@@ -7,11 +7,12 @@ interface Row {
 }
 
 /**
- * Football pitch layout. Renders three outfield rows (DEF, MID, FWD) plus
- * a keeper row. The container is direction-agnostic — rows use flex-row
- * and mirror naturally in RTL. Formations don't lose meaning: the pitch
- * is symmetric top-to-bottom, and RTL only flips the horizontal ordering
- * of positional peers, which reads naturally in Arabic.
+ * Perspective-style football pitch. A trapezoidal SVG backdrop provides
+ * alternating green bands and crisp white markings (boundary, halfway line,
+ * center circle, penalty areas, six-yard boxes, goals). Player rows sit on
+ * top of the backdrop untransformed so tap targets stay accurate and
+ * readable. RTL only reorders horizontal peers within a row — the pitch
+ * itself is not mirrored.
  */
 export function Pitch({
   gk,
@@ -36,48 +37,112 @@ export function Pitch({
     { key: "def", children: def },
     { key: "gk", children: [gk] },
   ];
+
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
+    <div className={cn("flex flex-col", className)}>
       <div
-        aria-hidden
-        className="relative overflow-hidden rounded-3xl border border-white/40 shadow-inner"
+        className="relative overflow-hidden rounded-3xl border border-white/25 shadow-2xl"
         style={{
-          background:
-            "linear-gradient(180deg, #0f5132 0%, #1a7040 50%, #0f5132 100%)",
+          boxShadow:
+            "0 30px 60px -30px rgba(10,20,45,0.55), inset 0 0 60px rgba(0,0,0,0.25)",
         }}
       >
-        {/* Field lines */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-2 rounded-2xl border border-white/25" />
-          <div className="absolute inset-x-2 top-1/2 h-px bg-white/25" />
-          <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
-          <div className="absolute inset-x-16 top-2 h-10 rounded-b-xl border-b border-x border-white/25" />
-          <div className="absolute inset-x-16 bottom-2 h-10 rounded-t-xl border-t border-x border-white/25" />
+        {/* Trapezoidal pitch backdrop */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            clipPath: "polygon(3% 0, 97% 0, 100% 100%, 0 100%)",
+          }}
+        >
+          {/* Alternating horizontal bands */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "repeating-linear-gradient(180deg, #14733f 0, #14733f 14%, #0f5c33 14%, #0f5c33 28%)",
+            }}
+          />
+          {/* Vignette + stadium-light glow */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 15%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 55%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 60%)",
+            }}
+          />
+          {/* Field markings */}
+          <svg
+            viewBox="0 0 100 130"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+          >
+            <g fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="0.5">
+              {/* Outer boundary */}
+              <rect x="4" y="3" width="92" height="124" />
+              {/* Halfway line */}
+              <line x1="4" y1="65" x2="96" y2="65" />
+              {/* Center circle */}
+              <circle cx="50" cy="65" r="9" />
+              <circle cx="50" cy="65" r="0.8" fill="rgba(255,255,255,0.75)" />
+              {/* Top penalty area */}
+              <rect x="26" y="3" width="48" height="16" />
+              {/* Top six-yard */}
+              <rect x="38" y="3" width="24" height="6" />
+              {/* Top goal */}
+              <rect x="45" y="1.5" width="10" height="2" />
+              {/* Top penalty spot */}
+              <circle cx="50" cy="12" r="0.7" fill="rgba(255,255,255,0.75)" />
+              {/* Bottom penalty area */}
+              <rect x="26" y="111" width="48" height="16" />
+              {/* Bottom six-yard */}
+              <rect x="38" y="121" width="24" height="6" />
+              {/* Bottom goal */}
+              <rect x="45" y="126.5" width="10" height="2" />
+              {/* Bottom penalty spot */}
+              <circle cx="50" cy="118" r="0.7" fill="rgba(255,255,255,0.75)" />
+            </g>
+          </svg>
         </div>
-        <div className="relative grid gap-3 px-2 py-4">
+
+        {/* Player rows overlay */}
+        <div className="relative grid gap-2 px-2 py-4 sm:gap-3 sm:py-6">
           {rows.map((r) => (
-            <div key={r.key} className="flex items-center justify-around gap-1">
+            <div key={r.key} className="flex items-start justify-around gap-1">
               {r.children.map((c, i) => (
-                <div key={i} className="flex-1 max-w-[80px]">{c}</div>
+                <div key={i} className="min-w-0 max-w-[92px] flex-1">
+                  {c}
+                </div>
               ))}
             </div>
           ))}
         </div>
-      </div>
-      {bench && bench.length > 0 && (
-        <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] p-2">
-          {benchLabel && (
-            <div className="mb-1 px-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-              {benchLabel}
+
+        {/* Bench enclosure — integrated inside the pitch frame */}
+        {bench && bench.length > 0 && (
+          <div
+            className="relative border-t border-white/20 px-2 pb-3 pt-2"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(10,20,45,0.55) 0%, rgba(10,20,45,0.75) 100%)",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            {benchLabel && (
+              <div className="mb-1.5 px-1 text-[10px] font-black uppercase tracking-[0.15em] text-white/85">
+                {benchLabel}
+              </div>
+            )}
+            <div className="flex items-start justify-around gap-1">
+              {bench.map((c, i) => (
+                <div key={i} className="min-w-0 max-w-[92px] flex-1">
+                  {c}
+                </div>
+              ))}
             </div>
-          )}
-          <div className="flex items-center justify-around gap-1">
-            {bench.map((c, i) => (
-              <div key={i} className="flex-1 max-w-[80px]">{c}</div>
-            ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
