@@ -43,6 +43,7 @@ function MyTeamPage() {
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
   const summaryQ = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
 
+  const { requireAuth } = useAuth();
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [captainSheet, setCaptainSheet] = useState(false);
