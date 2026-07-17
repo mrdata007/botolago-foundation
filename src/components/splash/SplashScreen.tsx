@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Logo } from "@/components/brand/Logo";
+import splashIcon from "@/assets/botolago-splash-icon.png";
 
 interface SplashScreenProps {
   onDone: () => void;
@@ -35,9 +35,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           "linear-gradient(160deg, hsl(215 70% 20%) 0%, hsl(220 65% 12%) 55%, hsl(222 60% 7%) 100%)",
       }}
     >
-      <Logo
-        variant="icon"
-        className="!h-24 !w-24 !rounded-2xl motion-safe:animate-[splash-in_600ms_ease-out_both]"
+      <img
+        src={splashIcon}
+        alt="BotolaGO"
+        className="h-24 w-24 object-contain motion-safe:animate-[splash-in_600ms_ease-out_both]"
+        draggable={false}
       />
 
       <style>{`
