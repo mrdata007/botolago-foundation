@@ -43,6 +43,14 @@ export const fantasyService = {
   async getFixtureDifficulty(): Promise<FixtureDifficulty[]> {
     return delay(fdb.fixtureDifficulties);
   },
+  async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
+    const gws = Object.keys(fdb.topPlayersByGameweek).map(Number);
+    const fallback = gws.length ? Math.max(...gws) : gameweek;
+    return delay(fdb.topPlayersByGameweek[gameweek] ?? fdb.topPlayersByGameweek[fallback] ?? []);
+  },
+  async getAvailableTopGameweeks(): Promise<number[]> {
+    return delay(Object.keys(fdb.topPlayersByGameweek).map(Number).sort((a, b) => a - b));
+  },
 };
 
 export type FantasyService = typeof fantasyService;
