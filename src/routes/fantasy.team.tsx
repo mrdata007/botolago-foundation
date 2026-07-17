@@ -5,7 +5,9 @@ import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
-import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
+import { SquadListToggle, type SquadViewMode } from "@/components/fantasy/SquadListToggle";
+import { SquadListView } from "@/components/fantasy/SquadListView";
+import { FantasyChipsRow, type FantasyChip } from "@/components/fantasy/FantasyChipCard";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { LoadingState } from "@/components/common/States";
@@ -15,6 +17,13 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Check, Pencil, RotateCcw } from "lucide-react";
+
+const TEAM_CHIPS: FantasyChip[] = [
+  { key: "bench_boost", state: "available" },
+  { key: "triple_captain", state: "available" },
+  { key: "free_hit", state: "unavailable" },
+  { key: "wildcard", state: "available" },
+];
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
