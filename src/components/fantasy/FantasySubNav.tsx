@@ -11,6 +11,7 @@ type FantasyRoute =
   | "/fantasy/leagues"
   | "/fantasy/players"
   | "/fantasy/fixtures"
+  | "/fantasy/top-players"
   | "/fantasy/rules";
 
 const items: { to: FantasyRoute; labelKey: TranslationKey }[] = [
@@ -18,6 +19,7 @@ const items: { to: FantasyRoute; labelKey: TranslationKey }[] = [
   { to: "/fantasy/team", labelKey: "fantasy.tab.team" },
   { to: "/fantasy/transfers", labelKey: "fantasy.tab.transfers" },
   { to: "/fantasy/points", labelKey: "fantasy.tab.points" },
+  { to: "/fantasy/top-players", labelKey: "fantasy.tab.top" },
   { to: "/fantasy/leagues", labelKey: "fantasy.tab.leagues" },
   { to: "/fantasy/players", labelKey: "fantasy.tab.players" },
   { to: "/fantasy/fixtures", labelKey: "fantasy.tab.fixtures" },
