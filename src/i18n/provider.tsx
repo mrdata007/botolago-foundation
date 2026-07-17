@@ -16,39 +16,36 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function readInitial(): { lang: Language; hasChosen: boolean } {
+  if (typeof window === "undefined") return { lang: "fr", hasChosen: true };
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY) as Language | null;
+    if (stored === "fr" || stored === "ar") return { lang: stored, hasChosen: true };
+  } catch { /* ignore */ }
+  return { lang: "fr", hasChosen: false };
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // Render deterministically on SSR to avoid hydration mismatch; the stored
-  // preference is applied after mount inside useEffect.
-  const [lang, setLang] = useState<Language>("fr");
-  const [hasChosen, setHasChosen] = useState<boolean>(true);
-  const [isHydrated, setIsHydrated] = useState(false);
+  // Synchronous initial read so lang/dir are correct on first paint after
+  // hydration — prevents the RTL flash between server HTML and client state.
+  const [{ lang, hasChosen }, setState] = useState(readInitial);
 
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY) as Language | null;
-      if (stored === "fr" || stored === "ar") {
-        setLang(stored);
-        setHasChosen(true);
-      } else {
-        setHasChosen(false);
-      }
-    } catch {
-      setHasChosen(false);
-    }
-    setIsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isHydrated) return;
+  // Apply html attributes as early as possible (during first client render).
+  if (typeof document !== "undefined") {
     const dir = lang === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = lang;
-    document.documentElement.dir = dir;
-    document.documentElement.dataset.lang = lang;
-  }, [lang, isHydrated]);
+    if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
+    if (document.documentElement.dir !== dir) document.documentElement.dir = dir;
+    if (document.documentElement.dataset.lang !== lang) document.documentElement.dataset.lang = lang;
+  }
+
+  // Kept for API compatibility with existing consumers (FirstLaunchLanguage,
+  // legacy call sites). Flip after mount so gated overlays only appear once
+  // the client is ready.
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => { setIsHydrated(true); }, []);
 
   const setLanguage = useCallback((l: Language) => {
-    setLang(l);
-    setHasChosen(true);
+    setState({ lang: l, hasChosen: true });
     try { window.localStorage.setItem(STORAGE_KEY, l); } catch { /* ignore */ }
   }, []);
 

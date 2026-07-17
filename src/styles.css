@@ -45,6 +45,11 @@
 :root {
   --radius: 0.875rem;
 
+  /* Shared sticky offsets — TopBar height including iOS safe area. Used by
+     news tab bar, fantasy sub-nav, and any other secondary sticky rows. */
+  --topbar-h: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+
+
   /* Brand */
   --brand-primary: oklch(0.24 0.07 260);   /* deep blue */
   --brand-primary-2: oklch(0.32 0.09 258); /* mid blue */

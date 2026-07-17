@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { botolaService } from "@/services/mock";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -29,26 +29,21 @@ function useGreeting() {
   return t("home.greeting_evening");
 }
 
+function readWelcomed(): boolean {
+  if (typeof window === "undefined") return true; // SSR renders content, splash covers first paint
+  try { return window.localStorage.getItem(WELCOME_KEY) === "1"; } catch { return true; }
+}
+
 function HomePage() {
   const navigate = useNavigate();
-  const [welcomeState, setWelcomeState] = useState<"pending" | "show" | "hide">("pending");
-
-  useEffect(() => {
-    try {
-      const seen = window.localStorage.getItem(WELCOME_KEY) === "1";
-      setWelcomeState(seen ? "hide" : "show");
-    } catch {
-      setWelcomeState("hide");
-    }
-  }, []);
+  const [welcomed, setWelcomed] = useState<boolean>(readWelcomed);
 
   const dismissWelcome = () => {
     try { window.localStorage.setItem(WELCOME_KEY, "1"); } catch { /* ignore */ }
-    setWelcomeState("hide");
+    setWelcomed(true);
   };
 
-  if (welcomeState === "pending") return null;
-  if (welcomeState === "show") {
+  if (!welcomed) {
     return (
       <WelcomeScreen
         onStart={dismissWelcome}
