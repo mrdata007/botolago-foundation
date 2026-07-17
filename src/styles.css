@@ -156,6 +156,11 @@ html[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
   }
 }
 
+@keyframes bgdrift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -12px, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
