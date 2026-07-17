@@ -22,6 +22,7 @@ export const Route = createFileRoute("/fantasy/transfers")({
 
 function TransfersPage() {
   const { t, tr, lang } = useI18n();
+  const qc = useQueryClient();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
@@ -30,7 +31,7 @@ function TransfersPage() {
 
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<string[]>([]);
-  const [pickerFor, setPickerFor] = useState<string | null>(null); // playerId being replaced
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -51,33 +52,35 @@ function TransfersPage() {
   const outPlayers = outIds.map(playerOf);
   const inPlayers = inIds.map(playerOf).filter(Boolean) as FantasyPlayer[];
 
-  const budgetDelta = outPlayers.reduce((s, p) => s + p.price, 0) - inPlayers.reduce((s, p) => s + p.price, 0);
-  const bankAfter = team.bank + budgetDelta;
+  const impact = computeBudgetImpact({ outPlayers, inPlayers, bank: team.bank });
+  const bankAfter = impact.bankAfter;
 
   const totalTransfers = Math.min(outIds.length, inIds.length);
-  const paidTransfers = Math.max(0, totalTransfers - team.freeTransfers);
-  const hitPoints = transferHitPoints(paidTransfers);
+  const { paid: paidTransfers } = splitTransfers(totalTransfers, team.freeTransfers);
+  const hitPoints = transferHit(paidTransfers);
 
-  const canReview =
-    totalTransfers > 0 && outIds.length === inIds.length && bankAfter >= -0.001;
+  const canReview = totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget;
 
   const startReplace = (playerId: string) => setPickerFor(playerId);
   const removeFromOut = (playerId: string) => {
     const idx = outIds.indexOf(playerId);
     if (idx < 0) return;
-    const newOut = outIds.filter((x) => x !== playerId);
-    const newIn = inIds.filter((_, i) => i !== idx);
-    setOutIds(newOut);
-    setInIds(newIn);
+    setOutIds(outIds.filter((x) => x !== playerId));
+    setInIds(inIds.filter((_, i) => i !== idx));
   };
   const onPick = (p: FantasyPlayer) => {
     if (!pickerFor) return;
     const outP = playerOf(pickerFor);
-    if (p.position !== outP.position) return; // position must match
-    // enforce club limit (max 3)
+    if (p.position !== outP.position) {
+      toast.error(lang === "ar" ? "لا بد من نفس المركز" : "Poste incompatible");
+      return;
+    }
     const nextIds = currentSquadIdsAfter.map((id) => (id === pickerFor ? p.id : id));
     const clubCount = nextIds.filter((id) => playerOf(id).clubId === p.clubId).length;
-    if (clubCount > 3) return;
+    if (clubCount > 3) {
+      toast.error(t("fantasy.validation.club_limit"));
+      return;
+    }
     if (!outIds.includes(pickerFor)) {
       setOutIds([...outIds, pickerFor]);
       setInIds([...inIds, p.id]);
@@ -92,15 +95,29 @@ function TransfersPage() {
 
   const resetAll = () => { setOutIds([]); setInIds([]); };
   const confirm = () => {
+    const nextSquad = team.squad.map((sp) => {
+      const idx = outIds.indexOf(sp.playerId);
+      if (idx < 0 || !inIds[idx]) return sp;
+      return { ...sp, playerId: inIds[idx] };
+    });
+    const nextFree = Math.max(0, team.freeTransfers - totalTransfers);
+    fantasyService.saveTeam({
+      squad: nextSquad,
+      bank: bankAfter,
+      freeTransfers: nextFree,
+      pendingTransfers: totalTransfers,
+    });
+    qc.invalidateQueries({ queryKey: ["fantasy-team"] });
+    qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
     setSuccess(true);
     setConfirming(false);
-    // Real backend would persist here.
+    toast.success(t("fantasy.transfers.success"));
     setTimeout(() => setSuccess(false), 2400);
     resetAll();
   };
 
   const pickerOut = pickerFor ? playerOf(pickerFor) : null;
-  const pickerMaxPrice = pickerOut ? pickerOut.price + team.bank + (outIds.filter((id) => id !== pickerFor).reduce((s, id) => s + playerOf(id).price, 0) - inIds.filter((_, i) => outIds[i] !== pickerFor).reduce((s, id) => s + playerOf(id).price, 0)) : undefined;
+  const pickerMaxPrice = pickerOut ? maxAffordableReplacement(pickerOut.price, team.bank) : undefined;
 
   return (
     <div>
