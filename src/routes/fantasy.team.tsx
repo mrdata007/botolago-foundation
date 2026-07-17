@@ -222,16 +222,38 @@ function MyTeamPage() {
         </button>
       </div>
 
-      <div className="mt-4">
-        <Pitch
-          gk={shirt(gkXi[0])}
-          def={defRender}
-          mid={midRender}
-          fwd={fwdRender}
-          bench={benchRender}
-          benchLabel={t("fantasy.bench")}
-        />
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <SquadListToggle value={view} onChange={setView} />
+        <div className="hidden text-[11px] text-muted-foreground sm:block">
+          {editing ? t("fantasy.edit_lineup") : ""}
+        </div>
       </div>
+
+      <div className="mt-2">
+        <FantasyChipsRow chips={TEAM_CHIPS} />
+      </div>
+
+      {view === "squad" ? (
+        <div className="mt-3">
+          <Pitch
+            gk={shirt(gkXi[0])}
+            def={defRender}
+            mid={midRender}
+            fwd={fwdRender}
+            bench={benchRender}
+            benchLabel={t("fantasy.bench")}
+          />
+        </div>
+      ) : (
+        <div className="mt-3">
+          <SquadListView
+            squad={squad}
+            players={players}
+            clubs={clubs}
+            onPlayerClick={editing ? handleTap : undefined}
+          />
+        </div>
+      )}
 
       <SectionHeader title={t("fantasy.starting_xi")} />
       <p className="text-xs text-muted-foreground">
