@@ -8,6 +8,7 @@ import type {
   GameweekResult,
   League,
   LeagueStanding,
+  TopPlayerOfWeek,
 } from "@/types/fantasy";
 import * as fdb from "@/mocks/fantasy-data";
 
