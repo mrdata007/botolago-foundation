@@ -268,8 +268,20 @@ export const dictionaries = {
     "player.pos.DEF": "DEF",
     "player.pos.MID": "MIL",
     "player.pos.FWD": "ATT",
+
+    "fantasy.view.squad": "Équipe",
+    "fantasy.view.list": "Liste",
+    "fantasy.view.toggle_label": "Mode d'affichage",
+    "fantasy.bench_short": "Banc",
+    "fantasy.xpts": "xPts",
+    "fantasy.chip.bench_boost": "Bench Boost",
+    "fantasy.chip.free_hit": "Free Hit",
+    "fantasy.chip.triple_captain": "Triple Capitaine",
+    "fantasy.chip.wildcard": "Wildcard",
+    "fantasy.chip.state.available": "Disponible",
+    "fantasy.chip.state.active": "Actif",
+    "fantasy.chip.state.unavailable": "Indisponible",
   },
-  ar: {
     "app.name": "BotolaGO",
     "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
 
