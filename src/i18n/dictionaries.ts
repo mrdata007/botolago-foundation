@@ -547,6 +547,19 @@ export const dictionaries = {
     "player.pos.DEF": "مد",
     "player.pos.MID": "وس",
     "player.pos.FWD": "هج",
+
+    "fantasy.view.squad": "التشكيلة",
+    "fantasy.view.list": "القائمة",
+    "fantasy.view.toggle_label": "طريقة العرض",
+    "fantasy.bench_short": "بديل",
+    "fantasy.xpts": "نقاط متوقعة",
+    "fantasy.chip.bench_boost": "تعزيز الاحتياط",
+    "fantasy.chip.free_hit": "الضربة الحرة",
+    "fantasy.chip.triple_captain": "القائد الثلاثي",
+    "fantasy.chip.wildcard": "الورقة الحرة",
+    "fantasy.chip.state.available": "متاح",
+    "fantasy.chip.state.active": "مُفعَّل",
+    "fantasy.chip.state.unavailable": "غير متاح",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
