@@ -7,11 +7,21 @@ import { LoadingState } from "@/components/common/States";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
+import { SquadListToggle, type SquadViewMode } from "@/components/fantasy/SquadListToggle";
+import { SquadListView } from "@/components/fantasy/SquadListView";
+import { FantasyChipsRow, type FantasyChip } from "@/components/fantasy/FantasyChipCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { useI18n } from "@/i18n/provider";
 import type { PointsEventKind } from "@/types/fantasy";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
+
+const POINTS_CHIPS: FantasyChip[] = [
+  { key: "triple_captain", state: "active" },
+  { key: "bench_boost", state: "unavailable" },
+  { key: "free_hit", state: "unavailable" },
+  { key: "wildcard", state: "unavailable" },
+];
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
@@ -36,6 +46,7 @@ const eventLabelKey: Record<PointsEventKind, TranslationKey> = {
 function PointsPage() {
   const { t, tr } = useI18n();
   const [gw, setGw] = useState(14);
+  const [view, setView] = useState<SquadViewMode>("squad");
   const gwResult = useQuery({ queryKey: ["gw-result", gw], queryFn: () => fantasyService.getGameweekResult(gw) });
   const historyQ = useQuery({ queryKey: ["gw-history"], queryFn: () => fantasyService.getGameweekHistory() });
   const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
@@ -83,8 +94,16 @@ function PointsPage() {
         <Stat label={t("fantasy.average")} value={String(result.averagePoints)} />
       </div>
 
-      {gk[0] && (
-        <div className="mt-4">
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <SquadListToggle value={view} onChange={setView} />
+      </div>
+
+      <div className="mt-2">
+        <FantasyChipsRow chips={POINTS_CHIPS} />
+      </div>
+
+      {gk[0] && view === "squad" && (
+        <div className="mt-3">
           <Pitch
             gk={shirtOf(gk[0])}
             def={def.map(shirtOf)}
@@ -95,6 +114,22 @@ function PointsPage() {
           />
         </div>
       )}
+
+      {view === "list" && (
+        <div className="mt-3">
+          <SquadListView
+            squad={teamQ.data.squad}
+            players={players}
+            clubs={clubs}
+            metricFor={(id) => {
+              const b = result.breakdown.find((x) => x.playerId === id);
+              return b?.totalPoints;
+            }}
+            metricLabel={t("fantasy.points.total")}
+          />
+        </div>
+      )}
+
 
       <SectionHeader title={t("fantasy.points.auto_subs")} />
       <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] p-3 text-xs text-muted-foreground">

@@ -5,7 +5,9 @@ import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
-import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
+import { SquadListToggle, type SquadViewMode } from "@/components/fantasy/SquadListToggle";
+import { SquadListView } from "@/components/fantasy/SquadListView";
+import { FantasyChipsRow, type FantasyChip } from "@/components/fantasy/FantasyChipCard";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { LoadingState } from "@/components/common/States";
@@ -15,6 +17,13 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Check, Pencil, RotateCcw } from "lucide-react";
+
+const TEAM_CHIPS: FantasyChip[] = [
+  { key: "bench_boost", state: "available" },
+  { key: "triple_captain", state: "available" },
+  { key: "free_hit", state: "unavailable" },
+  { key: "wildcard", state: "available" },
+];
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
@@ -35,6 +44,7 @@ function MyTeamPage() {
   const [captainSheet, setCaptainSheet] = useState(false);
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
+  const [view, setView] = useState<SquadViewMode>("squad");
 
   if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
 
@@ -212,16 +222,38 @@ function MyTeamPage() {
         </button>
       </div>
 
-      <div className="mt-4">
-        <Pitch
-          gk={shirt(gkXi[0])}
-          def={defRender}
-          mid={midRender}
-          fwd={fwdRender}
-          bench={benchRender}
-          benchLabel={t("fantasy.bench")}
-        />
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <SquadListToggle value={view} onChange={setView} />
+        <div className="hidden text-[11px] text-muted-foreground sm:block">
+          {editing ? t("fantasy.edit_lineup") : ""}
+        </div>
       </div>
+
+      <div className="mt-2">
+        <FantasyChipsRow chips={TEAM_CHIPS} />
+      </div>
+
+      {view === "squad" ? (
+        <div className="mt-3">
+          <Pitch
+            gk={shirt(gkXi[0])}
+            def={defRender}
+            mid={midRender}
+            fwd={fwdRender}
+            bench={benchRender}
+            benchLabel={t("fantasy.bench")}
+          />
+        </div>
+      ) : (
+        <div className="mt-3">
+          <SquadListView
+            squad={squad}
+            players={players}
+            clubs={clubs}
+            onPlayerClick={editing ? handleTap : undefined}
+          />
+        </div>
+      )}
 
       <SectionHeader title={t("fantasy.starting_xi")} />
       <p className="text-xs text-muted-foreground">

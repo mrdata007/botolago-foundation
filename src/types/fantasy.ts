@@ -36,6 +36,13 @@ export const SQUAD_RULES = {
   transferHitPoints: 4,
 };
 
+export type KitPattern =
+  | "solid"
+  | "stripes-vertical"
+  | "bands-horizontal"
+  | "central-stripe"
+  | "two-tone-sleeves";
+
 export interface FantasyPlayer extends Player {
   // extra fantasy-only fields
   nextOpponentClubId?: string;
@@ -44,6 +51,10 @@ export interface FantasyPlayer extends Player {
   expectedPoints?: number;
   news?: LocalizedString;
   chanceOfPlaying?: number; // 0-100
+  /** Optional pre-rendered jersey image. When present, PlayerShirt uses it with graceful fallback to CSS jersey. */
+  jerseyImageUrl?: string;
+  /** Optional per-player kit override; otherwise derived from the club. */
+  kitPattern?: KitPattern;
 }
 
 export interface SquadPlayer {

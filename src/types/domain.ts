@@ -11,6 +11,8 @@ export interface Club {
   shortName: LocalizedString;
   city: LocalizedString;
   primaryColor: string;
+  /** Optional second club color used for jersey patterns. Falls back to a derived tone. */
+  secondaryColor?: string;
   crestPlaceholder: string; // 2-3 letter abbreviation
 }
 
