@@ -281,6 +281,12 @@ export const dictionaries = {
     "fantasy.chip.state.available": "Disponible",
     "fantasy.chip.state.active": "Actif",
     "fantasy.chip.state.unavailable": "Indisponible",
+
+    "welcome.title": "Bienvenue sur BotolaGO",
+    "welcome.description": "Toute l'actualité du football marocain, les matchs en direct et la Fantasy Botola réunis dans une seule application.",
+    "welcome.cta_primary": "Commencer",
+    "welcome.secondary_prompt": "Vous avez déjà un compte ?",
+    "welcome.cta_secondary": "Se connecter",
   },
   ar: {
     "app.name": "BotolaGO",
