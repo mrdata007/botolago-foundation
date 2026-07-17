@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logoAsset from "@/assets/botolago-logo.jpg.asset.json";
+import { Logo } from "@/components/brand/Logo";
 
 interface SplashScreenProps {
   onDone: () => void;
