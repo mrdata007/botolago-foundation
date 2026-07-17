@@ -15,6 +15,7 @@ import { useI18n } from "@/i18n/provider";
 import { ArrowRightLeft, Check } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { toast } from "sonner";
+import { useAuth } from "@/auth/AuthProvider";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
@@ -34,6 +35,7 @@ function TransfersPage() {
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { requireAuth } = useAuth();
 
   if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
   const team = teamQ.data;
@@ -203,7 +205,7 @@ function TransfersPage() {
           {t("fantasy.transfers.reset")}
         </button>
         <button
-          onClick={() => setConfirming(true)}
+          onClick={() => requireAuth(() => setConfirming(true))}
           disabled={!canReview}
           className="rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
         >
