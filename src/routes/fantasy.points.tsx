@@ -46,6 +46,7 @@ const eventLabelKey: Record<PointsEventKind, TranslationKey> = {
 function PointsPage() {
   const { t, tr } = useI18n();
   const [gw, setGw] = useState(14);
+  const [view, setView] = useState<SquadViewMode>("squad");
   const gwResult = useQuery({ queryKey: ["gw-result", gw], queryFn: () => fantasyService.getGameweekResult(gw) });
   const historyQ = useQuery({ queryKey: ["gw-history"], queryFn: () => fantasyService.getGameweekHistory() });
   const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
