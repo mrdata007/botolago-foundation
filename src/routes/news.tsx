@@ -51,7 +51,7 @@ function NewsPage() {
       <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">{t("news.title")}</h1>
 
       {/* Tabs */}
-      <div className="sticky top-[4.5rem] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">
+      <div className="sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">
         <div className="glass-surface glass-strong flex items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--glass-border)] p-1">
           {tabs.map((it) => (
             <button

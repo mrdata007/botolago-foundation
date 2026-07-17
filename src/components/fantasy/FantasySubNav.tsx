@@ -32,7 +32,7 @@ export function FantasySubNav() {
   return (
     <nav
       aria-label="Fantasy sections"
-      className="glass-surface glass-regular sticky top-16 z-20 -mx-3 border-y border-[var(--glass-border)] px-3 py-2"
+      className="glass-surface glass-regular sticky top-[var(--topbar-h)] z-20 -mx-3 border-y border-[var(--glass-border)] px-3 py-2"
     >
       <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
         {items.map((it) => {
