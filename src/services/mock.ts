@@ -14,6 +14,9 @@ import type {
   TableRow,
 } from "@/types/domain";
 import * as db from "@/mocks/data";
+import * as fdb from "@/mocks/fantasy-data";
+import { readJSON, STORAGE_KEYS } from "@/lib/storage";
+import type { FantasyTeamPatch } from "@/services/fantasy-mock";
 
 const delay = <T>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
@@ -52,7 +55,19 @@ export const botolaService = {
     return delay(db.gameweek);
   },
   async getFantasySummary(): Promise<FantasySummary> {
-    return delay(db.fantasySummary);
+    const patch = readJSON<FantasyTeamPatch>(STORAGE_KEYS.FANTASY_TEAM) ?? {};
+    const squad = patch.squad ?? fdb.fantasyTeam.squad;
+    const teamValue = Math.round(squad.reduce((s, sp) => {
+      const p = fdb.fantasyPlayers.find((x) => x.id === sp.playerId);
+      return s + (p?.price ?? 0);
+    }, 0) * 10) / 10;
+    const merged: FantasySummary = {
+      ...db.fantasySummary,
+      transfersLeft: patch.freeTransfers ?? db.fantasySummary.transfersLeft,
+      bankValue: patch.bank ?? db.fantasySummary.bankValue,
+      teamValue: teamValue || db.fantasySummary.teamValue,
+    };
+    return delay(merged);
   },
   async getFantasyAlerts(): Promise<FantasyAlert[]> {
     return delay(db.fantasyAlerts);

@@ -51,7 +51,7 @@ function NewsPage() {
       <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">{t("news.title")}</h1>
 
       {/* Tabs */}
-      <div className="sticky top-[4.5rem] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">
+      <div className="sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">
         <div className="glass-surface glass-strong flex items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--glass-border)] p-1">
           {tabs.map((it) => (
             <button
@@ -135,12 +135,22 @@ function FilterChip({
   children: React.ReactNode;
   trailing?: React.ReactNode;
 }) {
+  // NB: rendered as a <span> with role="button" so a follow-toggle <button>
+  // can be nested inside without producing invalid <button> descendants.
   return (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+        "inline-flex cursor-pointer select-none items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         active
           ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
           : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
@@ -148,6 +158,6 @@ function FilterChip({
     >
       <span>{children}</span>
       {trailing}
-    </button>
+    </span>
   );
 }

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Check, Pencil, RotateCcw } from "lucide-react";
+import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
+import { toast } from "sonner";
 
 const TEAM_CHIPS: FantasyChip[] = [
   { key: "bench_boost", state: "available" },
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/fantasy/team")({
 
 function MyTeamPage() {
   const { t, tr, lang, dir } = useI18n();
+  const qc = useQueryClient();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
@@ -63,33 +66,16 @@ function MyTeamPage() {
   const midXi = xiIds.filter((id) => playerOf(id).position === "MID");
   const fwdXi = xiIds.filter((id) => playerOf(id).position === "FWD");
 
-  // Tap-to-swap interaction: first tap selects, second tap on another shirt
-  // swaps them, respecting positional feasibility (same position OR bench↔XI
-  // of same position).
   const handleTap = (playerId: string) => {
     if (!editing) return;
-    if (!selected) {
+    if (!selected) { setSelected(playerId); return; }
+    if (selected === playerId) { setSelected(null); return; }
+    const next = swapSquadMembers(squad, players, formation, selected, playerId);
+    if (!next) {
+      toast.error(lang === "ar" ? "لا يمكن تبديل لاعبين من مركزين مختلفين" : "Impossible d'échanger deux joueurs de postes différents");
       setSelected(playerId);
       return;
     }
-    if (selected === playerId) {
-      setSelected(null);
-      return;
-    }
-    const a = squad.find((s) => s.playerId === selected)!;
-    const b = squad.find((s) => s.playerId === playerId)!;
-    const pa = playerOf(a.playerId);
-    const pb = playerOf(b.playerId);
-    // Allow swap if same position, otherwise disallow (formation invariant)
-    if (pa.position !== pb.position) {
-      setSelected(playerId);
-      return;
-    }
-    const next = squad.map((s) => {
-      if (s.playerId === a.playerId) return { ...s, slot: b.slot };
-      if (s.playerId === b.playerId) return { ...s, slot: a.slot };
-      return s;
-    });
     setLocalSquad(next);
     setSelected(null);
   };
@@ -105,15 +91,21 @@ function MyTeamPage() {
 
   const changeFormation = (f: FormationKey) => {
     setLocalFormation(f);
-    // NB: real reassignment of slots by position would go here. For now
-    // we keep player-to-slot mapping and just update the visual layout by
-    // regrouping via position on render.
+    setLocalSquad(reslotForFormation({ squad, players, formation: f }));
   };
 
   const save = () => {
+    fantasyService.saveTeam({
+      formation: localFormation ?? teamQ.data.formation,
+      squad: localSquad ?? teamQ.data.squad,
+    });
+    qc.invalidateQueries({ queryKey: ["fantasy-team"] });
+    qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
     setEditing(false);
     setSelected(null);
-    // Persist: hand off to backend later. For now local state stays.
+    setLocalSquad(null);
+    setLocalFormation(null);
+    toast.success(t("fantasy.success"));
   };
   const cancel = () => {
     setEditing(false);
