@@ -35,12 +35,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           "linear-gradient(160deg, hsl(215 70% 20%) 0%, hsl(220 65% 12%) 55%, hsl(222 60% 7%) 100%)",
       }}
     >
-      <img
-        src={logoAsset.url}
-        alt="BotolaGO"
-        draggable={false}
-        className="h-14 w-auto select-none motion-safe:animate-[splash-in_600ms_ease-out_both]"
+      <Logo
+        variant="icon"
+        className="!h-24 !w-24 !rounded-2xl motion-safe:animate-[splash-in_600ms_ease-out_both]"
       />
+
       <style>{`
         @keyframes splash-in {
           0% { opacity: 0; transform: scale(0.96); }
