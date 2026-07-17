@@ -121,13 +121,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [splashDone, setSplashDone] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return sessionStorage.getItem("botolago.splashShown") === "1";
+  });
+
+  useEffect(() => {
+    if (splashDone && typeof window !== "undefined") {
+      sessionStorage.setItem("botolago.splashShown", "1");
+    }
+  }, [splashDone]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
+        {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </I18nProvider>
     </QueryClientProvider>
   );
 }
+
