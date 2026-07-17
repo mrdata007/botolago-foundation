@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Check, Pencil, RotateCcw } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
+import { useAuth } from "@/auth/AuthProvider";
 
 const TEAM_CHIPS: FantasyChip[] = [
   { key: "bench_boost", state: "available" },
@@ -163,7 +164,7 @@ function MyTeamPage() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {!editing ? (
           <button
-            onClick={() => setEditing(true)}
+            onClick={() => requireAuth(() => setEditing(true))}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.edit_lineup")}
