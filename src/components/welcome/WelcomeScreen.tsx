@@ -2,6 +2,7 @@ import { useI18n } from "@/i18n/provider";
 import { Logo } from "@/components/brand/Logo";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
+import { PageBackground } from "@/components/shell/PageBackground";
 
 interface Props {
   onStart: () => void;
