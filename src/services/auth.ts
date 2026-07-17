@@ -415,6 +415,12 @@ export const __testing = {
     safeRemove(K_SESSION);
     safeRemove(K_USERS);
     safeRemove(K_PENDING);
+    // Force singleton to reseed and re-read on next getSession()
+    const svc = authService as unknown as { initialized: boolean; cachedSession: AuthSession };
+    svc.initialized = false;
+    svc.cachedSession = { user: null, status: "loading" };
+    // Trigger init to reseed demo user
+    authService.getSession();
   },
   service: () => authService,
 };
