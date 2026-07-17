@@ -1,3 +1,4 @@
+// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/lib/budget.test.ts`
 import { describe, it, expect } from "bun:test";
 import {
