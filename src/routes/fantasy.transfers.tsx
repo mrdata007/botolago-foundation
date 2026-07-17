@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { LoadingState } from "@/components/common/States";
@@ -9,11 +9,12 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { TransferReviewPanel } from "@/components/fantasy/TransferReviewPanel";
-import { transferHitPoints } from "@/lib/fantasy-validation";
+import { computeBudgetImpact, transferHit, splitTransfers, maxAffordableReplacement } from "@/lib/budget";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { useI18n } from "@/i18n/provider";
 import { ArrowRightLeft, Check } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
