@@ -153,3 +153,18 @@ export interface FixtureDifficulty {
   isDouble?: boolean;
   isBlank?: boolean;
 }
+
+// Weekly top-performer entry — powers the "Top 5 players of the week" screen.
+export interface TopPlayerOfWeek {
+  playerId: string;
+  rank: 1 | 2 | 3 | 4 | 5;
+  gameweek: number;
+  weeklyPoints: number;
+  goals: number;
+  assists: number;
+  cleanSheets: number;
+  minutes: number;
+  price: number;
+  ownershipPercent: number;
+  form: number;
+}
