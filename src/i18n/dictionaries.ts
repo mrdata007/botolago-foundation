@@ -566,6 +566,12 @@ export const dictionaries = {
     "fantasy.chip.state.available": "متاح",
     "fantasy.chip.state.active": "مُفعَّل",
     "fantasy.chip.state.unavailable": "غير متاح",
+
+    "welcome.title": "مرحبًا بك في BotolaGO",
+    "welcome.description": "تابع أخبار الكرة المغربية، المباريات المباشرة، وفانتازي البطولة في تطبيق واحد.",
+    "welcome.cta_primary": "ابدأ",
+    "welcome.secondary_prompt": "لديك حساب بالفعل؟",
+    "welcome.cta_secondary": "تسجيل الدخول",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
