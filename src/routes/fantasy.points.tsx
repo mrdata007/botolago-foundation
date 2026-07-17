@@ -7,11 +7,21 @@ import { LoadingState } from "@/components/common/States";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
+import { SquadListToggle, type SquadViewMode } from "@/components/fantasy/SquadListToggle";
+import { SquadListView } from "@/components/fantasy/SquadListView";
+import { FantasyChipsRow, type FantasyChip } from "@/components/fantasy/FantasyChipCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { useI18n } from "@/i18n/provider";
 import type { PointsEventKind } from "@/types/fantasy";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
+
+const POINTS_CHIPS: FantasyChip[] = [
+  { key: "triple_captain", state: "active" },
+  { key: "bench_boost", state: "unavailable" },
+  { key: "free_hit", state: "unavailable" },
+  { key: "wildcard", state: "unavailable" },
+];
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
