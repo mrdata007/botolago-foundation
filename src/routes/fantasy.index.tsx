@@ -10,18 +10,19 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
-import { ArrowRightLeft, CalendarDays, LayoutGrid, ListChecks, TrendingUp, Trophy, UserCog, Users } from "lucide-react";
+import { ArrowRightLeft, CalendarDays, LayoutGrid, ListChecks, Sparkles, TrendingUp, Trophy, UserCog, Users } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/")({
   component: FantasyHub,
 });
 
-type QuickAction = { to: "/fantasy/team" | "/fantasy/transfers" | "/fantasy/points" | "/fantasy/leagues" | "/fantasy/players" | "/fantasy/fixtures"; labelKey: TranslationKey; icon: React.ComponentType<{ className?: string }> };
+type QuickAction = { to: "/fantasy/team" | "/fantasy/transfers" | "/fantasy/points" | "/fantasy/leagues" | "/fantasy/players" | "/fantasy/fixtures" | "/fantasy/top-players"; labelKey: TranslationKey; icon: React.ComponentType<{ className?: string }> };
 const quickActions: QuickAction[] = [
   { to: "/fantasy/team", labelKey: "fantasy.tab.team", icon: UserCog },
   { to: "/fantasy/transfers", labelKey: "fantasy.tab.transfers", icon: ArrowRightLeft },
   { to: "/fantasy/points", labelKey: "fantasy.tab.points", icon: ListChecks },
+  { to: "/fantasy/top-players", labelKey: "fantasy.tab.top", icon: Sparkles },
   { to: "/fantasy/leagues", labelKey: "fantasy.tab.leagues", icon: Users },
   { to: "/fantasy/players", labelKey: "fantasy.tab.players", icon: LayoutGrid },
   { to: "/fantasy/fixtures", labelKey: "fantasy.tab.fixtures", icon: CalendarDays },
