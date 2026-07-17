@@ -1,0 +1,136 @@
+import type {
+  Article,
+  Club,
+  FantasyAlert,
+  FantasySummary,
+  Gameweek,
+  Match,
+  Player,
+  PrivateLeague,
+  TableRow,
+} from "@/types/domain";
+
+// Botola Pro inspired but not tied to any real 2025 season data.
+export const clubs: Club[] = [
+  { id: "war", name: { fr: "Wydad AC", ar: "الوداد الرياضي" }, shortName: { fr: "WAC", ar: "الوداد" }, city: { fr: "Casablanca", ar: "الدار البيضاء" }, primaryColor: "#c8102e", crestPlaceholder: "WAC" },
+  { id: "rca", name: { fr: "Raja CA", ar: "الرجاء الرياضي" }, shortName: { fr: "RCA", ar: "الرجاء" }, city: { fr: "Casablanca", ar: "الدار البيضاء" }, primaryColor: "#0a8f3a", crestPlaceholder: "RCA" },
+  { id: "asfar", name: { fr: "AS FAR", ar: "الجيش الملكي" }, shortName: { fr: "FAR", ar: "الجيش" }, city: { fr: "Rabat", ar: "الرباط" }, primaryColor: "#1a3a7a", crestPlaceholder: "FAR" },
+  { id: "fus", name: { fr: "FUS Rabat", ar: "الفتح الرياضي" }, shortName: { fr: "FUS", ar: "الفتح" }, city: { fr: "Rabat", ar: "الرباط" }, primaryColor: "#f28e00", crestPlaceholder: "FUS" },
+  { id: "rsb", name: { fr: "RS Berkane", ar: "نهضة بركان" }, shortName: { fr: "RSB", ar: "بركان" }, city: { fr: "Berkane", ar: "بركان" }, primaryColor: "#e63946", crestPlaceholder: "RSB" },
+  { id: "mat", name: { fr: "Maghreb Tétouan", ar: "المغرب التطواني" }, shortName: { fr: "MAT", ar: "التطواني" }, city: { fr: "Tétouan", ar: "تطوان" }, primaryColor: "#c00", crestPlaceholder: "MAT" },
+  { id: "hus", name: { fr: "Hassania Agadir", ar: "حسنية أكادير" }, shortName: { fr: "HUSA", ar: "الحسنية" }, city: { fr: "Agadir", ar: "أكادير" }, primaryColor: "#e63900", crestPlaceholder: "HUS" },
+  { id: "moas", name: { fr: "Mouloudia Oujda", ar: "مولودية وجدة" }, shortName: { fr: "MCO", ar: "المولودية" }, city: { fr: "Oujda", ar: "وجدة" }, primaryColor: "#1e88e5", crestPlaceholder: "MCO" },
+];
+
+export const players: Player[] = [
+  { id: "p1", name: { fr: "Yahya Attiat-Allah", ar: "يحيى عطية الله" }, clubId: "war", position: "DEF", price: 6.2, totalPoints: 87, form: 6.4, ownership: 42.1, status: "available" },
+  { id: "p2", name: { fr: "Mohamed Nahiri", ar: "محمد ناهيري" }, clubId: "war", position: "DEF", price: 5.5, totalPoints: 71, form: 5.1, ownership: 21.8, status: "doubtful" },
+  { id: "p3", name: { fr: "Ben Malango", ar: "بن مالانغو" }, clubId: "rca", position: "FWD", price: 8.9, totalPoints: 104, form: 7.9, ownership: 38.4, status: "available" },
+  { id: "p4", name: { fr: "Ayoub El Kaabi", ar: "أيوب الكعبي" }, clubId: "rca", position: "FWD", price: 9.5, totalPoints: 118, form: 8.6, ownership: 51.2, status: "available" },
+  { id: "p5", name: { fr: "Abdelilah Hafidi", ar: "عبد الإله حافظي" }, clubId: "rca", position: "MID", price: 7.1, totalPoints: 82, form: 6.2, ownership: 24.3, status: "injured" },
+  { id: "p6", name: { fr: "Mohamed Rabie Hrimat", ar: "محمد ربيع حريمات" }, clubId: "asfar", position: "MID", price: 6.7, totalPoints: 78, form: 6.8, ownership: 19.5, status: "available" },
+];
+
+export const articles: Article[] = [
+  {
+    id: "a1",
+    title: { fr: "Le Wydad relance la course au titre après le derby", ar: "الوداد يشعل سباق اللقب بعد الديربي" },
+    excerpt: { fr: "Une victoire nette et sans bavure qui replace les Rouges dans le sillage du leader.", ar: "فوز واضح يعيد الأحمر إلى منافسة الصدارة." },
+    category: "latest", clubIds: ["war", "rca"], authorName: { fr: "Youssef Amrani", ar: "يوسف العمراني" },
+    publishedAt: new Date(Date.now() - 3 * 3600e3).toISOString(), readMinutes: 5,
+    heroGradient: "linear-gradient(135deg,#0a2540 0%,#1e4d8f 55%,#c8102e 100%)", isLead: true,
+    tag: { fr: "À la Une", ar: "الأبرز" },
+  },
+  {
+    id: "a2",
+    title: { fr: "Mercato : Berkane finalise un attaquant ivoirien", ar: "الميركاتو: بركان يحسم صفقة مهاجم إيفواري" },
+    excerpt: { fr: "Le club de l'Oriental prépare son retour en force pour la seconde partie de saison.", ar: "نادي الشرق يجهز عودة قوية في مرحلة الإياب." },
+    category: "transfers", clubIds: ["rsb"], authorName: { fr: "Salma Bennani", ar: "سلمى البناني" },
+    publishedAt: new Date(Date.now() - 8 * 3600e3).toISOString(), readMinutes: 3,
+    heroGradient: "linear-gradient(135deg,#111827 0%,#e63946 100%)",
+    tag: { fr: "Mercato", ar: "انتقالات" },
+  },
+  {
+    id: "a3",
+    title: { fr: "Analyse tactique : la pressing haute de l'AS FAR", ar: "تحليل تكتيكي: الضغط العالي للجيش الملكي" },
+    excerpt: { fr: "Comment les Militaires étouffent leurs adversaires dès la relance.", ar: "كيف يخنق العسكري خصومه منذ بناء اللعب." },
+    category: "analysis", clubIds: ["asfar"], authorName: { fr: "Karim Fassi", ar: "كريم الفاسي" },
+    publishedAt: new Date(Date.now() - 26 * 3600e3).toISOString(), readMinutes: 8,
+    heroGradient: "linear-gradient(135deg,#0f172a 0%,#1a3a7a 100%)",
+    tag: { fr: "Analyse", ar: "تحليل" },
+  },
+  {
+    id: "a4",
+    title: { fr: "Interview : « Le Raja doit retrouver son ADN offensif »", ar: "مقابلة: « على الرجاء استعادة هويته الهجومية »" },
+    excerpt: { fr: "L'ancien entraîneur revient sur la crise offensive des Verts.", ar: "المدرب السابق يتحدث عن أزمة الأخضر الهجومية." },
+    category: "interviews", clubIds: ["rca"], authorName: { fr: "Nadia El Ouafi", ar: "نادية الوافي" },
+    publishedAt: new Date(Date.now() - 2 * 86400e3).toISOString(), readMinutes: 6,
+    heroGradient: "linear-gradient(135deg,#052e16 0%,#0a8f3a 100%)",
+    tag: { fr: "Interview", ar: "مقابلة" },
+  },
+  {
+    id: "a5",
+    title: { fr: "Fantasy : les meilleurs choix pour la journée 14", ar: "فانتازي: أفضل الاختيارات للجولة 14" },
+    excerpt: { fr: "Différentiels, valeurs sûres et pièges à éviter avant la deadline.", ar: "خيارات بديلة، أوراق مضمونة وأخطاء يجب تجنبها قبل الموعد النهائي." },
+    category: "for_you", clubIds: ["war", "rca", "asfar"], authorName: { fr: "Redaction BotolaGO", ar: "تحرير BotolaGO" },
+    publishedAt: new Date(Date.now() - 5 * 3600e3).toISOString(), readMinutes: 4,
+    heroGradient: "linear-gradient(135deg,#0a2540 0%,#0ea5e9 100%)",
+    tag: { fr: "Fantasy", ar: "فانتازي" },
+  },
+];
+
+const nowIso = () => new Date().toISOString();
+const inHours = (h: number) => new Date(Date.now() + h * 3600e3).toISOString();
+
+export const matches: Match[] = [
+  { id: "m1", gameweek: 14, homeClubId: "war", awayClubId: "asfar", kickoff: nowIso(), status: "live", minute: 63, homeScore: 1, awayScore: 1, venue: { fr: "Stade Mohammed V", ar: "ملعب محمد الخامس" } },
+  { id: "m2", gameweek: 14, homeClubId: "rca", awayClubId: "rsb", kickoff: inHours(2), status: "scheduled", venue: { fr: "Complexe OCP", ar: "مركب المكتب الشريف للفوسفاط" } },
+  { id: "m3", gameweek: 14, homeClubId: "fus", awayClubId: "mat", kickoff: inHours(28), status: "scheduled", venue: { fr: "Stade Moulay Abdellah", ar: "ملعب مولاي عبد الله" } },
+  { id: "m4", gameweek: 14, homeClubId: "hus", awayClubId: "moas", kickoff: inHours(50), status: "scheduled", venue: { fr: "Stade Adrar", ar: "ملعب أدرار" } },
+  { id: "m5", gameweek: 13, homeClubId: "asfar", awayClubId: "rca", kickoff: inHours(-72), status: "finished", homeScore: 2, awayScore: 0, venue: { fr: "Complexe Prince Moulay Abdellah", ar: "مركب الأمير مولاي عبد الله" } },
+  { id: "m6", gameweek: 13, homeClubId: "rsb", awayClubId: "war", kickoff: inHours(-96), status: "finished", homeScore: 1, awayScore: 2, venue: { fr: "Stade Municipal de Berkane", ar: "ملعب بركان البلدي" } },
+];
+
+export const tableRows: TableRow[] = [
+  { position: 1, clubId: "asfar", played: 13, won: 9, drawn: 3, lost: 1, goalDifference: 14, points: 30, form: ["W","W","D","W","W"] },
+  { position: 2, clubId: "war", played: 13, won: 8, drawn: 3, lost: 2, goalDifference: 11, points: 27, form: ["W","D","W","L","W"] },
+  { position: 3, clubId: "rca", played: 13, won: 7, drawn: 4, lost: 2, goalDifference: 8, points: 25, form: ["D","W","L","W","D"] },
+  { position: 4, clubId: "rsb", played: 13, won: 7, drawn: 2, lost: 4, goalDifference: 5, points: 23, form: ["W","L","W","W","L"] },
+  { position: 5, clubId: "fus", played: 13, won: 6, drawn: 3, lost: 4, goalDifference: 2, points: 21, form: ["L","W","D","W","W"] },
+];
+
+export const gameweek: Gameweek = {
+  number: 14,
+  deadline: inHours(38),
+  isCurrent: true,
+  averagePoints: 46,
+  highestPoints: 92,
+  chipActive: { fr: "Aucun jeton", ar: "بدون رقاقة" },
+};
+
+export const fantasySummary: FantasySummary = {
+  managerName: "BotolaGO Manager",
+  teamName: "Atlas XI",
+  totalPoints: 612,
+  gameweekPoints: 58,
+  overallRank: 12_483,
+  gameweekRank: 4_129,
+  transfersLeft: 1,
+  bankValue: 1.4,
+  teamValue: 100.3,
+};
+
+export const fantasyAlerts: FantasyAlert[] = [
+  { id: "al1", playerId: "p5", severity: "critical", message: { fr: "Hafidi indisponible — remplacez avant la deadline.", ar: "حافظي غائب — قم بالتغيير قبل الموعد النهائي." } },
+  { id: "al2", playerId: "p2", severity: "warning", message: { fr: "Nahiri incertain — dernier entraînement décisif.", ar: "ناهيري مشكوك — التداريب الأخيرة حاسمة." } },
+  { id: "al3", playerId: "p4", severity: "info", message: { fr: "El Kaabi en grande forme : capitaine populaire.", ar: "الكعبي في أوج تألقه: قائد شعبي." } },
+];
+
+export const trendingPlayers: string[] = ["p4", "p3", "p1", "p6"];
+
+export const followedClubs: string[] = ["war", "rca"];
+
+export const privateLeagues: PrivateLeague[] = [
+  { id: "lg1", name: "Casablanca Derby", members: 24, rank: 3, previousRank: 5 },
+  { id: "lg2", name: "Amis du Wydad", members: 12, rank: 1, previousRank: 2 },
+];
