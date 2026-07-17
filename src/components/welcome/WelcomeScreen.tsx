@@ -2,6 +2,7 @@ import { useI18n } from "@/i18n/provider";
 import { Logo } from "@/components/brand/Logo";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
+import { PageBackground } from "@/components/shell/PageBackground";
 
 interface Props {
   onStart: () => void;
@@ -13,56 +14,18 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   return (
-    <div
-      className="relative min-h-[100dvh] w-full overflow-hidden text-white motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500"
-      style={{
-        background:
-          "linear-gradient(160deg, oklch(0.20 0.08 262) 0%, oklch(0.28 0.10 258) 45%, oklch(0.42 0.16 256) 100%)",
-      }}
-    >
-      {/* Decorative football-inspired arcs / bands */}
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.14]"
-        viewBox="0 0 400 800"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <defs>
-          <linearGradient id="wArc" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <circle cx="60" cy="120" r="220" fill="none" stroke="url(#wArc)" strokeWidth="1.5" />
-        <circle cx="60" cy="120" r="300" fill="none" stroke="url(#wArc)" strokeWidth="1" />
-        <circle cx="360" cy="700" r="260" fill="none" stroke="url(#wArc)" strokeWidth="1.2" />
-        <path
-          d="M -20 620 Q 200 520 420 640"
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.08"
-          strokeWidth="60"
-          strokeLinecap="round"
-        />
-        <path
-          d="M -20 680 Q 200 600 420 700"
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.05"
-          strokeWidth="40"
-          strokeLinecap="round"
-        />
-      </svg>
-
-      {/* Radial glow */}
+    <div className="relative min-h-[100dvh] w-full overflow-hidden text-white motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500">
+      <PageBackground variant="auth" />
+      {/* Extra top radial glow specific to welcome */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
             "radial-gradient(60% 40% at 50% 15%, rgba(255,255,255,0.18), transparent 70%)",
         }}
       />
+
 
       <div
         className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6"
