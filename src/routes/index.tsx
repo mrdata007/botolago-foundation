@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { toast } from "sonner";
 import { botolaService } from "@/services/mock";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -12,10 +12,11 @@ import { PlayerRow } from "@/components/common/PlayerRow";
 import { LoadingState, EmptyState } from "@/components/common/States";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { useI18n } from "@/i18n/provider";
+import { useAuth } from "@/auth/AuthProvider";
+import { authService } from "@/services/auth";
+import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { ChevronRight, TrendingUp } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-
-const WELCOME_KEY = "botolago.welcomed";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -29,33 +30,29 @@ function useGreeting() {
   return t("home.greeting_evening");
 }
 
-function readWelcomed(): boolean {
-  if (typeof window === "undefined") return true; // SSR renders content, splash covers first paint
-  try { return window.localStorage.getItem(WELCOME_KEY) === "1"; } catch { return true; }
-}
-
 function HomePage() {
   const navigate = useNavigate();
-  const [welcomed, setWelcomed] = useState<boolean>(readWelcomed);
+  const { status } = useAuth();
+  const { t } = useI18n();
 
-  const dismissWelcome = () => {
-    try { window.localStorage.setItem(WELCOME_KEY, "1"); } catch { /* ignore */ }
-    setWelcomed(true);
-  };
+  const showWelcome = status === "anonymous" && !hasWelcomed();
 
-  if (!welcomed) {
+  if (showWelcome) {
     return (
       <WelcomeScreen
-        onStart={dismissWelcome}
-        onSignIn={() => {
-          dismissWelcome();
-          navigate({ to: "/profile" });
+        onStart={() => navigate({ to: "/auth/register" })}
+        onSignIn={() => navigate({ to: "/auth/login" })}
+        onGuest={async () => {
+          await authService.continueAsGuest();
+          markWelcomeDone();
+          toast.success(t("auth.success.guest"));
         }}
       />
     );
   }
   return <HomeContent />;
 }
+
 
 function HomeContent() {
   const { t, tr } = useI18n();
