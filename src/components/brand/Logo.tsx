@@ -1,8 +1,4 @@
-// Placeholder logo slot for BotolaGO.
-// The user will provide the official logo & icon assets — drop them at
-// `public/brand/logo.svg` and `public/brand/icon.svg` and this component
-// will render them automatically. Until then, a neutral typographic mark
-// is shown so no invented visual identity leaks into the UI.
+import logoAsset from "@/assets/botolago-logo.jpg.asset.json";
 
 interface LogoProps {
   variant?: "full" | "icon";
@@ -12,23 +8,21 @@ interface LogoProps {
 export function Logo({ variant = "full", className }: LogoProps) {
   if (variant === "icon") {
     return (
-      <div
-        className={`grid h-9 w-9 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white font-black text-sm tracking-tight ring-1 ring-white/20 ${className ?? ""}`}
-        aria-label="BotolaGO"
-        data-brand-placeholder="icon"
-      >
-        BG
-      </div>
+      <img
+        src="/favicon.png"
+        alt="BotolaGO"
+        className={`h-9 w-9 rounded-xl object-cover ring-1 ring-white/20 ${className ?? ""}`}
+      />
     );
   }
   return (
-    <div className={`flex items-center gap-2 ${className ?? ""}`} data-brand-placeholder="full">
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white font-black text-sm tracking-tight ring-1 ring-white/20">
-        BG
-      </div>
-      <span className="text-lg font-black tracking-tight text-foreground">
-        Botola<span className="text-[color:var(--brand-accent)]">GO</span>
-      </span>
+    <div className={`flex items-center ${className ?? ""}`}>
+      <img
+        src={logoAsset.url}
+        alt="BotolaGO"
+        className="h-7 w-auto select-none"
+        draggable={false}
+      />
     </div>
   );
 }
