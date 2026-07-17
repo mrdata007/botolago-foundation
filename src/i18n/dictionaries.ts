@@ -282,6 +282,7 @@ export const dictionaries = {
     "fantasy.chip.state.active": "Actif",
     "fantasy.chip.state.unavailable": "Indisponible",
   },
+  ar: {
     "app.name": "BotolaGO",
     "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
 
