@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -9,9 +10,12 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
 import { LoadingState, EmptyState } from "@/components/common/States";
+import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { useI18n } from "@/i18n/provider";
 import { ChevronRight, TrendingUp } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+
+const WELCOME_KEY = "botolago.welcomed";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -26,8 +30,43 @@ function useGreeting() {
 }
 
 function HomePage() {
+  const navigate = useNavigate();
+  const [welcomeState, setWelcomeState] = useState<"pending" | "show" | "hide">("pending");
+
+  useEffect(() => {
+    try {
+      const seen = window.localStorage.getItem(WELCOME_KEY) === "1";
+      setWelcomeState(seen ? "hide" : "show");
+    } catch {
+      setWelcomeState("hide");
+    }
+  }, []);
+
+  const dismissWelcome = () => {
+    try { window.localStorage.setItem(WELCOME_KEY, "1"); } catch { /* ignore */ }
+    setWelcomeState("hide");
+  };
+
+  if (welcomeState === "pending") return null;
+  if (welcomeState === "show") {
+    return (
+      <WelcomeScreen
+        onStart={dismissWelcome}
+        onSignIn={() => {
+          dismissWelcome();
+          navigate({ to: "/profile" });
+        }}
+      />
+    );
+  }
+  return <HomeContent />;
+}
+
+function HomeContent() {
   const { t, tr } = useI18n();
   const greeting = useGreeting();
+
+
 
   const summaryQ = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });

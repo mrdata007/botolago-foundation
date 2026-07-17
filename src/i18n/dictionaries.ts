@@ -281,6 +281,12 @@ export const dictionaries = {
     "fantasy.chip.state.available": "Disponible",
     "fantasy.chip.state.active": "Actif",
     "fantasy.chip.state.unavailable": "Indisponible",
+
+    "welcome.title": "Bienvenue sur BotolaGO",
+    "welcome.description": "Toute l'actualité du football marocain, les matchs en direct et la Fantasy Botola réunis dans une seule application.",
+    "welcome.cta_primary": "Commencer",
+    "welcome.secondary_prompt": "Vous avez déjà un compte ?",
+    "welcome.cta_secondary": "Se connecter",
   },
   ar: {
     "app.name": "BotolaGO",
@@ -560,6 +566,12 @@ export const dictionaries = {
     "fantasy.chip.state.available": "متاح",
     "fantasy.chip.state.active": "مُفعَّل",
     "fantasy.chip.state.unavailable": "غير متاح",
+
+    "welcome.title": "مرحبًا بك في BotolaGO",
+    "welcome.description": "تابع أخبار الكرة المغربية، المباريات المباشرة، وفانتازي البطولة في تطبيق واحد.",
+    "welcome.cta_primary": "ابدأ",
+    "welcome.secondary_prompt": "لديك حساب بالفعل؟",
+    "welcome.cta_secondary": "تسجيل الدخول",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
