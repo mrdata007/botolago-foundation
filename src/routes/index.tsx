@@ -30,11 +30,9 @@ function useGreeting() {
 }
 
 function HomePage() {
-  const { t, tr } = useI18n();
-  const greeting = useGreeting();
   const navigate = useNavigate();
-
   const [welcomeState, setWelcomeState] = useState<"pending" | "show" | "hide">("pending");
+
   useEffect(() => {
     try {
       const seen = window.localStorage.getItem(WELCOME_KEY) === "1";
@@ -49,6 +47,7 @@ function HomePage() {
     setWelcomeState("hide");
   };
 
+  if (welcomeState === "pending") return null;
   if (welcomeState === "show") {
     return (
       <WelcomeScreen
@@ -60,6 +59,13 @@ function HomePage() {
       />
     );
   }
+  return <HomeContent />;
+}
+
+function HomeContent() {
+  const { t, tr } = useI18n();
+  const greeting = useGreeting();
+
 
 
   const summaryQ = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
