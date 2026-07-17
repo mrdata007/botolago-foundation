@@ -279,3 +279,41 @@ export const fixtureDifficulties: FixtureDifficulty[] = (() => {
   });
   return out;
 })();
+
+// Top 5 players of the week — deterministic mock built off fantasyPlayers.
+import type { TopPlayerOfWeek } from "@/types/fantasy";
+
+function pickTop(gw: number): TopPlayerOfWeek[] {
+  const pool = [...fantasyPlayers].sort((a, b) => (b.form + b.ownership / 20) - (a.form + a.ownership / 20));
+  const seeds = [
+    { g: 2, a: 1, cs: 0, mins: 90, pts: 15 },
+    { g: 1, a: 2, cs: 0, mins: 90, pts: 13 },
+    { g: 1, a: 1, cs: 1, mins: 90, pts: 12 },
+    { g: 0, a: 2, cs: 1, mins: 88, pts: 11 },
+    { g: 1, a: 0, cs: 0, mins: 84, pts: 10 },
+  ];
+  return pool.slice(0, 5).map((p, i) => {
+    const s = seeds[i];
+    // Clean sheets only meaningful for defenders/GK
+    const cs = p.position === "GK" || p.position === "DEF" ? s.cs : 0;
+    return {
+      playerId: p.id,
+      rank: (i + 1) as TopPlayerOfWeek["rank"],
+      gameweek: gw,
+      weeklyPoints: s.pts + (gw % 3),
+      goals: s.g,
+      assists: s.a,
+      cleanSheets: cs,
+      minutes: s.mins,
+      price: p.price,
+      ownershipPercent: p.ownership,
+      form: p.form,
+    };
+  });
+}
+
+export const topPlayersByGameweek: Record<number, TopPlayerOfWeek[]> = {
+  12: pickTop(12),
+  13: pickTop(13),
+  14: pickTop(14),
+};
