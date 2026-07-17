@@ -370,7 +370,7 @@ export const dictionaries = {
     "fantasy.set_captain": "تعيين قائداً",
     "fantasy.set_vice": "تعيين نائباً للقائد",
     "fantasy.substitute": "استبدال",
-    "fantasy.bench": "الاحتياط",
+    "fantasy.bench": "دكة البدلاء",
     "fantasy.starting_xi": "التشكيلة الأساسية",
     "fantasy.formation": "التشكيل",
     "fantasy.change_formation": "تغيير التشكيل",
