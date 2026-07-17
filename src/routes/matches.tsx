@@ -69,12 +69,7 @@ function MatchesPage() {
           const home = clubById(m.homeClubId);
           const away = clubById(m.awayClubId);
           if (!home || !away) return null;
-          return (
-            <div key={m.id} className="space-y-1">
-              <MatchCard match={m} home={home} away={away} />
-              <div className="px-3 text-[10px] text-muted-foreground">{tr(m.venue)}</div>
-            </div>
-          );
+          return <MatchCard key={m.id} match={m} home={home} away={away} showVenue />;
         })}
       </div>
 

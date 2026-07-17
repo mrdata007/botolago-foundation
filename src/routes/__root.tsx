@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
+import { Toaster } from "@/components/ui/sonner";
 
 
 function NotFoundComponent() {
@@ -140,6 +141,7 @@ function RootComponent() {
         <FirstLaunchLanguage />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <Toaster />
       </I18nProvider>
     </QueryClientProvider>
   );
