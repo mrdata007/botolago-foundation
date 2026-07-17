@@ -7,11 +7,13 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider } from "@/i18n/provider";
+import { SplashScreen } from "@/components/splash/SplashScreen";
+
 
 function NotFoundComponent() {
   return (
@@ -119,13 +121,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [splashDone, setSplashDone] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return sessionStorage.getItem("botolago.splashShown") === "1";
+  });
+
+  useEffect(() => {
+    if (splashDone && typeof window !== "undefined") {
+      sessionStorage.setItem("botolago.splashShown", "1");
+    }
+  }, [splashDone]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
+        {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </I18nProvider>
     </QueryClientProvider>
   );
 }
+
