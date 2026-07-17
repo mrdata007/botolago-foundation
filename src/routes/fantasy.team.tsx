@@ -44,6 +44,7 @@ function MyTeamPage() {
   const [captainSheet, setCaptainSheet] = useState(false);
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
+  const [view, setView] = useState<SquadViewMode>("squad");
 
   if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
 
