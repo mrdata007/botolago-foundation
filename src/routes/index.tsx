@@ -32,6 +32,35 @@ function useGreeting() {
 function HomePage() {
   const { t, tr } = useI18n();
   const greeting = useGreeting();
+  const navigate = useNavigate();
+
+  const [welcomeState, setWelcomeState] = useState<"pending" | "show" | "hide">("pending");
+  useEffect(() => {
+    try {
+      const seen = window.localStorage.getItem(WELCOME_KEY) === "1";
+      setWelcomeState(seen ? "hide" : "show");
+    } catch {
+      setWelcomeState("hide");
+    }
+  }, []);
+
+  const dismissWelcome = () => {
+    try { window.localStorage.setItem(WELCOME_KEY, "1"); } catch { /* ignore */ }
+    setWelcomeState("hide");
+  };
+
+  if (welcomeState === "show") {
+    return (
+      <WelcomeScreen
+        onStart={dismissWelcome}
+        onSignIn={() => {
+          dismissWelcome();
+          navigate({ to: "/profile" });
+        }}
+      />
+    );
+  }
+
 
   const summaryQ = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
