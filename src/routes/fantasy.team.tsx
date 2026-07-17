@@ -128,10 +128,8 @@ function MyTeamPage() {
     );
   };
 
-  const formationRow = useMemo(() => {
-    const cfg = FORMATIONS[formation];
-    return { def: cfg.DEF, mid: cfg.MID, fwd: cfg.FWD };
-  }, [formation]);
+  const formationCfg = FORMATIONS[formation];
+  const formationRow = { def: formationCfg.DEF, mid: formationCfg.MID, fwd: formationCfg.FWD };
 
   // Slice XI arrays to formation size — extra players fold to bench visually.
   const defRender = defXi.slice(0, formationRow.def).map(shirt);
