@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { Copy, Trophy } from "lucide-react";
+import { useAuth } from "@/auth/AuthProvider";
 
 export const Route = createFileRoute("/fantasy/leagues")({
   component: LeaguesPage,
@@ -30,19 +31,24 @@ function LeaguesPage() {
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [joinToast, setJoinToast] = useState<string | null>(null);
 
+  const { requireAuth } = useAuth();
   const leaguesQ = useQuery({ queryKey: ["fantasy-leagues", tab], queryFn: () => fantasyService.getLeagues(tab) });
 
   const handleCreate = () => {
     if (!createName.trim()) return;
-    const code = `BOT-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-    setCreatedCode(code);
-    setCreateName("");
+    requireAuth(() => {
+      const code = `BOT-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      setCreatedCode(code);
+      setCreateName("");
+    });
   };
   const handleJoin = () => {
     if (!joinCode.trim()) return;
-    setJoinToast(joinCode.trim());
-    setJoinCode("");
-    setTimeout(() => setJoinToast(null), 2400);
+    requireAuth(() => {
+      setJoinToast(joinCode.trim());
+      setJoinCode("");
+      setTimeout(() => setJoinToast(null), 2400);
+    });
   };
   const copy = (code: string) => {
     try { navigator.clipboard.writeText(code); } catch { /* ignore */ }

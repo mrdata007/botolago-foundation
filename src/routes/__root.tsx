@@ -15,6 +15,8 @@ import { I18nProvider } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/auth/AuthProvider";
+import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 
 
 function NotFoundComponent() {
@@ -109,7 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
         <HeadContent />
       </head>
@@ -137,13 +139,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
-        <FirstLaunchLanguage />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster />
+        <AuthProvider>
+          {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
+          <FirstLaunchLanguage />
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <AuthPromptDialog />
+          <Toaster />
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
 }
+
 

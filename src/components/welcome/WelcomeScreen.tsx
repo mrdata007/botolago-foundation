@@ -7,16 +7,16 @@ import { PageBackground } from "@/components/shell/PageBackground";
 interface Props {
   onStart: () => void;
   onSignIn: () => void;
+  onGuest: () => void;
 }
 
-export function WelcomeScreen({ onStart, onSignIn }: Props) {
+export function WelcomeScreen({ onStart, onSignIn, onGuest }: Props) {
   const { t, dir } = useI18n();
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   return (
     <div className="relative min-h-[100dvh] w-full overflow-hidden text-white motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500">
       <PageBackground variant="auth" />
-      {/* Extra top radial glow specific to welcome */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
@@ -25,7 +25,6 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
             "radial-gradient(60% 40% at 50% 15%, rgba(255,255,255,0.18), transparent 70%)",
         }}
       />
-
 
       <div
         className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6"
@@ -79,6 +78,15 @@ export function WelcomeScreen({ onStart, onSignIn }: Props) {
             <span>{t("welcome.cta_secondary")}</span>
             <Arrow className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden />
           </button>
+
+          <button
+            type="button"
+            onClick={onGuest}
+            className="mt-4 w-full text-center text-sm font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            {t("welcome.cta_guest")}
+          </button>
+          <p className="mt-1 text-center text-[11px] text-white/55">{t("welcome.guest_hint")}</p>
         </div>
       </div>
     </div>

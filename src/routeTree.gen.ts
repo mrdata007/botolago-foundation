@@ -13,6 +13,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as MatchesRouteImport } from './routes/matches'
 import { Route as FantasyRouteImport } from './routes/fantasy'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
@@ -23,6 +24,11 @@ import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
 import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
 import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
+import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
 
@@ -44,6 +50,11 @@ const MatchesRoute = MatchesRouteImport.update({
 const FantasyRoute = FantasyRouteImport.update({
   id: '/fantasy',
   path: '/fantasy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -96,6 +107,31 @@ const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
   path: '/fixtures',
   getParentRoute: () => FantasyRoute,
 } as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
+  id: '/profile-setup',
+  path: '/profile-setup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   id: '/$playerId',
   path: '/$playerId',
@@ -109,10 +145,16 @@ const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRoute
   '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/profile-setup': typeof AuthProfileSetupRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -127,9 +169,15 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/matches': typeof MatchesRoute
   '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/profile-setup': typeof AuthProfileSetupRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -145,10 +193,16 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRoute
   '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/profile-setup': typeof AuthProfileSetupRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -165,10 +219,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/fantasy'
     | '/matches'
     | '/news'
     | '/profile'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/profile-setup'
+    | '/auth/register'
+    | '/auth/verify'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -183,9 +243,15 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/matches'
     | '/news'
     | '/profile'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/profile-setup'
+    | '/auth/register'
+    | '/auth/verify'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -200,10 +266,16 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/fantasy'
     | '/matches'
     | '/news'
     | '/profile'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/profile-setup'
+    | '/auth/register'
+    | '/auth/verify'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -219,6 +291,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
   FantasyRoute: typeof FantasyRouteWithChildren
   MatchesRoute: typeof MatchesRoute
   NewsRoute: typeof NewsRoute
@@ -253,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/fantasy'
       fullPath: '/fantasy'
       preLoaderRoute: typeof FantasyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -325,6 +405,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyFixturesRouteImport
       parentRoute: typeof FantasyRoute
     }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/profile-setup': {
+      id: '/auth/profile-setup'
+      path: '/profile-setup'
+      fullPath: '/auth/profile-setup'
+      preLoaderRoute: typeof AuthProfileSetupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/fantasy/players/$playerId': {
       id: '/fantasy/players/$playerId'
       path: '/$playerId'
@@ -341,6 +456,24 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthRouteChildren {
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthProfileSetupRoute: typeof AuthProfileSetupRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthProfileSetupRoute: AuthProfileSetupRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface FantasyLeaguesRouteChildren {
   FantasyLeaguesLeagueIdRoute: typeof FantasyLeaguesLeagueIdRoute
@@ -395,6 +528,7 @@ const FantasyRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
   MatchesRoute: MatchesRoute,
   NewsRoute: NewsRoute,
