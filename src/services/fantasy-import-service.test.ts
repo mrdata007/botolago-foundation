@@ -11,8 +11,10 @@
 //   4. localized default team name used when local team.teamName is empty.
 //   5. cloud snapshot returned as-is; service does not mutate local state.
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import "./__test-shim";
+import { STORAGE_KEYS } from "@/lib/storage";
+
 import {
   importLocalTeamToCloud,
   prepareImportPayload,
