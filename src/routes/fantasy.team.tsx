@@ -214,12 +214,12 @@ function MyTeamPage() {
     setLocalSquad(reslotForFormation({ squad, players, formation: f }));
   };
 
-  const save = () => {
+  const save = async () => {
     // Re-evaluate the deadline at save time — the user may have been idle
     // in edit mode while the deadline passed, or the GW was finalized
     // elsewhere. Both revert the working state to the persisted team.
     const nowLocked = deadlineIso ? evaluateDeadline(deadlineIso, new Date()).isLocked : false;
-    const nowFinalized = !!fantasyStateStore.read().results[currentGw]?.finalized;
+    const nowFinalized = !!(isCloud ? fState : fantasyStateStore.read()).results[currentGw]?.finalized;
     if (nowLocked || nowFinalized) {
       revertLocal();
       toast.error(t("fantasy.team.error.deadline_crossed_revert"));
@@ -233,6 +233,65 @@ function MyTeamPage() {
       toast.error(t(errKey));
       return;
     }
+
+    if (isCloud && owned.userId) {
+      // Cloud path — authoritative RPC via owned repository.
+      const draftKey = {
+        uid: owned.userId,
+        teamId: owned.snapshot?.teamId ?? "new",
+        baseVersion: owned.snapshot?.version ?? 0,
+        kind: "team" as const,
+      };
+      const res = await runOwnedMutation(
+        {
+          qc,
+          scope: owned.scope,
+          setMutationStatus: owned.setMutationStatus,
+          invalidateOwned: owned.invalidateOwned,
+        },
+        {
+          action: () =>
+            owned.repo.saveTeam({
+              teamName: teamQ.data.teamName,
+              managerName: teamQ.data.managerName || null,
+              formation: formationToSave,
+              bank: teamQ.data.bank,
+              freeTransfers: teamQ.data.freeTransfers,
+              pendingTransfers: teamQ.data.pendingTransfers,
+              squad: squadToSave,
+              purchasePrices: owned.snapshot?.purchasePrices ?? {},
+              expectedVersion: owned.snapshot?.version ?? 0,
+              currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+              lifecycle: fState,
+            }),
+          args: undefined,
+          matchingDraftKey: draftKey,
+          savedIdleAfterMs: 2400,
+        },
+      );
+      if (res.ok) {
+        revertLocal();
+        toast.success(t("fantasy.status.saved"));
+        return;
+      }
+      // Preserve draft; surface localized error/conflict without overwriting.
+      fantasyDraftsStore.save(draftKey, {
+        squad: squadToSave,
+        formation: formationToSave,
+      });
+      const c = classifyRepoError(res.error);
+      const key: TranslationKey = c.isConflict
+        ? "fantasy.error.version_conflict"
+        : c.isNetwork
+          ? "fantasy.error.network"
+          : c.isPermission
+            ? "fantasy.error.permission"
+            : "fantasy.error.transfer_failed";
+      toast.error(t(key));
+      return;
+    }
+
+    // Local path — legacy mock service.
     fantasyService.saveTeam({ formation: formationToSave, squad: squadToSave });
     qc.invalidateQueries({ queryKey: ownedKey("team") });
     qc.invalidateQueries({ queryKey: ownedKey("summary") });
@@ -240,6 +299,7 @@ function MyTeamPage() {
     toast.success(t("fantasy.success"));
   };
   const cancel = () => { revertLocal(); };
+
 
   const shirt = (id: string) => {
     const p = playerOf(id);
