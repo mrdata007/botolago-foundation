@@ -13,6 +13,8 @@ export function TransferReviewPanel({
   paidTransfers,
   bankAfter,
   hitPoints,
+  chipLabel,
+  totalTransfers,
   onConfirm,
   onCancel,
 }: {
@@ -23,6 +25,8 @@ export function TransferReviewPanel({
   paidTransfers: number;
   bankAfter: number;
   hitPoints: number;
+  chipLabel?: string | null;
+  totalTransfers?: number;
   onConfirm: () => void;
   onCancel: () => void;
 }) {

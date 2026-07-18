@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { LoadingState } from "@/components/common/States";
@@ -9,13 +9,19 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { TransferReviewPanel } from "@/components/fantasy/TransferReviewPanel";
-import { computeBudgetImpact, transferHit, splitTransfers, maxAffordableReplacement } from "@/lib/budget";
+import { computeBudgetImpact, maxAffordableReplacement } from "@/lib/budget";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { useI18n } from "@/i18n/provider";
-import { ArrowRightLeft, Check } from "lucide-react";
+import { ArrowRightLeft, Check, Lock } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
+import {
+  applyConfirmedTransfers,
+  previewTransfers,
+  transfersDeadline,
+} from "@/services/transfers-service";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
@@ -29,6 +35,20 @@ function TransfersPage() {
   const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
+
+  // Persistent chip / fantasy state. Re-read on our own storage-event bus so
+  // toggling a chip on the Team screen is reflected here immediately.
+  const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  useEffect(() => {
+    const onEvt = () => setFantasyState(fantasyStateStore.read());
+    window.addEventListener("botolago:storage", onEvt);
+    window.addEventListener("storage", onEvt);
+    return () => {
+      window.removeEventListener("botolago:storage", onEvt);
+      window.removeEventListener("storage", onEvt);
+    };
+  }, []);
 
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<string[]>([]);
@@ -44,6 +64,9 @@ function TransfersPage() {
   const playerOf = (id: string) => players.find((p) => p.id === id)!;
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
 
+  const deadline = transfersDeadline(gwQ.data?.deadline);
+  const locked = !!deadline?.isLocked;
+
   const currentSquad = team.squad.map((s) => playerOf(s.playerId));
   const currentSquadIdsAfter = currentSquad.map((p) => p.id);
   outIds.forEach((oid, i) => {
@@ -55,15 +78,20 @@ function TransfersPage() {
   const inPlayers = inIds.map(playerOf).filter(Boolean) as FantasyPlayer[];
 
   const impact = computeBudgetImpact({ outPlayers, inPlayers, bank: team.bank });
-  const bankAfter = impact.bankAfter;
+  const preview = previewTransfers({
+    team,
+    chips: fantasyState.chips,
+    outIds,
+    inIds,
+    netCost: outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+  });
 
-  const totalTransfers = Math.min(outIds.length, inIds.length);
-  const { paid: paidTransfers } = splitTransfers(totalTransfers, team.freeTransfers);
-  const hitPoints = transferHit(paidTransfers);
+  const canReview = preview.totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget && !locked;
 
-  const canReview = totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget;
-
-  const startReplace = (playerId: string) => setPickerFor(playerId);
+  const startReplace = (playerId: string) => {
+    if (locked) return;
+    setPickerFor(playerId);
+  };
   const removeFromOut = (playerId: string) => {
     const idx = outIds.indexOf(playerId);
     if (idx < 0) return;
@@ -96,24 +124,49 @@ function TransfersPage() {
   };
 
   const resetAll = () => { setOutIds([]); setInIds([]); };
+  const openReview = () => {
+    if (locked) {
+      toast.error(t("fantasy.transfers.error.deadline"));
+      return;
+    }
+    setConfirming(true);
+  };
   const confirm = () => {
-    const nextSquad = team.squad.map((sp) => {
-      const idx = outIds.indexOf(sp.playerId);
-      if (idx < 0 || !inIds[idx]) return sp;
-      return { ...sp, playerId: inIds[idx] };
+    const res = applyConfirmedTransfers({
+      team,
+      chips: fantasyState.chips,
+      outIds,
+      inIds,
+      netCost: outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+      deadlineIso: gwQ.data?.deadline,
     });
-    const nextFree = Math.max(0, team.freeTransfers - totalTransfers);
+    if (!res.ok) {
+      const key: TranslationKey =
+        res.error === "deadline_passed" ? "fantasy.transfers.error.deadline"
+        : res.error === "over_budget" ? "fantasy.transfers.error.over_budget"
+        : "fantasy.transfers.error.no_changes";
+      toast.error(t(key));
+      return;
+    }
+    const v = res.value;
     fantasyService.saveTeam({
-      squad: nextSquad,
-      bank: bankAfter,
-      freeTransfers: nextFree,
-      pendingTransfers: totalTransfers,
+      squad: v.nextSquad,
+      bank: v.nextBank,
+      freeTransfers: v.nextFreeTransfers,
+      pendingTransfers: v.pendingTransfers,
     });
+    // Persist Free Hit snapshot + accumulated transfer hit for the gameweek.
+    fantasyStateStore.write({
+      chips: v.chips,
+      transferHitPoints: fantasyState.transferHitPoints + v.hitPointsApplied,
+    });
+    setFantasyState(fantasyStateStore.read());
     qc.invalidateQueries({ queryKey: ["fantasy-team"] });
     qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
     setSuccess(true);
     setConfirming(false);
     toast.success(t("fantasy.transfers.success"));
+    if (v.freeHitSnapshotTaken) toast.message(t("fantasy.transfers.free_hit_snapshot_taken"));
     setTimeout(() => setSuccess(false), 2400);
     resetAll();
   };
@@ -121,20 +174,42 @@ function TransfersPage() {
   const pickerOut = pickerFor ? playerOf(pickerFor) : null;
   const pickerMaxPrice = pickerOut ? maxAffordableReplacement(pickerOut.price, team.bank) : undefined;
 
+  const chipLabel: string | null = preview.chipActive === "wildcard"
+    ? t("fantasy.chip.wildcard")
+    : preview.chipActive === "free_hit"
+      ? t("fantasy.chip.free_hit")
+      : null;
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.transfers.title")}</span></h1>
-        <div className="flex items-center gap-2 text-xs">
-          <Stat label={t("fantasy.bank")} value={nf.format(bankAfter)} accent={bankAfter < 0} />
-          <Stat label={t("fantasy.transfers.free")} value={String(Math.max(0, team.freeTransfers - totalTransfers))} />
-          <Stat label={t("fantasy.transfers.hit")} value={`-${hitPoints}`} />
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <Stat label={t("fantasy.bank")} value={nf.format(preview.bankAfter)} accent={preview.overBudget} />
+          <Stat label={t("fantasy.transfers.free")} value={String(preview.freeTransfersAfter)} />
+          <Stat label={t("fantasy.transfers.hit")} value={`-${preview.hitPoints}`} />
+          {chipLabel && <Stat label={t("fantasy.transfers.chip_active")} value={chipLabel} />}
         </div>
       </div>
 
+      {locked && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-900"
+        >
+          <Lock className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="min-w-0">{t("fantasy.transfers.deadline_locked")}</span>
+        </div>
+      )}
+
       {success && (
-        <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-800">
-          <Check className="h-4 w-4" /> {t("fantasy.transfers.success")}
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-800"
+        >
+          <Check className="h-4 w-4 shrink-0" aria-hidden /> {t("fantasy.transfers.success")}
         </div>
       )}
 
@@ -177,13 +252,17 @@ function TransfersPage() {
                         )}
                       </div>
                       {inOut ? (
-                        <button onClick={() => removeFromOut(p.id)} className="rounded-lg bg-white px-2 py-1 text-[11px] font-semibold ring-1 ring-black/10">
+                        <button
+                          onClick={() => removeFromOut(p.id)}
+                          className="rounded-lg bg-white px-2 py-1 text-[11px] font-semibold ring-1 ring-black/10"
+                        >
                           {t("fantasy.transfers.reset")}
                         </button>
                       ) : (
                         <button
                           onClick={() => startReplace(p.id)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-[11px] font-semibold text-white"
+                          disabled={locked}
+                          className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-40"
                         >
                           <ArrowRightLeft className="h-3 w-3" aria-hidden /> {t("fantasy.transfers.title")}
                         </button>
@@ -200,12 +279,12 @@ function TransfersPage() {
         <button
           onClick={resetAll}
           className="rounded-xl border border-input bg-white/60 px-3 py-2 text-xs font-semibold hover:bg-white"
-          disabled={totalTransfers === 0}
+          disabled={preview.totalTransfers === 0}
         >
           {t("fantasy.transfers.reset")}
         </button>
         <button
-          onClick={() => requireAuth(() => setConfirming(true))}
+          onClick={() => requireAuth(() => openReview())}
           disabled={!canReview}
           className="rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
         >
@@ -219,10 +298,12 @@ function TransfersPage() {
             outPlayers={outPlayers}
             inPlayers={inPlayers}
             clubs={clubs}
-            freeTransfers={Math.min(team.freeTransfers, totalTransfers)}
-            paidTransfers={paidTransfers}
-            bankAfter={bankAfter}
-            hitPoints={hitPoints}
+            freeTransfers={preview.free}
+            paidTransfers={preview.paid}
+            bankAfter={preview.bankAfter}
+            hitPoints={preview.hitPoints}
+            chipLabel={chipLabel}
+            totalTransfers={preview.totalTransfers}
             onCancel={() => setConfirming(false)}
             onConfirm={confirm}
           />
