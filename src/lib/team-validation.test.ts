@@ -11,12 +11,12 @@ const players: FantasyPlayer[] = [
   ...Array.from({ length: 3 }, (_, i) => ({ id: `f${i}`, position: "FWD", clubId: "c1", name: { fr: "F", ar: "F" }, price: 5, totalPoints: 0 })),
 ] as any;
 
-// 4-4-2 legal squad. Slots 0..10 = XI, 11..14 = bench.
+// 4-4-2 legal squad. Slots 1..11 = XI, 12..15 = bench (matches reslotForFormation).
 function build442(): SquadPlayer[] {
   const ids = ["gk0", "d0", "d1", "d2", "d3", "m0", "m1", "m2", "m3", "f0", "f1", "gk1", "d4", "m4", "f2"];
-  return ids.map((id, slot) => ({
+  return ids.map((id, i) => ({
     playerId: id,
-    slot,
+    slot: i + 1,
     isCaptain: id === "f0",
     isViceCaptain: id === "m0",
   })) as any;
