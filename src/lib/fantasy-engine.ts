@@ -232,7 +232,9 @@ export function isLegalSwap(args: {
   });
   const bringIn = aInXI ? posB : posA;
   const takeOut = aInXI ? posA : posB;
-  const trial = { ...counts, [takeOut]: counts[takeOut] - 1, [bringIn]: counts[bringIn] + 1 };
+  const trial: Record<Position, number> = { ...counts };
+  trial[takeOut] -= 1;
+  trial[bringIn] += 1;
   return isLegal(trial, args.formation);
 }
 
