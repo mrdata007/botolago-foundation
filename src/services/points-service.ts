@@ -41,6 +41,14 @@ export interface PointsViewModel {
   highestPoints?: number;
   /** ISO timestamp of the compute pass; used by callers for freshness UI. */
   computedAt: string;
+  /** True when the gameweek has been closed by `finalizeGameweek`. */
+  finalized?: boolean;
+  /** ISO timestamp of the finalize call (present only when finalized). */
+  finalizedAt?: string;
+  /** Chip that was active at the moment of finalization (recorded for audit). */
+  chipUsed?: ChipKey | null;
+  /** Transfer hit points applied at finalization (recorded for audit). */
+  hitPointsApplied?: number;
 }
 
 export interface BuildInputs {
