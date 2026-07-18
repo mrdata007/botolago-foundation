@@ -55,9 +55,13 @@ const CHIP_KEYS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain", "wild
 
 function PointsPage() {
   const { t, tr } = useI18n();
+  const qc = useQueryClient();
+  const { requireAuth } = useAuth();
   const [state, setState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
   const [gw, setGw] = useState(() => state.currentGameweek);
   const [view, setView] = useState<SquadViewMode>("squad");
+  const [confirmFinalize, setConfirmFinalize] = useState(false);
+  const [confirmAdvance, setConfirmAdvance] = useState(false);
 
   useEffect(() => {
     const onEvt = () => setState(fantasyStateStore.read());
