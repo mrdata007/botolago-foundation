@@ -1,7 +1,8 @@
 import type { FantasySummary, Gameweek } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { DeadlineCountdown } from "./DeadlineCountdown";
-import { Trophy } from "lucide-react";
+import { Trophy, Shirt, ChevronRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; gw: Gameweek }) {
   const { t, lang } = useI18n();
@@ -27,6 +28,15 @@ export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; g
         <Metric label={t("fantasy.overall_rank")} value={nf.format(summary.overallRank)} small />
         <Metric label={t("fantasy.transfers")} value={String(summary.transfersLeft)} />
       </div>
+      <Link
+        to="/fantasy/team"
+        className="mt-4 flex w-full min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-black text-primary-foreground shadow-md shadow-black/10 transition hover:opacity-90 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
+        aria-label={t("home.view_fantasy_team")}
+      >
+        <Shirt className="h-4 w-4 shrink-0" aria-hidden />
+        <span>{t("home.view_fantasy_team")}</span>
+        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+      </Link>
     </div>
   );
 }
