@@ -3,7 +3,7 @@
 if (typeof globalThis.window === "undefined") {
   const mem = new Map<string, string>();
   // @ts-ignore
-  globalThis.window = {
+  (globalThis as any).window = {
     localStorage: {
       getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
       setItem: (k: string, v: string) => { mem.set(k, v); },
