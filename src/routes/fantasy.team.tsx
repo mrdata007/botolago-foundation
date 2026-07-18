@@ -32,6 +32,9 @@ import {
 } from "@/lib/fantasy-engine";
 import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
+import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
@@ -43,8 +46,26 @@ function MyTeamPage() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const { key: ownedKey } = useFantasyDataSource();
+  const owned = useFantasyOwned();
+  const isCloud = owned.source === "cloud";
 
-  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
+  const teamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: async () => {
+      if (isCloud) {
+        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
+        return owned.snapshot.team;
+      }
+      return fantasyService.getTeam();
+    },
+    enabled: !isCloud || !!owned.snapshot,
+  });
+
+  // Refresh teamQ whenever the authoritative snapshot version bumps.
+  useEffect(() => {
+    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
+  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
@@ -57,11 +78,19 @@ function MyTeamPage() {
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
-  const [fState, setFState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  const [fState, setFState] = useState<FantasyPersistedState>(() =>
+    owned.source === "cloud"
+      ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read())
+      : fantasyStateStore.read(),
+  );
   const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
 
-  // Re-read persisted state whenever another route (or this one) writes.
+  // Cloud: mirror lifecycle from snapshot. Local: subscribe to state store.
   useEffect(() => {
+    if (isCloud) {
+      if (owned.snapshot?.lifecycle) setFState(owned.snapshot.lifecycle);
+      return;
+    }
     const onEvt = () => setFState(fantasyStateStore.read());
     window.addEventListener("botolago:storage", onEvt);
     window.addEventListener("storage", onEvt);
@@ -69,7 +98,8 @@ function MyTeamPage() {
       window.removeEventListener("botolago:storage", onEvt);
       window.removeEventListener("storage", onEvt);
     };
-  }, []);
+  }, [isCloud, owned.snapshot?.lifecycle]);
+
 
   const chipsState = fState.chips;
   const deadlineIso = gwQ.data?.deadline;
