@@ -567,6 +567,38 @@ export const dictionaries = {
     "fantasy.cloud.error": "Erreur de synchronisation.",
     "fantasy.cloud.retry": "Réessayer",
     "fantasy.cloud.reload_latest": "Recharger",
+
+    // Pass 3 — import prompt
+    "fantasy.import.title": "Équipe locale détectée",
+    "fantasy.import.subtitle": "Retrouvez votre équipe sur tous vos appareils en l'enregistrant sur votre compte.",
+    "fantasy.import.cta_save": "Enregistrer mon équipe",
+    "fantasy.import.cta_start_new": "Commencer une nouvelle équipe",
+    "fantasy.import.cta_later": "Plus tard",
+    "fantasy.import.success": "Votre équipe a été enregistrée.",
+    "fantasy.import.failure": "L'enregistrement a échoué. Vos données restent intactes.",
+    "fantasy.import.mapping_gaps": "Certains joueurs ne sont pas encore synchronisables : {ids}",
+    // Pass 3 — empty cloud state
+    "fantasy.empty.title": "Aucune équipe enregistrée",
+    "fantasy.empty.cta_build": "Construire mon équipe",
+    // Pass 3 — mutation status
+    "fantasy.status.loading": "Chargement…",
+    "fantasy.status.saving": "Enregistrement…",
+    "fantasy.status.saved": "Enregistré",
+    "fantasy.status.unsaved": "Modifications non enregistrées",
+    // Pass 3 — error surfaces (do NOT promise automatic later sync)
+    "fantasy.error.network": "Connexion indisponible. Réessayez pour enregistrer.",
+    "fantasy.error.permission": "Accès refusé. Reconnectez-vous puis réessayez.",
+    "fantasy.error.version_conflict": "Une version plus récente de votre équipe existe.",
+    "fantasy.error.transfer_failed": "Les transferts n'ont pas pu être confirmés.",
+    "fantasy.error.finalize_failed": "La finalisation de la journée a échoué.",
+    "fantasy.error.retry": "Réessayer",
+    "fantasy.error.reload_latest": "Recharger la dernière version",
+    "fantasy.error.keep_working": "Continuer avec mes modifications",
+    // Pass 3 — stable / restored state
+    "fantasy.result.stable_restored": "Résultat officiel affiché.",
+    "fantasy.freehit.restored": "Équipe initiale restaurée après le Free Hit.",
+    // Pass 3 — ranking placeholder
+    "fantasy.rank.unavailable": "Classement bientôt disponible",
   },
   ar: {
     "app.name": "BotolaGO",
@@ -1132,6 +1164,38 @@ export const dictionaries = {
     "fantasy.cloud.error": "خطأ في المزامنة.",
     "fantasy.cloud.retry": "إعادة المحاولة",
     "fantasy.cloud.reload_latest": "إعادة التحميل",
+
+    // Pass 3 — import prompt
+    "fantasy.import.title": "تم اكتشاف فريق محلي",
+    "fantasy.import.subtitle": "احفظ فريقك في حسابك لاستعادته على جميع أجهزتك.",
+    "fantasy.import.cta_save": "حفظ فريقي",
+    "fantasy.import.cta_start_new": "بدء فريق جديد",
+    "fantasy.import.cta_later": "لاحقًا",
+    "fantasy.import.success": "تم حفظ فريقك.",
+    "fantasy.import.failure": "فشل الحفظ. بياناتك لا تزال سليمة.",
+    "fantasy.import.mapping_gaps": "بعض اللاعبين لا يمكن مزامنتهم بعد: {ids}",
+    // Pass 3 — empty cloud state
+    "fantasy.empty.title": "لا يوجد فريق محفوظ",
+    "fantasy.empty.cta_build": "إنشاء فريقي",
+    // Pass 3 — mutation status
+    "fantasy.status.loading": "جارٍ التحميل…",
+    "fantasy.status.saving": "جارٍ الحفظ…",
+    "fantasy.status.saved": "تم الحفظ",
+    "fantasy.status.unsaved": "تعديلات غير محفوظة",
+    // Pass 3 — error surfaces
+    "fantasy.error.network": "لا يوجد اتصال. أعد المحاولة للحفظ.",
+    "fantasy.error.permission": "تم رفض الوصول. سجّل الدخول من جديد ثم أعد المحاولة.",
+    "fantasy.error.version_conflict": "توجد نسخة أحدث من فريقك.",
+    "fantasy.error.transfer_failed": "تعذّر تأكيد التحويلات.",
+    "fantasy.error.finalize_failed": "فشلت عملية إنهاء الجولة.",
+    "fantasy.error.retry": "إعادة المحاولة",
+    "fantasy.error.reload_latest": "تحميل أحدث نسخة",
+    "fantasy.error.keep_working": "المتابعة بتعديلاتي",
+    // Pass 3 — stable / restored state
+    "fantasy.result.stable_restored": "النتيجة الرسمية المعتمدة.",
+    "fantasy.freehit.restored": "تمت استعادة الفريق الأصلي بعد الـ Free Hit.",
+    // Pass 3 — ranking placeholder
+    "fantasy.rank.unavailable": "الترتيب سيتوفر قريبًا",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
