@@ -39,12 +39,12 @@ export function FantasyChipCard({ chip, onClick, className }: CardProps) {
     <button
       type="button"
       onClick={onClick ? () => onClick(chip.key) : undefined}
-      disabled={state === "unavailable"}
+      disabled={state === "unavailable" || state === "used"}
       className={cn(
         "glass-surface glass-regular inline-flex min-w-[112px] shrink-0 items-center gap-1.5 rounded-2xl border border-[var(--glass-border)] px-2.5 py-1.5 text-start text-[11px] font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         state === "active" && "bg-[color:var(--brand-primary)] text-white ring-1 ring-[color:var(--brand-accent)]",
-        state === "unavailable" && "opacity-55",
-        onClick && state !== "unavailable" && "hover:-translate-y-0.5",
+        (state === "unavailable" || state === "used") && "opacity-55",
+        onClick && state === "available" && "hover:-translate-y-0.5",
         className,
       )}
       aria-pressed={state === "active"}
