@@ -122,7 +122,7 @@ function isRealPlayerId(id: string): boolean { return UUID_RE.test(id); }
 
 function parseLifecycle(raw: Json | null | undefined): CloudLifecyclePayload {
   const empty: CloudLifecyclePayload = {
-    chips: { active: null, used: [], freeHitSnapshot: null },
+    chips: { active: null, used: [] },
     currentGameweek: 0,
     transferHitPoints: 0,
     results: {},
