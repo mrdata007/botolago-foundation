@@ -181,6 +181,7 @@ describe("buildFinalizeGameweekPayload", () => {
           currentGameweekId: "gw-next",
           lifecycle: DEFAULT_STATE,
           squad: baseSquad(),
+          purchasePrices: prices(),
         },
       },
       idMap,
@@ -193,6 +194,9 @@ describe("buildFinalizeGameweekPayload", () => {
     expect((args._result as any).transfer_hit).toBe(4);
     expect((args._post_team as any).formation).toBe("4-4-2");
     expect((args._post_team as any).squad.length).toBe(15);
+    // Pass 3.1 — purchase prices are preserved (not zero-defaulted).
+    expect((args._post_team as any).squad[0].purchase_price).toBeCloseTo(5.1, 5);
+    expect((args._post_team as any).squad[14].purchase_price).toBeCloseTo(5 + 15 * 0.1, 5);
   });
 
   it("omits post-team squad when not supplied", () => {
@@ -229,6 +233,33 @@ describe("buildFinalizeGameweekPayload", () => {
       idMap,
     );
     expect((args._post_team as any).squad).toBeUndefined();
-    expect(args._chip_finalize).toBe("");
+    // Pass 3.1 — chip_finalize null flows through as SQL NULL (not "").
+    expect(args._chip_finalize).toBeNull();
+    // Pass 3.1 — nullable UUIDs use SQL NULL rather than empty string.
+    expect((args._post_team as any).current_gameweek_id).toBeNull();
+  });
+
+  it("save payload emits SQL NULL for missing teamId / currentGameweekId / managerName", () => {
+    const idMap = makeIdMap();
+    const args = buildSaveTeamPayload(
+      {
+        teamId: null,
+        teamName: "New",
+        managerName: null,
+        formation: "4-4-2",
+        bank: 100,
+        freeTransfers: 1,
+        pendingTransfers: 0,
+        currentGameweekId: null,
+        expectedVersion: 0,
+        lifecycle: DEFAULT_STATE,
+        squad: baseSquad(),
+        purchasePrices: prices(),
+      },
+      idMap,
+    );
+    expect(args._team_id).toBeNull();
+    expect(args._current_gameweek_id).toBeNull();
+    expect(args._manager_name).toBeNull();
   });
 });
