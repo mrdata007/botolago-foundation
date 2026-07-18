@@ -65,7 +65,9 @@ function TransfersPage() {
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
 
   const deadline = transfersDeadline(gwQ.data?.deadline);
-  const locked = !!deadline?.isLocked;
+  const currentGw = gwQ.data?.number ?? fantasyState.currentGameweek;
+  const finalized = !!fantasyState.results[currentGw]?.finalized;
+  const locked = !!deadline?.isLocked || finalized;
 
   const currentSquad = team.squad.map((s) => playerOf(s.playerId));
   const currentSquadIdsAfter = currentSquad.map((p) => p.id);
