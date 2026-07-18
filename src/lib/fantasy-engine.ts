@@ -54,11 +54,39 @@ export function activateChip(state: ChipsState, key: ChipKey, ctx: { gameweek: n
   return next;
 }
 
+/**
+ * Cancel an active chip BEFORE the deadline. Semantics:
+ * - The chip returns to `available` — it is NOT added to `used`.
+ * - Any Free Hit snapshot is discarded (nothing to restore).
+ * - Any wildcard-active marker is cleared.
+ * A used chip is produced ONLY by `finalizeChip` (gameweek finalization).
+ */
 export function deactivateChip(state: ChipsState): ChipsState {
   if (!state.active) return state;
+  return {
+    ...state,
+    active: null,
+    freeHitSnapshot: undefined,
+    wildcardActiveForGW: undefined,
+  };
+}
+
+/**
+ * Finalize the currently active chip: it becomes `used` (dedup so repeated
+ * finalization is idempotent), active is cleared, and the wildcard-active
+ * marker is cleared. `freeHitSnapshot` is preserved on the returned state so
+ * the caller can consume it separately for team reversion.
+ */
+export function finalizeChip(state: ChipsState): ChipsState {
+  if (!state.active) return state;
   const key = state.active;
-  const next: ChipsState = { ...state, active: null, used: [...state.used, key] };
-  return next;
+  const used = state.used.includes(key) ? state.used : [...state.used, key];
+  return {
+    ...state,
+    active: null,
+    used,
+    wildcardActiveForGW: undefined,
+  };
 }
 
 /** Restore squad after Free Hit expires. Returns the snapshot (or null). */
