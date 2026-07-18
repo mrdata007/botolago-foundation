@@ -17,7 +17,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { ChipsState } from "@/lib/fantasy-engine";
 import type { PointsViewModel } from "@/services/points-service";
-import type { FormationKey, SquadPlayer } from "@/types/fantasy";
+import type { FormationKey } from "@/types/fantasy";
 
 // ---------- Public types ----------
 
