@@ -116,6 +116,16 @@
 /* Glass utilities                                                    */
 /* ------------------------------------------------------------------ */
 
+/* Typographic brand accents (selective use in headlines / stat values) */
+@utility text-brand {
+  color: var(--brand-primary);
+}
+@utility text-brand-accent {
+  color: var(--brand-accent);
+}
+
+/* ------------------------------------------------------------------ */
+
 @utility glass-surface {
   /* Solid fallback (rendered by browsers without backdrop-filter). */
   background: var(--glass-bg-strong);
