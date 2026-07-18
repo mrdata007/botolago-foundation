@@ -140,11 +140,10 @@ describe("importLocalTeamToCloud", () => {
 
   it("mapping failure: bubbles aggregate missing ids as FantasyRepoError('mapping_incomplete')", async () => {
     const localRepo = await localRepoWithRealTeam();
-    const missing = new MissingIdMappingError(
-      "mapping incomplete",
-      ["p-1", "p-2", "p-3"],
-      [],
-    );
+    const missing = new MissingIdMappingError({
+      missingPlayers: ["p-1", "p-2", "p-3"],
+    });
+
     const cloudRepo = {
       async saveTeam() {
         throw missing;
