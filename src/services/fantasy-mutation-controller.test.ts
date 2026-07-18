@@ -48,8 +48,8 @@ describe("runOwnedMutation — H1 foundation", () => {
   it("on success: replaces snapshot, records saving→saved, clears matching draft", async () => {
     const ctx = makeCtx();
     const draftKey = { uid: "u1", team: "t1", version: 3, kind: "team" as const };
-    fantasyDraftsStore.set(draftKey, { squad: [] } as any);
-    expect(fantasyDraftsStore.get(draftKey)).not.toBeNull();
+    fantasyDraftsStore.save(draftKey, { squad: [] } as any);
+    expect(fantasyDraftsStore.read(draftKey)).not.toBeNull();
 
     const snap = { version: 4, source: "cloud", team: {}, lifecycle: {} } as any;
     const res = await runOwnedMutation(ctx as any, {
@@ -61,7 +61,7 @@ describe("runOwnedMutation — H1 foundation", () => {
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.snapshot).toBe(snap);
     expect(ctx._replaced).toEqual([snap]);
-    expect(fantasyDraftsStore.get(draftKey)).toBeNull();
+    expect(fantasyDraftsStore.read(draftKey)).toBeNull();
     const kinds = ctx._statusLog.map((e: any) => e[1]);
     expect(kinds).toContain("saving");
     expect(kinds).toContain("saved");
@@ -101,7 +101,7 @@ describe("runOwnedMutation — H1 foundation", () => {
   it("cloud error surfaces as typed FantasyRepoError result — no local fallback", async () => {
     const ctx = makeCtx();
     const draftKey = { uid: "u1", team: "t1", version: 3, kind: "team" as const };
-    fantasyDraftsStore.set(draftKey, { squad: [] } as any);
+    fantasyDraftsStore.save(draftKey, { squad: [] } as any);
 
     const err = new FantasyRepoError("permission_denied", "RLS");
     const res = await runOwnedMutation(ctx as any, {
@@ -116,7 +116,7 @@ describe("runOwnedMutation — H1 foundation", () => {
       expect(res.kind).toBe("error");
     }
     // Draft must be preserved on failure.
-    expect(fantasyDraftsStore.get(draftKey)).not.toBeNull();
+    expect(fantasyDraftsStore.read(draftKey)).not.toBeNull();
     // No snapshot was replaced.
     expect(ctx._replaced).toEqual([]);
     fantasyDraftsStore.remove(draftKey);
@@ -125,7 +125,7 @@ describe("runOwnedMutation — H1 foundation", () => {
   it("version_conflict is classified as kind='conflict' and preserves draft", async () => {
     const ctx = makeCtx();
     const draftKey = { uid: "u1", team: "t2", version: 7, kind: "transfers" as const };
-    fantasyDraftsStore.set(draftKey, { outIds: [], inIds: [] } as any);
+    fantasyDraftsStore.save(draftKey, { outIds: [], inIds: [] } as any);
 
     const err = new FantasyRepoError("version_conflict", "stale");
     const res = await runOwnedMutation(ctx as any, {
@@ -135,7 +135,7 @@ describe("runOwnedMutation — H1 foundation", () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.kind).toBe("conflict");
-    expect(fantasyDraftsStore.get(draftKey)).not.toBeNull();
+    expect(fantasyDraftsStore.read(draftKey)).not.toBeNull();
     fantasyDraftsStore.remove(draftKey);
   });
 });
