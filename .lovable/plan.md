@@ -1,95 +1,101 @@
-# BotolaGO Headline Color Audit & Accent Plan
 
-## Current state (verified at HEAD)
+# BotolaGO — Remaining-Sequence Audit (read-only)
 
-Nearly every route-level H1 and every shared H2 uses `text-foreground` with `font-black`, producing a uniformly near-black wall of headlines on light surfaces. The brand blue tokens (`--brand-primary`, `--brand-primary-2`, `--brand-accent`) currently appear only in gradients, focus rings, and the `--primary` mapping — never in typographic hierarchy.
+Verified in this pass: repo structure, all routes, services, `src/lib/*`, engine tests (44/44 pass), Supabase migrations directory (empty), Supabase client wiring, i18n dictionary size (958 lines), and targeted `grep` inspection of Fantasy Team/Transfers/Points to confirm which engine primitives are actually wired.
 
-### Headlines on light surfaces (all currently plain `text-foreground`)
-- `src/routes/index.tsx` — Home H1 (manager greeting) + `SectionHeader` blocks
-- `src/routes/news.tsx` — "News" H1
-- `src/routes/matches.tsx` — "Matches" H1
-- `src/routes/profile.tsx` — profile H1, guest H2, anon H2
-- `src/routes/fantasy.index.tsx` — Fantasy Hub H1
-- `src/routes/fantasy.team.tsx` — team name H1
-- `src/routes/fantasy.transfers.tsx` — H1
-- `src/routes/fantasy.points.tsx` — H1
-- `src/routes/fantasy.leagues.tsx` — H1
-- `src/routes/fantasy.leagues.$leagueId.tsx` — league name title (`div.text-lg font-black`)
-- `src/routes/fantasy.players.tsx` — H1
-- `src/routes/fantasy.players.$playerId.tsx` — player name + numeric stat titles
-- `src/routes/fantasy.fixtures.tsx` — H1
-- `src/routes/fantasy.rules.tsx` — H1 + per-section H2s
-- `src/routes/fantasy.top-players.tsx` — H1
-- `src/components/common/SectionHeader.tsx` — every section H2 in the app
-- `src/components/shell/FirstLaunchLanguage.tsx` — modal H1
+Legend: ✅ complete · 🟡 partial · ❌ missing · ⚠ risky
 
-### Headlines already on dark/blue gradients (must NOT be re-tinted blue)
-- `src/components/welcome/WelcomeScreen.tsx` H1 (dark brand gradient, currently inherits white)
-- `src/components/auth/AuthShell.tsx` H1 (dark brand gradient background)
-- `src/routes/__root.tsx` 404 H1/H2 (may sit on gradient)
+---
 
-## Findings
+## Phase 1 — Visual system (selective BotolaGO blue)
 
-1. **Overuse of black `font-black` headlines** flattens visual hierarchy — H1, H2, and numeric labels all read at the same weight/color.
-2. **No brand-blue accent** exists anywhere in typography, despite blue being the core brand identity. New users get no chromatic anchor to the brand outside splash/welcome.
-3. **Uniform `SectionHeader`** means every section on every screen looks identical; it's the biggest single lever.
-4. **Numeric emphasis mixed with titles** (rank `#`, price, stat values) uses the same `font-black text-foreground` as headings, so accenting numbers separately would also clarify hierarchy.
-5. **RTL/i18n risk**: any approach that hard-splits an English/French string into "first word" + "rest" will break Arabic word order. Accent spans must come from the dictionary layer, not from JS string slicing.
+- ✅ Utilities `.text-brand` / `.text-brand-accent` in `styles.css`; `Trans`, `AccentEyebrow`, `SectionHeader` primitives exist; ~15 routes updated in the last pass.
+- 🟡 Coverage gaps likely on: `fantasy.rules.tsx`, `fantasy.fixtures.tsx`, `fantasy.top-players.tsx`, `fantasy.points.tsx`, `auth.profile-setup.tsx` — need a sweep to confirm eyebrows and accent words are applied consistently and not overused.
+- 🟡 Loading/empty/error states: no shared `EmptyState` / `ErrorState` / skeleton primitives observed under `src/components/common/`; routes rely on ad-hoc conditionals.
+- 🟡 Safe areas: `min-h-dvh` used in shell, but `env(safe-area-inset-*)` padding on `BottomNav` / `TopBar` should be spot-checked.
+- ⚠ Systematic 320px/RTL/contrast sweep never formally executed — needs a checklist pass.
 
-## Recommendation
+**DoD:** Every H1/H2 audited; shared `EmptyState`, `ErrorState`, `SkeletonCard` primitives; documented rules for when to tint; verified at 320/360/390 in FR + AR with Playwright screenshots.
 
-Adopt a **selective accent** pattern rather than repainting whole H1s:
+## Phase 2 — Fantasy engine integration
 
-- Keep the main heading body in `text-foreground` for contrast and legibility.
-- Introduce a reusable `<AccentText>` (or `text-brand` utility mapped to `var(--brand-primary)` — the deep blue reads best on light surfaces; reserve `--brand-accent` for numeric/interactive highlights) applied to:
-  - **Section labels / eyebrows** (e.g. Home greeting eyebrow "Bonjour" / "مرحبا") — full eyebrow in blue, keeps manager name black.
-  - **Meaningful headline fragments** via i18n keys with a `{accent}` placeholder rendered by a small `<Trans>` helper, so FR and AR translators control which word is emphasized (e.g. FR `"Mon {accent}Équipe{/accent}"`, AR equivalent chooses a different word if word order demands).
-  - **Numeric emphases** (league rank `#12`, player price, points totals) get `text-[color:var(--brand-accent)]` — the brighter accent — while their surrounding labels stay foreground.
-- Leave headlines on dark/brand gradients unchanged (Welcome, AuthShell, 404) — they must remain white for contrast.
-- `SectionHeader` gains an optional `accent?: "eyebrow" | "word"` prop plus an optional pre-title eyebrow slot; default behavior stays black so existing usages are unaffected until opted in.
+Engine module `src/lib/fantasy-engine.ts` is implemented and unit-tested (chips, auto-subs, scoring, deadline). **Route integration is the gap.**
 
-### Concrete accent targets
-| Surface | Current | Proposed |
-|---|---|---|
-| Home hero (`index.tsx`) | greeting eyebrow gray, name black | eyebrow → `--brand-primary`; name stays black |
-| `SectionHeader` (all screens) | plain black H2 | add short blue eyebrow key (e.g. "Aujourd'hui", "Ma section") above title on Home + Fantasy hub only |
-| Fantasy Hub H1 | black | accent word "Fantasy" via i18n `{accent}` |
-| Fantasy Team H1 | team name black | small blue eyebrow "Mon équipe" above team name |
-| Fantasy Transfers/Points/Leagues/Players/Fixtures/Rules H1 | black | accent last/first meaningful word per dictionary (FR & AR curated) |
-| League detail (`$leagueId`) | league name + rank black | league name unchanged; `#rank` uses `--brand-accent` |
-| Player detail (`$playerId`) | player name + stat values black | stat *values* use `--brand-accent`; name unchanged |
-| Profile H1 + guest/anon H2 | black | blue eyebrow "Compte" above; H2 unchanged |
-| News / Matches H1 | black | blue eyebrow (section label) above H1 |
-| `FirstLaunchLanguage` modal H1 | black | accent word via i18n |
-| Welcome / AuthShell / 404 on gradient | white/foreground | **no change** (contrast) |
+- ✅ `fantasy.team.tsx` uses `evaluateDeadline`, `canActivateChip`, chip state.
+- 🟡 `fantasy.transfers.tsx` uses `splitTransfers` + `transferHit` and `team.freeTransfers`, but there is **no Wildcard / Free Hit branch** (grep returns 0 hits). Activating those chips from Team does not currently change transfer cost logic on the Transfers screen, and there is no Free Hit squad snapshot/restore wired on confirm.
+- ❌ `fantasy.points.tsx` does **not** call `computeGameweekResult` or `applyAutoSubs` (grep returns 0 hits). Captain multiplier, vice takeover, auto-subs list, bench points, Triple Captain, Bench Boost, and transfer-hit deductions are rendered from mock fields rather than derived by the engine. This is the single biggest integration gap.
+- 🟡 Deadline lock: enforced on Team, but Transfers "Confirm", chip activation on Points, and league join/leave are not verified to honor `isLocked`.
+- ❌ Persistent gameweek results — chip usage history and per-GW scores are not persisted across reloads (only chip active-state via `fantasy-state.ts`).
 
-## Exclusions (no blue)
-- Welcome hero H1 (dark gradient)
-- AuthShell H1 (dark gradient)
-- Any headline rendered inside a `--bg-brand-gradient` surface
-- Splash screen
-- Bench/pitch labels inside Fantasy pitch (already on colored kits)
-- Body copy, muted subtitles, form labels
+**DoD:** Points screen fully derived from engine; Transfers respects Wildcard (no hits) and Free Hit (snapshot + auto-revert next GW); every mutation checks `isLocked`; results & chip history persisted via `storage.ts` (later Supabase).
 
-## Implementation approach (build phase)
+## Phase 3 — Production backend foundation (Supabase)
 
-1. **Tokens & utilities** (`src/styles.css`)
-   - Add `.text-brand` → `color: var(--brand-primary)` and `.text-brand-accent` → `color: var(--brand-accent)` as `@utility` entries (Tailwind v4).
-2. **Shared primitives**
-   - `src/components/common/AccentEyebrow.tsx` — small uppercase tracking-wider label in `--brand-primary`, RTL-safe.
-   - `src/components/common/Trans.tsx` — parses `{accent}…{/accent}` in a translation string and wraps that span in `--brand-primary`. Keeps RTL/word order controlled by translators.
-   - Extend `SectionHeader` with optional `eyebrow?: string` prop; default rendering unchanged.
-3. **i18n dictionaries** (`src/i18n/dictionaries.ts`)
-   - Add `.eyebrow` keys for section labels (news, matches, profile, fantasy sub-screens).
-   - Convert selected H1 title keys to include `{accent}…{/accent}` markers in both FR and AR (translator chooses the fragment per language to preserve grammar and RTL flow).
-4. **Route edits** — apply `AccentEyebrow` / `<Trans>` in the ~14 route files listed above; no logic changes.
-5. **Numeric accent pass** — swap `text-foreground` → `text-brand-accent` on the specific stat *values* in `fantasy.players.$playerId.tsx` and `fantasy.leagues.$leagueId.tsx` (rank, price, points value only).
-6. **QA**
-   - Manual check at 320 / 360 / 390 px in both LTR (FR) and RTL (AR) that eyebrows and accent spans wrap cleanly and stay above their headline.
-   - Verify contrast: `--brand-primary` on `--background` ≥ 4.5:1 (deep blue on near-white passes; accent-blue on white is used only for large numeric labels, still ≥ 3:1 for large text).
-   - Confirm no accent is emitted on dark-gradient surfaces (Welcome, AuthShell).
-7. **Tests** — no behavior changes; existing 44 tests should remain green. Add a small snapshot/DOM test for `<Trans>` accent parsing if trivial.
+- ✅ Lovable Cloud enabled; typed client `src/integrations/supabase/client.ts` present.
+- ❌ `supabase/migrations/` is **empty**. No `profiles`, `user_preferences`, `fantasy_teams`, `squads`, `transfers`, `chips`, `gw_results`, `leagues`, `league_members`, `saved_articles`, `follows` tables exist.
+- ❌ `src/services/auth.ts` is still `LocalMockAuthService`; `AuthProvider` does not consume `supabase.auth`.
+- ⚠ Migration risk: local mock data lives in `localStorage` under namespaced keys (`storage.ts`, `leagues-store.ts`, `fantasy-state.ts`). A one-shot client-side migration on first authenticated login is required, otherwise users lose their team on cutover.
+- ⚠ RLS: every new public table needs `GRANT` + policies scoped to `auth.uid()`; roles table required if admin/moderation is introduced later.
 
-## Risks / notes
-- Introducing accent via string-split JS would break AR. Route all accent choices through i18n placeholder markers.
-- Keep the accent selective: aim for **one accent per screen** (eyebrow *or* headline word *or* numeric value), never all three, to preserve the "premium" restraint of the current design.
+**DoD:** Full migration set with `GRANT` + RLS; typed regeneration; auth swapped to Supabase (email/password + Google via broker) with `_authenticated/route.tsx` gate; server functions replace mock services behind the same interfaces; one-time local→cloud migration on first login; demo seed migration.
+
+## Phase 4 — Live football/news data
+
+- ❌ No provider abstraction, no cache tables, no ingestion. `src/services/mock.ts` and `fantasy-mock.ts` are the only sources.
+- **Design needed:** provider interface (fixtures, results, standings, clubs, players, injuries, stats, news), Supabase cache tables with `fetched_at`, `pg_cron` + `pg_net` scheduled server routes under `src/routes/api/public/hooks/*`, secret-driven activation with graceful mock fallback when credentials absent.
+
+**DoD:** Providers behind a typed boundary; nightly + intra-day sync jobs; UI reads only from cache; mock fallback documented.
+
+## Phase 5 — Chat portal
+
+- ❌ Not started. No routes, tables, or realtime channels.
+- **Needs:** `conversations`, `conversation_members`, `messages`, `reactions`, `reads`, `mutes`, `blocks`, `reports`; room kinds (DM, league, club, match); realtime via `supabase.channel`; auth gating; FR/AR/RTL; moderation queue.
+
+**DoD:** Landing + all room types; realtime messages, replies, reactions, mentions, unread counts; mute/block/report + admin moderation view.
+
+## Phase 6 — Social layer
+
+- ❌ Missing. No comments, reactions, polls, follows, share, or activity feed.
+- Depends on Phase 3 (auth + profiles) and Phase 4 (articles as first-class entities).
+
+## Phase 7 — Notifications
+
+- ❌ No in-app center, no unread count, no preferences, no event bus.
+- **Design:** `notifications` table + `notification_preferences`; server-side emitters on match/news/fantasy/chat/social events; push-ready boundary (Web Push / FCM later) hidden behind a service.
+
+## Phase 8 — Final production audit
+
+- ✅ Typecheck currently clean; 44/44 tests pass.
+- 🟡 No CI-style checklist yet: browser console cleanliness at each route, Playwright RTL screenshots, Lighthouse/perf pass, RLS lint, error boundaries on every route with a loader, 404/500 pages, sitemap/OG per route, badge visibility, publish settings.
+
+---
+
+## Recommended delivery order
+
+Do phases in dependency order; do not start backend UI features before Phase 3 lands.
+
+1. **Phase 2 (Fantasy engine wire-up)** — pure frontend, unblocks credibility of the flagship feature. Lowest risk, highest visible value. ~1 milestone.
+2. **Phase 1 residuals (shared Empty/Error/Skeleton + 320px/RTL sweep)** — small, and makes Phase 3 UI states trivial. ~0.5 milestone.
+3. **Phase 3 (Supabase auth + core tables + local→cloud migration)** — foundation for 4–7. Ship in two sub-milestones: (a) auth + profiles + preferences + saved/follows, (b) fantasy tables + leagues + results, each with migration, RLS, server fns, and swap-in. ~2 milestones.
+4. **Phase 4 (data provider boundary + cache + cron)** — before social/chat, since articles and matches feed both. ~1.5 milestones.
+5. **Phase 7 (notifications spine)** — needed by chat and social; land the table + service boundary before those features so events wire in directly. ~0.5 milestone.
+6. **Phase 5 (chat)** — heaviest realtime feature; do after notifications. ~2 milestones.
+7. **Phase 6 (social)** — layers cleanly once articles, follows, notifications exist. ~1 milestone.
+8. **Phase 8 (final audit + publish)** — checklist, perf, RLS lint, publish. ~0.5 milestone.
+
+## Cross-cutting risks
+
+- **Local→Cloud migration** (Phase 3): design idempotent one-shot importer keyed off `localStorage` namespaces; wipe local keys only after server ACK.
+- **RLS correctness** (Phase 3+): every table needs `GRANT` in the same migration; league membership policies must reference a `has_membership()` security-definer function to avoid recursive RLS.
+- **Provider credentials absent** (Phase 4): must degrade to mock without route breakage.
+- **Realtime cost** (Phase 5): subscribe in `useEffect` with cleanup; scope policies so subscribers only receive rows they may read.
+- **Deadline lock coverage** (Phase 2): audit every mutation entry point, not just Team.
+- **Google OAuth**: must use `lovable.auth.signInWithOAuth("google", …)` broker, and provider must be enabled via `supabase--configure_social_auth` in the same turn Supabase auth ships.
+
+## Definition of done — global
+
+Typecheck + all tests green; Playwright FR/AR screenshots at 320/390/1280 for every route; console clean; RLS lint clean; every route has `errorComponent` + `notFoundComponent`; local mock removed or clearly gated to demo mode; documented data provider fallback; publish settings reviewed.
+
+---
+
+**Nothing edited in this pass.** Ready to convert any single phase above into a concrete implementation plan on your signal — I suggest starting with Phase 2 (engine wire-up on Points + Transfers + deadline lock coverage) as the fastest high-leverage next milestone.
