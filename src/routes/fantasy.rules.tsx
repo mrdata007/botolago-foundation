@@ -23,7 +23,7 @@ function RulesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground">{t("fantasy.rules.title")}</h1>
+      <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.rules.title")}</span></h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.rules.intro")}</p>
 
       <div className="mt-4 grid gap-2">

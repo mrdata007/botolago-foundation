@@ -124,7 +124,7 @@ function TransfersPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-black text-foreground">{t("fantasy.transfers.title")}</h1>
+        <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.transfers.title")}</span></h1>
         <div className="flex items-center gap-2 text-xs">
           <Stat label={t("fantasy.bank")} value={nf.format(bankAfter)} accent={bankAfter < 0} />
           <Stat label={t("fantasy.transfers.free")} value={String(Math.max(0, team.freeTransfers - totalTransfers))} />

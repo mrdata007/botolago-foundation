@@ -48,7 +48,7 @@ function NewsPage() {
 
   return (
     <AppShell>
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">{t("news.title")}</h1>
+      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground"><span className="text-brand">{t("news.title")}</span></h1>
 
       {/* Tabs */}
       <div className="sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">

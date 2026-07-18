@@ -43,8 +43,8 @@ function FantasyHub() {
 
   return (
     <div>
-      <h1 className="text-2xl font-black tracking-tight text-foreground">{t("fantasy.title")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.subtitle")}</p>
+      <h1 className="text-2xl font-black tracking-tight text-foreground"><span className="text-brand">{t("fantasy.title")}</span></h1>
+      <p className="mt-1 text-sm text-muted-foreground"><Trans text={t("fantasy.subtitle")} accentClassName="text-brand font-semibold" /></p>
 
       <div className="mt-3">
         {summary.data && gw.data ? (

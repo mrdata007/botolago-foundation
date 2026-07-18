@@ -40,7 +40,7 @@ function MatchesPage() {
 
   return (
     <AppShell>
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">{t("matches.title")}</h1>
+      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground"><span className="text-brand">{t("matches.title")}</span></h1>
 
       <div className="mt-3">
         <div className="glass-surface glass-strong flex items-center gap-1 rounded-2xl border border-[var(--glass-border)] p-1">
