@@ -464,6 +464,26 @@ export const dictionaries = {
     "auth.forgot.success_body": "Si un compte est associé à cet e-mail, vous recevrez un message contenant les instructions.",
     "auth.forgot.back_to_login": "Retour à la connexion",
 
+    "auth.callback.title": "Connexion en cours",
+    "auth.callback.subtitle": "Nous finalisons votre authentification.",
+    "auth.callback.error": "Le lien est invalide ou a expiré. Réessayez.",
+
+    "auth.update.title": "Nouveau mot de passe",
+    "auth.update.subtitle": "Choisissez un mot de passe fort pour sécuriser votre compte.",
+    "auth.update.new_password": "Nouveau mot de passe",
+    "auth.update.confirm_password": "Confirmer le mot de passe",
+    "auth.update.cta": "Mettre à jour",
+    "auth.update.success": "Mot de passe mis à jour",
+    "auth.update.success_title": "Mot de passe mis à jour",
+    "auth.update.success_body": "Vous pouvez maintenant continuer avec votre nouveau mot de passe.",
+    "auth.update.continue": "Continuer",
+    "auth.update.no_session": "Le lien de réinitialisation a expiré. Demandez-en un nouveau.",
+    "auth.update.request_new_link": "Demander un nouveau lien",
+
+    "auth.mode.mock": "MODE DÉMO",
+    "auth.error.provider_unavailable": "Ce fournisseur n'est pas disponible pour le moment.",
+
+
     "auth.setup.title": "Personnalisez votre profil",
     "auth.setup.subtitle": "Quelques choix rapides pour adapter BotolaGO à vos préférences.",
     "auth.setup.step": "Étape",
@@ -998,6 +1018,26 @@ export const dictionaries = {
     "auth.forgot.success_title": "تحقق من صندوق الوارد",
     "auth.forgot.success_body": "إذا كان هناك حساب مرتبط بهذا البريد، ستصلك رسالة بالتعليمات.",
     "auth.forgot.back_to_login": "العودة إلى تسجيل الدخول",
+
+    "auth.callback.title": "جاري تسجيل الدخول",
+    "auth.callback.subtitle": "نُنهي عملية المصادقة الآن.",
+    "auth.callback.error": "الرابط غير صالح أو انتهت صلاحيته. حاول مجددًا.",
+
+    "auth.update.title": "كلمة مرور جديدة",
+    "auth.update.subtitle": "اختر كلمة مرور قوية لتأمين حسابك.",
+    "auth.update.new_password": "كلمة المرور الجديدة",
+    "auth.update.confirm_password": "تأكيد كلمة المرور",
+    "auth.update.cta": "تحديث",
+    "auth.update.success": "تم تحديث كلمة المرور",
+    "auth.update.success_title": "تم تحديث كلمة المرور",
+    "auth.update.success_body": "يمكنك الآن المتابعة باستخدام كلمة المرور الجديدة.",
+    "auth.update.continue": "متابعة",
+    "auth.update.no_session": "انتهت صلاحية رابط إعادة التعيين. اطلب رابطًا جديدًا.",
+    "auth.update.request_new_link": "طلب رابط جديد",
+
+    "auth.mode.mock": "وضع تجريبي",
+    "auth.error.provider_unavailable": "هذا المزود غير متاح حاليًا.",
+
 
     "auth.setup.title": "خصّص ملفك الشخصي",
     "auth.setup.subtitle": "بعض الخيارات السريعة لتكييف BotolaGO حسب تفضيلاتك.",
