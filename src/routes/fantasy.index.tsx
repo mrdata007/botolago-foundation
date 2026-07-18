@@ -4,6 +4,7 @@ import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
 import { LoadingState } from "@/components/common/States";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";

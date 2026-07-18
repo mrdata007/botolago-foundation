@@ -12,6 +12,7 @@ import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { getKitForClub } from "@/lib/kits";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
 import type { TopPlayerOfWeek, FantasyPlayer } from "@/types/fantasy";
 import type { Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
