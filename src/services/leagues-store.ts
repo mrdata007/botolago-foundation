@@ -84,7 +84,7 @@ export const leaguesStore = {
     const standings = ranked([meRow(612), ...seedRows(3)]);
     const meRank = standings.findIndex((r) => r.managerId === "me") + 1;
     const league: PersistedLeague = {
-      id: `pl_${Date.now().toString(36)}`,
+      id: genId(),
       name: trimmed,
       type: "private",
       members: standings.length,
@@ -107,7 +107,7 @@ export const leaguesStore = {
     const standings = ranked([meRow(612), ...seedRows(5)]);
     const meRank = standings.findIndex((r) => r.managerId === "me") + 1;
     const league: PersistedLeague = {
-      id: `pl_${Date.now().toString(36)}`,
+      id: genId(),
       name: `Ligue ${trimmed}`,
       type: "private",
       members: standings.length,
