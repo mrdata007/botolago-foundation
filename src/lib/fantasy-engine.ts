@@ -184,7 +184,9 @@ export function computeAutoSubs(input: AutoSubInput): AutoSubResult {
       const pos = posOf(input.players, id);
       if (!pos || pos === "GK") return false;
       if (!played(id)) return false;
-      const trial = { ...counts, [outPos]: counts[outPos] - 1, [pos]: counts[pos] + 1 };
+      const trial: Record<Position, number> = { ...counts };
+      trial[outPos] -= 1;
+      trial[pos] += 1;
       return isLegal(trial, input.formation);
     });
     if (legalIdx < 0) continue;
