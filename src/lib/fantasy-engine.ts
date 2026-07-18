@@ -304,7 +304,7 @@ export function computeGameweekResult(input: ScoringInput): ScoringResult {
   const xiIds = benchBoost
     ? [...auto.startingIds, ...input.squad.filter((s) => s.slot >= 12).map((s) => s.playerId).filter((id) => !auto.startingIds.includes(id))]
     : auto.startingIds;
-  const benchIds = input.squad.map((s) => s.playerId).filter((id) => !xiIds.includes(id));
+  const benchSlotIds = input.squad.filter((s) => s.slot >= 12).map((s) => s.playerId);
 
   const cap = resolveCaptainMultiplier({ squad: input.squad, minutesById: input.minutesById, tripleCaptainActive: tripleCap });
   const capId = cap.captainId;
@@ -315,7 +315,8 @@ export function computeGameweekResult(input: ScoringInput): ScoringResult {
     const base = raw(id);
     xiPoints += id === capId ? base * capMult : base;
   });
-  const benchPoints = benchIds.reduce((s, id) => s + raw(id), 0);
+  // Bench points are always the informational sum of original bench slot raw points.
+  const benchPoints = benchSlotIds.reduce((s, id) => s + raw(id), 0);
   const captainBonus = capId ? raw(capId) * (capMult - 1) : 0;
 
   return {
