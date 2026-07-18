@@ -509,7 +509,7 @@ export interface RepositoryFactoryInput {
   client?: SupabaseClient<Database>;
 }
 
-const DEFAULT_SEASON = "2025-26";
+export const DEFAULT_SEASON = "2025-26";
 
 export function createFantasyOwnedRepository(
   input: RepositoryFactoryInput,

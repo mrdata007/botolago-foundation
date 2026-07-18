@@ -23,6 +23,9 @@ import {
   previewTransfers,
   transfersDeadline,
 } from "@/services/transfers-service";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
+import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
@@ -34,16 +37,38 @@ function TransfersPage() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const { key: ownedKey } = useFantasyDataSource();
+  const owned = useFantasyOwned();
+  const isCloud = owned.source === "cloud";
 
-  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
+  const teamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: async () => {
+      if (isCloud) {
+        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
+        return owned.snapshot.team;
+      }
+      return fantasyService.getTeam();
+    },
+    enabled: !isCloud || !!owned.snapshot,
+  });
+  useEffect(() => {
+    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
+  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
 
-  // Persistent chip / fantasy state. Re-read on our own storage-event bus so
-  // toggling a chip on the Team screen is reflected here immediately.
-  const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  // Persistent chip / fantasy state. In cloud mode it mirrors the snapshot;
+  // in local mode we still listen to the local storage event bus.
+  const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
+    isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
+  );
   useEffect(() => {
+    if (isCloud) {
+      if (owned.snapshot?.lifecycle) setFantasyState(owned.snapshot.lifecycle);
+      return;
+    }
     const onEvt = () => setFantasyState(fantasyStateStore.read());
     window.addEventListener("botolago:storage", onEvt);
     window.addEventListener("storage", onEvt);
@@ -51,7 +76,8 @@ function TransfersPage() {
       window.removeEventListener("botolago:storage", onEvt);
       window.removeEventListener("storage", onEvt);
     };
-  }, []);
+  }, [isCloud, owned.snapshot?.lifecycle]);
+
 
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<string[]>([]);
@@ -136,7 +162,7 @@ function TransfersPage() {
     }
     setConfirming(true);
   };
-  const confirm = () => {
+  const confirm = async () => {
     const res = applyConfirmedTransfers({
       team,
       chips: fantasyState.chips,
@@ -154,6 +180,90 @@ function TransfersPage() {
       return;
     }
     const v = res.value;
+
+    if (isCloud && owned.userId && owned.snapshot?.currentGameweekId) {
+      // Cloud path — atomic confirm through the owned repository.
+      const draftKey = {
+        uid: owned.userId,
+        teamId: owned.snapshot.teamId ?? "new",
+        baseVersion: owned.snapshot.version,
+        kind: "transfers" as const,
+      };
+      const purchasePrices: Record<string, number> = {
+        ...owned.snapshot.purchasePrices,
+      };
+      // Track new player entry prices at their in-price.
+      const transfers = outIds.map((oid, i) => {
+        const inId = inIds[i];
+        const oP = outPlayers.find((p) => p.id === oid)!;
+        const iP = inPlayers.find((p) => p.id === inId)!;
+        purchasePrices[inId] = iP.price;
+        delete purchasePrices[oid];
+        return {
+          outSourceId: oid,
+          inSourceId: inId,
+          priceOut: oP.price,
+          priceIn: iP.price,
+          cost: iP.price - oP.price,
+          hit: 0,
+          chip: v.chips.active ?? null,
+        };
+      });
+      const nextLifecycle = {
+        ...fantasyState,
+        chips: v.chips,
+        transferHitPoints: fantasyState.transferHitPoints + v.hitPointsApplied,
+      };
+      const cloudRes = await runOwnedMutation(
+        {
+          qc,
+          scope: owned.scope,
+          setMutationStatus: owned.setMutationStatus,
+          invalidateOwned: owned.invalidateOwned,
+        },
+        {
+          action: () =>
+            owned.repo.confirmTransfers({
+              expectedVersion: owned.snapshot!.version,
+              formation: team.formation,
+              bank: v.nextBank,
+              freeTransfers: v.nextFreeTransfers,
+              pendingTransfers: v.pendingTransfers,
+              squad: v.nextSquad,
+              purchasePrices,
+              currentGameweekId: owned.snapshot!.currentGameweekId!,
+              lifecycle: nextLifecycle,
+              transfers,
+            }),
+          args: undefined,
+          matchingDraftKey: draftKey,
+          savedIdleAfterMs: 2400,
+        },
+      );
+      if (cloudRes.ok) {
+        setSuccess(true);
+        setConfirming(false);
+        toast.success(t("fantasy.transfers.success"));
+        if (v.freeHitSnapshotTaken) toast.message(t("fantasy.transfers.free_hit_snapshot_taken"));
+        setTimeout(() => setSuccess(false), 2400);
+        resetAll();
+        return;
+      }
+      // Preserve draft; do NOT persist locally.
+      fantasyDraftsStore.save(draftKey, { outIds, inIds });
+      const c = classifyRepoError(cloudRes.error);
+      const key: TranslationKey = c.isConflict
+        ? "fantasy.error.version_conflict"
+        : c.isNetwork
+          ? "fantasy.error.network"
+          : c.isPermission
+            ? "fantasy.error.permission"
+            : "fantasy.error.transfer_failed";
+      toast.error(t(key));
+      return;
+    }
+
+    // Local path — legacy mock service.
     fantasyService.saveTeam({
       squad: v.nextSquad,
       bank: v.nextBank,
@@ -175,6 +285,7 @@ function TransfersPage() {
     setTimeout(() => setSuccess(false), 2400);
     resetAll();
   };
+
 
   const pickerOut = pickerFor ? playerOf(pickerFor) : null;
   const pickerMaxPrice = pickerOut ? maxAffordableReplacement(pickerOut.price, team.bank) : undefined;

@@ -31,10 +31,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/auth/AuthProvider";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
+import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
+
+
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
 });
+
 
 const eventLabelKey: Record<PointsEventKind, TranslationKey> = {
   appearance: "fantasy.events.appearance",
@@ -58,13 +64,21 @@ function PointsPage() {
   const { t, tr } = useI18n();
   const qc = useQueryClient();
   const { requireAuth } = useAuth();
-  const [state, setState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  const owned = useFantasyOwned();
+  const isCloud = owned.source === "cloud";
+  const [state, setState] = useState<FantasyPersistedState>(() =>
+    isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
+  );
   const [gw, setGw] = useState(() => state.currentGameweek);
   const [view, setView] = useState<SquadViewMode>("squad");
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
 
   useEffect(() => {
+    if (isCloud) {
+      if (owned.snapshot?.lifecycle) setState(owned.snapshot.lifecycle);
+      return;
+    }
     const onEvt = () => setState(fantasyStateStore.read());
     window.addEventListener("botolago:storage", onEvt);
     window.addEventListener("storage", onEvt);
@@ -72,15 +86,29 @@ function PointsPage() {
       window.removeEventListener("botolago:storage", onEvt);
       window.removeEventListener("storage", onEvt);
     };
-  }, []);
+  }, [isCloud, owned.snapshot?.lifecycle]);
 
   const { key: ownedKey } = useFantasyDataSource();
   const currentGwQ = useQuery({ queryKey: ["current-gw"], queryFn: () => botolaService.getCurrentGameweek() });
   const gwResultQ = useQuery({ queryKey: ownedKey("gw-result", gw), queryFn: () => fantasyService.getGameweekResult(gw) });
   const historyQ = useQuery({ queryKey: ownedKey("gw-history"), queryFn: () => fantasyService.getGameweekHistory() });
-  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
+  const teamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: async () => {
+      if (isCloud) {
+        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
+        return owned.snapshot.team;
+      }
+      return fantasyService.getTeam();
+    },
+    enabled: !isCloud || !!owned.snapshot,
+  });
+  useEffect(() => {
+    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
+  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+
 
   const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
   const isCurrent = gw === currentGw;
@@ -223,7 +251,7 @@ function PointsPage() {
   const finalized = !!vm.finalized;
 
   const doFinalize = () => {
-    requireAuth(() => {
+    requireAuth(async () => {
       if (!isCurrent) { toast.error(t("fantasy.points.lifecycle_error")); return; }
       if (finalized) { toast.error(t("fantasy.points.already_finalized")); return; }
       if (!deadlineLocked) { toast.error(t("fantasy.deadline.open")); return; }
@@ -232,6 +260,106 @@ function PointsPage() {
         toast.error(t("fantasy.points.lifecycle_error"));
         return;
       }
+
+      if (isCloud && owned.snapshot?.currentGameweekId) {
+        // Cloud path — authoritative finalize RPC. We compute the view model
+        // here (pure) and derive chipFinalize/postTeam, without touching the
+        // local store.
+        try {
+          const vm0 = buildPointsViewModel({
+            gameweek: gw,
+            team: teamQ.data,
+            players: playersQ.data,
+            chips: state.chips,
+            transferHitPoints: state.transferHitPoints,
+            breakdown: raw.breakdown,
+            averagePoints: raw.averagePoints,
+            highestPoints: raw.highestPoints,
+          });
+          const chipFinalize = state.chips.active ?? null;
+          const result: PointsViewModel = {
+            ...vm0,
+            finalized: true,
+            finalizedAt: new Date().toISOString(),
+            chipUsed: chipFinalize,
+            hitPointsApplied: state.transferHitPoints,
+          };
+
+          // Post-team: Free Hit restores its snapshot; other chips keep the mutated team.
+          const nextLifecycle: FantasyPersistedState = {
+            ...state,
+            chips: { ...state.chips, active: null, used: chipFinalize ? [...state.chips.used, chipFinalize] : state.chips.used, freeHitSnapshot: undefined },
+            results: { ...state.results, [gw]: result },
+            transferHitPoints: 0,
+          };
+          let postSquad = teamQ.data.squad;
+          let postFormation = teamQ.data.formation;
+          let postBank = teamQ.data.bank;
+          let postFreeTransfers = teamQ.data.freeTransfers;
+          let postPurchasePrices: Record<string, number> = { ...owned.snapshot.purchasePrices };
+          if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) {
+            const snap = state.chips.freeHitSnapshot;
+            postSquad = snap.squad;
+            postFormation = snap.formation;
+            postBank = snap.bank;
+            postFreeTransfers = snap.freeTransfers;
+            postPurchasePrices = owned.snapshot.purchasePrices;
+          }
+
+          const res = await runOwnedMutation(
+            {
+              qc,
+              scope: owned.scope,
+              setMutationStatus: owned.setMutationStatus,
+              invalidateOwned: owned.invalidateOwned,
+            },
+            {
+              action: () =>
+                owned.repo.finalizeGameweek({
+                  gameweek: gw,
+                  gameweekId: owned.snapshot!.currentGameweekId!,
+                  expectedVersion: owned.snapshot!.version,
+                  season: DEFAULT_SEASON,
+                  chipFinalize,
+                  result,
+                  postTeam: {
+                    formation: postFormation,
+                    bank: postBank,
+                    freeTransfers: postFreeTransfers,
+                    pendingTransfers: 0,
+                    squad: postSquad,
+                    purchasePrices: postPurchasePrices,
+                    currentGameweekId: owned.snapshot!.currentGameweekId!,
+                    lifecycle: nextLifecycle,
+                  },
+                }),
+              args: undefined,
+              savedIdleAfterMs: 2400,
+            },
+          );
+          if (res.ok) {
+            if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) toast.success(t("fantasy.points.free_hit_restored"));
+            else toast.success(t("fantasy.points.finalize_success"));
+          } else {
+            const c = classifyRepoError(res.error);
+            const key: TranslationKey = c.isConflict
+              ? "fantasy.error.version_conflict"
+              : c.isNetwork
+                ? "fantasy.error.network"
+                : c.isPermission
+                  ? "fantasy.error.permission"
+                  : "fantasy.points.lifecycle_error";
+            toast.error(t(key));
+          }
+        } catch {
+          toast.error(t("fantasy.points.lifecycle_error"));
+        }
+        setConfirmFinalize(false);
+        return;
+      }
+
+
+
       try {
         const out = finalizeGameweek({
           gameweek: gw,
@@ -253,6 +381,7 @@ function PointsPage() {
     });
     setConfirmFinalize(false);
   };
+
 
   const doAdvance = () => {
     requireAuth(() => {

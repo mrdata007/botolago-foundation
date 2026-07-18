@@ -3,6 +3,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { FantasySubNav } from "@/components/fantasy/FantasySubNav";
 import { FantasyOnboarding } from "@/components/fantasy/FantasyOnboarding";
 import { CloudSyncBanner } from "@/components/fantasy/CloudSyncBanner";
+import { FantasyImportPrompt } from "@/components/fantasy/FantasyImportPrompt";
 
 export const Route = createFileRoute("/fantasy")({
   head: () => ({
@@ -21,6 +22,7 @@ function FantasyLayout() {
     <AppShell>
       <FantasySubNav />
       <CloudSyncBanner />
+      <FantasyImportPrompt />
       <div className="pt-3">
         <Outlet />
       </div>

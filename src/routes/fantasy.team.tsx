@@ -32,6 +32,9 @@ import {
 } from "@/lib/fantasy-engine";
 import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
+import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
@@ -43,8 +46,26 @@ function MyTeamPage() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const { key: ownedKey } = useFantasyDataSource();
+  const owned = useFantasyOwned();
+  const isCloud = owned.source === "cloud";
 
-  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
+  const teamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: async () => {
+      if (isCloud) {
+        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
+        return owned.snapshot.team;
+      }
+      return fantasyService.getTeam();
+    },
+    enabled: !isCloud || !!owned.snapshot,
+  });
+
+  // Refresh teamQ whenever the authoritative snapshot version bumps.
+  useEffect(() => {
+    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
+  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
@@ -57,11 +78,19 @@ function MyTeamPage() {
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
-  const [fState, setFState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  const [fState, setFState] = useState<FantasyPersistedState>(() =>
+    owned.source === "cloud"
+      ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read())
+      : fantasyStateStore.read(),
+  );
   const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
 
-  // Re-read persisted state whenever another route (or this one) writes.
+  // Cloud: mirror lifecycle from snapshot. Local: subscribe to state store.
   useEffect(() => {
+    if (isCloud) {
+      if (owned.snapshot?.lifecycle) setFState(owned.snapshot.lifecycle);
+      return;
+    }
     const onEvt = () => setFState(fantasyStateStore.read());
     window.addEventListener("botolago:storage", onEvt);
     window.addEventListener("storage", onEvt);
@@ -69,7 +98,8 @@ function MyTeamPage() {
       window.removeEventListener("botolago:storage", onEvt);
       window.removeEventListener("storage", onEvt);
     };
-  }, []);
+  }, [isCloud, owned.snapshot?.lifecycle]);
+
 
   const chipsState = fState.chips;
   const deadlineIso = gwQ.data?.deadline;
@@ -184,12 +214,12 @@ function MyTeamPage() {
     setLocalSquad(reslotForFormation({ squad, players, formation: f }));
   };
 
-  const save = () => {
+  const save = async () => {
     // Re-evaluate the deadline at save time — the user may have been idle
     // in edit mode while the deadline passed, or the GW was finalized
     // elsewhere. Both revert the working state to the persisted team.
     const nowLocked = deadlineIso ? evaluateDeadline(deadlineIso, new Date()).isLocked : false;
-    const nowFinalized = !!fantasyStateStore.read().results[currentGw]?.finalized;
+    const nowFinalized = !!(isCloud ? fState : fantasyStateStore.read()).results[currentGw]?.finalized;
     if (nowLocked || nowFinalized) {
       revertLocal();
       toast.error(t("fantasy.team.error.deadline_crossed_revert"));
@@ -203,6 +233,65 @@ function MyTeamPage() {
       toast.error(t(errKey));
       return;
     }
+
+    if (isCloud && owned.userId) {
+      // Cloud path — authoritative RPC via owned repository.
+      const draftKey = {
+        uid: owned.userId,
+        teamId: owned.snapshot?.teamId ?? "new",
+        baseVersion: owned.snapshot?.version ?? 0,
+        kind: "team" as const,
+      };
+      const res = await runOwnedMutation(
+        {
+          qc,
+          scope: owned.scope,
+          setMutationStatus: owned.setMutationStatus,
+          invalidateOwned: owned.invalidateOwned,
+        },
+        {
+          action: () =>
+            owned.repo.saveTeam({
+              teamName: teamQ.data.teamName,
+              managerName: teamQ.data.managerName || null,
+              formation: formationToSave,
+              bank: teamQ.data.bank,
+              freeTransfers: teamQ.data.freeTransfers,
+              pendingTransfers: teamQ.data.pendingTransfers,
+              squad: squadToSave,
+              purchasePrices: owned.snapshot?.purchasePrices ?? {},
+              expectedVersion: owned.snapshot?.version ?? 0,
+              currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+              lifecycle: fState,
+            }),
+          args: undefined,
+          matchingDraftKey: draftKey,
+          savedIdleAfterMs: 2400,
+        },
+      );
+      if (res.ok) {
+        revertLocal();
+        toast.success(t("fantasy.status.saved"));
+        return;
+      }
+      // Preserve draft; surface localized error/conflict without overwriting.
+      fantasyDraftsStore.save(draftKey, {
+        squad: squadToSave,
+        formation: formationToSave,
+      });
+      const c = classifyRepoError(res.error);
+      const key: TranslationKey = c.isConflict
+        ? "fantasy.error.version_conflict"
+        : c.isNetwork
+          ? "fantasy.error.network"
+          : c.isPermission
+            ? "fantasy.error.permission"
+            : "fantasy.error.transfer_failed";
+      toast.error(t(key));
+      return;
+    }
+
+    // Local path — legacy mock service.
     fantasyService.saveTeam({ formation: formationToSave, squad: squadToSave });
     qc.invalidateQueries({ queryKey: ownedKey("team") });
     qc.invalidateQueries({ queryKey: ownedKey("summary") });
@@ -210,6 +299,7 @@ function MyTeamPage() {
     toast.success(t("fantasy.success"));
   };
   const cancel = () => { revertLocal(); };
+
 
   const shirt = (id: string) => {
     const p = playerOf(id);
