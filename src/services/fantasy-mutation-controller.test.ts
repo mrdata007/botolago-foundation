@@ -47,7 +47,7 @@ function makeCtx() {
 describe("runOwnedMutation — H1 foundation", () => {
   it("on success: replaces snapshot, records saving→saved, clears matching draft", async () => {
     const ctx = makeCtx();
-    const draftKey = { uid: "u1", team: "t1", version: 3, kind: "team" as const };
+    const draftKey = { uid: "u1", teamId: "t1", baseVersion: 3, kind: "team" as const };
     fantasyDraftsStore.save(draftKey, { squad: [] } as any);
     expect(fantasyDraftsStore.read(draftKey)).not.toBeNull();
 
@@ -100,7 +100,7 @@ describe("runOwnedMutation — H1 foundation", () => {
 
   it("cloud error surfaces as typed FantasyRepoError result — no local fallback", async () => {
     const ctx = makeCtx();
-    const draftKey = { uid: "u1", team: "t1", version: 3, kind: "team" as const };
+    const draftKey = { uid: "u1", teamId: "t1", baseVersion: 3, kind: "team" as const };
     fantasyDraftsStore.save(draftKey, { squad: [] } as any);
 
     const err = new FantasyRepoError("permission_denied", "RLS");
@@ -124,7 +124,7 @@ describe("runOwnedMutation — H1 foundation", () => {
 
   it("version_conflict is classified as kind='conflict' and preserves draft", async () => {
     const ctx = makeCtx();
-    const draftKey = { uid: "u1", team: "t2", version: 7, kind: "transfers" as const };
+    const draftKey = { uid: "u1", teamId: "t2", baseVersion: 7, kind: "transfers" as const };
     fantasyDraftsStore.save(draftKey, { outIds: [], inIds: [] } as any);
 
     const err = new FantasyRepoError("version_conflict", "stale");
