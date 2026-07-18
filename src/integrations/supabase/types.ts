@@ -379,6 +379,7 @@ export type Database = {
           formation: string
           free_transfers: number
           id: string
+          lifecycle_state: Json
           manager_name: string | null
           pending_transfers: number
           team_name: string
@@ -393,6 +394,7 @@ export type Database = {
           formation?: string
           free_transfers?: number
           id?: string
+          lifecycle_state?: Json
           manager_name?: string | null
           pending_transfers?: number
           team_name: string
@@ -407,6 +409,7 @@ export type Database = {
           formation?: string
           free_transfers?: number
           id?: string
+          lifecycle_state?: Json
           manager_name?: string | null
           pending_transfers?: number
           team_name?: string
@@ -1053,6 +1056,19 @@ export type Database = {
       }
       join_league_by_code: { Args: { _code: string }; Returns: string }
       leave_league: { Args: { _league_id: string }; Returns: undefined }
+      save_fantasy_lifecycle: {
+        Args: {
+          _current_gameweek_id?: string
+          _expected_version: number
+          _lifecycle: Json
+          _team_id: string
+        }
+        Returns: {
+          id: string
+          lifecycle_state: Json
+          version: number
+        }[]
+      }
       save_fantasy_team: {
         Args: {
           _bank: number
