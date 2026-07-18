@@ -31,10 +31,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/auth/AuthProvider";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
 });
+
 
 const eventLabelKey: Record<PointsEventKind, TranslationKey> = {
   appearance: "fantasy.events.appearance",
