@@ -1,5 +1,6 @@
 // @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/points-service.test.ts`
+import "./__test-shim";
 import { describe, it, expect, beforeEach } from "bun:test";
 import { buildLegacyViewModel, buildPointsViewModel } from "./points-service";
 import { fantasyStateStore } from "./fantasy-state";

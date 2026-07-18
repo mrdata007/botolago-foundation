@@ -17,7 +17,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { ChipsState } from "@/lib/fantasy-engine";
 import type { PointsViewModel } from "@/services/points-service";
-import type { FormationKey, SquadPlayer } from "@/types/fantasy";
+import type { FormationKey } from "@/types/fantasy";
 
 // ---------- Public types ----------
 
@@ -262,12 +262,13 @@ export const fantasyCloudRepo: FantasyCloudRepo = {
   },
 
   async saveLifecycle({ teamId, expectedVersion, lifecycle, currentGameweekId }) {
-    const { data, error } = await supabase.rpc("save_fantasy_lifecycle", {
+    const args: Database["public"]["Functions"]["save_fantasy_lifecycle"]["Args"] = {
       _team_id: teamId,
       _expected_version: expectedVersion,
       _lifecycle: lifecycle as unknown as Json,
-      _current_gameweek_id: (currentGameweekId ?? null) as unknown as string,
-    });
+    };
+    if (currentGameweekId) args._current_gameweek_id = currentGameweekId;
+    const { data, error } = await supabase.rpc("save_fantasy_lifecycle", args);
     if (error) throw mapSupabaseError(error);
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) throw new FantasyCloudError("not_found", "save_fantasy_lifecycle returned no row");

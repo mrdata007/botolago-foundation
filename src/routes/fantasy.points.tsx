@@ -16,6 +16,7 @@ import type { PlayerPointsBreakdown, PointsEventKind } from "@/types/fantasy";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import {
   buildLegacyViewModel,
   buildPointsViewModel,
@@ -73,10 +74,11 @@ function PointsPage() {
     };
   }, []);
 
+  const { key: ownedKey } = useFantasyDataSource();
   const currentGwQ = useQuery({ queryKey: ["current-gw"], queryFn: () => botolaService.getCurrentGameweek() });
-  const gwResultQ = useQuery({ queryKey: ["gw-result", gw], queryFn: () => fantasyService.getGameweekResult(gw) });
-  const historyQ = useQuery({ queryKey: ["gw-history"], queryFn: () => fantasyService.getGameweekHistory() });
-  const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
+  const gwResultQ = useQuery({ queryKey: ownedKey("gw-result", gw), queryFn: () => fantasyService.getGameweekResult(gw) });
+  const historyQ = useQuery({ queryKey: ownedKey("gw-history"), queryFn: () => fantasyService.getGameweekHistory() });
+  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
 
@@ -240,9 +242,9 @@ function PointsPage() {
           highestPoints: raw.highestPoints,
         });
         setState(fantasyStateStore.read());
-        qc.invalidateQueries({ queryKey: ["fantasy-team"] });
-        qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
-        qc.invalidateQueries({ queryKey: ["gw-result", gw] });
+        qc.invalidateQueries({ queryKey: ownedKey("team") });
+        qc.invalidateQueries({ queryKey: ownedKey("summary") });
+        qc.invalidateQueries({ queryKey: ownedKey("gw-result", gw) });
         if (out.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
         else toast.success(t("fantasy.points.finalize_success"));
       } catch {
@@ -263,8 +265,8 @@ function PointsPage() {
       }
       setState(fantasyStateStore.read());
       setGw(target);
-      qc.invalidateQueries({ queryKey: ["fantasy-team"] });
-      qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+      qc.invalidateQueries({ queryKey: ownedKey("team") });
+      qc.invalidateQueries({ queryKey: ownedKey("summary") });
       qc.invalidateQueries({ queryKey: ["current-gw"] });
       toast.success(t("fantasy.points.advance_success"));
     });

@@ -8,16 +8,19 @@ export function CloudSyncBanner() {
   const { t } = useI18n();
   const { status, errorCode, isCloud, reload } = useFantasyCloudSync();
   if (!isCloud) return null;
-  if (status === "idle" || status === "saved") return null;
+  if (status === "idle") return null;
 
   const tone =
     status === "conflict" || status === "error"
       ? "border-amber-400/40 bg-amber-500/10 text-amber-100"
-      : "border-white/10 bg-white/5 text-white/80";
+      : status === "saved"
+        ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
+        : "border-white/10 bg-white/5 text-white/80";
 
   const label =
     status === "loading" ? t("fantasy.cloud.loading")
       : status === "saving" ? t("fantasy.cloud.saving")
+      : status === "saved" ? t("fantasy.cloud.saved")
       : status === "conflict" ? t("fantasy.cloud.conflict")
       : errorCode === "permission_denied" ? t("fantasy.cloud.permission_denied")
       : errorCode === "network" ? t("fantasy.cloud.offline")
@@ -25,18 +28,20 @@ export function CloudSyncBanner() {
       : t("fantasy.cloud.error");
 
   const showRetry = status === "error" || status === "conflict";
+  const live: "polite" | "assertive" = showRetry ? "assertive" : "polite";
 
   return (
     <div
       role="status"
+      aria-live={live}
       className={`mx-3 mt-2 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs ${tone}`}
     >
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <span className="min-w-0 flex-1 break-words whitespace-normal">{label}</span>
       {showRetry && (
         <button
           type="button"
           onClick={() => { void reload(); }}
-          className="rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium hover:bg-white/20"
+          className="shrink-0 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium hover:bg-white/20"
         >
           {status === "conflict" ? t("fantasy.cloud.reload_latest") : t("fantasy.cloud.retry")}
         </button>

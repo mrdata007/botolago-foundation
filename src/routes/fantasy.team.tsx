@@ -24,6 +24,7 @@ import { Check, Lock, Pencil, RotateCcw } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import {
   activateChip, canActivateChip, chipDisplayState, deactivateChip,
@@ -41,11 +42,13 @@ function MyTeamPage() {
   const qc = useQueryClient();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
-  const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
+  const { key: ownedKey } = useFantasyDataSource();
+
+  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
-  const summaryQ = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
+  const summaryQ = useQuery({ queryKey: ownedKey("summary"), queryFn: () => botolaService.getFantasySummary() });
 
   const { requireAuth } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -201,8 +204,8 @@ function MyTeamPage() {
       return;
     }
     fantasyService.saveTeam({ formation: formationToSave, squad: squadToSave });
-    qc.invalidateQueries({ queryKey: ["fantasy-team"] });
-    qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+    qc.invalidateQueries({ queryKey: ownedKey("team") });
+    qc.invalidateQueries({ queryKey: ownedKey("summary") });
     revertLocal();
     toast.success(t("fantasy.success"));
   };
