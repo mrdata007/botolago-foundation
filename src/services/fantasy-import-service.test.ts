@@ -73,11 +73,14 @@ function fakeGameweekIndex(numbers: number[]) {
 describe("importLocalTeamToCloud", () => {
   beforeEach(() => {
     // Isolate from patches written by sibling test files (fantasy mock
-    // service is backed by localStorage and shared across the suite).
+    // service reads from window.localStorage via the test shim).
     try {
-      globalThis.localStorage?.removeItem(STORAGE_KEYS.FANTASY_TEAM);
+      (globalThis as any).window?.localStorage?.removeItem(
+        STORAGE_KEYS.FANTASY_TEAM,
+      );
     } catch {}
   });
+
 
   it("happy path: loads local snapshot, resolves GW UUID, invokes cloud saveTeam exactly once", async () => {
     const localRepo = await localRepoWithRealTeam();
