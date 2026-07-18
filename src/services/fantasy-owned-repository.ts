@@ -474,7 +474,10 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
           season: input.season,
           chipFinalize: input.chipFinalize,
           result: input.result,
-          postTeam: input.postTeam,
+          postTeam: {
+            ...input.postTeam,
+            purchasePrices: input.postPurchasePrices,
+          },
         },
         idMap,
       );
