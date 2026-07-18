@@ -4,7 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthSecondaryButton, AuthDivider, AuthFieldError, AuthFieldLabel, AuthLink } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
-import { authService } from "@/services/auth";
+import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
