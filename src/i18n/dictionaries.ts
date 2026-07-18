@@ -825,6 +825,12 @@ export const dictionaries = {
     "state.error": "حدث خطأ.",
     "state.offline": "أنت غير متصل. قد تكون البيانات قديمة.",
     "state.retry": "إعادة المحاولة",
+    "state.go_home": "العودة إلى الرئيسية",
+    "notfound.code": "404",
+    "notfound.title": "الصفحة غير موجودة",
+    "notfound.description": "هذه الصفحة غير موجودة أو تم نقلها.",
+    "error.title": "تعذّر تحميل هذه الصفحة",
+    "error.description": "حدث خطأ ما. يمكنك إعادة المحاولة أو العودة إلى الرئيسية.",
 
     "player.status.available": "متاح",
     "player.status.injured": "مصاب",
