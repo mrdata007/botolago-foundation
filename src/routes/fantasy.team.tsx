@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
@@ -24,11 +24,12 @@ import { Check, Lock, Pencil, RotateCcw } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { fantasyStateStore } from "@/services/fantasy-state";
+import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import {
   activateChip, canActivateChip, chipDisplayState, deactivateChip,
   evaluateDeadline, type ChipKey,
 } from "@/lib/fantasy-engine";
+import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/team")({
