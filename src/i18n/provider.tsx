@@ -16,8 +16,8 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-function readInitial(): { lang: Language; hasChosen: boolean } {
-  if (typeof window === "undefined") return { lang: "fr", hasChosen: true };
+function readStored(): { lang: Language; hasChosen: boolean } | null {
+  if (typeof window === "undefined") return null;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY) as Language | null;
     if (stored === "fr" || stored === "ar") return { lang: stored, hasChosen: true };
@@ -26,23 +26,27 @@ function readInitial(): { lang: Language; hasChosen: boolean } {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // Synchronous initial read so lang/dir are correct on first paint after
-  // hydration — prevents the RTL flash between server HTML and client state.
-  const [{ lang, hasChosen }, setState] = useState(readInitial);
+  // SSR and first client render MUST match. Server always renders `fr`/`ltr`,
+  // so the initial client state is also `fr` — we upgrade after mount.
+  const [{ lang, hasChosen }, setState] = useState<{ lang: Language; hasChosen: boolean }>(
+    { lang: "fr", hasChosen: true },
+  );
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Apply html attributes as early as possible (during first client render).
-  if (typeof document !== "undefined") {
+  useEffect(() => {
+    const stored = readStored();
+    if (stored) setState(stored);
+    setIsHydrated(true);
+  }, []);
+
+  // Sync <html lang> and <html dir> only after mount, never during render.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
     const dir = lang === "ar" ? "rtl" : "ltr";
     if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
     if (document.documentElement.dir !== dir) document.documentElement.dir = dir;
-    if (document.documentElement.dataset.lang !== lang) document.documentElement.dataset.lang = lang;
-  }
-
-  // Kept for API compatibility with existing consumers (FirstLaunchLanguage,
-  // legacy call sites). Flip after mount so gated overlays only appear once
-  // the client is ready.
-  const [isHydrated, setIsHydrated] = useState(false);
-  useEffect(() => { setIsHydrated(true); }, []);
+    document.documentElement.dataset.lang = lang;
+  }, [lang]);
 
   const setLanguage = useCallback((l: Language) => {
     setState({ lang: l, hasChosen: true });
@@ -55,7 +59,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     isHydrated,
     hasChosen,
     setLanguage,
-    t: (key) => dictionaries[lang][key] ?? key,
+    t: (key) => (dictionaries[lang] as Record<string, string>)[key] ?? key,
     tr: (s) => s[lang] ?? s.fr,
   }), [lang, hasChosen, isHydrated, setLanguage]);
 
