@@ -1029,11 +1029,54 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _replace_fantasy_squad: {
+        Args: { _squad: Json; _team_id: string }
+        Returns: undefined
+      }
+      confirm_fantasy_transfers: {
+        Args: {
+          _bank: number
+          _current_gameweek_id: string
+          _expected_version: number
+          _formation: string
+          _free_transfers: number
+          _lifecycle: Json
+          _pending_transfers: number
+          _squad: Json
+          _team_id: string
+          _transfers: Json
+        }
+        Returns: {
+          id: string
+          transfer_ids: string[]
+          updated_at: string
+          version: number
+        }[]
+      }
       create_private_league: {
         Args: { _description: string; _name: string; _scoring_mode?: string }
         Returns: string
       }
       delete_league: { Args: { _league_id: string }; Returns: undefined }
+      finalize_fantasy_gameweek_v2: {
+        Args: {
+          _chip_finalize: string
+          _expected_version: number
+          _gameweek_id: string
+          _post_team: Json
+          _result: Json
+          _season: string
+          _team_id: string
+        }
+        Returns: {
+          already_finalized: boolean
+          final_points: number
+          gameweek_id: string
+          result_id: string
+          team_id: string
+          version: number
+        }[]
+      }
       finalize_gameweek_result: {
         Args: { _gameweek_id: string; _payload: Json; _team_id: string }
         Returns: string
@@ -1079,6 +1122,26 @@ export type Database = {
           _team_name: string
         }
         Returns: string
+      }
+      save_fantasy_team_v2: {
+        Args: {
+          _bank: number
+          _current_gameweek_id: string
+          _expected_version: number
+          _formation: string
+          _free_transfers: number
+          _lifecycle: Json
+          _manager_name: string
+          _pending_transfers: number
+          _squad: Json
+          _team_id: string
+          _team_name: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+          version: number
+        }[]
       }
     }
     Enums: {
