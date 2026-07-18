@@ -290,6 +290,12 @@ export const dictionaries = {
     "state.error": "Une erreur est survenue.",
     "state.offline": "Vous êtes hors ligne. Les données peuvent être obsolètes.",
     "state.retry": "Réessayer",
+    "state.go_home": "Retour à l'accueil",
+    "notfound.code": "404",
+    "notfound.title": "Page introuvable",
+    "notfound.description": "Cette page n'existe pas ou a été déplacée.",
+    "error.title": "Cette page ne s'est pas chargée",
+    "error.description": "Un incident est survenu. Vous pouvez réessayer ou revenir à l'accueil.",
 
     "player.status.available": "Disponible",
     "player.status.injured": "Blessé",
