@@ -70,7 +70,7 @@ function VerifyPage() {
           <AuthFieldError id="otp-err">{error && t(error)}</AuthFieldError>
         </div>
 
-        <p className="text-center text-[11px] text-muted-foreground">{t("auth.verify.demo_hint")}</p>
+        {IS_MOCK_AUTH && <p className="text-center text-[11px] text-muted-foreground">{t("auth.verify.demo_hint")}</p>}
 
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
