@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useI18n } from "@/i18n/provider";
-import { authService } from "@/services/auth";
+import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
