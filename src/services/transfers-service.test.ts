@@ -1,3 +1,5 @@
+// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
+// Run with: `bun test src/services/transfers-service.test.ts`
 import { describe, it, expect } from "bun:test";
 import { applyConfirmedTransfers, previewTransfers } from "./transfers-service";
 import { DEFAULT_CHIPS, type ChipsState } from "@/lib/fantasy-engine";
@@ -8,16 +10,12 @@ const sp = (playerId: string, slot: number): SquadPlayer => ({
 });
 
 const team: FantasyTeam = {
-  managerId: "u1",
-  name: "Test",
+  managerName: "U",
+  teamName: "Test",
   formation: "3-4-3",
   bank: 2.0,
   freeTransfers: 1,
   pendingTransfers: 0,
-  totalPoints: 0,
-  overallRank: 0,
-  gameweekPoints: 0,
-  gameweekRank: 0,
   squad: [
     sp("gk1", 1),
     sp("d1", 2), sp("d2", 3), sp("d3", 4),
