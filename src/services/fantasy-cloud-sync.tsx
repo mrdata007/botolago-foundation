@@ -2,17 +2,17 @@
 //
 // For authenticated cloud-mode users this provider:
 //   1. Loads the user's cloud fantasy_teams row on mount (creating one if
-//      missing) and hydrates fantasyStateStore from `lifecycle_state`.
-//   2. Subscribes to local state changes (fantasyStateStore.write emits a
-//      "fantasy.state.changed" event) and pushes each change to the cloud
-//      via `save_fantasy_lifecycle`, using the last-known version for
-//      optimistic concurrency.
-//   3. Surfaces a typed status ("idle" | "loading" | "saving" | "saved" |
-//      "error" | "conflict") so routes can render a localized banner.
+//      missing) and hydrates fantasyStateStore from `lifecycle_state`
+//      as an internal write (no echo back to Supabase).
+//   2. Listens for local mutations via the "fantasy.state.changed" event
+//      and mirrors them via `save_fantasy_lifecycle`. Writes are queued
+//      SERIALLY so concurrent mutations never reuse the same expected
+//      version and race the DB.
+//   3. Surfaces a typed status so routes can render a localized banner.
 //
-// The pure engine remains authoritative for validation/scoring. This
-// provider only mirrors the persisted lifecycle bag; it never re-computes
-// results.
+// Cloud errors never overwrite local working state. On conflict/error the
+// local store keeps the user's latest edits; the banner offers retry /
+// reload-latest so the user chooses when to reconcile.
 
 import {
   createContext,
@@ -33,8 +33,12 @@ import {
   type CloudFantasyTeam,
   type CloudLifecyclePayload,
 } from "@/services/fantasy-cloud-repo";
-import { fantasyStateStore } from "@/services/fantasy-state";
-import { clearOwnedFantasyCache, selectFantasyDataSource } from "@/services/fantasy-data-source";
+import { fantasyStateStore, FANTASY_STATE_EVENT } from "@/services/fantasy-state";
+import {
+  clearOwnedFantasyCache,
+  isOwnedFantasyKey,
+  selectFantasyDataSource,
+} from "@/services/fantasy-data-source";
 
 export type CloudSyncStatus =
   | "idle"
@@ -49,15 +53,14 @@ interface CloudSyncCtx {
   errorCode: string | null;
   teamId: string | null;
   version: number | null;
-  /** Trigger a fresh cloud reload; used by the retry / "reload latest" button. */
   reload: () => Promise<void>;
-  /** True when this session runs against cloud (authenticated + supabase). */
   isCloud: boolean;
 }
 
 const Ctx = createContext<CloudSyncCtx | null>(null);
 
-const STATE_EVENT = "fantasy.state.changed";
+const SAVED_DISMISS_MS = 1500;
+const DEBOUNCE_MS = 350;
 
 function toPayload(): CloudLifecyclePayload {
   const s = fantasyStateStore.read();
@@ -69,23 +72,15 @@ function toPayload(): CloudLifecyclePayload {
   };
 }
 
-function applyPayload(p: CloudLifecyclePayload) {
-  fantasyStateStore.write({
-    chips: p.chips,
-    currentGameweek: p.currentGameweek || fantasyStateStore.read().currentGameweek,
-    transferHitPoints: p.transferHitPoints,
-    results: p.results ?? {},
-  });
-}
-
 export function FantasyCloudSyncProvider({ children }: { children: ReactNode }) {
   const { user, status: authStatus } = useAuth();
   const qc = useQueryClient();
 
-  const isCloud = selectFantasyDataSource({
-    authMode: AUTH_MODE,
-    isAuthenticated: authStatus === "authenticated" && !!user?.id,
-  }) === "cloud";
+  const isCloud =
+    selectFantasyDataSource({
+      authMode: AUTH_MODE,
+      isAuthenticated: authStatus === "authenticated" && !!user?.id,
+    }) === "cloud";
 
   const [status, setStatus] = useState<CloudSyncStatus>("idle");
   const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -93,9 +88,28 @@ export function FantasyCloudSyncProvider({ children }: { children: ReactNode }) 
 
   const versionRef = useRef<number | null>(null);
   const teamIdRef = useRef<string | null>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const suppressEcho = useRef(false);
+  const suppressEchoRef = useRef(false);
   const lastOwnerRef = useRef<string | null>(null);
+
+  // Serial queue: at most ONE in-flight save. Pending re-fires collapse to
+  // a single follow-up save so we always send the latest snapshot with the
+  // freshest version.
+  const inFlightRef = useRef(false);
+  const pendingRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const invalidateOwned = useCallback(() => {
+    qc.invalidateQueries({ predicate: (q) => isOwnedFantasyKey(q.queryKey) });
+  }, [qc]);
+
+  const flashSaved = useCallback(() => {
+    setStatus("saved");
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => {
+      setStatus((cur) => (cur === "saved" ? "idle" : cur));
+    }, SAVED_DISMISS_MS);
+  }, []);
 
   const load = useCallback(async (uid: string) => {
     setStatus("loading");
@@ -108,12 +122,21 @@ export function FantasyCloudSyncProvider({ children }: { children: ReactNode }) 
       teamIdRef.current = t.id;
       versionRef.current = t.version;
       setTeam(t);
-      // Hydrate local store from cloud, suppressing the echo that would
-      // otherwise re-push the same payload back up.
-      suppressEcho.current = true;
-      applyPayload(t.lifecycle);
-      // Microtask boundary: let the change event flush before re-enabling.
-      queueMicrotask(() => { suppressEcho.current = false; });
+      // Hydrate local store from cloud as an internal write (no echo).
+      suppressEchoRef.current = true;
+      fantasyStateStore.write(
+        {
+          chips: t.lifecycle.chips,
+          currentGameweek:
+            t.lifecycle.currentGameweek || fantasyStateStore.read().currentGameweek,
+          transferHitPoints: t.lifecycle.transferHitPoints,
+          results: t.lifecycle.results ?? {},
+        },
+        { internal: true },
+      );
+      queueMicrotask(() => {
+        suppressEchoRef.current = false;
+      });
       setStatus("idle");
     } catch (err) {
       const code = err instanceof FantasyCloudError ? err.code : "unknown";
@@ -127,17 +150,62 @@ export function FantasyCloudSyncProvider({ children }: { children: ReactNode }) 
     await load(user.id);
   }, [load, user?.id]);
 
+  // Serial save runner.
+  const runSave = useCallback(async () => {
+    if (inFlightRef.current) {
+      // Coalesce: mark that another save is needed after the current one.
+      pendingRef.current = true;
+      return;
+    }
+    const teamId = teamIdRef.current;
+    const version = versionRef.current;
+    if (!teamId || version == null) return;
+
+    inFlightRef.current = true;
+    setStatus("saving");
+    setErrorCode(null);
+    try {
+      const res = await fantasyCloudRepo.saveLifecycle({
+        teamId,
+        expectedVersion: version,
+        lifecycle: toPayload(),
+      });
+      versionRef.current = res.version;
+      flashSaved();
+      invalidateOwned();
+    } catch (err) {
+      if (err instanceof FantasyCloudError && err.code === "version_conflict") {
+        setErrorCode("version_conflict");
+        setStatus("conflict");
+        // Do NOT keep firing saves with a stale version.
+        pendingRef.current = false;
+      } else {
+        const code = err instanceof FantasyCloudError ? err.code : "unknown";
+        setErrorCode(code);
+        setStatus("error");
+        pendingRef.current = false;
+      }
+    } finally {
+      inFlightRef.current = false;
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        // Fire immediately with the latest snapshot + updated version.
+        void runSave();
+      }
+    }
+  }, [flashSaved, invalidateOwned]);
+
   // Boot / owner change.
   useEffect(() => {
     const owner = isCloud ? user?.id ?? null : null;
     if (owner === lastOwnerRef.current) return;
 
-    // Owner changed — always drop scoped cache from previous owner.
     clearOwnedFantasyCache(qc);
     lastOwnerRef.current = owner;
 
     if (!isCloud || !user?.id) {
       setStatus("idle");
+      setErrorCode(null);
       setTeam(null);
       teamIdRef.current = null;
       versionRef.current = null;
@@ -149,47 +217,23 @@ export function FantasyCloudSyncProvider({ children }: { children: ReactNode }) 
   // Local → cloud mirror.
   useEffect(() => {
     if (!isCloud) return;
-
-    const push = async () => {
-      if (suppressEcho.current) return;
-      const teamId = teamIdRef.current;
-      const version = versionRef.current;
-      if (!teamId || version == null) return;
-      setStatus("saving");
-      setErrorCode(null);
-      try {
-        const res = await fantasyCloudRepo.saveLifecycle({
-          teamId,
-          expectedVersion: version,
-          lifecycle: toPayload(),
-        });
-        versionRef.current = res.version;
-        setStatus("saved");
-        // Invalidate every owned key so Team/Transfers/Points/summary refetch.
-        qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "owned-fantasy" });
-      } catch (err) {
-        if (err instanceof FantasyCloudError && err.code === "version_conflict") {
-          setErrorCode("version_conflict");
-          setStatus("conflict");
-        } else {
-          const code = err instanceof FantasyCloudError ? err.code : "unknown";
-          setErrorCode(code);
-          setStatus("error");
-        }
-      }
-    };
+    if (typeof window === "undefined") return;
 
     const onChange = () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => { void push(); }, 350);
+      if (suppressEchoRef.current) return;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        void runSave();
+      }, DEBOUNCE_MS);
     };
 
-    window.addEventListener(STATE_EVENT, onChange);
+    window.addEventListener(FANTASY_STATE_EVENT, onChange);
     return () => {
-      window.removeEventListener(STATE_EVENT, onChange);
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      window.removeEventListener(FANTASY_STATE_EVENT, onChange);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
-  }, [isCloud, qc]);
+  }, [isCloud, runSave]);
 
   const value = useMemo<CloudSyncCtx>(
     () => ({
@@ -209,7 +253,6 @@ export function FantasyCloudSyncProvider({ children }: { children: ReactNode }) 
 export function useFantasyCloudSync(): CloudSyncCtx {
   const v = useContext(Ctx);
   if (!v) {
-    // Provider not mounted (e.g. non-fantasy routes) — return a neutral shape.
     return {
       status: "idle",
       errorCode: null,
