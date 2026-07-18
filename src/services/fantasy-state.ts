@@ -1,6 +1,10 @@
 // Persistent Fantasy state store: chips, current gameweek, transfer hit,
 // pre-Free-Hit snapshot, and last-computed gameweek results. Persists via
 // namespaced localStorage so a page refresh preserves everything.
+//
+// Emits a single "fantasy.state.changed" browser event after every real
+// mutation. Callers hydrating from a remote source can pass
+// { internal: true } to suppress the echo.
 
 import { readJSON, writeJSON } from "@/lib/storage";
 import { DEFAULT_CHIPS, type ChipsState } from "@/lib/fantasy-engine";
@@ -15,6 +19,7 @@ export interface FantasyPersistedState {
 }
 
 const KEY = "fantasy.state";
+export const FANTASY_STATE_EVENT = "fantasy.state.changed";
 
 export const DEFAULT_STATE: FantasyPersistedState = {
   chips: DEFAULT_CHIPS,
@@ -22,6 +27,24 @@ export const DEFAULT_STATE: FantasyPersistedState = {
   transferHitPoints: 0,
   results: {},
 };
+
+/** Guarded, one-frame-safe event dispatch. */
+function emitChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(FANTASY_STATE_EVENT));
+}
+
+/** Reentrancy guard so nested public calls emit exactly once. */
+let depth = 0;
+function runMutation(fn: () => void, opts?: { internal?: boolean }) {
+  depth++;
+  try {
+    fn();
+  } finally {
+    depth--;
+    if (depth === 0 && !opts?.internal) emitChanged();
+  }
+}
 
 export const fantasyStateStore = {
   read(): FantasyPersistedState {
@@ -33,24 +56,37 @@ export const fantasyStateStore = {
       results: raw?.results ?? {},
     };
   },
-  write(patch: Partial<FantasyPersistedState>) {
-    const cur = this.read();
-    writeJSON<FantasyPersistedState>(KEY, { ...cur, ...patch });
+  /**
+   * Merge a patch into the persisted state.
+   * `opts.internal` suppresses the change event — used by cloud hydration
+   * so re-applying a remote snapshot does not echo back to Supabase.
+   */
+  write(patch: Partial<FantasyPersistedState>, opts?: { internal?: boolean }) {
+    runMutation(() => {
+      const cur = this.read();
+      writeJSON<FantasyPersistedState>(KEY, { ...cur, ...patch });
+    }, opts);
   },
-  reset() {
-    writeJSON<FantasyPersistedState>(KEY, DEFAULT_STATE);
+  reset(opts?: { internal?: boolean }) {
+    runMutation(() => {
+      writeJSON<FantasyPersistedState>(KEY, DEFAULT_STATE);
+    }, opts);
   },
   getResult(gw: number): PointsViewModel | undefined {
     return this.read().results[gw];
   },
-  saveResult(gw: number, vm: PointsViewModel) {
-    const cur = this.read();
-    this.write({ results: { ...cur.results, [gw]: vm } });
+  saveResult(gw: number, vm: PointsViewModel, opts?: { internal?: boolean }) {
+    runMutation(() => {
+      const cur = this.read();
+      this.write({ results: { ...cur.results, [gw]: vm } }, { internal: true });
+    }, opts);
   },
-  clearResult(gw: number) {
-    const cur = this.read();
-    const next = { ...cur.results };
-    delete next[gw];
-    this.write({ results: next });
+  clearResult(gw: number, opts?: { internal?: boolean }) {
+    runMutation(() => {
+      const cur = this.read();
+      const next = { ...cur.results };
+      delete next[gw];
+      this.write({ results: next }, { internal: true });
+    }, opts);
   },
 };
