@@ -201,7 +201,7 @@ function TransfersPage() {
           className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-900"
         >
           <Lock className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="min-w-0">{t("fantasy.transfers.deadline_locked")}</span>
+          <span className="min-w-0">{t(finalized ? "fantasy.transfers.gw_closed" : "fantasy.transfers.deadline_locked")}</span>
         </div>
       )}
 
