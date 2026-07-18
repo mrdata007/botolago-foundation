@@ -61,13 +61,21 @@ function PointsPage() {
   const { t, tr } = useI18n();
   const qc = useQueryClient();
   const { requireAuth } = useAuth();
-  const [state, setState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  const owned = useFantasyOwned();
+  const isCloud = owned.source === "cloud";
+  const [state, setState] = useState<FantasyPersistedState>(() =>
+    isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
+  );
   const [gw, setGw] = useState(() => state.currentGameweek);
   const [view, setView] = useState<SquadViewMode>("squad");
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
 
   useEffect(() => {
+    if (isCloud) {
+      if (owned.snapshot?.lifecycle) setState(owned.snapshot.lifecycle);
+      return;
+    }
     const onEvt = () => setState(fantasyStateStore.read());
     window.addEventListener("botolago:storage", onEvt);
     window.addEventListener("storage", onEvt);
@@ -75,15 +83,29 @@ function PointsPage() {
       window.removeEventListener("botolago:storage", onEvt);
       window.removeEventListener("storage", onEvt);
     };
-  }, []);
+  }, [isCloud, owned.snapshot?.lifecycle]);
 
   const { key: ownedKey } = useFantasyDataSource();
   const currentGwQ = useQuery({ queryKey: ["current-gw"], queryFn: () => botolaService.getCurrentGameweek() });
   const gwResultQ = useQuery({ queryKey: ownedKey("gw-result", gw), queryFn: () => fantasyService.getGameweekResult(gw) });
   const historyQ = useQuery({ queryKey: ownedKey("gw-history"), queryFn: () => fantasyService.getGameweekHistory() });
-  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
+  const teamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: async () => {
+      if (isCloud) {
+        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
+        return owned.snapshot.team;
+      }
+      return fantasyService.getTeam();
+    },
+    enabled: !isCloud || !!owned.snapshot,
+  });
+  useEffect(() => {
+    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
+  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+
 
   const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
   const isCurrent = gw === currentGw;
