@@ -1,100 +1,95 @@
+# BotolaGO Headline Color Audit & Accent Plan
 
-# BotolaGO — Frontend Audit (read-only)
+## Current state (verified at HEAD)
 
-Scope: welcome/splash, root shell, home, news, matches, profile, fantasy hub/team/transfers/points/leagues/players/fixtures/rules/top-players, AppShell/TopBar/BottomNav/FantasySubNav, i18n/RTL, responsive, a11y, states, mocked interactions.
+Nearly every route-level H1 and every shared H2 uses `text-foreground` with `font-black`, producing a uniformly near-black wall of headlines on light surfaces. The brand blue tokens (`--brand-primary`, `--brand-primary-2`, `--brand-accent`) currently appear only in gradients, focus rings, and the `--primary` mapping — never in typographic hierarchy.
 
-## Critical
+### Headlines on light surfaces (all currently plain `text-foreground`)
+- `src/routes/index.tsx` — Home H1 (manager greeting) + `SectionHeader` blocks
+- `src/routes/news.tsx` — "News" H1
+- `src/routes/matches.tsx` — "Matches" H1
+- `src/routes/profile.tsx` — profile H1, guest H2, anon H2
+- `src/routes/fantasy.index.tsx` — Fantasy Hub H1
+- `src/routes/fantasy.team.tsx` — team name H1
+- `src/routes/fantasy.transfers.tsx` — H1
+- `src/routes/fantasy.points.tsx` — H1
+- `src/routes/fantasy.leagues.tsx` — H1
+- `src/routes/fantasy.leagues.$leagueId.tsx` — league name title (`div.text-lg font-black`)
+- `src/routes/fantasy.players.tsx` — H1
+- `src/routes/fantasy.players.$playerId.tsx` — player name + numeric stat titles
+- `src/routes/fantasy.fixtures.tsx` — H1
+- `src/routes/fantasy.rules.tsx` — H1 + per-section H2s
+- `src/routes/fantasy.top-players.tsx` — H1
+- `src/components/common/SectionHeader.tsx` — every section H2 in the app
+- `src/components/shell/FirstLaunchLanguage.tsx` — modal H1
 
-1. **Splash icon asset is 20×20 rendered at 96×96 → visibly pixelated.**
-   `file src/assets/botolago-splash-icon.png` confirms 20×20 RGBA. `SplashScreen.tsx` renders it via `<img class="h-24 w-24">` (~4.8× upscale). On any HiDPI screen the launch icon looks blurry/broken — the first frame the user sees. `public/favicon.png` already exists at 1024×1024 and would render perfectly. Recommend swapping the splash source to the 1024 asset (or reusing `<Logo variant="icon" />` which was the previous working state) and deleting `botolago-splash-icon.png`.
+### Headlines already on dark/blue gradients (must NOT be re-tinted blue)
+- `src/components/welcome/WelcomeScreen.tsx` H1 (dark brand gradient, currently inherits white)
+- `src/components/auth/AuthShell.tsx` H1 (dark brand gradient background)
+- `src/routes/__root.tsx` 404 H1/H2 (may sit on gradient)
 
-2. **`<html lang="en">` is hardcoded in `RootShell`, then patched client-side.**
-   `src/routes/__root.tsx` renders `<html lang="en">`; `I18nProvider` updates `documentElement.lang/dir` only after mount. Result on first paint: wrong lang, missing `dir="rtl"` for Arabic users → FOUC of a mirrored layout, wrong font selection, wrong hyphenation. Any SEO crawler sees `en`. Should either read the stored preference via a synchronous inline script in the shell head, or accept a lang cookie server-side and inject it into `<html>` at render.
+## Findings
 
-3. **`FirstLaunchLanguage` modal is mounted only inside `AppShell`.**
-   Welcome screen (`WelcomeScreen`) does not include `AppShell`, and the splash covers the first ~900 ms, so the "first launch language selector" specified in the original brief never appears on the actual first launch — users land straight on the French welcome. Either move the modal to `RootComponent` (above `<Outlet />`) or render it on `WelcomeScreen` too.
+1. **Overuse of black `font-black` headlines** flattens visual hierarchy — H1, H2, and numeric labels all read at the same weight/color.
+2. **No brand-blue accent** exists anywhere in typography, despite blue being the core brand identity. New users get no chromatic anchor to the brand outside splash/welcome.
+3. **Uniform `SectionHeader`** means every section on every screen looks identical; it's the biggest single lever.
+4. **Numeric emphasis mixed with titles** (rank `#`, price, stat values) uses the same `font-black text-foreground` as headings, so accenting numbers separately would also clarify hierarchy.
+5. **RTL/i18n risk**: any approach that hard-splits an English/French string into "first word" + "rest" will break Arabic word order. Accent spans must come from the dictionary layer, not from JS string slicing.
 
-## High
+## Recommendation
 
-4. **Formation change is a visual no-op (documented in code).**
-   `fantasy.team.tsx` `changeFormation()` comment: *"real reassignment of slots by position would go here."* The formation label updates and rows are sliced, but extra XI players are silently dropped from the render instead of being moved to bench and vice-versa. A user picking 3-4-3 from 4-4-2 loses a defender from view. Either implement slot reassignment against `FORMATIONS` config, or disable formation switching until it works.
+Adopt a **selective accent** pattern rather than repainting whole H1s:
 
-5. **`fantasy.team.tsx` "Save" and Transfers "Confirm" are fake without any UI acknowledgement of that.**
-   `save()` only clears editing state; `confirm()` shows a 2.4 s toast then resets. Because the mock service isn't updated, the "saved" squad reverts on next data refetch. This is fine for a prototype, but there is no `queryClient.setQueryData` optimistic write and no persistence to `localStorage` — the illusion breaks on any navigation. Add optimistic cache writes into the mock layer so the demo feels real.
+- Keep the main heading body in `text-foreground` for contrast and legibility.
+- Introduce a reusable `<AccentText>` (or `text-brand` utility mapped to `var(--brand-primary)` — the deep blue reads best on light surfaces; reserve `--brand-accent` for numeric/interactive highlights) applied to:
+  - **Section labels / eyebrows** (e.g. Home greeting eyebrow "Bonjour" / "مرحبا") — full eyebrow in blue, keeps manager name black.
+  - **Meaningful headline fragments** via i18n keys with a `{accent}` placeholder rendered by a small `<Trans>` helper, so FR and AR translators control which word is emphasized (e.g. FR `"Mon {accent}Équipe{/accent}"`, AR equivalent chooses a different word if word order demands).
+  - **Numeric emphases** (league rank `#12`, player price, points totals) get `text-[color:var(--brand-accent)]` — the brighter accent — while their surrounding labels stay foreground.
+- Leave headlines on dark/brand gradients unchanged (Welcome, AuthShell, 404) — they must remain white for contrast.
+- `SectionHeader` gains an optional `accent?: "eyebrow" | "word"` prop plus an optional pre-title eyebrow slot; default behavior stays black so existing usages are unaffected until opted in.
 
-6. **Home page renders `null` while resolving welcome state, then flashes content.**
-   `HomePage` returns `null` for one paint after splash → visible white/gradient blink before Welcome or Home mounts. Combine with #2 to make first-run feel intentional (splash → welcome, no null frame).
+### Concrete accent targets
+| Surface | Current | Proposed |
+|---|---|---|
+| Home hero (`index.tsx`) | greeting eyebrow gray, name black | eyebrow → `--brand-primary`; name stays black |
+| `SectionHeader` (all screens) | plain black H2 | add short blue eyebrow key (e.g. "Aujourd'hui", "Ma section") above title on Home + Fantasy hub only |
+| Fantasy Hub H1 | black | accent word "Fantasy" via i18n `{accent}` |
+| Fantasy Team H1 | team name black | small blue eyebrow "Mon équipe" above team name |
+| Fantasy Transfers/Points/Leagues/Players/Fixtures/Rules H1 | black | accent last/first meaningful word per dictionary (FR & AR curated) |
+| League detail (`$leagueId`) | league name + rank black | league name unchanged; `#rank` uses `--brand-accent` |
+| Player detail (`$playerId`) | player name + stat values black | stat *values* use `--brand-accent`; name unchanged |
+| Profile H1 + guest/anon H2 | black | blue eyebrow "Compte" above; H2 unchanged |
+| News / Matches H1 | black | blue eyebrow (section label) above H1 |
+| `FirstLaunchLanguage` modal H1 | black | accent word via i18n |
+| Welcome / AuthShell / 404 on gradient | white/foreground | **no change** (contrast) |
 
-7. **Sticky offsets are hardcoded and drift from the TopBar height.**
-   - `news.tsx`: `sticky top-[4.5rem]`
-   - `FantasySubNav.tsx`: `sticky top-16`
-   The TopBar height depends on `env(safe-area-inset-top)` + padding, and on iPhone notches the sub-nav overlaps the TopBar (fantasy) or leaves a visible gap (news). Use a shared CSS custom property (e.g. `--topbar-offset`) set on the TopBar, or a single sticky wrapper.
+## Exclusions (no blue)
+- Welcome hero H1 (dark gradient)
+- AuthShell H1 (dark gradient)
+- Any headline rendered inside a `--bg-brand-gradient` surface
+- Splash screen
+- Bench/pitch labels inside Fantasy pitch (already on colored kits)
+- Body copy, muted subtitles, form labels
 
-8. **Hardcoded English string in fantasy edit hint.**
-   `fantasy.team.tsx` line 260: `"Tap two players of the same position to swap."` bypasses the i18n dictionary. Verified as the only current leaked literal in the audited routes, but violates the "no hardcoded user-facing strings" rule.
+## Implementation approach (build phase)
 
-9. **`aria-label` values on nav landmarks are not localized.**
-   `BottomNav` `aria-label="Primary"` and `FantasySubNav` `aria-label="Fantasy sections"` are English. Arabic screen-reader users hear English landmark names.
+1. **Tokens & utilities** (`src/styles.css`)
+   - Add `.text-brand` → `color: var(--brand-primary)` and `.text-brand-accent` → `color: var(--brand-accent)` as `@utility` entries (Tailwind v4).
+2. **Shared primitives**
+   - `src/components/common/AccentEyebrow.tsx` — small uppercase tracking-wider label in `--brand-primary`, RTL-safe.
+   - `src/components/common/Trans.tsx` — parses `{accent}…{/accent}` in a translation string and wraps that span in `--brand-primary`. Keeps RTL/word order controlled by translators.
+   - Extend `SectionHeader` with optional `eyebrow?: string` prop; default rendering unchanged.
+3. **i18n dictionaries** (`src/i18n/dictionaries.ts`)
+   - Add `.eyebrow` keys for section labels (news, matches, profile, fantasy sub-screens).
+   - Convert selected H1 title keys to include `{accent}…{/accent}` markers in both FR and AR (translator chooses the fragment per language to preserve grammar and RTL flow).
+4. **Route edits** — apply `AccentEyebrow` / `<Trans>` in the ~14 route files listed above; no logic changes.
+5. **Numeric accent pass** — swap `text-foreground` → `text-brand-accent` on the specific stat *values* in `fantasy.players.$playerId.tsx` and `fantasy.leagues.$leagueId.tsx` (rank, price, points value only).
+6. **QA**
+   - Manual check at 320 / 360 / 390 px in both LTR (FR) and RTL (AR) that eyebrows and accent spans wrap cleanly and stay above their headline.
+   - Verify contrast: `--brand-primary` on `--background` ≥ 4.5:1 (deep blue on near-white passes; accent-blue on white is used only for large numeric labels, still ≥ 3:1 for large text).
+   - Confirm no accent is emitted on dark-gradient surfaces (Welcome, AuthShell).
+7. **Tests** — no behavior changes; existing 44 tests should remain green. Add a small snapshot/DOM test for `<Trans>` accent parsing if trivial.
 
-10. **Home "Private leagues" and other secondary sections lack loading/empty/error branches.**
-    `leaguesQ.data?.map`, `trendingQ.data?.map`, `followedNewsQ.data?.slice` render nothing while pending and expose no empty/error state. `matches` and `alerts` are the only sections that fully handle the four states. Inconsistent with the brief.
-
-11. **Article surfaces read on tinted glass, not solid, in News list.**
-    Brief says article reading surfaces should be mostly solid; `ArticleCard` (per its usage) currently sits on `bg-white/50` and the page also has multiple radial washes behind it. Contrast on the `matches` variant background falls close to WCAG AA for `text-muted-foreground` on translucent white. Prefer opaque `bg-card` for article and dense-table surfaces (matches league table already gets this right).
-
-## Medium
-
-12. **Fantasy MiniStat grid `grid-cols-4` overflows on 320–360 px screens.**
-    Four tabular numbers plus uppercase labels wrap awkwardly. Use `grid-cols-2 sm:grid-cols-4`.
-
-13. **PageBackground SVG arcs are absolutely positioned in a fixed viewBox (400×800), stretched with `preserveAspectRatio="xMidYMid slice"`.**
-    On tall desktops the arcs move offscreen and the atmosphere flattens; on short landscape phones the arcs cut through the content. Consider a responsive positioning strategy or CSS-mask based blobs.
-
-14. **`resolveVariant` only matches `/welcome` and `/auth` for the auth variant, but the welcome screen actually lives at `/` behind local state.**
-    Not a runtime bug (Welcome passes `variant="auth"` explicitly), but the pathname-based mapping is misleading and any second entry point (e.g. a real `/auth` route later) will fight the state gate. Also, once auth is real, the home path can't stay coupled to unauthenticated state — needs a proper `_authenticated` layout.
-
-15. **Transfers `pickerMaxPrice` calculation is opaque and off by cases.**
-    The nested reducer swaps `outIds[i]` with `inIds` price by index, but reuses the *outer* `outIds`/`inIds` while filtering — for a second transfer where the first swap already moved money into bank, the max price can under- or over-count by the delta of the first pair. Extract a `computeAvailableBudget()` helper with unit tests via the validation module.
-
-16. **Tap-to-swap in `fantasy.team.tsx` doesn't allow the documented bench↔XI same-position swap.**
-    The block comment on `handleTap` promises "same position OR bench↔XI of same position" but the implementation only requires same position (fine) yet the shirt list is sliced to formation size (`defXi.slice(0, formationRow.def)`), so extra bench-eligible XI players never receive taps.
-
-17. **Bottom nav active detection is prefix-based.**
-    `pathname.startsWith("/fantasy")` also matches a future `/fantasy-…` slug. Low risk today but cheap to guard with `pathname === it.to || pathname.startsWith(it.to + "/")`.
-
-18. **Splash uses `sessionStorage`, Welcome uses `localStorage`.**
-    Splitting persistence keys is fine, but they aren't cleared coherently on language change or profile sign-out; add a `botolago.*` namespace utility to avoid stale flags surviving auth mode changes.
-
-19. **Match card venue text is rendered outside the card at `text-[10px]`.**
-    Below WCAG minimum comfortable size; also unlabeled (screen reader hears the venue with no context). Move inside the card and use `text-xs`.
-
-20. **`h-screen`/`min-h-screen` in `AppShell` and error/notFound components should be `min-h-dvh` on mobile** to avoid the iOS URL bar bounce squeezing the bottom nav.
-
-## Low
-
-21. **News "Follow / Following" pill is inside the filter chip button** — nesting an interactive `<button>` inside an interactive `<button>` is invalid HTML and blocks keyboard focus on the inner one. Split into two adjacent buttons in a chip group.
-
-22. **`Table` in Matches has no `<caption>`, and header text `"J"`, `"+/-"`, `"Pts"` is untranslated abbreviation.** Add localized `aria-label` or use `t("matches.table.*")` keys.
-
-23. **`GameweekSelector` shown on Top Players — verify keyboard focus visibility.** Not read this pass; flag for the a11y sweep.
-
-24. **`DropdownMenu` (LanguageSwitcher) `align="end"` doesn't flip on RTL.** shadcn Radix should handle logical alignment but `align="end"` freezes the anchor; consider omitting `align` or switching by `dir`.
-
-25. **Motion**: page background blobs animate via `bgdrift` keyframes with `motion-reduce:animate-none` — good. Welcome uses `animate-in fade-in` with no `motion-reduce` override; Radix classes respect reduced-motion already, but the two custom springs on splash and welcome should be double-checked.
-
-26. **CSS-only glass fallback** — I did not verify `@supports not (backdrop-filter)` rules in `styles.css`. Brief requires it; audit next pass.
-
-## Recommended execution sequence
-
-1. Splash icon fix (Critical #1) — 1 line, biggest perceived-quality win.
-2. SSR `lang`/`dir` correctness + first-launch language modal placement (Critical #2, #3) — unblocks RTL day-one story.
-3. Fantasy formation reassignment + tap-swap parity + optimistic mock persistence (High #4, #5, #16) — the demo currently misrepresents what works.
-4. Sticky offset unification and MiniStat responsive grid (High #7, Medium #12) — cheapest visible polish.
-5. Localize remaining strings and landmarks; add missing loading/empty/error states (High #8, #9, #10).
-6. Article/table opacity pass to enforce solid reading surfaces (High #11).
-7. Transfers budget helper + tests (Medium #15).
-8. A11y sweep for tables, focus rings, motion, RTL dropdown flip (Medium/Low #19–#25).
-
-## Single highest-value next milestone
-
-**"Fantasy My Team" as a fully believable interactive demo**: swap the fake formation change, wire optimistic mock persistence for save/transfers, land the bench↔XI swap, fix the responsive MiniStat row, and localize the last hardcoded hint. This screen is the product's centerpiece and currently the most gap-heavy — one focused pass moves it from "looks right" to "feels right", which is what the backend team will build against.
+## Risks / notes
+- Introducing accent via string-split JS would break AR. Route all accent choices through i18n placeholder markers.
+- Keep the accent selective: aim for **one accent per screen** (eyebrow *or* headline word *or* numeric value), never all three, to preserve the "premium" restraint of the current design.
