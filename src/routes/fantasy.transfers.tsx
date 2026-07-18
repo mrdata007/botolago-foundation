@@ -17,6 +17,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import {
   applyConfirmedTransfers,
   previewTransfers,
@@ -32,7 +33,9 @@ function TransfersPage() {
   const qc = useQueryClient();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
-  const teamQ = useQuery({ queryKey: ["fantasy-team"], queryFn: () => fantasyService.getTeam() });
+  const { key: ownedKey } = useFantasyDataSource();
+
+  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
