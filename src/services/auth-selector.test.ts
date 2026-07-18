@@ -22,7 +22,7 @@ describe("Supabase error mapping", () => {
     ["Invalid login credentials", 400, "credentials"],
     ["Email not confirmed", 400, "email_unconfirmed"],
     ["User already registered", 422, "email_taken"],
-    ["Token has expired or is invalid", 400, "otp_invalid"],
+    ["Token has expired or is invalid", 400, "otp_expired"],
     ["Password should be at least 8 characters", 422, "weak_password"],
     ["Provider is not enabled", 400, "provider_unavailable"],
     ["Failed to fetch", undefined, "network"],
