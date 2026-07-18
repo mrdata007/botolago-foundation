@@ -259,17 +259,50 @@ function PointsPage() {
       }
 
       if (isCloud && owned.snapshot?.currentGameweekId) {
-        // Cloud path — authoritative finalize RPC.
+        // Cloud path — authoritative finalize RPC. We compute the view model
+        // here (pure) and derive chipFinalize/postTeam, without touching the
+        // local store.
         try {
-          const out = finalizeGameweek({
+          const vm0 = buildPointsViewModel({
             gameweek: gw,
             team: teamQ.data,
             players: playersQ.data,
+            chips: state.chips,
+            transferHitPoints: state.transferHitPoints,
             breakdown: raw.breakdown,
             averagePoints: raw.averagePoints,
             highestPoints: raw.highestPoints,
-            dryRun: true,
           });
+          const chipFinalize = state.chips.active ?? null;
+          const result: PointsViewModel = {
+            ...vm0,
+            finalized: true,
+            finalizedAt: new Date().toISOString(),
+            chipUsed: chipFinalize,
+            hitPointsApplied: state.transferHitPoints,
+          };
+
+          // Post-team: Free Hit restores its snapshot; other chips keep the mutated team.
+          const nextLifecycle: FantasyPersistedState = {
+            ...state,
+            chips: { ...state.chips, active: null, used: chipFinalize ? [...state.chips.used, chipFinalize] : state.chips.used, freeHitSnapshot: null },
+            results: { ...state.results, [gw]: result },
+            transferHitPoints: 0,
+          };
+          let postSquad = teamQ.data.squad;
+          let postFormation = teamQ.data.formation;
+          let postBank = teamQ.data.bank;
+          let postFreeTransfers = teamQ.data.freeTransfers;
+          let postPurchasePrices: Record<string, number> = { ...owned.snapshot.purchasePrices };
+          if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) {
+            const snap = state.chips.freeHitSnapshot;
+            postSquad = snap.squad;
+            postFormation = snap.formation;
+            postBank = snap.bank;
+            postFreeTransfers = snap.freeTransfers;
+            postPurchasePrices = owned.snapshot.purchasePrices;
+          }
+
           const res = await runOwnedMutation(
             {
               qc,
@@ -283,17 +316,26 @@ function PointsPage() {
                   gameweek: gw,
                   gameweekId: owned.snapshot!.currentGameweekId!,
                   expectedVersion: owned.snapshot!.version,
-                  season: owned.snapshot!.season ?? new Date().getFullYear(),
-                  result: out.result,
-                  chipFinalize: out.chipFinalize,
-                  postTeam: out.postTeam ?? null,
+                  season: DEFAULT_SEASON,
+                  chipFinalize,
+                  result,
+                  postTeam: {
+                    formation: postFormation,
+                    bank: postBank,
+                    freeTransfers: postFreeTransfers,
+                    pendingTransfers: 0,
+                    squad: postSquad,
+                    purchasePrices: postPurchasePrices,
+                    currentGameweekId: owned.snapshot!.currentGameweekId!,
+                    lifecycle: nextLifecycle,
+                  },
                 }),
               args: undefined,
               savedIdleAfterMs: 2400,
             },
           );
           if (res.ok) {
-            if (out.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
+            if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) toast.success(t("fantasy.points.free_hit_restored"));
             else toast.success(t("fantasy.points.finalize_success"));
           } else {
             const c = classifyRepoError(res.error);
@@ -312,6 +354,8 @@ function PointsPage() {
         setConfirmFinalize(false);
         return;
       }
+
+
 
       try {
         const out = finalizeGameweek({
