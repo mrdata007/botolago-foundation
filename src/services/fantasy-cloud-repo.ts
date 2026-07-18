@@ -262,12 +262,13 @@ export const fantasyCloudRepo: FantasyCloudRepo = {
   },
 
   async saveLifecycle({ teamId, expectedVersion, lifecycle, currentGameweekId }) {
-    const { data, error } = await supabase.rpc("save_fantasy_lifecycle", {
+    const args: Database["public"]["Functions"]["save_fantasy_lifecycle"]["Args"] = {
       _team_id: teamId,
       _expected_version: expectedVersion,
       _lifecycle: lifecycle as unknown as Json,
-      _current_gameweek_id: (currentGameweekId ?? null) as unknown as string,
-    });
+    };
+    if (currentGameweekId) args._current_gameweek_id = currentGameweekId;
+    const { data, error } = await supabase.rpc("save_fantasy_lifecycle", args);
     if (error) throw mapSupabaseError(error);
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) throw new FantasyCloudError("not_found", "save_fantasy_lifecycle returned no row");
