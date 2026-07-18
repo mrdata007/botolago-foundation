@@ -204,8 +204,8 @@ function MyTeamPage() {
       return;
     }
     fantasyService.saveTeam({ formation: formationToSave, squad: squadToSave });
-    qc.invalidateQueries({ queryKey: ["fantasy-team"] });
-    qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+    qc.invalidateQueries({ queryKey: ownedKey("team") });
+    qc.invalidateQueries({ queryKey: ownedKey("summary") });
     revertLocal();
     toast.success(t("fantasy.success"));
   };
