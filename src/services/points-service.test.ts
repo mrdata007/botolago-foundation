@@ -27,9 +27,10 @@ function mkPlayer(id: string, position: FantasyPlayer["position"]): FantasyPlaye
   } as FantasyPlayer;
 }
 
-// Slot 1 GK, 2-4 DEF, 5-7 MID, 8-11 FWD, 12 bench GK, 13-15 bench outfield
+// Slot 1 GK, 2-5 DEF (4), 6-8 MID (3), 9-11 FWD (3) — matches 4-3-3.
+// Bench 12 GK, 13 DEF, 14 MID, 15 FWD.
 const positions: FantasyPlayer["position"][] = [
-  "GK", "DEF", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD", "FWD",
+  "GK", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD",
   "GK", "DEF", "MID", "FWD",
 ];
 
