@@ -1,9 +1,13 @@
 // @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/auth.test.ts`
 import { describe, it, expect, beforeEach } from "bun:test";
-import { authService, __testing } from "./auth";
+import { __testing } from "./auth";
+import type { AuthService } from "./auth-types";
 
-// jsdom-lite in bun test: provide a minimal localStorage.
+// Explicitly instantiate mock mode; do not touch the module-level factory
+// (which may resolve to the production Supabase service in this env).
+let authService: AuthService;
+
 beforeEach(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = globalThis as any;
@@ -17,8 +21,10 @@ beforeEach(() => {
         clear: () => store.clear(),
       },
     };
+  } else {
+    try { g.window.localStorage.clear?.(); } catch { /* ignore */ }
   }
-  __testing.reset();
+  authService = __testing.createMockService();
 });
 
 describe("authService (local mock)", () => {
