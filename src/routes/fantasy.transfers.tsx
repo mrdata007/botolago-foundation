@@ -23,6 +23,9 @@ import {
   previewTransfers,
   transfersDeadline,
 } from "@/services/transfers-service";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
+import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
@@ -34,16 +37,38 @@ function TransfersPage() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const { key: ownedKey } = useFantasyDataSource();
+  const owned = useFantasyOwned();
+  const isCloud = owned.source === "cloud";
 
-  const teamQ = useQuery({ queryKey: ownedKey("team"), queryFn: () => fantasyService.getTeam() });
+  const teamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: async () => {
+      if (isCloud) {
+        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
+        return owned.snapshot.team;
+      }
+      return fantasyService.getTeam();
+    },
+    enabled: !isCloud || !!owned.snapshot,
+  });
+  useEffect(() => {
+    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
+  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
 
-  // Persistent chip / fantasy state. Re-read on our own storage-event bus so
-  // toggling a chip on the Team screen is reflected here immediately.
-  const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
+  // Persistent chip / fantasy state. In cloud mode it mirrors the snapshot;
+  // in local mode we still listen to the local storage event bus.
+  const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
+    isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
+  );
   useEffect(() => {
+    if (isCloud) {
+      if (owned.snapshot?.lifecycle) setFantasyState(owned.snapshot.lifecycle);
+      return;
+    }
     const onEvt = () => setFantasyState(fantasyStateStore.read());
     window.addEventListener("botolago:storage", onEvt);
     window.addEventListener("storage", onEvt);
@@ -51,7 +76,8 @@ function TransfersPage() {
       window.removeEventListener("botolago:storage", onEvt);
       window.removeEventListener("storage", onEvt);
     };
-  }, []);
+  }, [isCloud, owned.snapshot?.lifecycle]);
+
 
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<string[]>([]);
