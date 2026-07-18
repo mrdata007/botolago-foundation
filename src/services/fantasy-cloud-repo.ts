@@ -245,7 +245,7 @@ export const fantasyCloudRepo: FantasyCloudRepo = {
       player_id: s.playerId,
       slot: s.slot,
       is_captain: !!s.isCaptain,
-      is_vice: !!s.isVice,
+      is_vice: !!s.isViceCaptain,
       purchase_price: s.purchasePrice,
     }));
 
