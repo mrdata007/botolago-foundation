@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
@@ -16,17 +16,20 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Check, Pencil, RotateCcw } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Check, Lock, Pencil, RotateCcw } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-
-const TEAM_CHIPS: FantasyChip[] = [
-  { key: "bench_boost", state: "available" },
-  { key: "triple_captain", state: "available" },
-  { key: "free_hit", state: "unavailable" },
-  { key: "wildcard", state: "available" },
-];
+import { fantasyStateStore } from "@/services/fantasy-state";
+import {
+  activateChip, canActivateChip, chipDisplayState, deactivateChip,
+  evaluateDeadline, type ChipKey,
+} from "@/lib/fantasy-engine";
+import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
