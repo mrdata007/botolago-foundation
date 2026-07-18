@@ -200,11 +200,19 @@ function MyTeamPage() {
         </div>
       )}
 
+      {locked && (
+        <div role="status" className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-900">
+          <Lock className="h-3.5 w-3.5" aria-hidden />
+          {t("fantasy.deadline.locked")}
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {!editing ? (
           <button
             onClick={() => requireAuth(() => setEditing(true))}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white"
+            disabled={locked}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.edit_lineup")}
           </button>
@@ -221,7 +229,7 @@ function MyTeamPage() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <button className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5">
+            <button disabled={locked} className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40">
               {t("fantasy.formation")}: {formation}
             </button>
           </PopoverTrigger>
@@ -248,7 +256,8 @@ function MyTeamPage() {
 
         <button
           onClick={() => setCaptainSheet(true)}
-          className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5"
+          disabled={locked}
+          className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
         >
           {t("fantasy.set_captain")}
         </button>
@@ -262,8 +271,25 @@ function MyTeamPage() {
       </div>
 
       <div className="mt-2">
-        <FantasyChipsRow chips={TEAM_CHIPS} />
+        <FantasyChipsRow chips={teamChips} onSelect={(k) => requireAuth(() => activateChipHandler(k))} />
       </div>
+
+      <AlertDialog open={chipConfirm !== null} onOpenChange={(o) => !o && setChipConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("fantasy.chip.confirm_title")}
+              {chipConfirm && <> — {t(`fantasy.chip.${chipConfirm}` as TranslationKey)}</>}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t("fantasy.chip.confirm_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("fantasy.chip.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmChip}>{t("fantasy.chip.confirm")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {view === "squad" ? (
         <div className="mt-3">
