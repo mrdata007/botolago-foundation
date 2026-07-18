@@ -18,6 +18,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
+import { FantasyCloudSyncProvider } from "@/services/fantasy-cloud-sync";
 import { RotateCcw, Home } from "lucide-react";
 
 
@@ -142,10 +143,12 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider>
-          <LaunchGate />
-          <AuthPromptDialog />
-          <AuthModeBadge />
-          <Toaster />
+          <FantasyCloudSyncProvider>
+            <LaunchGate />
+            <AuthPromptDialog />
+            <AuthModeBadge />
+            <Toaster />
+          </FantasyCloudSyncProvider>
         </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
