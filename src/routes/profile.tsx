@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { botolaService } from "@/services/mock";
