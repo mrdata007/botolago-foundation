@@ -34,7 +34,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { buildPointsViewModel as _bpvmMarker } from "@/services/points-service";
+
 
 
 export const Route = createFileRoute("/fantasy/points")({
