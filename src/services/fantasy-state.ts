@@ -31,6 +31,8 @@ export const DEFAULT_STATE: FantasyPersistedState = {
 /** Guarded, one-frame-safe event dispatch. */
 function emitChanged() {
   if (typeof window === "undefined") return;
+  if (typeof window.dispatchEvent !== "function") return;
+  if (typeof CustomEvent !== "function") return;
   window.dispatchEvent(new CustomEvent(FANTASY_STATE_EVENT));
 }
 
