@@ -207,6 +207,20 @@ describe("points-service — buildPointsViewModel", () => {
 
 describe("fantasyStateStore — result persistence", () => {
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = globalThis as any;
+    if (typeof g.window === "undefined") {
+      const store = new Map<string, string>();
+      g.window = {
+        localStorage: {
+          getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
+          setItem: (k: string, v: string) => { store.set(k, v); },
+          removeItem: (k: string) => { store.delete(k); },
+          clear: () => store.clear(),
+        },
+        dispatchEvent: () => true,
+      };
+    }
     fantasyStateStore.reset();
   });
 
