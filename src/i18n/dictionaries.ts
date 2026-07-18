@@ -1217,7 +1217,28 @@ export const dictionaries = {
     "fantasy.freehit.restored": "تمت استعادة الفريق الأصلي بعد الـ Free Hit.",
     // Pass 3 — ranking placeholder
     "fantasy.rank.unavailable": "الترتيب سيتوفر قريبًا",
+    // Pass 3.2-H2 — hardening keys (unsaved / conflict / import / empty / defaults)
+    "fantasy.status.draft_restored": "تم استرجاع المسودة. احفظ للمزامنة.",
+    "fantasy.status.finalized": "تم إنهاء الجولة.",
+    "fantasy.status.saved_short": "تم الحفظ",
+    "fantasy.action.save": "حفظ",
+    "fantasy.action.save_draft": "الاحتفاظ بالمسودة",
+    "fantasy.action.cancel": "إلغاء",
+    "fantasy.conflict.title": "توجد نسخة أحدث",
+    "fantasy.conflict.explain": "قام أحدهم — أنت من جهاز آخر أو تحديث تلقائي — بحفظ نسخة أحدث من فريقك. اختر كيف تريد المتابعة.",
+    "fantasy.conflict.reload_latest": "تحميل أحدث نسخة",
+    "fantasy.conflict.keep_working": "المتابعة بتعديلاتي",
+    "fantasy.default.team_name": "فريقي",
+    "fantasy.team.hint.swap": "المس لاعبين من نفس المركز لتبديلهما.",
+    "fantasy.team.hint.position_incompatible": "لا يمكن تبديل لاعبين من مركزين مختلفين.",
+    "fantasy.empty.subtitle": "قم ببناء فريقك المكوّن من 15 لاعبًا للبدء.",
+    "fantasy.empty.builder_open": "فتح منشئ الفريق",
+    "fantasy.error.import_validation": "فريقك المحلي لا يستوفي القواعد (15 لاعبًا، تشكيلة قانونية، قائد ونائبه).",
+    "fantasy.error.gameweek_unresolved": "تعذّر تحديد الجولة الحالية في الخدمة السحابية.",
+    "fantasy.error.import_generic": "فشلت عملية الاستيراد. لم يتم حفظ أي تعديل.",
+    "fantasy.result.cloud_stable": "نتيجة رسمية محفوظة.",
   },
+
 } as const satisfies Record<Language, Record<string, string>>;
 
 export type TranslationKey = keyof (typeof dictionaries)["fr"];
