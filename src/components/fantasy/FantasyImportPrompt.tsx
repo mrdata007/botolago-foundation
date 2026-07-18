@@ -1,16 +1,16 @@
-// Pass 3.2 — Reusable empty-cloud import prompt.
+// Pass 3.2-H3 — Reusable empty-cloud import prompt.
 //
 // Mounted once by the /fantasy layout. Renders only when
 // `isImportPromptEligible(...)` is true against the authoritative cloud
 // snapshot. Never mounts in local/guest mode.
 //
 // Actions:
-//   Save   → validate local team → cloud saveTeam → markImported on success.
+//   Save   → runFantasyImport (via importLocalTeamToCloud) → markImported on success.
 //   New    → markStartNew (no cloud write) → close.
 //   Later  → close only; no persistent marker.
 //
-// Failure modes (mapping/network/RLS/conflict/validation) keep local state
-// intact and never mark the UID.
+// Failure modes (mapping/network/RLS/conflict/validation/gameweek_unresolved)
+// keep local state intact and never mark the UID.
 
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/provider";
@@ -25,7 +25,10 @@ import {
 } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { FantasyRepoError } from "@/services/fantasy-errors";
+import { LocalFantasyRepository, DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
+import { importLocalTeamToCloud } from "@/services/fantasy-import-service";
+import { loadGameweekIndex } from "@/services/fantasy-gameweek-resolver";
+import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 
@@ -34,7 +37,6 @@ type Phase = "idle" | "saving" | "success" | "error";
 interface LocalPayload {
   team: FantasyTeam;
   players: FantasyPlayer[];
-  purchasePrices: Record<string, number>;
   isValid: boolean;
 }
 
@@ -53,7 +55,9 @@ export function FantasyImportPrompt() {
   const [missingIds, setMissingIds] = useState<string[] | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
-  // Load the local team once we know we might be eligible.
+  // Preview the local team for eligibility gating only. The authoritative
+  // import source at save-time is a fresh LocalFantasyRepository snapshot
+  // consumed inside the injected service (never the mock service directly).
   useEffect(() => {
     let cancelled = false;
     if (owned.source !== "cloud" || !isAuthenticated) return;
@@ -68,12 +72,7 @@ export function FantasyImportPrompt() {
       const isValid =
         team.squad.length === 15 &&
         validateTeam(team.squad, team.formation, players).ok === true;
-      const purchasePrices: Record<string, number> = {};
-      for (const s of team.squad) {
-        const p = players.find((x) => x.id === s.playerId);
-        if (p) purchasePrices[s.playerId] = p.price;
-      }
-      setLocal({ team, players, purchasePrices, isValid });
+      setLocal({ team, players, isValid });
     })();
     return () => {
       cancelled = true;
@@ -99,14 +98,12 @@ export function FantasyImportPrompt() {
     setPhase("saving");
     setErrorMessage(null);
     setMissingIds(null);
-    const team = local.team;
-    // Validate again — the local data could have changed since load.
-    const v = validateTeam(team.squad, team.formation, local.players);
-    if (!v.ok) {
-      setPhase("error");
-      setErrorMessage(t("fantasy.error.transfer_failed"));
-      return;
-    }
+
+    // Fresh repositories: injected here so runOwnedMutation's `action` is a
+    // pure closure the service can be stubbed against in tests.
+    const localRepo = new LocalFantasyRepository();
+    const defaultTeamName = t("fantasy.default.team_name");
+
     const res = await runOwnedMutation(
       {
         qc,
@@ -119,23 +116,14 @@ export function FantasyImportPrompt() {
       },
       {
         action: () =>
-          owned.repo.saveTeam({
-            teamName: team.teamName || "My Team",
-            managerName: team.managerName || null,
-            formation: team.formation,
-            bank: team.bank,
-            freeTransfers: team.freeTransfers,
-            pendingTransfers: team.pendingTransfers,
-            squad: team.squad,
-            purchasePrices: local.purchasePrices,
-            expectedVersion: owned.snapshot?.version ?? 0,
-            currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
-            lifecycle: owned.snapshot?.lifecycle ?? {
-              chips: { active: null, used: [] },
-              currentGameweek: 14,
-              transferHitPoints: 0,
-              results: {},
-            },
+          importLocalTeamToCloud({
+            localRepo,
+            cloudRepo: owned.repo,
+            loadPlayers: () => fantasyService.getPlayers(),
+            loadGameweekIndex: () => loadGameweekIndex(supabase),
+            season: DEFAULT_SEASON,
+            defaultTeamName,
+            cloudExpectedVersion: owned.snapshot?.version ?? 0,
           }),
         args: undefined,
         savedIdleAfterMs: 2400,
@@ -159,8 +147,12 @@ export function FantasyImportPrompt() {
       setErrorMessage(t("fantasy.error.permission"));
     } else if (c.isConflict) {
       setErrorMessage(t("fantasy.error.version_conflict"));
+    } else if (c.isValidation) {
+      setErrorMessage(t("fantasy.error.import_validation"));
+    } else if (res.error.code === "gameweek_unresolved") {
+      setErrorMessage(t("fantasy.error.gameweek_unresolved"));
     } else {
-      setErrorMessage(t("fantasy.import.failure"));
+      setErrorMessage(t("fantasy.error.import_generic"));
     }
   };
 
