@@ -40,7 +40,7 @@ function FixturesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground">{t("fantasy.fixtures.title")}</h1>
+      <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.fixtures.title")}</span></h1>
       <p className="mt-1 text-xs text-muted-foreground">{t("fantasy.fixtures.difficulty")} 1–5</p>
 
       <div className="mt-3 flex flex-wrap items-center gap-1">

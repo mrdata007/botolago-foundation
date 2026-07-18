@@ -81,7 +81,7 @@ function LeaguesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground">{t("fantasy.leagues.title")}</h1>
+      <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.leagues.title")}</span></h1>
 
       <div className="mt-3 glass-surface glass-strong flex items-center gap-1 rounded-2xl border border-[var(--glass-border)] p-1">
         {tabs.map((it) => (

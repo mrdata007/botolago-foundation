@@ -84,7 +84,7 @@ function PointsPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-black text-foreground">{t("fantasy.points.title")}</h1>
+        <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.points.title")}</span></h1>
         <GameweekSelector value={gw} min={11} max={14} onChange={setGw} />
       </div>
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { botolaService } from "@/services/mock";
@@ -43,7 +44,7 @@ function ProfilePage() {
 
   return (
     <AppShell>
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">{t("profile.title")}</h1>
+      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground"><span className="text-brand">{t("profile.title")}</span></h1>
 
       {status === "authenticated" && user ? (
         <AuthenticatedProfile
@@ -151,7 +152,7 @@ function GuestProfile() {
         <div className="mb-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700">
           {t("profile.guest_badge")}
         </div>
-        <h2 className="text-lg font-black text-foreground">{t("profile.guest_title")}</h2>
+        <h2 className="text-lg font-black text-foreground"><Trans text={t("profile.guest_title")} /></h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("profile.guest_body")}</p>
         <div className="mt-4 grid gap-2">
           <button onClick={() => navigate({ to: "/auth/register" })} className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[color:var(--brand-primary)] px-4 text-sm font-bold text-white">
@@ -174,7 +175,7 @@ function AnonymousProfile() {
       <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[var(--bg-brand-gradient)] p-2 text-white">
         <Logo variant="icon" className="!h-12 !w-12" />
       </div>
-      <h2 className="mt-3 text-lg font-black text-foreground">{t("profile.anon_title")}</h2>
+      <h2 className="mt-3 text-lg font-black text-foreground"><Trans text={t("profile.anon_title")} /></h2>
       <p className="mt-1 text-sm text-muted-foreground">{t("profile.anon_body")}</p>
       <div className="mt-4 grid gap-2">
         <button onClick={() => navigate({ to: "/auth/register" })} className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[color:var(--brand-primary)] px-4 text-sm font-bold text-white">

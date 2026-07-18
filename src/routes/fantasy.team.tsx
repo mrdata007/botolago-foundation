@@ -183,6 +183,7 @@ function MyTeamPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
+          <div className="mb-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-brand">{t("fantasy.team")}</div>
           <h1 className="text-xl font-black text-foreground">{teamQ.data.teamName}</h1>
           <div className="text-xs text-muted-foreground">{teamQ.data.managerName}</div>
         </div>

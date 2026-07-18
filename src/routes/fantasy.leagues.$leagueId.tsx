@@ -90,7 +90,7 @@ function LeagueDetailPage() {
           </div>
         </div>
         <div className="text-end">
-          <div className="text-lg font-black tabular-nums">#{nf.format(league.rank)}</div>
+          <div className="text-lg font-black tabular-nums text-brand-accent">#{nf.format(league.rank)}</div>
           <RankChangeIndicator rank={league.rank} previousRank={league.previousRank} />
         </div>
       </div>

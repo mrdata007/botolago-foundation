@@ -77,7 +77,7 @@ function HomeContent() {
   return (
     <AppShell>
       <div className="pt-2">
-        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="text-xs font-black uppercase tracking-[0.14em] text-brand">
           {greeting}
         </div>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground">

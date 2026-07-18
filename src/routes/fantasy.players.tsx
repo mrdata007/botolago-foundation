@@ -83,7 +83,7 @@ function PlayersPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground">{t("fantasy.players.title")}</h1>
+      <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.players.title")}</span></h1>
 
       <div className="mt-3 space-y-2">
         <label className="glass-surface glass-regular flex items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 py-2">

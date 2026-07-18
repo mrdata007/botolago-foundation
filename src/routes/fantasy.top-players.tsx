@@ -12,6 +12,7 @@ import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { getKitForClub } from "@/lib/kits";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
 import type { TopPlayerOfWeek, FantasyPlayer } from "@/types/fantasy";
 import type { Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -98,7 +99,7 @@ function TopPlayersPage() {
       </div>
 
       <div className="mt-3">
-        <h1 className="text-2xl font-black tracking-tight text-foreground">{t("fantasy.top.title")}</h1>
+        <h1 className="text-2xl font-black tracking-tight text-foreground"><Trans text={t("fantasy.top.title")} /></h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.top.subtitle")}</p>
       </div>
 

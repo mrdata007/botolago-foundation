@@ -58,7 +58,7 @@ function PlayerDetailPage() {
           </div>
         </div>
         <div className="text-end">
-          <div className="text-lg font-black tabular-nums">{nf.format(p.price)}</div>
+          <div className="text-lg font-black tabular-nums text-brand-accent">{nf.format(p.price)}</div>
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("fantasy.price")}</div>
         </div>
       </div>
@@ -143,7 +143,7 @@ function PlayerDetailPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] px-2 py-3 text-center">
-      <div className="text-lg font-black tabular-nums text-foreground">{value}</div>
+      <div className="text-lg font-black tabular-nums text-brand-accent">{value}</div>
       <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
     </div>
   );
