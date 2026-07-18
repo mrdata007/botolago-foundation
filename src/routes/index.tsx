@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { botolaService } from "@/services/mock";
@@ -35,7 +36,11 @@ function HomePage() {
   const { status } = useAuth();
   const { t } = useI18n();
 
-  const showWelcome = status === "anonymous" && !hasWelcomed();
+  // Read localStorage only after mount so SSR and first client render match.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const showWelcome = mounted && status === "anonymous" && !hasWelcomed();
 
   if (showWelcome) {
     return (
