@@ -1,3 +1,5 @@
+// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
+// Run with: `bun test src/lib/fantasy-engine.test.ts`
 import { describe, expect, it } from "bun:test";
 import type { FantasyPlayer, PlayerPointsBreakdown, SquadPlayer } from "@/types/fantasy";
 import {
