@@ -53,6 +53,41 @@ function MyTeamPage() {
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
+  const [chipsVersion, setChipsVersion] = useState(0);
+  const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
+  const chipsState = useMemo(() => fantasyStateStore.read().chips, [chipsVersion]);
+  const deadlineIso = gwQ.data?.deadline;
+  const deadline = deadlineIso ? evaluateDeadline(deadlineIso) : null;
+  const locked = !!deadline?.isLocked;
+
+  const CHIP_KEYS: ChipKey[] = ["bench_boost", "triple_captain", "free_hit", "wildcard"];
+  const teamChips: FantasyChip[] = CHIP_KEYS.map((key) => ({
+    key,
+    state: locked && chipsState.active !== key ? "unavailable" : chipDisplayState(chipsState, key),
+  }));
+
+  const activateChipHandler = (key: ChipKey) => {
+    if (!teamQ.data) return;
+    // Toggle off if already active.
+    if (chipsState.active === key) {
+      const next = deactivateChip(chipsState);
+      fantasyStateStore.write({ chips: next });
+      setChipsVersion((v) => v + 1);
+      toast.success(t("fantasy.chip.deactivated"));
+      return;
+    }
+    const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
+    if (!check.ok) { toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey)); return; }
+    setChipConfirm(key);
+  };
+  const confirmChip = () => {
+    if (!chipConfirm || !teamQ.data) return;
+    const next = activateChip(chipsState, chipConfirm, { gameweek: gwQ.data?.number ?? 14, team: teamQ.data });
+    fantasyStateStore.write({ chips: next });
+    setChipsVersion((v) => v + 1);
+    setChipConfirm(null);
+    toast.success(t("fantasy.chip.activated"));
+  };
 
   if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
 
