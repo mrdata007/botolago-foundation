@@ -58,9 +58,28 @@ export interface FantasyOwnedContextValue {
   mutationStatus: OwnedMutationStatus;
   mutationError: FantasyRepoError | null;
   setMutationStatus: (s: OwnedMutationStatus, err?: FantasyRepoError | null) => void;
+  /**
+   * H1: reserve a monotonic sequence number for a mutation. Later calls to
+   * `setMutationStatusIfCurrent(seq, ...)` are ignored if a newer sequence
+   * has already been reserved — preventing a stale `saved→idle` timer from
+   * overwriting a newer `saving` status.
+   */
+  nextMutationSeq: () => number;
+  setMutationStatusIfCurrent: (
+    seq: number,
+    s: OwnedMutationStatus,
+    err?: FantasyRepoError | null,
+  ) => void;
+  /**
+   * H1: replace the authoritative cached snapshot with a returned value
+   * without a network round-trip. Callers still use `invalidateOwned()` for
+   * dependent surfaces.
+   */
+  replaceSnapshot: (next: FantasySnapshot) => void;
   reload: () => Promise<void>;
   invalidateOwned: () => void;
 }
+
 
 const Ctx = createContext<FantasyOwnedContextValue | null>(null);
 
