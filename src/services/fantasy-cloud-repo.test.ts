@@ -74,7 +74,7 @@ describe("validateSquadShape", () => {
     expect(() => validateSquadShape(s1, "4-4-2")).toThrow(/Missing captain/);
     const s2 = baseSquad(); s2[10].isViceCaptain = false;
     expect(() => validateSquadShape(s2, "4-4-2")).toThrow(/Missing vice/);
-    const s3 = baseSquad(); s3[9].isViceCaptain = true;
+    const s3 = baseSquad(); s3[10].isViceCaptain = false; s3[9].isViceCaptain = true;
     expect(() => validateSquadShape(s3, "4-4-2")).toThrow(/must differ/);
   });
   it("rejects illegal formation", () => {
