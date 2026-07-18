@@ -248,7 +248,7 @@ function PointsPage() {
   const finalized = !!vm.finalized;
 
   const doFinalize = () => {
-    requireAuth(() => {
+    requireAuth(async () => {
       if (!isCurrent) { toast.error(t("fantasy.points.lifecycle_error")); return; }
       if (finalized) { toast.error(t("fantasy.points.already_finalized")); return; }
       if (!deadlineLocked) { toast.error(t("fantasy.deadline.open")); return; }
@@ -257,6 +257,62 @@ function PointsPage() {
         toast.error(t("fantasy.points.lifecycle_error"));
         return;
       }
+
+      if (isCloud && owned.snapshot?.currentGameweekId) {
+        // Cloud path — authoritative finalize RPC.
+        try {
+          const out = finalizeGameweek({
+            gameweek: gw,
+            team: teamQ.data,
+            players: playersQ.data,
+            breakdown: raw.breakdown,
+            averagePoints: raw.averagePoints,
+            highestPoints: raw.highestPoints,
+            dryRun: true,
+          });
+          const res = await runOwnedMutation(
+            {
+              qc,
+              scope: owned.scope,
+              setMutationStatus: owned.setMutationStatus,
+              invalidateOwned: owned.invalidateOwned,
+            },
+            {
+              action: () =>
+                owned.repo.finalizeGameweek({
+                  gameweek: gw,
+                  gameweekId: owned.snapshot!.currentGameweekId!,
+                  expectedVersion: owned.snapshot!.version,
+                  season: owned.snapshot!.season ?? new Date().getFullYear(),
+                  result: out.result,
+                  chipFinalize: out.chipFinalize,
+                  postTeam: out.postTeam ?? null,
+                }),
+              args: undefined,
+              savedIdleAfterMs: 2400,
+            },
+          );
+          if (res.ok) {
+            if (out.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
+            else toast.success(t("fantasy.points.finalize_success"));
+          } else {
+            const c = classifyRepoError(res.error);
+            const key: TranslationKey = c.isConflict
+              ? "fantasy.error.version_conflict"
+              : c.isNetwork
+                ? "fantasy.error.network"
+                : c.isPermission
+                  ? "fantasy.error.permission"
+                  : "fantasy.points.lifecycle_error";
+            toast.error(t(key));
+          }
+        } catch {
+          toast.error(t("fantasy.points.lifecycle_error"));
+        }
+        setConfirmFinalize(false);
+        return;
+      }
+
       try {
         const out = finalizeGameweek({
           gameweek: gw,
@@ -278,6 +334,7 @@ function PointsPage() {
     });
     setConfirmFinalize(false);
   };
+
 
   const doAdvance = () => {
     requireAuth(() => {
