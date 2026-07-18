@@ -16,6 +16,7 @@ import type { PlayerPointsBreakdown, PointsEventKind } from "@/types/fantasy";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import {
   buildLegacyViewModel,
   buildPointsViewModel,
