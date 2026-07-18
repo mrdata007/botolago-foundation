@@ -12,6 +12,7 @@ import {
   DEFAULT_CHIPS,
   deactivateChip,
   evaluateDeadline,
+  finalizeChip,
   isLegalSwap,
   resolveCaptainMultiplier,
   setCaptain,
@@ -147,11 +148,26 @@ describe("chips", () => {
     expect(snapshot?.bank).toBe(2);
     expect(after.freeHitSnapshot).toBeUndefined();
   });
-  it("deactivateChip moves active into used", () => {
+  it("deactivateChip cancels active chip WITHOUT marking it used (pre-deadline)", () => {
     const s = activateChip(DEFAULT_CHIPS, "triple_captain", { gameweek: 1, team: { managerName: "", teamName: "", formation: "4-4-2", squad, bank: 0, freeTransfers: 1, pendingTransfers: 0 } });
     const d = deactivateChip(s);
-    expect(d.used).toContain("triple_captain");
     expect(d.active).toBe(null);
+    expect(d.used).not.toContain("triple_captain");
+    // Free Hit snapshot cleared on cancel.
+    const sFh = activateChip(DEFAULT_CHIPS, "free_hit", { gameweek: 1, team: { managerName: "", teamName: "", formation: "4-4-2", squad, bank: 3, freeTransfers: 1, pendingTransfers: 0 } });
+    expect(deactivateChip(sFh).freeHitSnapshot).toBeUndefined();
+    // Wildcard flag cleared on cancel.
+    const sWc = activateChip(DEFAULT_CHIPS, "wildcard", { gameweek: 7, team: { managerName: "", teamName: "", formation: "4-4-2", squad, bank: 0, freeTransfers: 1, pendingTransfers: 0 } });
+    expect(deactivateChip(sWc).wildcardActiveForGW).toBeUndefined();
+  });
+  it("finalizeChip moves active into used exactly once (idempotent)", () => {
+    const s = activateChip(DEFAULT_CHIPS, "triple_captain", { gameweek: 1, team: { managerName: "", teamName: "", formation: "4-4-2", squad, bank: 0, freeTransfers: 1, pendingTransfers: 0 } });
+    const f1 = finalizeChip(s);
+    expect(f1.used).toContain("triple_captain");
+    expect(f1.active).toBe(null);
+    // A second finalize on the resulting state is a no-op (no active chip).
+    const f2 = finalizeChip(f1);
+    expect(f2.used.filter((k) => k === "triple_captain")).toHaveLength(1);
   });
 });
 

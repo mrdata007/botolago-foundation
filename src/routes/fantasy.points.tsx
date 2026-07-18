@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-mock";
 import { botolaService } from "@/services/mock";
@@ -21,9 +21,15 @@ import {
   buildPointsViewModel,
   type PointsViewModel,
 } from "@/services/points-service";
+import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
 import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-engine";
 import { toast } from "sonner";
-import { RefreshCcw, ArrowDown, ArrowUp } from "lucide-react";
+import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/auth/AuthProvider";
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
@@ -49,9 +55,13 @@ const CHIP_KEYS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain", "wild
 
 function PointsPage() {
   const { t, tr } = useI18n();
+  const qc = useQueryClient();
+  const { requireAuth } = useAuth();
   const [state, setState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
   const [gw, setGw] = useState(() => state.currentGameweek);
   const [view, setView] = useState<SquadViewMode>("squad");
+  const [confirmFinalize, setConfirmFinalize] = useState(false);
+  const [confirmAdvance, setConfirmAdvance] = useState(false);
 
   useEffect(() => {
     const onEvt = () => setState(fantasyStateStore.read());
@@ -208,6 +218,59 @@ function PointsPage() {
     toast.success(t("fantasy.points.recomputed"));
   };
 
+  const finalized = !!vm.finalized;
+
+  const doFinalize = () => {
+    requireAuth(() => {
+      if (!isCurrent) { toast.error(t("fantasy.points.lifecycle_error")); return; }
+      if (finalized) { toast.error(t("fantasy.points.already_finalized")); return; }
+      if (!deadlineLocked) { toast.error(t("fantasy.deadline.open")); return; }
+      const raw = gwResultQ.data;
+      if (!raw?.breakdown.length || !teamQ.data || !playersQ.data) {
+        toast.error(t("fantasy.points.lifecycle_error"));
+        return;
+      }
+      try {
+        const out = finalizeGameweek({
+          gameweek: gw,
+          team: teamQ.data,
+          players: playersQ.data,
+          breakdown: raw.breakdown,
+          averagePoints: raw.averagePoints,
+          highestPoints: raw.highestPoints,
+        });
+        setState(fantasyStateStore.read());
+        qc.invalidateQueries({ queryKey: ["fantasy-team"] });
+        qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+        qc.invalidateQueries({ queryKey: ["gw-result", gw] });
+        if (out.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
+        else toast.success(t("fantasy.points.finalize_success"));
+      } catch {
+        toast.error(t("fantasy.points.lifecycle_error"));
+      }
+    });
+    setConfirmFinalize(false);
+  };
+
+  const doAdvance = () => {
+    requireAuth(() => {
+      if (!teamQ.data) return;
+      const target = currentGw + 1;
+      const res = advanceGameweek({ targetGameweek: target, team: teamQ.data });
+      if (!res.ok) {
+        toast.error(t(res.error === "must_finalize_first" ? "fantasy.points.must_finalize_first" : "fantasy.points.lifecycle_error"));
+        return;
+      }
+      setState(fantasyStateStore.read());
+      setGw(target);
+      qc.invalidateQueries({ queryKey: ["fantasy-team"] });
+      qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+      qc.invalidateQueries({ queryKey: ["current-gw"] });
+      toast.success(t("fantasy.points.advance_success"));
+    });
+    setConfirmAdvance(false);
+  };
+
   const effectiveCaptainName = vm.effectiveCaptainId ? tr(playerOf(vm.effectiveCaptainId).name) : "—";
 
   // History: prefer persisted results when available; fall back to legacy mock rows.
@@ -251,7 +314,61 @@ function PointsPage() {
             <RefreshCcw className="h-3 w-3" aria-hidden /> {t("fantasy.points.recompute")}
           </button>
         )}
+        {finalized && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800"
+            role="status"
+          >
+            <LockIcon className="h-3 w-3" aria-hidden />
+            {t("fantasy.points.finalized_badge")}
+          </span>
+        )}
+        {isCurrent && !finalized && deadlineLocked && vm.source === "engine" && (
+          <button
+            type="button"
+            onClick={() => setConfirmFinalize(true)}
+            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+          >
+            <LockIcon className="h-3 w-3" aria-hidden /> {t("fantasy.points.finalize")}
+          </button>
+        )}
+        {isCurrent && finalized && (
+          <button
+            type="button"
+            onClick={() => setConfirmAdvance(true)}
+            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+          >
+            {t("fantasy.points.advance")} <ChevronRight className="h-3 w-3 rtl:rotate-180" aria-hidden />
+          </button>
+        )}
       </div>
+
+      <AlertDialog open={confirmFinalize} onOpenChange={setConfirmFinalize}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("fantasy.points.finalize_confirm_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("fantasy.points.finalize_confirm_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={doFinalize}>{t("fantasy.points.finalize")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmAdvance} onOpenChange={setConfirmAdvance}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("fantasy.points.advance_confirm_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("fantasy.points.advance_confirm_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={doAdvance}>{t("fantasy.points.advance")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <Stat label={t("fantasy.points.total")} value={String(vm.totalPoints)} accent />

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
@@ -24,11 +24,12 @@ import { Check, Lock, Pencil, RotateCcw } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { fantasyStateStore } from "@/services/fantasy-state";
+import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import {
   activateChip, canActivateChip, chipDisplayState, deactivateChip,
   evaluateDeadline, type ChipKey,
 } from "@/lib/fantasy-engine";
+import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/team")({
@@ -53,12 +54,39 @@ function MyTeamPage() {
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
-  const [chipsVersion, setChipsVersion] = useState(0);
+  const [fState, setFState] = useState<FantasyPersistedState>(() => fantasyStateStore.read());
   const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
-  const chipsState = useMemo(() => fantasyStateStore.read().chips, [chipsVersion]);
+
+  // Re-read persisted state whenever another route (or this one) writes.
+  useEffect(() => {
+    const onEvt = () => setFState(fantasyStateStore.read());
+    window.addEventListener("botolago:storage", onEvt);
+    window.addEventListener("storage", onEvt);
+    return () => {
+      window.removeEventListener("botolago:storage", onEvt);
+      window.removeEventListener("storage", onEvt);
+    };
+  }, []);
+
+  const chipsState = fState.chips;
   const deadlineIso = gwQ.data?.deadline;
+  const currentGw = gwQ.data?.number ?? fState.currentGameweek;
   const deadline = deadlineIso ? evaluateDeadline(deadlineIso) : null;
-  const locked = !!deadline?.isLocked;
+  const deadlineLocked = !!deadline?.isLocked;
+  const finalized = !!fState.results[currentGw]?.finalized;
+
+  // Single shared gate used by every mutation entry point (edit, swap,
+  // formation, captain/vice, chip toggle, save).
+  const mutable = useMemo(
+    () => ({
+      ok: !deadlineLocked && !finalized,
+      reasonKey: (finalized
+        ? "fantasy.team.error.gw_finalized"
+        : "fantasy.deadline.locked") as TranslationKey,
+    }),
+    [deadlineLocked, finalized],
+  );
+  const locked = !mutable.ok;
 
   const CHIP_KEYS: ChipKey[] = ["bench_boost", "triple_captain", "free_hit", "wildcard"];
   const teamChips: FantasyChip[] = CHIP_KEYS.map((key) => ({
@@ -68,12 +96,13 @@ function MyTeamPage() {
 
   const activateChipHandler = (key: ChipKey) => {
     if (!teamQ.data) return;
-    // Toggle off if already active.
+    if (!mutable.ok) { toast.error(t(mutable.reasonKey)); return; }
+    // Toggle off cancels: chip returns to available (never marks used).
     if (chipsState.active === key) {
       const next = deactivateChip(chipsState);
       fantasyStateStore.write({ chips: next });
-      setChipsVersion((v) => v + 1);
-      toast.success(t("fantasy.chip.deactivated"));
+      setFState(fantasyStateStore.read());
+      toast.success(t("fantasy.chip.cancelled"));
       return;
     }
     const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
@@ -82,9 +111,10 @@ function MyTeamPage() {
   };
   const confirmChip = () => {
     if (!chipConfirm || !teamQ.data) return;
-    const next = activateChip(chipsState, chipConfirm, { gameweek: gwQ.data?.number ?? 14, team: teamQ.data });
+    if (!mutable.ok) { toast.error(t(mutable.reasonKey)); setChipConfirm(null); return; }
+    const next = activateChip(chipsState, chipConfirm, { gameweek: currentGw, team: teamQ.data });
     fantasyStateStore.write({ chips: next });
-    setChipsVersion((v) => v + 1);
+    setFState(fantasyStateStore.read());
     setChipConfirm(null);
     toast.success(t("fantasy.chip.activated"));
   };
@@ -106,13 +136,22 @@ function MyTeamPage() {
   const midXi = xiIds.filter((id) => playerOf(id).position === "MID");
   const fwdXi = xiIds.filter((id) => playerOf(id).position === "FWD");
 
+  // Revert local edit state back to the persisted team.
+  const revertLocal = () => {
+    setEditing(false);
+    setSelected(null);
+    setLocalSquad(null);
+    setLocalFormation(null);
+  };
+
   const handleTap = (playerId: string) => {
     if (!editing) return;
+    if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
     if (!selected) { setSelected(playerId); return; }
     if (selected === playerId) { setSelected(null); return; }
     const next = swapSquadMembers(squad, players, formation, selected, playerId);
     if (!next) {
-      toast.error(lang === "ar" ? "لا يمكن تبديل لاعبين من مركزين مختلفين" : "Impossible d'échanger deux joueurs de postes différents");
+      toast.error(t("fantasy.team.error.swap_position"));
       setSelected(playerId);
       return;
     }
@@ -121,6 +160,13 @@ function MyTeamPage() {
   };
 
   const setCaptain = (playerId: string, vice = false) => {
+    if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
+    // Reject same player as both roles.
+    const target = squad.find((s) => s.playerId === playerId);
+    if (!target || target.slot >= 12) {
+      toast.error(t("fantasy.team.error.captain_not_in_xi"));
+      return;
+    }
     const next = squad.map((s) => {
       if (vice) return { ...s, isViceCaptain: s.playerId === playerId, isCaptain: s.isCaptain && s.playerId !== playerId };
       return { ...s, isCaptain: s.playerId === playerId, isViceCaptain: s.isViceCaptain && s.playerId !== playerId };
@@ -130,29 +176,37 @@ function MyTeamPage() {
   };
 
   const changeFormation = (f: FormationKey) => {
+    if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
     setLocalFormation(f);
     setLocalSquad(reslotForFormation({ squad, players, formation: f }));
   };
 
   const save = () => {
-    fantasyService.saveTeam({
-      formation: localFormation ?? teamQ.data.formation,
-      squad: localSquad ?? teamQ.data.squad,
-    });
+    // Re-evaluate the deadline at save time — the user may have been idle
+    // in edit mode while the deadline passed, or the GW was finalized
+    // elsewhere. Both revert the working state to the persisted team.
+    const nowLocked = deadlineIso ? evaluateDeadline(deadlineIso, new Date()).isLocked : false;
+    const nowFinalized = !!fantasyStateStore.read().results[currentGw]?.finalized;
+    if (nowLocked || nowFinalized) {
+      revertLocal();
+      toast.error(t("fantasy.team.error.deadline_crossed_revert"));
+      return;
+    }
+    const squadToSave = localSquad ?? teamQ.data.squad;
+    const formationToSave = localFormation ?? teamQ.data.formation;
+    const validation = validateTeam(squadToSave, formationToSave, players);
+    if (!validation.ok) {
+      const errKey = (`fantasy.team.error.${validation.error satisfies TeamValidationError}`) as TranslationKey;
+      toast.error(t(errKey));
+      return;
+    }
+    fantasyService.saveTeam({ formation: formationToSave, squad: squadToSave });
     qc.invalidateQueries({ queryKey: ["fantasy-team"] });
     qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
-    setEditing(false);
-    setSelected(null);
-    setLocalSquad(null);
-    setLocalFormation(null);
+    revertLocal();
     toast.success(t("fantasy.success"));
   };
-  const cancel = () => {
-    setEditing(false);
-    setSelected(null);
-    setLocalSquad(null);
-    setLocalFormation(null);
-  };
+  const cancel = () => { revertLocal(); };
 
   const shirt = (id: string) => {
     const p = playerOf(id);
