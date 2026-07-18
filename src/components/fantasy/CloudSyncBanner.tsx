@@ -1,12 +1,13 @@
-// Localized status banner for Fantasy cloud sync.
-// Renders nothing in guest/mock mode. Fully RTL and ≤ 320px safe.
+// Localized status banner for Fantasy cloud sync (Pass 3.1).
+// Reads state from the owned-Fantasy provider. Renders nothing in
+// guest/mock mode. Fully RTL and ≤ 320px safe.
 
 import { useI18n } from "@/i18n/provider";
-import { useFantasyCloudSync } from "@/services/fantasy-cloud-sync";
+import { useFantasyCloudSyncStatus } from "@/services/fantasy-owned-provider";
 
 export function CloudSyncBanner() {
   const { t } = useI18n();
-  const { status, errorCode, isCloud, reload } = useFantasyCloudSync();
+  const { status, errorCode, isCloud, reload } = useFantasyCloudSyncStatus();
   if (!isCloud) return null;
   if (status === "idle") return null;
 
@@ -24,7 +25,7 @@ export function CloudSyncBanner() {
       : status === "conflict" ? t("fantasy.cloud.conflict")
       : errorCode === "permission_denied" ? t("fantasy.cloud.permission_denied")
       : errorCode === "network" ? t("fantasy.cloud.offline")
-      : errorCode === "id_mapping_unavailable" ? t("fantasy.cloud.mapping_unavailable")
+      : errorCode === "mapping_incomplete" ? t("fantasy.cloud.mapping_unavailable")
       : t("fantasy.cloud.error");
 
   const showRetry = status === "error" || status === "conflict";
@@ -41,7 +42,7 @@ export function CloudSyncBanner() {
         <button
           type="button"
           onClick={() => { void reload(); }}
-          className="shrink-0 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium hover:bg-white/20"
+          className="shrink-0 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium hover:bg-white/20 min-h-11"
         >
           {status === "conflict" ? t("fantasy.cloud.reload_latest") : t("fantasy.cloud.retry")}
         </button>
