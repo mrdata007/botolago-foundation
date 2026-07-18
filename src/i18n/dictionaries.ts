@@ -599,7 +599,28 @@ export const dictionaries = {
     "fantasy.freehit.restored": "Équipe initiale restaurée après le Free Hit.",
     // Pass 3 — ranking placeholder
     "fantasy.rank.unavailable": "Classement bientôt disponible",
+    // Pass 3.2-H2 — hardening keys (unsaved / conflict / import / empty / defaults)
+    "fantasy.status.draft_restored": "Brouillon restauré. Enregistrez pour synchroniser.",
+    "fantasy.status.finalized": "Journée finalisée.",
+    "fantasy.status.saved_short": "Enregistré",
+    "fantasy.action.save": "Enregistrer",
+    "fantasy.action.save_draft": "Conserver le brouillon",
+    "fantasy.action.cancel": "Annuler",
+    "fantasy.conflict.title": "Version plus récente disponible",
+    "fantasy.conflict.explain": "Quelqu'un — vous sur un autre appareil, ou une mise à jour automatique — a enregistré une version plus récente de votre équipe. Choisissez comment continuer.",
+    "fantasy.conflict.reload_latest": "Recharger la dernière version",
+    "fantasy.conflict.keep_working": "Continuer avec mes modifications",
+    "fantasy.default.team_name": "Mon équipe",
+    "fantasy.team.hint.swap": "Touchez deux joueurs du même poste pour les échanger.",
+    "fantasy.team.hint.position_incompatible": "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
+    "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
+    "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
+    "fantasy.error.import_validation": "Votre équipe locale ne respecte pas les règles (15 joueurs, formation légale, capitaine et vice-capitaine).",
+    "fantasy.error.gameweek_unresolved": "La journée en cours n'a pas pu être identifiée dans le cloud.",
+    "fantasy.error.import_generic": "L'importation a échoué. Aucune modification n'a été enregistrée.",
+    "fantasy.result.cloud_stable": "Résultat officiel enregistré.",
   },
+
   ar: {
     "app.name": "BotolaGO",
     "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
