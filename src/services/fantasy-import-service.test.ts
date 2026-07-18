@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach } from "bun:test";
 import "./__test-shim";
-import { STORAGE_KEYS } from "@/lib/storage";
+import { STORAGE_KEYS, removeKey } from "@/lib/storage";
 
 import {
   importLocalTeamToCloud,
