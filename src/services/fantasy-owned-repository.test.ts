@@ -1,0 +1,292 @@
+// @ts-nocheck
+import { describe, it, expect } from "bun:test";
+import {
+  selectFantasyRepoSource,
+  createFantasyOwnedRepository,
+  CloudFantasyRepository,
+  LocalFantasyRepository,
+} from "./fantasy-owned-repository";
+import { FantasyRepoError, toRepoError } from "./fantasy-errors";
+import { FantasyCloudError } from "./fantasy-cloud-repo";
+import { MissingIdMappingError } from "./fantasy-id-map";
+
+// ---------- source selector ----------
+
+describe("selectFantasyRepoSource", () => {
+  it("returns cloud only for supabase mode + authenticated", () => {
+    expect(
+      selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: true }),
+    ).toBe("cloud");
+    expect(
+      selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false }),
+    ).toBe("local");
+    expect(
+      selectFantasyRepoSource({ authMode: "mock", isAuthenticated: true }),
+    ).toBe("local");
+    expect(
+      selectFantasyRepoSource({ authMode: "mock", isAuthenticated: false }),
+    ).toBe("local");
+  });
+});
+
+describe("createFantasyOwnedRepository", () => {
+  it("returns Local for guests", () => {
+    const repo = createFantasyOwnedRepository({
+      authMode: "supabase",
+      isAuthenticated: false,
+      userId: null,
+    });
+    expect(repo).toBeInstanceOf(LocalFantasyRepository);
+    expect(repo.source).toBe("local");
+  });
+  it("throws typed unauthenticated when cloud is required but userId is null", () => {
+    let e: unknown;
+    try {
+      createFantasyOwnedRepository({
+        authMode: "supabase",
+        isAuthenticated: true,
+        userId: null,
+      });
+    } catch (err) {
+      e = err;
+    }
+    expect(e).toBeInstanceOf(FantasyRepoError);
+    expect((e as FantasyRepoError).code).toBe("unauthenticated");
+  });
+});
+
+// ---------- error mapping ----------
+
+describe("toRepoError", () => {
+  it("maps MissingIdMappingError to mapping_incomplete with aggregate ids", () => {
+    const err = new MissingIdMappingError({ missingPlayers: ["a", "b"] });
+    const mapped = toRepoError(err);
+    expect(mapped.code).toBe("mapping_incomplete");
+    expect(mapped.missingIds?.players).toEqual(["a", "b"]);
+  });
+  it("maps FantasyCloudError version_conflict through unchanged", () => {
+    const mapped = toRepoError(new FantasyCloudError("version_conflict", "stale"));
+    expect(mapped.code).toBe("version_conflict");
+  });
+  it("passes through an existing FantasyRepoError", () => {
+    const e = new FantasyRepoError("permission_denied", "rls");
+    expect(toRepoError(e)).toBe(e);
+  });
+});
+
+// ---------- cloud adapter with injected fake supabase ----------
+
+function makeIdMap() {
+  const players = new Map<string, string>();
+  const rev = new Map<string, string>();
+  for (let i = 1; i <= 15; i++) {
+    players.set(`fp_war_${i}`, `p${i}`);
+    rev.set(`p${i}`, `fp_war_${i}`);
+  }
+  return {
+    clubIdBySource: new Map(),
+    clubSourceById: new Map(),
+    playerIdBySource: players,
+    playerSourceById: rev,
+  };
+}
+
+function makeFakeClient(state: {
+  team: any | null;
+  squad: any[];
+  rpcHandler?: (name: string, args: any) => { data?: any; error?: any };
+}) {
+  return {
+    from(table: string) {
+      const rows =
+        table === "fantasy_teams" ? (state.team ? [state.team] : []) : state.squad;
+      const chain: any = {
+        _rows: rows,
+        select() {
+          return this;
+        },
+        eq() {
+          return this;
+        },
+        order() {
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: this._rows[0] ?? null, error: null });
+        },
+        then(res: any) {
+          res({ data: this._rows, error: null });
+        },
+      };
+      // make it awaitable to return rows
+      chain[Symbol.asyncIterator] = undefined;
+      const p = Promise.resolve({ data: rows, error: null });
+      Object.assign(chain, {
+        then: (r: any, j: any) => p.then(r, j),
+      });
+      return chain;
+    },
+    rpc(name: string, args: any) {
+      const handler = state.rpcHandler;
+      const result = handler ? handler(name, args) : { data: null, error: null };
+      return Promise.resolve({ data: result.data ?? null, error: result.error ?? null });
+    },
+  } as any;
+}
+
+function baseSquadRows(teamId = "team-1") {
+  return Array.from({ length: 15 }, (_, i) => ({
+    team_id: teamId,
+    player_id: `p${i + 1}`,
+    slot: i + 1,
+    is_captain: i === 0,
+    is_vice: i === 1,
+    purchase_price: 5 + i * 0.1,
+  }));
+}
+
+describe("CloudFantasyRepository.loadSnapshot", () => {
+  it("returns emptyCloudSquad=true when team has no squad rows", async () => {
+    const client = makeFakeClient({
+      team: {
+        id: "t1",
+        user_id: "u1",
+        team_name: "T",
+        manager_name: "M",
+        formation: "4-4-2",
+        bank: 100,
+        free_transfers: 1,
+        pending_transfers: 0,
+        current_gameweek_id: null,
+        version: 3,
+        lifecycle_state: null,
+      },
+      squad: [],
+    });
+    const repo = new CloudFantasyRepository({
+      client,
+      userId: "u1",
+      season: "2025-26",
+      loadMap: async () => makeIdMap(),
+      loadGameweeks: async () => ({ bySeasonAndNumber: new Map(), seasons: [] }),
+    });
+    const snap = await repo.loadSnapshot();
+    expect(snap.source).toBe("cloud");
+    expect(snap.teamId).toBe("t1");
+    expect(snap.version).toBe(3);
+    expect(snap.emptyCloudSquad).toBe(true);
+    expect(snap.team.squad.length).toBe(0);
+  });
+
+  it("returns emptyCloudSquad=true and teamId=null when no team row exists", async () => {
+    const client = makeFakeClient({ team: null, squad: [] });
+    const repo = new CloudFantasyRepository({
+      client,
+      userId: "u1",
+      season: "2025-26",
+      loadMap: async () => makeIdMap(),
+      loadGameweeks: async () => ({ bySeasonAndNumber: new Map(), seasons: [] }),
+    });
+    const snap = await repo.loadSnapshot();
+    expect(snap.teamId).toBeNull();
+    expect(snap.emptyCloudSquad).toBe(true);
+  });
+
+  it("maps a full 15-row cloud squad back to source ids with purchase prices", async () => {
+    const client = makeFakeClient({
+      team: {
+        id: "team-1",
+        user_id: "u1",
+        team_name: "T",
+        manager_name: null,
+        formation: "4-4-2",
+        bank: 2.5,
+        free_transfers: 1,
+        pending_transfers: 0,
+        current_gameweek_id: "gw-1",
+        version: 5,
+        lifecycle_state: {
+          chips: { active: null, used: [] },
+          currentGameweek: 14,
+          transferHitPoints: 0,
+          results: {},
+        },
+      },
+      squad: baseSquadRows(),
+    });
+    const repo = new CloudFantasyRepository({
+      client,
+      userId: "u1",
+      season: "2025-26",
+      loadMap: async () => makeIdMap(),
+      loadGameweeks: async () => ({ bySeasonAndNumber: new Map(), seasons: [] }),
+    });
+    const snap = await repo.loadSnapshot();
+    expect(snap.team.squad.length).toBe(15);
+    expect(snap.team.squad[0].playerId).toBe("fp_war_1");
+    expect(snap.team.squad[0].isCaptain).toBe(true);
+    expect(snap.purchasePrices["fp_war_1"]).toBeCloseTo(5.0, 5);
+    expect(snap.emptyCloudSquad).toBe(false);
+    expect(snap.currentGameweekId).toBe("gw-1");
+    expect(snap.version).toBe(5);
+  });
+
+  it("propagates version_conflict from RPC without falling back", async () => {
+    const client = makeFakeClient({
+      team: {
+        id: "team-1",
+        user_id: "u1",
+        team_name: "T",
+        manager_name: null,
+        formation: "4-4-2",
+        bank: 0,
+        free_transfers: 1,
+        pending_transfers: 0,
+        current_gameweek_id: "gw-1",
+        version: 1,
+        lifecycle_state: null,
+      },
+      squad: baseSquadRows(),
+      rpcHandler: () => ({ error: { code: "40001", message: "Version conflict" } }),
+    });
+    const repo = new CloudFantasyRepository({
+      client,
+      userId: "u1",
+      season: "2025-26",
+      loadMap: async () => makeIdMap(),
+      loadGameweeks: async () => ({ bySeasonAndNumber: new Map(), seasons: [] }),
+    });
+    let e: unknown;
+    try {
+      await repo.saveTeam({
+        teamName: "T",
+        managerName: null,
+        formation: "4-4-2",
+        bank: 0,
+        freeTransfers: 1,
+        pendingTransfers: 0,
+        squad: Array.from({ length: 15 }, (_, i) => ({
+          playerId: `fp_war_${i + 1}`,
+          slot: i + 1,
+          isCaptain: i === 0,
+          isViceCaptain: i === 1,
+        })),
+        purchasePrices: Object.fromEntries(
+          Array.from({ length: 15 }, (_, i) => [`fp_war_${i + 1}`, 5]),
+        ),
+        expectedVersion: 1,
+        currentGameweekId: "gw-1",
+        lifecycle: {
+          chips: { active: null, used: [] },
+          currentGameweek: 14,
+          transferHitPoints: 0,
+          results: {},
+        },
+      });
+    } catch (err) {
+      e = err;
+    }
+    expect(e).toBeInstanceOf(FantasyRepoError);
+    expect((e as FantasyRepoError).code).toBe("version_conflict");
+  });
+});
