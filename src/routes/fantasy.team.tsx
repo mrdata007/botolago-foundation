@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
@@ -16,17 +16,20 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Check, Pencil, RotateCcw } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Check, Lock, Pencil, RotateCcw } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-
-const TEAM_CHIPS: FantasyChip[] = [
-  { key: "bench_boost", state: "available" },
-  { key: "triple_captain", state: "available" },
-  { key: "free_hit", state: "unavailable" },
-  { key: "wildcard", state: "available" },
-];
+import { fantasyStateStore } from "@/services/fantasy-state";
+import {
+  activateChip, canActivateChip, chipDisplayState, deactivateChip,
+  evaluateDeadline, type ChipKey,
+} from "@/lib/fantasy-engine";
+import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
@@ -50,6 +53,41 @@ function MyTeamPage() {
   const [localSquad, setLocalSquad] = useState<SquadPlayer[] | null>(null);
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
+  const [chipsVersion, setChipsVersion] = useState(0);
+  const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
+  const chipsState = useMemo(() => fantasyStateStore.read().chips, [chipsVersion]);
+  const deadlineIso = gwQ.data?.deadline;
+  const deadline = deadlineIso ? evaluateDeadline(deadlineIso) : null;
+  const locked = !!deadline?.isLocked;
+
+  const CHIP_KEYS: ChipKey[] = ["bench_boost", "triple_captain", "free_hit", "wildcard"];
+  const teamChips: FantasyChip[] = CHIP_KEYS.map((key) => ({
+    key,
+    state: locked && chipsState.active !== key ? "unavailable" : chipDisplayState(chipsState, key),
+  }));
+
+  const activateChipHandler = (key: ChipKey) => {
+    if (!teamQ.data) return;
+    // Toggle off if already active.
+    if (chipsState.active === key) {
+      const next = deactivateChip(chipsState);
+      fantasyStateStore.write({ chips: next });
+      setChipsVersion((v) => v + 1);
+      toast.success(t("fantasy.chip.deactivated"));
+      return;
+    }
+    const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
+    if (!check.ok) { toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey)); return; }
+    setChipConfirm(key);
+  };
+  const confirmChip = () => {
+    if (!chipConfirm || !teamQ.data) return;
+    const next = activateChip(chipsState, chipConfirm, { gameweek: gwQ.data?.number ?? 14, team: teamQ.data });
+    fantasyStateStore.write({ chips: next });
+    setChipsVersion((v) => v + 1);
+    setChipConfirm(null);
+    toast.success(t("fantasy.chip.activated"));
+  };
 
   if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
 
@@ -162,11 +200,19 @@ function MyTeamPage() {
         </div>
       )}
 
+      {locked && (
+        <div role="status" className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-900">
+          <Lock className="h-3.5 w-3.5" aria-hidden />
+          {t("fantasy.deadline.locked")}
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {!editing ? (
           <button
             onClick={() => requireAuth(() => setEditing(true))}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white"
+            disabled={locked}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.edit_lineup")}
           </button>
@@ -183,7 +229,7 @@ function MyTeamPage() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <button className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5">
+            <button disabled={locked} className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40">
               {t("fantasy.formation")}: {formation}
             </button>
           </PopoverTrigger>
@@ -210,7 +256,8 @@ function MyTeamPage() {
 
         <button
           onClick={() => setCaptainSheet(true)}
-          className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5"
+          disabled={locked}
+          className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
         >
           {t("fantasy.set_captain")}
         </button>
@@ -224,8 +271,25 @@ function MyTeamPage() {
       </div>
 
       <div className="mt-2">
-        <FantasyChipsRow chips={TEAM_CHIPS} />
+        <FantasyChipsRow chips={teamChips} onSelect={(k) => requireAuth(() => activateChipHandler(k))} />
       </div>
+
+      <AlertDialog open={chipConfirm !== null} onOpenChange={(o) => !o && setChipConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("fantasy.chip.confirm_title")}
+              {chipConfirm && <> — {t(`fantasy.chip.${chipConfirm}` as TranslationKey)}</>}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t("fantasy.chip.confirm_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("fantasy.chip.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmChip}>{t("fantasy.chip.confirm")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {view === "squad" ? (
         <div className="mt-3">
