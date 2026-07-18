@@ -5,7 +5,7 @@ import { Zap, Repeat, Star, Wand2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type FantasyChipKey = "bench_boost" | "free_hit" | "triple_captain" | "wildcard";
-export type FantasyChipState = "available" | "active" | "unavailable";
+export type FantasyChipState = "available" | "active" | "unavailable" | "used";
 
 export interface FantasyChip {
   key: FantasyChipKey;
