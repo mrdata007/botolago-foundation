@@ -166,7 +166,7 @@ export interface FantasyCloudRepo {
     formation: FormationKey;
     bank: number;
     currentGameweekId: string | null;
-    squad: SquadPlayer[];
+    squad: Array<{ playerId: string; slot: number; isCaptain?: boolean; isViceCaptain?: boolean; purchasePrice: number }>;
     expectedVersion?: number;
   }): Promise<{ teamId: string }>;
   saveLifecycle(input: {
