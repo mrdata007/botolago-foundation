@@ -65,13 +65,22 @@ export function TransferReviewPanel({
         ))}
       </ul>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+        {typeof totalTransfers === "number" && (
+          <Stat label={t("fantasy.transfers.transfers_total")} value={String(totalTransfers)} />
+        )}
         <Stat label={t("fantasy.transfers.free")} value={String(freeTransfers)} />
         <Stat label={t("fantasy.transfers.paid")} value={String(paidTransfers)} />
-        <Stat label={t("fantasy.bank")} value={nf.format(bankAfter)} />
+        <Stat label={t("fantasy.transfers.projected_bank")} value={nf.format(bankAfter)} />
       </div>
 
-      {hitPoints > 0 && (
+      {chipLabel && (
+        <div className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-900">
+          {t("fantasy.transfers.chip_active")}: {chipLabel} — {t("fantasy.transfers.no_hit_chip")}
+        </div>
+      )}
+
+      {!chipLabel && hitPoints > 0 && (
         <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-900">
           {t("fantasy.transfers.hit")}: −{hitPoints} pts
         </div>
