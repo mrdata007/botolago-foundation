@@ -1,101 +1,86 @@
+# Pass 3.2 Hardening — Ordered Execution Plan
 
-# BotolaGO — Remaining-Sequence Audit (read-only)
+The audit is correct: Pass 3.2 was declared complete prematurely. This plan lands every acceptance item, in an order that keeps typecheck/tests green after each sub-pass. Each sub-pass ends with `bunx tsgo --noEmit` + `bun test` green and a matching test count bump.
 
-Verified in this pass: repo structure, all routes, services, `src/lib/*`, engine tests (44/44 pass), Supabase migrations directory (empty), Supabase client wiring, i18n dictionary size (958 lines), and targeted `grep` inspection of Fantasy Team/Transfers/Points to confirm which engine primitives are actually wired.
+**Total scope**: ~11 files edited, 4 new files, ~20 new tests. This is too large for one green pass; splitting it lets each sub-pass be reviewed and typecheck-clean.
 
-Legend: ✅ complete · 🟡 partial · ❌ missing · ⚠ risky
+## 3.2-H1 — Provider + repo foundation (Finding E)
 
----
+New / edited:
+- `src/services/fantasy-owned-provider.tsx`: add `replaceSnapshot(next)` and `writeMutationStatus(next)` (timer-safe, monotonic) so routes never race stale `saved→idle` timers, and can install a returned snapshot into the cache without a network reload.
+- `src/services/fantasy-mutation-controller.ts`: call `replaceSnapshot(res.data)` on success instead of blind `invalidateOwned()`; guard `saved→idle` with a mutation id so an older timer cannot overwrite a newer status. Never re-throw a cloud error as a local fallback.
+- Tests: monotonic status timer, `replaceSnapshot` cache write, no-fallback-to-local on cloud error.
 
-## Phase 1 — Visual system (selective BotolaGO blue)
+## 3.2-H2 — i18n keys + a11y primitives (Finding F)
 
-- ✅ Utilities `.text-brand` / `.text-brand-accent` in `styles.css`; `Trans`, `AccentEyebrow`, `SectionHeader` primitives exist; ~15 routes updated in the last pass.
-- 🟡 Coverage gaps likely on: `fantasy.rules.tsx`, `fantasy.fixtures.tsx`, `fantasy.top-players.tsx`, `fantasy.points.tsx`, `auth.profile-setup.tsx` — need a sweep to confirm eyebrows and accent words are applied consistently and not overused.
-- 🟡 Loading/empty/error states: no shared `EmptyState` / `ErrorState` / skeleton primitives observed under `src/components/common/`; routes rely on ad-hoc conditionals.
-- 🟡 Safe areas: `min-h-dvh` used in shell, but `env(safe-area-inset-*)` padding on `BottomNav` / `TopBar` should be spot-checked.
-- ⚠ Systematic 320px/RTL/contrast sweep never formally executed — needs a checklist pass.
+- `src/i18n/dictionaries/fr.ts` + `ar.ts`: add keys for unsaved / conflict / retry / reload-latest / keep-working / import validation / empty-builder / swap-hint / draft-restored / cloud-finalized.
+- `src/components/fantasy/UnsavedBadge.tsx`: `aria-live="polite"` visible unsaved badge (44px hit target for its inline "Save" affordance).
+- `src/components/fantasy/ConflictBar.tsx`: localized reload-latest / keep-working inline bar, `aria-live="assertive"`, 44px targets, 320px wrap.
+- Verify RTL logical props (`ms-*`, `me-*`) — no `ml-*` / `mr-*` in new components.
 
-**DoD:** Every H1/H2 audited; shared `EmptyState`, `ErrorState`, `SkeletonCard` primitives; documented rules for when to tint; verified at 320/360/390 in FR + AR with Playwright screenshots.
+## 3.2-H3 — Import prompt (Finding A)
 
-## Phase 2 — Fantasy engine integration
+Rewrite `src/components/fantasy/FantasyImportPrompt.tsx`:
+- Source = `new LocalFantasyRepository().loadSnapshot()` (not `fantasyService.getTeam()`).
+- Validate all 15 (squad size, formation legality via `validateTeam`, ID map coverage) with localized error copy.
+- Resolve local `state.currentGameweek` number → live UUID via `loadGameweekIndex` + `resolveGameweekId`; refuse import when no UUID exists.
+- Pass local `lifecycle` (chips, transferHitPoints, results, currentGameweek) and derived purchase prices to `repo.saveTeam` (`expectedVersion: 0`).
+- Marker `imported` set only on success. `start_new` marker sets on explicit action. "Plus tard" is transient (no marker).
+- Remove `"My Team"`; all copy through `t()`.
+- Tests (4): happy path (single `saveTeam` call, `imported` marker), mapping failure (no marker, no local mutation), RPC conflict/RLS (no marker, snapshot untouched), start-new (marker set, no `saveTeam` call).
 
-Engine module `src/lib/fantasy-engine.ts` is implemented and unit-tested (chips, auto-subs, scoring, deadline). **Route integration is the gap.**
+## 3.2-H4 — Team draft + builder (Finding B)
 
-- ✅ `fantasy.team.tsx` uses `evaluateDeadline`, `canActivateChip`, chip state.
-- 🟡 `fantasy.transfers.tsx` uses `splitTransfers` + `transferHit` and `team.freeTransfers`, but there is **no Wildcard / Free Hit branch** (grep returns 0 hits). Activating those chips from Team does not currently change transfer cost logic on the Transfers screen, and there is no Free Hit squad snapshot/restore wired on confirm.
-- ❌ `fantasy.points.tsx` does **not** call `computeGameweekResult` or `applyAutoSubs` (grep returns 0 hits). Captain multiplier, vice takeover, auto-subs list, bench points, Triple Captain, Bench Boost, and transfer-hit deductions are rendered from mock fields rather than derived by the engine. This is the single biggest integration gap.
-- 🟡 Deadline lock: enforced on Team, but Transfers "Confirm", chip activation on Points, and league join/leave are not verified to honor `isLocked`.
-- ❌ Persistent gameweek results — chip usage history and per-GW scores are not persisted across reloads (only chip active-state via `fantasy-state.ts`).
+New: `src/services/fantasy-team-draft.ts` — typed `TeamDraftPayload` (squad, formation, captain/vice, chip draft, purchase prices, lifecycle patch, baseVersion, teamId), JSON round-trip.
+Edit `src/routes/fantasy.team.tsx`:
+- Init working state from draft (matching uid/team/version/kind) or `owned.snapshot`.
+- Persist draft on every real edit (formation, swap, captain/vice, chip toggle, replacement). In cloud mode, chip toggles write draft only — never `fantasyStateStore`.
+- `UnsavedBadge` visible when draft ≠ snapshot.
+- Save: `expectedVersion = snapshot.version`. On success → `replaceSnapshot`, clear draft. On conflict/error → draft kept; `ConflictBar` renders Reload Latest / Keep Working. Reload Latest calls `repo.reload()` + drops draft after user confirmation.
+- Remove the `fantasySummary` mock query in cloud mode (omit those stats; Pass 3.3 wires them from snapshot).
+- Empty-cloud (post start-new) renders `EmptyTeamBuilder` initialized from public player pool, not local squad; no pitch crash on empty squad.
+- Remove hardcoded `"Tap two players of the same position…"` and any `lang === "ar" ? … : …` ternaries → dictionary keys.
+- Ensure 44px hit targets on formation, chips, captain/vice, save/cancel; check with pixel probe.
+- Tests (5): draft init/restore by (uid, team, version), persist edits, save-success clears draft + returned snapshot wins, conflict preserves draft, start-new produces empty builder (no local squad substitution), cloud chip edit writes draft only (spy that `fantasyStateStore.write` is not called).
 
-**DoD:** Points screen fully derived from engine; Transfers respects Wildcard (no hits) and Free Hit (snapshot + auto-revert next GW); every mutation checks `isLocked`; results & chip history persisted via `storage.ts` (later Supabase).
+## 3.2-H5 — Transfers draft + Free Hit (Finding C)
 
-## Phase 3 — Production backend foundation (Supabase)
+New: `src/services/fantasy-transfers-draft.ts` — typed `TransfersDraftPayload` (staged out/in ids, nextSquad, nextBank, nextFreeTransfers, pendingTransfers, purchase prices, transaction rows with engine hits, lifecycle patch, baseVersion, teamId). JSON round-trip test.
+New: `src/services/fantasy-free-hit-snapshot.ts` — `captureFreeHitSnapshotOnce({team, chips, purchasePrices})` and `restoreFreeHitSnapshot(snap)`; snapshot includes 15 squad rows w/ slots, captain/vice, formation, bank, freeTransfers, pendingTransfers, teamName, managerName, purchasePrices. Idempotent — no overwrite once set.
+Edit `src/routes/fantasy.transfers.tsx`:
+- Restore draft on mount by scoped key; persist every staging change (add/remove/replace).
+- Confirm passes real engine `transactions` with per-row `hit` derived from engine (matches `hitPointsApplied`), not `hit: 0`.
+- Free Hit: capture-once before first temporary transfer; wildcard retains and hit=0.
+- On confirm success: `replaceSnapshot`, clear draft. On conflict/error: full draft kept, `ConflictBar` inline.
+- Replace inline FR/AR ternaries with dictionary keys. 44px targets.
+- Tests (5): draft JSON round-trip + restore, single `confirmTransfers` invocation with complete payload, failure/conflict preserves full draft, Free Hit capture-once + exact restoration, wildcard retention & zero-hit.
 
-- ✅ Lovable Cloud enabled; typed client `src/integrations/supabase/client.ts` present.
-- ❌ `supabase/migrations/` is **empty**. No `profiles`, `user_preferences`, `fantasy_teams`, `squads`, `transfers`, `chips`, `gw_results`, `leagues`, `league_members`, `saved_articles`, `follows` tables exist.
-- ❌ `src/services/auth.ts` is still `LocalMockAuthService`; `AuthProvider` does not consume `supabase.auth`.
-- ⚠ Migration risk: local mock data lives in `localStorage` under namespaced keys (`storage.ts`, `leagues-store.ts`, `fantasy-state.ts`). A one-shot client-side migration on first authenticated login is required, otherwise users lose their team on cutover.
-- ⚠ RLS: every new public table needs `GRANT` + policies scoped to `auth.uid()`; roles table required if admin/moderation is introduced later.
+## 3.2-H6 — Points/finalization (Finding D)
 
-**DoD:** Full migration set with `GRANT` + RLS; typed regeneration; auth swapped to Supabase (email/password + Google via broker) with `_authenticated/route.tsx` gate; server functions replace mock services behind the same interfaces; one-time local→cloud migration on first login; demo seed migration.
+New: `src/services/fantasy-cloud-finalize.ts`:
+- `selectStableCloudResult(snapshot, gw)` — returns finalized result from `snapshot.finalizedResults[gw]` if present.
+- `buildCloudFinalizationPlan({snapshot, gw, breakdown, averagePoints, highestPoints, lifecycle})` — returns `{ result, chipFinalize, postTeam, postPurchasePrices, nextGameweekNumber, nextGameweekId, nextLifecycle }`. Rolls free transfers via `rollFreeTransfers`. Free Hit restores from snapshot's captured purchase prices (not current temporary ones). Chip `used` de-duplicated.
+Edit `src/routes/fantasy.points.tsx`:
+- Cloud mode: gw-result/history primary source = `owned.snapshot.finalizedResults` + snapshot history; provisional breakdown may come from public gameweek fixture data (mock is public/fixture only, comment cited).
+- `onRecompute`: no-op writing local storage in cloud mode; only refetches the fixture/breakdown query.
+- Stable result short-circuit: if `selectStableCloudResult` returns a result, do NOT call `finalizeGameweek`; render immediately.
+- Finalize: call `repo.finalizeGameweek` once with `postPurchasePrices` passed at the repo input level (not only inside `postTeam`), advance to resolved next GW UUID.
+- Cloud advance path: no local `advanceGameweek` call; lifecycle transitions built purely and installed via `replaceSnapshot` after `repo.saveTeam` with new `currentGameweekId` and rolled `freeTransfers`.
+- 44px targets on Finalize / Advance / Recompute.
+- Tests (5): stable-result short-circuits (spy: `repo.finalizeGameweek` not called), plan advances GW + rolls free transfers, plan finalizes chip exactly once (no duplicate `used`), `postPurchasePrices` reaches the repo input (spy assertion on `finalizeGameweek` args), idempotent reload does not replay effects, cloud `onRecompute`/advance never write `fantasyStateStore` (spy).
 
-## Phase 4 — Live football/news data
+## 3.2-H7 — Browser matrix (targeted, not full 3.3)
 
-- ❌ No provider abstraction, no cache tables, no ingestion. `src/services/mock.ts` and `fantasy-mock.ts` are the only sources.
-- **Design needed:** provider interface (fixtures, results, standings, clubs, players, injuries, stats, news), Supabase cache tables with `fetched_at`, `pg_cron` + `pg_net` scheduled server routes under `src/routes/api/public/hooks/*`, secret-driven activation with graceful mock fallback when credentials absent.
+Playwright script `/tmp/browser/pass32/` — Chromium 320×1800:
+- `/fantasy/team` FR + AR: empty (post start-new), unsaved badge, conflict bar simulated by version bump.
+- `/fantasy/transfers` FR + AR: staged draft, over-budget, deadline error copy wraps.
+- `/fantasy/points` FR + AR: stable-result render, provisional recompute.
+- Assert no console errors, no horizontal overflow (`document.documentElement.scrollWidth <= 320`).
 
-**DoD:** Providers behind a typed boundary; nightly + intra-day sync jobs; UI reads only from cache; mock fallback documented.
+## Verification
 
-## Phase 5 — Chat portal
+After each sub-pass and at end: `bunx tsgo --noEmit` + `bun test`. End total tests ≥ 177 + 20 = 197. Report final count + per-file diff summary + Pass 3.3 remaining scope (Home/dashboard cloud summary, leagues cloud, browser matrix full).
 
-- ❌ Not started. No routes, tables, or realtime channels.
-- **Needs:** `conversations`, `conversation_members`, `messages`, `reactions`, `reads`, `mutes`, `blocks`, `reports`; room kinds (DM, league, club, match); realtime via `supabase.channel`; auth gating; FR/AR/RTL; moderation queue.
+## Ask
 
-**DoD:** Landing + all room types; realtime messages, replies, reactions, mentions, unread counts; mute/block/report + admin moderation view.
-
-## Phase 6 — Social layer
-
-- ❌ Missing. No comments, reactions, polls, follows, share, or activity feed.
-- Depends on Phase 3 (auth + profiles) and Phase 4 (articles as first-class entities).
-
-## Phase 7 — Notifications
-
-- ❌ No in-app center, no unread count, no preferences, no event bus.
-- **Design:** `notifications` table + `notification_preferences`; server-side emitters on match/news/fantasy/chat/social events; push-ready boundary (Web Push / FCM later) hidden behind a service.
-
-## Phase 8 — Final production audit
-
-- ✅ Typecheck currently clean; 44/44 tests pass.
-- 🟡 No CI-style checklist yet: browser console cleanliness at each route, Playwright RTL screenshots, Lighthouse/perf pass, RLS lint, error boundaries on every route with a loader, 404/500 pages, sitemap/OG per route, badge visibility, publish settings.
-
----
-
-## Recommended delivery order
-
-Do phases in dependency order; do not start backend UI features before Phase 3 lands.
-
-1. **Phase 2 (Fantasy engine wire-up)** — pure frontend, unblocks credibility of the flagship feature. Lowest risk, highest visible value. ~1 milestone.
-2. **Phase 1 residuals (shared Empty/Error/Skeleton + 320px/RTL sweep)** — small, and makes Phase 3 UI states trivial. ~0.5 milestone.
-3. **Phase 3 (Supabase auth + core tables + local→cloud migration)** — foundation for 4–7. Ship in two sub-milestones: (a) auth + profiles + preferences + saved/follows, (b) fantasy tables + leagues + results, each with migration, RLS, server fns, and swap-in. ~2 milestones.
-4. **Phase 4 (data provider boundary + cache + cron)** — before social/chat, since articles and matches feed both. ~1.5 milestones.
-5. **Phase 7 (notifications spine)** — needed by chat and social; land the table + service boundary before those features so events wire in directly. ~0.5 milestone.
-6. **Phase 5 (chat)** — heaviest realtime feature; do after notifications. ~2 milestones.
-7. **Phase 6 (social)** — layers cleanly once articles, follows, notifications exist. ~1 milestone.
-8. **Phase 8 (final audit + publish)** — checklist, perf, RLS lint, publish. ~0.5 milestone.
-
-## Cross-cutting risks
-
-- **Local→Cloud migration** (Phase 3): design idempotent one-shot importer keyed off `localStorage` namespaces; wipe local keys only after server ACK.
-- **RLS correctness** (Phase 3+): every table needs `GRANT` in the same migration; league membership policies must reference a `has_membership()` security-definer function to avoid recursive RLS.
-- **Provider credentials absent** (Phase 4): must degrade to mock without route breakage.
-- **Realtime cost** (Phase 5): subscribe in `useEffect` with cleanup; scope policies so subscribers only receive rows they may read.
-- **Deadline lock coverage** (Phase 2): audit every mutation entry point, not just Team.
-- **Google OAuth**: must use `lovable.auth.signInWithOAuth("google", …)` broker, and provider must be enabled via `supabase--configure_social_auth` in the same turn Supabase auth ships.
-
-## Definition of done — global
-
-Typecheck + all tests green; Playwright FR/AR screenshots at 320/390/1280 for every route; console clean; RLS lint clean; every route has `errorComponent` + `notFoundComponent`; local mock removed or clearly gated to demo mode; documented data provider fallback; publish settings reviewed.
-
----
-
-**Nothing edited in this pass.** Ready to convert any single phase above into a concrete implementation plan on your signal — I suggest starting with Phase 2 (engine wire-up on Points + Transfers + deadline lock coverage) as the fastest high-leverage next milestone.
+This is 3+ turns of work if each sub-pass must land green. **Confirm the sequence (H1 → H7) or reorder.** Otherwise I begin H1 (provider foundation) now and land the rest in subsequent turns, reporting after each.

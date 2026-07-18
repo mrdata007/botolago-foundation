@@ -20,10 +20,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
@@ -56,9 +58,28 @@ export interface FantasyOwnedContextValue {
   mutationStatus: OwnedMutationStatus;
   mutationError: FantasyRepoError | null;
   setMutationStatus: (s: OwnedMutationStatus, err?: FantasyRepoError | null) => void;
+  /**
+   * H1: reserve a monotonic sequence number for a mutation. Later calls to
+   * `setMutationStatusIfCurrent(seq, ...)` are ignored if a newer sequence
+   * has already been reserved — preventing a stale `saved→idle` timer from
+   * overwriting a newer `saving` status.
+   */
+  nextMutationSeq: () => number;
+  setMutationStatusIfCurrent: (
+    seq: number,
+    s: OwnedMutationStatus,
+    err?: FantasyRepoError | null,
+  ) => void;
+  /**
+   * H1: replace the authoritative cached snapshot with a returned value
+   * without a network round-trip. Callers still use `invalidateOwned()` for
+   * dependent surfaces.
+   */
+  replaceSnapshot: (next: FantasySnapshot) => void;
   reload: () => Promise<void>;
   invalidateOwned: () => void;
 }
+
 
 const Ctx = createContext<FantasyOwnedContextValue | null>(null);
 
@@ -118,6 +139,8 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
 
   const [mutationStatus, setMutationStatusState] = useState<OwnedMutationStatus>("idle");
   const [mutationError, setMutationError] = useState<FantasyRepoError | null>(null);
+  const mutationSeqRef = useRef(0);
+  const activeSeqRef = useRef(0);
 
   const setMutationStatus = useCallback(
     (s: OwnedMutationStatus, err?: FantasyRepoError | null) => {
@@ -127,9 +150,32 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const nextMutationSeq = useCallback(() => {
+    mutationSeqRef.current += 1;
+    activeSeqRef.current = mutationSeqRef.current;
+    return mutationSeqRef.current;
+  }, []);
+
+  const setMutationStatusIfCurrent = useCallback(
+    (seq: number, s: OwnedMutationStatus, err?: FantasyRepoError | null) => {
+      // Ignore updates from a superseded mutation.
+      if (seq !== activeSeqRef.current) return;
+      setMutationStatusState(s);
+      setMutationError(err ?? null);
+    },
+    [],
+  );
+
   const invalidateOwned = useCallback(() => {
     qc.invalidateQueries({ predicate: (q) => isOwnedFantasyKey(q.queryKey) });
   }, [qc]);
+
+  const replaceSnapshot = useCallback(
+    (next: FantasySnapshot) => {
+      qc.setQueryData(queryKey, next);
+    },
+    [qc, queryKey],
+  );
 
   const reload = useCallback(async () => {
     await qc.invalidateQueries({ queryKey });
@@ -144,6 +190,8 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     clearOwnedFantasyCache(qc);
     setMutationStatusState("idle");
     setMutationError(null);
+    mutationSeqRef.current = 0;
+    activeSeqRef.current = 0;
     // We intentionally depend on `owner` so identity swaps trigger cleanup.
   }, [owner, qc]);
 
@@ -160,15 +208,21 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
       mutationStatus,
       mutationError,
       setMutationStatus,
+      nextMutationSeq,
+      setMutationStatusIfCurrent,
+      replaceSnapshot,
       reload,
       invalidateOwned,
     }),
     [
       source, userId, repo, scope,
       query.data, query.isLoading, query.isFetching, query.error,
-      mutationStatus, mutationError, setMutationStatus, reload, invalidateOwned,
+      mutationStatus, mutationError, setMutationStatus,
+      nextMutationSeq, setMutationStatusIfCurrent, replaceSnapshot,
+      reload, invalidateOwned,
     ],
   );
+
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

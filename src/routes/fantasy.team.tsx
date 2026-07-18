@@ -247,6 +247,9 @@ function MyTeamPage() {
           qc,
           scope: owned.scope,
           setMutationStatus: owned.setMutationStatus,
+          nextMutationSeq: owned.nextMutationSeq,
+          setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+          replaceSnapshot: owned.replaceSnapshot,
           invalidateOwned: owned.invalidateOwned,
         },
         {
