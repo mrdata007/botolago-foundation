@@ -285,7 +285,7 @@ function PointsPage() {
           // Post-team: Free Hit restores its snapshot; other chips keep the mutated team.
           const nextLifecycle: FantasyPersistedState = {
             ...state,
-            chips: { ...state.chips, active: null, used: chipFinalize ? [...state.chips.used, chipFinalize] : state.chips.used, freeHitSnapshot: null },
+            chips: { ...state.chips, active: null, used: chipFinalize ? [...state.chips.used, chipFinalize] : state.chips.used, freeHitSnapshot: undefined },
             results: { ...state.results, [gw]: result },
             transferHitPoints: 0,
           };
