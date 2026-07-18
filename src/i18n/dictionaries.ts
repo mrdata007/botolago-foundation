@@ -1121,6 +1121,15 @@ export const dictionaries = {
     "profile.notif.news": "الأخبار",
     "profile.notif.deadline": "مواعيد الفانتازي",
     "profile.member_since": "عضو منذ",
+    "fantasy.cloud.loading": "جارٍ تحميل فريقك…",
+    "fantasy.cloud.saving": "جارٍ الحفظ…",
+    "fantasy.cloud.conflict": "توجد نسخة أحدث. أعد التحميل للمتابعة.",
+    "fantasy.cloud.permission_denied": "تم رفض الوصول. يرجى تسجيل الدخول من جديد.",
+    "fantasy.cloud.offline": "غير متصل. ستتم المزامنة لاحقًا.",
+    "fantasy.cloud.mapping_unavailable": "مزامنة اللاعبين غير متاحة حاليًا.",
+    "fantasy.cloud.error": "خطأ في المزامنة.",
+    "fantasy.cloud.retry": "إعادة المحاولة",
+    "fantasy.cloud.reload_latest": "إعادة التحميل",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
