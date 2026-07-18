@@ -22,7 +22,6 @@ import {
   type FantasyDraftKey,
 } from "@/services/fantasy-drafts-store";
 import {
-  scopedFantasyKey,
   type FantasyKeyScope,
 } from "@/services/fantasy-data-source";
 
@@ -30,6 +29,15 @@ export interface OwnedMutationContext {
   qc: QueryClient;
   scope: FantasyKeyScope;
   setMutationStatus: (s: OwnedMutationStatus, err?: FantasyRepoError | null) => void;
+  /** H1: monotonic sequence guard, provided by FantasyOwnedProvider. */
+  nextMutationSeq?: () => number;
+  setMutationStatusIfCurrent?: (
+    seq: number,
+    s: OwnedMutationStatus,
+    err?: FantasyRepoError | null,
+  ) => void;
+  /** H1: install returned snapshot into the authoritative cache. */
+  replaceSnapshot?: (snap: FantasySnapshot) => void;
   invalidateOwned: () => void;
 }
 
@@ -51,28 +59,36 @@ export type RunOwnedMutationResult =
 /**
  * Pure orchestrator. `action` is the async cloud call producing the
  * authoritative snapshot. Never throws — errors are typed and returned.
+ *
+ * H1: uses a per-call monotonic sequence so a delayed `saved→idle` timer
+ * from a previous mutation cannot overwrite a newer `saving` status. Never
+ * silently falls back to local — cloud errors surface as typed results.
  */
 export async function runOwnedMutation<TArgs>(
   ctx: OwnedMutationContext,
   input: RunOwnedMutationInput<TArgs>,
 ): Promise<RunOwnedMutationResult> {
-  ctx.setMutationStatus("saving", null);
+  const seq = ctx.nextMutationSeq?.() ?? 0;
+  const setStatus = (s: OwnedMutationStatus, err?: FantasyRepoError | null) => {
+    if (ctx.setMutationStatusIfCurrent) ctx.setMutationStatusIfCurrent(seq, s, err ?? null);
+    else ctx.setMutationStatus(s, err ?? null);
+  };
+  setStatus("saving", null);
   try {
     const snapshot = await input.action(input.args);
     // 1. Prime the authoritative snapshot cache with the returned value
     //    so the next render never flashes stale data.
-    ctx.qc.setQueryData(scopedFantasyKey(ctx.scope, "snapshot"), snapshot);
-    // 2. Invalidate every owned surface (Team/Transfers/Points/Summary).
+    if (ctx.replaceSnapshot) ctx.replaceSnapshot(snapshot);
+    // 2. Invalidate dependent owned surfaces (Team/Transfers/Points/Summary).
     ctx.invalidateOwned();
     // 3. Success clears the matching draft (transfers/team drafts alike).
     if (input.matchingDraftKey) {
       fantasyDraftsStore.remove(input.matchingDraftKey);
     }
-    ctx.setMutationStatus("saved", null);
+    setStatus("saved", null);
     if (input.savedIdleAfterMs && input.savedIdleAfterMs > 0) {
       const ms = input.savedIdleAfterMs;
-      // Do not await — return synchronously so the caller can react.
-      void schedule(ms, () => ctx.setMutationStatus("idle", null));
+      void schedule(ms, () => setStatus("idle", null));
     }
     input.onSuccess?.(snapshot);
     return { ok: true, snapshot };
@@ -83,20 +99,20 @@ export async function runOwnedMutation<TArgs>(
         : new FantasyRepoError("unknown", err instanceof Error ? err.message : String(err));
     const kind: "conflict" | "error" =
       repoErr.code === "version_conflict" ? "conflict" : "error";
-    ctx.setMutationStatus(kind, repoErr);
+    setStatus(kind, repoErr);
     return { ok: false, error: repoErr, kind };
   }
 }
 
 function schedule(ms: number, fn: () => void): Promise<void> {
   return new Promise((resolve) => {
-    // Use setTimeout — jsdom + Node both support it.
     setTimeout(() => {
       fn();
       resolve();
     }, ms);
   });
 }
+
 
 /**
  * Classifier used by tests and by inline error surfaces. Kept pure so
