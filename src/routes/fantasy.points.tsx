@@ -218,6 +218,59 @@ function PointsPage() {
     toast.success(t("fantasy.points.recomputed"));
   };
 
+  const finalized = !!vm.finalized;
+
+  const doFinalize = () => {
+    requireAuth(() => {
+      if (!isCurrent) { toast.error(t("fantasy.points.lifecycle_error")); return; }
+      if (finalized) { toast.error(t("fantasy.points.already_finalized")); return; }
+      if (!deadlineLocked) { toast.error(t("fantasy.deadline.open")); return; }
+      const raw = gwResultQ.data;
+      if (!raw?.breakdown.length || !teamQ.data || !playersQ.data) {
+        toast.error(t("fantasy.points.lifecycle_error"));
+        return;
+      }
+      try {
+        const out = finalizeGameweek({
+          gameweek: gw,
+          team: teamQ.data,
+          players: playersQ.data,
+          breakdown: raw.breakdown,
+          averagePoints: raw.averagePoints,
+          highestPoints: raw.highestPoints,
+        });
+        setState(fantasyStateStore.read());
+        qc.invalidateQueries({ queryKey: ["fantasy-team"] });
+        qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+        qc.invalidateQueries({ queryKey: ["gw-result", gw] });
+        if (out.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
+        else toast.success(t("fantasy.points.finalize_success"));
+      } catch {
+        toast.error(t("fantasy.points.lifecycle_error"));
+      }
+    });
+    setConfirmFinalize(false);
+  };
+
+  const doAdvance = () => {
+    requireAuth(() => {
+      if (!teamQ.data) return;
+      const target = currentGw + 1;
+      const res = advanceGameweek({ targetGameweek: target, team: teamQ.data });
+      if (!res.ok) {
+        toast.error(t(res.error === "must_finalize_first" ? "fantasy.points.must_finalize_first" : "fantasy.points.lifecycle_error"));
+        return;
+      }
+      setState(fantasyStateStore.read());
+      setGw(target);
+      qc.invalidateQueries({ queryKey: ["fantasy-team"] });
+      qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+      qc.invalidateQueries({ queryKey: ["current-gw"] });
+      toast.success(t("fantasy.points.advance_success"));
+    });
+    setConfirmAdvance(false);
+  };
+
   const effectiveCaptainName = vm.effectiveCaptainId ? tr(playerOf(vm.effectiveCaptainId).name) : "—";
 
   // History: prefer persisted results when available; fall back to legacy mock rows.
