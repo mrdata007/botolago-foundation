@@ -314,7 +314,61 @@ function PointsPage() {
             <RefreshCcw className="h-3 w-3" aria-hidden /> {t("fantasy.points.recompute")}
           </button>
         )}
+        {finalized && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800"
+            role="status"
+          >
+            <LockIcon className="h-3 w-3" aria-hidden />
+            {t("fantasy.points.finalized_badge")}
+          </span>
+        )}
+        {isCurrent && !finalized && deadlineLocked && vm.source === "engine" && (
+          <button
+            type="button"
+            onClick={() => setConfirmFinalize(true)}
+            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+          >
+            <LockIcon className="h-3 w-3" aria-hidden /> {t("fantasy.points.finalize")}
+          </button>
+        )}
+        {isCurrent && finalized && (
+          <button
+            type="button"
+            onClick={() => setConfirmAdvance(true)}
+            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+          >
+            {t("fantasy.points.advance")} <ChevronRight className="h-3 w-3 rtl:rotate-180" aria-hidden />
+          </button>
+        )}
       </div>
+
+      <AlertDialog open={confirmFinalize} onOpenChange={setConfirmFinalize}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("fantasy.points.finalize_confirm_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("fantasy.points.finalize_confirm_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={doFinalize}>{t("fantasy.points.finalize")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmAdvance} onOpenChange={setConfirmAdvance}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("fantasy.points.advance_confirm_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("fantasy.points.advance_confirm_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={doAdvance}>{t("fantasy.points.advance")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <Stat label={t("fantasy.points.total")} value={String(vm.totalPoints)} accent />
