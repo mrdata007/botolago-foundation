@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-mock";
 import { botolaService } from "@/services/mock";
@@ -21,9 +21,15 @@ import {
   buildPointsViewModel,
   type PointsViewModel,
 } from "@/services/points-service";
+import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
 import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-engine";
 import { toast } from "sonner";
-import { RefreshCcw, ArrowDown, ArrowUp } from "lucide-react";
+import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/auth/AuthProvider";
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
