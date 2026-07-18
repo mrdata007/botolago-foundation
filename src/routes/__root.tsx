@@ -143,6 +143,7 @@ function RootComponent() {
         <AuthProvider>
           <LaunchGate />
           <AuthPromptDialog />
+          <AuthModeBadge />
           <Toaster />
         </AuthProvider>
       </I18nProvider>
