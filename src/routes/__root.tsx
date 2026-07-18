@@ -17,6 +17,7 @@ import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
+import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { RotateCcw, Home } from "lucide-react";
 
 
@@ -143,6 +144,7 @@ function RootComponent() {
         <AuthProvider>
           <LaunchGate />
           <AuthPromptDialog />
+          <AuthModeBadge />
           <Toaster />
         </AuthProvider>
       </I18nProvider>

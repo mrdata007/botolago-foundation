@@ -25,10 +25,12 @@ import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
 import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
+import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
 
@@ -112,6 +114,11 @@ const AuthVerifyRoute = AuthVerifyRouteImport.update({
   path: '/verify',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthUpdatePasswordRoute = AuthUpdatePasswordRouteImport.update({
+  id: '/update-password',
+  path: '/update-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -132,6 +139,11 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   id: '/$playerId',
   path: '/$playerId',
@@ -150,10 +162,12 @@ export interface FileRoutesByFullPath {
   '/matches': typeof MatchesRoute
   '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
@@ -173,10 +187,12 @@ export interface FileRoutesByTo {
   '/matches': typeof MatchesRoute
   '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
@@ -198,10 +214,12 @@ export interface FileRoutesById {
   '/matches': typeof MatchesRoute
   '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
@@ -224,10 +242,12 @@ export interface FileRouteTypes {
     | '/matches'
     | '/news'
     | '/profile'
+    | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/profile-setup'
     | '/auth/register'
+    | '/auth/update-password'
     | '/auth/verify'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
@@ -247,10 +267,12 @@ export interface FileRouteTypes {
     | '/matches'
     | '/news'
     | '/profile'
+    | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/profile-setup'
     | '/auth/register'
+    | '/auth/update-password'
     | '/auth/verify'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
@@ -271,10 +293,12 @@ export interface FileRouteTypes {
     | '/matches'
     | '/news'
     | '/profile'
+    | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/profile-setup'
     | '/auth/register'
+    | '/auth/update-password'
     | '/auth/verify'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
@@ -412,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthVerifyRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/update-password': {
+      id: '/auth/update-password'
+      path: '/update-password'
+      fullPath: '/auth/update-password'
+      preLoaderRoute: typeof AuthUpdatePasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/register': {
       id: '/auth/register'
       path: '/register'
@@ -440,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/fantasy/players/$playerId': {
       id: '/fantasy/players/$playerId'
       path: '/$playerId'
@@ -458,18 +496,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthProfileSetupRoute: typeof AuthProfileSetupRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthProfileSetupRoute: AuthProfileSetupRoute,
   AuthRegisterRoute: AuthRegisterRoute,
+  AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
   AuthVerifyRoute: AuthVerifyRoute,
 }
 
