@@ -166,8 +166,8 @@ function TransfersPage() {
       transferHitPoints: fantasyState.transferHitPoints + v.hitPointsApplied,
     });
     setFantasyState(fantasyStateStore.read());
-    qc.invalidateQueries({ queryKey: ["fantasy-team"] });
-    qc.invalidateQueries({ queryKey: ["fantasy-summary"] });
+    qc.invalidateQueries({ queryKey: ownedKey("team") });
+    qc.invalidateQueries({ queryKey: ownedKey("summary") });
     setSuccess(true);
     setConfirming(false);
     toast.success(t("fantasy.transfers.success"));
