@@ -36,6 +36,8 @@ function readState(): PersistedState {
 }
 function writeState(s: PersistedState) { writeJSON(KEY, s); }
 
+let _idCounter = 0;
+function genId(): string { _idCounter += 1; return `pl_${Date.now().toString(36)}_${_idCounter}`; }
 function genCode(): string {
   return `BOT-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 }
