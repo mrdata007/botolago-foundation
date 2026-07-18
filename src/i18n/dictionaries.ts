@@ -36,6 +36,8 @@ export const dictionaries = {
     "home.trending": "Joueurs {accent}en vue{/accent}",
     "home.private_leagues": "Vos {accent}ligues privées{/accent}",
     "home.view_all": "Tout voir",
+    "home.view_fantasy_team": "Voir mon équipe",
+
 
     "news.title": "Actualités",
     "news.tab.for_you": "Pour vous",
@@ -509,6 +511,8 @@ export const dictionaries = {
     "home.trending": "{accent}لاعبون{/accent} بارزون",
     "home.private_leagues": "دورياتك {accent}الخاصة{/accent}",
     "home.view_all": "عرض الكل",
+    "home.view_fantasy_team": "عرض فريقي",
+
 
     "news.title": "الأخبار",
     "news.tab.for_you": "مقترح لك",
