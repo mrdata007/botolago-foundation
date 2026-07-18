@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
+import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
 
 interface AuthPromptState {
   open: boolean;
@@ -27,11 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { lang } = useI18n();
   const langRef = useRef(lang);
   langRef.current = lang;
+  const qc = useQueryClient();
+  const prevUidRef = useRef<string | null>(session.user?.id ?? null);
 
   useEffect(() => {
     const unsub = authService.subscribeToSession(setSession);
     return () => { unsub(); };
   }, []);
+
+  // Sign-out / account-switch cleanup: purge owned Fantasy cache + drafts for
+  // the outgoing UID. Public caches and guest local prototype data untouched.
+  useEffect(() => {
+    const nextUid = session.user?.id ?? null;
+    const prev = prevUidRef.current;
+    if (prev && prev !== nextUid) {
+      cleanupOwnedFantasyOnSignOut({ qc, uid: prev });
+    }
+    prevUidRef.current = nextUid;
+  }, [session.user?.id, qc]);
 
   const requireAuth = useCallback<AuthContextValue["requireAuth"]>((action, opts) => {
     const s = authService.getSession();
