@@ -245,13 +245,25 @@ function PointsPage() {
 
   const canRecompute = isCurrent && deadlineLocked;
 
-  const onRecompute = () => {
+  const onRecompute = async () => {
     if (!canRecompute) {
       toast.error(t("fantasy.points.recompute_locked"));
       return;
     }
     const raw = gwResultQ.data;
     if (!raw?.breakdown.length || !team || !playersQ.data) return;
+
+    if (isCloud) {
+      // H6 — Cloud mode: recompute is a fixture refetch + snapshot reload.
+      // Never mutate fantasyStateStore; the authoritative provisional view
+      // is derived on demand from `owned.snapshot` + breakdown data.
+      await qc.invalidateQueries({ queryKey: ownedKey("gw-result", gw) });
+      await owned.reload();
+      toast.success(t("fantasy.points.recomputed"));
+      return;
+    }
+
+    // Local mode — persist provisional VM so the pitch shows updated points.
     const fresh = buildPointsViewModel({
       gameweek: gw,
       team: team,
