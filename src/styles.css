@@ -432,6 +432,34 @@ html[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
   50%      { transform: translate3d(0, -10px, 0) scale(1.015); }
 }
 
+/* Premium shimmer — soft light sweep across placeholder surfaces. */
+@keyframes shimmer-sweep {
+  0%   { background-position: -150% 0; }
+  100% { background-position: 150% 0; }
+}
+
+@utility shimmer {
+  background-color: var(--border-subtle);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--surface) 60%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer-sweep 1.6s var(--ease-standard) infinite;
+}
+
+/* Unified press-feedback for interactive tiles/cards. */
+@utility press-tile {
+  transition:
+    transform var(--duration-tap) var(--ease-standard),
+    box-shadow var(--duration-quick) var(--ease-standard),
+    background-color var(--duration-quick) var(--ease-standard);
+}
+.press-tile:active { transform: translateY(1px); box-shadow: var(--shadow-subtle); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -440,4 +468,5 @@ html[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
     scroll-behavior: auto !important;
   }
   .mesh-drift { animation: none !important; }
+  .shimmer { animation: none !important; background-image: none !important; }
 }

@@ -3,24 +3,20 @@ import { cn } from "@/lib/utils";
 /**
  * Skeleton primitives that mirror final layouts (per Design System V2).
  *
- * All skeletons use a single shimmer utility driven by a keyframe defined
- * inline (see styles.css `bgdrift` isn't reused — we rely on Tailwind's
- * animate-pulse but soften opacity for a calmer, more editorial feel).
- * Respects prefers-reduced-motion globally.
+ * Uses the shared `shimmer` utility for a soft light sweep across placeholder
+ * surfaces. Falls back to a static tone under prefers-reduced-motion (handled
+ * globally in styles.css). No opacity pulse — an editorial, non-jittery feel.
  */
 
 function Shimmer({ className }: { className?: string }) {
   return (
     <span
       aria-hidden
-      className={cn(
-        "block animate-pulse rounded-md motion-reduce:animate-none",
-        "bg-[color:var(--border-subtle)]",
-        className,
-      )}
+      className={cn("block shimmer rounded-md", className)}
     />
   );
 }
+
 
 export function HeroSkeleton() {
   return (

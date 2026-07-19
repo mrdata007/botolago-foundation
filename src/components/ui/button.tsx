@@ -10,23 +10,24 @@ import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   [
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer",
-    "transition-[background-color,color,box-shadow,transform] duration-[var(--duration-tap)] ease-[var(--ease-standard)]",
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer select-none",
+    "transition-[background-color,color,box-shadow,transform,opacity] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
-    "active:translate-y-px",
+    "active:translate-y-px active:duration-[var(--duration-tap)]",
     "disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed",
+    "aria-busy:opacity-80 aria-busy:pointer-events-none",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   ].join(" "),
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-subtle hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground shadow-[var(--shadow-subtle)] hover:bg-primary/90 hover:shadow-[var(--shadow-card)]",
         premium:
-          "text-primary-foreground shadow-card hover:shadow-floating [background-image:var(--bg-brand-gradient)] bg-[length:150%_150%] hover:bg-[position:100%_100%]",
-        destructive: "bg-destructive text-destructive-foreground shadow-subtle hover:bg-destructive/90",
+          "text-primary-foreground shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-floating)] [background-image:var(--bg-brand-gradient)] bg-[length:150%_150%] hover:bg-[position:100%_100%]",
+        destructive: "bg-destructive text-destructive-foreground shadow-[var(--shadow-subtle)] hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-subtle hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-subtle hover:bg-secondary/80",
+          "border border-[color:var(--border-strong)] bg-background shadow-[var(--shadow-subtle)] hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground shadow-[var(--shadow-subtle)] hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
