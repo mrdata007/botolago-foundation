@@ -293,48 +293,22 @@ function PointsPage() {
       }
 
       if (isCloud && owned.snapshot?.currentGameweekId) {
-        // Cloud path — authoritative finalize RPC. We compute the view model
-        // here (pure) and derive chipFinalize/postTeam, without touching the
-        // local store.
+        // H6 — Cloud-authoritative finalize via pure planner.
         try {
-          const vm0 = buildPointsViewModel({
-            gameweek: gw,
-            team: team,
+          const plan = buildCloudFinalizationPlan({
+            snapshot: owned.snapshot,
+            gw,
             players: playersQ.data,
-            chips: state.chips,
-            transferHitPoints: state.transferHitPoints,
             breakdown: raw.breakdown,
             averagePoints: raw.averagePoints,
             highestPoints: raw.highestPoints,
           });
-          const chipFinalize = state.chips.active ?? null;
-          const result: PointsViewModel = {
-            ...vm0,
-            finalized: true,
-            finalizedAt: new Date().toISOString(),
-            chipUsed: chipFinalize,
-            hitPointsApplied: state.transferHitPoints,
-          };
 
-          // Post-team: Free Hit restores its snapshot; other chips keep the mutated team.
-          const nextLifecycle: FantasyPersistedState = {
-            ...state,
-            chips: { ...state.chips, active: null, used: chipFinalize ? [...state.chips.used, chipFinalize] : state.chips.used, freeHitSnapshot: undefined },
-            results: { ...state.results, [gw]: result },
-            transferHitPoints: 0,
-          };
-          let postSquad = team.squad;
-          let postFormation = team.formation;
-          let postBank = team.bank;
-          let postFreeTransfers = team.freeTransfers;
-          let postPurchasePrices: Record<string, number> = { ...owned.snapshot.purchasePrices };
-          if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) {
-            const snap = state.chips.freeHitSnapshot;
-            postSquad = snap.squad;
-            postFormation = snap.formation;
-            postBank = snap.bank;
-            postFreeTransfers = snap.freeTransfers;
-            postPurchasePrices = owned.snapshot.purchasePrices;
+          // Short-circuit: server already finalized this GW.
+          if (plan.skipReason === "already_finalized") {
+            toast.success(t("fantasy.points.already_finalized"));
+            setConfirmFinalize(false);
+            return;
           }
 
           const res = await runOwnedMutation(
@@ -354,17 +328,17 @@ function PointsPage() {
                   gameweekId: owned.snapshot!.currentGameweekId!,
                   expectedVersion: owned.snapshot!.version,
                   season: DEFAULT_SEASON,
-                  chipFinalize,
-                  result,
+                  chipFinalize: plan.chipFinalize,
+                  result: plan.result,
                   postTeam: {
-                    formation: postFormation,
-                    bank: postBank,
-                    freeTransfers: postFreeTransfers,
-                    pendingTransfers: 0,
-                    squad: postSquad,
-                    purchasePrices: postPurchasePrices,
+                    formation: plan.postTeam.formation,
+                    bank: plan.postTeam.bank,
+                    freeTransfers: plan.postTeam.freeTransfers,
+                    pendingTransfers: plan.postTeam.pendingTransfers,
+                    squad: plan.postTeam.squad,
+                    purchasePrices: plan.postPurchasePrices,
                     currentGameweekId: owned.snapshot!.currentGameweekId!,
-                    lifecycle: nextLifecycle,
+                    lifecycle: plan.nextLifecycle,
                   },
                 }),
               args: undefined,
@@ -373,7 +347,7 @@ function PointsPage() {
           );
           if (res.ok) {
             setConflictOpen(false);
-            if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) toast.success(t("fantasy.points.free_hit_restored"));
+            if (plan.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
             else toast.success(t("fantasy.points.finalize_success"));
           } else {
             const c = classifyRepoError(res.error);
