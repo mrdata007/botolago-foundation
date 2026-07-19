@@ -15,7 +15,13 @@ const tone = {
   critical: "border-red-500/30 bg-red-500/10 text-red-900",
 } as const;
 
-export function FantasyAlertList({ alerts, players }: { alerts: FantasyAlert[]; players: Player[] }) {
+export function FantasyAlertList({
+  alerts,
+  players,
+}: {
+  alerts: FantasyAlert[];
+  players: Player[];
+}) {
   const { tr } = useI18n();
   return (
     <ul className="grid gap-2">

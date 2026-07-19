@@ -86,7 +86,9 @@ export function PlayerPickerDrawer({
 
           {!position && (
             <div className="flex flex-wrap gap-1">
-              <FilterChip active={pos === ""} onClick={() => setPos("")}>{t("common.all")}</FilterChip>
+              <FilterChip active={pos === ""} onClick={() => setPos("")}>
+                {t("common.all")}
+              </FilterChip>
               {positions.map((p) => (
                 <FilterChip key={p} active={pos === p} onClick={() => setPos(p)}>
                   {t(`player.pos.${p}` as TranslationKey)}
@@ -96,7 +98,9 @@ export function PlayerPickerDrawer({
           )}
 
           <div className="flex flex-wrap gap-1">
-            <FilterChip active={clubId === ""} onClick={() => setClubId("")}>{t("common.all")}</FilterChip>
+            <FilterChip active={clubId === ""} onClick={() => setClubId("")}>
+              {t("common.all")}
+            </FilterChip>
             {clubs.map((c) => (
               <FilterChip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>
                 {tr(c.shortName)}
@@ -141,16 +145,21 @@ export function PlayerPickerDrawer({
                     {club && <ClubCrest club={club} size="sm" />}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <div className="truncate text-sm font-bold text-foreground">{tr(p.name)}</div>
+                        <div className="truncate text-sm font-bold text-foreground">
+                          {tr(p.name)}
+                        </div>
                         {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
                       </div>
                       <div className="mt-0.5 text-[11px] text-muted-foreground">
-                        {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")} {nf.format(p.form)} · {nf.format(p.ownership)}%
+                        {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
+                        {nf.format(p.form)} · {nf.format(p.ownership)}%
                       </div>
                     </div>
                     <div className="text-end">
                       <div className="text-sm font-black tabular-nums">{nf.format(p.price)}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.totalPoints} pts</div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {p.totalPoints} pts
+                      </div>
                     </div>
                   </button>
                 </li>
@@ -163,7 +172,15 @@ export function PlayerPickerDrawer({
   );
 }
 
-function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"

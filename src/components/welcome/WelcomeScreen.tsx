@@ -62,12 +62,13 @@ export function WelcomeScreen({ onStart, onSignIn, onGuest }: Props) {
             className="group flex min-h-[54px] w-full items-center justify-center gap-2 rounded-[18px] bg-white px-6 text-base font-bold text-[color:var(--brand-primary)] shadow-lg shadow-black/30 transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:translate-y-0"
           >
             <span>{t("welcome.cta_primary")}</span>
-            <Arrow className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden />
+            <Arrow
+              className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+              aria-hidden
+            />
           </button>
 
-          <p className="mt-5 text-center text-sm text-white/70">
-            {t("welcome.secondary_prompt")}
-          </p>
+          <p className="mt-5 text-center text-sm text-white/70">{t("welcome.secondary_prompt")}</p>
 
           <button
             type="button"
@@ -76,7 +77,10 @@ export function WelcomeScreen({ onStart, onSignIn, onGuest }: Props) {
             style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)" }}
           >
             <span>{t("welcome.cta_secondary")}</span>
-            <Arrow className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden />
+            <Arrow
+              className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+              aria-hidden
+            />
           </button>
 
           <button

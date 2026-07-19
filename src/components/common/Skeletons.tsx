@@ -9,14 +9,8 @@ import { cn } from "@/lib/utils";
  */
 
 function Shimmer({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("block shimmer rounded-md", className)}
-    />
-  );
+  return <span aria-hidden className={cn("block shimmer rounded-md", className)} />;
 }
-
 
 export function HeroSkeleton() {
   return (

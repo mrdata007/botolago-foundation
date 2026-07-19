@@ -33,14 +33,23 @@ export interface ChipsState {
 export const DEFAULT_CHIPS: ChipsState = { active: null, used: [] };
 
 /** Only one chip may be active per gameweek; already-used chips cannot repeat. */
-export function canActivateChip(state: ChipsState, key: ChipKey, opts: { deadlinePassed: boolean }): { ok: boolean; reasonKey?: string } {
+export function canActivateChip(
+  state: ChipsState,
+  key: ChipKey,
+  opts: { deadlinePassed: boolean },
+): { ok: boolean; reasonKey?: string } {
   if (opts.deadlinePassed) return { ok: false, reasonKey: "fantasy.engine.deadline_passed" };
   if (state.used.includes(key)) return { ok: false, reasonKey: "fantasy.engine.chip_used" };
-  if (state.active && state.active !== key) return { ok: false, reasonKey: "fantasy.engine.chip_conflict" };
+  if (state.active && state.active !== key)
+    return { ok: false, reasonKey: "fantasy.engine.chip_conflict" };
   return { ok: true };
 }
 
-export function activateChip(state: ChipsState, key: ChipKey, ctx: { gameweek: number; team: FantasyTeam }): ChipsState {
+export function activateChip(
+  state: ChipsState,
+  key: ChipKey,
+  ctx: { gameweek: number; team: FantasyTeam },
+): ChipsState {
   const next: ChipsState = { ...state, active: key };
   if (key === "wildcard") next.wildcardActiveForGW = ctx.gameweek;
   if (key === "free_hit") {
@@ -90,7 +99,10 @@ export function finalizeChip(state: ChipsState): ChipsState {
 }
 
 /** Restore squad after Free Hit expires. Returns the snapshot (or null). */
-export function consumeFreeHitSnapshot(state: ChipsState): { state: ChipsState; snapshot: ChipsState["freeHitSnapshot"] } {
+export function consumeFreeHitSnapshot(state: ChipsState): {
+  state: ChipsState;
+  snapshot: ChipsState["freeHitSnapshot"];
+} {
   const snapshot = state.freeHitSnapshot;
   return { state: { ...state, freeHitSnapshot: undefined }, snapshot };
 }
@@ -105,11 +117,19 @@ export function chipDisplayState(state: ChipsState, key: ChipKey): ChipState {
 
 /** Set captain (and clear captain flag from anyone else). */
 export function setCaptain(squad: SquadPlayer[], playerId: string): SquadPlayer[] {
-  return squad.map((s) => ({ ...s, isCaptain: s.playerId === playerId, isViceCaptain: s.isViceCaptain && s.playerId !== playerId }));
+  return squad.map((s) => ({
+    ...s,
+    isCaptain: s.playerId === playerId,
+    isViceCaptain: s.isViceCaptain && s.playerId !== playerId,
+  }));
 }
 
 export function setViceCaptain(squad: SquadPlayer[], playerId: string): SquadPlayer[] {
-  return squad.map((s) => ({ ...s, isViceCaptain: s.playerId === playerId, isCaptain: s.isCaptain && s.playerId !== playerId }));
+  return squad.map((s) => ({
+    ...s,
+    isViceCaptain: s.playerId === playerId,
+    isCaptain: s.isCaptain && s.playerId !== playerId,
+  }));
 }
 
 // ---------- Captain multiplier ----------
@@ -139,7 +159,7 @@ export function resolveCaptainMultiplier(args: {
 // ---------- Automatic substitutions ----------
 
 export interface AutoSubInput {
-  squad: SquadPlayer[];       // 15 with slot order (bench 12..15)
+  squad: SquadPlayer[]; // 15 with slot order (bench 12..15)
   players: FantasyPlayer[];
   formation: FormationKey;
   /** Minutes played per player in the settled gameweek. */
@@ -162,12 +182,18 @@ function posOf(players: FantasyPlayer[], id: string): Position | undefined {
 /** Would the current outfield counts satisfy `formation`? */
 function isLegal(counts: Record<Position, number>, formation: FormationKey): boolean {
   const cfg = FORMATIONS[formation];
-  return counts.GK === 1 && counts.DEF >= 3 && counts.FWD >= 1 &&
+  return (
+    counts.GK === 1 &&
+    counts.DEF >= 3 &&
+    counts.FWD >= 1 &&
     counts.DEF + counts.MID + counts.FWD === 10 &&
     // exact match preferred but the auto-sub may change formation implicitly;
     // we accept any legal FPL-style structure here.
-    counts.DEF <= 5 && counts.MID <= 5 && counts.FWD <= 3 &&
-    cfg !== undefined; // keeps formation referenced
+    counts.DEF <= 5 &&
+    counts.MID <= 5 &&
+    counts.FWD <= 3 &&
+    cfg !== undefined
+  ); // keeps formation referenced
 }
 
 /**
@@ -178,15 +204,24 @@ function isLegal(counts: Record<Position, number>, formation: FormationKey): boo
  *   that preserves a legal outfield distribution.
  */
 export function computeAutoSubs(input: AutoSubInput): AutoSubResult {
-  const startingIds = input.squad.filter((s) => s.slot < 12).sort((a, b) => a.slot - b.slot).map((s) => s.playerId);
-  const bench = input.squad.filter((s) => s.slot >= 12).sort((a, b) => a.slot - b.slot).map((s) => s.playerId);
+  const startingIds = input.squad
+    .filter((s) => s.slot < 12)
+    .sort((a, b) => a.slot - b.slot)
+    .map((s) => s.playerId);
+  const bench = input.squad
+    .filter((s) => s.slot >= 12)
+    .sort((a, b) => a.slot - b.slot)
+    .map((s) => s.playerId);
   const played = (id: string) => (input.minutesById[id] ?? 0) > 0;
   const subs: AutoSubResult["subs"] = [];
 
   // Track current XI positions
   const idsXI = [...startingIds];
   const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
-  idsXI.forEach((id) => { const p = posOf(input.players, id); if (p) counts[p]++; });
+  idsXI.forEach((id) => {
+    const p = posOf(input.players, id);
+    if (p) counts[p]++;
+  });
   const benchQueue = [...bench];
 
   for (let i = 0; i < idsXI.length; i++) {
@@ -222,7 +257,8 @@ export function computeAutoSubs(input: AutoSubInput): AutoSubResult {
     const inPos = posOf(input.players, inId)!;
     benchQueue.splice(legalIdx, 1);
     idsXI[i] = inId;
-    counts[outPos]--; counts[inPos]++;
+    counts[outPos]--;
+    counts[inPos]++;
     subs.push({ outId, inId, reasonKey: "fantasy.engine.sub.outfield" });
   }
 
@@ -255,9 +291,12 @@ export function isLegalSwap(args: {
   const bInXI = inXI.has(args.bId);
   if (aInXI === bInXI) return false; // swap only meaningful across the divide.
   const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
-  args.squad.filter((s) => s.slot < 12).forEach((s) => {
-    const p = posOf(args.players, s.playerId); if (p) counts[p]++;
-  });
+  args.squad
+    .filter((s) => s.slot < 12)
+    .forEach((s) => {
+      const p = posOf(args.players, s.playerId);
+      if (p) counts[p]++;
+    });
   const bringIn = aInXI ? posB : posA;
   const takeOut = aInXI ? posA : posB;
   const trial: Record<Position, number> = { ...counts };
@@ -334,11 +373,21 @@ export function computeGameweekResult(input: ScoringInput): ScoringResult {
   const raw = (id: string) => rawById.get(id) ?? 0;
 
   const xiIds = benchBoost
-    ? [...auto.startingIds, ...input.squad.filter((s) => s.slot >= 12).map((s) => s.playerId).filter((id) => !auto.startingIds.includes(id))]
+    ? [
+        ...auto.startingIds,
+        ...input.squad
+          .filter((s) => s.slot >= 12)
+          .map((s) => s.playerId)
+          .filter((id) => !auto.startingIds.includes(id)),
+      ]
     : auto.startingIds;
   const benchSlotIds = input.squad.filter((s) => s.slot >= 12).map((s) => s.playerId);
 
-  const cap = resolveCaptainMultiplier({ squad: input.squad, minutesById: input.minutesById, tripleCaptainActive: tripleCap });
+  const cap = resolveCaptainMultiplier({
+    squad: input.squad,
+    minutesById: input.minutesById,
+    tripleCaptainActive: tripleCap,
+  });
   const capId = cap.captainId;
   const capMult = cap.multiplier;
 

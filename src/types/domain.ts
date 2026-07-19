@@ -28,12 +28,7 @@ export interface Player {
   status: "available" | "injured" | "doubtful" | "suspended";
 }
 
-export type ArticleCategory =
-  | "for_you"
-  | "latest"
-  | "transfers"
-  | "analysis"
-  | "interviews";
+export type ArticleCategory = "for_you" | "latest" | "transfers" | "analysis" | "interviews";
 
 export interface Article {
   id: string;

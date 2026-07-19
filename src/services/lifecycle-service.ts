@@ -11,20 +11,9 @@
 // The service is UI-agnostic and the caller passes the freshly-loaded
 // team/players/breakdown so we don't reach into async data sources here.
 
-import type {
-  FantasyPlayer,
-  FantasyTeam,
-  PlayerPointsBreakdown,
-} from "@/types/fantasy";
-import {
-  consumeFreeHitSnapshot,
-  finalizeChip,
-  type ChipsState,
-} from "@/lib/fantasy-engine";
-import {
-  buildPointsViewModel,
-  type PointsViewModel,
-} from "@/services/points-service";
+import type { FantasyPlayer, FantasyTeam, PlayerPointsBreakdown } from "@/types/fantasy";
+import { consumeFreeHitSnapshot, finalizeChip, type ChipsState } from "@/lib/fantasy-engine";
+import { buildPointsViewModel, type PointsViewModel } from "@/services/points-service";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { fantasyService, type FantasyTeamPatch } from "@/services/fantasy-mock";
 

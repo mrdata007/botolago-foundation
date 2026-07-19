@@ -12,12 +12,7 @@
 // This module has NO React and NO Supabase imports so it is trivially
 // testable and safe to import from both the route and tests.
 
-import type {
-  FantasyPlayer,
-  FormationKey,
-  Position,
-  SquadPlayer,
-} from "@/types/fantasy";
+import type { FantasyPlayer, FormationKey, Position, SquadPlayer } from "@/types/fantasy";
 import { FORMATIONS, SQUAD_RULES } from "@/types/fantasy";
 import { validateTeam } from "@/lib/team-validation";
 
@@ -177,7 +172,7 @@ function withDefaultCaptaincy(draft: CreateTeamDraft): CreateTeamDraft {
   const viceId =
     viceInXI && viceInXI.playerId !== captainId
       ? viceInXI.playerId
-      : xi.find((s) => s.playerId !== captainId)?.playerId ?? second?.playerId ?? null;
+      : (xi.find((s) => s.playerId !== captainId)?.playerId ?? second?.playerId ?? null);
   const slots = draft.slots.map((s) => ({
     ...s,
     isCaptain: !!s.playerId && s.playerId === captainId && s.slot < 12,

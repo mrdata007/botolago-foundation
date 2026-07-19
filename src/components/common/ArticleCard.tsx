@@ -50,8 +50,14 @@ export function ArticleCard({
           style={{ background: article.heroGradient }}
           aria-hidden
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" aria-hidden />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-black/25 to-transparent" aria-hidden />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-black/25 to-transparent"
+          aria-hidden
+        />
         <div className="absolute end-3 top-3 z-10">
           <SavedButton articleId={article.id} variant="overlay" />
         </div>
@@ -64,7 +70,12 @@ export function ArticleCard({
           <h3 className="mt-2.5 text-[22px] font-black leading-[1.15] tracking-tight text-white drop-shadow-md sm:text-2xl">
             {tr(article.title)}
           </h3>
-          <p className={cn("mt-1.5 line-clamp-2 text-sm text-white/85", lang === "ar" && "leading-relaxed")}>
+          <p
+            className={cn(
+              "mt-1.5 line-clamp-2 text-sm text-white/85",
+              lang === "ar" && "leading-relaxed",
+            )}
+          >
             {tr(article.excerpt)}
           </p>
           <div className="mt-3 flex items-center gap-3 text-[11px] font-medium text-white/85">
@@ -74,7 +85,12 @@ export function ArticleCard({
               <Clock className="h-3 w-3" aria-hidden />
               {article.readMinutes} {t("news.read_min")}
             </span>
-            {time && (<><span className="h-1 w-1 shrink-0 rounded-full bg-white/50" aria-hidden /><span>{time}</span></>)}
+            {time && (
+              <>
+                <span className="h-1 w-1 shrink-0 rounded-full bg-white/50" aria-hidden />
+                <span>{time}</span>
+              </>
+            )}
           </div>
         </div>
       </Link>
@@ -92,12 +108,26 @@ export function ArticleCard({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         )}
       >
-        <div className="h-14 w-14 shrink-0 rounded-xl shadow-inner" style={{ background: article.heroGradient }} aria-hidden />
+        <div
+          className="h-14 w-14 shrink-0 rounded-xl shadow-inner"
+          style={{ background: article.heroGradient }}
+          aria-hidden
+        />
         <div className="min-w-0 flex-1">
-          <h4 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">{tr(article.title)}</h4>
+          <h4 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
+            {tr(article.title)}
+          </h4>
           <div className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-[color:var(--text-muted)]">
             <span className="truncate">{tr(article.authorName)}</span>
-            {time && (<><span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden /><span className="shrink-0">{time}</span></>)}
+            {time && (
+              <>
+                <span
+                  className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50"
+                  aria-hidden
+                />
+                <span className="shrink-0">{time}</span>
+              </>
+            )}
           </div>
         </div>
       </Link>
@@ -139,9 +169,16 @@ export function ArticleCard({
           <div className="mt-2 flex items-center justify-between gap-2 text-[10.5px] text-[color:var(--text-muted)]">
             <span className="inline-flex items-center gap-1 truncate">
               {time && <span className="truncate">{time}</span>}
-              {time && <span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />}
+              {time && (
+                <span
+                  className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50"
+                  aria-hidden
+                />
+              )}
               <Clock className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="shrink-0">{article.readMinutes} {t("news.read_min")}</span>
+              <span className="shrink-0">
+                {article.readMinutes} {t("news.read_min")}
+              </span>
             </span>
             <SavedButton articleId={article.id} variant="icon" className="h-9 w-9 -me-1" />
           </div>
@@ -170,7 +207,10 @@ export function ArticleCard({
             style={{ background: article.heroGradient }}
             aria-hidden
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" aria-hidden />
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"
+            aria-hidden
+          />
           {article.tag && (
             <span className="absolute start-3 top-3 inline-flex items-center rounded-full bg-white/95 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.14em] text-[color:var(--brand-primary)] shadow-subtle backdrop-blur">
               {tr(article.tag)}
@@ -183,7 +223,8 @@ export function ArticleCard({
             <div className="mt-1.5 flex items-center gap-2 text-[10px] text-white/85">
               {time && <span>{time}</span>}
               <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3" aria-hidden />{article.readMinutes} {t("news.read_min")}
+                <Clock className="h-3 w-3" aria-hidden />
+                {article.readMinutes} {t("news.read_min")}
               </span>
             </div>
           </div>
@@ -212,7 +253,10 @@ export function ArticleCard({
           style={{ background: article.heroGradient }}
           aria-hidden
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent"
+          aria-hidden
+        />
       </div>
       <div className="p-4">
         {article.tag && (
@@ -223,14 +267,30 @@ export function ArticleCard({
         <h3 className="mt-1 line-clamp-2 text-[15px] font-black leading-snug tracking-tight text-foreground">
           {tr(article.title)}
         </h3>
-        <p className={cn("mt-1.5 line-clamp-2 text-[13px] text-[color:var(--text-secondary)]", lang === "ar" && "leading-relaxed")}>
+        <p
+          className={cn(
+            "mt-1.5 line-clamp-2 text-[13px] text-[color:var(--text-secondary)]",
+            lang === "ar" && "leading-relaxed",
+          )}
+        >
           {tr(article.excerpt)}
         </p>
         <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-[color:var(--text-muted)]">
           <span className="inline-flex items-center gap-1.5 truncate">
             <span className="truncate">{tr(article.authorName)}</span>
-            {time && (<><span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden /><span className="shrink-0">{time}</span></>)}
-            <span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+            {time && (
+              <>
+                <span
+                  className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50"
+                  aria-hidden
+                />
+                <span className="shrink-0">{time}</span>
+              </>
+            )}
+            <span
+              className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--text-muted)]/50"
+              aria-hidden
+            />
             <span className="inline-flex shrink-0 items-center gap-1">
               <Clock className="h-3 w-3" aria-hidden />
               {article.readMinutes} {t("news.read_min")}

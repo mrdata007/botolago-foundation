@@ -3,7 +3,13 @@ import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
 import { PageBackground, type BackgroundVariant } from "./PageBackground";
 
-export function AppShell({ children, backgroundVariant }: { children: ReactNode; backgroundVariant?: BackgroundVariant }) {
+export function AppShell({
+  children,
+  backgroundVariant,
+}: {
+  children: ReactNode;
+  backgroundVariant?: BackgroundVariant;
+}) {
   return (
     <div className="relative min-h-dvh text-foreground">
       <PageBackground variant={backgroundVariant} />
@@ -13,4 +19,3 @@ export function AppShell({ children, backgroundVariant }: { children: ReactNode;
     </div>
   );
 }
-

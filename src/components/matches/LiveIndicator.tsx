@@ -20,10 +20,7 @@ export function LiveIndicator({
 }) {
   const { t } = useI18n();
   const label = t("matches.status.live");
-  const sizes =
-    size === "md"
-      ? "px-2 py-0.5 text-[11px]"
-      : "px-1.5 py-0.5 text-[10px]";
+  const sizes = size === "md" ? "px-2 py-0.5 text-[11px]" : "px-1.5 py-0.5 text-[10px]";
   return (
     <span
       className={cn(
@@ -38,9 +35,7 @@ export function LiveIndicator({
         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--color-live)]" />
       </span>
       <span>{label}</span>
-      {typeof minute === "number" && (
-        <span className="tabular-nums">{minute}′</span>
-      )}
+      {typeof minute === "number" && <span className="tabular-nums">{minute}′</span>}
     </span>
   );
 }

@@ -38,7 +38,6 @@ export const dictionaries = {
     "home.view_all": "Tout voir",
     "home.view_fantasy_team": "Voir mon équipe",
 
-
     "news.title": "Actualités",
     "news.tab.for_you": "Pour vous",
     "news.tab.latest": "Dernières actualités",
@@ -59,7 +58,8 @@ export const dictionaries = {
     "news.section.analysis": "Analyses & tactiques",
     "news.section.interviews": "Interviews",
     "news.section.saved": "Mes articles enregistrés",
-    "news.saved.empty": "Vous n'avez encore rien enregistré. Touchez le signet sur un article pour le retrouver ici.",
+    "news.saved.empty":
+      "Vous n'avez encore rien enregistré. Touchez le signet sur un article pour le retrouver ici.",
     "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
     "news.view_all": "Tout voir",
     "article.back": "Retour",
@@ -200,7 +200,8 @@ export const dictionaries = {
     "fantasy.transfers.chip_active": "Chip actif",
     "fantasy.transfers.no_hit_chip": "Aucune pénalité — chip actif",
     "fantasy.transfers.deadline_locked": "Deadline dépassée — transferts indisponibles.",
-    "fantasy.transfers.free_hit_snapshot_taken": "Sauvegarde de l'équipe Free Hit effectuée. Elle sera restaurée à la fin de la journée.",
+    "fantasy.transfers.free_hit_snapshot_taken":
+      "Sauvegarde de l'équipe Free Hit effectuée. Elle sera restaurée à la fin de la journée.",
     "fantasy.transfers.error.over_budget": "Budget insuffisant pour ces transferts.",
     "fantasy.transfers.error.deadline": "La deadline est dépassée — impossible de confirmer.",
     "fantasy.transfers.error.no_changes": "Aucun transfert à confirmer.",
@@ -308,22 +309,30 @@ export const dictionaries = {
     "fantasy.rules.formation": "Formations",
     "fantasy.rules.formation_desc": "Alignez 11 joueurs dans une formation valide chaque journée.",
     "fantasy.rules.captaincy": "Capitanat",
-    "fantasy.rules.captaincy_desc": "Le capitaine marque le double de ses points. Le vice-capitaine prend le relais si besoin.",
+    "fantasy.rules.captaincy_desc":
+      "Le capitaine marque le double de ses points. Le vice-capitaine prend le relais si besoin.",
     "fantasy.rules.transfers_r": "Transferts",
-    "fantasy.rules.transfers_desc": "1 transfert gratuit par journée. Chaque transfert supplémentaire coûte 4 points.",
+    "fantasy.rules.transfers_desc":
+      "1 transfert gratuit par journée. Chaque transfert supplémentaire coûte 4 points.",
     "fantasy.rules.deadlines": "Deadlines",
-    "fantasy.rules.deadlines_desc": "Chaque journée a une deadline. Les modifications après la deadline sont refusées.",
+    "fantasy.rules.deadlines_desc":
+      "Chaque journée a une deadline. Les modifications après la deadline sont refusées.",
     "fantasy.rules.scoring": "Barème de points",
-    "fantasy.rules.scoring_desc": "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+    "fantasy.rules.scoring_desc":
+      "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
     "fantasy.rules.tiebreak": "Départages",
-    "fantasy.rules.tiebreak_desc": "En cas d'égalité, la place la plus élevée revient au manager avec le plus de bonus, puis le plus de buts marqués.",
+    "fantasy.rules.tiebreak_desc":
+      "En cas d'égalité, la place la plus élevée revient au manager avec le plus de bonus, puis le plus de buts marqués.",
     "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
     "fantasy.onboarding.step1_title": "Composez votre équipe",
-    "fantasy.onboarding.step1_body": "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
+    "fantasy.onboarding.step1_body":
+      "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
     "fantasy.onboarding.step2_title": "Marquez des points",
-    "fantasy.onboarding.step2_body": "Buts, passes, cages inviolées, bonus… chaque action rapporte.",
+    "fantasy.onboarding.step2_body":
+      "Buts, passes, cages inviolées, bonus… chaque action rapporte.",
     "fantasy.onboarding.step3_title": "Défiez vos amis",
-    "fantasy.onboarding.step3_body": "Créez une ligue privée avec un code et grimpez au classement.",
+    "fantasy.onboarding.step3_body":
+      "Créez une ligue privée avec un code et grimpez au classement.",
     "fantasy.onboarding.skip": "Passer",
     "fantasy.onboarding.next": "Suivant",
     "fantasy.onboarding.start": "Commencer",
@@ -386,7 +395,8 @@ export const dictionaries = {
     "fantasy.chip.activate": "Activer",
     "fantasy.chip.deactivate": "Annuler",
     "fantasy.chip.confirm_title": "Activer ce jeton ?",
-    "fantasy.chip.confirm_desc": "Un seul jeton peut être actif à la fois. Cette action sera bloquée après la deadline.",
+    "fantasy.chip.confirm_desc":
+      "Un seul jeton peut être actif à la fois. Cette action sera bloquée après la deadline.",
     "fantasy.chip.confirm": "Confirmer",
     "fantasy.chip.cancel": "Annuler",
     "fantasy.chip.activated": "Jeton activé",
@@ -399,14 +409,16 @@ export const dictionaries = {
     "fantasy.deadline.locked": "Deadline dépassée — modifications désactivées.",
     "fantasy.deadline.open": "Modifications ouvertes jusqu'à la deadline.",
     "fantasy.chip.cancelled": "Jeton annulé",
-    "fantasy.team.error.deadline_crossed_revert": "Deadline dépassée pendant l'édition — modifications annulées.",
+    "fantasy.team.error.deadline_crossed_revert":
+      "Deadline dépassée pendant l'édition — modifications annulées.",
     "fantasy.team.error.gw_finalized": "Journée clôturée — modifications désactivées.",
     "fantasy.team.error.swap_position": "Impossible d'échanger deux joueurs de postes différents.",
     "fantasy.team.error.invalid_size": "Effectif invalide (15 joueurs, 11 titulaires requis).",
     "fantasy.team.error.invalid_formation": "Formation invalide.",
     "fantasy.team.error.no_captain": "Aucun capitaine sélectionné.",
     "fantasy.team.error.no_vice": "Aucun vice-capitaine sélectionné.",
-    "fantasy.team.error.captain_vice_same": "Le capitaine et le vice-capitaine doivent être différents.",
+    "fantasy.team.error.captain_vice_same":
+      "Le capitaine et le vice-capitaine doivent être différents.",
     "fantasy.team.error.captain_not_in_xi": "Le capitaine doit être titulaire.",
     "fantasy.team.error.vice_not_in_xi": "Le vice-capitaine doit être titulaire.",
     "fantasy.points.finalize": "Clôturer la journée",
@@ -415,9 +427,11 @@ export const dictionaries = {
     "fantasy.points.already_finalized": "Journée déjà clôturée.",
     "fantasy.points.must_finalize_first": "Clôturez la journée en cours d'abord.",
     "fantasy.points.finalize_confirm_title": "Clôturer cette journée ?",
-    "fantasy.points.finalize_confirm_desc": "Le résultat sera enregistré, le jeton actif marqué utilisé et l'équipe Free Hit restaurée le cas échéant.",
+    "fantasy.points.finalize_confirm_desc":
+      "Le résultat sera enregistré, le jeton actif marqué utilisé et l'équipe Free Hit restaurée le cas échéant.",
     "fantasy.points.advance_confirm_title": "Passer à la journée suivante ?",
-    "fantasy.points.advance_confirm_desc": "Les transferts gratuits seront mis à jour (plafond 2) et l'état de transfert réinitialisé.",
+    "fantasy.points.advance_confirm_desc":
+      "Les transferts gratuits seront mis à jour (plafond 2) et l'état de transfert réinitialisé.",
     "fantasy.points.finalize_success": "Journée clôturée.",
     "fantasy.points.advance_success": "Nouvelle journée démarrée.",
     "fantasy.points.free_hit_restored": "Équipe Free Hit restaurée.",
@@ -426,9 +440,11 @@ export const dictionaries = {
     "fantasy.leagues.leave": "Quitter la ligue",
     "fantasy.leagues.delete": "Supprimer la ligue",
     "fantasy.leagues.leave_confirm_title": "Quitter cette ligue ?",
-    "fantasy.leagues.leave_confirm_desc": "Vous pourrez la rejoindre à nouveau avec le code d'invitation.",
+    "fantasy.leagues.leave_confirm_desc":
+      "Vous pourrez la rejoindre à nouveau avec le code d'invitation.",
     "fantasy.leagues.delete_confirm_title": "Supprimer cette ligue ?",
-    "fantasy.leagues.delete_confirm_desc": "Cette action est définitive. Les membres perdront l'accès.",
+    "fantasy.leagues.delete_confirm_desc":
+      "Cette action est définitive. Les membres perdront l'accès.",
     "fantasy.leagues.role.creator": "Admin",
     "fantasy.leagues.role.member": "Membre",
     "fantasy.leagues.copied": "Code copié",
@@ -442,12 +458,14 @@ export const dictionaries = {
     "fantasy.leagues.empty": "Aucune ligue pour l'instant.",
     "fantasy.leagues.overall": "Général",
     "fantasy.leagues.gameweek": "Journée",
-    "fantasy.leagues.rules_summary": "Points cumulés depuis le début de la saison. Le classement se met à jour après chaque journée.",
+    "fantasy.leagues.rules_summary":
+      "Points cumulés depuis le début de la saison. Le classement se met à jour après chaque journée.",
     "common.confirm": "Confirmer",
     "common.cancel": "Annuler",
 
     "fantasy.top.title": "{accent}Top 5{/accent} joueurs de la semaine",
-    "fantasy.top.subtitle": "Les meilleurs joueurs de la journée selon leurs performances et leurs points Fantasy.",
+    "fantasy.top.subtitle":
+      "Les meilleurs joueurs de la journée selon leurs performances et leurs points Fantasy.",
     "fantasy.top.gw_label": "Journée",
     "fantasy.top.points": "Points",
     "fantasy.top.goals": "Buts",
@@ -464,14 +482,15 @@ export const dictionaries = {
     "fantasy.top.entry_cta": "Voir le classement",
     "fantasy.tab.top": "Top 5",
 
-
     "welcome.title": "Bienvenue sur BotolaGO",
-    "welcome.description": "Toute l'actualité du football marocain, les matchs en direct et la Fantasy Botola réunis dans une seule application.",
+    "welcome.description":
+      "Toute l'actualité du football marocain, les matchs en direct et la Fantasy Botola réunis dans une seule application.",
     "welcome.cta_primary": "Commencer",
     "welcome.secondary_prompt": "Vous avez déjà un compte ?",
     "welcome.cta_secondary": "Se connecter",
     "welcome.cta_guest": "Continuer en invité",
-    "welcome.guest_hint": "Découvrez BotolaGO sans compte. Certaines fonctionnalités resteront limitées.",
+    "welcome.guest_hint":
+      "Découvrez BotolaGO sans compte. Certaines fonctionnalités resteront limitées.",
 
     "auth.brand_tagline": "Le football marocain, réuni.",
     "auth.back": "Retour",
@@ -485,12 +504,14 @@ export const dictionaries = {
     "auth.or_continue_with": "ou continuer avec",
     "auth.google": "Continuer avec Google",
     "auth.apple": "Continuer avec Apple",
-    "auth.terms_notice": "En continuant, vous acceptez nos Conditions et Politique de confidentialité.",
+    "auth.terms_notice":
+      "En continuant, vous acceptez nos Conditions et Politique de confidentialité.",
     "auth.demo_hint": "Démo : demo@botolago.ma / demo1234",
     "auth.submitting": "Un instant…",
 
     "auth.login.title": "Bon retour",
-    "auth.login.subtitle": "Connectez-vous pour retrouver votre équipe Fantasy et vos clubs suivis.",
+    "auth.login.subtitle":
+      "Connectez-vous pour retrouver votre équipe Fantasy et vos clubs suivis.",
     "auth.login.cta": "Se connecter",
     "auth.login.forgot": "Mot de passe oublié ?",
     "auth.login.no_account": "Pas encore de compte ?",
@@ -504,7 +525,8 @@ export const dictionaries = {
     "auth.register.username": "Nom d'utilisateur",
     "auth.register.username_placeholder": "ex : rachid_1998",
     "auth.register.confirm_password": "Confirmer le mot de passe",
-    "auth.register.accept_terms": "J'accepte les Conditions d'utilisation et la Politique de confidentialité.",
+    "auth.register.accept_terms":
+      "J'accepte les Conditions d'utilisation et la Politique de confidentialité.",
     "auth.register.have_account": "Vous avez déjà un compte ?",
     "auth.register.login_link": "Se connecter",
     "auth.register.password_strength": "Force du mot de passe",
@@ -522,10 +544,12 @@ export const dictionaries = {
     "auth.verify.demo_hint": "Démo : le code est 123456",
 
     "auth.forgot.title": "Mot de passe oublié",
-    "auth.forgot.subtitle": "Indiquez votre e-mail. Si un compte existe, vous recevrez un lien de réinitialisation.",
+    "auth.forgot.subtitle":
+      "Indiquez votre e-mail. Si un compte existe, vous recevrez un lien de réinitialisation.",
     "auth.forgot.cta": "Envoyer le lien",
     "auth.forgot.success_title": "Vérifiez votre boîte de réception",
-    "auth.forgot.success_body": "Si un compte est associé à cet e-mail, vous recevrez un message contenant les instructions.",
+    "auth.forgot.success_body":
+      "Si un compte est associé à cet e-mail, vous recevrez un message contenant les instructions.",
     "auth.forgot.back_to_login": "Retour à la connexion",
 
     "auth.callback.title": "Connexion en cours",
@@ -546,7 +570,6 @@ export const dictionaries = {
 
     "auth.mode.mock": "MODE DÉMO",
     "auth.error.provider_unavailable": "Ce fournisseur n'est pas disponible pour le moment.",
-
 
     "auth.setup.title": "Personnalisez votre profil",
     "auth.setup.subtitle": "Quelques choix rapides pour adapter BotolaGO à vos préférences.",
@@ -573,7 +596,8 @@ export const dictionaries = {
     "auth.setup.success": "Profil mis à jour",
 
     "auth.prompt.title": "Compte requis",
-    "auth.prompt.body": "Créez un compte gratuit ou connectez-vous pour accéder à cette fonctionnalité.",
+    "auth.prompt.body":
+      "Créez un compte gratuit ou connectez-vous pour accéder à cette fonctionnalité.",
     "auth.prompt.login": "Se connecter",
     "auth.prompt.register": "Créer un compte",
     "auth.prompt.cancel": "Continuer à explorer",
@@ -604,9 +628,11 @@ export const dictionaries = {
 
     "profile.guest_badge": "Invité",
     "profile.anon_title": "Connectez-vous à {accent}BotolaGO{/accent}",
-    "profile.anon_body": "Créez un compte pour sauvegarder votre équipe Fantasy, suivre vos clubs et rejoindre des ligues privées.",
+    "profile.anon_body":
+      "Créez un compte pour sauvegarder votre équipe Fantasy, suivre vos clubs et rejoindre des ligues privées.",
     "profile.guest_title": "Vous naviguez en {accent}invité{/accent}",
-    "profile.guest_body": "Certaines actions comme l'édition de votre équipe Fantasy ou la création de ligues nécessitent un compte.",
+    "profile.guest_body":
+      "Certaines actions comme l'édition de votre équipe Fantasy ou la création de ligues nécessitent un compte.",
     "profile.email": "E-mail",
     "profile.username": "Nom d'utilisateur",
     "profile.fav_club": "Club favori",
@@ -626,7 +652,8 @@ export const dictionaries = {
     "fantasy.cloud.saved": "Enregistré",
     "fantasy.cloud.conflict": "Une version plus récente existe. Rechargez pour continuer.",
     "fantasy.cloud.permission_denied": "Accès refusé. Reconnectez-vous.",
-    "fantasy.cloud.offline": "Hors ligne. Vos modifications restent locales et ne sont pas enregistrées — réessayez pour synchroniser.",
+    "fantasy.cloud.offline":
+      "Hors ligne. Vos modifications restent locales et ne sont pas enregistrées — réessayez pour synchroniser.",
     "fantasy.cloud.mapping_unavailable": "Synchronisation des joueurs indisponible pour le moment.",
     "fantasy.cloud.error": "Erreur de synchronisation.",
     "fantasy.cloud.retry": "Réessayer",
@@ -634,7 +661,8 @@ export const dictionaries = {
 
     // Pass 3 — import prompt
     "fantasy.import.title": "Équipe locale détectée",
-    "fantasy.import.subtitle": "Retrouvez votre équipe sur tous vos appareils en l'enregistrant sur votre compte.",
+    "fantasy.import.subtitle":
+      "Retrouvez votre équipe sur tous vos appareils en l'enregistrant sur votre compte.",
     "fantasy.import.cta_save": "Enregistrer mon équipe",
     "fantasy.import.cta_start_new": "Commencer une nouvelle équipe",
     "fantasy.import.cta_later": "Plus tard",
@@ -671,17 +699,22 @@ export const dictionaries = {
     "fantasy.action.save_draft": "Conserver le brouillon",
     "fantasy.action.cancel": "Annuler",
     "fantasy.conflict.title": "Version plus récente disponible",
-    "fantasy.conflict.explain": "Quelqu'un — vous sur un autre appareil, ou une mise à jour automatique — a enregistré une version plus récente de votre équipe. Choisissez comment continuer.",
+    "fantasy.conflict.explain":
+      "Quelqu'un — vous sur un autre appareil, ou une mise à jour automatique — a enregistré une version plus récente de votre équipe. Choisissez comment continuer.",
     "fantasy.conflict.reload_latest": "Recharger la dernière version",
     "fantasy.conflict.keep_working": "Continuer avec mes modifications",
     "fantasy.default.team_name": "Mon équipe",
     "fantasy.team.hint.swap": "Touchez deux joueurs du même poste pour les échanger.",
-    "fantasy.team.hint.position_incompatible": "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
+    "fantasy.team.hint.position_incompatible":
+      "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
     "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
     "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
-    "fantasy.error.import_validation": "Votre équipe locale ne respecte pas les règles (15 joueurs, formation légale, capitaine et vice-capitaine).",
-    "fantasy.error.gameweek_unresolved": "La journée en cours n'a pas pu être identifiée dans le cloud.",
-    "fantasy.error.import_generic": "L'importation a échoué. Aucune modification n'a été enregistrée.",
+    "fantasy.error.import_validation":
+      "Votre équipe locale ne respecte pas les règles (15 joueurs, formation légale, capitaine et vice-capitaine).",
+    "fantasy.error.gameweek_unresolved":
+      "La journée en cours n'a pas pu être identifiée dans le cloud.",
+    "fantasy.error.import_generic":
+      "L'importation a échoué. Aucune modification n'a été enregistrée.",
     "fantasy.result.cloud_stable": "Résultat officiel enregistré.",
 
     "fantasy.create.title": "Créer mon équipe",
@@ -700,7 +733,8 @@ export const dictionaries = {
     "fantasy.create.remove_slot": "Retirer ce joueur",
     "fantasy.create.discard": "Réinitialiser",
     "fantasy.create.discard_title": "Réinitialiser l'équipe ?",
-    "fantasy.create.discard_desc": "Tous les joueurs sélectionnés seront retirés. Le brouillon local sera effacé.",
+    "fantasy.create.discard_desc":
+      "Tous les joueurs sélectionnés seront retirés. Le brouillon local sera effacé.",
     "fantasy.create.discarded": "Brouillon réinitialisé.",
     "fantasy.create.success": "Équipe créée avec succès.",
     "fantasy.create.cta_primary": "Enregistrer mon équipe",
@@ -708,18 +742,19 @@ export const dictionaries = {
     "fantasy.create.error.no_gameweek": "Aucune journée active pour le moment.",
     "fantasy.create.error.team_name": "Nom d'équipe invalide.",
     "fantasy.create.error.size": "Sélectionnez exactement 15 joueurs.",
-    "fantasy.create.error.position_count": "Répartition par poste invalide (2 GK, 5 DEF, 5 MID, 3 FWD).",
+    "fantasy.create.error.position_count":
+      "Répartition par poste invalide (2 GK, 5 DEF, 5 MID, 3 FWD).",
     "fantasy.create.error.duplicate": "Un joueur ne peut être sélectionné qu'une seule fois.",
     "fantasy.create.error.club_limit": "Maximum 3 joueurs par club.",
     "fantasy.create.error.budget": "Budget dépassé.",
     "fantasy.create.error.formation": "Formation des titulaires invalide.",
     "fantasy.create.error.captain_missing": "Choisissez un capitaine.",
     "fantasy.create.error.vice_missing": "Choisissez un vice-capitaine.",
-    "fantasy.create.error.captain_vice_same": "Le capitaine et le vice-capitaine doivent être différents.",
+    "fantasy.create.error.captain_vice_same":
+      "Le capitaine et le vice-capitaine doivent être différents.",
     "fantasy.create.error.captain_not_in_xi": "Le capitaine doit être titulaire.",
     "fantasy.create.error.vice_not_in_xi": "Le vice-capitaine doit être titulaire.",
   },
-
 
   ar: {
     "app.name": "BotolaGO",
@@ -755,7 +790,6 @@ export const dictionaries = {
     "home.private_leagues": "دورياتك {accent}الخاصة{/accent}",
     "home.view_all": "عرض الكل",
     "home.view_fantasy_team": "عرض فريقي",
-
 
     "news.title": "الأخبار",
     "news.tab.for_you": "مقترح لك",
@@ -918,7 +952,8 @@ export const dictionaries = {
     "fantasy.transfers.chip_active": "الرقاقة النشطة",
     "fantasy.transfers.no_hit_chip": "بدون خصم — رقاقة نشطة",
     "fantasy.transfers.deadline_locked": "انتهى الموعد النهائي — الانتقالات غير متاحة.",
-    "fantasy.transfers.free_hit_snapshot_taken": "تم حفظ فريقك قبل الضربة الحرة وسيُستعاد بعد الجولة.",
+    "fantasy.transfers.free_hit_snapshot_taken":
+      "تم حفظ فريقك قبل الضربة الحرة وسيُستعاد بعد الجولة.",
     "fantasy.transfers.error.over_budget": "الرصيد لا يكفي لإتمام الانتقالات.",
     "fantasy.transfers.error.deadline": "انتهى الموعد النهائي — لا يمكن التأكيد.",
     "fantasy.transfers.error.no_changes": "لا توجد انتقالات للتأكيد.",
@@ -1032,14 +1067,18 @@ export const dictionaries = {
     "fantasy.rules.deadlines": "المواعيد النهائية",
     "fantasy.rules.deadlines_desc": "لكل جولة موعد نهائي. لا يُقبل أي تعديل بعده.",
     "fantasy.rules.scoring": "نظام النقاط",
-    "fantasy.rules.scoring_desc": "هدف مهاجم: 4 نقاط، وسط: 5 نقاط، مدافع أو حارس: 6 نقاط. شباك نظيفة: 4 نقاط (مدافع/حارس).",
+    "fantasy.rules.scoring_desc":
+      "هدف مهاجم: 4 نقاط، وسط: 5 نقاط، مدافع أو حارس: 6 نقاط. شباك نظيفة: 4 نقاط (مدافع/حارس).",
     "fantasy.rules.tiebreak": "الترجيح",
-    "fantasy.rules.tiebreak_desc": "عند التعادل، يتقدم صاحب النقاط الإضافية الأعلى ثم صاحب الأهداف الأكثر.",
+    "fantasy.rules.tiebreak_desc":
+      "عند التعادل، يتقدم صاحب النقاط الإضافية الأعلى ثم صاحب الأهداف الأكثر.",
     "fantasy.onboarding.title": "أهلاً بك في فانتازي BotolaGO",
     "fantasy.onboarding.step1_title": "شكّل فريقك",
-    "fantasy.onboarding.step1_body": "اختر 15 لاعباً بميزانية 100 م وشكّل 11 لاعباً أساسياً في كل جولة.",
+    "fantasy.onboarding.step1_body":
+      "اختر 15 لاعباً بميزانية 100 م وشكّل 11 لاعباً أساسياً في كل جولة.",
     "fantasy.onboarding.step2_title": "اجمع النقاط",
-    "fantasy.onboarding.step2_body": "أهداف، تمريرات حاسمة، شباك نظيفة، ونقاط إضافية… كل حدث يُحتسب.",
+    "fantasy.onboarding.step2_body":
+      "أهداف، تمريرات حاسمة، شباك نظيفة، ونقاط إضافية… كل حدث يُحتسب.",
     "fantasy.onboarding.step3_title": "تحدَّ أصدقاءك",
     "fantasy.onboarding.step3_body": "أنشئ دوري خاصاً برمز وتنافس على الصدارة.",
     "fantasy.onboarding.skip": "تخطي",
@@ -1104,7 +1143,8 @@ export const dictionaries = {
     "fantasy.chip.activate": "تفعيل",
     "fantasy.chip.deactivate": "إلغاء",
     "fantasy.chip.confirm_title": "تفعيل هذه الرقاقة؟",
-    "fantasy.chip.confirm_desc": "لا يمكن تفعيل أكثر من رقاقة واحدة. سيتم إيقاف هذا الإجراء بعد الموعد النهائي.",
+    "fantasy.chip.confirm_desc":
+      "لا يمكن تفعيل أكثر من رقاقة واحدة. سيتم إيقاف هذا الإجراء بعد الموعد النهائي.",
     "fantasy.chip.confirm": "تأكيد",
     "fantasy.chip.cancel": "إلغاء",
     "fantasy.chip.activated": "تم تفعيل الرقاقة",
@@ -1117,7 +1157,8 @@ export const dictionaries = {
     "fantasy.deadline.locked": "انتهى الموعد النهائي — التعديلات معطّلة.",
     "fantasy.deadline.open": "التعديلات متاحة حتى الموعد النهائي.",
     "fantasy.chip.cancelled": "تم إلغاء الرقاقة",
-    "fantasy.team.error.deadline_crossed_revert": "انتهى الموعد النهائي أثناء التعديل — تم التراجع عن التغييرات.",
+    "fantasy.team.error.deadline_crossed_revert":
+      "انتهى الموعد النهائي أثناء التعديل — تم التراجع عن التغييرات.",
     "fantasy.team.error.gw_finalized": "الجولة مُقفَلة — التعديلات معطّلة.",
     "fantasy.team.error.swap_position": "لا يمكن تبديل لاعبين من مركزين مختلفين.",
     "fantasy.team.error.invalid_size": "تشكيلة غير صالحة (15 لاعبًا، 11 أساسيًا).",
@@ -1133,9 +1174,11 @@ export const dictionaries = {
     "fantasy.points.already_finalized": "الجولة مُقفَلة سلفًا.",
     "fantasy.points.must_finalize_first": "يجب إقفال الجولة الحالية أولًا.",
     "fantasy.points.finalize_confirm_title": "إقفال هذه الجولة؟",
-    "fantasy.points.finalize_confirm_desc": "سيتم حفظ النتيجة، واحتساب الرقاقة النشطة كمُستخدَمة، واستعادة تشكيلة Free Hit عند الاقتضاء.",
+    "fantasy.points.finalize_confirm_desc":
+      "سيتم حفظ النتيجة، واحتساب الرقاقة النشطة كمُستخدَمة، واستعادة تشكيلة Free Hit عند الاقتضاء.",
     "fantasy.points.advance_confirm_title": "الانتقال إلى الجولة التالية؟",
-    "fantasy.points.advance_confirm_desc": "سيتم تحديث التحويلات المجانية (بحد أقصى 2) وإعادة تعيين حالة التحويلات.",
+    "fantasy.points.advance_confirm_desc":
+      "سيتم تحديث التحويلات المجانية (بحد أقصى 2) وإعادة تعيين حالة التحويلات.",
     "fantasy.points.finalize_success": "تم إقفال الجولة.",
     "fantasy.points.advance_success": "تم بدء جولة جديدة.",
     "fantasy.points.free_hit_restored": "تمت استعادة تشكيلة Free Hit.",
@@ -1160,7 +1203,8 @@ export const dictionaries = {
     "fantasy.leagues.empty": "لا توجد دوريات بعد.",
     "fantasy.leagues.overall": "العام",
     "fantasy.leagues.gameweek": "الجولة",
-    "fantasy.leagues.rules_summary": "النقاط التراكمية منذ بداية الموسم. يُحدَّث الترتيب بعد كل جولة.",
+    "fantasy.leagues.rules_summary":
+      "النقاط التراكمية منذ بداية الموسم. يُحدَّث الترتيب بعد كل جولة.",
     "common.confirm": "تأكيد",
     "common.cancel": "إلغاء",
 
@@ -1182,9 +1226,9 @@ export const dictionaries = {
     "fantasy.top.entry_cta": "عرض التصنيف",
     "fantasy.tab.top": "أفضل 5",
 
-
     "welcome.title": "مرحبًا بك في BotolaGO",
-    "welcome.description": "تابع أخبار الكرة المغربية، المباريات المباشرة، وفانتازي البطولة في تطبيق واحد.",
+    "welcome.description":
+      "تابع أخبار الكرة المغربية، المباريات المباشرة، وفانتازي البطولة في تطبيق واحد.",
     "welcome.cta_primary": "ابدأ",
     "welcome.secondary_prompt": "لديك حساب بالفعل؟",
     "welcome.cta_secondary": "تسجيل الدخول",
@@ -1265,7 +1309,6 @@ export const dictionaries = {
     "auth.mode.mock": "وضع تجريبي",
     "auth.error.provider_unavailable": "هذا المزود غير متاح حاليًا.",
 
-
     "auth.setup.title": "خصّص ملفك الشخصي",
     "auth.setup.subtitle": "بعض الخيارات السريعة لتكييف BotolaGO حسب تفضيلاتك.",
     "auth.setup.step": "الخطوة",
@@ -1322,7 +1365,8 @@ export const dictionaries = {
 
     "profile.guest_badge": "ضيف",
     "profile.anon_title": "سجّل الدخول إلى {accent}BotolaGO{/accent}",
-    "profile.anon_body": "أنشئ حسابًا لحفظ فريق الفانتازي، متابعة الأندية والانضمام إلى الدوريات الخاصة.",
+    "profile.anon_body":
+      "أنشئ حسابًا لحفظ فريق الفانتازي، متابعة الأندية والانضمام إلى الدوريات الخاصة.",
     "profile.guest_title": "أنت تتصفح {accent}كضيف{/accent}",
     "profile.guest_body": "بعض الإجراءات كتعديل فريق الفانتازي أو إنشاء الدوريات تتطلب حسابًا.",
     "profile.email": "البريد الإلكتروني",
@@ -1344,7 +1388,8 @@ export const dictionaries = {
     "fantasy.cloud.saved": "تم الحفظ",
     "fantasy.cloud.conflict": "توجد نسخة أحدث. أعد التحميل للمتابعة.",
     "fantasy.cloud.permission_denied": "تم رفض الوصول. يرجى تسجيل الدخول من جديد.",
-    "fantasy.cloud.offline": "غير متصل. تعديلاتك محفوظة محليًا فقط ولم تُزامَن — أعد المحاولة للمزامنة.",
+    "fantasy.cloud.offline":
+      "غير متصل. تعديلاتك محفوظة محليًا فقط ولم تُزامَن — أعد المحاولة للمزامنة.",
     "fantasy.cloud.mapping_unavailable": "مزامنة اللاعبين غير متاحة حاليًا.",
     "fantasy.cloud.error": "خطأ في المزامنة.",
     "fantasy.cloud.retry": "إعادة المحاولة",
@@ -1389,7 +1434,8 @@ export const dictionaries = {
     "fantasy.action.save_draft": "الاحتفاظ بالمسودة",
     "fantasy.action.cancel": "إلغاء",
     "fantasy.conflict.title": "توجد نسخة أحدث",
-    "fantasy.conflict.explain": "قام أحدهم — أنت من جهاز آخر أو تحديث تلقائي — بحفظ نسخة أحدث من فريقك. اختر كيف تريد المتابعة.",
+    "fantasy.conflict.explain":
+      "قام أحدهم — أنت من جهاز آخر أو تحديث تلقائي — بحفظ نسخة أحدث من فريقك. اختر كيف تريد المتابعة.",
     "fantasy.conflict.reload_latest": "تحميل أحدث نسخة",
     "fantasy.conflict.keep_working": "المتابعة بتعديلاتي",
     "fantasy.default.team_name": "فريقي",
@@ -1397,7 +1443,8 @@ export const dictionaries = {
     "fantasy.team.hint.position_incompatible": "لا يمكن تبديل لاعبين من مركزين مختلفين.",
     "fantasy.empty.subtitle": "قم ببناء فريقك المكوّن من 15 لاعبًا للبدء.",
     "fantasy.empty.builder_open": "فتح منشئ الفريق",
-    "fantasy.error.import_validation": "فريقك المحلي لا يستوفي القواعد (15 لاعبًا، تشكيلة قانونية، قائد ونائبه).",
+    "fantasy.error.import_validation":
+      "فريقك المحلي لا يستوفي القواعد (15 لاعبًا، تشكيلة قانونية، قائد ونائبه).",
     "fantasy.error.gameweek_unresolved": "تعذّر تحديد الجولة الحالية في الخدمة السحابية.",
     "fantasy.error.import_generic": "فشلت عملية الاستيراد. لم يتم حفظ أي تعديل.",
     "fantasy.result.cloud_stable": "نتيجة رسمية محفوظة.",
@@ -1426,7 +1473,8 @@ export const dictionaries = {
     "fantasy.create.error.no_gameweek": "لا توجد جولة نشطة حاليًا.",
     "fantasy.create.error.team_name": "اسم الفريق غير صالح.",
     "fantasy.create.error.size": "اختر 15 لاعبًا بالضبط.",
-    "fantasy.create.error.position_count": "توزيع المراكز غير صحيح (2 حراسة، 5 دفاع، 5 وسط، 3 هجوم).",
+    "fantasy.create.error.position_count":
+      "توزيع المراكز غير صحيح (2 حراسة، 5 دفاع، 5 وسط، 3 هجوم).",
     "fantasy.create.error.duplicate": "لا يمكن اختيار اللاعب مرتين.",
     "fantasy.create.error.club_limit": "بحد أقصى 3 لاعبين من نفس النادي.",
     "fantasy.create.error.budget": "تم تجاوز الميزانية.",
@@ -1437,8 +1485,6 @@ export const dictionaries = {
     "fantasy.create.error.captain_not_in_xi": "يجب أن يكون القائد ضمن الأساسيين.",
     "fantasy.create.error.vice_not_in_xi": "يجب أن يكون نائب القائد ضمن الأساسيين.",
   },
-
-
 } as const satisfies Record<Language, Record<string, string>>;
 
 export type TranslationKey = keyof (typeof dictionaries)["fr"];

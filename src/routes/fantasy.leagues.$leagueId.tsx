@@ -10,8 +10,14 @@ import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { ArrowLeft, Copy, LogOut, Trash2, Trophy } from "lucide-react";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
@@ -44,22 +50,42 @@ function LeagueDetailPage() {
   const league = persisted ?? leagueQ.data;
   if (!persisted && leagueQ.isLoading) return <LoadingState />;
   if (!league) return <EmptyState />;
-  const standings = persisted ? persisted.standings : standingsQ.data ?? [];
+  const standings = persisted ? persisted.standings : (standingsQ.data ?? []);
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2400);
+  };
   const copy = () => {
     if (!league.code) return;
-    try { navigator.clipboard.writeText(league.code); showToast(t("fantasy.leagues.copied")); } catch { /* ignore */ }
+    try {
+      navigator.clipboard.writeText(league.code);
+      showToast(t("fantasy.leagues.copied"));
+    } catch {
+      /* ignore */
+    }
   };
   const handleLeave = () => {
-    try { leaguesStore.leave(league.id); qc.invalidateQueries({ queryKey: ["persisted-leagues"] }); navigate({ to: "/fantasy/leagues" }); }
-    catch (e) { if (e instanceof LeagueError) showToast(t(e.key as TranslationKey)); }
-    finally { setConfirm(null); }
+    try {
+      leaguesStore.leave(league.id);
+      qc.invalidateQueries({ queryKey: ["persisted-leagues"] });
+      navigate({ to: "/fantasy/leagues" });
+    } catch (e) {
+      if (e instanceof LeagueError) showToast(t(e.key as TranslationKey));
+    } finally {
+      setConfirm(null);
+    }
   };
   const handleDelete = () => {
-    try { leaguesStore.delete(league.id); qc.invalidateQueries({ queryKey: ["persisted-leagues"] }); navigate({ to: "/fantasy/leagues" }); }
-    catch (e) { if (e instanceof LeagueError) showToast(t(e.key as TranslationKey)); }
-    finally { setConfirm(null); }
+    try {
+      leaguesStore.delete(league.id);
+      qc.invalidateQueries({ queryKey: ["persisted-leagues"] });
+      navigate({ to: "/fantasy/leagues" });
+    } catch (e) {
+      if (e instanceof LeagueError) showToast(t(e.key as TranslationKey));
+    } finally {
+      setConfirm(null);
+    }
   };
 
   const isCreator = persisted?.role === "creator";
@@ -67,7 +93,10 @@ function LeagueDetailPage() {
 
   return (
     <div>
-      <Link to="/fantasy/leagues" className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+      <Link
+        to="/fantasy/leagues"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         {t("common.back")}
       </Link>
@@ -81,16 +110,23 @@ function LeagueDetailPage() {
             <div className="truncate text-lg font-black text-foreground">{league.name}</div>
             {persisted && (
               <span className="rounded-full bg-[color:var(--brand-accent)]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
-                {t(persisted.role === "creator" ? "fantasy.leagues.role.creator" : "fantasy.leagues.role.member")}
+                {t(
+                  persisted.role === "creator"
+                    ? "fantasy.leagues.role.creator"
+                    : "fantasy.leagues.role.member",
+                )}
               </span>
             )}
           </div>
           <div className="text-xs text-muted-foreground">
-            {nf.format(league.members)} {t("fantasy.leagues.members")} · {t("fantasy.leagues.leader")}: {league.leaderName ?? "—"}
+            {nf.format(league.members)} {t("fantasy.leagues.members")} ·{" "}
+            {t("fantasy.leagues.leader")}: {league.leaderName ?? "—"}
           </div>
         </div>
         <div className="text-end">
-          <div className="text-lg font-black tabular-nums text-brand-accent">#{nf.format(league.rank)}</div>
+          <div className="text-lg font-black tabular-nums text-brand-accent">
+            #{nf.format(league.rank)}
+          </div>
           <RankChangeIndicator rank={league.rank} previousRank={league.previousRank} />
         </div>
       </div>
@@ -98,10 +134,15 @@ function LeagueDetailPage() {
       {league.code && (
         <div className="mt-2 flex items-center justify-between rounded-xl bg-white/60 px-3 py-2 text-sm ring-1 ring-black/5">
           <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("fantasy.leagues.code")}</div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {t("fantasy.leagues.code")}
+            </div>
             <div className="font-mono font-black">{league.code}</div>
           </div>
-          <button onClick={copy} className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-xs font-semibold text-white">
+          <button
+            onClick={copy}
+            className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-xs font-semibold text-white"
+          >
             <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
           </button>
         </div>
@@ -133,16 +174,18 @@ function LeagueDetailPage() {
       )}
 
       <div className="mt-4">
-        <div className="mb-2 text-sm font-black text-foreground">{t("fantasy.leagues.standings")}</div>
-        {standings.length > 0 ? (
-          <LeagueTable standings={standings} meId="me" />
-        ) : (
-          <EmptyState />
-        )}
+        <div className="mb-2 text-sm font-black text-foreground">
+          {t("fantasy.leagues.standings")}
+        </div>
+        {standings.length > 0 ? <LeagueTable standings={standings} meId="me" /> : <EmptyState />}
       </div>
 
       {toast && (
-        <div role="status" aria-live="polite" className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-sm rounded-xl bg-foreground/90 px-3 py-2 text-center text-xs font-semibold text-background shadow-lg">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-sm rounded-xl bg-foreground/90 px-3 py-2 text-center text-xs font-semibold text-background shadow-lg"
+        >
           {toast}
         </div>
       )}
@@ -151,10 +194,18 @@ function LeagueDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t(confirm === "delete" ? "fantasy.leagues.delete_confirm_title" : "fantasy.leagues.leave_confirm_title")}
+              {t(
+                confirm === "delete"
+                  ? "fantasy.leagues.delete_confirm_title"
+                  : "fantasy.leagues.leave_confirm_title",
+              )}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t(confirm === "delete" ? "fantasy.leagues.delete_confirm_desc" : "fantasy.leagues.leave_confirm_desc")}
+              {t(
+                confirm === "delete"
+                  ? "fantasy.leagues.delete_confirm_desc"
+                  : "fantasy.leagues.leave_confirm_desc",
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

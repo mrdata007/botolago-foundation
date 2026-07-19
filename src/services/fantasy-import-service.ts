@@ -26,10 +26,7 @@
 import type { FantasyPlayer } from "@/types/fantasy";
 import { validateTeam } from "@/lib/team-validation";
 import { FantasyRepoError, toRepoError } from "@/services/fantasy-errors";
-import {
-  resolveGameweekId,
-  type GameweekIndex,
-} from "@/services/fantasy-gameweek-resolver";
+import { resolveGameweekId, type GameweekIndex } from "@/services/fantasy-gameweek-resolver";
 import type {
   FantasyOwnedRepository,
   FantasySnapshot,
@@ -53,9 +50,7 @@ export interface ImportServiceDeps {
  * Assemble the SaveOwnedTeamInput without hitting the cloud. Extracted so
  * tests can assert the exact payload passed to `saveTeam`.
  */
-export async function prepareImportPayload(
-  deps: ImportServiceDeps,
-): Promise<SaveOwnedTeamInput> {
+export async function prepareImportPayload(deps: ImportServiceDeps): Promise<SaveOwnedTeamInput> {
   const localSnapshot = await deps.localRepo.loadSnapshot();
   const team = localSnapshot.team;
   const players = await deps.loadPlayers();
@@ -63,10 +58,7 @@ export async function prepareImportPayload(
   // Validation — surface as typed error.
   const v = validateTeam(team.squad, team.formation, players);
   if (!v.ok) {
-    throw new FantasyRepoError(
-      "validation",
-      `import: ${v.error}`,
-    );
+    throw new FantasyRepoError("validation", `import: ${v.error}`);
   }
 
   // Resolve the current GW number → live UUID. Never guess.
@@ -78,12 +70,8 @@ export async function prepareImportPayload(
   });
 
   return {
-    teamName:
-      (team.teamName ?? "").trim().length > 0
-        ? team.teamName
-        : deps.defaultTeamName,
-    managerName:
-      (team.managerName ?? "").trim().length > 0 ? team.managerName : null,
+    teamName: (team.teamName ?? "").trim().length > 0 ? team.teamName : deps.defaultTeamName,
+    managerName: (team.managerName ?? "").trim().length > 0 ? team.managerName : null,
     formation: team.formation,
     bank: team.bank,
     freeTransfers: team.freeTransfers,
@@ -100,9 +88,7 @@ export async function prepareImportPayload(
  * Full import pipeline. Never sets the import-decision marker — the caller
  * is responsible for that on success.
  */
-export async function importLocalTeamToCloud(
-  deps: ImportServiceDeps,
-): Promise<FantasySnapshot> {
+export async function importLocalTeamToCloud(deps: ImportServiceDeps): Promise<FantasySnapshot> {
   const input = await prepareImportPayload(deps);
   try {
     return await deps.cloudRepo.saveTeam(input);

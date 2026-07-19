@@ -1,4 +1,3 @@
-// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/leagues-store.test.ts`
 import { describe, it, expect, beforeEach } from "bun:test";
 import { leaguesStore, LEAGUE_ERROR } from "./leagues-store";
@@ -6,17 +5,23 @@ import { leaguesStore, LEAGUE_ERROR } from "./leagues-store";
 // jsdom-like localStorage shim for bun test.
 if (typeof globalThis.window === "undefined") {
   const mem = new Map<string, string>();
-  // @ts-ignore
+  // @ts-expect-error test-only window shim; global type intentionally overridden
   globalThis.window = {
     localStorage: {
       getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
-      setItem: (k: string, v: string) => { mem.set(k, v); },
-      removeItem: (k: string) => { mem.delete(k); },
+      setItem: (k: string, v: string) => {
+        mem.set(k, v);
+      },
+      removeItem: (k: string) => {
+        mem.delete(k);
+      },
     },
     dispatchEvent: () => true,
   };
-  // @ts-ignore
-  globalThis.CustomEvent = class { constructor(_t: string, _o?: any) {} };
+  // @ts-expect-error test-only CustomEvent shim; global type intentionally overridden
+  globalThis.CustomEvent = class {
+    constructor(_t: string, _o?: any) {}
+  };
 }
 
 describe("leaguesStore", () => {

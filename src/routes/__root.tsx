@@ -21,7 +21,6 @@ import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { RotateCcw, Home } from "lucide-react";
 
-
 function NotFoundComponent() {
   return (
     <I18nProvider>
@@ -75,7 +74,10 @@ function ErrorBody({ reset }: { reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">{t("error.description")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             aria-label={t("state.retry")}
             className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -102,10 +104,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "BotolaGO — Actualité & Fantasy du football marocain" },
-      { name: "description", content: "BotolaGO combine l'actualité premium du football marocain (Botola Pro) et le fantasy football, en français et en arabe." },
+      {
+        name: "description",
+        content:
+          "BotolaGO combine l'actualité premium du football marocain (Botola Pro) et le fantasy football, en français et en arabe.",
+      },
       { name: "author", content: "BotolaGO" },
       { property: "og:title", content: "BotolaGO — Actualité & Fantasy du football marocain" },
-      { property: "og:description", content: "Actualité, analyses et fantasy football de la Botola Pro, en français et en arabe." },
+      {
+        property: "og:description",
+        content:
+          "Actualité, analyses et fantasy football de la Botola Pro, en français et en arabe.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -113,7 +123,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap",
+      },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
     ],
   }),
@@ -129,7 +142,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
         <Scripts />
       </body>

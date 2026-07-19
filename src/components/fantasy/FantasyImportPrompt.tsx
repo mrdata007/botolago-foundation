@@ -21,10 +21,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { fantasyService } from "@/services/fantasy-mock";
 import { validateTeam } from "@/lib/team-validation";
 import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
-import {
-  importDecisionService,
-  isImportPromptEligible,
-} from "@/services/fantasy-import-decision";
+import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { LocalFantasyRepository, DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
@@ -48,7 +45,6 @@ export function FantasyImportPrompt() {
   const owned = useFantasyOwned();
   const qc = useQueryClient();
   const nav = useNavigate();
-
 
   const isAuthenticated = status === "authenticated" && !!user?.id;
   const uid = user?.id ?? null;
@@ -74,8 +70,7 @@ export function FantasyImportPrompt() {
       ]);
       if (cancelled) return;
       const isValid =
-        team.squad.length === 15 &&
-        validateTeam(team.squad, team.formation, players).ok === true;
+        team.squad.length === 15 && validateTeam(team.squad, team.formation, players).ok === true;
       setLocal({ team, players, isValid });
     })();
     return () => {
@@ -166,7 +161,6 @@ export function FantasyImportPrompt() {
     void nav({ to: "/fantasy/create" });
   };
 
-
   const later = () => {
     setDismissed(true);
   };
@@ -199,11 +193,7 @@ export function FantasyImportPrompt() {
         </button>
       </div>
 
-      <div
-        role="status"
-        aria-live="polite"
-        className="mt-2 min-h-[1.25rem] text-[11px]"
-      >
+      <div role="status" aria-live="polite" className="mt-2 min-h-[1.25rem] text-[11px]">
         {phase === "saving" && (
           <span className="text-muted-foreground">{t("fantasy.status.saving")}</span>
         )}

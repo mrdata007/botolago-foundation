@@ -32,7 +32,9 @@ import type { Session, User, AuthError } from "@supabase/supabase-js";
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth."; // for cleanup of stale mock keys
 
-function hasWindow() { return typeof window !== "undefined"; }
+function hasWindow() {
+  return typeof window !== "undefined";
+}
 
 function sanitizeSameOriginPath(input: string | null | undefined, fallback: string): string {
   if (!input) return fallback;
@@ -50,14 +52,35 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   const msg = (err.message ?? "").toLowerCase();
   const status = err.status ?? 0;
   if (status === 429 || msg.includes("rate limit")) return "rate_limited";
-  if (msg.includes("invalid login") || msg.includes("invalid credentials") || msg.includes("invalid_credentials")) return "credentials";
-  if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed")) return "email_unconfirmed";
-  if (msg.includes("already registered") || msg.includes("user already") || msg.includes("already exists")) return "email_taken";
+  if (
+    msg.includes("invalid login") ||
+    msg.includes("invalid credentials") ||
+    msg.includes("invalid_credentials")
+  )
+    return "credentials";
+  if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed"))
+    return "email_unconfirmed";
+  if (
+    msg.includes("already registered") ||
+    msg.includes("user already") ||
+    msg.includes("already exists")
+  )
+    return "email_taken";
   if (msg.includes("otp") && msg.includes("expired")) return "otp_expired";
   if (msg.includes("token") && msg.includes("expired")) return "otp_expired";
-  if (msg.includes("invalid otp") || msg.includes("invalid token") || msg.includes("token has expired or is invalid")) return "otp_invalid";
+  if (
+    msg.includes("invalid otp") ||
+    msg.includes("invalid token") ||
+    msg.includes("token has expired or is invalid")
+  )
+    return "otp_invalid";
   if (msg.includes("weak password") || msg.includes("password should")) return "weak_password";
-  if (msg.includes("provider is not enabled") || msg.includes("unsupported provider") || msg.includes("provider disabled")) return "provider_unavailable";
+  if (
+    msg.includes("provider is not enabled") ||
+    msg.includes("unsupported provider") ||
+    msg.includes("provider disabled")
+  )
+    return "provider_unavailable";
   if (msg.includes("failed to fetch") || msg.includes("network")) return "network";
   return "generic";
 }
@@ -66,8 +89,16 @@ export { mapAuthError as __mapAuthErrorForTests };
 
 async function buildAuthUser(u: User, full: FullProfile | null): Promise<AuthUser> {
   const profile = full?.profile;
-  const displayName = (profile?.display_name?.trim() || (u.user_metadata?.display_name as string | undefined)?.trim() || "").toString();
-  const username = (profile?.username?.trim() || (u.user_metadata?.username as string | undefined)?.trim() || "").toString();
+  const displayName = (
+    profile?.display_name?.trim() ||
+    (u.user_metadata?.display_name as string | undefined)?.trim() ||
+    ""
+  ).toString();
+  const username = (
+    profile?.username?.trim() ||
+    (u.user_metadata?.username as string | undefined)?.trim() ||
+    ""
+  ).toString();
   const avatarPath = profile?.avatar_url || undefined;
   let avatarDataUrl: string | undefined;
   if (avatarPath) {
@@ -75,9 +106,14 @@ async function buildAuthUser(u: User, full: FullProfile | null): Promise<AuthUse
     if (url) avatarDataUrl = url;
   }
   const providerRaw = (u.app_metadata?.provider as string | undefined) ?? "email";
-  const provider: AuthUser["provider"] = providerRaw === "google" ? "google" : providerRaw === "apple" ? "apple" : "email";
+  const provider: AuthUser["provider"] =
+    providerRaw === "google" ? "google" : providerRaw === "apple" ? "apple" : "email";
 
-  const language = coerceLanguage(profile?.preferred_language ?? (u.user_metadata?.preferred_language as string | undefined) ?? "fr");
+  const language = coerceLanguage(
+    profile?.preferred_language ??
+      (u.user_metadata?.preferred_language as string | undefined) ??
+      "fr",
+  );
 
   return {
     id: u.id,
@@ -144,11 +180,16 @@ export class SupabaseAuthService implements AuthService {
     this.init();
     this.listeners.add(listener);
     listener(this.getSession());
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   async signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
     if (hasWindow()) window.localStorage.removeItem(K_GUEST);
     const full = await loadFullProfile(data.user.id).catch(() => null);
@@ -177,7 +218,9 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async requestPasswordReset(email: string): Promise<AuthResult> {
-    const redirectTo = hasWindow() ? `${getRedirectBase()}/auth/callback?next=/auth/update-password` : undefined;
+    const redirectTo = hasWindow()
+      ? `${getRedirectBase()}/auth/callback?next=/auth/update-password`
+      : undefined;
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     // Non-enumerating: always report success unless it's a hard network error.
     if (error && mapAuthError(error) === "network") return { ok: false, errorCode: "network" };
@@ -215,7 +258,9 @@ export class SupabaseAuthService implements AuthService {
     return { ok: true };
   }
 
-  private async signInWithOAuthProvider(provider: "google" | "apple"): Promise<AuthResult<AuthUser>> {
+  private async signInWithOAuthProvider(
+    provider: "google" | "apple",
+  ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
     const redirectTo = `${getRedirectBase()}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
@@ -227,8 +272,12 @@ export class SupabaseAuthService implements AuthService {
     return { ok: true };
   }
 
-  signInWithGoogle() { return this.signInWithOAuthProvider("google"); }
-  signInWithApple() { return this.signInWithOAuthProvider("apple"); }
+  signInWithGoogle() {
+    return this.signInWithOAuthProvider("google");
+  }
+  signInWithApple() {
+    return this.signInWithOAuthProvider("apple");
+  }
 
   async continueAsGuest(): Promise<AuthResult> {
     if (hasWindow()) window.localStorage.setItem(K_GUEST, "1");
@@ -260,7 +309,11 @@ export class SupabaseAuthService implements AuthService {
       avatarPath: avatarPathPatch,
       preferredLanguage: input.language,
     });
-    if (!profileRes.ok) return { ok: false, errorCode: profileRes.error === "username_taken" ? "username_taken" : "generic" };
+    if (!profileRes.ok)
+      return {
+        ok: false,
+        errorCode: profileRes.error === "username_taken" ? "username_taken" : "generic",
+      };
 
     if (input.notifications) {
       await updatePreferences(userId, input.notifications);
@@ -282,7 +335,11 @@ export class SupabaseAuthService implements AuthService {
     if (hasWindow()) {
       window.localStorage.removeItem(K_GUEST);
       if (options?.resetLocalData) {
-        const keys = ["botolago.fantasy.team", "botolago.fantasy.bank", "botolago.fantasy.transfers"];
+        const keys = [
+          "botolago.fantasy.team",
+          "botolago.fantasy.bank",
+          "botolago.fantasy.transfers",
+        ];
         keys.forEach((k) => window.localStorage.removeItem(k));
       }
       // Sweep stale mock keys from previous local-only sessions.
@@ -290,7 +347,9 @@ export class SupabaseAuthService implements AuthService {
         Object.keys(window.localStorage)
           .filter((k) => k.startsWith(K_LEGACY_PREFIX) && k !== K_GUEST)
           .forEach((k) => window.localStorage.removeItem(k));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     this.cachedSession = { user: null, status: "anonymous" };
     for (const l of this.listeners) l(this.cachedSession);

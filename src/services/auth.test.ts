@@ -1,4 +1,3 @@
-// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/auth.test.ts`
 import { describe, it, expect, beforeEach } from "bun:test";
 import { __testing } from "./auth";
@@ -9,20 +8,33 @@ import type { AuthService } from "./auth-types";
 let authService: AuthService;
 
 beforeEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = globalThis as any;
   if (typeof g.window === "undefined") {
     const store = new Map<string, string>();
     g.window = {
       localStorage: {
         getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-        setItem: (k: string, v: string) => { store.set(k, v); },
-        removeItem: (k: string) => { store.delete(k); },
+        setItem: (k: string, v: string) => {
+          store.set(k, v);
+        },
+        removeItem: (k: string) => {
+          store.delete(k);
+        },
         clear: () => store.clear(),
       },
     };
   } else {
-    try { g.window.localStorage.clear?.(); } catch { /* ignore */ }
+    // Some shared shims (e.g., leagues-store test) don't expose `clear`.
+    // Nuke known auth keys explicitly to avoid cross-file bleed.
+    try {
+      const ls = g.window.localStorage;
+      ls.clear?.();
+      ["botolago.auth.session", "botolago.auth.users", "botolago.auth.pending"].forEach((k) =>
+        ls.removeItem?.(k),
+      );
+    } catch {
+      /* ignore */
+    }
   }
   authService = __testing.createMockService();
 });
@@ -57,7 +69,11 @@ describe("authService (local mock)", () => {
 
   it("OTP 123456 verifies a pending registration", async () => {
     await authService.registerWithEmail({
-      fullName: "Amine Test", username: "aminetest", email: "amine@example.com", password: "SuperSecret1!", language: "fr",
+      fullName: "Amine Test",
+      username: "aminetest",
+      email: "amine@example.com",
+      password: "SuperSecret1!",
+      language: "fr",
     });
     const bad = await authService.verifyCode("amine@example.com", "000000");
     expect(bad.ok).toBe(false);

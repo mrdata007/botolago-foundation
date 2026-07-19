@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider/source-selection integration tests without mounting React.
 // These verify that:
 //   1. selectFantasyRepoSource returns "cloud" ONLY for authenticated Supabase.
@@ -44,7 +43,10 @@ describe("createFantasyOwnedRepository — no silent fallback", () => {
       from: () => ({
         select: () => ({
           eq: () => ({
-            maybeSingle: async () => ({ data: null, error: { code: "PGRST301", message: "row-level security" } }),
+            maybeSingle: async () => ({
+              data: null,
+              error: { code: "PGRST301", message: "row-level security" },
+            }),
           }),
         }),
       }),
@@ -54,13 +56,19 @@ describe("createFantasyOwnedRepository — no silent fallback", () => {
       userId: "u1",
       season: "2025-26",
       loadMap: async () => ({
-        clubIdBySource: new Map(), clubSourceById: new Map(),
-        playerIdBySource: new Map(), playerSourceById: new Map(),
+        clubIdBySource: new Map(),
+        clubSourceById: new Map(),
+        playerIdBySource: new Map(),
+        playerSourceById: new Map(),
       }),
       loadGameweeks: async () => ({ byNumber: new Map(), byId: new Map() }),
     });
     let caught: unknown = null;
-    try { await repo.loadSnapshot(); } catch (e) { caught = e; }
+    try {
+      await repo.loadSnapshot();
+    } catch (e) {
+      caught = e;
+    }
     expect(caught).toBeInstanceOf(FantasyRepoError);
     expect((caught as FantasyRepoError).code).toBe("permission_denied");
   });
@@ -71,15 +79,17 @@ describe("no automatic cloud mirror on fantasyStateStore mutation", () => {
     fantasyStateStore.reset({ internal: true });
   });
 
-  it("emitting the change event does not create a save through any provider layer", () => {
+  it("emitting the change event does not create a save through any provider layer", async () => {
     // The old FantasyCloudSyncProvider module has been removed; verify the
     // symbol is no longer resolvable — importing it would throw. This is a
     // structural guarantee: no listener remains that could auto-save.
-    let mod: any = null;
+    let mod: unknown = null;
     try {
-      // Dynamic import path uses relative form to match src layout.
-      mod = require("./fantasy-cloud-sync");
-    } catch { /* expected */ }
+      // Dynamic import: this module MUST be gone. Relative path matches src layout.
+      mod = await import(/* @vite-ignore */ "./fantasy-cloud-sync");
+    } catch {
+      /* expected — module removed */
+    }
     expect(mod).toBeNull();
     // And a plain state mutation must not throw / emit into cloud.
     expect(() => fantasyStateStore.write({ transferHitPoints: 4 })).not.toThrow();

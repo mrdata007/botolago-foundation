@@ -1,7 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { AuthShell, AuthPrimaryButton, AuthSecondaryButton, AuthFieldError, AuthFieldLabel } from "@/components/auth/AuthShell";
+import {
+  AuthShell,
+  AuthPrimaryButton,
+  AuthSecondaryButton,
+  AuthFieldError,
+  AuthFieldLabel,
+} from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
 import { validateEmail } from "@/lib/validation";
@@ -53,8 +59,16 @@ function ForgotPage() {
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
         <div>
           <AuthFieldLabel htmlFor={emailId}>{t("auth.email")}</AuthFieldLabel>
-          <input id={emailId} type="email" autoComplete="email" inputMode="email"
-            value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }}
+          <input
+            id={emailId}
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(null);
+            }}
             aria-invalid={!!error}
             className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
           />

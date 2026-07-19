@@ -24,24 +24,30 @@ function ArticlePage() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
-  const allQ = useQuery({ queryKey: ["articles", "all"], queryFn: () => botolaService.getArticles() });
+  const allQ = useQuery({
+    queryKey: ["articles", "all"],
+    queryFn: () => botolaService.getArticles(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
 
-  const article = useMemo(
-    () => allQ.data?.find((a) => a.id === articleId),
-    [allQ.data, articleId],
-  );
+  const article = useMemo(() => allQ.data?.find((a) => a.id === articleId), [allQ.data, articleId]);
 
   const related = useMemo<Article[]>(() => {
     if (!allQ.data || !article) return [];
     return allQ.data
-      .filter((a) => a.id !== article.id && (a.category === article.category || a.clubIds.some((c) => article.clubIds.includes(c))))
+      .filter(
+        (a) =>
+          a.id !== article.id &&
+          (a.category === article.category || a.clubIds.some((c) => article.clubIds.includes(c))),
+      )
       .slice(0, 3);
   }, [allQ.data, article]);
 
   if (allQ.isLoading) {
     return (
-      <AppShell backgroundVariant="news"><LoadingState /></AppShell>
+      <AppShell backgroundVariant="news">
+        <LoadingState />
+      </AppShell>
     );
   }
 
@@ -50,7 +56,9 @@ function ArticlePage() {
       <AppShell backgroundVariant="news">
         <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--surface)] p-6 text-center">
           <h1 className="text-lg font-black text-foreground">{t("article.not_found_title")}</h1>
-          <p className="mt-2 text-sm text-[color:var(--text-secondary)]">{t("article.not_found_desc")}</p>
+          <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+            {t("article.not_found_desc")}
+          </p>
           <Link
             to="/news"
             className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[color:var(--brand-primary)] px-4 text-sm font-semibold text-white"
@@ -83,12 +91,16 @@ function ArticlePage() {
         });
         return;
       }
-    } catch { /* user cancelled or blocked */ }
+    } catch {
+      /* user cancelled or blocked */
+    }
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   return (

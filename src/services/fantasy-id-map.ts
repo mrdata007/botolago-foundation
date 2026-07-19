@@ -48,10 +48,17 @@ export class MissingIdMappingError extends Error {
   }) {
     const parts: string[] = [];
     if (opts.missingClubs?.length) parts.push(`missing clubs: ${opts.missingClubs.join(", ")}`);
-    if (opts.missingPlayers?.length) parts.push(`missing players: ${opts.missingPlayers.join(", ")}`);
-    if (opts.duplicateClubProviderIds?.length) parts.push(`dup club provider_ids: ${opts.duplicateClubProviderIds.join(", ")}`);
-    if (opts.duplicatePlayerProviderIds?.length) parts.push(`dup player provider_ids: ${opts.duplicatePlayerProviderIds.join(", ")}`);
-    super(parts.length ? `Fantasy ID mapping incomplete — ${parts.join("; ")}` : "Fantasy ID mapping incomplete");
+    if (opts.missingPlayers?.length)
+      parts.push(`missing players: ${opts.missingPlayers.join(", ")}`);
+    if (opts.duplicateClubProviderIds?.length)
+      parts.push(`dup club provider_ids: ${opts.duplicateClubProviderIds.join(", ")}`);
+    if (opts.duplicatePlayerProviderIds?.length)
+      parts.push(`dup player provider_ids: ${opts.duplicatePlayerProviderIds.join(", ")}`);
+    super(
+      parts.length
+        ? `Fantasy ID mapping incomplete — ${parts.join("; ")}`
+        : "Fantasy ID mapping incomplete",
+    );
     this.missingClubs = opts.missingClubs ?? [];
     this.missingPlayers = opts.missingPlayers ?? [];
     this.duplicateClubProviderIds = opts.duplicateClubProviderIds ?? [];

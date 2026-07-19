@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from "bun:test";
 import {
   selectStableCloudResult,
@@ -95,7 +94,11 @@ function makeSnapshot(overrides: any = {}) {
     currentGameweekId: "gw-14",
     purchasePrices: Object.fromEntries(squad15().map((s) => [s.playerId, 5])),
   };
-  return { ...base, ...overrides, lifecycle: { ...base.lifecycle, ...(overrides.lifecycle ?? {}) } };
+  return {
+    ...base,
+    ...overrides,
+    lifecycle: { ...base.lifecycle, ...(overrides.lifecycle ?? {}) },
+  };
 }
 
 // ---------- selectStableCloudResult ----------
@@ -115,7 +118,12 @@ describe("selectStableCloudResult", () => {
   it("falls back to lifecycle.results only when finalized", () => {
     const vm = { gameweek: 14, finalized: true, totalPoints: 42 } as any;
     const snap = makeSnapshot({
-      lifecycle: { chips: { active: null, used: [] }, currentGameweek: 14, transferHitPoints: 0, results: { 14: vm } },
+      lifecycle: {
+        chips: { active: null, used: [] },
+        currentGameweek: 14,
+        transferHitPoints: 0,
+        results: { 14: vm },
+      },
     });
     expect(selectStableCloudResult(snap, 14)).toBe(vm);
   });
@@ -123,7 +131,12 @@ describe("selectStableCloudResult", () => {
   it("ignores non-finalized lifecycle results (provisional)", () => {
     const provisional = { gameweek: 14, finalized: false, totalPoints: 12 } as any;
     const snap = makeSnapshot({
-      lifecycle: { chips: { active: null, used: [] }, currentGameweek: 14, transferHitPoints: 0, results: { 14: provisional } },
+      lifecycle: {
+        chips: { active: null, used: [] },
+        currentGameweek: 14,
+        transferHitPoints: 0,
+        results: { 14: provisional },
+      },
     });
     expect(selectStableCloudResult(snap, 14)).toBeNull();
   });

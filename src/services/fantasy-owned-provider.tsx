@@ -26,7 +26,6 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
 import {
@@ -80,7 +79,6 @@ export interface FantasyOwnedContextValue {
   invalidateOwned: () => void;
 }
 
-
 const Ctx = createContext<FantasyOwnedContextValue | null>(null);
 
 const SNAPSHOT_KIND = "snapshot";
@@ -108,10 +106,7 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, userId]);
 
   const scope = useMemo<FantasyKeyScope>(() => ({ source, owner }), [source, owner]);
-  const queryKey = useMemo(
-    () => scopedFantasyKey(scope, SNAPSHOT_KIND),
-    [scope],
-  );
+  const queryKey = useMemo(() => scopedFantasyKey(scope, SNAPSHOT_KIND), [scope]);
 
   const query = useQuery<FantasySnapshot, FantasyRepoError>({
     queryKey,
@@ -129,8 +124,12 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     staleTime: 30_000,
     retry: (count, err) => {
       // Version conflicts / permission errors are terminal — never retry.
-      if (err.code === "version_conflict" || err.code === "permission_denied"
-          || err.code === "unauthenticated" || err.code === "mapping_incomplete") {
+      if (
+        err.code === "version_conflict" ||
+        err.code === "permission_denied" ||
+        err.code === "unauthenticated" ||
+        err.code === "mapping_incomplete"
+      ) {
         return false;
       }
       return count < 1;
@@ -142,13 +141,10 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
   const mutationSeqRef = useRef(0);
   const activeSeqRef = useRef(0);
 
-  const setMutationStatus = useCallback(
-    (s: OwnedMutationStatus, err?: FantasyRepoError | null) => {
-      setMutationStatusState(s);
-      setMutationError(err ?? null);
-    },
-    [],
-  );
+  const setMutationStatus = useCallback((s: OwnedMutationStatus, err?: FantasyRepoError | null) => {
+    setMutationStatusState(s);
+    setMutationError(err ?? null);
+  }, []);
 
   const nextMutationSeq = useCallback(() => {
     mutationSeqRef.current += 1;
@@ -215,14 +211,24 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
       invalidateOwned,
     }),
     [
-      source, userId, repo, scope,
-      query.data, query.isLoading, query.isFetching, query.error,
-      mutationStatus, mutationError, setMutationStatus,
-      nextMutationSeq, setMutationStatusIfCurrent, replaceSnapshot,
-      reload, invalidateOwned,
+      source,
+      userId,
+      repo,
+      scope,
+      query.data,
+      query.isLoading,
+      query.isFetching,
+      query.error,
+      mutationStatus,
+      mutationError,
+      setMutationStatus,
+      nextMutationSeq,
+      setMutationStatusIfCurrent,
+      replaceSnapshot,
+      reload,
+      invalidateOwned,
     ],
   );
-
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -244,11 +250,7 @@ export function useFantasyCloudSyncStatus(): {
   errorCode: string | null;
   reload: () => Promise<void>;
 } {
-  const {
-    source, isLoading, loadError,
-    mutationStatus, mutationError,
-    reload,
-  } = useFantasyOwned();
+  const { source, isLoading, loadError, mutationStatus, mutationError, reload } = useFantasyOwned();
   const isCloud = source === "cloud";
   if (!isCloud) {
     return { isCloud, status: "idle", errorCode: null, reload };

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Tests for the auth service selector and Supabase error mapping.
 // Run with: `bun test src/services/auth-selector.test.ts`
 import { describe, it, expect } from "bun:test";
@@ -31,12 +30,11 @@ describe("Supabase error mapping", () => {
   for (const [msg, status, expected] of cases) {
     it(`maps "${msg}" → ${expected}`, () => {
       const err = { message: msg, status } as unknown as { message: string; status?: number };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect(mapError(err as any)).toBe(expected);
     });
   }
   it("returns 'rate_limited' for HTTP 429", () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(mapError({ message: "too many", status: 429 } as any)).toBe("rate_limited");
   });
 });

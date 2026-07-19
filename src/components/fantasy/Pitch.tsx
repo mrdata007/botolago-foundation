@@ -61,8 +61,7 @@ export function Pitch({
           <div
             className="absolute inset-0"
             style={{
-              background:
-                "linear-gradient(180deg, #0e5a3a 0%, #0f6a44 45%, #0d5f45 100%)",
+              background: "linear-gradient(180deg, #0e5a3a 0%, #0f6a44 45%, #0d5f45 100%)",
             }}
           />
           {/* Alternating mow bands — very subtle */}
@@ -134,8 +133,7 @@ export function Pitch({
           <div
             className="relative border-t border-white/15 px-2 pb-3 pt-2"
             style={{
-              background:
-                "linear-gradient(180deg, rgba(8,18,38,0.62) 0%, rgba(8,18,38,0.82) 100%)",
+              background: "linear-gradient(180deg, rgba(8,18,38,0.62) 0%, rgba(8,18,38,0.82) 100%)",
               backdropFilter: "blur(10px)",
             }}
           >
@@ -144,7 +142,9 @@ export function Pitch({
                 <span
                   aria-hidden
                   className="h-[2px] w-4 rounded-full"
-                  style={{ background: "color-mix(in oklab, var(--brand-accent) 70%, transparent)" }}
+                  style={{
+                    background: "color-mix(in oklab, var(--brand-accent) 70%, transparent)",
+                  }}
                 />
                 <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/90">
                   {benchLabel}

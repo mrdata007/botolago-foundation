@@ -23,7 +23,15 @@ const ORDER: Position[] = ["GK", "DEF", "MID", "FWD"];
  * Grouped-by-position list of all 15 squad players. Reflects the same
  * captain/vice/status/fixture/points information as the pitch view.
  */
-export function SquadListView({ squad, players, clubs, metricFor, metricLabel, onPlayerClick, className }: Props) {
+export function SquadListView({
+  squad,
+  players,
+  clubs,
+  metricFor,
+  metricLabel,
+  onPlayerClick,
+  className,
+}: Props) {
   const { t, tr } = useI18n();
   const playerOf = (id: string) => players.find((p) => p.id === id);
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
@@ -64,18 +72,31 @@ export function SquadListView({ squad, players, clubs, metricFor, metricLabel, o
                     )}
                   >
                     <div className="shrink-0">
-                      <JerseyVisual kit={kit} size={32} imageUrl={p.jerseyImageUrl} ariaLabel={club ? tr(club.shortName) : undefined} />
+                      <JerseyVisual
+                        kit={kit}
+                        size={32}
+                        imageUrl={p.jerseyImageUrl}
+                        ariaLabel={club ? tr(club.shortName) : undefined}
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-bold text-foreground">{tr(p.name)}</span>
+                        <span className="truncate text-sm font-bold text-foreground">
+                          {tr(p.name)}
+                        </span>
                         {s.isCaptain && (
-                          <span className="rounded bg-[color:var(--brand-accent)] px-1 py-0.5 text-[9px] font-black text-white" aria-label={t("fantasy.captain_full")}>
+                          <span
+                            className="rounded bg-[color:var(--brand-accent)] px-1 py-0.5 text-[9px] font-black text-white"
+                            aria-label={t("fantasy.captain_full")}
+                          >
                             {t("fantasy.captain")}
                           </span>
                         )}
                         {s.isViceCaptain && !s.isCaptain && (
-                          <span className="rounded border border-[color:var(--brand-primary)] px-1 py-0.5 text-[9px] font-black text-[color:var(--brand-primary)]" aria-label={t("fantasy.vice_full")}>
+                          <span
+                            className="rounded border border-[color:var(--brand-primary)] px-1 py-0.5 text-[9px] font-black text-[color:var(--brand-primary)]"
+                            aria-label={t("fantasy.vice_full")}
+                          >
                             {t("fantasy.vice")}
                           </span>
                         )}
@@ -101,7 +122,8 @@ export function SquadListView({ squad, players, clubs, metricFor, metricLabel, o
                         )}
                         {p.nextOpponentClubId && (
                           <span className="tabular-nums">
-                            {clubOf(p.nextOpponentClubId)?.crestPlaceholder} {p.nextIsHome ? "(D)" : "(E)"}
+                            {clubOf(p.nextOpponentClubId)?.crestPlaceholder}{" "}
+                            {p.nextIsHome ? "(D)" : "(E)"}
                           </span>
                         )}
                       </div>

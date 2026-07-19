@@ -10,18 +10,42 @@ export function FantasyOnboarding() {
   const { t } = useI18n();
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    try { return window.localStorage.getItem(STORAGE) !== "1"; } catch { return false; }
+    try {
+      return window.localStorage.getItem(STORAGE) !== "1";
+    } catch {
+      return false;
+    }
   });
   const [step, setStep] = useState(0);
 
-  const steps: { icon: React.ComponentType<{ className?: string }>; titleKey: TranslationKey; bodyKey: TranslationKey }[] = [
-    { icon: Trophy, titleKey: "fantasy.onboarding.step1_title", bodyKey: "fantasy.onboarding.step1_body" },
-    { icon: Target, titleKey: "fantasy.onboarding.step2_title", bodyKey: "fantasy.onboarding.step2_body" },
-    { icon: Users, titleKey: "fantasy.onboarding.step3_title", bodyKey: "fantasy.onboarding.step3_body" },
+  const steps: {
+    icon: React.ComponentType<{ className?: string }>;
+    titleKey: TranslationKey;
+    bodyKey: TranslationKey;
+  }[] = [
+    {
+      icon: Trophy,
+      titleKey: "fantasy.onboarding.step1_title",
+      bodyKey: "fantasy.onboarding.step1_body",
+    },
+    {
+      icon: Target,
+      titleKey: "fantasy.onboarding.step2_title",
+      bodyKey: "fantasy.onboarding.step2_body",
+    },
+    {
+      icon: Users,
+      titleKey: "fantasy.onboarding.step3_title",
+      bodyKey: "fantasy.onboarding.step3_body",
+    },
   ];
 
   const finish = () => {
-    try { window.localStorage.setItem(STORAGE, "1"); } catch { /* ignore */ }
+    try {
+      window.localStorage.setItem(STORAGE, "1");
+    } catch {
+      /* ignore */
+    }
     setOpen(false);
   };
 
@@ -50,7 +74,10 @@ export function FantasyOnboarding() {
           </div>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <button onClick={finish} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+          <button
+            onClick={finish}
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
             {t("fantasy.onboarding.skip")}
           </button>
           <button

@@ -28,7 +28,15 @@ const OVERRIDES: Record<string, Partial<KitConfig>> = {
 /** Derive a slightly darker or lighter tone from a hex. */
 function shade(hex: string, amount: number): string {
   const m = hex.replace("#", "");
-  const n = parseInt(m.length === 3 ? m.split("").map((c) => c + c).join("") : m, 16);
+  const n = parseInt(
+    m.length === 3
+      ? m
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : m,
+    16,
+  );
   const r = Math.max(0, Math.min(255, ((n >> 16) & 0xff) + amount));
   const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amount));
   const b = Math.max(0, Math.min(255, (n & 0xff) + amount));
@@ -37,7 +45,15 @@ function shade(hex: string, amount: number): string {
 
 function readableInk(hex: string): string {
   const m = hex.replace("#", "");
-  const n = parseInt(m.length === 3 ? m.split("").map((c) => c + c).join("") : m, 16);
+  const n = parseInt(
+    m.length === 3
+      ? m
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : m,
+    16,
+  );
   const r = (n >> 16) & 0xff;
   const g = (n >> 8) & 0xff;
   const b = n & 0xff;
@@ -52,7 +68,8 @@ export function getKitForClub(club: Club | undefined, patternOverride?: KitPatte
   }
   const base = OVERRIDES[club.id];
   const primary = base?.primary ?? club.primaryColor;
-  const secondary = base?.secondary ?? club.secondaryColor ?? shade(primary, primary.length ? -60 : 0);
+  const secondary =
+    base?.secondary ?? club.secondaryColor ?? shade(primary, primary.length ? -60 : 0);
   const ink = base?.ink ?? readableInk(primary);
   const pattern = patternOverride ?? base?.pattern ?? "solid";
   return { pattern, primary, secondary, ink };

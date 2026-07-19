@@ -30,7 +30,11 @@ export function SavedButton({
     return (
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(articleId); }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggle(articleId);
+        }}
         aria-pressed={saved}
         aria-label={label}
         className={cn(
@@ -49,7 +53,11 @@ export function SavedButton({
     return (
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(articleId); }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggle(articleId);
+        }}
         aria-pressed={saved}
         aria-label={label}
         className={cn(
@@ -67,7 +75,11 @@ export function SavedButton({
   return (
     <button
       type="button"
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(articleId); }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle(articleId);
+      }}
       aria-pressed={saved}
       className={cn(
         common,

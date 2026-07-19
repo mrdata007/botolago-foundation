@@ -172,10 +172,7 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
     const team = await fantasyService.getTeam();
     const outIds = input.transfers.map((t) => t.outSourceId);
     const inIds = input.transfers.map((t) => t.inSourceId);
-    const netCost = input.transfers.reduce(
-      (s, t) => s + (t.priceIn - t.priceOut),
-      0,
-    );
+    const netCost = input.transfers.reduce((s, t) => s + (t.priceIn - t.priceOut), 0);
     const result = applyConfirmedTransfers({
       team,
       chips: input.lifecycle.chips,
@@ -200,8 +197,7 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
         ...input.lifecycle,
         chips: result.value.chips as ChipsState,
         transferHitPoints:
-          (input.lifecycle.transferHitPoints ?? 0) +
-          (result.value.hitPointsApplied ?? 0),
+          (input.lifecycle.transferHitPoints ?? 0) + (result.value.hitPointsApplied ?? 0),
       },
       { internal: true },
     );
@@ -269,13 +265,9 @@ function parseLifecycle(raw: unknown): FantasyPersistedState {
   return {
     chips: (r.chips as ChipsState) ?? DEFAULT_STATE.chips,
     currentGameweek:
-      typeof r.currentGameweek === "number"
-        ? r.currentGameweek
-        : DEFAULT_STATE.currentGameweek,
-    transferHitPoints:
-      typeof r.transferHitPoints === "number" ? r.transferHitPoints : 0,
-    results:
-      (r.results as Record<number, PointsViewModel>) ?? {},
+      typeof r.currentGameweek === "number" ? r.currentGameweek : DEFAULT_STATE.currentGameweek,
+    transferHitPoints: typeof r.transferHitPoints === "number" ? r.transferHitPoints : 0,
+    results: (r.results as Record<number, PointsViewModel>) ?? {},
   };
 }
 
@@ -430,10 +422,7 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
       const idMap = await this.loadMap();
       const current = await this.loadSnapshot();
       if (!current.teamId) {
-        throw new FantasyRepoError(
-          "not_found",
-          "No cloud team to apply transfers against",
-        );
+        throw new FantasyRepoError("not_found", "No cloud team to apply transfers against");
       }
       const args = buildConfirmTransfersPayload(
         {

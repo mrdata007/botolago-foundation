@@ -23,13 +23,20 @@ const WATCH_KEY = "botolago.fantasy.watchlist";
 
 function readWatch(): string[] {
   if (typeof window === "undefined") return [];
-  try { return JSON.parse(window.localStorage.getItem(WATCH_KEY) ?? "[]"); } catch { return []; }
+  try {
+    return JSON.parse(window.localStorage.getItem(WATCH_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
-  const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
+  const playersQ = useQuery({
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
 
   const [q, setQ] = useState("");
@@ -42,7 +49,11 @@ function PlayersPage() {
   const toggleWatch = (id: string) => {
     const next = watch.includes(id) ? watch.filter((x) => x !== id) : [...watch, id];
     setWatch(next);
-    try { window.localStorage.setItem(WATCH_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    try {
+      window.localStorage.setItem(WATCH_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
   };
   const toggleCompare = (id: string) => {
     setCompare((prev) => {
@@ -83,7 +94,9 @@ function PlayersPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.players.title")}</span></h1>
+      <h1 className="text-xl font-black text-foreground">
+        <span className="text-brand">{t("fantasy.players.title")}</span>
+      </h1>
 
       <div className="mt-3 space-y-2">
         <label className="glass-surface glass-regular flex items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 py-2">
@@ -97,18 +110,34 @@ function PlayersPage() {
         </label>
 
         <div className="flex flex-wrap gap-1">
-          <Chip active={pos === ""} onClick={() => setPos("")}>{t("common.all")}</Chip>
+          <Chip active={pos === ""} onClick={() => setPos("")}>
+            {t("common.all")}
+          </Chip>
           {positions.map((p) => (
-            <Chip key={p} active={pos === p} onClick={() => setPos(p)}>{t(`player.pos.${p}` as TranslationKey)}</Chip>
+            <Chip key={p} active={pos === p} onClick={() => setPos(p)}>
+              {t(`player.pos.${p}` as TranslationKey)}
+            </Chip>
           ))}
         </div>
         <div className="flex flex-wrap gap-1">
-          <Chip active={clubId === ""} onClick={() => setClubId("")}>{t("common.all")}</Chip>
-          {clubs.map((c) => <Chip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>{tr(c.shortName)}</Chip>)}
+          <Chip active={clubId === ""} onClick={() => setClubId("")}>
+            {t("common.all")}
+          </Chip>
+          {clubs.map((c) => (
+            <Chip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>
+              {tr(c.shortName)}
+            </Chip>
+          ))}
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">{t("fantasy.picker.sort")}:</span>
-          {sorts.map((s) => <Chip key={s.k} active={sort === s.k} onClick={() => setSort(s.k)}>{t(s.labelKey)}</Chip>)}
+          <span className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
+            {t("fantasy.picker.sort")}:
+          </span>
+          {sorts.map((s) => (
+            <Chip key={s.k} active={sort === s.k} onClick={() => setSort(s.k)}>
+              {t(s.labelKey)}
+            </Chip>
+          ))}
         </div>
       </div>
 
@@ -125,17 +154,25 @@ function PlayersPage() {
                     <div className="truncate text-xs font-bold">{tr(p.name)}</div>
                   </div>
                   <dl className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
-                    <dt className="text-muted-foreground">{t("fantasy.price")}</dt><dd className="tabular-nums text-end">{nf.format(p.price)}</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.total_points")}</dt><dd className="tabular-nums text-end">{p.totalPoints}</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.form")}</dt><dd className="tabular-nums text-end">{nf.format(p.form)}</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.ownership")}</dt><dd className="tabular-nums text-end">{nf.format(p.ownership)}%</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.expected_points")}</dt><dd className="tabular-nums text-end">{p.expectedPoints}</dd>
+                    <dt className="text-muted-foreground">{t("fantasy.price")}</dt>
+                    <dd className="tabular-nums text-end">{nf.format(p.price)}</dd>
+                    <dt className="text-muted-foreground">{t("fantasy.total_points")}</dt>
+                    <dd className="tabular-nums text-end">{p.totalPoints}</dd>
+                    <dt className="text-muted-foreground">{t("fantasy.form")}</dt>
+                    <dd className="tabular-nums text-end">{nf.format(p.form)}</dd>
+                    <dt className="text-muted-foreground">{t("fantasy.ownership")}</dt>
+                    <dd className="tabular-nums text-end">{nf.format(p.ownership)}%</dd>
+                    <dt className="text-muted-foreground">{t("fantasy.expected_points")}</dt>
+                    <dd className="tabular-nums text-end">{p.expectedPoints}</dd>
                   </dl>
                 </div>
               );
             })}
           </div>
-          <button onClick={() => setCompare([])} className="mt-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => setCompare([])}
+            className="mt-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+          >
             {t("common.reset")}
           </button>
         </div>
@@ -154,7 +191,10 @@ function PlayersPage() {
           const inWatch = watch.includes(p.id);
           const inCompare = compare.includes(p.id);
           return (
-            <div key={p.id} className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
+            <div
+              key={p.id}
+              className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
+            >
               <Link
                 to="/fantasy/players/$playerId"
                 params={{ playerId: p.id }}
@@ -167,7 +207,8 @@ function PlayersPage() {
                     {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
                   </div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")} {nf.format(p.form)} · {nf.format(p.ownership)}%
+                    {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
+                    {nf.format(p.form)} · {nf.format(p.ownership)}%
                   </div>
                 </div>
               </Link>
@@ -185,10 +226,14 @@ function PlayersPage() {
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => toggleWatch(p.id)}
-                  aria-label={inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")}
+                  aria-label={
+                    inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
+                  }
                   className={cn(
                     "grid h-7 w-7 place-items-center rounded-lg",
-                    inWatch ? "bg-[color:var(--brand-accent)]/20 text-[color:var(--brand-accent)]" : "bg-white ring-1 ring-black/10 text-muted-foreground",
+                    inWatch
+                      ? "bg-[color:var(--brand-accent)]/20 text-[color:var(--brand-accent)]"
+                      : "bg-white ring-1 ring-black/10 text-muted-foreground",
                   )}
                 >
                   <Star className={cn("h-3.5 w-3.5", inWatch && "fill-current")} aria-hidden />
@@ -197,7 +242,9 @@ function PlayersPage() {
                   onClick={() => toggleCompare(p.id)}
                   className={cn(
                     "rounded-lg px-1.5 py-0.5 text-[10px] font-bold",
-                    inCompare ? "bg-[color:var(--brand-primary)] text-white" : "bg-white ring-1 ring-black/10",
+                    inCompare
+                      ? "bg-[color:var(--brand-primary)] text-white"
+                      : "bg-white ring-1 ring-black/10",
                   )}
                 >
                   {t("fantasy.players.compare")}
@@ -211,14 +258,24 @@ function PlayersPage() {
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
         "rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
-        active ? "bg-[color:var(--brand-primary)] text-white" : "bg-white/60 text-foreground ring-1 ring-black/5 hover:bg-white",
+        active
+          ? "bg-[color:var(--brand-primary)] text-white"
+          : "bg-white/60 text-foreground ring-1 ring-black/5 hover:bg-white",
       )}
       aria-pressed={active}
     >

@@ -11,9 +11,17 @@ interface AuthorizationDetails {
 }
 
 interface OAuthApi {
-  getAuthorizationDetails: (id: string) => Promise<{ data: AuthorizationDetails | null; error: { message: string } | null }>;
-  approveAuthorization: (id: string) => Promise<{ data: { redirect_url?: string; redirect_to?: string } | null; error: { message: string } | null }>;
-  denyAuthorization: (id: string) => Promise<{ data: { redirect_url?: string; redirect_to?: string } | null; error: { message: string } | null }>;
+  getAuthorizationDetails: (
+    id: string,
+  ) => Promise<{ data: AuthorizationDetails | null; error: { message: string } | null }>;
+  approveAuthorization: (id: string) => Promise<{
+    data: { redirect_url?: string; redirect_to?: string } | null;
+    error: { message: string } | null;
+  }>;
+  denyAuthorization: (id: string) => Promise<{
+    data: { redirect_url?: string; redirect_to?: string } | null;
+    error: { message: string } | null;
+  }>;
 }
 
 function oauthApi(): OAuthApi {
@@ -87,26 +95,28 @@ function Consent() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Connect {clientName} to BotolaGO
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Connect {clientName} to BotolaGO</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This lets {clientName} use BotolaGO as you — reading your profile, fantasy team,
-          and fixtures through the app's MCP tools. Your data still follows BotolaGO's
-          access rules.
+          This lets {clientName} use BotolaGO as you — reading your profile, fantasy team, and
+          fixtures through the app's MCP tools. Your data still follows BotolaGO's access rules.
         </p>
       </div>
 
       {details?.scopes && details.scopes.length > 0 && (
         <ul className="rounded-xl border border-input bg-background/50 p-4 text-sm">
           {details.scopes.map((s: string) => (
-            <li key={s} className="text-muted-foreground">• {s}</li>
+            <li key={s} className="text-muted-foreground">
+              • {s}
+            </li>
           ))}
         </ul>
       )}
 
       {error && (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+        <p
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
+        >
           {error}
         </p>
       )}

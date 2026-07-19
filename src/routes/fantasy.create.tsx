@@ -67,9 +67,15 @@ function CreateTeamPage() {
   const owned = useFantasyOwned();
   const { requireAuth, user } = useAuth();
 
-  const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
+  const playersQ = useQuery({
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
+  const gwQ = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => botolaService.getCurrentGameweek(),
+  });
 
   // Entry conditions:
   //   1. Authenticated cloud user.
@@ -114,7 +120,9 @@ function CreateTeamPage() {
       setDraft(entry.payload);
     } else {
       // Default the name to the user's manager name if available.
-      const defaultName = user?.displayName?.trim() ? `${user.displayName.trim().split(" ")[0]} FC` : "";
+      const defaultName = user?.displayName?.trim()
+        ? `${user.displayName.trim().split(" ")[0]} FC`
+        : "";
       setDraft(initCreateDraft(defaultName));
     }
     initedRef.current = true;
@@ -128,8 +136,8 @@ function CreateTeamPage() {
 
   // ---- Derived state ----
 
-  const players = playersQ.data ?? [];
-  const clubs = clubsQ.data ?? [];
+  const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
+  const clubs = useMemo(() => clubsQ.data ?? [], [clubsQ.data]);
   const summary = useMemo(() => computeSummary(draft, players), [draft, players]);
   const validation = useMemo(() => validateDraft(draft, players), [draft, players]);
   const teamNameCheck = validateTeamName(draft.teamName);
@@ -332,7 +340,9 @@ function CreateTeamPage() {
     );
   };
 
-  const xiIds = draft.slots.filter((s) => s.slot < 12 && s.playerId).map((s) => s.playerId!) as string[];
+  const xiIds = draft.slots
+    .filter((s) => s.slot < 12 && s.playerId)
+    .map((s) => s.playerId!) as string[];
   const gkXi = xiIds.filter((id) => playerOf(id)?.position === "GK");
   const defXi = xiIds.filter((id) => playerOf(id)?.position === "DEF");
   const midXi = xiIds.filter((id) => playerOf(id)?.position === "MID");
@@ -377,7 +387,10 @@ function CreateTeamPage() {
 
       {/* Team name */}
       <div className="mt-4">
-        <label htmlFor="botolago-create-team-name" className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+        <label
+          htmlFor="botolago-create-team-name"
+          className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
+        >
           {t("fantasy.create.team_name_label")}
         </label>
         <input
@@ -402,7 +415,9 @@ function CreateTeamPage() {
           className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[11px] text-muted-foreground"
         >
           <span>
-            {t("fantasy.create.team_name_help").replace("{min}", String(TEAM_NAME_MIN_LENGTH)).replace("{max}", String(TEAM_NAME_MAX_LENGTH))}
+            {t("fantasy.create.team_name_help")
+              .replace("{min}", String(TEAM_NAME_MIN_LENGTH))
+              .replace("{max}", String(TEAM_NAME_MAX_LENGTH))}
           </span>
           <span className="tabular-nums">
             {draft.teamName.trim().length}/{TEAM_NAME_MAX_LENGTH}
@@ -422,10 +437,7 @@ function CreateTeamPage() {
           value={nf.format(Math.max(0, summary.bankRemaining))}
           tone={summary.overBudget ? "warn" : "ok"}
         />
-        <StatusTile
-          label={t("fantasy.team_value")}
-          value={nf.format(summary.totalCost)}
-        />
+        <StatusTile label={t("fantasy.team_value")} value={nf.format(summary.totalCost)} />
         <StatusTile
           label={t("fantasy.create.club_limit_label")}
           value={summary.overClubLimit.length > 0 ? String(summary.overClubLimit.length) : "0"}
@@ -538,7 +550,10 @@ function CreateTeamPage() {
               if (!p) return null;
               const s = draft.slots.find((x) => x.playerId === id)!;
               return (
-                <li key={id} className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
+                <li
+                  key={id}
+                  className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold">{tr(p.name)}</div>
                     <div className="text-[11px] text-muted-foreground">
@@ -588,7 +603,9 @@ function CreateTeamPage() {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
           >
-            <h2 className="text-sm font-black text-foreground">{t("fantasy.create.discard_title")}</h2>
+            <h2 className="text-sm font-black text-foreground">
+              {t("fantasy.create.discard_title")}
+            </h2>
             <p className="mt-1 text-xs text-muted-foreground break-words">
               {t("fantasy.create.discard_desc")}
             </p>
@@ -709,7 +726,15 @@ function StatusTile({
   );
 }
 
-function PositionTile({ label, filled, required }: { label: string; filled: number; required: number }) {
+function PositionTile({
+  label,
+  filled,
+  required,
+}: {
+  label: string;
+  filled: number;
+  required: number;
+}) {
   const complete = filled === required;
   const over = filled > required;
   return (
@@ -723,7 +748,9 @@ function PositionTile({ label, filled, required }: { label: string; filled: numb
             : "bg-white/60 ring-black/5",
       )}
     >
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </div>
       <div
         className={cn(
           "mt-0.5 text-sm font-black tabular-nums",

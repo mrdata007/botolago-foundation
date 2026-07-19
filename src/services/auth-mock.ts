@@ -40,18 +40,33 @@ export const MOCK_DEMO_EMAIL = "demo@botolago.ma";
 export const MOCK_DEMO_PASSWORD = "demo1234";
 export const MOCK_DEMO_CODE = "123456";
 
-function hasWindow() { return typeof window !== "undefined"; }
+function hasWindow() {
+  return typeof window !== "undefined";
+}
 function safeGet<T>(key: string): T | null {
   if (!hasWindow()) return null;
-  try { const raw = window.localStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : null; } catch { return null; }
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
 }
 function safeSet<T>(key: string, value: T): void {
   if (!hasWindow()) return;
-  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
 }
 function safeRemove(key: string): void {
   if (!hasWindow()) return;
-  try { window.localStorage.removeItem(key); } catch { /* ignore */ }
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    /* ignore */
+  }
 }
 function digest(input: string): string {
   let h = 0x811c9dc5;
@@ -106,7 +121,10 @@ export class LocalMockAuthService implements AuthService {
     if (rec.kind === "guest") return { user: null, status: "guest" };
     const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
     const found = users.find((u) => u.id === rec.userId);
-    if (!found) { safeRemove(K_SESSION); return { user: null, status: "anonymous" }; }
+    if (!found) {
+      safeRemove(K_SESSION);
+      return { user: null, status: "anonymous" };
+    }
     return { user: stripPassword(found), status: "authenticated" };
   }
 
@@ -127,12 +145,17 @@ export class LocalMockAuthService implements AuthService {
     safeSet(K_USERS, users);
   }
 
-  getSession(): AuthSession { this.init(); return this.cachedSession; }
+  getSession(): AuthSession {
+    this.init();
+    return this.cachedSession;
+  }
   subscribeToSession(listener: (s: AuthSession) => void): () => void {
     this.init();
     this.listeners.add(listener);
     listener(this.cachedSession);
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   async signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>> {
@@ -153,8 +176,10 @@ export class LocalMockAuthService implements AuthService {
     const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
     const normalizedEmail = input.email.trim().toLowerCase();
     const normalizedUsername = input.username.trim().toLowerCase();
-    if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) return { ok: false, errorCode: "email_taken" };
-    if (users.some((u) => u.username.toLowerCase() === normalizedUsername)) return { ok: false, errorCode: "username_taken" };
+    if (users.some((u) => u.email.toLowerCase() === normalizedEmail))
+      return { ok: false, errorCode: "email_taken" };
+    if (users.some((u) => u.username.toLowerCase() === normalizedUsername))
+      return { ok: false, errorCode: "username_taken" };
     const draft: PendingRecord["draft"] = {
       email: normalizedEmail,
       displayName: input.fullName.trim(),
@@ -165,7 +190,12 @@ export class LocalMockAuthService implements AuthService {
       provider: "email",
       passwordDigest: digest(input.password),
     };
-    safeSet(K_PENDING, { email: normalizedEmail, code: MOCK_DEMO_CODE, expiresAt: Date.now() + 10 * 60 * 1000, draft });
+    safeSet(K_PENDING, {
+      email: normalizedEmail,
+      code: MOCK_DEMO_CODE,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      draft,
+    });
     return { ok: true, data: { email: normalizedEmail } };
   }
 
@@ -185,10 +215,16 @@ export class LocalMockAuthService implements AuthService {
     this.init();
     await simulateLatency();
     const pending = safeGet<PendingRecord>(K_PENDING);
-    if (!pending || pending.email.toLowerCase() !== email.trim().toLowerCase()) return { ok: false, errorCode: "otp_invalid" };
+    if (!pending || pending.email.toLowerCase() !== email.trim().toLowerCase())
+      return { ok: false, errorCode: "otp_invalid" };
     if (pending.expiresAt < Date.now()) return { ok: false, errorCode: "otp_expired" };
     if (code.trim() !== pending.code) return { ok: false, errorCode: "otp_invalid" };
-    const user: StoredUserRecord = { ...pending.draft, id: uid("usr"), createdAt: new Date().toISOString(), verified: true };
+    const user: StoredUserRecord = {
+      ...pending.draft,
+      id: uid("usr"),
+      createdAt: new Date().toISOString(),
+      verified: true,
+    };
     this.saveUser(user);
     safeRemove(K_PENDING);
     this.setSession({ kind: "user", userId: user.id, createdAt: new Date().toISOString() });
@@ -199,7 +235,8 @@ export class LocalMockAuthService implements AuthService {
     this.init();
     await simulateLatency();
     const pending = safeGet<PendingRecord>(K_PENDING);
-    if (!pending || pending.email.toLowerCase() !== email.trim().toLowerCase()) return { ok: false, errorCode: "generic" };
+    if (!pending || pending.email.toLowerCase() !== email.trim().toLowerCase())
+      return { ok: false, errorCode: "generic" };
     pending.expiresAt = Date.now() + 10 * 60 * 1000;
     safeSet(K_PENDING, pending);
     return { ok: true };
@@ -231,8 +268,12 @@ export class LocalMockAuthService implements AuthService {
     return { ok: true, data: stripPassword(user) };
   }
 
-  signInWithGoogle() { return this.signInWithProvider("google"); }
-  signInWithApple() { return this.signInWithProvider("apple"); }
+  signInWithGoogle() {
+    return this.signInWithProvider("google");
+  }
+  signInWithApple() {
+    return this.signInWithProvider("apple");
+  }
 
   async continueAsGuest(): Promise<AuthResult> {
     this.init();
@@ -252,7 +293,9 @@ export class LocalMockAuthService implements AuthService {
       ...users[idx],
       displayName: input.displayName?.trim() || users[idx].displayName,
       favoriteClubId: input.favoriteClubId ?? users[idx].favoriteClubId,
-      avatarDataUrl: input.removeAvatar ? undefined : (input.avatarDataUrl ?? users[idx].avatarDataUrl),
+      avatarDataUrl: input.removeAvatar
+        ? undefined
+        : (input.avatarDataUrl ?? users[idx].avatarDataUrl),
       language: input.language ?? users[idx].language,
       notifications: { ...users[idx].notifications, ...(input.notifications ?? {}) },
       profileComplete: true,
@@ -284,4 +327,6 @@ export class LocalMockAuthService implements AuthService {
   }
 }
 
-async function simulateLatency() { await new Promise((r) => setTimeout(r, 20)); }
+async function simulateLatency() {
+  await new Promise((r) => setTimeout(r, 20));
+}

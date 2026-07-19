@@ -11,14 +11,35 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
-import { ArrowRightLeft, CalendarDays, LayoutGrid, ListChecks, Sparkles, TrendingUp, Trophy, UserCog, Users } from "lucide-react";
+import {
+  ArrowRightLeft,
+  CalendarDays,
+  LayoutGrid,
+  ListChecks,
+  Sparkles,
+  TrendingUp,
+  Trophy,
+  UserCog,
+  Users,
+} from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/")({
   component: FantasyHub,
 });
 
-type QuickAction = { to: "/fantasy/team" | "/fantasy/transfers" | "/fantasy/points" | "/fantasy/leagues" | "/fantasy/players" | "/fantasy/fixtures" | "/fantasy/top-players"; labelKey: TranslationKey; icon: React.ComponentType<{ className?: string }> };
+type QuickAction = {
+  to:
+    | "/fantasy/team"
+    | "/fantasy/transfers"
+    | "/fantasy/points"
+    | "/fantasy/leagues"
+    | "/fantasy/players"
+    | "/fantasy/fixtures"
+    | "/fantasy/top-players";
+  labelKey: TranslationKey;
+  icon: React.ComponentType<{ className?: string }>;
+};
 const quickActions: QuickAction[] = [
   { to: "/fantasy/team", labelKey: "fantasy.tab.team", icon: UserCog },
   { to: "/fantasy/transfers", labelKey: "fantasy.tab.transfers", icon: ArrowRightLeft },
@@ -32,13 +53,31 @@ const quickActions: QuickAction[] = [
 function FantasyHub() {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
-  const summary = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
-  const gw = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
-  const alerts = useQuery({ queryKey: ["alerts"], queryFn: () => botolaService.getFantasyAlerts() });
-  const trending = useQuery({ queryKey: ["trending"], queryFn: () => botolaService.getTrendingPlayers() });
+  const summary = useQuery({
+    queryKey: ["fantasy-summary"],
+    queryFn: () => botolaService.getFantasySummary(),
+  });
+  const gw = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => botolaService.getCurrentGameweek(),
+  });
+  const alerts = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => botolaService.getFantasyAlerts(),
+  });
+  const trending = useQuery({
+    queryKey: ["trending"],
+    queryFn: () => botolaService.getTrendingPlayers(),
+  });
   const clubs = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const leagues = useQuery({ queryKey: ["fantasy-leagues"], queryFn: () => fantasyService.getLeagues("private") });
-  const articles = useQuery({ queryKey: ["fantasy-articles"], queryFn: () => botolaService.getArticles({ category: "for_you" }) });
+  const leagues = useQuery({
+    queryKey: ["fantasy-leagues"],
+    queryFn: () => fantasyService.getLeagues("private"),
+  });
+  const articles = useQuery({
+    queryKey: ["fantasy-articles"],
+    queryFn: () => botolaService.getArticles({ category: "for_you" }),
+  });
 
   const clubById = (id: string) => clubs.data?.find((c) => c.id === id);
 
@@ -71,7 +110,10 @@ function FantasyHub() {
         <div className="mt-3 grid grid-cols-3 gap-2">
           <MiniStat label={t("fantasy.team_value")} value={nf.format(summary.data.teamValue)} />
           <MiniStat label={t("fantasy.bank")} value={nf.format(summary.data.bankValue)} />
-          <MiniStat label={t("fantasy.free_transfers")} value={String(summary.data.transfersLeft)} />
+          <MiniStat
+            label={t("fantasy.free_transfers")}
+            value={String(summary.data.transfersLeft)}
+          />
         </div>
       )}
 
@@ -103,7 +145,9 @@ function FantasyHub() {
 
       <SectionHeader title={t("fantasy.recent_news")} />
       <div className="grid gap-3">
-        {articles.data?.slice(0, 2).map((a) => <ArticleCard key={a.id} article={a} />)}
+        {articles.data?.slice(0, 2).map((a) => (
+          <ArticleCard key={a.id} article={a} />
+        ))}
       </div>
 
       <SectionHeader
@@ -111,10 +155,22 @@ function FantasyHub() {
         action={<TrendingUp className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />}
       />
       <div className="grid gap-2">
-        {trending.data?.map((p) => <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} />)}
+        {trending.data?.map((p) => (
+          <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} />
+        ))}
       </div>
 
-      <SectionHeader title={t("fantasy.mini_league")} action={<Link to="/fantasy/leagues" className="text-xs font-semibold text-[color:var(--brand-accent)]">{t("home.view_all")}</Link>} />
+      <SectionHeader
+        title={t("fantasy.mini_league")}
+        action={
+          <Link
+            to="/fantasy/leagues"
+            className="text-xs font-semibold text-[color:var(--brand-accent)]"
+          >
+            {t("home.view_all")}
+          </Link>
+        }
+      />
       <div className="grid gap-2">
         {leagues.data?.map((l) => (
           <Link
@@ -128,7 +184,9 @@ function FantasyHub() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
-              <div className="text-[11px] text-muted-foreground">{l.members} {t("fantasy.leagues.members")}</div>
+              <div className="text-[11px] text-muted-foreground">
+                {l.members} {t("fantasy.leagues.members")}
+              </div>
             </div>
             <div className="text-end">
               <div className="text-sm font-black tabular-nums">#{l.rank}</div>
@@ -145,7 +203,9 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="surface-2 rounded-2xl px-2 py-2.5 text-center">
       <div className="text-sm font-black tabular-nums text-foreground">{value}</div>
-      <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </div>
     </div>
   );
 }

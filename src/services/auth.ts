@@ -6,7 +6,12 @@
 // unit tests. Never silently fall back from Supabase to mock on runtime errors.
 
 import type { AuthService } from "./auth-types";
-import { LocalMockAuthService, MOCK_DEMO_EMAIL, MOCK_DEMO_PASSWORD, MOCK_DEMO_CODE } from "./auth-mock";
+import {
+  LocalMockAuthService,
+  MOCK_DEMO_EMAIL,
+  MOCK_DEMO_PASSWORD,
+  MOCK_DEMO_CODE,
+} from "./auth-mock";
 import { SupabaseAuthService } from "./auth-supabase";
 
 export * from "./auth-types";
@@ -18,8 +23,7 @@ function detectMode(): Mode {
   if (explicit === "mock") return "mock";
   if (explicit === "supabase") return "supabase";
   const hasSupabase =
-    !!import.meta.env.VITE_SUPABASE_URL &&
-    !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   return hasSupabase ? "supabase" : "mock";
 }
 

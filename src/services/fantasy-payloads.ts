@@ -107,10 +107,7 @@ function squadToJson(
   })) as unknown as Json;
 }
 
-export function buildSaveTeamPayload(
-  input: SaveTeamPayloadInput,
-  idMap: FantasyIdMap,
-): SaveArgs {
+export function buildSaveTeamPayload(input: SaveTeamPayloadInput, idMap: FantasyIdMap): SaveArgs {
   return {
     _team_id: asNullableUuidArg(input.teamId),
     _expected_version: (input.expectedVersion ?? 0) as number,
@@ -177,7 +174,7 @@ export function buildFinalizeGameweekPayload(
       const price = prices[m.sourceId];
       if (typeof price !== "number") {
         // Missing price would silently zero out — surface at dev time.
-        // eslint-disable-next-line no-console
+
         console.warn(
           `[fantasy-payloads] finalize post-squad missing purchase price for ${m.sourceId}`,
         );

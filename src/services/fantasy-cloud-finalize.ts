@@ -137,9 +137,7 @@ export function buildCloudFinalizationPlan(
   };
 
   // De-duplicate used[] via engine helper and drop any freeHitSnapshot.
-  const finalizedChips: ChipsState = consumeFreeHitSnapshot(
-    finalizeChip(lifecycle.chips),
-  ).state;
+  const finalizedChips: ChipsState = consumeFreeHitSnapshot(finalizeChip(lifecycle.chips)).state;
 
   // Free Hit restore: revert squad/formation/bank/freeTransfers to the
   // pre-mutation snapshot and re-install the pre-Free-Hit purchase prices.
@@ -196,10 +194,7 @@ export interface CloudAdvancePlanInput {
   nextGameweekId: string;
 }
 
-export type CloudAdvancePlanError =
-  | "must_finalize_first"
-  | "already_advanced"
-  | "target_in_past";
+export type CloudAdvancePlanError = "must_finalize_first" | "already_advanced" | "target_in_past";
 
 export type CloudAdvancePlan =
   | {
@@ -220,9 +215,7 @@ export type CloudAdvancePlan =
     }
   | { ok: false; error: CloudAdvancePlanError };
 
-export function buildCloudAdvancePlan(
-  input: CloudAdvancePlanInput,
-): CloudAdvancePlan {
+export function buildCloudAdvancePlan(input: CloudAdvancePlanInput): CloudAdvancePlan {
   const { snapshot, nextGameweekNumber, nextGameweekId } = input;
   const lifecycle = snapshot.lifecycle;
   const cur = lifecycle.currentGameweek;

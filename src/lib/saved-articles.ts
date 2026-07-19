@@ -30,7 +30,9 @@ function write(next: string[]) {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch { /* ignore quota */ }
+    } catch {
+      /* ignore quota */
+    }
   }
   listeners.forEach((fn) => fn(next));
 }
@@ -44,7 +46,9 @@ export function useSavedArticles() {
     setHydrated(true);
     const listener: Listener = (next) => setIds(next);
     listeners.add(listener);
-    return () => { listeners.delete(listener); };
+    return () => {
+      listeners.delete(listener);
+    };
   }, []);
 
   const toggle = useCallback((id: string) => {

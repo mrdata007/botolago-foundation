@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach } from "bun:test";
 import {
   buildIdMap,
@@ -53,10 +52,7 @@ describe("buildIdMap", () => {
     }
   });
   it("skips rows with null provider_id", () => {
-    const m = buildIdMap(
-      [...CLUB_ROWS, { id: "uuid-club-x", provider_id: null }],
-      PLAYER_ROWS,
-    );
+    const m = buildIdMap([...CLUB_ROWS, { id: "uuid-club-x", provider_id: null }], PLAYER_ROWS);
     expect(m.clubSourceById.get("uuid-club-x")).toBeUndefined();
   });
 });

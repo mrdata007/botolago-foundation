@@ -1,4 +1,3 @@
-// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/transfers-service.test.ts`
 import { describe, it, expect } from "bun:test";
 import { applyConfirmedTransfers, previewTransfers } from "./transfers-service";
@@ -6,7 +5,10 @@ import { DEFAULT_CHIPS, type ChipsState } from "@/lib/fantasy-engine";
 import type { FantasyTeam, SquadPlayer } from "@/types/fantasy";
 
 const sp = (playerId: string, slot: number): SquadPlayer => ({
-  playerId, slot, isCaptain: false, isViceCaptain: false,
+  playerId,
+  slot,
+  isCaptain: false,
+  isViceCaptain: false,
 });
 
 const team: FantasyTeam = {
@@ -18,10 +20,20 @@ const team: FantasyTeam = {
   pendingTransfers: 0,
   squad: [
     sp("gk1", 1),
-    sp("d1", 2), sp("d2", 3), sp("d3", 4),
-    sp("m1", 5), sp("m2", 6), sp("m3", 7), sp("m4", 8),
-    sp("f1", 9), sp("f2", 10), sp("f3", 11),
-    sp("gk2", 12), sp("d4", 13), sp("m5", 14), sp("f4", 15),
+    sp("d1", 2),
+    sp("d2", 3),
+    sp("d3", 4),
+    sp("m1", 5),
+    sp("m2", 6),
+    sp("m3", 7),
+    sp("m4", 8),
+    sp("f1", 9),
+    sp("f2", 10),
+    sp("f3", 11),
+    sp("gk2", 12),
+    sp("d4", 13),
+    sp("m5", 14),
+    sp("f4", 15),
   ],
 };
 
@@ -31,8 +43,11 @@ const past = new Date(Date.now() - 60_000).toISOString();
 describe("previewTransfers", () => {
   it("computes free/paid/hit for a normal transfer within free-transfer budget", () => {
     const p = previewTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: ["m1"], inIds: ["m1b"], netCost: 0.5,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1"],
+      inIds: ["m1b"],
+      netCost: 0.5,
     });
     expect(p.totalTransfers).toBe(1);
     expect(p.free).toBe(1);
@@ -45,8 +60,11 @@ describe("previewTransfers", () => {
 
   it("charges a hit for paid transfers beyond the free-transfer budget", () => {
     const p = previewTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: ["m1", "d1"], inIds: ["m1b", "d1b"], netCost: 0,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
     });
     expect(p.paid).toBe(1);
     expect(p.hitPoints).toBe(4);
@@ -55,8 +73,11 @@ describe("previewTransfers", () => {
   it("zeroes cost when Wildcard is active regardless of transfer count", () => {
     const chips: ChipsState = { ...DEFAULT_CHIPS, active: "wildcard" };
     const p = previewTransfers({
-      team, chips,
-      outIds: ["m1", "d1", "d2", "f1"], inIds: ["m1b", "d1b", "d2b", "f1b"], netCost: 0,
+      team,
+      chips,
+      outIds: ["m1", "d1", "d2", "f1"],
+      inIds: ["m1b", "d1b", "d2b", "f1b"],
+      netCost: 0,
     });
     expect(p.hitPoints).toBe(0);
     expect(p.paid).toBe(0);
@@ -67,8 +88,11 @@ describe("previewTransfers", () => {
   it("zeroes cost when Free Hit is active and does not consume free transfers", () => {
     const chips: ChipsState = { ...DEFAULT_CHIPS, active: "free_hit" };
     const p = previewTransfers({
-      team, chips,
-      outIds: ["m1", "d1"], inIds: ["m1b", "d1b"], netCost: 0,
+      team,
+      chips,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
     });
     expect(p.hitPoints).toBe(0);
     expect(p.chipActive).toBe("free_hit");
@@ -77,8 +101,11 @@ describe("previewTransfers", () => {
 
   it("flags over-budget when netCost exceeds bank", () => {
     const p = previewTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: ["m1"], inIds: ["m1b"], netCost: 5.0,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1"],
+      inIds: ["m1b"],
+      netCost: 5.0,
     });
     expect(p.overBudget).toBe(true);
   });
@@ -87,8 +114,12 @@ describe("previewTransfers", () => {
 describe("applyConfirmedTransfers", () => {
   it("returns the next squad, bank, and free transfers for a normal confirmation", () => {
     const res = applyConfirmedTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: ["m1"], inIds: ["m1b"], netCost: 0.3, deadlineIso: future,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1"],
+      inIds: ["m1b"],
+      netCost: 0.3,
+      deadlineIso: future,
     });
     expect(res.ok).toBe(true);
     if (!res.ok) return;
@@ -101,8 +132,12 @@ describe("applyConfirmedTransfers", () => {
 
   it("rejects when the deadline has passed", () => {
     const res = applyConfirmedTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: ["m1"], inIds: ["m1b"], netCost: 0, deadlineIso: past,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1"],
+      inIds: ["m1b"],
+      netCost: 0,
+      deadlineIso: past,
     });
     expect(res.ok).toBe(false);
     if (res.ok) return;
@@ -111,8 +146,11 @@ describe("applyConfirmedTransfers", () => {
 
   it("rejects when the resulting bank would be negative", () => {
     const res = applyConfirmedTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: ["m1"], inIds: ["m1b"], netCost: 10,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1"],
+      inIds: ["m1b"],
+      netCost: 10,
     });
     expect(res.ok).toBe(false);
     if (res.ok) return;
@@ -122,8 +160,11 @@ describe("applyConfirmedTransfers", () => {
   it("wildcard confirmation charges zero and keeps free transfers intact", () => {
     const chips: ChipsState = { ...DEFAULT_CHIPS, active: "wildcard" };
     const res = applyConfirmedTransfers({
-      team, chips,
-      outIds: ["m1", "d1", "f1"], inIds: ["m1b", "d1b", "f1b"], netCost: 0,
+      team,
+      chips,
+      outIds: ["m1", "d1", "f1"],
+      inIds: ["m1b", "d1b", "f1b"],
+      netCost: 0,
     });
     expect(res.ok).toBe(true);
     if (!res.ok) return;
@@ -136,8 +177,11 @@ describe("applyConfirmedTransfers", () => {
   it("free_hit first confirmation captures an exact pre-mutation snapshot", () => {
     const chips: ChipsState = { ...DEFAULT_CHIPS, active: "free_hit" };
     const res = applyConfirmedTransfers({
-      team, chips,
-      outIds: ["m1", "d1"], inIds: ["m1b", "d1b"], netCost: 0,
+      team,
+      chips,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
     });
     expect(res.ok).toBe(true);
     if (!res.ok) return;
@@ -169,8 +213,11 @@ describe("applyConfirmedTransfers", () => {
       freeHitSnapshot: originalSnap,
     };
     const res = applyConfirmedTransfers({
-      team: mutatedTeam, chips,
-      outIds: ["d1"], inIds: ["d1b"], netCost: 0,
+      team: mutatedTeam,
+      chips,
+      outIds: ["d1"],
+      inIds: ["d1b"],
+      netCost: 0,
     });
     expect(res.ok).toBe(true);
     if (!res.ok) return;
@@ -180,8 +227,11 @@ describe("applyConfirmedTransfers", () => {
 
   it("rejects when no changes are pending", () => {
     const res = applyConfirmedTransfers({
-      team, chips: DEFAULT_CHIPS,
-      outIds: [], inIds: [], netCost: 0,
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: [],
+      inIds: [],
+      netCost: 0,
     });
     expect(res.ok).toBe(false);
     if (res.ok) return;

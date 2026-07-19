@@ -48,9 +48,10 @@ export function previewTransfers(input: TransfersPreviewInput): TransfersPreview
   const bankAfter = Math.round((input.team.bank - input.netCost) * 10) / 10;
   // While Wildcard or Free Hit is active, free transfers are not consumed —
   // Wildcard grants unlimited transfers and Free Hit reverts everything.
-  const freeTransfersAfter = wildcardActive || freeHitActive
-    ? input.team.freeTransfers
-    : Math.max(0, input.team.freeTransfers - totalTransfers);
+  const freeTransfersAfter =
+    wildcardActive || freeHitActive
+      ? input.team.freeTransfers
+      : Math.max(0, input.team.freeTransfers - totalTransfers);
   return {
     totalTransfers,
     free: cost.free,
@@ -86,11 +87,7 @@ export interface AppliedTransfers {
   freeHitSnapshotTaken: boolean;
 }
 
-export type TransferError =
-  | "deadline_passed"
-  | "over_budget"
-  | "no_changes"
-  | "unequal_in_out";
+export type TransferError = "deadline_passed" | "over_budget" | "no_changes" | "unequal_in_out";
 
 /** Result union — errors carry a stable machine key that maps to an i18n string. */
 export type ApplyResult =
@@ -130,9 +127,10 @@ export function applyConfirmedTransfers(input: ApplyTransfersInput): ApplyResult
     return { ...sp, playerId: inId };
   });
 
-  const nextFreeTransfers = wildcardActive || freeHitActive
-    ? input.team.freeTransfers
-    : Math.max(0, input.team.freeTransfers - totalTransfers);
+  const nextFreeTransfers =
+    wildcardActive || freeHitActive
+      ? input.team.freeTransfers
+      : Math.max(0, input.team.freeTransfers - totalTransfers);
 
   // Free Hit: snapshot the ORIGINAL squad on the first temporary mutation.
   // Subsequent Free Hit confirmations must never overwrite the snapshot.

@@ -15,7 +15,9 @@ export function formatRelativeTime(iso: string, lang: Language): string {
   if (abs < 86400) return rtf.format(Math.round(diffSec / 3600), "hour");
   if (abs < 7 * 86400) return rtf.format(Math.round(diffSec / 86400), "day");
   return new Intl.DateTimeFormat(lang === "ar" ? "ar" : "fr", {
-    day: "numeric", month: "short", year: abs > 365 * 86400 ? "numeric" : undefined,
+    day: "numeric",
+    month: "short",
+    year: abs > 365 * 86400 ? "numeric" : undefined,
   }).format(new Date(iso));
 }
 
@@ -23,6 +25,10 @@ export function formatFullDate(iso: string, lang: Language): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat(lang === "ar" ? "ar" : "fr", {
-    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(d);
 }

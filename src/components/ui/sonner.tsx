@@ -36,11 +36,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-[color:var(--brand-accent)] group-[.toast]:text-[color:var(--primary-foreground)] group-[.toast]:rounded-lg group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-xs group-[.toast]:font-semibold",
           cancelButton:
             "group-[.toast]:bg-[color:var(--surface-hover)] group-[.toast]:text-[color:var(--text-secondary)] group-[.toast]:rounded-lg group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-xs",
-          success: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-success)]",
-          error: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-danger)]",
-          warning: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-warning)]",
+          success:
+            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-success)]",
+          error:
+            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-danger)]",
+          warning:
+            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-warning)]",
           info: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--brand-accent)]",
-          loading: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--text-muted)]",
+          loading:
+            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--text-muted)]",
         },
       }}
       {...props}
