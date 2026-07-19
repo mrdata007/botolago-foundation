@@ -19,6 +19,7 @@ export default tseslint.config(
       "src/routes/**/list-tools.ts",
       "src/routes/**/invoke-tool/**",
       "src/routes/**/oauth-protected-resource.ts",
+    ],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
