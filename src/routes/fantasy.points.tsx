@@ -394,9 +394,88 @@ function PointsPage() {
 
 
   const doAdvance = () => {
-    requireAuth(() => {
+    requireAuth(async () => {
       if (!team) return;
       const target = currentGw + 1;
+
+      if (isCloud && owned.snapshot) {
+        // H6 — Cloud-authoritative advance via saveTeam with resolved next-GW UUID.
+        const idx = gwIndexQ.data;
+        if (!idx) {
+          toast.error(t("fantasy.error.network"));
+          return;
+        }
+        const nextGameweekId = resolveGameweekId(idx, target);
+        if (!nextGameweekId) {
+          toast.error(t("fantasy.points.lifecycle_error"));
+          return;
+        }
+        const plan = buildCloudAdvancePlan({
+          snapshot: owned.snapshot,
+          nextGameweekNumber: target,
+          nextGameweekId,
+        });
+        if (!plan.ok) {
+          toast.error(
+            t(
+              plan.error === "must_finalize_first"
+                ? "fantasy.points.must_finalize_first"
+                : "fantasy.points.lifecycle_error",
+            ),
+          );
+          return;
+        }
+
+        const res = await runOwnedMutation(
+          {
+            qc,
+            scope: owned.scope,
+            setMutationStatus: owned.setMutationStatus,
+            nextMutationSeq: owned.nextMutationSeq,
+            setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+            replaceSnapshot: owned.replaceSnapshot,
+            invalidateOwned: owned.invalidateOwned,
+          },
+          {
+            action: () =>
+              owned.repo.saveTeam({
+                teamName: team.teamName,
+                managerName: team.managerName,
+                formation: plan.postTeam.formation,
+                bank: plan.postTeam.bank,
+                freeTransfers: plan.postTeam.freeTransfers,
+                pendingTransfers: plan.postTeam.pendingTransfers,
+                squad: plan.postTeam.squad,
+                purchasePrices: plan.postPurchasePrices,
+                currentGameweekId: plan.currentGameweekId,
+                lifecycle: plan.nextLifecycle,
+                expectedVersion: plan.expectedVersion,
+              }),
+            args: undefined,
+            savedIdleAfterMs: 2400,
+          },
+        );
+        if (res.ok) {
+          setGw(target);
+          qc.invalidateQueries({ queryKey: ["current-gw"] });
+          toast.success(t("fantasy.points.advance_success"));
+        } else {
+          const c = classifyRepoError(res.error);
+          if (c.isConflict) setConflictOpen(true);
+          const key: TranslationKey = c.isConflict
+            ? "fantasy.error.version_conflict"
+            : c.isNetwork
+              ? "fantasy.error.network"
+              : c.isPermission
+                ? "fantasy.error.permission"
+                : "fantasy.points.lifecycle_error";
+          toast.error(t(key));
+        }
+        setConfirmAdvance(false);
+        return;
+      }
+
+      // Local mode — untouched.
       const res = advanceGameweek({ targetGameweek: target, team: team });
       if (!res.ok) {
         toast.error(t(res.error === "must_finalize_first" ? "fantasy.points.must_finalize_first" : "fantasy.points.lifecycle_error"));
