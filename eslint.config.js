@@ -36,5 +36,15 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  // Test files: narrow relaxations. Tests build partial mocks of Supabase and
+  // service surfaces where `any`/`unknown` casts are unavoidable, and empty
+  // catch blocks assert "throws" without needing the caught value.
+  {
+    files: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/services/__test-shim.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-empty": ["error", { allowEmptyCatch: true }],
+    },
+  },
   eslintPluginPrettier,
 );
