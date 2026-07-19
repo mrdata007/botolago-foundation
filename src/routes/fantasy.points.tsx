@@ -102,20 +102,13 @@ function PointsPage() {
   const currentGwQ = useQuery({ queryKey: ["current-gw"], queryFn: () => botolaService.getCurrentGameweek() });
   const gwResultQ = useQuery({ queryKey: ownedKey("gw-result", gw), queryFn: () => fantasyService.getGameweekResult(gw) });
   const historyQ = useQuery({ queryKey: ownedKey("gw-history"), queryFn: () => fantasyService.getGameweekHistory() });
-  const teamQ = useQuery({
+  // H7 — Consume owned.snapshot directly in cloud mode; no parallel Team query.
+  const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
-    queryFn: async () => {
-      if (isCloud) {
-        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
-        return owned.snapshot.team;
-      }
-      return fantasyService.getTeam();
-    },
-    enabled: !isCloud || !!owned.snapshot,
+    queryFn: () => fantasyService.getTeam(),
+    enabled: !isCloud,
   });
-  useEffect(() => {
-    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
-  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
 
