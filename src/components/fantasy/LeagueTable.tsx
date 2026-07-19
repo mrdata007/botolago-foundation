@@ -85,7 +85,7 @@ export function LeagueTable({
                       <div className="truncate font-bold text-foreground">{s.managerName}</div>
                       {isMe && (
                         <span className="rounded-full bg-[color:var(--brand-accent)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
-                          {t("fantasy.leagues.you") /* falls back gracefully */}
+                          {t("fantasy.leagues.me")}
                         </span>
                       )}
                     </div>
