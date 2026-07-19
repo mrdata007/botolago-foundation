@@ -42,11 +42,20 @@ export function FantasySubNav() {
               key={it.to}
               to={it.to}
               className={cn(
-                "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
+                "relative whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold transition-colors",
                 active
-                  ? "bg-[color:var(--brand-primary)] text-white shadow-sm"
+                  ? "text-white"
                   : "bg-white/50 text-foreground hover:bg-white/80",
               )}
+              style={
+                active
+                  ? {
+                      backgroundImage: "var(--bg-brand-gradient)",
+                      boxShadow:
+                        "0 6px 14px -8px color-mix(in oklab, var(--brand-accent) 60%, transparent), inset 0 1px 0 rgba(255,255,255,0.20)",
+                    }
+                  : undefined
+              }
               aria-current={active ? "page" : undefined}
             >
               {t(it.labelKey)}

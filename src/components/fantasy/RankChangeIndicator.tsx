@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 
 export function RankChangeIndicator({
   rank,
@@ -12,20 +13,21 @@ export function RankChangeIndicator({
   const delta = previousRank - rank;
   const up = delta > 0;
   const down = delta < 0;
-  const same = delta === 0;
+  const Icon = up ? ArrowUp : down ? ArrowDown : Minus;
+  const abs = Math.abs(delta) || 0;
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums",
-        up && "text-emerald-600",
-        down && "text-red-600",
-        same && "text-muted-foreground",
+        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums ring-1",
+        up && "bg-emerald-500/12 text-emerald-700 ring-emerald-600/25",
+        down && "bg-red-500/12 text-red-700 ring-red-600/25",
+        !up && !down && "bg-muted text-muted-foreground ring-black/5",
         className,
       )}
       aria-label={`change ${delta}`}
     >
-      <span aria-hidden>{up ? "▲" : down ? "▼" : "="}</span>
-      {Math.abs(delta) || 0}
+      <Icon className="h-2.5 w-2.5" aria-hidden />
+      {abs}
     </span>
   );
 }
