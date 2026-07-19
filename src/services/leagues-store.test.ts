@@ -5,7 +5,7 @@ import { leaguesStore, LEAGUE_ERROR } from "./leagues-store";
 // jsdom-like localStorage shim for bun test.
 if (typeof globalThis.window === "undefined") {
   const mem = new Map<string, string>();
-  // @ts-ignore
+  // @ts-expect-error test-only window shim; global type intentionally overridden
   globalThis.window = {
     localStorage: {
       getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
