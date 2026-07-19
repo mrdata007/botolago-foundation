@@ -70,12 +70,15 @@ function NewsPage() {
   const list = allQ.data ?? [];
   const lead = leadQ.data;
 
-  const byClub = (arr: Article[]) =>
-    clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr;
+  const byClub = useCallback(
+    (arr: Article[]) =>
+      clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr,
+    [clubFilter],
+  );
 
   const forYou = useMemo(
     () => byClub(list.filter((a) => a.id !== lead?.id)),
-    [list, lead, clubFilter],
+    [list, lead, byClub],
   );
   const topStories = useMemo(() => forYou.slice(0, 3), [forYou]);
   const latest = useMemo(
@@ -84,25 +87,25 @@ function NewsPage() {
   );
   const transfers = useMemo(
     () => byClub(list.filter((a) => a.category === "transfers")),
-    [list, clubFilter],
+    [list, byClub],
   );
   const analysis = useMemo(
     () => byClub(list.filter((a) => a.category === "analysis")),
-    [list, clubFilter],
+    [list, byClub],
   );
   const interviews = useMemo(
     () => byClub(list.filter((a) => a.category === "interviews")),
-    [list, clubFilter],
+    [list, byClub],
   );
   const savedList = useMemo(
     () => byClub(list.filter((a) => savedIds.includes(a.id))),
-    [list, savedIds, clubFilter],
+    [list, savedIds, byClub],
   );
 
   const filteredForTab = useMemo(() => {
     if (tab === "for_you") return null;
     return byClub(list.filter((a) => a.category === tab));
-  }, [tab, list, clubFilter]);
+  }, [tab, list, byClub]);
 
   return (
     <AppShell backgroundVariant="news">
