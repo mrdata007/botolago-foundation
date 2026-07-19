@@ -57,19 +57,25 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
         </div>
 
         <div className="mt-6">
-          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>
+          <h1 className="text-2xl font-black tracking-tight sm:text-[26px]">{title}</h1>
           {subtitle && (
-            <p className="mt-2 text-sm leading-relaxed text-white/75">{subtitle}</p>
+            <p className="mt-2 max-w-[36ch] text-[13.5px] leading-relaxed text-white/80">{subtitle}</p>
           )}
         </div>
 
         <div className="mt-6 flex-1">
-          <div className="rounded-3xl bg-white/95 p-5 text-foreground shadow-2xl shadow-black/25 ring-1 ring-white/30">
+          <div
+            className="rounded-[24px] bg-white/97 p-5 text-foreground ring-1 ring-white/40 sm:p-6"
+            style={{
+              boxShadow:
+                "0 24px 60px -24px rgba(3, 12, 40, 0.55), 0 2px 8px -2px rgba(3, 12, 40, 0.18)",
+            }}
+          >
             {children}
           </div>
         </div>
 
-        {footer && <div className="mt-5 text-center text-sm text-white/80">{footer}</div>}
+        {footer && <div className="mt-5 text-center text-sm text-white/85">{footer}</div>}
       </div>
     </div>
   );
