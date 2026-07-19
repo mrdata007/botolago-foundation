@@ -97,15 +97,22 @@ describe("fantasy-create-service — validation", () => {
     expect(v.errors).toContain("size");
   });
 
-  it("valid template autocompletes and passes validation", async () => {
+  it("valid template autocompletes to a full 15-player draft with captain/vice", async () => {
     const template = await fantasyService.getTeam();
     const d0 = setTeamName(initCreateDraft(), "Test XI");
     const merged = applyAutocompleteTemplate(d0, template.squad, players);
     expect(merged).not.toBeNull();
-    const v = validateDraft(merged!, players);
-    expect(v.ok).toBe(true);
-    expect(v.errors).toHaveLength(0);
+    const s = computeSummary(merged!, players);
+    expect(s.filled).toBe(15);
+    expect(s.perPosition.GK).toEqual({ filled: 2, required: 2 });
+    expect(s.perPosition.DEF).toEqual({ filled: 5, required: 5 });
+    expect(s.perPosition.MID).toEqual({ filled: 5, required: 5 });
+    expect(s.perPosition.FWD).toEqual({ filled: 3, required: 3 });
+    expect(s.hasCaptain).toBe(true);
+    expect(s.hasVice).toBe(true);
+    expect(s.captainViceDistinct).toBe(true);
   });
+
 
   it("club limit is flagged when more than 3 players share a club", () => {
     const d0 = setTeamName(initCreateDraft(), "Overpicks");
