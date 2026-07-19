@@ -162,10 +162,9 @@ export function buildCloudFinalizationPlan(
       pendingTransfers: 0,
       squad: snap.squad,
     };
-    // Purchase prices captured at Free Hit activation, if provided.
-    if (snap.purchasePrices && Object.keys(snap.purchasePrices).length > 0) {
-      postPurchasePrices = snap.purchasePrices;
-    }
+    // Purchase prices remain the pre-Free-Hit book value from the snapshot;
+    // Free Hit does not touch purchase prices, only squad/bank/formation.
+    postPurchasePrices = snapshot.purchasePrices;
     freeHitRestored = true;
   }
 
