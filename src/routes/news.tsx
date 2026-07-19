@@ -71,15 +71,11 @@ function NewsPage() {
   const lead = leadQ.data;
 
   const byClub = useCallback(
-    (arr: Article[]) =>
-      clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr,
+    (arr: Article[]) => (clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr),
     [clubFilter],
   );
 
-  const forYou = useMemo(
-    () => byClub(list.filter((a) => a.id !== lead?.id)),
-    [list, lead, byClub],
-  );
+  const forYou = useMemo(() => byClub(list.filter((a) => a.id !== lead?.id)), [list, lead, byClub]);
   const topStories = useMemo(() => forYou.slice(0, 3), [forYou]);
   const latest = useMemo(
     () => [...forYou].sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt)),
