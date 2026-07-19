@@ -83,12 +83,12 @@ describe("no automatic cloud mirror on fantasyStateStore mutation", () => {
     // The old FantasyCloudSyncProvider module has been removed; verify the
     // symbol is no longer resolvable — importing it would throw. This is a
     // structural guarantee: no listener remains that could auto-save.
-    let mod: any = null;
+    let mod: unknown = null;
     try {
-      // Dynamic import path uses relative form to match src layout.
-      mod = require("./fantasy-cloud-sync");
+      // Dynamic import: this module MUST be gone. Relative path matches src layout.
+      mod = await import(/* @vite-ignore */ "./fantasy-cloud-sync");
     } catch {
-      /* expected */
+      /* expected — module removed */
     }
     expect(mod).toBeNull();
     // And a plain state mutation must not throw / emit into cloud.
