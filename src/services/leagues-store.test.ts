@@ -18,7 +18,7 @@ if (typeof globalThis.window === "undefined") {
     },
     dispatchEvent: () => true,
   };
-  // @ts-ignore
+  // @ts-expect-error test-only CustomEvent shim; global type intentionally overridden
   globalThis.CustomEvent = class {
     constructor(_t: string, _o?: any) {}
   };
