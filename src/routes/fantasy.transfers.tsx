@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { LoadingState } from "@/components/common/States";
@@ -9,6 +9,8 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { TransferReviewPanel } from "@/components/fantasy/TransferReviewPanel";
+import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
+import { ConflictBar } from "@/components/fantasy/ConflictBar";
 import { computeBudgetImpact, maxAffordableReplacement } from "@/lib/budget";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { useI18n } from "@/i18n/provider";
@@ -24,12 +26,24 @@ import {
   transfersDeadline,
 } from "@/services/transfers-service";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
-import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
+import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
 });
+
+// H5 — Persisted working state for the Transfers route.
+interface TransfersDraftPayload {
+  outIds: string[];
+  inIds: string[];
+}
+
+function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
+  if (!v || typeof v !== "object") return false;
+  const p = v as Partial<TransfersDraftPayload>;
+  return Array.isArray(p.outIds) && Array.isArray(p.inIds);
+}
 
 function TransfersPage() {
   const { t, tr, lang } = useI18n();
@@ -40,27 +54,18 @@ function TransfersPage() {
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
 
-  const teamQ = useQuery({
+  // H7 — Consume owned.snapshot directly in cloud mode; no parallel query.
+  const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
-    queryFn: async () => {
-      if (isCloud) {
-        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
-        return owned.snapshot.team;
-      }
-      return fantasyService.getTeam();
-    },
-    enabled: !isCloud || !!owned.snapshot,
+    queryFn: () => fantasyService.getTeam(),
+    enabled: !isCloud,
   });
-  useEffect(() => {
-    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
-  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
 
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
 
-  // Persistent chip / fantasy state. In cloud mode it mirrors the snapshot;
-  // in local mode we still listen to the local storage event bus.
   const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
     isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
   );
@@ -78,16 +83,63 @@ function TransfersPage() {
     };
   }, [isCloud, owned.snapshot?.lifecycle]);
 
-
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<string[]>([]);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftInitRef = useRef(false);
   const { requireAuth } = useAuth();
 
-  if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
-  const team = teamQ.data;
+  // H5 — Draft key (cloud-only).
+  const teamId = isCloud ? owned.snapshot?.teamId ?? "new" : null;
+  const baseVersion = isCloud ? owned.snapshot?.version ?? 0 : 0;
+  const draftKey = useMemo<FantasyDraftKey | null>(() => {
+    if (!isCloud || !owned.userId) return null;
+    return {
+      uid: owned.userId,
+      teamId: teamId ?? "new",
+      baseVersion,
+      kind: "transfers",
+    };
+  }, [isCloud, owned.userId, teamId, baseVersion]);
+
+  // Reset draft-init flag when identity changes.
+  useEffect(() => {
+    draftInitRef.current = false;
+    setDraftRestored(false);
+  }, [draftKey?.uid, draftKey?.teamId, draftKey?.baseVersion]);
+
+  // Hydrate draft on mount.
+  useEffect(() => {
+    if (!isCloud || !draftKey || !team) return;
+    if (draftInitRef.current) return;
+    const entry = fantasyDraftsStore.read<TransfersDraftPayload>(draftKey);
+    if (entry && isTransfersDraftPayload(entry.payload)) {
+      // Only restore ids that still map to current squad or exist in players.
+      setOutIds(entry.payload.outIds);
+      setInIds(entry.payload.inIds);
+      setDraftRestored(true);
+    }
+    draftInitRef.current = true;
+  }, [isCloud, draftKey, team]);
+
+  const persistDraft = (nextOut: string[], nextIn: string[]) => {
+    if (!isCloud || !draftKey) return;
+    if (nextOut.length === 0 && nextIn.length === 0) {
+      fantasyDraftsStore.remove(draftKey);
+      return;
+    }
+    fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, {
+      outIds: nextOut,
+      inIds: nextIn,
+    });
+    setDraftRestored(false);
+  };
+
+  if (!team || !playersQ.data || !clubsQ.data) return <LoadingState />;
   const players = playersQ.data;
   const clubs = clubsQ.data;
   const playerOf = (id: string) => players.find((p) => p.id === id)!;
@@ -118,6 +170,7 @@ function TransfersPage() {
   });
 
   const canReview = preview.totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget && !locked;
+  const hasWorkingChanges = outIds.length > 0 || inIds.length > 0;
 
   const startReplace = (playerId: string) => {
     if (locked) return;
@@ -126,14 +179,17 @@ function TransfersPage() {
   const removeFromOut = (playerId: string) => {
     const idx = outIds.indexOf(playerId);
     if (idx < 0) return;
-    setOutIds(outIds.filter((x) => x !== playerId));
-    setInIds(inIds.filter((_, i) => i !== idx));
+    const nextOut = outIds.filter((x) => x !== playerId);
+    const nextIn = inIds.filter((_, i) => i !== idx);
+    setOutIds(nextOut);
+    setInIds(nextIn);
+    persistDraft(nextOut, nextIn);
   };
   const onPick = (p: FantasyPlayer) => {
     if (!pickerFor) return;
     const outP = playerOf(pickerFor);
     if (p.position !== outP.position) {
-      toast.error(lang === "ar" ? "لا بد من نفس المركز" : "Poste incompatible");
+      toast.error(t("fantasy.team.hint.position_incompatible"));
       return;
     }
     const nextIds = currentSquadIdsAfter.map((id) => (id === pickerFor ? p.id : id));
@@ -142,19 +198,27 @@ function TransfersPage() {
       toast.error(t("fantasy.validation.club_limit"));
       return;
     }
+    let nextOut = outIds;
+    let nextIn = inIds;
     if (!outIds.includes(pickerFor)) {
-      setOutIds([...outIds, pickerFor]);
-      setInIds([...inIds, p.id]);
+      nextOut = [...outIds, pickerFor];
+      nextIn = [...inIds, p.id];
     } else {
       const idx = outIds.indexOf(pickerFor);
-      const newIn = inIds.slice();
-      newIn[idx] = p.id;
-      setInIds(newIn);
+      nextIn = inIds.slice();
+      nextIn[idx] = p.id;
     }
+    setOutIds(nextOut);
+    setInIds(nextIn);
+    persistDraft(nextOut, nextIn);
     setPickerFor(null);
   };
 
-  const resetAll = () => { setOutIds([]); setInIds([]); };
+  const resetAll = () => {
+    setOutIds([]);
+    setInIds([]);
+    persistDraft([], []);
+  };
   const openReview = () => {
     if (locked) {
       toast.error(t("fantasy.transfers.error.deadline"));
@@ -162,6 +226,18 @@ function TransfersPage() {
     }
     setConfirming(true);
   };
+
+  const reloadLatest = async () => {
+    setConflictOpen(false);
+    if (draftKey) fantasyDraftsStore.remove(draftKey);
+    setOutIds([]);
+    setInIds([]);
+    setDraftRestored(false);
+    await owned.reload();
+    toast.success(t("fantasy.status.saved_short"));
+  };
+  const keepWorking = () => setConflictOpen(false);
+
   const confirm = async () => {
     const res = applyConfirmedTransfers({
       team,
@@ -182,17 +258,9 @@ function TransfersPage() {
     const v = res.value;
 
     if (isCloud && owned.userId && owned.snapshot?.currentGameweekId) {
-      // Cloud path — atomic confirm through the owned repository.
-      const draftKey = {
-        uid: owned.userId,
-        teamId: owned.snapshot.teamId ?? "new",
-        baseVersion: owned.snapshot.version,
-        kind: "transfers" as const,
-      };
       const purchasePrices: Record<string, number> = {
         ...owned.snapshot.purchasePrices,
       };
-      // Track new player entry prices at their in-price.
       const transfers = outIds.map((oid, i) => {
         const inId = inIds[i];
         const oP = outPlayers.find((p) => p.id === oid)!;
@@ -239,22 +307,28 @@ function TransfersPage() {
               transfers,
             }),
           args: undefined,
-          matchingDraftKey: draftKey,
+          matchingDraftKey: draftKey ?? undefined,
           savedIdleAfterMs: 2400,
         },
       );
       if (cloudRes.ok) {
         setSuccess(true);
         setConfirming(false);
+        setConflictOpen(false);
         toast.success(t("fantasy.transfers.success"));
         if (v.freeHitSnapshotTaken) toast.message(t("fantasy.transfers.free_hit_snapshot_taken"));
         setTimeout(() => setSuccess(false), 2400);
-        resetAll();
+        setOutIds([]);
+        setInIds([]);
+        setDraftRestored(false);
         return;
       }
-      // Preserve draft; do NOT persist locally.
-      fantasyDraftsStore.save(draftKey, { outIds, inIds });
+      // Preserve draft on failure.
+      if (draftKey) {
+        fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, { outIds, inIds });
+      }
       const c = classifyRepoError(cloudRes.error);
+      if (c.isConflict) setConflictOpen(true);
       const key: TranslationKey = c.isConflict
         ? "fantasy.error.version_conflict"
         : c.isNetwork
@@ -273,7 +347,6 @@ function TransfersPage() {
       freeTransfers: v.nextFreeTransfers,
       pendingTransfers: v.pendingTransfers,
     });
-    // Persist Free Hit snapshot + accumulated transfer hit for the gameweek.
     fantasyStateStore.write({
       chips: v.chips,
       transferHitPoints: fantasyState.transferHitPoints + v.hitPointsApplied,
@@ -286,9 +359,9 @@ function TransfersPage() {
     toast.success(t("fantasy.transfers.success"));
     if (v.freeHitSnapshotTaken) toast.message(t("fantasy.transfers.free_hit_snapshot_taken"));
     setTimeout(() => setSuccess(false), 2400);
-    resetAll();
+    setOutIds([]);
+    setInIds([]);
   };
-
 
   const pickerOut = pickerFor ? playerOf(pickerFor) : null;
   const pickerMaxPrice = pickerOut ? maxAffordableReplacement(pickerOut.price, team.bank) : undefined;
@@ -329,6 +402,28 @@ function TransfersPage() {
           className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-800"
         >
           <Check className="h-4 w-4 shrink-0" aria-hidden /> {t("fantasy.transfers.success")}
+        </div>
+      )}
+
+      {/* H5 — Unsaved-changes badge (cloud mode only). */}
+      {isCloud && (
+        <div className="mt-3">
+          <UnsavedBadge
+            visible={hasWorkingChanges}
+            variant={draftRestored ? "draft_restored" : "unsaved"}
+          />
+        </div>
+      )}
+
+      {/* H5 — Version-conflict resolution bar. */}
+      {isCloud && (
+        <div className="mt-2">
+          <ConflictBar
+            visible={conflictOpen}
+            onReloadLatest={reloadLatest}
+            onKeepWorking={keepWorking}
+            busy={owned.mutationStatus === "saving"}
+          />
         </div>
       )}
 
@@ -373,7 +468,7 @@ function TransfersPage() {
                       {inOut ? (
                         <button
                           onClick={() => removeFromOut(p.id)}
-                          className="rounded-lg bg-white px-2 py-1 text-[11px] font-semibold ring-1 ring-black/10"
+                          className="min-h-11 rounded-lg bg-white px-3 py-2 text-[11px] font-semibold ring-1 ring-black/10"
                         >
                           {t("fantasy.transfers.reset")}
                         </button>
@@ -381,7 +476,7 @@ function TransfersPage() {
                         <button
                           onClick={() => startReplace(p.id)}
                           disabled={locked}
-                          className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-40"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-3 py-2 text-[11px] font-semibold text-white disabled:opacity-40"
                         >
                           <ArrowRightLeft className="h-3 w-3" aria-hidden /> {t("fantasy.transfers.title")}
                         </button>
@@ -397,7 +492,7 @@ function TransfersPage() {
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <button
           onClick={resetAll}
-          className="rounded-xl border border-input bg-white/60 px-3 py-2 text-xs font-semibold hover:bg-white"
+          className="min-h-11 rounded-xl border border-input bg-white/60 px-3 py-2 text-xs font-semibold hover:bg-white disabled:opacity-40"
           disabled={preview.totalTransfers === 0}
         >
           {t("fantasy.transfers.reset")}
@@ -405,7 +500,7 @@ function TransfersPage() {
         <button
           onClick={() => requireAuth(() => openReview())}
           disabled={!canReview}
-          className="rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+          className="min-h-11 rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
         >
           {t("fantasy.review")}
         </button>
