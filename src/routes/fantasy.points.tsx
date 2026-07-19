@@ -447,18 +447,18 @@ function PointsPage() {
             type="button"
             onClick={onRecompute}
             disabled={!canRecompute}
-            className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold text-foreground ring-1 ring-black/10 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-foreground ring-1 ring-black/10 disabled:opacity-50"
             aria-label={t("fantasy.points.recompute")}
           >
-            <RefreshCcw className="h-3 w-3" aria-hidden /> {t("fantasy.points.recompute")}
+            <RefreshCcw className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.points.recompute")}
           </button>
         )}
         {finalized && (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-800"
             role="status"
           >
-            <LockIcon className="h-3 w-3" aria-hidden />
+            <LockIcon className="h-3.5 w-3.5" aria-hidden />
             {t("fantasy.points.finalized_badge")}
           </span>
         )}
@@ -466,21 +466,40 @@ function PointsPage() {
           <button
             type="button"
             onClick={() => setConfirmFinalize(true)}
-            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
           >
-            <LockIcon className="h-3 w-3" aria-hidden /> {t("fantasy.points.finalize")}
+            <LockIcon className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.points.finalize")}
           </button>
         )}
         {isCurrent && finalized && (
           <button
             type="button"
             onClick={() => setConfirmAdvance(true)}
-            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
           >
-            {t("fantasy.points.advance")} <ChevronRight className="h-3 w-3 rtl:rotate-180" aria-hidden />
+            {t("fantasy.points.advance")} <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
           </button>
         )}
       </div>
+
+      {/* H6 — Live status region (points route has no editable drafts; badge stays silent). */}
+      {isCloud && (
+        <div className="mt-3">
+          <UnsavedBadge visible={false} />
+        </div>
+      )}
+
+      {/* H6 — Version-conflict resolution bar. */}
+      {isCloud && (
+        <div className="mt-2">
+          <ConflictBar
+            visible={conflictOpen}
+            onReloadLatest={reloadLatest}
+            onKeepWorking={keepWorking}
+            busy={owned.mutationStatus === "saving"}
+          />
+        </div>
+      )}
 
       <AlertDialog open={confirmFinalize} onOpenChange={setConfirmFinalize}>
         <AlertDialogContent>
