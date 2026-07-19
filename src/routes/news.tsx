@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Newspaper, Flame, Clock, Sparkles, Bookmark, ArrowRightLeft, PieChart, MessageSquare } from "lucide-react";
 import { botolaService } from "@/services/mock";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
-import { LoadingState, EmptyState } from "@/components/common/States";
+import { Section } from "@/components/common/Section";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
+import { EmptyState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
-import type { ArticleCategory } from "@/types/domain";
+import { useSavedArticles } from "@/lib/saved-articles";
+import type { Article, ArticleCategory } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 
@@ -35,34 +40,63 @@ function NewsPage() {
   const [tab, setTab] = useState<ArticleCategory>("for_you");
   const [clubFilter, setClubFilter] = useState<string | null>(null);
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
+  const { ids: savedIds } = useSavedArticles();
 
-  const articlesQ = useQuery({ queryKey: ["articles", tab], queryFn: () => botolaService.getArticles({ category: tab }) });
+  const allQ = useQuery({ queryKey: ["articles", "all"], queryFn: () => botolaService.getArticles() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const leadQ = useQuery({ queryKey: ["lead"], queryFn: () => botolaService.getLeadArticle() });
 
-  const filtered = useMemo(() => {
-    const list = articlesQ.data ?? [];
-    if (!clubFilter) return list;
-    return list.filter((a) => a.clubIds.includes(clubFilter));
-  }, [articlesQ.data, clubFilter]);
+  const isLoading = allQ.isLoading || leadQ.isLoading;
+  const list = allQ.data ?? [];
+  const lead = leadQ.data;
+
+  const byClub = (arr: Article[]) => (clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr);
+
+  const forYou = useMemo(() => byClub(list.filter((a) => a.id !== lead?.id)), [list, lead, clubFilter]);
+  const topStories = useMemo(() => forYou.slice(0, 3), [forYou]);
+  const latest = useMemo(
+    () => [...forYou].sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt)),
+    [forYou],
+  );
+  const transfers = useMemo(() => byClub(list.filter((a) => a.category === "transfers")), [list, clubFilter]);
+  const analysis = useMemo(() => byClub(list.filter((a) => a.category === "analysis")), [list, clubFilter]);
+  const interviews = useMemo(() => byClub(list.filter((a) => a.category === "interviews")), [list, clubFilter]);
+  const savedList = useMemo(
+    () => byClub(list.filter((a) => savedIds.includes(a.id))),
+    [list, savedIds, clubFilter],
+  );
+
+  const filteredForTab = useMemo(() => {
+    if (tab === "for_you") return null;
+    return byClub(list.filter((a) => a.category === tab));
+  }, [tab, list, clubFilter]);
 
   return (
-    <AppShell>
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground"><span className="text-brand">{t("news.title")}</span></h1>
+    <AppShell backgroundVariant="news">
+      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
+        <span className="text-brand">{t("news.title")}</span>
+      </h1>
 
       {/* Tabs */}
       <div className="sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">
-        <div className="glass-surface glass-strong flex items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--glass-border)] p-1">
+        <div
+          role="tablist"
+          aria-label={t("news.title")}
+          className="glass-surface glass-strong flex items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--glass-border)] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {tabs.map((it) => (
             <button
               key={it.key}
+              role="tab"
               onClick={() => setTab(it.key)}
               className={cn(
-                "shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
+                "shrink-0 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
+                "min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
                 tab === it.key
                   ? "bg-[var(--brand-primary)] text-white shadow"
                   : "text-muted-foreground hover:text-foreground",
               )}
+              aria-selected={tab === it.key}
               aria-pressed={tab === it.key}
             >
               {t(it.label)}
@@ -71,14 +105,9 @@ function NewsPage() {
         </div>
       </div>
 
-      {/* Lead */}
-      {leadQ.data && <div className="mt-3">
-        <ArticleCard article={leadQ.data} variant="lead" />
-      </div>}
-
       {/* Club filters */}
-      <div className="mt-4">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <Section index={0} className="mt-4">
+        <div className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
           {t("news.filter_clubs")}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -97,6 +126,7 @@ function NewsPage() {
                     e.stopPropagation();
                     setFollowed((f) => ({ ...f, [c.id]: !f[c.id] }));
                   }}
+                  aria-pressed={!!followed[c.id]}
                   className={cn(
                     "ms-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide",
                     followed[c.id] ? "bg-[color:var(--brand-accent)] text-white" : "bg-muted text-muted-foreground",
@@ -110,16 +140,110 @@ function NewsPage() {
             </FilterChip>
           ))}
         </div>
-      </div>
+      </Section>
 
-      {/* Article list */}
-      <div className="mt-4 grid gap-3">
-        {articlesQ.isLoading && <LoadingState />}
-        {!articlesQ.isLoading && filtered.length === 0 && <EmptyState />}
-        {filtered.map((a) => (
-          <ArticleCard key={a.id} article={a} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="mt-4 space-y-4">
+          <ArticleCardSkeleton variant="lead" />
+          <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+        </div>
+      ) : filteredForTab ? (
+        <Section index={1}>
+          <SectionHeader
+            title={t(`news.section.${tab === "latest" ? "latest" : tab === "transfers" ? "transfers" : tab === "analysis" ? "analysis" : "interviews"}` as TranslationKey)}
+            icon={tab === "transfers" ? ArrowRightLeft : tab === "analysis" ? PieChart : tab === "interviews" ? MessageSquare : Clock}
+            eyebrow={t(`news.tab.${tab}` as TranslationKey)}
+          />
+          {filteredForTab.length === 0 ? (
+            <EmptyState>{t("news.empty_category")}</EmptyState>
+          ) : (
+            <div className="grid gap-3">
+              {filteredForTab.map((a) => <ArticleCard key={a.id} article={a} />)}
+            </div>
+          )}
+        </Section>
+      ) : (
+        <>
+          {/* Lead */}
+          {lead && (
+            <Section index={1}>
+              <SectionHeader eyebrow={t("news.section.lead")} icon={Sparkles} title={t("news.section.lead")} />
+              <ArticleCard article={lead} variant="lead" />
+            </Section>
+          )}
+
+          {/* Top stories — image-led grid */}
+          {topStories.length > 0 && (
+            <Section index={2}>
+              <SectionHeader title={t("news.section.top_stories")} icon={Flame} eyebrow={t("news.section.top_stories")} />
+              <div className="grid grid-cols-2 gap-3">
+                {topStories.slice(0, 2).map((a) => (
+                  <ArticleCard key={a.id} article={a} variant="imageLed" />
+                ))}
+              </div>
+              {topStories[2] && (
+                <div className="mt-3">
+                  <ArticleCard article={topStories[2]} variant="horizontal" />
+                </div>
+              )}
+            </Section>
+          )}
+
+          {/* Latest — horizontal list */}
+          {latest.length > 0 && (
+            <Section index={3}>
+              <SectionHeader title={t("news.section.latest")} icon={Clock} eyebrow={t("news.section.latest")} />
+              <div className="grid gap-2.5">
+                {latest.slice(0, 5).map((a) => (
+                  <ArticleCard key={a.id} article={a} variant="horizontal" />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Transfers strip */}
+          {transfers.length > 0 && (
+            <Section index={4}>
+              <SectionHeader title={t("news.section.transfers")} icon={ArrowRightLeft} eyebrow={t("news.section.transfers")} />
+              <div className="grid gap-3">
+                {transfers.slice(0, 2).map((a) => <ArticleCard key={a.id} article={a} />)}
+              </div>
+            </Section>
+          )}
+
+          {/* Analysis */}
+          {analysis.length > 0 && (
+            <Section index={5}>
+              <SectionHeader title={t("news.section.analysis")} icon={PieChart} eyebrow={t("news.section.analysis")} />
+              <div className="grid gap-3">
+                {analysis.slice(0, 2).map((a) => <ArticleCard key={a.id} article={a} />)}
+              </div>
+            </Section>
+          )}
+
+          {/* Interviews */}
+          {interviews.length > 0 && (
+            <Section index={6}>
+              <SectionHeader title={t("news.section.interviews")} icon={MessageSquare} eyebrow={t("news.section.interviews")} />
+              <div className="grid gap-2.5">
+                {interviews.slice(0, 3).map((a) => <ArticleCard key={a.id} article={a} variant="horizontal" />)}
+              </div>
+            </Section>
+          )}
+
+          {/* Saved */}
+          <Section index={6}>
+            <SectionHeader title={t("news.section.saved")} icon={Bookmark} eyebrow={t("news.section.saved")} />
+            {savedList.length === 0 ? (
+              <EmptyState compact>{t("news.saved.empty")}</EmptyState>
+            ) : (
+              <div className="grid gap-2.5">
+                {savedList.map((a) => <ArticleCard key={a.id} article={a} variant="compact" />)}
+              </div>
+            )}
+          </Section>
+        </>
+      )}
     </AppShell>
   );
 }
@@ -135,8 +259,7 @@ function FilterChip({
   children: React.ReactNode;
   trailing?: React.ReactNode;
 }) {
-  // NB: rendered as a <span> with role="button" so a follow-toggle <button>
-  // can be nested inside without producing invalid <button> descendants.
+  // Rendered as a role="button" span so a nested follow-toggle <button> is valid.
   return (
     <span
       role="button"
@@ -150,7 +273,7 @@ function FilterChip({
       }}
       aria-pressed={active}
       className={cn(
-        "inline-flex cursor-pointer select-none items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         active
           ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
           : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
@@ -161,3 +284,6 @@ function FilterChip({
     </span>
   );
 }
+
+// Retain Newspaper import to prevent unused warning if we later add empty hero.
+void Newspaper;

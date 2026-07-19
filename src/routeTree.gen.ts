@@ -17,6 +17,7 @@ import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
+import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
@@ -78,6 +79,11 @@ const FantasyIndexRoute = FantasyIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => FantasyRoute,
+} as any)
+const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
+  id: '/$articleId',
+  path: '/$articleId',
+  getParentRoute: () => NewsRoute,
 } as any)
 const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
   id: '/transfers',
@@ -194,7 +200,7 @@ export interface FileRoutesByFullPath {
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRoute
   '/mcp': typeof McpRoute
-  '/news': typeof NewsRoute
+  '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -224,7 +231,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/matches': typeof MatchesRoute
   '/mcp': typeof McpRoute
-  '/news': typeof NewsRoute
+  '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -256,7 +264,7 @@ export interface FileRoutesById {
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRoute
   '/mcp': typeof McpRoute
-  '/news': typeof NewsRoute
+  '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/news/$articleId'
     | '/fantasy/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/news/$articleId'
     | '/fantasy'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/news/$articleId'
     | '/fantasy/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -382,7 +394,7 @@ export interface RootRouteChildren {
   FantasyRoute: typeof FantasyRouteWithChildren
   MatchesRoute: typeof MatchesRoute
   McpRoute: typeof McpRoute
-  NewsRoute: typeof NewsRoute
+  NewsRoute: typeof NewsRouteWithChildren
   ProfileRoute: typeof ProfileRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -447,6 +459,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/'
       preLoaderRoute: typeof FantasyIndexRouteImport
       parentRoute: typeof FantasyRoute
+    }
+    '/news/$articleId': {
+      id: '/news/$articleId'
+      path: '/$articleId'
+      fullPath: '/news/$articleId'
+      preLoaderRoute: typeof NewsArticleIdRouteImport
+      parentRoute: typeof NewsRoute
     }
     '/fantasy/transfers': {
       id: '/fantasy/transfers'
@@ -671,13 +690,23 @@ const FantasyRouteChildren: FantasyRouteChildren = {
 const FantasyRouteWithChildren =
   FantasyRoute._addFileChildren(FantasyRouteChildren)
 
+interface NewsRouteChildren {
+  NewsArticleIdRoute: typeof NewsArticleIdRoute
+}
+
+const NewsRouteChildren: NewsRouteChildren = {
+  NewsArticleIdRoute: NewsArticleIdRoute,
+}
+
+const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
   MatchesRoute: MatchesRoute,
   McpRoute: McpRoute,
-  NewsRoute: NewsRoute,
+  NewsRoute: NewsRouteWithChildren,
   ProfileRoute: ProfileRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
