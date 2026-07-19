@@ -8,7 +8,6 @@ import type { AuthService } from "./auth-types";
 let authService: AuthService;
 
 beforeEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = globalThis as any;
   if (typeof g.window === "undefined") {
     const store = new Map<string, string>();

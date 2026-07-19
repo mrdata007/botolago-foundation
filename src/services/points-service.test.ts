@@ -267,7 +267,6 @@ describe("points-service — buildPointsViewModel", () => {
 
 describe("fantasyStateStore — result persistence", () => {
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const g = globalThis as any;
     if (typeof g.window === "undefined") {
       const store = new Map<string, string>();
