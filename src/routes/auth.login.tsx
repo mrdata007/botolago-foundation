@@ -9,16 +9,33 @@ import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
+function sanitizeNext(raw: unknown): string | undefined {
+  if (typeof raw !== "string" || !raw) return undefined;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
+  return raw;
+}
+
 export const Route = createFileRoute("/auth/login")({
   head: () => ({ meta: [{ title: "Se connecter — BotolaGO" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ next: sanitizeNext(s.next) }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const emailId = useId();
   const passwordId = useId();
+
+  const goAfterLogin = (profileComplete: boolean | undefined) => {
+    if (next && profileComplete) {
+      window.location.href = next;
+      return;
+    }
+    navigate({ to: profileComplete ? "/" : "/auth/profile-setup" });
+  };
+
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +59,7 @@ function LoginPage() {
     }
     markWelcomeDone();
     toast.success(t("auth.success.login"));
-    navigate({ to: res.data?.profileComplete ? "/" : "/auth/profile-setup" });
+    goAfterLogin(res.data?.profileComplete);
   };
 
   const onSocial = async (provider: "google" | "apple") => {
@@ -52,7 +69,7 @@ function LoginPage() {
     if (!res.ok) { setErrors({ form: "auth.error.generic" }); return; }
     markWelcomeDone();
     toast.success(t("auth.success.login"));
-    navigate({ to: res.data?.profileComplete ? "/" : "/auth/profile-setup" });
+    goAfterLogin(res.data?.profileComplete);
   };
 
   return (
