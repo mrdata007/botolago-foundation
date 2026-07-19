@@ -62,8 +62,17 @@ function CallbackPage() {
           handled = true;
         } else if (tokenHash && type) {
           // Email confirmation / recovery / magiclink via token_hash.
-          const otpType = type as "signup" | "recovery" | "invite" | "email" | "magiclink" | "email_change";
-          const { error: vErr } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
+          const otpType = type as
+            | "signup"
+            | "recovery"
+            | "invite"
+            | "email"
+            | "magiclink"
+            | "email_change";
+          const { error: vErr } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: otpType,
+          });
           if (vErr) throw vErr;
           handled = true;
           if (otpType === "recovery" && next === "/") {
@@ -73,7 +82,10 @@ function CallbackPage() {
             return;
           }
         } else if (accessToken && refreshToken) {
-          const { error: sErr } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          const { error: sErr } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
           if (sErr) throw sErr;
           handled = true;
         }
@@ -92,7 +104,9 @@ function CallbackPage() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return (
@@ -120,5 +134,7 @@ function scrubUrl() {
     clean.search = "";
     clean.hash = "";
     window.history.replaceState({}, "", clean.toString());
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }

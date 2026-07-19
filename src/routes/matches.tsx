@@ -21,9 +21,15 @@ export const Route = createFileRoute("/matches")({
   head: () => ({
     meta: [
       { title: "Matchs — BotolaGO" },
-      { name: "description", content: "Suivez tous les matchs de la Botola Pro : en direct, à venir et résultats." },
+      {
+        name: "description",
+        content: "Suivez tous les matchs de la Botola Pro : en direct, à venir et résultats.",
+      },
       { property: "og:title", content: "Matchs — BotolaGO" },
-      { property: "og:description", content: "Suivez tous les matchs de la Botola Pro : en direct, à venir et résultats." },
+      {
+        property: "og:description",
+        content: "Suivez tous les matchs de la Botola Pro : en direct, à venir et résultats.",
+      },
     ],
   }),
   component: MatchesPage,
@@ -129,11 +135,7 @@ function MatchesPage() {
       </div>
 
       {/* Sticky status filters */}
-      <div
-        className={cn(
-          "sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1",
-        )}
-      >
+      <div className={cn("sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1")}>
         <div
           role="tablist"
           aria-label={t("matches.title")}
@@ -197,9 +199,7 @@ function MatchesPage() {
           />
         )}
         {totalDay > 0 && (
-          <span className="tabular-nums text-[color:var(--text-secondary)]">
-            {totalDay}
-          </span>
+          <span className="tabular-nums text-[color:var(--text-secondary)]">{totalDay}</span>
         )}
       </div>
 
@@ -287,16 +287,22 @@ function MatchesPage() {
           <EmptyState compact>{t("matches.section.no_live")}</EmptyState>
         </div>
       )}
-      {!loading && filter === "upcoming" && visibleByBucket.upcoming.length === 0 && totalDay > 0 && (
-        <div className="mt-4">
-          <EmptyState compact>{t("matches.section.no_upcoming")}</EmptyState>
-        </div>
-      )}
-      {!loading && filter === "finished" && visibleByBucket.finished.length === 0 && totalDay > 0 && (
-        <div className="mt-4">
-          <EmptyState compact>{t("matches.section.no_finished")}</EmptyState>
-        </div>
-      )}
+      {!loading &&
+        filter === "upcoming" &&
+        visibleByBucket.upcoming.length === 0 &&
+        totalDay > 0 && (
+          <div className="mt-4">
+            <EmptyState compact>{t("matches.section.no_upcoming")}</EmptyState>
+          </div>
+        )}
+      {!loading &&
+        filter === "finished" &&
+        visibleByBucket.finished.length === 0 &&
+        totalDay > 0 && (
+          <div className="mt-4">
+            <EmptyState compact>{t("matches.section.no_finished")}</EmptyState>
+          </div>
+        )}
 
       {/* Standings — persistent context regardless of the selected date */}
       <Section index={3}>
@@ -330,7 +336,9 @@ function MatchesPage() {
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <ClubCrest club={club} size="sm" />
-                          <span className="truncate font-semibold text-foreground">{tr(club.shortName)}</span>
+                          <span className="truncate font-semibold text-foreground">
+                            {tr(club.shortName)}
+                          </span>
                         </div>
                       </td>
                       <td className="px-2 py-2 text-center tabular-nums">{row.played}</td>

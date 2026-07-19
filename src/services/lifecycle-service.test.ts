@@ -16,14 +16,24 @@ async function resetAll() {
   fantasyService.__testing?.reset?.();
 }
 
-beforeEach(async () => { await resetAll(); });
-afterEach(async () => { await resetAll(); });
+beforeEach(async () => {
+  await resetAll();
+});
+afterEach(async () => {
+  await resetAll();
+});
 
 async function loadInputs(gw = 14) {
   const team = await fantasyService.getTeam();
   const players = await fantasyService.getPlayers();
   const raw = await fantasyService.getGameweekResult(gw);
-  return { team, players, breakdown: raw.breakdown, averagePoints: raw.averagePoints, highestPoints: raw.highestPoints };
+  return {
+    team,
+    players,
+    breakdown: raw.breakdown,
+    averagePoints: raw.averagePoints,
+    highestPoints: raw.highestPoints,
+  };
 }
 
 describe("rollFreeTransfers", () => {
@@ -48,7 +58,10 @@ describe("finalizeGameweek", () => {
     const inp = await loadInputs(14);
     // Activate triple_captain first so we can also check chip semantics.
     const state0 = fantasyStateStore.read();
-    const chipsAfterActivate = activateChip(state0.chips, "triple_captain", { gameweek: 14, team: inp.team });
+    const chipsAfterActivate = activateChip(state0.chips, "triple_captain", {
+      gameweek: 14,
+      team: inp.team,
+    });
     fantasyStateStore.write({ chips: chipsAfterActivate });
 
     const first = finalizeGameweek({ gameweek: 14, ...inp });
@@ -105,7 +118,10 @@ describe("finalizeGameweek", () => {
 describe("advanceGameweek", () => {
   it("requires the current gameweek to be finalized", async () => {
     const team = await fantasyService.getTeam();
-    const res = advanceGameweek({ targetGameweek: fantasyStateStore.read().currentGameweek + 1, team });
+    const res = advanceGameweek({
+      targetGameweek: fantasyStateStore.read().currentGameweek + 1,
+      team,
+    });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toBe("must_finalize_first");
   });

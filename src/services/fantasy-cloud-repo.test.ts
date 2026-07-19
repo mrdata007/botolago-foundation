@@ -1,10 +1,6 @@
 // @ts-nocheck
 import { describe, it, expect } from "bun:test";
-import {
-  FantasyCloudError,
-  mapSupabaseError,
-  validateSquadShape,
-} from "./fantasy-cloud-repo";
+import { FantasyCloudError, mapSupabaseError, validateSquadShape } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
 
 describe("mapSupabaseError", () => {
@@ -19,7 +15,9 @@ describe("mapSupabaseError", () => {
     expect(mapped.missingIds?.players).toEqual(["fp_x", "fp_y"]);
   });
   it("maps 40001 to version_conflict", () => {
-    expect(mapSupabaseError({ code: "40001", message: "Version conflict" }).code).toBe("version_conflict");
+    expect(mapSupabaseError({ code: "40001", message: "Version conflict" }).code).toBe(
+      "version_conflict",
+    );
   });
   it("maps 42501 / Not authenticated to unauthenticated", () => {
     expect(mapSupabaseError({ code: "42501", message: "" }).code).toBe("unauthenticated");
@@ -35,7 +33,9 @@ describe("mapSupabaseError", () => {
     expect(mapSupabaseError({ message: "Failed to fetch" }).code).toBe("network");
   });
   it("maps 22P02 / check violations to validation", () => {
-    expect(mapSupabaseError({ code: "22P02", message: "invalid input syntax" }).code).toBe("validation");
+    expect(mapSupabaseError({ code: "22P02", message: "invalid input syntax" }).code).toBe(
+      "validation",
+    );
   });
   it("falls back to unknown", () => {
     expect(mapSupabaseError({ message: "weird" }).code).toBe("unknown");
@@ -70,11 +70,15 @@ describe("validateSquadShape", () => {
     expect(() => validateSquadShape(s, "4-4-2")).toThrow(/Duplicate slot/);
   });
   it("rejects missing captain / vice / captain==vice", () => {
-    const s1 = baseSquad(); s1[9].isCaptain = false;
+    const s1 = baseSquad();
+    s1[9].isCaptain = false;
     expect(() => validateSquadShape(s1, "4-4-2")).toThrow(/Missing captain/);
-    const s2 = baseSquad(); s2[10].isViceCaptain = false;
+    const s2 = baseSquad();
+    s2[10].isViceCaptain = false;
     expect(() => validateSquadShape(s2, "4-4-2")).toThrow(/Missing vice/);
-    const s3 = baseSquad(); s3[10].isViceCaptain = false; s3[9].isViceCaptain = true;
+    const s3 = baseSquad();
+    s3[10].isViceCaptain = false;
+    s3[9].isViceCaptain = true;
     expect(() => validateSquadShape(s3, "4-4-2")).toThrow(/must differ/);
   });
   it("rejects illegal formation", () => {

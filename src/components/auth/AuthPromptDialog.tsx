@@ -1,5 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
 import { LogIn, UserPlus } from "lucide-react";

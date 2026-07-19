@@ -2,8 +2,6 @@
 import { describe, it, expect } from "bun:test";
 import "./__test-shim";
 
-
-
 import {
   applyAutocompleteTemplate,
   buildEmptySlots,
@@ -114,7 +112,6 @@ describe("fantasy-create-service — validation", () => {
     expect(s.hasVice).toBe(true);
     expect(s.captainViceDistinct).toBe(true);
   });
-
 
   it("club limit is flagged when more than 3 players share a club", () => {
     const d0 = setTeamName(initCreateDraft(), "Overpicks");

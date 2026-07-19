@@ -37,9 +37,15 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Profil — BotolaGO" },
-      { name: "description", content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO." },
+      {
+        name: "description",
+        content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
+      },
       { property: "og:title", content: "Profil — BotolaGO" },
-      { property: "og:description", content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO." },
+      {
+        property: "og:description",
+        content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
+      },
     ],
   }),
   component: ProfilePage,
@@ -116,7 +122,9 @@ function AuthenticatedProfile({
 }: {
   user: NonNullable<ReturnType<typeof useAuth>["user"]>;
   favoriteClubLabel?: string;
-  favoriteClub?: ReturnType<typeof useI18n> extends unknown ? Parameters<typeof ClubCrest>[0]["club"] | undefined : never;
+  favoriteClub?: ReturnType<typeof useI18n> extends unknown
+    ? Parameters<typeof ClubCrest>[0]["club"] | undefined
+    : never;
   onSignOut: () => void;
 }) {
   const { t } = useI18n();
@@ -285,10 +293,7 @@ function AuthenticatedProfile({
             </span>
             <span className="font-semibold">{t("profile.edit")}</span>
           </div>
-          <ChevronRight
-            className="h-4 w-4 text-muted-foreground rtl:rotate-180"
-            aria-hidden
-          />
+          <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" aria-hidden />
         </button>
       </Group>
 
@@ -320,9 +325,7 @@ function StatTile({
   monoValue?: boolean;
 }) {
   return (
-    <div
-      className="min-w-0 rounded-2xl border border-[var(--border-subtle,rgba(0,0,0,0.06))] bg-[color:var(--surface,#fff)]/70 p-3 backdrop-blur-sm"
-    >
+    <div className="min-w-0 rounded-2xl border border-[var(--border-subtle,rgba(0,0,0,0.06))] bg-[color:var(--surface,#fff)]/70 p-3 backdrop-blur-sm">
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         <span className="text-[color:var(--brand-accent)]">{icon}</span>
         <span className="truncate">{label}</span>

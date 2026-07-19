@@ -90,8 +90,16 @@ export function useOwnedTeam(): UnifiedTeamRead {
       error: null,
       userId: null,
     };
-  }, [owned.source, owned.snapshot, owned.isLoading, owned.loadError, owned.userId,
-      localTeamQ.data, localTeamQ.isLoading, localLifecycle]);
+  }, [
+    owned.source,
+    owned.snapshot,
+    owned.isLoading,
+    owned.loadError,
+    owned.userId,
+    localTeamQ.data,
+    localTeamQ.isLoading,
+    localLifecycle,
+  ]);
 }
 
 /**

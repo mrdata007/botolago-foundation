@@ -40,7 +40,9 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
               <Arrow className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">{t("auth.back")}</span>
             </button>
-          ) : <span aria-hidden />}
+          ) : (
+            <span aria-hidden />
+          )}
           <LanguageSwitcher />
         </div>
 
@@ -59,7 +61,9 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
         <div className="mt-6">
           <h1 className="text-2xl font-black tracking-tight sm:text-[26px]">{title}</h1>
           {subtitle && (
-            <p className="mt-2 max-w-[36ch] text-[13.5px] leading-relaxed text-white/80">{subtitle}</p>
+            <p className="mt-2 max-w-[36ch] text-[13.5px] leading-relaxed text-white/80">
+              {subtitle}
+            </p>
           )}
         </div>
 
@@ -91,9 +95,10 @@ export function AuthDivider({ label }: { label: string }) {
   );
 }
 
-export function AuthPrimaryButton(
-  { children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>,
-) {
+export function AuthPrimaryButton({
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       {...props}
@@ -106,9 +111,10 @@ export function AuthPrimaryButton(
   );
 }
 
-export function AuthSecondaryButton(
-  { children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>,
-) {
+export function AuthSecondaryButton({
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       {...props}
@@ -123,7 +129,10 @@ export function AuthSecondaryButton(
 
 export function AuthFieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+    <label
+      htmlFor={htmlFor}
+      className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
+    >
       {children}
     </label>
   );
@@ -131,7 +140,12 @@ export function AuthFieldLabel({ htmlFor, children }: { htmlFor: string; childre
 
 export function AuthFieldError({ id, children }: { id: string; children?: ReactNode }) {
   return (
-    <p id={id} role="alert" aria-live="polite" className="mt-1 min-h-[16px] text-xs font-semibold text-destructive">
+    <p
+      id={id}
+      role="alert"
+      aria-live="polite"
+      className="mt-1 min-h-[16px] text-xs font-semibold text-destructive"
+    >
       {children ?? ""}
     </p>
   );
@@ -139,10 +153,7 @@ export function AuthFieldError({ id, children }: { id: string; children?: ReactN
 
 export function AuthLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link
-      to={to}
-      className="font-bold text-white underline-offset-4 hover:underline"
-    >
+    <Link to={to} className="font-bold text-white underline-offset-4 hover:underline">
       {children}
     </Link>
   );

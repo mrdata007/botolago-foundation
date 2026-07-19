@@ -17,8 +17,14 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Check, Lock, Pencil, RotateCcw, Users } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
@@ -27,8 +33,12 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import {
-  activateChip, canActivateChip, chipDisplayState, deactivateChip,
-  evaluateDeadline, type ChipKey,
+  activateChip,
+  canActivateChip,
+  chipDisplayState,
+  deactivateChip,
+  evaluateDeadline,
+  type ChipKey,
 } from "@/lib/fantasy-engine";
 import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -50,7 +60,6 @@ function RedirectToCreate() {
   }, [nav]);
   return <LoadingState />;
 }
-
 
 // H4 — Persisted working state for the Team route. Kept intentionally small
 // (squad + formation); captain/vice live inside SquadPlayer entries.
@@ -74,9 +83,15 @@ function MyTeamPage() {
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
 
-  const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
+  const playersQ = useQuery({
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
+  const gwQ = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => botolaService.getCurrentGameweek(),
+  });
 
   // Local-only mock summary. In cloud mode we derive from the owned snapshot
   // + public player prices; the mock summary is never consumed.
@@ -94,7 +109,7 @@ function MyTeamPage() {
     enabled: !isCloud,
   });
 
-  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
+  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
 
   const { requireAuth } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -104,9 +119,7 @@ function MyTeamPage() {
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
   const [fState, setFState] = useState<FantasyPersistedState>(() =>
-    isCloud
-      ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read())
-      : fantasyStateStore.read(),
+    isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
   );
   const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
   const [conflictOpen, setConflictOpen] = useState(false);
@@ -128,8 +141,8 @@ function MyTeamPage() {
     };
   }, [isCloud, owned.snapshot?.lifecycle]);
 
-  const teamId = isCloud ? owned.snapshot?.teamId ?? "new" : null;
-  const baseVersion = isCloud ? owned.snapshot?.version ?? 0 : 0;
+  const teamId = isCloud ? (owned.snapshot?.teamId ?? "new") : null;
+  const baseVersion = isCloud ? (owned.snapshot?.version ?? 0) : 0;
 
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
     if (!isCloud || !owned.userId) return null;
@@ -266,7 +279,10 @@ function MyTeamPage() {
 
   const activateChipHandler = (key: ChipKey) => {
     if (!team) return;
-    if (!mutable.ok) { toast.error(t(mutable.reasonKey)); return; }
+    if (!mutable.ok) {
+      toast.error(t(mutable.reasonKey));
+      return;
+    }
     if (chipsState.active === key) {
       const next = deactivateChip(chipsState);
       const prev = fState;
@@ -281,13 +297,20 @@ function MyTeamPage() {
       return;
     }
     const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
-    if (!check.ok) { toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey)); return; }
+    if (!check.ok) {
+      toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey));
+      return;
+    }
     setChipConfirm(key);
   };
 
   const confirmChip = () => {
     if (!chipConfirm || !team) return;
-    if (!mutable.ok) { toast.error(t(mutable.reasonKey)); setChipConfirm(null); return; }
+    if (!mutable.ok) {
+      toast.error(t(mutable.reasonKey));
+      setChipConfirm(null);
+      return;
+    }
     const nextChips = activateChip(chipsState, chipConfirm, { gameweek: currentGw, team });
     const prev = fState;
     const nextState: FantasyPersistedState = { ...fState, chips: nextChips };
@@ -323,7 +346,6 @@ function MyTeamPage() {
   if (showBuilder) {
     return <RedirectToCreate />;
   }
-
 
   if (!team || team.squad.length === 0) {
     // Defensive: unexpected empty squad state with no builder branch.
@@ -373,9 +395,19 @@ function MyTeamPage() {
 
   const handleTap = (playerId: string) => {
     if (!editing) return;
-    if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
-    if (!selected) { setSelected(playerId); return; }
-    if (selected === playerId) { setSelected(null); return; }
+    if (!mutable.ok) {
+      toast.error(t("fantasy.team.error.deadline_crossed_revert"));
+      revertLocal();
+      return;
+    }
+    if (!selected) {
+      setSelected(playerId);
+      return;
+    }
+    if (selected === playerId) {
+      setSelected(null);
+      return;
+    }
     const next = swapSquadMembers(squad, players, formation, selected, playerId);
     if (!next) {
       toast.error(t("fantasy.team.hint.position_incompatible"));
@@ -388,15 +420,28 @@ function MyTeamPage() {
   };
 
   const setCaptain = (playerId: string, vice = false) => {
-    if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
+    if (!mutable.ok) {
+      toast.error(t("fantasy.team.error.deadline_crossed_revert"));
+      revertLocal();
+      return;
+    }
     const target = squad.find((s) => s.playerId === playerId);
     if (!target || target.slot >= 12) {
       toast.error(t("fantasy.team.error.captain_not_in_xi"));
       return;
     }
     const next = squad.map((s) => {
-      if (vice) return { ...s, isViceCaptain: s.playerId === playerId, isCaptain: s.isCaptain && s.playerId !== playerId };
-      return { ...s, isCaptain: s.playerId === playerId, isViceCaptain: s.isViceCaptain && s.playerId !== playerId };
+      if (vice)
+        return {
+          ...s,
+          isViceCaptain: s.playerId === playerId,
+          isCaptain: s.isCaptain && s.playerId !== playerId,
+        };
+      return {
+        ...s,
+        isCaptain: s.playerId === playerId,
+        isViceCaptain: s.isViceCaptain && s.playerId !== playerId,
+      };
     });
     setLocalSquad(next);
     setCaptainSheet(false);
@@ -404,7 +449,11 @@ function MyTeamPage() {
   };
 
   const changeFormation = (f: FormationKey) => {
-    if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
+    if (!mutable.ok) {
+      toast.error(t("fantasy.team.error.deadline_crossed_revert"));
+      revertLocal();
+      return;
+    }
     const nextSquad = reslotForFormation({ squad, players, formation: f });
     setLocalFormation(f);
     setLocalSquad(nextSquad);
@@ -414,7 +463,8 @@ function MyTeamPage() {
   const save = async () => {
     if (!team) return;
     const nowLocked = deadlineIso ? evaluateDeadline(deadlineIso, new Date()).isLocked : false;
-    const nowFinalized = !!(isCloud ? fState : fantasyStateStore.read()).results[currentGw]?.finalized;
+    const nowFinalized = !!(isCloud ? fState : fantasyStateStore.read()).results[currentGw]
+      ?.finalized;
     if (nowLocked || nowFinalized) {
       revertLocal();
       toast.error(t("fantasy.team.error.deadline_crossed_revert"));
@@ -424,7 +474,8 @@ function MyTeamPage() {
     const formationToSave = localFormation ?? team.formation;
     const validation = validateTeam(squadToSave, formationToSave, players);
     if (!validation.ok) {
-      const errKey = (`fantasy.team.error.${validation.error satisfies TeamValidationError}`) as TranslationKey;
+      const errKey =
+        `fantasy.team.error.${validation.error satisfies TeamValidationError}` as TranslationKey;
       toast.error(t(errKey));
       return;
     }
@@ -522,7 +573,9 @@ function MyTeamPage() {
         captain={sq.isCaptain}
         vice={sq.isViceCaptain}
         onClick={() => handleTap(id)}
-        className={cn(selected === id && "-translate-y-1 ring-2 ring-[color:var(--brand-accent)] rounded-xl")}
+        className={cn(
+          selected === id && "-translate-y-1 ring-2 ring-[color:var(--brand-accent)] rounded-xl",
+        )}
       />
     );
   };
@@ -539,7 +592,9 @@ function MyTeamPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="mb-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-brand">{t("fantasy.team")}</div>
+          <div className="mb-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-brand">
+            {t("fantasy.team")}
+          </div>
           <h1 className="text-xl font-black text-foreground">{team.teamName}</h1>
           <div className="text-xs text-muted-foreground">{team.managerName}</div>
         </div>
@@ -550,15 +605,25 @@ function MyTeamPage() {
 
       {derivedSummary && (
         <div className="mt-3 grid grid-cols-4 gap-2">
-          <MiniStat label={t("fantasy.gw_points")} value={String(derivedSummary.gameweekPoints)} accent />
-          <MiniStat label={t("fantasy.free_transfers")} value={String(derivedSummary.transfersLeft)} />
+          <MiniStat
+            label={t("fantasy.gw_points")}
+            value={String(derivedSummary.gameweekPoints)}
+            accent
+          />
+          <MiniStat
+            label={t("fantasy.free_transfers")}
+            value={String(derivedSummary.transfersLeft)}
+          />
           <MiniStat label={t("fantasy.bank")} value={nf.format(derivedSummary.bankValue)} />
           <MiniStat label={t("fantasy.team_value")} value={nf.format(derivedSummary.teamValue)} />
         </div>
       )}
 
       {locked && (
-        <div role="status" className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-900">
+        <div
+          role="status"
+          className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-900"
+        >
           <Lock className="h-3.5 w-3.5" aria-hidden />
           {t("fantasy.deadline.locked")}
         </div>
@@ -626,7 +691,9 @@ function MyTeamPage() {
             </button>
           </PopoverTrigger>
           <PopoverContent align={dir === "rtl" ? "end" : "start"} className="w-48 p-2">
-            <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">{t("fantasy.change_formation")}</div>
+            <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              {t("fantasy.change_formation")}
+            </div>
             <div className="grid grid-cols-2 gap-1">
               {(Object.keys(FORMATIONS) as FormationKey[]).map((f) => (
                 <button
@@ -663,7 +730,10 @@ function MyTeamPage() {
       </div>
 
       <div className="mt-2">
-        <FantasyChipsRow chips={teamChips} onSelect={(k) => requireAuth(() => activateChipHandler(k))} />
+        <FantasyChipsRow
+          chips={teamChips}
+          onSelect={(k) => requireAuth(() => activateChipHandler(k))}
+        />
       </div>
 
       <AlertDialog open={chipConfirm !== null} onOpenChange={(o) => !o && setChipConfirm(null)}>
@@ -711,22 +781,31 @@ function MyTeamPage() {
 
       <Sheet open={captainSheet} onOpenChange={setCaptainSheet}>
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
-          <SheetHeader><SheetTitle>{t("fantasy.set_captain")}</SheetTitle></SheetHeader>
+          <SheetHeader>
+            <SheetTitle>{t("fantasy.set_captain")}</SheetTitle>
+          </SheetHeader>
           <ul className="mt-3 grid gap-1.5">
             {xiIds.map((id) => {
               const p = playerOf(id);
               const sq = squad.find((s) => s.playerId === id)!;
               return (
-                <li key={id} className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
+                <li
+                  key={id}
+                  className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold">{tr(p.name)}</div>
-                    <div className="text-[11px] text-muted-foreground">{clubOf(p.clubId) && tr(clubOf(p.clubId)!.shortName)}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {clubOf(p.clubId) && tr(clubOf(p.clubId)!.shortName)}
+                    </div>
                   </div>
                   <button
                     onClick={() => setCaptain(id, false)}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
-                      sq.isCaptain ? "bg-[color:var(--brand-accent)] text-white" : "bg-white ring-1 ring-black/10",
+                      sq.isCaptain
+                        ? "bg-[color:var(--brand-accent)] text-white"
+                        : "bg-white ring-1 ring-black/10",
                     )}
                   >
                     {t("fantasy.captain")}
@@ -735,7 +814,9 @@ function MyTeamPage() {
                     onClick={() => setCaptain(id, true)}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
-                      sq.isViceCaptain ? "bg-[color:var(--brand-primary)] text-white" : "bg-white ring-1 ring-black/10",
+                      sq.isViceCaptain
+                        ? "bg-[color:var(--brand-primary)] text-white"
+                        : "bg-white ring-1 ring-black/10",
                     )}
                   >
                     {t("fantasy.vice")}
@@ -848,7 +929,10 @@ function EmptyCloudBuilder({ team }: { team: unknown }) {
         {busy ? t("fantasy.status.saving") : t("fantasy.empty.builder_open")}
       </button>
       {errorKey && (
-        <p role="alert" className="mt-3 break-words whitespace-normal text-[11px] font-semibold text-red-700">
+        <p
+          role="alert"
+          className="mt-3 break-words whitespace-normal text-[11px] font-semibold text-red-700"
+        >
           {t(errorKey)}
         </p>
       )}
@@ -859,10 +943,17 @@ function EmptyCloudBuilder({ team }: { team: unknown }) {
 function MiniStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] px-2 py-2 text-center">
-      <div className={cn("text-sm font-black tabular-nums", accent ? "text-[color:var(--brand-accent)]" : "text-foreground")}>
+      <div
+        className={cn(
+          "text-sm font-black tabular-nums",
+          accent ? "text-[color:var(--brand-accent)]" : "text-foreground",
+        )}
+      >
         {value}
       </div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
     </div>
   );
 }

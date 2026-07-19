@@ -140,9 +140,7 @@ export function MatchCard({
             color: "color-mix(in oklab, var(--color-warning) 60%, black)",
           }}
         >
-          {status === "cancelled"
-            ? t("matches.status.cancelled")
-            : t("matches.status.postponed")}
+          {status === "cancelled" ? t("matches.status.cancelled") : t("matches.status.postponed")}
         </span>
       );
     }
@@ -179,7 +177,9 @@ export function MatchCard({
             )}
           >
             <span aria-hidden>{hs}</span>
-            <span aria-hidden className="text-[color:var(--text-muted)]">–</span>
+            <span aria-hidden className="text-[color:var(--text-muted)]">
+              –
+            </span>
             <span aria-hidden>{as}</span>
           </div>
           {status === "penalties" && extras?.penaltiesScore && (
@@ -187,11 +187,15 @@ export function MatchCard({
               className="mt-0.5 text-[10px] font-black uppercase tabular-nums tracking-wider text-[color:var(--brand-primary)]"
               aria-hidden
             >
-              {t("matches.penalty_shootout")} {extras.penaltiesScore.home}–{extras.penaltiesScore.away}
+              {t("matches.penalty_shootout")} {extras.penaltiesScore.home}–
+              {extras.penaltiesScore.away}
             </div>
           )}
           {status === "extra_time" && (
-            <div className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-[color:var(--color-live)]" aria-hidden>
+            <div
+              className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-[color:var(--color-live)]"
+              aria-hidden
+            >
               {t("matches.status.extra_time")}
             </div>
           )}
@@ -224,7 +228,10 @@ export function MatchCard({
         >
           {timeFmt}
         </div>
-        <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]" aria-hidden>
+        <div
+          className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]"
+          aria-hidden
+        >
           {t("matches.kickoff")}
         </div>
       </div>

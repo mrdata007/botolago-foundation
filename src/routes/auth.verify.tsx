@@ -11,7 +11,9 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/auth/verify")({
   head: () => ({ meta: [{ title: "Vérification — BotolaGO" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({ email: typeof s.email === "string" ? s.email : "" }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    email: typeof s.email === "string" ? s.email : "",
+  }),
   component: VerifyPage,
 });
 
@@ -27,18 +29,25 @@ function VerifyPage() {
 
   useEffect(() => {
     timer.current = setInterval(() => setCooldown((c) => (c > 0 ? c - 1 : 0)), 1000);
-    return () => { if (timer.current) clearInterval(timer.current); };
+    return () => {
+      if (timer.current) clearInterval(timer.current);
+    };
   }, []);
 
   const onSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (submitting) return;
-    if (code.length !== 6) { setError("auth.error.otp_required"); return; }
+    if (code.length !== 6) {
+      setError("auth.error.otp_required");
+      return;
+    }
     setSubmitting(true);
     const res = await authService.verifyCode(email, code);
     setSubmitting(false);
     if (!res.ok) {
-      setError(res.errorCode === "otp_expired" ? "auth.error.otp_expired" : "auth.error.otp_invalid");
+      setError(
+        res.errorCode === "otp_expired" ? "auth.error.otp_expired" : "auth.error.otp_invalid",
+      );
       return;
     }
     markWelcomeDone();
@@ -49,7 +58,10 @@ function VerifyPage() {
   const resend = async () => {
     if (cooldown > 0) return;
     const res = await authService.resendCode(email);
-    if (res.ok) { setCooldown(30); toast.success(t("auth.verify.resend")); }
+    if (res.ok) {
+      setCooldown(30);
+      toast.success(t("auth.verify.resend"));
+    }
   };
 
   return (
@@ -57,7 +69,16 @@ function VerifyPage() {
       <form onSubmit={onSubmit} noValidate className="grid gap-4">
         <div className="flex flex-col items-center gap-3">
           <label className="sr-only">{t("auth.verify.code_label")}</label>
-          <InputOTP maxLength={6} value={code} onChange={(v) => { setCode(v); setError(null); }} inputMode="numeric" pattern="[0-9]*">
+          <InputOTP
+            maxLength={6}
+            value={code}
+            onChange={(v) => {
+              setCode(v);
+              setError(null);
+            }}
+            inputMode="numeric"
+            pattern="[0-9]*"
+          >
             <InputOTPGroup>
               <InputOTPSlot index={0} />
               <InputOTPSlot index={1} />
@@ -70,7 +91,11 @@ function VerifyPage() {
           <AuthFieldError id="otp-err">{error && t(error)}</AuthFieldError>
         </div>
 
-        {IS_MOCK_AUTH && <p className="text-center text-[11px] text-muted-foreground">{t("auth.verify.demo_hint")}</p>}
+        {IS_MOCK_AUTH && (
+          <p className="text-center text-[11px] text-muted-foreground">
+            {t("auth.verify.demo_hint")}
+          </p>
+        )}
 
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

@@ -17,13 +17,8 @@ import type { QueryClient } from "@tanstack/react-query";
 import { FantasyRepoError } from "@/services/fantasy-errors";
 import type { FantasySnapshot } from "@/services/fantasy-owned-repository";
 import type { OwnedMutationStatus } from "@/services/fantasy-owned-provider";
-import {
-  fantasyDraftsStore,
-  type FantasyDraftKey,
-} from "@/services/fantasy-drafts-store";
-import {
-  type FantasyKeyScope,
-} from "@/services/fantasy-data-source";
+import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
+import { type FantasyKeyScope } from "@/services/fantasy-data-source";
 
 export interface OwnedMutationContext {
   qc: QueryClient;
@@ -97,8 +92,7 @@ export async function runOwnedMutation<TArgs>(
       err instanceof FantasyRepoError
         ? err
         : new FantasyRepoError("unknown", err instanceof Error ? err.message : String(err));
-    const kind: "conflict" | "error" =
-      repoErr.code === "version_conflict" ? "conflict" : "error";
+    const kind: "conflict" | "error" = repoErr.code === "version_conflict" ? "conflict" : "error";
     setStatus(kind, repoErr);
     return { ok: false, error: repoErr, kind };
   }
@@ -112,7 +106,6 @@ function schedule(ms: number, fn: () => void): Promise<void> {
     }, ms);
   });
 }
-
 
 /**
  * Classifier used by tests and by inline error surfaces. Kept pure so

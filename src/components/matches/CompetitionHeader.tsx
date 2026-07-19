@@ -19,12 +19,7 @@ export function CompetitionHeader({
 }) {
   const { t } = useI18n();
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2.5 px-1 pb-2 pt-1",
-        className,
-      )}
-    >
+    <div className={cn("flex items-center gap-2.5 px-1 pb-2 pt-1", className)}>
       <div
         className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white shadow-subtle"
         style={{ background: "var(--bg-brand-gradient)" }}

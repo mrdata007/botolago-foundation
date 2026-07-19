@@ -45,9 +45,11 @@ function isValidEntry(v: unknown): v is FantasyDraftEntry {
   if (!e.key || typeof e.key !== "object") return false;
   const k = e.key;
   return (
-    typeof k.uid === "string" && k.uid.length > 0 &&
-    (typeof k.teamId === "string") &&
-    typeof k.baseVersion === "number" && Number.isFinite(k.baseVersion) &&
+    typeof k.uid === "string" &&
+    k.uid.length > 0 &&
+    typeof k.teamId === "string" &&
+    typeof k.baseVersion === "number" &&
+    Number.isFinite(k.baseVersion) &&
     (k.kind === "team" || k.kind === "transfers" || k.kind === "create-team") &&
     typeof e.updatedAt === "number" &&
     "payload" in e

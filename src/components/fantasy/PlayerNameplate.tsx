@@ -35,9 +35,7 @@ export function PlayerNameplate({ name, metric, fixture, className, emphasize }:
         <div
           className={cn(
             "w-full max-w-[80px] truncate rounded-b-md px-1.5 py-[2px] text-center text-[10px] font-black tabular-nums leading-tight",
-            emphasize
-              ? "text-white"
-              : "text-foreground",
+            emphasize ? "text-white" : "text-foreground",
           )}
           style={{
             background: emphasize

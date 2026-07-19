@@ -66,7 +66,13 @@ export function PageBackground({ variant }: Props) {
         <circle cx="60" cy="120" r="240" fill="none" stroke={arcStroke} strokeWidth="1" />
         <circle cx="60" cy="120" r="340" fill="none" stroke={arcSoft} strokeWidth="1" />
         <circle cx="360" cy="700" r="280" fill="none" stroke={arcSoft} strokeWidth="1" />
-        <path d="M -20 640 Q 200 540 420 660" fill="none" stroke={arcSoft} strokeWidth="30" strokeLinecap="round" />
+        <path
+          d="M -20 640 Q 200 540 420 660"
+          fill="none"
+          stroke={arcSoft}
+          strokeWidth="30"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );

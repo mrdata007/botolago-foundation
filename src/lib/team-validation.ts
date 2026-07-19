@@ -14,9 +14,7 @@ export type TeamValidationError =
   | "captain_not_in_xi"
   | "vice_not_in_xi";
 
-export type TeamValidationResult =
-  | { ok: true }
-  | { ok: false; error: TeamValidationError };
+export type TeamValidationResult = { ok: true } | { ok: false; error: TeamValidationError };
 
 export function validateTeam(
   squad: SquadPlayer[],

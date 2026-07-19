@@ -111,7 +111,9 @@ export function PlayerShirt({
       </div>
       <PlayerNameplate
         name={shortName}
-        metric={metric ?? (player.expectedPoints != null ? String(player.expectedPoints) : undefined)}
+        metric={
+          metric ?? (player.expectedPoints != null ? String(player.expectedPoints) : undefined)
+        }
         fixture={fixtureText}
         emphasize={captain}
       />

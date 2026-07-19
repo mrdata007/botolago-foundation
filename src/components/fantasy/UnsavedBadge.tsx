@@ -39,9 +39,7 @@ export function UnsavedBadge({
     );
   }
   const label =
-    variant === "draft_restored"
-      ? t("fantasy.status.draft_restored")
-      : t("fantasy.status.unsaved");
+    variant === "draft_restored" ? t("fantasy.status.draft_restored") : t("fantasy.status.unsaved");
   return (
     <div
       role="status"
@@ -56,9 +54,7 @@ export function UnsavedBadge({
       >
         <CircleDot className="h-3.5 w-3.5" />
       </span>
-      <span className="min-w-0 flex-1 break-words whitespace-normal">
-        {label}
-      </span>
+      <span className="min-w-0 flex-1 break-words whitespace-normal">{label}</span>
       {onSave ? (
         <button
           type="button"

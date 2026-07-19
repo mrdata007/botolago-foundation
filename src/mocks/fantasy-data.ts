@@ -26,65 +26,318 @@ type Seed = {
 
 const clubPlayers: Record<string, Seed[]> = {
   war: [
-    { fr: "Ahmed Reda Tagnaouti", ar: "أحمد رضا تكناوتي", pos: "GK", price: 5.0, form: 5.2, pts: 82, own: 28.4 },
+    {
+      fr: "Ahmed Reda Tagnaouti",
+      ar: "أحمد رضا تكناوتي",
+      pos: "GK",
+      price: 5.0,
+      form: 5.2,
+      pts: 82,
+      own: 28.4,
+    },
     { fr: "Adam Aznou", ar: "آدم أزنو", pos: "DEF", price: 4.9, form: 5.6, pts: 74, own: 15.1 },
-    { fr: "Yahya Attiat-Allah", ar: "يحيى عطية الله", pos: "DEF", price: 6.2, form: 6.4, pts: 87, own: 42.1 },
-    { fr: "Mohamed Nahiri", ar: "محمد ناهيري", pos: "DEF", price: 5.5, form: 5.1, pts: 71, own: 21.8, status: "doubtful" },
+    {
+      fr: "Yahya Attiat-Allah",
+      ar: "يحيى عطية الله",
+      pos: "DEF",
+      price: 6.2,
+      form: 6.4,
+      pts: 87,
+      own: 42.1,
+    },
+    {
+      fr: "Mohamed Nahiri",
+      ar: "محمد ناهيري",
+      pos: "DEF",
+      price: 5.5,
+      form: 5.1,
+      pts: 71,
+      own: 21.8,
+      status: "doubtful",
+    },
     { fr: "Reda Jaadi", ar: "رضا جعدي", pos: "MID", price: 6.8, form: 6.9, pts: 88, own: 24.6 },
-    { fr: "Zouhair El Moutaraji", ar: "زهير المتراجي", pos: "MID", price: 7.4, form: 7.1, pts: 95, own: 33.2 },
+    {
+      fr: "Zouhair El Moutaraji",
+      ar: "زهير المتراجي",
+      pos: "MID",
+      price: 7.4,
+      form: 7.1,
+      pts: 95,
+      own: 33.2,
+    },
     { fr: "Bouly Sambou", ar: "بولي سامبو", pos: "FWD", price: 8.0, form: 7.2, pts: 96, own: 31.5 },
-    { fr: "Cassius Mailula", ar: "كاسيوس ماييولا", pos: "FWD", price: 7.6, form: 6.5, pts: 82, own: 18.9 },
+    {
+      fr: "Cassius Mailula",
+      ar: "كاسيوس ماييولا",
+      pos: "FWD",
+      price: 7.6,
+      form: 6.5,
+      pts: 82,
+      own: 18.9,
+    },
   ],
   rca: [
     { fr: "Anas Zniti", ar: "أنس زنيتي", pos: "GK", price: 4.8, form: 4.9, pts: 76, own: 19.7 },
-    { fr: "Mohsine Moutouali", ar: "محسن متولي", pos: "DEF", price: 5.3, form: 5.4, pts: 72, own: 12.6 },
-    { fr: "Abdelhak Ben Nasser", ar: "عبد الحق بن ناصر", pos: "DEF", price: 5.1, form: 4.8, pts: 68, own: 10.1 },
-    { fr: "Abdelilah Hafidi", ar: "عبد الإله حافظي", pos: "MID", price: 7.1, form: 6.2, pts: 82, own: 24.3, status: "injured" },
-    { fr: "Nassim Boujellab", ar: "نسيم بوجلاب", pos: "MID", price: 6.9, form: 6.4, pts: 84, own: 22.0 },
+    {
+      fr: "Mohsine Moutouali",
+      ar: "محسن متولي",
+      pos: "DEF",
+      price: 5.3,
+      form: 5.4,
+      pts: 72,
+      own: 12.6,
+    },
+    {
+      fr: "Abdelhak Ben Nasser",
+      ar: "عبد الحق بن ناصر",
+      pos: "DEF",
+      price: 5.1,
+      form: 4.8,
+      pts: 68,
+      own: 10.1,
+    },
+    {
+      fr: "Abdelilah Hafidi",
+      ar: "عبد الإله حافظي",
+      pos: "MID",
+      price: 7.1,
+      form: 6.2,
+      pts: 82,
+      own: 24.3,
+      status: "injured",
+    },
+    {
+      fr: "Nassim Boujellab",
+      ar: "نسيم بوجلاب",
+      pos: "MID",
+      price: 6.9,
+      form: 6.4,
+      pts: 84,
+      own: 22.0,
+    },
     { fr: "Ben Malango", ar: "بن مالانغو", pos: "FWD", price: 8.9, form: 7.9, pts: 104, own: 38.4 },
-    { fr: "Ayoub El Kaabi", ar: "أيوب الكعبي", pos: "FWD", price: 9.5, form: 8.6, pts: 118, own: 51.2, xp: 8.4 },
-    { fr: "Yassine Meriah", ar: "ياسين مرياح", pos: "DEF", price: 4.6, form: 4.5, pts: 61, own: 8.4 },
+    {
+      fr: "Ayoub El Kaabi",
+      ar: "أيوب الكعبي",
+      pos: "FWD",
+      price: 9.5,
+      form: 8.6,
+      pts: 118,
+      own: 51.2,
+      xp: 8.4,
+    },
+    {
+      fr: "Yassine Meriah",
+      ar: "ياسين مرياح",
+      pos: "DEF",
+      price: 4.6,
+      form: 4.5,
+      pts: 61,
+      own: 8.4,
+    },
   ],
   asfar: [
-    { fr: "Anas Bach", ar: "أنس باش", pos: "GK", price: 5.2, form: 6.0, pts: 89, own: 34.5, xp: 5.1 },
+    {
+      fr: "Anas Bach",
+      ar: "أنس باش",
+      pos: "GK",
+      price: 5.2,
+      form: 6.0,
+      pts: 89,
+      own: 34.5,
+      xp: 5.1,
+    },
     { fr: "Achraf Dari", ar: "أشرف داري", pos: "DEF", price: 6.0, form: 6.6, pts: 91, own: 39.2 },
-    { fr: "Anass Salah-Eddine", ar: "أنس صلاح الدين", pos: "DEF", price: 5.7, form: 6.1, pts: 79, own: 22.7 },
-    { fr: "Ismael Baouf", ar: "إسماعيل باعوف", pos: "DEF", price: 4.9, form: 5.3, pts: 70, own: 14.0 },
-    { fr: "Mohamed Rabie Hrimat", ar: "محمد ربيع حريمات", pos: "MID", price: 6.7, form: 6.8, pts: 78, own: 19.5 },
-    { fr: "Oussama Lamlaoui", ar: "أسامة لملاوي", pos: "MID", price: 7.0, form: 7.4, pts: 92, own: 27.9 },
-    { fr: "Sabir Bougrine", ar: "صابر بوكرين", pos: "FWD", price: 7.8, form: 7.6, pts: 98, own: 29.1 },
+    {
+      fr: "Anass Salah-Eddine",
+      ar: "أنس صلاح الدين",
+      pos: "DEF",
+      price: 5.7,
+      form: 6.1,
+      pts: 79,
+      own: 22.7,
+    },
+    {
+      fr: "Ismael Baouf",
+      ar: "إسماعيل باعوف",
+      pos: "DEF",
+      price: 4.9,
+      form: 5.3,
+      pts: 70,
+      own: 14.0,
+    },
+    {
+      fr: "Mohamed Rabie Hrimat",
+      ar: "محمد ربيع حريمات",
+      pos: "MID",
+      price: 6.7,
+      form: 6.8,
+      pts: 78,
+      own: 19.5,
+    },
+    {
+      fr: "Oussama Lamlaoui",
+      ar: "أسامة لملاوي",
+      pos: "MID",
+      price: 7.0,
+      form: 7.4,
+      pts: 92,
+      own: 27.9,
+    },
+    {
+      fr: "Sabir Bougrine",
+      ar: "صابر بوكرين",
+      pos: "FWD",
+      price: 7.8,
+      form: 7.6,
+      pts: 98,
+      own: 29.1,
+    },
   ],
   fus: [
     { fr: "Ayoub Lakred", ar: "أيوب لكرد", pos: "GK", price: 4.4, form: 4.6, pts: 63, own: 6.8 },
-    { fr: "Marouane Saadane", ar: "مروان سعدان", pos: "DEF", price: 4.5, form: 4.7, pts: 62, own: 5.9 },
-    { fr: "Youssef El Fahli", ar: "يوسف الفهلي", pos: "DEF", price: 4.7, form: 4.9, pts: 66, own: 7.1 },
-    { fr: "Zakaria Draoui", ar: "زكرياء الدراوي", pos: "MID", price: 6.0, form: 6.0, pts: 74, own: 12.3 },
+    {
+      fr: "Marouane Saadane",
+      ar: "مروان سعدان",
+      pos: "DEF",
+      price: 4.5,
+      form: 4.7,
+      pts: 62,
+      own: 5.9,
+    },
+    {
+      fr: "Youssef El Fahli",
+      ar: "يوسف الفهلي",
+      pos: "DEF",
+      price: 4.7,
+      form: 4.9,
+      pts: 66,
+      own: 7.1,
+    },
+    {
+      fr: "Zakaria Draoui",
+      ar: "زكرياء الدراوي",
+      pos: "MID",
+      price: 6.0,
+      form: 6.0,
+      pts: 74,
+      own: 12.3,
+    },
     { fr: "Reda Slim", ar: "رضا سليم", pos: "MID", price: 6.4, form: 6.3, pts: 80, own: 15.4 },
     { fr: "Ilias Haddad", ar: "إلياس حداد", pos: "FWD", price: 7.2, form: 6.9, pts: 85, own: 18.3 },
   ],
   rsb: [
-    { fr: "Munir Mohamedi", ar: "منير محمدي", pos: "GK", price: 4.6, form: 5.0, pts: 71, own: 11.2 },
-    { fr: "Issoufou Dayo", ar: "إيسوفو دايو", pos: "DEF", price: 5.4, form: 5.7, pts: 76, own: 17.8 },
-    { fr: "Mehdi Attouchi", ar: "مهدي عتوشي", pos: "DEF", price: 5.0, form: 5.2, pts: 69, own: 9.6 },
-    { fr: "Bakr El Helali", ar: "بكر الهلالي", pos: "MID", price: 6.5, form: 6.5, pts: 81, own: 20.5 },
+    {
+      fr: "Munir Mohamedi",
+      ar: "منير محمدي",
+      pos: "GK",
+      price: 4.6,
+      form: 5.0,
+      pts: 71,
+      own: 11.2,
+    },
+    {
+      fr: "Issoufou Dayo",
+      ar: "إيسوفو دايو",
+      pos: "DEF",
+      price: 5.4,
+      form: 5.7,
+      pts: 76,
+      own: 17.8,
+    },
+    {
+      fr: "Mehdi Attouchi",
+      ar: "مهدي عتوشي",
+      pos: "DEF",
+      price: 5.0,
+      form: 5.2,
+      pts: 69,
+      own: 9.6,
+    },
+    {
+      fr: "Bakr El Helali",
+      ar: "بكر الهلالي",
+      pos: "MID",
+      price: 6.5,
+      form: 6.5,
+      pts: 81,
+      own: 20.5,
+    },
     { fr: "Youssef Mehri", ar: "يوسف مهري", pos: "MID", price: 6.2, form: 5.9, pts: 72, own: 13.7 },
-    { fr: "Youssoupha Mbodji", ar: "يوسوفا مبودجي", pos: "FWD", price: 7.5, form: 7.0, pts: 90, own: 24.4 },
+    {
+      fr: "Youssoupha Mbodji",
+      ar: "يوسوفا مبودجي",
+      pos: "FWD",
+      price: 7.5,
+      form: 7.0,
+      pts: 90,
+      own: 24.4,
+    },
   ],
   mat: [
     { fr: "Mehdi Benabid", ar: "مهدي بنعبيد", pos: "GK", price: 4.3, form: 4.4, pts: 58, own: 5.1 },
-    { fr: "Anass Serrhir", ar: "أنس السرغيني", pos: "DEF", price: 4.4, form: 4.6, pts: 60, own: 5.5 },
-    { fr: "Mohamed Aabid", ar: "محمد عابد", pos: "MID", price: 5.8, form: 5.7, pts: 68, own: 8.9, status: "suspended" },
+    {
+      fr: "Anass Serrhir",
+      ar: "أنس السرغيني",
+      pos: "DEF",
+      price: 4.4,
+      form: 4.6,
+      pts: 60,
+      own: 5.5,
+    },
+    {
+      fr: "Mohamed Aabid",
+      ar: "محمد عابد",
+      pos: "MID",
+      price: 5.8,
+      form: 5.7,
+      pts: 68,
+      own: 8.9,
+      status: "suspended",
+    },
     { fr: "Youssef Fakhr", ar: "يوسف فخر", pos: "FWD", price: 6.8, form: 6.2, pts: 74, own: 12.6 },
   ],
   hus: [
     { fr: "Mohamed Amsif", ar: "محمد أمصيف", pos: "GK", price: 4.5, form: 4.8, pts: 65, own: 8.0 },
     { fr: "Aziz Boura", ar: "عزيز بورة", pos: "DEF", price: 4.6, form: 4.8, pts: 64, own: 6.4 },
-    { fr: "Mohamed Ali Bemammer", ar: "محمد علي بامامر", pos: "MID", price: 6.1, form: 6.0, pts: 76, own: 14.2 },
-    { fr: "Karim El Berkaoui", ar: "كريم البركاوي", pos: "FWD", price: 7.0, form: 6.6, pts: 82, own: 16.1 },
+    {
+      fr: "Mohamed Ali Bemammer",
+      ar: "محمد علي بامامر",
+      pos: "MID",
+      price: 6.1,
+      form: 6.0,
+      pts: 76,
+      own: 14.2,
+    },
+    {
+      fr: "Karim El Berkaoui",
+      ar: "كريم البركاوي",
+      pos: "FWD",
+      price: 7.0,
+      form: 6.6,
+      pts: 82,
+      own: 16.1,
+    },
   ],
   moas: [
-    { fr: "Zouhir Laâroubi", ar: "زهير العروبي", pos: "GK", price: 4.2, form: 4.3, pts: 55, own: 4.2 },
-    { fr: "Rabii Alhous", ar: "الربيع الحوس", pos: "DEF", price: 4.5, form: 4.6, pts: 61, own: 6.0 },
+    {
+      fr: "Zouhir Laâroubi",
+      ar: "زهير العروبي",
+      pos: "GK",
+      price: 4.2,
+      form: 4.3,
+      pts: 55,
+      own: 4.2,
+    },
+    {
+      fr: "Rabii Alhous",
+      ar: "الربيع الحوس",
+      pos: "DEF",
+      price: 4.5,
+      form: 4.6,
+      pts: 61,
+      own: 6.0,
+    },
     { fr: "Amine Bassi", ar: "أمين باسي", pos: "MID", price: 5.9, form: 5.8, pts: 70, own: 10.7 },
     { fr: "Ayoub Nanah", ar: "أيوب نانا", pos: "FWD", price: 6.5, form: 6.0, pts: 71, own: 11.4 },
   ],
@@ -97,7 +350,7 @@ Object.entries(clubPlayers).forEach(([clubId, seeds], ci) => {
     // pick a next opponent from the clubs list (rotate)
     const opponents = clubs.filter((c) => c.id !== clubId);
     const opp = opponents[(ci + i) % opponents.length];
-    const difficulty = ((((ci + i) % 5) + 1) as 1 | 2 | 3 | 4 | 5);
+    const difficulty = (((ci + i) % 5) + 1) as 1 | 2 | 3 | 4 | 5;
     fantasyPlayers.push({
       id: `fp_${clubId}_${i + 1}`,
       name: { fr: s.fr, ar: s.ar },
@@ -111,13 +364,28 @@ Object.entries(clubPlayers).forEach(([clubId, seeds], ci) => {
       nextOpponentClubId: opp.id,
       nextIsHome: (ci + i) % 2 === 0,
       nextFixtureDifficulty: difficulty,
-      expectedPoints: s.xp ?? Math.round((s.form * 0.9 + (s.pos === "FWD" ? 2 : s.pos === "MID" ? 1.4 : 1)) * 10) / 10,
-      chanceOfPlaying: s.status === "injured" ? 0 : s.status === "doubtful" ? 50 : s.status === "suspended" ? 0 : 100,
+      expectedPoints:
+        s.xp ??
+        Math.round((s.form * 0.9 + (s.pos === "FWD" ? 2 : s.pos === "MID" ? 1.4 : 1)) * 10) / 10,
+      chanceOfPlaying:
+        s.status === "injured"
+          ? 0
+          : s.status === "doubtful"
+            ? 50
+            : s.status === "suspended"
+              ? 0
+              : 100,
       news:
         s.status === "injured"
-          ? { fr: "Blessure musculaire — indisponible cette journée.", ar: "إصابة عضلية — غائب هذه الجولة." }
+          ? {
+              fr: "Blessure musculaire — indisponible cette journée.",
+              ar: "إصابة عضلية — غائب هذه الجولة.",
+            }
           : s.status === "doubtful"
-            ? { fr: "Incertain — test décisif à l'entraînement.", ar: "مشكوك في مشاركته — التداريب الأخيرة حاسمة." }
+            ? {
+                fr: "Incertain — test décisif à l'entraînement.",
+                ar: "مشكوك في مشاركته — التداريب الأخيرة حاسمة.",
+              }
             : s.status === "suspended"
               ? { fr: "Suspendu (cumul de cartons).", ar: "موقوف بسبب تراكم البطاقات." }
               : undefined,
@@ -131,7 +399,10 @@ export function getFP(id: string): FantasyPlayer | undefined {
 
 // A default 15-man squad the user "owns"
 const pickIds = (clubId: string, pos: string, n: number) =>
-  fantasyPlayers.filter((p) => p.clubId === clubId && p.position === pos).slice(0, n).map((p) => p.id);
+  fantasyPlayers
+    .filter((p) => p.clubId === clubId && p.position === pos)
+    .slice(0, n)
+    .map((p) => p.id);
 
 const squadIds: string[] = [
   // GK (2)
@@ -187,25 +458,136 @@ export const fantasyTeam: FantasyTeam = {
 
 // League data
 export const leagues: League[] = [
-  { id: "lg1", name: "Casablanca Derby", type: "private", members: 24, rank: 3, previousRank: 5, score: 612, leaderName: "Youssef A.", code: "CASA-24" },
-  { id: "lg2", name: "Amis du Wydad", type: "private", members: 12, rank: 1, previousRank: 2, score: 612, leaderName: "You", code: "WYDAD-12" },
-  { id: "lg3", name: "BotolaGO Officielle", type: "public", members: 18420, rank: 12483, previousRank: 15100, score: 612, leaderName: "Karim F." },
-  { id: "lg4", name: "Overall", type: "public", members: 142310, rank: 12483, previousRank: 15100, score: 612, leaderName: "Achraf B." },
-  { id: "lg5", name: "Coupe BotolaGO", type: "cup", members: 128, rank: 41, previousRank: 60, score: 58, leaderName: "—" },
+  {
+    id: "lg1",
+    name: "Casablanca Derby",
+    type: "private",
+    members: 24,
+    rank: 3,
+    previousRank: 5,
+    score: 612,
+    leaderName: "Youssef A.",
+    code: "CASA-24",
+  },
+  {
+    id: "lg2",
+    name: "Amis du Wydad",
+    type: "private",
+    members: 12,
+    rank: 1,
+    previousRank: 2,
+    score: 612,
+    leaderName: "You",
+    code: "WYDAD-12",
+  },
+  {
+    id: "lg3",
+    name: "BotolaGO Officielle",
+    type: "public",
+    members: 18420,
+    rank: 12483,
+    previousRank: 15100,
+    score: 612,
+    leaderName: "Karim F.",
+  },
+  {
+    id: "lg4",
+    name: "Overall",
+    type: "public",
+    members: 142310,
+    rank: 12483,
+    previousRank: 15100,
+    score: 612,
+    leaderName: "Achraf B.",
+  },
+  {
+    id: "lg5",
+    name: "Coupe BotolaGO",
+    type: "cup",
+    members: 128,
+    rank: 41,
+    previousRank: 60,
+    score: 58,
+    leaderName: "—",
+  },
 ];
 
 export const leagueStandings: Record<string, LeagueStanding[]> = {
   lg1: [
-    { managerId: "m1", managerName: "Youssef A.", teamName: "Aigles de Casa", rank: 1, previousRank: 1, gameweekScore: 74, totalScore: 680 },
-    { managerId: "m2", managerName: "Salma B.", teamName: "Green Machine", rank: 2, previousRank: 3, gameweekScore: 69, totalScore: 651 },
-    { managerId: "me", managerName: "You", teamName: "Atlas XI", rank: 3, previousRank: 5, gameweekScore: 58, totalScore: 612 },
-    { managerId: "m4", managerName: "Karim F.", teamName: "Rabat Rebels", rank: 4, previousRank: 2, gameweekScore: 41, totalScore: 605 },
-    { managerId: "m5", managerName: "Nadia E.", teamName: "Berkane FC", rank: 5, previousRank: 4, gameweekScore: 52, totalScore: 590 },
+    {
+      managerId: "m1",
+      managerName: "Youssef A.",
+      teamName: "Aigles de Casa",
+      rank: 1,
+      previousRank: 1,
+      gameweekScore: 74,
+      totalScore: 680,
+    },
+    {
+      managerId: "m2",
+      managerName: "Salma B.",
+      teamName: "Green Machine",
+      rank: 2,
+      previousRank: 3,
+      gameweekScore: 69,
+      totalScore: 651,
+    },
+    {
+      managerId: "me",
+      managerName: "You",
+      teamName: "Atlas XI",
+      rank: 3,
+      previousRank: 5,
+      gameweekScore: 58,
+      totalScore: 612,
+    },
+    {
+      managerId: "m4",
+      managerName: "Karim F.",
+      teamName: "Rabat Rebels",
+      rank: 4,
+      previousRank: 2,
+      gameweekScore: 41,
+      totalScore: 605,
+    },
+    {
+      managerId: "m5",
+      managerName: "Nadia E.",
+      teamName: "Berkane FC",
+      rank: 5,
+      previousRank: 4,
+      gameweekScore: 52,
+      totalScore: 590,
+    },
   ],
   lg2: [
-    { managerId: "me", managerName: "You", teamName: "Atlas XI", rank: 1, previousRank: 2, gameweekScore: 58, totalScore: 612 },
-    { managerId: "m6", managerName: "Anas M.", teamName: "Rouge & Blanc", rank: 2, previousRank: 1, gameweekScore: 55, totalScore: 601 },
-    { managerId: "m7", managerName: "Hicham T.", teamName: "Derby Kings", rank: 3, previousRank: 4, gameweekScore: 62, totalScore: 588 },
+    {
+      managerId: "me",
+      managerName: "You",
+      teamName: "Atlas XI",
+      rank: 1,
+      previousRank: 2,
+      gameweekScore: 58,
+      totalScore: 612,
+    },
+    {
+      managerId: "m6",
+      managerName: "Anas M.",
+      teamName: "Rouge & Blanc",
+      rank: 2,
+      previousRank: 1,
+      gameweekScore: 55,
+      totalScore: 601,
+    },
+    {
+      managerId: "m7",
+      managerName: "Hicham T.",
+      teamName: "Derby Kings",
+      rank: 3,
+      previousRank: 4,
+      gameweekScore: 62,
+      totalScore: 588,
+    },
   ],
 };
 
@@ -216,7 +598,10 @@ export const currentGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squ
   const base = 2; // appearance
   const goals = i % 4 === 0 && !bench ? 1 : 0;
   const assists = i % 5 === 0 && !bench ? 1 : 0;
-  const cs = fantasyPlayers.find((p) => p.id === s.playerId)?.position !== "FWD" && i % 3 === 0 && !bench ? 1 : 0;
+  const cs =
+    fantasyPlayers.find((p) => p.id === s.playerId)?.position !== "FWD" && i % 3 === 0 && !bench
+      ? 1
+      : 0;
   const bonus = i === 0 ? 3 : i === 4 ? 2 : i === 8 ? 1 : 0;
   const events = [
     { kind: "appearance" as const, points: bench ? 0 : base },
@@ -242,17 +627,48 @@ export const currentGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squ
 export const gameweekResults: GameweekResult[] = [
   {
     gameweek: 14,
-    totalPoints: currentGameweekBreakdown.filter((b) => !b.isBench).reduce((s, b) => s + b.totalPoints, 0),
-    benchPoints: currentGameweekBreakdown.filter((b) => b.isBench).reduce((s, b) => s + b.totalPoints, 0),
+    totalPoints: currentGameweekBreakdown
+      .filter((b) => !b.isBench)
+      .reduce((s, b) => s + b.totalPoints, 0),
+    benchPoints: currentGameweekBreakdown
+      .filter((b) => b.isBench)
+      .reduce((s, b) => s + b.totalPoints, 0),
     captainId,
     averagePoints: 46,
     highestPoints: 92,
     autoSubs: [],
     breakdown: currentGameweekBreakdown,
   },
-  { gameweek: 13, totalPoints: 62, benchPoints: 3, captainId, averagePoints: 44, highestPoints: 88, autoSubs: [], breakdown: [] },
-  { gameweek: 12, totalPoints: 48, benchPoints: 7, captainId, averagePoints: 41, highestPoints: 79, autoSubs: [], breakdown: [] },
-  { gameweek: 11, totalPoints: 71, benchPoints: 2, captainId, averagePoints: 49, highestPoints: 96, autoSubs: [], breakdown: [] },
+  {
+    gameweek: 13,
+    totalPoints: 62,
+    benchPoints: 3,
+    captainId,
+    averagePoints: 44,
+    highestPoints: 88,
+    autoSubs: [],
+    breakdown: [],
+  },
+  {
+    gameweek: 12,
+    totalPoints: 48,
+    benchPoints: 7,
+    captainId,
+    averagePoints: 41,
+    highestPoints: 79,
+    autoSubs: [],
+    breakdown: [],
+  },
+  {
+    gameweek: 11,
+    totalPoints: 71,
+    benchPoints: 2,
+    captainId,
+    averagePoints: 49,
+    highestPoints: 96,
+    autoSubs: [],
+    breakdown: [],
+  },
 ];
 
 // Fixture difficulty matrix: 6 upcoming gameweeks for each club
@@ -284,7 +700,9 @@ export const fixtureDifficulties: FixtureDifficulty[] = (() => {
 import type { TopPlayerOfWeek } from "@/types/fantasy";
 
 function pickTop(gw: number): TopPlayerOfWeek[] {
-  const pool = [...fantasyPlayers].sort((a, b) => (b.form + b.ownership / 20) - (a.form + a.ownership / 20));
+  const pool = [...fantasyPlayers].sort(
+    (a, b) => b.form + b.ownership / 20 - (a.form + a.ownership / 20),
+  );
   const seeds = [
     { g: 2, a: 1, cs: 0, mins: 90, pts: 15 },
     { g: 1, a: 2, cs: 0, mins: 90, pts: 13 },

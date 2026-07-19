@@ -15,10 +15,7 @@ import { describe, it, expect, beforeEach } from "bun:test";
 import "./__test-shim";
 import { STORAGE_KEYS, removeKey } from "@/lib/storage";
 
-import {
-  importLocalTeamToCloud,
-  prepareImportPayload,
-} from "./fantasy-import-service";
+import { importLocalTeamToCloud, prepareImportPayload } from "./fantasy-import-service";
 import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { buildGameweekIndex } from "./fantasy-gameweek-resolver";
@@ -77,8 +74,6 @@ describe("importLocalTeamToCloud", () => {
       removeKey(STORAGE_KEYS.FANTASY_TEAM);
     } catch {}
   });
-
-
 
   it("happy path: loads local snapshot, resolves GW UUID, invokes cloud saveTeam exactly once", async () => {
     const localRepo = await localRepoWithRealTeam();
@@ -176,11 +171,7 @@ describe("importLocalTeamToCloud", () => {
     }
     expect(caught).toBeInstanceOf(FantasyRepoError);
     expect((caught as FantasyRepoError).code).toBe("mapping_incomplete");
-    expect((caught as FantasyRepoError).missingIds?.players).toEqual([
-      "p-1",
-      "p-2",
-      "p-3",
-    ]);
+    expect((caught as FantasyRepoError).missingIds?.players).toEqual(["p-1", "p-2", "p-3"]);
   });
 
   it("network/RLS/conflict: typed errors bubble through unchanged", async () => {
@@ -294,7 +285,11 @@ describe("importLocalTeamToCloud", () => {
     };
     const input = await prepareImportPayload({
       localRepo,
-      cloudRepo: { async saveTeam() { return {} as any; } } as any,
+      cloudRepo: {
+        async saveTeam() {
+          return {} as any;
+        },
+      } as any,
       loadPlayers: async () => players,
       loadGameweekIndex: async () => fakeGameweekIndex([14]),
       season: SEASON,
@@ -305,7 +300,11 @@ describe("importLocalTeamToCloud", () => {
     // Verify the FR default flows through when supplied instead.
     const input2 = await prepareImportPayload({
       localRepo,
-      cloudRepo: { async saveTeam() { return {} as any; } } as any,
+      cloudRepo: {
+        async saveTeam() {
+          return {} as any;
+        },
+      } as any,
       loadPlayers: async () => players,
       loadGameweekIndex: async () => fakeGameweekIndex([14]),
       season: SEASON,

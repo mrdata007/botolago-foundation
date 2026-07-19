@@ -49,7 +49,10 @@ describe("cleanupOwnedFantasyOnSignOut", () => {
     fantasyDraftsStore.save({ uid: "u1", teamId: "new", baseVersion: 0, kind: "team" }, { a: 1 });
     cleanupOwnedFantasyOnSignOut({ qc, uid: null });
     // Owned caches gone.
-    expect(qc.getQueryCache().findAll({ predicate: (q) => q.queryKey[0] === OWNED_FANTASY_KEY_ROOT }).length).toBe(0);
+    expect(
+      qc.getQueryCache().findAll({ predicate: (q) => q.queryKey[0] === OWNED_FANTASY_KEY_ROOT })
+        .length,
+    ).toBe(0);
     // Drafts intact (no UID to target).
     expect(fantasyDraftsStore.listForUid("u1").length).toBe(1);
   });

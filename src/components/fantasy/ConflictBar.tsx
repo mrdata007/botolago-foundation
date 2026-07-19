@@ -60,12 +60,8 @@ export function ConflictBar({
           <AlertTriangle className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-bold break-words whitespace-normal">
-            {t(titleKey)}
-          </p>
-          <p className="mt-0.5 text-[11px] break-words whitespace-normal">
-            {t(explanationKey)}
-          </p>
+          <p className="text-[12px] font-bold break-words whitespace-normal">{t(titleKey)}</p>
+          <p className="mt-0.5 text-[11px] break-words whitespace-normal">{t(explanationKey)}</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">

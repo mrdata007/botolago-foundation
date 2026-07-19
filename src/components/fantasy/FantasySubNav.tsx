@@ -36,16 +36,15 @@ export function FantasySubNav() {
     >
       <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
         {items.map((it) => {
-          const active = it.to === "/fantasy" ? pathname === "/fantasy" : pathname.startsWith(it.to);
+          const active =
+            it.to === "/fantasy" ? pathname === "/fantasy" : pathname.startsWith(it.to);
           return (
             <Link
               key={it.to}
               to={it.to}
               className={cn(
                 "relative whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold transition-colors",
-                active
-                  ? "text-white"
-                  : "bg-white/50 text-foreground hover:bg-white/80",
+                active ? "text-white" : "bg-white/50 text-foreground hover:bg-white/80",
               )}
               style={
                 active

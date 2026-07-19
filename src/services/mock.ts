@@ -46,7 +46,9 @@ export const botolaService = {
     return delay(all);
   },
   async getLiveOrUpcoming(): Promise<Match[]> {
-    return delay(db.matches.filter((m) => m.status === "live" || m.status === "scheduled").slice(0, 3));
+    return delay(
+      db.matches.filter((m) => m.status === "live" || m.status === "scheduled").slice(0, 3),
+    );
   },
   async getTable(): Promise<TableRow[]> {
     return delay(db.tableRows);
@@ -57,10 +59,13 @@ export const botolaService = {
   async getFantasySummary(): Promise<FantasySummary> {
     const patch = readJSON<FantasyTeamPatch>(STORAGE_KEYS.FANTASY_TEAM) ?? {};
     const squad = patch.squad ?? fdb.fantasyTeam.squad;
-    const teamValue = Math.round(squad.reduce((s, sp) => {
-      const p = fdb.fantasyPlayers.find((x) => x.id === sp.playerId);
-      return s + (p?.price ?? 0);
-    }, 0) * 10) / 10;
+    const teamValue =
+      Math.round(
+        squad.reduce((s, sp) => {
+          const p = fdb.fantasyPlayers.find((x) => x.id === sp.playerId);
+          return s + (p?.price ?? 0);
+        }, 0) * 10,
+      ) / 10;
     const merged: FantasySummary = {
       ...db.fantasySummary,
       transfersLeft: patch.freeTransfers ?? db.fantasySummary.transfersLeft,
@@ -73,7 +78,9 @@ export const botolaService = {
     return delay(db.fantasyAlerts);
   },
   async getTrendingPlayers(): Promise<Player[]> {
-    return delay(db.trendingPlayers.map((id) => db.players.find((p) => p.id === id)!).filter(Boolean));
+    return delay(
+      db.trendingPlayers.map((id) => db.players.find((p) => p.id === id)!).filter(Boolean),
+    );
   },
   async getPlayer(id: string): Promise<Player | undefined> {
     return delay(db.players.find((p) => p.id === id));

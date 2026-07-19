@@ -27,10 +27,14 @@ export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; g
         <div className="min-w-0">
           <div className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[color:var(--brand-accent)]">
             <Trophy className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="truncate">{t("home.gameweek")} {gw.number}</span>
+            <span className="truncate">
+              {t("home.gameweek")} {gw.number}
+            </span>
           </div>
           <div className="mt-1 truncate text-lg font-black text-foreground">{summary.teamName}</div>
-          <div className="truncate text-xs text-[color:var(--text-secondary)]">{summary.managerName}</div>
+          <div className="truncate text-xs text-[color:var(--text-secondary)]">
+            {summary.managerName}
+          </div>
         </div>
         <div className="text-end">
           <div className="text-[10px] uppercase tracking-wide text-[color:var(--text-muted)]">
@@ -75,7 +79,12 @@ function Metric({
   value,
   accent,
   small,
-}: { label: string; value: string; accent?: boolean; small?: boolean }) {
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  small?: boolean;
+}) {
   return (
     <div
       className="rounded-xl px-1.5 py-2"

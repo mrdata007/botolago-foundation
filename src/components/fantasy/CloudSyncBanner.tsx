@@ -19,14 +19,21 @@ export function CloudSyncBanner() {
         : "border-white/10 bg-white/5 text-white/80";
 
   const label =
-    status === "loading" ? t("fantasy.cloud.loading")
-      : status === "saving" ? t("fantasy.cloud.saving")
-      : status === "saved" ? t("fantasy.cloud.saved")
-      : status === "conflict" ? t("fantasy.cloud.conflict")
-      : errorCode === "permission_denied" ? t("fantasy.cloud.permission_denied")
-      : errorCode === "network" ? t("fantasy.cloud.offline")
-      : errorCode === "mapping_incomplete" ? t("fantasy.cloud.mapping_unavailable")
-      : t("fantasy.cloud.error");
+    status === "loading"
+      ? t("fantasy.cloud.loading")
+      : status === "saving"
+        ? t("fantasy.cloud.saving")
+        : status === "saved"
+          ? t("fantasy.cloud.saved")
+          : status === "conflict"
+            ? t("fantasy.cloud.conflict")
+            : errorCode === "permission_denied"
+              ? t("fantasy.cloud.permission_denied")
+              : errorCode === "network"
+                ? t("fantasy.cloud.offline")
+                : errorCode === "mapping_incomplete"
+                  ? t("fantasy.cloud.mapping_unavailable")
+                  : t("fantasy.cloud.error");
 
   const showRetry = status === "error" || status === "conflict";
   const live: "polite" | "assertive" = showRetry ? "assertive" : "polite";
@@ -41,7 +48,9 @@ export function CloudSyncBanner() {
       {showRetry && (
         <button
           type="button"
-          onClick={() => { void reload(); }}
+          onClick={() => {
+            void reload();
+          }}
           className="shrink-0 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium hover:bg-white/20 min-h-11"
         >
           {status === "conflict" ? t("fantasy.cloud.reload_latest") : t("fantasy.cloud.retry")}

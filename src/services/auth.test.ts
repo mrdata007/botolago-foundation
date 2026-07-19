@@ -16,13 +16,21 @@ beforeEach(() => {
     g.window = {
       localStorage: {
         getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-        setItem: (k: string, v: string) => { store.set(k, v); },
-        removeItem: (k: string) => { store.delete(k); },
+        setItem: (k: string, v: string) => {
+          store.set(k, v);
+        },
+        removeItem: (k: string) => {
+          store.delete(k);
+        },
         clear: () => store.clear(),
       },
     };
   } else {
-    try { g.window.localStorage.clear?.(); } catch { /* ignore */ }
+    try {
+      g.window.localStorage.clear?.();
+    } catch {
+      /* ignore */
+    }
   }
   authService = __testing.createMockService();
 });
@@ -57,7 +65,11 @@ describe("authService (local mock)", () => {
 
   it("OTP 123456 verifies a pending registration", async () => {
     await authService.registerWithEmail({
-      fullName: "Amine Test", username: "aminetest", email: "amine@example.com", password: "SuperSecret1!", language: "fr",
+      fullName: "Amine Test",
+      username: "aminetest",
+      email: "amine@example.com",
+      password: "SuperSecret1!",
+      language: "fr",
     });
     const bad = await authService.verifyCode("amine@example.com", "000000");
     expect(bad.ok).toBe(false);

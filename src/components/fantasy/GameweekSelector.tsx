@@ -22,10 +22,7 @@ export function GameweekSelector({
   // classes are flipped in RTL by global styles so the visual arrow matches.
   return (
     <div
-      className={cn(
-        "surface-3 inline-flex items-center gap-1 rounded-full px-1 py-1",
-        className,
-      )}
+      className={cn("surface-3 inline-flex items-center gap-1 rounded-full px-1 py-1", className)}
     >
       <button
         onClick={prev}
@@ -39,9 +36,7 @@ export function GameweekSelector({
         <span className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground">
           {t("fantasy.points.gameweek")}
         </span>
-        <span className="text-sm font-black tabular-nums text-foreground">
-          {value}
-        </span>
+        <span className="text-sm font-black tabular-nums text-foreground">{value}</span>
       </div>
       <button
         onClick={next}

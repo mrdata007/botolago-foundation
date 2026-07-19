@@ -10,7 +10,13 @@ const tone = {
   suspended: "bg-neutral-800/10 text-neutral-800 border-neutral-800/30",
 } as const;
 
-export function PlayerStatusBadge({ status, className }: { status: Player["status"]; className?: string }) {
+export function PlayerStatusBadge({
+  status,
+  className,
+}: {
+  status: Player["status"];
+  className?: string;
+}) {
   const { t } = useI18n();
   return (
     <span

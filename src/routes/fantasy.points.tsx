@@ -23,10 +23,7 @@ import {
   type PointsViewModel,
 } from "@/services/points-service";
 import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
-import {
-  loadGameweekIndex,
-  resolveGameweekId,
-} from "@/services/fantasy-gameweek-resolver";
+import { loadGameweekIndex, resolveGameweekId } from "@/services/fantasy-gameweek-resolver";
 import {
   selectStableCloudResult,
   buildCloudFinalizationPlan,
@@ -36,8 +33,14 @@ import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-
 import { toast } from "sonner";
 import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/auth/AuthProvider";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -46,12 +49,9 @@ import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation
 import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
 import { ConflictBar } from "@/components/fantasy/ConflictBar";
 
-
-
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
 });
-
 
 const eventLabelKey: Record<PointsEventKind, TranslationKey> = {
   appearance: "fantasy.events.appearance",
@@ -108,17 +108,29 @@ function PointsPage() {
   }, [isCloud, owned.snapshot?.lifecycle]);
 
   const { key: ownedKey } = useFantasyDataSource();
-  const currentGwQ = useQuery({ queryKey: ["current-gw"], queryFn: () => botolaService.getCurrentGameweek() });
-  const gwResultQ = useQuery({ queryKey: ownedKey("gw-result", gw), queryFn: () => fantasyService.getGameweekResult(gw) });
-  const historyQ = useQuery({ queryKey: ownedKey("gw-history"), queryFn: () => fantasyService.getGameweekHistory() });
+  const currentGwQ = useQuery({
+    queryKey: ["current-gw"],
+    queryFn: () => botolaService.getCurrentGameweek(),
+  });
+  const gwResultQ = useQuery({
+    queryKey: ownedKey("gw-result", gw),
+    queryFn: () => fantasyService.getGameweekResult(gw),
+  });
+  const historyQ = useQuery({
+    queryKey: ownedKey("gw-history"),
+    queryFn: () => fantasyService.getGameweekHistory(),
+  });
   // H7 — Consume owned.snapshot directly in cloud mode; no parallel Team query.
   const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
     queryFn: () => fantasyService.getTeam(),
     enabled: !isCloud,
   });
-  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
-  const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
+  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
+  const playersQ = useQuery({
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
   // when advancing. Not needed in local mode.
@@ -127,7 +139,6 @@ function PointsPage() {
     queryFn: () => loadGameweekIndex(),
     enabled: isCloud,
   });
-
 
   const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
   const isCurrent = gw === currentGw;
@@ -283,9 +294,18 @@ function PointsPage() {
 
   const doFinalize = () => {
     requireAuth(async () => {
-      if (!isCurrent) { toast.error(t("fantasy.points.lifecycle_error")); return; }
-      if (finalized) { toast.error(t("fantasy.points.already_finalized")); return; }
-      if (!deadlineLocked) { toast.error(t("fantasy.deadline.open")); return; }
+      if (!isCurrent) {
+        toast.error(t("fantasy.points.lifecycle_error"));
+        return;
+      }
+      if (finalized) {
+        toast.error(t("fantasy.points.already_finalized"));
+        return;
+      }
+      if (!deadlineLocked) {
+        toast.error(t("fantasy.deadline.open"));
+        return;
+      }
       const raw = gwResultQ.data;
       if (!raw?.breakdown.length || !team || !playersQ.data) {
         toast.error(t("fantasy.points.lifecycle_error"));
@@ -368,8 +388,6 @@ function PointsPage() {
         return;
       }
 
-
-
       try {
         const out = finalizeGameweek({
           gameweek: gw,
@@ -391,7 +409,6 @@ function PointsPage() {
     });
     setConfirmFinalize(false);
   };
-
 
   const doAdvance = () => {
     requireAuth(async () => {
@@ -483,7 +500,13 @@ function PointsPage() {
       // Local mode — untouched.
       const res = advanceGameweek({ targetGameweek: target, team: team });
       if (!res.ok) {
-        toast.error(t(res.error === "must_finalize_first" ? "fantasy.points.must_finalize_first" : "fantasy.points.lifecycle_error"));
+        toast.error(
+          t(
+            res.error === "must_finalize_first"
+              ? "fantasy.points.must_finalize_first"
+              : "fantasy.points.lifecycle_error",
+          ),
+        );
         return;
       }
       setState(fantasyStateStore.read());
@@ -496,7 +519,9 @@ function PointsPage() {
     setConfirmAdvance(false);
   };
 
-  const effectiveCaptainName = vm.effectiveCaptainId ? tr(playerOf(vm.effectiveCaptainId).name) : "—";
+  const effectiveCaptainName = vm.effectiveCaptainId
+    ? tr(playerOf(vm.effectiveCaptainId).name)
+    : "—";
 
   // History: prefer persisted results when available; fall back to legacy mock rows.
   const historyItems = (historyQ.data ?? []).map((h) => {
@@ -526,7 +551,9 @@ function PointsPage() {
               : "bg-amber-500/15 text-amber-800",
           )}
         >
-          {vm.source === "engine" ? t("fantasy.points.engine_source") : t("fantasy.points.legacy_source")}
+          {vm.source === "engine"
+            ? t("fantasy.points.engine_source")
+            : t("fantasy.points.legacy_source")}
         </span>
         {isCurrent && vm.source === "engine" && (
           <button
@@ -563,7 +590,8 @@ function PointsPage() {
             onClick={() => setConfirmAdvance(true)}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
           >
-            {t("fantasy.points.advance")} <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
+            {t("fantasy.points.advance")}{" "}
+            <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
           </button>
         )}
       </div>
@@ -591,11 +619,15 @@ function PointsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("fantasy.points.finalize_confirm_title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("fantasy.points.finalize_confirm_desc")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {t("fantasy.points.finalize_confirm_desc")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={doFinalize}>{t("fantasy.points.finalize")}</AlertDialogAction>
+            <AlertDialogAction onClick={doFinalize}>
+              {t("fantasy.points.finalize")}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -604,7 +636,9 @@ function PointsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("fantasy.points.advance_confirm_title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("fantasy.points.advance_confirm_desc")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {t("fantasy.points.advance_confirm_desc")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
@@ -612,7 +646,6 @@ function PointsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <Stat label={t("fantasy.points.total")} value={String(vm.totalPoints)} accent />
@@ -623,12 +656,24 @@ function PointsPage() {
       {vm.source === "engine" && (
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <MiniStat label={t("fantasy.points.captain_bonus")} value={`+${vm.captainBonus}`} />
-          <MiniStat label={t("fantasy.points.hit")} value={vm.transferHitPoints ? `−${vm.transferHitPoints}` : "0"} tone={vm.transferHitPoints ? "danger" : undefined} />
+          <MiniStat
+            label={t("fantasy.points.hit")}
+            value={vm.transferHitPoints ? `−${vm.transferHitPoints}` : "0"}
+            tone={vm.transferHitPoints ? "danger" : undefined}
+          />
           {vm.benchBoostContribution > 0 && (
-            <MiniStat label={t("fantasy.points.bench_boost_contrib")} value={`+${vm.benchBoostContribution}`} tone="accent" />
+            <MiniStat
+              label={t("fantasy.points.bench_boost_contrib")}
+              value={`+${vm.benchBoostContribution}`}
+              tone="accent"
+            />
           )}
           {vm.tripleCaptainContribution > 0 && (
-            <MiniStat label={t("fantasy.points.triple_captain_contrib")} value={`+${vm.tripleCaptainContribution * (vm.captainMultiplier - 1)}`} tone="accent" />
+            <MiniStat
+              label={t("fantasy.points.triple_captain_contrib")}
+              value={`+${vm.tripleCaptainContribution * (vm.captainMultiplier - 1)}`}
+              tone="accent"
+            />
           )}
           <MiniStat
             label={t("fantasy.points.effective_captain")}
@@ -706,7 +751,8 @@ function PointsPage() {
               const p = playerOf(b.playerId);
               const isEffCap = vm.effectiveCaptainId === b.playerId;
               const displayPoints = isEffCap
-                ? (b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints) * vm.captainMultiplier
+                ? (b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints) *
+                  vm.captainMultiplier
                 : b.totalPoints;
               const onBench = benchIdsForDisplay.includes(b.playerId);
               const cameOn = cameOnIds.has(b.playerId);
@@ -723,7 +769,9 @@ function PointsPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="truncate text-sm font-bold text-foreground">{tr(p.name)}</span>
+                          <span className="truncate text-sm font-bold text-foreground">
+                            {tr(p.name)}
+                          </span>
                           {isEffCap && (
                             <span className="rounded bg-[color:var(--brand-accent)] px-1 py-0.5 text-[9px] font-black text-white">
                               {t("fantasy.captain")}
@@ -749,13 +797,18 @@ function PointsPage() {
                           )}
                         </div>
                         <div className="text-[11px] text-muted-foreground">
-                          <StatusPill status={b.status} /> · {b.minutesPlayed}′{onBench ? ` · ${t("fantasy.bench")}` : ""}
+                          <StatusPill status={b.status} /> · {b.minutesPlayed}′
+                          {onBench ? ` · ${t("fantasy.bench")}` : ""}
                         </div>
                       </div>
                     </div>
                     <div className="text-end">
-                      <div className="text-lg font-black tabular-nums text-foreground">{displayPoints}</div>
-                      <div className="text-[10px] uppercase text-muted-foreground">{t("fantasy.points.abbr")}</div>
+                      <div className="text-lg font-black tabular-nums text-foreground">
+                        {displayPoints}
+                      </div>
+                      <div className="text-[10px] uppercase text-muted-foreground">
+                        {t("fantasy.points.abbr")}
+                      </div>
                     </div>
                   </div>
                   {b.events.length > 0 && <EventGrid b={b} />}
@@ -788,12 +841,16 @@ function PointsPage() {
                   h.source === "engine" ? "text-[color:var(--brand-primary)]" : "text-amber-700",
                 )}
               >
-                {h.source === "engine" ? t("fantasy.points.engine_source") : t("fantasy.points.legacy_source")}
+                {h.source === "engine"
+                  ? t("fantasy.points.engine_source")
+                  : t("fantasy.points.legacy_source")}
               </div>
             </div>
             <div className="text-end">
               <div className="text-lg font-black tabular-nums text-foreground">{h.totalPoints}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">{t("fantasy.points.abbr")}</div>
+              <div className="text-[10px] uppercase text-muted-foreground">
+                {t("fantasy.points.abbr")}
+              </div>
             </div>
           </button>
         ))}
@@ -837,7 +894,9 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
       >
         {value}
       </div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
     </div>
   );
 }

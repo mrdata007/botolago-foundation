@@ -40,10 +40,7 @@ export function SectionHeader({
               style={{ background: "var(--brand-accent)" }}
             />
             {Icon && (
-              <Icon
-                className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]"
-                aria-hidden
-              />
+              <Icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]" aria-hidden />
             )}
             {eyebrow && (
               <span className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-brand">
@@ -56,9 +53,7 @@ export function SectionHeader({
           <Trans text={title} />
         </h2>
         {subtitle && (
-          <p className="mt-0.5 truncate text-xs text-[color:var(--text-secondary)]">
-            {subtitle}
-          </p>
+          <p className="mt-0.5 truncate text-xs text-[color:var(--text-secondary)]">{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0 self-center">{action}</div>}

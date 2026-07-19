@@ -14,18 +14,10 @@ import { MissingIdMappingError } from "./fantasy-id-map";
 
 describe("selectFantasyRepoSource", () => {
   it("returns cloud only for supabase mode + authenticated", () => {
-    expect(
-      selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: true }),
-    ).toBe("cloud");
-    expect(
-      selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false }),
-    ).toBe("local");
-    expect(
-      selectFantasyRepoSource({ authMode: "mock", isAuthenticated: true }),
-    ).toBe("local");
-    expect(
-      selectFantasyRepoSource({ authMode: "mock", isAuthenticated: false }),
-    ).toBe("local");
+    expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: true })).toBe("cloud");
+    expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false })).toBe("local");
+    expect(selectFantasyRepoSource({ authMode: "mock", isAuthenticated: true })).toBe("local");
+    expect(selectFantasyRepoSource({ authMode: "mock", isAuthenticated: false })).toBe("local");
   });
 });
 
@@ -98,8 +90,7 @@ function makeFakeClient(state: {
 }) {
   return {
     from(table: string) {
-      const rows =
-        table === "fantasy_teams" ? (state.team ? [state.team] : []) : state.squad;
+      const rows = table === "fantasy_teams" ? (state.team ? [state.team] : []) : state.squad;
       const chain: any = {
         _rows: rows,
         select() {

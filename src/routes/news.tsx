@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Newspaper, Flame, Clock, Sparkles, Bookmark, ArrowRightLeft, PieChart, MessageSquare } from "lucide-react";
+import {
+  Newspaper,
+  Flame,
+  Clock,
+  Sparkles,
+  Bookmark,
+  ArrowRightLeft,
+  PieChart,
+  MessageSquare,
+} from "lucide-react";
 import { botolaService } from "@/services/mock";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -19,9 +28,17 @@ export const Route = createFileRoute("/news")({
   head: () => ({
     meta: [
       { title: "Actualités — BotolaGO" },
-      { name: "description", content: "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews." },
+      {
+        name: "description",
+        content:
+          "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
+      },
       { property: "og:title", content: "Actualités — BotolaGO" },
-      { property: "og:description", content: "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews." },
+      {
+        property: "og:description",
+        content:
+          "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
+      },
     ],
   }),
   component: NewsPage,
@@ -42,7 +59,10 @@ function NewsPage() {
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
   const { ids: savedIds } = useSavedArticles();
 
-  const allQ = useQuery({ queryKey: ["articles", "all"], queryFn: () => botolaService.getArticles() });
+  const allQ = useQuery({
+    queryKey: ["articles", "all"],
+    queryFn: () => botolaService.getArticles(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const leadQ = useQuery({ queryKey: ["lead"], queryFn: () => botolaService.getLeadArticle() });
 
@@ -50,17 +70,30 @@ function NewsPage() {
   const list = allQ.data ?? [];
   const lead = leadQ.data;
 
-  const byClub = (arr: Article[]) => (clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr);
+  const byClub = (arr: Article[]) =>
+    clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr;
 
-  const forYou = useMemo(() => byClub(list.filter((a) => a.id !== lead?.id)), [list, lead, clubFilter]);
+  const forYou = useMemo(
+    () => byClub(list.filter((a) => a.id !== lead?.id)),
+    [list, lead, clubFilter],
+  );
   const topStories = useMemo(() => forYou.slice(0, 3), [forYou]);
   const latest = useMemo(
     () => [...forYou].sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt)),
     [forYou],
   );
-  const transfers = useMemo(() => byClub(list.filter((a) => a.category === "transfers")), [list, clubFilter]);
-  const analysis = useMemo(() => byClub(list.filter((a) => a.category === "analysis")), [list, clubFilter]);
-  const interviews = useMemo(() => byClub(list.filter((a) => a.category === "interviews")), [list, clubFilter]);
+  const transfers = useMemo(
+    () => byClub(list.filter((a) => a.category === "transfers")),
+    [list, clubFilter],
+  );
+  const analysis = useMemo(
+    () => byClub(list.filter((a) => a.category === "analysis")),
+    [list, clubFilter],
+  );
+  const interviews = useMemo(
+    () => byClub(list.filter((a) => a.category === "interviews")),
+    [list, clubFilter],
+  );
   const savedList = useMemo(
     () => byClub(list.filter((a) => savedIds.includes(a.id))),
     [list, savedIds, clubFilter],
@@ -129,7 +162,9 @@ function NewsPage() {
                   aria-pressed={!!followed[c.id]}
                   className={cn(
                     "ms-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide",
-                    followed[c.id] ? "bg-[color:var(--brand-accent)] text-white" : "bg-muted text-muted-foreground",
+                    followed[c.id]
+                      ? "bg-[color:var(--brand-accent)] text-white"
+                      : "bg-muted text-muted-foreground",
                   )}
                 >
                   {followed[c.id] ? t("news.following") : t("news.follow")}
@@ -150,15 +185,27 @@ function NewsPage() {
       ) : filteredForTab ? (
         <Section index={1}>
           <SectionHeader
-            title={t(`news.section.${tab === "latest" ? "latest" : tab === "transfers" ? "transfers" : tab === "analysis" ? "analysis" : "interviews"}` as TranslationKey)}
-            icon={tab === "transfers" ? ArrowRightLeft : tab === "analysis" ? PieChart : tab === "interviews" ? MessageSquare : Clock}
+            title={t(
+              `news.section.${tab === "latest" ? "latest" : tab === "transfers" ? "transfers" : tab === "analysis" ? "analysis" : "interviews"}` as TranslationKey,
+            )}
+            icon={
+              tab === "transfers"
+                ? ArrowRightLeft
+                : tab === "analysis"
+                  ? PieChart
+                  : tab === "interviews"
+                    ? MessageSquare
+                    : Clock
+            }
             eyebrow={t(`news.tab.${tab}` as TranslationKey)}
           />
           {filteredForTab.length === 0 ? (
             <EmptyState>{t("news.empty_category")}</EmptyState>
           ) : (
             <div className="grid gap-3">
-              {filteredForTab.map((a) => <ArticleCard key={a.id} article={a} />)}
+              {filteredForTab.map((a) => (
+                <ArticleCard key={a.id} article={a} />
+              ))}
             </div>
           )}
         </Section>
@@ -167,7 +214,11 @@ function NewsPage() {
           {/* Lead */}
           {lead && (
             <Section index={1}>
-              <SectionHeader eyebrow={t("news.section.lead")} icon={Sparkles} title={t("news.section.lead")} />
+              <SectionHeader
+                eyebrow={t("news.section.lead")}
+                icon={Sparkles}
+                title={t("news.section.lead")}
+              />
               <ArticleCard article={lead} variant="lead" />
             </Section>
           )}
@@ -175,7 +226,11 @@ function NewsPage() {
           {/* Top stories — image-led grid */}
           {topStories.length > 0 && (
             <Section index={2}>
-              <SectionHeader title={t("news.section.top_stories")} icon={Flame} eyebrow={t("news.section.top_stories")} />
+              <SectionHeader
+                title={t("news.section.top_stories")}
+                icon={Flame}
+                eyebrow={t("news.section.top_stories")}
+              />
               <div className="grid grid-cols-2 gap-3">
                 {topStories.slice(0, 2).map((a) => (
                   <ArticleCard key={a.id} article={a} variant="imageLed" />
@@ -192,7 +247,11 @@ function NewsPage() {
           {/* Latest — horizontal list */}
           {latest.length > 0 && (
             <Section index={3}>
-              <SectionHeader title={t("news.section.latest")} icon={Clock} eyebrow={t("news.section.latest")} />
+              <SectionHeader
+                title={t("news.section.latest")}
+                icon={Clock}
+                eyebrow={t("news.section.latest")}
+              />
               <div className="grid gap-2.5">
                 {latest.slice(0, 5).map((a) => (
                   <ArticleCard key={a.id} article={a} variant="horizontal" />
@@ -204,9 +263,15 @@ function NewsPage() {
           {/* Transfers strip */}
           {transfers.length > 0 && (
             <Section index={4}>
-              <SectionHeader title={t("news.section.transfers")} icon={ArrowRightLeft} eyebrow={t("news.section.transfers")} />
+              <SectionHeader
+                title={t("news.section.transfers")}
+                icon={ArrowRightLeft}
+                eyebrow={t("news.section.transfers")}
+              />
               <div className="grid gap-3">
-                {transfers.slice(0, 2).map((a) => <ArticleCard key={a.id} article={a} />)}
+                {transfers.slice(0, 2).map((a) => (
+                  <ArticleCard key={a.id} article={a} />
+                ))}
               </div>
             </Section>
           )}
@@ -214,9 +279,15 @@ function NewsPage() {
           {/* Analysis */}
           {analysis.length > 0 && (
             <Section index={5}>
-              <SectionHeader title={t("news.section.analysis")} icon={PieChart} eyebrow={t("news.section.analysis")} />
+              <SectionHeader
+                title={t("news.section.analysis")}
+                icon={PieChart}
+                eyebrow={t("news.section.analysis")}
+              />
               <div className="grid gap-3">
-                {analysis.slice(0, 2).map((a) => <ArticleCard key={a.id} article={a} />)}
+                {analysis.slice(0, 2).map((a) => (
+                  <ArticleCard key={a.id} article={a} />
+                ))}
               </div>
             </Section>
           )}
@@ -224,21 +295,33 @@ function NewsPage() {
           {/* Interviews */}
           {interviews.length > 0 && (
             <Section index={6}>
-              <SectionHeader title={t("news.section.interviews")} icon={MessageSquare} eyebrow={t("news.section.interviews")} />
+              <SectionHeader
+                title={t("news.section.interviews")}
+                icon={MessageSquare}
+                eyebrow={t("news.section.interviews")}
+              />
               <div className="grid gap-2.5">
-                {interviews.slice(0, 3).map((a) => <ArticleCard key={a.id} article={a} variant="horizontal" />)}
+                {interviews.slice(0, 3).map((a) => (
+                  <ArticleCard key={a.id} article={a} variant="horizontal" />
+                ))}
               </div>
             </Section>
           )}
 
           {/* Saved */}
           <Section index={6}>
-            <SectionHeader title={t("news.section.saved")} icon={Bookmark} eyebrow={t("news.section.saved")} />
+            <SectionHeader
+              title={t("news.section.saved")}
+              icon={Bookmark}
+              eyebrow={t("news.section.saved")}
+            />
             {savedList.length === 0 ? (
               <EmptyState compact>{t("news.saved.empty")}</EmptyState>
             ) : (
               <div className="grid gap-2.5">
-                {savedList.map((a) => <ArticleCard key={a.id} article={a} variant="compact" />)}
+                {savedList.map((a) => (
+                  <ArticleCard key={a.id} article={a} variant="compact" />
+                ))}
               </div>
             )}
           </Section>

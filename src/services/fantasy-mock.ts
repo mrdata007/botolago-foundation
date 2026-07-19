@@ -90,7 +90,11 @@ export const fantasyService = {
     return delay(fdb.topPlayersByGameweek[gameweek] ?? fdb.topPlayersByGameweek[fallback] ?? []);
   },
   async getAvailableTopGameweeks(): Promise<number[]> {
-    return delay(Object.keys(fdb.topPlayersByGameweek).map(Number).sort((a, b) => a - b));
+    return delay(
+      Object.keys(fdb.topPlayersByGameweek)
+        .map(Number)
+        .sort((a, b) => a - b),
+    );
   },
 };
 

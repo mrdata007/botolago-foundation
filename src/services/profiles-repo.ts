@@ -18,7 +18,10 @@ export interface FullProfile {
  * Load profile + preferences for a given user id, with bounded retry to wait
  * for the trigger-created row(s) on first sign-in.
  */
-export async function loadFullProfile(userId: string, maxAttempts = 5): Promise<FullProfile | null> {
+export async function loadFullProfile(
+  userId: string,
+  maxAttempts = 5,
+): Promise<FullProfile | null> {
   for (let i = 0; i < maxAttempts; i++) {
     const [pRes, prefRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
@@ -88,7 +91,8 @@ export async function updatePreferences(
   const patch: Database["public"]["Tables"]["user_preferences"]["Update"] = {};
   if (input.matchAlerts !== undefined) patch.match_alerts = input.matchAlerts;
   if (input.breakingNews !== undefined) patch.breaking_news = input.breakingNews;
-  if (input.fantasyDeadlines !== undefined) patch.fantasy_deadline_reminders = input.fantasyDeadlines;
+  if (input.fantasyDeadlines !== undefined)
+    patch.fantasy_deadline_reminders = input.fantasyDeadlines;
 
   // Upsert to be resilient if the trigger row is briefly missing.
   const { data, error } = await supabase
@@ -120,10 +124,14 @@ const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gi
 
 export function extForMime(mime: string): string {
   switch (mime) {
-    case "image/png": return "png";
-    case "image/webp": return "webp";
-    case "image/gif": return "gif";
-    default: return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    default:
+      return "jpg";
   }
 }
 
@@ -131,7 +139,9 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob | null> {
   try {
     const res = await fetch(dataUrl);
     return await res.blob();
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export type AvatarUploadError = "too_large" | "bad_type" | "upload_failed";
@@ -156,11 +166,17 @@ export async function uploadAvatarFromDataUrl(
 }
 
 export async function deleteAvatar(path: string): Promise<void> {
-  try { await supabase.storage.from(AVATAR_BUCKET).remove([path]); } catch { /* ignore */ }
+  try {
+    await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function signedAvatarUrl(path: string, expiresIn = 60 * 60): Promise<string | null> {
-  const { data, error } = await supabase.storage.from(AVATAR_BUCKET).createSignedUrl(path, expiresIn);
+  const { data, error } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .createSignedUrl(path, expiresIn);
   if (error || !data) return null;
   return data.signedUrl;
 }

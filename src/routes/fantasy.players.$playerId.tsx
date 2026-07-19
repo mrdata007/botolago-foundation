@@ -29,9 +29,15 @@ function PlayerDetailPage() {
   const { playerId } = Route.useParams();
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
-  const playerQ = useQuery({ queryKey: ["fantasy-player", playerId], queryFn: () => fantasyService.getPlayer(playerId) });
+  const playerQ = useQuery({
+    queryKey: ["fantasy-player", playerId],
+    queryFn: () => fantasyService.getPlayer(playerId),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const fixturesQ = useQuery({ queryKey: ["fixture-difficulty"], queryFn: () => fantasyService.getFixtureDifficulty() });
+  const fixturesQ = useQuery({
+    queryKey: ["fixture-difficulty"],
+    queryFn: () => fantasyService.getFixtureDifficulty(),
+  });
   const [tab, setTab] = useState<Tab>("overview");
 
   if (playerQ.isLoading) return <LoadingState />;
@@ -43,7 +49,10 @@ function PlayerDetailPage() {
 
   return (
     <div>
-      <Link to="/fantasy/players" className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+      <Link
+        to="/fantasy/players"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t("common.back")}
       </Link>
 
@@ -52,14 +61,20 @@ function PlayerDetailPage() {
         <div className="min-w-0 flex-1">
           <div className="truncate text-lg font-black text-foreground">{tr(p.name)}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">{t(`player.pos.${p.position}` as TranslationKey)}</span>
+            <span className="text-muted-foreground">
+              {t(`player.pos.${p.position}` as TranslationKey)}
+            </span>
             {club && <span className="text-muted-foreground">· {tr(club.name)}</span>}
             {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
           </div>
         </div>
         <div className="text-end">
-          <div className="text-lg font-black tabular-nums text-brand-accent">{nf.format(p.price)}</div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("fantasy.price")}</div>
+          <div className="text-lg font-black tabular-nums text-brand-accent">
+            {nf.format(p.price)}
+          </div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {t("fantasy.price")}
+          </div>
         </div>
       </div>
 
@@ -70,7 +85,9 @@ function PlayerDetailPage() {
             onClick={() => setTab(it.key)}
             className={cn(
               "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold",
-              tab === it.key ? "bg-[color:var(--brand-primary)] text-white" : "bg-white/60 ring-1 ring-black/5",
+              tab === it.key
+                ? "bg-[color:var(--brand-primary)] text-white"
+                : "bg-white/60 ring-1 ring-black/5",
             )}
             aria-pressed={tab === it.key}
           >
@@ -92,7 +109,8 @@ function PlayerDetailPage() {
         {tab === "history" && (
           <div className="rounded-2xl bg-card ring-1 ring-black/5 p-3">
             <div className="text-sm text-muted-foreground">
-              {tr(p.name)}: {p.totalPoints} pts sur la saison ({nf.format(p.form)} / journée en moyenne).
+              {tr(p.name)}: {p.totalPoints} pts sur la saison ({nf.format(p.form)} / journée en
+              moyenne).
             </div>
           </div>
         )}
@@ -103,16 +121,35 @@ function PlayerDetailPage() {
             {playerFixtures.map((f) => {
               const opp = clubs.find((c) => c.id === f.opponentClubId);
               return (
-                <div key={f.gameweek} className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-                  <div className="w-14 shrink-0 text-[11px] font-bold text-muted-foreground">GW {f.gameweek}</div>
+                <div
+                  key={f.gameweek}
+                  className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
+                >
+                  <div className="w-14 shrink-0 text-[11px] font-bold text-muted-foreground">
+                    GW {f.gameweek}
+                  </div>
                   {opp && <ClubCrest club={opp} size="sm" />}
                   <div className="flex-1 text-sm font-semibold">
                     {opp && tr(opp.shortName)}{" "}
-                    <span className="text-muted-foreground">({f.isHome ? t("common.home") : t("common.away")})</span>
-                    {f.isDouble && <span className="ms-1 rounded bg-emerald-500/15 px-1 text-[9px] font-black text-emerald-700">DGW</span>}
-                    {f.isBlank && <span className="ms-1 rounded bg-neutral-500/20 px-1 text-[9px] font-black text-neutral-700">BGW</span>}
+                    <span className="text-muted-foreground">
+                      ({f.isHome ? t("common.home") : t("common.away")})
+                    </span>
+                    {f.isDouble && (
+                      <span className="ms-1 rounded bg-emerald-500/15 px-1 text-[9px] font-black text-emerald-700">
+                        DGW
+                      </span>
+                    )}
+                    {f.isBlank && (
+                      <span className="ms-1 rounded bg-neutral-500/20 px-1 text-[9px] font-black text-neutral-700">
+                        BGW
+                      </span>
+                    )}
                   </div>
-                  <DifficultyBadge difficulty={f.difficulty} label={String(f.difficulty)} className="w-8" />
+                  <DifficultyBadge
+                    difficulty={f.difficulty}
+                    label={String(f.difficulty)}
+                    className="w-8"
+                  />
                 </div>
               );
             })}
@@ -126,7 +163,10 @@ function PlayerDetailPage() {
             <StatDl k={t("fantasy.expected_points")} v={String(p.expectedPoints ?? "—")} />
             <StatDl k={t("fantasy.ownership")} v={`${nf.format(p.ownership)}%`} />
             <StatDl k={t("fantasy.price")} v={nf.format(p.price)} />
-            <StatDl k={t("fantasy.picker.filter_status")} v={t(`player.status.${p.status}` as TranslationKey)} />
+            <StatDl
+              k={t("fantasy.picker.filter_status")}
+              v={t(`player.status.${p.status}` as TranslationKey)}
+            />
           </dl>
         )}
 
@@ -144,7 +184,9 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] px-2 py-3 text-center">
       <div className="text-lg font-black tabular-nums text-brand-accent">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
     </div>
   );
 }

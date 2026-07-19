@@ -60,11 +60,17 @@ function TransfersPage() {
     queryFn: () => fantasyService.getTeam(),
     enabled: !isCloud,
   });
-  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
+  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
 
-  const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
+  const playersQ = useQuery({
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
+  const gwQ = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => botolaService.getCurrentGameweek(),
+  });
 
   const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
     isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
@@ -94,8 +100,8 @@ function TransfersPage() {
   const { requireAuth } = useAuth();
 
   // H5 — Draft key (cloud-only).
-  const teamId = isCloud ? owned.snapshot?.teamId ?? "new" : null;
-  const baseVersion = isCloud ? owned.snapshot?.version ?? 0 : 0;
+  const teamId = isCloud ? (owned.snapshot?.teamId ?? "new") : null;
+  const baseVersion = isCloud ? (owned.snapshot?.version ?? 0) : 0;
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
     if (!isCloud || !owned.userId) return null;
     return {
@@ -166,10 +172,12 @@ function TransfersPage() {
     chips: fantasyState.chips,
     outIds,
     inIds,
-    netCost: outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+    netCost:
+      outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
   });
 
-  const canReview = preview.totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget && !locked;
+  const canReview =
+    preview.totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget && !locked;
   const hasWorkingChanges = outIds.length > 0 || inIds.length > 0;
 
   const startReplace = (playerId: string) => {
@@ -244,14 +252,17 @@ function TransfersPage() {
       chips: fantasyState.chips,
       outIds,
       inIds,
-      netCost: outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+      netCost:
+        outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
       deadlineIso: gwQ.data?.deadline,
     });
     if (!res.ok) {
       const key: TranslationKey =
-        res.error === "deadline_passed" ? "fantasy.transfers.error.deadline"
-        : res.error === "over_budget" ? "fantasy.transfers.error.over_budget"
-        : "fantasy.transfers.error.no_changes";
+        res.error === "deadline_passed"
+          ? "fantasy.transfers.error.deadline"
+          : res.error === "over_budget"
+            ? "fantasy.transfers.error.over_budget"
+            : "fantasy.transfers.error.no_changes";
       toast.error(t(key));
       return;
     }
@@ -364,20 +375,29 @@ function TransfersPage() {
   };
 
   const pickerOut = pickerFor ? playerOf(pickerFor) : null;
-  const pickerMaxPrice = pickerOut ? maxAffordableReplacement(pickerOut.price, team.bank) : undefined;
+  const pickerMaxPrice = pickerOut
+    ? maxAffordableReplacement(pickerOut.price, team.bank)
+    : undefined;
 
-  const chipLabel: string | null = preview.chipActive === "wildcard"
-    ? t("fantasy.chip.wildcard")
-    : preview.chipActive === "free_hit"
-      ? t("fantasy.chip.free_hit")
-      : null;
+  const chipLabel: string | null =
+    preview.chipActive === "wildcard"
+      ? t("fantasy.chip.wildcard")
+      : preview.chipActive === "free_hit"
+        ? t("fantasy.chip.free_hit")
+        : null;
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.transfers.title")}</span></h1>
+        <h1 className="text-xl font-black text-foreground">
+          <span className="text-brand">{t("fantasy.transfers.title")}</span>
+        </h1>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <Stat label={t("fantasy.bank")} value={nf.format(preview.bankAfter)} accent={preview.overBudget} />
+          <Stat
+            label={t("fantasy.bank")}
+            value={nf.format(preview.bankAfter)}
+            accent={preview.overBudget}
+          />
           <Stat label={t("fantasy.transfers.free")} value={String(preview.freeTransfersAfter)} />
           <Stat label={t("fantasy.transfers.hit")} value={`-${preview.hitPoints}`} />
           {chipLabel && <Stat label={t("fantasy.transfers.chip_active")} value={chipLabel} />}
@@ -391,7 +411,9 @@ function TransfersPage() {
           className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-900"
         >
           <Lock className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="min-w-0">{t(finalized ? "fantasy.transfers.gw_closed" : "fantasy.transfers.deadline_locked")}</span>
+          <span className="min-w-0">
+            {t(finalized ? "fantasy.transfers.gw_closed" : "fantasy.transfers.deadline_locked")}
+          </span>
         </div>
       )}
 
@@ -440,7 +462,8 @@ function TransfersPage() {
                 .map((p) => {
                   const inOut = outIds.includes(p.id);
                   const replacementIdx = outIds.indexOf(p.id);
-                  const replacement = replacementIdx >= 0 ? inPlayers.find((_, i) => i === replacementIdx) : null;
+                  const replacement =
+                    replacementIdx >= 0 ? inPlayers.find((_, i) => i === replacementIdx) : null;
                   return (
                     <li
                       key={p.id}
@@ -449,7 +472,13 @@ function TransfersPage() {
                       {clubOf(p.clubId) && <ClubCrest club={clubOf(p.clubId)!} size="sm" />}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <span className={inOut ? "line-through text-muted-foreground text-sm font-bold" : "text-sm font-bold text-foreground"}>
+                          <span
+                            className={
+                              inOut
+                                ? "line-through text-muted-foreground text-sm font-bold"
+                                : "text-sm font-bold text-foreground"
+                            }
+                          >
                             {tr(p.name)}
                           </span>
                           {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
@@ -461,7 +490,8 @@ function TransfersPage() {
                         )}
                         {!replacement && (
                           <div className="text-[11px] text-muted-foreground">
-                            {t("fantasy.price")} {nf.format(p.price)} · {t("fantasy.form")} {nf.format(p.form)}
+                            {t("fantasy.price")} {nf.format(p.price)} · {t("fantasy.form")}{" "}
+                            {nf.format(p.form)}
                           </div>
                         )}
                       </div>
@@ -478,7 +508,8 @@ function TransfersPage() {
                           disabled={locked}
                           className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-3 py-2 text-[11px] font-semibold text-white disabled:opacity-40"
                         >
-                          <ArrowRightLeft className="h-3 w-3" aria-hidden /> {t("fantasy.transfers.title")}
+                          <ArrowRightLeft className="h-3 w-3" aria-hidden />{" "}
+                          {t("fantasy.transfers.title")}
                         </button>
                       )}
                     </li>
@@ -540,8 +571,14 @@ function TransfersPage() {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`rounded-xl px-2 py-1 ring-1 ring-black/5 ${accent ? "bg-red-500/10" : "bg-white/60"}`}>
-      <div className={`text-xs font-black tabular-nums ${accent ? "text-red-700" : "text-foreground"}`}>{value}</div>
+    <div
+      className={`rounded-xl px-2 py-1 ring-1 ring-black/5 ${accent ? "bg-red-500/10" : "bg-white/60"}`}
+    >
+      <div
+        className={`text-xs font-black tabular-nums ${accent ? "text-red-700" : "text-foreground"}`}
+      >
+        {value}
+      </div>
       <div className="text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div>
     </div>
   );

@@ -1,14 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  MapPin,
-  Trophy,
-  CalendarClock,
-  Share2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Trophy, CalendarClock, Share2 } from "lucide-react";
 import { botolaService } from "@/services/mock";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -31,10 +24,16 @@ function MatchDetailPage() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
-  const matchesQ = useQuery({ queryKey: ["matches", "all"], queryFn: () => botolaService.getMatches() });
+  const matchesQ = useQuery({
+    queryKey: ["matches", "all"],
+    queryFn: () => botolaService.getMatches(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const tableQ = useQuery({ queryKey: ["table"], queryFn: () => botolaService.getTable() });
-  const articlesQ = useQuery({ queryKey: ["articles", "all"], queryFn: () => botolaService.getArticles() });
+  const articlesQ = useQuery({
+    queryKey: ["articles", "all"],
+    queryFn: () => botolaService.getArticles(),
+  });
 
   const match = useMemo(
     () => matchesQ.data?.find((m) => m.id === matchId),
@@ -59,9 +58,7 @@ function MatchDetailPage() {
   const related = useMemo(() => {
     if (!match || !articlesQ.data) return [];
     return articlesQ.data
-      .filter(
-        (a) => a.clubIds.includes(match.homeClubId) || a.clubIds.includes(match.awayClubId),
-      )
+      .filter((a) => a.clubIds.includes(match.homeClubId) || a.clubIds.includes(match.awayClubId))
       .slice(0, 3);
   }, [match, articlesQ.data]);
 
@@ -77,7 +74,9 @@ function MatchDetailPage() {
     return (
       <AppShell backgroundVariant="matches">
         <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] p-6 text-center shadow-card">
-          <h1 className="text-lg font-black text-foreground">{t("matches.detail.not_found_title")}</h1>
+          <h1 className="text-lg font-black text-foreground">
+            {t("matches.detail.not_found_title")}
+          </h1>
           <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
             {t("matches.detail.not_found_desc")}
           </p>
@@ -94,7 +93,9 @@ function MatchDetailPage() {
 
   const kickoff = new Date(match.kickoff);
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  const timeFmt = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(kickoff);
+  const timeFmt = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
+    kickoff,
+  );
   const dateFmt = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
@@ -311,10 +312,7 @@ function MatchDetailPage() {
 
       {/* Head-to-head */}
       <Section index={1}>
-        <SectionHeader
-          title={t("matches.detail.head_to_head")}
-          eyebrow="H2H"
-        />
+        <SectionHeader title={t("matches.detail.head_to_head")} eyebrow="H2H" />
         {h2h.length === 0 ? (
           <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-6 text-center text-sm text-[color:var(--text-secondary)]">
             {t("matches.detail.no_h2h")}
@@ -334,10 +332,7 @@ function MatchDetailPage() {
       {/* Related news */}
       {related.length > 0 && (
         <Section index={2}>
-          <SectionHeader
-            title={t("matches.detail.related_news")}
-            eyebrow={t("news.title")}
-          />
+          <SectionHeader title={t("matches.detail.related_news")} eyebrow={t("news.title")} />
           <div className="grid gap-2.5">
             {related.map((a) => (
               <ArticleCard key={a.id} article={a} variant="horizontal" />
@@ -351,15 +346,7 @@ function MatchDetailPage() {
   );
 }
 
-function MetaCell({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function MetaCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="min-w-0">
       <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
@@ -404,7 +391,9 @@ function StandingsCard({
           <span aria-hidden>·</span>
           <span className="tabular-nums">{row.points} pts</span>
           <span aria-hidden>·</span>
-          <span className="tabular-nums">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</span>
+          <span className="tabular-nums">
+            {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+          </span>
         </div>
       </div>
     </div>

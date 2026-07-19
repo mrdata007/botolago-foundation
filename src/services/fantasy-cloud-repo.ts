@@ -114,12 +114,10 @@ type PgErrorLike = { code?: string; message?: string; details?: string | null };
 export function mapSupabaseError(err: unknown): FantasyCloudError {
   if (err instanceof FantasyCloudError) return err;
   if (err instanceof MissingIdMappingError) {
-    return new FantasyCloudError(
-      "id_mapping_unavailable",
-      err.message,
-      err,
-      { players: err.missingPlayers, clubs: err.missingClubs },
-    );
+    return new FantasyCloudError("id_mapping_unavailable", err.message, err, {
+      players: err.missingPlayers,
+      clubs: err.missingClubs,
+    });
   }
   const e = err as PgErrorLike | null;
   const msg = e?.message ?? "";
@@ -202,7 +200,10 @@ const LEGAL_FORMATIONS: ReadonlySet<FormationKey> = new Set([
 
 export function validateSquadShape(squad: SquadPlayer[], formation: FormationKey): void {
   if (squad.length !== 15) {
-    throw new FantasyCloudError("validation", `Squad must have exactly 15 players (got ${squad.length}).`);
+    throw new FantasyCloudError(
+      "validation",
+      `Squad must have exactly 15 players (got ${squad.length}).`,
+    );
   }
   const slots = new Set<number>();
   const ids = new Set<string>();
@@ -214,7 +215,8 @@ export function validateSquadShape(squad: SquadPlayer[], formation: FormationKey
     }
     if (slots.has(s.slot)) throw new FantasyCloudError("validation", `Duplicate slot ${s.slot}.`);
     slots.add(s.slot);
-    if (ids.has(s.playerId)) throw new FantasyCloudError("validation", `Duplicate player ${s.playerId}.`);
+    if (ids.has(s.playerId))
+      throw new FantasyCloudError("validation", `Duplicate player ${s.playerId}.`);
     ids.add(s.playerId);
     if (s.isCaptain) {
       if (captain) throw new FantasyCloudError("validation", "Exactly one captain required.");
@@ -227,7 +229,8 @@ export function validateSquadShape(squad: SquadPlayer[], formation: FormationKey
   }
   if (!captain) throw new FantasyCloudError("validation", "Missing captain.");
   if (!vice) throw new FantasyCloudError("validation", "Missing vice-captain.");
-  if (captain === vice) throw new FantasyCloudError("validation", "Captain and vice-captain must differ.");
+  if (captain === vice)
+    throw new FantasyCloudError("validation", "Captain and vice-captain must differ.");
   if (!LEGAL_FORMATIONS.has(formation)) {
     throw new FantasyCloudError("validation", `Illegal formation ${formation}.`);
   }
@@ -289,25 +292,33 @@ export interface FantasyCloudRepo {
     chip?: string | null;
     idMap?: FantasyIdMap;
   }): Promise<{ id: string }>;
-  loadConfirmedTransfers(teamId: string): Promise<Array<{
-    id: string;
-    gameweekId: string;
-    playerOutSourceId: string | undefined;
-    playerInSourceId: string | undefined;
-    priceOut: number;
-    priceIn: number;
-    cost: number;
-    hit: number;
-    chip: string | null;
-    confirmedAt: string | null;
-  }>>;
+  loadConfirmedTransfers(teamId: string): Promise<
+    Array<{
+      id: string;
+      gameweekId: string;
+      playerOutSourceId: string | undefined;
+      playerInSourceId: string | undefined;
+      priceOut: number;
+      priceIn: number;
+      cost: number;
+      hit: number;
+      chip: string | null;
+      confirmedAt: string | null;
+    }>
+  >;
   upsertGameweekResult(input: {
     teamId: string;
     gameweekId: string;
     payload: Record<string, Json>;
   }): Promise<{ id: string }>;
   loadGameweekResults(teamId: string): Promise<CloudGameweekResult[]>;
-  recordChipUse(input: { teamId: string; gameweekId: string; chip: string; season: string; state?: string }): Promise<{ id: string }>;
+  recordChipUse(input: {
+    teamId: string;
+    gameweekId: string;
+    chip: string;
+    season: string;
+    state?: string;
+  }): Promise<{ id: string }>;
   finalizeChipUse(input: { id: string }): Promise<void>;
   loadChipUses(teamId: string): Promise<CloudChipUse[]>;
 }
@@ -416,7 +427,16 @@ export const fantasyCloudRepo: FantasyCloudRepo = {
     return rowToTeam(data, squad, purchasePrices);
   },
 
-  async saveTeam({ teamName, managerName, formation, bank, currentGameweekId, squad, purchasePrices, idMap }) {
+  async saveTeam({
+    teamName,
+    managerName,
+    formation,
+    bank,
+    currentGameweekId,
+    squad,
+    purchasePrices,
+    idMap,
+  }) {
     validateSquadShape(squad, formation);
     const resolved = idMap ?? (await loadIdMap());
     const mapped = mapSquad(squad, resolved);
@@ -544,7 +564,9 @@ export const fantasyCloudRepo: FantasyCloudRepo = {
       benchBoostPoints: r.bench_boost_points,
       tripleCaptainPoints: r.triple_captain_points,
       transferHit: r.transfer_hit,
-      effectiveCaptainSourceId: r.effective_captain_id ? unmapPlayerId(r.effective_captain_id, idMap) ?? null : null,
+      effectiveCaptainSourceId: r.effective_captain_id
+        ? (unmapPlayerId(r.effective_captain_id, idMap) ?? null)
+        : null,
       captainMultiplier: r.captain_multiplier,
       autoSubs: r.auto_subs,
       chip: r.chip,

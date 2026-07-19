@@ -4,7 +4,13 @@
  * Kept intentionally compact so it reads as a supporting label, never
  * competing with the headline.
  */
-export function AccentEyebrow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function AccentEyebrow({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={`text-[11px] font-black uppercase tracking-[0.14em] text-brand ${className}`.trim()}

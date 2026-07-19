@@ -20,7 +20,14 @@ interface JerseyVisualProps {
  * several deterministic kit patterns and an optional pixel image with
  * graceful fallback.
  */
-export function JerseyVisual({ kit, size = 48, imageUrl, className, ariaLabel, selected }: JerseyVisualProps) {
+export function JerseyVisual({
+  kit,
+  size = 48,
+  imageUrl,
+  className,
+  ariaLabel,
+  selected,
+}: JerseyVisualProps) {
   const [imgFailed, setImgFailed] = useState(false);
 
   if (imageUrl && !imgFailed) {

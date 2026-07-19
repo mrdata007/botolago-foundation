@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
@@ -34,7 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = authService.subscribeToSession(setSession);
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, []);
 
   // Sign-out / account-switch cleanup: purge owned Fantasy cache + drafts for
@@ -65,16 +76,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => setSession(authService.getSession()), []);
 
-  const value = useMemo<AuthContextValue>(() => ({
-    user: session.user,
-    status: session.status,
-    profileComplete: session.user?.profileComplete ?? false,
-    requireAuth,
-    prompt,
-    closePrompt,
-    signOut,
-    refresh,
-  }), [session, prompt, requireAuth, closePrompt, signOut, refresh]);
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user: session.user,
+      status: session.status,
+      profileComplete: session.user?.profileComplete ?? false,
+      requireAuth,
+      prompt,
+      closePrompt,
+      signOut,
+      refresh,
+    }),
+    [session, prompt, requireAuth, closePrompt, signOut, refresh],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

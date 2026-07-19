@@ -72,7 +72,7 @@ describe("runOwnedMutation — H1 foundation", () => {
 
     // Mutation A: succeeds with a delayed idle timer.
     const pA = runOwnedMutation(ctx as any, {
-      action: async () => ({ version: 1 } as any),
+      action: async () => ({ version: 1 }) as any,
       args: undefined,
       savedIdleAfterMs: 10,
     });
@@ -105,7 +105,9 @@ describe("runOwnedMutation — H1 foundation", () => {
 
     const err = new FantasyRepoError("permission_denied", "RLS");
     const res = await runOwnedMutation(ctx as any, {
-      action: async () => { throw err; },
+      action: async () => {
+        throw err;
+      },
       args: undefined,
       matchingDraftKey: draftKey,
     });
@@ -129,7 +131,9 @@ describe("runOwnedMutation — H1 foundation", () => {
 
     const err = new FantasyRepoError("version_conflict", "stale");
     const res = await runOwnedMutation(ctx as any, {
-      action: async () => { throw err; },
+      action: async () => {
+        throw err;
+      },
       args: undefined,
       matchingDraftKey: draftKey,
     });

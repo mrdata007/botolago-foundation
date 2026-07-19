@@ -43,8 +43,12 @@ describe("clearOwnedFantasyCache", () => {
     qc.setQueryData(scopedFantasyKey({ source: "local", owner: "__local__" }, "team"), { x: 2 });
     qc.setQueryData(["public", "articles"], [{ id: 1 }]);
     clearOwnedFantasyCache(qc);
-    expect(qc.getQueryData(scopedFantasyKey({ source: "cloud", owner: "u1" }, "team"))).toBeUndefined();
-    expect(qc.getQueryData(scopedFantasyKey({ source: "local", owner: "__local__" }, "team"))).toBeUndefined();
+    expect(
+      qc.getQueryData(scopedFantasyKey({ source: "cloud", owner: "u1" }, "team")),
+    ).toBeUndefined();
+    expect(
+      qc.getQueryData(scopedFantasyKey({ source: "local", owner: "__local__" }, "team")),
+    ).toBeUndefined();
     expect(qc.getQueryData(["public", "articles"])).toEqual([{ id: 1 }]);
   });
 });

@@ -37,12 +37,14 @@ function LeaguesPage() {
     queryKey: ["persisted-leagues"],
     queryFn: () => Promise.resolve(leaguesStore.list()),
   });
-  const remoteQ = useQuery({ queryKey: ["fantasy-leagues", tab], queryFn: () => fantasyService.getLeagues(tab) });
+  const remoteQ = useQuery({
+    queryKey: ["fantasy-leagues", tab],
+    queryFn: () => fantasyService.getLeagues(tab),
+  });
 
   const persisted = persistedQ.data ?? [];
-  const leagues = tab === "private"
-    ? [...persisted, ...(remoteQ.data ?? [])]
-    : (remoteQ.data ?? []);
+  const leagues =
+    tab === "private" ? [...persisted, ...(remoteQ.data ?? [])] : (remoteQ.data ?? []);
 
   const showToast = (msg: string, kind: "ok" | "err" = "ok") => {
     setToast({ msg, kind });
@@ -76,12 +78,19 @@ function LeaguesPage() {
     });
   };
   const copy = (code: string) => {
-    try { navigator.clipboard.writeText(code); showToast(t("fantasy.leagues.copied")); } catch { /* ignore */ }
+    try {
+      navigator.clipboard.writeText(code);
+      showToast(t("fantasy.leagues.copied"));
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground"><span className="text-brand">{t("fantasy.leagues.title")}</span></h1>
+      <h1 className="text-xl font-black text-foreground">
+        <span className="text-brand">{t("fantasy.leagues.title")}</span>
+      </h1>
 
       <div className="mt-3 glass-surface glass-strong flex items-center gap-1 rounded-2xl border border-[var(--glass-border)] p-1">
         {tabs.map((it) => (
@@ -90,7 +99,9 @@ function LeaguesPage() {
             onClick={() => setTab(it.key)}
             className={cn(
               "flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
-              tab === it.key ? "bg-[color:var(--brand-primary)] text-white shadow" : "text-muted-foreground hover:text-foreground",
+              tab === it.key
+                ? "bg-[color:var(--brand-primary)] text-white shadow"
+                : "text-muted-foreground hover:text-foreground",
             )}
             aria-pressed={tab === it.key}
           >
@@ -126,7 +137,8 @@ function LeaguesPage() {
                 )}
               </div>
               <div className="text-[11px] text-muted-foreground">
-                {nf.format(l.members)} {t("fantasy.leagues.members")} · {t("fantasy.leagues.leader")}: {l.leaderName ?? "—"}
+                {nf.format(l.members)} {t("fantasy.leagues.members")} ·{" "}
+                {t("fantasy.leagues.leader")}: {l.leaderName ?? "—"}
               </div>
             </div>
             <div className="text-end">
@@ -173,17 +185,26 @@ function LeaguesPage() {
 
       {persisted.length > 0 && tab === "private" && (
         <div className="mt-3 space-y-2">
-          {persisted.map((l) => l.code && (
-            <div key={l.id} className="flex items-center justify-between rounded-xl border border-[color:var(--brand-accent)]/40 bg-[color:var(--brand-accent)]/10 px-3 py-2 text-sm">
-              <div className="min-w-0">
-                <div className="truncate text-[11px] text-muted-foreground">{l.name}</div>
-                <div className="font-mono font-black text-foreground">{l.code}</div>
-              </div>
-              <button onClick={() => copy(l.code!)} className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-xs font-semibold ring-1 ring-black/10">
-                <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
-              </button>
-            </div>
-          ))}
+          {persisted.map(
+            (l) =>
+              l.code && (
+                <div
+                  key={l.id}
+                  className="flex items-center justify-between rounded-xl border border-[color:var(--brand-accent)]/40 bg-[color:var(--brand-accent)]/10 px-3 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-[11px] text-muted-foreground">{l.name}</div>
+                    <div className="font-mono font-black text-foreground">{l.code}</div>
+                  </div>
+                  <button
+                    onClick={() => copy(l.code!)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-xs font-semibold ring-1 ring-black/10"
+                  >
+                    <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
+                  </button>
+                </div>
+              ),
+          )}
         </div>
       )}
 

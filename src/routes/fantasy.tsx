@@ -9,9 +9,15 @@ export const Route = createFileRoute("/fantasy")({
   head: () => ({
     meta: [
       { title: "Fantasy — BotolaGO" },
-      { name: "description", content: "Créez votre équipe fantasy de la Botola Pro et affrontez vos amis." },
+      {
+        name: "description",
+        content: "Créez votre équipe fantasy de la Botola Pro et affrontez vos amis.",
+      },
       { property: "og:title", content: "Fantasy — BotolaGO" },
-      { property: "og:description", content: "Créez votre équipe fantasy de la Botola Pro et affrontez vos amis." },
+      {
+        property: "og:description",
+        content: "Créez votre équipe fantasy de la Botola Pro et affrontez vos amis.",
+      },
     ],
   }),
   component: FantasyLayout,

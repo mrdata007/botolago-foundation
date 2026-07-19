@@ -41,7 +41,10 @@ export function TransferReviewPanel({
 
       <ul className="mt-3 grid gap-2">
         {rows.map(({ out, in: inP }, i) => (
-          <li key={i} className="flex items-center gap-2 rounded-xl bg-white/60 p-2 ring-1 ring-black/5">
+          <li
+            key={i}
+            className="flex items-center gap-2 rounded-xl bg-white/60 p-2 ring-1 ring-black/5"
+          >
             <div className="flex min-w-0 flex-1 items-center gap-2">
               {clubOf(out.clubId) && <ClubCrest club={clubOf(out.clubId)!} size="sm" />}
               <div className="min-w-0">
@@ -54,9 +57,13 @@ export function TransferReviewPanel({
             <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
               <div className="min-w-0 text-end">
-                <div className="truncate text-xs font-bold text-emerald-700">+ {inP ? tr(inP.name) : "—"}</div>
+                <div className="truncate text-xs font-bold text-emerald-700">
+                  + {inP ? tr(inP.name) : "—"}
+                </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {inP ? `${t(`player.pos.${inP.position}` as TranslationKey)} · ${nf.format(inP.price)}` : "—"}
+                  {inP
+                    ? `${t(`player.pos.${inP.position}` as TranslationKey)} · ${nf.format(inP.price)}`
+                    : "—"}
                 </div>
               </div>
               {inP && clubOf(inP.clubId) && <ClubCrest club={clubOf(inP.clubId)!} size="sm" />}
@@ -108,7 +115,9 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-white/60 px-2 py-2 ring-1 ring-black/5">
       <div className="text-sm font-black tabular-nums text-foreground">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
     </div>
   );
 }

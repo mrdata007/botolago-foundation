@@ -31,11 +31,29 @@ function mkPlayer(id: string, position: FantasyPlayer["position"]): FantasyPlaye
 // Slot 1 GK, 2-5 DEF (4), 6-8 MID (3), 9-11 FWD (3) — matches 4-3-3.
 // Bench 12 GK, 13 DEF, 14 MID, 15 FWD.
 const positions: FantasyPlayer["position"][] = [
-  "GK", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD",
-  "GK", "DEF", "MID", "FWD",
+  "GK",
+  "DEF",
+  "DEF",
+  "DEF",
+  "DEF",
+  "MID",
+  "MID",
+  "MID",
+  "FWD",
+  "FWD",
+  "FWD",
+  "GK",
+  "DEF",
+  "MID",
+  "FWD",
 ];
 
-function mkFixtures(opts: { captain: string; vice: string; formation?: FantasyTeam["formation"] } = { captain: "p8", vice: "p9" }) {
+function mkFixtures(
+  opts: { captain: string; vice: string; formation?: FantasyTeam["formation"] } = {
+    captain: "p8",
+    vice: "p9",
+  },
+) {
   const players: FantasyPlayer[] = positions.map((pos, i) => mkPlayer(`p${i + 1}`, pos));
   const squad: SquadPlayer[] = players.map((p, i) => ({
     playerId: p.id,
@@ -88,7 +106,12 @@ describe("points-service — buildPointsViewModel", () => {
     const { players, team } = mkFixtures({ captain: "p8", vice: "p9" });
     const breakdown = mkBreakdown(team);
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown,
     });
     // 11 starters x 5 = 55; captain (5) doubled → +5 bonus = 60
     expect(vm.totalPoints).toBe(60);
@@ -105,7 +128,12 @@ describe("points-service — buildPointsViewModel", () => {
     const breakdown = mkBreakdown(team, { p8: { pts: 10, minutes: 90 } });
     const chips: ChipsState = { active: "triple_captain", used: [] };
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips,
+      transferHitPoints: 0,
+      breakdown,
     });
     // 10 starters x5 = 50; captain 10 x 3 = 30 → 80
     expect(vm.captainMultiplier).toBe(3);
@@ -118,7 +146,12 @@ describe("points-service — buildPointsViewModel", () => {
     const { players, team } = mkFixtures({ captain: "p8", vice: "p9" });
     const breakdown = mkBreakdown(team, { p8: { pts: 0, minutes: 0 } });
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown,
     });
     expect(vm.effectiveCaptainId).toBe("p9");
     expect(vm.captainTookOver).toBe(true);
@@ -132,7 +165,12 @@ describe("points-service — buildPointsViewModel", () => {
       p9: { pts: 0, minutes: 0 },
     });
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown,
     });
     expect(vm.effectiveCaptainId).toBeNull();
     expect(vm.captainMultiplier).toBe(1);
@@ -149,7 +187,12 @@ describe("points-service — buildPointsViewModel", () => {
     });
     const chips: ChipsState = { active: "bench_boost", used: [] };
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips,
+      transferHitPoints: 0,
+      breakdown,
     });
     // XI (with cap): 60. Bench: 3+4+2+6 = 15 → 75
     expect(vm.benchBoostContribution).toBe(15);
@@ -166,7 +209,12 @@ describe("points-service — buildPointsViewModel", () => {
       p13: { pts: 6, minutes: 90 },
     });
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown,
     });
     expect(vm.autoSubs.length).toBeGreaterThan(0);
     const sub = vm.autoSubs.find((s) => s.outId === "p2");
@@ -181,7 +229,12 @@ describe("points-service — buildPointsViewModel", () => {
     const { players, team } = mkFixtures({ captain: "p8", vice: "p9" });
     const breakdown = mkBreakdown(team);
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 8, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 8,
+      breakdown,
     });
     // 60 raw XI - 8 hit = 52
     expect(vm.totalPoints).toBe(52);
@@ -192,8 +245,14 @@ describe("points-service — buildPointsViewModel", () => {
   it("legacy view model preserves mock totals without engine fields", () => {
     const vm = buildLegacyViewModel(
       {
-        gameweek: 13, totalPoints: 62, benchPoints: 3, captainId: "p8",
-        averagePoints: 44, highestPoints: 88, autoSubs: [], breakdown: [],
+        gameweek: 13,
+        totalPoints: 62,
+        benchPoints: 3,
+        captainId: "p8",
+        averagePoints: 44,
+        highestPoints: 88,
+        autoSubs: [],
+        breakdown: [],
       },
       ["p12", "p13", "p14", "p15"],
       ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11"],
@@ -216,8 +275,12 @@ describe("fantasyStateStore — result persistence", () => {
       g.window = {
         localStorage: {
           getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-          setItem: (k: string, v: string) => { store.set(k, v); },
-          removeItem: (k: string) => { store.delete(k); },
+          setItem: (k: string, v: string) => {
+            store.set(k, v);
+          },
+          removeItem: (k: string) => {
+            store.delete(k);
+          },
           clear: () => store.clear(),
         },
         dispatchEvent: () => true,
@@ -230,7 +293,12 @@ describe("fantasyStateStore — result persistence", () => {
     const { players, team } = mkFixtures({ captain: "p8", vice: "p9" });
     const breakdown = mkBreakdown(team);
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown,
     });
     fantasyStateStore.saveResult(14, vm);
     const back = fantasyStateStore.getResult(14);
@@ -245,7 +313,12 @@ describe("fantasyStateStore — result persistence", () => {
     const { players, team } = mkFixtures({ captain: "p8", vice: "p9" });
     const breakdown = mkBreakdown(team);
     const vm = buildPointsViewModel({
-      gameweek: 14, team, players, chips: DEFAULT_CHIPS, transferHitPoints: 0, breakdown,
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown,
     });
     fantasyStateStore.saveResult(14, vm);
     fantasyStateStore.saveResult(13, { ...vm, gameweek: 13, totalPoints: 42 });

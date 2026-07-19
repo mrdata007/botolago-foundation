@@ -6,14 +6,7 @@ import type { LocalizedString, Player } from "@/types/domain";
 export type Position = "GK" | "DEF" | "MID" | "FWD";
 
 // Valid Botola-fantasy formations (starting XI = 11)
-export type FormationKey =
-  | "3-4-3"
-  | "3-5-2"
-  | "4-3-3"
-  | "4-4-2"
-  | "4-5-1"
-  | "5-3-2"
-  | "5-4-1";
+export type FormationKey = "3-4-3" | "3-5-2" | "4-3-3" | "4-4-2" | "4-5-1" | "5-3-2" | "5-4-1";
 
 export const FORMATIONS: Record<FormationKey, { DEF: number; MID: number; FWD: number }> = {
   "3-4-3": { DEF: 3, MID: 4, FWD: 3 },
@@ -76,7 +69,7 @@ export interface FantasyTeam {
 
 export interface TransferDraft {
   out: string[]; // player ids
-  in: string[];  // player ids
+  in: string[]; // player ids
 }
 
 export interface League {

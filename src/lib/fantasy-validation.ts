@@ -26,11 +26,18 @@ export function validateSquad(input: SquadInput): ValidationIssue[] {
   const budget = input.budget ?? SQUAD_RULES.budget;
   const ids = input.playerIds;
   const dedup = new Set(ids);
-  if (dedup.size !== ids.length) issues.push({ code: "duplicate", key: "fantasy.validation.duplicate" });
+  if (dedup.size !== ids.length)
+    issues.push({ code: "duplicate", key: "fantasy.validation.duplicate" });
   if (ids.length !== SQUAD_RULES.totalSize)
-    issues.push({ code: "squad_size", key: "fantasy.validation.squad_size", extra: { n: SQUAD_RULES.totalSize } });
+    issues.push({
+      code: "squad_size",
+      key: "fantasy.validation.squad_size",
+      extra: { n: SQUAD_RULES.totalSize },
+    });
 
-  const players = ids.map((id) => input.players.find((p) => p.id === id)).filter(Boolean) as FantasyPlayer[];
+  const players = ids
+    .map((id) => input.players.find((p) => p.id === id))
+    .filter(Boolean) as FantasyPlayer[];
   const byPos: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
   const byClub: Record<string, number> = {};
   let cost = 0;
@@ -41,14 +48,26 @@ export function validateSquad(input: SquadInput): ValidationIssue[] {
   });
   (Object.keys(SQUAD_RULES.perPosition) as Position[]).forEach((pos) => {
     if (byPos[pos] !== SQUAD_RULES.perPosition[pos])
-      issues.push({ code: "position_count", key: "fantasy.validation.position_count", extra: { pos, n: SQUAD_RULES.perPosition[pos] } });
+      issues.push({
+        code: "position_count",
+        key: "fantasy.validation.position_count",
+        extra: { pos, n: SQUAD_RULES.perPosition[pos] },
+      });
   });
   Object.entries(byClub).forEach(([clubId, n]) => {
     if (n > SQUAD_RULES.maxPerClub)
-      issues.push({ code: "club_limit", key: "fantasy.validation.club_limit", extra: { clubId, max: SQUAD_RULES.maxPerClub } });
+      issues.push({
+        code: "club_limit",
+        key: "fantasy.validation.club_limit",
+        extra: { clubId, max: SQUAD_RULES.maxPerClub },
+      });
   });
   if (cost - input.bank > budget)
-    issues.push({ code: "budget", key: "fantasy.validation.budget", extra: { over: (cost - input.bank - budget).toFixed(1) } });
+    issues.push({
+      code: "budget",
+      key: "fantasy.validation.budget",
+      extra: { over: (cost - input.bank - budget).toFixed(1) },
+    });
 
   return issues;
 }
@@ -59,10 +78,16 @@ export interface FormationCheckInput {
   formation: FormationKey;
 }
 
-export function validateFormation({ startingIds, players, formation }: FormationCheckInput): ValidationIssue[] {
+export function validateFormation({
+  startingIds,
+  players,
+  formation,
+}: FormationCheckInput): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const cfg = FORMATIONS[formation];
-  const list = startingIds.map((id) => players.find((p) => p.id === id)).filter(Boolean) as FantasyPlayer[];
+  const list = startingIds
+    .map((id) => players.find((p) => p.id === id))
+    .filter(Boolean) as FantasyPlayer[];
   const gk = list.filter((p) => p.position === "GK").length;
   const def = list.filter((p) => p.position === "DEF").length;
   const mid = list.filter((p) => p.position === "MID").length;

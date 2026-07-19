@@ -7,7 +7,7 @@ import { SQUAD_RULES } from "@/types/fantasy";
 export interface BudgetImpact {
   outCost: number;
   inCost: number;
-  delta: number;      // positive = money freed (players out cost more than in)
+  delta: number; // positive = money freed (players out cost more than in)
   bankAfter: number;
   overBudget: boolean;
 }
@@ -37,7 +37,10 @@ export function computeBudgetImpact(args: {
 }
 
 /** Points hit for paid transfers. Free transfers cost 0. */
-export function transferHit(paidTransfers: number, hitPerTransfer = SQUAD_RULES.transferHitPoints): number {
+export function transferHit(
+  paidTransfers: number,
+  hitPerTransfer = SQUAD_RULES.transferHitPoints,
+): number {
   return Math.max(0, paidTransfers) * hitPerTransfer;
 }
 

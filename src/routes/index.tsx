@@ -98,17 +98,44 @@ function HomeContent() {
   const { t, tr, lang } = useI18n();
   const greeting = useGreeting();
 
-  const summaryQ = useQuery({ queryKey: ["fantasy-summary"], queryFn: () => botolaService.getFantasySummary() });
-  const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
-  const matchesQ = useQuery({ queryKey: ["home-matches"], queryFn: () => botolaService.getLiveOrUpcoming() });
-  const alertsQ = useQuery({ queryKey: ["alerts"], queryFn: () => botolaService.getFantasyAlerts() });
-  const playersQ = useQuery({ queryKey: ["all-players-for-alerts"], queryFn: () => botolaService.getTrendingPlayers() });
+  const summaryQ = useQuery({
+    queryKey: ["fantasy-summary"],
+    queryFn: () => botolaService.getFantasySummary(),
+  });
+  const gwQ = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => botolaService.getCurrentGameweek(),
+  });
+  const matchesQ = useQuery({
+    queryKey: ["home-matches"],
+    queryFn: () => botolaService.getLiveOrUpcoming(),
+  });
+  const alertsQ = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => botolaService.getFantasyAlerts(),
+  });
+  const playersQ = useQuery({
+    queryKey: ["all-players-for-alerts"],
+    queryFn: () => botolaService.getTrendingPlayers(),
+  });
   const leadQ = useQuery({ queryKey: ["lead"], queryFn: () => botolaService.getLeadArticle() });
-  const followedQ = useQuery({ queryKey: ["followed"], queryFn: () => botolaService.getFollowedClubs() });
-  const followedNewsQ = useQuery({ queryKey: ["followed-news"], queryFn: () => botolaService.getArticles({ category: "latest" }) });
-  const trendingQ = useQuery({ queryKey: ["trending"], queryFn: () => botolaService.getTrendingPlayers() });
+  const followedQ = useQuery({
+    queryKey: ["followed"],
+    queryFn: () => botolaService.getFollowedClubs(),
+  });
+  const followedNewsQ = useQuery({
+    queryKey: ["followed-news"],
+    queryFn: () => botolaService.getArticles({ category: "latest" }),
+  });
+  const trendingQ = useQuery({
+    queryKey: ["trending"],
+    queryFn: () => botolaService.getTrendingPlayers(),
+  });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const leaguesQ = useQuery({ queryKey: ["leagues"], queryFn: () => botolaService.getPrivateLeagues() });
+  const leaguesQ = useQuery({
+    queryKey: ["leagues"],
+    queryFn: () => botolaService.getPrivateLeagues(),
+  });
 
   const clubById = (id: string) => clubsQ.data?.find((c) => c.id === id);
 
@@ -122,10 +149,7 @@ function HomeContent() {
     return fmt.format(new Date());
   }, [lang]);
 
-  const nf = useMemo(
-    () => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"),
-    [lang],
-  );
+  const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
 
   return (
     <AppShell>
@@ -195,11 +219,7 @@ function HomeContent() {
       {/* Fantasy alerts                                           */}
       {/* -------------------------------------------------------- */}
       <Section index={2}>
-        <SectionHeader
-          eyebrow={t("nav.fantasy")}
-          icon={Bell}
-          title={t("home.fantasy_alerts")}
-        />
+        <SectionHeader eyebrow={t("nav.fantasy")} icon={Bell} title={t("home.fantasy_alerts")} />
         {alertsQ.data && playersQ.data ? (
           alertsQ.data.length === 0 ? (
             <EmptyState compact>{t("state.empty")}</EmptyState>
@@ -215,11 +235,7 @@ function HomeContent() {
       {/* Lead story                                               */}
       {/* -------------------------------------------------------- */}
       <Section index={3}>
-        <SectionHeader
-          eyebrow={t("nav.news")}
-          icon={Newspaper}
-          title={t("home.lead_story")}
-        />
+        <SectionHeader eyebrow={t("nav.news")} icon={Newspaper} title={t("home.lead_story")} />
         {leadQ.data ? (
           <ArticleCard article={leadQ.data} variant="lead" />
         ) : (
@@ -252,22 +268,11 @@ function HomeContent() {
       {/* Trending players                                         */}
       {/* -------------------------------------------------------- */}
       <Section index={5}>
-        <SectionHeader
-          eyebrow={t("nav.fantasy")}
-          icon={TrendingUp}
-          title={t("home.trending")}
-        />
+        <SectionHeader eyebrow={t("nav.fantasy")} icon={TrendingUp} title={t("home.trending")} />
         <div className="grid gap-2">
-          {!trendingQ.data && (
-            <SkeletonList count={4}>{() => <PlayerRowSkeleton />}</SkeletonList>
-          )}
+          {!trendingQ.data && <SkeletonList count={4}>{() => <PlayerRowSkeleton />}</SkeletonList>}
           {trendingQ.data?.map((p, i) => (
-            <PlayerRow
-              key={p.id}
-              player={p}
-              club={clubById(p.clubId)}
-              rank={i + 1}
-            />
+            <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} rank={i + 1} />
           ))}
         </div>
       </Section>
@@ -283,9 +288,7 @@ function HomeContent() {
           action={<ViewAllLink to="/fantasy" />}
         />
         <div className="grid gap-2">
-          {!leaguesQ.data && (
-            <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>
-          )}
+          {!leaguesQ.data && <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>}
           {leaguesQ.data?.map((l) => {
             const delta = l.previousRank - l.rank; // positive = climbed
             const climbed = delta > 0;
@@ -293,9 +296,7 @@ function HomeContent() {
             return (
               <div
                 key={l.id}
-                className={cn(
-                  "surface-2-interactive flex items-center gap-3 px-3 py-3",
-                )}
+                className={cn("surface-2-interactive flex items-center gap-3 px-3 py-3")}
               >
                 <div
                   className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-black text-white shadow-inner"
@@ -317,16 +318,11 @@ function HomeContent() {
                       "bg-[color:color-mix(in_oklab,var(--color-success)_14%,transparent)] text-[color:var(--color-success)]",
                     dropped &&
                       "bg-[color:color-mix(in_oklab,var(--color-danger)_14%,transparent)] text-[color:var(--color-danger)]",
-                    !climbed && !dropped &&
+                    !climbed &&
+                      !dropped &&
                       "bg-[color:var(--surface-hover)] text-[color:var(--text-secondary)]",
                   )}
-                  aria-label={
-                    climbed
-                      ? `+${delta}`
-                      : dropped
-                        ? `${delta}`
-                        : "0"
-                  }
+                  aria-label={climbed ? `+${delta}` : dropped ? `${delta}` : "0"}
                 >
                   <span aria-hidden>{climbed ? "▲" : dropped ? "▼" : "="}</span>
                   {Math.abs(delta) || 0}

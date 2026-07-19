@@ -46,7 +46,9 @@ export function LeagueTable({
             <tr>
               <th className="px-3 py-2 text-start font-black">#</th>
               <th className="px-3 py-2 text-start font-black">{t("fantasy.leagues.manager")}</th>
-              {!compact && <th className="px-2 py-2 text-center font-black">{t("fantasy.leagues.gw")}</th>}
+              {!compact && (
+                <th className="px-2 py-2 text-center font-black">{t("fantasy.leagues.gw")}</th>
+              )}
               <th className="px-3 py-2 text-end font-black">{t("fantasy.leagues.total")}</th>
               <th className="px-2 py-2 text-end font-black">{t("fantasy.leagues.movement")}</th>
             </tr>

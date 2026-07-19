@@ -89,12 +89,7 @@ export function DateStrip({
   }).format(selectedDay);
 
   return (
-    <div
-      className={cn(
-        "surface-3 flex flex-col gap-2 p-2",
-        "border border-[var(--glass-border)]",
-      )}
-    >
+    <div className={cn("surface-3 flex flex-col gap-2 p-2", "border border-[var(--glass-border)]")}>
       {/* Header row: month + Today shortcut */}
       <div className="flex items-center gap-2 px-1">
         <div className="min-w-0 flex-1">
@@ -150,9 +145,7 @@ export function DateStrip({
           {days.map((d) => {
             const active = isSameDay(d, selectedDay);
             const isDayToday = isSameDay(d, today);
-            const dayLabel = isDayToday
-              ? t("matches.date.today")
-              : weekdayFmt.format(d);
+            const dayLabel = isDayToday ? t("matches.date.today") : weekdayFmt.format(d);
             return (
               <button
                 key={d.toISOString()}
