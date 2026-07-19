@@ -23,6 +23,15 @@ import {
   type PointsViewModel,
 } from "@/services/points-service";
 import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
+import {
+  loadGameweekIndex,
+  resolveGameweekId,
+} from "@/services/fantasy-gameweek-resolver";
+import {
+  selectStableCloudResult,
+  buildCloudFinalizationPlan,
+  buildCloudAdvancePlan,
+} from "@/services/fantasy-cloud-finalize";
 import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-engine";
 import { toast } from "sonner";
 import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
