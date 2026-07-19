@@ -24,8 +24,14 @@ beforeEach(() => {
       },
     };
   } else {
+    // Some shared shims (e.g., leagues-store test) don't expose `clear`.
+    // Nuke known auth keys explicitly to avoid cross-file bleed.
     try {
-      g.window.localStorage.clear?.();
+      const ls = g.window.localStorage;
+      ls.clear?.();
+      ["botolago.auth.session", "botolago.auth.users", "botolago.auth.pending"].forEach((k) =>
+        ls.removeItem?.(k),
+      );
     } catch {
       /* ignore */
     }
