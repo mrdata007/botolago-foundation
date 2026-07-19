@@ -23,10 +23,11 @@ function FixturesPage() {
   const [clubId, setClubId] = useState("");
   const [range, setRange] = useState<3 | 6>(6);
 
+  const fdData = fdQ.data;
   const grid = useMemo(() => {
-    if (!fdQ.data) return null;
-    const rows = new Map<string, typeof fdQ.data>();
-    for (const f of fdQ.data) {
+    if (!fdData) return null;
+    const rows = new Map<string, typeof fdData>();
+    for (const f of fdData) {
       if (clubId && f.clubId !== clubId) continue;
       const arr = rows.get(f.clubId) ?? [];
       arr.push(f);
@@ -34,7 +35,7 @@ function FixturesPage() {
     }
     for (const arr of rows.values()) arr.sort((a, b) => a.gameweek - b.gameweek);
     return rows;
-  }, [fdQ.data, clubId]);
+  }, [fdData, clubId]);
 
   if (!fdQ.data || !clubsQ.data || !grid) return <LoadingState />;
   const clubs = clubsQ.data;
