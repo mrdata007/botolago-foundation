@@ -23,6 +23,15 @@ import {
   type PointsViewModel,
 } from "@/services/points-service";
 import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
+import {
+  loadGameweekIndex,
+  resolveGameweekId,
+} from "@/services/fantasy-gameweek-resolver";
+import {
+  selectStableCloudResult,
+  buildCloudFinalizationPlan,
+  buildCloudAdvancePlan,
+} from "@/services/fantasy-cloud-finalize";
 import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-engine";
 import { toast } from "sonner";
 import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
@@ -111,6 +120,13 @@ function PointsPage() {
   const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
+  // when advancing. Not needed in local mode.
+  const gwIndexQ = useQuery({
+    queryKey: ["gw-index", DEFAULT_SEASON],
+    queryFn: () => loadGameweekIndex(),
+    enabled: isCloud,
+  });
 
 
   const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
@@ -229,13 +245,25 @@ function PointsPage() {
 
   const canRecompute = isCurrent && deadlineLocked;
 
-  const onRecompute = () => {
+  const onRecompute = async () => {
     if (!canRecompute) {
       toast.error(t("fantasy.points.recompute_locked"));
       return;
     }
     const raw = gwResultQ.data;
     if (!raw?.breakdown.length || !team || !playersQ.data) return;
+
+    if (isCloud) {
+      // H6 — Cloud mode: recompute is a fixture refetch + snapshot reload.
+      // Never mutate fantasyStateStore; the authoritative provisional view
+      // is derived on demand from `owned.snapshot` + breakdown data.
+      await qc.invalidateQueries({ queryKey: ownedKey("gw-result", gw) });
+      await owned.reload();
+      toast.success(t("fantasy.points.recomputed"));
+      return;
+    }
+
+    // Local mode — persist provisional VM so the pitch shows updated points.
     const fresh = buildPointsViewModel({
       gameweek: gw,
       team: team,
@@ -265,48 +293,22 @@ function PointsPage() {
       }
 
       if (isCloud && owned.snapshot?.currentGameweekId) {
-        // Cloud path — authoritative finalize RPC. We compute the view model
-        // here (pure) and derive chipFinalize/postTeam, without touching the
-        // local store.
+        // H6 — Cloud-authoritative finalize via pure planner.
         try {
-          const vm0 = buildPointsViewModel({
-            gameweek: gw,
-            team: team,
+          const plan = buildCloudFinalizationPlan({
+            snapshot: owned.snapshot,
+            gw,
             players: playersQ.data,
-            chips: state.chips,
-            transferHitPoints: state.transferHitPoints,
             breakdown: raw.breakdown,
             averagePoints: raw.averagePoints,
             highestPoints: raw.highestPoints,
           });
-          const chipFinalize = state.chips.active ?? null;
-          const result: PointsViewModel = {
-            ...vm0,
-            finalized: true,
-            finalizedAt: new Date().toISOString(),
-            chipUsed: chipFinalize,
-            hitPointsApplied: state.transferHitPoints,
-          };
 
-          // Post-team: Free Hit restores its snapshot; other chips keep the mutated team.
-          const nextLifecycle: FantasyPersistedState = {
-            ...state,
-            chips: { ...state.chips, active: null, used: chipFinalize ? [...state.chips.used, chipFinalize] : state.chips.used, freeHitSnapshot: undefined },
-            results: { ...state.results, [gw]: result },
-            transferHitPoints: 0,
-          };
-          let postSquad = team.squad;
-          let postFormation = team.formation;
-          let postBank = team.bank;
-          let postFreeTransfers = team.freeTransfers;
-          let postPurchasePrices: Record<string, number> = { ...owned.snapshot.purchasePrices };
-          if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) {
-            const snap = state.chips.freeHitSnapshot;
-            postSquad = snap.squad;
-            postFormation = snap.formation;
-            postBank = snap.bank;
-            postFreeTransfers = snap.freeTransfers;
-            postPurchasePrices = owned.snapshot.purchasePrices;
+          // Short-circuit: server already finalized this GW.
+          if (plan.skipReason === "already_finalized") {
+            toast.success(t("fantasy.points.already_finalized"));
+            setConfirmFinalize(false);
+            return;
           }
 
           const res = await runOwnedMutation(
@@ -326,17 +328,17 @@ function PointsPage() {
                   gameweekId: owned.snapshot!.currentGameweekId!,
                   expectedVersion: owned.snapshot!.version,
                   season: DEFAULT_SEASON,
-                  chipFinalize,
-                  result,
+                  chipFinalize: plan.chipFinalize,
+                  result: plan.result,
                   postTeam: {
-                    formation: postFormation,
-                    bank: postBank,
-                    freeTransfers: postFreeTransfers,
-                    pendingTransfers: 0,
-                    squad: postSquad,
-                    purchasePrices: postPurchasePrices,
+                    formation: plan.postTeam.formation,
+                    bank: plan.postTeam.bank,
+                    freeTransfers: plan.postTeam.freeTransfers,
+                    pendingTransfers: plan.postTeam.pendingTransfers,
+                    squad: plan.postTeam.squad,
+                    purchasePrices: plan.postPurchasePrices,
                     currentGameweekId: owned.snapshot!.currentGameweekId!,
-                    lifecycle: nextLifecycle,
+                    lifecycle: plan.nextLifecycle,
                   },
                 }),
               args: undefined,
@@ -345,7 +347,7 @@ function PointsPage() {
           );
           if (res.ok) {
             setConflictOpen(false);
-            if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) toast.success(t("fantasy.points.free_hit_restored"));
+            if (plan.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
             else toast.success(t("fantasy.points.finalize_success"));
           } else {
             const c = classifyRepoError(res.error);
@@ -392,9 +394,93 @@ function PointsPage() {
 
 
   const doAdvance = () => {
-    requireAuth(() => {
+    requireAuth(async () => {
       if (!team) return;
       const target = currentGw + 1;
+
+      if (isCloud && owned.snapshot) {
+        // H6 — Cloud-authoritative advance via saveTeam with resolved next-GW UUID.
+        const idx = gwIndexQ.data;
+        if (!idx) {
+          toast.error(t("fantasy.error.network"));
+          return;
+        }
+        let nextGameweekId: string | null = null;
+        try {
+          nextGameweekId = resolveGameweekId(idx, { number: target, season: DEFAULT_SEASON });
+        } catch {
+          nextGameweekId = null;
+        }
+        if (!nextGameweekId) {
+          toast.error(t("fantasy.points.lifecycle_error"));
+          return;
+        }
+        const plan = buildCloudAdvancePlan({
+          snapshot: owned.snapshot,
+          nextGameweekNumber: target,
+          nextGameweekId,
+        });
+        if (!plan.ok) {
+          toast.error(
+            t(
+              plan.error === "must_finalize_first"
+                ? "fantasy.points.must_finalize_first"
+                : "fantasy.points.lifecycle_error",
+            ),
+          );
+          return;
+        }
+
+        const res = await runOwnedMutation(
+          {
+            qc,
+            scope: owned.scope,
+            setMutationStatus: owned.setMutationStatus,
+            nextMutationSeq: owned.nextMutationSeq,
+            setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+            replaceSnapshot: owned.replaceSnapshot,
+            invalidateOwned: owned.invalidateOwned,
+          },
+          {
+            action: () =>
+              owned.repo.saveTeam({
+                teamName: team.teamName,
+                managerName: team.managerName,
+                formation: plan.postTeam.formation,
+                bank: plan.postTeam.bank,
+                freeTransfers: plan.postTeam.freeTransfers,
+                pendingTransfers: plan.postTeam.pendingTransfers,
+                squad: plan.postTeam.squad,
+                purchasePrices: plan.postPurchasePrices,
+                currentGameweekId: plan.currentGameweekId,
+                lifecycle: plan.nextLifecycle,
+                expectedVersion: plan.expectedVersion,
+              }),
+            args: undefined,
+            savedIdleAfterMs: 2400,
+          },
+        );
+        if (res.ok) {
+          setGw(target);
+          qc.invalidateQueries({ queryKey: ["current-gw"] });
+          toast.success(t("fantasy.points.advance_success"));
+        } else {
+          const c = classifyRepoError(res.error);
+          if (c.isConflict) setConflictOpen(true);
+          const key: TranslationKey = c.isConflict
+            ? "fantasy.error.version_conflict"
+            : c.isNetwork
+              ? "fantasy.error.network"
+              : c.isPermission
+                ? "fantasy.error.permission"
+                : "fantasy.points.lifecycle_error";
+          toast.error(t(key));
+        }
+        setConfirmAdvance(false);
+        return;
+      }
+
+      // Local mode — untouched.
       const res = advanceGameweek({ targetGameweek: target, team: team });
       if (!res.ok) {
         toast.error(t(res.error === "must_finalize_first" ? "fantasy.points.must_finalize_first" : "fantasy.points.lifecycle_error"));
