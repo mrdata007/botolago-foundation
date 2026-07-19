@@ -1,3 +1,10 @@
+/**
+ * @deprecated Legacy compatibility snapshot from the abandoned backend.
+ *
+ * Do not use this file to design BotolaGO Production V2. New greenfield types
+ * are generated into `src/backend/generated/database.types.ts`. Existing
+ * imports remain temporarily so the frozen frontend can build before Phase 2.
+ */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {

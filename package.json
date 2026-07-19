@@ -3,13 +3,28 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "packageManager": "bun@1.3.14",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:backend": "bun test src/backend",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "backend:migrations:check": "bun scripts/backend/validate-migrations.mjs",
+    "backend:secrets:check": "bun scripts/backend/check-committed-secrets.mjs",
+    "backend:types:generate": "bun scripts/backend/generate-database-types.mjs",
+    "backend:types:check": "bun scripts/backend/check-generated-types.mjs",
+    "backend:local:start": "supabase start",
+    "backend:db:start": "supabase start --exclude edge-runtime,gotrue,imgproxy,kong,logflare,mailpit,postgres-meta,postgrest,realtime,storage-api,studio,supavisor,vector",
+    "backend:db:stop": "supabase stop --no-backup",
+    "backend:db:reset": "supabase db reset --local",
+    "backend:db:test": "supabase test db --local supabase/tests/database",
+    "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -83,6 +98,7 @@
     "globals": "^15.15.0",
     "nitro": "3.0.260603-beta",
     "prettier": "^3.7.3",
+    "supabase": "2.109.1",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16"

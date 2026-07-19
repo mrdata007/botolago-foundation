@@ -1,0 +1,2 @@
+-- Phase 1 deliberately has no seed data.
+-- Feature phases may add deterministic, non-production reference fixtures.
