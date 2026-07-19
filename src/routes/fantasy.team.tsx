@@ -310,9 +310,11 @@ function MyTeamPage() {
   const decision = isCloud && owned.userId ? importDecisionService.get(owned.userId) : null;
   const showBuilder = emptyCloud && (decision === "start_new" || !team || team.squad.length === 0);
 
+  // B8 — redirect empty-cloud users to the dedicated /fantasy/create screen.
   if (showBuilder) {
-    return <EmptyCloudBuilder team={team} />;
+    return <RedirectToCreate />;
   }
+
 
   if (!team || team.squad.length === 0) {
     // Defensive: unexpected empty squad state with no builder branch.
