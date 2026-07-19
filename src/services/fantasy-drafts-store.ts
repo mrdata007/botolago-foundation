@@ -13,7 +13,7 @@
 
 import { readJSON, writeJSON, removeKey } from "@/lib/storage";
 
-export type FantasyDraftKind = "team" | "transfers";
+export type FantasyDraftKind = "team" | "transfers" | "create-team";
 
 export interface FantasyDraftKey {
   uid: string;
