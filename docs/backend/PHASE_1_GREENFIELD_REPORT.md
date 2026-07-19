@@ -2,7 +2,8 @@
 
 Date: 2026-07-19
 Branch: `backend/greenfield-foundation`
-Status: implementation and local verification complete; draft PR pending
+Status: complete; draft PR open for review
+Draft PR: https://github.com/mrdata007/botolago-foundation/pull/1
 
 ## Architecture summary
 
