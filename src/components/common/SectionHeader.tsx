@@ -1,38 +1,58 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { Trans } from "./Trans";
 
-// Design System V2 — Section header.
-// Adds a slim brand accent bar to the eyebrow and enforces min-w-0 so long
-// titles truncate cleanly at 320px.
-
+/**
+ * Design System V2 — Section header.
+ *
+ * Every section on Home should feel distinct. This header supports:
+ *   - `eyebrow`  short brand-blue kicker (e.g. "MATCHS", "NEWS")
+ *   - `icon`     small lucide icon that anchors the section identity
+ *   - `title`    supports Trans accent markers ({accent}…{/accent})
+ *   - `subtitle` optional muted context line
+ *   - `action`   trailing action (e.g. "Tout voir")
+ *
+ * Layout is a two-column grid so long titles truncate cleanly at 320px
+ * while trailing actions stay pinned to the inline-end. Fully RTL-safe.
+ */
 export function SectionHeader({
   title,
-  action,
   subtitle,
+  action,
   eyebrow,
+  icon: Icon,
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
-  /** Optional short brand-blue label rendered above the title. */
+  /** Short brand-blue label rendered above the title. */
   eyebrow?: string;
+  /** Small lucide icon rendered next to the eyebrow. */
+  icon?: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 pt-6 pb-3">
+    <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 pb-3">
       <div className="min-w-0">
-        {eyebrow && (
-          <div className="mb-1.5 inline-flex items-center gap-2">
+        {(eyebrow || Icon) && (
+          <div className="mb-1.5 inline-flex items-center gap-1.5">
             <span
               aria-hidden
-              className="h-3 w-0.5 rounded-full"
+              className="h-3 w-0.5 shrink-0 rounded-full"
               style={{ background: "var(--brand-accent)" }}
             />
-            <span className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-brand">
-              {eyebrow}
-            </span>
+            {Icon && (
+              <Icon
+                className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]"
+                aria-hidden
+              />
+            )}
+            {eyebrow && (
+              <span className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-brand">
+                {eyebrow}
+              </span>
+            )}
           </div>
         )}
-        <h2 className="truncate text-lg font-black tracking-tight text-foreground">
+        <h2 className="truncate text-[17px] font-black tracking-tight text-foreground sm:text-lg">
           <Trans text={title} />
         </h2>
         {subtitle && (
@@ -41,7 +61,7 @@ export function SectionHeader({
           </p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
-    </div>
+      {action && <div className="shrink-0 self-center">{action}</div>}
+    </header>
   );
 }
