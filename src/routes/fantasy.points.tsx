@@ -405,7 +405,12 @@ function PointsPage() {
           toast.error(t("fantasy.error.network"));
           return;
         }
-        const nextGameweekId = resolveGameweekId(idx, target);
+        let nextGameweekId: string | null = null;
+        try {
+          nextGameweekId = resolveGameweekId(idx, { number: target, season: DEFAULT_SEASON });
+        } catch {
+          nextGameweekId = null;
+        }
         if (!nextGameweekId) {
           toast.error(t("fantasy.points.lifecycle_error"));
           return;
