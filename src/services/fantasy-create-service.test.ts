@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { describe, it, expect } from "bun:test";
-import "./__test-shim";
+import { describe, it, expect } from "vitest";
+
 
 import {
   applyAutocompleteTemplate,
