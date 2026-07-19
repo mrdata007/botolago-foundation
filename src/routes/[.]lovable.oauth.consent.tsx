@@ -17,8 +17,7 @@ interface OAuthApi {
 }
 
 function oauthApi(): OAuthApi {
-  // @ts-expect-error - auth.oauth is a beta namespace not yet in the types
-  return supabase.auth.oauth as OAuthApi;
+  return (supabase.auth as unknown as { oauth: OAuthApi }).oauth;
 }
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
@@ -100,7 +99,7 @@ function Consent() {
 
       {details?.scopes && details.scopes.length > 0 && (
         <ul className="rounded-xl border border-input bg-background/50 p-4 text-sm">
-          {details.scopes.map((s) => (
+          {details.scopes.map((s: string) => (
             <li key={s} className="text-muted-foreground">• {s}</li>
           ))}
         </ul>
