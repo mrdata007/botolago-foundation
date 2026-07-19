@@ -67,7 +67,7 @@ function NewsPage() {
   const leadQ = useQuery({ queryKey: ["lead"], queryFn: () => botolaService.getLeadArticle() });
 
   const isLoading = allQ.isLoading || leadQ.isLoading;
-  const list = allQ.data ?? [];
+  const list = useMemo(() => allQ.data ?? [], [allQ.data]);
   const lead = leadQ.data;
 
   const byClub = useCallback(
