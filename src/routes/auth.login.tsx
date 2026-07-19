@@ -69,7 +69,7 @@ function LoginPage() {
     if (!res.ok) { setErrors({ form: "auth.error.generic" }); return; }
     markWelcomeDone();
     toast.success(t("auth.success.login"));
-    navigate({ to: res.data?.profileComplete ? "/" : "/auth/profile-setup" });
+    goAfterLogin(res.data?.profileComplete);
   };
 
   return (
