@@ -1,7 +1,7 @@
 // of any test file that touches fantasyStateStore / storage.ts helpers.
 if (typeof globalThis.window === "undefined") {
   const mem = new Map<string, string>();
-  // @ts-ignore
+  // @ts-expect-error test-only window shim; global type intentionally overridden
   (globalThis as any).window = {
     localStorage: {
       getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
