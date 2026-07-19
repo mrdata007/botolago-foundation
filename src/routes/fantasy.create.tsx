@@ -114,7 +114,7 @@ function CreateTeamPage() {
       setDraft(entry.payload);
     } else {
       // Default the name to the user's manager name if available.
-      const defaultName = user?.name?.trim() ? `${user.name.trim().split(" ")[0]} FC` : "";
+      const defaultName = user?.name?.trim() ? `${user.displayName.trim().split(" ")[0]} FC` : "";
       setDraft(initCreateDraft(defaultName));
     }
     initedRef.current = true;
@@ -220,7 +220,7 @@ function CreateTeamPage() {
           action: () =>
             owned.repo.saveTeam({
               teamName: draft.teamName.trim(),
-              managerName: user?.name?.trim() ? user.name.trim() : null,
+              managerName: user?.name?.trim() ? user.displayName.trim() : null,
               formation: draft.formation,
               bank: round1(summary.bankRemaining),
               freeTransfers: 1,
