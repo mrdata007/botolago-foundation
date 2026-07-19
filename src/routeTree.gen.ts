@@ -27,6 +27,7 @@ import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
 import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
 import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
+import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
@@ -131,6 +132,11 @@ const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
   path: '/fixtures',
   getParentRoute: () => FantasyRoute,
 } as any)
+const FantasyCreateRoute = FantasyCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => FantasyRoute,
+} as any)
 const AuthVerifyRoute = AuthVerifyRouteImport.update({
   id: '/verify',
   path: '/verify',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
+  '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
+  '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
+  '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
+    | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
+    | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -383,6 +394,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
+    | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -542,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyFixturesRouteImport
       parentRoute: typeof FantasyRoute
     }
+    '/fantasy/create': {
+      id: '/fantasy/create'
+      path: '/create'
+      fullPath: '/fantasy/create'
+      preLoaderRoute: typeof FantasyCreateRouteImport
+      parentRoute: typeof FantasyRoute
+    }
     '/auth/verify': {
       id: '/auth/verify'
       path: '/verify'
@@ -683,6 +702,7 @@ const FantasyPlayersRouteWithChildren = FantasyPlayersRoute._addFileChildren(
 )
 
 interface FantasyRouteChildren {
+  FantasyCreateRoute: typeof FantasyCreateRoute
   FantasyFixturesRoute: typeof FantasyFixturesRoute
   FantasyLeaguesRoute: typeof FantasyLeaguesRouteWithChildren
   FantasyPlayersRoute: typeof FantasyPlayersRouteWithChildren
@@ -695,6 +715,7 @@ interface FantasyRouteChildren {
 }
 
 const FantasyRouteChildren: FantasyRouteChildren = {
+  FantasyCreateRoute: FantasyCreateRoute,
   FantasyFixturesRoute: FantasyFixturesRoute,
   FantasyLeaguesRoute: FantasyLeaguesRouteWithChildren,
   FantasyPlayersRoute: FantasyPlayersRouteWithChildren,

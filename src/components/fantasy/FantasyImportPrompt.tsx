@@ -13,6 +13,8 @@
 // keep local state intact and never mark the UID.
 
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+
 import { useI18n } from "@/i18n/provider";
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
@@ -45,6 +47,8 @@ export function FantasyImportPrompt() {
   const { user, status } = useAuth();
   const owned = useFantasyOwned();
   const qc = useQueryClient();
+  const nav = useNavigate();
+
 
   const isAuthenticated = status === "authenticated" && !!user?.id;
   const uid = user?.id ?? null;
@@ -159,7 +163,9 @@ export function FantasyImportPrompt() {
   const startNew = () => {
     importDecisionService.markStartNew(uid);
     setDismissed(true);
+    void nav({ to: "/fantasy/create" });
   };
+
 
   const later = () => {
     setDismissed(true);

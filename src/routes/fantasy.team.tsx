@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { botolaService } from "@/services/mock";
@@ -42,6 +42,15 @@ import { importDecisionService } from "@/services/fantasy-import-decision";
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
 });
+
+function RedirectToCreate() {
+  const nav = useNavigate();
+  useEffect(() => {
+    void nav({ to: "/fantasy/create", replace: true });
+  }, [nav]);
+  return <LoadingState />;
+}
+
 
 // H4 — Persisted working state for the Team route. Kept intentionally small
 // (squad + formation); captain/vice live inside SquadPlayer entries.
@@ -310,9 +319,11 @@ function MyTeamPage() {
   const decision = isCloud && owned.userId ? importDecisionService.get(owned.userId) : null;
   const showBuilder = emptyCloud && (decision === "start_new" || !team || team.squad.length === 0);
 
+  // B8 — redirect empty-cloud users to the dedicated /fantasy/create screen.
   if (showBuilder) {
-    return <EmptyCloudBuilder team={team} />;
+    return <RedirectToCreate />;
   }
+
 
   if (!team || team.squad.length === 0) {
     // Defensive: unexpected empty squad state with no builder branch.

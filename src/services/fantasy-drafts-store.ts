@@ -13,7 +13,7 @@
 
 import { readJSON, writeJSON, removeKey } from "@/lib/storage";
 
-export type FantasyDraftKind = "team" | "transfers";
+export type FantasyDraftKind = "team" | "transfers" | "create-team";
 
 export interface FantasyDraftKey {
   uid: string;
@@ -48,7 +48,7 @@ function isValidEntry(v: unknown): v is FantasyDraftEntry {
     typeof k.uid === "string" && k.uid.length > 0 &&
     (typeof k.teamId === "string") &&
     typeof k.baseVersion === "number" && Number.isFinite(k.baseVersion) &&
-    (k.kind === "team" || k.kind === "transfers") &&
+    (k.kind === "team" || k.kind === "transfers" || k.kind === "create-team") &&
     typeof e.updatedAt === "number" &&
     "payload" in e
   );
