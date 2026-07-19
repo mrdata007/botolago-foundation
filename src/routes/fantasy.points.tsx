@@ -344,10 +344,12 @@ function PointsPage() {
             },
           );
           if (res.ok) {
+            setConflictOpen(false);
             if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) toast.success(t("fantasy.points.free_hit_restored"));
             else toast.success(t("fantasy.points.finalize_success"));
           } else {
             const c = classifyRepoError(res.error);
+            if (c.isConflict) setConflictOpen(true);
             const key: TranslationKey = c.isConflict
               ? "fantasy.error.version_conflict"
               : c.isNetwork
