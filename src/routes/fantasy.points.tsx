@@ -102,20 +102,13 @@ function PointsPage() {
   const currentGwQ = useQuery({ queryKey: ["current-gw"], queryFn: () => botolaService.getCurrentGameweek() });
   const gwResultQ = useQuery({ queryKey: ownedKey("gw-result", gw), queryFn: () => fantasyService.getGameweekResult(gw) });
   const historyQ = useQuery({ queryKey: ownedKey("gw-history"), queryFn: () => fantasyService.getGameweekHistory() });
-  const teamQ = useQuery({
+  // H7 — Consume owned.snapshot directly in cloud mode; no parallel Team query.
+  const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
-    queryFn: async () => {
-      if (isCloud) {
-        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
-        return owned.snapshot.team;
-      }
-      return fantasyService.getTeam();
-    },
-    enabled: !isCloud || !!owned.snapshot,
+    queryFn: () => fantasyService.getTeam(),
+    enabled: !isCloud,
   });
-  useEffect(() => {
-    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
-  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
+  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
 
@@ -127,18 +120,18 @@ function PointsPage() {
 
   // Compute VM for the selected gameweek.
   const vm: PointsViewModel | null | "error" = useMemo(() => {
-    if (!teamQ.data || !playersQ.data) return null;
+    if (!team || !playersQ.data) return null;
     const persisted = state.results[gw];
     if (persisted) return persisted;
 
     const raw = gwResultQ.data;
     if (!raw) return null;
 
-    const originalBenchIds = teamQ.data.squad
+    const originalBenchIds = team.squad
       .filter((s) => s.slot >= 12)
       .sort((a, b) => a.slot - b.slot)
       .map((s) => s.playerId);
-    const originalStartingIds = teamQ.data.squad
+    const originalStartingIds = team.squad
       .filter((s) => s.slot < 12)
       .sort((a, b) => a.slot - b.slot)
       .map((s) => s.playerId);
@@ -151,7 +144,7 @@ function PointsPage() {
     try {
       return buildPointsViewModel({
         gameweek: gw,
-        team: teamQ.data,
+        team: team,
         players: playersQ.data,
         chips: isCurrent ? state.chips : { active: null, used: [] },
         transferHitPoints: isCurrent ? state.transferHitPoints : 0,
@@ -162,9 +155,9 @@ function PointsPage() {
     } catch {
       return "error";
     }
-  }, [teamQ.data, playersQ.data, gwResultQ.data, state, gw, isCurrent]);
+  }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent]);
 
-  if (!teamQ.data || !playersQ.data || !clubsQ.data || gwResultQ.isPending || currentGwQ.isPending) {
+  if (!team || !playersQ.data || !clubsQ.data || gwResultQ.isPending || currentGwQ.isPending) {
     return <LoadingState />;
   }
 
@@ -203,7 +196,7 @@ function PointsPage() {
   const benchIdsForDisplay = vm.originalBenchIds;
   const cameOnIds = new Set(vm.autoSubs.map((s) => s.inId));
   const subbedOffIds = new Set(vm.autoSubs.map((s) => s.outId));
-  const captainDeclaredId = teamQ.data.squad.find((s) => s.isCaptain)?.playerId;
+  const captainDeclaredId = team.squad.find((s) => s.isCaptain)?.playerId;
 
   const shirtFor = (playerId: string) => {
     const p = playerOf(playerId);
@@ -219,7 +212,7 @@ function PointsPage() {
         club={clubOf(p.clubId)}
         metric={String(shown)}
         captain={isCap}
-        vice={p.id === teamQ.data.squad.find((s) => s.isViceCaptain)?.playerId}
+        vice={p.id === team.squad.find((s) => s.isViceCaptain)?.playerId}
       />
     );
   };
@@ -242,10 +235,10 @@ function PointsPage() {
       return;
     }
     const raw = gwResultQ.data;
-    if (!raw?.breakdown.length || !teamQ.data || !playersQ.data) return;
+    if (!raw?.breakdown.length || !team || !playersQ.data) return;
     const fresh = buildPointsViewModel({
       gameweek: gw,
-      team: teamQ.data,
+      team: team,
       players: playersQ.data,
       chips: state.chips,
       transferHitPoints: state.transferHitPoints,
@@ -266,7 +259,7 @@ function PointsPage() {
       if (finalized) { toast.error(t("fantasy.points.already_finalized")); return; }
       if (!deadlineLocked) { toast.error(t("fantasy.deadline.open")); return; }
       const raw = gwResultQ.data;
-      if (!raw?.breakdown.length || !teamQ.data || !playersQ.data) {
+      if (!raw?.breakdown.length || !team || !playersQ.data) {
         toast.error(t("fantasy.points.lifecycle_error"));
         return;
       }
@@ -278,7 +271,7 @@ function PointsPage() {
         try {
           const vm0 = buildPointsViewModel({
             gameweek: gw,
-            team: teamQ.data,
+            team: team,
             players: playersQ.data,
             chips: state.chips,
             transferHitPoints: state.transferHitPoints,
@@ -302,10 +295,10 @@ function PointsPage() {
             results: { ...state.results, [gw]: result },
             transferHitPoints: 0,
           };
-          let postSquad = teamQ.data.squad;
-          let postFormation = teamQ.data.formation;
-          let postBank = teamQ.data.bank;
-          let postFreeTransfers = teamQ.data.freeTransfers;
+          let postSquad = team.squad;
+          let postFormation = team.formation;
+          let postBank = team.bank;
+          let postFreeTransfers = team.freeTransfers;
           let postPurchasePrices: Record<string, number> = { ...owned.snapshot.purchasePrices };
           if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) {
             const snap = state.chips.freeHitSnapshot;
@@ -378,7 +371,7 @@ function PointsPage() {
       try {
         const out = finalizeGameweek({
           gameweek: gw,
-          team: teamQ.data,
+          team: team,
           players: playersQ.data,
           breakdown: raw.breakdown,
           averagePoints: raw.averagePoints,
@@ -400,9 +393,9 @@ function PointsPage() {
 
   const doAdvance = () => {
     requireAuth(() => {
-      if (!teamQ.data) return;
+      if (!team) return;
       const target = currentGw + 1;
-      const res = advanceGameweek({ targetGameweek: target, team: teamQ.data });
+      const res = advanceGameweek({ targetGameweek: target, team: team });
       if (!res.ok) {
         toast.error(t(res.error === "must_finalize_first" ? "fantasy.points.must_finalize_first" : "fantasy.points.lifecycle_error"));
         return;
@@ -587,7 +580,7 @@ function PointsPage() {
       {view === "list" && (
         <div className="mt-3">
           <SquadListView
-            squad={teamQ.data.squad}
+            squad={team.squad}
             players={players}
             clubs={clubs}
             metricFor={(id) => breakdownById.get(id)?.totalPoints}
