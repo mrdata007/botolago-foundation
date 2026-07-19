@@ -77,6 +77,13 @@ function PointsPage() {
   const [confirmAdvance, setConfirmAdvance] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
 
+  const reloadLatest = async () => {
+    setConflictOpen(false);
+    if (isCloud) await owned.reload();
+    toast.success(t("fantasy.status.saved_short"));
+  };
+  const keepWorking = () => setConflictOpen(false);
+
   useEffect(() => {
     if (isCloud) {
       if (owned.snapshot?.lifecycle) setState(owned.snapshot.lifecycle);
