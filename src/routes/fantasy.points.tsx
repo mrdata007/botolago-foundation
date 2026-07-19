@@ -120,6 +120,13 @@ function PointsPage() {
   const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
+  // when advancing. Not needed in local mode.
+  const gwIndexQ = useQuery({
+    queryKey: ["gw-index", DEFAULT_SEASON],
+    queryFn: () => loadGameweekIndex(),
+    enabled: isCloud,
+  });
 
 
   const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
