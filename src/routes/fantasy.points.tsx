@@ -75,6 +75,7 @@ function PointsPage() {
   const [view, setView] = useState<SquadViewMode>("squad");
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
+  const [conflictOpen, setConflictOpen] = useState(false);
 
   useEffect(() => {
     if (isCloud) {
