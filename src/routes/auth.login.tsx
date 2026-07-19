@@ -59,7 +59,7 @@ function LoginPage() {
     }
     markWelcomeDone();
     toast.success(t("auth.success.login"));
-    navigate({ to: res.data?.profileComplete ? "/" : "/auth/profile-setup" });
+    goAfterLogin(res.data?.profileComplete);
   };
 
   const onSocial = async (provider: "google" | "apple") => {
