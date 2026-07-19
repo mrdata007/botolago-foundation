@@ -79,7 +79,7 @@ describe("no automatic cloud mirror on fantasyStateStore mutation", () => {
     fantasyStateStore.reset({ internal: true });
   });
 
-  it("emitting the change event does not create a save through any provider layer", () => {
+  it("emitting the change event does not create a save through any provider layer", async () => {
     // The old FantasyCloudSyncProvider module has been removed; verify the
     // symbol is no longer resolvable — importing it would throw. This is a
     // structural guarantee: no listener remains that could auto-save.
