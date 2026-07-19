@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
+import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
@@ -84,6 +85,11 @@ const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   id: '/$articleId',
   path: '/$articleId',
   getParentRoute: () => NewsRoute,
+} as any)
+const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
+  id: '/$matchId',
+  path: '/$matchId',
+  getParentRoute: () => MatchesRoute,
 } as any)
 const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
   id: '/transfers',
@@ -198,7 +204,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
-  '/matches': typeof MatchesRoute
+  '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -229,7 +236,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
-  '/matches': typeof MatchesRoute
+  '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -262,7 +270,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
-  '/matches': typeof MatchesRoute
+  '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/matches/$matchId'
     | '/news/$articleId'
     | '/fantasy/'
     | '/.lovable/oauth/consent'
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/matches/$matchId'
     | '/news/$articleId'
     | '/fantasy'
     | '/.lovable/oauth/consent'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/matches/$matchId'
     | '/news/$articleId'
     | '/fantasy/'
     | '/.lovable/oauth/consent'
@@ -392,7 +404,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   FantasyRoute: typeof FantasyRouteWithChildren
-  MatchesRoute: typeof MatchesRoute
+  MatchesRoute: typeof MatchesRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
   ProfileRoute: typeof ProfileRoute
@@ -466,6 +478,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/news/$articleId'
       preLoaderRoute: typeof NewsArticleIdRouteImport
       parentRoute: typeof NewsRoute
+    }
+    '/matches/$matchId': {
+      id: '/matches/$matchId'
+      path: '/$matchId'
+      fullPath: '/matches/$matchId'
+      preLoaderRoute: typeof MatchesMatchIdRouteImport
+      parentRoute: typeof MatchesRoute
     }
     '/fantasy/transfers': {
       id: '/fantasy/transfers'
@@ -690,6 +709,17 @@ const FantasyRouteChildren: FantasyRouteChildren = {
 const FantasyRouteWithChildren =
   FantasyRoute._addFileChildren(FantasyRouteChildren)
 
+interface MatchesRouteChildren {
+  MatchesMatchIdRoute: typeof MatchesMatchIdRoute
+}
+
+const MatchesRouteChildren: MatchesRouteChildren = {
+  MatchesMatchIdRoute: MatchesMatchIdRoute,
+}
+
+const MatchesRouteWithChildren =
+  MatchesRoute._addFileChildren(MatchesRouteChildren)
+
 interface NewsRouteChildren {
   NewsArticleIdRoute: typeof NewsArticleIdRoute
 }
@@ -704,7 +734,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
-  MatchesRoute: MatchesRoute,
+  MatchesRoute: MatchesRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
   ProfileRoute: ProfileRoute,
