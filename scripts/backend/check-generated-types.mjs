@@ -34,11 +34,33 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-const result = spawnSync(
-  executable,
-  ["gen", "types", "--db-url", databaseUrl, "--schema", "public,app,api"],
-  commandOptions,
-);
+const typeGenerationArguments = [
+  "gen",
+  "types",
+  "--db-url",
+  databaseUrl,
+  "--schema",
+  "public,app,api",
+];
+const registryRetryDelaysMs = [5_000, 15_000, 30_000];
+const isTransientRegistryFailure = (output) =>
+  /(?:too\s*many\s*requests|toomanyrequests|rate exceeded|http\s*429)/i.test(output);
+
+let result;
+for (let attempt = 0; ; attempt += 1) {
+  result = spawnSync(executable, typeGenerationArguments, commandOptions);
+  if (result.status === 0) break;
+
+  const output = `${result.stderr ?? ""}\n${result.stdout ?? ""}`;
+  const delayMs = registryRetryDelaysMs[attempt];
+  if (delayMs === undefined || !isTransientRegistryFailure(output)) break;
+
+  process.stderr.write(
+    `Supabase type generation hit a transient registry rate limit; retrying in ${delayMs / 1_000}s ` +
+      `(attempt ${attempt + 2}/${registryRetryDelaysMs.length + 1}).\n`,
+  );
+  await new Promise((resolveDelay) => setTimeout(resolveDelay, delayMs));
+}
 
 if (result.status !== 0) {
   process.stderr.write(result.stderr || result.stdout);
