@@ -136,8 +136,8 @@ function CreateTeamPage() {
 
   // ---- Derived state ----
 
-  const players = playersQ.data ?? [];
-  const clubs = clubsQ.data ?? [];
+  const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
+  const clubs = useMemo(() => clubsQ.data ?? [], [clubsQ.data]);
   const summary = useMemo(() => computeSummary(draft, players), [draft, players]);
   const validation = useMemo(() => validateDraft(draft, players), [draft, players]);
   const teamNameCheck = validateTeamName(draft.teamName);
