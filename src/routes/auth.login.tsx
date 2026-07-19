@@ -17,7 +17,10 @@ function sanitizeNext(raw: unknown): string | undefined {
 
 export const Route = createFileRoute("/auth/login")({
   head: () => ({ meta: [{ title: "Se connecter — BotolaGO" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({ next: sanitizeNext(s.next) }),
+  validateSearch: (s: Record<string, unknown>) => {
+    const next = sanitizeNext(s.next);
+    return next ? { next } : {};
+  },
   component: LoginPage,
 });
 

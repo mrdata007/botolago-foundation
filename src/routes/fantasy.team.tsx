@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-mock";
 import { Pitch } from "@/components/fantasy/Pitch";
@@ -20,7 +20,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Check, Lock, Pencil, RotateCcw } from "lucide-react";
+import { Check, Lock, Pencil, RotateCcw, Users } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
@@ -33,12 +33,28 @@ import {
 import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
-import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
+import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
+import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
+import { ConflictBar } from "@/components/fantasy/ConflictBar";
+import { importDecisionService } from "@/services/fantasy-import-decision";
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
 });
+
+// H4 — Persisted working state for the Team route. Kept intentionally small
+// (squad + formation); captain/vice live inside SquadPlayer entries.
+interface TeamDraftPayload {
+  squad: SquadPlayer[];
+  formation: FormationKey;
+}
+
+function isTeamDraftPayload(v: unknown): v is TeamDraftPayload {
+  if (!v || typeof v !== "object") return false;
+  const p = v as Partial<TeamDraftPayload>;
+  return Array.isArray(p.squad) && typeof p.formation === "string";
+}
 
 function MyTeamPage() {
   const { t, tr, lang, dir } = useI18n();
@@ -49,27 +65,27 @@ function MyTeamPage() {
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
 
-  const teamQ = useQuery({
-    queryKey: ownedKey("team"),
-    queryFn: async () => {
-      if (isCloud) {
-        if (!owned.snapshot) throw new Error("cloud-snapshot-loading");
-        return owned.snapshot.team;
-      }
-      return fantasyService.getTeam();
-    },
-    enabled: !isCloud || !!owned.snapshot,
-  });
-
-  // Refresh teamQ whenever the authoritative snapshot version bumps.
-  useEffect(() => {
-    if (isCloud) qc.invalidateQueries({ queryKey: ownedKey("team") });
-  }, [isCloud, owned.snapshot?.version, qc, ownedKey]);
-
   const playersQ = useQuery({ queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() });
   const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
   const gwQ = useQuery({ queryKey: ["gameweek"], queryFn: () => botolaService.getCurrentGameweek() });
-  const summaryQ = useQuery({ queryKey: ownedKey("summary"), queryFn: () => botolaService.getFantasySummary() });
+
+  // Local-only mock summary. In cloud mode we derive from the owned snapshot
+  // + public player prices; the mock summary is never consumed.
+  const summaryQ = useQuery({
+    queryKey: ownedKey("summary"),
+    queryFn: () => botolaService.getFantasySummary(),
+    enabled: !isCloud,
+  });
+
+  // Local-mode team read; in cloud mode we consume owned.snapshot directly
+  // (H7 — no parallel Team queries in cloud mode).
+  const localTeamQ = useQuery({
+    queryKey: ownedKey("team"),
+    queryFn: () => fantasyService.getTeam(),
+    enabled: !isCloud,
+  });
+
+  const team = isCloud ? owned.snapshot?.team ?? null : localTeamQ.data ?? null;
 
   const { requireAuth } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -79,11 +95,14 @@ function MyTeamPage() {
   const [localFormation, setLocalFormation] = useState<FormationKey | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
   const [fState, setFState] = useState<FantasyPersistedState>(() =>
-    owned.source === "cloud"
+    isCloud
       ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read())
       : fantasyStateStore.read(),
   );
   const [chipConfirm, setChipConfirm] = useState<ChipKey | null>(null);
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftInitRef = useRef(false);
 
   // Cloud: mirror lifecycle from snapshot. Local: subscribe to state store.
   useEffect(() => {
@@ -100,6 +119,43 @@ function MyTeamPage() {
     };
   }, [isCloud, owned.snapshot?.lifecycle]);
 
+  const teamId = isCloud ? owned.snapshot?.teamId ?? "new" : null;
+  const baseVersion = isCloud ? owned.snapshot?.version ?? 0 : 0;
+
+  const draftKey = useMemo<FantasyDraftKey | null>(() => {
+    if (!isCloud || !owned.userId) return null;
+    return {
+      uid: owned.userId,
+      teamId: teamId ?? "new",
+      baseVersion,
+      kind: "team",
+    };
+  }, [isCloud, owned.userId, teamId, baseVersion]);
+
+  // H4 — Init from matching draft or cloud snapshot on mount / identity change.
+  // Runs once per (uid + teamId + version) so a fresh save that bumps the
+  // version does NOT re-hydrate the same draft it just cleared.
+  useEffect(() => {
+    if (!isCloud) return;
+    if (!draftKey || !team) return;
+    if (draftInitRef.current) return;
+    const entry = fantasyDraftsStore.read<TeamDraftPayload>(draftKey);
+    if (entry && isTeamDraftPayload(entry.payload)) {
+      setLocalSquad(entry.payload.squad);
+      setLocalFormation(entry.payload.formation);
+      setEditing(true);
+      setDraftRestored(true);
+      draftInitRef.current = true;
+    } else {
+      draftInitRef.current = true;
+    }
+  }, [isCloud, draftKey, team]);
+
+  // Reset draft-init flag when the identity changes (new base version or uid).
+  useEffect(() => {
+    draftInitRef.current = false;
+    setDraftRestored(false);
+  }, [draftKey?.uid, draftKey?.teamId, draftKey?.baseVersion]);
 
   const chipsState = fState.chips;
   const deadlineIso = gwQ.data?.deadline;
@@ -108,8 +164,7 @@ function MyTeamPage() {
   const deadlineLocked = !!deadline?.isLocked;
   const finalized = !!fState.results[currentGw]?.finalized;
 
-  // Single shared gate used by every mutation entry point (edit, swap,
-  // formation, captain/vice, chip toggle, save).
+  // Single shared gate used by every mutation entry point.
   const mutable = useMemo(
     () => ({
       ok: !deadlineLocked && !finalized,
@@ -127,47 +182,174 @@ function MyTeamPage() {
     state: locked && chipsState.active !== key ? "unavailable" : chipDisplayState(chipsState, key),
   }));
 
+  // Persist a working draft. No-op in local mode (guest state already lives
+  // in fantasyStateStore + the mock service).
+  const persistDraft = (payload: TeamDraftPayload) => {
+    if (!isCloud || !draftKey) return;
+    fantasyDraftsStore.save<TeamDraftPayload>(draftKey, payload);
+    setDraftRestored(false); // any explicit edit clears the "restored" badge variant
+  };
+
+  const clearDraft = () => {
+    if (!isCloud || !draftKey) return;
+    fantasyDraftsStore.remove(draftKey);
+  };
+
+  // Cloud-mode chip commit: persist the lifecycle transition via saveTeam so
+  // fantasyStateStore is NEVER written to in cloud mode. Reverts fState on
+  // failure. `team` guarantees we have the current squad/formation/etc.
+  const commitCloudLifecycle = async (
+    next: FantasyPersistedState,
+    successKey: TranslationKey,
+    prev: FantasyPersistedState,
+  ) => {
+    if (!isCloud || !team) return false;
+    setFState(next);
+    const squadToSave = localSquad ?? team.squad;
+    const formationToSave = localFormation ?? team.formation;
+    const res = await runOwnedMutation(
+      {
+        qc,
+        scope: owned.scope,
+        setMutationStatus: owned.setMutationStatus,
+        nextMutationSeq: owned.nextMutationSeq,
+        setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+        replaceSnapshot: owned.replaceSnapshot,
+        invalidateOwned: owned.invalidateOwned,
+      },
+      {
+        action: () =>
+          owned.repo.saveTeam({
+            teamName: team.teamName,
+            managerName: team.managerName || null,
+            formation: formationToSave,
+            bank: team.bank,
+            freeTransfers: team.freeTransfers,
+            pendingTransfers: team.pendingTransfers,
+            squad: squadToSave,
+            purchasePrices: owned.snapshot?.purchasePrices ?? {},
+            expectedVersion: baseVersion,
+            currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+            lifecycle: next,
+          }),
+        args: undefined,
+        savedIdleAfterMs: 2400,
+      },
+    );
+    if (res.ok) {
+      toast.success(t(successKey));
+      return true;
+    }
+    // Revert transient lifecycle change on error.
+    setFState(prev);
+    const c = classifyRepoError(res.error);
+    if (c.isConflict) setConflictOpen(true);
+    const key: TranslationKey = c.isConflict
+      ? "fantasy.error.version_conflict"
+      : c.isNetwork
+        ? "fantasy.error.network"
+        : c.isPermission
+          ? "fantasy.error.permission"
+          : "fantasy.error.transfer_failed";
+    toast.error(t(key));
+    return false;
+  };
+
   const activateChipHandler = (key: ChipKey) => {
-    if (!teamQ.data) return;
+    if (!team) return;
     if (!mutable.ok) { toast.error(t(mutable.reasonKey)); return; }
-    // Toggle off cancels: chip returns to available (never marks used).
     if (chipsState.active === key) {
       const next = deactivateChip(chipsState);
-      fantasyStateStore.write({ chips: next });
-      setFState(fantasyStateStore.read());
-      toast.success(t("fantasy.chip.cancelled"));
+      const prev = fState;
+      const nextState: FantasyPersistedState = { ...fState, chips: next };
+      if (isCloud) {
+        void commitCloudLifecycle(nextState, "fantasy.chip.cancelled", prev);
+      } else {
+        fantasyStateStore.write({ chips: next });
+        setFState(fantasyStateStore.read());
+        toast.success(t("fantasy.chip.cancelled"));
+      }
       return;
     }
     const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
     if (!check.ok) { toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey)); return; }
     setChipConfirm(key);
   };
+
   const confirmChip = () => {
-    if (!chipConfirm || !teamQ.data) return;
+    if (!chipConfirm || !team) return;
     if (!mutable.ok) { toast.error(t(mutable.reasonKey)); setChipConfirm(null); return; }
-    const next = activateChip(chipsState, chipConfirm, { gameweek: currentGw, team: teamQ.data });
-    fantasyStateStore.write({ chips: next });
+    const nextChips = activateChip(chipsState, chipConfirm, { gameweek: currentGw, team });
+    const prev = fState;
+    const nextState: FantasyPersistedState = { ...fState, chips: nextChips };
+    if (isCloud) {
+      setChipConfirm(null);
+      void commitCloudLifecycle(nextState, "fantasy.chip.activated", prev);
+      return;
+    }
+    fantasyStateStore.write({ chips: nextChips });
     setFState(fantasyStateStore.read());
     setChipConfirm(null);
     toast.success(t("fantasy.chip.activated"));
   };
 
-  if (!teamQ.data || !playersQ.data || !clubsQ.data) return <LoadingState />;
+  // Early loading state — we need players/clubs/team for any render below.
+  if (!playersQ.data || !clubsQ.data) return <LoadingState />;
+  if (isCloud && owned.isLoading && !owned.snapshot) return <LoadingState />;
+  if (!isCloud && !team) return <LoadingState />;
 
-  const squad = localSquad ?? teamQ.data.squad;
-  const formation = localFormation ?? teamQ.data.formation;
   const players = playersQ.data;
   const clubs = clubsQ.data;
+
+  // H4 — Empty-cloud builder for start_new. When the cloud team exists but has
+  // zero squad rows AND the import prompt won't render (user picked start_new,
+  // or has no valid local template), offer an inline "seed starter squad"
+  // affordance so the user leaves this route with a valid 15-player team they
+  // can then edit. Never renders in local mode.
+  const emptyCloud = isCloud && owned.snapshot?.emptyCloudSquad === true;
+  const decision = isCloud && owned.userId ? importDecisionService.get(owned.userId) : null;
+  const showBuilder = emptyCloud && (decision === "start_new" || !team || team.squad.length === 0);
+
+  if (showBuilder) {
+    return <EmptyCloudBuilder team={team} />;
+  }
+
+  if (!team || team.squad.length === 0) {
+    // Defensive: unexpected empty squad state with no builder branch.
+    return <LoadingState />;
+  }
+
+  const squad = localSquad ?? team.squad;
+  const formation = localFormation ?? team.formation;
 
   const playerOf = (id: string) => players.find((p) => p.id === id)!;
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
   const xiIds = squad.filter((s) => s.slot < 12).map((s) => s.playerId);
   const benchIds = squad.filter((s) => s.slot >= 12).map((s) => s.playerId);
 
-  const gkXi = xiIds.filter((id) => playerOf(id).position === "GK");
-  const defXi = xiIds.filter((id) => playerOf(id).position === "DEF");
-  const midXi = xiIds.filter((id) => playerOf(id).position === "MID");
-  const fwdXi = xiIds.filter((id) => playerOf(id).position === "FWD");
+  const gkXi = xiIds.filter((id) => playerOf(id)?.position === "GK");
+  const defXi = xiIds.filter((id) => playerOf(id)?.position === "DEF");
+  const midXi = xiIds.filter((id) => playerOf(id)?.position === "MID");
+  const fwdXi = xiIds.filter((id) => playerOf(id)?.position === "FWD");
+
+  // Cloud-mode summary derived from the owned snapshot + public prices.
+  // Never falls back to the mock summary in cloud mode.
+  const derivedSummary = (() => {
+    if (!isCloud) return summaryQ.data ?? null;
+    const teamValue = team.squad.reduce((sum, s) => {
+      const p = players.find((pp) => pp.id === s.playerId);
+      return sum + (p?.price ?? 0);
+    }, 0);
+    const gwPoints = fState.results[currentGw]?.totalPoints ?? 0;
+    return {
+      gameweekPoints: gwPoints,
+      transfersLeft: team.freeTransfers,
+      bankValue: team.bank,
+      teamValue,
+    };
+  })();
+
+  const hasWorkingChanges = localSquad !== null || localFormation !== null;
 
   // Revert local edit state back to the persisted team.
   const revertLocal = () => {
@@ -175,6 +357,7 @@ function MyTeamPage() {
     setSelected(null);
     setLocalSquad(null);
     setLocalFormation(null);
+    setDraftRestored(false);
   };
 
   const handleTap = (playerId: string) => {
@@ -184,17 +367,17 @@ function MyTeamPage() {
     if (selected === playerId) { setSelected(null); return; }
     const next = swapSquadMembers(squad, players, formation, selected, playerId);
     if (!next) {
-      toast.error(t("fantasy.team.error.swap_position"));
+      toast.error(t("fantasy.team.hint.position_incompatible"));
       setSelected(playerId);
       return;
     }
     setLocalSquad(next);
     setSelected(null);
+    persistDraft({ squad: next, formation });
   };
 
   const setCaptain = (playerId: string, vice = false) => {
     if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
-    // Reject same player as both roles.
     const target = squad.find((s) => s.playerId === playerId);
     if (!target || target.slot >= 12) {
       toast.error(t("fantasy.team.error.captain_not_in_xi"));
@@ -206,18 +389,19 @@ function MyTeamPage() {
     });
     setLocalSquad(next);
     setCaptainSheet(false);
+    persistDraft({ squad: next, formation });
   };
 
   const changeFormation = (f: FormationKey) => {
     if (!mutable.ok) { toast.error(t("fantasy.team.error.deadline_crossed_revert")); revertLocal(); return; }
+    const nextSquad = reslotForFormation({ squad, players, formation: f });
     setLocalFormation(f);
-    setLocalSquad(reslotForFormation({ squad, players, formation: f }));
+    setLocalSquad(nextSquad);
+    persistDraft({ squad: nextSquad, formation: f });
   };
 
   const save = async () => {
-    // Re-evaluate the deadline at save time — the user may have been idle
-    // in edit mode while the deadline passed, or the GW was finalized
-    // elsewhere. Both revert the working state to the persisted team.
+    if (!team) return;
     const nowLocked = deadlineIso ? evaluateDeadline(deadlineIso, new Date()).isLocked : false;
     const nowFinalized = !!(isCloud ? fState : fantasyStateStore.read()).results[currentGw]?.finalized;
     if (nowLocked || nowFinalized) {
@@ -225,8 +409,8 @@ function MyTeamPage() {
       toast.error(t("fantasy.team.error.deadline_crossed_revert"));
       return;
     }
-    const squadToSave = localSquad ?? teamQ.data.squad;
-    const formationToSave = localFormation ?? teamQ.data.formation;
+    const squadToSave = localSquad ?? team.squad;
+    const formationToSave = localFormation ?? team.formation;
     const validation = validateTeam(squadToSave, formationToSave, players);
     if (!validation.ok) {
       const errKey = (`fantasy.team.error.${validation.error satisfies TeamValidationError}`) as TranslationKey;
@@ -234,14 +418,7 @@ function MyTeamPage() {
       return;
     }
 
-    if (isCloud && owned.userId) {
-      // Cloud path — authoritative RPC via owned repository.
-      const draftKey = {
-        uid: owned.userId,
-        teamId: owned.snapshot?.teamId ?? "new",
-        baseVersion: owned.snapshot?.version ?? 0,
-        kind: "team" as const,
-      };
+    if (isCloud && draftKey) {
       const res = await runOwnedMutation(
         {
           qc,
@@ -255,15 +432,15 @@ function MyTeamPage() {
         {
           action: () =>
             owned.repo.saveTeam({
-              teamName: teamQ.data.teamName,
-              managerName: teamQ.data.managerName || null,
+              teamName: team.teamName,
+              managerName: team.managerName || null,
               formation: formationToSave,
-              bank: teamQ.data.bank,
-              freeTransfers: teamQ.data.freeTransfers,
-              pendingTransfers: teamQ.data.pendingTransfers,
+              bank: team.bank,
+              freeTransfers: team.freeTransfers,
+              pendingTransfers: team.pendingTransfers,
               squad: squadToSave,
               purchasePrices: owned.snapshot?.purchasePrices ?? {},
-              expectedVersion: owned.snapshot?.version ?? 0,
+              expectedVersion: baseVersion,
               currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
               lifecycle: fState,
             }),
@@ -274,15 +451,17 @@ function MyTeamPage() {
       );
       if (res.ok) {
         revertLocal();
+        setConflictOpen(false);
         toast.success(t("fantasy.status.saved"));
         return;
       }
-      // Preserve draft; surface localized error/conflict without overwriting.
-      fantasyDraftsStore.save(draftKey, {
+      // Preserve draft on failure; surface localized error/conflict.
+      fantasyDraftsStore.save<TeamDraftPayload>(draftKey, {
         squad: squadToSave,
         formation: formationToSave,
       });
       const c = classifyRepoError(res.error);
+      if (c.isConflict) setConflictOpen(true);
       const key: TranslationKey = c.isConflict
         ? "fantasy.error.version_conflict"
         : c.isNetwork
@@ -301,11 +480,28 @@ function MyTeamPage() {
     revertLocal();
     toast.success(t("fantasy.success"));
   };
-  const cancel = () => { revertLocal(); };
 
+  const cancel = () => {
+    revertLocal();
+    clearDraft();
+    setConflictOpen(false);
+  };
+
+  const reloadLatest = async () => {
+    setConflictOpen(false);
+    clearDraft();
+    revertLocal();
+    await owned.reload();
+    toast.success(t("fantasy.status.saved_short"));
+  };
+
+  const keepWorking = () => {
+    setConflictOpen(false);
+  };
 
   const shirt = (id: string) => {
     const p = playerOf(id);
+    if (!p) return null;
     const sq = squad.find((s) => s.playerId === id)!;
     return (
       <PlayerShirt
@@ -323,7 +519,6 @@ function MyTeamPage() {
   const formationCfg = FORMATIONS[formation];
   const formationRow = { def: formationCfg.DEF, mid: formationCfg.MID, fwd: formationCfg.FWD };
 
-  // Slice XI arrays to formation size — extra players fold to bench visually.
   const defRender = defXi.slice(0, formationRow.def).map(shirt);
   const midRender = midXi.slice(0, formationRow.mid).map(shirt);
   const fwdRender = fwdXi.slice(0, formationRow.fwd).map(shirt);
@@ -334,20 +529,20 @@ function MyTeamPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="mb-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-brand">{t("fantasy.team")}</div>
-          <h1 className="text-xl font-black text-foreground">{teamQ.data.teamName}</h1>
-          <div className="text-xs text-muted-foreground">{teamQ.data.managerName}</div>
+          <h1 className="text-xl font-black text-foreground">{team.teamName}</h1>
+          <div className="text-xs text-muted-foreground">{team.managerName}</div>
         </div>
         <div className="flex items-center gap-2">
           {gwQ.data && <DeadlineCountdown iso={gwQ.data.deadline} />}
         </div>
       </div>
 
-      {summaryQ.data && (
+      {derivedSummary && (
         <div className="mt-3 grid grid-cols-4 gap-2">
-          <MiniStat label={t("fantasy.gw_points")} value={String(summaryQ.data.gameweekPoints)} accent />
-          <MiniStat label={t("fantasy.free_transfers")} value={String(summaryQ.data.transfersLeft)} />
-          <MiniStat label={t("fantasy.bank")} value={nf.format(summaryQ.data.bankValue)} />
-          <MiniStat label={t("fantasy.team_value")} value={nf.format(summaryQ.data.teamValue)} />
+          <MiniStat label={t("fantasy.gw_points")} value={String(derivedSummary.gameweekPoints)} accent />
+          <MiniStat label={t("fantasy.free_transfers")} value={String(derivedSummary.transfersLeft)} />
+          <MiniStat label={t("fantasy.bank")} value={nf.format(derivedSummary.bankValue)} />
+          <MiniStat label={t("fantasy.team_value")} value={nf.format(derivedSummary.teamValue)} />
         </div>
       )}
 
@@ -358,21 +553,53 @@ function MyTeamPage() {
         </div>
       )}
 
+      {/* H4 — Unsaved changes badge (cloud mode only). */}
+      {isCloud && (
+        <div className="mt-3">
+          <UnsavedBadge
+            visible={hasWorkingChanges}
+            variant={draftRestored ? "draft_restored" : "unsaved"}
+            onSave={hasWorkingChanges ? save : undefined}
+            saving={owned.mutationStatus === "saving"}
+          />
+        </div>
+      )}
+
+      {/* H4 — Version-conflict resolution bar. */}
+      {isCloud && (
+        <div className="mt-2">
+          <ConflictBar
+            visible={conflictOpen}
+            onReloadLatest={reloadLatest}
+            onKeepWorking={keepWorking}
+            busy={owned.mutationStatus === "saving"}
+          />
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {!editing ? (
           <button
             onClick={() => requireAuth(() => setEditing(true))}
             disabled={locked}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.edit_lineup")}
           </button>
         ) : (
           <>
-            <button onClick={save} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">
-              <Check className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.save")}
+            <button
+              onClick={save}
+              disabled={owned.mutationStatus === "saving"}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            >
+              <Check className="h-3.5 w-3.5" aria-hidden />
+              {owned.mutationStatus === "saving" ? t("fantasy.status.saving") : t("fantasy.save")}
             </button>
-            <button onClick={cancel} className="inline-flex items-center gap-1.5 rounded-xl border border-input bg-white/60 px-3 py-1.5 text-xs font-semibold">
+            <button
+              onClick={cancel}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-input bg-white/60 px-3 py-2 text-xs font-semibold"
+            >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.cancel")}
             </button>
           </>
@@ -380,7 +607,10 @@ function MyTeamPage() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <button disabled={locked} className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40">
+            <button
+              disabled={locked}
+              className="min-h-11 rounded-xl bg-white/60 px-3 py-2 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
+            >
               {t("fantasy.formation")}: {formation}
             </button>
           </PopoverTrigger>
@@ -392,7 +622,7 @@ function MyTeamPage() {
                   key={f}
                   onClick={() => changeFormation(f)}
                   className={cn(
-                    "rounded-lg px-2 py-1.5 text-xs font-semibold",
+                    "min-h-11 rounded-lg px-2 py-2 text-xs font-semibold",
                     formation === f
                       ? "bg-[color:var(--brand-primary)] text-white"
                       : "bg-white/70 text-foreground hover:bg-white",
@@ -408,7 +638,7 @@ function MyTeamPage() {
         <button
           onClick={() => setCaptainSheet(true)}
           disabled={locked}
-          className="rounded-xl bg-white/60 px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
+          className="min-h-11 rounded-xl bg-white/60 px-3 py-2 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
         >
           {t("fantasy.set_captain")}
         </button>
@@ -441,11 +671,10 @@ function MyTeamPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-
       {view === "squad" ? (
         <div className="mt-3">
           <Pitch
-            gk={shirt(gkXi[0])}
+            gk={gkXi[0] ? shirt(gkXi[0]) : null}
             def={defRender}
             mid={midRender}
             fwd={fwdRender}
@@ -465,11 +694,10 @@ function MyTeamPage() {
       )}
 
       <SectionHeader title={t("fantasy.starting_xi")} />
-      <p className="text-xs text-muted-foreground">
-        {editing ? "Tap two players of the same position to swap." : t("fantasy.edit_lineup")}
+      <p className="text-xs text-muted-foreground break-words whitespace-normal">
+        {editing ? t("fantasy.team.hint.swap") : t("fantasy.edit_lineup")}
       </p>
 
-      {/* Captain sheet */}
       <Sheet open={captainSheet} onOpenChange={setCaptainSheet}>
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
           <SheetHeader><SheetTitle>{t("fantasy.set_captain")}</SheetTitle></SheetHeader>
@@ -486,7 +714,7 @@ function MyTeamPage() {
                   <button
                     onClick={() => setCaptain(id, false)}
                     className={cn(
-                      "rounded-lg px-2 py-1 text-[11px] font-semibold",
+                      "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       sq.isCaptain ? "bg-[color:var(--brand-accent)] text-white" : "bg-white ring-1 ring-black/10",
                     )}
                   >
@@ -495,7 +723,7 @@ function MyTeamPage() {
                   <button
                     onClick={() => setCaptain(id, true)}
                     className={cn(
-                      "rounded-lg px-2 py-1 text-[11px] font-semibold",
+                      "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       sq.isViceCaptain ? "bg-[color:var(--brand-primary)] text-white" : "bg-white ring-1 ring-black/10",
                     )}
                   >
@@ -507,6 +735,112 @@ function MyTeamPage() {
           </ul>
         </SheetContent>
       </Sheet>
+    </div>
+  );
+}
+
+// H4 — Empty-cloud builder: shown when the authenticated cloud team has
+// zero squad rows and the user has chosen to start a new team (or has no
+// valid local template). Seeds a valid 15-player starter squad from the
+// public mock template via the authoritative cloud repository, so the
+// user leaves this route with a version-1 team they can then edit
+// normally through the standard save/draft flow.
+function EmptyCloudBuilder({ team }: { team: unknown }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const owned = useFantasyOwned();
+  const [busy, setBusy] = useState(false);
+  const [errorKey, setErrorKey] = useState<TranslationKey | null>(null);
+
+  const seed = async () => {
+    if (busy) return;
+    setBusy(true);
+    setErrorKey(null);
+    try {
+      const [seedTeam, players] = await Promise.all([
+        fantasyService.getTeam(),
+        fantasyService.getPlayers(),
+      ]);
+      const validation = validateTeam(seedTeam.squad, seedTeam.formation, players);
+      if (!validation.ok) {
+        setErrorKey("fantasy.error.import_validation");
+        setBusy(false);
+        return;
+      }
+      // Book value at seed time = current player price.
+      const purchasePrices: Record<string, number> = {};
+      for (const s of seedTeam.squad) {
+        const p = players.find((pp) => pp.id === s.playerId);
+        if (p) purchasePrices[s.playerId] = p.price;
+      }
+      const res = await runOwnedMutation(
+        {
+          qc,
+          scope: owned.scope,
+          setMutationStatus: owned.setMutationStatus,
+          nextMutationSeq: owned.nextMutationSeq,
+          setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+          replaceSnapshot: owned.replaceSnapshot,
+          invalidateOwned: owned.invalidateOwned,
+        },
+        {
+          action: () =>
+            owned.repo.saveTeam({
+              teamName: seedTeam.teamName || t("fantasy.default.team_name"),
+              managerName: seedTeam.managerName || null,
+              formation: seedTeam.formation,
+              bank: seedTeam.bank,
+              freeTransfers: seedTeam.freeTransfers,
+              pendingTransfers: seedTeam.pendingTransfers,
+              squad: seedTeam.squad,
+              purchasePrices,
+              expectedVersion: owned.snapshot?.version ?? 0,
+              currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+              lifecycle: owned.snapshot?.lifecycle ?? fantasyStateStore.read(),
+            }),
+          args: undefined,
+        },
+      );
+      if (!res.ok) {
+        const c = classifyRepoError(res.error);
+        setErrorKey(
+          c.isNetwork
+            ? "fantasy.error.network"
+            : c.isPermission
+              ? "fantasy.error.permission"
+              : c.isConflict
+                ? "fantasy.error.version_conflict"
+                : "fantasy.error.import_generic",
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  void team; // reserved for future variants that pre-fill from a template
+  return (
+    <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] p-5 text-center">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--bg-brand-gradient)] text-white">
+        <Users className="h-6 w-6" aria-hidden />
+      </div>
+      <h2 className="mt-3 text-base font-black text-foreground">{t("fantasy.empty.title")}</h2>
+      <p className="mt-1 text-xs text-muted-foreground break-words whitespace-normal">
+        {t("fantasy.empty.subtitle")}
+      </p>
+      <button
+        type="button"
+        onClick={seed}
+        disabled={busy}
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+      >
+        {busy ? t("fantasy.status.saving") : t("fantasy.empty.builder_open")}
+      </button>
+      {errorKey && (
+        <p role="alert" className="mt-3 break-words whitespace-normal text-[11px] font-semibold text-red-700">
+          {t(errorKey)}
+        </p>
+      )}
     </div>
   );
 }
