@@ -40,32 +40,61 @@ export function LeagueTable({
           />
         </label>
       )}
-      <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-black/5">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-card shadow-[var(--shadow-card)]">
         <table className="w-full text-sm">
-          <thead className="bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-muted/60 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 text-start">#</th>
-              <th className="px-3 py-2 text-start">{t("fantasy.leagues.manager")}</th>
-              {!compact && <th className="px-2 py-2 text-center">{t("fantasy.leagues.gw")}</th>}
-              <th className="px-3 py-2 text-end">{t("fantasy.leagues.total")}</th>
-              <th className="px-2 py-2 text-end">{t("fantasy.leagues.movement")}</th>
+              <th className="px-3 py-2 text-start font-black">#</th>
+              <th className="px-3 py-2 text-start font-black">{t("fantasy.leagues.manager")}</th>
+              {!compact && <th className="px-2 py-2 text-center font-black">{t("fantasy.leagues.gw")}</th>}
+              <th className="px-3 py-2 text-end font-black">{t("fantasy.leagues.total")}</th>
+              <th className="px-2 py-2 text-end font-black">{t("fantasy.leagues.movement")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((s) => {
               const isMe = meId && s.managerId === meId;
+              const medal =
+                s.rank === 1
+                  ? "bg-amber-400/25 text-amber-800 ring-amber-500/40"
+                  : s.rank === 2
+                    ? "bg-slate-300/40 text-slate-700 ring-slate-500/30"
+                    : s.rank === 3
+                      ? "bg-orange-400/20 text-orange-800 ring-orange-500/30"
+                      : "bg-muted text-muted-foreground ring-black/5";
               return (
                 <tr
                   key={s.managerId}
-                  className={cn("border-t border-border/70", isMe && "bg-[color:var(--brand-accent)]/10")}
+                  className={cn(
+                    "border-t border-border/70 transition-colors",
+                    isMe && "bg-[color:var(--brand-accent)]/10",
+                  )}
                 >
-                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{s.rank}</td>
                   <td className="px-3 py-2">
-                    <div className="truncate font-bold text-foreground">{s.managerName}</div>
+                    <span
+                      className={cn(
+                        "inline-grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[11px] font-black tabular-nums ring-1",
+                        medal,
+                      )}
+                    >
+                      {s.rank}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="truncate font-bold text-foreground">{s.managerName}</div>
+                      {isMe && (
+                        <span className="rounded-full bg-[color:var(--brand-accent)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                          {t("fantasy.leagues.you") /* falls back gracefully */}
+                        </span>
+                      )}
+                    </div>
                     <div className="truncate text-[10px] text-muted-foreground">{s.teamName}</div>
                   </td>
                   {!compact && (
-                    <td className="px-2 py-2 text-center tabular-nums">{s.gameweekScore}</td>
+                    <td className="px-2 py-2 text-center font-semibold tabular-nums text-muted-foreground">
+                      {s.gameweekScore}
+                    </td>
                   )}
                   <td className="px-3 py-2 text-end font-black tabular-nums text-foreground">
                     {nf.format(s.totalScore)}

@@ -5,6 +5,7 @@
 // 320px; never truncated.
 
 import { useI18n } from "@/i18n/provider";
+import { CircleDot } from "lucide-react";
 
 export interface UnsavedBadgeProps {
   /** When false, the badge does not render (kept in DOM only when useful). */
@@ -47,12 +48,14 @@ export function UnsavedBadge({
       aria-live="polite"
       aria-atomic="true"
       data-testid="unsaved-badge"
-      className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300/70 bg-amber-50/80 px-3 py-2 text-[12px] text-amber-900"
+      className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300/70 bg-amber-50/85 px-3 py-2 text-[12px] font-semibold text-amber-900 shadow-sm backdrop-blur"
     >
       <span
         aria-hidden
-        className="inline-block h-2 w-2 rounded-full bg-amber-500"
-      />
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30"
+      >
+        <CircleDot className="h-3.5 w-3.5" />
+      </span>
       <span className="min-w-0 flex-1 break-words whitespace-normal">
         {label}
       </span>
