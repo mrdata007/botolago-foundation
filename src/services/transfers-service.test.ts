@@ -1,4 +1,3 @@
-// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/transfers-service.test.ts`
 import { describe, it, expect } from "bun:test";
 import { applyConfirmedTransfers, previewTransfers } from "./transfers-service";

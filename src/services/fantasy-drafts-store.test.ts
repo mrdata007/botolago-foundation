@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach } from "bun:test";
 import "./__test-shim";
 import { fantasyDraftsStore, flattenDraftKey, type FantasyDraftKey } from "./fantasy-drafts-store";

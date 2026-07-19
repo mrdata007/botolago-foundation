@@ -1,4 +1,3 @@
-// @ts-nocheck
 import "./__test-shim";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { fantasyStateStore } from "@/services/fantasy-state";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Tests for the auth service selector and Supabase error mapping.
 // Run with: `bun test src/services/auth-selector.test.ts`
 import { describe, it, expect } from "bun:test";

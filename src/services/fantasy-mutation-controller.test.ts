@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Pass 3.2-H1 — mutation controller foundation tests.
 //
 // Verifies:

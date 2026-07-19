@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Pass 3.2-H3 — Fantasy import service tests.
 //
 // Deterministic; no Supabase. Covers:

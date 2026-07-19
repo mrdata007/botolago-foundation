@@ -1,4 +1,3 @@
-// @ts-nocheck — bun test runtime types are provided by bun-types (not in deps).
 // Run with: `bun test src/services/auth.test.ts`
 import { describe, it, expect, beforeEach } from "bun:test";
 import { __testing } from "./auth";

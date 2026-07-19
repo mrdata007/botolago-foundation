@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach } from "bun:test";
 import { QueryClient } from "@tanstack/react-query";
 import "./__test-shim";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from "bun:test";
 import { FantasyCloudError, mapSupabaseError, validateSquadShape } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";

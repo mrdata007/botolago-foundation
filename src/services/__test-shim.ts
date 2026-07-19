@@ -1,4 +1,3 @@
-// @ts-nocheck
 // of any test file that touches fantasyStateStore / storage.ts helpers.
 if (typeof globalThis.window === "undefined") {
   const mem = new Map<string, string>();

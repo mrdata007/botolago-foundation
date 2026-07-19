@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach } from "bun:test";
 import "./__test-shim";
 import { importDecisionService, isImportPromptEligible } from "./fantasy-import-decision";

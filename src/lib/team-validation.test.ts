@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "bun:test";
 import { validateTeam } from "./team-validation";
 import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";

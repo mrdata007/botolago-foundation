@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider/source-selection integration tests without mounting React.
 // These verify that:
 //   1. selectFantasyRepoSource returns "cloud" ONLY for authenticated Supabase.
