@@ -45,6 +45,14 @@ export function PlayerShirt({
       ? `${nextOpponentClub.crestPlaceholder} ${player.nextIsHome ? "(D)" : "(E)"}`
       : undefined;
 
+  const statusLabel = status !== "available" ? t(`player.status.${status}` as TranslationKey) : "";
+  const roleLabel = captain
+    ? `, ${t("fantasy.captain_full")}`
+    : vice
+      ? `, ${t("fantasy.vice_full")}`
+      : "";
+  const fullAria = `${tr(player.name)}${club ? `, ${tr(club.shortName)}` : ""}${roleLabel}${statusLabel ? `, ${statusLabel}` : ""}`;
+
   return (
     <button
       type="button"
@@ -54,20 +62,24 @@ export function PlayerShirt({
         onClick && "cursor-pointer",
         className,
       )}
-      aria-label={tr(player.name)}
+      aria-label={fullAria}
     >
-      <div className="relative">
+      <div className="relative pt-1">
         <JerseyVisual
           kit={kit}
           size={jerseySize}
           imageUrl={player.jerseyImageUrl}
           ariaLabel={club ? tr(club.shortName) : undefined}
+          selected={captain}
         />
-        {/* Captain / Vice — top-end shoulder */}
         {captain && (
           <span
-            className="absolute -top-1 -end-1 grid h-4 w-4 place-items-center rounded-full bg-[color:var(--brand-accent)] text-[9px] font-black text-white ring-2 ring-white shadow"
-            aria-label={t("fantasy.captain_full")}
+            className="absolute -top-1 -end-1 grid h-5 w-5 place-items-center rounded-full text-[10px] font-black text-white ring-2 ring-white shadow-md"
+            style={{
+              background:
+                "linear-gradient(135deg, color-mix(in oklab, var(--brand-accent) 90%, black) 0%, color-mix(in oklab, var(--brand-accent) 65%, black) 100%)",
+            }}
+            aria-hidden
             title={t("fantasy.captain_full")}
           >
             {t("fantasy.captain")}
@@ -75,24 +87,23 @@ export function PlayerShirt({
         )}
         {!captain && vice && (
           <span
-            className="absolute -top-1 -end-1 grid h-4 w-4 place-items-center rounded-full bg-white text-[9px] font-black text-[color:var(--brand-primary)] ring-2 ring-[color:var(--brand-primary)] shadow"
-            aria-label={t("fantasy.vice_full")}
+            className="absolute -top-1 -end-1 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px] font-black text-[color:var(--brand-primary)] ring-2 ring-[color:var(--brand-primary)] shadow-md"
+            aria-hidden
             title={t("fantasy.vice_full")}
           >
             {t("fantasy.vice")}
           </span>
         )}
-        {/* Status — bottom-start shoulder, attached to jersey */}
         {status !== "available" && (
           <span
             className={cn(
-              "absolute -bottom-0.5 -start-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-black text-white ring-2 ring-white shadow",
+              "absolute -bottom-0.5 -start-1 grid h-5 w-5 place-items-center rounded-full text-[10px] font-black text-white ring-2 ring-white shadow",
               status === "injured" && "bg-red-500",
               status === "doubtful" && "bg-amber-500",
               status === "suspended" && "bg-neutral-800",
             )}
-            aria-label={t(`player.status.${status}` as TranslationKey)}
-            title={t(`player.status.${status}` as TranslationKey)}
+            aria-hidden
+            title={statusLabel}
           >
             {status === "injured" ? "×" : status === "doubtful" ? "?" : "!"}
           </span>
@@ -102,6 +113,7 @@ export function PlayerShirt({
         name={shortName}
         metric={metric ?? (player.expectedPoints != null ? String(player.expectedPoints) : undefined)}
         fixture={fixtureText}
+        emphasize={captain}
       />
       {metricLabel && <span className="sr-only">{metricLabel}</span>}
     </button>
