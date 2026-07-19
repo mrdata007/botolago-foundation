@@ -8,108 +8,160 @@ interface JerseyVisualProps {
   imageUrl?: string;
   className?: string;
   ariaLabel?: string;
+  /** When true, renders a soft brand ring behind the jersey (selected state). */
+  selected?: boolean;
 }
 
 /**
- * SVG football jersey. Renders a torso with sleeves, neckline, subtle highlight
- * and shadow. Supports several deterministic kit patterns from KitConfig. When
- * `imageUrl` is set and loads, the pixel image is shown; on error, gracefully
- * falls back to the generated SVG jersey.
+ * Dimensional SVG football jersey.
+ *
+ * Adds proper collar, sleeve seams, subtle top highlight and a rich bottom
+ * shadow so the shirt reads as a garment rather than a flat icon. Supports
+ * several deterministic kit patterns and an optional pixel image with
+ * graceful fallback.
  */
-export function JerseyVisual({ kit, size = 48, imageUrl, className, ariaLabel }: JerseyVisualProps) {
+export function JerseyVisual({ kit, size = 48, imageUrl, className, ariaLabel, selected }: JerseyVisualProps) {
   const [imgFailed, setImgFailed] = useState(false);
 
   if (imageUrl && !imgFailed) {
     return (
-      <img
-        src={imageUrl}
-        alt={ariaLabel ?? ""}
-        width={size}
-        height={size * 1.15}
-        onError={() => setImgFailed(true)}
-        className={cn("select-none drop-shadow-md", className)}
-        draggable={false}
-      />
+      <div className={cn("relative", className)}>
+        {selected && (
+          <span
+            aria-hidden
+            className="absolute inset-0 -m-1 rounded-full"
+            style={{
+              background:
+                "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 55%, transparent), transparent 70%)",
+              filter: "blur(2px)",
+            }}
+          />
+        )}
+        <img
+          src={imageUrl}
+          alt={ariaLabel ?? ""}
+          width={size}
+          height={size * 1.15}
+          onError={() => setImgFailed(true)}
+          className="relative select-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+          draggable={false}
+        />
+      </div>
     );
   }
 
   const { primary, secondary, pattern } = kit;
   const w = 48;
   const h = 56;
+  const gid = `j${Math.abs(hash(`${primary}-${secondary}-${pattern}`))}`;
   return (
-    <svg
-      role="img"
-      aria-label={ariaLabel}
-      viewBox={`0 0 ${w} ${h}`}
-      width={size}
-      height={size * (h / w)}
-      className={cn("select-none drop-shadow-md", className)}
-    >
-      <defs>
-        <linearGradient id="jerseyHighlight" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-          <stop offset="45%" stopColor="rgba(255,255,255,0)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,0.22)" />
-        </linearGradient>
-        <clipPath id="jerseyBody">
-          {/* Torso + shoulders shape */}
-          <path d="M8 10 L16 4 L20 6 Q24 9 28 6 L32 4 L40 10 L44 20 L38 22 L36 52 Q24 55 12 52 L10 22 L4 20 Z" />
-        </clipPath>
-      </defs>
+    <div className={cn("relative inline-block", className)}>
+      {selected && (
+        <span
+          aria-hidden
+          className="absolute inset-0 -m-1 rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 55%, transparent), transparent 70%)",
+            filter: "blur(2px)",
+          }}
+        />
+      )}
+      <svg
+        role="img"
+        aria-label={ariaLabel}
+        viewBox={`0 0 ${w} ${h}`}
+        width={size}
+        height={size * (h / w)}
+        className="relative select-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+      >
+        <defs>
+          <linearGradient id={`${gid}-hi`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.42)" />
+            <stop offset="35%" stopColor="rgba(255,255,255,0.08)" />
+            <stop offset="65%" stopColor="rgba(0,0,0,0.05)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.32)" />
+          </linearGradient>
+          <linearGradient id={`${gid}-side`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(0,0,0,0.18)" />
+            <stop offset="20%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="80%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
+          </linearGradient>
+          <clipPath id={`${gid}-body`}>
+            <path d="M8 10 L16 4 L20 6 Q24 9 28 6 L32 4 L40 10 L44 20 L38 22 L36 52 Q24 55 12 52 L10 22 L4 20 Z" />
+          </clipPath>
+        </defs>
 
-      {/* Sleeves (drawn behind torso) */}
-      <path
-        d="M8 10 L4 20 L0 32 L8 36 L14 24 Z"
-        fill={pattern === "two-tone-sleeves" ? secondary : primary}
-      />
-      <path
-        d="M40 10 L44 20 L48 32 L40 36 L34 24 Z"
-        fill={pattern === "two-tone-sleeves" ? secondary : primary}
-      />
+        {/* Sleeves */}
+        <g>
+          <path
+            d="M8 10 L4 20 L0 32 L8 36 L14 24 Z"
+            fill={pattern === "two-tone-sleeves" ? secondary : primary}
+          />
+          <path
+            d="M40 10 L44 20 L48 32 L40 36 L34 24 Z"
+            fill={pattern === "two-tone-sleeves" ? secondary : primary}
+          />
+          {/* Sleeve cuffs */}
+          <path d="M0 32 L8 36 L7 38 L-0.5 34 Z" fill="rgba(0,0,0,0.22)" />
+          <path d="M48 32 L40 36 L41 38 L48.5 34 Z" fill="rgba(0,0,0,0.22)" />
+        </g>
 
-      {/* Torso base */}
-      <g clipPath="url(#jerseyBody)">
-        <rect x="0" y="0" width={w} height={h} fill={primary} />
+        {/* Torso base */}
+        <g clipPath={`url(#${gid}-body)`}>
+          <rect x="0" y="0" width={w} height={h} fill={primary} />
 
-        {pattern === "stripes-vertical" && (
-          <g fill={secondary}>
-            {[10, 20, 30, 40].map((x) => (
-              <rect key={x} x={x - 2} y="0" width="4" height={h} />
-            ))}
-          </g>
-        )}
+          {pattern === "stripes-vertical" && (
+            <g fill={secondary}>
+              {[10, 20, 30, 40].map((x) => (
+                <rect key={x} x={x - 2} y="0" width="4" height={h} />
+              ))}
+            </g>
+          )}
 
-        {pattern === "bands-horizontal" && (
-          <g fill={secondary}>
-            {[14, 26, 38, 50].map((y) => (
-              <rect key={y} x="0" y={y - 3} width={w} height="6" />
-            ))}
-          </g>
-        )}
+          {pattern === "bands-horizontal" && (
+            <g fill={secondary}>
+              {[14, 26, 38, 50].map((y) => (
+                <rect key={y} x="0" y={y - 3} width={w} height="6" />
+              ))}
+            </g>
+          )}
 
-        {pattern === "central-stripe" && (
-          <rect x={w / 2 - 5} y="0" width="10" height={h} fill={secondary} />
-        )}
+          {pattern === "central-stripe" && (
+            <rect x={w / 2 - 5} y="0" width="10" height={h} fill={secondary} />
+          )}
 
-        {/* Highlight & shadow overlay for depth */}
-        <rect x="0" y="0" width={w} height={h} fill="url(#jerseyHighlight)" />
-      </g>
+          {/* Side shading */}
+          <rect x="0" y="0" width={w} height={h} fill={`url(#${gid}-side)`} />
+          {/* Vertical highlight/shadow */}
+          <rect x="0" y="0" width={w} height={h} fill={`url(#${gid}-hi)`} />
+          {/* Hem accent */}
+          <rect x="0" y="49" width={w} height="1.6" fill={secondary} opacity="0.9" />
+        </g>
 
-      {/* Body outline */}
-      <path
-        d="M8 10 L16 4 L20 6 Q24 9 28 6 L32 4 L40 10 L44 20 L38 22 L36 52 Q24 55 12 52 L10 22 L4 20 Z"
-        fill="none"
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth="0.8"
-      />
+        {/* Body outline */}
+        <path
+          d="M8 10 L16 4 L20 6 Q24 9 28 6 L32 4 L40 10 L44 20 L38 22 L36 52 Q24 55 12 52 L10 22 L4 20 Z"
+          fill="none"
+          stroke="rgba(0,0,0,0.42)"
+          strokeWidth="0.8"
+        />
 
-      {/* Neckline */}
-      <path
-        d="M20 6 Q24 12 28 6 L26 4 Q24 6 22 4 Z"
-        fill={secondary}
-        stroke="rgba(0,0,0,0.3)"
-        strokeWidth="0.6"
-      />
-    </svg>
+        {/* V-neck collar */}
+        <path
+          d="M20 6 Q24 12 28 6 L26 4 Q24 6 22 4 Z"
+          fill={secondary}
+          stroke="rgba(0,0,0,0.35)"
+          strokeWidth="0.6"
+        />
+      </svg>
+    </div>
   );
+}
+
+function hash(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
 }

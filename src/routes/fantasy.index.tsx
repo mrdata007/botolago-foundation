@@ -44,10 +44,22 @@ function FantasyHub() {
 
   return (
     <div>
-      <h1 className="text-2xl font-black tracking-tight text-foreground"><span className="text-brand">{t("fantasy.title")}</span></h1>
-      <p className="mt-1 text-sm text-muted-foreground"><Trans text={t("fantasy.subtitle")} accentClassName="text-brand font-semibold" /></p>
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--brand-accent)]">
+            <Sparkles className="h-3 w-3" aria-hidden />
+            {gw.data ? `${t("home.gameweek")} ${gw.data.number}` : t("fantasy.title")}
+          </div>
+          <h1 className="mt-1 text-[26px] font-black tracking-tight text-foreground">
+            <span className="text-brand">{t("fantasy.title")}</span>
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            <Trans text={t("fantasy.subtitle")} accentClassName="text-brand font-semibold" />
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-3">
+      <div className="mt-4">
         {summary.data && gw.data ? (
           <FantasySummaryCard summary={summary.data} gw={gw.data} />
         ) : (
@@ -69,12 +81,15 @@ function FantasyHub() {
           <Link
             key={a.to}
             to={a.to}
-            className="glass-surface glass-regular flex flex-col items-center gap-1.5 rounded-2xl border border-[var(--glass-border)] px-2 py-3 text-center transition-transform motion-safe:hover:-translate-y-0.5"
+            className="surface-2-interactive flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-center"
           >
-            <div className="grid h-8 w-8 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white">
+            <div
+              className="grid h-9 w-9 place-items-center rounded-xl text-white shadow-[0_6px_14px_-8px_color-mix(in_oklab,var(--brand-accent)_60%,transparent)]"
+              style={{ backgroundImage: "var(--bg-brand-gradient)" }}
+            >
               <a.icon className="h-4 w-4" aria-hidden />
             </div>
-            <span className="text-[11px] font-semibold text-foreground">{t(a.labelKey)}</span>
+            <span className="text-[11px] font-bold text-foreground">{t(a.labelKey)}</span>
           </Link>
         ))}
       </div>
@@ -128,9 +143,9 @@ function FantasyHub() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] px-2 py-2 text-center">
+    <div className="surface-2 rounded-2xl px-2 py-2.5 text-center">
       <div className="text-sm font-black tabular-nums text-foreground">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
     </div>
   );
 }

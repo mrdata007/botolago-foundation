@@ -8,6 +8,7 @@
 // 44px minimum tap targets, RTL-safe logical layout, 320px wrap.
 
 import { useI18n } from "@/i18n/provider";
+import { AlertTriangle } from "lucide-react";
 
 export interface ConflictBarProps {
   visible: boolean;
@@ -49,15 +50,23 @@ export function ConflictBar({
       aria-live="assertive"
       aria-atomic="true"
       data-testid="conflict-bar"
-      className="flex flex-col gap-2 rounded-xl border border-red-300/70 bg-red-50/80 px-3 py-2 text-red-900"
+      className="flex flex-col gap-2 rounded-xl border border-red-300/70 bg-red-50/85 px-3 py-2.5 text-red-900 shadow-sm backdrop-blur"
     >
-      <div className="min-w-0">
-        <p className="text-[12px] font-bold break-words whitespace-normal">
-          {t(titleKey)}
-        </p>
-        <p className="mt-0.5 text-[11px] break-words whitespace-normal">
-          {t(explanationKey)}
-        </p>
+      <div className="flex min-w-0 items-start gap-2">
+        <span
+          aria-hidden
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-red-500/15 text-red-700 ring-1 ring-red-500/30"
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-bold break-words whitespace-normal">
+            {t(titleKey)}
+          </p>
+          <p className="mt-0.5 text-[11px] break-words whitespace-normal">
+            {t(explanationKey)}
+          </p>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <button
