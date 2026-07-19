@@ -31,7 +31,8 @@ API strategy, compatibility matrix, and roadmap are in
 - The hosted project is healthy and empty.
 - No migration, SQL, function, bucket, Auth configuration, or application key
   from this branch was applied to the hosted project.
-- The legacy hosted project was not queried or modified during implementation.
+- The legacy hosted project was not modified; no schema, configuration, or data
+  write was applied to it.
 - The prior repository configuration/migrations are labeled and quarantined at
   `docs/backend/archive/legacy-supabase`.
 
