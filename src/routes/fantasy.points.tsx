@@ -34,6 +34,8 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
+import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
+import { ConflictBar } from "@/components/fantasy/ConflictBar";
 
 
 
@@ -73,6 +75,14 @@ function PointsPage() {
   const [view, setView] = useState<SquadViewMode>("squad");
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
+  const [conflictOpen, setConflictOpen] = useState(false);
+
+  const reloadLatest = async () => {
+    setConflictOpen(false);
+    if (isCloud) await owned.reload();
+    toast.success(t("fantasy.status.saved_short"));
+  };
+  const keepWorking = () => setConflictOpen(false);
 
   useEffect(() => {
     if (isCloud) {
@@ -341,10 +351,12 @@ function PointsPage() {
             },
           );
           if (res.ok) {
+            setConflictOpen(false);
             if (chipFinalize === "free_hit" && state.chips.freeHitSnapshot) toast.success(t("fantasy.points.free_hit_restored"));
             else toast.success(t("fantasy.points.finalize_success"));
           } else {
             const c = classifyRepoError(res.error);
+            if (c.isConflict) setConflictOpen(true);
             const key: TranslationKey = c.isConflict
               ? "fantasy.error.version_conflict"
               : c.isNetwork
@@ -442,18 +454,18 @@ function PointsPage() {
             type="button"
             onClick={onRecompute}
             disabled={!canRecompute}
-            className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold text-foreground ring-1 ring-black/10 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-foreground ring-1 ring-black/10 disabled:opacity-50"
             aria-label={t("fantasy.points.recompute")}
           >
-            <RefreshCcw className="h-3 w-3" aria-hidden /> {t("fantasy.points.recompute")}
+            <RefreshCcw className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.points.recompute")}
           </button>
         )}
         {finalized && (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-800"
             role="status"
           >
-            <LockIcon className="h-3 w-3" aria-hidden />
+            <LockIcon className="h-3.5 w-3.5" aria-hidden />
             {t("fantasy.points.finalized_badge")}
           </span>
         )}
@@ -461,21 +473,40 @@ function PointsPage() {
           <button
             type="button"
             onClick={() => setConfirmFinalize(true)}
-            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
           >
-            <LockIcon className="h-3 w-3" aria-hidden /> {t("fantasy.points.finalize")}
+            <LockIcon className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.points.finalize")}
           </button>
         )}
         {isCurrent && finalized && (
           <button
             type="button"
             onClick={() => setConfirmAdvance(true)}
-            className="inline-flex items-center gap-1 rounded-full bg-[color:var(--brand-primary)] px-2 py-0.5 text-[10px] font-bold text-white ring-1 ring-black/10"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
           >
-            {t("fantasy.points.advance")} <ChevronRight className="h-3 w-3 rtl:rotate-180" aria-hidden />
+            {t("fantasy.points.advance")} <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
           </button>
         )}
       </div>
+
+      {/* H6 — Live status region (points route has no editable drafts; badge stays silent). */}
+      {isCloud && (
+        <div className="mt-3">
+          <UnsavedBadge visible={false} />
+        </div>
+      )}
+
+      {/* H6 — Version-conflict resolution bar. */}
+      {isCloud && (
+        <div className="mt-2">
+          <ConflictBar
+            visible={conflictOpen}
+            onReloadLatest={reloadLatest}
+            onKeepWorking={keepWorking}
+            busy={owned.mutationStatus === "saving"}
+          />
+        </div>
+      )}
 
       <AlertDialog open={confirmFinalize} onOpenChange={setConfirmFinalize}>
         <AlertDialogContent>
