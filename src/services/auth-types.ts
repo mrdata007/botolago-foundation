@@ -39,9 +39,14 @@ export type AuthErrorCode =
   | "credentials"
   | "email_taken"
   | "username_taken"
+  | "invalid_username"
+  | "reserved_username"
   | "otp_invalid"
   | "otp_expired"
   | "email_unconfirmed"
+  | "unauthorized"
+  | "session_expired"
+  | "invalid_reset_token"
   | "rate_limited"
   | "network"
   | "provider_unavailable"
@@ -76,6 +81,18 @@ export interface CompleteProfileInput {
 
 export interface UpdatePasswordInput {
   password: string;
+  /** OTP returned by Supabase reauthentication when secure password changes require it. */
+  nonce?: string;
+  /** Used only when the hosted Auth setting requires the current password. */
+  currentPassword?: string;
+}
+
+export type SignOutScope = "local" | "global" | "others";
+
+export interface SignOutOptions {
+  resetLocalData?: boolean;
+  /** Defaults to local so signing out one device does not unexpectedly revoke every session. */
+  scope?: SignOutScope;
 }
 
 export interface AuthService {
@@ -84,6 +101,8 @@ export interface AuthService {
   signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>>;
   registerWithEmail(input: RegisterInput): Promise<AuthResult<{ email: string }>>;
   requestPasswordReset(email: string): Promise<AuthResult>;
+  reauthenticate(): Promise<AuthResult>;
+  refreshSession(): Promise<AuthResult<AuthUser>>;
   updatePassword(input: UpdatePasswordInput): Promise<AuthResult>;
   verifyCode(email: string, code: string): Promise<AuthResult<AuthUser>>;
   resendCode(email: string): Promise<AuthResult>;
@@ -91,7 +110,9 @@ export interface AuthService {
   signInWithApple(): Promise<AuthResult<AuthUser>>;
   continueAsGuest(): Promise<AuthResult>;
   completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>>;
-  signOut(options?: { resetLocalData?: boolean }): Promise<void>;
+  requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>>;
+  cancelAccountDeletion(): Promise<AuthResult>;
+  signOut(options?: SignOutOptions): Promise<void>;
 }
 
 export function defaultNotifications(): NotificationPreferences {

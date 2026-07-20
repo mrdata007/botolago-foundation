@@ -94,4 +94,29 @@ describe("authService (local mock)", () => {
     await authService.signOut();
     expect(authService.getSession().status).toBe("anonymous");
   });
+
+  it("refreshes an active session and rejects an expired session", async () => {
+    await authService.signInWithEmail(__testing.DEMO_EMAIL, __testing.DEMO_PASSWORD);
+    expect((await authService.refreshSession()).ok).toBe(true);
+    await authService.signOut();
+    const expired = await authService.refreshSession();
+    expect(expired.ok).toBe(false);
+    expect(expired.errorCode).toBe("session_expired");
+  });
+
+  it("creates and cancels an idempotent account deletion request", async () => {
+    await authService.signInWithEmail(__testing.DEMO_EMAIL, __testing.DEMO_PASSWORD);
+    const first = await authService.requestAccountDeletion();
+    const second = await authService.requestAccountDeletion();
+    expect(first.ok).toBe(true);
+    expect(second.data?.requestId).toBe(first.data?.requestId);
+    expect((await authService.cancelAccountDeletion()).ok).toBe(true);
+  });
+
+  it("rejects a reserved username during onboarding", async () => {
+    await authService.signInWithEmail(__testing.DEMO_EMAIL, __testing.DEMO_PASSWORD);
+    const result = await authService.completeProfile({ username: "admin" });
+    expect(result.ok).toBe(false);
+    expect(result.errorCode).toBe("reserved_username");
+  });
 });

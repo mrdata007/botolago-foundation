@@ -1,4 +1,4 @@
-name: Backend foundation quality
+name: Backend quality
 
 on:
   pull_request:
@@ -14,9 +14,10 @@ on:
   push:
     branches:
       - backend/greenfield-foundation
+      - backend/identity-domain
 
 concurrency:
-  group: backend-foundation-${{ github.ref }}
+  group: backend-quality-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

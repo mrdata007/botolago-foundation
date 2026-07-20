@@ -2,7 +2,8 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const USERNAME_RE = /^[a-z0-9_-]{3,20}$/i;
+// Mirrors app_private.normalize_username/check constraints. The server remains authoritative.
+const USERNAME_RE = /^[a-z0-9][a-z0-9_-]{2,19}$/i;
 
 export function validateEmail(v: string): TranslationKey | null {
   const s = v.trim();

@@ -34,6 +34,7 @@ function ProfileSetupPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState<string | undefined>();
   const [favoriteClubId, setFavoriteClubId] = useState<string | undefined>();
   const [prefs, setPrefs] = useState<NotificationPreferences>({
@@ -53,6 +54,7 @@ function ProfileSetupPage() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName);
+      setUsername(user.username);
       setAvatar(user.avatarDataUrl);
       setFavoriteClubId(user.favoriteClubId);
       setPrefs(user.notifications);
@@ -77,22 +79,33 @@ function ProfileSetupPage() {
     if (chosenLang !== lang) setLanguage(chosenLang);
     const res = await authService.completeProfile({
       displayName,
+      username,
       avatarDataUrl: avatar,
       favoriteClubId,
       notifications: prefs,
       language: chosenLang,
     });
     setSubmitting(false);
-    if (!res.ok) return;
+    if (!res.ok) {
+      const key =
+        res.errorCode === "username_taken"
+          ? "auth.error.username_taken"
+          : res.errorCode === "invalid_username" || res.errorCode === "reserved_username"
+            ? "auth.error.username_invalid"
+            : "auth.error.generic";
+      toast.error(t(key));
+      return;
+    }
     refresh();
     toast.success(t("auth.setup.success"));
     navigate({ to: "/" });
   };
 
   const canNext = useMemo(() => {
-    if (step === 1) return displayName.trim().length >= 2;
+    if (step === 1)
+      return displayName.trim().length >= 2 && /^[a-z0-9][a-z0-9_-]{2,19}$/i.test(username);
     return true;
-  }, [step, displayName]);
+  }, [step, displayName, username]);
 
   return (
     <AuthShell title={t("auth.setup.title")} subtitle={t("auth.setup.subtitle")} showBack={false}>
@@ -170,6 +183,22 @@ function ProfileSetupPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="setupUsername"
+              className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
+            >
+              {t("auth.register.username")}
+            </label>
+            <input
+              id="setupUsername"
+              autoComplete="username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
             />
           </div>
         </div>
