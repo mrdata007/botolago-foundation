@@ -17,6 +17,7 @@ on:
       - backend/identity-domain
       - backend/football-domain
       - backend/news-domain
+      - backend/notifications-domain
 
 concurrency:
   group: backend-quality-${{ github.ref }}

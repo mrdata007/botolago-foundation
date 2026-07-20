@@ -27,3 +27,8 @@ export function getFootballApi() {
 export function getNewsApi() {
   return supabaseV2.schema("api");
 }
+
+/** Notifications V2 exposes only owner-bounded and explicitly granted RPCs. */
+export function getNotificationsApi() {
+  return supabaseV2.schema("api");
+}
