@@ -1,66 +1,109 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/auth/AuthProvider";
+import { getNewsDataMode, newsService } from "@/services/news";
 
-/**
- * Transitional mock/local saved-article adapter. SSR-safe: reads happen after mount so
- * initial render never diverges between server and client. Persistence
- * is scoped to a namespaced key and is intentionally decoupled from the
- * Supabase cloud. It is not production authority: Phase 4 will bind the
- * SavedArticleRepository contract to canonical article UUIDs and migrate this
- * device-local draft state. No weak/unconstrained article reference is created
- * during the identity phase.
- */
+// Device-local persistence exists only in explicit preview/mock mode. Supabase
+// mode is server-authoritative and never falls back to these values.
 const STORAGE_KEY = "botolago.savedArticles";
-
 type Listener = (ids: string[]) => void;
 const listeners = new Set<Listener>();
 let cached: string[] | null = null;
 
-function read(): string[] {
+function readLocal(): string[] {
   if (cached) return cached;
   if (typeof window === "undefined") return (cached = []);
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    cached = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]") as unknown;
+    cached = Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === "string")
+      : [];
   } catch {
     cached = [];
   }
   return cached;
 }
 
-function write(next: string[]) {
+function writeLocal(next: string[]): void {
   cached = next;
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore quota */
-    }
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Preview persistence is best-effort. Production never uses this path.
   }
-  listeners.forEach((fn) => fn(next));
+  listeners.forEach((listener) => listener(next));
 }
 
 export function useSavedArticles() {
-  const [ids, setIds] = useState<string[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const mode = getNewsDataMode();
+  const { user, status, requireAuth } = useAuth();
+  const queryClient = useQueryClient();
+  const queryKey = ["news", "saved-article-ids", user?.id ?? "anonymous"] as const;
+  const [localIds, setLocalIds] = useState<string[]>([]);
+  const [localHydrated, setLocalHydrated] = useState(false);
 
   useEffect(() => {
-    setIds(read());
-    setHydrated(true);
-    const listener: Listener = (next) => setIds(next);
+    if (mode !== "mock") return;
+    setLocalIds(readLocal());
+    setLocalHydrated(true);
+    const listener: Listener = (next) => setLocalIds(next);
     listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  }, []);
+    return () => void listeners.delete(listener);
+  }, [mode]);
 
-  const toggle = useCallback((id: string) => {
-    const current = read();
-    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
-    write(next);
-  }, []);
+  const cloud = useQuery({
+    queryKey,
+    queryFn: () => newsService.getSavedIds(),
+    enabled: mode === "supabase" && status === "authenticated",
+    staleTime: 30_000,
+  });
 
+  const mutation = useMutation({
+    mutationFn: async ({ id, saved }: { id: string; saved: boolean }) => {
+      if (saved) await newsService.unsave(id);
+      else await newsService.save(id);
+    },
+    onMutate: async ({ id, saved }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<string[]>(queryKey) ?? [];
+      queryClient.setQueryData<string[]>(
+        queryKey,
+        saved ? previous.filter((value) => value !== id) : [...new Set([...previous, id])],
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, rollback) => {
+      if (rollback) queryClient.setQueryData(queryKey, rollback.previous);
+    },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey }),
+  });
+
+  const ids = useMemo(
+    () => (mode === "mock" ? localIds : (cloud.data ?? [])),
+    [cloud.data, localIds, mode],
+  );
   const isSaved = useCallback((id: string) => ids.includes(id), [ids]);
+  const toggle = useCallback(
+    (id: string) => {
+      if (mode === "mock") {
+        const current = readLocal();
+        writeLocal(
+          current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+        );
+        return;
+      }
+      requireAuth(() => mutation.mutate({ id, saved: ids.includes(id) }), {
+        reason: "Connectez-vous pour enregistrer cet article.",
+      });
+    },
+    [ids, mode, mutation, requireAuth],
+  );
 
-  return { ids, isSaved, toggle, hydrated };
+  return {
+    ids,
+    isSaved,
+    toggle,
+    hydrated: mode === "mock" ? localHydrated : status !== "loading" && !cloud.isLoading,
+    pending: mutation.isPending,
+  };
 }
