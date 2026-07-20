@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
@@ -107,8 +108,8 @@ function HomeContent() {
     queryFn: () => botolaService.getCurrentGameweek(),
   });
   const matchesQ = useQuery({
-    queryKey: ["home-matches"],
-    queryFn: () => botolaService.getLiveOrUpcoming(),
+    queryKey: ["football", "home-matches", lang],
+    queryFn: () => footballService.getHomeMatches(lang),
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],
@@ -137,7 +138,9 @@ function HomeContent() {
     queryFn: () => botolaService.getPrivateLeagues(),
   });
 
-  const clubById = (id: string) => clubsQ.data?.find((c) => c.id === id);
+  const clubById = (id: string) =>
+    matchesQ.data?.clubs.find((club) => club.id === id) ??
+    clubsQ.data?.find((club) => club.id === id);
 
   // Localized full date used in the hero meta line.
   const dateLine = useMemo(() => {
@@ -203,10 +206,10 @@ function HomeContent() {
           {matchesQ.isLoading && (
             <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
           )}
-          {!matchesQ.isLoading && matchesQ.data?.length === 0 && (
+          {!matchesQ.isLoading && matchesQ.data?.matches.length === 0 && (
             <EmptyState compact>{t("state.empty")}</EmptyState>
           )}
-          {matchesQ.data?.map((m) => {
+          {matchesQ.data?.matches.map((m) => {
             const home = clubById(m.homeClubId);
             const away = clubById(m.awayClubId);
             if (!home || !away) return null;

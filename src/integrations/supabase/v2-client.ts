@@ -17,3 +17,8 @@ export const supabaseV2 = supabase as unknown as SupabaseClient<Database>;
 export function getIdentityApi() {
   return supabaseV2.schema("api");
 }
+
+/** Football V2 shares the same controlled api schema and generated contract. */
+export function getFootballApi() {
+  return supabaseV2.schema("api");
+}

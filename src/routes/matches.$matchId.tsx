@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, MapPin, Trophy, CalendarClock, Share2 } from "lucide-react";
 import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -24,36 +25,22 @@ function MatchDetailPage() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
-  const matchesQ = useQuery({
-    queryKey: ["matches", "all"],
-    queryFn: () => botolaService.getMatches(),
+  const detailQ = useQuery({
+    queryKey: ["football", "match-detail", matchId, lang],
+    queryFn: () => footballService.getMatchDetailPage(matchId, lang),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const tableQ = useQuery({ queryKey: ["table"], queryFn: () => botolaService.getTable() });
   const articlesQ = useQuery({
     queryKey: ["articles", "all"],
     queryFn: () => botolaService.getArticles(),
   });
 
-  const match = useMemo(
-    () => matchesQ.data?.find((m) => m.id === matchId),
-    [matchesQ.data, matchId],
-  );
+  const match = detailQ.data?.match;
 
-  const clubById = (id?: string) => clubsQ.data?.find((c) => c.id === id);
+  const clubById = (id?: string) => detailQ.data?.clubs.find((club) => club.id === id);
   const home = clubById(match?.homeClubId);
   const away = clubById(match?.awayClubId);
 
-  const h2h = useMemo(() => {
-    if (!match || !matchesQ.data) return [];
-    return matchesQ.data.filter(
-      (m) =>
-        m.id !== match.id &&
-        m.status === "finished" &&
-        ((m.homeClubId === match.homeClubId && m.awayClubId === match.awayClubId) ||
-          (m.homeClubId === match.awayClubId && m.awayClubId === match.homeClubId)),
-    );
-  }, [match, matchesQ.data]);
+  const h2h = detailQ.data?.headToHead ?? [];
 
   const related = useMemo(() => {
     if (!match || !articlesQ.data) return [];
@@ -62,7 +49,7 @@ function MatchDetailPage() {
       .slice(0, 3);
   }, [match, articlesQ.data]);
 
-  if (matchesQ.isLoading || clubsQ.isLoading) {
+  if (detailQ.isLoading) {
     return (
       <AppShell backgroundVariant="matches">
         <LoadingState />
@@ -132,8 +119,8 @@ function MatchDetailPage() {
     }
   };
 
-  const homeRow = tableQ.data?.find((r) => r.clubId === home.id);
-  const awayRow = tableQ.data?.find((r) => r.clubId === away.id);
+  const homeRow = detailQ.data?.standings.find((row) => row.clubId === home.id);
+  const awayRow = detailQ.data?.standings.find((row) => row.clubId === away.id);
 
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;

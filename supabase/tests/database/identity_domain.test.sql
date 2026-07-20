@@ -159,6 +159,25 @@ select extensions.is(
   'NULL username availability fails closed with a stable validation reason'
 );
 
+-- Phase 3 binds identity follows to canonical Football UUIDs. These rows are
+-- deterministic test catalog data, not legacy IDs or production seed data.
+insert into app.competitions (
+  id, slug, name, competition_type
+) values (
+  'bbbbbbbb-1111-4111-8111-111111111111',
+  'identity-test-competition',
+  'Identity Test Competition',
+  'league'
+);
+insert into app.teams (
+  id, slug, name, short_name
+) values (
+  'aaaaaaaa-1111-4111-8111-111111111111',
+  'identity-test-team',
+  'Identity Test Team',
+  'ITT'
+);
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Radio, CalendarClock, CheckCircle2 } from "lucide-react";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -66,17 +66,20 @@ function MatchesPage() {
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   const matchesQ = useQuery({
-    queryKey: ["matches", "all"],
-    queryFn: () => botolaService.getMatches(),
+    queryKey: [
+      "football",
+      "matches",
+      `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`,
+      lang,
+    ],
+    queryFn: () => footballService.getMatchDay(selectedDate, lang),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const tableQ = useQuery({ queryKey: ["table"], queryFn: () => botolaService.getTable() });
 
-  const clubById = (id: string) => clubsQ.data?.find((c) => c.id === id);
+  const clubById = (id: string) => matchesQ.data?.clubs.find((club) => club.id === id);
 
   // Matches happening on the selected day (all statuses).
   const dayMatches = useMemo(() => {
-    const list = matchesQ.data ?? [];
+    const list = matchesQ.data?.matches ?? [];
     return list.filter((m) => sameDay(new Date(m.kickoff), selectedDate));
   }, [matchesQ.data, selectedDate]);
 
@@ -121,7 +124,7 @@ function MatchesPage() {
     month: "long",
   }).format(selectedDate);
 
-  const loading = matchesQ.isLoading || clubsQ.isLoading;
+  const loading = matchesQ.isLoading;
 
   return (
     <AppShell backgroundVariant="matches">
@@ -310,7 +313,7 @@ function MatchesPage() {
           title={t("matches.table_preview")}
           eyebrow={t("matches.competition.botola")}
         />
-        {tableQ.isLoading ? (
+        {matchesQ.isLoading ? (
           <LoadingState />
         ) : (
           <div className="overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] shadow-card">
@@ -325,7 +328,7 @@ function MatchesPage() {
                 </tr>
               </thead>
               <tbody>
-                {tableQ.data?.map((row) => {
+                {matchesQ.data?.standings.map((row) => {
                   const club = clubById(row.clubId);
                   if (!club) return null;
                   return (
