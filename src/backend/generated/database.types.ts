@@ -202,6 +202,67 @@ export type Database = {
         }
         Returns: undefined
       }
+      editorial_create_draft: {
+        Args: {
+          p_author_id?: string
+          p_body_format: Database["app"]["Enums"]["article_body_format"]
+          p_body_html: string
+          p_body_source: string
+          p_language: string
+          p_publisher_id?: string
+          p_reading_time_minutes: number
+          p_sanitizer_version: string
+          p_slug: string
+          p_story_id?: string
+          p_summary: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      editorial_set_placement: {
+        Args: {
+          p_article_edition_id: string
+          p_ends_at?: string
+          p_placement_type: Database["app"]["Enums"]["placement_type"]
+          p_priority?: number
+          p_scope_id?: string
+          p_scope_type?: Database["app"]["Enums"]["placement_scope"]
+          p_starts_at?: string
+        }
+        Returns: Json
+      }
+      editorial_soft_delete_story: {
+        Args: { p_story_id: string }
+        Returns: Json
+      }
+      editorial_transition_article: {
+        Args: {
+          p_article_edition_id: string
+          p_scheduled_at?: string
+          p_target_status: Database["app"]["Enums"]["publication_status"]
+          p_visibility?: Database["app"]["Enums"]["article_visibility"]
+        }
+        Returns: Json
+      }
+      editorial_update_article: {
+        Args: {
+          p_article_edition_id: string
+          p_body_format: Database["app"]["Enums"]["article_body_format"]
+          p_body_html: string
+          p_body_source: string
+          p_expected_updated_at: string
+          p_hero_asset_id?: string
+          p_reading_time_minutes: number
+          p_sanitizer_version: string
+          p_seo_description?: string
+          p_seo_title?: string
+          p_slug: string
+          p_subtitle: string
+          p_summary: string
+          p_title: string
+        }
+        Returns: Json
+      }
       follow_competition: {
         Args: { p_competition_id: string }
         Returns: boolean
@@ -310,6 +371,120 @@ export type Database = {
         }
         Returns: string
       }
+      news_article_detail: {
+        Args: { p_identifier: string; p_language: string }
+        Returns: Json
+      }
+      news_begin_ingestion_run: {
+        Args: {
+          p_cursor?: string
+          p_job_type: string
+          p_publisher_id: string
+          p_target_scope?: string
+        }
+        Returns: string
+      }
+      news_complete_ingestion_run: {
+        Args: {
+          p_cursor: string
+          p_error_code?: string
+          p_error_summary?: string
+          p_fetched: number
+          p_inserted: number
+          p_rejected: number
+          p_run_id: string
+          p_skipped: number
+          p_status:
+            | "pending"
+            | "running"
+            | "succeeded"
+            | "partially_succeeded"
+            | "failed"
+            | "cancelled"
+          p_updated: number
+          p_validated: number
+        }
+        Returns: undefined
+      }
+      news_feed: {
+        Args: {
+          p_after_id?: string
+          p_after_published_at?: string
+          p_category_slug?: string
+          p_competition_id?: string
+          p_language: string
+          p_limit?: number
+          p_player_id?: string
+          p_team_id?: string
+          p_topic_slug?: string
+        }
+        Returns: Json
+      }
+      news_home_modules: {
+        Args: { p_language: string; p_limit?: number }
+        Returns: Json
+      }
+      news_record_ingestion_rejection: {
+        Args: {
+          p_error_code: string
+          p_external_id: string
+          p_reason:
+            | "invalid_payload"
+            | "mapping_collision"
+            | "duplicate_conflict"
+            | "unsafe_content"
+            | "unsupported_language"
+            | "stale_update"
+            | "source_blocked"
+            | "rate_limited"
+            | "provider_unavailable"
+          p_run_id: string
+          p_sanitized_summary: string
+        }
+        Returns: undefined
+      }
+      news_register_source_article: {
+        Args: {
+          p_article_edition_id: string
+          p_canonical_url: string
+          p_content_fingerprint: string
+          p_external_id: string
+          p_publisher_id: string
+          p_source_published_at: string
+          p_source_updated_at: string
+          p_source_version: string
+          p_story_id: string
+        }
+        Returns: Json
+      }
+      news_related_articles: {
+        Args: { p_article_edition_id: string; p_limit?: number }
+        Returns: Json
+      }
+      news_saved_articles: {
+        Args: {
+          p_after_article_id?: string
+          p_after_created_at?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      news_search: {
+        Args: {
+          p_after_id?: string
+          p_after_published_at?: string
+          p_after_rank?: number
+          p_language: string
+          p_limit?: number
+          p_query: string
+        }
+        Returns: Json
+      }
+      news_taxonomies: {
+        Args: { p_language: string; p_type?: string }
+        Returns: Json
+      }
+      news_team_filters: { Args: { p_language: string }; Returns: Json }
       record_football_ingestion_rejection: {
         Args: {
           p_entity_type: string
@@ -334,11 +509,13 @@ export type Database = {
         }
         Returns: string
       }
+      save_article: { Args: { p_article_edition_id: string }; Returns: Json }
       unfollow_competition: {
         Args: { p_competition_id: string }
         Returns: boolean
       }
       unfollow_team: { Args: { p_team_id: string }; Returns: boolean }
+      unsave_article: { Args: { p_article_edition_id: string }; Returns: Json }
       update_my_preferences: {
         Args: {
           breaking_news: boolean
@@ -397,6 +574,247 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_editions: {
+        Row: {
+          body_format: Database["app"]["Enums"]["article_body_format"]
+          body_html: string
+          body_source: string | null
+          created_at: string
+          created_by: string | null
+          hero_asset_id: string | null
+          id: string
+          language: Database["app"]["Enums"]["language_code"]
+          published_at: string | null
+          reading_time_minutes: number
+          sanitizer_version: string
+          scheduled_at: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          source_updated_at: string | null
+          status: Database["app"]["Enums"]["publication_status"]
+          story_id: string
+          subtitle: string | null
+          summary: string
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by: string | null
+          visibility: Database["app"]["Enums"]["article_visibility"]
+        }
+        Insert: {
+          body_format?: Database["app"]["Enums"]["article_body_format"]
+          body_html: string
+          body_source?: string | null
+          created_at?: string
+          created_by?: string | null
+          hero_asset_id?: string | null
+          id?: string
+          language: Database["app"]["Enums"]["language_code"]
+          published_at?: string | null
+          reading_time_minutes: number
+          sanitizer_version: string
+          scheduled_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          source_updated_at?: string | null
+          status?: Database["app"]["Enums"]["publication_status"]
+          story_id: string
+          subtitle?: string | null
+          summary: string
+          title: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: Database["app"]["Enums"]["article_visibility"]
+        }
+        Update: {
+          body_format?: Database["app"]["Enums"]["article_body_format"]
+          body_html?: string
+          body_source?: string | null
+          created_at?: string
+          created_by?: string | null
+          hero_asset_id?: string | null
+          id?: string
+          language?: Database["app"]["Enums"]["language_code"]
+          published_at?: string | null
+          reading_time_minutes?: number
+          sanitizer_version?: string
+          scheduled_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          source_updated_at?: string | null
+          status?: Database["app"]["Enums"]["publication_status"]
+          story_id?: string
+          subtitle?: string | null
+          summary?: string
+          title?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: Database["app"]["Enums"]["article_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_editions_hero_asset_id_fkey"
+            columns: ["hero_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_editions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_revisions: {
+        Row: {
+          article_edition_id: string
+          body_html: string
+          body_source: string | null
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          revision_number: number
+          status: Database["app"]["Enums"]["publication_status"]
+          subtitle: string | null
+          summary: string
+          title: string
+          visibility: Database["app"]["Enums"]["article_visibility"]
+        }
+        Insert: {
+          article_edition_id: string
+          body_html: string
+          body_source?: string | null
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          revision_number: number
+          status: Database["app"]["Enums"]["publication_status"]
+          subtitle?: string | null
+          summary: string
+          title: string
+          visibility: Database["app"]["Enums"]["article_visibility"]
+        }
+        Update: {
+          article_edition_id?: string
+          body_html?: string
+          body_source?: string | null
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          revision_number?: number
+          status?: Database["app"]["Enums"]["publication_status"]
+          subtitle?: string | null
+          summary?: string
+          title?: string
+          visibility?: Database["app"]["Enums"]["article_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_revisions_article_edition_id_fkey"
+            columns: ["article_edition_id"]
+            isOneToOne: false
+            referencedRelation: "article_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_search_documents: {
+        Row: {
+          article_edition_id: string
+          language: Database["app"]["Enums"]["language_code"]
+          published_at: string | null
+          refreshed_at: string
+          search_vector: unknown
+          story_id: string
+        }
+        Insert: {
+          article_edition_id: string
+          language: Database["app"]["Enums"]["language_code"]
+          published_at?: string | null
+          refreshed_at?: string
+          search_vector: unknown
+          story_id: string
+        }
+        Update: {
+          article_edition_id?: string
+          language?: Database["app"]["Enums"]["language_code"]
+          published_at?: string | null
+          refreshed_at?: string
+          search_vector?: unknown
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_search_documents_article_edition_id_fkey"
+            columns: ["article_edition_id"]
+            isOneToOne: true
+            referencedRelation: "article_editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_search_documents_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      authors: {
+        Row: {
+          active: boolean
+          author_type: Database["app"]["Enums"]["author_type"]
+          avatar_asset_id: string | null
+          biography: string | null
+          created_at: string
+          display_name: string
+          id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          author_type?: Database["app"]["Enums"]["author_type"]
+          avatar_asset_id?: string | null
+          biography?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          author_type?: Database["app"]["Enums"]["author_type"]
+          avatar_asset_id?: string | null
+          biography?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authors_avatar_asset_id_fkey"
+            columns: ["avatar_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -551,6 +969,59 @@ export type Database = {
             columns: ["country_id"]
             isOneToOne: false
             referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_placements: {
+        Row: {
+          article_edition_id: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          language: Database["app"]["Enums"]["language_code"]
+          placement_type: Database["app"]["Enums"]["placement_type"]
+          priority: number
+          scope_id: string | null
+          scope_type: Database["app"]["Enums"]["placement_scope"]
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          article_edition_id: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          language: Database["app"]["Enums"]["language_code"]
+          placement_type: Database["app"]["Enums"]["placement_type"]
+          priority?: number
+          scope_id?: string | null
+          scope_type?: Database["app"]["Enums"]["placement_scope"]
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          article_edition_id?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          language?: Database["app"]["Enums"]["language_code"]
+          placement_type?: Database["app"]["Enums"]["placement_type"]
+          priority?: number
+          scope_id?: string | null
+          scope_type?: Database["app"]["Enums"]["placement_scope"]
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_placements_article_edition_id_fkey"
+            columns: ["article_edition_id"]
+            isOneToOne: false
+            referencedRelation: "article_editions"
             referencedColumns: ["id"]
           },
         ]
@@ -1024,40 +1495,67 @@ export type Database = {
       }
       media_assets: {
         Row: {
+          alt_text: string | null
           attribution: string | null
+          attribution_url: string | null
+          caption: string | null
+          copyright_owner: string | null
           created_at: string
+          credit: string | null
+          height: number | null
           id: string
           kind: Database["app"]["Enums"]["media_kind"]
           license_code: string | null
+          license_url: string | null
+          mime_type: string | null
           source_url: string | null
           storage_path: string | null
           updated_at: string
           validated_at: string | null
           validation_status: Database["app"]["Enums"]["media_validation_status"]
+          width: number | null
         }
         Insert: {
+          alt_text?: string | null
           attribution?: string | null
+          attribution_url?: string | null
+          caption?: string | null
+          copyright_owner?: string | null
           created_at?: string
+          credit?: string | null
+          height?: number | null
           id?: string
           kind: Database["app"]["Enums"]["media_kind"]
           license_code?: string | null
+          license_url?: string | null
+          mime_type?: string | null
           source_url?: string | null
           storage_path?: string | null
           updated_at?: string
           validated_at?: string | null
           validation_status?: Database["app"]["Enums"]["media_validation_status"]
+          width?: number | null
         }
         Update: {
+          alt_text?: string | null
           attribution?: string | null
+          attribution_url?: string | null
+          caption?: string | null
+          copyright_owner?: string | null
           created_at?: string
+          credit?: string | null
+          height?: number | null
           id?: string
           kind?: Database["app"]["Enums"]["media_kind"]
           license_code?: string | null
+          license_url?: string | null
+          mime_type?: string | null
           source_url?: string | null
           storage_path?: string | null
           updated_at?: string
           validated_at?: string | null
           validation_status?: Database["app"]["Enums"]["media_validation_status"]
+          width?: number | null
         }
         Relationships: []
       }
@@ -1229,6 +1727,56 @@ export type Database = {
         }
         Relationships: []
       }
+      publishers: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          ingestion_mode: Database["app"]["Enums"]["publisher_ingestion_mode"]
+          logo_asset_id: string | null
+          name: string
+          slug: string
+          source_type: Database["app"]["Enums"]["publisher_source_type"]
+          trust_status: Database["app"]["Enums"]["publisher_trust_status"]
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          ingestion_mode?: Database["app"]["Enums"]["publisher_ingestion_mode"]
+          logo_asset_id?: string | null
+          name: string
+          slug: string
+          source_type: Database["app"]["Enums"]["publisher_source_type"]
+          trust_status?: Database["app"]["Enums"]["publisher_trust_status"]
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          ingestion_mode?: Database["app"]["Enums"]["publisher_ingestion_mode"]
+          logo_asset_id?: string | null
+          name?: string
+          slug?: string
+          source_type?: Database["app"]["Enums"]["publisher_source_type"]
+          trust_status?: Database["app"]["Enums"]["publisher_trust_status"]
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishers_logo_asset_id_fkey"
+            columns: ["logo_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rounds: {
         Row: {
           created_at: string
@@ -1269,6 +1817,32 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_articles: {
+        Row: {
+          article_edition_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          article_edition_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          article_edition_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_articles_article_edition_id_fkey"
+            columns: ["article_edition_id"]
+            isOneToOne: false
+            referencedRelation: "article_editions"
             referencedColumns: ["id"]
           },
         ]
@@ -1446,6 +2020,296 @@ export type Database = {
           value_type?: Database["app"]["Enums"]["statistic_value_type"]
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          author_id: string | null
+          canonical_url: string | null
+          content_fingerprint: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          origin: Database["app"]["Enums"]["content_origin"]
+          original_language: Database["app"]["Enums"]["language_code"]
+          publisher_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          canonical_url?: string | null
+          content_fingerprint?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          origin?: Database["app"]["Enums"]["content_origin"]
+          original_language: Database["app"]["Enums"]["language_code"]
+          publisher_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          canonical_url?: string | null
+          content_fingerprint?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          origin?: Database["app"]["Enums"]["content_origin"]
+          original_language?: Database["app"]["Enums"]["language_code"]
+          publisher_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "authors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "publishers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_competitions: {
+        Row: {
+          competition_id: string
+          created_at: string
+          story_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          story_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_competitions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_competitions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_countries: {
+        Row: {
+          country_id: string
+          created_at: string
+          story_id: string
+        }
+        Insert: {
+          country_id: string
+          created_at?: string
+          story_id: string
+        }
+        Update: {
+          country_id?: string
+          created_at?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_countries_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_countries_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_players: {
+        Row: {
+          created_at: string
+          player_id: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string
+          player_id: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string
+          player_id?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_players_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_taxonomies: {
+        Row: {
+          created_at: string
+          is_primary: boolean
+          story_id: string
+          taxonomy_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_primary?: boolean
+          story_id: string
+          taxonomy_id: string
+        }
+        Update: {
+          created_at?: string
+          is_primary?: boolean
+          story_id?: string
+          taxonomy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_taxonomies_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_taxonomies_taxonomy_id_fkey"
+            columns: ["taxonomy_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_teams: {
+        Row: {
+          created_at: string
+          story_id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          story_id: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          story_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_teams_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taxonomies: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          id: string
+          slug: string
+          taxonomy_type: Database["app"]["Enums"]["taxonomy_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          slug: string
+          taxonomy_type: Database["app"]["Enums"]["taxonomy_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          slug?: string
+          taxonomy_type?: Database["app"]["Enums"]["taxonomy_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      taxonomy_translations: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          language: Database["app"]["Enums"]["language_code"]
+          taxonomy_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          language: Database["app"]["Enums"]["language_code"]
+          taxonomy_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          language?: Database["app"]["Enums"]["language_code"]
+          taxonomy_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxonomy_translations_taxonomy_id_fkey"
+            columns: ["taxonomy_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_memberships: {
         Row: {
@@ -1741,6 +2605,9 @@ export type Database = {
         | "processing"
         | "completed"
         | "rejected"
+      article_body_format: "markdown" | "rich_text"
+      article_visibility: "public" | "unlisted" | "private"
+      author_type: "staff" | "guest" | "agency" | "automated"
       availability_status:
         | "available"
         | "injured"
@@ -1753,6 +2620,7 @@ export type Database = {
         | "super_cup"
         | "international"
         | "friendly"
+      content_origin: "manual" | "provider" | "partner"
       fixture_period:
         | "pre_match"
         | "first_half"
@@ -1796,12 +2664,37 @@ export type Database = {
         | "team_crest"
         | "player_photo"
         | "venue_image"
+        | "article_hero"
+        | "article_inline"
+        | "author_avatar"
+        | "publisher_logo"
+        | "video_thumbnail"
       media_validation_status: "pending" | "validated" | "rejected" | "expired"
+      placement_scope: "global" | "competition" | "team" | "country"
+      placement_type:
+        | "home_lead"
+        | "news_lead"
+        | "editors_pick"
+        | "featured"
+        | "breaking"
+        | "trending"
       preferred_foot: "left" | "right" | "both" | "unknown"
+      publication_status:
+        | "draft"
+        | "in_review"
+        | "scheduled"
+        | "published"
+        | "unpublished"
+        | "archived"
+        | "rejected"
+      publisher_ingestion_mode: "manual" | "api" | "rss"
+      publisher_source_type: "internal" | "provider" | "partner"
+      publisher_trust_status: "trusted" | "review_required" | "blocked"
       round_status: "planned" | "active" | "completed" | "cancelled"
       season_status: "planned" | "active" | "completed" | "cancelled"
       squad_role: "player" | "captain" | "vice_captain" | "reserve"
       statistic_value_type: "integer" | "decimal" | "percentage" | "duration"
+      taxonomy_type: "category" | "topic" | "tag"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1956,6 +2849,9 @@ export const Constants = {
         "completed",
         "rejected",
       ],
+      article_body_format: ["markdown", "rich_text"],
+      article_visibility: ["public", "unlisted", "private"],
+      author_type: ["staff", "guest", "agency", "automated"],
       availability_status: [
         "available",
         "injured",
@@ -1970,6 +2866,7 @@ export const Constants = {
         "international",
         "friendly",
       ],
+      content_origin: ["manual", "provider", "partner"],
       fixture_period: [
         "pre_match",
         "first_half",
@@ -2016,13 +2913,40 @@ export const Constants = {
         "team_crest",
         "player_photo",
         "venue_image",
+        "article_hero",
+        "article_inline",
+        "author_avatar",
+        "publisher_logo",
+        "video_thumbnail",
       ],
       media_validation_status: ["pending", "validated", "rejected", "expired"],
+      placement_scope: ["global", "competition", "team", "country"],
+      placement_type: [
+        "home_lead",
+        "news_lead",
+        "editors_pick",
+        "featured",
+        "breaking",
+        "trending",
+      ],
       preferred_foot: ["left", "right", "both", "unknown"],
+      publication_status: [
+        "draft",
+        "in_review",
+        "scheduled",
+        "published",
+        "unpublished",
+        "archived",
+        "rejected",
+      ],
+      publisher_ingestion_mode: ["manual", "api", "rss"],
+      publisher_source_type: ["internal", "provider", "partner"],
+      publisher_trust_status: ["trusted", "review_required", "blocked"],
       round_status: ["planned", "active", "completed", "cancelled"],
       season_status: ["planned", "active", "completed", "cancelled"],
       squad_role: ["player", "captain", "vice_captain", "reserve"],
       statistic_value_type: ["integer", "decimal", "percentage", "duration"],
+      taxonomy_type: ["category", "topic", "tag"],
     },
   },
   public: {
