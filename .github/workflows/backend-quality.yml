@@ -1,0 +1,60 @@
+name: Backend foundation quality
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/backend-quality.yml"
+      - "docs/backend/**"
+      - "scripts/backend/**"
+      - "src/backend/**"
+      - "supabase/**"
+      - ".env.example"
+      - "package.json"
+      - "bun.lock"
+  push:
+    branches:
+      - backend/greenfield-foundation
+
+concurrency:
+  group: backend-foundation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  application-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run backend:migrations:check
+      - run: bun run backend:secrets:check
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run lint
+      - run: bun run build
+
+  database-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run backend:db:start
+      - run: bun run backend:db:reset
+      - run: bun run backend:db:test
+      - run: bun run backend:db:lint
+      - run: bun run backend:types:check
+      - name: Stop local Supabase
+        if: always()
+        run: ./node_modules/.bin/supabase stop --no-backup
