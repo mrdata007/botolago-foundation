@@ -34,20 +34,42 @@ The two SQL harnesses refuse to run unless the session is explicitly marked
 1. Apply reviewed migrations to Staging V2 only.
 2. Run `scripts/backend/fantasy-staging-seed.sql` with
    `set botolago.capacity_environment = 'staging-v2'`.
-3. Temporarily enable only the 2,500 generated load-test identities; do not
-   commit or log the password.
-4. Run `scripts/backend/fantasy-load-test.py` at 600 RPS for 10 seconds and 250
-   RPS for the remaining 50 seconds.
-5. Revoke the temporary credentials and sessions immediately.
-6. Run `scripts/backend/fantasy-staging-finalization.sql` to verify bounded
+3. Obtain an approved Auth load-test window or distributed provisioner. Enable
+   only the 2,500 generated identities and mint 2,500 independent
+   `authenticated` sessions gradually, outside the measured window. Do not
+   burst `/auth/v1/token` from one IP and do not use `service_role`, shared
+   identities, fabricated JWTs, or an ownership bypass.
+4. Write the access tokens to an owner-only (mode `0600`) JSON file outside the
+   repository. The file is an array of exactly 2,500 records shaped as
+   `{"number": 1, "access_token": "..."}`. User numbers must be contiguous;
+   tokens must have unique UUID subjects and remain valid for at least five
+   minutes after the workload ends.
+5. Start `scripts/backend/supabase-metrics-collector.py` with a temporary
+   Staging-only Secret API key, a five-second interval, and a 75-second window.
+   The collector writes an owner-only NDJSON artifact outside the repository.
+6. Run `scripts/backend/fantasy-load-test.py` at 600 RPS for 10 seconds and 250
+   RPS for the remaining 50 seconds. Session and team preparation is completed
+   before the measurement clock begins.
+7. Revoke all temporary sessions/passwords, delete the temporary Secret API
+   key, and remove both local credential artifacts immediately.
+8. Run `scripts/backend/fantasy-staging-finalization.sql` to verify bounded
    resume, Free Hit restoration, rollover, rankings, and stable completion.
-7. Capture `EXPLAIN (ANALYZE, BUFFERS)` for current-team, player-pool, results,
-   transfer-preview, and league-standings access paths.
+9. Capture `EXPLAIN (ANALYZE, BUFFERS, WAL, SETTINGS)` for current-team,
+   player-pool, results, transfer-preview, and league-standings access paths.
 
 If Auth returns 429 while preparing independent users, stop: do not share
 tokens, weaken the user count, or create a bypass RPC. Revoke temporary
 passwords/sessions, record the gate as blocked, and request a reviewed Auth
-load-test window.
+load-test window. A Pro plan does not remove the non-customizable per-IP token
+endpoint limit, so plan/tier alone is not evidence that session preparation is
+approved.
+
+The load runner rejects a cache that is not absolute, owner-only, exactly
+2,500 users, uniquely authenticated, contiguously numbered, and sufficiently
+unexpired. It never writes tokens to its result artifact and clears them from
+its in-memory state after the run. The metrics collector authenticates only to
+the Staging Metrics API, never prints its Secret API key, and must run in
+parallel with the workload for the resource-utilization gate to count.
 
 The representative profile is 50,000 teams, 750,000 active memberships,
 50,000 current lineups, one 10,000-member league, and 1,000 additional mixed

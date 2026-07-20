@@ -9,6 +9,7 @@ documented in FANTASY_DOMAIN_RUNBOOK.md.
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import json
 import math
@@ -64,7 +65,7 @@ class FantasyLoadRunner:
     def __init__(self) -> None:
         self.base_url = require_env("BOTOLAGO_STAGING_SUPABASE_URL").rstrip("/")
         self.api_key = require_env("BOTOLAGO_STAGING_PUBLISHABLE_KEY")
-        self.password = require_env("BOTOLAGO_LOAD_USER_PASSWORD")
+        self.session_cache_path = Path(require_env("BOTOLAGO_LOAD_SESSION_CACHE"))
         if "staging" not in os.getenv("BOTOLAGO_LOAD_ENVIRONMENT", "").lower():
             raise SystemExit("BOTOLAGO_LOAD_ENVIRONMENT must explicitly contain 'staging'")
         self.users = int(os.getenv("BOTOLAGO_LOAD_USERS", "2500"))
@@ -80,51 +81,55 @@ class FantasyLoadRunner:
         self.observations: list[Observation] = []
         self.states: list[UserState] = []
         self.random = random.Random(610)
+        self.session_tokens = load_session_tokens(
+            self.session_cache_path,
+            self.users,
+            self.total_seconds,
+        )
 
     async def run(self) -> dict[str, Any]:
         timeout = aiohttp.ClientTimeout(total=15, connect=5)
         connector = aiohttp.TCPConnector(limit=1200, limit_per_host=1200, ttl_dns_cache=300)
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-            await self.prepare_users(session)
-            requests: list[asyncio.Task[None]] = []
-            started = time.perf_counter()
-            request_number = 0
-            while True:
-                elapsed = time.perf_counter() - started
-                if elapsed >= self.total_seconds:
-                    break
-                rps = self.burst_rps if elapsed < self.burst_seconds else self.sustained_rps
-                second = int(elapsed)
-                target_total = (
-                    min(second + 1, self.burst_seconds) * self.burst_rps
-                    + max(second + 1 - self.burst_seconds, 0) * self.sustained_rps
-                )
-                while request_number < target_total:
-                    state = self.states[request_number % self.users]
-                    operation = self.pick_operation()
-                    requests.append(asyncio.create_task(self.execute_serial(session, state, operation)))
-                    request_number += 1
-                await asyncio.sleep(max(0.001, second + 1 - (time.perf_counter() - started)))
-            await asyncio.gather(*requests)
-        result = self.summarize(time.perf_counter() - started)
-        self.results_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-        return result
+        try:
+            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+                await self.prepare_users(session)
+                requests: list[asyncio.Task[None]] = []
+                started = time.perf_counter()
+                request_number = 0
+                while True:
+                    elapsed = time.perf_counter() - started
+                    if elapsed >= self.total_seconds:
+                        break
+                    rps = self.burst_rps if elapsed < self.burst_seconds else self.sustained_rps
+                    second = int(elapsed)
+                    target_total = (
+                        min(second + 1, self.burst_seconds) * self.burst_rps
+                        + max(second + 1 - self.burst_seconds, 0) * self.sustained_rps
+                    )
+                    while request_number < target_total:
+                        state = self.states[request_number % self.users]
+                        operation = self.pick_operation()
+                        requests.append(
+                            asyncio.create_task(self.execute_serial(session, state, operation))
+                        )
+                        request_number += 1
+                    await asyncio.sleep(max(0.001, second + 1 - (time.perf_counter() - started)))
+                await asyncio.gather(*requests)
+            result = self.summarize(time.perf_counter() - started)
+            self.results_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+            return result
+        finally:
+            for state in self.states:
+                state.token = ""
+            self.states.clear()
+            self.session_tokens.clear()
 
     async def prepare_users(self, session: aiohttp.ClientSession) -> None:
-        semaphore = asyncio.Semaphore(200)
+        semaphore = asyncio.Semaphore(50)
 
         async def prepare(number: int) -> UserState:
             async with semaphore:
-                email = f"fantasy-load-{number}@staging.botolago.invalid"
-                auth = await self.request(
-                    session,
-                    "POST",
-                    "/auth/v1/token?grant_type=password",
-                    None,
-                    {"email": email, "password": self.password},
-                    record=False,
-                )
-                token = auth["access_token"]
+                token = self.session_tokens[number]
                 team = await self.rpc(
                     session,
                     token,
@@ -311,6 +316,7 @@ class FantasyLoadRunner:
         return {
             "profile": {
                 "users": self.users,
+                "sessionSource": "preprovisioned_independent_auth_sessions",
                 "sustainedRps": self.sustained_rps,
                 "burstRps": self.burst_rps,
                 "burstSeconds": self.burst_seconds,
@@ -390,6 +396,66 @@ def require_env(name: str) -> str:
     if not value:
         raise SystemExit(f"{name} is required")
     return value
+
+
+def load_session_tokens(path: Path, expected_users: int, workload_seconds: int) -> dict[int, str]:
+    if not path.is_absolute() or not path.is_file():
+        raise SystemExit("BOTOLAGO_LOAD_SESSION_CACHE must be an existing absolute file")
+    if path.stat().st_mode & 0o077:
+        raise SystemExit("BOTOLAGO_LOAD_SESSION_CACHE must use owner-only permissions (0600)")
+
+    try:
+        records = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit("BOTOLAGO_LOAD_SESSION_CACHE is not valid JSON") from error
+    if not isinstance(records, list) or len(records) != expected_users:
+        raise SystemExit(f"session cache must contain exactly {expected_users} records")
+
+    tokens: dict[int, str] = {}
+    subjects: set[str] = set()
+    minimum_expiry = int(time.time()) + workload_seconds + 300
+    for record in records:
+        if not isinstance(record, dict):
+            raise SystemExit("each session cache record must be an object")
+        number = record.get("number")
+        token = record.get("access_token")
+        if not isinstance(number, int) or not isinstance(token, str):
+            raise SystemExit("session cache records require number and access_token")
+        if number in tokens or number < 1 or number > expected_users:
+            raise SystemExit("session cache user numbers must be unique and contiguous")
+
+        claims = decode_jwt_claims(token)
+        subject = claims.get("sub")
+        role = claims.get("role")
+        expiry = claims.get("exp")
+        try:
+            uuid.UUID(str(subject))
+        except (ValueError, TypeError) as error:
+            raise SystemExit("session cache contains an invalid user subject") from error
+        if subject in subjects or role != "authenticated":
+            raise SystemExit("sessions must be unique authenticated-user tokens")
+        if not isinstance(expiry, int) or expiry < minimum_expiry:
+            raise SystemExit("all access tokens must remain valid through the workload window")
+        subjects.add(subject)
+        tokens[number] = token
+
+    if set(tokens) != set(range(1, expected_users + 1)):
+        raise SystemExit("session cache user numbers must be unique and contiguous")
+    return tokens
+
+
+def decode_jwt_claims(token: str) -> dict[str, Any]:
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise SystemExit("session cache contains a malformed access token")
+    try:
+        payload = parts[1] + "=" * (-len(parts[1]) % 4)
+        claims = json.loads(base64.urlsafe_b64decode(payload).decode("utf-8"))
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise SystemExit("session cache contains a malformed access token") from error
+    if not isinstance(claims, dict):
+        raise SystemExit("session cache contains invalid token claims")
+    return claims
 
 
 if __name__ == "__main__":

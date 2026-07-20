@@ -40,6 +40,9 @@ client-side and non-authoritative.
   foreign key introduced by the v1.0 migration.
 - `20260720184632_fantasy_standings_keyset_hardening.sql`: adds covering
   overall/gameweek league keyset paths.
+- `20260720191839_fantasy_standings_rpc_pagination.sql`: keeps overall and
+  gameweek predicates indexable, materializes the bounded keyset page before
+  joining team display data, and preserves the existing public DTO and grants.
 
 All tables enable and force RLS. Canonical tables have no direct browser
 grants. Owner mutations use auth ownership, server time, advisory/row locks,
@@ -93,8 +96,8 @@ until a versioned product rule exists, rather than inventing ratings.
 
 ## Tests and validation
 
-- clean V2 migration replay from zero (27 migrations): pass;
-- pgTAP/RLS: 14 files, 261 assertions: pass;
+- clean V2 migration replay from zero (28 migrations): pass;
+- pgTAP/RLS: 14 files, 264 assertions: pass;
 - full unit/integration suite: 316 tests, 767 expectations: pass;
 - generated database types: synchronized after Phase 6 migrations;
 - typecheck: pass;
@@ -103,7 +106,7 @@ until a versioned product rule exists, rather than inventing ratings.
 - migration policy validation: pass;
 - committed-secret scan: pass.
 
-All ten Phase 6 migrations were also applied to **BotolaGO Staging V2**.
+All eleven Phase 6 migrations were also applied to **BotolaGO Staging V2**.
 Staging checks confirmed the four bounded route contracts and their grants,
 anonymous archive denial, authenticated owner-RPC reachability, and zero
 uncovered Fantasy foreign keys. Production V2 and Legacy were not queried or
@@ -127,19 +130,30 @@ Finalization completed in 31.92 seconds, overall ranking in 6.90 seconds, and
 the large-league ranking in 1.84 seconds with all idempotency invariants
 passing.
 
-The 2,500-user HTTP workload was blocked by Staging Auth HTTP 429 while
-preparing legitimate sessions. Temporary credentials and sessions were
-revoked. First-page standings HTTP p95 remained 1.27 seconds against a 750 ms
-gate; later-page p95 was 702 ms. Database CPU telemetry was unavailable through
-the connected management surface. See `FANTASY_CAPACITY_REPORT.md`.
+The standings bottleneck was fixed without changing its DTO or page size. The
+old RPC joined and sorted all 10,000 league teams before `LIMIT`, taking
+1,053.044 ms and 41,526 shared-buffer hits inside PostgreSQL. The bounded
+keyset-first function takes 13–17 ms at the database boundary. Three public
+HTTP runs produced first-page p95 values of 254.29, 195.78, and 224.24 ms and
+later-page p95 values of 204.12, 210.82, and 198.73 ms. All 1,200 measured
+responses succeeded, so both standings gates now pass.
+
+The 2,500-user HTTP workload remains blocked by the non-customizable per-IP
+Staging Auth token limit. Temporary credentials and sessions remain revoked.
+The runner now accepts only a secure pre-provisioned cache of 2,500 independent
+sessions and performs no Auth burst in its measured process. A bounded Metrics
+API collector is also ready, but the connected environment has no temporary
+Staging Secret API key; CPU and Supavisor telemetry therefore remain unpassed.
+See `FANTASY_CAPACITY_REPORT.md`.
 
 ## Risks
 
 - Ruleset v1.0 is approved and encoded, but no production season may be
   activated before PR review.
 - Staging Auth rate limiting blocked the 2,500-user workload; an approved load
-  window or dedicated environment is required.
-- First-page standings p95 and database CPU gates remain unpassed.
+  window or distributed approved provisioner is required.
+- Metrics API CPU and Supavisor pool gates require a temporary Staging Secret
+  API key and must be captured concurrently with the workload.
 - Staging Auth leaked-password protection remains an environment warning.
 - No production workers, cron, schema, data, or environment were modified.
 

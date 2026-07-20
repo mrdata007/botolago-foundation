@@ -127,13 +127,99 @@ select extensions.throws_ok(
   'PT409', 'chip_conflict',
   'only one chip can be active in a gameweek'
 );
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated"}',
+  true
+);
+select set_config('test.fantasy_second_team_response', api.create_fantasy_team(
+  'f6300000-0000-4000-8000-000000000001', 'f6400000-0000-4000-8000-000000000001',
+  'Rif Eleven', current_setting('test.fantasy_selection')::jsonb,
+  'f9000000-0000-4000-8000-000000000004'
+)::text, true);
 reset role;
 
-select extensions.is((select count(*)::integer from app.fantasy_teams), 1,
+select extensions.is((select count(*)::integer from app.fantasy_teams), 2,
   'failed mutations do not create partial teams');
 select extensions.is((select count(*)::integer from app_private.fantasy_mutation_audit
-  where operation in ('create_team','activate_chip')), 2,
+  where operation in ('create_team','activate_chip')), 3,
   'accepted sensitive mutations append audit entries');
+
+insert into app.fantasy_leagues (
+  id, fantasy_season_id, owner_user_id, name, visibility, member_count
+) values (
+  'f9100000-0000-4000-8000-000000000001',
+  'f6300000-0000-4000-8000-000000000001',
+  'f8000000-0000-4000-8000-000000000001',
+  'Public Pagination League', 'public', 2
+);
+
+insert into app.fantasy_rankings (
+  id, fantasy_season_id, gameweek_id, league_id, fantasy_team_id,
+  rank, previous_rank, total_points, gameweek_points,
+  calculation_version, calculated_at
+) values
+  (
+    'f9200000-0000-4000-8000-000000000001',
+    'f6300000-0000-4000-8000-000000000001', null,
+    'f9100000-0000-4000-8000-000000000001',
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    1, 2, 100, 50, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9200000-0000-4000-8000-000000000002',
+    'f6300000-0000-4000-8000-000000000001', null,
+    'f9100000-0000-4000-8000-000000000001',
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    2, 1, 90, 40, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9200000-0000-4000-8000-000000000003',
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'f9100000-0000-4000-8000-000000000001',
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    1, null, 90, 40, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9200000-0000-4000-8000-000000000004',
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'f9100000-0000-4000-8000-000000000001',
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    2, null, 100, 50, 1, '2090-01-09T12:00:00Z'
+  );
+
+set local role anon;
+select extensions.is(
+  jsonb_array_length(api.fantasy_league_standings(
+    'f9100000-0000-4000-8000-000000000001', null, null, null, 1
+  ) -> 'items'),
+  1,
+  'overall standings applies the page limit before returning its DTO'
+);
+select extensions.is(
+  api.fantasy_league_standings(
+    'f9100000-0000-4000-8000-000000000001',
+    null,
+    1,
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    1
+  ) -> 'items' -> 0 ->> 'rank',
+  '2',
+  'overall standings advances with its composite keyset cursor'
+);
+select extensions.results_eq(
+  $$select item ->> 'rank'
+    from jsonb_array_elements(api.fantasy_league_standings(
+      'f9100000-0000-4000-8000-000000000001',
+      'f6400000-0000-4000-8000-000000000001', null, null, 2
+    ) -> 'items') item$$,
+  $$values ('1'::text), ('2'::text)$$,
+  'gameweek standings preserve deterministic rank ordering'
+);
+reset role;
 
 select * from extensions.finish();
 rollback;
