@@ -42,20 +42,36 @@ The two SQL harnesses refuse to run unless the session is explicitly marked
 4. Write the access tokens to an owner-only (mode `0600`) JSON file outside the
    repository. The file is an array of exactly 2,500 records shaped as
    `{"number": 1, "access_token": "..."}`. User numbers must be contiguous;
-   tokens must have unique UUID subjects and remain valid for at least five
-   minutes after the workload ends.
+   tokens must have unique UUID subjects and remain valid throughout the full
+   gate-plus-soak sequence. Provision at least 20 minutes of remaining token
+   lifetime before starting the collector.
 5. Start `scripts/backend/supabase-metrics-collector.py` with a temporary
-   Staging-only Secret API key, a five-second interval, and a 75-second window.
-   The collector writes an owner-only NDJSON artifact outside the repository.
-6. Run `scripts/backend/fantasy-load-test.py` at 600 RPS for 10 seconds and 250
-   RPS for the remaining 50 seconds. Session and team preparation is completed
-   before the measurement clock begins.
-7. Revoke all temporary sessions/passwords, delete the temporary Secret API
-   key, and remove both local credential artifacts immediately.
-8. Run `scripts/backend/fantasy-staging-finalization.sql` to verify bounded
+   Staging-only Secret API key, the documented 60-second cadence, and a
+   900-second window. The collector writes an owner-only NDJSON artifact
+   outside the repository. Do not lower the interval without written Supabase
+   approval. The 15-minute window includes both runners' unmeasured team
+   preparation, the exact gate, the soak, and bounded handoff time.
+6. Run `scripts/backend/fantasy-load-test.py` with
+   `BOTOLAGO_LOAD_PROFILE=merge_gate`: 600 RPS for 10 seconds and 250 RPS for
+   the remaining 50 seconds. Session and team preparation is completed before
+   the measurement clock begins. By default, results are written owner-only to
+   `/tmp/botolago-fantasy-merge_gate-results.json`.
+7. Immediately run a telemetry soak with
+   `BOTOLAGO_LOAD_PROFILE=telemetry_soak`,
+   `BOTOLAGO_LOAD_BURST_SECONDS=0`, and
+   `BOTOLAGO_LOAD_DURATION_SECONDS=600`. It uses the same 2,500 independent
+   users, 250 RPS, and operation mix for ten minutes. Soak latency does not
+   replace or dilute the exact merge-gate result. Its default owner-only result
+   path is `/tmp/botolago-fantasy-telemetry_soak-results.json`, so it cannot
+   overwrite the merge-gate artifact.
+8. Run the workload integrity queries, then revoke all temporary
+   sessions/passwords, delete the temporary Secret API key, and remove the
+   session cache and any local secret material immediately. Retain only the
+   sanitized load-result and metrics artifacts as gate evidence.
+9. Run `scripts/backend/fantasy-staging-finalization.sql` to verify bounded
    resume, Free Hit restoration, rollover, rankings, and stable completion.
-9. Capture `EXPLAIN (ANALYZE, BUFFERS, WAL, SETTINGS)` for current-team,
-   player-pool, results, transfer-preview, and league-standings access paths.
+10. Capture `EXPLAIN (ANALYZE, BUFFERS, WAL, SETTINGS)` for current-team,
+    player-pool, results, transfer-preview, and league-standings access paths.
 
 If Auth returns 429 while preparing independent users, stop: do not share
 tokens, weaken the user count, or create a bypass RPC. Revoke temporary
@@ -66,10 +82,12 @@ approved.
 
 The load runner rejects a cache that is not absolute, owner-only, exactly
 2,500 users, uniquely authenticated, contiguously numbered, and sufficiently
-unexpired. It never writes tokens to its result artifact and clears them from
-its in-memory state after the run. The metrics collector authenticates only to
-the Staging Metrics API, never prints its Secret API key, and must run in
-parallel with the workload for the resource-utilization gate to count.
+unexpired. For the full gate-plus-soak sequence, provision at least 20 minutes
+of remaining token lifetime. It never writes tokens to its result artifact and
+clears them from its in-memory state after each run. The metrics collector
+authenticates only to the Staging Metrics API, never prints its Secret API key,
+and must run across the exact workload and soak for the resource-utilization
+gate to count.
 
 The representative profile is 50,000 teams, 750,000 active memberships,
 50,000 current lineups, one 10,000-member league, and 1,000 additional mixed

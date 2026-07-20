@@ -50,10 +50,12 @@ async def collect() -> dict[str, Any]:
     if not secret_key.startswith("sb_secret_"):
         raise SystemExit("Metrics API requires a staging Secret API key")
 
-    interval_seconds = int(os.getenv("BOTOLAGO_METRICS_INTERVAL_SECONDS", "5"))
-    duration_seconds = int(os.getenv("BOTOLAGO_METRICS_DURATION_SECONDS", "75"))
-    if interval_seconds not in range(1, 61) or duration_seconds not in range(60, 601):
-        raise SystemExit("metrics interval/duration must remain bounded")
+    interval_seconds = int(os.getenv("BOTOLAGO_METRICS_INTERVAL_SECONDS", "60"))
+    duration_seconds = int(os.getenv("BOTOLAGO_METRICS_DURATION_SECONDS", "900"))
+    if interval_seconds != 60:
+        raise SystemExit("Supabase Metrics API collection requires the documented 60-second cadence")
+    if duration_seconds not in range(300, 901):
+        raise SystemExit("metrics duration must remain between 5 and 15 minutes")
 
     output_path = Path(
         os.getenv("BOTOLAGO_METRICS_OUTPUT", "/tmp/botolago-fantasy-metrics.ndjson")
@@ -67,7 +69,11 @@ async def collect() -> dict[str, Any]:
     scrape_count = 0
     scrape_errors = 0
     observed_series: set[str] = set()
-    descriptor = os.open(output_path, os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0o600)
+    output_flags = os.O_CREAT | os.O_TRUNC | os.O_WRONLY
+    output_flags |= getattr(os, "O_CLOEXEC", 0)
+    output_flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(output_path, output_flags, 0o600)
+    os.fchmod(descriptor, 0o600)
 
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as output:

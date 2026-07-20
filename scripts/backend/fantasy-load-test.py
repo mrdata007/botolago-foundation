@@ -68,16 +68,30 @@ class FantasyLoadRunner:
         self.session_cache_path = Path(require_env("BOTOLAGO_LOAD_SESSION_CACHE"))
         if "staging" not in os.getenv("BOTOLAGO_LOAD_ENVIRONMENT", "").lower():
             raise SystemExit("BOTOLAGO_LOAD_ENVIRONMENT must explicitly contain 'staging'")
+        self.load_profile = os.getenv("BOTOLAGO_LOAD_PROFILE", "merge_gate")
         self.users = int(os.getenv("BOTOLAGO_LOAD_USERS", "2500"))
         self.sustained_rps = int(os.getenv("BOTOLAGO_LOAD_SUSTAINED_RPS", "250"))
         self.burst_rps = int(os.getenv("BOTOLAGO_LOAD_BURST_RPS", "600"))
         self.burst_seconds = int(os.getenv("BOTOLAGO_LOAD_BURST_SECONDS", "10"))
         self.total_seconds = int(os.getenv("BOTOLAGO_LOAD_DURATION_SECONDS", "60"))
+        default_results_path = f"/tmp/botolago-fantasy-{self.load_profile}-results.json"
         self.results_path = Path(
-            os.getenv("BOTOLAGO_LOAD_RESULTS_PATH", "/tmp/botolago-fantasy-load-results.json")
+            os.getenv("BOTOLAGO_LOAD_RESULTS_PATH", default_results_path)
         )
+        if not self.results_path.is_absolute():
+            raise SystemExit("BOTOLAGO_LOAD_RESULTS_PATH must be an absolute path")
         if self.users != 2500 or self.sustained_rps != 250 or self.burst_rps != 600:
             raise SystemExit("approved merge-gate load dimensions may not be weakened")
+        if self.load_profile == "merge_gate":
+            if self.burst_seconds != 10 or self.total_seconds != 60:
+                raise SystemExit("merge_gate requires a 10-second burst and 60-second duration")
+        elif self.load_profile == "telemetry_soak":
+            if self.burst_seconds != 0 or self.total_seconds not in range(300, 601):
+                raise SystemExit(
+                    "telemetry_soak requires no burst and a 5-to-10-minute duration"
+                )
+        else:
+            raise SystemExit("BOTOLAGO_LOAD_PROFILE must be merge_gate or telemetry_soak")
         self.observations: list[Observation] = []
         self.states: list[UserState] = []
         self.random = random.Random(610)
@@ -116,7 +130,7 @@ class FantasyLoadRunner:
                     await asyncio.sleep(max(0.001, second + 1 - (time.perf_counter() - started)))
                 await asyncio.gather(*requests)
             result = self.summarize(time.perf_counter() - started)
-            self.results_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+            write_private_json(self.results_path, result)
             return result
         finally:
             for state in self.states:
@@ -315,6 +329,7 @@ class FantasyLoadRunner:
         )
         return {
             "profile": {
+                "loadProfile": self.load_profile,
                 "users": self.users,
                 "sessionSource": "preprovisioned_independent_auth_sessions",
                 "sustainedRps": self.sustained_rps,
@@ -396,6 +411,20 @@ def require_env(name: str) -> str:
     if not value:
         raise SystemExit(f"{name} is required")
     return value
+
+
+def write_private_json(path: Path, value: dict[str, Any]) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+            json.dump(value, output, indent=2, sort_keys=True)
+            output.write("\n")
+    except OSError as error:
+        raise SystemExit(f"unable to write owner-only result artifact: {path}") from error
 
 
 def load_session_tokens(path: Path, expected_users: int, workload_seconds: int) -> dict[int, str]:

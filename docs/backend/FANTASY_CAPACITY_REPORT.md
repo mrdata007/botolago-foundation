@@ -48,15 +48,20 @@ tokens. This remains an external staging-capacity gate:
   measurement window and write them to an owner-only cache outside the repo;
 - create a temporary Staging Secret API key for the Metrics API;
 - run the unchanged 2,500-user/60-second/600-to-250 RPS profile while collecting
-  five-second resource samples;
+  documented 60-second Metrics API samples;
+- immediately run a separate ten-minute, 250 RPS telemetry soak with the same
+  2,500 users and operation mix; soak results supplement but never replace the
+  exact 60-second latency gate;
 - revoke sessions/passwords, delete the Secret API key, and remove local
   credential artifacts immediately.
 
 The load runner now fails closed unless the cache has exactly 2,500 unique
-`authenticated` UUID subjects, contiguous user numbers, at least five minutes
-of remaining token validity, and owner-only file permissions. Authentication
-and team preparation remain outside the measured clock; no credential is
-included in results.
+`authenticated` UUID subjects, contiguous user numbers, enough remaining token
+validity for the workload plus a five-minute safety window, and owner-only file
+permissions. The complete gate-plus-soak sequence is provisioned with at least
+20 minutes of remaining token lifetime. Authentication and team preparation
+remain outside the measured clock; no credential is included in results. The
+merge gate and telemetry soak use distinct owner-only result artifacts.
 
 ## Finalization and ranking
 
@@ -136,7 +141,8 @@ count query, RLS user-rank join, or network-only delay. The first-page target of
   credential is available in the repository or
   connected management surface, so the workload telemetry gate is **not passed
   by inference**. `scripts/backend/supabase-metrics-collector.py` is ready to
-  capture five-second Prometheus samples once a temporary key is approved.
+  capture 60-second Prometheus samples across the exact run and the separate
+  ten-minute soak once a temporary key is approved.
 
 Staging PostgREST initially exposed only `public, graphql_public`, contrary to
 the checked-in `schemas = ["api"]` configuration. Staging was aligned to

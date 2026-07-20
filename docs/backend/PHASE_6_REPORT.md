@@ -142,9 +142,10 @@ The 2,500-user HTTP workload remains blocked by the non-customizable per-IP
 Staging Auth token limit. Temporary credentials and sessions remain revoked.
 The runner now accepts only a secure pre-provisioned cache of 2,500 independent
 sessions and performs no Auth burst in its measured process. A bounded Metrics
-API collector is also ready, but the connected environment has no temporary
-Staging Secret API key; CPU and Supavisor telemetry therefore remain unpassed.
-See `FANTASY_CAPACITY_REPORT.md`.
+API collector now enforces Supabase's documented 60-second cadence across the
+exact workload plus a separate ten-minute, 250 RPS soak. The connected
+environment has no temporary Staging Secret API key; CPU and Supavisor
+telemetry therefore remain unpassed. See `FANTASY_CAPACITY_REPORT.md`.
 
 ## Risks
 
