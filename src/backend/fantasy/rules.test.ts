@@ -2,6 +2,8 @@ import { describe, expect, it } from "bun:test";
 import type { FantasyRules } from "./contracts";
 import {
   calculateTransferCost,
+  freeTransfersAfterGameweek,
+  resolveChipAllocation,
   rollFreeTransfers,
   validateFantasySquad,
   type SquadCandidate,
@@ -109,5 +111,40 @@ describe("Fantasy rules", () => {
     expect(rollFreeTransfers(0, rules)).toBe(1);
     expect(rollFreeTransfers(1, rules)).toBe(2);
     expect(rollFreeTransfers(2, rules)).toBe(2);
+  });
+
+  it("resets free transfers after Wildcard and Free Hit", () => {
+    expect(freeTransfersAfterGameweek(2, "wildcard", rules)).toBe(1);
+    expect(freeTransfersAfterGameweek(2, "free_hit", rules)).toBe(1);
+    expect(freeTransfersAfterGameweek(1, null, rules)).toBe(2);
+  });
+
+  it("resolves both Wildcard allocations and a published short-season midpoint", () => {
+    const allocations = [
+      {
+        allocationCode: "wildcard_1",
+        chip: "wildcard" as const,
+        startsAtGameweek: 1,
+        endsAtGameweek: 15,
+      },
+      {
+        allocationCode: "wildcard_2",
+        chip: "wildcard" as const,
+        startsAtGameweek: 16,
+        endsAtGameweek: null,
+      },
+    ];
+    expect(resolveChipAllocation("wildcard", 15, null, allocations)?.allocationCode).toBe(
+      "wildcard_1",
+    );
+    expect(resolveChipAllocation("wildcard", 16, null, allocations)?.allocationCode).toBe(
+      "wildcard_2",
+    );
+    expect(resolveChipAllocation("wildcard", 12, 12, allocations)?.allocationCode).toBe(
+      "wildcard_1",
+    );
+    expect(resolveChipAllocation("wildcard", 13, 12, allocations)?.allocationCode).toBe(
+      "wildcard_2",
+    );
   });
 });

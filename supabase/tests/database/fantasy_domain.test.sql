@@ -32,26 +32,10 @@ from generate_series(1, 15) i;
 insert into app.fantasy_competitions (id, football_competition_id, slug, name, active)
 values ('f6000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001',
   'fantasy-test', 'Fantasy Test', true);
-insert into app.fantasy_rulesets (
-  id, fantasy_competition_id, version, name, squad_size, initial_budget,
-  max_players_per_club, initial_free_transfers, max_free_transfer_rollover,
-  transfer_hit_cost, effective_from, active
-) values ('f6100000-0000-4000-8000-000000000001', 'f6000000-0000-4000-8000-000000000001',
-  1, 'Test Rules', 15, 100, 3, 1, 2, 4, '2089-01-01', true);
-insert into app.fantasy_position_rules (
-  ruleset_id, position_id, squad_quota, starting_minimum, starting_maximum,
-  goal_points, clean_sheet_points
-) select 'f6100000-0000-4000-8000-000000000001', position.id,
-  case position.code when 'GK' then 2 when 'DEF' then 5 when 'MID' then 5 else 3 end,
-  case position.code when 'GK' then 1 when 'DEF' then 3 when 'MID' then 2 else 1 end,
-  case position.code when 'GK' then 1 when 'DEF' then 5 when 'MID' then 5 else 3 end,
-  case position.code when 'GK' then 6 when 'DEF' then 6 when 'MID' then 5 else 4 end,
-  case position.code when 'GK' then 4 when 'DEF' then 4 when 'MID' then 1 else 0 end
-from app.fantasy_positions position;
 insert into app.fantasy_seasons (
   id, fantasy_competition_id, football_season_id, ruleset_id, name, status, starts_at, ends_at
 ) values ('f6300000-0000-4000-8000-000000000001', 'f6000000-0000-4000-8000-000000000001',
-  'f2000000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000100',
   '2089/90', 'active', '2089-08-01', '2090-06-30');
 insert into app.fantasy_gameweeks (
   id, fantasy_season_id, football_round_id, sequence_number, name,

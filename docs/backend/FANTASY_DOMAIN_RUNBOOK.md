@@ -20,10 +20,38 @@ storage is permitted only for drafts keyed by user/team/base version.
 
 ## Ruleset activation
 
-Before opening registration, create one reviewed ruleset and its position and
-scoring rows, link it to a Fantasy season, and preserve that version forever.
-Official Botola rules remain a product-approval gate. Never edit a historical
-ruleset in place; create a new version and choose an explicit effective date.
+The approved global template is `botolago-fantasy-v1.0`; its exact immutable
+decision record is `FANTASY_RULES_V1.md`. Before opening registration, link it
+to one reviewed Fantasy season and publish the explicit short-season Wildcard
+split when applicable. Never edit a historical ruleset in place; create a new
+version and choose an explicit effective date.
+
+## Staging capacity validation
+
+The two SQL harnesses refuse to run unless the session is explicitly marked
+`staging-v2`. They must never be executed in Production V2 or Legacy.
+
+1. Apply reviewed migrations to Staging V2 only.
+2. Run `scripts/backend/fantasy-staging-seed.sql` with
+   `set botolago.capacity_environment = 'staging-v2'`.
+3. Temporarily enable only the 2,500 generated load-test identities; do not
+   commit or log the password.
+4. Run `scripts/backend/fantasy-load-test.py` at 600 RPS for 10 seconds and 250
+   RPS for the remaining 50 seconds.
+5. Revoke the temporary credentials and sessions immediately.
+6. Run `scripts/backend/fantasy-staging-finalization.sql` to verify bounded
+   resume, Free Hit restoration, rollover, rankings, and stable completion.
+7. Capture `EXPLAIN (ANALYZE, BUFFERS)` for current-team, player-pool, results,
+   transfer-preview, and league-standings access paths.
+
+If Auth returns 429 while preparing independent users, stop: do not share
+tokens, weaken the user count, or create a bypass RPC. Revoke temporary
+passwords/sessions, record the gate as blocked, and request a reviewed Auth
+load-test window.
+
+The representative profile is 50,000 teams, 750,000 active memberships,
+50,000 current lineups, one 10,000-member league, and 1,000 additional mixed
+public/private leagues. Production workers and schedules remain disabled.
 
 ## Gameweek operations
 

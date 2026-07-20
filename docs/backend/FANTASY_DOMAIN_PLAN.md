@@ -19,21 +19,21 @@ outside Phase 6.
 
 ## 1. Frontend dependency map
 
-| Surface | Current dependency | Current authority problem | V2 contract |
-| --- | --- | --- | --- |
-| Fantasy hub | `botolaService` mock summary/GW/alerts plus mock leagues | totals/ranks can be fabricated | server hub DTO with nullable computed rank |
-| Create Team | mock players/clubs/GW; `FantasyOwnedRepository.saveTeam` | browser supplies bank/rules; old RPC uses JSON squad | atomic create RPC with idempotency/version |
-| Team | owned snapshot plus local lifecycle store | chips/deadline/captaincy can be client-authoritative | team/squad/lineup DTO and versioned mutations |
-| Transfers | browser preview/apply engine | bank, free transfers, hits supplied by client | server preview and atomic confirmation |
-| Points | browser computes/finalizes scoring | client can persist points/finalize | read-only provisional/final result DTO |
-| History | mock results/local lifecycle JSON | mutable and unbounded | immutable keyset gameweek history |
-| Fixtures | mock difficulty | disconnected from Football UUIDs | Fantasy fixture projection from Football |
-| Rules | hardcoded translated cards/constants | rules scattered in client | current versioned ruleset DTO |
-| Top players | generated mock ranks | fabricated ownership/rank | computed player totals; null rank until calculated |
-| Leagues | `leaguesStore` localStorage with random five-character codes | no ownership/privacy/authority | transactional league RPCs and standings |
-| Player detail/pool | generated mock players and local watch list | mock IDs/prices/ownership | canonical Fantasy-player UUID DTOs |
-| Import/empty cloud | legacy public tables and ID mapping | old schema assumptions | no legacy import; empty V2 creates canonical team |
-| Draft/conflict | `fantasyDraftsStore` keyed by user/team/version | valid draft-only behavior | preserve unchanged; clear only after success |
+| Surface            | Current dependency                                           | Current authority problem                            | V2 contract                                        |
+| ------------------ | ------------------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------- |
+| Fantasy hub        | `botolaService` mock summary/GW/alerts plus mock leagues     | totals/ranks can be fabricated                       | server hub DTO with nullable computed rank         |
+| Create Team        | mock players/clubs/GW; `FantasyOwnedRepository.saveTeam`     | browser supplies bank/rules; old RPC uses JSON squad | atomic create RPC with idempotency/version         |
+| Team               | owned snapshot plus local lifecycle store                    | chips/deadline/captaincy can be client-authoritative | team/squad/lineup DTO and versioned mutations      |
+| Transfers          | browser preview/apply engine                                 | bank, free transfers, hits supplied by client        | server preview and atomic confirmation             |
+| Points             | browser computes/finalizes scoring                           | client can persist points/finalize                   | read-only provisional/final result DTO             |
+| History            | mock results/local lifecycle JSON                            | mutable and unbounded                                | immutable keyset gameweek history                  |
+| Fixtures           | mock difficulty                                              | disconnected from Football UUIDs                     | Fantasy fixture projection from Football           |
+| Rules              | hardcoded translated cards/constants                         | rules scattered in client                            | current versioned ruleset DTO                      |
+| Top players        | generated mock ranks                                         | fabricated ownership/rank                            | computed player totals; null rank until calculated |
+| Leagues            | `leaguesStore` localStorage with random five-character codes | no ownership/privacy/authority                       | transactional league RPCs and standings            |
+| Player detail/pool | generated mock players and local watch list                  | mock IDs/prices/ownership                            | canonical Fantasy-player UUID DTOs                 |
+| Import/empty cloud | legacy public tables and ID mapping                          | old schema assumptions                               | no legacy import; empty V2 creates canonical team  |
+| Draft/conflict     | `fantasyDraftsStore` keyed by user/team/version              | valid draft-only behavior                            | preserve unchanged; clear only after success       |
 
 ### Routes and adapters audited
 
@@ -130,10 +130,11 @@ rankings.
 ## 4. Ruleset and validation model
 
 Rulesets are immutable once used. The initial Botola ruleset preserves the
-current UI contract: budget 100.0, squad 15, maximum three per club, two GK,
-five DEF, five MID, three FWD, legal XI of one GK/3–5 DEF/1–5 MID/1–3 FWD,
+approved v1.0 contract: budget 100.0, squad 15, maximum three per club, two GK,
+five DEF, five MID, three FWD, legal XI of one GK/3–5 DEF/2–5 MID/1–3 FWD,
 one free transfer per transition, maximum two rollover, four-point paid
-transfer hit, captain multiplier two and triple-captain multiplier three.
+transfer hit, captain multiplier two and triple-captain multiplier three. The
+complete immutable decision record is `FANTASY_RULES_V1.md`.
 
 Database helpers validate team names, selected eligible players, duplicates,
 position quotas, real-team limit, current server prices, budget, 11 starters,
@@ -195,8 +196,10 @@ Only Wildcard, Free Hit, Bench Boost, and Triple Captain are seeded. Season
 configuration controls availability/period/multiplier/cancellation.
 
 Activation is one idempotent transaction before deadline. A team has at most
-one active chip per gameweek and one use per configured period. Cancellation is
-allowed only while active and before deadline.
+one active chip per gameweek and one use per configured allocation. Confirmed
+v1.0 activations are non-cancellable. The two Wildcard allocations use the
+published season split; Free Hit, Bench Boost, and Triple Captain each have one
+season allocation.
 
 - Wildcard makes the gameweek transfer hit zero and preserves transfer ledger.
 - Free Hit captures the original memberships/prices/bank exactly once, uses a
@@ -208,8 +211,8 @@ allowed only while active and before deadline.
 ## 9. Scoring and substitutions
 
 Versioned scoring categories cover appearances/minutes, position goals,
-assists, clean sheets, goals conceded, saves, penalty saves/misses, cards, own
-goals, and bonus. A scoring worker reads only normalized Football fixtures,
+official assists, clean sheets, goals conceded, saves, penalty saves/misses,
+cards, and own goals. Bonus and player-of-the-match are disabled in v1.0. A scoring worker reads only normalized Football fixtures,
 lineups, events and statistics. Point-event uniqueness uses
 fixture/player/category/source-version so retries do not duplicate.
 
@@ -247,10 +250,11 @@ stored after creation. Public/private visibility is explicit. Creator becomes
 owner membership atomically. Join/leave/admin operations are owner/member safe,
 and the owner cannot leave without an ownership transfer or archive action.
 
-Rank ordering is total points descending, then gameweek points descending,
-then fewer accumulated hit points, then team UUID as a stable non-gameplay
-fallback. Rank/movement is null until a calculation exists; no value is
-fabricated. Large standings use keyset pages and versioned ranking snapshots.
+Rank ordering is total points descending, accumulated transfer-hit points
+ascending, confirmed transfers ascending, latest finalized gameweek score
+descending, team creation ascending, and team UUID ascending. Rank/movement is
+null until a calculation exists; no value is fabricated. Large standings use
+keyset pages and versioned ranking snapshots.
 
 ## 12. API/RPC and DTO strategy
 
@@ -347,8 +351,8 @@ Implementation order:
 
 - V2 staging has no production Football population; deterministic canonical
   Football fixtures are required for database tests.
-- Official Botola Fantasy scoring/price/tie-break rules need product approval
-  before production season activation.
+- BotolaGO Fantasy v1.0 is approved and encoded. A concrete season still needs
+  an explicit activation record before registration is opened.
 - Current UI assumes mock ownership/form/expected points; these remain nullable
   until computed.
 - Deadline-scale concurrency and large-league ranking need representative load

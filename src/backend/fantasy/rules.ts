@@ -114,6 +114,45 @@ export function rollFreeTransfers(
   return Math.min(rules.maxFreeTransferRollover, current + rules.initialFreeTransfers);
 }
 
+export interface ChipAllocationRule {
+  readonly allocationCode: string;
+  readonly chip: FantasyChip;
+  readonly startsAtGameweek: number;
+  readonly endsAtGameweek: number | null;
+}
+
+export function resolveChipAllocation(
+  chip: FantasyChip,
+  gameweek: number,
+  publishedWildcardSplit: number | null,
+  allocations: readonly ChipAllocationRule[],
+): ChipAllocationRule | null {
+  if (!Number.isInteger(gameweek) || gameweek <= 0) return null;
+  return (
+    allocations.find((allocation) => {
+      if (allocation.chip !== chip) return false;
+      const start =
+        allocation.allocationCode === "wildcard_2" && publishedWildcardSplit !== null
+          ? publishedWildcardSplit + 1
+          : allocation.startsAtGameweek;
+      const end =
+        allocation.allocationCode === "wildcard_1" && publishedWildcardSplit !== null
+          ? publishedWildcardSplit
+          : allocation.endsAtGameweek;
+      return gameweek >= start && (end === null || gameweek <= end);
+    }) ?? null
+  );
+}
+
+export function freeTransfersAfterGameweek(
+  current: number,
+  chip: FantasyChip | null,
+  rules: Pick<FantasyRules, "initialFreeTransfers" | "maxFreeTransferRollover">,
+): number {
+  if (chip === "wildcard" || chip === "free_hit") return rules.initialFreeTransfers;
+  return rollFreeTransfers(current, rules);
+}
+
 function countBy<T>(values: readonly T[], key: (value: T) => string): Map<string, number> {
   const counts = new Map<string, number>();
   for (const value of values) counts.set(key(value), (counts.get(key(value)) ?? 0) + 1);

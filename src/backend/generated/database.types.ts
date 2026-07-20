@@ -696,6 +696,15 @@ export type Database = {
         }
         Returns: Json
       }
+      service_apply_fantasy_price_changes: {
+        Args: {
+          p_after_player_id?: string
+          p_batch_size?: number
+          p_gameweek_id: string
+          p_source_version: number
+        }
+        Returns: Json
+      }
       service_begin_fantasy_job: {
         Args: {
           p_calculation_version?: number
@@ -734,6 +743,10 @@ export type Database = {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
       }
+      service_complete_fantasy_gameweek: {
+        Args: { p_calculation_version: number; p_gameweek_id: string }
+        Returns: Json
+      }
       service_complete_fantasy_job: {
         Args: {
           p_error_code?: string
@@ -759,6 +772,15 @@ export type Database = {
           p_variables: Json
         }
         Returns: string
+      }
+      service_finalize_fantasy_team_results: {
+        Args: {
+          p_after_team_id?: string
+          p_batch_size?: number
+          p_calculation_version: number
+          p_gameweek_id: string
+        }
+        Returns: Json
       }
       service_ingest_notification_event: {
         Args: {
@@ -1507,11 +1529,71 @@ export type Database = {
           },
         ]
       }
+      fantasy_chip_rules: {
+        Row: {
+          activation_cancellable: boolean
+          allocation_code: string
+          chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
+          created_at: string
+          ends_at_gameweek: number | null
+          id: string
+          midpoint_fallback: boolean
+          permanent_squad_change: boolean
+          post_gameweek_free_transfers: number | null
+          ruleset_id: string
+          starts_at_gameweek: number
+          transfer_hit_exempt: boolean
+          updated_at: string
+          use_limit: number
+        }
+        Insert: {
+          activation_cancellable?: boolean
+          allocation_code: string
+          chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
+          created_at?: string
+          ends_at_gameweek?: number | null
+          id?: string
+          midpoint_fallback?: boolean
+          permanent_squad_change?: boolean
+          post_gameweek_free_transfers?: number | null
+          ruleset_id: string
+          starts_at_gameweek: number
+          transfer_hit_exempt?: boolean
+          updated_at?: string
+          use_limit?: number
+        }
+        Update: {
+          activation_cancellable?: boolean
+          allocation_code?: string
+          chip_type?: Database["app"]["Enums"]["fantasy_chip_type"]
+          created_at?: string
+          ends_at_gameweek?: number | null
+          id?: string
+          midpoint_fallback?: boolean
+          permanent_squad_change?: boolean
+          post_gameweek_free_transfers?: number | null
+          ruleset_id?: string
+          starts_at_gameweek?: number
+          transfer_hit_exempt?: boolean
+          updated_at?: string
+          use_limit?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_chip_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fantasy_chip_uses: {
         Row: {
           activated_at: string
           activation_idempotency_key: string
           cancelled_at: string | null
+          chip_rule_id: string | null
           chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
           created_at: string
           fantasy_team_id: string
@@ -1524,6 +1606,7 @@ export type Database = {
           activated_at?: string
           activation_idempotency_key: string
           cancelled_at?: string | null
+          chip_rule_id?: string | null
           chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
           created_at?: string
           fantasy_team_id: string
@@ -1536,6 +1619,7 @@ export type Database = {
           activated_at?: string
           activation_idempotency_key?: string
           cancelled_at?: string | null
+          chip_rule_id?: string | null
           chip_type?: Database["app"]["Enums"]["fantasy_chip_type"]
           created_at?: string
           fantasy_team_id?: string
@@ -1545,6 +1629,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fantasy_chip_uses_chip_rule_id_fkey"
+            columns: ["chip_rule_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_chip_rules"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fantasy_chip_uses_fantasy_team_id_fkey"
             columns: ["fantasy_team_id"]
@@ -1595,6 +1686,168 @@ export type Database = {
             columns: ["football_competition_id"]
             isOneToOne: true
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_deadline_rules: {
+        Row: {
+          administrative_change_requires_open_gameweek: boolean
+          created_at: string
+          grace_period_seconds: number
+          minutes_before_first_fixture: number
+          ruleset_id: string
+          updated_at: string
+        }
+        Insert: {
+          administrative_change_requires_open_gameweek?: boolean
+          created_at?: string
+          grace_period_seconds: number
+          minutes_before_first_fixture: number
+          ruleset_id: string
+          updated_at?: string
+        }
+        Update: {
+          administrative_change_requires_open_gameweek?: boolean
+          created_at?: string
+          grace_period_seconds?: number
+          minutes_before_first_fixture?: number
+          ruleset_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_deadline_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_fixture_assignments: {
+        Row: {
+          assigned_kickoff_at: string
+          assignment_status: string
+          counts_points: boolean
+          created_at: string
+          fantasy_season_id: string
+          fixture_id: string
+          frozen_at: string | null
+          gameweek_id: string
+          id: string
+          original_gameweek_id: string
+          original_kickoff_at: string
+          resolution: string | null
+          source_version: number
+          superseded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_kickoff_at: string
+          assignment_status?: string
+          counts_points?: boolean
+          created_at?: string
+          fantasy_season_id: string
+          fixture_id: string
+          frozen_at?: string | null
+          gameweek_id: string
+          id?: string
+          original_gameweek_id: string
+          original_kickoff_at: string
+          resolution?: string | null
+          source_version: number
+          superseded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_kickoff_at?: string
+          assignment_status?: string
+          counts_points?: boolean
+          created_at?: string
+          fantasy_season_id?: string
+          fixture_id?: string
+          frozen_at?: string | null
+          gameweek_id?: string
+          id?: string
+          original_gameweek_id?: string
+          original_kickoff_at?: string
+          resolution?: string | null
+          source_version?: number
+          superseded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_fixture_assignments_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_fixture_assignments_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_fixture_assignments_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_fixture_assignments_original_gameweek_id_fkey"
+            columns: ["original_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_fixture_rules: {
+        Row: {
+          aggregate_double_gameweek_fixtures: boolean
+          assignment_frozen_at_deadline: boolean
+          correction_window_hours: number
+          created_at: string
+          late_correction_requires_elevated_approval: boolean
+          post_lock_completion_window_hours: number
+          ruleset_id: string
+          unresolved_gameweek_remains_provisional: boolean
+          updated_at: string
+        }
+        Insert: {
+          aggregate_double_gameweek_fixtures: boolean
+          assignment_frozen_at_deadline: boolean
+          correction_window_hours: number
+          created_at?: string
+          late_correction_requires_elevated_approval: boolean
+          post_lock_completion_window_hours: number
+          ruleset_id: string
+          unresolved_gameweek_remains_provisional: boolean
+          updated_at?: string
+        }
+        Update: {
+          aggregate_double_gameweek_fixtures?: boolean
+          assignment_frozen_at_deadline?: boolean
+          correction_window_hours?: number
+          created_at?: string
+          late_correction_requires_elevated_approval?: boolean
+          post_lock_completion_window_hours?: number
+          ruleset_id?: string
+          unresolved_gameweek_remains_provisional?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_fixture_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_rulesets"
             referencedColumns: ["id"]
           },
         ]
@@ -2143,33 +2396,42 @@ export type Database = {
       }
       fantasy_player_price_history: {
         Row: {
+          active_team_count: number | null
           created_at: string
           effective_at: string
           fantasy_player_id: string
           gameweek_id: string | null
           id: string
+          movement: number | null
+          net_transfers: number | null
           new_price: number
           old_price: number | null
           reason: string
           source_version: number
         }
         Insert: {
+          active_team_count?: number | null
           created_at?: string
           effective_at: string
           fantasy_player_id: string
           gameweek_id?: string | null
           id?: string
+          movement?: number | null
+          net_transfers?: number | null
           new_price: number
           old_price?: number | null
           reason: string
           source_version: number
         }
         Update: {
+          active_team_count?: number | null
           created_at?: string
           effective_at?: string
           fantasy_player_id?: string
           gameweek_id?: string | null
           id?: string
+          movement?: number | null
+          net_transfers?: number | null
           new_price?: number
           old_price?: number | null
           reason?: string
@@ -2347,19 +2609,125 @@ export type Database = {
         }
         Relationships: []
       }
+      fantasy_price_rules: {
+        Row: {
+          absolute_maximum: number
+          absolute_minimum: number
+          created_at: string
+          exclude_free_hit_demand: boolean
+          exclude_wildcard_demand: boolean
+          initial_maximum: number
+          initial_minimum: number
+          large_movement: number
+          large_rate_threshold: number
+          maximum_gameweek_movement: number
+          minimum_net_transfers: number
+          price_increment: number
+          ruleset_id: string
+          sale_profit_block: number
+          sale_profit_increment: number
+          small_movement: number
+          small_rate_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          absolute_maximum: number
+          absolute_minimum: number
+          created_at?: string
+          exclude_free_hit_demand?: boolean
+          exclude_wildcard_demand?: boolean
+          initial_maximum: number
+          initial_minimum: number
+          large_movement: number
+          large_rate_threshold: number
+          maximum_gameweek_movement: number
+          minimum_net_transfers: number
+          price_increment: number
+          ruleset_id: string
+          sale_profit_block: number
+          sale_profit_increment: number
+          small_movement: number
+          small_rate_threshold: number
+          updated_at?: string
+        }
+        Update: {
+          absolute_maximum?: number
+          absolute_minimum?: number
+          created_at?: string
+          exclude_free_hit_demand?: boolean
+          exclude_wildcard_demand?: boolean
+          initial_maximum?: number
+          initial_minimum?: number
+          large_movement?: number
+          large_rate_threshold?: number
+          maximum_gameweek_movement?: number
+          minimum_net_transfers?: number
+          price_increment?: number
+          ruleset_id?: string
+          sale_profit_block?: number
+          sale_profit_increment?: number
+          small_movement?: number
+          small_rate_threshold?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_price_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_ranking_tiebreak_rules: {
+        Row: {
+          created_at: string
+          criterion: string
+          direction: string
+          priority: number
+          ruleset_id: string
+        }
+        Insert: {
+          created_at?: string
+          criterion: string
+          direction: string
+          priority: number
+          ruleset_id: string
+        }
+        Update: {
+          created_at?: string
+          criterion?: string
+          direction?: string
+          priority?: number
+          ruleset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_ranking_tiebreak_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fantasy_rankings: {
         Row: {
           calculated_at: string
           calculation_version: number
+          confirmed_transfers: number
           created_at: string
           fantasy_season_id: string
           fantasy_team_id: string
           gameweek_id: string | null
           gameweek_points: number | null
           id: string
+          latest_finalized_gameweek_score: number | null
           league_id: string | null
           previous_rank: number | null
           rank: number
+          team_created_at: string | null
           total_points: number
           transfer_hits: number
           updated_at: string
@@ -2367,15 +2735,18 @@ export type Database = {
         Insert: {
           calculated_at: string
           calculation_version: number
+          confirmed_transfers?: number
           created_at?: string
           fantasy_season_id: string
           fantasy_team_id: string
           gameweek_id?: string | null
           gameweek_points?: number | null
           id?: string
+          latest_finalized_gameweek_score?: number | null
           league_id?: string | null
           previous_rank?: number | null
           rank: number
+          team_created_at?: string | null
           total_points: number
           transfer_hits?: number
           updated_at?: string
@@ -2383,15 +2754,18 @@ export type Database = {
         Update: {
           calculated_at?: string
           calculation_version?: number
+          confirmed_transfers?: number
           created_at?: string
           fantasy_season_id?: string
           fantasy_team_id?: string
           gameweek_id?: string | null
           gameweek_points?: number | null
           id?: string
+          latest_finalized_gameweek_score?: number | null
           league_id?: string | null
           previous_rank?: number | null
           rank?: number
+          team_created_at?: string | null
           total_points?: number
           transfer_hits?: number
           updated_at?: string
@@ -2427,13 +2801,54 @@ export type Database = {
           },
         ]
       }
+      fantasy_ruleset_features: {
+        Row: {
+          bonus_points_enabled: boolean
+          created_at: string
+          fixture_difficulty_enabled: boolean
+          inferred_assists_enabled: boolean
+          official_assists_only: boolean
+          player_of_match_enabled: boolean
+          ruleset_id: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_points_enabled: boolean
+          created_at?: string
+          fixture_difficulty_enabled: boolean
+          inferred_assists_enabled: boolean
+          official_assists_only: boolean
+          player_of_match_enabled: boolean
+          ruleset_id: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_points_enabled?: boolean
+          created_at?: string
+          fixture_difficulty_enabled?: boolean
+          inferred_assists_enabled?: boolean
+          official_assists_only?: boolean
+          player_of_match_enabled?: boolean
+          ruleset_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_ruleset_features_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fantasy_rulesets: {
         Row: {
           active: boolean
           captain_multiplier: number
           created_at: string
           effective_from: string
-          fantasy_competition_id: string
+          fantasy_competition_id: string | null
           full_appearance_minutes: number
           id: string
           initial_budget: number
@@ -2441,8 +2856,11 @@ export type Database = {
           max_free_transfer_rollover: number
           max_players_per_club: number
           minimum_minutes_for_appearance: number
+          minor_version: number
           name: string
+          published_at: string | null
           retired_at: string | null
+          ruleset_code: string | null
           squad_size: number
           transfer_hit_cost: number
           triple_captain_multiplier: number
@@ -2454,7 +2872,7 @@ export type Database = {
           captain_multiplier?: number
           created_at?: string
           effective_from: string
-          fantasy_competition_id: string
+          fantasy_competition_id?: string | null
           full_appearance_minutes?: number
           id?: string
           initial_budget: number
@@ -2462,8 +2880,11 @@ export type Database = {
           max_free_transfer_rollover: number
           max_players_per_club: number
           minimum_minutes_for_appearance?: number
+          minor_version?: number
           name: string
+          published_at?: string | null
           retired_at?: string | null
+          ruleset_code?: string | null
           squad_size: number
           transfer_hit_cost: number
           triple_captain_multiplier?: number
@@ -2475,7 +2896,7 @@ export type Database = {
           captain_multiplier?: number
           created_at?: string
           effective_from?: string
-          fantasy_competition_id?: string
+          fantasy_competition_id?: string | null
           full_appearance_minutes?: number
           id?: string
           initial_budget?: number
@@ -2483,8 +2904,11 @@ export type Database = {
           max_free_transfer_rollover?: number
           max_players_per_club?: number
           minimum_minutes_for_appearance?: number
+          minor_version?: number
           name?: string
+          published_at?: string | null
           retired_at?: string | null
+          ruleset_code?: string | null
           squad_size?: number
           transfer_hit_cost?: number
           triple_captain_multiplier?: number
@@ -2564,6 +2988,7 @@ export type Database = {
           starts_at: string
           status: Database["app"]["Enums"]["fantasy_season_status"]
           updated_at: string
+          wildcard_split_gameweek: number | null
         }
         Insert: {
           created_at?: string
@@ -2576,6 +3001,7 @@ export type Database = {
           starts_at: string
           status?: Database["app"]["Enums"]["fantasy_season_status"]
           updated_at?: string
+          wildcard_split_gameweek?: number | null
         }
         Update: {
           created_at?: string
@@ -2588,6 +3014,7 @@ export type Database = {
           starts_at?: string
           status?: Database["app"]["Enums"]["fantasy_season_status"]
           updated_at?: string
+          wildcard_split_gameweek?: number | null
         }
         Relationships: [
           {

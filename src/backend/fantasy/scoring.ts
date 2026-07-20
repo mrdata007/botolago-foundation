@@ -13,10 +13,14 @@ export interface ScoringRules {
   readonly penaltyMiss: number;
   readonly yellowCard: number;
   readonly redCard: number;
+  readonly secondYellowDismissal: number;
   readonly ownGoal: number;
+  readonly bonusEnabled: boolean;
+  readonly playerOfMatchEnabled: boolean;
 }
 
 export interface PlayerFixtureStats {
+  /** Official regulation minutes only; stoppage time must not inflate thresholds. */
   readonly minutes: number;
   readonly goals: number;
   readonly assists: number;
@@ -27,8 +31,10 @@ export interface PlayerFixtureStats {
   readonly penaltiesMissed: number;
   readonly yellowCards: number;
   readonly redCards: number;
+  readonly secondYellowDismissals: number;
   readonly ownGoals: number;
   readonly bonus: number;
+  readonly playerOfMatchPoints: number;
 }
 
 export interface PointEvent {
@@ -74,8 +80,15 @@ export function scorePlayerFixture(
   add("penalty_miss", stats.penaltiesMissed * rules.penaltyMiss, String(stats.penaltiesMissed));
   add("yellow_card", stats.yellowCards * rules.yellowCard, String(stats.yellowCards));
   add("red_card", stats.redCards * rules.redCard, String(stats.redCards));
+  add(
+    "second_yellow_dismissal",
+    stats.secondYellowDismissals * rules.secondYellowDismissal,
+    String(stats.secondYellowDismissals),
+  );
   add("own_goal", stats.ownGoals * rules.ownGoal, String(stats.ownGoals));
-  add("bonus", stats.bonus, String(stats.bonus));
+  if (rules.bonusEnabled) add("bonus", stats.bonus, String(stats.bonus));
+  if (rules.playerOfMatchEnabled)
+    add("player_of_match", stats.playerOfMatchPoints, String(stats.playerOfMatchPoints));
   return events;
 }
 
