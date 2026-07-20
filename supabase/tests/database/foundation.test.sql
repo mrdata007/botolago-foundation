@@ -33,8 +33,8 @@ select extensions.ok(
   'anon cannot resolve app'
 );
 select extensions.ok(
-  not has_schema_privilege('authenticated', 'app', 'usage'),
-  'authenticated cannot resolve app'
+  has_schema_privilege('authenticated', 'app', 'usage'),
+  'authenticated can resolve only explicitly granted owner-read dependencies in app'
 );
 select extensions.ok(
   not has_schema_privilege('anon', 'app_private', 'usage'),
@@ -80,10 +80,17 @@ select extensions.ok(
     select 1
     from pg_class as relation
     join pg_namespace as namespace on namespace.oid = relation.relnamespace
-    where namespace.nspname = 'app'
+    where namespace.nspname = 'public'
       and relation.relkind in ('r', 'p')
+      and relation.relname in (
+        'profiles',
+        'user_preferences',
+        'followed_teams',
+        'followed_competitions',
+        'account_deletion_requests'
+      )
   ),
-  'Phase 1 creates no product tables'
+  'canonical product tables are never created in public'
 );
 
 create temporary table updated_at_probe (

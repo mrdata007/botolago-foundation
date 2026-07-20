@@ -51,7 +51,9 @@ function createSupabaseClient() {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      storage: typeof window !== "undefined" ? localStorage : undefined,
+      // Some SSR/test runtimes expose a partial `window` without a global
+      // Storage implementation. Probe the actual dependency, not the window.
+      storage: typeof localStorage !== "undefined" ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     },

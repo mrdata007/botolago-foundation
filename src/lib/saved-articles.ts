@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 /**
- * Local-only saved-article store. SSR-safe: reads happen after mount so
+ * Transitional mock/local saved-article adapter. SSR-safe: reads happen after mount so
  * initial render never diverges between server and client. Persistence
  * is scoped to a namespaced key and is intentionally decoupled from the
- * Supabase cloud (this is a client-side reading list bookmark).
+ * Supabase cloud. It is not production authority: Phase 4 will bind the
+ * SavedArticleRepository contract to canonical article UUIDs and migrate this
+ * device-local draft state. No weak/unconstrained article reference is created
+ * during the identity phase.
  */
 const STORAGE_KEY = "botolago.savedArticles";
 

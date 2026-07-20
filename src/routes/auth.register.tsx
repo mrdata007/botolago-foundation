@@ -100,6 +100,8 @@ function RegisterPage() {
       if (res.errorCode === "email_taken") setErrors({ email: "auth.error.email_taken" });
       else if (res.errorCode === "username_taken")
         setErrors({ username: "auth.error.username_taken" });
+      else if (res.errorCode === "invalid_username" || res.errorCode === "reserved_username")
+        setErrors({ username: "auth.error.username_invalid" });
       else setErrors({ form: "auth.error.generic" });
       return;
     }

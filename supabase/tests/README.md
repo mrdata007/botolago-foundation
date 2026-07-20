@@ -8,6 +8,15 @@ proves the test harness can enforce owner-only select/insert/update/delete
 behavior for two JWT identities. The probe rolls back and is not a product
 table.
 
+`database/identity_domain.test.sql` verifies profile creation and retry safety,
+username normalization/validation/conflicts, atomic onboarding, idempotent
+follow operations, account-deletion requests, audit creation, and the private
+avatar bucket contract.
+
+`database/identity_rls.test.sql` proves cross-user and anonymous denial for
+profiles, preferences, follows, deletion requests, audit data, and avatar
+object paths using two deterministic JWT identities.
+
 Run with:
 
 ```sh

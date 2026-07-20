@@ -1,45 +1,45 @@
-// Production Supabase-backed implementation of AuthService.
-//
-// Session state is driven by supabase.auth.onAuthStateChange plus an initial
-// getSession() probe. Profile + preferences are loaded on authentication via
-// the profiles-repo, with a bounded retry to wait for the signup trigger.
+// Production Supabase-backed AuthService.
+// Supabase Auth owns sessions; identity data is accessed only through the
+// greenfield API schema and repository contracts.
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  SupabaseAccountSecurityRepository,
+  SupabaseProfileRepository,
+} from "@/backend/identity/supabase-repositories";
+import type { ProfileDto } from "@/backend/identity/contracts";
+import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
+import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  AuthErrorCode,
+  AuthResult,
   AuthService,
   AuthSession,
   AuthUser,
-  AuthResult,
   CompleteProfileInput,
   RegisterInput,
+  SignOutOptions,
   UpdatePasswordInput,
-  AuthErrorCode,
 } from "./auth-types";
 import { defaultNotifications } from "./auth-types";
-import {
-  coerceLanguage,
-  loadFullProfile,
-  preferencesToNotifications,
-  updatePreferences,
-  updateProfile,
-  uploadAvatarFromDataUrl,
-  deleteAvatar,
-  signedAvatarUrl,
-  type FullProfile,
-} from "./profiles-repo";
-import type { Session, User, AuthError } from "@supabase/supabase-js";
+import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
+import type { AuthError, Session, User } from "@supabase/supabase-js";
 
 const K_GUEST = "botolago.auth.guest";
-const K_LEGACY_PREFIX = "botolago.auth."; // for cleanup of stale mock keys
+const K_LEGACY_PREFIX = "botolago.auth.";
+const profiles = new SupabaseProfileRepository();
+const accountSecurity = new SupabaseAccountSecurityRepository();
 
 function hasWindow() {
   return typeof window !== "undefined";
 }
 
-function sanitizeSameOriginPath(input: string | null | undefined, fallback: string): string {
-  if (!input) return fallback;
-  if (!input.startsWith("/") || input.startsWith("//")) return fallback;
-  return input;
+function requestId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `web-${Date.now().toString(36)}`;
+}
+
+function context(actorId: string | null): RepositoryContext {
+  return { actorId, requestId: requestId() };
 }
 
 function getRedirectBase(): string {
@@ -52,137 +52,137 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   const msg = (err.message ?? "").toLowerCase();
   const status = err.status ?? 0;
   if (status === 429 || msg.includes("rate limit")) return "rate_limited";
-  if (
-    msg.includes("invalid login") ||
-    msg.includes("invalid credentials") ||
-    msg.includes("invalid_credentials")
-  )
-    return "credentials";
+  if (status === 401 || msg.includes("session_not_found")) return "session_expired";
+  if (msg.includes("invalid login") || msg.includes("invalid credentials")) return "credentials";
   if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed"))
     return "email_unconfirmed";
-  if (
-    msg.includes("already registered") ||
-    msg.includes("user already") ||
-    msg.includes("already exists")
-  )
-    return "email_taken";
+  if (msg.includes("already registered") || msg.includes("user already")) return "email_taken";
   if (msg.includes("otp") && msg.includes("expired")) return "otp_expired";
-  if (msg.includes("token") && msg.includes("expired")) return "otp_expired";
-  if (
-    msg.includes("invalid otp") ||
-    msg.includes("invalid token") ||
-    msg.includes("token has expired or is invalid")
-  )
-    return "otp_invalid";
+  if (msg.includes("token has expired or is invalid")) return "otp_expired";
+  if (msg.includes("token") && msg.includes("expired")) return "invalid_reset_token";
+  if (msg.includes("invalid otp")) return "otp_invalid";
+  if (msg.includes("invalid token")) return "invalid_reset_token";
   if (msg.includes("weak password") || msg.includes("password should")) return "weak_password";
-  if (
-    msg.includes("provider is not enabled") ||
-    msg.includes("unsupported provider") ||
-    msg.includes("provider disabled")
-  )
+  if (msg.includes("provider is not enabled") || msg.includes("provider disabled"))
     return "provider_unavailable";
   if (msg.includes("failed to fetch") || msg.includes("network")) return "network";
+  if (msg.includes("username_taken")) return "username_taken";
+  if (msg.includes("reserved_username") || msg.includes("username_reserved"))
+    return "reserved_username";
+  if (msg.includes("invalid_username") || msg.includes("username_invalid"))
+    return "invalid_username";
   return "generic";
+}
+
+function mapIdentityCode(error: unknown): AuthErrorCode {
+  const code = mapIdentityError(error).code;
+  switch (code) {
+    case "username_taken":
+    case "invalid_username":
+    case "reserved_username":
+    case "unauthorized":
+    case "session_expired":
+    case "invalid_reset_token":
+    case "rate_limited":
+    case "network":
+      return code;
+    case "email_unverified":
+      return "email_unconfirmed";
+    default:
+      return "generic";
+  }
 }
 
 export { mapAuthError as __mapAuthErrorForTests };
 
-async function buildAuthUser(u: User, full: FullProfile | null): Promise<AuthUser> {
-  const profile = full?.profile;
-  const displayName = (
-    profile?.display_name?.trim() ||
-    (u.user_metadata?.display_name as string | undefined)?.trim() ||
-    ""
-  ).toString();
-  const username = (
-    profile?.username?.trim() ||
-    (u.user_metadata?.username as string | undefined)?.trim() ||
-    ""
-  ).toString();
-  const avatarPath = profile?.avatar_url || undefined;
-  let avatarDataUrl: string | undefined;
-  if (avatarPath) {
-    const url = await signedAvatarUrl(avatarPath).catch(() => null);
-    if (url) avatarDataUrl = url;
-  }
-  const providerRaw = (u.app_metadata?.provider as string | undefined) ?? "email";
+async function buildAuthUser(user: User, profile: ProfileDto | null): Promise<AuthUser> {
+  const displayName =
+    profile?.displayName.trim() ||
+    String(user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "").trim();
+  const username = profile?.username?.trim() || String(user.user_metadata?.username ?? "").trim();
+  const avatarPath = profile?.avatarPath ?? undefined;
+  const avatarDataUrl = avatarPath
+    ? ((await signedAvatarUrl(avatarPath).catch(() => null)) ?? undefined)
+    : undefined;
+  const rawProvider = String(user.app_metadata?.provider ?? "email");
   const provider: AuthUser["provider"] =
-    providerRaw === "google" ? "google" : providerRaw === "apple" ? "apple" : "email";
-
-  const language = coerceLanguage(
-    profile?.preferred_language ??
-      (u.user_metadata?.preferred_language as string | undefined) ??
-      "fr",
-  );
+    rawProvider === "google" ? "google" : rawProvider === "apple" ? "apple" : "email";
 
   return {
-    id: u.id,
-    email: u.email ?? "",
+    id: user.id,
+    email: user.email ?? "",
     displayName,
     username,
     avatarPath,
     avatarDataUrl,
-    favoriteClubId: profile?.favorite_club_id ?? undefined,
-    language,
-    notifications: full ? preferencesToNotifications(full.preferences) : defaultNotifications(),
-    profileComplete: displayName.trim().length >= 2 && /^[a-z0-9_-]{3,20}$/i.test(username),
-    createdAt: u.created_at ?? new Date().toISOString(),
-    verified: !!u.email_confirmed_at,
+    favoriteClubId: profile?.favoriteTeamReference ?? profile?.favoriteTeamId ?? undefined,
+    language: profile?.preferredLanguage ?? "fr",
+    notifications: profile?.notifications ?? defaultNotifications(),
+    profileComplete: profile?.onboardingCompletedAt != null,
+    createdAt: profile?.createdAt ?? user.created_at ?? new Date().toISOString(),
+    verified: !!user.email_confirmed_at,
     provider,
   };
 }
 
 export class SupabaseAuthService implements AuthService {
-  private listeners = new Set<(s: AuthSession) => void>();
+  private listeners = new Set<(session: AuthSession) => void>();
   private cachedSession: AuthSession = { user: null, status: "loading" };
   private initialized = false;
+
+  private emit(session: AuthSession) {
+    this.cachedSession = session;
+    for (const listener of this.listeners) listener(session);
+  }
 
   private init() {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
-
-    // Initial state probe.
-    void supabase.auth.getSession().then(async ({ data }) => {
-      await this.applySession(data.session);
+    void supabase.auth.getSession().then(({ data }) => this.applySession(data.session));
+    supabase.auth.onAuthStateChange((_event, session) => {
+      void this.applySession(session);
     });
+  }
 
-    supabase.auth.onAuthStateChange(async (_event, session) => {
-      await this.applySession(session);
-    });
+  private async loadProfile(userId: string): Promise<ProfileDto | null> {
+    // The signup trigger commits before Auth returns. A small bounded retry also
+    // handles the first OAuth callback racing the Data API replica.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const profile = await profiles.getMe(context(userId));
+        if (profile) return profile;
+      } catch (error) {
+        if (attempt === 3 || mapIdentityError(error).code !== "not_found") return null;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150 + attempt * 100));
+    }
+    return null;
   }
 
   private async applySession(session: Session | null) {
     if (!session?.user) {
-      // Preserve guest flag as a distinct local state.
       const guest = hasWindow() && window.localStorage.getItem(K_GUEST) === "1";
-      this.cachedSession = { user: null, status: guest ? "guest" : "anonymous" };
-    } else {
-      // Clear any lingering guest flag once a real user is present.
-      if (hasWindow()) window.localStorage.removeItem(K_GUEST);
-      const full = await loadFullProfile(session.user.id).catch(() => null);
-      const user = await buildAuthUser(session.user, full);
-      this.cachedSession = { user, status: "authenticated" };
+      this.emit({ user: null, status: guest ? "guest" : "anonymous" });
+      return;
     }
-    for (const l of this.listeners) l(this.cachedSession);
+    if (hasWindow()) window.localStorage.removeItem(K_GUEST);
+    const profile = await this.loadProfile(session.user.id);
+    this.emit({ user: await buildAuthUser(session.user, profile), status: "authenticated" });
   }
 
   getSession(): AuthSession {
     this.init();
     if (!hasWindow()) return { user: null, status: "loading" };
-    // Reflect guest even before the async probe resolves.
-    if (this.cachedSession.status === "loading" && window.localStorage.getItem(K_GUEST) === "1") {
+    if (this.cachedSession.status === "loading" && window.localStorage.getItem(K_GUEST) === "1")
       return { user: null, status: "guest" };
-    }
     return this.cachedSession;
   }
 
-  subscribeToSession(listener: (s: AuthSession) => void): () => void {
+  subscribeToSession(listener: (session: AuthSession) => void): () => void {
     this.init();
     this.listeners.add(listener);
     listener(this.getSession());
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return () => void this.listeners.delete(listener);
   }
 
   async signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>> {
@@ -191,24 +191,20 @@ export class SupabaseAuthService implements AuthService {
       password,
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    if (hasWindow()) window.localStorage.removeItem(K_GUEST);
-    const full = await loadFullProfile(data.user.id).catch(() => null);
-    const user = await buildAuthUser(data.user, full);
-    this.cachedSession = { user, status: "authenticated" };
-    for (const l of this.listeners) l(this.cachedSession);
-    return { ok: true, data: user };
+    const authUser = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
+    this.emit({ user: authUser, status: "authenticated" });
+    return { ok: true, data: authUser };
   }
 
   async registerWithEmail(input: RegisterInput): Promise<AuthResult<{ email: string }>> {
-    const emailRedirectTo = hasWindow() ? `${getRedirectBase()}/auth/callback` : undefined;
     const { data, error } = await supabase.auth.signUp({
       email: input.email.trim(),
       password: input.password,
       options: {
-        emailRedirectTo,
+        emailRedirectTo: hasWindow() ? `${getRedirectBase()}/auth/callback` : undefined,
         data: {
           display_name: input.fullName.trim(),
-          username: input.username.trim().toLowerCase(),
+          username: input.username.trim(),
           preferred_language: input.language,
         },
       },
@@ -222,15 +218,33 @@ export class SupabaseAuthService implements AuthService {
       ? `${getRedirectBase()}/auth/callback?next=/auth/update-password`
       : undefined;
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
-    // Non-enumerating: always report success unless it's a hard network error.
+    // Prevent account enumeration while still surfacing transport failures.
     if (error && mapAuthError(error) === "network") return { ok: false, errorCode: "network" };
+    if (error && mapAuthError(error) === "rate_limited")
+      return { ok: false, errorCode: "rate_limited" };
     return { ok: true };
   }
 
+  async reauthenticate(): Promise<AuthResult> {
+    const { error } = await supabase.auth.reauthenticate();
+    return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
+  }
+
+  async refreshSession(): Promise<AuthResult<AuthUser>> {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.user) return { ok: false, errorCode: "session_expired" };
+    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
+    this.emit({ user, status: "authenticated" });
+    return { ok: true, data: user };
+  }
+
   async updatePassword(input: UpdatePasswordInput): Promise<AuthResult> {
-    const { error } = await supabase.auth.updateUser({ password: input.password });
-    if (error) return { ok: false, errorCode: mapAuthError(error) };
-    return { ok: true };
+    const { error } = await supabase.auth.updateUser({
+      password: input.password,
+      nonce: input.nonce,
+      current_password: input.currentPassword,
+    });
+    return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
   async verifyCode(email: string, code: string): Promise<AuthResult<AuthUser>> {
@@ -240,118 +254,133 @@ export class SupabaseAuthService implements AuthService {
       type: "email",
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const full = await loadFullProfile(data.user.id).catch(() => null);
-    const user = await buildAuthUser(data.user, full);
-    this.cachedSession = { user, status: "authenticated" };
-    for (const l of this.listeners) l(this.cachedSession);
+    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
+    this.emit({ user, status: "authenticated" });
     return { ok: true, data: user };
   }
 
   async resendCode(email: string): Promise<AuthResult> {
-    const emailRedirectTo = hasWindow() ? `${getRedirectBase()}/auth/callback` : undefined;
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
-      options: { emailRedirectTo },
+      options: { emailRedirectTo: hasWindow() ? `${getRedirectBase()}/auth/callback` : undefined },
     });
-    if (error) return { ok: false, errorCode: mapAuthError(error) };
-    return { ok: true };
+    return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
   private async signInWithOAuthProvider(
     provider: "google" | "apple",
   ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
-    const redirectTo = `${getRedirectBase()}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo },
+      options: { redirectTo: `${getRedirectBase()}/auth/callback` },
     });
-    if (error) return { ok: false, errorCode: mapAuthError(error) };
-    // Browser is redirecting; caller should treat this as pending.
-    return { ok: true };
+    return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
   signInWithGoogle() {
     return this.signInWithOAuthProvider("google");
   }
+
   signInWithApple() {
     return this.signInWithOAuthProvider("apple");
   }
 
   async continueAsGuest(): Promise<AuthResult> {
     if (hasWindow()) window.localStorage.setItem(K_GUEST, "1");
-    this.cachedSession = { user: null, status: "guest" };
-    for (const l of this.listeners) l(this.cachedSession);
+    this.emit({ user: null, status: "guest" });
     return { ok: true };
   }
 
   async completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>> {
-    const s = this.cachedSession;
-    if (s.status !== "authenticated" || !s.user) return { ok: false, errorCode: "generic" };
-    const userId = s.user.id;
+    const current = this.cachedSession.user;
+    if (this.cachedSession.status !== "authenticated" || !current)
+      return { ok: false, errorCode: "unauthorized" };
+    const username = input.username?.trim() || current.username.trim();
+    if (!username) return { ok: false, errorCode: "invalid_username" };
 
-    // Avatar handling.
-    let avatarPathPatch: string | null | undefined = undefined;
-    if (input.removeAvatar) {
-      if (s.user.avatarPath) await deleteAvatar(s.user.avatarPath);
-      avatarPathPatch = null;
-    } else if (input.avatarDataUrl && input.avatarDataUrl.startsWith("data:")) {
-      const up = await uploadAvatarFromDataUrl(userId, input.avatarDataUrl);
-      if (!up.ok) return { ok: false, errorCode: "generic" };
-      avatarPathPatch = up.path;
+    const oldAvatarPath = current.avatarPath;
+    let nextAvatarPath = input.removeAvatar ? null : (oldAvatarPath ?? null);
+    let uploadedPath: string | null = null;
+    if (!input.removeAvatar && input.avatarDataUrl?.startsWith("data:")) {
+      const uploaded = await uploadAvatarFromDataUrl(current.id, input.avatarDataUrl);
+      if (!uploaded.ok) return { ok: false, errorCode: "generic" };
+      uploadedPath = uploaded.path;
+      nextAvatarPath = uploaded.path;
     }
 
-    const profileRes = await updateProfile(userId, {
-      displayName: input.displayName,
-      username: input.username,
-      favoriteClubId: input.favoriteClubId ?? undefined,
-      avatarPath: avatarPathPatch,
-      preferredLanguage: input.language,
-    });
-    if (!profileRes.ok)
-      return {
-        ok: false,
-        errorCode: profileRes.error === "username_taken" ? "username_taken" : "generic",
-      };
-
-    if (input.notifications) {
-      await updatePreferences(userId, input.notifications);
+    try {
+      const profile = await profiles.completeOnboarding(
+        {
+          displayName: input.displayName?.trim() || current.displayName,
+          username,
+          avatarPath: nextAvatarPath,
+          preferredLanguage: input.language ?? current.language,
+          favoriteTeamReference: input.favoriteClubId ?? current.favoriteClubId ?? null,
+          notifications: { ...current.notifications, ...(input.notifications ?? {}) },
+        },
+        context(current.id),
+      );
+      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return { ok: false, errorCode: "session_expired" };
+      const user = await buildAuthUser(data.user, profile);
+      this.emit({ user, status: "authenticated" });
+      return { ok: true, data: user };
+    } catch (error) {
+      // A newly-created path is safe to remove. If an existing deterministic
+      // path was overwritten, retain it because the profile still references it.
+      if (uploadedPath && uploadedPath !== oldAvatarPath) await deleteAvatar(uploadedPath);
+      return { ok: false, errorCode: mapIdentityCode(error) };
     }
-
-    // Re-load and emit.
-    const full = await loadFullProfile(userId).catch(() => null);
-    const { data: sessionData } = await supabase.auth.getUser();
-    const supUser = sessionData.user;
-    if (!supUser) return { ok: false, errorCode: "generic" };
-    const user = await buildAuthUser(supUser, full);
-    this.cachedSession = { user, status: "authenticated" };
-    for (const l of this.listeners) l(this.cachedSession);
-    return { ok: true, data: user };
   }
 
-  async signOut(options?: { resetLocalData?: boolean }): Promise<void> {
-    await supabase.auth.signOut().catch(() => undefined);
+  async requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>> {
+    const actorId = this.cachedSession.user?.id ?? null;
+    try {
+      const id = await accountSecurity.requestDeletion(context(actorId));
+      return { ok: true, data: { requestId: id } };
+    } catch (error) {
+      return { ok: false, errorCode: mapIdentityCode(error) };
+    }
+  }
+
+  async cancelAccountDeletion(): Promise<AuthResult> {
+    const actorId = this.cachedSession.user?.id ?? null;
+    try {
+      await accountSecurity.cancelDeletion(context(actorId));
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, errorCode: mapIdentityCode(error) };
+    }
+  }
+
+  async signOut(options?: SignOutOptions): Promise<void> {
+    const scope = options?.scope ?? "local";
+    const actorId = this.cachedSession.user?.id ?? null;
+    if (actorId) {
+      await accountSecurity.recordSessionRevocation(scope, context(actorId)).catch(() => undefined);
+    }
+    await supabase.auth.signOut({ scope }).catch(() => undefined);
     if (hasWindow()) {
       window.localStorage.removeItem(K_GUEST);
       if (options?.resetLocalData) {
-        const keys = [
-          "botolago.fantasy.team",
-          "botolago.fantasy.bank",
-          "botolago.fantasy.transfers",
-        ];
-        keys.forEach((k) => window.localStorage.removeItem(k));
+        ["botolago.fantasy.team", "botolago.fantasy.bank", "botolago.fantasy.transfers"].forEach(
+          (key) => window.localStorage.removeItem(key),
+        );
       }
-      // Sweep stale mock keys from previous local-only sessions.
       try {
         Object.keys(window.localStorage)
-          .filter((k) => k.startsWith(K_LEGACY_PREFIX) && k !== K_GUEST)
-          .forEach((k) => window.localStorage.removeItem(k));
+          .filter((key) => key.startsWith(K_LEGACY_PREFIX) && key !== K_GUEST)
+          .forEach((key) => window.localStorage.removeItem(key));
       } catch {
-        /* ignore */
+        // Browser privacy modes may deny localStorage enumeration.
       }
     }
-    this.cachedSession = { user: null, status: "anonymous" };
-    for (const l of this.listeners) l(this.cachedSession);
+    if (scope !== "others") this.emit({ user: null, status: "anonymous" });
   }
 }
+
+// Retained as a named export for tests and consumers that discriminate errors.
+export { IdentityError };

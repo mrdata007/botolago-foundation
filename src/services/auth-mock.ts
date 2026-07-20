@@ -11,15 +11,18 @@ import type {
   CompleteProfileInput,
   RegisterInput,
   AuthResult,
+  SignOutOptions,
   UpdatePasswordInput,
 } from "./auth-types";
 import { defaultNotifications } from "./auth-types";
 import type { Language } from "@/types/domain";
+import { validateCanonicalUsername } from "@/backend/identity/username";
 
 const NS = "botolago.";
 const K_SESSION = `${NS}auth.session`;
 const K_USERS = `${NS}auth.users`;
 const K_PENDING = `${NS}auth.pending`;
+const K_DELETION = `${NS}auth.deletion-request`;
 
 interface StoredUserRecord extends AuthUser {
   passwordDigest: string;
@@ -176,6 +179,12 @@ export class LocalMockAuthService implements AuthService {
     const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
     const normalizedEmail = input.email.trim().toLowerCase();
     const normalizedUsername = input.username.trim().toLowerCase();
+    const usernameValidation = validateCanonicalUsername(normalizedUsername);
+    if (usernameValidation)
+      return {
+        ok: false,
+        errorCode: usernameValidation === "reserved" ? "reserved_username" : "invalid_username",
+      };
     if (users.some((u) => u.email.toLowerCase() === normalizedEmail))
       return { ok: false, errorCode: "email_taken" };
     if (users.some((u) => u.username.toLowerCase() === normalizedUsername))
@@ -205,9 +214,34 @@ export class LocalMockAuthService implements AuthService {
     return { ok: true };
   }
 
-  async updatePassword(_input: UpdatePasswordInput): Promise<AuthResult> {
+  async reauthenticate(): Promise<AuthResult> {
     this.init();
     await simulateLatency();
+    return this.readSession().status === "authenticated"
+      ? { ok: true }
+      : { ok: false, errorCode: "session_expired" };
+  }
+
+  async refreshSession(): Promise<AuthResult<AuthUser>> {
+    this.init();
+    await simulateLatency();
+    const session = this.readSession();
+    return session.status === "authenticated" && session.user
+      ? { ok: true, data: session.user }
+      : { ok: false, errorCode: "session_expired" };
+  }
+
+  async updatePassword(input: UpdatePasswordInput): Promise<AuthResult> {
+    this.init();
+    await simulateLatency();
+    const session = this.readSession();
+    if (session.status !== "authenticated" || !session.user)
+      return { ok: false, errorCode: "session_expired" };
+    const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
+    const user = users.find((candidate) => candidate.id === session.user!.id);
+    if (!user) return { ok: false, errorCode: "session_expired" };
+    user.passwordDigest = digest(input.password);
+    safeSet(K_USERS, users);
     return { ok: true };
   }
 
@@ -289,8 +323,23 @@ export class LocalMockAuthService implements AuthService {
     const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
     const idx = users.findIndex((u) => u.id === s.user!.id);
     if (idx < 0) return { ok: false, errorCode: "generic" };
+    const username = input.username?.trim().toLowerCase() || users[idx].username;
+    const usernameValidation = validateCanonicalUsername(username);
+    if (usernameValidation)
+      return {
+        ok: false,
+        errorCode: usernameValidation === "reserved" ? "reserved_username" : "invalid_username",
+      };
+    if (
+      users.some(
+        (candidate, candidateIndex) =>
+          candidateIndex !== idx && candidate.username.toLowerCase() === username,
+      )
+    )
+      return { ok: false, errorCode: "username_taken" };
     const merged: StoredUserRecord = {
       ...users[idx],
+      username,
       displayName: input.displayName?.trim() || users[idx].displayName,
       favoriteClubId: input.favoriteClubId ?? users[idx].favoriteClubId,
       avatarDataUrl: input.removeAvatar
@@ -306,7 +355,28 @@ export class LocalMockAuthService implements AuthService {
     return { ok: true, data: stripPassword(merged) };
   }
 
-  async signOut(options?: { resetLocalData?: boolean }): Promise<void> {
+  async requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>> {
+    this.init();
+    await simulateLatency();
+    const session = this.readSession();
+    if (session.status !== "authenticated" || !session.user)
+      return { ok: false, errorCode: "unauthorized" };
+    const existing = safeGet<{ requestId: string }>(K_DELETION);
+    const request = existing ?? { requestId: `deletion-${session.user.id}` };
+    safeSet(K_DELETION, request);
+    return { ok: true, data: request };
+  }
+
+  async cancelAccountDeletion(): Promise<AuthResult> {
+    this.init();
+    await simulateLatency();
+    if (this.readSession().status !== "authenticated")
+      return { ok: false, errorCode: "unauthorized" };
+    safeRemove(K_DELETION);
+    return { ok: true };
+  }
+
+  async signOut(options?: SignOutOptions): Promise<void> {
     this.init();
     this.setSession(null);
     if (options?.resetLocalData && hasWindow()) {
@@ -321,6 +391,7 @@ export class LocalMockAuthService implements AuthService {
     safeRemove(K_SESSION);
     safeRemove(K_USERS);
     safeRemove(K_PENDING);
+    safeRemove(K_DELETION);
     this.initialized = false;
     this.cachedSession = { user: null, status: "loading" };
     this.init();
