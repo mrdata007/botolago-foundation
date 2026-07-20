@@ -1,6 +1,6 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { CursorPage, CursorPageRequest, RepositoryContext } from "../contracts/repository";
-import { identityApi } from "@/integrations/supabase/v2-client";
+import { getIdentityApi } from "@/integrations/supabase/v2-client";
 import type { Database } from "../generated/database.types";
 import {
   type AccountDeletionRequestDto,
@@ -58,7 +58,7 @@ function throwIfError(error: PostgrestError | null): void {
 export class SupabaseProfileRepository implements ProfileRepository {
   async getMe(context: RepositoryContext): Promise<ProfileDto | null> {
     requireActor(context);
-    const { data, error } = await identityApi.from("my_profile").select("*").maybeSingle();
+    const { data, error } = await getIdentityApi().from("my_profile").select("*").maybeSingle();
     throwIfError(error);
     return data ? mapProfile(data) : null;
   }
@@ -67,7 +67,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     candidate: string,
     _context: RepositoryContext,
   ): Promise<UsernameAvailabilityDto> {
-    const { data, error } = await identityApi.rpc("username_availability", { candidate });
+    const { data, error } = await getIdentityApi().rpc("username_availability", { candidate });
     throwIfError(error);
     const result = data?.[0];
     if (!result) throw new IdentityError("internal", "Username availability returned no result.");
@@ -84,7 +84,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     context: RepositoryContext,
   ): Promise<ProfileDto> {
     requireActor(context);
-    const { error } = await identityApi.rpc("complete_onboarding", {
+    const { error } = await getIdentityApi().rpc("complete_onboarding", {
       display_name: input.displayName.trim(),
       username: normalizeCanonicalUsername(input.username),
       avatar_path: input.avatarPath as string,
@@ -107,7 +107,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     context: RepositoryContext,
   ): Promise<ProfileDto> {
     requireActor(context);
-    const { error } = await identityApi.rpc("update_my_preferences", {
+    const { error } = await getIdentityApi().rpc("update_my_preferences", {
       preferred_language: language,
       match_alerts: preferences.matchAlerts,
       breaking_news: preferences.breakingNews,
@@ -153,7 +153,7 @@ async function listFollows(
   const { limit, cursor } = normalizePage(page);
   const relation = kind === "team" ? "my_followed_teams" : "my_followed_competitions";
   const idColumn = kind === "team" ? "team_id" : "competition_id";
-  let query = identityApi
+  let query = getIdentityApi()
     .from(relation)
     .select("*")
     .order("created_at", { ascending: false })
@@ -183,13 +183,13 @@ export class SupabaseFollowRepository implements FollowRepository {
   async followTeam(teamId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(teamId, "team");
-    const { error } = await identityApi.rpc("follow_team", { p_team_id: teamId });
+    const { error } = await getIdentityApi().rpc("follow_team", { p_team_id: teamId });
     throwIfError(error);
   }
   async unfollowTeam(teamId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(teamId, "team");
-    const { error } = await identityApi.rpc("unfollow_team", { p_team_id: teamId });
+    const { error } = await getIdentityApi().rpc("unfollow_team", { p_team_id: teamId });
     throwIfError(error);
   }
   listTeams(page: CursorPageRequest, context: RepositoryContext) {
@@ -198,7 +198,7 @@ export class SupabaseFollowRepository implements FollowRepository {
   async followCompetition(competitionId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(competitionId, "competition");
-    const { error } = await identityApi.rpc("follow_competition", {
+    const { error } = await getIdentityApi().rpc("follow_competition", {
       p_competition_id: competitionId,
     });
     throwIfError(error);
@@ -206,7 +206,7 @@ export class SupabaseFollowRepository implements FollowRepository {
   async unfollowCompetition(competitionId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(competitionId, "competition");
-    const { error } = await identityApi.rpc("unfollow_competition", {
+    const { error } = await getIdentityApi().rpc("unfollow_competition", {
       p_competition_id: competitionId,
     });
     throwIfError(error);
@@ -219,20 +219,20 @@ export class SupabaseFollowRepository implements FollowRepository {
 export class SupabaseAccountSecurityRepository implements AccountSecurityRepository {
   async requestDeletion(context: RepositoryContext): Promise<string> {
     requireActor(context);
-    const { data, error } = await identityApi.rpc("request_account_deletion");
+    const { data, error } = await getIdentityApi().rpc("request_account_deletion");
     throwIfError(error);
     return requireValue(data, "account deletion request id");
   }
   async cancelDeletion(context: RepositoryContext): Promise<void> {
     requireActor(context);
-    const { error } = await identityApi.rpc("cancel_account_deletion");
+    const { error } = await getIdentityApi().rpc("cancel_account_deletion");
     throwIfError(error);
   }
   async listDeletionRequests(
     context: RepositoryContext,
   ): Promise<readonly AccountDeletionRequestDto[]> {
     requireActor(context);
-    const { data, error } = await identityApi
+    const { data, error } = await getIdentityApi()
       .from("my_account_deletion_requests")
       .select("*")
       .order("requested_at", { ascending: false });
@@ -250,7 +250,7 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
     context: RepositoryContext,
   ): Promise<void> {
     requireActor(context);
-    const { error } = await identityApi.rpc("record_session_revocation", { scope });
+    const { error } = await getIdentityApi().rpc("record_session_revocation", { scope });
     throwIfError(error);
   }
 }
