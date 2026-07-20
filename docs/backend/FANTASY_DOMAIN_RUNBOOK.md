@@ -1,0 +1,89 @@
+# Fantasy Domain Runbook
+
+## Authority
+
+Fantasy V2 is authoritative for rules, eligibility, prices, teams, squads,
+lineups, transfers, chips, points, results, leagues, and rankings. Football V2
+is read-only input. Browser callers use only explicitly granted `api` RPCs;
+workers use service-role RPCs. No worker schedule is enabled by this phase.
+
+## Environment
+
+- local/preview: `VITE_FANTASY_DATA_MODE=mock` with deterministic adapters;
+- staging/production UI: `VITE_FANTASY_DATA_MODE=supabase`;
+- workers: server-only service key plus the sanitized batch/version/retry values
+  in `.env.example`;
+- client code must never receive the service-role key.
+
+Production mode fails closed if the Fantasy data mode is omitted. Local
+storage is permitted only for drafts keyed by user/team/base version.
+
+## Ruleset activation
+
+Before opening registration, create one reviewed ruleset and its position and
+scoring rows, link it to a Fantasy season, and preserve that version forever.
+Official Botola rules remain a product-approval gate. Never edit a historical
+ruleset in place; create a new version and choose an explicit effective date.
+
+## Gameweek operations
+
+The intended manual/staging order is:
+
+1. open the next scheduled gameweek;
+2. lock it at database `statement_timestamp() >= deadline_at`;
+3. recalculate provisional points from canonical Football inputs;
+4. verify all required fixtures are final or explicitly resolved;
+5. freeze the Football input/calculation version;
+6. calculate player points and user results in bounded batches;
+7. apply automatic substitutions, multipliers, chips, and transfer hits;
+8. restore Free Hit snapshots exactly once;
+9. roll free transfers once;
+10. recalculate overall and league rankings;
+11. emit target-user Notification events;
+12. mark the gameweek finalized.
+
+`app_private.fantasy_job_runs` stores resumable checkpoints, counters, leases,
+and sanitized failures. Stale leases can be reclaimed; worker RPC calls and
+calculation versions are idempotent. Corrections use a new calculation version
+and `app_private.fantasy_corrections`, never an in-place historical rewrite.
+
+## Deadline incident response
+
+If a deadline transition fails, stop mutations by setting the gameweek to
+`locked` through trusted operations before retrying downstream jobs. Do not
+change the deadline to accommodate late browser requests. Audit accepted and
+rejected mutation counts and preserve correlation/idempotency identifiers.
+
+## Free Hit recovery
+
+Snapshots are relational and unique per chip use/team/gameweek. The restoration
+worker marks active temporary memberships sold, recreates original membership
+rows with original prices, restores bank/free transfers, advances team version,
+and writes `restored_at` plus `restoration_version`. A populated `restored_at`
+is the retry short circuit. Missing snapshots are a hard
+`free_hit_snapshot_missing` incident, not a silent fallback.
+
+## Validation commands
+
+```text
+bun run backend:migrations:check
+bun run backend:db:reset
+bun run backend:db:test
+bun run backend:db:lint
+bun run backend:types:generate
+bun run backend:types:check
+bun run backend:secrets:check
+bun run typecheck
+bun test
+bun run lint
+bun run build
+```
+
+## Rollback
+
+No production migration or worker schedule is activated in Phase 6. To roll
+back application behavior, set the reviewed environment back to the previous
+domain mode and revert the Phase 6 application commit while keeping migrations
+dormant. On disposable staging, recreate from the last approved migration set.
+For a populated environment, stop workers and ship a reviewed additive forward
+repair; do not drop Fantasy history, replay legacy migrations, or touch legacy.

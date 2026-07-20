@@ -161,6 +161,20 @@ export type Database = {
       }
     }
     Functions: {
+      activate_fantasy_chip: {
+        Args: {
+          p_chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
+          p_expected_version: number
+          p_gameweek_id: string
+          p_idempotency_key: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
+      archive_fantasy_league: {
+        Args: { p_league_id: string; p_team_id: string }
+        Returns: boolean
+      }
       begin_football_ingestion: {
         Args: {
           p_checkpoint?: Json
@@ -171,6 +185,14 @@ export type Database = {
         Returns: string
       }
       cancel_account_deletion: { Args: never; Returns: boolean }
+      cancel_fantasy_chip: {
+        Args: {
+          p_expected_version: number
+          p_gameweek_id: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
       complete_football_ingestion: {
         Args: {
           p_checkpoint?: Json
@@ -201,6 +223,37 @@ export type Database = {
           username: string
         }
         Returns: undefined
+      }
+      confirm_fantasy_transfers: {
+        Args: {
+          p_chip_type?: Database["app"]["Enums"]["fantasy_chip_type"]
+          p_expected_version: number
+          p_gameweek_id: string
+          p_idempotency_key: string
+          p_team_id: string
+          p_transfers: Json
+        }
+        Returns: Json
+      }
+      create_fantasy_league: {
+        Args: {
+          p_idempotency_key: string
+          p_name: string
+          p_season_id: string
+          p_team_id: string
+          p_visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
+        }
+        Returns: Json
+      }
+      create_fantasy_team: {
+        Args: {
+          p_gameweek_id: string
+          p_idempotency_key: string
+          p_season_id: string
+          p_selection: Json
+          p_team_name: string
+        }
+        Returns: Json
       }
       disable_my_notification_device: {
         Args: { p_device_id: string }
@@ -269,6 +322,51 @@ export type Database = {
           p_summary: string
           p_title: string
         }
+        Returns: Json
+      }
+      fantasy_gameweeks: {
+        Args: {
+          p_before_sequence?: number
+          p_limit?: number
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      fantasy_hub: { Args: { p_language?: string }; Returns: Json }
+      fantasy_league_standings: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_league_id: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      fantasy_leagues: {
+        Args: {
+          p_limit?: number
+          p_season_id: string
+          p_visibility?: Database["app"]["Enums"]["fantasy_league_visibility"]
+        }
+        Returns: Json
+      }
+      fantasy_player_pool: {
+        Args: {
+          p_after_id?: string
+          p_after_price?: number
+          p_limit?: number
+          p_max_price?: number
+          p_position?: string
+          p_search?: string
+          p_season_id: string
+          p_team_id?: string
+        }
+        Returns: Json
+      }
+      fantasy_rules: { Args: { p_season_id: string }; Returns: Json }
+      fantasy_top_players: {
+        Args: { p_gameweek_id: string; p_limit?: number }
         Returns: Json
       }
       follow_competition: {
@@ -371,6 +469,19 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_my_fantasy_history: {
+        Args: {
+          p_before_gameweek_sequence?: number
+          p_limit?: number
+          p_team_id: string
+        }
+        Returns: Json
+      }
+      get_my_fantasy_points: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
       ingest_football_fixture: {
         Args: {
@@ -379,6 +490,18 @@ export type Database = {
           p_provider_name: string
         }
         Returns: string
+      }
+      join_fantasy_league: {
+        Args: {
+          p_idempotency_key: string
+          p_invite_code: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
+      leave_fantasy_league: {
+        Args: { p_league_id: string; p_team_id: string }
+        Returns: boolean
       }
       list_my_notification_devices: { Args: never; Returns: Json }
       list_my_notifications: {
@@ -516,6 +639,16 @@ export type Database = {
         Returns: Json
       }
       news_team_filters: { Args: { p_language: string }; Returns: Json }
+      preview_fantasy_transfers: {
+        Args: {
+          p_chip_type?: Database["app"]["Enums"]["fantasy_chip_type"]
+          p_expected_version: number
+          p_gameweek_id: string
+          p_team_id: string
+          p_transfers: Json
+        }
+        Returns: Json
+      }
       record_football_ingestion_rejection: {
         Args: {
           p_entity_type: string
@@ -553,6 +686,25 @@ export type Database = {
         Returns: string
       }
       save_article: { Args: { p_article_edition_id: string }; Returns: Json }
+      save_fantasy_lineup: {
+        Args: {
+          p_expected_version: number
+          p_gameweek_id: string
+          p_idempotency_key: string
+          p_selection: Json
+          p_team_id: string
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_job: {
+        Args: {
+          p_calculation_version?: number
+          p_gameweek_id?: string
+          p_job_type: string
+          p_season_id?: string
+        }
+        Returns: string
+      }
       service_cancel_notification_schedule: {
         Args: { p_schedule_id: string }
         Returns: boolean
@@ -581,6 +733,18 @@ export type Database = {
       service_claim_notification_schedules: {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
+      }
+      service_complete_fantasy_job: {
+        Args: {
+          p_error_code?: string
+          p_error_summary?: string
+          p_failed: number
+          p_processed: number
+          p_run_id: string
+          p_skipped: number
+          p_status: Database["app"]["Enums"]["fantasy_run_status"]
+        }
+        Returns: boolean
       }
       service_create_user_notification: {
         Args: {
@@ -623,6 +787,15 @@ export type Database = {
         Args: { p_since?: string }
         Returns: Json
       }
+      service_recalculate_fantasy_rankings: {
+        Args: {
+          p_calculation_version?: number
+          p_gameweek_id?: string
+          p_league_id?: string
+          p_season_id: string
+        }
+        Returns: number
+      }
       service_record_notification_delivery_attempt: {
         Args: {
           p_delivery_id: string
@@ -641,6 +814,28 @@ export type Database = {
       service_request_notification_dead_letter_replay: {
         Args: { p_dead_letter_id: string; p_idempotency_key: string }
         Returns: boolean
+      }
+      service_restore_free_hit: {
+        Args: { p_batch_size?: number; p_gameweek_id: string }
+        Returns: Json
+      }
+      service_roll_fantasy_free_transfers: {
+        Args: { p_batch_size?: number; p_gameweek_id: string }
+        Returns: Json
+      }
+      service_upsert_fantasy_player_points: {
+        Args: {
+          p_category: string
+          p_fantasy_player_id: string
+          p_fixture_id: string
+          p_gameweek_id: string
+          p_points: number
+          p_scoring_version: number
+          p_source_key: string
+          p_source_sequence: number
+          p_state?: Database["app"]["Enums"]["fantasy_points_state"]
+        }
+        Returns: string
       }
       service_upsert_notification_schedule: {
         Args: {
@@ -1253,6 +1448,1507 @@ export type Database = {
             columns: ["article_edition_id"]
             isOneToOne: false
             referencedRelation: "article_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_auto_substitutions: {
+        Row: {
+          calculation_version: number
+          created_at: string
+          id: string
+          lineup_id: string
+          player_in_id: string
+          player_out_id: string
+          reason: string
+          sequence_number: number
+        }
+        Insert: {
+          calculation_version: number
+          created_at?: string
+          id?: string
+          lineup_id: string
+          player_in_id: string
+          player_out_id: string
+          reason: string
+          sequence_number: number
+        }
+        Update: {
+          calculation_version?: number
+          created_at?: string
+          id?: string
+          lineup_id?: string
+          player_in_id?: string
+          player_out_id?: string
+          reason?: string
+          sequence_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_auto_substitutions_lineup_id_fkey"
+            columns: ["lineup_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_lineups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_auto_substitutions_player_in_id_fkey"
+            columns: ["player_in_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_auto_substitutions_player_out_id_fkey"
+            columns: ["player_out_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_chip_uses: {
+        Row: {
+          activated_at: string
+          activation_idempotency_key: string
+          cancelled_at: string | null
+          chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
+          created_at: string
+          fantasy_team_id: string
+          finalized_at: string | null
+          gameweek_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string
+          activation_idempotency_key: string
+          cancelled_at?: string | null
+          chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
+          created_at?: string
+          fantasy_team_id: string
+          finalized_at?: string | null
+          gameweek_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string
+          activation_idempotency_key?: string
+          cancelled_at?: string | null
+          chip_type?: Database["app"]["Enums"]["fantasy_chip_type"]
+          created_at?: string
+          fantasy_team_id?: string
+          finalized_at?: string | null
+          gameweek_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_chip_uses_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_chip_uses_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_competitions: {
+        Row: {
+          active: boolean
+          created_at: string
+          football_competition_id: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          football_competition_id: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          football_competition_id?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_competitions_football_competition_id_fkey"
+            columns: ["football_competition_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_free_hit_snapshot_players: {
+        Row: {
+          acquired_gameweek_id: string
+          created_at: string
+          fantasy_player_id: string
+          purchase_price: number
+          sale_price: number
+          snapshot_id: string
+        }
+        Insert: {
+          acquired_gameweek_id: string
+          created_at?: string
+          fantasy_player_id: string
+          purchase_price: number
+          sale_price: number
+          snapshot_id: string
+        }
+        Update: {
+          acquired_gameweek_id?: string
+          created_at?: string
+          fantasy_player_id?: string
+          purchase_price?: number
+          sale_price?: number
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_free_hit_snapshot_players_acquired_gameweek_id_fkey"
+            columns: ["acquired_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_free_hit_snapshot_players_fantasy_player_id_fkey"
+            columns: ["fantasy_player_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_free_hit_snapshot_players_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_free_hit_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_free_hit_snapshots: {
+        Row: {
+          bank: number
+          chip_use_id: string
+          created_at: string
+          fantasy_team_id: string
+          free_transfers: number
+          gameweek_id: string
+          id: string
+          restoration_version: number | null
+          restored_at: string | null
+          team_value: number
+          team_version: number
+        }
+        Insert: {
+          bank: number
+          chip_use_id: string
+          created_at?: string
+          fantasy_team_id: string
+          free_transfers: number
+          gameweek_id: string
+          id?: string
+          restoration_version?: number | null
+          restored_at?: string | null
+          team_value: number
+          team_version: number
+        }
+        Update: {
+          bank?: number
+          chip_use_id?: string
+          created_at?: string
+          fantasy_team_id?: string
+          free_transfers?: number
+          gameweek_id?: string
+          id?: string
+          restoration_version?: number | null
+          restored_at?: string | null
+          team_value?: number
+          team_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_free_hit_snapshots_chip_use_id_fkey"
+            columns: ["chip_use_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_chip_uses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_free_hit_snapshots_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_free_hit_snapshots_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_gameweeks: {
+        Row: {
+          corrected_at: string | null
+          created_at: string
+          deadline_at: string
+          ends_at: string
+          fantasy_season_id: string
+          finalized_at: string | null
+          football_round_id: string | null
+          id: string
+          lock_version: number
+          name: string
+          points_state: Database["app"]["Enums"]["fantasy_points_state"]
+          scoring_input_version: number
+          sequence_number: number
+          starts_at: string
+          status: Database["app"]["Enums"]["fantasy_gameweek_status"]
+          updated_at: string
+        }
+        Insert: {
+          corrected_at?: string | null
+          created_at?: string
+          deadline_at: string
+          ends_at: string
+          fantasy_season_id: string
+          finalized_at?: string | null
+          football_round_id?: string | null
+          id?: string
+          lock_version?: number
+          name: string
+          points_state?: Database["app"]["Enums"]["fantasy_points_state"]
+          scoring_input_version?: number
+          sequence_number: number
+          starts_at: string
+          status?: Database["app"]["Enums"]["fantasy_gameweek_status"]
+          updated_at?: string
+        }
+        Update: {
+          corrected_at?: string | null
+          created_at?: string
+          deadline_at?: string
+          ends_at?: string
+          fantasy_season_id?: string
+          finalized_at?: string | null
+          football_round_id?: string | null
+          id?: string
+          lock_version?: number
+          name?: string
+          points_state?: Database["app"]["Enums"]["fantasy_points_state"]
+          scoring_input_version?: number
+          sequence_number?: number
+          starts_at?: string
+          status?: Database["app"]["Enums"]["fantasy_gameweek_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_gameweeks_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_gameweeks_football_round_id_fkey"
+            columns: ["football_round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_league_memberships: {
+        Row: {
+          created_at: string
+          fantasy_team_id: string
+          id: string
+          joined_at: string
+          league_id: string
+          left_at: string | null
+          role: Database["app"]["Enums"]["fantasy_league_role"]
+          status: Database["app"]["Enums"]["fantasy_league_member_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_team_id: string
+          id?: string
+          joined_at?: string
+          league_id: string
+          left_at?: string | null
+          role?: Database["app"]["Enums"]["fantasy_league_role"]
+          status?: Database["app"]["Enums"]["fantasy_league_member_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_team_id?: string
+          id?: string
+          joined_at?: string
+          league_id?: string
+          left_at?: string | null
+          role?: Database["app"]["Enums"]["fantasy_league_role"]
+          status?: Database["app"]["Enums"]["fantasy_league_member_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_league_memberships_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_league_memberships_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_league_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_leagues: {
+        Row: {
+          active: boolean
+          created_at: string
+          fantasy_season_id: string
+          id: string
+          invite_code_digest: string | null
+          invite_code_hint: string | null
+          member_count: number
+          name: string
+          owner_user_id: string
+          updated_at: string
+          visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          fantasy_season_id: string
+          id?: string
+          invite_code_digest?: string | null
+          invite_code_hint?: string | null
+          member_count?: number
+          name: string
+          owner_user_id: string
+          updated_at?: string
+          visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          fantasy_season_id?: string
+          id?: string
+          invite_code_digest?: string | null
+          invite_code_hint?: string | null
+          member_count?: number
+          name?: string
+          owner_user_id?: string
+          updated_at?: string
+          visibility?: Database["app"]["Enums"]["fantasy_league_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_leagues_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_leagues_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_lineup_players: {
+        Row: {
+          captain: boolean
+          created_at: string
+          fantasy_player_id: string
+          lineup_id: string
+          multiplier: number
+          slot: Database["app"]["Enums"]["fantasy_lineup_slot"]
+          slot_order: number
+          snapshot_price: number
+          updated_at: string
+          vice_captain: boolean
+        }
+        Insert: {
+          captain?: boolean
+          created_at?: string
+          fantasy_player_id: string
+          lineup_id: string
+          multiplier?: number
+          slot: Database["app"]["Enums"]["fantasy_lineup_slot"]
+          slot_order: number
+          snapshot_price: number
+          updated_at?: string
+          vice_captain?: boolean
+        }
+        Update: {
+          captain?: boolean
+          created_at?: string
+          fantasy_player_id?: string
+          lineup_id?: string
+          multiplier?: number
+          slot?: Database["app"]["Enums"]["fantasy_lineup_slot"]
+          slot_order?: number
+          snapshot_price?: number
+          updated_at?: string
+          vice_captain?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_lineup_players_fantasy_player_id_fkey"
+            columns: ["fantasy_player_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_lineup_players_lineup_id_fkey"
+            columns: ["lineup_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_lineups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_lineups: {
+        Row: {
+          created_at: string
+          fantasy_team_id: string
+          finalized_at: string | null
+          gameweek_id: string
+          id: string
+          locked_at: string | null
+          team_version: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_team_id: string
+          finalized_at?: string | null
+          gameweek_id: string
+          id?: string
+          locked_at?: string | null
+          team_version: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_team_id?: string
+          finalized_at?: string | null
+          gameweek_id?: string
+          id?: string
+          locked_at?: string | null
+          team_version?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_lineups_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_lineups_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_player_gameweek_points: {
+        Row: {
+          calculation_version: number
+          created_at: string
+          did_play: boolean
+          fantasy_player_id: string
+          final_points: number | null
+          finalized_at: string | null
+          football_input_version: number
+          gameweek_id: string
+          minutes_played: number
+          provisional_points: number
+          updated_at: string
+        }
+        Insert: {
+          calculation_version: number
+          created_at?: string
+          did_play?: boolean
+          fantasy_player_id: string
+          final_points?: number | null
+          finalized_at?: string | null
+          football_input_version: number
+          gameweek_id: string
+          minutes_played?: number
+          provisional_points?: number
+          updated_at?: string
+        }
+        Update: {
+          calculation_version?: number
+          created_at?: string
+          did_play?: boolean
+          fantasy_player_id?: string
+          final_points?: number | null
+          finalized_at?: string | null
+          football_input_version?: number
+          gameweek_id?: string
+          minutes_played?: number
+          provisional_points?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_player_gameweek_points_fantasy_player_id_fkey"
+            columns: ["fantasy_player_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_player_gameweek_points_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_player_point_events: {
+        Row: {
+          category: string
+          created_at: string
+          fantasy_player_id: string
+          fixture_id: string
+          football_event_id: string | null
+          gameweek_id: string
+          id: string
+          points: number
+          scoring_version: number
+          source_key: string
+          source_sequence: number
+          state: Database["app"]["Enums"]["fantasy_points_state"]
+          superseded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          fantasy_player_id: string
+          fixture_id: string
+          football_event_id?: string | null
+          gameweek_id: string
+          id?: string
+          points: number
+          scoring_version: number
+          source_key: string
+          source_sequence: number
+          state?: Database["app"]["Enums"]["fantasy_points_state"]
+          superseded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          fantasy_player_id?: string
+          fixture_id?: string
+          football_event_id?: string | null
+          gameweek_id?: string
+          id?: string
+          points?: number
+          scoring_version?: number
+          source_key?: string
+          source_sequence?: number
+          state?: Database["app"]["Enums"]["fantasy_points_state"]
+          superseded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_player_point_events_fantasy_player_id_fkey"
+            columns: ["fantasy_player_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_player_point_events_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_player_point_events_football_event_id_fkey"
+            columns: ["football_event_id"]
+            isOneToOne: false
+            referencedRelation: "match_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_player_point_events_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_player_price_history: {
+        Row: {
+          created_at: string
+          effective_at: string
+          fantasy_player_id: string
+          gameweek_id: string | null
+          id: string
+          new_price: number
+          old_price: number | null
+          reason: string
+          source_version: number
+        }
+        Insert: {
+          created_at?: string
+          effective_at: string
+          fantasy_player_id: string
+          gameweek_id?: string | null
+          id?: string
+          new_price: number
+          old_price?: number | null
+          reason: string
+          source_version: number
+        }
+        Update: {
+          created_at?: string
+          effective_at?: string
+          fantasy_player_id?: string
+          gameweek_id?: string | null
+          id?: string
+          new_price?: number
+          old_price?: number | null
+          reason?: string
+          source_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_player_price_history_fantasy_player_id_fkey"
+            columns: ["fantasy_player_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_player_price_history_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_players: {
+        Row: {
+          active: boolean
+          created_at: string
+          eligible: boolean
+          fantasy_season_id: string
+          football_player_id: string
+          football_team_id: string
+          id: string
+          position_id: string
+          price: number
+          price_version: number
+          selected_by_count: number
+          status: Database["app"]["Enums"]["fantasy_player_status"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          eligible?: boolean
+          fantasy_season_id: string
+          football_player_id: string
+          football_team_id: string
+          id?: string
+          position_id: string
+          price: number
+          price_version?: number
+          selected_by_count?: number
+          status?: Database["app"]["Enums"]["fantasy_player_status"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          eligible?: boolean
+          fantasy_season_id?: string
+          football_player_id?: string
+          football_team_id?: string
+          id?: string
+          position_id?: string
+          price?: number
+          price_version?: number
+          selected_by_count?: number
+          status?: Database["app"]["Enums"]["fantasy_player_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_players_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_players_football_player_id_fkey"
+            columns: ["football_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_players_football_team_id_fkey"
+            columns: ["football_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_players_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_position_rules: {
+        Row: {
+          clean_sheet_points: number
+          created_at: string
+          goal_points: number
+          position_id: string
+          ruleset_id: string
+          squad_quota: number
+          starting_maximum: number
+          starting_minimum: number
+          updated_at: string
+        }
+        Insert: {
+          clean_sheet_points?: number
+          created_at?: string
+          goal_points: number
+          position_id: string
+          ruleset_id: string
+          squad_quota: number
+          starting_maximum: number
+          starting_minimum: number
+          updated_at?: string
+        }
+        Update: {
+          clean_sheet_points?: number
+          created_at?: string
+          goal_points?: number
+          position_id?: string
+          ruleset_id?: string
+          squad_quota?: number
+          starting_maximum?: number
+          starting_minimum?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_position_rules_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_position_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_positions: {
+        Row: {
+          code: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          display_order: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fantasy_rankings: {
+        Row: {
+          calculated_at: string
+          calculation_version: number
+          created_at: string
+          fantasy_season_id: string
+          fantasy_team_id: string
+          gameweek_id: string | null
+          gameweek_points: number | null
+          id: string
+          league_id: string | null
+          previous_rank: number | null
+          rank: number
+          total_points: number
+          transfer_hits: number
+          updated_at: string
+        }
+        Insert: {
+          calculated_at: string
+          calculation_version: number
+          created_at?: string
+          fantasy_season_id: string
+          fantasy_team_id: string
+          gameweek_id?: string | null
+          gameweek_points?: number | null
+          id?: string
+          league_id?: string | null
+          previous_rank?: number | null
+          rank: number
+          total_points: number
+          transfer_hits?: number
+          updated_at?: string
+        }
+        Update: {
+          calculated_at?: string
+          calculation_version?: number
+          created_at?: string
+          fantasy_season_id?: string
+          fantasy_team_id?: string
+          gameweek_id?: string | null
+          gameweek_points?: number | null
+          id?: string
+          league_id?: string | null
+          previous_rank?: number | null
+          rank?: number
+          total_points?: number
+          transfer_hits?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_rankings_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_rankings_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_rankings_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_rankings_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_rulesets: {
+        Row: {
+          active: boolean
+          captain_multiplier: number
+          created_at: string
+          effective_from: string
+          fantasy_competition_id: string
+          full_appearance_minutes: number
+          id: string
+          initial_budget: number
+          initial_free_transfers: number
+          max_free_transfer_rollover: number
+          max_players_per_club: number
+          minimum_minutes_for_appearance: number
+          name: string
+          retired_at: string | null
+          squad_size: number
+          transfer_hit_cost: number
+          triple_captain_multiplier: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          captain_multiplier?: number
+          created_at?: string
+          effective_from: string
+          fantasy_competition_id: string
+          full_appearance_minutes?: number
+          id?: string
+          initial_budget: number
+          initial_free_transfers: number
+          max_free_transfer_rollover: number
+          max_players_per_club: number
+          minimum_minutes_for_appearance?: number
+          name: string
+          retired_at?: string | null
+          squad_size: number
+          transfer_hit_cost: number
+          triple_captain_multiplier?: number
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          active?: boolean
+          captain_multiplier?: number
+          created_at?: string
+          effective_from?: string
+          fantasy_competition_id?: string
+          full_appearance_minutes?: number
+          id?: string
+          initial_budget?: number
+          initial_free_transfers?: number
+          max_free_transfer_rollover?: number
+          max_players_per_club?: number
+          minimum_minutes_for_appearance?: number
+          name?: string
+          retired_at?: string | null
+          squad_size?: number
+          transfer_hit_cost?: number
+          triple_captain_multiplier?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_rulesets_fantasy_competition_id_fkey"
+            columns: ["fantasy_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_scoring_rules: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          id: string
+          points: number
+          position_id: string | null
+          ruleset_id: string
+          threshold: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          id?: string
+          points: number
+          position_id?: string | null
+          ruleset_id: string
+          threshold?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          points?: number
+          position_id?: string | null
+          ruleset_id?: string
+          threshold?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_scoring_rules_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_scoring_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_seasons: {
+        Row: {
+          created_at: string
+          ends_at: string
+          fantasy_competition_id: string
+          football_season_id: string
+          id: string
+          name: string
+          ruleset_id: string
+          starts_at: string
+          status: Database["app"]["Enums"]["fantasy_season_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          fantasy_competition_id: string
+          football_season_id: string
+          id?: string
+          name: string
+          ruleset_id: string
+          starts_at: string
+          status?: Database["app"]["Enums"]["fantasy_season_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          fantasy_competition_id?: string
+          football_season_id?: string
+          id?: string
+          name?: string
+          ruleset_id?: string
+          starts_at?: string
+          status?: Database["app"]["Enums"]["fantasy_season_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_seasons_fantasy_competition_id_fkey"
+            columns: ["fantasy_competition_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_seasons_football_season_id_fkey"
+            columns: ["football_season_id"]
+            isOneToOne: true
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_seasons_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_rulesets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_squad_memberships: {
+        Row: {
+          acquired_at: string
+          acquired_gameweek_id: string
+          created_at: string
+          current_sale_price: number
+          fantasy_player_id: string
+          fantasy_team_id: string
+          id: string
+          purchase_price: number
+          sold_at: string | null
+          sold_gameweek_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          acquired_at?: string
+          acquired_gameweek_id: string
+          created_at?: string
+          current_sale_price: number
+          fantasy_player_id: string
+          fantasy_team_id: string
+          id?: string
+          purchase_price: number
+          sold_at?: string | null
+          sold_gameweek_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acquired_at?: string
+          acquired_gameweek_id?: string
+          created_at?: string
+          current_sale_price?: number
+          fantasy_player_id?: string
+          fantasy_team_id?: string
+          id?: string
+          purchase_price?: number
+          sold_at?: string | null
+          sold_gameweek_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_squad_memberships_acquired_gameweek_id_fkey"
+            columns: ["acquired_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_squad_memberships_fantasy_player_id_fkey"
+            columns: ["fantasy_player_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_squad_memberships_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_squad_memberships_sold_gameweek_id_fkey"
+            columns: ["sold_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_team_gameweek_results: {
+        Row: {
+          bench_points: number
+          calculation_version: number
+          captain_points: number
+          chip_type: Database["app"]["Enums"]["fantasy_chip_type"] | null
+          created_at: string
+          fantasy_team_id: string
+          final_score: number | null
+          finalized_at: string | null
+          gameweek_id: string
+          id: string
+          overall_rank: number | null
+          provisional_score: number
+          rank: number | null
+          starting_points: number
+          state: Database["app"]["Enums"]["fantasy_points_state"]
+          transfer_hit: number
+          updated_at: string
+        }
+        Insert: {
+          bench_points: number
+          calculation_version: number
+          captain_points: number
+          chip_type?: Database["app"]["Enums"]["fantasy_chip_type"] | null
+          created_at?: string
+          fantasy_team_id: string
+          final_score?: number | null
+          finalized_at?: string | null
+          gameweek_id: string
+          id?: string
+          overall_rank?: number | null
+          provisional_score: number
+          rank?: number | null
+          starting_points: number
+          state?: Database["app"]["Enums"]["fantasy_points_state"]
+          transfer_hit: number
+          updated_at?: string
+        }
+        Update: {
+          bench_points?: number
+          calculation_version?: number
+          captain_points?: number
+          chip_type?: Database["app"]["Enums"]["fantasy_chip_type"] | null
+          created_at?: string
+          fantasy_team_id?: string
+          final_score?: number | null
+          finalized_at?: string | null
+          gameweek_id?: string
+          id?: string
+          overall_rank?: number | null
+          provisional_score?: number
+          rank?: number | null
+          starting_points?: number
+          state?: Database["app"]["Enums"]["fantasy_points_state"]
+          transfer_hit?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_team_gameweek_results_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_team_gameweek_results_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_teams: {
+        Row: {
+          bank: number
+          created_at: string
+          current_gameweek_id: string | null
+          fantasy_season_id: string
+          free_transfers: number
+          id: string
+          name: string
+          status: Database["app"]["Enums"]["fantasy_team_status"]
+          team_value: number
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          bank: number
+          created_at?: string
+          current_gameweek_id?: string | null
+          fantasy_season_id: string
+          free_transfers: number
+          id?: string
+          name: string
+          status?: Database["app"]["Enums"]["fantasy_team_status"]
+          team_value: number
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          bank?: number
+          created_at?: string
+          current_gameweek_id?: string | null
+          fantasy_season_id?: string
+          free_transfers?: number
+          id?: string
+          name?: string
+          status?: Database["app"]["Enums"]["fantasy_team_status"]
+          team_value?: number
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_teams_current_gameweek_id_fkey"
+            columns: ["current_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_teams_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_teams_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_transfer_batches: {
+        Row: {
+          bank_after: number
+          bank_before: number
+          base_team_version: number
+          chip_type: Database["app"]["Enums"]["fantasy_chip_type"] | null
+          confirmed_at: string
+          created_at: string
+          fantasy_team_id: string
+          free_transfers_before: number
+          free_transfers_used: number
+          gameweek_id: string
+          id: string
+          idempotency_key: string
+          point_hit: number
+          resulting_team_version: number
+          status: Database["app"]["Enums"]["fantasy_transfer_batch_status"]
+          transfers_count: number
+        }
+        Insert: {
+          bank_after: number
+          bank_before: number
+          base_team_version: number
+          chip_type?: Database["app"]["Enums"]["fantasy_chip_type"] | null
+          confirmed_at?: string
+          created_at?: string
+          fantasy_team_id: string
+          free_transfers_before: number
+          free_transfers_used: number
+          gameweek_id: string
+          id?: string
+          idempotency_key: string
+          point_hit: number
+          resulting_team_version: number
+          status?: Database["app"]["Enums"]["fantasy_transfer_batch_status"]
+          transfers_count: number
+        }
+        Update: {
+          bank_after?: number
+          bank_before?: number
+          base_team_version?: number
+          chip_type?: Database["app"]["Enums"]["fantasy_chip_type"] | null
+          confirmed_at?: string
+          created_at?: string
+          fantasy_team_id?: string
+          free_transfers_before?: number
+          free_transfers_used?: number
+          gameweek_id?: string
+          id?: string
+          idempotency_key?: string
+          point_hit?: number
+          resulting_team_version?: number
+          status?: Database["app"]["Enums"]["fantasy_transfer_batch_status"]
+          transfers_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_transfer_batches_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_transfer_batches_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_transfers: {
+        Row: {
+          created_at: string
+          id: string
+          player_in_id: string
+          player_out_id: string
+          purchase_price: number
+          sale_price: number
+          sequence_number: number
+          transfer_batch_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_in_id: string
+          player_out_id: string
+          purchase_price: number
+          sale_price: number
+          sequence_number: number
+          transfer_batch_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_in_id?: string
+          player_out_id?: string
+          purchase_price?: number
+          sale_price?: number
+          sequence_number?: number
+          transfer_batch_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_transfers_player_in_id_fkey"
+            columns: ["player_in_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_transfers_player_out_id_fkey"
+            columns: ["player_out_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_transfers_transfer_batch_id_fkey"
+            columns: ["transfer_batch_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_transfer_batches"
             referencedColumns: ["id"]
           },
         ]
@@ -3188,6 +4884,48 @@ export type Database = {
         | "international"
         | "friendly"
       content_origin: "manual" | "provider" | "partner"
+      fantasy_chip_type:
+        | "wildcard"
+        | "free_hit"
+        | "bench_boost"
+        | "triple_captain"
+      fantasy_gameweek_status:
+        | "scheduled"
+        | "open"
+        | "locked"
+        | "live"
+        | "provisional"
+        | "finalizing"
+        | "finalized"
+        | "corrected"
+        | "cancelled"
+      fantasy_league_member_status: "active" | "left" | "removed"
+      fantasy_league_role: "owner" | "admin" | "member"
+      fantasy_league_visibility: "public" | "private"
+      fantasy_lineup_slot: "starter" | "bench"
+      fantasy_player_status:
+        | "available"
+        | "doubtful"
+        | "injured"
+        | "suspended"
+        | "ineligible"
+        | "unavailable"
+      fantasy_points_state: "provisional" | "final"
+      fantasy_run_status:
+        | "pending"
+        | "running"
+        | "partial"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+      fantasy_season_status:
+        | "planned"
+        | "registration_open"
+        | "active"
+        | "completed"
+        | "cancelled"
+      fantasy_team_status: "active" | "suspended" | "archived"
+      fantasy_transfer_batch_status: "confirmed" | "reversed_by_correction"
       fixture_period:
         | "pre_match"
         | "first_half"
@@ -3516,6 +5254,53 @@ export const Constants = {
         "friendly",
       ],
       content_origin: ["manual", "provider", "partner"],
+      fantasy_chip_type: [
+        "wildcard",
+        "free_hit",
+        "bench_boost",
+        "triple_captain",
+      ],
+      fantasy_gameweek_status: [
+        "scheduled",
+        "open",
+        "locked",
+        "live",
+        "provisional",
+        "finalizing",
+        "finalized",
+        "corrected",
+        "cancelled",
+      ],
+      fantasy_league_member_status: ["active", "left", "removed"],
+      fantasy_league_role: ["owner", "admin", "member"],
+      fantasy_league_visibility: ["public", "private"],
+      fantasy_lineup_slot: ["starter", "bench"],
+      fantasy_player_status: [
+        "available",
+        "doubtful",
+        "injured",
+        "suspended",
+        "ineligible",
+        "unavailable",
+      ],
+      fantasy_points_state: ["provisional", "final"],
+      fantasy_run_status: [
+        "pending",
+        "running",
+        "partial",
+        "succeeded",
+        "failed",
+        "cancelled",
+      ],
+      fantasy_season_status: [
+        "planned",
+        "registration_open",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+      fantasy_team_status: ["active", "suspended", "archived"],
+      fantasy_transfer_batch_status: ["confirmed", "reversed_by_correction"],
       fixture_period: [
         "pre_match",
         "first_half",

@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { fantasyService } from "@/services/fantasy-mock";
-import { leaguesStore, LeagueError } from "@/services/leagues-store";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { LoadingState, EmptyState } from "@/components/common/States";
 import { LeagueTable } from "@/components/fantasy/LeagueTable";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
@@ -19,7 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
   component: LeagueDetailPage,
@@ -35,22 +33,19 @@ function LeagueDetailPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"leave" | "delete" | null>(null);
 
-  const persisted = leaguesStore.get(leagueId);
   const leagueQ = useQuery({
     queryKey: ["league", leagueId],
     queryFn: () => fantasyService.getLeague(leagueId),
-    enabled: !persisted,
   });
   const standingsQ = useQuery({
     queryKey: ["standings", leagueId],
     queryFn: () => fantasyService.getLeagueStandings(leagueId),
-    enabled: !persisted,
   });
 
-  const league = persisted ?? leagueQ.data;
-  if (!persisted && leagueQ.isLoading) return <LoadingState />;
+  const league = leagueQ.data;
+  if (leagueQ.isLoading) return <LoadingState />;
   if (!league) return <EmptyState />;
-  const standings = persisted ? persisted.standings : (standingsQ.data ?? []);
+  const standings = standingsQ.data ?? [];
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -65,31 +60,31 @@ function LeagueDetailPage() {
       /* ignore */
     }
   };
-  const handleLeave = () => {
+  const handleLeave = async () => {
     try {
-      leaguesStore.leave(league.id);
-      qc.invalidateQueries({ queryKey: ["persisted-leagues"] });
+      await fantasyService.leaveLeague(league.id);
+      await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
       navigate({ to: "/fantasy/leagues" });
-    } catch (e) {
-      if (e instanceof LeagueError) showToast(t(e.key as TranslationKey));
+    } catch {
+      showToast(t("fantasy.error.permission"));
     } finally {
       setConfirm(null);
     }
   };
-  const handleDelete = () => {
+  const handleDelete = async () => {
     try {
-      leaguesStore.delete(league.id);
-      qc.invalidateQueries({ queryKey: ["persisted-leagues"] });
+      await fantasyService.archiveLeague(league.id);
+      await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
       navigate({ to: "/fantasy/leagues" });
-    } catch (e) {
-      if (e instanceof LeagueError) showToast(t(e.key as TranslationKey));
+    } catch {
+      showToast(t("fantasy.error.permission"));
     } finally {
       setConfirm(null);
     }
   };
 
-  const isCreator = persisted?.role === "creator";
-  const isMember = persisted?.role === "member";
+  const isCreator = league.role === "owner";
+  const isMember = league.role === "member" || league.role === "admin";
 
   return (
     <div>
@@ -108,10 +103,10 @@ function LeagueDetailPage() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <div className="truncate text-lg font-black text-foreground">{league.name}</div>
-            {persisted && (
+            {league.role && (
               <span className="rounded-full bg-[color:var(--brand-accent)]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
                 {t(
-                  persisted.role === "creator"
+                  league.role === "owner"
                     ? "fantasy.leagues.role.creator"
                     : "fantasy.leagues.role.member",
                 )}
@@ -125,9 +120,14 @@ function LeagueDetailPage() {
         </div>
         <div className="text-end">
           <div className="text-lg font-black tabular-nums text-brand-accent">
-            #{nf.format(league.rank)}
+            {league.rank === null ? "—" : `#${nf.format(league.rank)}`}
           </div>
-          <RankChangeIndicator rank={league.rank} previousRank={league.previousRank} />
+          {league.rank !== null && (
+            <RankChangeIndicator
+              rank={league.rank}
+              previousRank={league.previousRank ?? league.rank}
+            />
+          )}
         </div>
       </div>
 
