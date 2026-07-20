@@ -202,6 +202,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      disable_my_notification_device: {
+        Args: { p_device_id: string }
+        Returns: boolean
+      }
+      dismiss_my_notification: {
+        Args: { p_archive?: boolean; p_notification_id: string }
+        Returns: boolean
+      }
       editorial_create_draft: {
         Args: {
           p_author_id?: string
@@ -363,6 +371,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_my_notification_preferences: { Args: never; Returns: Json }
       ingest_football_fixture: {
         Args: {
           p_external_id: string
@@ -370,6 +379,28 @@ export type Database = {
           p_provider_name: string
         }
         Returns: string
+      }
+      list_my_notification_devices: { Args: never; Returns: Json }
+      list_my_notifications: {
+        Args: {
+          p_before_created_at?: string
+          p_before_id?: string
+          p_category?: Database["app"]["Enums"]["notification_category"]
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      mark_all_my_notifications_read: {
+        Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
+        Returns: number
+      }
+      mark_my_notification_read: {
+        Args: { p_notification_id: string; p_read?: boolean }
+        Returns: boolean
+      }
+      my_notification_unread_count: {
+        Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
+        Returns: number
       }
       news_article_detail: {
         Args: { p_identifier: string; p_language: string }
@@ -497,6 +528,18 @@ export type Database = {
         Returns: string
       }
       record_session_revocation: { Args: { scope: string }; Returns: undefined }
+      register_my_notification_device: {
+        Args: {
+          p_app_version?: string
+          p_destination: string
+          p_device_id: string
+          p_locale: Database["app"]["Enums"]["language_code"]
+          p_platform: Database["app"]["Enums"]["notification_device_platform"]
+          p_push_provider: Database["app"]["Enums"]["notification_push_provider"]
+          p_timezone: string
+        }
+        Returns: Json
+      }
       request_account_deletion: { Args: never; Returns: string }
       resolve_football_mapping: {
         Args: {
@@ -510,12 +553,144 @@ export type Database = {
         Returns: string
       }
       save_article: { Args: { p_article_edition_id: string }; Returns: Json }
+      service_cancel_notification_schedule: {
+        Args: { p_schedule_id: string }
+        Returns: boolean
+      }
+      service_checkpoint_notification_fanout: {
+        Args: {
+          p_audience_count: number
+          p_checkpoint_user_id: string
+          p_complete?: boolean
+          p_deliveries_queued: number
+          p_event_id: string
+          p_notifications_created: number
+          p_rejected_count: number
+          p_skipped_count: number
+        }
+        Returns: boolean
+      }
+      service_claim_notification_deliveries: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_claim_notification_event: {
+        Args: { p_event_id: string; p_lease_seconds?: number }
+        Returns: Json
+      }
+      service_claim_notification_schedules: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_create_user_notification: {
+        Args: {
+          p_deep_link_entity_id?: string
+          p_deep_link_target?: Database["app"]["Enums"]["notification_deep_link_target"]
+          p_email_provider_key?: string
+          p_event_id: string
+          p_expires_at?: string
+          p_priority?: Database["app"]["Enums"]["notification_priority"]
+          p_push_provider_key?: string
+          p_user_id: string
+          p_variables: Json
+        }
+        Returns: string
+      }
+      service_ingest_notification_event: {
+        Args: {
+          p_correlation_id: string
+          p_deduplication_key: string
+          p_event_id: string
+          p_event_type: Database["app"]["Enums"]["notification_type"]
+          p_occurred_at: string
+          p_safe_payload?: Json
+          p_schema_version: number
+          p_source_domain: Database["app"]["Enums"]["notification_source_domain"]
+          p_source_entity_id: string
+          p_target_user_id: string
+        }
+        Returns: string
+      }
+      service_invalidate_notification_device: {
+        Args: { p_device_registration_id: string; p_reason_code: string }
+        Returns: boolean
+      }
+      service_list_notification_audience: {
+        Args: { p_after_user_id?: string; p_event_id: string; p_limit?: number }
+        Returns: Json
+      }
+      service_notification_metrics: {
+        Args: { p_since?: string }
+        Returns: Json
+      }
+      service_record_notification_delivery_attempt: {
+        Args: {
+          p_delivery_id: string
+          p_max_attempts?: number
+          p_outcome: string
+          p_provider_latency_ms?: number
+          p_provider_message_id?: string
+          p_rate_limit_remaining?: number
+          p_retry_after_seconds?: number
+          p_retryable: boolean
+          p_sanitized_summary?: string
+          p_stable_error_code?: string
+        }
+        Returns: Database["app"]["Enums"]["notification_delivery_status"]
+      }
+      service_request_notification_dead_letter_replay: {
+        Args: { p_dead_letter_id: string; p_idempotency_key: string }
+        Returns: boolean
+      }
+      service_upsert_notification_schedule: {
+        Args: {
+          p_due_at: string
+          p_idempotency_key: string
+          p_notification_type: Database["app"]["Enums"]["notification_type"]
+          p_safe_payload?: Json
+          p_source_domain: Database["app"]["Enums"]["notification_source_domain"]
+          p_source_entity_id: string
+          p_target_user_id: string
+          p_timezone_basis: string
+        }
+        Returns: string
+      }
+      set_my_notification_subscription: {
+        Args: {
+          p_enabled?: boolean
+          p_kind: Database["app"]["Enums"]["notification_subscription_kind"]
+          p_target_id: string
+        }
+        Returns: boolean
+      }
       unfollow_competition: {
         Args: { p_competition_id: string }
         Returns: boolean
       }
       unfollow_team: { Args: { p_team_id: string }; Returns: boolean }
+      unregister_my_notification_device: {
+        Args: { p_device_id: string }
+        Returns: boolean
+      }
       unsave_article: { Args: { p_article_edition_id: string }; Returns: Json }
+      update_my_notification_preferences: {
+        Args: {
+          p_breaking_news: boolean
+          p_digest_mode?: Database["app"]["Enums"]["notification_digest_mode"]
+          p_email_enabled: boolean
+          p_fantasy_deadline_offset_minutes?: number
+          p_fantasy_deadlines: boolean
+          p_in_app_enabled: boolean
+          p_match_alerts: boolean
+          p_notifications_enabled: boolean
+          p_push_enabled: boolean
+          p_quiet_hours_enabled: boolean
+          p_quiet_hours_end?: string
+          p_quiet_hours_start?: string
+          p_timezone: string
+        }
+        Returns: Json
+      }
       update_my_preferences: {
         Args: {
           breaking_news: boolean
@@ -969,6 +1144,62 @@ export type Database = {
             columns: ["country_id"]
             isOneToOne: false
             referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_registrations: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_id: string
+          enabled: boolean
+          id: string
+          invalidated_at: string | null
+          last_seen_at: string
+          locale: Database["app"]["Enums"]["language_code"]
+          platform: Database["app"]["Enums"]["notification_device_platform"]
+          push_provider: Database["app"]["Enums"]["notification_push_provider"]
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_id: string
+          enabled?: boolean
+          id?: string
+          invalidated_at?: string | null
+          last_seen_at?: string
+          locale: Database["app"]["Enums"]["language_code"]
+          platform: Database["app"]["Enums"]["notification_device_platform"]
+          push_provider: Database["app"]["Enums"]["notification_push_provider"]
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_id?: string
+          enabled?: boolean
+          id?: string
+          invalidated_at?: string | null
+          last_seen_at?: string
+          locale?: Database["app"]["Enums"]["language_code"]
+          platform?: Database["app"]["Enums"]["notification_device_platform"]
+          push_provider?: Database["app"]["Enums"]["notification_push_provider"]
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1558,6 +1789,312 @@ export type Database = {
           width?: number | null
         }
         Relationships: []
+      }
+      notification_deliveries: {
+        Row: {
+          attempt_count: number
+          channel: Database["app"]["Enums"]["notification_channel"]
+          claim_expires_at: string | null
+          claimed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          device_registration_id: string | null
+          failed_at: string | null
+          id: string
+          next_retry_at: string | null
+          notification_id: string
+          provider_key: string
+          provider_message_id: string | null
+          sanitized_failure_summary: string | null
+          sent_at: string | null
+          stable_error_code: string | null
+          status: Database["app"]["Enums"]["notification_delivery_status"]
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          channel: Database["app"]["Enums"]["notification_channel"]
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          device_registration_id?: string | null
+          failed_at?: string | null
+          id?: string
+          next_retry_at?: string | null
+          notification_id: string
+          provider_key: string
+          provider_message_id?: string | null
+          sanitized_failure_summary?: string | null
+          sent_at?: string | null
+          stable_error_code?: string | null
+          status?: Database["app"]["Enums"]["notification_delivery_status"]
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          channel?: Database["app"]["Enums"]["notification_channel"]
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          device_registration_id?: string | null
+          failed_at?: string | null
+          id?: string
+          next_retry_at?: string | null
+          notification_id?: string
+          provider_key?: string
+          provider_message_id?: string | null
+          sanitized_failure_summary?: string | null
+          sent_at?: string | null
+          stable_error_code?: string | null
+          status?: Database["app"]["Enums"]["notification_delivery_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_device_registration_fkey"
+            columns: ["device_registration_id"]
+            isOneToOne: false
+            referencedRelation: "device_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_subscriptions: {
+        Row: {
+          competition_id: string | null
+          created_at: string
+          enabled: boolean
+          fixture_id: string | null
+          id: string
+          kind: Database["app"]["Enums"]["notification_subscription_kind"]
+          news_topic_id: string | null
+          team_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competition_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          fixture_id?: string | null
+          id?: string
+          kind: Database["app"]["Enums"]["notification_subscription_kind"]
+          news_topic_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          fixture_id?: string | null
+          id?: string
+          kind?: Database["app"]["Enums"]["notification_subscription_kind"]
+          news_topic_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_subscriptions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_subscriptions_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_subscriptions_news_topic_id_fkey"
+            columns: ["news_topic_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_subscriptions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          activated_at: string | null
+          active: boolean
+          body_template: string
+          bypass_quiet_hours: boolean
+          category: Database["app"]["Enums"]["notification_category"]
+          channel: Database["app"]["Enums"]["notification_channel"]
+          created_at: string
+          id: string
+          is_mandatory: boolean
+          language: Database["app"]["Enums"]["language_code"]
+          max_body_length: number
+          max_title_length: number
+          notification_type: Database["app"]["Enums"]["notification_type"]
+          required_variables: string[]
+          retired_at: string | null
+          template_key: string
+          title_template: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          activated_at?: string | null
+          active?: boolean
+          body_template: string
+          bypass_quiet_hours?: boolean
+          category: Database["app"]["Enums"]["notification_category"]
+          channel: Database["app"]["Enums"]["notification_channel"]
+          created_at?: string
+          id?: string
+          is_mandatory?: boolean
+          language: Database["app"]["Enums"]["language_code"]
+          max_body_length: number
+          max_title_length: number
+          notification_type: Database["app"]["Enums"]["notification_type"]
+          required_variables?: string[]
+          retired_at?: string | null
+          template_key: string
+          title_template: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          activated_at?: string | null
+          active?: boolean
+          body_template?: string
+          bypass_quiet_hours?: boolean
+          category?: Database["app"]["Enums"]["notification_category"]
+          channel?: Database["app"]["Enums"]["notification_channel"]
+          created_at?: string
+          id?: string
+          is_mandatory?: boolean
+          language?: Database["app"]["Enums"]["language_code"]
+          max_body_length?: number
+          max_title_length?: number
+          notification_type?: Database["app"]["Enums"]["notification_type"]
+          required_variables?: string[]
+          retired_at?: string | null
+          template_key?: string
+          title_template?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          archived_at: string | null
+          available_at: string
+          body: string
+          category: Database["app"]["Enums"]["notification_category"]
+          created_at: string
+          deep_link_entity_id: string | null
+          deep_link_target: Database["app"]["Enums"]["notification_deep_link_target"]
+          dismissed_at: string | null
+          event_id: string
+          expires_at: string | null
+          id: string
+          language: Database["app"]["Enums"]["language_code"]
+          notification_type: Database["app"]["Enums"]["notification_type"]
+          priority: Database["app"]["Enums"]["notification_priority"]
+          read_at: string | null
+          source_domain: Database["app"]["Enums"]["notification_source_domain"]
+          source_entity_id: string | null
+          template_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          available_at?: string
+          body: string
+          category: Database["app"]["Enums"]["notification_category"]
+          created_at?: string
+          deep_link_entity_id?: string | null
+          deep_link_target?: Database["app"]["Enums"]["notification_deep_link_target"]
+          dismissed_at?: string | null
+          event_id: string
+          expires_at?: string | null
+          id?: string
+          language: Database["app"]["Enums"]["language_code"]
+          notification_type: Database["app"]["Enums"]["notification_type"]
+          priority?: Database["app"]["Enums"]["notification_priority"]
+          read_at?: string | null
+          source_domain: Database["app"]["Enums"]["notification_source_domain"]
+          source_entity_id?: string | null
+          template_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          available_at?: string
+          body?: string
+          category?: Database["app"]["Enums"]["notification_category"]
+          created_at?: string
+          deep_link_entity_id?: string | null
+          deep_link_target?: Database["app"]["Enums"]["notification_deep_link_target"]
+          dismissed_at?: string | null
+          event_id?: string
+          expires_at?: string | null
+          id?: string
+          language?: Database["app"]["Enums"]["language_code"]
+          notification_type?: Database["app"]["Enums"]["notification_type"]
+          priority?: Database["app"]["Enums"]["notification_priority"]
+          read_at?: string | null
+          source_domain?: Database["app"]["Enums"]["notification_source_domain"]
+          source_entity_id?: string | null
+          template_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_availability: {
         Row: {
@@ -2452,30 +2989,60 @@ export type Database = {
         Row: {
           breaking_news: boolean
           created_at: string
+          email_notifications_enabled: boolean
+          fantasy_deadline_offset_minutes: number
           fantasy_deadline_reminders: boolean
           favorite_team_id: string | null
           favorite_team_provisional_ref: string | null
+          in_app_notifications_enabled: boolean
           match_alerts: boolean
+          notification_digest_mode: Database["app"]["Enums"]["notification_digest_mode"]
+          notification_timezone: string
+          notifications_enabled: boolean
+          push_notifications_enabled: boolean
+          quiet_hours_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           breaking_news?: boolean
           created_at?: string
+          email_notifications_enabled?: boolean
+          fantasy_deadline_offset_minutes?: number
           fantasy_deadline_reminders?: boolean
           favorite_team_id?: string | null
           favorite_team_provisional_ref?: string | null
+          in_app_notifications_enabled?: boolean
           match_alerts?: boolean
+          notification_digest_mode?: Database["app"]["Enums"]["notification_digest_mode"]
+          notification_timezone?: string
+          notifications_enabled?: boolean
+          push_notifications_enabled?: boolean
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           breaking_news?: boolean
           created_at?: string
+          email_notifications_enabled?: boolean
+          fantasy_deadline_offset_minutes?: number
           fantasy_deadline_reminders?: boolean
           favorite_team_id?: string | null
           favorite_team_provisional_ref?: string | null
+          in_app_notifications_enabled?: boolean
           match_alerts?: boolean
+          notification_digest_mode?: Database["app"]["Enums"]["notification_digest_mode"]
+          notification_timezone?: string
+          notifications_enabled?: boolean
+          push_notifications_enabled?: boolean
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2670,6 +3237,88 @@ export type Database = {
         | "publisher_logo"
         | "video_thumbnail"
       media_validation_status: "pending" | "validated" | "rejected" | "expired"
+      notification_category:
+        | "account"
+        | "security"
+        | "football"
+        | "fantasy"
+        | "news"
+        | "system"
+      notification_channel: "in_app" | "push" | "email"
+      notification_deep_link_target:
+        | "none"
+        | "match_detail"
+        | "article"
+        | "fantasy_team"
+        | "fantasy_points"
+        | "fantasy_transfers"
+        | "profile"
+        | "settings"
+        | "security_action"
+      notification_delivery_status:
+        | "pending"
+        | "claimed"
+        | "sent"
+        | "delivered"
+        | "retry_scheduled"
+        | "failed"
+        | "dead_lettered"
+        | "cancelled"
+      notification_device_platform: "web" | "ios" | "android"
+      notification_digest_mode: "immediate" | "daily" | "weekly"
+      notification_event_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "partially_failed"
+        | "failed"
+        | "cancelled"
+      notification_priority: "low" | "normal" | "high" | "urgent"
+      notification_push_provider:
+        | "fixture"
+        | "web_push"
+        | "fcm"
+        | "apns"
+        | "expo"
+      notification_source_domain:
+        | "identity"
+        | "football"
+        | "news"
+        | "fantasy"
+        | "system"
+      notification_subscription_kind:
+        | "match"
+        | "team"
+        | "competition"
+        | "news_topic"
+      notification_type:
+        | "email_verified"
+        | "password_changed"
+        | "account_deletion_requested"
+        | "account_deletion_cancelled"
+        | "new_session_detected"
+        | "sensitive_profile_change"
+        | "match_starting"
+        | "match_started"
+        | "goal"
+        | "half_time"
+        | "full_time"
+        | "lineup_available"
+        | "match_postponed"
+        | "match_cancelled"
+        | "followed_team_result"
+        | "deadline_24h"
+        | "deadline_1h"
+        | "team_incomplete"
+        | "transfer_confirmation"
+        | "chip_activated"
+        | "gameweek_finalized"
+        | "league_position_changed"
+        | "breaking_news"
+        | "followed_team_article"
+        | "followed_competition_article"
+        | "editorial_digest"
+        | "system_announcement"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -2920,6 +3569,96 @@ export const Constants = {
         "video_thumbnail",
       ],
       media_validation_status: ["pending", "validated", "rejected", "expired"],
+      notification_category: [
+        "account",
+        "security",
+        "football",
+        "fantasy",
+        "news",
+        "system",
+      ],
+      notification_channel: ["in_app", "push", "email"],
+      notification_deep_link_target: [
+        "none",
+        "match_detail",
+        "article",
+        "fantasy_team",
+        "fantasy_points",
+        "fantasy_transfers",
+        "profile",
+        "settings",
+        "security_action",
+      ],
+      notification_delivery_status: [
+        "pending",
+        "claimed",
+        "sent",
+        "delivered",
+        "retry_scheduled",
+        "failed",
+        "dead_lettered",
+        "cancelled",
+      ],
+      notification_device_platform: ["web", "ios", "android"],
+      notification_digest_mode: ["immediate", "daily", "weekly"],
+      notification_event_status: [
+        "pending",
+        "processing",
+        "completed",
+        "partially_failed",
+        "failed",
+        "cancelled",
+      ],
+      notification_priority: ["low", "normal", "high", "urgent"],
+      notification_push_provider: [
+        "fixture",
+        "web_push",
+        "fcm",
+        "apns",
+        "expo",
+      ],
+      notification_source_domain: [
+        "identity",
+        "football",
+        "news",
+        "fantasy",
+        "system",
+      ],
+      notification_subscription_kind: [
+        "match",
+        "team",
+        "competition",
+        "news_topic",
+      ],
+      notification_type: [
+        "email_verified",
+        "password_changed",
+        "account_deletion_requested",
+        "account_deletion_cancelled",
+        "new_session_detected",
+        "sensitive_profile_change",
+        "match_starting",
+        "match_started",
+        "goal",
+        "half_time",
+        "full_time",
+        "lineup_available",
+        "match_postponed",
+        "match_cancelled",
+        "followed_team_result",
+        "deadline_24h",
+        "deadline_1h",
+        "team_incomplete",
+        "transfer_confirmation",
+        "chip_activated",
+        "gameweek_finalized",
+        "league_position_changed",
+        "breaking_news",
+        "followed_team_article",
+        "followed_competition_article",
+        "editorial_digest",
+        "system_announcement",
+      ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [
         "home_lead",
