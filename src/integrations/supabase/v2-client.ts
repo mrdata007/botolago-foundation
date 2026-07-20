@@ -22,3 +22,8 @@ export function getIdentityApi() {
 export function getFootballApi() {
   return supabaseV2.schema("api");
 }
+
+/** News V2 uses only DTO-shaped RPCs in the controlled api schema. */
+export function getNewsApi() {
+  return supabaseV2.schema("api");
+}

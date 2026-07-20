@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { botolaService } from "@/services/mock";
+import { newsService } from "@/services/news";
 import { footballService } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -119,14 +120,17 @@ function HomeContent() {
     queryKey: ["all-players-for-alerts"],
     queryFn: () => botolaService.getTrendingPlayers(),
   });
-  const leadQ = useQuery({ queryKey: ["lead"], queryFn: () => botolaService.getLeadArticle() });
+  const leadQ = useQuery({
+    queryKey: ["news", "home-modules", lang],
+    queryFn: () => newsService.getHome(lang).then((modules) => modules.lead),
+  });
   const followedQ = useQuery({
     queryKey: ["followed"],
     queryFn: () => botolaService.getFollowedClubs(),
   });
   const followedNewsQ = useQuery({
-    queryKey: ["followed-news"],
-    queryFn: () => botolaService.getArticles({ category: "latest" }),
+    queryKey: ["news", "latest", lang],
+    queryFn: () => newsService.getArticles(lang, { category: "latest" }),
   });
   const trendingQ = useQuery({
     queryKey: ["trending"],

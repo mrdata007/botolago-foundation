@@ -47,7 +47,15 @@ export function ArticleCard({
       >
         <div
           className="aspect-[16/10] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02]"
-          style={{ background: article.heroGradient }}
+          style={
+            article.heroUrl
+              ? {
+                  backgroundImage: `url(${article.heroUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : { background: article.heroGradient }
+          }
           aria-hidden
         />
         <div
@@ -110,7 +118,15 @@ export function ArticleCard({
       >
         <div
           className="h-14 w-14 shrink-0 rounded-xl shadow-inner"
-          style={{ background: article.heroGradient }}
+          style={
+            article.heroUrl
+              ? {
+                  backgroundImage: `url(${article.heroUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : { background: article.heroGradient }
+          }
           aria-hidden
         />
         <div className="min-w-0 flex-1">
@@ -151,7 +167,15 @@ export function ArticleCard({
         <div className="relative overflow-hidden rounded-[calc(var(--radius-card)-4px)]">
           <div
             className="aspect-square w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
-            style={{ background: article.heroGradient }}
+            style={
+              article.heroUrl
+                ? {
+                    backgroundImage: `url(${article.heroUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : { background: article.heroGradient }
+            }
             aria-hidden
           />
         </div>
@@ -204,7 +228,15 @@ export function ArticleCard({
         <div className="relative overflow-hidden">
           <div
             className="aspect-[4/5] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
-            style={{ background: article.heroGradient }}
+            style={
+              article.heroUrl
+                ? {
+                    backgroundImage: `url(${article.heroUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : { background: article.heroGradient }
+            }
             aria-hidden
           />
           <div
@@ -250,7 +282,15 @@ export function ArticleCard({
       <div className="relative overflow-hidden">
         <div
           className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
-          style={{ background: article.heroGradient }}
+          style={
+            article.heroUrl
+              ? {
+                  backgroundImage: `url(${article.heroUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : { background: article.heroGradient }
+          }
           aria-hidden
         />
         <div

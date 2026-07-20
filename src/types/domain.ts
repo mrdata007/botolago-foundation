@@ -40,6 +40,10 @@ export interface Article {
   publishedAt: string; // ISO
   readMinutes: number;
   heroGradient: string; // CSS gradient string
+  /** Trusted media URL supplied by the V2 News read model. */
+  heroUrl?: string;
+  /** Sanitized server-authored HTML, present only on article detail. */
+  bodyHtml?: string;
   isLead?: boolean;
   tag?: LocalizedString;
 }

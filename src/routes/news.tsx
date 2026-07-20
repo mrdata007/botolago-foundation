@@ -11,7 +11,7 @@ import {
   PieChart,
   MessageSquare,
 } from "lucide-react";
-import { botolaService } from "@/services/mock";
+import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
@@ -53,18 +53,24 @@ const tabs: { key: ArticleCategory; label: TranslationKey }[] = [
 ];
 
 function NewsPage() {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const [tab, setTab] = useState<ArticleCategory>("for_you");
   const [clubFilter, setClubFilter] = useState<string | null>(null);
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
   const { ids: savedIds } = useSavedArticles();
 
   const allQ = useQuery({
-    queryKey: ["articles", "all"],
-    queryFn: () => botolaService.getArticles(),
+    queryKey: ["news", "feed", lang],
+    queryFn: () => newsService.getArticles(lang),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
-  const leadQ = useQuery({ queryKey: ["lead"], queryFn: () => botolaService.getLeadArticle() });
+  const clubsQ = useQuery({
+    queryKey: ["news", "team-filters", lang],
+    queryFn: () => newsService.getTeamFilters(lang),
+  });
+  const leadQ = useQuery({
+    queryKey: ["news", "home-modules", lang],
+    queryFn: () => newsService.getHome(lang).then((modules) => modules.lead),
+  });
 
   const isLoading = allQ.isLoading || leadQ.isLoading;
   const list = useMemo(() => allQ.data ?? [], [allQ.data]);

@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
-import { botolaService } from "@/services/mock";
+import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
@@ -11,7 +11,6 @@ import { SavedButton } from "@/components/news/SavedButton";
 import { LoadingState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
-import type { Article } from "@/types/domain";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/news/$articleId")({
@@ -24,26 +23,23 @@ function ArticlePage() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
-  const allQ = useQuery({
-    queryKey: ["articles", "all"],
-    queryFn: () => botolaService.getArticles(),
+  const articleQ = useQuery({
+    queryKey: ["news", "article", lang, articleId],
+    queryFn: () => newsService.getArticle(articleId, lang),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const relatedQ = useQuery({
+    queryKey: ["news", "related", lang, articleId],
+    queryFn: () => newsService.getRelated(articleId, lang),
+    enabled: !!articleQ.data,
+  });
+  const clubsQ = useQuery({
+    queryKey: ["news", "team-filters", lang],
+    queryFn: () => newsService.getTeamFilters(lang),
+  });
+  const article = articleQ.data;
+  const related = relatedQ.data ?? [];
 
-  const article = useMemo(() => allQ.data?.find((a) => a.id === articleId), [allQ.data, articleId]);
-
-  const related = useMemo<Article[]>(() => {
-    if (!allQ.data || !article) return [];
-    return allQ.data
-      .filter(
-        (a) =>
-          a.id !== article.id &&
-          (a.category === article.category || a.clubIds.some((c) => article.clubIds.includes(c))),
-      )
-      .slice(0, 3);
-  }, [allQ.data, article]);
-
-  if (allQ.isLoading) {
+  if (articleQ.isLoading) {
     return (
       <AppShell backgroundVariant="news">
         <LoadingState />
@@ -75,9 +71,6 @@ function ArticlePage() {
     .map((id) => clubs.find((c) => c.id === id))
     .filter(Boolean)
     .map((c) => tr(c!.shortName));
-
-  // Editorial reading body derived from excerpt (mock scaffolding — no backend change).
-  const body = buildBody(article, lang);
 
   const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
   const share = async () => {
@@ -148,7 +141,15 @@ function ArticlePage() {
       <div className="mt-4 overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)] shadow-card">
         <div
           className="aspect-[16/10] w-full animate-in fade-in duration-500"
-          style={{ background: article.heroGradient }}
+          style={
+            article.heroUrl
+              ? {
+                  backgroundImage: `url(${article.heroUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : { background: article.heroGradient }
+          }
           role="img"
           aria-label={tr(article.title)}
         />
@@ -222,9 +223,7 @@ function ArticlePage() {
             lang === "ar" && "text-[17px] leading-[2]",
           )}
         >
-          {body.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+          <div dangerouslySetInnerHTML={{ __html: article.bodyHtml ?? "" }} />
         </div>
       </article>
 
@@ -241,28 +240,4 @@ function ArticlePage() {
       )}
     </AppShell>
   );
-}
-
-/**
- * Editorial scaffolding — expands the excerpt into a small, readable
- * body. Purely presentational; no data contract is added. When a real
- * article body arrives from the backend it will replace this helper
- * without any other UI change.
- */
-function buildBody(article: Article, lang: "fr" | "ar"): string[] {
-  const excerpt = article.title[lang] === article.excerpt[lang] ? "" : article.excerpt[lang];
-  if (lang === "ar") {
-    return [
-      excerpt,
-      "من داخل غرفة الملابس، تتوالى الإشارات على أن الفريق يعيش على وقع جولات مصيرية في البطولة الاحترافية. المدرب يراهن على استقرار الأحد عشر الأساسي مع ضخ دماء جديدة في المفاصل الحيوية.",
-      "على الصعيد التكتيكي، تكشف المعطيات المتوفرة أن الضغط العالي والانتقال السريع إلى الهجوم أصبحا العلامة المميزة لهذا الموسم، بينما تراهن المنافسات على قوة الكرات الثابتة لصنع الفارق.",
-      "أمام الجولات القادمة، يبقى السؤال الأبرز: هل ستحسم الفرق موقفها في الصدارة، أم أن مفاجآت البطولة المغربية ستفرض نفسها من جديد؟",
-    ].filter(Boolean);
-  }
-  return [
-    excerpt,
-    "Dans les coulisses du club, tout indique que l'équipe aborde ces prochaines journées avec un discours clair : consolider les acquis, corriger les erreurs récentes et maintenir la dynamique face aux poursuivants directs.",
-    "Sur le plan tactique, la stabilité du bloc défensif reste la priorité, mais les entraîneurs veulent aussi ajouter davantage de verticalité dans les phases de transition. Les coups de pied arrêtés, souvent négligés, deviennent une arme décisive.",
-    "Les prochaines rencontres diront si cette approche suffit à confirmer les ambitions affichées en début de saison, ou si la Botola Pro réservera de nouvelles surprises comme elle en a l'habitude.",
-  ].filter(Boolean);
 }
