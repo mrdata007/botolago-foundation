@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
 import { z } from "zod";
+import type { Database } from "@/backend/generated/database.types";
+import { matchCardSchema } from "@/backend/football/contracts";
 
 export default defineTool({
   name: "list_fixtures",
@@ -21,7 +23,7 @@ export default defineTool({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const supabase = createClient(
+    const supabase = createClient<Database>(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       {
@@ -29,17 +31,26 @@ export default defineTool({
         auth: { persistSession: false, autoRefreshToken: false },
       },
     );
-    const { data, error } = await supabase
-      .from("fixtures")
-      .select("*")
-      .order("kickoff_at", { ascending: true })
-      .limit(limit ?? 10);
+    const { data, error } = await supabase.schema("api").rpc("football_upcoming_matches", {
+      p_language: "fr",
+      p_limit: limit ?? 10,
+    });
     if (error) {
-      return { content: [{ type: "text", text: error.message }], isError: true };
+      return {
+        content: [{ type: "text", text: "Football data is temporarily unavailable." }],
+        isError: true,
+      };
+    }
+    const fixtures = z.array(matchCardSchema).safeParse(data);
+    if (!fixtures.success) {
+      return {
+        content: [{ type: "text", text: "Football data is temporarily unavailable." }],
+        isError: true,
+      };
     }
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { fixtures: data ?? [] },
+      content: [{ type: "text", text: JSON.stringify(fixtures.data) }],
+      structuredContent: { fixtures: fixtures.data },
     };
   },
 });

@@ -22,6 +22,14 @@ values
     statement_timestamp(), statement_timestamp()
   );
 
+insert into app.teams (id, slug, name, short_name)
+values (
+  'aaaaaaaa-1111-4111-8111-111111111111',
+  'rls-test-team',
+  'RLS Test Team',
+  'RTT'
+);
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',

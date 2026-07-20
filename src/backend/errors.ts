@@ -8,6 +8,18 @@ export const BACKEND_ERROR_CODES = [
   "session_expired",
   "service_unavailable",
   "timeout",
+  "provider_unavailable",
+  "provider_rate_limited",
+  "invalid_provider_payload",
+  "mapping_not_found",
+  "mapping_collision",
+  "stale_update",
+  "fixture_not_found",
+  "competition_not_supported",
+  "invalid_fixture_state",
+  "partial_sync_failure",
+  "ingestion_conflict",
+  "data_unavailable",
   "internal",
 ] as const;
 
