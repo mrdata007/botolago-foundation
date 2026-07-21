@@ -35,6 +35,21 @@ distributed sequence and mandatory cleanup verification; it contains no
 credential and accepts secrets only through an owner-only temporary runtime
 file outside the repository.
 
+Run the setup-only rehearsal before the full gate. The combined command keeps
+credentials in process memory between two otherwise isolated runs and starts
+the full gate only after rehearsal cleanup verifies exact zero:
+
+```text
+python scripts/backend/fantasy-capacity-orchestrator.py --rehearsal-then-full
+```
+
+The rehearsal uses five runners and 25 users per runner. It executes user,
+session, Fantasy team/squad, team-read preparation, cross-runner fingerprint,
+75-second synchronization, readiness, and Metrics-startup paths, but schedules
+zero measured requests. Every runner must produce an owner-only sanitized
+stdout and stderr artifact. The full-gate mode remains fixed at 500 users per
+runner and cannot inherit the rehearsal dimensions.
+
 1. Apply reviewed migrations to Staging V2 only.
 2. Run `scripts/backend/fantasy-staging-seed.sql` with
    `set botolago.capacity_environment = 'staging-v2'`.
@@ -104,6 +119,14 @@ and credential artifacts, and keep PR #6 draft. Wait for the AWS verification
 email or open an account-management support case before retrying. Do not reduce
 the runner count or reuse an egress IP as a substitute.
 
+If AWS STS returns `InvalidClientTokenId`, stop before creating the Metrics key
+or any runner. Verify that `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are a
+matching active pair. Include `AWS_SESSION_TOKEN` only for temporary STS
+credentials, and ensure it belongs to the same pair and has not expired. Do not
+retry the full gate, weaken preflight, or infer cleanup from an authenticated
+inventory call that could not run. Retain the sanitized setup failure and keep
+the PR draft.
+
 If only another region is temporarily available, record the cross-region path.
 A pass is conservative; a latency failure is not sufficient evidence of a
 database regression until the unchanged gate is repeated near Staging V2. Any
@@ -120,13 +143,13 @@ authenticates only to the Staging Metrics API, never prints its Secret API key,
 and must run across the exact workload and soak for the resource-utilization
 gate to count.
 
-Team preparation is unmeasured and uses bounded retries. Runner stderr is
-captured to an owner-only temporary file, reduced to a sanitized diagnostic,
-and retained only when setup fails. Cleanup must not delete all load data in a
-single transaction: high-volume squad memberships, teams, and Auth users are
-deleted in bounded committed batches so the staging statement timeout cannot
-roll back the entire cleanup. Always run the exact-zero global namespace audit
-even when the orchestrator reports a cleanup exception.
+Team preparation is unmeasured and uses bounded retries. The rehearsal retains
+sanitized owner-only stdout and stderr for all five runners; the measured gate
+retains sanitized failure diagnostics. Cleanup must not delete load data in a
+single transaction: every load-owned table is deleted in bounded,
+independently committed batches so the staging statement timeout cannot roll
+back the entire cleanup. Always run the exact-zero global namespace audit even
+when the orchestrator reports a cleanup exception.
 
 The representative profile is 50,000 teams, 750,000 active memberships,
 50,000 current lineups, one 10,000-member league, and 1,000 additional mixed

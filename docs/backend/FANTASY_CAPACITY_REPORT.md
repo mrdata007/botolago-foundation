@@ -111,6 +111,41 @@ permissions. The complete gate-plus-soak sequence is provisioned with at least
 remain outside the measured clock; no credential is included in results. The
 merge gate and telemetry soak use distinct owner-only result artifacts.
 
+### 2026-07-21 hardened setup-only rehearsal
+
+The requested final validation was started from hardened harness base commit
+`f6340e0eed667f730ceddc1f4dd5d89dc9085003`. The harness gained an explicit
+setup-only mode for five 25-user shards, sanitized stdout/stderr retention for
+every runner, coordinator readiness records, zero-request enforcement, and
+independently committed bounded deletion for every load-owned table. The full
+gate remains hard-locked to 2,500 users and the approved 600/250 RPS profile.
+
+The rehearsal stopped at its first read-only AWS preflight. `GetCallerIdentity`
+returned `InvalidClientTokenId`, so the supplied AWS access-key, secret-key,
+and optional session-token combination was not valid. No runner was launched,
+no Supabase Metrics key or temporary user was created, no session or Fantasy
+state was prepared, the Metrics collector did not start, and measured requests
+were exactly zero. Consequently there are zero runner-ready records rather
+than five, and the full workload and soak were correctly not attempted.
+
+The coordinator had no tracked database users and reported users/sessions/
+active refresh tokens as `0/0/0`. No cloud-state file, runtime credential
+handoff, EC2 key material, session cache, or raw credential remains locally.
+The two retained failure artifacts are mode `0600` and a targeted scan found
+no raw Supabase key, AWS access-key ID, bearer token, or JWT. External cleanup
+enumeration could not authenticate with the invalid AWS credentials, so this
+attempt is a **setup failure**, not a successful exact-zero rehearsal or a
+capacity result. The execution order proves that no mutation method was
+reached before the STS failure.
+
+Post-failure repository validation passed 316 application tests, TypeScript
+typecheck, production build, migration-file validation, and the tracked-file
+secret scan. ESLint completed with zero errors and the existing 11 Fast
+Refresh warnings. A fresh local Docker migration replay was started but no
+Supabase container became available and the silent reset was bounded and
+stopped; pgTAP/RLS, database lint, and generated-type drift were therefore not
+rerun locally for this attempt. They are not reported as passing by inference.
+
 ## Finalization and ranking
 
 The committed partial-run/resume exercise passed:
@@ -199,7 +234,9 @@ verified during every environment promotion.
 
 Database correctness, finalization, rankings, read plans, and both standings
 latency gates pass. The exact 2,500-user workload and concurrent resource gate
-remain open after a same-region pre-measurement runner setup failure. PR #6
-must remain draft. The verified harness defects are fixed, but no capacity
-threshold is passed by inference. A reviewed rerun of the hardened harness is
-required before the PR can become merge-ready.
+remain open. The hardened setup-only rehearsal stopped at AWS identity
+validation with `InvalidClientTokenId`, before runners or any measured traffic.
+PR #6 must remain draft. No capacity threshold is passed by inference. A
+reviewed rerun with one valid AWS credential set in `eu-west-3` is required
+before the PR can become merge-ready, followed by the outstanding database and
+GitHub workflow gates.

@@ -18,6 +18,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from collections import Counter, defaultdict
@@ -37,7 +38,9 @@ RUNNER_COUNT = 5
 USERS_PER_RUNNER = 500
 TOTAL_USERS = RUNNER_COUNT * USERS_PER_RUNNER
 FIRST_USER_NUMBER = 50_001
-LAST_USER_NUMBER = FIRST_USER_NUMBER + TOTAL_USERS - 1
+REHEARSAL_USERS_PER_RUNNER = 25
+FULL_GATE_MODE = "full_gate"
+SETUP_REHEARSAL_MODE = "setup_rehearsal"
 # Supabase Management API key names accept lowercase alphanumerics and
 # underscores only; the requested display name used hyphens.
 TEMP_KEY_NAME = "phase6_fantasy_metrics"
@@ -95,9 +98,27 @@ def read_runtime(path: Path) -> dict[str, str]:
     missing = required - values.keys()
     if missing:
         raise RuntimeError("runtime credential file is missing required keys")
+    values["SUPABASE_STAGING_URL"] = values["SUPABASE_STAGING_URL"].rstrip("/")
+    parsed_url = urllib.parse.urlparse(values["SUPABASE_STAGING_URL"])
+    hostname = parsed_url.hostname or ""
+    derived_ref = (
+        hostname.removesuffix(".supabase.co")
+        if hostname.endswith(".supabase.co")
+        else ""
+    )
+    if (
+        parsed_url.scheme != "https"
+        or len(derived_ref) != 20
+        or not derived_ref.isalnum()
+        or not derived_ref.islower()
+    ):
+        raise RuntimeError("staging project URL is invalid")
     project_ref = values["SUPABASE_STAGING_PROJECT_REF"]
-    if values["SUPABASE_STAGING_URL"] != f"https://{project_ref}.supabase.co":
+    if project_ref != derived_ref and (
+        len(project_ref) == 20 and project_ref.isalnum() and project_ref.islower()
+    ):
         raise RuntimeError("staging project reference and URL do not match")
+    values["SUPABASE_STAGING_PROJECT_REF"] = derived_ref
     if not values["SUPABASE_STAGING_PUBLISHABLE_KEY"].startswith("sb_publishable_"):
         raise RuntimeError("a staging publishable key is required")
     return values
@@ -159,11 +180,31 @@ def safe_runner_diagnostic(value: str) -> str:
 
 
 class CapacityGate:
-    def __init__(self) -> None:
-        self.runtime = read_runtime(RUNTIME_FILE)
+    def __init__(
+        self,
+        mode: str = FULL_GATE_MODE,
+        runtime: dict[str, str] | None = None,
+    ) -> None:
+        if mode not in {FULL_GATE_MODE, SETUP_REHEARSAL_MODE}:
+            raise RuntimeError("unsupported capacity mode")
+        self.mode = mode
+        self.users_per_runner = (
+            REHEARSAL_USERS_PER_RUNNER
+            if mode == SETUP_REHEARSAL_MODE
+            else USERS_PER_RUNNER
+        )
+        self.total_users = RUNNER_COUNT * self.users_per_runner
+        self.first_user_number = FIRST_USER_NUMBER
+        self.last_user_number = self.first_user_number + self.total_users - 1
+        self.runtime = dict(runtime) if runtime is not None else read_runtime(RUNTIME_FILE)
+        if self.runtime.get("AWS_REGION") != "eu-west-3":
+            raise RuntimeError("Phase 6 capacity validation requires AWS region eu-west-3")
         self.project_ref = self.runtime["SUPABASE_STAGING_PROJECT_REF"]
         self.supabase_url = self.runtime["SUPABASE_STAGING_URL"].rstrip("/")
-        self.run_id = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+        self.run_id = (
+            datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+            + f"-{mode}-{uuid.uuid4().hex[:6]}"
+        )
         self.artifact_dir = ARTIFACT_ROOT / self.run_id
         self.artifact_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
         self.temp_secret: str | None = None
@@ -365,7 +406,7 @@ class CapacityGate:
         )
 
     def create_users(self) -> None:
-        event("Creating 2,500 isolated temporary staging users")
+        event(f"Creating {self.total_users} isolated temporary staging users")
         rate_lock = threading.Lock()
         stats_lock = threading.Lock()
         next_request_at = [time.monotonic()]
@@ -423,7 +464,8 @@ class CapacityGate:
             raise RuntimeError("temporary Auth user creation exhausted retries") from last_error
 
         failures: list[str] = []
-        numbers = range(FIRST_USER_NUMBER, LAST_USER_NUMBER + 1)
+        numbers = range(self.first_user_number, self.last_user_number + 1)
+        progress_interval = max(25, self.total_users // 10)
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(create_one, number) for number in numbers]
             for future in concurrent.futures.as_completed(futures):
@@ -434,8 +476,14 @@ class CapacityGate:
                     continue
                 self.users.append(record)
                 self.passwords[record["number"]] = record["password"]
-                if len(self.users) % 250 == 0:
-                    event(f"Temporary staging users created: {len(self.users)}/2500")
+                if (
+                    len(self.users) % progress_interval == 0
+                    or len(self.users) == self.total_users
+                ):
+                    event(
+                        "Temporary staging users created: "
+                        f"{len(self.users)}/{self.total_users}"
+                    )
         if failures:
             failure_types = ", ".join(
                 f"{name}={count}" for name, count in sorted(Counter(failures).items())
@@ -444,10 +492,10 @@ class CapacityGate:
                 f"temporary Auth user creation failed for {len(failures)} users "
                 f"({failure_types})"
             )
-        if len({item["user_id"] for item in self.users}) != TOTAL_USERS:
+        if len({item["user_id"] for item in self.users}) != self.total_users:
             raise RuntimeError("temporary Auth user IDs are not unique")
         self.users.sort(key=lambda item: item["number"])
-        event("Created 2,500 unique temporary Auth users")
+        event(f"Created {self.total_users} unique temporary Auth users")
 
     def seed_user_fantasy_state(self) -> None:
         safe_users = [
@@ -520,9 +568,12 @@ commit;
             f"(select id from auth.users where email like 'fantasy-gate-{self.run_id}-%') "
             "group by team.id) checked"
         )[0]
-        if validation != {"teams": TOTAL_USERS, "valid_squads": TOTAL_USERS}:
+        if validation != {
+            "teams": self.total_users,
+            "valid_squads": self.total_users,
+        }:
             raise RuntimeError("temporary Fantasy state validation failed")
-        event("Seeded 2,500 isolated valid Fantasy teams")
+        event(f"Seeded {self.total_users} isolated valid Fantasy teams")
 
     def _coordinator_ip(self) -> str:
         request = urllib.request.Request(
@@ -746,7 +797,9 @@ shutdown -h +105
                     "password": item["password"],
                     "user_id": item["user_id"],
                 }
-                for item in self.users[index * USERS_PER_RUNNER : (index + 1) * USERS_PER_RUNNER]
+                for item in self.users[
+                    index * self.users_per_runner : (index + 1) * self.users_per_runner
+                ]
             ]
             credential_path = self.artifact_dir / f"credentials-{index}.json"
             private_json(credential_path, records)
@@ -771,6 +824,8 @@ shutdown -h +105
         command = (
             "set -a; . /opt/botolago/runtime.env; set +a; "
             "BOTOLAGO_SESSION_OPERATION=provision "
+            f"BOTOLAGO_CAPACITY_MODE={self.mode} "
+            f"BOTOLAGO_EXPECTED_SESSION_USERS={self.users_per_runner} "
             "BOTOLAGO_AUTH_RATE_PER_SECOND=0.4 "
             "BOTOLAGO_LOAD_CREDENTIAL_CACHE=/opt/botolago/credentials-{index}.json "
             "BOTOLAGO_LOAD_SESSION_CACHE=/opt/botolago/sessions.json "
@@ -784,15 +839,17 @@ shutdown -h +105
         with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
             summaries = list(executor.map(provision, range(RUNNER_COUNT)))
         if any(
-            item.get("sessions") != USERS_PER_RUNNER
-            or item.get("uniqueSubjects") != USERS_PER_RUNNER
-            or item.get("uniqueSessionIds") != USERS_PER_RUNNER
+            item.get("sessions") != self.users_per_runner
+            or item.get("uniqueSubjects") != self.users_per_runner
+            or item.get("uniqueSessionIds") != self.users_per_runner
             or item.get("minimumValidityMinutes", 0) < 20
             for item in summaries
         ):
             raise RuntimeError("distributed session validation failed")
-        if sum(item["sessions"] for item in summaries) != TOTAL_USERS:
-            raise RuntimeError("distributed session count is not 2,500")
+        if sum(item["sessions"] for item in summaries) != self.total_users:
+            raise RuntimeError(
+                f"distributed session count is not {self.total_users}"
+            )
         for field in (
             "subjectFingerprints",
             "sessionFingerprints",
@@ -804,15 +861,36 @@ shutdown -h +105
                 for item in summaries
                 for fingerprint in item.get(field, [])
             ]
-            if len(values) != TOTAL_USERS or len(set(values)) != TOTAL_USERS:
+            if (
+                len(values) != self.total_users
+                or len(set(values)) != self.total_users
+            ):
                 raise RuntimeError(f"distributed {field} validation failed")
             values.clear()
             for item in summaries:
                 item[field] = []
+        private_json(
+            self.artifact_dir / "cross-runner-session-validation.json",
+            {
+                "runners": RUNNER_COUNT,
+                "users": self.total_users,
+                "uniqueSubjects": self.total_users,
+                "uniqueSessions": self.total_users,
+                "uniqueAccessTokenFingerprints": self.total_users,
+                "uniqueRefreshTokenFingerprints": self.total_users,
+                "minimumValidityMinutes": min(
+                    int(item["minimumValidityMinutes"]) for item in summaries
+                ),
+                "rawSessionMaterialRetained": False,
+            },
+        )
         for item in self.users:
             item["password"] = ""
         self.passwords.clear()
-        event("Validated 2,500 unique authenticated sessions with >=20 minutes validity")
+        event(
+            f"Validated {self.total_users} unique authenticated sessions "
+            "with >=20 minutes validity"
+        )
 
     def start_metrics(self) -> None:
         if not self.temp_secret:
@@ -825,7 +903,9 @@ shutdown -h +105
             "BOTOLAGO_STAGING_SUPABASE_URL": self.supabase_url,
             "BOTOLAGO_STAGING_SECRET_KEY": self.temp_secret,
             "BOTOLAGO_METRICS_INTERVAL_SECONDS": "60",
-            "BOTOLAGO_METRICS_DURATION_SECONDS": "900",
+            "BOTOLAGO_METRICS_DURATION_SECONDS": (
+                "300" if self.mode == SETUP_REHEARSAL_MODE else "900"
+            ),
             "BOTOLAGO_METRICS_OUTPUT": str(metrics_output),
         }
         self.metrics_process = subprocess.Popen(
@@ -841,7 +921,14 @@ shutdown -h +105
             daemon=True,
         )
         self.sql_sampler_thread.start()
-        event("Started 60-second Metrics API collection for the 15-minute evidence window")
+        event(
+            "Started 60-second Metrics API collection for "
+            + (
+                "setup rehearsal validation"
+                if self.mode == SETUP_REHEARSAL_MODE
+                else "the 15-minute evidence window"
+            )
+        )
 
     def _sample_database_until_stopped(self) -> None:
         while not self.sql_sampler_stop.is_set():
@@ -851,6 +938,134 @@ shutdown -h +105
                 pass
             self.sql_sampler_stop.wait(10)
 
+    def run_setup_rehearsal(self) -> dict[str, Any]:
+        if self.mode != SETUP_REHEARSAL_MODE:
+            raise RuntimeError("setup rehearsal requires rehearsal mode")
+        start_at = time.time() + 75
+        command = (
+            "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
+            "BOTOLAGO_LOAD_PROFILE=setup_rehearsal "
+            f"BOTOLAGO_LOAD_USERS={self.total_users} "
+            "BOTOLAGO_LOAD_SHARD_COUNT=5 "
+            f"BOTOLAGO_LOAD_FIRST_USER={self.first_user_number} "
+            "BOTOLAGO_LOAD_SUSTAINED_RPS=250 BOTOLAGO_LOAD_BURST_RPS=600 "
+            "BOTOLAGO_LOAD_BURST_SECONDS=0 BOTOLAGO_LOAD_DURATION_SECONDS=0 "
+            f"BOTOLAGO_LOAD_START_AT={start_at:.3f} "
+            "BOTOLAGO_LOAD_SESSION_CACHE=/opt/botolago/sessions.json "
+            "BOTOLAGO_LOAD_RESULTS_PATH=/opt/botolago/setup-rehearsal.json "
+            "BOTOLAGO_LOAD_SHARD_INDEX={index} "
+            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-load-test.py "
+            "> /opt/botolago/setup-rehearsal.stdout.json "
+            "2> /opt/botolago/setup-rehearsal.stderr.log"
+        )
+
+        def run(index: int) -> dict[str, Any]:
+            try:
+                self.ssh(self.instance_ips[index], command.format(index=index), 600)
+            except (subprocess.SubprocessError, OSError) as error:
+                diagnostic = "runner diagnostic unavailable"
+                try:
+                    diagnostic = self.ssh(
+                        self.instance_ips[index],
+                        "tail -c 4000 /opt/botolago/setup-rehearsal.stderr.log",
+                        30,
+                    )
+                except (subprocess.SubprocessError, OSError):
+                    pass
+                return {
+                    "runner": index,
+                    "ready": False,
+                    "error": type(error).__name__,
+                    "diagnostic": safe_runner_diagnostic(diagnostic),
+                }
+
+            result_path = self.artifact_dir / f"rehearsal-runner-{index}-result.json"
+            stdout_path = self.artifact_dir / f"rehearsal-runner-{index}-stdout.json"
+            stderr_path = self.artifact_dir / f"rehearsal-runner-{index}-stderr.txt"
+            self.scp_from(
+                self.instance_ips[index],
+                "/opt/botolago/setup-rehearsal.json",
+                result_path,
+            )
+            self.scp_from(
+                self.instance_ips[index],
+                "/opt/botolago/setup-rehearsal.stdout.json",
+                stdout_path,
+            )
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+            stdout = json.loads(stdout_path.read_text(encoding="utf-8"))
+            private_json(result_path, result)
+            private_json(stdout_path, stdout)
+            diagnostic = self.ssh(
+                self.instance_ips[index],
+                "tail -c 4000 /opt/botolago/setup-rehearsal.stderr.log",
+                30,
+            )
+            private_write(stderr_path, safe_runner_diagnostic(diagnostic) + "\n")
+            profile = result.get("profile", {})
+            readiness = result.get("readiness", {})
+            return {
+                "runner": index,
+                "ready": readiness.get("ready") is True,
+                "assignedUsers": profile.get("shardUsers"),
+                "preparedUsers": readiness.get("preparedUsers"),
+                "requests": profile.get("requests"),
+                "readyAt": readiness.get("readyAt"),
+                "synchronizedStartAt": readiness.get("synchronizedStartAt"),
+            }
+
+        event("Starting synchronized setup-only rehearsal on all five runners")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
+            readiness = list(executor.map(run, range(RUNNER_COUNT)))
+
+        expected_runners = set(range(RUNNER_COUNT))
+        valid = (
+            {item.get("runner") for item in readiness} == expected_runners
+            and all(
+                item.get("ready") is True
+                and item.get("assignedUsers") == self.users_per_runner
+                and item.get("preparedUsers") == self.users_per_runner
+                and item.get("requests") == 0
+                for item in readiness
+            )
+        )
+        record = {
+            "mode": SETUP_REHEARSAL_MODE,
+            "runners": readiness,
+            "coordinatorReadinessRecords": len(readiness),
+            "synchronizationLeadSeconds": 75,
+            "measuredRequests": 0,
+            "passed": valid,
+        }
+        private_json(self.artifact_dir / "setup-rehearsal-readiness.json", record)
+        if not valid:
+            failures = [item for item in readiness if item.get("ready") is not True]
+            private_json(self.artifact_dir / "setup-rehearsal-failures.json", failures)
+            raise RuntimeError("one or more setup rehearsal runners did not become ready")
+        event(
+            f"All five runners prepared {self.total_users} users and reported ready; "
+            "no measured workload was executed"
+        )
+        return record
+
+    def validate_rehearsal_metrics_startup(self) -> dict[str, Any]:
+        if not self.metrics_process or self.metrics_process.poll() is not None:
+            raise RuntimeError("Metrics collector exited during setup rehearsal")
+        metrics_path = self.artifact_dir / "metrics.ndjson"
+        records = []
+        if metrics_path.is_file():
+            records = [
+                json.loads(line)
+                for line in metrics_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        if len(records) < 2:
+            raise RuntimeError("Metrics collector did not complete two 60-second-cadence scrapes")
+        result = {"cadenceSeconds": 60, "successfulStartupScrapes": len(records)}
+        private_json(self.artifact_dir / "rehearsal-metrics-startup.json", result)
+        event("Validated Metrics API collector startup and 60-second cadence")
+        return result
+
     def run_profile(self, profile: str, duration: int, burst_seconds: int) -> dict[str, Any]:
         if profile not in {"merge_gate", "telemetry_soak"}:
             raise RuntimeError("unsupported load profile")
@@ -859,7 +1074,7 @@ shutdown -h +105
         # start instant instead of treating a transient setup response as load.
         start_at = time.time() + 75
         command = (
-            "set -a; . /opt/botolago/runtime.env; set +a; "
+            "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
             f"BOTOLAGO_LOAD_PROFILE={profile} "
             "BOTOLAGO_LOAD_USERS=2500 BOTOLAGO_LOAD_SHARD_COUNT=5 "
             "BOTOLAGO_LOAD_FIRST_USER=50001 BOTOLAGO_LOAD_SUSTAINED_RPS=250 "
@@ -1190,7 +1405,7 @@ shutdown -h +105
                 output = self.ssh(ip, command, 600)
                 return json.loads(output)
             except (subprocess.SubprocessError, OSError, ValueError):
-                return {"revoked": False, "failures": USERS_PER_RUNNER}
+                return {"revoked": False, "failures": self.users_per_runner}
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
             results = list(executor.map(revoke, self.instance_ips))
@@ -1203,32 +1418,6 @@ shutdown -h +105
         if not self.users:
             return {"users": 0, "sessions": 0, "refresh_tokens": 0}
         ids = ",".join(f"'{item['user_id']}'::uuid" for item in self.users)
-        query = f"""
-begin;
-create temporary table phase6_gate_users(user_id uuid primary key) on commit drop;
-insert into phase6_gate_users values {','.join(f"('{item['user_id']}'::uuid)" for item in self.users)};
-create temporary table phase6_gate_teams(team_id uuid primary key) on commit drop;
-insert into phase6_gate_teams select id from app.fantasy_teams
-where user_id in (select user_id from phase6_gate_users);
-
-delete from app_private.fantasy_free_transfer_rollovers where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app_private.fantasy_mutation_audit where fantasy_team_id in (select team_id from phase6_gate_teams) or user_id in (select user_id from phase6_gate_users);
-delete from app_private.fantasy_idempotency_keys where user_id in (select user_id from phase6_gate_users);
-delete from app.fantasy_rankings where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_league_memberships where fantasy_team_id in (select team_id from phase6_gate_teams) or user_id in (select user_id from phase6_gate_users);
-delete from app.fantasy_leagues where owner_user_id in (select user_id from phase6_gate_users);
-delete from app.fantasy_team_gameweek_results where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_auto_substitutions where lineup_id in (select id from app.fantasy_lineups where fantasy_team_id in (select team_id from phase6_gate_teams));
-delete from app.fantasy_lineup_players where lineup_id in (select id from app.fantasy_lineups where fantasy_team_id in (select team_id from phase6_gate_teams));
-delete from app.fantasy_lineups where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_transfers where transfer_batch_id in (select id from app.fantasy_transfer_batches where fantasy_team_id in (select team_id from phase6_gate_teams));
-delete from app.fantasy_transfer_batches where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_free_hit_snapshot_players where snapshot_id in (select id from app.fantasy_free_hit_snapshots where fantasy_team_id in (select team_id from phase6_gate_teams));
-delete from app.fantasy_free_hit_snapshots where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_chip_uses where fantasy_team_id in (select team_id from phase6_gate_teams);
-commit;
-"""
-        self.sql(query)
 
         def delete_batches(label: str, target: str, maximum_batches: int) -> None:
             total_deleted = 0
@@ -1243,6 +1432,102 @@ commit;
                     return
             raise RuntimeError(f"{label} cleanup exceeded its bounded batch budget")
 
+        team_ids = f"(select id from app.fantasy_teams where user_id in ({ids}))"
+        lineup_ids = (
+            "(select id from app.fantasy_lineups where fantasy_team_id in "
+            f"{team_ids})"
+        )
+        transfer_batch_ids = (
+            "(select id from app.fantasy_transfer_batches where fantasy_team_id in "
+            f"{team_ids})"
+        )
+        snapshot_ids = (
+            "(select id from app.fantasy_free_hit_snapshots where fantasy_team_id in "
+            f"{team_ids})"
+        )
+
+        def delete_table_batches(
+            label: str,
+            table: str,
+            predicate: str,
+            maximum_batches: int = 250,
+        ) -> None:
+            delete_batches(
+                label,
+                f"with target as (select item.ctid from {table} item where "
+                f"{predicate} limit 2000), deleted as (delete from {table} item "
+                "using target where item.ctid = target.ctid returning 1) "
+                "select count(*)::integer as deleted from deleted",
+                maximum_batches,
+            )
+
+        # Every statement is an independently committed, bounded deletion.
+        # Never retry the former all-table cleanup transaction first.
+        delete_table_batches(
+            "free-transfer rollovers",
+            "app_private.fantasy_free_transfer_rollovers",
+            f"item.fantasy_team_id in {team_ids}",
+        )
+        delete_table_batches(
+            "mutation audit rows",
+            "app_private.fantasy_mutation_audit",
+            f"item.fantasy_team_id in {team_ids} or item.user_id in ({ids})",
+        )
+        delete_table_batches(
+            "idempotency keys",
+            "app_private.fantasy_idempotency_keys",
+            f"item.user_id in ({ids})",
+        )
+        delete_table_batches(
+            "rankings", "app.fantasy_rankings", f"item.fantasy_team_id in {team_ids}"
+        )
+        delete_table_batches(
+            "league memberships",
+            "app.fantasy_league_memberships",
+            f"item.fantasy_team_id in {team_ids} or item.user_id in ({ids})",
+        )
+        delete_table_batches(
+            "gameweek results",
+            "app.fantasy_team_gameweek_results",
+            f"item.fantasy_team_id in {team_ids}",
+        )
+        delete_table_batches(
+            "automatic substitutions",
+            "app.fantasy_auto_substitutions",
+            f"item.lineup_id in {lineup_ids}",
+        )
+        delete_table_batches(
+            "lineup players",
+            "app.fantasy_lineup_players",
+            f"item.lineup_id in {lineup_ids}",
+        )
+        delete_table_batches(
+            "lineups", "app.fantasy_lineups", f"item.fantasy_team_id in {team_ids}"
+        )
+        delete_table_batches(
+            "transfers",
+            "app.fantasy_transfers",
+            f"item.transfer_batch_id in {transfer_batch_ids}",
+        )
+        delete_table_batches(
+            "transfer batches",
+            "app.fantasy_transfer_batches",
+            f"item.fantasy_team_id in {team_ids}",
+        )
+        delete_table_batches(
+            "Free Hit snapshot players",
+            "app.fantasy_free_hit_snapshot_players",
+            f"item.snapshot_id in {snapshot_ids}",
+        )
+        delete_table_batches(
+            "Free Hit snapshots",
+            "app.fantasy_free_hit_snapshots",
+            f"item.fantasy_team_id in {team_ids}",
+        )
+        delete_table_batches(
+            "chip uses", "app.fantasy_chip_uses", f"item.fantasy_team_id in {team_ids}"
+        )
+
         delete_batches(
             "squad memberships",
             "with target as (select membership.id from "
@@ -1253,6 +1538,11 @@ commit;
             "membership.id = target.id returning 1) select count(*)::integer as "
             "deleted from deleted",
             20,
+        )
+        delete_table_batches(
+            "owned leagues",
+            "app.fantasy_leagues",
+            f"item.owner_user_id in ({ids})",
         )
         delete_batches(
             "Fantasy teams",
@@ -1274,7 +1564,19 @@ commit;
             "select "
             f"(select count(*) from auth.users where id in ({ids}))::integer as users, "
             f"(select count(*) from auth.sessions where user_id in ({ids}))::integer as sessions, "
-            f"(select count(*) from auth.refresh_tokens where user_id::uuid in ({ids}) and revoked is false)::integer as refresh_tokens"
+            f"(select count(*) from auth.refresh_tokens where user_id::uuid in ({ids}) and revoked is false)::integer as refresh_tokens, "
+            f"(select count(*) from app.profiles where id in ({ids}))::integer as profiles, "
+            f"(select count(*) from app.fantasy_teams where user_id in ({ids}))::integer as fantasy_teams, "
+            "(select count(*) from app.fantasy_squad_memberships membership "
+            f"where membership.fantasy_team_id in {team_ids})::integer as squad_memberships, "
+            "(select count(*) from app.fantasy_lineups lineup "
+            f"where lineup.fantasy_team_id in {team_ids})::integer as lineups, "
+            "(select count(*) from app.fantasy_transfer_batches batch "
+            f"where batch.fantasy_team_id in {team_ids})::integer as transfer_batches, "
+            "(select count(*) from app.fantasy_chip_uses chip "
+            f"where chip.fantasy_team_id in {team_ids})::integer as chip_uses, "
+            "(select count(*) from app_private.fantasy_mutation_audit audit "
+            f"where audit.user_id in ({ids}))::integer as mutation_audit"
         )[0]
         event(
             f"Deleted all {len(self.users)} tracked temporary test users "
@@ -1368,6 +1670,13 @@ commit;
                 "securityGroups": len(security_groups),
                 "keyPairs": len(key_pairs),
                 "keyMaterialFiles": int(bool(self.key_path and self.key_path.exists())),
+                "runtimeCredentialHandoffs": sum(
+                    1
+                    for path in self.artifact_dir.glob("*")
+                    if path.name.startswith("credentials-")
+                    or path.name == "runner-runtime.env"
+                ),
+                "cloudStateFiles": int(STATE_FILE.exists()),
             }
         except Exception as error:
             cleanup["errors"].append(f"cleanup_verification:{type(error).__name__}")
@@ -1375,8 +1684,11 @@ commit;
         return cleanup
 
     def run(self) -> int:
-        outcome: dict[str, Any] = {"runId": self.run_id, "passed": False}
-        failure: str | None = None
+        outcome: dict[str, Any] = {
+            "runId": self.run_id,
+            "mode": self.mode,
+            "passed": False,
+        }
         try:
             self.preflight()
             self.create_temporary_key()
@@ -1386,38 +1698,66 @@ commit;
             self.seed_user_fantasy_state()
             self.deploy_and_provision_sessions()
             self.start_metrics()
-            merge = self.run_profile("merge_gate", 60, 10)
-            self.sample_database()
-            soak = self.run_profile("telemetry_soak", 600, 0)
-            self.sample_database()
-            metrics_summary = self.await_metrics()
-            self.sample_database()
-            integrity = self.integrity()
-            metrics = self.analyze_metrics()
-            criteria = {
-                **{f"merge_{key}": value for key, value in merge["passCriteria"].items()},
-                **{f"soak_{key}": value for key, value in soak["passCriteria"].items()},
-                "integrity": integrity["passed"],
-                "metricsComplete": metrics_summary["scrapeErrors"] == 0,
-                "connectionUtilization": metrics["maxConnectionUtilizationPercent"] < 80,
-                "cpu": metrics["maxCpuPercent"] is not None
-                and metrics["maxCpuPercent"] < 80,
-                "poolUtilization": metrics["maxPoolUtilizationPercent"] is not None
-                and metrics["maxPoolUtilizationPercent"] < 80,
-                "deadlocks": metrics["deadlockDelta"] == 0,
-                "conflicts": metrics["conflictDelta"] == 0,
-            }
-            outcome.update(
-                {
-                    "mergeGate": merge,
-                    "soak": soak,
-                    "userCreation": dict(self.user_creation_stats),
-                    "metrics": metrics,
-                    "integrity": integrity,
-                    "criteria": criteria,
-                    "passed": all(criteria.values()),
+            if self.mode == SETUP_REHEARSAL_MODE:
+                readiness = self.run_setup_rehearsal()
+                metrics_startup = self.validate_rehearsal_metrics_startup()
+                criteria = {
+                    "allRunnersReady": readiness["passed"],
+                    "noMeasuredTraffic": readiness["measuredRequests"] == 0,
+                    "metricsCollectorStarted": (
+                        metrics_startup["successfulStartupScrapes"] >= 2
+                    ),
                 }
-            )
+                outcome.update(
+                    {
+                        "readiness": readiness,
+                        "metricsStartup": metrics_startup,
+                        "userCreation": dict(self.user_creation_stats),
+                        "criteria": criteria,
+                        "passed": all(criteria.values()),
+                    }
+                )
+            else:
+                merge = self.run_profile("merge_gate", 60, 10)
+                self.sample_database()
+                soak = self.run_profile("telemetry_soak", 600, 0)
+                self.sample_database()
+                metrics_summary = self.await_metrics()
+                self.sample_database()
+                integrity = self.integrity()
+                metrics = self.analyze_metrics()
+                criteria = {
+                    **{
+                        f"merge_{key}": value
+                        for key, value in merge["passCriteria"].items()
+                    },
+                    **{
+                        f"soak_{key}": value
+                        for key, value in soak["passCriteria"].items()
+                    },
+                    "integrity": integrity["passed"],
+                    "metricsComplete": metrics_summary["scrapeErrors"] == 0,
+                    "connectionUtilization": (
+                        metrics["maxConnectionUtilizationPercent"] < 80
+                    ),
+                    "cpu": metrics["maxCpuPercent"] is not None
+                    and metrics["maxCpuPercent"] < 80,
+                    "poolUtilization": metrics["maxPoolUtilizationPercent"] is not None
+                    and metrics["maxPoolUtilizationPercent"] < 80,
+                    "deadlocks": metrics["deadlockDelta"] == 0,
+                    "conflicts": metrics["conflictDelta"] == 0,
+                }
+                outcome.update(
+                    {
+                        "mergeGate": merge,
+                        "soak": soak,
+                        "userCreation": dict(self.user_creation_stats),
+                        "metrics": metrics,
+                        "integrity": integrity,
+                        "criteria": criteria,
+                        "passed": all(criteria.values()),
+                    }
+                )
         except Exception as error:
             failure = f"{type(error).__name__}: {error}"
             outcome["failure"] = failure
@@ -1429,42 +1769,53 @@ commit;
                     self.metrics_process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     self.metrics_process.kill()
+            self.sql_sampler_stop.set()
+            if self.sql_sampler_thread:
+                self.sql_sampler_thread.join(timeout=15)
             cleanup = self.cleanup()
             outcome["cleanup"] = cleanup
-            if self.cloud_mutation_started:
-                RUNTIME_FILE.unlink(missing_ok=True)
+            RUNTIME_FILE.unlink(missing_ok=True)
             outcome["localRuntimeCredentialFileRemaining"] = RUNTIME_FILE.exists()
             cleanup_db = cleanup.get("database", {})
             cleanup_external = cleanup.get("verification", {})
             cleanup_passed = (
                 not cleanup.get("errors")
-                and cleanup_db.get("users", 0) == 0
-                and cleanup_db.get("sessions", 0) == 0
-                and cleanup_db.get("refresh_tokens", 0) == 0
-                and cleanup_external.get("metricsKeys", 0) == 0
-                and cleanup_external.get("activeRunners", 0) == 0
-                and cleanup_external.get("securityGroups", 0) == 0
-                and cleanup_external.get("keyPairs", 0) == 0
-                and cleanup_external.get("keyMaterialFiles", 0) == 0
-                and (
-                    not self.cloud_mutation_started
-                    or not outcome["localRuntimeCredentialFileRemaining"]
-                )
+                and all(int(value) == 0 for value in cleanup_db.values())
+                and all(int(value) == 0 for value in cleanup_external.values())
+                and not outcome["localRuntimeCredentialFileRemaining"]
             )
             outcome["cleanupPassed"] = cleanup_passed
             outcome["passed"] = bool(outcome.get("passed")) and cleanup_passed
             outcome.setdefault("userCreation", dict(self.user_creation_stats))
             private_json(self.artifact_dir / "gate-summary.json", outcome)
-            if self.cloud_mutation_started:
-                event("Removed the local runtime credential handoff file")
-        event(f"Phase 6 external gate verdict: {'PASS' if outcome['passed'] else 'FAIL'}")
+            event("Removed the local runtime credential handoff file")
+        label = "setup rehearsal" if self.mode == SETUP_REHEARSAL_MODE else "external gate"
+        event(f"Phase 6 {label} verdict: {'PASS' if outcome['passed'] else 'FAIL'}")
         return 0 if outcome["passed"] else 2
 
 
 if __name__ == "__main__":
     try:
-        gate = CapacityGate()
-        raise SystemExit(gate.run())
+        arguments = sys.argv[1:]
+        if arguments == ["--setup-rehearsal"]:
+            raise SystemExit(CapacityGate(SETUP_REHEARSAL_MODE).run())
+        if arguments == ["--full-gate"]:
+            raise SystemExit(CapacityGate(FULL_GATE_MODE).run())
+        if arguments == ["--rehearsal-then-full"]:
+            rehearsal = CapacityGate(SETUP_REHEARSAL_MODE)
+            secure_runtime = dict(rehearsal.runtime)
+            rehearsal_result = rehearsal.run()
+            if rehearsal_result != 0:
+                secure_runtime.clear()
+                raise SystemExit(rehearsal_result)
+            full_gate = CapacityGate(FULL_GATE_MODE, runtime=secure_runtime)
+            try:
+                raise SystemExit(full_gate.run())
+            finally:
+                secure_runtime.clear()
+        raise RuntimeError(
+            "use --setup-rehearsal, --full-gate, or --rehearsal-then-full"
+        )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")
         raise

@@ -162,12 +162,31 @@ AWS runners/security groups/key pairs, key material, and runtime credentials.
 The harness now has bounded setup retries, sanitized runner diagnostics,
 cross-runner session-material fingerprint validation, and batched cleanup.
 
+The subsequent hardened setup-only rehearsal was based on commit
+`f6340e0eed667f730ceddc1f4dd5d89dc9085003` and configured five 25-user shards,
+but stopped at the first AWS STS preflight with `InvalidClientTokenId`. No EC2
+runner, Metrics key, temporary user, session, Fantasy record, collector, merge
+workload, or soak was started. The local runtime handoff and cloud-state/key/
+session material are absent, and retained owner-only artifacts contain no raw
+credential. Because external resource enumeration could not authenticate, the
+rehearsal acceptance gate is not passed; PR #6 remains draft and Phase 7 must
+not begin.
+
+After the stopped rehearsal, application tests passed 316/316, typecheck and
+production build passed, migration validation passed all 28 migrations, and
+the tracked-file secret scan found no high-confidence secrets. Lint completed
+with zero errors and 11 pre-existing Fast Refresh warnings. Local Docker did
+not make a Supabase container available for the clean replay, so clean replay,
+pgTAP/RLS, database lint, and generated-type drift remain unverified in this
+attempt rather than inferred from earlier runs.
+
 ## Risks
 
 - Ruleset v1.0 is approved and encoded, but no production season may be
   activated before PR review.
 - `eu-west-3` runner launch is now available, but the same-region attempt
-  stopped during unmeasured runner preparation. PR #6 remains draft.
+  stopped during unmeasured runner preparation, and the hardened rehearsal
+  later stopped at AWS STS identity validation. PR #6 remains draft.
 - Metrics API CPU and pool gates must still be captured concurrently with the
   exact workload in a reviewed rerun of the hardened harness.
 - Staging Auth leaked-password protection remains an environment warning.

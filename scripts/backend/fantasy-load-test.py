@@ -82,7 +82,17 @@ class FantasyLoadRunner:
         )
         if not self.results_path.is_absolute():
             raise SystemExit("BOTOLAGO_LOAD_RESULTS_PATH must be an absolute path")
-        if (
+        if self.load_profile == "setup_rehearsal":
+            if (
+                self.shard_count != 5
+                or self.total_users not in range(125, 251)
+                or self.total_users % self.shard_count
+                or self.total_users // self.shard_count not in range(25, 51)
+            ):
+                raise SystemExit(
+                    "setup rehearsal requires five shards with 25 to 50 users each"
+                )
+        elif (
             self.total_users != 2500
             or self.global_sustained_rps != 250
             or self.global_burst_rps != 600
@@ -90,10 +100,12 @@ class FantasyLoadRunner:
             raise SystemExit("approved merge-gate load dimensions may not be weakened")
         if self.shard_count < 1 or not 0 <= self.shard_index < self.shard_count:
             raise SystemExit("load shard index/count are invalid")
-        if (
-            self.total_users % self.shard_count
-            or self.global_sustained_rps % self.shard_count
-            or self.global_burst_rps % self.shard_count
+        if self.total_users % self.shard_count or (
+            self.load_profile != "setup_rehearsal"
+            and (
+                self.global_sustained_rps % self.shard_count
+                or self.global_burst_rps % self.shard_count
+            )
         ):
             raise SystemExit("approved load dimensions must divide evenly across shards")
         self.users = self.total_users // self.shard_count
@@ -102,7 +114,10 @@ class FantasyLoadRunner:
         if self.first_user < 1:
             raise SystemExit("BOTOLAGO_LOAD_FIRST_USER must be positive")
         self.user_start = self.first_user + self.shard_index * self.users
-        if self.load_profile == "merge_gate":
+        if self.load_profile == "setup_rehearsal":
+            if self.burst_seconds != 0 or self.total_seconds != 0:
+                raise SystemExit("setup_rehearsal must not execute measured traffic")
+        elif self.load_profile == "merge_gate":
             if self.burst_seconds != 10 or self.total_seconds != 60:
                 raise SystemExit("merge_gate requires a 10-second burst and 60-second duration")
         elif self.load_profile == "telemetry_soak":
@@ -111,7 +126,9 @@ class FantasyLoadRunner:
                     "telemetry_soak requires no burst and a 5-to-10-minute duration"
                 )
         else:
-            raise SystemExit("BOTOLAGO_LOAD_PROFILE must be merge_gate or telemetry_soak")
+            raise SystemExit(
+                "BOTOLAGO_LOAD_PROFILE must be setup_rehearsal, merge_gate, or telemetry_soak"
+            )
         self.observations: list[Observation] = []
         self.states: list[UserState] = []
         self.session_tokens = load_session_tokens(
@@ -132,6 +149,28 @@ class FantasyLoadRunner:
                     if delay <= 0:
                         raise SystemExit("BOTOLAGO_LOAD_START_AT elapsed before preparation completed")
                     await asyncio.sleep(delay)
+                if self.load_profile == "setup_rehearsal":
+                    result = {
+                        "profile": {
+                            "loadProfile": self.load_profile,
+                            "users": self.total_users,
+                            "shardCount": self.shard_count,
+                            "shardIndex": self.shard_index,
+                            "shardUsers": self.users,
+                            "firstUser": self.first_user,
+                            "shardFirstUser": self.user_start,
+                            "sessionSource": "preprovisioned_independent_auth_sessions",
+                            "requests": 0,
+                        },
+                        "readiness": {
+                            "ready": True,
+                            "preparedUsers": len(self.states),
+                            "readyAt": time.time(),
+                            "synchronizedStartAt": self.start_at,
+                        },
+                    }
+                    write_private_json(self.results_path, result)
+                    return result
                 requests: list[asyncio.Task[None]] = []
                 started = time.perf_counter()
                 request_number = 0

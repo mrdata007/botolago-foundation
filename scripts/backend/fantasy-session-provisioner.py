@@ -72,9 +72,20 @@ async def provision() -> dict[str, Any]:
     if rate <= 0 or rate > 0.4:
         raise SystemExit("Auth provisioning rate must remain at or below 0.4 requests/second")
 
+    capacity_mode = os.getenv("BOTOLAGO_CAPACITY_MODE", "full_gate")
+    expected_users = int(os.getenv("BOTOLAGO_EXPECTED_SESSION_USERS", "500"))
+    if capacity_mode == "full_gate" and expected_users != 500:
+        raise SystemExit("full gate requires exactly 500 users per runner")
+    if capacity_mode == "setup_rehearsal" and expected_users not in range(25, 51):
+        raise SystemExit("setup rehearsal requires 25 to 50 users per runner")
+    if capacity_mode not in {"full_gate", "setup_rehearsal"}:
+        raise SystemExit("unsupported capacity mode")
+
     records = json.loads(credentials_path.read_text())
-    if not isinstance(records, list) or len(records) != 500:
-        raise SystemExit("each runner requires exactly 500 credential records")
+    if not isinstance(records, list) or len(records) != expected_users:
+        raise SystemExit(
+            f"each runner requires exactly {expected_users} credential records"
+        )
 
     timeout = aiohttp.ClientTimeout(total=20, connect=5)
     sessions: list[dict[str, Any]] = []
@@ -152,7 +163,7 @@ async def provision() -> dict[str, Any]:
     if any(value < 20 * 60 for value in remaining_seconds):
         raise SystemExit("one or more sessions have less than 20 minutes remaining")
     if not all(
-        len(values) == 500
+        len(values) == expected_users
         for values in (
             subjects,
             session_ids,
@@ -160,7 +171,9 @@ async def provision() -> dict[str, Any]:
             refresh_token_fingerprints,
         )
     ):
-        raise SystemExit("runner did not provision 500 independent sessions")
+        raise SystemExit(
+            f"runner did not provision {expected_users} independent sessions"
+        )
 
     write_private_json(output_path, sessions)
     credentials_path.unlink()
