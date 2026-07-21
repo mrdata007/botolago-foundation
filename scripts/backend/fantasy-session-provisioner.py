@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import sys
 import time
 import uuid
@@ -33,6 +34,12 @@ SECRET_PATTERNS = (
     re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
     re.compile(r"\b[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\b"),
 )
+
+_DIAGNOSTICS_PATH: Path | None = None
+_RUNNER_ID: int | None = None
+_CURRENT_USER_INDEX = -1
+_SESSIONS_PROVISIONED = 0
+_FINAL_DIAGNOSTIC_WRITTEN = False
 
 
 def require_env(name: str) -> str:
@@ -119,6 +126,12 @@ def create_private_diagnostics_file(path: Path) -> None:
     os.close(descriptor)
 
 
+def configure_diagnostics_path(path: Path) -> None:
+    global _DIAGNOSTICS_PATH
+    create_private_diagnostics_file(path)
+    _DIAGNOSTICS_PATH = path
+
+
 def append_private_diagnostic(path: Path, value: dict[str, Any]) -> None:
     flags = os.O_WRONLY | os.O_APPEND
     flags |= getattr(os, "O_CLOEXEC", 0)
@@ -127,6 +140,17 @@ def append_private_diagnostic(path: Path, value: dict[str, Any]) -> None:
     with os.fdopen(descriptor, "a", encoding="utf-8") as output:
         output.write(json.dumps(value, separators=(",", ":"), sort_keys=True))
         output.write("\n")
+
+
+def best_effort_append_diagnostic(value: dict[str, Any]) -> None:
+    path = _DIAGNOSTICS_PATH
+    if path is None:
+        return
+    try:
+        append_private_diagnostic(path, sanitize_response(value))
+    except Exception:
+        # Last-chance diagnostics must never mask the original failure path.
+        return
 
 
 def auth_error_code(payload: Any, status: int | None) -> str:
@@ -166,7 +190,48 @@ def record_auth_failure(
     )
 
 
+def record_final_diagnostic(
+    *,
+    status: str,
+    exit_kind: str,
+    exit_code: int,
+    reason: str,
+) -> None:
+    global _FINAL_DIAGNOSTIC_WRITTEN
+    if _FINAL_DIAGNOSTIC_WRITTEN:
+        return
+    _FINAL_DIAGNOSTIC_WRITTEN = True
+    best_effort_append_diagnostic(
+        {
+            "event": "session_provisioning_exit",
+            "exitCode": exit_code,
+            "exitKind": exit_kind,
+            "reason": sanitize_text(reason, 300),
+            "runnerId": _RUNNER_ID,
+            "sessionsProvisioned": _SESSIONS_PROVISIONED,
+            "status": status,
+            "timestamp": int(time.time()),
+            "userIndex": _CURRENT_USER_INDEX,
+        }
+    )
+
+
+def install_signal_handlers() -> None:
+    def handle_signal(signum: int, _: Any) -> None:
+        record_final_diagnostic(
+            status="failure",
+            exit_kind="signal",
+            exit_code=128 + signum,
+            reason=signal.Signals(signum).name,
+        )
+        raise SystemExit(128 + signum)
+
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(signum, handle_signal)
+
+
 async def provision() -> dict[str, Any]:
+    global _CURRENT_USER_INDEX, _RUNNER_ID, _SESSIONS_PROVISIONED
     if "staging" not in require_env("BOTOLAGO_LOAD_ENVIRONMENT").lower():
         raise SystemExit("session provisioning requires an explicit staging environment")
     base_url = require_env("BOTOLAGO_STAGING_SUPABASE_URL").rstrip("/")
@@ -178,11 +243,12 @@ async def provision() -> dict[str, Any]:
     output_path = Path(require_env("BOTOLAGO_LOAD_SESSION_CACHE"))
     diagnostics_path = Path(require_env("BOTOLAGO_SESSION_DIAGNOSTICS_PATH"))
     require_private_file(credentials_path)
-    create_private_diagnostics_file(diagnostics_path)
+    configure_diagnostics_path(diagnostics_path)
     try:
         runner_id = int(require_env("BOTOLAGO_RUNNER_ID"))
     except ValueError as error:
         raise SystemExit("runner ID must be an integer") from error
+    _RUNNER_ID = runner_id
     if runner_id not in range(5):
         raise SystemExit("runner ID must be between 0 and 4")
     rate = float(os.getenv("BOTOLAGO_AUTH_RATE_PER_SECOND", "0.4"))
@@ -219,6 +285,7 @@ async def provision() -> dict[str, Any]:
     started = time.monotonic()
     async with aiohttp.ClientSession(timeout=timeout) as client:
         for index, record in enumerate(records):
+            _CURRENT_USER_INDEX = index
             target = started + index / rate
             await asyncio.sleep(max(0.0, target - time.monotonic()))
             if not isinstance(record, dict):
@@ -306,6 +373,7 @@ async def provision() -> dict[str, Any]:
                 access_token_fingerprints.add(access_fingerprint)
                 refresh_token_fingerprints.add(refresh_fingerprint)
                 sessions.append({"number": number, "access_token": token})
+                _SESSIONS_PROVISIONED = len(sessions)
                 payload["refresh_token"] = ""
                 refresh_token = ""
             except SystemExit:
@@ -403,11 +471,56 @@ async def revoke() -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    operation = os.getenv("BOTOLAGO_SESSION_OPERATION", "provision")
-    if operation == "provision":
-        result = asyncio.run(provision())
-    elif operation == "revoke":
-        result = asyncio.run(revoke())
-    else:
-        raise SystemExit("BOTOLAGO_SESSION_OPERATION must be provision or revoke")
-    print(json.dumps(result, sort_keys=True))
+    install_signal_handlers()
+    exit_code = 0
+    try:
+        operation = os.getenv("BOTOLAGO_SESSION_OPERATION", "provision")
+        if operation == "provision":
+            result = asyncio.run(provision())
+            record_final_diagnostic(
+                status="success",
+                exit_kind="normal",
+                exit_code=0,
+                reason="completed",
+            )
+        elif operation == "revoke":
+            result = asyncio.run(revoke())
+        else:
+            raise SystemExit("BOTOLAGO_SESSION_OPERATION must be provision or revoke")
+        print(json.dumps(result, sort_keys=True))
+    except SystemExit as error:
+        code = error.code if isinstance(error.code, int) else 1
+        exit_code = code
+        record_final_diagnostic(
+            status="failure",
+            exit_kind="system_exit",
+            exit_code=code,
+            reason=str(error) or type(error).__name__,
+        )
+        raise
+    except asyncio.TimeoutError as error:
+        exit_code = 124
+        record_final_diagnostic(
+            status="failure",
+            exit_kind="timeout",
+            exit_code=124,
+            reason=type(error).__name__,
+        )
+        raise SystemExit(124) from error
+    except BaseException as error:
+        exit_code = 1
+        record_final_diagnostic(
+            status="failure",
+            exit_kind="unhandled_exception",
+            exit_code=1,
+            reason=type(error).__name__,
+        )
+        raise
+    finally:
+        if not _FINAL_DIAGNOSTIC_WRITTEN and os.getenv("BOTOLAGO_SESSION_OPERATION", "provision") == "provision":
+            record_final_diagnostic(
+                status="failure" if exit_code else "success",
+                exit_kind="finally",
+                exit_code=exit_code,
+                reason="last_chance",
+            )
