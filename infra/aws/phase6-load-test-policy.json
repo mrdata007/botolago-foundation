@@ -1,0 +1,208 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DiscoverEuWest3Resources",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeKeyPairs",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3"
+        }
+      }
+    },
+    {
+      "Sid": "ReadAmazonLinuxAmiParameter",
+      "Effect": "Allow",
+      "Action": "ssm:GetParameter",
+      "Resource": "arn:aws:ssm:eu-west-3::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3"
+        }
+      }
+    },
+    {
+      "Sid": "CreateTemporaryKeyPair",
+      "Effect": "Allow",
+      "Action": "ec2:CreateKeyPair",
+      "Resource": "arn:aws:ec2:eu-west-3:455155948410:key-pair/botolago-phase6-*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "aws:RequestTag/Purpose": "botolago-phase6"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Purpose"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "CreateTemporarySecurityGroupInStagingVpc",
+      "Effect": "Allow",
+      "Action": "ec2:CreateSecurityGroup",
+      "Resource": "arn:aws:ec2:eu-west-3:455155948410:vpc/vpc-040c2bc710f60c8f6",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3"
+        }
+      }
+    },
+    {
+      "Sid": "CreateTaggedTemporarySecurityGroup",
+      "Effect": "Allow",
+      "Action": "ec2:CreateSecurityGroup",
+      "Resource": "arn:aws:ec2:eu-west-3:455155948410:security-group/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "aws:RequestTag/Purpose": "botolago-phase6"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Purpose"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "TagResourcesOnlyDuringCreation",
+      "Effect": "Allow",
+      "Action": "ec2:CreateTags",
+      "Resource": [
+        "arn:aws:ec2:eu-west-3:455155948410:key-pair/botolago-phase6-*",
+        "arn:aws:ec2:eu-west-3:455155948410:security-group/*",
+        "arn:aws:ec2:eu-west-3:455155948410:instance/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "aws:RequestTag/Purpose": "botolago-phase6",
+          "ec2:CreateAction": [
+            "CreateKeyPair",
+            "CreateSecurityGroup",
+            "RunInstances"
+          ]
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Name",
+            "Purpose",
+            "Environment",
+            "ExpiresAt"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ConfigureTemporarySshIngress",
+      "Effect": "Allow",
+      "Action": "ec2:AuthorizeSecurityGroupIngress",
+      "Resource": "arn:aws:ec2:eu-west-3:455155948410:security-group/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "ec2:ResourceTag/Purpose": "botolago-phase6"
+        }
+      }
+    },
+    {
+      "Sid": "LaunchWithRequiredVpcResources",
+      "Effect": "Allow",
+      "Action": "ec2:RunInstances",
+      "Resource": [
+        "arn:aws:ec2:eu-west-3:455155948410:subnet/*",
+        "arn:aws:ec2:eu-west-3:455155948410:network-interface/*",
+        "arn:aws:ec2:eu-west-3:455155948410:volume/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3"
+        }
+      }
+    },
+    {
+      "Sid": "LaunchWithTemporaryKeyAndSecurityGroup",
+      "Effect": "Allow",
+      "Action": "ec2:RunInstances",
+      "Resource": [
+        "arn:aws:ec2:eu-west-3:455155948410:key-pair/botolago-phase6-*",
+        "arn:aws:ec2:eu-west-3:455155948410:security-group/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "ec2:ResourceTag/Purpose": "botolago-phase6"
+        }
+      }
+    },
+    {
+      "Sid": "LaunchAmazonLinuxOnly",
+      "Effect": "Allow",
+      "Action": "ec2:RunInstances",
+      "Resource": "arn:aws:ec2:eu-west-3::image/ami-*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "ec2:Owner": "amazon"
+        }
+      }
+    },
+    {
+      "Sid": "LaunchTaggedT3SmallOnly",
+      "Effect": "Allow",
+      "Action": "ec2:RunInstances",
+      "Resource": "arn:aws:ec2:eu-west-3:455155948410:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "ec2:InstanceType": "t3.small",
+          "aws:RequestTag/Name": "botolago-phase6-load-runner",
+          "aws:RequestTag/Purpose": "botolago-phase6",
+          "aws:RequestTag/Environment": "staging-v2"
+        },
+        "Null": {
+          "aws:RequestTag/ExpiresAt": "false"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Name",
+            "Purpose",
+            "Environment",
+            "ExpiresAt"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DeleteOnlyTemporaryResources",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:TerminateInstances",
+        "ec2:DeleteSecurityGroup",
+        "ec2:DeleteKeyPair"
+      ],
+      "Resource": [
+        "arn:aws:ec2:eu-west-3:455155948410:instance/*",
+        "arn:aws:ec2:eu-west-3:455155948410:security-group/*",
+        "arn:aws:ec2:eu-west-3:455155948410:key-pair/botolago-phase6-*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-3",
+          "ec2:ResourceTag/Purpose": "botolago-phase6"
+        }
+      }
+    }
+  ]
+}
