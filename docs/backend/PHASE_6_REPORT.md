@@ -138,23 +138,26 @@ HTTP runs produced first-page p95 values of 254.29, 195.78, and 224.24 ms and
 later-page p95 values of 204.12, 210.82, and 198.73 ms. All 1,200 measured
 responses succeeded, so both standings gates now pass.
 
-The 2,500-user HTTP workload remains blocked by the non-customizable per-IP
-Staging Auth token limit. Temporary credentials and sessions remain revoked.
-The runner now accepts only a secure pre-provisioned cache of 2,500 independent
-sessions and performs no Auth burst in its measured process. A bounded Metrics
-API collector now enforces Supabase's documented 60-second cadence across the
-exact workload plus a separate ten-minute, 250 RPS soak. The connected
-environment has no temporary Staging Secret API key; CPU and Supavisor
-telemetry therefore remain unpassed. See `FANTASY_CAPACITY_REPORT.md`.
+The distributed 2,500-user gate was attempted on 2026-07-20. AWS initially
+rejected `eu-west-3` with `PendingVerification`; an authorized `us-east-1`
+retry then produced five healthy runners with five distinct public egress IPs.
+The retry stopped before session provisioning because 2 of 2,500 temporary
+Auth-admin user-creation requests failed from the client perspective. The exact
+workload, soak, and resource telemetry therefore remain unpassed. Cleanup
+restored the synthetic capacity gameweek and a global audit verified zero
+temporary users, sessions, refresh tokens, Supabase keys, EC2 runners, security
+groups, key pairs, key material, or runtime credential files. See
+`FANTASY_CAPACITY_REPORT.md`.
 
 ## Risks
 
 - Ruleset v1.0 is approved and encoded, but no production season may be
   activated before PR review.
-- Staging Auth rate limiting blocked the 2,500-user workload; an approved load
-  window or distributed approved provisioner is required.
-- Metrics API CPU and Supavisor pool gates require a temporary Staging Secret
-  API key and must be captured concurrently with the workload.
+- `eu-west-3` still awaits AWS account verification; the cross-region runner
+  path works, but temporary Auth-user creation stopped the latest attempt and
+  PR #6 remains draft.
+- Metrics API CPU and pool gates must still be captured concurrently with the
+  exact workload after AWS verification completes.
 - Staging Auth leaked-password protection remains an environment warning.
 - No production workers, cron, schema, data, or environment were modified.
 

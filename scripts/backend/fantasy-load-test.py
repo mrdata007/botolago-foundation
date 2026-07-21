@@ -14,7 +14,6 @@ import hashlib
 import json
 import math
 import os
-import random
 import statistics
 import time
 import uuid
@@ -48,7 +47,6 @@ class UserState:
     version: int
     selection: list[dict[str, Any]]
     transferred_in: bool = False
-    chip_activated: bool = False
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
@@ -69,19 +67,41 @@ class FantasyLoadRunner:
         if "staging" not in os.getenv("BOTOLAGO_LOAD_ENVIRONMENT", "").lower():
             raise SystemExit("BOTOLAGO_LOAD_ENVIRONMENT must explicitly contain 'staging'")
         self.load_profile = os.getenv("BOTOLAGO_LOAD_PROFILE", "merge_gate")
-        self.users = int(os.getenv("BOTOLAGO_LOAD_USERS", "2500"))
-        self.sustained_rps = int(os.getenv("BOTOLAGO_LOAD_SUSTAINED_RPS", "250"))
-        self.burst_rps = int(os.getenv("BOTOLAGO_LOAD_BURST_RPS", "600"))
+        self.total_users = int(os.getenv("BOTOLAGO_LOAD_USERS", "2500"))
+        self.global_sustained_rps = int(os.getenv("BOTOLAGO_LOAD_SUSTAINED_RPS", "250"))
+        self.global_burst_rps = int(os.getenv("BOTOLAGO_LOAD_BURST_RPS", "600"))
+        self.shard_count = int(os.getenv("BOTOLAGO_LOAD_SHARD_COUNT", "1"))
+        self.shard_index = int(os.getenv("BOTOLAGO_LOAD_SHARD_INDEX", "0"))
+        self.first_user = int(os.getenv("BOTOLAGO_LOAD_FIRST_USER", "1"))
         self.burst_seconds = int(os.getenv("BOTOLAGO_LOAD_BURST_SECONDS", "10"))
         self.total_seconds = int(os.getenv("BOTOLAGO_LOAD_DURATION_SECONDS", "60"))
+        self.start_at = float(os.getenv("BOTOLAGO_LOAD_START_AT", "0"))
         default_results_path = f"/tmp/botolago-fantasy-{self.load_profile}-results.json"
         self.results_path = Path(
             os.getenv("BOTOLAGO_LOAD_RESULTS_PATH", default_results_path)
         )
         if not self.results_path.is_absolute():
             raise SystemExit("BOTOLAGO_LOAD_RESULTS_PATH must be an absolute path")
-        if self.users != 2500 or self.sustained_rps != 250 or self.burst_rps != 600:
+        if (
+            self.total_users != 2500
+            or self.global_sustained_rps != 250
+            or self.global_burst_rps != 600
+        ):
             raise SystemExit("approved merge-gate load dimensions may not be weakened")
+        if self.shard_count < 1 or not 0 <= self.shard_index < self.shard_count:
+            raise SystemExit("load shard index/count are invalid")
+        if (
+            self.total_users % self.shard_count
+            or self.global_sustained_rps % self.shard_count
+            or self.global_burst_rps % self.shard_count
+        ):
+            raise SystemExit("approved load dimensions must divide evenly across shards")
+        self.users = self.total_users // self.shard_count
+        self.sustained_rps = self.global_sustained_rps // self.shard_count
+        self.burst_rps = self.global_burst_rps // self.shard_count
+        if self.first_user < 1:
+            raise SystemExit("BOTOLAGO_LOAD_FIRST_USER must be positive")
+        self.user_start = self.first_user + self.shard_index * self.users
         if self.load_profile == "merge_gate":
             if self.burst_seconds != 10 or self.total_seconds != 60:
                 raise SystemExit("merge_gate requires a 10-second burst and 60-second duration")
@@ -94,11 +114,11 @@ class FantasyLoadRunner:
             raise SystemExit("BOTOLAGO_LOAD_PROFILE must be merge_gate or telemetry_soak")
         self.observations: list[Observation] = []
         self.states: list[UserState] = []
-        self.random = random.Random(610)
         self.session_tokens = load_session_tokens(
             self.session_cache_path,
             self.users,
             self.total_seconds,
+            self.user_start,
         )
 
     async def run(self) -> dict[str, Any]:
@@ -107,6 +127,11 @@ class FantasyLoadRunner:
         try:
             async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
                 await self.prepare_users(session)
+                if self.start_at:
+                    delay = self.start_at - time.time()
+                    if delay <= 0:
+                        raise SystemExit("BOTOLAGO_LOAD_START_AT elapsed before preparation completed")
+                    await asyncio.sleep(delay)
                 requests: list[asyncio.Task[None]] = []
                 started = time.perf_counter()
                 request_number = 0
@@ -122,7 +147,7 @@ class FantasyLoadRunner:
                     )
                     while request_number < target_total:
                         state = self.states[request_number % self.users]
-                        operation = self.pick_operation()
+                        operation = self.pick_operation(request_number)
                         requests.append(
                             asyncio.create_task(self.execute_serial(session, state, operation))
                         )
@@ -163,18 +188,20 @@ class FantasyLoadRunner:
                 ]
                 return UserState(number, token, team["id"], int(team["version"]), selection)
 
-        prepared = await asyncio.gather(*(prepare(number) for number in range(1, self.users + 1)))
+        prepared = await asyncio.gather(
+            *(prepare(number) for number in range(self.user_start, self.user_start + self.users))
+        )
         self.states = list(prepared)
 
-    def pick_operation(self) -> str:
-        value = self.random.random()
-        if value < 0.60:
+    def pick_operation(self, request_number: int) -> str:
+        bucket = request_number % 100
+        if bucket < 60:
             return "lineup"
-        if value < 0.75:
+        if bucket < 75:
             return "transfer_preview"
-        if value < 0.90:
+        if bucket < 90:
             return "transfer_confirm"
-        if value < 0.95:
+        if bucket < 95:
             return "chip"
         return "team_read"
 
@@ -228,7 +255,7 @@ class FantasyLoadRunner:
                     state.version = int(response["team"]["version"])
                     replace_player(state.selection, player_out, player_in)
                     state.transferred_in = not state.transferred_in
-            elif operation == "chip" and not state.chip_activated:
+            elif operation == "chip":
                 response = await self.rpc(
                     session,
                     state.token,
@@ -243,7 +270,6 @@ class FantasyLoadRunner:
                     operation,
                 )
                 state.version = int(response["teamVersion"])
-                state.chip_activated = True
             else:
                 await self.rpc(
                     session,
@@ -330,10 +356,17 @@ class FantasyLoadRunner:
         return {
             "profile": {
                 "loadProfile": self.load_profile,
-                "users": self.users,
+                "users": self.total_users,
+                "shardCount": self.shard_count,
+                "shardIndex": self.shard_index,
+                "shardUsers": self.users,
+                "firstUser": self.first_user,
+                "shardFirstUser": self.user_start,
                 "sessionSource": "preprovisioned_independent_auth_sessions",
-                "sustainedRps": self.sustained_rps,
-                "burstRps": self.burst_rps,
+                "sustainedRps": self.global_sustained_rps,
+                "burstRps": self.global_burst_rps,
+                "shardSustainedRps": self.sustained_rps,
+                "shardBurstRps": self.burst_rps,
                 "burstSeconds": self.burst_seconds,
                 "durationSeconds": self.total_seconds,
                 "actualElapsedSeconds": round(elapsed_seconds, 3),
@@ -351,6 +384,12 @@ class FantasyLoadRunner:
                 operation: summarize_observations(observations)
                 for operation, observations in sorted(by_operation.items())
             },
+            "latencySamplesMs": {
+                operation: [round(item.latency_ms, 3) for item in observations]
+                for operation, observations in sorted(by_operation.items())
+            }
+            if os.getenv("BOTOLAGO_LOAD_INCLUDE_SAMPLES") == "1"
+            else None,
             "errorCodes": dict(Counter(item.error_code for item in self.observations if item.error_code)),
             "passCriteria": {
                 "readP95": percentile(reads, 95) <= 500,
@@ -427,7 +466,12 @@ def write_private_json(path: Path, value: dict[str, Any]) -> None:
         raise SystemExit(f"unable to write owner-only result artifact: {path}") from error
 
 
-def load_session_tokens(path: Path, expected_users: int, workload_seconds: int) -> dict[int, str]:
+def load_session_tokens(
+    path: Path,
+    expected_users: int,
+    workload_seconds: int,
+    first_user: int = 1,
+) -> dict[int, str]:
     if not path.is_absolute() or not path.is_file():
         raise SystemExit("BOTOLAGO_LOAD_SESSION_CACHE must be an existing absolute file")
     if path.stat().st_mode & 0o077:
@@ -443,6 +487,7 @@ def load_session_tokens(path: Path, expected_users: int, workload_seconds: int) 
     tokens: dict[int, str] = {}
     subjects: set[str] = set()
     minimum_expiry = int(time.time()) + workload_seconds + 300
+    expected_numbers = set(range(first_user, first_user + expected_users))
     for record in records:
         if not isinstance(record, dict):
             raise SystemExit("each session cache record must be an object")
@@ -450,8 +495,8 @@ def load_session_tokens(path: Path, expected_users: int, workload_seconds: int) 
         token = record.get("access_token")
         if not isinstance(number, int) or not isinstance(token, str):
             raise SystemExit("session cache records require number and access_token")
-        if number in tokens or number < 1 or number > expected_users:
-            raise SystemExit("session cache user numbers must be unique and contiguous")
+        if number in tokens or number not in expected_numbers:
+            raise SystemExit("session cache user numbers must match the assigned shard")
 
         claims = decode_jwt_claims(token)
         subject = claims.get("sub")
@@ -468,8 +513,8 @@ def load_session_tokens(path: Path, expected_users: int, workload_seconds: int) 
         subjects.add(subject)
         tokens[number] = token
 
-    if set(tokens) != set(range(1, expected_users + 1)):
-        raise SystemExit("session cache user numbers must be unique and contiguous")
+    if set(tokens) != set(range(first_user, first_user + expected_users)):
+        raise SystemExit("session cache user numbers must match the assigned shard")
     return tokens
 
 

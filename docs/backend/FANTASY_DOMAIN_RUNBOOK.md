@@ -30,6 +30,10 @@ version and choose an explicit effective date.
 
 The two SQL harnesses refuse to run unless the session is explicitly marked
 `staging-v2`. They must never be executed in Production V2 or Legacy.
+`scripts/backend/fantasy-capacity-orchestrator.py` implements the bounded
+distributed sequence and mandatory cleanup verification; it contains no
+credential and accepts secrets only through an owner-only temporary runtime
+file outside the repository.
 
 1. Apply reviewed migrations to Staging V2 only.
 2. Run `scripts/backend/fantasy-staging-seed.sql` with
@@ -39,6 +43,13 @@ The two SQL harnesses refuse to run unless the session is explicitly marked
    `authenticated` sessions gradually, outside the measured window. Do not
    burst `/auth/v1/token` from one IP and do not use `service_role`, shared
    identities, fabricated JWTs, or an ownership bypass.
+   The reviewed distributed profile uses five runners with distinct public
+   IPv4 egress, 500 users per runner, and at most 0.4 Auth requests/second per
+   runner. Verify the AWS account can launch in the selected staging region
+   before creating any temporary credential.
+   Create temporary users at a bounded five admin requests/second. For an
+   ambiguous response, resolve the unique email first and only then retry with
+   the same password; never create a replacement identity blindly.
 4. Write the access tokens to an owner-only (mode `0600`) JSON file outside the
    repository. The file is an array of exactly 2,500 records shaped as
    `{"number": 1, "access_token": "..."}`. User numbers must be contiguous;
@@ -51,6 +62,9 @@ The two SQL harnesses refuse to run unless the session is explicitly marked
    outside the repository. Do not lower the interval without written Supabase
    approval. The 15-minute window includes both runners' unmeasured team
    preparation, the exact gate, the soak, and bounded handoff time.
+   Supabase API-key names permit lowercase alphanumerics and underscores, not
+   hyphens; use `phase6_fantasy_metrics` when the intended display name is
+   `phase6-fantasy-metrics`.
 6. Run `scripts/backend/fantasy-load-test.py` with
    `BOTOLAGO_LOAD_PROFILE=merge_gate`: 600 RPS for 10 seconds and 250 RPS for
    the remaining 50 seconds. Session and team preparation is completed before
@@ -79,6 +93,20 @@ passwords/sessions, record the gate as blocked, and request a reviewed Auth
 load-test window. A Pro plan does not remove the non-customizable per-IP token
 endpoint limit, so plan/tier alone is not evidence that session preparation is
 approved.
+
+If AWS returns `PendingVerification` from `RunInstances`, stop before session
+provisioning. Restore any temporarily changed synthetic gameweek state, delete
+the Metrics API key, security group, and key pair, verify zero active runners
+and credential artifacts, and keep PR #6 draft. Wait for the AWS verification
+email or open an account-management support case before retrying. Do not reduce
+the runner count or reuse an egress IP as a substitute.
+
+If only another region is temporarily available, record the cross-region path.
+A pass is conservative; a latency failure is not sufficient evidence of a
+database regression until the unchanged gate is repeated near Staging V2. Any
+temporary-user creation failure still stops that attempt before authentication.
+After cleanup, verify the global temporary-email prefix has zero users, not
+only that the locally tracked IDs are absent.
 
 The load runner rejects a cache that is not absolute, owner-only, exactly
 2,500 users, uniquely authenticated, contiguously numbered, and sufficiently

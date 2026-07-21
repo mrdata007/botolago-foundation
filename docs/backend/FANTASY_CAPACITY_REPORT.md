@@ -26,34 +26,40 @@ Fantasy teams.
 
 ## Deadline HTTP workload
 
-The approved 2,500-user workload did **not** run. Supabase Auth returned HTTP
-429 while preparing 2,500 independent password sessions from one source IP,
-before the measured 600 RPS/250 RPS workload began. [Supabase documents the
-`/auth/v1/token` bucket](https://supabase.com/docs/guides/auth/rate-limits) as
-IP-limited and non-customizable. Shared identities,
-fabricated JWTs, `service_role`, and a staging authentication backdoor were
-rejected as invalid test substitutions.
+The approved 2,500-user workload still did **not** run. A distributed harness
+was added for five temporary AWS runners, 500 users per runner, distinct public
+IPv4 egress, gradual authentication at most 0.4 requests/second per runner,
+and synchronized workload shards. It preserves the exact global 60/30/5/5
+traffic mix and 600-to-250 RPS schedule.
 
-Temporary passwords and all generated sessions/refresh tokens were revoked
-immediately. Verification returned zero enabled load passwords and zero
-remaining sessions.
+The 2026-07-20 external run passed Staging V2 and synthetic-data preflight. It
+created a temporary Supabase Secret API key in process memory and temporarily
+reopened only the known synthetic capacity gameweek. Supabase API-key names do
+not permit hyphens, so the requested `phase6-fantasy-metrics` name used the
+platform-compliant `phase6_fantasy_metrics` equivalent.
 
-The staging project contains 50,000 synthetic Auth identities but now has zero
-enabled load passwords, zero load sessions, and zero non-revoked load refresh
-tokens. This remains an external staging-capacity gate:
+AWS first rejected `RunInstances` in `eu-west-3` with `PendingVerification`.
+An explicitly authorized retry in the account's available `us-east-1` region
+successfully provisioned five healthy runners with five distinct public egress
+IPs. This cross-region runner placement is temporary; a passing latency result
+would be conservative, while a latency failure would require a same-region
+rerun before attributing it to the backend.
 
-- obtain a reviewed Auth load-test window or a distributed, approved session
-  provisioner; the current runner must not burst Auth from one IP;
-- mint 2,500 legitimate, unique, sufficiently unexpired sessions before the
-  measurement window and write them to an owner-only cache outside the repo;
-- create a temporary Staging Secret API key for the Metrics API;
-- run the unchanged 2,500-user/60-second/600-to-250 RPS profile while collecting
-  documented 60-second Metrics API samples;
-- immediately run a separate ten-minute, 250 RPS telemetry soak with the same
-  2,500 users and operation mix; soak results supplement but never replace the
-  exact 60-second latency gate;
-- revoke sessions/passwords, delete the Secret API key, and remove local
-  credential artifacts immediately.
+The retry stopped before authentication and measurement because 2 of 2,500
+temporary Auth-admin user-creation requests returned client-observed failures.
+The latest Auth log window contained no HTTP failures, so no server status can
+be asserted for those two requests. The remaining 2,498 tracked users were
+removed, and a global prefix-based database audit confirmed zero residual
+temporary users, sessions, or active refresh tokens. Under the gate's fail
+rule, the harness did not retry the run or start the measured workload.
+
+The fail-closed cleanup restored the synthetic gameweek and verified:
+
+- temporary test users, sessions, and active refresh tokens: 0 / 0 / 0;
+- temporary Supabase Metrics API keys: 0;
+- active Phase 6 runners, security groups, and EC2 key pairs: 0 / 0 / 0;
+- local EC2 key material and runtime credential handoff files: 0 / 0;
+- cleanup errors: 0.
 
 The load runner now fails closed unless the cache has exactly 2,500 unique
 `authenticated` UUID subjects, contiguous user numbers, enough remaining token
@@ -135,14 +141,12 @@ count query, RLS user-rank join, or network-only delay. The first-page target of
 - security advisor: deny-by-default RLS-without-policy informational findings,
   plus leaked-password protection disabled for Staging Auth;
 - performance advisor: fresh-dataset unused-index informational findings;
-- Metrics API CPU, memory, IO, Supavisor pool/client utilization, lock timeout,
-  and per-interval query telemetry cannot be collected without a Staging
-  [Secret API key](https://supabase.com/docs/guides/telemetry/metrics). No such
-  credential is available in the repository or
-  connected management surface, so the workload telemetry gate is **not passed
-  by inference**. `scripts/backend/supabase-metrics-collector.py` is ready to
-  capture 60-second Prometheus samples across the exact run and the separate
-  ten-minute soak once a temporary key is approved.
+- Metrics API CPU, memory, IO, pool/client utilization, lock timeout, and
+  per-interval query telemetry remain unmeasured because temporary user
+  creation stopped the run before session provisioning. The temporary Staging
+  Secret API key and distributed AWS runners were successfully created and
+  deleted; credential and runner availability are no longer the immediate
+  blockers. The telemetry gate is **not passed by inference**.
 
 Staging PostgREST initially exposed only `public, graphql_public`, contrary to
 the checked-in `schemas = ["api"]` configuration. Staging was aligned to
@@ -153,6 +157,9 @@ verified during every environment promotion.
 
 Database correctness, finalization, rankings, read plans, and both standings
 latency gates pass. The 2,500-user authenticated workload and concurrent
-Metrics API/Supavisor resource-observation gate remain externally blocked. PR
-#6 must remain draft; it is not merge-ready until those two gates pass against
-the unchanged workload profile and their cleanup checks return zero.
+resource-observation gate remain open after the temporary Auth-user creation
+failure. PR #6 must remain draft. The setup path now uses a lower five-request-
+per-second admin rate plus lookup-before-retry for ambiguous create responses.
+Run the unchanged gate in a new reviewed attempt; cleanup must again return zero
+before the PR can become merge-ready. A same-region latency run remains the
+target before final capacity sign-off.
