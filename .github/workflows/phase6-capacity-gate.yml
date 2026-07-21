@@ -32,13 +32,23 @@ jobs:
       AWS_REGION: eu-west-3
       AWS_DEFAULT_REGION: eu-west-3
       BOTOLAGO_LOAD_ENVIRONMENT: staging-v2
-      BOTOLAGO_PHASE6_RUNTIME_DIR: ${{ runner.temp }}/botolago-phase6
-      BOTOLAGO_PHASE6_EVIDENCE_DIR: ${{ runner.temp }}/botolago-phase6/evidence
       BOTOLAGO_MAX_ESTIMATED_COST_USD: "50"
       BOTOLAGO_REQUIRE_AWS_SESSION_TOKEN: "1"
       BOTOLAGO_AWS_LOAD_TEST_ROLE_ARN: ${{ vars.AWS_LOAD_TEST_ROLE_ARN }}
 
     steps:
+      - name: Initialize Phase 6 runtime environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_dir="$RUNNER_TEMP/botolago-phase6"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "BOTOLAGO_PHASE6_RUNTIME_DIR=$runtime_dir"
+            echo "BOTOLAGO_PHASE6_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+
       - name: Validate manual dispatch
         id: dispatch_guard
         shell: bash
