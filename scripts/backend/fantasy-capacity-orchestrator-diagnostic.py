@@ -85,6 +85,14 @@ CONSERVATIVE_ESTIMATED_COST_USD = (
     / 60
     + NON_COMPUTE_COST_BUFFER_USD
 )
+CLEANUP_EXTERNAL_RESOURCE_KEYS = {
+    "activeRunners",
+    "keyMaterialFiles",
+    "keyPairs",
+    "metricsKeys",
+    "runtimeCredentialHandoffs",
+    "securityGroups",
+}
 
 
 def event(message: str) -> None:
@@ -229,7 +237,7 @@ def sanitize_diagnostic_value(value: Any, depth: int = 0) -> Any:
     return safe_runner_diagnostic(str(value))[:1000]
 
 
-def sanitized_diagnostic_records(value: str) -> list[dict[str, Any]]:
+def sanitized_diagnostic_records(value: str) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     for line in value.splitlines():
         if not line.strip():
@@ -237,22 +245,137 @@ def sanitized_diagnostic_records(value: str) -> list[dict[str, Any]]:
         parsed = json.loads(line)
         if not isinstance(parsed, dict):
             raise ValueError("session diagnostic record must be an object")
-        required = {
-            "event",
-            "httpStatus",
-            "requestDurationMs",
-            "responseBody",
-            "runnerId",
-            "supabaseErrorCode",
-            "userIndex",
-        }
-        if set(parsed) != required or parsed.get("event") != "authentication_failure":
+        event_name = parsed.get("event")
+        if event_name == "authentication_failure":
+            required = {
+                "event",
+                "httpStatus",
+                "requestDurationMs",
+                "responseBody",
+                "runnerId",
+                "supabaseErrorCode",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session authentication diagnostic has an invalid contract")
+        elif event_name == "session_provisioning_exit":
+            required = {
+                "event",
+                "exitCode",
+                "exitKind",
+                "reason",
+                "runnerId",
+                "sessionsProvisioned",
+                "status",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session final diagnostic has an invalid contract")
+        elif event_name == "session_provisioning_start":
+            required = {
+                "event",
+                "expectedUsers",
+                "mode",
+                "runnerId",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session start diagnostic has an invalid contract")
+        elif event_name == "auth_request_start":
+            required = {
+                "credentialNumber",
+                "event",
+                "runnerId",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session request diagnostic has an invalid contract")
+        elif event_name == "auth_response_received":
+            required = {
+                "event",
+                "httpStatus",
+                "requestDurationMs",
+                "responseClassification",
+                "runnerId",
+                "supabaseErrorCode",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session response diagnostic has an invalid contract")
+        elif event_name == "authentication_exception":
+            required = {
+                "event",
+                "exceptionClass",
+                "httpStatus",
+                "requestDurationMs",
+                "responseBody",
+                "responseClassification",
+                "runnerId",
+                "sanitizedMessage",
+                "supabaseErrorCode",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session exception diagnostic has an invalid contract")
+        elif event_name == "artifact_collection_failure":
+            required = {
+                "event",
+                "artifactExists",
+                "artifactSizeBytes",
+                "copySucceeded",
+                "remoteExists",
+                "remoteSizeBytes",
+                "runnerId",
+                "stage",
+                "stderrSizeBytes",
+            }
+            if set(parsed) != required:
+                raise ValueError("session artifact diagnostic has an invalid contract")
+        else:
             raise ValueError("session diagnostic record has an invalid contract")
         sanitized = sanitize_diagnostic_value(parsed)
         if not isinstance(sanitized, dict):
             raise ValueError("session diagnostic sanitization failed")
         records.append(sanitized)
-    return records
+    return {
+        "authFailures": [item for item in records if item.get("event") == "authentication_failure"],
+        "artifactFailures": [
+            item for item in records if item.get("event") == "artifact_collection_failure"
+        ],
+        "exceptionRecords": [
+            item for item in records if item.get("event") == "authentication_exception"
+        ],
+        "finalRecords": [
+            item for item in records if item.get("event") == "session_provisioning_exit"
+        ],
+        "requestRecords": [
+            item for item in records if item.get("event") == "auth_request_start"
+        ],
+        "responseRecords": [
+            item for item in records if item.get("event") == "auth_response_received"
+        ],
+        "startRecords": [
+            item for item in records if item.get("event") == "session_provisioning_start"
+        ],
+        "records": records,
+    }
+
+
+def cleanup_verified_zero(cleanup: dict[str, Any]) -> bool:
+    database = cleanup.get("database", {})
+    verification = cleanup.get("verification", {})
+    if not isinstance(database, dict) or not isinstance(verification, dict):
+        return False
+    database_zero = bool(database) and all(int(value) == 0 for value in database.values())
+    external_zero = all(
+        int(verification.get(key, 1)) == 0 for key in CLEANUP_EXTERNAL_RESOURCE_KEYS
+    )
+    return database_zero and external_zero
 
 
 class CapacityGate:
@@ -944,7 +1067,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             f"{self.runtime['SUPABASE_STAGING_PUBLISHABLE_KEY']}\n",
         )
         load_script = PROJECT_ROOT / "scripts/backend/fantasy-load-test.py"
-        session_script = PROJECT_ROOT / "scripts/backend/fantasy-session-provisioner.py"
+        session_script = PROJECT_ROOT / "scripts/backend/fantasy-session-provisioner-diagnostic.py"
 
         def deploy(index: int) -> None:
             ip = self.instance_ips[index]
@@ -963,7 +1086,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             private_json(credential_path, records)
             try:
                 self.scp_to(ip, load_script, "/opt/botolago/fantasy-load-test.py")
-                self.scp_to(ip, session_script, "/opt/botolago/fantasy-session-provisioner.py")
+                self.scp_to(ip, session_script, "/opt/botolago/fantasy-session-provisioner-diagnostic.py")
                 self.scp_to(ip, runtime_path, "/opt/botolago/runtime.env")
                 self.scp_to(ip, credential_path, f"/opt/botolago/credentials-{index}.json")
                 self.ssh(
@@ -989,7 +1112,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "BOTOLAGO_LOAD_CREDENTIAL_CACHE=/opt/botolago/credentials-{index}.json "
             "BOTOLAGO_LOAD_SESSION_CACHE=/opt/botolago/sessions.json "
             "BOTOLAGO_SESSION_DIAGNOSTICS_PATH=/opt/botolago/session-provisioning-diagnostics.ndjson "
-            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner.py "
+            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner-diagnostic.py "
             "> /opt/botolago/session-provisioning.stdout.json "
             "2> /opt/botolago/session-provisioning.stderr.log"
         )
@@ -1002,11 +1125,33 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 self.artifact_dir / f"session-runner-{index}-diagnostics.ndjson"
             )
             command_error: Exception | None = None
+            artifact_stage = {
+                "copySucceeded": False,
+                "remoteExists": False,
+                "remoteSizeBytes": 0,
+                "artifactExists": False,
+                "artifactSizeBytes": 0,
+                "stderrSizeBytes": 0,
+            }
             try:
                 self.ssh(ip, command.format(index=index), 1800)
             except (subprocess.SubprocessError, OSError) as error:
                 command_error = error
             finally:
+                try:
+                    remote_state = self.ssh(
+                        ip,
+                        "if test -f /opt/botolago/session-provisioning-diagnostics.ndjson; "
+                        "then wc -c < /opt/botolago/session-provisioning-diagnostics.ndjson; "
+                        "else echo missing; fi",
+                        30,
+                    )
+                    artifact_stage["remoteExists"] = remote_state != "missing"
+                    artifact_stage["remoteSizeBytes"] = (
+                        int(remote_state) if remote_state.isdigit() else 0
+                    )
+                except (subprocess.SubprocessError, OSError):
+                    artifact_stage["remoteExists"] = False
                 for remote, local in (
                     ("/opt/botolago/session-provisioning.stderr.log", stderr_path),
                     (
@@ -1017,13 +1162,22 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                     try:
                         self.scp_from(ip, remote, local)
                         os.chmod(local, 0o600)
+                        if local == diagnostics_path:
+                            artifact_stage["copySucceeded"] = True
                     except (subprocess.SubprocessError, OSError):
                         private_write(local, "")
+                artifact_stage["artifactExists"] = diagnostics_path.exists()
+                artifact_stage["artifactSizeBytes"] = (
+                    diagnostics_path.stat().st_size if diagnostics_path.exists() else 0
+                )
+                artifact_stage["stderrSizeBytes"] = (
+                    stderr_path.stat().st_size if stderr_path.exists() else 0
+                )
 
             stderr = safe_runner_diagnostic(stderr_path.read_text(encoding="utf-8"))
             private_write(stderr_path, stderr + "\n")
             try:
-                diagnostic_records = sanitized_diagnostic_records(
+                diagnostic_bundle = sanitized_diagnostic_records(
                     diagnostics_path.read_text(encoding="utf-8")
                 )
             except (json.JSONDecodeError, ValueError) as error:
@@ -1031,6 +1185,29 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 raise RuntimeError(
                     f"runner {index} emitted an invalid session diagnostic"
                 ) from error
+            diagnostic_records = diagnostic_bundle["records"]
+            final_records = diagnostic_bundle["finalRecords"]
+            auth_failures = diagnostic_bundle["authFailures"]
+            if not final_records:
+                artifact_record = {
+                    "event": "artifact_collection_failure",
+                    "artifactExists": artifact_stage["artifactExists"],
+                    "artifactSizeBytes": artifact_stage["artifactSizeBytes"],
+                    "copySucceeded": artifact_stage["copySucceeded"],
+                    "remoteExists": artifact_stage["remoteExists"],
+                    "remoteSizeBytes": artifact_stage["remoteSizeBytes"],
+                    "runnerId": index,
+                    "stage": (
+                        "remote-diagnostic-missing"
+                        if not artifact_stage["remoteExists"]
+                        else "remote-diagnostic-empty"
+                        if artifact_stage["remoteSizeBytes"] == 0
+                        else "artifact-copy-or-parse-missing-final-record"
+                    ),
+                    "stderrSizeBytes": artifact_stage["stderrSizeBytes"],
+                }
+                diagnostic_records.append(artifact_record)
+                diagnostic_bundle["artifactFailures"].append(artifact_record)
             private_write(
                 diagnostics_path,
                 "".join(
@@ -1041,8 +1218,24 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             if command_error is not None:
                 raise RuntimeError(
                     f"runner {index} session provisioning failed; "
-                    "sanitized diagnostics were preserved"
+                    "sanitized diagnostics were preserved "
+                    f"(stage={diagnostic_bundle['artifactFailures'][-1]['stage'] if diagnostic_bundle['artifactFailures'] else 'runner-final-diagnostic-emitted'}, "
+                    f"remoteSize={artifact_stage['remoteSizeBytes']}, "
+                    f"artifactSize={artifact_stage['artifactSizeBytes']}, "
+                    f"stderrSize={artifact_stage['stderrSizeBytes']})"
                 ) from command_error
+            if not final_records:
+                raise RuntimeError(
+                    f"runner {index} emitted no final session diagnostic "
+                    f"(stage={diagnostic_bundle['artifactFailures'][-1]['stage']}, "
+                    f"remoteSize={artifact_stage['remoteSizeBytes']}, "
+                    f"artifactSize={artifact_stage['artifactSizeBytes']}, "
+                    f"stderrSize={artifact_stage['stderrSizeBytes']})"
+                )
+            if auth_failures:
+                raise RuntimeError(
+                    f"runner {index} emitted {len(auth_failures)} authentication diagnostics"
+                )
 
             self.scp_from(
                 ip,
@@ -1053,6 +1246,8 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             summary = json.loads(stdout_path.read_text(encoding="utf-8"))
             private_json(stdout_path, summary)
             summary["diagnosticEvents"] = len(diagnostic_records)
+            summary["authFailureEvents"] = len(auth_failures)
+            summary["finalDiagnosticEmitted"] = bool(final_records)
             return summary
 
         summaries: list[dict[str, Any]] = []
@@ -1073,7 +1268,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                         try:
                             self.ssh(
                                 ip,
-                                "pkill -f '/opt/botolago/fantasy-session-provisioner.py' || true",
+                                "pkill -f '/opt/botolago/fantasy-session-provisioner-diagnostic.py' || true",
                                 30,
                             )
                         except (subprocess.SubprocessError, OSError):
@@ -1089,7 +1284,8 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             or item.get("uniqueSubjects") != self.users_per_runner
             or item.get("uniqueSessionIds") != self.users_per_runner
             or item.get("minimumValidityMinutes", 0) < 20
-            or item.get("diagnosticEvents") != 0
+            or item.get("authFailureEvents") != 0
+            or item.get("finalDiagnosticEmitted") is not True
             for item in summaries
         ):
             raise RuntimeError("distributed session validation failed")
@@ -1130,6 +1326,12 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 ),
                 "diagnosticEvents": sum(
                     int(item["diagnosticEvents"]) for item in summaries
+                ),
+                "authFailureEvents": sum(
+                    int(item["authFailureEvents"]) for item in summaries
+                ),
+                "finalDiagnostics": sum(
+                    1 for item in summaries if item.get("finalDiagnosticEmitted")
                 ),
                 "rawSessionMaterialRetained": False,
             },
@@ -1663,7 +1865,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "set -a; . /opt/botolago/runtime.env; set +a; "
             "BOTOLAGO_SESSION_OPERATION=revoke "
             "BOTOLAGO_LOAD_SESSION_CACHE=/opt/botolago/sessions.json "
-            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner.py"
+            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner-diagnostic.py"
         )
 
         def revoke(ip: str) -> dict[str, Any]:
@@ -2087,39 +2289,45 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             event("Removed the temporary security group and EC2 key pair")
 
     def cleanup(self) -> dict[str, Any]:
-        cleanup: dict[str, Any] = {"errors": []}
+        execution_errors: list[str] = []
+        cleanup: dict[str, Any] = {
+            "errors": execution_errors,
+            "execution": {"errors": execution_errors, "status": "started"},
+            "verifiedEndState": False,
+            "warnings": [],
+        }
         try:
             self.discover_cleanup_state()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"cleanup_discovery:{type(error).__name__}")
+            execution_errors.append(f"cleanup_discovery:{type(error).__name__}")
         try:
             self.revoke_remote_sessions()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"session_revoke:{type(error).__name__}")
+            execution_errors.append(f"session_revoke:{type(error).__name__}")
         try:
             self.remove_remote_runtime_files()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"remote_runtime_cleanup:{type(error).__name__}")
+            execution_errors.append(f"remote_runtime_cleanup:{type(error).__name__}")
         try:
             cleanup["database"] = self.delete_users_and_state()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"database_cleanup:{type(error).__name__}")
+            execution_errors.append(f"database_cleanup:{type(error).__name__}")
         try:
             self.restore_capacity_gameweek()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"gameweek_restore:{type(error).__name__}")
+            execution_errors.append(f"gameweek_restore:{type(error).__name__}")
         try:
             self.delete_temporary_key()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"key_cleanup:{type(error).__name__}")
+            execution_errors.append(f"key_cleanup:{type(error).__name__}")
         try:
             self.terminate_runners()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"aws_cleanup:{type(error).__name__}")
+            execution_errors.append(f"aws_cleanup:{type(error).__name__}")
         try:
             self.remove_local_runtime_files()
         except Exception as error:  # cleanup must continue
-            cleanup["errors"].append(f"local_runtime_cleanup:{type(error).__name__}")
+            execution_errors.append(f"local_runtime_cleanup:{type(error).__name__}")
         self.passwords.clear()
         for item in self.users:
             item["password"] = ""
@@ -2164,22 +2372,31 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 ),
                 "cloudStateFiles": int(STATE_FILE.exists()),
             }
-            database = cleanup.get("database", {})
-            external_without_state = {
-                key: value
-                for key, value in cleanup["verification"].items()
-                if key != "cloudStateFiles"
-            }
-            if (
-                not cleanup["errors"]
-                and database
-                and all(int(value) == 0 for value in database.values())
-                and all(int(value) == 0 for value in external_without_state.values())
-            ):
+            verified_zero = cleanup_verified_zero(cleanup)
+            cleanup["verifiedEndState"] = verified_zero
+            if verified_zero:
                 STATE_FILE.unlink(missing_ok=True)
                 cleanup["verification"]["cloudStateFiles"] = int(STATE_FILE.exists())
+                if execution_errors:
+                    cleanup["warnings"] = list(execution_errors)
+                    cleanup["errors"] = []
+                    cleanup["execution"] = {
+                        "errors": execution_errors,
+                        "status": "warning_verified_zero",
+                    }
+                else:
+                    cleanup["execution"] = {"errors": [], "status": "success"}
+            else:
+                cleanup["execution"] = {
+                    "errors": execution_errors,
+                    "status": "failed_residual_resources_or_unknown",
+                }
         except Exception as error:
-            cleanup["errors"].append(f"cleanup_verification:{type(error).__name__}")
+            execution_errors.append(f"cleanup_verification:{type(error).__name__}")
+            cleanup["execution"] = {
+                "errors": execution_errors,
+                "status": "failed_verification_error",
+            }
         private_json(self.artifact_dir / "cleanup.json", cleanup)
         return cleanup
 
@@ -2291,14 +2508,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             cleanup = self.cleanup()
             outcome["cleanup"] = cleanup
             outcome["localRuntimeCredentialFileRemaining"] = False
-            cleanup_db = cleanup.get("database", {})
-            cleanup_external = cleanup.get("verification", {})
-            cleanup_passed = (
-                not cleanup.get("errors")
-                and all(int(value) == 0 for value in cleanup_db.values())
-                and all(int(value) == 0 for value in cleanup_external.values())
-                and not outcome["localRuntimeCredentialFileRemaining"]
-            )
+            cleanup_passed = cleanup_verified_zero(cleanup) and not outcome[
+                "localRuntimeCredentialFileRemaining"
+            ]
             outcome["cleanupPassed"] = cleanup_passed
             outcome["passed"] = bool(outcome.get("passed")) and cleanup_passed
             outcome.setdefault("userCreation", dict(self.user_creation_stats))
@@ -2320,15 +2532,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "passed": False,
         }
         cleanup = self.cleanup()
-        database = cleanup.get("database", {})
-        external = cleanup.get("verification", {})
-        passed = (
-            not cleanup.get("errors")
-            and bool(database)
-            and bool(external)
-            and all(int(value) == 0 for value in database.values())
-            and all(int(value) == 0 for value in external.values())
-        )
+        passed = cleanup_verified_zero(cleanup)
         outcome.update({"cleanup": cleanup, "passed": passed})
         private_json(self.artifact_dir / "recovery-cleanup-summary.json", outcome)
         event(f"Phase 6 recovery cleanup verdict: {'PASS' if passed else 'FAIL'}")
