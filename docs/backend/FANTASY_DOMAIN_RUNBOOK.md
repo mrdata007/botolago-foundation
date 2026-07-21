@@ -53,9 +53,12 @@ file outside the repository.
 4. Write the access tokens to an owner-only (mode `0600`) JSON file outside the
    repository. The file is an array of exactly 2,500 records shaped as
    `{"number": 1, "access_token": "..."}`. User numbers must be contiguous;
-   tokens must have unique UUID subjects and remain valid throughout the full
-   gate-plus-soak sequence. Provision at least 20 minutes of remaining token
-   lifetime before starting the collector.
+   tokens must have unique UUID subjects and session IDs, unique access and
+   refresh material, and remain valid throughout the full gate-plus-soak
+   sequence. The distributed provisioner returns only SHA-256 fingerprints to
+   prove cross-runner uniqueness; raw refresh tokens never leave a runner.
+   Provision at least 20 minutes of remaining token lifetime before starting
+   the collector.
 5. Start `scripts/backend/supabase-metrics-collector.py` with a temporary
    Staging-only Secret API key, the documented 60-second cadence, and a
    900-second window. The collector writes an owner-only NDJSON artifact
@@ -116,6 +119,14 @@ clears them from its in-memory state after each run. The metrics collector
 authenticates only to the Staging Metrics API, never prints its Secret API key,
 and must run across the exact workload and soak for the resource-utilization
 gate to count.
+
+Team preparation is unmeasured and uses bounded retries. Runner stderr is
+captured to an owner-only temporary file, reduced to a sanitized diagnostic,
+and retained only when setup fails. Cleanup must not delete all load data in a
+single transaction: high-volume squad memberships, teams, and Auth users are
+deleted in bounded committed batches so the staging statement timeout cannot
+roll back the entire cleanup. Always run the exact-zero global namespace audit
+even when the orchestrator reports a cleanup exception.
 
 The representative profile is 50,000 teams, 750,000 active memberships,
 50,000 current lineups, one 10,000-member league, and 1,000 additional mixed

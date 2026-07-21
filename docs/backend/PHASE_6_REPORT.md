@@ -149,15 +149,27 @@ temporary users, sessions, refresh tokens, Supabase keys, EC2 runners, security
 groups, key pairs, key material, or runtime credential files. See
 `FANTASY_CAPACITY_REPORT.md`.
 
+The 2026-07-21 rerun used five same-region `eu-west-3` runners with five unique
+egress IPs. Exactly 2,500 unique Auth users and 2,500 authenticated session
+subjects were provisioned, but one runner exited during unmeasured team
+preparation before the shared workload start. No merge-gate or soak request was
+measured. The attempt is a setup failure, not a backend capacity result.
+Remote session revocation succeeded. The monolithic cleanup then hit the
+staging statement timeout and rolled back; bounded recovery deleted 37,500
+memberships, 2,500 teams, and 2,500 users. Final exact-zero checks passed for
+users, sessions, refresh tokens, profiles, teams, memberships, Metrics keys,
+AWS runners/security groups/key pairs, key material, and runtime credentials.
+The harness now has bounded setup retries, sanitized runner diagnostics,
+cross-runner session-material fingerprint validation, and batched cleanup.
+
 ## Risks
 
 - Ruleset v1.0 is approved and encoded, but no production season may be
   activated before PR review.
-- `eu-west-3` still awaits AWS account verification; the cross-region runner
-  path works, but temporary Auth-user creation stopped the latest attempt and
-  PR #6 remains draft.
+- `eu-west-3` runner launch is now available, but the same-region attempt
+  stopped during unmeasured runner preparation. PR #6 remains draft.
 - Metrics API CPU and pool gates must still be captured concurrently with the
-  exact workload after AWS verification completes.
+  exact workload in a reviewed rerun of the hardened harness.
 - Staging Auth leaked-password protection remains an environment warning.
 - No production workers, cron, schema, data, or environment were modified.
 

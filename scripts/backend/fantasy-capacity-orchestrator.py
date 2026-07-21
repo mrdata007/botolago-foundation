@@ -150,6 +150,14 @@ def percentile(values: list[float], percent: int) -> float:
     return round(ordered[index], 3)
 
 
+def safe_runner_diagnostic(value: str) -> str:
+    normalized = " ".join(value.split())
+    forbidden = ("sb_", "Bearer ", "access_token", "refresh_token", "password")
+    if any(token in normalized for token in forbidden):
+        return "runner diagnostic redacted because it contained credential-like text"
+    return normalized[-1000:] or "runner emitted no diagnostic"
+
+
 class CapacityGate:
     def __init__(self) -> None:
         self.runtime = read_runtime(RUNTIME_FILE)
@@ -162,6 +170,7 @@ class CapacityGate:
         self.temp_key_id: str | None = None
         self.users: list[dict[str, Any]] = []
         self.passwords: dict[int, str] = {}
+        self.user_creation_stats = Counter()
         self.instance_ids: list[str] = []
         self.instance_ips: list[str] = []
         self.security_group_id: str | None = None
@@ -358,6 +367,7 @@ class CapacityGate:
     def create_users(self) -> None:
         event("Creating 2,500 isolated temporary staging users")
         rate_lock = threading.Lock()
+        stats_lock = threading.Lock()
         next_request_at = [time.monotonic()]
 
         def create_one(number: int) -> dict[str, Any]:
@@ -372,6 +382,8 @@ class CapacityGate:
                     next_request_at[0] += 0.2
                 time.sleep(max(0.0, request_at - time.monotonic()))
                 try:
+                    with stats_lock:
+                        self.user_creation_stats["adminRequests"] += 1
                     response = self.auth_admin(
                         "POST",
                         "/admin/users",
@@ -387,12 +399,16 @@ class CapacityGate:
                     }
                 except Exception as error:
                     last_error = error
+                    with stats_lock:
+                        self.user_creation_stats["ambiguousResponses"] += 1
                     safe_email = email.replace("'", "''")
                     existing = self.sql(
                         "select id::text from auth.users "
                         f"where email = '{safe_email}' limit 2"
                     )
                     if len(existing) == 1:
+                        with stats_lock:
+                            self.user_creation_stats["reconciledByEmail"] += 1
                         uuid.UUID(str(existing[0]["id"]))
                         return {
                             "number": number,
@@ -401,6 +417,8 @@ class CapacityGate:
                             "user_id": str(existing[0]["id"]),
                         }
                     if attempt < 2:
+                        with stats_lock:
+                            self.user_creation_stats["safeRetries"] += 1
                         time.sleep(2**attempt)
             raise RuntimeError("temporary Auth user creation exhausted retries") from last_error
 
@@ -726,6 +744,7 @@ shutdown -h +105
                     "number": item["number"],
                     "email": item["email"],
                     "password": item["password"],
+                    "user_id": item["user_id"],
                 }
                 for item in self.users[index * USERS_PER_RUNNER : (index + 1) * USERS_PER_RUNNER]
             ]
@@ -767,12 +786,29 @@ shutdown -h +105
         if any(
             item.get("sessions") != USERS_PER_RUNNER
             or item.get("uniqueSubjects") != USERS_PER_RUNNER
+            or item.get("uniqueSessionIds") != USERS_PER_RUNNER
             or item.get("minimumValidityMinutes", 0) < 20
             for item in summaries
         ):
             raise RuntimeError("distributed session validation failed")
         if sum(item["sessions"] for item in summaries) != TOTAL_USERS:
             raise RuntimeError("distributed session count is not 2,500")
+        for field in (
+            "subjectFingerprints",
+            "sessionFingerprints",
+            "accessTokenFingerprints",
+            "refreshTokenFingerprints",
+        ):
+            values = [
+                fingerprint
+                for item in summaries
+                for fingerprint in item.get(field, [])
+            ]
+            if len(values) != TOTAL_USERS or len(set(values)) != TOTAL_USERS:
+                raise RuntimeError(f"distributed {field} validation failed")
+            values.clear()
+            for item in summaries:
+                item[field] = []
         for item in self.users:
             item["password"] = ""
         self.passwords.clear()
@@ -818,7 +854,10 @@ shutdown -h +105
     def run_profile(self, profile: str, duration: int, burst_seconds: int) -> dict[str, Any]:
         if profile not in {"merge_gate", "telemetry_soak"}:
             raise RuntimeError("unsupported load profile")
-        start_at = time.time() + 35
+        # Preparation reads are outside the measured workload. Give all five
+        # runners enough time to complete bounded retries before the shared
+        # start instant instead of treating a transient setup response as load.
+        start_at = time.time() + 75
         command = (
             "set -a; . /opt/botolago/runtime.env; set +a; "
             f"BOTOLAGO_LOAD_PROFILE={profile} "
@@ -833,16 +872,41 @@ shutdown -h +105
             f"BOTOLAGO_LOAD_RESULTS_PATH=/opt/botolago/{profile}.json "
             "BOTOLAGO_LOAD_SHARD_INDEX={index} "
             "/opt/botolago-venv/bin/python /opt/botolago/fantasy-load-test.py "
-            f"> /opt/botolago/{profile}.summary.json"
+            f"> /opt/botolago/{profile}.summary.json "
+            f"2> /opt/botolago/{profile}.error.log"
         )
 
-        def run(index: int) -> None:
+        def run(index: int) -> dict[str, Any] | None:
             timeout = duration + 900
-            self.ssh(self.instance_ips[index], command.format(index=index), timeout)
+            try:
+                self.ssh(self.instance_ips[index], command.format(index=index), timeout)
+                return None
+            except (subprocess.SubprocessError, OSError) as error:
+                diagnostic = "runner diagnostic unavailable"
+                try:
+                    diagnostic = self.ssh(
+                        self.instance_ips[index],
+                        f"tail -c 4000 /opt/botolago/{profile}.error.log",
+                        30,
+                    )
+                except (subprocess.SubprocessError, OSError):
+                    pass
+                return {
+                    "runner": index,
+                    "error": type(error).__name__,
+                    "diagnostic": safe_runner_diagnostic(diagnostic),
+                }
 
         event(f"Starting synchronized {profile} on all five runners")
         with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
-            list(executor.map(run, range(RUNNER_COUNT)))
+            failures = [item for item in executor.map(run, range(RUNNER_COUNT)) if item]
+        if failures:
+            private_json(self.artifact_dir / f"{profile}-setup-failures.json", failures)
+            summaries = "; ".join(
+                f"runner={item['runner']} {item['error']}: {item['diagnostic']}"
+                for item in failures
+            )
+            raise RuntimeError(f"{profile} runner setup failed: {summaries}")
         shards = []
         for index, ip in enumerate(self.instance_ips):
             local = self.artifact_dir / f"{profile}-shard-{index}.json"
@@ -1137,7 +1201,7 @@ shutdown -h +105
 
     def delete_users_and_state(self) -> dict[str, Any]:
         if not self.users:
-            return {"users": 0, "sessions": 0, "refreshTokens": 0}
+            return {"users": 0, "sessions": 0, "refresh_tokens": 0}
         ids = ",".join(f"'{item['user_id']}'::uuid" for item in self.users)
         query = f"""
 begin;
@@ -1162,12 +1226,50 @@ delete from app.fantasy_transfer_batches where fantasy_team_id in (select team_i
 delete from app.fantasy_free_hit_snapshot_players where snapshot_id in (select id from app.fantasy_free_hit_snapshots where fantasy_team_id in (select team_id from phase6_gate_teams));
 delete from app.fantasy_free_hit_snapshots where fantasy_team_id in (select team_id from phase6_gate_teams);
 delete from app.fantasy_chip_uses where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_squad_memberships where fantasy_team_id in (select team_id from phase6_gate_teams);
-delete from app.fantasy_teams where id in (select team_id from phase6_gate_teams);
-delete from auth.users where id in (select user_id from phase6_gate_users);
 commit;
 """
         self.sql(query)
+
+        def delete_batches(label: str, target: str, maximum_batches: int) -> None:
+            total_deleted = 0
+            for _ in range(maximum_batches):
+                rows = self.sql(target)
+                deleted = int(rows[0]["deleted"]) if isinstance(rows, list) and rows else -1
+                if deleted < 0:
+                    raise RuntimeError(f"{label} cleanup returned an invalid count")
+                total_deleted += deleted
+                if deleted == 0:
+                    event(f"Batched cleanup removed {total_deleted} temporary {label}")
+                    return
+            raise RuntimeError(f"{label} cleanup exceeded its bounded batch budget")
+
+        delete_batches(
+            "squad memberships",
+            "with target as (select membership.id from "
+            "app.fantasy_squad_memberships membership join app.fantasy_teams team "
+            "on team.id = membership.fantasy_team_id "
+            f"where team.user_id in ({ids}) limit 5000), deleted as (delete from "
+            "app.fantasy_squad_memberships membership using target where "
+            "membership.id = target.id returning 1) select count(*)::integer as "
+            "deleted from deleted",
+            20,
+        )
+        delete_batches(
+            "Fantasy teams",
+            "with target as (select id from app.fantasy_teams "
+            f"where user_id in ({ids}) limit 250), deleted as (delete from "
+            "app.fantasy_teams team using target where team.id = target.id "
+            "returning 1) select count(*)::integer as deleted from deleted",
+            20,
+        )
+        delete_batches(
+            "Auth users",
+            f"with target as (select id from auth.users where id in ({ids}) "
+            "limit 250), deleted as (delete from auth.users users using target "
+            "where users.id = target.id returning 1) select count(*)::integer "
+            "as deleted from deleted",
+            20,
+        )
         verification = self.sql(
             "select "
             f"(select count(*) from auth.users where id in ({ids}))::integer as users, "
@@ -1309,6 +1411,7 @@ commit;
                 {
                     "mergeGate": merge,
                     "soak": soak,
+                    "userCreation": dict(self.user_creation_stats),
                     "metrics": metrics,
                     "integrity": integrity,
                     "criteria": criteria,
@@ -1350,6 +1453,7 @@ commit;
             )
             outcome["cleanupPassed"] = cleanup_passed
             outcome["passed"] = bool(outcome.get("passed")) and cleanup_passed
+            outcome.setdefault("userCreation", dict(self.user_creation_stats))
             private_json(self.artifact_dir / "gate-summary.json", outcome)
             if self.cloud_mutation_started:
                 event("Removed the local runtime credential handoff file")

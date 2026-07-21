@@ -3,7 +3,7 @@
 ## Scope and environment
 
 Validation ran on **BotolaGO Staging V2**
-(`srdrflfrfpwixsllveid`, Pro plan, `eu-west-3`) on 2026-07-20. Production V2
+(`srdrflfrfpwixsllveid`, Pro plan, `eu-west-3`) through 2026-07-21. Production V2
 and Legacy were not queried or modified. No Fantasy cron extension, schedule,
 or production worker was enabled.
 
@@ -60,6 +60,48 @@ The fail-closed cleanup restored the synthetic gameweek and verified:
 - active Phase 6 runners, security groups, and EC2 key pairs: 0 / 0 / 0;
 - local EC2 key material and runtime credential handoff files: 0 / 0;
 - cleanup errors: 0.
+
+### 2026-07-21 same-region rerun
+
+AWS account verification permitted the requested same-region path. The rerun
+used five `eu-west-3` runners and verified five distinct public egress IPs. It
+created exactly 2,500 deterministic temporary users with 2,500 unique Auth
+user IDs and seeded 2,500 valid isolated Fantasy teams. The published harness
+did not persist an ambiguous-response counter for this attempt, so the exact
+reconciliation count is unavailable; the hardened follow-up records admin
+requests, ambiguous responses, exact-email reconciliations, and safe retries.
+
+All five provisioners returned 500 authenticated subjects and the coordinator
+accepted exactly 2,500 sessions with at least 20 minutes remaining. The
+published harness proved unique subjects per shard but did not aggregate JWT
+session IDs or refresh-token uniqueness across shards. The follow-up harness
+now verifies 2,500 unique assigned subjects, JWT session IDs, access-token
+fingerprints, and refresh-token fingerprints without returning raw session
+material.
+
+The measured workload did **not** start. During unmeasured team preparation,
+one runner exited before the synchronized start and the coordinator returned a
+`CalledProcessError`; runner stderr had not been retained. Therefore achieved
+RPS, latency percentiles, expected/unexpected workload errors, integrity
+results, and CPU/pool/lock/timeout thresholds are all **not measured**, not
+failed. This is a setup failure and cannot be treated as capacity evidence.
+
+Two concrete harness defects were verified and corrected after the stopped
+attempt:
+
+- unmeasured setup reads now have bounded retries, a 75-second synchronization
+  lead, and sanitized per-runner stderr evidence;
+- cleanup now removes high-volume memberships, teams, and users in bounded,
+  independently committed batches.
+
+Remote logout succeeded for all runner caches. The original monolithic
+database cleanup exceeded staging's statement timeout and rolled back, leaving
+2,500 users, 2,500 teams, and 37,500 squad memberships. Recovery then removed
+the exact temporary namespace in bounded batches. Final verification returned
+users/sessions/refresh tokens/profiles/teams/memberships = `0/0/0/0/0/0`.
+The Metrics key, active runners, security group, EC2 key pair, key material,
+and runtime credential handoff also each returned zero. Production V2 and
+Legacy were not selected or modified.
 
 The load runner now fails closed unless the cache has exactly 2,500 unique
 `authenticated` UUID subjects, contiguous user numbers, enough remaining token
@@ -142,11 +184,11 @@ count query, RLS user-rank join, or network-only delay. The first-page target of
   plus leaked-password protection disabled for Staging Auth;
 - performance advisor: fresh-dataset unused-index informational findings;
 - Metrics API CPU, memory, IO, pool/client utilization, lock timeout, and
-  per-interval query telemetry remain unmeasured because temporary user
-  creation stopped the run before session provisioning. The temporary Staging
-  Secret API key and distributed AWS runners were successfully created and
-  deleted; credential and runner availability are no longer the immediate
-  blockers. The telemetry gate is **not passed by inference**.
+  per-interval query telemetry remain unmeasured because the same-region rerun
+  stopped during unmeasured team preparation. The temporary Staging Secret API
+  key and distributed AWS runners were successfully created and deleted;
+  credential, same-region runner, user, and session provisioning are no longer
+  the immediate blockers. The telemetry gate is **not passed by inference**.
 
 Staging PostgREST initially exposed only `public, graphql_public`, contrary to
 the checked-in `schemas = ["api"]` configuration. Staging was aligned to
@@ -156,10 +198,8 @@ verified during every environment promotion.
 ## Verdict
 
 Database correctness, finalization, rankings, read plans, and both standings
-latency gates pass. The 2,500-user authenticated workload and concurrent
-resource-observation gate remain open after the temporary Auth-user creation
-failure. PR #6 must remain draft. The setup path now uses a lower five-request-
-per-second admin rate plus lookup-before-retry for ambiguous create responses.
-Run the unchanged gate in a new reviewed attempt; cleanup must again return zero
-before the PR can become merge-ready. A same-region latency run remains the
-target before final capacity sign-off.
+latency gates pass. The exact 2,500-user workload and concurrent resource gate
+remain open after a same-region pre-measurement runner setup failure. PR #6
+must remain draft. The verified harness defects are fixed, but no capacity
+threshold is passed by inference. A reviewed rerun of the hardened harness is
+required before the PR can become merge-ready.

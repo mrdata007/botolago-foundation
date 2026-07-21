@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 import os
 import time
@@ -78,6 +79,9 @@ async def provision() -> dict[str, Any]:
     timeout = aiohttp.ClientTimeout(total=20, connect=5)
     sessions: list[dict[str, Any]] = []
     subjects: set[str] = set()
+    session_ids: set[str] = set()
+    access_token_fingerprints: set[str] = set()
+    refresh_token_fingerprints: set[str] = set()
     started = time.monotonic()
     async with aiohttp.ClientSession(timeout=timeout) as client:
         for index, record in enumerate(records):
@@ -88,8 +92,16 @@ async def provision() -> dict[str, Any]:
             number = record.get("number")
             email = record.get("email")
             password = record.get("password")
-            if not isinstance(number, int) or not isinstance(email, str) or not isinstance(password, str):
-                raise SystemExit("credential records require number, email, and password")
+            expected_user_id = record.get("user_id")
+            if (
+                not isinstance(number, int)
+                or not isinstance(email, str)
+                or not isinstance(password, str)
+                or not isinstance(expected_user_id, str)
+            ):
+                raise SystemExit(
+                    "credential records require number, email, password, and user_id"
+                )
             async with client.post(
                 f"{base_url}/auth/v1/token?grant_type=password",
                 headers={"apikey": publishable_key, "Content-Type": "application/json"},
@@ -99,26 +111,56 @@ async def provision() -> dict[str, Any]:
                 if response.status != 200 or not isinstance(payload, dict):
                     raise SystemExit(f"Auth session provisioning failed with HTTP {response.status}")
                 token = payload.get("access_token")
-                if not isinstance(token, str):
-                    raise SystemExit("Auth response omitted the access token")
+                refresh_token = payload.get("refresh_token")
+                if not isinstance(token, str) or not isinstance(refresh_token, str):
+                    raise SystemExit("Auth response omitted independent session material")
                 claims = decode_claims(token)
                 subject = claims.get("sub")
+                session_id = claims.get("session_id")
                 if claims.get("role") != "authenticated":
                     raise SystemExit("Auth session did not receive the authenticated role")
                 try:
                     uuid.UUID(str(subject))
+                    uuid.UUID(str(session_id))
+                    uuid.UUID(expected_user_id)
                 except (TypeError, ValueError) as error:
-                    raise SystemExit("Auth session subject is not a UUID") from error
-                if str(subject) in subjects:
-                    raise SystemExit("Auth returned a duplicate session subject")
+                    raise SystemExit("Auth session identity is not a UUID") from error
+                if str(subject) != expected_user_id:
+                    raise SystemExit("Auth session subject does not match its assigned user")
+                access_fingerprint = hashlib.sha256(token.encode("utf-8")).hexdigest()
+                refresh_fingerprint = hashlib.sha256(refresh_token.encode("utf-8")).hexdigest()
+                if (
+                    str(subject) in subjects
+                    or str(session_id) in session_ids
+                    or access_fingerprint in access_token_fingerprints
+                    or refresh_fingerprint in refresh_token_fingerprints
+                ):
+                    raise SystemExit("Auth returned duplicate session material")
                 subjects.add(str(subject))
+                session_ids.add(str(session_id))
+                access_token_fingerprints.add(access_fingerprint)
+                refresh_token_fingerprints.add(refresh_fingerprint)
                 sessions.append({"number": number, "access_token": token})
+                payload["refresh_token"] = ""
+                refresh_token = ""
 
-    minimum_expiry = int(time.time()) + 20 * 60
-    if any(int(decode_claims(item["access_token"]).get("exp", 0)) < minimum_expiry for item in sessions):
+    now = int(time.time())
+    remaining_seconds = [
+        int(decode_claims(item["access_token"]).get("exp", 0)) - now
+        for item in sessions
+    ]
+    if any(value < 20 * 60 for value in remaining_seconds):
         raise SystemExit("one or more sessions have less than 20 minutes remaining")
-    if len(subjects) != 500:
-        raise SystemExit("runner did not provision 500 unique authenticated users")
+    if not all(
+        len(values) == 500
+        for values in (
+            subjects,
+            session_ids,
+            access_token_fingerprints,
+            refresh_token_fingerprints,
+        )
+    ):
+        raise SystemExit("runner did not provision 500 independent sessions")
 
     write_private_json(output_path, sessions)
     credentials_path.unlink()
@@ -129,8 +171,17 @@ async def provision() -> dict[str, Any]:
     return {
         "sessions": len(sessions),
         "uniqueSubjects": len(subjects),
-        "minimumValidityMinutes": 20,
+        "uniqueSessionIds": len(session_ids),
+        "minimumValidityMinutes": min(remaining_seconds) // 60,
         "ratePerSecond": rate,
+        "subjectFingerprints": sorted(
+            hashlib.sha256(value.encode("utf-8")).hexdigest() for value in subjects
+        ),
+        "sessionFingerprints": sorted(
+            hashlib.sha256(value.encode("utf-8")).hexdigest() for value in session_ids
+        ),
+        "accessTokenFingerprints": sorted(access_token_fingerprints),
+        "refreshTokenFingerprints": sorted(refresh_token_fingerprints),
     }
 
 

@@ -169,13 +169,29 @@ class FantasyLoadRunner:
         async def prepare(number: int) -> UserState:
             async with semaphore:
                 token = self.session_tokens[number]
-                team = await self.rpc(
-                    session,
-                    token,
-                    "get_my_fantasy_team",
-                    {"p_season_id": SEASON_ID},
-                    record=False,
-                )
+                team: dict[str, Any] | None = None
+                last_error: LoadRequestError | None = None
+                for attempt in range(3):
+                    try:
+                        team = await self.rpc(
+                            session,
+                            token,
+                            "get_my_fantasy_team",
+                            {"p_season_id": SEASON_ID},
+                            record=False,
+                        )
+                        break
+                    except LoadRequestError as error:
+                        last_error = error
+                        if attempt < 2:
+                            await asyncio.sleep(0.5 * (2**attempt))
+                if team is None:
+                    code = safe_error_code(last_error.code if last_error else None)
+                    status = last_error.status if last_error else 0
+                    raise RuntimeError(
+                        f"setup RPC failed for assigned user {number}: "
+                        f"status={status} code={code}"
+                    ) from last_error
                 selection = [
                     {
                         "fantasy_player_id": item["fantasyPlayerId"],
@@ -402,7 +418,17 @@ class FantasyLoadRunner:
 
 class LoadRequestError(RuntimeError):
     def __init__(self, status: int, code: str) -> None:
+        self.status = status
+        self.code = code
         super().__init__(f"request failed: {status} {code}")
+
+
+def safe_error_code(code: str | None) -> str:
+    if not code or len(code) > 80:
+        return "unknown_setup_error"
+    if not all(character.isalnum() or character in "._-" for character in code):
+        return "unknown_setup_error"
+    return code
 
 
 def rotate_captain(selection: list[dict[str, Any]]) -> None:
