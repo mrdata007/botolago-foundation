@@ -144,7 +144,9 @@ secret scan. ESLint completed with zero errors and the existing 11 Fast
 Refresh warnings. A fresh local Docker migration replay was started but no
 Supabase container became available and the silent reset was bounded and
 stopped; pgTAP/RLS, database lint, and generated-type drift were therefore not
-rerun locally for this attempt. They are not reported as passing by inference.
+rerun locally for this attempt. GitHub Backend quality run #38 subsequently
+passed both `application-quality` and `database-quality`, including clean
+replay, pgTAP/RLS, database lint, and generated-type drift.
 
 ## Finalization and ranking
 
@@ -238,5 +240,5 @@ remain open. The hardened setup-only rehearsal stopped at AWS identity
 validation with `InvalidClientTokenId`, before runners or any measured traffic.
 PR #6 must remain draft. No capacity threshold is passed by inference. A
 reviewed rerun with one valid AWS credential set in `eu-west-3` is required
-before the PR can become merge-ready, followed by the outstanding database and
-GitHub workflow gates.
+before the PR can become merge-ready. GitHub quality gates pass at the latest
+reported head, but they do not substitute for the failed external rehearsal.

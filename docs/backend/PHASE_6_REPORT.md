@@ -178,7 +178,9 @@ the tracked-file secret scan found no high-confidence secrets. Lint completed
 with zero errors and 11 pre-existing Fast Refresh warnings. Local Docker did
 not make a Supabase container available for the clean replay, so clean replay,
 pgTAP/RLS, database lint, and generated-type drift remain unverified in this
-attempt rather than inferred from earlier runs.
+local attempt rather than inferred from earlier runs. GitHub Backend quality
+run #38 then passed application quality and database quality, including clean
+replay, pgTAP/RLS, database lint, and generated-type drift.
 
 ## Risks
 
