@@ -32,16 +32,52 @@ The two SQL harnesses refuse to run unless the session is explicitly marked
 `staging-v2`. They must never be executed in Production V2 or Legacy.
 `scripts/backend/fantasy-capacity-orchestrator.py` implements the bounded
 distributed sequence and mandatory cleanup verification; it contains no
-credential and accepts secrets only through an owner-only temporary runtime
-file outside the repository.
+credential and accepts protected values only from the GitHub Actions process
+environment. AWS credentials are short-lived assumed-role credentials issued
+through GitHub OIDC. No AWS access key is configured as a GitHub secret or
+written to disk.
 
-Run the setup-only rehearsal before the full gate. The combined command keeps
-credentials in process memory between two otherwise isolated runs and starts
-the full gate only after rehearsal cleanup verifies exact zero:
+The authoritative entry point is the manually dispatched
+`.github/workflows/phase6-capacity-gate.yml` workflow. Its fixed GitHub
+environment is `staging-load-test`, so protected secrets and OIDC permission
+remain behind owner approval. Dispatch requires the exact reviewed PR #6 head
+SHA and the explicit `RUN_PHASE6_STAGING_GATE` confirmation. The job checks
+that SHA against PR #6 before obtaining credentials, then checks out that exact
+commit. It permits one concurrent run, is pinned to `eu-west-3`, times out at
+two hours, caps the conservative estimate at $50, and gives every EC2 runner a
+105-minute self-termination backstop.
+
+GitHub only accepts `workflow_dispatch` for workflow definitions already
+present on the default branch. Therefore this workflow-only operational change
+must be reviewed and landed on `main` before it can test PR #6; landing the
+workflow does not merge or activate the Fantasy domain. Once present on
+`main`, select the current `backend/fantasy-domain` head as the
+`expected_commit`. Never dispatch an older or unreviewed SHA.
+
+The protected environment must define:
+
+- secret `SUPABASE_ACCESS_TOKEN`;
+- variable `AWS_LOAD_TEST_ROLE_ARN`;
+- variables `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_STAGING_URL`, and
+  `SUPABASE_STAGING_PUBLISHABLE_KEY`.
+
+The workflow runs the setup-only rehearsal before the full gate. The combined
+command keeps protected values in process memory between two otherwise
+isolated runs and starts the full gate only after rehearsal cleanup verifies
+exact zero:
 
 ```text
 python scripts/backend/fantasy-capacity-orchestrator.py --rehearsal-then-full
 ```
+
+This command is executed by Actions; do not create a local `runtime.env` or
+copy protected GitHub values to a developer machine. The independent
+`--cleanup-only` invocation runs under `if: always()` and rediscovers resources
+by their dedicated Supabase namespace and AWS tags. Non-secret recovery IDs
+are stored only under the ephemeral Actions runner directory. Runner session
+files, temporary user credentials, the temporary Metrics key, Auth users,
+Fantasy records, instances, security groups, key pairs, and recovery state are
+removed before exact-zero verification.
 
 The rehearsal uses five runners and 25 users per runner. It executes user,
 session, Fantasy team/squad, team-read preparation, cross-runner fingerprint,
@@ -60,13 +96,16 @@ runner and cannot inherit the rehearsal dimensions.
    identities, fabricated JWTs, or an ownership bypass.
    The reviewed distributed profile uses five runners with distinct public
    IPv4 egress, 500 users per runner, and at most 0.4 Auth requests/second per
-   runner. Verify the AWS account can launch in the selected staging region
-   before creating any temporary credential.
+   runner. Verify the delegated AWS caller can launch in `eu-west-3` before
+   creating any temporary resource. The assumed-role ARN must match
+   `AWS_LOAD_TEST_ROLE_ARN`, and an AWS session token is mandatory.
    Create temporary users at a bounded five admin requests/second. For an
    ambiguous response, resolve the unique email first and only then retry with
    the same password; never create a replacement identity blindly.
-4. Write the access tokens to an owner-only (mode `0600`) JSON file outside the
-   repository. The file is an array of exactly 2,500 records shaped as
+4. Each ephemeral runner writes its assigned access tokens to an owner-only
+   (mode `0600`) JSON file on its encrypted temporary volume. The complete user
+   pool is never stored on the GitHub runner. Each shard file contains exactly
+   500 records shaped as
    `{"number": 1, "access_token": "..."}`. User numbers must be contiguous;
    tokens must have unique UUID subjects and session IDs, unique access and
    refresh material, and remain valid throughout the full gate-plus-soak
@@ -99,7 +138,10 @@ runner and cannot inherit the rehearsal dimensions.
 8. Run the workload integrity queries, then revoke all temporary
    sessions/passwords, delete the temporary Secret API key, and remove the
    session cache and any local secret material immediately. Retain only the
-   sanitized load-result and metrics artifacts as gate evidence.
+   sanitized load-result and metrics artifacts as gate evidence. The evidence
+   renderer rejects Supabase secret keys, Management tokens, AWS access-key
+   identifiers, authorization headers, private keys, and JWT-shaped material;
+   artifacts are not uploaded if this scan fails.
 9. Run `scripts/backend/fantasy-staging-finalization.sql` to verify bounded
    resume, Free Hit restoration, rollover, rankings, and stable completion.
 10. Capture `EXPLAIN (ANALYZE, BUFFERS, WAL, SETTINGS)` for current-team,
@@ -119,13 +161,13 @@ and credential artifacts, and keep PR #6 draft. Wait for the AWS verification
 email or open an account-management support case before retrying. Do not reduce
 the runner count or reuse an egress IP as a substitute.
 
-If AWS STS returns `InvalidClientTokenId`, stop before creating the Metrics key
-or any runner. Verify that `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are a
-matching active pair. Include `AWS_SESSION_TOKEN` only for temporary STS
-credentials, and ensure it belongs to the same pair and has not expired. Do not
-retry the full gate, weaken preflight, or infer cleanup from an authenticated
-inventory call that could not run. Retain the sanitized setup failure and keep
-the PR draft.
+If OIDC role assumption or AWS caller verification fails, stop before creating
+the Metrics key or any runner. The credential action performs one attempt; do
+not add repeated credential retries or fall back to long-lived access keys.
+Run local cleanup, retain only the sanitized preflight record, and keep PR #6
+draft. Because no AWS session was obtained, external inventory cannot be
+asserted; the report must say that provisioning never started rather than
+claiming a measured or cleanup pass.
 
 If only another region is temporarily available, record the cross-region path.
 A pass is conservative; a latency failure is not sufficient evidence of a

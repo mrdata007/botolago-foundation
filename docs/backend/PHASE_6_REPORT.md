@@ -193,6 +193,10 @@ replay, pgTAP/RLS, database lint, and generated-type drift.
   exact workload in a reviewed rerun of the hardened harness.
 - Staging Auth leaked-password protection remains an environment warning.
 - No production workers, cron, schema, data, or environment were modified.
+- The delegated capacity workflow is implemented but cannot be dispatched
+  until its workflow definition is present on GitHub's default branch. A
+  separately reviewed workflow-only bootstrap must land before testing the
+  exact PR #6 head. No capacity threshold is passed by implementation alone.
 
 ## Rollback
 

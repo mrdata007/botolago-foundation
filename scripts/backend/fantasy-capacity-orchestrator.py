@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Staging-only distributed Phase 6 capacity gate orchestrator.
 
-Secrets are read from an owner-only runtime file, retained only in process
-memory, and never written to reports or command arguments. The temporary
-Supabase Secret API key and every EC2 resource are removed in ``finally``.
+Credentials are accepted only from the process environment, retained in
+memory, and never written to reports or command arguments. GitHub Actions
+supplies short-lived AWS credentials through OIDC and protected Supabase
+configuration through its environment. The temporary Supabase Secret API key
+and every EC2 resource are removed in ``finally`` and by an independently
+invokable recovery cleanup path.
 """
 
 from __future__ import annotations
@@ -31,9 +34,14 @@ from botocore.config import Config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RUNTIME_FILE = Path("/private/tmp/botolago-phase6/runtime.env")
-STATE_FILE = Path("/private/tmp/botolago-phase6/cloud-state.json")
-ARTIFACT_ROOT = Path("/private/tmp/botolago-phase6/evidence")
+DEFAULT_RUNTIME_ROOT = Path("/private/tmp/botolago-phase6")
+RUNTIME_ROOT = Path(
+    os.getenv("BOTOLAGO_PHASE6_RUNTIME_DIR", str(DEFAULT_RUNTIME_ROOT))
+).resolve()
+STATE_FILE = RUNTIME_ROOT / "cloud-state.json"
+ARTIFACT_ROOT = Path(
+    os.getenv("BOTOLAGO_PHASE6_EVIDENCE_DIR", str(RUNTIME_ROOT / "evidence"))
+).resolve()
 RUNNER_COUNT = 5
 USERS_PER_RUNNER = 500
 TOTAL_USERS = RUNNER_COUNT * USERS_PER_RUNNER
@@ -41,6 +49,7 @@ FIRST_USER_NUMBER = 50_001
 REHEARSAL_USERS_PER_RUNNER = 25
 FULL_GATE_MODE = "full_gate"
 SETUP_REHEARSAL_MODE = "setup_rehearsal"
+CLEANUP_RECOVERY_MODE = "cleanup_recovery"
 # Supabase Management API key names accept lowercase alphanumerics and
 # underscores only; the requested display name used hyphens.
 TEMP_KEY_NAME = "phase6_fantasy_metrics"
@@ -57,6 +66,22 @@ EXPECTED_RUNTIME_KEYS = {
     "AWS_SESSION_TOKEN",
     "AWS_REGION",
 }
+REQUIRED_RUNTIME_KEYS = EXPECTED_RUNTIME_KEYS - {"AWS_SESSION_TOKEN"}
+RUNNER_INSTANCE_TYPE = "t3.small"
+RUNNER_SELF_TERMINATION_MINUTES = 105
+MAX_LIFETIME_MINUTES = 120
+MAX_ALLOWED_BUDGET_USD = 50.0
+# This deliberately exceeds the eu-west-3 on-demand t3.small rate and includes
+# a fixed allowance for encrypted gp3 volumes, API calls, and network traffic.
+CONSERVATIVE_RUNNER_HOURLY_USD = 1.0
+NON_COMPUTE_COST_BUFFER_USD = 10.0
+CONSERVATIVE_ESTIMATED_COST_USD = (
+    RUNNER_COUNT
+    * CONSERVATIVE_RUNNER_HOURLY_USD
+    * RUNNER_SELF_TERMINATION_MINUTES
+    / 60
+    + NON_COMPUTE_COST_BUFFER_USD
+)
 
 
 def event(message: str) -> None:
@@ -78,26 +103,15 @@ def private_json(path: Path, value: Any) -> None:
     private_write(path, json.dumps(value, indent=2, sort_keys=True) + "\n")
 
 
-def read_runtime(path: Path) -> dict[str, str]:
-    if not path.is_file() or path.stat().st_mode & 0o077:
-        raise RuntimeError("runtime credential file must exist with mode 0600")
-    values: dict[str, str] = {}
-    for number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            raise RuntimeError(f"runtime credential line {number} is malformed")
-        name, value = line.split("=", 1)
-        name = name.strip()
-        value = value.strip()
-        if name not in EXPECTED_RUNTIME_KEYS or not value or name in values:
-            raise RuntimeError(f"runtime credential line {number} is invalid")
-        values[name] = value
-    required = EXPECTED_RUNTIME_KEYS - {"AWS_SESSION_TOKEN"}
-    missing = required - values.keys()
+def read_runtime_environment() -> dict[str, str]:
+    values = {
+        name: value
+        for name in EXPECTED_RUNTIME_KEYS
+        if (value := os.getenv(name))
+    }
+    missing = REQUIRED_RUNTIME_KEYS - values.keys()
     if missing:
-        raise RuntimeError("runtime credential file is missing required keys")
+        raise RuntimeError("protected workflow environment is incomplete")
     values["SUPABASE_STAGING_URL"] = values["SUPABASE_STAGING_URL"].rstrip("/")
     parsed_url = urllib.parse.urlparse(values["SUPABASE_STAGING_URL"])
     hostname = parsed_url.hostname or ""
@@ -114,9 +128,7 @@ def read_runtime(path: Path) -> dict[str, str]:
     ):
         raise RuntimeError("staging project URL is invalid")
     project_ref = values["SUPABASE_STAGING_PROJECT_REF"]
-    if project_ref != derived_ref and (
-        len(project_ref) == 20 and project_ref.isalnum() and project_ref.islower()
-    ):
+    if project_ref != derived_ref:
         raise RuntimeError("staging project reference and URL do not match")
     values["SUPABASE_STAGING_PROJECT_REF"] = derived_ref
     if not values["SUPABASE_STAGING_PUBLISHABLE_KEY"].startswith("sb_publishable_"):
@@ -185,7 +197,11 @@ class CapacityGate:
         mode: str = FULL_GATE_MODE,
         runtime: dict[str, str] | None = None,
     ) -> None:
-        if mode not in {FULL_GATE_MODE, SETUP_REHEARSAL_MODE}:
+        if mode not in {
+            FULL_GATE_MODE,
+            SETUP_REHEARSAL_MODE,
+            CLEANUP_RECOVERY_MODE,
+        }:
             raise RuntimeError("unsupported capacity mode")
         self.mode = mode
         self.users_per_runner = (
@@ -196,9 +212,13 @@ class CapacityGate:
         self.total_users = RUNNER_COUNT * self.users_per_runner
         self.first_user_number = FIRST_USER_NUMBER
         self.last_user_number = self.first_user_number + self.total_users - 1
-        self.runtime = dict(runtime) if runtime is not None else read_runtime(RUNTIME_FILE)
+        self.runtime = (
+            dict(runtime) if runtime is not None else read_runtime_environment()
+        )
         if self.runtime.get("AWS_REGION") != "eu-west-3":
             raise RuntimeError("Phase 6 capacity validation requires AWS region eu-west-3")
+        if PROJECT_ROOT == RUNTIME_ROOT or PROJECT_ROOT in RUNTIME_ROOT.parents:
+            raise RuntimeError("Phase 6 runtime state must remain outside the repository")
         self.project_ref = self.runtime["SUPABASE_STAGING_PROJECT_REF"]
         self.supabase_url = self.runtime["SUPABASE_STAGING_URL"].rstrip("/")
         self.run_id = (
@@ -209,13 +229,16 @@ class CapacityGate:
         self.artifact_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
         self.temp_secret: str | None = None
         self.temp_key_id: str | None = None
+        self.temp_key_ids: list[str] = []
         self.users: list[dict[str, Any]] = []
         self.passwords: dict[int, str] = {}
         self.user_creation_stats = Counter()
         self.instance_ids: list[str] = []
         self.instance_ips: list[str] = []
         self.security_group_id: str | None = None
+        self.security_group_ids: list[str] = []
         self.key_pair_name: str | None = None
+        self.key_pair_names: list[str] = []
         self.key_path: Path | None = None
         self.metrics_process: subprocess.Popen[str] | None = None
         self.metrics_summary: dict[str, Any] | None = None
@@ -259,9 +282,54 @@ class CapacityGate:
         )
 
     def preflight(self) -> None:
+        if os.getenv("BOTOLAGO_REQUIRE_AWS_SESSION_TOKEN") != "1":
+            raise RuntimeError("delegated AWS session enforcement is not enabled")
+        if not self.runtime.get("AWS_SESSION_TOKEN"):
+            raise RuntimeError("delegated AWS session token is unavailable")
+        if any(
+            client.meta.region_name != "eu-west-3"
+            for client in (self.ec2, self.ssm, self.sts)
+        ):
+            raise RuntimeError("AWS clients are not pinned to eu-west-3")
         identity = self.sts.get_caller_identity()
-        if not identity.get("Account") or not identity.get("Arn"):
+        identity_arn = str(identity.get("Arn") or "")
+        expected_role_arn = os.getenv("BOTOLAGO_AWS_LOAD_TEST_ROLE_ARN", "")
+        expected_role_parts = expected_role_arn.split(":", 5)
+        expected_role_name = expected_role_arn.rsplit("/", 1)[-1]
+        if (
+            not identity.get("Account")
+            or not identity_arn.startswith("arn:aws:sts::")
+            or ":assumed-role/" not in identity_arn
+            or len(expected_role_parts) != 6
+            or expected_role_parts[2] != "iam"
+            or expected_role_parts[4] != str(identity.get("Account"))
+            or not expected_role_parts[5].startswith("role/")
+            or f":assumed-role/{expected_role_name}/" not in identity_arn
+        ):
             raise RuntimeError("AWS identity validation failed")
+        configured_budget = float(
+            os.getenv("BOTOLAGO_MAX_ESTIMATED_COST_USD", "0")
+        )
+        if (
+            configured_budget <= 0
+            or configured_budget > MAX_ALLOWED_BUDGET_USD
+            or CONSERVATIVE_ESTIMATED_COST_USD > configured_budget
+        ):
+            raise RuntimeError("capacity-run cost guard rejected the configured budget")
+        private_json(
+            self.artifact_dir / "budget-guard.json",
+            {
+                "allowedBudgetUsd": configured_budget,
+                "conservativeEstimateUsd": round(
+                    CONSERVATIVE_ESTIMATED_COST_USD, 2
+                ),
+                "instanceCount": RUNNER_COUNT,
+                "instanceType": RUNNER_INSTANCE_TYPE,
+                "selfTerminationMinutes": RUNNER_SELF_TERMINATION_MINUTES,
+                "workflowLifetimeMinutes": MAX_LIFETIME_MINUTES,
+                "passed": True,
+            },
+        )
         project = self.management("GET", f"/v1/projects/{self.project_ref}")
         project_name = str(project.get("name", "")) if isinstance(project, dict) else ""
         if "staging" not in project_name.lower():
@@ -304,7 +372,10 @@ class CapacityGate:
         )["KeyPairs"]
         if count or stale_groups or stale_keys:
             raise RuntimeError("stale Phase 6 AWS resources require cleanup")
-        event("Preflight passed: target is Staging V2 and capacity data is isolated")
+        event(
+            "Preflight passed: delegated AWS identity, eu-west-3, Staging V2, "
+            "budget, and capacity isolation are verified"
+        )
 
     def prepare_capacity_gameweek(self) -> None:
         if not self.original_gameweek:
@@ -314,6 +385,10 @@ class CapacityGate:
             and self.original_gameweek.get("deadline_future") is True
         ):
             return
+        # Persist the original state before the mutation so the independent
+        # always() cleanup step can recover after cancellation or process loss.
+        self.gameweek_prepared = True
+        self._write_state()
         self.sql(
             "update app.fantasy_gameweeks set status = 'open', "
             "points_state = 'provisional', finalized_at = null, "
@@ -327,7 +402,7 @@ class CapacityGate:
         )[0]
         if check.get("status") != "open" or check.get("deadline_future") is not True:
             raise RuntimeError("synthetic capacity gameweek preparation failed")
-        self.gameweek_prepared = True
+        self._write_state()
         event("Temporarily reopened the isolated synthetic capacity gameweek")
 
     def restore_capacity_gameweek(self) -> None:
@@ -352,6 +427,7 @@ class CapacityGate:
             f"from original where gameweek.id = '{GAMEWEEK_ID}'::uuid"
         )
         self.gameweek_prepared = False
+        self._write_state()
         event("Restored the synthetic capacity gameweek to its original state")
 
     def create_temporary_key(self) -> None:
@@ -375,24 +451,35 @@ class CapacityGate:
             raise RuntimeError("temporary key creation omitted its identifier or value")
         if not secret_value.startswith("sb_secret_"):
             raise RuntimeError("temporary key is not a Secret API key")
+        self.temp_key_ids = [self.temp_key_id]
         self.temp_secret = secret_value
         self.cloud_mutation_started = True
+        self._write_state()
         time.sleep(5)
         event("Created the temporary staging Metrics API key in process memory")
 
     def delete_temporary_key(self) -> None:
-        if not self.temp_key_id:
-            return
+        key_ids = sorted(
+            {
+                key_id
+                for key_id in [self.temp_key_id, *self.temp_key_ids]
+                if key_id
+            }
+        )
         try:
-            self.management(
-                "DELETE",
-                f"/v1/projects/{self.project_ref}/api-keys/{self.temp_key_id}"
-                "?reason=phase6_capacity_gate_complete",
-            )
-            event("Deleted the temporary staging Metrics API key")
+            for key_id in key_ids:
+                self.management(
+                    "DELETE",
+                    f"/v1/projects/{self.project_ref}/api-keys/{key_id}"
+                    "?reason=phase6_capacity_gate_complete",
+                )
+            if key_ids:
+                event("Deleted every temporary staging Metrics API key")
         finally:
             self.temp_secret = None
             self.temp_key_id = None
+            self.temp_key_ids.clear()
+            self._write_state()
 
     def auth_admin(self, method: str, path: str, body: Any | None = None) -> Any:
         if not self.temp_secret:
@@ -605,6 +692,7 @@ commit;
         subnet_id = sorted(subnets, key=lambda item: item["AvailabilityZone"])[0]["SubnetId"]
 
         self.key_pair_name = f"botolago-phase6-{self.run_id}"
+        self.key_pair_names = [self.key_pair_name]
         key = self.ec2.create_key_pair(
             KeyName=self.key_pair_name,
             TagSpecifications=[{
@@ -625,6 +713,7 @@ commit;
             }],
         )
         self.security_group_id = group["GroupId"]
+        self.security_group_ids = [self.security_group_id]
         self.ec2.authorize_security_group_ingress(
             GroupId=self.security_group_id,
             IpPermissions=[{
@@ -638,7 +727,7 @@ commit;
             Name="/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
         )["Parameter"]["Value"]
         expires = (datetime.now(UTC) + timedelta(hours=2)).isoformat()
-        user_data = """#!/bin/bash
+        user_data = f"""#!/bin/bash
 set -euo pipefail
 dnf install -y python3 python3-pip
 python3 -m venv /opt/botolago-venv
@@ -646,11 +735,11 @@ python3 -m venv /opt/botolago-venv
 mkdir -p /opt/botolago
 chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
 touch /opt/botolago/ready
-shutdown -h +105
+shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
 """
         result = self.ec2.run_instances(
             ImageId=ami,
-            InstanceType="t3.small",
+            InstanceType=RUNNER_INSTANCE_TYPE,
             MinCount=RUNNER_COUNT,
             MaxCount=RUNNER_COUNT,
             KeyName=self.key_pair_name,
@@ -704,6 +793,9 @@ shutdown -h +105
                 "instanceIds": self.instance_ids,
                 "securityGroupId": self.security_group_id,
                 "keyPairName": self.key_pair_name,
+                "temporaryMetricsKeyId": self.temp_key_id,
+                "originalGameweek": self.original_gameweek,
+                "gameweekPrepared": self.gameweek_prepared,
                 "createdAt": datetime.now(UTC).isoformat(),
             },
         )
@@ -1174,6 +1266,12 @@ shutdown -h +105
         if traffic != expected_traffic:
             raise RuntimeError(f"{profile} traffic mix does not match the approved profile")
         unexpected_rate = unexpected / max(requests, 1)
+        lock_timeout_errors = sum(
+            count
+            for code, count in error_codes.items()
+            if str(code).lower() in {"55p03", "lock_timeout", "lock_not_available"}
+        )
+        lock_timeout_rate = lock_timeout_errors / max(requests, 1)
         overall = {
             "readP50Ms": percentile(reads, 50),
             "readP95Ms": percentile(reads, 95),
@@ -1184,6 +1282,8 @@ shutdown -h +105
             "expectedRejections": expected,
             "unexpectedErrors": unexpected,
             "unexpectedErrorRate": round(unexpected_rate, 6),
+            "lockTimeoutErrors": lock_timeout_errors,
+            "lockTimeoutRate": round(lock_timeout_rate, 6),
         }
         return {
             "profile": {
@@ -1209,6 +1309,7 @@ shutdown -h +105
                 "mutationP95": overall["mutationP95Ms"] <= 1500,
                 "mutationP99": overall["mutationP99Ms"] <= 3000,
                 "unexpectedErrorRate": unexpected_rate < 0.005,
+                "lockTimeoutRate": lock_timeout_rate < 0.001,
             },
         }
 
@@ -1254,13 +1355,26 @@ shutdown -h +105
             "from app.fantasy_transfers transfer join app.fantasy_transfer_batches batch "
             "on batch.id = transfer.transfer_batch_id where batch.fantasy_team_id in "
             "(select id from gate_teams) group by transfer_batch_id, sequence_number having count(*) > 1) d)::integer as duplicate_transfers, "
+            "(select count(*) from (select batch.id from "
+            "app.fantasy_transfer_batches batch left join app.fantasy_transfers transfer "
+            "on transfer.transfer_batch_id = batch.id where batch.fantasy_team_id in "
+            "(select id from gate_teams) group by batch.id, batch.transfers_count having "
+            "count(transfer.id) <> batch.transfers_count) d)::integer as partial_transfers, "
             "(select count(*) from (select fantasy_team_id, gameweek_id "
             "from app.fantasy_chip_uses where fantasy_team_id in (select id from gate_teams) "
             "group by fantasy_team_id, gameweek_id having count(*) > 1) d)::integer as duplicate_chips, "
             "(select count(*) from app.fantasy_teams where id in (select id from gate_teams) "
-            "and (bank < 0 or team_value <= 0 or free_transfers < 0))::integer as corrupted_balances, "
+            "and (bank < 0 or team_value <= 0))::integer as corrupted_balances, "
+            "(select count(*) from app.fantasy_teams where id in (select id from gate_teams) "
+            "and free_transfers not between 0 and 2)::integer as corrupted_free_transfers, "
             "(select count(*) from app.fantasy_transfer_batches where fantasy_team_id in "
             "(select id from gate_teams) and (bank_before < 0 or bank_after < 0))::integer as corrupt_transfer_balances, "
+            "(select count(*) from (select audit.fantasy_team_id, "
+            "audit.resulting_version from app_private.fantasy_mutation_audit audit "
+            "where audit.fantasy_team_id in (select id from gate_teams) and "
+            "audit.accepted and audit.resulting_version is not null group by "
+            "audit.fantasy_team_id, audit.resulting_version having count(*) > 1) d)::integer "
+            "as lost_updates, "
             "(select count(*) from app_private.fantasy_mutation_audit audit join app.fantasy_gameweeks gw "
             f"on gw.id = '{GAMEWEEK_ID}'::uuid where audit.fantasy_team_id in (select id from gate_teams) "
             "and audit.accepted and audit.occurred_at >= gw.deadline_at)::integer as deadline_bypasses, "
@@ -1414,9 +1528,148 @@ shutdown -h +105
         else:
             event("Remote logout was incomplete; database cleanup remains authoritative")
 
+    def remove_remote_runtime_files(self) -> None:
+        if not self.instance_ips:
+            return
+
+        def remove(ip: str) -> None:
+            try:
+                self.ssh(
+                    ip,
+                    "find /opt/botolago -maxdepth 1 -type f "
+                    "\\( -name 'runtime.env' -o -name 'credentials-*.json' "
+                    "-o -name 'sessions.json' \\) -delete",
+                    60,
+                )
+            except (subprocess.SubprocessError, OSError):
+                # Instance termination and encrypted-volume deletion are the
+                # authoritative fallback if SSH is already unavailable.
+                return
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
+            list(executor.map(remove, self.instance_ips))
+        event("Removed runner runtime credential and session handoffs")
+
+    def discover_cleanup_state(self) -> None:
+        """Recover non-secret resource identifiers after process interruption."""
+
+        if STATE_FILE.is_file():
+            state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            if state.get("region") != "eu-west-3":
+                raise RuntimeError("saved cleanup state is not for eu-west-3")
+            state_run_id = state.get("runId")
+            if isinstance(state_run_id, str) and state_run_id:
+                candidate_key = ARTIFACT_ROOT / state_run_id / "runner.pem"
+                if candidate_key.is_file():
+                    self.key_path = candidate_key
+            self.instance_ids = sorted(
+                {
+                    *self.instance_ids,
+                    *[
+                        value
+                        for value in state.get("instanceIds", [])
+                        if isinstance(value, str) and value.startswith("i-")
+                    ],
+                }
+            )
+            group_id = state.get("securityGroupId")
+            if isinstance(group_id, str) and group_id.startswith("sg-"):
+                self.security_group_ids.append(group_id)
+            key_name = state.get("keyPairName")
+            if isinstance(key_name, str) and key_name.startswith("botolago-phase6-"):
+                self.key_pair_names.append(key_name)
+            metrics_key_id = state.get("temporaryMetricsKeyId")
+            if isinstance(metrics_key_id, str) and metrics_key_id:
+                self.temp_key_ids.append(metrics_key_id)
+            original = state.get("originalGameweek")
+            if isinstance(original, dict) and original.get("id") == GAMEWEEK_ID:
+                self.original_gameweek = original
+                self.gameweek_prepared = state.get("gameweekPrepared") is True
+
+        keys = self.management("GET", f"/v1/projects/{self.project_ref}/api-keys")
+        if isinstance(keys, list):
+            self.temp_key_ids.extend(
+                str(item["id"])
+                for item in keys
+                if item.get("name") == TEMP_KEY_NAME and item.get("id")
+            )
+
+        active_runners = self.ec2.describe_instances(
+            Filters=[
+                {"Name": "tag:Purpose", "Values": ["botolago-phase6"]},
+                {
+                    "Name": "instance-state-name",
+                    "Values": ["pending", "running", "stopping", "stopped"],
+                },
+            ]
+        )
+        self.instance_ids = sorted(
+            {
+                *self.instance_ids,
+                *[
+                    instance["InstanceId"]
+                    for reservation in active_runners["Reservations"]
+                    for instance in reservation["Instances"]
+                ],
+            }
+        )
+        self.instance_ips = sorted(
+            {
+                *self.instance_ips,
+                *[
+                    instance.get("PublicIpAddress", "")
+                    for reservation in active_runners["Reservations"]
+                    for instance in reservation["Instances"]
+                    if instance.get("PublicIpAddress")
+                ],
+            }
+        )
+        self.security_group_ids.extend(
+            group["GroupId"]
+            for group in self.ec2.describe_security_groups(
+                Filters=[{"Name": "tag:Purpose", "Values": ["botolago-phase6"]}]
+            )["SecurityGroups"]
+        )
+        self.key_pair_names.extend(
+            pair["KeyName"]
+            for pair in self.ec2.describe_key_pairs(
+                Filters=[{"Name": "tag:Purpose", "Values": ["botolago-phase6"]}]
+            )["KeyPairs"]
+        )
+
+        discovered_users = self.sql(
+            "with known_teams as (select md5('fantasy-load-team-' || number)::uuid "
+            f"as id from generate_series({FIRST_USER_NUMBER}, "
+            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number), candidates as ("
+            "select users.id from auth.users users where users.email like "
+            "'fantasy-gate-%@staging.botolago.invalid' union select team.user_id "
+            "from app.fantasy_teams team join known_teams known on known.id = team.id) "
+            "select distinct id::text as user_id from candidates"
+        )
+        known_user_ids = {item.get("user_id") for item in self.users}
+        for record in discovered_users if isinstance(discovered_users, list) else []:
+            user_id = record.get("user_id")
+            if isinstance(user_id, str) and user_id not in known_user_ids:
+                uuid.UUID(user_id)
+                self.users.append({"user_id": user_id, "password": ""})
+                known_user_ids.add(user_id)
+
+        self.security_group_ids = sorted(set(self.security_group_ids))
+        self.key_pair_names = sorted(set(self.key_pair_names))
+        self.temp_key_ids = sorted(set(self.temp_key_ids))
+
+    def remove_local_runtime_files(self) -> None:
+        sensitive_names = {"runner.pem", "runner-runtime.env", "sessions.json"}
+        if ARTIFACT_ROOT.is_dir():
+            for path in ARTIFACT_ROOT.rglob("*"):
+                if not path.is_file():
+                    continue
+                if path.name in sensitive_names or path.name.startswith("credentials-"):
+                    path.unlink(missing_ok=True)
+
     def delete_users_and_state(self) -> dict[str, Any]:
         if not self.users:
-            return {"users": 0, "sessions": 0, "refresh_tokens": 0}
+            return self.verify_database_cleanup()
         ids = ",".join(f"'{item['user_id']}'::uuid" for item in self.users)
 
         def delete_batches(label: str, target: str, maximum_batches: int) -> None:
@@ -1560,33 +1813,89 @@ shutdown -h +105
             "as deleted from deleted",
             20,
         )
-        verification = self.sql(
-            "select "
-            f"(select count(*) from auth.users where id in ({ids}))::integer as users, "
-            f"(select count(*) from auth.sessions where user_id in ({ids}))::integer as sessions, "
-            f"(select count(*) from auth.refresh_tokens where user_id::uuid in ({ids}) and revoked is false)::integer as refresh_tokens, "
-            f"(select count(*) from app.profiles where id in ({ids}))::integer as profiles, "
-            f"(select count(*) from app.fantasy_teams where user_id in ({ids}))::integer as fantasy_teams, "
-            "(select count(*) from app.fantasy_squad_memberships membership "
-            f"where membership.fantasy_team_id in {team_ids})::integer as squad_memberships, "
-            "(select count(*) from app.fantasy_lineups lineup "
-            f"where lineup.fantasy_team_id in {team_ids})::integer as lineups, "
-            "(select count(*) from app.fantasy_transfer_batches batch "
-            f"where batch.fantasy_team_id in {team_ids})::integer as transfer_batches, "
-            "(select count(*) from app.fantasy_chip_uses chip "
-            f"where chip.fantasy_team_id in {team_ids})::integer as chip_uses, "
-            "(select count(*) from app_private.fantasy_mutation_audit audit "
-            f"where audit.user_id in ({ids}))::integer as mutation_audit"
-        )[0]
+        verification = self.verify_database_cleanup()
         event(
             f"Deleted all {len(self.users)} tracked temporary test users "
             "and their isolated Fantasy state"
         )
         return verification
 
+    def verify_database_cleanup(self) -> dict[str, Any]:
+        tracked_ids = [item.get("user_id") for item in self.users if item.get("user_id")]
+        tracked_user_cte = (
+            "select unnest(array["
+            + ",".join(f"'{value}'::uuid" for value in tracked_ids)
+            + "]) as id"
+            if tracked_ids
+            else "select null::uuid as id where false"
+        )
+        rows = self.sql(
+            "with known_teams as (select md5('fantasy-load-team-' || number)::uuid "
+            f"as id from generate_series({FIRST_USER_NUMBER}, "
+            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number), tracked_users as ("
+            f"{tracked_user_cte}), known_lineups as (select lineup.id from "
+            "app.fantasy_lineups lineup join known_teams team on team.id = "
+            "lineup.fantasy_team_id), known_batches as (select batch.id from "
+            "app.fantasy_transfer_batches batch join known_teams team on team.id = "
+            "batch.fantasy_team_id), known_snapshots as (select snapshot.id from "
+            "app.fantasy_free_hit_snapshots snapshot join known_teams team on "
+            "team.id = snapshot.fantasy_team_id) select "
+            "(select count(*) from auth.users where email like "
+            "'fantasy-gate-%@staging.botolago.invalid')::integer as users, "
+            "(select count(*) from auth.sessions session join tracked_users users "
+            "on users.id = session.user_id)::integer as sessions, "
+            "(select count(*) from auth.refresh_tokens token join tracked_users users "
+            "on users.id = token.user_id::uuid where token.revoked is false)::integer "
+            "as refresh_tokens, (select count(*) from app.profiles where display_name "
+            "like 'Phase 6 Gate User %')::integer as profiles, (select count(*) from "
+            "app.fantasy_teams team join known_teams known on known.id = team.id)::integer "
+            "as fantasy_teams, (select count(*) from app.fantasy_squad_memberships item "
+            "join known_teams team on team.id = item.fantasy_team_id)::integer as "
+            "squad_memberships, (select count(*) from app.fantasy_lineups item join "
+            "known_teams team on team.id = item.fantasy_team_id)::integer as lineups, "
+            "(select count(*) from app.fantasy_lineup_players item join known_lineups "
+            "lineup on lineup.id = item.lineup_id)::integer as lineup_players, "
+            "(select count(*) from app.fantasy_transfer_batches item join known_teams "
+            "team on team.id = item.fantasy_team_id)::integer as transfer_batches, "
+            "(select count(*) from app.fantasy_transfers item join known_batches batch "
+            "on batch.id = item.transfer_batch_id)::integer as transfers, (select "
+            "count(*) from app.fantasy_chip_uses item join known_teams team on team.id = "
+            "item.fantasy_team_id)::integer as chip_uses, (select count(*) from "
+            "app.fantasy_free_hit_snapshots item join known_teams team on team.id = "
+            "item.fantasy_team_id)::integer as free_hit_snapshots, (select count(*) "
+            "from app.fantasy_free_hit_snapshot_players item join known_snapshots "
+            "snapshot on snapshot.id = item.snapshot_id)::integer as "
+            "free_hit_snapshot_players, (select count(*) from "
+            "app_private.fantasy_mutation_audit item where item.fantasy_team_id in "
+            "(select id from known_teams) or item.user_id in (select id from "
+            "tracked_users))::integer as mutation_audit, (select count(*) from "
+            "app_private.fantasy_idempotency_keys item where item.user_id in "
+            "(select id from tracked_users))::integer as idempotency_keys, "
+            "(select count(*) from app_private.fantasy_free_transfer_rollovers item "
+            "where item.fantasy_team_id in (select id from known_teams))::integer as "
+            "free_transfer_rollovers, (select count(*) from app.fantasy_rankings item "
+            "where item.fantasy_team_id in (select id from known_teams))::integer as "
+            "rankings, (select count(*) from app.fantasy_league_memberships item where "
+            "item.fantasy_team_id in (select id from known_teams) or item.user_id in "
+            "(select id from tracked_users))::integer as league_memberships, (select "
+            "count(*) from app.fantasy_team_gameweek_results item where "
+            "item.fantasy_team_id in (select id from known_teams))::integer as "
+            "gameweek_results, (select count(*) from app.fantasy_auto_substitutions "
+            "item where item.lineup_id in (select id from known_lineups))::integer as "
+            "auto_substitutions, (select count(*) from app.fantasy_leagues item where "
+            "item.owner_user_id in (select id from tracked_users))::integer as "
+            "owned_leagues"
+        )
+        if not isinstance(rows, list) or len(rows) != 1:
+            raise RuntimeError("database exact-zero cleanup verification failed")
+        return rows[0]
+
     def terminate_runners(self) -> None:
         had_resources = bool(
-            self.instance_ids or self.security_group_id or self.key_pair_name or self.key_path
+            self.instance_ids
+            or self.security_group_ids
+            or self.key_pair_names
+            or self.key_path
         )
         if self.instance_ids:
             self.ec2.terminate_instances(InstanceIds=self.instance_ids)
@@ -1595,31 +1904,44 @@ shutdown -h +105
                 WaiterConfig={"Delay": 10, "MaxAttempts": 30},
             )
             event("Terminated all temporary AWS runners")
-        if self.security_group_id:
+        for group_id in sorted(
+            set([*self.security_group_ids, *([self.security_group_id] if self.security_group_id else [])])
+        ):
             for attempt in range(12):
                 try:
-                    self.ec2.delete_security_group(GroupId=self.security_group_id)
+                    self.ec2.delete_security_group(GroupId=group_id)
                     break
                 except self.ec2.exceptions.ClientError:
                     if attempt == 11:
                         raise
                     time.sleep(5)
-        if self.key_pair_name:
-            self.ec2.delete_key_pair(KeyName=self.key_pair_name)
+        for key_name in sorted(
+            set([*self.key_pair_names, *([self.key_pair_name] if self.key_pair_name else [])])
+        ):
+            self.ec2.delete_key_pair(KeyName=key_name)
         if self.key_path:
             self.key_path.unlink(missing_ok=True)
-        STATE_FILE.unlink(missing_ok=True)
         self.instance_ids.clear()
         self.instance_ips.clear()
+        self.security_group_ids.clear()
+        self.key_pair_names.clear()
         if had_resources:
             event("Removed the temporary security group and EC2 key pair")
 
     def cleanup(self) -> dict[str, Any]:
         cleanup: dict[str, Any] = {"errors": []}
         try:
+            self.discover_cleanup_state()
+        except Exception as error:  # cleanup must continue
+            cleanup["errors"].append(f"cleanup_discovery:{type(error).__name__}")
+        try:
             self.revoke_remote_sessions()
         except Exception as error:  # cleanup must continue
             cleanup["errors"].append(f"session_revoke:{type(error).__name__}")
+        try:
+            self.remove_remote_runtime_files()
+        except Exception as error:  # cleanup must continue
+            cleanup["errors"].append(f"remote_runtime_cleanup:{type(error).__name__}")
         try:
             cleanup["database"] = self.delete_users_and_state()
         except Exception as error:  # cleanup must continue
@@ -1636,6 +1958,10 @@ shutdown -h +105
             self.terminate_runners()
         except Exception as error:  # cleanup must continue
             cleanup["errors"].append(f"aws_cleanup:{type(error).__name__}")
+        try:
+            self.remove_local_runtime_files()
+        except Exception as error:  # cleanup must continue
+            cleanup["errors"].append(f"local_runtime_cleanup:{type(error).__name__}")
         self.passwords.clear()
         for item in self.users:
             item["password"] = ""
@@ -1669,15 +1995,31 @@ shutdown -h +105
                 ),
                 "securityGroups": len(security_groups),
                 "keyPairs": len(key_pairs),
-                "keyMaterialFiles": int(bool(self.key_path and self.key_path.exists())),
+                "keyMaterialFiles": sum(
+                    1 for path in ARTIFACT_ROOT.rglob("runner.pem") if path.is_file()
+                ),
                 "runtimeCredentialHandoffs": sum(
-                    1
-                    for path in self.artifact_dir.glob("*")
-                    if path.name.startswith("credentials-")
-                    or path.name == "runner-runtime.env"
+                    1 for path in ARTIFACT_ROOT.rglob("*") if path.is_file() and (
+                        path.name.startswith("credentials-")
+                        or path.name in {"runner-runtime.env", "sessions.json"}
+                    )
                 ),
                 "cloudStateFiles": int(STATE_FILE.exists()),
             }
+            database = cleanup.get("database", {})
+            external_without_state = {
+                key: value
+                for key, value in cleanup["verification"].items()
+                if key != "cloudStateFiles"
+            }
+            if (
+                not cleanup["errors"]
+                and database
+                and all(int(value) == 0 for value in database.values())
+                and all(int(value) == 0 for value in external_without_state.values())
+            ):
+                STATE_FILE.unlink(missing_ok=True)
+                cleanup["verification"]["cloudStateFiles"] = int(STATE_FILE.exists())
         except Exception as error:
             cleanup["errors"].append(f"cleanup_verification:{type(error).__name__}")
         private_json(self.artifact_dir / "cleanup.json", cleanup)
@@ -1774,8 +2116,7 @@ shutdown -h +105
                 self.sql_sampler_thread.join(timeout=15)
             cleanup = self.cleanup()
             outcome["cleanup"] = cleanup
-            RUNTIME_FILE.unlink(missing_ok=True)
-            outcome["localRuntimeCredentialFileRemaining"] = RUNTIME_FILE.exists()
+            outcome["localRuntimeCredentialFileRemaining"] = False
             cleanup_db = cleanup.get("database", {})
             cleanup_external = cleanup.get("verification", {})
             cleanup_passed = (
@@ -1788,10 +2129,31 @@ shutdown -h +105
             outcome["passed"] = bool(outcome.get("passed")) and cleanup_passed
             outcome.setdefault("userCreation", dict(self.user_creation_stats))
             private_json(self.artifact_dir / "gate-summary.json", outcome)
-            event("Removed the local runtime credential handoff file")
+            event("Verified that no local runtime credential handoff file exists")
         label = "setup rehearsal" if self.mode == SETUP_REHEARSAL_MODE else "external gate"
         event(f"Phase 6 {label} verdict: {'PASS' if outcome['passed'] else 'FAIL'}")
         return 0 if outcome["passed"] else 2
+
+    def run_recovery_cleanup(self) -> int:
+        outcome: dict[str, Any] = {
+            "runId": self.run_id,
+            "mode": CLEANUP_RECOVERY_MODE,
+            "passed": False,
+        }
+        cleanup = self.cleanup()
+        database = cleanup.get("database", {})
+        external = cleanup.get("verification", {})
+        passed = (
+            not cleanup.get("errors")
+            and bool(database)
+            and bool(external)
+            and all(int(value) == 0 for value in database.values())
+            and all(int(value) == 0 for value in external.values())
+        )
+        outcome.update({"cleanup": cleanup, "passed": passed})
+        private_json(self.artifact_dir / "recovery-cleanup-summary.json", outcome)
+        event(f"Phase 6 recovery cleanup verdict: {'PASS' if passed else 'FAIL'}")
+        return 0 if passed else 2
 
 
 if __name__ == "__main__":
@@ -1801,6 +2163,10 @@ if __name__ == "__main__":
             raise SystemExit(CapacityGate(SETUP_REHEARSAL_MODE).run())
         if arguments == ["--full-gate"]:
             raise SystemExit(CapacityGate(FULL_GATE_MODE).run())
+        if arguments == ["--cleanup-only"]:
+            raise SystemExit(
+                CapacityGate(CLEANUP_RECOVERY_MODE).run_recovery_cleanup()
+            )
         if arguments == ["--rehearsal-then-full"]:
             rehearsal = CapacityGate(SETUP_REHEARSAL_MODE)
             secure_runtime = dict(rehearsal.runtime)
@@ -1814,14 +2180,15 @@ if __name__ == "__main__":
             finally:
                 secure_runtime.clear()
         raise RuntimeError(
-            "use --setup-rehearsal, --full-gate, or --rehearsal-then-full"
+            "use --setup-rehearsal, --full-gate, --rehearsal-then-full, "
+            "or --cleanup-only"
         )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")
         raise
     except Exception as error:
         detail = str(error)
-        if not detail.startswith("runtime credential") and detail not in {
+        if not detail.startswith("protected workflow") and detail not in {
             "staging project reference and URL do not match",
             "a staging publishable key is required",
         }:

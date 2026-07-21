@@ -232,6 +232,31 @@ the checked-in `schemas = ["api"]` configuration. Staging was aligned to
 `pgrst.db_schemas=api` and reloaded; this operational configuration must be
 verified during every environment promotion.
 
+## Delegated execution workflow
+
+The replacement capacity path is implemented as the protected, manual
+`Phase 6 delegated capacity gate` GitHub Actions workflow. It uses GitHub OIDC
+to assume the staging load-test role, requires an STS assumed-role session,
+and has no long-lived AWS secret inputs. The Supabase Management token is read
+only from the protected `staging-load-test` environment; each temporary
+`sb_secret` Metrics key remains in process memory and is deleted by both normal
+and independent recovery cleanup.
+
+The workflow binds execution to the exact reviewed PR #6 head, runs the
+five-runner 25-user-per-runner rehearsal first, and proceeds to the unchanged
+2,500-user gate and soak only after the rehearsal and its exact-zero cleanup
+pass. A separate `if: always()` invocation rediscovers namespaced test users,
+Fantasy records, Metrics keys, and tagged AWS resources after interruption.
+Only evidence that passes the credential-pattern scan is uploaded or written
+to PR #6. A passing run marks PR #6 ready for review; any failure keeps or
+returns it to draft. The workflow cannot merge the PR or enable a worker.
+
+This workflow has not yet produced measured evidence. GitHub requires a manual
+workflow definition to exist on the default branch before dispatch, so the
+workflow-only bootstrap must be reviewed and landed on `main` first. The
+capacity verdict remains blocked until that protected run passes; none of the
+thresholds above are inferred from this implementation change.
+
 ## Verdict
 
 Database correctness, finalization, rankings, read plans, and both standings
@@ -239,6 +264,6 @@ latency gates pass. The exact 2,500-user workload and concurrent resource gate
 remain open. The hardened setup-only rehearsal stopped at AWS identity
 validation with `InvalidClientTokenId`, before runners or any measured traffic.
 PR #6 must remain draft. No capacity threshold is passed by inference. A
-reviewed rerun with one valid AWS credential set in `eu-west-3` is required
-before the PR can become merge-ready. GitHub quality gates pass at the latest
-reported head, but they do not substitute for the failed external rehearsal.
+reviewed protected OIDC run in `eu-west-3` is required before the PR can become
+merge-ready. GitHub quality gates pass at the latest reported head, but they do
+not substitute for the failed external rehearsal.
