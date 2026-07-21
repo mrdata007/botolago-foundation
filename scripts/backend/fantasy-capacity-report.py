@@ -13,11 +13,23 @@ from typing import Any
 
 FORBIDDEN_PATTERNS = {
     "supabase_secret_key": re.compile(rb"sb_secret_[A-Za-z0-9_-]+"),
+    "supabase_publishable_key": re.compile(rb"sb_publishable_[A-Za-z0-9_-]+"),
     "supabase_management_token": re.compile(rb"sbp_[A-Za-z0-9_-]+"),
     "aws_access_key": re.compile(rb"(?:AKIA|ASIA)[A-Z0-9]{16}"),
     "authorization_header": re.compile(rb"Bearer\s+[A-Za-z0-9._~+/-]+", re.I),
     "private_key": re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     "jwt": re.compile(rb"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"),
+    "password_value": re.compile(
+        rb'"password"\s*:\s*"(?!\[REDACTED\])[^"\r\n]+"', re.I
+    ),
+    "session_token_value": re.compile(
+        rb'"(?:access_token|refresh_token)"\s*:\s*"(?!\[REDACTED\])[^"\r\n]+"',
+        re.I,
+    ),
+    "api_key_value": re.compile(
+        rb'"(?:api_key|apikey|authorization)"\s*:\s*"(?!\[REDACTED\])[^"\r\n]+"',
+        re.I,
+    ),
 }
 
 
