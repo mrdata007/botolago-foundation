@@ -296,6 +296,24 @@ def install_signal_handlers() -> None:
         signal.signal(signum, handle_signal)
 
 
+def validate_capacity_mode(capacity_mode: str, expected_users: int) -> None:
+    if capacity_mode == "full_gate" and expected_users != 500:
+        raise SystemExit("full gate requires exactly 500 users per runner")
+    if capacity_mode == "full_session_diagnostic" and expected_users != 500:
+        raise SystemExit("full session diagnostic requires exactly 500 users per runner")
+    if capacity_mode == "setup_rehearsal" and expected_users not in range(25, 51):
+        raise SystemExit("setup rehearsal requires 25 to 50 users per runner")
+    if capacity_mode == "session_provisioning_rehearsal" and expected_users != 1:
+        raise SystemExit("session provisioning rehearsal requires one user per runner")
+    if capacity_mode not in {
+        "full_gate",
+        "full_session_diagnostic",
+        "setup_rehearsal",
+        "session_provisioning_rehearsal",
+    }:
+        raise SystemExit("unsupported capacity mode")
+
+
 async def provision() -> dict[str, Any]:
     global _CURRENT_USER_INDEX, _RUNNER_ID, _SESSIONS_PROVISIONED
     if "staging" not in require_env("BOTOLAGO_LOAD_ENVIRONMENT").lower():
@@ -330,18 +348,7 @@ async def provision() -> dict[str, Any]:
 
     capacity_mode = os.getenv("BOTOLAGO_CAPACITY_MODE", "full_gate")
     expected_users = int(os.getenv("BOTOLAGO_EXPECTED_SESSION_USERS", "500"))
-    if capacity_mode == "full_gate" and expected_users != 500:
-        raise SystemExit("full gate requires exactly 500 users per runner")
-    if capacity_mode == "setup_rehearsal" and expected_users not in range(25, 51):
-        raise SystemExit("setup rehearsal requires 25 to 50 users per runner")
-    if capacity_mode == "session_provisioning_rehearsal" and expected_users != 1:
-        raise SystemExit("session provisioning rehearsal requires one user per runner")
-    if capacity_mode not in {
-        "full_gate",
-        "setup_rehearsal",
-        "session_provisioning_rehearsal",
-    }:
-        raise SystemExit("unsupported capacity mode")
+    validate_capacity_mode(capacity_mode, expected_users)
 
     records = json.loads(credentials_path.read_text())
     if not isinstance(records, list) or len(records) != expected_users:

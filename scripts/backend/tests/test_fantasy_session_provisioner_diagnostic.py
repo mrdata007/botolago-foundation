@@ -432,6 +432,85 @@ class SessionProvisionerTests(unittest.TestCase):
             self.assertEqual(gate.first_user_number, 50001)
             self.assertEqual(gate.last_user_number, 50005)
 
+    def test_orchestrator_diagnostic_scales_are_fixed_and_exact(self) -> None:
+        runtime = {
+            "SUPABASE_ACCESS_TOKEN": "management-placeholder",
+            "SUPABASE_STAGING_PROJECT_REF": "exampleprojectref001",
+            "SUPABASE_STAGING_URL": "https://exampleprojectref001.supabase.co",
+            "SUPABASE_STAGING_PUBLISHABLE_KEY": "sb_publishable_example",
+            "AWS_ACCESS_KEY_ID": "temporary-placeholder",
+            "AWS_SECRET_ACCESS_KEY": "temporary-placeholder",
+            "AWS_SESSION_TOKEN": "temporary-placeholder",
+            "AWS_REGION": "eu-west-3",
+        }
+        fake_session = mock.Mock()
+        fake_session.client.side_effect = lambda service, config=None: mock.Mock(
+            service=service, meta=mock.Mock(region_name="eu-west-3")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with (
+                mock.patch.object(ORCHESTRATOR, "ARTIFACT_ROOT", root / "evidence"),
+                mock.patch.object(ORCHESTRATOR, "RUNTIME_ROOT", root / "runtime"),
+                mock.patch.object(ORCHESTRATOR.boto3, "Session", return_value=fake_session),
+            ):
+                small = ORCHESTRATOR.CapacityGate(
+                    ORCHESTRATOR.SETUP_REHEARSAL_MODE,
+                    runtime=runtime,
+                )
+                full = ORCHESTRATOR.CapacityGate(
+                    ORCHESTRATOR.FULL_SESSION_DIAGNOSTIC_MODE,
+                    runtime=runtime,
+                )
+
+            self.assertEqual(small.users_per_runner, 25)
+            self.assertEqual(small.total_users, 125)
+            self.assertEqual(full.users_per_runner, 500)
+            self.assertEqual(full.total_users, 2500)
+            self.assertNotEqual(
+                ORCHESTRATOR.FULL_SESSION_DIAGNOSTIC_MODE,
+                ORCHESTRATOR.FULL_GATE_MODE,
+            )
+
+            full.preflight = mock.Mock()
+            full.create_temporary_key = mock.Mock()
+            full.prepare_capacity_gameweek = mock.Mock()
+            full.provision_runners = mock.Mock()
+            full.create_users = mock.Mock()
+            full.seed_user_fantasy_state = mock.Mock()
+            full.deploy_and_provision_sessions = mock.Mock()
+            full.start_metrics = mock.Mock()
+            full.run_setup_rehearsal = mock.Mock(
+                return_value={"passed": True, "measuredRequests": 0}
+            )
+            full.validate_rehearsal_metrics_startup = mock.Mock(
+                return_value={"successfulStartupScrapes": 2}
+            )
+            full.run_profile = mock.Mock(
+                side_effect=AssertionError("measured workload must not run")
+            )
+            full.cleanup = mock.Mock(
+                return_value={
+                    "database": {"users": 0},
+                    "verification": {
+                        key: 0 for key in ORCHESTRATOR.CLEANUP_EXTERNAL_RESOURCE_KEYS
+                    },
+                }
+            )
+
+            self.assertEqual(full.run(), 0)
+            full.run_setup_rehearsal.assert_called_once_with()
+            full.run_profile.assert_not_called()
+
+    def test_session_provisioner_accepts_only_closed_diagnostic_scales(self) -> None:
+        PROVISIONER.validate_capacity_mode("setup_rehearsal", 25)
+        PROVISIONER.validate_capacity_mode("full_session_diagnostic", 500)
+
+        with self.assertRaises(SystemExit):
+            PROVISIONER.validate_capacity_mode("full_session_diagnostic", 499)
+        with self.assertRaises(SystemExit):
+            PROVISIONER.validate_capacity_mode("custom_diagnostic", 500)
+
     def test_artifact_scan_rejects_unredacted_session_material(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
