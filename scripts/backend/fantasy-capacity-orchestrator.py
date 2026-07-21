@@ -15,6 +15,7 @@ import concurrent.futures
 import json
 import math
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -47,8 +48,10 @@ USERS_PER_RUNNER = 500
 TOTAL_USERS = RUNNER_COUNT * USERS_PER_RUNNER
 FIRST_USER_NUMBER = 50_001
 REHEARSAL_USERS_PER_RUNNER = 25
+SESSION_REHEARSAL_USERS_PER_RUNNER = 1
 FULL_GATE_MODE = "full_gate"
 SETUP_REHEARSAL_MODE = "setup_rehearsal"
+SESSION_PROVISIONING_REHEARSAL_MODE = "session_provisioning_rehearsal"
 CLEANUP_RECOVERY_MODE = "cleanup_recovery"
 # Supabase Management API key names accept lowercase alphanumerics and
 # underscores only; the requested display name used hyphens.
@@ -184,11 +187,72 @@ def percentile(values: list[float], percent: int) -> float:
 
 
 def safe_runner_diagnostic(value: str) -> str:
-    normalized = " ".join(value.split())
-    forbidden = ("sb_", "Bearer ", "access_token", "refresh_token", "password")
-    if any(token in normalized for token in forbidden):
-        return "runner diagnostic redacted because it contained credential-like text"
-    return normalized[-1000:] or "runner emitted no diagnostic"
+    normalized = value.replace("\r\n", "\n").replace("\r", "\n")
+    patterns = (
+        re.compile(r"\b(?:sb_(?:publishable|secret)|sbp)_[A-Za-z0-9_-]+\b"),
+        re.compile(r"\bBearer\s+[A-Za-z0-9._~+/-]+", re.IGNORECASE),
+        re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
+        re.compile(r"\b[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\b"),
+    )
+    for pattern in patterns:
+        normalized = pattern.sub("[REDACTED]", normalized)
+    normalized = re.sub(
+        r'(?i)("?(?:password|access_token|refresh_token|apikey|api_key|authorization)"?\s*[:=]\s*)[^\s,}]+',
+        r"\1[REDACTED]",
+        normalized,
+    )
+    return normalized[-16_000:] or "runner emitted no diagnostic"
+
+
+def sanitize_diagnostic_value(value: Any, depth: int = 0) -> Any:
+    if depth >= 5:
+        return "[TRUNCATED]"
+    if isinstance(value, dict):
+        sanitized: dict[str, Any] = {}
+        for key, item in value.items():
+            safe_key = str(key)[:100]
+            normalized_key = safe_key.lower()
+            if any(
+                marker in normalized_key
+                for marker in ("password", "token", "authorization", "api_key", "apikey")
+            ):
+                sanitized[safe_key] = "[REDACTED]"
+            else:
+                sanitized[safe_key] = sanitize_diagnostic_value(item, depth + 1)
+        return sanitized
+    if isinstance(value, list):
+        return [sanitize_diagnostic_value(item, depth + 1) for item in value[:20]]
+    if isinstance(value, str):
+        return safe_runner_diagnostic(value)[:1000]
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    return safe_runner_diagnostic(str(value))[:1000]
+
+
+def sanitized_diagnostic_records(value: str) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for line in value.splitlines():
+        if not line.strip():
+            continue
+        parsed = json.loads(line)
+        if not isinstance(parsed, dict):
+            raise ValueError("session diagnostic record must be an object")
+        required = {
+            "event",
+            "httpStatus",
+            "requestDurationMs",
+            "responseBody",
+            "runnerId",
+            "supabaseErrorCode",
+            "userIndex",
+        }
+        if set(parsed) != required or parsed.get("event") != "authentication_failure":
+            raise ValueError("session diagnostic record has an invalid contract")
+        sanitized = sanitize_diagnostic_value(parsed)
+        if not isinstance(sanitized, dict):
+            raise ValueError("session diagnostic sanitization failed")
+        records.append(sanitized)
+    return records
 
 
 class CapacityGate:
@@ -200,15 +264,17 @@ class CapacityGate:
         if mode not in {
             FULL_GATE_MODE,
             SETUP_REHEARSAL_MODE,
+            SESSION_PROVISIONING_REHEARSAL_MODE,
             CLEANUP_RECOVERY_MODE,
         }:
             raise RuntimeError("unsupported capacity mode")
         self.mode = mode
-        self.users_per_runner = (
-            REHEARSAL_USERS_PER_RUNNER
-            if mode == SETUP_REHEARSAL_MODE
-            else USERS_PER_RUNNER
-        )
+        if mode == SETUP_REHEARSAL_MODE:
+            self.users_per_runner = REHEARSAL_USERS_PER_RUNNER
+        elif mode == SESSION_PROVISIONING_REHEARSAL_MODE:
+            self.users_per_runner = SESSION_REHEARSAL_USERS_PER_RUNNER
+        else:
+            self.users_per_runner = USERS_PER_RUNNER
         self.total_users = RUNNER_COUNT * self.users_per_runner
         self.first_user_number = FIRST_USER_NUMBER
         self.last_user_number = self.first_user_number + self.total_users - 1
@@ -919,22 +985,111 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             f"BOTOLAGO_CAPACITY_MODE={self.mode} "
             f"BOTOLAGO_EXPECTED_SESSION_USERS={self.users_per_runner} "
             "BOTOLAGO_AUTH_RATE_PER_SECOND=0.4 "
+            "BOTOLAGO_RUNNER_ID={index} "
             "BOTOLAGO_LOAD_CREDENTIAL_CACHE=/opt/botolago/credentials-{index}.json "
             "BOTOLAGO_LOAD_SESSION_CACHE=/opt/botolago/sessions.json "
-            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner.py"
+            "BOTOLAGO_SESSION_DIAGNOSTICS_PATH=/opt/botolago/session-provisioning-diagnostics.ndjson "
+            "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner.py "
+            "> /opt/botolago/session-provisioning.stdout.json "
+            "2> /opt/botolago/session-provisioning.stderr.log"
         )
 
         def provision(index: int) -> dict[str, Any]:
-            output = self.ssh(self.instance_ips[index], command.format(index=index), 1800)
-            return json.loads(output)
+            ip = self.instance_ips[index]
+            stdout_path = self.artifact_dir / f"session-runner-{index}-stdout.json"
+            stderr_path = self.artifact_dir / f"session-runner-{index}-stderr.log"
+            diagnostics_path = (
+                self.artifact_dir / f"session-runner-{index}-diagnostics.ndjson"
+            )
+            command_error: Exception | None = None
+            try:
+                self.ssh(ip, command.format(index=index), 1800)
+            except (subprocess.SubprocessError, OSError) as error:
+                command_error = error
+            finally:
+                for remote, local in (
+                    ("/opt/botolago/session-provisioning.stderr.log", stderr_path),
+                    (
+                        "/opt/botolago/session-provisioning-diagnostics.ndjson",
+                        diagnostics_path,
+                    ),
+                ):
+                    try:
+                        self.scp_from(ip, remote, local)
+                        os.chmod(local, 0o600)
+                    except (subprocess.SubprocessError, OSError):
+                        private_write(local, "")
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
-            summaries = list(executor.map(provision, range(RUNNER_COUNT)))
+            stderr = safe_runner_diagnostic(stderr_path.read_text(encoding="utf-8"))
+            private_write(stderr_path, stderr + "\n")
+            try:
+                diagnostic_records = sanitized_diagnostic_records(
+                    diagnostics_path.read_text(encoding="utf-8")
+                )
+            except (json.JSONDecodeError, ValueError) as error:
+                private_write(diagnostics_path, "")
+                raise RuntimeError(
+                    f"runner {index} emitted an invalid session diagnostic"
+                ) from error
+            private_write(
+                diagnostics_path,
+                "".join(
+                    json.dumps(item, separators=(",", ":"), sort_keys=True) + "\n"
+                    for item in diagnostic_records
+                ),
+            )
+            if command_error is not None:
+                raise RuntimeError(
+                    f"runner {index} session provisioning failed; "
+                    "sanitized diagnostics were preserved"
+                ) from command_error
+
+            self.scp_from(
+                ip,
+                "/opt/botolago/session-provisioning.stdout.json",
+                stdout_path,
+            )
+            os.chmod(stdout_path, 0o600)
+            summary = json.loads(stdout_path.read_text(encoding="utf-8"))
+            private_json(stdout_path, summary)
+            summary["diagnosticEvents"] = len(diagnostic_records)
+            return summary
+
+        summaries: list[dict[str, Any]] = []
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT)
+        futures = {
+            executor.submit(provision, index): index for index in range(RUNNER_COUNT)
+        }
+        first_error: Exception | None = None
+        try:
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    summaries.append(future.result())
+                except Exception as error:
+                    first_error = error
+                    for pending in futures:
+                        pending.cancel()
+                    for ip in self.instance_ips:
+                        try:
+                            self.ssh(
+                                ip,
+                                "pkill -f '/opt/botolago/fantasy-session-provisioner.py' || true",
+                                30,
+                            )
+                        except (subprocess.SubprocessError, OSError):
+                            pass
+                    break
+        finally:
+            executor.shutdown(wait=True, cancel_futures=True)
+        if first_error is not None:
+            raise first_error
+        summaries.sort(key=lambda item: int(item.get("runnerId", 0)))
         if any(
             item.get("sessions") != self.users_per_runner
             or item.get("uniqueSubjects") != self.users_per_runner
             or item.get("uniqueSessionIds") != self.users_per_runner
             or item.get("minimumValidityMinutes", 0) < 20
+            or item.get("diagnosticEvents") != 0
             for item in summaries
         ):
             raise RuntimeError("distributed session validation failed")
@@ -972,6 +1127,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 "uniqueRefreshTokenFingerprints": self.total_users,
                 "minimumValidityMinutes": min(
                     int(item["minimumValidityMinutes"]) for item in summaries
+                ),
+                "diagnosticEvents": sum(
+                    int(item["diagnosticEvents"]) for item in summaries
                 ),
                 "rawSessionMaterialRetained": False,
             },
@@ -2034,12 +2192,28 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         try:
             self.preflight()
             self.create_temporary_key()
-            self.prepare_capacity_gameweek()
+            if self.mode != SESSION_PROVISIONING_REHEARSAL_MODE:
+                self.prepare_capacity_gameweek()
             self.provision_runners()
             self.create_users()
             self.seed_user_fantasy_state()
             self.deploy_and_provision_sessions()
-            self.start_metrics()
+            if self.mode == SESSION_PROVISIONING_REHEARSAL_MODE:
+                criteria = {
+                    "fiveUsersCreated": len(self.users) == 5,
+                    "fiveTeamsSeeded": self.total_users == 5,
+                    "fiveSessionsProvisioned": True,
+                    "noMeasuredTraffic": True,
+                }
+                outcome.update(
+                    {
+                        "userCreation": dict(self.user_creation_stats),
+                        "criteria": criteria,
+                        "passed": all(criteria.values()),
+                    }
+                )
+            else:
+                self.start_metrics()
             if self.mode == SETUP_REHEARSAL_MODE:
                 readiness = self.run_setup_rehearsal()
                 metrics_startup = self.validate_rehearsal_metrics_startup()
@@ -2059,7 +2233,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                         "passed": all(criteria.values()),
                     }
                 )
-            else:
+            elif self.mode == FULL_GATE_MODE:
                 merge = self.run_profile("merge_gate", 60, 10)
                 self.sample_database()
                 soak = self.run_profile("telemetry_soak", 600, 0)
@@ -2130,7 +2304,12 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             outcome.setdefault("userCreation", dict(self.user_creation_stats))
             private_json(self.artifact_dir / "gate-summary.json", outcome)
             event("Verified that no local runtime credential handoff file exists")
-        label = "setup rehearsal" if self.mode == SETUP_REHEARSAL_MODE else "external gate"
+        labels = {
+            SETUP_REHEARSAL_MODE: "setup rehearsal",
+            SESSION_PROVISIONING_REHEARSAL_MODE: "session provisioning rehearsal",
+            FULL_GATE_MODE: "external gate",
+        }
+        label = labels.get(self.mode, "cleanup")
         event(f"Phase 6 {label} verdict: {'PASS' if outcome['passed'] else 'FAIL'}")
         return 0 if outcome["passed"] else 2
 
@@ -2161,6 +2340,10 @@ if __name__ == "__main__":
         arguments = sys.argv[1:]
         if arguments == ["--setup-rehearsal"]:
             raise SystemExit(CapacityGate(SETUP_REHEARSAL_MODE).run())
+        if arguments == ["--session-provisioning-rehearsal"]:
+            raise SystemExit(
+                CapacityGate(SESSION_PROVISIONING_REHEARSAL_MODE).run()
+            )
         if arguments == ["--full-gate"]:
             raise SystemExit(CapacityGate(FULL_GATE_MODE).run())
         if arguments == ["--cleanup-only"]:
@@ -2180,8 +2363,8 @@ if __name__ == "__main__":
             finally:
                 secure_runtime.clear()
         raise RuntimeError(
-            "use --setup-rehearsal, --full-gate, --rehearsal-then-full, "
-            "or --cleanup-only"
+            "use --session-provisioning-rehearsal, --setup-rehearsal, "
+            "--full-gate, --rehearsal-then-full, or --cleanup-only"
         )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")

@@ -8,12 +8,31 @@ import base64
 import hashlib
 import json
 import os
+import re
+import sys
 import time
 import uuid
 from pathlib import Path
 from typing import Any
 
 import aiohttp
+
+
+REDACTED = "[REDACTED]"
+SENSITIVE_RESPONSE_KEYS = {
+    "access_token",
+    "apikey",
+    "api_key",
+    "authorization",
+    "password",
+    "refresh_token",
+}
+SECRET_PATTERNS = (
+    re.compile(r"\b(?:sb_(?:publishable|secret)|sbp)_[A-Za-z0-9_-]+\b"),
+    re.compile(r"\bBearer\s+[A-Za-z0-9._~+/-]+", re.IGNORECASE),
+    re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
+    re.compile(r"\b[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\b"),
+)
 
 
 def require_env(name: str) -> str:
@@ -57,6 +76,96 @@ def write_private_json(path: Path, value: Any) -> None:
         output.write("\n")
 
 
+def sanitize_text(value: str, limit: int = 1000) -> str:
+    sanitized = " ".join(value.split())
+    for pattern in SECRET_PATTERNS:
+        sanitized = pattern.sub(REDACTED, sanitized)
+    return sanitized[:limit]
+
+
+def sanitize_response(value: Any, depth: int = 0) -> Any:
+    if depth >= 5:
+        return "[TRUNCATED]"
+    if isinstance(value, dict):
+        sanitized: dict[str, Any] = {}
+        for key, item in list(value.items())[:50]:
+            safe_key = sanitize_text(str(key), 100)
+            normalized_key = safe_key.lower()
+            if normalized_key in SENSITIVE_RESPONSE_KEYS or any(
+                marker in normalized_key
+                for marker in ("password", "token", "authorization", "api_key", "apikey")
+            ):
+                sanitized[safe_key] = REDACTED
+            else:
+                sanitized[safe_key] = sanitize_response(item, depth + 1)
+        return sanitized
+    if isinstance(value, list):
+        return [sanitize_response(item, depth + 1) for item in value[:20]]
+    if isinstance(value, str):
+        return sanitize_text(value)
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    return sanitize_text(str(value))
+
+
+def create_private_diagnostics_file(path: Path) -> None:
+    if not path.is_absolute() or not path.parent.is_dir():
+        raise SystemExit("diagnostics path must be absolute with an existing parent")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags, 0o600)
+    os.fchmod(descriptor, 0o600)
+    os.close(descriptor)
+
+
+def append_private_diagnostic(path: Path, value: dict[str, Any]) -> None:
+    flags = os.O_WRONLY | os.O_APPEND
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    with os.fdopen(descriptor, "a", encoding="utf-8") as output:
+        output.write(json.dumps(value, separators=(",", ":"), sort_keys=True))
+        output.write("\n")
+
+
+def auth_error_code(payload: Any, status: int | None) -> str:
+    if isinstance(payload, dict):
+        for key in ("code", "error_code", "error"):
+            candidate = payload.get(key)
+            if isinstance(candidate, str) and candidate:
+                return sanitize_text(candidate, 100)
+    return f"http_{status}" if status is not None else "request_failed"
+
+
+def record_auth_failure(
+    diagnostics_path: Path,
+    *,
+    runner_id: int,
+    user_index: int,
+    http_status: int | None,
+    payload: Any,
+    request_duration_ms: float,
+    fallback_code: str | None = None,
+) -> None:
+    diagnostic = {
+        "event": "authentication_failure",
+        "httpStatus": http_status,
+        "requestDurationMs": round(max(0.0, request_duration_ms), 3),
+        "responseBody": sanitize_response(payload),
+        "runnerId": runner_id,
+        "supabaseErrorCode": fallback_code or auth_error_code(payload, http_status),
+        "userIndex": user_index,
+    }
+    append_private_diagnostic(diagnostics_path, diagnostic)
+    print(
+        "[session-provisioning-diagnostic] "
+        + json.dumps(diagnostic, separators=(",", ":"), sort_keys=True),
+        file=sys.stderr,
+        flush=True,
+    )
+
+
 async def provision() -> dict[str, Any]:
     if "staging" not in require_env("BOTOLAGO_LOAD_ENVIRONMENT").lower():
         raise SystemExit("session provisioning requires an explicit staging environment")
@@ -67,7 +176,15 @@ async def provision() -> dict[str, Any]:
 
     credentials_path = Path(require_env("BOTOLAGO_LOAD_CREDENTIAL_CACHE"))
     output_path = Path(require_env("BOTOLAGO_LOAD_SESSION_CACHE"))
+    diagnostics_path = Path(require_env("BOTOLAGO_SESSION_DIAGNOSTICS_PATH"))
     require_private_file(credentials_path)
+    create_private_diagnostics_file(diagnostics_path)
+    try:
+        runner_id = int(require_env("BOTOLAGO_RUNNER_ID"))
+    except ValueError as error:
+        raise SystemExit("runner ID must be an integer") from error
+    if runner_id not in range(5):
+        raise SystemExit("runner ID must be between 0 and 4")
     rate = float(os.getenv("BOTOLAGO_AUTH_RATE_PER_SECOND", "0.4"))
     if rate <= 0 or rate > 0.4:
         raise SystemExit("Auth provisioning rate must remain at or below 0.4 requests/second")
@@ -78,7 +195,13 @@ async def provision() -> dict[str, Any]:
         raise SystemExit("full gate requires exactly 500 users per runner")
     if capacity_mode == "setup_rehearsal" and expected_users not in range(25, 51):
         raise SystemExit("setup rehearsal requires 25 to 50 users per runner")
-    if capacity_mode not in {"full_gate", "setup_rehearsal"}:
+    if capacity_mode == "session_provisioning_rehearsal" and expected_users != 1:
+        raise SystemExit("session provisioning rehearsal requires one user per runner")
+    if capacity_mode not in {
+        "full_gate",
+        "setup_rehearsal",
+        "session_provisioning_rehearsal",
+    }:
         raise SystemExit("unsupported capacity mode")
 
     records = json.loads(credentials_path.read_text())
@@ -113,14 +236,45 @@ async def provision() -> dict[str, Any]:
                 raise SystemExit(
                     "credential records require number, email, password, and user_id"
                 )
-            async with client.post(
-                f"{base_url}/auth/v1/token?grant_type=password",
-                headers={"apikey": publishable_key, "Content-Type": "application/json"},
-                json={"email": email, "password": password},
-            ) as response:
-                payload = await response.json(content_type=None)
-                if response.status != 200 or not isinstance(payload, dict):
-                    raise SystemExit(f"Auth session provisioning failed with HTTP {response.status}")
+            request_started = time.perf_counter()
+            try:
+                async with client.post(
+                    f"{base_url}/auth/v1/token?grant_type=password",
+                    headers={"apikey": publishable_key, "Content-Type": "application/json"},
+                    json={"email": email, "password": password},
+                ) as response:
+                    response_text = await response.text()
+                    request_duration_ms = (time.perf_counter() - request_started) * 1000
+                    try:
+                        payload = json.loads(response_text) if response_text else None
+                    except json.JSONDecodeError:
+                        payload = response_text
+                    if not 200 <= response.status < 300 or not isinstance(payload, dict):
+                        record_auth_failure(
+                            diagnostics_path,
+                            runner_id=runner_id,
+                            user_index=index,
+                            http_status=response.status,
+                            payload=payload,
+                            request_duration_ms=request_duration_ms,
+                        )
+                        raise SystemExit(
+                            f"Auth session provisioning failed with HTTP {response.status}"
+                        )
+            except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+                request_duration_ms = (time.perf_counter() - request_started) * 1000
+                record_auth_failure(
+                    diagnostics_path,
+                    runner_id=runner_id,
+                    user_index=index,
+                    http_status=None,
+                    payload={"error": type(error).__name__},
+                    request_duration_ms=request_duration_ms,
+                    fallback_code="network_error",
+                )
+                raise SystemExit("Auth session provisioning request failed") from error
+
+            try:
                 token = payload.get("access_token")
                 refresh_token = payload.get("refresh_token")
                 if not isinstance(token, str) or not isinstance(refresh_token, str):
@@ -154,6 +308,17 @@ async def provision() -> dict[str, Any]:
                 sessions.append({"number": number, "access_token": token})
                 payload["refresh_token"] = ""
                 refresh_token = ""
+            except SystemExit:
+                record_auth_failure(
+                    diagnostics_path,
+                    runner_id=runner_id,
+                    user_index=index,
+                    http_status=response.status,
+                    payload=payload,
+                    request_duration_ms=request_duration_ms,
+                    fallback_code="invalid_auth_response",
+                )
+                raise
 
     now = int(time.time())
     remaining_seconds = [
@@ -182,6 +347,7 @@ async def provision() -> dict[str, Any]:
             record["password"] = ""
     records.clear()
     return {
+        "runnerId": runner_id,
         "sessions": len(sessions),
         "uniqueSubjects": len(subjects),
         "uniqueSessionIds": len(session_ids),
