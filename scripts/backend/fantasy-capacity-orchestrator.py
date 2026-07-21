@@ -272,6 +272,56 @@ def sanitized_diagnostic_records(value: str) -> dict[str, Any]:
             }
             if set(parsed) != required:
                 raise ValueError("session final diagnostic has an invalid contract")
+        elif event_name == "session_provisioning_start":
+            required = {
+                "event",
+                "expectedUsers",
+                "mode",
+                "runnerId",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session start diagnostic has an invalid contract")
+        elif event_name == "auth_request_start":
+            required = {
+                "credentialNumber",
+                "event",
+                "runnerId",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session request diagnostic has an invalid contract")
+        elif event_name == "auth_response_received":
+            required = {
+                "event",
+                "httpStatus",
+                "requestDurationMs",
+                "responseClassification",
+                "runnerId",
+                "supabaseErrorCode",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session response diagnostic has an invalid contract")
+        elif event_name == "authentication_exception":
+            required = {
+                "event",
+                "exceptionClass",
+                "httpStatus",
+                "requestDurationMs",
+                "responseBody",
+                "responseClassification",
+                "runnerId",
+                "sanitizedMessage",
+                "supabaseErrorCode",
+                "timestamp",
+                "userIndex",
+            }
+            if set(parsed) != required:
+                raise ValueError("session exception diagnostic has an invalid contract")
         elif event_name == "artifact_collection_failure":
             required = {
                 "event",
@@ -297,8 +347,20 @@ def sanitized_diagnostic_records(value: str) -> dict[str, Any]:
         "artifactFailures": [
             item for item in records if item.get("event") == "artifact_collection_failure"
         ],
+        "exceptionRecords": [
+            item for item in records if item.get("event") == "authentication_exception"
+        ],
         "finalRecords": [
             item for item in records if item.get("event") == "session_provisioning_exit"
+        ],
+        "requestRecords": [
+            item for item in records if item.get("event") == "auth_request_start"
+        ],
+        "responseRecords": [
+            item for item in records if item.get("event") == "auth_response_received"
+        ],
+        "startRecords": [
+            item for item in records if item.get("event") == "session_provisioning_start"
         ],
         "records": records,
     }

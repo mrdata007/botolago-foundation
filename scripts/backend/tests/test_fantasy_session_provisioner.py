@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import signal
 import subprocess
 import tempfile
 import time
@@ -69,6 +70,20 @@ class FakeClientSession:
 
     def post(self, *_: object, **__: object) -> FakeResponse:
         return self.response
+
+
+class FakeTimeoutClientSession:
+    def __init__(self, **_: object) -> None:
+        pass
+
+    async def __aenter__(self) -> "FakeTimeoutClientSession":
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        return None
+
+    def post(self, *_: object, **__: object) -> object:
+        raise asyncio.TimeoutError()
 
 
 def jwt(claims: dict[str, object]) -> str:
@@ -170,8 +185,13 @@ class SessionProvisionerTests(unittest.TestCase):
             ):
                 asyncio.run(PROVISIONER.provision())
 
-            diagnostics = (root / "diagnostics.ndjson").read_text()
-            record = json.loads(diagnostics)
+            diagnostics = [
+                json.loads(line)
+                for line in (root / "diagnostics.ndjson").read_text().splitlines()
+            ]
+            record = next(
+                item for item in diagnostics if item["event"] == "authentication_failure"
+            )
             self.assertEqual(record["httpStatus"], 400)
             self.assertEqual(record["supabaseErrorCode"], "invalid_credentials")
             self.assertEqual(record["runnerId"], 3)
@@ -181,7 +201,7 @@ class SessionProvisionerTests(unittest.TestCase):
             self.assertEqual(record["responseBody"]["refresh_token"], "[REDACTED]")
             self.assertEqual(record["responseBody"]["password"], "[REDACTED]")
             self.assertEqual(record["responseBody"]["api_key"], "[REDACTED]")
-            combined = diagnostics + stderr.getvalue()
+            combined = json.dumps(diagnostics) + stderr.getvalue()
             self.assertNotIn("must-not-survive", combined)
             self.assertNotIn("gate-user@staging.invalid", combined)
             self.assertNotIn(secret_value, combined)
@@ -221,10 +241,17 @@ class SessionProvisionerTests(unittest.TestCase):
                 json.loads(line)
                 for line in (root / "diagnostics.ndjson").read_text().splitlines()
             ]
-            self.assertEqual(len(diagnostics), 1)
-            self.assertEqual(diagnostics[0]["event"], "session_provisioning_exit")
-            self.assertEqual(diagnostics[0]["status"], "success")
-            self.assertEqual(diagnostics[0]["sessionsProvisioned"], 1)
+            self.assertEqual(
+                [item["event"] for item in diagnostics],
+                [
+                    "session_provisioning_start",
+                    "auth_request_start",
+                    "auth_response_received",
+                    "session_provisioning_exit",
+                ],
+            )
+            self.assertEqual(diagnostics[-1]["status"], "success")
+            self.assertEqual(diagnostics[-1]["sessionsProvisioned"], 1)
             self.assertFalse((root / "credentials.json").exists())
             self.assertTrue((root / "sessions.json").is_file())
 
@@ -273,10 +300,105 @@ class SessionProvisionerTests(unittest.TestCase):
             ]
             self.assertEqual(
                 [item["event"] for item in diagnostics],
-                ["authentication_failure", "session_provisioning_exit"],
+                [
+                    "session_provisioning_start",
+                    "auth_request_start",
+                    "auth_response_received",
+                    "authentication_exception",
+                    "authentication_failure",
+                    "session_provisioning_exit",
+                ],
             )
-            self.assertEqual(diagnostics[0]["supabaseErrorCode"], "invalid_auth_response")
+            auth_failure = next(
+                item for item in diagnostics if item["event"] == "authentication_failure"
+            )
+            self.assertEqual(auth_failure["supabaseErrorCode"], "invalid_auth_response")
             self.assertEqual(diagnostics[-1]["status"], "failure")
+
+    def test_http_401_records_unauthorized_classification(self) -> None:
+        self.assert_http_error_classification(401, "unauthorized", "invalid_credentials")
+
+    def test_http_429_records_rate_limited_classification(self) -> None:
+        self.assert_http_error_classification(429, "rate_limited", "over_request_rate_limit")
+
+    def assert_http_error_classification(
+        self,
+        status: int,
+        classification: str,
+        code: str,
+    ) -> None:
+        user_id = str(uuid.uuid4())
+        FakeClientSession.response = FakeResponse(
+            status,
+            {
+                "code": code,
+                "message": "sanitized failure",
+            },
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with (
+                mock.patch.dict(os.environ, self.environment(root, user_id), clear=True),
+                mock.patch.object(PROVISIONER.aiohttp, "ClientSession", FakeClientSession),
+                self.assertRaises(SystemExit),
+            ):
+                self.run_provision_with_final_diagnostic()
+
+            diagnostics = [
+                json.loads(line)
+                for line in (root / "diagnostics.ndjson").read_text().splitlines()
+            ]
+            response = next(
+                item for item in diagnostics if item["event"] == "auth_response_received"
+            )
+            auth_failure = next(
+                item for item in diagnostics if item["event"] == "authentication_failure"
+            )
+            self.assertEqual(response["httpStatus"], status)
+            self.assertEqual(response["responseClassification"], classification)
+            self.assertEqual(auth_failure["supabaseErrorCode"], code)
+            self.assertEqual(diagnostics[-1]["status"], "failure")
+
+    def test_network_timeout_records_exception_diagnostic(self) -> None:
+        user_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with (
+                mock.patch.dict(os.environ, self.environment(root, user_id), clear=True),
+                mock.patch.object(PROVISIONER.aiohttp, "ClientSession", FakeTimeoutClientSession),
+                self.assertRaises(SystemExit),
+            ):
+                self.run_provision_with_final_diagnostic()
+
+            diagnostics = [
+                json.loads(line)
+                for line in (root / "diagnostics.ndjson").read_text().splitlines()
+            ]
+            exception = next(
+                item for item in diagnostics if item["event"] == "authentication_exception"
+            )
+            self.assertEqual(exception["exceptionClass"], "TimeoutError")
+            self.assertEqual(exception["responseClassification"], "no_response")
+            self.assertEqual(diagnostics[-1]["status"], "failure")
+
+    def test_signal_termination_writes_terminal_diagnostic(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            diagnostics = root / "diagnostics.ndjson"
+            PROVISIONER.configure_diagnostics_path(diagnostics)
+            PROVISIONER._RUNNER_ID = 4
+            PROVISIONER.install_signal_handlers()
+            with self.assertRaises(SystemExit) as raised:
+                signal.raise_signal(signal.SIGTERM)
+
+            self.assertEqual(raised.exception.code, 143)
+            records = [
+                json.loads(line)
+                for line in diagnostics.read_text().splitlines()
+            ]
+            self.assertEqual(records[-1]["event"], "session_provisioning_exit")
+            self.assertEqual(records[-1]["exitKind"], "signal")
+            self.assertEqual(records[-1]["status"], "failure")
 
     def test_orchestrator_session_rehearsal_is_bounded_to_five_users(self) -> None:
         runtime = {

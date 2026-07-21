@@ -132,7 +132,7 @@ def configure_diagnostics_path(path: Path) -> None:
     _DIAGNOSTICS_PATH = path
 
 
-def append_private_diagnostic(path: Path, value: dict[str, Any]) -> None:
+def append_private_diagnostic(path: Path, value: dict[str, Any], *, force_sync: bool = False) -> None:
     flags = os.O_WRONLY | os.O_APPEND
     flags |= getattr(os, "O_CLOEXEC", 0)
     flags |= getattr(os, "O_NOFOLLOW", 0)
@@ -140,14 +140,17 @@ def append_private_diagnostic(path: Path, value: dict[str, Any]) -> None:
     with os.fdopen(descriptor, "a", encoding="utf-8") as output:
         output.write(json.dumps(value, separators=(",", ":"), sort_keys=True))
         output.write("\n")
+        output.flush()
+        if force_sync:
+            os.fsync(output.fileno())
 
 
-def best_effort_append_diagnostic(value: dict[str, Any]) -> None:
+def best_effort_append_diagnostic(value: dict[str, Any], *, force_sync: bool = False) -> None:
     path = _DIAGNOSTICS_PATH
     if path is None:
         return
     try:
-        append_private_diagnostic(path, sanitize_response(value))
+        append_private_diagnostic(path, sanitize_response(value), force_sync=force_sync)
     except Exception:
         # Last-chance diagnostics must never mask the original failure path.
         return
@@ -181,12 +184,74 @@ def record_auth_failure(
         "supabaseErrorCode": fallback_code or auth_error_code(payload, http_status),
         "userIndex": user_index,
     }
-    append_private_diagnostic(diagnostics_path, diagnostic)
+    append_private_diagnostic(diagnostics_path, diagnostic, force_sync=True)
     print(
         "[session-provisioning-diagnostic] "
         + json.dumps(diagnostic, separators=(",", ":"), sort_keys=True),
         file=sys.stderr,
         flush=True,
+    )
+
+
+def response_classification(payload: Any, status: int | None) -> str:
+    if status == 401:
+        return "unauthorized"
+    if status == 429:
+        return "rate_limited"
+    if status is None:
+        return "no_response"
+    if isinstance(payload, dict) and auth_error_code(payload, status) != f"http_{status}":
+        return "supabase_error"
+    if 200 <= status < 300:
+        return "success"
+    if 400 <= status < 500:
+        return "client_error"
+    if status >= 500:
+        return "server_error"
+    return "unexpected_status"
+
+
+def record_lifecycle(
+    *,
+    event_name: str,
+    runner_id: int | None,
+    user_index: int,
+    force_sync: bool = False,
+    **fields: Any,
+) -> None:
+    best_effort_append_diagnostic(
+        {
+            "event": event_name,
+            "runnerId": runner_id,
+            "timestamp": int(time.time()),
+            "userIndex": user_index,
+            **fields,
+        },
+        force_sync=force_sync,
+    )
+
+
+def record_exception_diagnostic(
+    *,
+    runner_id: int | None,
+    user_index: int,
+    error: BaseException,
+    http_status: int | None = None,
+    payload: Any = None,
+    request_duration_ms: float = 0.0,
+) -> None:
+    record_lifecycle(
+        event_name="authentication_exception",
+        runner_id=runner_id,
+        user_index=user_index,
+        exceptionClass=type(error).__name__,
+        httpStatus=http_status,
+        requestDurationMs=round(max(0.0, request_duration_ms), 3),
+        responseBody=sanitize_response(payload),
+        responseClassification=response_classification(payload, http_status),
+        sanitizedMessage=sanitize_text(str(error), 300),
+        supabaseErrorCode=auth_error_code(payload, http_status),
+        force_sync=True,
     )
 
 
@@ -212,7 +277,8 @@ def record_final_diagnostic(
             "status": status,
             "timestamp": int(time.time()),
             "userIndex": _CURRENT_USER_INDEX,
-        }
+        },
+        force_sync=True,
     )
 
 
@@ -251,6 +317,13 @@ async def provision() -> dict[str, Any]:
     _RUNNER_ID = runner_id
     if runner_id not in range(5):
         raise SystemExit("runner ID must be between 0 and 4")
+    record_lifecycle(
+        event_name="session_provisioning_start",
+        runner_id=runner_id,
+        user_index=-1,
+        expectedUsers=int(os.getenv("BOTOLAGO_EXPECTED_SESSION_USERS", "500")),
+        mode=os.getenv("BOTOLAGO_CAPACITY_MODE", "full_gate"),
+    )
     rate = float(os.getenv("BOTOLAGO_AUTH_RATE_PER_SECOND", "0.4"))
     if rate <= 0 or rate > 0.4:
         raise SystemExit("Auth provisioning rate must remain at or below 0.4 requests/second")
@@ -305,6 +378,12 @@ async def provision() -> dict[str, Any]:
                 )
             request_started = time.perf_counter()
             try:
+                record_lifecycle(
+                    event_name="auth_request_start",
+                    runner_id=runner_id,
+                    user_index=index,
+                    credentialNumber=number,
+                )
                 async with client.post(
                     f"{base_url}/auth/v1/token?grant_type=password",
                     headers={"apikey": publishable_key, "Content-Type": "application/json"},
@@ -316,6 +395,15 @@ async def provision() -> dict[str, Any]:
                         payload = json.loads(response_text) if response_text else None
                     except json.JSONDecodeError:
                         payload = response_text
+                    record_lifecycle(
+                        event_name="auth_response_received",
+                        runner_id=runner_id,
+                        user_index=index,
+                        httpStatus=response.status,
+                        requestDurationMs=round(max(0.0, request_duration_ms), 3),
+                        responseClassification=response_classification(payload, response.status),
+                        supabaseErrorCode=auth_error_code(payload, response.status),
+                    )
                     if not 200 <= response.status < 300 or not isinstance(payload, dict):
                         record_auth_failure(
                             diagnostics_path,
@@ -330,6 +418,12 @@ async def provision() -> dict[str, Any]:
                         )
             except (aiohttp.ClientError, asyncio.TimeoutError) as error:
                 request_duration_ms = (time.perf_counter() - request_started) * 1000
+                record_exception_diagnostic(
+                    runner_id=runner_id,
+                    user_index=index,
+                    error=error,
+                    request_duration_ms=request_duration_ms,
+                )
                 record_auth_failure(
                     diagnostics_path,
                     runner_id=runner_id,
@@ -377,6 +471,14 @@ async def provision() -> dict[str, Any]:
                 payload["refresh_token"] = ""
                 refresh_token = ""
             except SystemExit:
+                record_exception_diagnostic(
+                    runner_id=runner_id,
+                    user_index=index,
+                    error=SystemExit("invalid_auth_response"),
+                    http_status=response.status,
+                    payload=payload,
+                    request_duration_ms=request_duration_ms,
+                )
                 record_auth_failure(
                     diagnostics_path,
                     runner_id=runner_id,
