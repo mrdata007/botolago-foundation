@@ -51,6 +51,7 @@ REHEARSAL_USERS_PER_RUNNER = 25
 SESSION_REHEARSAL_USERS_PER_RUNNER = 1
 FULL_GATE_MODE = "full_gate"
 SETUP_REHEARSAL_MODE = "setup_rehearsal"
+FULL_SESSION_DIAGNOSTIC_MODE = "full_session_diagnostic"
 SESSION_PROVISIONING_REHEARSAL_MODE = "session_provisioning_rehearsal"
 CLEANUP_RECOVERY_MODE = "cleanup_recovery"
 # Supabase Management API key names accept lowercase alphanumerics and
@@ -387,6 +388,7 @@ class CapacityGate:
         if mode not in {
             FULL_GATE_MODE,
             SETUP_REHEARSAL_MODE,
+            FULL_SESSION_DIAGNOSTIC_MODE,
             SESSION_PROVISIONING_REHEARSAL_MODE,
             CLEANUP_RECOVERY_MODE,
         }:
@@ -1356,7 +1358,12 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "BOTOLAGO_STAGING_SECRET_KEY": self.temp_secret,
             "BOTOLAGO_METRICS_INTERVAL_SECONDS": "60",
             "BOTOLAGO_METRICS_DURATION_SECONDS": (
-                "300" if self.mode == SETUP_REHEARSAL_MODE else "900"
+                "300"
+                if self.mode in {
+                    SETUP_REHEARSAL_MODE,
+                    FULL_SESSION_DIAGNOSTIC_MODE,
+                }
+                else "900"
             ),
             "BOTOLAGO_METRICS_OUTPUT": str(metrics_output),
         }
@@ -1378,6 +1385,8 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             + (
                 "setup rehearsal validation"
                 if self.mode == SETUP_REHEARSAL_MODE
+                else "full session diagnostic validation"
+                if self.mode == FULL_SESSION_DIAGNOSTIC_MODE
                 else "the 15-minute evidence window"
             )
         )
@@ -1391,8 +1400,11 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             self.sql_sampler_stop.wait(10)
 
     def run_setup_rehearsal(self) -> dict[str, Any]:
-        if self.mode != SETUP_REHEARSAL_MODE:
-            raise RuntimeError("setup rehearsal requires rehearsal mode")
+        if self.mode not in {
+            SETUP_REHEARSAL_MODE,
+            FULL_SESSION_DIAGNOSTIC_MODE,
+        }:
+            raise RuntimeError("setup rehearsal requires a setup-only diagnostic mode")
         start_at = time.time() + 75
         command = (
             "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
@@ -1482,7 +1494,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             )
         )
         record = {
-            "mode": SETUP_REHEARSAL_MODE,
+            "mode": self.mode,
             "runners": readiness,
             "coordinatorReadinessRecords": len(readiness),
             "synchronizationLeadSeconds": 75,
@@ -2431,7 +2443,10 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 )
             else:
                 self.start_metrics()
-            if self.mode == SETUP_REHEARSAL_MODE:
+            if self.mode in {
+                SETUP_REHEARSAL_MODE,
+                FULL_SESSION_DIAGNOSTIC_MODE,
+            }:
                 readiness = self.run_setup_rehearsal()
                 metrics_startup = self.validate_rehearsal_metrics_startup()
                 criteria = {
@@ -2518,6 +2533,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             event("Verified that no local runtime credential handoff file exists")
         labels = {
             SETUP_REHEARSAL_MODE: "setup rehearsal",
+            FULL_SESSION_DIAGNOSTIC_MODE: "full session diagnostic",
             SESSION_PROVISIONING_REHEARSAL_MODE: "session provisioning rehearsal",
             FULL_GATE_MODE: "external gate",
         }
@@ -2544,6 +2560,8 @@ if __name__ == "__main__":
         arguments = sys.argv[1:]
         if arguments == ["--setup-rehearsal"]:
             raise SystemExit(CapacityGate(SETUP_REHEARSAL_MODE).run())
+        if arguments == ["--full-session-diagnostic"]:
+            raise SystemExit(CapacityGate(FULL_SESSION_DIAGNOSTIC_MODE).run())
         if arguments == ["--session-provisioning-rehearsal"]:
             raise SystemExit(
                 CapacityGate(SESSION_PROVISIONING_REHEARSAL_MODE).run()
@@ -2568,7 +2586,8 @@ if __name__ == "__main__":
                 secure_runtime.clear()
         raise RuntimeError(
             "use --session-provisioning-rehearsal, --setup-rehearsal, "
-            "--full-gate, --rehearsal-then-full, or --cleanup-only"
+            "--full-session-diagnostic, --full-gate, --rehearsal-then-full, "
+            "or --cleanup-only"
         )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")

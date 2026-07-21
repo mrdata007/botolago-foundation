@@ -7,8 +7,16 @@ on:
         description: Exact backend/fantasy-domain head SHA to diagnose
         required: true
         type: string
+      diagnostic_scale:
+        description: Fixed session-provisioning diagnostic scale
+        required: true
+        default: small_125
+        type: choice
+        options:
+          - small_125
+          - full_2500
       confirmation:
-        description: Type RUN_PHASE6_SESSION_DIAGNOSTIC
+        description: Type the confirmation required for the selected scale
         required: true
         type: string
 
@@ -23,10 +31,10 @@ permissions:
 
 jobs:
   session-diagnostic:
-    name: 125-user session provisioning diagnostic reproduction
+    name: ${{ inputs.diagnostic_scale == 'full_2500' && '2,500-user session provisioning diagnostic reproduction' || '125-user session provisioning diagnostic reproduction' }}
     if: github.repository == 'mrdata007/botolago-foundation'
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: ${{ inputs.diagnostic_scale == 'full_2500' && 120 || 75 }}
     environment: staging-load-test
     env:
       AWS_REGION: eu-west-3
@@ -53,8 +61,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "${{ inputs.confirmation }}" = "RUN_PHASE6_SESSION_DIAGNOSTIC"
           [[ "${{ inputs.expected_commit }}" =~ ^[0-9a-f]{40}$ ]]
+          case "${{ inputs.diagnostic_scale }}" in
+            small_125)
+              test "${{ inputs.confirmation }}" = "RUN_PHASE6_SESSION_DIAGNOSTIC"
+              diagnostic_flag="--setup-rehearsal"
+              diagnostic_timeout="45m"
+              expected_users_per_runner="25"
+              expected_total_users="125"
+              ;;
+            full_2500)
+              test "${{ inputs.confirmation }}" = "RUN_PHASE6_FULL_SESSION_DIAGNOSTIC"
+              diagnostic_flag="--full-session-diagnostic"
+              diagnostic_timeout="90m"
+              expected_users_per_runner="500"
+              expected_total_users="2500"
+              ;;
+            *)
+              exit 2
+              ;;
+          esac
+          {
+            echo "BOTOLAGO_PHASE6_DIAGNOSTIC_FLAG=$diagnostic_flag"
+            echo "BOTOLAGO_PHASE6_DIAGNOSTIC_TIMEOUT=$diagnostic_timeout"
+            echo "BOTOLAGO_PHASE6_EXPECTED_USERS_PER_RUNNER=$expected_users_per_runner"
+            echo "BOTOLAGO_PHASE6_EXPECTED_TOTAL_USERS=$expected_total_users"
+          } >> "$GITHUB_ENV"
 
       - name: Verify PR #6 and backend/fantasy-domain head
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
@@ -116,7 +148,7 @@ jobs:
           role-to-assume: ${{ vars.AWS_LOAD_TEST_ROLE_ARN }}
           role-session-name: phase6-session-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
           aws-region: eu-west-3
-          role-duration-seconds: 5400
+          role-duration-seconds: ${{ inputs.diagnostic_scale == 'full_2500' && 7200 || 5400 }}
           retry-max-attempts: 1
           mask-aws-account-id: true
           unset-current-credentials: true
@@ -141,7 +173,7 @@ jobs:
         shell: bash
         run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
 
-      - name: Run 125-user session provisioning diagnostic reproduction
+      - name: ${{ inputs.diagnostic_scale == 'full_2500' && 'Run 2,500-user session provisioning diagnostic reproduction' || 'Run 125-user session provisioning diagnostic reproduction' }}
         id: diagnostic
         continue-on-error: true
         shell: bash
@@ -152,8 +184,9 @@ jobs:
           SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
         run: |
           set +e
-          timeout --signal=INT --kill-after=60s 45m \
-            python scripts/backend/fantasy-capacity-orchestrator-diagnostic.py --setup-rehearsal
+          timeout --signal=INT --kill-after=60s "$BOTOLAGO_PHASE6_DIAGNOSTIC_TIMEOUT" \
+            python scripts/backend/fantasy-capacity-orchestrator-diagnostic.py \
+              "$BOTOLAGO_PHASE6_DIAGNOSTIC_FLAG"
           status=$?
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit 0
@@ -184,6 +217,7 @@ jobs:
         env:
           DIAGNOSTIC_EXIT: ${{ steps.diagnostic.outputs.exit_code || '2' }}
           CLEANUP_EXIT: ${{ steps.cleanup.outputs.exit_code || '2' }}
+          DIAGNOSTIC_SCALE: ${{ inputs.diagnostic_scale }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set +e
@@ -210,10 +244,11 @@ jobs:
             "cleanupExit": int(os.environ["CLEANUP_EXIT"]),
             "cleanupSummaries": cleanup_summaries,
             "diagnosticExit": int(os.environ["DIAGNOSTIC_EXIT"]),
+            "diagnosticScale": os.environ["DIAGNOSTIC_SCALE"],
             "diagnosticScope": "session_provisioning_only",
             "expectedRunners": 5,
-            "expectedUsersPerRunner": 25,
-            "expectedTotalUsers": 125,
+            "expectedUsersPerRunner": int(os.environ["BOTOLAGO_PHASE6_EXPECTED_USERS_PER_RUNNER"]),
+            "expectedTotalUsers": int(os.environ["BOTOLAGO_PHASE6_EXPECTED_TOTAL_USERS"]),
             "noMeasuredWorkload": True,
             "runUrl": os.environ["RUN_URL"],
             "summaries": summaries,
