@@ -33,20 +33,20 @@ main schedule risk.
 
 ## 2. Delivery timeline
 
-| Date | Milestone | PR | State |
-| --- | --- | --- | --- |
-| 07-17 → 07-19 | Lovable frontend build-out (293 bot commits) | — | done |
-| 07-19 | Phase 0/1: greenfield foundation, CI, schema conventions | #1 | merged 07-20 |
-| 07-20 | Phase 2: identity domain (profiles, preferences, follows, RLS) | #2 | merged |
-| 07-20 | Phase 3: football catalog + match ingestion domain | #3 | merged |
-| 07-20 | Phase 4: news/editorial domain (FTS, sanitizer, taxonomy) | #4 | merged |
-| 07-20 | Phase 5: notifications domain (fan-out, templates, quiet hours) | #5 | merged |
-| 07-20 | Phase 6: fantasy domain (rules v1, scoring, leagues) | #6 | **open draft** |
-| 07-21 | Phase 6 capacity-gate workflow bootstrap | #7 | merged |
-| 07-21 | Fix workflow `runner.temp` parse rejection | #8 | merged |
-| 07-21 | Fix IAM implicit deny on `ec2:CreateSecurityGroup` | #9 | merged |
-| 07-21 | Session-provisioning diagnostics (stacked on #6) | #10 | **open draft** |
-| 07-21 | Executable five-user session rehearsal workflow | #11 | merged |
+| Date          | Milestone                                                       | PR  | State          |
+| ------------- | --------------------------------------------------------------- | --- | -------------- |
+| 07-17 → 07-19 | Lovable frontend build-out (293 bot commits)                    | —   | done           |
+| 07-19         | Phase 0/1: greenfield foundation, CI, schema conventions        | #1  | merged 07-20   |
+| 07-20         | Phase 2: identity domain (profiles, preferences, follows, RLS)  | #2  | merged         |
+| 07-20         | Phase 3: football catalog + match ingestion domain              | #3  | merged         |
+| 07-20         | Phase 4: news/editorial domain (FTS, sanitizer, taxonomy)       | #4  | merged         |
+| 07-20         | Phase 5: notifications domain (fan-out, templates, quiet hours) | #5  | merged         |
+| 07-20         | Phase 6: fantasy domain (rules v1, scoring, leagues)            | #6  | **open draft** |
+| 07-21         | Phase 6 capacity-gate workflow bootstrap                        | #7  | merged         |
+| 07-21         | Fix workflow `runner.temp` parse rejection                      | #8  | merged         |
+| 07-21         | Fix IAM implicit deny on `ec2:CreateSecurityGroup`              | #9  | merged         |
+| 07-21         | Session-provisioning diagnostics (stacked on #6)                | #10 | **open draft** |
+| 07-21         | Executable five-user session rehearsal workflow                 | #11 | merged         |
 
 ## 3. What is on `main` (merged, Phases 0–5)
 
@@ -144,14 +144,15 @@ classic signature of an over-distributed test topology.
 
 ## 6. Independent verification (this audit, `main` @ `d6dc7e8`)
 
-| Gate | Command | Result |
-| --- | --- | --- |
-| Migration validation | `bun scripts/backend/validate-migrations.mjs` | PASS — 17 migrations |
-| Secret scan | `bun scripts/backend/check-committed-secrets.mjs` | PASS — no high-confidence secrets |
-| Typecheck | `bun run typecheck` | PENDING — dependency install was still retrying through the environment proxy at commit time; result lands in a follow-up commit |
-| Application tests | `bun test` | PENDING — dependency install was still retrying through the environment proxy at commit time; result lands in a follow-up commit |
-| Lint | `bun run lint` | PENDING — dependency install was still retrying through the environment proxy at commit time; result lands in a follow-up commit |
-| Database suite (pgTAP/RLS, replay, type drift) | `supabase start` stack | NOT RUN — no Docker/Supabase stack in this audit environment; last green in GitHub CI per PR #5/#6 records |
+| Gate                                           | Command                                           | Result                                                                                                     |
+| ---------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Migration validation                           | `bun scripts/backend/validate-migrations.mjs`     | PASS — 17 migrations                                                                                       |
+| Secret scan                                    | `bun scripts/backend/check-committed-secrets.mjs` | PASS — no high-confidence secrets                                                                          |
+| Typecheck                                      | `bun run typecheck`                               | PASS                                                                                                       |
+| Application tests                              | `bun test`                                        | PASS — 288 tests / 704 expectations / 48 files (matches PR #5 claim exactly)                               |
+| Lint                                           | `bun run lint`                                    | PASS — 0 errors, 11 warnings (all pre-existing `react-refresh/only-export-components`)                     |
+| Formatting                                     | `bun run format:check`                            | FAIL (not CI-enforced) — 12 pre-existing unformatted files                                                 |
+| Database suite (pgTAP/RLS, replay, type drift) | `supabase start` stack                            | NOT RUN — no Docker/Supabase stack in this audit environment; last green in GitHub CI per PR #5/#6 records |
 
 ## 7. Findings
 
@@ -162,7 +163,7 @@ Ranked by severity; none is release-blocking for the merged code.
    `${{ inputs.expected_commit }}` directly into bash `run:` blocks
    (`phase6-capacity-gate.yml:57-58,93`,
    `phase6-session-provisioning-rehearsal.yml:95-96,146`). The regex check
-   validates the value only *after* raw interpolation into the script text.
+   validates the value only _after_ raw interpolation into the script text.
    Exploitation requires dispatch rights plus protected-environment
    approval, so practical risk is low, but the fix is one-line: pass inputs
    via `env:` and reference `"$EXPECTED_COMMIT"` — the pattern the same
@@ -191,10 +192,19 @@ Ranked by severity; none is release-blocking for the merged code.
    theater).
 6. **[Info] PR #10 is partially superseded** by merged PR #11 and needs a
    rebase/trim before it can be reviewed.
-7. **[Info] Repo-wide formatting debt:** 13 pre-existing files fail
-   `prettier --check` (acknowledged in PR #6's body); the check is not
-   enforced in CI, so the number can only grow.
-8. **[Info] Frontend/product state:** all data modes remain mock by default;
+7. **[Info] Repo-wide formatting debt:** 12 pre-existing files on `main`
+   fail `prettier --check` (re-verified in this audit; PR #6 reported 13 on
+   its branch); the check is not enforced in CI, so the number can only
+   grow.
+8. **[Info] Lockfile depends on Lovable's private registry cache.**
+   `bun.lock` pins 95 tarball URLs to
+   `europe-west{1,4}-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache`
+   instead of `registry.npmjs.org`. GitHub CI can reach that cache today,
+   but any environment that cannot (as this audit's sandbox could not)
+   fails `bun install` until the URLs are rewritten. If Lovable's cache is
+   ever retired or made private, installs break everywhere. Consider
+   re-resolving the lockfile against the public registry.
+9. **[Info] Frontend/product state:** all data modes remain mock by default;
    Production V2 is still empty; no provider, cron, or deployment is active.
    This is by design and correctly documented, but it means **no user-facing
    functionality is yet backed by the new backend in production.**
@@ -202,15 +212,15 @@ Ranked by severity; none is release-blocking for the merged code.
 ## 8. Recommendations
 
 1. **Decide the Phase 6 gate's budget now.** Two sound options:
-   - *Simplify the topology:* run the rehearsal (and even a reduced-scale
+   - _Simplify the topology:_ run the rehearsal (and even a reduced-scale
      gate) directly from the GitHub runner without EC2/SSH indirection —
      Supabase staging does not care where load originates, and every failure
      so far has been in the EC2/SSH/credential layer, not the workload.
      Keep the 2,500-user distributed run as a post-merge staging exercise.
-   - *Or de-couple merge from measurement:* Phase 6 is additive, RLS-forced,
+   - _Or de-couple merge from measurement:_ Phase 6 is additive, RLS-forced,
      schedule-disabled, and fail-closed — the same posture under which
      Phases 2–5 merged. Merge behind those guards and let capacity evidence
-     gate *activation*, not code landing.
+     gate _activation_, not code landing.
 2. **Fix the workflow-input interpolation** (finding 1) in both Phase 6
    workflows — trivial and worth doing before the next protected dispatch.
 3. **Rebase/trim PR #10** against the merged #11 so the diagnostics land at
