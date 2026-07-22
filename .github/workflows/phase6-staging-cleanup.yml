@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ env.PHASE6_CLEANUP_HARNESS_SHA }}
-          fetch-depth: 1
+          fetch-depth: 2
           persist-credentials: false
 
       - name: Verify reviewed cleanup harness
