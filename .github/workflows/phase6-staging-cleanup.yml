@@ -1,0 +1,309 @@
+name: Phase 6 staging cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type RUN_PHASE6_STAGING_CLEANUP
+        required: true
+        type: string
+
+concurrency:
+  group: phase6-staging-load-test
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  cleanup:
+    name: Remove deterministic Phase 6 staging data and verify exact zero
+    if: github.repository == 'mrdata007/botolago-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: staging-load-test
+    env:
+      AWS_REGION: eu-west-3
+      AWS_DEFAULT_REGION: eu-west-3
+      BOTOLAGO_LOAD_ENVIRONMENT: staging-v2
+      BOTOLAGO_MAX_ESTIMATED_COST_USD: "50"
+      BOTOLAGO_REQUIRE_AWS_SESSION_TOKEN: "1"
+      BOTOLAGO_AWS_LOAD_TEST_ROLE_ARN: ${{ vars.AWS_LOAD_TEST_ROLE_ARN }}
+      PHASE6_CLEANUP_HARNESS_SHA: dd766d05abb29564d0edf3d8d3a4772e53429652
+
+    steps:
+      - name: Initialize owner-only cleanup runtime
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_dir="$RUNNER_TEMP/botolago-phase6-cleanup"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "BOTOLAGO_PHASE6_RUNTIME_DIR=$runtime_dir"
+            echo "BOTOLAGO_PHASE6_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Validate manual confirmation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirmation }}" = "RUN_PHASE6_STAGING_CLEANUP"
+
+      - name: Check out reviewed cleanup harness
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.PHASE6_CLEANUP_HARNESS_SHA }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify reviewed cleanup harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PHASE6_CLEANUP_HARNESS_SHA"
+          test "$(git diff --name-only "$PHASE6_CLEANUP_HARNESS_SHA^" "$PHASE6_CLEANUP_HARNESS_SHA" -- scripts/backend/fantasy-capacity-orchestrator.py)" = "scripts/backend/fantasy-capacity-orchestrator.py"
+
+      - name: Configure delegated AWS credentials
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_LOAD_TEST_ROLE_ARN }}
+          role-session-name: phase6-cleanup-${{ github.run_id }}-${{ github.run_attempt }}
+          aws-region: eu-west-3
+          role-duration-seconds: 3600
+          retry-max-attempts: 1
+          mask-aws-account-id: true
+          unset-current-credentials: true
+
+      - name: Verify delegated caller and staging region
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$AWS_REGION" = "eu-west-3"
+          test "$AWS_DEFAULT_REGION" = "eu-west-3"
+          test -n "${AWS_SESSION_TOKEN:-}"
+          aws sts get-caller-identity --output json >/dev/null
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/backend/fantasy-capacity-requirements.txt
+
+      - name: Install pinned cleanup dependencies
+        shell: bash
+        run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
+
+      - name: Capture deterministic Phase 6 inventory
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import pathlib
+          import sys
+
+          module_path = pathlib.Path("scripts/backend/fantasy-capacity-orchestrator.py")
+          spec = importlib.util.spec_from_file_location("phase6_cleanup_harness", module_path)
+          module = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = module
+          spec.loader.exec_module(module)
+          gate = module.CapacityGate(module.CLEANUP_RECOVERY_MODE)
+
+          candidates = gate.sql(
+              "with known_teams as (select md5('fantasy-load-team-' || number)::uuid id "
+              "from generate_series(50001,52500) number), candidates as ("
+              "select id from auth.users where email like 'fantasy-gate-%@staging.botolago.invalid' "
+              "union select user_id from auth.identities where provider_id like "
+              "'fantasy-gate-%@staging.botolago.invalid' union select id from app.profiles "
+              "where display_name like 'Phase 6 Gate User %' union select team.user_id from "
+              "app.fantasy_teams team join known_teams known on known.id=team.id) "
+              "select distinct id::text user_id from candidates order by user_id"
+          )
+          user_ids = [row["user_id"] for row in candidates]
+          target_file = pathlib.Path(os.environ["BOTOLAGO_PHASE6_RUNTIME_DIR"]) / "target-user-ids.json"
+          module.private_json(target_file, user_ids)
+
+          target_cte = (
+              "select unnest(array[" + ",".join(f"'{value}'::uuid" for value in user_ids) + "]) id"
+              if user_ids else "select null::uuid id where false"
+          )
+          query = (
+              "with target_users as (" + target_cte + "), known_teams as (select "
+              "md5('fantasy-load-team-' || number)::uuid id from generate_series(50001,52500) number), "
+              "known_lineups as (select id from app.fantasy_lineups where fantasy_team_id in "
+              "(select id from known_teams)), known_batches as (select id from "
+              "app.fantasy_transfer_batches where fantasy_team_id in (select id from known_teams)) select "
+              "(select count(*) from auth.users where id in (select id from target_users) or email like "
+              "'fantasy-gate-%@staging.botolago.invalid')::integer users, (select count(*) from "
+              "auth.identities where user_id in (select id from target_users) or provider_id like "
+              "'fantasy-gate-%@staging.botolago.invalid')::integer identities, (select count(*) from "
+              "auth.sessions where user_id in (select id from target_users))::integer sessions, "
+              "(select count(*) from auth.refresh_tokens where user_id::uuid in (select id from "
+              "target_users))::integer refresh_tokens, (select count(*) from app.profiles where id in "
+              "(select id from target_users) or display_name like 'Phase 6 Gate User %')::integer profiles, "
+              "(select count(*) from app.user_preferences where user_id in (select id from target_users))::integer preferences, "
+              "(select count(*) from app.fantasy_teams where id in (select id from known_teams))::integer fantasy_teams, "
+              "(select count(*) from app.fantasy_squad_memberships where fantasy_team_id in (select id from known_teams))::integer squads, "
+              "(select count(*) from app.fantasy_lineups where fantasy_team_id in (select id from known_teams))::integer lineups, "
+              "(select count(*) from app.fantasy_transfers where transfer_batch_id in (select id from known_batches))::integer transfers, "
+              "(select count(*) from app.fantasy_chip_uses where fantasy_team_id in (select id from known_teams))::integer chips, "
+              "(select count(*) from app.fantasy_rankings where fantasy_team_id in (select id from known_teams))::integer rankings"
+          )
+          counts = gate.sql(query)[0]
+          keys = gate.management("GET", f"/v1/projects/{gate.project_ref}/api-keys")
+          counts["metrics_keys"] = sum(1 for item in keys if item.get("name") == module.TEMP_KEY_NAME)
+          active = gate.ec2.describe_instances(Filters=[
+              {"Name": "tag:Purpose", "Values": ["botolago-phase6"]},
+              {"Name": "instance-state-name", "Values": ["pending", "running", "stopping", "stopped"]},
+          ])
+          counts["ec2"] = sum(len(item["Instances"]) for item in active["Reservations"])
+          counts["security_groups"] = len(gate.ec2.describe_security_groups(
+              Filters=[{"Name": "tag:Purpose", "Values": ["botolago-phase6"]}]
+          )["SecurityGroups"])
+          counts["key_pairs"] = len(gate.ec2.describe_key_pairs(
+              Filters=[{"Name": "tag:Purpose", "Values": ["botolago-phase6"]}]
+          )["KeyPairs"])
+          module.private_json(pathlib.Path(os.environ["BOTOLAGO_PHASE6_EVIDENCE_DIR"]) / "before.json", counts)
+          print("Captured deterministic Phase 6 inventory without exposing record identifiers")
+          PY
+
+      - name: Execute bounded Phase 6 cleanup
+        id: cleanup
+        continue-on-error: true
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+        run: |
+          set +e
+          timeout --signal=INT --kill-after=60s 25m \
+            python scripts/backend/fantasy-capacity-orchestrator.py --cleanup-only
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Independently verify exact-zero end state
+        id: verify
+        if: always()
+        shell: bash
+        env:
+          CLEANUP_EXIT: ${{ steps.cleanup.outputs.exit_code || '2' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import pathlib
+          import sys
+
+          module_path = pathlib.Path("scripts/backend/fantasy-capacity-orchestrator.py")
+          spec = importlib.util.spec_from_file_location("phase6_cleanup_verify", module_path)
+          module = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = module
+          spec.loader.exec_module(module)
+          gate = module.CapacityGate(module.CLEANUP_RECOVERY_MODE)
+          runtime = pathlib.Path(os.environ["BOTOLAGO_PHASE6_RUNTIME_DIR"])
+          evidence = pathlib.Path(os.environ["BOTOLAGO_PHASE6_EVIDENCE_DIR"])
+          before = json.loads((evidence / "before.json").read_text(encoding="utf-8"))
+          user_ids = json.loads((runtime / "target-user-ids.json").read_text(encoding="utf-8"))
+          target_cte = (
+              "select unnest(array[" + ",".join(f"'{value}'::uuid" for value in user_ids) + "]) id"
+              if user_ids else "select null::uuid id where false"
+          )
+          query = (
+              "with target_users as (" + target_cte + "), known_teams as (select "
+              "md5('fantasy-load-team-' || number)::uuid id from generate_series(50001,52500) number), "
+              "known_batches as (select id from app.fantasy_transfer_batches where fantasy_team_id in "
+              "(select id from known_teams)) select (select count(*) from auth.users where id in "
+              "(select id from target_users) or email like 'fantasy-gate-%@staging.botolago.invalid')::integer users, "
+              "(select count(*) from auth.identities where user_id in (select id from target_users) or "
+              "provider_id like 'fantasy-gate-%@staging.botolago.invalid')::integer identities, "
+              "(select count(*) from auth.sessions where user_id in (select id from target_users))::integer sessions, "
+              "(select count(*) from auth.refresh_tokens where user_id::uuid in (select id from target_users))::integer refresh_tokens, "
+              "(select count(*) from app.profiles where id in (select id from target_users) or display_name like "
+              "'Phase 6 Gate User %')::integer profiles, (select count(*) from app.user_preferences where user_id in "
+              "(select id from target_users))::integer preferences, (select count(*) from app.fantasy_teams where id in "
+              "(select id from known_teams))::integer fantasy_teams, (select count(*) from app.fantasy_squad_memberships "
+              "where fantasy_team_id in (select id from known_teams))::integer squads, (select count(*) from app.fantasy_lineups "
+              "where fantasy_team_id in (select id from known_teams))::integer lineups, (select count(*) from app.fantasy_transfers "
+              "where transfer_batch_id in (select id from known_batches))::integer transfers, (select count(*) from "
+              "app.fantasy_chip_uses where fantasy_team_id in (select id from known_teams))::integer chips, (select count(*) from "
+              "app.fantasy_rankings where fantasy_team_id in (select id from known_teams))::integer rankings"
+          )
+          after = gate.sql(query)[0]
+          keys = gate.management("GET", f"/v1/projects/{gate.project_ref}/api-keys")
+          after["metrics_keys"] = sum(1 for item in keys if item.get("name") == module.TEMP_KEY_NAME)
+          active = gate.ec2.describe_instances(Filters=[
+              {"Name": "tag:Purpose", "Values": ["botolago-phase6"]},
+              {"Name": "instance-state-name", "Values": ["pending", "running", "stopping", "stopped"]},
+          ])
+          after["ec2"] = sum(len(item["Instances"]) for item in active["Reservations"])
+          after["security_groups"] = len(gate.ec2.describe_security_groups(
+              Filters=[{"Name": "tag:Purpose", "Values": ["botolago-phase6"]}]
+          )["SecurityGroups"])
+          after["key_pairs"] = len(gate.ec2.describe_key_pairs(
+              Filters=[{"Name": "tag:Purpose", "Values": ["botolago-phase6"]}]
+          )["KeyPairs"])
+          deleted = {key: max(0, int(before.get(key, 0)) - int(after.get(key, 0))) for key in after}
+          failures = [{"table": key, "count": int(value), "reason": "deterministic Phase 6 records remain"}
+                      for key, value in sorted(after.items()) if int(value) != 0]
+          summary = {
+              "cleanupExit": int(os.environ["CLEANUP_EXIT"]),
+              "deleted": deleted,
+              "finalInventory": after,
+              "failures": failures,
+              "passed": not failures,
+          }
+          module.private_json(evidence / "after.json", after)
+          module.private_json(evidence / "summary.json", summary)
+          with (evidence / "summary.md").open("w", encoding="utf-8") as output:
+              output.write("# Phase 6 staging cleanup\n\n")
+              output.write(f"- Result: {'PASS' if summary['passed'] else 'FAIL'}\n")
+              output.write(f"- Cleanup execution exit: `{summary['cleanupExit']}`\n\n")
+              output.write("| Inventory | Deleted | Remaining |\n|---|---:|---:|\n")
+              for key in sorted(after):
+                  output.write(f"| {key} | {deleted[key]} | {after[key]} |\n")
+          for failure in failures:
+              print(f"::error::table={failure['table']} count={failure['count']} reason={failure['reason']}")
+          print(json.dumps({"passed": summary["passed"], "deleted": deleted, "finalInventory": after}, sort_keys=True))
+          sys.exit(0 if summary["passed"] else 2)
+          PY
+
+      - name: Remove runtime target identifiers
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -c 'import os,pathlib; (pathlib.Path(os.environ["BOTOLAGO_PHASE6_RUNTIME_DIR"])/"target-user-ids.json").unlink(missing_ok=True)'
+
+      - name: Upload sanitized cleanup evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase6-staging-cleanup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ steps.runtime.outputs.evidence_dir }}/before.json
+            ${{ steps.runtime.outputs.evidence_dir }}/after.json
+            ${{ steps.runtime.outputs.evidence_dir }}/summary.json
+            ${{ steps.runtime.outputs.evidence_dir }}/summary.md
+          if-no-files-found: error
+          retention-days: 14
