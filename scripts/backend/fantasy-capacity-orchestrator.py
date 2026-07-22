@@ -46,6 +46,10 @@ ARTIFACT_ROOT = Path(
 RUNNER_COUNT = 5
 USERS_PER_RUNNER = 500
 TOTAL_USERS = RUNNER_COUNT * USERS_PER_RUNNER
+RUNNER_PREPARATION_STAGGER_SECONDS = 15
+PREPARATION_SYNCHRONIZATION_LEAD_SECONDS = 75
+DATABASE_OBSERVER_INTERVAL_SECONDS = 5
+DATABASE_OBSERVER_BLOCKING_PAIR_LIMIT = 20
 FIRST_USER_NUMBER = 50_001
 REHEARSAL_USERS_PER_RUNNER = 25
 SESSION_REHEARSAL_USERS_PER_RUNNER = 1
@@ -104,6 +108,29 @@ def private_write(path: Path, value: str) -> None:
 
 def private_json(path: Path, value: Any) -> None:
     private_write(path, json.dumps(value, indent=2, sort_keys=True) + "\n")
+
+
+def private_append_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags, 0o600)
+    os.fchmod(descriptor, 0o600)
+    with os.fdopen(descriptor, "a", encoding="utf-8") as output:
+        output.write(json.dumps(value, separators=(",", ":"), sort_keys=True) + "\n")
+
+
+def runner_preparation_delay(index: int) -> int:
+    if not 0 <= index < RUNNER_COUNT:
+        raise ValueError("runner index is outside the Phase 6 shard range")
+    return index * RUNNER_PREPARATION_STAGGER_SECONDS
+
+
+def synchronized_preparation_lead_seconds() -> int:
+    return PREPARATION_SYNCHRONIZATION_LEAD_SECONDS + runner_preparation_delay(
+        RUNNER_COUNT - 1
+    )
 
 
 def read_runtime_environment() -> dict[str, str]:
@@ -311,6 +338,7 @@ class CapacityGate:
         self.sql_samples: list[dict[str, Any]] = []
         self.sql_sampler_stop = threading.Event()
         self.sql_sampler_thread: threading.Thread | None = None
+        self.database_observer_path = self.artifact_dir / "database-observer.ndjson"
         self.original_gameweek: dict[str, Any] | None = None
         self.gameweek_prepared = False
         self.cloud_mutation_started = False
@@ -346,6 +374,25 @@ class CapacityGate:
             f"/v1/projects/{self.project_ref}/database/query",
             {"query": query},
         )
+
+    def bounded_count(self, label: str, query: str) -> int:
+        """Execute one bounded inventory/verification count statement."""
+
+        rows = self.sql(query)
+        if (
+            not isinstance(rows, list)
+            or len(rows) != 1
+            or not isinstance(rows[0], dict)
+            or set(rows[0]) != {"count"}
+        ):
+            raise RuntimeError(f"{label} count returned an invalid contract")
+        try:
+            count = int(rows[0]["count"])
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(f"{label} count is not an integer") from error
+        if count < 0:
+            raise RuntimeError(f"{label} count is negative")
+        return count
 
     def preflight(self) -> None:
         if os.getenv("BOTOLAGO_REQUIRE_AWS_SESSION_TOKEN") != "1":
@@ -414,11 +461,12 @@ class CapacityGate:
         ):
             raise RuntimeError("staging capacity gameweek identity validation failed")
         self.original_gameweek = row
-        existing = self.sql(
-            "select count(*)::integer as users from auth.users "
+        existing = self.bounded_count(
+            "temporary Auth users",
+            "select count(*)::integer as count from auth.users "
             "where email like 'fantasy-gate-%@staging.botolago.invalid'"
         )
-        if existing[0]["users"] != 0:
+        if existing != 0:
             raise RuntimeError("stale Phase 6 temporary Auth users require cleanup")
         active_runners = self.ec2.describe_instances(
             Filters=[
@@ -711,20 +759,21 @@ from phase6_gate_users gate cross join generate_series(1, 15) player;
 commit;
 """
         self.sql(query)
-        validation = self.sql(
-            "select count(*)::integer as teams, "
-            "count(*) filter (where squad_count = 15)::integer as valid_squads "
-            "from (select team.id, count(membership.id) as squad_count "
-            "from app.fantasy_teams team left join app.fantasy_squad_memberships membership "
-            "on membership.fantasy_team_id = team.id and membership.sold_at is null "
-            f"where team.name like 'Gate Team %' and team.user_id in "
-            f"(select id from auth.users where email like 'fantasy-gate-{self.run_id}-%') "
-            "group by team.id) checked"
-        )[0]
-        if validation != {
-            "teams": self.total_users,
-            "valid_squads": self.total_users,
-        }:
+        team_count = self.bounded_count(
+            "seeded Fantasy teams",
+            "select count(*)::integer as count from app.fantasy_teams team "
+            "where team.name like 'Gate Team %' and team.user_id in "
+            f"(select id from auth.users where email like 'fantasy-gate-{self.run_id}-%')",
+        )
+        membership_count = self.bounded_count(
+            "seeded active squad memberships",
+            "with known_teams as (select md5('fantasy-load-team-' || number)::uuid "
+            f"as id from generate_series({self.first_user_number}, "
+            f"{self.last_user_number}) number) select count(*)::integer as count "
+            "from app.fantasy_squad_memberships membership where membership.sold_at "
+            "is null and membership.fantasy_team_id in (select id from known_teams)",
+        )
+        if team_count != self.total_users or membership_count != self.total_users * 15:
             raise RuntimeError("temporary Fantasy state validation failed")
         event(f"Seeded {self.total_users} isolated valid Fantasy teams")
 
@@ -1171,12 +1220,6 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             text=True,
             env=process_env,
         )
-        self.sql_sampler_thread = threading.Thread(
-            target=self._sample_database_until_stopped,
-            name="phase6-database-sampler",
-            daemon=True,
-        )
-        self.sql_sampler_thread.start()
         event(
             "Started 60-second Metrics API collection for "
             + (
@@ -1186,18 +1229,33 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             )
         )
 
+    def start_database_observer(self) -> None:
+        if self.sql_sampler_thread and self.sql_sampler_thread.is_alive():
+            return
+        self.sql_sampler_stop.clear()
+        self.sql_sampler_thread = threading.Thread(
+            target=self._sample_database_until_stopped,
+            name="phase6-database-observer",
+            daemon=True,
+        )
+        self.sql_sampler_thread.start()
+        event("Started fail-open five-second database observer")
+
+    def stop_database_observer(self) -> None:
+        self.sql_sampler_stop.set()
+        if self.sql_sampler_thread:
+            self.sql_sampler_thread.join(timeout=15)
+
     def _sample_database_until_stopped(self) -> None:
         while not self.sql_sampler_stop.is_set():
-            try:
-                self.sample_database()
-            except Exception:
-                pass
-            self.sql_sampler_stop.wait(10)
+            self.sample_database()
+            self.sql_sampler_stop.wait(DATABASE_OBSERVER_INTERVAL_SECONDS)
 
     def run_setup_rehearsal(self) -> dict[str, Any]:
         if self.mode != SETUP_REHEARSAL_MODE:
             raise RuntimeError("setup rehearsal requires rehearsal mode")
-        start_at = time.time() + 75
+        synchronization_lead = synchronized_preparation_lead_seconds()
+        start_at = time.time() + synchronization_lead
         command = (
             "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
             "BOTOLAGO_LOAD_PROFILE=setup_rehearsal "
@@ -1216,6 +1274,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         )
 
         def run(index: int) -> dict[str, Any]:
+            time.sleep(runner_preparation_delay(index))
             try:
                 self.ssh(self.instance_ips[index], command.format(index=index), 600)
             except (subprocess.SubprocessError, OSError) as error:
@@ -1289,7 +1348,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "mode": SETUP_REHEARSAL_MODE,
             "runners": readiness,
             "coordinatorReadinessRecords": len(readiness),
-            "synchronizationLeadSeconds": 75,
+            "synchronizationLeadSeconds": synchronization_lead,
             "measuredRequests": 0,
             "passed": valid,
         }
@@ -1328,7 +1387,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         # Preparation reads are outside the measured workload. Give all five
         # runners enough time to complete bounded retries before the shared
         # start instant instead of treating a transient setup response as load.
-        start_at = time.time() + 75
+        start_at = time.time() + synchronized_preparation_lead_seconds()
         command = (
             "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
             f"BOTOLAGO_LOAD_PROFILE={profile} "
@@ -1349,6 +1408,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
 
         def run(index: int) -> dict[str, Any] | None:
             timeout = duration + 900
+            time.sleep(runner_preparation_delay(index))
             try:
                 self.ssh(self.instance_ips[index], command.format(index=index), timeout)
                 return None
@@ -1478,28 +1538,62 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         }
 
     def sample_database(self) -> None:
-        rows = self.sql(
-            "select statement_timestamp() as sampled_at, "
-            "(select count(*) from pg_stat_activity where datname = current_database())::integer as connections, "
-            "current_setting('max_connections')::integer as max_connections, "
-            "(select count(*) from pg_stat_activity where datname = current_database() "
-            "and wait_event_type = 'Lock')::integer as lock_waits, "
-            "(select deadlocks from pg_stat_database where datname = current_database())::bigint as deadlocks, "
-            "(select conflicts from pg_stat_database where datname = current_database())::bigint as conflicts, "
-            "(select case when blks_hit + blks_read = 0 then 1 else "
-            "blks_hit::numeric / (blks_hit + blks_read) end from pg_stat_database "
-            "where datname = current_database()) as cache_hit_ratio"
-        )
-        if isinstance(rows, list) and rows:
-            self.sql_samples.append(rows[0])
+        try:
+            rows = self.sql(
+                "with activity as materialized (select pid, coalesce(state, 'unknown') "
+                "as state, wait_event is not null as waiting, wait_event_type, "
+                "case when state = 'active' and query_start is not null then "
+                "extract(epoch from statement_timestamp() - query_start) else 0 end "
+                "as query_age_seconds from pg_stat_activity where datname = "
+                "current_database() and pid <> pg_backend_pid()), state_totals as ("
+                "select state, count(*)::integer as total from activity group by state), "
+                "blocking as (select blocked.pid as blocked_pid, blocker.pid as "
+                "blocking_pid from activity blocked cross join lateral "
+                "unnest(pg_blocking_pids(blocked.pid)) blocker(pid) order by "
+                "blocked.pid, blocker.pid limit "
+                f"{DATABASE_OBSERVER_BLOCKING_PAIR_LIMIT}) select statement_timestamp() "
+                "as sampled_at, (select count(*) from activity)::integer as connections, "
+                "current_setting('max_connections')::integer as max_connections, "
+                "(select count(*) from activity where wait_event_type = 'Lock')::integer "
+                "as lock_waits, (select count(*) from activity where waiting)::integer "
+                "as waiting, coalesce((select max(query_age_seconds) from activity), "
+                "0)::numeric as longest_query_age_seconds, coalesce((select "
+                "jsonb_object_agg(state, total) from state_totals), '{}'::jsonb) as "
+                "state_counts, coalesce((select jsonb_agg(jsonb_build_object("
+                "'blockedFingerprint', md5(blocked_pid::text || ':phase6'), "
+                "'blockingFingerprint', md5(blocking_pid::text || ':phase6')) order by "
+                "blocked_pid, blocking_pid) from blocking), '[]'::jsonb) as "
+                "blocking_pairs, (select deadlocks from pg_stat_database where datname "
+                "= current_database())::bigint as deadlocks, (select conflicts from "
+                "pg_stat_database where datname = current_database())::bigint as "
+                "conflicts, (select case when blks_hit + blks_read = 0 then 1 else "
+                "blks_hit::numeric / (blks_hit + blks_read) end from pg_stat_database "
+                "where datname = current_database()) as cache_hit_ratio"
+            )
+            if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+                raise RuntimeError("database observer returned an invalid contract")
+            sample = sanitize_diagnostic_value(rows[0])
+            if not isinstance(sample, dict):
+                raise RuntimeError("database observer sanitization failed")
+            self.sql_samples.append(sample)
+            private_append_json(self.database_observer_path, sample)
+        except Exception as error:
+            # Observation must never affect preparation, measured traffic, or cleanup.
+            try:
+                private_append_json(
+                    self.database_observer_path,
+                    {
+                        "sampled_at": datetime.now(UTC).isoformat(),
+                        "observer_error": type(error).__name__,
+                    },
+                )
+            except Exception:
+                pass
 
     def await_metrics(self) -> dict[str, Any]:
         if not self.metrics_process:
             raise RuntimeError("metrics collector was not started")
         stdout, stderr = self.metrics_process.communicate(timeout=300)
-        self.sql_sampler_stop.set()
-        if self.sql_sampler_thread:
-            self.sql_sampler_thread.join(timeout=15)
         if self.metrics_process.returncode != 0:
             raise RuntimeError(f"metrics collector failed: {stderr.strip()[:120]}")
         summary = json.loads(stdout)
@@ -1512,43 +1606,65 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
     def integrity(self) -> dict[str, Any]:
         user_ids = [item["user_id"] for item in self.users]
         ids = ",".join(f"'{value}'::uuid" for value in user_ids)
-        rows = self.sql(
+        gate_teams = (
             "with gate_teams as (select id from app.fantasy_teams "
-            f"where user_id in ({ids})), checks as (select "
-            "(select count(*) from (select transfer_batch_id, sequence_number "
-            "from app.fantasy_transfers transfer join app.fantasy_transfer_batches batch "
-            "on batch.id = transfer.transfer_batch_id where batch.fantasy_team_id in "
-            "(select id from gate_teams) group by transfer_batch_id, sequence_number having count(*) > 1) d)::integer as duplicate_transfers, "
-            "(select count(*) from (select batch.id from "
-            "app.fantasy_transfer_batches batch left join app.fantasy_transfers transfer "
-            "on transfer.transfer_batch_id = batch.id where batch.fantasy_team_id in "
-            "(select id from gate_teams) group by batch.id, batch.transfers_count having "
-            "count(transfer.id) <> batch.transfers_count) d)::integer as partial_transfers, "
-            "(select count(*) from (select fantasy_team_id, gameweek_id "
-            "from app.fantasy_chip_uses where fantasy_team_id in (select id from gate_teams) "
-            "group by fantasy_team_id, gameweek_id having count(*) > 1) d)::integer as duplicate_chips, "
-            "(select count(*) from app.fantasy_teams where id in (select id from gate_teams) "
-            "and (bank < 0 or team_value <= 0))::integer as corrupted_balances, "
-            "(select count(*) from app.fantasy_teams where id in (select id from gate_teams) "
-            "and free_transfers not between 0 and 2)::integer as corrupted_free_transfers, "
-            "(select count(*) from app.fantasy_transfer_batches where fantasy_team_id in "
-            "(select id from gate_teams) and (bank_before < 0 or bank_after < 0))::integer as corrupt_transfer_balances, "
-            "(select count(*) from (select audit.fantasy_team_id, "
+            f"where user_id in ({ids})) "
+        )
+        queries = {
+            "duplicate_transfers": gate_teams
+            + "select count(*)::integer as count from (select transfer_batch_id, "
+            "sequence_number from app.fantasy_transfers transfer join "
+            "app.fantasy_transfer_batches batch on batch.id = "
+            "transfer.transfer_batch_id where batch.fantasy_team_id in (select id "
+            "from gate_teams) group by transfer_batch_id, sequence_number having "
+            "count(*) > 1) duplicates",
+            "partial_transfers": gate_teams
+            + "select count(*)::integer as count from (select batch.id from "
+            "app.fantasy_transfer_batches batch left join app.fantasy_transfers "
+            "transfer on transfer.transfer_batch_id = batch.id where "
+            "batch.fantasy_team_id in (select id from gate_teams) group by batch.id, "
+            "batch.transfers_count having count(transfer.id) <> batch.transfers_count) "
+            "partial",
+            "duplicate_chips": gate_teams
+            + "select count(*)::integer as count from (select fantasy_team_id, "
+            "gameweek_id from app.fantasy_chip_uses where fantasy_team_id in "
+            "(select id from gate_teams) group by fantasy_team_id, gameweek_id having "
+            "count(*) > 1) duplicates",
+            "corrupted_balances": gate_teams
+            + "select count(*)::integer as count from app.fantasy_teams where id in "
+            "(select id from gate_teams) and (bank < 0 or team_value <= 0)",
+            "corrupted_free_transfers": gate_teams
+            + "select count(*)::integer as count from app.fantasy_teams where id in "
+            "(select id from gate_teams) and free_transfers not between 0 and 2",
+            "corrupt_transfer_balances": gate_teams
+            + "select count(*)::integer as count from app.fantasy_transfer_batches "
+            "where fantasy_team_id in (select id from gate_teams) and "
+            "(bank_before < 0 or bank_after < 0)",
+            "lost_updates": gate_teams
+            + "select count(*)::integer as count from (select audit.fantasy_team_id, "
             "audit.resulting_version from app_private.fantasy_mutation_audit audit "
             "where audit.fantasy_team_id in (select id from gate_teams) and "
             "audit.accepted and audit.resulting_version is not null group by "
-            "audit.fantasy_team_id, audit.resulting_version having count(*) > 1) d)::integer "
-            "as lost_updates, "
-            "(select count(*) from app_private.fantasy_mutation_audit audit join app.fantasy_gameweeks gw "
-            f"on gw.id = '{GAMEWEEK_ID}'::uuid where audit.fantasy_team_id in (select id from gate_teams) "
-            "and audit.accepted and audit.occurred_at >= gw.deadline_at)::integer as deadline_bypasses, "
-            "(select count(*) from (select team.id from gate_teams team left join "
-            "app.fantasy_squad_memberships membership on membership.fantasy_team_id = team.id "
-            "and membership.sold_at is null group by team.id having count(membership.id) <> 15) d)::integer as invalid_active_squads) "
-            "select * from checks"
-        )[0]
-        passed = all(int(value) == 0 for value in rows.values())
-        result = {**rows, "passed": passed}
+            "audit.fantasy_team_id, audit.resulting_version having count(*) > 1) "
+            "duplicates",
+            "deadline_bypasses": gate_teams
+            + "select count(*)::integer as count from "
+            "app_private.fantasy_mutation_audit audit join app.fantasy_gameweeks gw "
+            f"on gw.id = '{GAMEWEEK_ID}'::uuid where audit.fantasy_team_id in "
+            "(select id from gate_teams) and audit.accepted and audit.occurred_at >= "
+            "gw.deadline_at",
+            "invalid_active_squads": gate_teams
+            + "select count(*)::integer as count from (select team.id from "
+            "gate_teams team left join app.fantasy_squad_memberships membership on "
+            "membership.fantasy_team_id = team.id and membership.sold_at is null "
+            "group by team.id having count(membership.id) <> 15) invalid",
+        }
+        counts = {
+            label: self.bounded_count(f"integrity {label}", query)
+            for label, query in queries.items()
+        }
+        passed = all(value == 0 for value in counts.values())
+        result = {**counts, "passed": passed}
         private_json(self.artifact_dir / "integrity.json", result)
         event(f"Integrity validation {'passed' if passed else 'failed'}")
         return result
@@ -1801,17 +1917,31 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             )["KeyPairs"]
         )
 
-        discovered_users = self.sql(
+        discovered_auth_users = self.sql(
+            "select users.id::text as user_id from auth.users users where "
+            "users.email like 'fantasy-gate-%@staging.botolago.invalid'"
+        )
+        discovered_team_users = self.sql(
             "with known_teams as (select md5('fantasy-load-team-' || number)::uuid "
             f"as id from generate_series({FIRST_USER_NUMBER}, "
-            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number), candidates as ("
-            "select users.id from auth.users users where users.email like "
-            "'fantasy-gate-%@staging.botolago.invalid' union select team.user_id "
-            "from app.fantasy_teams team join known_teams known on known.id = team.id) "
-            "select distinct id::text as user_id from candidates"
+            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number) select distinct "
+            "team.user_id::text as user_id from app.fantasy_teams team join "
+            "known_teams known on known.id = team.id"
         )
         known_user_ids = {item.get("user_id") for item in self.users}
-        for record in discovered_users if isinstance(discovered_users, list) else []:
+        discovered_users = [
+            *(
+                discovered_auth_users
+                if isinstance(discovered_auth_users, list)
+                else []
+            ),
+            *(
+                discovered_team_users
+                if isinstance(discovered_team_users, list)
+                else []
+            ),
+        ]
+        for record in discovered_users:
             user_id = record.get("user_id")
             if isinstance(user_id, str) and user_id not in known_user_ids:
                 uuid.UUID(user_id)
@@ -1986,73 +2116,109 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
 
     def verify_database_cleanup(self) -> dict[str, Any]:
         tracked_ids = [item.get("user_id") for item in self.users if item.get("user_id")]
-        tracked_user_cte = (
+        tracked_users = (
             "select unnest(array["
             + ",".join(f"'{value}'::uuid" for value in tracked_ids)
             + "]) as id"
             if tracked_ids
             else "select null::uuid as id where false"
         )
-        rows = self.sql(
-            "with known_teams as (select md5('fantasy-load-team-' || number)::uuid "
-            f"as id from generate_series({FIRST_USER_NUMBER}, "
-            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number), tracked_users as ("
-            f"{tracked_user_cte}), known_lineups as (select lineup.id from "
-            "app.fantasy_lineups lineup join known_teams team on team.id = "
-            "lineup.fantasy_team_id), known_batches as (select batch.id from "
-            "app.fantasy_transfer_batches batch join known_teams team on team.id = "
-            "batch.fantasy_team_id), known_snapshots as (select snapshot.id from "
-            "app.fantasy_free_hit_snapshots snapshot join known_teams team on "
-            "team.id = snapshot.fantasy_team_id) select "
-            "(select count(*) from auth.users where email like "
-            "'fantasy-gate-%@staging.botolago.invalid')::integer as users, "
-            "(select count(*) from auth.sessions session join tracked_users users "
-            "on users.id = session.user_id)::integer as sessions, "
-            "(select count(*) from auth.refresh_tokens token join tracked_users users "
-            "on users.id = token.user_id::uuid where token.revoked is false)::integer "
-            "as refresh_tokens, (select count(*) from app.profiles where display_name "
-            "like 'Phase 6 Gate User %')::integer as profiles, (select count(*) from "
-            "app.fantasy_teams team join known_teams known on known.id = team.id)::integer "
-            "as fantasy_teams, (select count(*) from app.fantasy_squad_memberships item "
-            "join known_teams team on team.id = item.fantasy_team_id)::integer as "
-            "squad_memberships, (select count(*) from app.fantasy_lineups item join "
-            "known_teams team on team.id = item.fantasy_team_id)::integer as lineups, "
-            "(select count(*) from app.fantasy_lineup_players item join known_lineups "
-            "lineup on lineup.id = item.lineup_id)::integer as lineup_players, "
-            "(select count(*) from app.fantasy_transfer_batches item join known_teams "
-            "team on team.id = item.fantasy_team_id)::integer as transfer_batches, "
-            "(select count(*) from app.fantasy_transfers item join known_batches batch "
-            "on batch.id = item.transfer_batch_id)::integer as transfers, (select "
-            "count(*) from app.fantasy_chip_uses item join known_teams team on team.id = "
-            "item.fantasy_team_id)::integer as chip_uses, (select count(*) from "
-            "app.fantasy_free_hit_snapshots item join known_teams team on team.id = "
-            "item.fantasy_team_id)::integer as free_hit_snapshots, (select count(*) "
-            "from app.fantasy_free_hit_snapshot_players item join known_snapshots "
-            "snapshot on snapshot.id = item.snapshot_id)::integer as "
-            "free_hit_snapshot_players, (select count(*) from "
+        known_teams = (
+            "select md5('fantasy-load-team-' || number)::uuid as id from "
+            f"generate_series({FIRST_USER_NUMBER}, "
+            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number"
+        )
+        known_lineups = (
+            "select md5('fantasy-gate-lineup-' || number)::uuid as id from "
+            f"generate_series({FIRST_USER_NUMBER}, "
+            f"{FIRST_USER_NUMBER + TOTAL_USERS - 1}) number"
+        )
+        team_prefix = f"with known_teams as ({known_teams}) "
+        user_prefix = f"with tracked_users as ({tracked_users}) "
+        team_user_prefix = (
+            f"with known_teams as ({known_teams}), tracked_users as ({tracked_users}) "
+        )
+        queries = {
+            "users": "select count(*)::integer as count from auth.users where email "
+            "like 'fantasy-gate-%@staging.botolago.invalid'",
+            "sessions": user_prefix
+            + "select count(*)::integer as count from auth.sessions session join "
+            "tracked_users users on users.id = session.user_id",
+            "refresh_tokens": user_prefix
+            + "select count(*)::integer as count from auth.refresh_tokens token join "
+            "tracked_users users on users.id = token.user_id::uuid where token.revoked "
+            "is false",
+            "profiles": "select count(*)::integer as count from app.profiles where "
+            "display_name like 'Phase 6 Gate User %'",
+            "fantasy_teams": team_prefix
+            + "select count(*)::integer as count from app.fantasy_teams item where "
+            "item.id in (select id from known_teams)",
+            "squad_memberships": team_prefix
+            + "select count(*)::integer as count from "
+            "app.fantasy_squad_memberships item where item.fantasy_team_id in "
+            "(select id from known_teams)",
+            "lineups": team_prefix
+            + "select count(*)::integer as count from app.fantasy_lineups item where "
+            "item.fantasy_team_id in (select id from known_teams)",
+            "lineup_players": f"with known_lineups as ({known_lineups}) "
+            "select count(*)::integer as count from app.fantasy_lineup_players item "
+            "where item.lineup_id in (select id from known_lineups)",
+            "transfer_batches": team_prefix
+            + "select count(*)::integer as count from app.fantasy_transfer_batches "
+            "item where item.fantasy_team_id in (select id from known_teams)",
+            "transfers": team_prefix
+            + "select count(*)::integer as count from app.fantasy_transfers item where "
+            "item.transfer_batch_id in (select batch.id from "
+            "app.fantasy_transfer_batches batch where batch.fantasy_team_id in "
+            "(select id from known_teams))",
+            "chip_uses": team_prefix
+            + "select count(*)::integer as count from app.fantasy_chip_uses item where "
+            "item.fantasy_team_id in (select id from known_teams)",
+            "free_hit_snapshots": team_prefix
+            + "select count(*)::integer as count from "
+            "app.fantasy_free_hit_snapshots item where item.fantasy_team_id in "
+            "(select id from known_teams)",
+            "free_hit_snapshot_players": team_prefix
+            + "select count(*)::integer as count from "
+            "app.fantasy_free_hit_snapshot_players item where item.snapshot_id in "
+            "(select snapshot.id from app.fantasy_free_hit_snapshots snapshot where "
+            "snapshot.fantasy_team_id in (select id from known_teams))",
+            "mutation_audit": team_user_prefix
+            + "select count(*)::integer as count from "
             "app_private.fantasy_mutation_audit item where item.fantasy_team_id in "
             "(select id from known_teams) or item.user_id in (select id from "
-            "tracked_users))::integer as mutation_audit, (select count(*) from "
+            "tracked_users)",
+            "idempotency_keys": user_prefix
+            + "select count(*)::integer as count from "
             "app_private.fantasy_idempotency_keys item where item.user_id in "
-            "(select id from tracked_users))::integer as idempotency_keys, "
-            "(select count(*) from app_private.fantasy_free_transfer_rollovers item "
-            "where item.fantasy_team_id in (select id from known_teams))::integer as "
-            "free_transfer_rollovers, (select count(*) from app.fantasy_rankings item "
-            "where item.fantasy_team_id in (select id from known_teams))::integer as "
-            "rankings, (select count(*) from app.fantasy_league_memberships item where "
-            "item.fantasy_team_id in (select id from known_teams) or item.user_id in "
-            "(select id from tracked_users))::integer as league_memberships, (select "
-            "count(*) from app.fantasy_team_gameweek_results item where "
-            "item.fantasy_team_id in (select id from known_teams))::integer as "
-            "gameweek_results, (select count(*) from app.fantasy_auto_substitutions "
-            "item where item.lineup_id in (select id from known_lineups))::integer as "
-            "auto_substitutions, (select count(*) from app.fantasy_leagues item where "
-            "item.owner_user_id in (select id from tracked_users))::integer as "
-            "owned_leagues"
-        )
-        if not isinstance(rows, list) or len(rows) != 1:
-            raise RuntimeError("database exact-zero cleanup verification failed")
-        return rows[0]
+            "(select id from tracked_users)",
+            "free_transfer_rollovers": team_prefix
+            + "select count(*)::integer as count from "
+            "app_private.fantasy_free_transfer_rollovers item where "
+            "item.fantasy_team_id in (select id from known_teams)",
+            "rankings": team_prefix
+            + "select count(*)::integer as count from app.fantasy_rankings item where "
+            "item.fantasy_team_id in (select id from known_teams)",
+            "league_memberships": team_user_prefix
+            + "select count(*)::integer as count from "
+            "app.fantasy_league_memberships item where item.fantasy_team_id in "
+            "(select id from known_teams) or item.user_id in (select id from "
+            "tracked_users)",
+            "gameweek_results": team_prefix
+            + "select count(*)::integer as count from "
+            "app.fantasy_team_gameweek_results item where item.fantasy_team_id in "
+            "(select id from known_teams)",
+            "auto_substitutions": f"with known_lineups as ({known_lineups}) "
+            "select count(*)::integer as count from app.fantasy_auto_substitutions "
+            "item where item.lineup_id in (select id from known_lineups)",
+            "owned_leagues": user_prefix
+            + "select count(*)::integer as count from app.fantasy_leagues item where "
+            "item.owner_user_id in (select id from tracked_users)",
+        }
+        return {
+            label: self.bounded_count(f"cleanup {label}", query)
+            for label, query in queries.items()
+        }
 
     def terminate_runners(self) -> None:
         had_resources = bool(
@@ -2197,6 +2363,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         }
         try:
             self.preflight()
+            self.start_database_observer()
             self.create_temporary_key()
             if self.mode != SESSION_PROVISIONING_REHEARSAL_MODE:
                 self.prepare_capacity_gameweek()
@@ -2291,9 +2458,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                     self.metrics_process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     self.metrics_process.kill()
-            self.sql_sampler_stop.set()
-            if self.sql_sampler_thread:
-                self.sql_sampler_thread.join(timeout=15)
+            self.stop_database_observer()
             cleanup = self.cleanup()
             outcome["cleanup"] = cleanup
             outcome["localRuntimeCredentialFileRemaining"] = False

@@ -14,6 +14,7 @@ import hashlib
 import json
 import math
 import os
+import random
 import statistics
 import time
 import uuid
@@ -33,6 +34,16 @@ EXPECTED_ERRORS = {
     "chip_conflict",
     "idempotency_conflict",
 }
+PREPARATION_CONCURRENCY = 10
+PREPARATION_RETRY_BASE_SECONDS = 0.5
+
+
+def preparation_retry_delay(attempt: int) -> float:
+    """Return full jitter for the existing zero-based preparation backoff."""
+
+    if attempt < 0:
+        raise ValueError("preparation retry attempt must be non-negative")
+    return random.uniform(0.0, PREPARATION_RETRY_BASE_SECONDS * (2**attempt))
 
 
 def deterministic_uuid(value: str) -> str:
@@ -203,7 +214,7 @@ class FantasyLoadRunner:
             self.session_tokens.clear()
 
     async def prepare_users(self, session: aiohttp.ClientSession) -> None:
-        semaphore = asyncio.Semaphore(50)
+        semaphore = asyncio.Semaphore(PREPARATION_CONCURRENCY)
 
         async def prepare(number: int) -> UserState:
             async with semaphore:
@@ -223,7 +234,7 @@ class FantasyLoadRunner:
                     except LoadRequestError as error:
                         last_error = error
                         if attempt < 2:
-                            await asyncio.sleep(0.5 * (2**attempt))
+                            await asyncio.sleep(preparation_retry_delay(attempt))
                 if team is None:
                     code = safe_error_code(last_error.code if last_error else None)
                     status = last_error.status if last_error else 0
