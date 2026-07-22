@@ -13,6 +13,7 @@ on:
         default: small_125
         type: choice
         options:
+          - ssh_transport_probe
           - small_125
           - full_2500
       confirmation:
@@ -31,7 +32,7 @@ permissions:
 
 jobs:
   session-diagnostic:
-    name: ${{ inputs.diagnostic_scale == 'full_2500' && '2,500-user session provisioning diagnostic reproduction' || '125-user session provisioning diagnostic reproduction' }}
+    name: ${{ inputs.diagnostic_scale == 'ssh_transport_probe' && 'Seven-minute SSH transport probe' || inputs.diagnostic_scale == 'full_2500' && '2,500-user session provisioning diagnostic reproduction' || '125-user session provisioning diagnostic reproduction' }}
     if: github.repository == 'mrdata007/botolago-foundation'
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.diagnostic_scale == 'full_2500' && 120 || 75 }}
@@ -63,10 +64,19 @@ jobs:
           set -euo pipefail
           [[ "${{ inputs.expected_commit }}" =~ ^[0-9a-f]{40}$ ]]
           case "${{ inputs.diagnostic_scale }}" in
+            ssh_transport_probe)
+              test "${{ inputs.confirmation }}" = "RUN_PHASE6_SSH_TRANSPORT_PROBE"
+              diagnostic_flag="--ssh-transport-probe"
+              diagnostic_timeout="30m"
+              diagnostic_scope="ssh_transport_only"
+              expected_users_per_runner="0"
+              expected_total_users="0"
+              ;;
             small_125)
               test "${{ inputs.confirmation }}" = "RUN_PHASE6_SESSION_DIAGNOSTIC"
               diagnostic_flag="--setup-rehearsal"
               diagnostic_timeout="45m"
+              diagnostic_scope="session_provisioning_only"
               expected_users_per_runner="25"
               expected_total_users="125"
               ;;
@@ -74,6 +84,7 @@ jobs:
               test "${{ inputs.confirmation }}" = "RUN_PHASE6_FULL_SESSION_DIAGNOSTIC"
               diagnostic_flag="--full-session-diagnostic"
               diagnostic_timeout="90m"
+              diagnostic_scope="session_provisioning_only"
               expected_users_per_runner="500"
               expected_total_users="2500"
               ;;
@@ -83,6 +94,7 @@ jobs:
           esac
           {
             echo "BOTOLAGO_PHASE6_DIAGNOSTIC_FLAG=$diagnostic_flag"
+            echo "BOTOLAGO_PHASE6_DIAGNOSTIC_SCOPE=$diagnostic_scope"
             echo "BOTOLAGO_PHASE6_DIAGNOSTIC_TIMEOUT=$diagnostic_timeout"
             echo "BOTOLAGO_PHASE6_EXPECTED_USERS_PER_RUNNER=$expected_users_per_runner"
             echo "BOTOLAGO_PHASE6_EXPECTED_TOTAL_USERS=$expected_total_users"
@@ -173,7 +185,7 @@ jobs:
         shell: bash
         run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
 
-      - name: ${{ inputs.diagnostic_scale == 'full_2500' && 'Run 2,500-user session provisioning diagnostic reproduction' || 'Run 125-user session provisioning diagnostic reproduction' }}
+      - name: ${{ inputs.diagnostic_scale == 'ssh_transport_probe' && 'Run seven-minute SSH transport probe' || inputs.diagnostic_scale == 'full_2500' && 'Run 2,500-user session provisioning diagnostic reproduction' || 'Run 125-user session provisioning diagnostic reproduction' }}
         id: diagnostic
         continue-on-error: true
         shell: bash
@@ -245,7 +257,7 @@ jobs:
             "cleanupSummaries": cleanup_summaries,
             "diagnosticExit": int(os.environ["DIAGNOSTIC_EXIT"]),
             "diagnosticScale": os.environ["DIAGNOSTIC_SCALE"],
-            "diagnosticScope": "session_provisioning_only",
+            "diagnosticScope": os.environ["BOTOLAGO_PHASE6_DIAGNOSTIC_SCOPE"],
             "expectedRunners": 5,
             "expectedUsersPerRunner": int(os.environ["BOTOLAGO_PHASE6_EXPECTED_USERS_PER_RUNNER"]),
             "expectedTotalUsers": int(os.environ["BOTOLAGO_PHASE6_EXPECTED_TOTAL_USERS"]),
