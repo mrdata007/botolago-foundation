@@ -17,6 +17,7 @@ import math
 import os
 import re
 import secrets
+import shlex
 import subprocess
 import sys
 import threading
@@ -94,6 +95,16 @@ CLEANUP_EXTERNAL_RESOURCE_KEYS = {
     "runtimeCredentialHandoffs",
     "securityGroups",
 }
+CONTROLLER_EXCERPT_BYTES = 2_048
+DIAGNOSTIC_FAIL_FAST_DELAY_SECONDS = 5.0
+
+
+class TracedSSHFailure(RuntimeError):
+    """A sanitized local SSH failure with its controller trace attached."""
+
+    def __init__(self, message: str, trace: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.trace = trace
 
 
 def event(message: str) -> None:
@@ -211,6 +222,260 @@ def safe_runner_diagnostic(value: str) -> str:
         normalized,
     )
     return normalized[-16_000:] or "runner emitted no diagnostic"
+
+
+def bounded_controller_excerpt(value: str, *, first: bool) -> str:
+    """Return a sanitized first/last 2 KiB excerpt without emitting secrets."""
+    if not value:
+        return ""
+    encoded = value.encode("utf-8", errors="replace")
+    selected = (
+        encoded[:CONTROLLER_EXCERPT_BYTES]
+        if first
+        else encoded[-CONTROLLER_EXCERPT_BYTES:]
+    )
+    decoded = selected.decode("utf-8", errors="replace")
+    sanitized = safe_runner_diagnostic(decoded)
+    return sanitized[:CONTROLLER_EXCERPT_BYTES] if first else sanitized[-CONTROLLER_EXCERPT_BYTES:]
+
+
+def sanitized_ssh_command(arguments: list[str], key_path: Path | None) -> str:
+    """Render the exact SSH argv while replacing the private key path."""
+    safe_arguments: list[str] = []
+    redact_next = False
+    for argument in arguments:
+        if redact_next:
+            safe_arguments.append("[REDACTED_KEY_PATH]")
+            redact_next = False
+            continue
+        safe_arguments.append(argument)
+        redact_next = argument == "-i"
+    if key_path is not None:
+        safe_arguments = [
+            "[REDACTED_KEY_PATH]" if item == str(key_path) else item
+            for item in safe_arguments
+        ]
+    return safe_runner_diagnostic(shlex.join(safe_arguments))
+
+
+def controller_process_trace(
+    arguments: list[str],
+    *,
+    timeout: float,
+    key_path: Path | None = None,
+    on_started: Any | None = None,
+) -> dict[str, Any]:
+    """Execute one local SSH subprocess and retain bounded, sanitized evidence."""
+    started_at = datetime.now(UTC)
+    started_monotonic = time.monotonic()
+    trace: dict[str, Any] = {
+        "calledProcessError": False,
+        "command": sanitized_ssh_command(arguments, key_path),
+        "completedAt": None,
+        "connectionResetError": False,
+        "durationMs": None,
+        "eofError": False,
+        "exceptionClass": None,
+        "localPid": None,
+        "osError": False,
+        "returnCode": None,
+        "signalNumber": None,
+        "startedAt": started_at.isoformat(),
+        "stderrFirst2KiB": "",
+        "stderrLast2KiB": "",
+        "stderrLengthBytes": 0,
+        "stdoutFirst2KiB": "",
+        "stdoutLast2KiB": "",
+        "stdoutLengthBytes": 0,
+        "timeoutExpired": False,
+        "unexpectedExceptionClass": None,
+        "brokenPipeError": False,
+    }
+    process: subprocess.Popen[str] | None = None
+    stdout = ""
+    stderr = ""
+    caught: BaseException | None = None
+    try:
+        process = subprocess.Popen(
+            arguments,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        trace["localPid"] = process.pid
+        if on_started is not None:
+            on_started(process.pid)
+        stdout, stderr = process.communicate(timeout=timeout)
+        trace["returnCode"] = process.returncode
+        if process.returncode is not None and process.returncode < 0:
+            trace["signalNumber"] = -process.returncode
+        if process.returncode:
+            trace["calledProcessError"] = True
+            caught = subprocess.CalledProcessError(
+                process.returncode,
+                arguments,
+                output=stdout,
+                stderr=stderr,
+            )
+    except subprocess.TimeoutExpired as error:
+        caught = error
+        trace["timeoutExpired"] = True
+        trace["exceptionClass"] = type(error).__name__
+        if process is not None:
+            process.terminate()
+            try:
+                stdout, stderr = process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                try:
+                    stdout, stderr = process.communicate()
+                except Exception:
+                    stdout, stderr = "", ""
+            except Exception:
+                process.kill()
+                try:
+                    stdout, stderr = process.communicate()
+                except Exception:
+                    stdout, stderr = "", ""
+            trace["returnCode"] = process.returncode
+            if process.returncode is not None and process.returncode < 0:
+                trace["signalNumber"] = -process.returncode
+    except BrokenPipeError as error:
+        caught = error
+        trace["brokenPipeError"] = True
+        trace["exceptionClass"] = type(error).__name__
+    except ConnectionResetError as error:
+        caught = error
+        trace["connectionResetError"] = True
+        trace["exceptionClass"] = type(error).__name__
+    except EOFError as error:
+        caught = error
+        trace["eofError"] = True
+        trace["exceptionClass"] = type(error).__name__
+    except OSError as error:
+        caught = error
+        trace["osError"] = True
+        trace["exceptionClass"] = type(error).__name__
+    except Exception as error:
+        caught = error
+        trace["unexpectedExceptionClass"] = type(error).__name__
+        trace["exceptionClass"] = type(error).__name__
+    finally:
+        if process is not None and process.poll() is None:
+            process.terminate()
+            try:
+                remaining_stdout, remaining_stderr = process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                try:
+                    remaining_stdout, remaining_stderr = process.communicate()
+                except Exception:
+                    remaining_stdout, remaining_stderr = "", ""
+            except Exception as cleanup_error:
+                if caught is None:
+                    caught = cleanup_error
+                    trace["unexpectedExceptionClass"] = type(cleanup_error).__name__
+                    trace["exceptionClass"] = type(cleanup_error).__name__
+                process.kill()
+                try:
+                    remaining_stdout, remaining_stderr = process.communicate()
+                except Exception:
+                    remaining_stdout, remaining_stderr = "", ""
+            stdout += remaining_stdout or ""
+            stderr += remaining_stderr or ""
+            trace["returnCode"] = process.returncode
+            if process.returncode is not None and process.returncode < 0:
+                trace["signalNumber"] = -process.returncode
+        completed_at = datetime.now(UTC)
+        trace["completedAt"] = completed_at.isoformat()
+        trace["durationMs"] = round(
+            (time.monotonic() - started_monotonic) * 1000,
+            3,
+        )
+        trace["stdoutLengthBytes"] = len(stdout.encode("utf-8", errors="replace"))
+        trace["stderrLengthBytes"] = len(stderr.encode("utf-8", errors="replace"))
+        trace["stdoutFirst2KiB"] = bounded_controller_excerpt(stdout, first=True)
+        trace["stdoutLast2KiB"] = bounded_controller_excerpt(stdout, first=False)
+        trace["stderrFirst2KiB"] = bounded_controller_excerpt(stderr, first=True)
+        trace["stderrLast2KiB"] = bounded_controller_excerpt(stderr, first=False)
+        if isinstance(caught, subprocess.CalledProcessError):
+            trace["exceptionClass"] = type(caught).__name__
+    if caught is not None:
+        raise TracedSSHFailure(
+            f"local SSH subprocess failed with {type(caught).__name__}", trace
+        ) from caught
+    return trace
+
+
+def classify_controller_outcome(
+    trace: dict[str, Any], remote_state: dict[str, Any]
+) -> dict[str, Any]:
+    """Separate controller/SSH failures from completed remote-process failures."""
+    return_code = trace.get("returnCode")
+    remote_status_available = bool(remote_state.get("exitStatusAvailable"))
+    remote_exit_status = remote_state.get("exitStatus")
+    ssh_exited_normally = (
+        isinstance(return_code, int)
+        and trace.get("signalNumber") is None
+        and not trace.get("timeoutExpired")
+        and not trace.get("brokenPipeError")
+        and not trace.get("connectionResetError")
+        and not trace.get("eofError")
+        and not trace.get("osError")
+        and not trace.get("unexpectedExceptionClass")
+    )
+    remote_process_exited_normally = (
+        remote_status_available and remote_exit_status == 0
+    )
+    remote_process_failure = (
+        remote_status_available
+        and isinstance(remote_exit_status, int)
+        and remote_exit_status != 0
+    )
+    local_ssh_failure = bool(
+        trace.get("timeoutExpired")
+        or trace.get("brokenPipeError")
+        or trace.get("connectionResetError")
+        or trace.get("eofError")
+        or trace.get("osError")
+        or trace.get("unexpectedExceptionClass")
+        or return_code == 255
+        or (return_code not in (None, 0) and not remote_status_available)
+    )
+    return {
+        "localSSHFailure": local_ssh_failure,
+        "remoteProcessFailure": remote_process_failure,
+        "remoteProcessExitedNormally": remote_process_exited_normally,
+        "sshExitedNormally": ssh_exited_normally,
+    }
+
+
+def artifact_collection_failure_record(
+    runner_id: int, artifact_stage: dict[str, Any]
+) -> dict[str, Any]:
+    """Describe a copied/missing runner artifact without inspecting its contents."""
+    return {
+        "event": "artifact_collection_failure",
+        "artifactExists": bool(artifact_stage.get("artifactExists")),
+        "artifactSizeBytes": int(artifact_stage.get("artifactSizeBytes", 0)),
+        "copySucceeded": bool(artifact_stage.get("copySucceeded")),
+        "remoteExists": bool(artifact_stage.get("remoteExists")),
+        "remoteSizeBytes": int(artifact_stage.get("remoteSizeBytes", 0)),
+        "runnerId": runner_id,
+        "stage": (
+            "remote-diagnostic-missing"
+            if not artifact_stage.get("remoteExists")
+            else "remote-diagnostic-empty"
+            if int(artifact_stage.get("remoteSizeBytes", 0)) == 0
+            else "artifact-copy-or-parse-missing-final-record"
+        ),
+        "stderrSizeBytes": int(artifact_stage.get("stderrSizeBytes", 0)),
+    }
+
+
+def wait_before_diagnostic_fail_fast(sleeper: Any = time.sleep) -> None:
+    """Give diagnostic-only evidence collection five seconds before SIGTERM."""
+    sleeper(DIAGNOSTIC_FAIL_FAST_DELAY_SECONDS)
 
 
 def sanitize_diagnostic_value(value: Any, depth: int = 0) -> Any:
@@ -439,6 +704,8 @@ class CapacityGate:
         self.original_gameweek: dict[str, Any] | None = None
         self.gameweek_prepared = False
         self.cloud_mutation_started = False
+        self.controller_timeline: list[dict[str, Any]] = []
+        self.controller_timeline_lock = threading.Lock()
         aws = {
             "aws_access_key_id": self.runtime["AWS_ACCESS_KEY_ID"],
             "aws_secret_access_key": self.runtime["AWS_SECRET_ACCESS_KEY"],
@@ -1019,6 +1286,179 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         )
         return result.stdout.strip()
 
+    def record_controller_timeline(
+        self,
+        runner_id: int,
+        event_name: str,
+        **details: Any,
+    ) -> None:
+        source_timestamp = details.pop("sourceTimestamp", None)
+        observed_at = datetime.now(UTC).isoformat()
+        record = {
+            "event": event_name,
+            "runnerId": runner_id,
+            "observedAt": observed_at,
+            "timestamp": source_timestamp or observed_at,
+            **sanitize_diagnostic_value(details),
+        }
+        with self.controller_timeline_lock:
+            record["sequence"] = len(self.controller_timeline) + 1
+            self.controller_timeline.append(record)
+            merged_timeline = sorted(
+                self.controller_timeline,
+                key=lambda item: (str(item["timestamp"]), int(item["sequence"])),
+            )
+            private_json(
+                self.artifact_dir / "controller-session-timeline.json",
+                merged_timeline,
+            )
+
+    def remote_process_state(self, ip: str) -> dict[str, Any]:
+        state = {
+            "alive": False,
+            "exitStatus": None,
+            "exitStatusAvailable": False,
+            "pid": None,
+            "pidAvailable": False,
+        }
+        try:
+            output = self.ssh(
+                ip,
+                "pid=missing; status=missing; alive=false; "
+                "if test -s /opt/botolago/session-provisioning.controller.pid; "
+                "then pid=$(cat /opt/botolago/session-provisioning.controller.pid); fi; "
+                "if test -s /opt/botolago/session-provisioning.controller.exit; "
+                "then status=$(cat /opt/botolago/session-provisioning.controller.exit); fi; "
+                "if test \"$pid\" != missing && kill -0 \"$pid\" 2>/dev/null; "
+                "then alive=true; fi; "
+                "printf '%s|%s|%s\\n' \"$pid\" \"$status\" \"$alive\"",
+                30,
+            )
+            pid_value, status_value, alive_value = output.split("|", 2)
+            if pid_value.isdigit():
+                state["pid"] = int(pid_value)
+                state["pidAvailable"] = True
+            if re.fullmatch(r"-?\d+", status_value):
+                state["exitStatus"] = int(status_value)
+                state["exitStatusAvailable"] = True
+            state["alive"] = alive_value == "true"
+        except (subprocess.SubprocessError, OSError, ValueError):
+            state["stateCollectionError"] = True
+        return state
+
+    def run_traced_session_ssh(
+        self,
+        runner_id: int,
+        ip: str,
+        command: str,
+        timeout: float,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        arguments = [*self.ssh_base(ip), command]
+
+        def launched(local_pid: int) -> None:
+            self.record_controller_timeline(
+                runner_id,
+                "ssh_launched",
+                localPid=local_pid,
+                sshCommand=sanitized_ssh_command(arguments, self.key_path),
+            )
+            remote_state: dict[str, Any] = {}
+            for _ in range(20):
+                remote_state = self.remote_process_state(ip)
+                if remote_state.get("pidAvailable"):
+                    self.record_controller_timeline(
+                        runner_id,
+                        "remote_process_started",
+                        remotePid=remote_state.get("pid"),
+                    )
+                    break
+                time.sleep(0.1)
+
+        trace: dict[str, Any]
+        try:
+            trace = controller_process_trace(
+                arguments,
+                timeout=timeout,
+                key_path=self.key_path,
+                on_started=launched,
+            )
+        except TracedSSHFailure as error:
+            trace = error.trace
+            remote_state = self.remote_process_state(ip)
+            trace["remoteState"] = remote_state
+            trace["classification"] = classify_controller_outcome(
+                trace, remote_state
+            )
+            private_json(
+                self.artifact_dir / f"controller-runner-{runner_id}.json",
+                trace,
+            )
+            self.record_controller_timeline(
+                runner_id,
+                "ssh_controller_failure",
+                exceptionClass=trace.get("exceptionClass"),
+                returnCode=trace.get("returnCode"),
+                signalNumber=trace.get("signalNumber"),
+                classification=trace.get("classification"),
+            )
+            self.record_controller_timeline(
+                runner_id,
+                (
+                    "remote_process_exited"
+                    if remote_state.get("exitStatusAvailable")
+                    else "remote_process_state_at_ssh_failure"
+                ),
+                **remote_state,
+            )
+            raise
+        remote_state = self.remote_process_state(ip)
+        trace["remoteState"] = remote_state
+        trace["classification"] = classify_controller_outcome(trace, remote_state)
+        private_json(
+            self.artifact_dir / f"controller-runner-{runner_id}.json",
+            trace,
+        )
+        self.record_controller_timeline(
+            runner_id,
+            "ssh_completed",
+            returnCode=trace.get("returnCode"),
+            signalNumber=trace.get("signalNumber"),
+            classification=trace.get("classification"),
+        )
+        self.record_controller_timeline(
+            runner_id,
+            "remote_process_exited",
+            **remote_state,
+        )
+        if trace.get("returnCode"):
+            raise TracedSSHFailure(
+                "SSH subprocess returned a non-zero status", trace
+            )
+        return trace, remote_state
+
+    def diagnostic_fail_fast(self, runner_id: int, error: Exception) -> None:
+        """Delay diagnostic-only termination until controller evidence is durable."""
+        self.record_controller_timeline(
+            runner_id,
+            "controller_failure_detected",
+            exceptionClass=type(error).__name__,
+        )
+        wait_before_diagnostic_fail_fast()
+        self.record_controller_timeline(
+            runner_id,
+            "fail_fast_sigterm_broadcast",
+            delaySeconds=DIAGNOSTIC_FAIL_FAST_DELAY_SECONDS,
+        )
+        for ip in self.instance_ips:
+            try:
+                self.ssh(
+                    ip,
+                    "pkill -f '/opt/botolago/fantasy-session-provisioner-diagnostic.py' || true",
+                    30,
+                )
+            except (subprocess.SubprocessError, OSError):
+                pass
+
     def scp_to(self, ip: str, local: Path, remote: str) -> None:
         if not self.key_path:
             raise RuntimeError("runner key is unavailable")
@@ -1105,7 +1545,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         runtime_path.unlink(missing_ok=True)
 
         command = (
-            "set -a; . /opt/botolago/runtime.env; set +a; "
+            "rm -f /opt/botolago/session-provisioning.controller.pid "
+            "/opt/botolago/session-provisioning.controller.exit; "
+            "( set -a; . /opt/botolago/runtime.env; set +a; "
             "BOTOLAGO_SESSION_OPERATION=provision "
             f"BOTOLAGO_CAPACITY_MODE={self.mode} "
             f"BOTOLAGO_EXPECTED_SESSION_USERS={self.users_per_runner} "
@@ -1116,11 +1558,20 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "BOTOLAGO_SESSION_DIAGNOSTICS_PATH=/opt/botolago/session-provisioning-diagnostics.ndjson "
             "/opt/botolago-venv/bin/python /opt/botolago/fantasy-session-provisioner-diagnostic.py "
             "> /opt/botolago/session-provisioning.stdout.json "
-            "2> /opt/botolago/session-provisioning.stderr.log"
+            "2> /opt/botolago/session-provisioning.stderr.log; "
+            "remote_status=$?; "
+            "printf '%s\\n' \"$remote_status\" "
+            "> /opt/botolago/session-provisioning.controller.exit; "
+            "exit \"$remote_status\" ) & "
+            "remote_pid=$!; "
+            "printf '%s\\n' \"$remote_pid\" "
+            "> /opt/botolago/session-provisioning.controller.pid; "
+            "wait \"$remote_pid\""
         )
 
         def provision(index: int) -> dict[str, Any]:
             ip = self.instance_ips[index]
+            self.record_controller_timeline(index, "runner_supervision_started")
             stdout_path = self.artifact_dir / f"session-runner-{index}-stdout.json"
             stderr_path = self.artifact_dir / f"session-runner-{index}-stderr.log"
             diagnostics_path = (
@@ -1136,10 +1587,19 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 "stderrSizeBytes": 0,
             }
             try:
-                self.ssh(ip, command.format(index=index), 1800)
-            except (subprocess.SubprocessError, OSError) as error:
+                self.run_traced_session_ssh(
+                    index,
+                    ip,
+                    command.format(index=index),
+                    1800,
+                )
+            except (TracedSSHFailure, subprocess.SubprocessError, OSError) as error:
                 command_error = error
             finally:
+                self.record_controller_timeline(
+                    index,
+                    "final_artifact_collection_started",
+                )
                 try:
                     remote_state = self.ssh(
                         ip,
@@ -1175,6 +1635,11 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 artifact_stage["stderrSizeBytes"] = (
                     stderr_path.stat().st_size if stderr_path.exists() else 0
                 )
+                self.record_controller_timeline(
+                    index,
+                    "final_artifact_collection_completed",
+                    **artifact_stage,
+                )
 
             stderr = safe_runner_diagnostic(stderr_path.read_text(encoding="utf-8"))
             private_write(stderr_path, stderr + "\n")
@@ -1190,24 +1655,47 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             diagnostic_records = diagnostic_bundle["records"]
             final_records = diagnostic_bundle["finalRecords"]
             auth_failures = diagnostic_bundle["authFailures"]
-            if not final_records:
-                artifact_record = {
-                    "event": "artifact_collection_failure",
-                    "artifactExists": artifact_stage["artifactExists"],
-                    "artifactSizeBytes": artifact_stage["artifactSizeBytes"],
-                    "copySucceeded": artifact_stage["copySucceeded"],
-                    "remoteExists": artifact_stage["remoteExists"],
-                    "remoteSizeBytes": artifact_stage["remoteSizeBytes"],
-                    "runnerId": index,
-                    "stage": (
-                        "remote-diagnostic-missing"
-                        if not artifact_stage["remoteExists"]
-                        else "remote-diagnostic-empty"
-                        if artifact_stage["remoteSizeBytes"] == 0
-                        else "artifact-copy-or-parse-missing-final-record"
+            response_records = diagnostic_bundle["responseRecords"]
+            if response_records:
+                last_response = response_records[-1]
+                response_timestamp = last_response.get("timestamp")
+                source_timestamp = None
+                if isinstance(response_timestamp, (int, float)):
+                    source_timestamp = datetime.fromtimestamp(
+                        response_timestamp, UTC
+                    ).isoformat()
+                self.record_controller_timeline(
+                    index,
+                    "last_successful_response",
+                    httpStatus=last_response.get("httpStatus"),
+                    requestDurationMs=last_response.get("requestDurationMs"),
+                    responseClassification=last_response.get(
+                        "responseClassification"
                     ),
-                    "stderrSizeBytes": artifact_stage["stderrSizeBytes"],
-                }
+                    sourceTimestamp=source_timestamp,
+                    userIndex=last_response.get("userIndex"),
+                )
+            for final_record in final_records:
+                final_timestamp = final_record.get("timestamp")
+                source_timestamp = None
+                if isinstance(final_timestamp, (int, float)):
+                    source_timestamp = datetime.fromtimestamp(
+                        final_timestamp, UTC
+                    ).isoformat()
+                self.record_controller_timeline(
+                    index,
+                    "runner_exit",
+                    exitCode=final_record.get("exitCode"),
+                    exitKind=final_record.get("exitKind"),
+                    reason=final_record.get("reason"),
+                    sourceTimestamp=source_timestamp,
+                    status=final_record.get("status"),
+                    userIndex=final_record.get("userIndex"),
+                )
+            if not final_records:
+                artifact_record = artifact_collection_failure_record(
+                    index, artifact_stage
+                )
                 diagnostic_records.append(artifact_record)
                 diagnostic_bundle["artifactFailures"].append(artifact_record)
             private_write(
@@ -1266,15 +1754,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                     first_error = error
                     for pending in futures:
                         pending.cancel()
-                    for ip in self.instance_ips:
-                        try:
-                            self.ssh(
-                                ip,
-                                "pkill -f '/opt/botolago/fantasy-session-provisioner-diagnostic.py' || true",
-                                30,
-                            )
-                        except (subprocess.SubprocessError, OSError):
-                            pass
+                    self.diagnostic_fail_fast(futures[future], error)
                     break
         finally:
             executor.shutdown(wait=True, cancel_futures=True)
