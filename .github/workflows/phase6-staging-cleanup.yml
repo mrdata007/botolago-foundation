@@ -196,12 +196,70 @@ jobs:
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
+      - name: Complete slow deterministic deletions in smaller batches
+        id: fallback
+        if: steps.cleanup.outputs.exit_code != '0'
+        continue-on-error: true
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+        run: |
+          set +e
+          timeout --signal=INT --kill-after=60s 20m python - <<'PY'
+          import importlib.util
+          import pathlib
+          import sys
+
+          module_path = pathlib.Path("scripts/backend/fantasy-capacity-orchestrator.py")
+          spec = importlib.util.spec_from_file_location("phase6_cleanup_fallback", module_path)
+          module = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = module
+          spec.loader.exec_module(module)
+          gate = module.CapacityGate(module.CLEANUP_RECOVERY_MODE)
+
+          def delete_batches(label, query, maximum_batches=120):
+              total = 0
+              for _ in range(maximum_batches):
+                  rows = gate.sql(query)
+                  deleted = int(rows[0]["deleted"]) if isinstance(rows, list) and rows else -1
+                  if deleted < 0:
+                      raise RuntimeError(f"{label} returned an invalid count")
+                  total += deleted
+                  if deleted == 0:
+                      print(f"Small-batch cleanup removed {total} deterministic {label}")
+                      return
+              raise RuntimeError(f"{label} exceeded the bounded batch budget")
+
+          delete_batches(
+              "Fantasy teams",
+              "with known as (select md5('fantasy-load-team-' || number)::uuid id "
+              "from generate_series(50001,52500) number), target as (select team.id "
+              "from app.fantasy_teams team join known on known.id=team.id limit 25), "
+              "deleted as (delete from app.fantasy_teams team using target where "
+              "team.id=target.id returning 1) select count(*)::integer deleted from deleted",
+          )
+          delete_batches(
+              "Auth users",
+              "with target as (select id from auth.users where email like "
+              "'fantasy-gate-%@staging.botolago.invalid' limit 25), deleted as "
+              "(delete from auth.users users using target where users.id=target.id "
+              "returning 1) select count(*)::integer deleted from deleted",
+          )
+          PY
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
       - name: Independently verify exact-zero end state
         id: verify
         if: always()
         shell: bash
         env:
           CLEANUP_EXIT: ${{ steps.cleanup.outputs.exit_code || '2' }}
+          FALLBACK_EXIT: ${{ steps.fallback.outputs.exit_code || '0' }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
           SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
@@ -268,6 +326,7 @@ jobs:
                       for key, value in sorted(after.items()) if int(value) != 0]
           summary = {
               "cleanupExit": int(os.environ["CLEANUP_EXIT"]),
+              "smallBatchFallbackExit": int(os.environ["FALLBACK_EXIT"]),
               "deleted": deleted,
               "finalInventory": after,
               "failures": failures,
@@ -279,6 +338,7 @@ jobs:
               output.write("# Phase 6 staging cleanup\n\n")
               output.write(f"- Result: {'PASS' if summary['passed'] else 'FAIL'}\n")
               output.write(f"- Cleanup execution exit: `{summary['cleanupExit']}`\n\n")
+              output.write(f"- Small-batch fallback exit: `{summary['smallBatchFallbackExit']}`\n\n")
               output.write("| Inventory | Deleted | Remaining |\n|---|---:|---:|\n")
               for key in sorted(after):
                   output.write(f"| {key} | {deleted[key]} | {after[key]} |\n")
