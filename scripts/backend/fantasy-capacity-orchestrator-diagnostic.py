@@ -54,6 +54,7 @@ FULL_GATE_MODE = "full_gate"
 SETUP_REHEARSAL_MODE = "setup_rehearsal"
 FULL_SESSION_DIAGNOSTIC_MODE = "full_session_diagnostic"
 SESSION_PROVISIONING_REHEARSAL_MODE = "session_provisioning_rehearsal"
+SSH_TRANSPORT_PROBE_MODE = "ssh_transport_probe"
 CLEANUP_RECOVERY_MODE = "cleanup_recovery"
 # Supabase Management API key names accept lowercase alphanumerics and
 # underscores only; the requested display name used hyphens.
@@ -97,6 +98,21 @@ CLEANUP_EXTERNAL_RESOURCE_KEYS = {
 }
 CONTROLLER_EXCERPT_BYTES = 2_048
 DIAGNOSTIC_FAIL_FAST_DELAY_SECONDS = 5.0
+SSH_KEEPALIVE_OPTIONS = (
+    "ServerAliveInterval=30",
+    "ServerAliveCountMax=6",
+    "TCPKeepAlive=yes",
+)
+SSH_TRANSPORT_PROBE_INTERVAL_SECONDS = 60
+SSH_TRANSPORT_PROBE_DURATION_SECONDS = 7 * 60
+SSH_TRANSPORT_PROBE_HEARTBEATS = (
+    SSH_TRANSPORT_PROBE_DURATION_SECONDS // SSH_TRANSPORT_PROBE_INTERVAL_SECONDS
+    + 1
+)
+SSH_TRANSPORT_PROBE_TIMEOUT_SECONDS = SSH_TRANSPORT_PROBE_DURATION_SECONDS + 120
+SSH_TRANSPORT_HEARTBEAT_PATTERN = re.compile(
+    r"^phase6-ssh-heartbeat\|(?P<sequence>\d+)\|(?P<timestamp>\d+)$"
+)
 
 
 class TracedSSHFailure(RuntimeError):
@@ -644,6 +660,80 @@ def cleanup_verified_zero(cleanup: dict[str, Any]) -> bool:
     return database_zero and external_zero
 
 
+def validate_transport_probe(
+    trace: dict[str, Any],
+    remote_state: dict[str, Any],
+    heartbeat_output: str,
+) -> dict[str, Any]:
+    """Validate a fixed seven-minute diagnostic SSH transport probe."""
+    heartbeats: list[dict[str, int]] = []
+    for line in heartbeat_output.splitlines():
+        match = SSH_TRANSPORT_HEARTBEAT_PATTERN.fullmatch(line.strip())
+        if match:
+            heartbeats.append(
+                {
+                    "sequence": int(match.group("sequence")),
+                    "timestamp": int(match.group("timestamp")),
+                }
+            )
+    expected_sequences = list(range(SSH_TRANSPORT_PROBE_HEARTBEATS))
+    observed_sequences = [item["sequence"] for item in heartbeats]
+    observed_duration = (
+        heartbeats[-1]["timestamp"] - heartbeats[0]["timestamp"]
+        if len(heartbeats) >= 2
+        else 0
+    )
+    criteria = {
+        "allHeartbeatsObserved": observed_sequences == expected_sequences,
+        "controllerDurationAtLeastSevenMinutes": (
+            float(trace.get("durationMs") or 0)
+            >= SSH_TRANSPORT_PROBE_DURATION_SECONDS * 1_000
+        ),
+        "durationAtLeastSevenMinutes": (
+            observed_duration >= SSH_TRANSPORT_PROBE_DURATION_SECONDS
+        ),
+        "localSshExitZero": trace.get("returnCode") == 0,
+        "noBrokenPipe": (
+            trace.get("brokenPipeError") is False
+            and "broken pipe"
+            not in str(trace.get("stderrFirst2KiB", "")).lower()
+            and "broken pipe"
+            not in str(trace.get("stderrLast2KiB", "")).lower()
+        ),
+        "noTimeout": trace.get("timeoutExpired") is False,
+        "noTransportClosure": (
+            trace.get("connectionResetError") is False
+            and trace.get("eofError") is False
+            and trace.get("exceptionClass") is None
+            and not any(
+                marker
+                in (
+                    str(trace.get("stderrFirst2KiB", ""))
+                    + str(trace.get("stderrLast2KiB", ""))
+                ).lower()
+                for marker in (
+                    "connection reset",
+                    "connection closed",
+                    "closed by remote host",
+                    "unexpected eof",
+                )
+            )
+        ),
+        "remoteExitZero": (
+            remote_state.get("exitStatusAvailable") is True
+            and remote_state.get("exitStatus") == 0
+        ),
+        "remoteProcessStopped": remote_state.get("alive") is False,
+    }
+    return {
+        "criteria": criteria,
+        "expectedHeartbeatCount": SSH_TRANSPORT_PROBE_HEARTBEATS,
+        "heartbeats": heartbeats,
+        "observedDurationSeconds": observed_duration,
+        "passed": all(criteria.values()),
+    }
+
+
 class CapacityGate:
     def __init__(
         self,
@@ -655,6 +745,7 @@ class CapacityGate:
             SETUP_REHEARSAL_MODE,
             FULL_SESSION_DIAGNOSTIC_MODE,
             SESSION_PROVISIONING_REHEARSAL_MODE,
+            SSH_TRANSPORT_PROBE_MODE,
             CLEANUP_RECOVERY_MODE,
         }:
             raise RuntimeError("unsupported capacity mode")
@@ -1270,6 +1361,12 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "-o",
             "ConnectTimeout=10",
             "-o",
+            SSH_KEEPALIVE_OPTIONS[0],
+            "-o",
+            SSH_KEEPALIVE_OPTIONS[1],
+            "-o",
+            SSH_KEEPALIVE_OPTIONS[2],
+            "-o",
             "StrictHostKeyChecking=accept-new",
             "-o",
             f"UserKnownHostsFile={self.artifact_dir / 'known_hosts'}",
@@ -1435,6 +1532,173 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 "SSH subprocess returned a non-zero status", trace
             )
         return trace, remote_state
+
+    def transport_probe_remote_state(self, ip: str) -> dict[str, Any]:
+        state = {
+            "alive": False,
+            "exitStatus": None,
+            "exitStatusAvailable": False,
+            "pid": None,
+            "pidAvailable": False,
+        }
+        try:
+            output = self.ssh(
+                ip,
+                "pid=missing; status=missing; alive=false; "
+                "if test -s /opt/botolago/ssh-transport-probe.controller.pid; "
+                "then pid=$(cat /opt/botolago/ssh-transport-probe.controller.pid); fi; "
+                "if test -s /opt/botolago/ssh-transport-probe.controller.exit; "
+                "then status=$(cat /opt/botolago/ssh-transport-probe.controller.exit); fi; "
+                "if test \"$pid\" != missing && kill -0 \"$pid\" 2>/dev/null; "
+                "then alive=true; fi; "
+                "printf '%s|%s|%s\\n' \"$pid\" \"$status\" \"$alive\"",
+                30,
+            )
+            pid_value, status_value, alive_value = output.split("|", 2)
+            if pid_value.isdigit():
+                state["pid"] = int(pid_value)
+                state["pidAvailable"] = True
+            if re.fullmatch(r"-?\d+", status_value):
+                state["exitStatus"] = int(status_value)
+                state["exitStatusAvailable"] = True
+            state["alive"] = alive_value == "true"
+        except (subprocess.SubprocessError, OSError, ValueError):
+            state["stateCollectionError"] = True
+        return state
+
+    def transport_probe_command(self) -> str:
+        """Return the fixed harmless command; callers cannot supply a command or duration."""
+        return (
+            "rm -f /opt/botolago/ssh-transport-probe.controller.pid "
+            "/opt/botolago/ssh-transport-probe.controller.exit "
+            "/opt/botolago/ssh-transport-probe-heartbeats.log; "
+            "( heartbeat=0; "
+            f"while test \"$heartbeat\" -lt {SSH_TRANSPORT_PROBE_HEARTBEATS}; do "
+            "timestamp=$(date -u +%s); "
+            "printf 'phase6-ssh-heartbeat|%s|%s\\n' \"$heartbeat\" \"$timestamp\" "
+            "| tee -a /opt/botolago/ssh-transport-probe-heartbeats.log; "
+            f"if test \"$heartbeat\" -eq {SSH_TRANSPORT_PROBE_HEARTBEATS - 1}; "
+            "then break; fi; "
+            f"sleep {SSH_TRANSPORT_PROBE_INTERVAL_SECONDS}; "
+            "heartbeat=$((heartbeat + 1)); "
+            "done ) & "
+            "remote_pid=$!; "
+            "printf '%s\\n' \"$remote_pid\" "
+            "> /opt/botolago/ssh-transport-probe.controller.pid; "
+            "wait \"$remote_pid\"; remote_status=$?; "
+            "printf '%s\\n' \"$remote_status\" "
+            "> /opt/botolago/ssh-transport-probe.controller.exit; "
+            "exit \"$remote_status\""
+        )
+
+    def run_ssh_transport_probe(self) -> dict[str, Any]:
+        event("Running fixed seven-minute SSH transport probe on five runners")
+        command = self.transport_probe_command()
+
+        def probe(index: int) -> dict[str, Any]:
+            ip = self.instance_ips[index]
+            arguments = [*self.ssh_base(ip), command]
+            self.record_controller_timeline(
+                index, "transport_probe_supervision_started"
+            )
+
+            def launched(local_pid: int) -> None:
+                self.record_controller_timeline(
+                    index,
+                    "transport_probe_ssh_launched",
+                    localPid=local_pid,
+                    sshCommand=sanitized_ssh_command(arguments, self.key_path),
+                )
+                for _ in range(20):
+                    remote_state = self.transport_probe_remote_state(ip)
+                    if remote_state.get("pidAvailable"):
+                        self.record_controller_timeline(
+                            index,
+                            "transport_probe_remote_process_started",
+                            remotePid=remote_state.get("pid"),
+                        )
+                        break
+                    time.sleep(0.1)
+
+            trace: dict[str, Any]
+            command_error: Exception | None = None
+            try:
+                trace = controller_process_trace(
+                    arguments,
+                    timeout=SSH_TRANSPORT_PROBE_TIMEOUT_SECONDS,
+                    key_path=self.key_path,
+                    on_started=launched,
+                )
+            except TracedSSHFailure as error:
+                trace = error.trace
+                command_error = error
+            remote_state = self.transport_probe_remote_state(ip)
+            try:
+                heartbeat_output = self.ssh(
+                    ip,
+                    "if test -f /opt/botolago/ssh-transport-probe-heartbeats.log; "
+                    "then cat /opt/botolago/ssh-transport-probe-heartbeats.log; fi",
+                    30,
+                )
+            except (subprocess.SubprocessError, OSError):
+                heartbeat_output = ""
+            validation = validate_transport_probe(
+                trace, remote_state, heartbeat_output
+            )
+            evidence = {
+                "classification": classify_controller_outcome(
+                    trace, remote_state
+                ),
+                "remoteState": remote_state,
+                "runnerId": index,
+                "trace": trace,
+                "validation": validation,
+            }
+            private_json(
+                self.artifact_dir / f"ssh-transport-probe-runner-{index}.json",
+                evidence,
+            )
+            self.record_controller_timeline(
+                index,
+                "transport_probe_completed",
+                localReturnCode=trace.get("returnCode"),
+                passed=validation["passed"],
+                remoteExitStatus=remote_state.get("exitStatus"),
+            )
+            if command_error is not None:
+                raise RuntimeError(
+                    f"runner {index} SSH transport probe failed"
+                ) from command_error
+            if not validation["passed"]:
+                raise RuntimeError(
+                    f"runner {index} SSH transport probe validation failed"
+                )
+            return evidence
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=RUNNER_COUNT
+        ) as executor:
+            futures = [executor.submit(probe, index) for index in range(RUNNER_COUNT)]
+            results: list[dict[str, Any]] = []
+            errors: list[Exception] = []
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    results.append(future.result())
+                except Exception as error:
+                    errors.append(error)
+        if errors:
+            raise errors[0]
+        results.sort(key=lambda item: int(item["runnerId"]))
+        summary = {
+            "expectedRunners": RUNNER_COUNT,
+            "passed": (
+                len(results) == RUNNER_COUNT
+                and all(item["validation"]["passed"] for item in results)
+            ),
+            "runners": results,
+        }
+        private_json(self.artifact_dir / "ssh-transport-probe-summary.json", summary)
+        return summary
 
     def diagnostic_fail_fast(self, runner_id: int, error: Exception) -> None:
         """Delay diagnostic-only termination until controller evidence is durable."""
@@ -2900,13 +3164,31 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         }
         try:
             self.preflight()
-            self.create_temporary_key()
-            if self.mode != SESSION_PROVISIONING_REHEARSAL_MODE:
-                self.prepare_capacity_gameweek()
-            self.provision_runners()
-            self.create_users()
-            self.seed_user_fantasy_state()
-            self.deploy_and_provision_sessions()
+            if self.mode == SSH_TRANSPORT_PROBE_MODE:
+                self.provision_runners()
+                probe = self.run_ssh_transport_probe()
+                criteria = {
+                    "allFiveRunnersPassed": probe["passed"],
+                    "noFantasyProvisioning": True,
+                    "noMeasuredTraffic": True,
+                    "noSessionProvisioning": True,
+                    "noSupabaseUserProvisioning": True,
+                }
+                outcome.update(
+                    {
+                        "criteria": criteria,
+                        "transportProbe": probe,
+                        "passed": all(criteria.values()),
+                    }
+                )
+            else:
+                self.create_temporary_key()
+                if self.mode != SESSION_PROVISIONING_REHEARSAL_MODE:
+                    self.prepare_capacity_gameweek()
+                self.provision_runners()
+                self.create_users()
+                self.seed_user_fantasy_state()
+                self.deploy_and_provision_sessions()
             if self.mode == SESSION_PROVISIONING_REHEARSAL_MODE:
                 criteria = {
                     "fiveUsersCreated": len(self.users) == 5,
@@ -2921,7 +3203,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                         "passed": all(criteria.values()),
                     }
                 )
-            else:
+            elif self.mode != SSH_TRANSPORT_PROBE_MODE:
                 self.start_metrics()
             if self.mode in {
                 SETUP_REHEARSAL_MODE,
@@ -3015,6 +3297,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             SETUP_REHEARSAL_MODE: "setup rehearsal",
             FULL_SESSION_DIAGNOSTIC_MODE: "full session diagnostic",
             SESSION_PROVISIONING_REHEARSAL_MODE: "session provisioning rehearsal",
+            SSH_TRANSPORT_PROBE_MODE: "SSH transport probe",
             FULL_GATE_MODE: "external gate",
         }
         label = labels.get(self.mode, "cleanup")
@@ -3046,6 +3329,8 @@ if __name__ == "__main__":
             raise SystemExit(
                 CapacityGate(SESSION_PROVISIONING_REHEARSAL_MODE).run()
             )
+        if arguments == ["--ssh-transport-probe"]:
+            raise SystemExit(CapacityGate(SSH_TRANSPORT_PROBE_MODE).run())
         if arguments == ["--full-gate"]:
             raise SystemExit(CapacityGate(FULL_GATE_MODE).run())
         if arguments == ["--cleanup-only"]:
@@ -3066,8 +3351,8 @@ if __name__ == "__main__":
                 secure_runtime.clear()
         raise RuntimeError(
             "use --session-provisioning-rehearsal, --setup-rehearsal, "
-            "--full-session-diagnostic, --full-gate, --rehearsal-then-full, "
-            "or --cleanup-only"
+            "--full-session-diagnostic, --ssh-transport-probe, --full-gate, "
+            "--rehearsal-then-full, or --cleanup-only"
         )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")

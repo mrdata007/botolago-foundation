@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import signal
@@ -8,6 +9,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from collections import Counter
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +17,10 @@ from unittest import mock
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "fantasy-capacity-orchestrator-diagnostic.py"
+)
+PRODUCTION_ORCHESTRATOR = SCRIPT.with_name("fantasy-capacity-orchestrator.py")
+PRODUCTION_ORCHESTRATOR_SHA256 = (
+    "e6aaf102e973f3ecda7d0b18640eb0d2c30ded0354c5b04b0b711954d69071dc"
 )
 SPEC = importlib.util.spec_from_file_location("fantasy_capacity_diagnostic", SCRIPT)
 assert SPEC and SPEC.loader
@@ -301,6 +307,203 @@ class ControllerEvidenceTests(unittest.TestCase):
             ["last_successful_response", "ssh_controller_failure"],
         )
         self.assertEqual([item["sequence"] for item in timeline], [2, 1])
+
+
+class DiagnosticSshKeepaliveTests(unittest.TestCase):
+    def test_keepalives_and_existing_security_options_appear_exactly_once(self) -> None:
+        self.assertEqual(
+            MODULE.SSH_KEEPALIVE_OPTIONS,
+            (
+                "ServerAliveInterval=30",
+                "ServerAliveCountMax=6",
+                "TCPKeepAlive=yes",
+            ),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            gate = MODULE.CapacityGate.__new__(MODULE.CapacityGate)
+            gate.key_path = Path(temporary) / "private-runner.pem"
+            gate.artifact_dir = Path(temporary)
+            arguments = gate.ssh_base("203.0.113.10")
+        for option in MODULE.SSH_KEEPALIVE_OPTIONS:
+            self.assertEqual(arguments.count(option), 1)
+        for option in (
+            "BatchMode=yes",
+            "ConnectTimeout=10",
+            "StrictHostKeyChecking=accept-new",
+        ):
+            self.assertEqual(arguments.count(option), 1)
+        known_hosts = [
+            item for item in arguments if item.startswith("UserKnownHostsFile=")
+        ]
+        self.assertEqual(len(known_hosts), 1)
+
+    def test_keepalive_command_reporting_redacts_key_and_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            gate = MODULE.CapacityGate.__new__(MODULE.CapacityGate)
+            gate.key_path = Path(temporary) / "sensitive-private-runner.pem"
+            gate.artifact_dir = Path(temporary)
+            arguments = gate.ssh_base("203.0.113.10")
+            rendered = MODULE.sanitized_ssh_command(arguments, gate.key_path)
+        self.assertNotIn(str(gate.key_path), rendered)
+        self.assertNotIn("ec2-user@203.0.113.10", rendered)
+        self.assertIn("[REDACTED_KEY_PATH]", rendered)
+        for option in MODULE.SSH_KEEPALIVE_OPTIONS:
+            self.assertIn(option, rendered)
+
+    def test_production_orchestrator_is_byte_for_byte_unchanged(self) -> None:
+        digest = hashlib.sha256(PRODUCTION_ORCHESTRATOR.read_bytes()).hexdigest()
+        self.assertEqual(digest, PRODUCTION_ORCHESTRATOR_SHA256)
+
+
+class DiagnosticSshTransportProbeTests(unittest.TestCase):
+    @staticmethod
+    def trace(**overrides: object) -> dict[str, object]:
+        value: dict[str, object] = {
+            "brokenPipeError": False,
+            "connectionResetError": False,
+            "durationMs": MODULE.SSH_TRANSPORT_PROBE_DURATION_SECONDS * 1_000,
+            "eofError": False,
+            "exceptionClass": None,
+            "returnCode": 0,
+            "stderrFirst2KiB": "",
+            "stderrLast2KiB": "",
+            "timeoutExpired": False,
+        }
+        value.update(overrides)
+        return value
+
+    @staticmethod
+    def remote_state(**overrides: object) -> dict[str, object]:
+        value: dict[str, object] = {
+            "alive": False,
+            "exitStatus": 0,
+            "exitStatusAvailable": True,
+            "pid": 1234,
+            "pidAvailable": True,
+        }
+        value.update(overrides)
+        return value
+
+    @staticmethod
+    def heartbeats(*, missing: int | None = None) -> str:
+        records = []
+        for sequence in range(MODULE.SSH_TRANSPORT_PROBE_HEARTBEATS):
+            if sequence == missing:
+                continue
+            timestamp = 1_000 + sequence * MODULE.SSH_TRANSPORT_PROBE_INTERVAL_SECONDS
+            records.append(
+                f"phase6-ssh-heartbeat|{sequence}|{timestamp}"
+            )
+        return "\n".join(records)
+
+    def test_probe_duration_is_at_least_seven_minutes(self) -> None:
+        self.assertGreaterEqual(MODULE.SSH_TRANSPORT_PROBE_DURATION_SECONDS, 7 * 60)
+        gate = MODULE.CapacityGate.__new__(MODULE.CapacityGate)
+        command = gate.transport_probe_command()
+        self.assertIn(
+            f"sleep {MODULE.SSH_TRANSPORT_PROBE_INTERVAL_SECONDS}", command
+        )
+        self.assertIn(
+            f'while test "$heartbeat" -lt {MODULE.SSH_TRANSPORT_PROBE_HEARTBEATS}',
+            command,
+        )
+
+    def test_heartbeat_loss_fails_probe(self) -> None:
+        result = MODULE.validate_transport_probe(
+            self.trace(), self.remote_state(), self.heartbeats(missing=3)
+        )
+        self.assertFalse(result["criteria"]["allHeartbeatsObserved"])
+        self.assertFalse(result["passed"])
+
+    def test_ssh_exit_255_fails_probe(self) -> None:
+        result = MODULE.validate_transport_probe(
+            self.trace(
+                returnCode=255,
+                stderrFirst2KiB="client_loop: send disconnect: Broken pipe",
+            ),
+            self.remote_state(alive=True, exitStatus=None, exitStatusAvailable=False),
+            self.heartbeats(),
+        )
+        self.assertFalse(result["criteria"]["localSshExitZero"])
+        self.assertFalse(result["criteria"]["noBrokenPipe"])
+        self.assertFalse(result["passed"])
+
+    def test_remote_nonzero_exit_fails_probe(self) -> None:
+        result = MODULE.validate_transport_probe(
+            self.trace(), self.remote_state(exitStatus=1), self.heartbeats()
+        )
+        self.assertFalse(result["criteria"]["remoteExitZero"])
+        self.assertFalse(result["passed"])
+
+    def test_timeout_or_orphaned_remote_process_fails_probe(self) -> None:
+        result = MODULE.validate_transport_probe(
+            self.trace(timeoutExpired=True),
+            self.remote_state(alive=True),
+            self.heartbeats(),
+        )
+        self.assertFalse(result["criteria"]["noTimeout"])
+        self.assertFalse(result["criteria"]["remoteProcessStopped"])
+        self.assertFalse(result["passed"])
+
+    def test_successful_seven_minute_supervision_passes(self) -> None:
+        result = MODULE.validate_transport_probe(
+            self.trace(), self.remote_state(), self.heartbeats()
+        )
+        self.assertEqual(
+            result["observedDurationSeconds"],
+            MODULE.SSH_TRANSPORT_PROBE_DURATION_SECONDS,
+        )
+        self.assertTrue(result["passed"])
+
+    def test_probe_mode_skips_supabase_and_fantasy_provisioning(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            gate = MODULE.CapacityGate.__new__(MODULE.CapacityGate)
+            gate.mode = MODULE.SSH_TRANSPORT_PROBE_MODE
+            gate.run_id = "transport-probe-test"
+            gate.artifact_dir = Path(temporary)
+            gate.metrics_process = None
+            gate.sql_sampler_stop = threading.Event()
+            gate.sql_sampler_thread = None
+            gate.user_creation_stats = Counter()
+            gate.preflight = mock.Mock()
+            gate.provision_runners = mock.Mock()
+            gate.run_ssh_transport_probe = mock.Mock(
+                return_value={
+                    "passed": True,
+                    "runners": [
+                        {"runnerId": index} for index in range(MODULE.RUNNER_COUNT)
+                    ],
+                }
+            )
+            cleanup = {
+                "database": {"temporary_records": 0},
+                "verification": {
+                    key: 0 for key in MODULE.CLEANUP_EXTERNAL_RESOURCE_KEYS
+                },
+            }
+            gate.cleanup = mock.Mock(return_value=cleanup)
+            forbidden = (
+                "create_temporary_key",
+                "prepare_capacity_gameweek",
+                "create_users",
+                "seed_user_fantasy_state",
+                "deploy_and_provision_sessions",
+                "start_metrics",
+                "run_setup_rehearsal",
+                "run_profile",
+            )
+            for method_name in forbidden:
+                setattr(
+                    gate,
+                    method_name,
+                    mock.Mock(side_effect=AssertionError(method_name)),
+                )
+            result = gate.run()
+        self.assertEqual(result, 0)
+        gate.provision_runners.assert_called_once_with()
+        gate.run_ssh_transport_probe.assert_called_once_with()
+        for method_name in forbidden:
+            getattr(gate, method_name).assert_not_called()
 
 
 if __name__ == "__main__":
