@@ -75,6 +75,7 @@ class PreparationAndObserverHardeningTests(unittest.TestCase):
                         "max_connections": 100,
                         "lock_waits": 1,
                         "waiting": 2,
+                        "idle_client_reads": 1,
                         "longest_query_age_seconds": 3.25,
                         "state_counts": {"active": 2, "idle": 2},
                         "blocking_pairs": [
@@ -97,6 +98,20 @@ class PreparationAndObserverHardeningTests(unittest.TestCase):
             self.assertIn("from pg_stat_activity", normalized)
             self.assertIn("pg_blocking_pids", normalized)
             self.assertIn("limit 20", normalized)
+            self.assertIn(
+                "state = 'active' and wait_event is not null",
+                normalized,
+            )
+            self.assertIn(
+                "coalesce(wait_event_type, '') not in ('client', 'activity')",
+                normalized,
+            )
+            self.assertIn("or wait_event_type = 'lock'", normalized)
+            self.assertIn(
+                "state = 'idle' and wait_event_type = 'client' "
+                "and wait_event = 'clientread'",
+                normalized,
+            )
             self.assertNotIn("select query,", normalized)
             records = [
                 json.loads(line)
@@ -106,6 +121,49 @@ class PreparationAndObserverHardeningTests(unittest.TestCase):
             self.assertNotIn("pid", json.dumps(records).lower())
             mode = stat.S_IMODE(gate.database_observer_path.stat().st_mode)
             self.assertEqual(mode, 0o600)
+
+    def test_idle_client_read_is_informational_and_active_waits_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            gate = MODULE.CapacityGate.__new__(MODULE.CapacityGate)
+            gate.database_observer_path = Path(temporary) / "database-observer.ndjson"
+            gate.sql_samples = []
+            queries: list[str] = []
+
+            def sql(query: str) -> list[dict[str, object]]:
+                queries.append(query)
+                return [
+                    {
+                        "sampled_at": "2026-07-23T00:00:00Z",
+                        "connections": 8,
+                        "max_connections": 100,
+                        "lock_waits": 1,
+                        "waiting": 2,
+                        "idle_client_reads": 5,
+                        "longest_query_age_seconds": 0.25,
+                        "state_counts": {"active": 2, "idle": 6},
+                        "blocking_pairs": [],
+                        "deadlocks": 0,
+                        "conflicts": 0,
+                        "cache_hit_ratio": 0.99,
+                    }
+                ]
+
+            gate.sql = sql
+            gate.sample_database()
+
+            normalized = " ".join(queries[0].lower().split())
+            self.assertIn(
+                "state = 'active' and wait_event is not null",
+                normalized,
+            )
+            self.assertIn(
+                "coalesce(wait_event_type, '') not in ('client', 'activity')",
+                normalized,
+            )
+            self.assertIn("or wait_event_type = 'lock'", normalized)
+            record = json.loads(gate.database_observer_path.read_text())
+            self.assertEqual(record["waiting"], 2)
+            self.assertEqual(record["idle_client_reads"], 5)
 
     def test_database_observer_is_fail_open(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

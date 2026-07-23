@@ -1556,7 +1556,10 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         try:
             rows = self.sql(
                 "with activity as materialized (select pid, coalesce(state, 'unknown') "
-                "as state, wait_event is not null as waiting, wait_event_type, "
+                "as state, wait_event, wait_event_type, "
+                "((state = 'active' and wait_event is not null and "
+                "coalesce(wait_event_type, '') not in ('Client', 'Activity')) or "
+                "wait_event_type = 'Lock') as waiting, "
                 "case when state = 'active' and query_start is not null then "
                 "extract(epoch from statement_timestamp() - query_start) else 0 end "
                 "as query_age_seconds from pg_stat_activity where datname = "
@@ -1571,7 +1574,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 "current_setting('max_connections')::integer as max_connections, "
                 "(select count(*) from activity where wait_event_type = 'Lock')::integer "
                 "as lock_waits, (select count(*) from activity where waiting)::integer "
-                "as waiting, coalesce((select max(query_age_seconds) from activity), "
+                "as waiting, (select count(*) from activity where state = 'idle' and "
+                "wait_event_type = 'Client' and wait_event = 'ClientRead')::integer "
+                "as idle_client_reads, coalesce((select max(query_age_seconds) from activity), "
                 "0)::numeric as longest_query_age_seconds, coalesce((select "
                 "jsonb_object_agg(state, total) from state_totals), '{}'::jsonb) as "
                 "state_counts, coalesce((select jsonb_agg(jsonb_build_object("
