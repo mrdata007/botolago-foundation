@@ -11,6 +11,11 @@ import time
 
 import aiohttp
 
+try:
+    from fantasy_harness_tls import create_verified_ssl_context
+except ModuleNotFoundError:
+    from scripts.backend.fantasy_harness_tls import create_verified_ssl_context
+
 
 LEAGUE_ID = "fa900000-0000-4000-8000-000000000001"
 
@@ -67,7 +72,10 @@ async def main() -> dict[str, object]:
     if "staging" not in os.environ.get("BOTOLAGO_LOAD_ENVIRONMENT", "").lower():
         raise RuntimeError("fantasy_standings_benchmark_requires_staging")
     timeout = aiohttp.ClientTimeout(total=20)
-    connector = aiohttp.TCPConnector(limit=50)
+    connector = aiohttp.TCPConnector(
+        limit=50,
+        ssl=create_verified_ssl_context(),
+    )
     async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
         await benchmark(
             session,

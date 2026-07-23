@@ -13,6 +13,11 @@ from typing import Any
 
 import aiohttp
 
+try:
+    from fantasy_harness_tls import create_verified_ssl_context
+except ModuleNotFoundError:
+    from scripts.backend.fantasy_harness_tls import create_verified_ssl_context
+
 
 def require_env(name: str) -> str:
     value = os.getenv(name)
@@ -74,12 +79,14 @@ async def collect() -> dict[str, Any]:
     output_flags |= getattr(os, "O_NOFOLLOW", 0)
     descriptor = os.open(output_path, output_flags, 0o600)
     os.fchmod(descriptor, 0o600)
+    connector = aiohttp.TCPConnector(ssl=create_verified_ssl_context())
 
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as output:
             async with aiohttp.ClientSession(
                 timeout=timeout,
                 auth=aiohttp.BasicAuth("service_role", secret_key),
+                connector=connector,
             ) as session:
                 monotonic_start = time.monotonic()
                 while time.monotonic() - monotonic_start <= duration_seconds:

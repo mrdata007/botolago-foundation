@@ -25,6 +25,11 @@ from typing import Any
 
 import aiohttp
 
+try:
+    from fantasy_harness_tls import create_verified_ssl_context
+except ModuleNotFoundError:
+    from scripts.backend.fantasy_harness_tls import create_verified_ssl_context
+
 SEASON_ID = "fa630000-0000-4000-8000-000000000001"
 GAMEWEEK_ID = "fa640000-0000-4000-8000-000000000002"
 EXPECTED_ERRORS = {
@@ -151,7 +156,12 @@ class FantasyLoadRunner:
 
     async def run(self) -> dict[str, Any]:
         timeout = aiohttp.ClientTimeout(total=15, connect=5)
-        connector = aiohttp.TCPConnector(limit=1200, limit_per_host=1200, ttl_dns_cache=300)
+        connector = aiohttp.TCPConnector(
+            limit=1200,
+            limit_per_host=1200,
+            ttl_dns_cache=300,
+            ssl=create_verified_ssl_context(),
+        )
         try:
             async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
                 await self.prepare_users(session)

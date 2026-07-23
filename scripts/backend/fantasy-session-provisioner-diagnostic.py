@@ -18,6 +18,11 @@ from typing import Any
 
 import aiohttp
 
+try:
+    from fantasy_harness_tls import create_verified_ssl_context
+except ModuleNotFoundError:
+    from scripts.backend.fantasy_harness_tls import create_verified_ssl_context
+
 
 REDACTED = "[REDACTED]"
 SENSITIVE_RESPONSE_KEYS = {
@@ -363,7 +368,8 @@ async def provision() -> dict[str, Any]:
     access_token_fingerprints: set[str] = set()
     refresh_token_fingerprints: set[str] = set()
     started = time.monotonic()
-    async with aiohttp.ClientSession(timeout=timeout) as client:
+    connector = aiohttp.TCPConnector(ssl=create_verified_ssl_context())
+    async with aiohttp.ClientSession(timeout=timeout, connector=connector) as client:
         for index, record in enumerate(records):
             _CURRENT_USER_INDEX = index
             target = started + index / rate
@@ -552,7 +558,11 @@ async def revoke() -> dict[str, Any]:
     semaphore = asyncio.Semaphore(10)
     failures = 0
 
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20, connect=5)) as client:
+    connector = aiohttp.TCPConnector(ssl=create_verified_ssl_context())
+    async with aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=20, connect=5),
+        connector=connector,
+    ) as client:
 
         async def revoke_one(record: dict[str, Any]) -> None:
             nonlocal failures

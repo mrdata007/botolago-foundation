@@ -34,6 +34,11 @@ from typing import Any
 import boto3
 from botocore.config import Config
 
+try:
+    from fantasy_harness_tls import create_verified_ssl_context
+except ModuleNotFoundError:
+    from scripts.backend.fantasy_harness_tls import create_verified_ssl_context
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUNTIME_ROOT = Path("/private/tmp/botolago-phase6")
@@ -192,7 +197,11 @@ def http_json(
         url, data=payload, headers=request_headers, method=method
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(
+            request,
+            timeout=timeout,
+            context=create_verified_ssl_context(),
+        ) as response:
             raw = response.read()
             return json.loads(raw) if raw else None
     except urllib.error.HTTPError as error:
@@ -1215,7 +1224,11 @@ commit;
         request = urllib.request.Request(
             "https://checkip.amazonaws.com", headers={"User-Agent": USER_AGENT}
         )
-        with urllib.request.urlopen(request, timeout=15) as response:
+        with urllib.request.urlopen(
+            request,
+            timeout=15,
+            context=create_verified_ssl_context(),
+        ) as response:
             value = response.read().decode("ascii").strip()
         parts = value.split(".")
         if len(parts) != 4 or any(not part.isdigit() for part in parts):
@@ -1280,7 +1293,7 @@ commit;
 set -euo pipefail
 dnf install -y python3 python3-pip
 python3 -m venv /opt/botolago-venv
-/opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15
+/opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15 certifi==2026.7.22
 mkdir -p /opt/botolago
 chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
 touch /opt/botolago/ready
@@ -1774,6 +1787,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         )
         load_script = PROJECT_ROOT / "scripts/backend/fantasy-load-test.py"
         session_script = PROJECT_ROOT / "scripts/backend/fantasy-session-provisioner-diagnostic.py"
+        tls_helper = PROJECT_ROOT / "scripts/backend/fantasy_harness_tls.py"
 
         def deploy(index: int) -> None:
             ip = self.instance_ips[index]
@@ -1793,6 +1807,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             try:
                 self.scp_to(ip, load_script, "/opt/botolago/fantasy-load-test.py")
                 self.scp_to(ip, session_script, "/opt/botolago/fantasy-session-provisioner-diagnostic.py")
+                self.scp_to(ip, tls_helper, "/opt/botolago/fantasy_harness_tls.py")
                 self.scp_to(ip, runtime_path, "/opt/botolago/runtime.env")
                 self.scp_to(ip, credential_path, f"/opt/botolago/credentials-{index}.json")
                 self.ssh(
