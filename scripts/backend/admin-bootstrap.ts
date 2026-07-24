@@ -1,82 +1,84 @@
-import { createClient, type User } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../../src/backend/generated/database.types";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import {
+  collectOwnerReadinessEvidence,
+  OwnerReadinessError,
+  resolveOwnerEmail,
+  selectUniqueConfirmedOwner,
+} from "./admin-owner-readiness";
+import {
+  AdminRuntimeError,
+  createServerSupabaseFetch,
+  isDirectAdminCommand,
+  requireServerOnlyKey,
+} from "./admin-runtime";
 
 export interface BootstrapArguments {
   readonly email: string;
   readonly syntheticTest: boolean;
 }
 
-export function parseBootstrapArguments(argumentsList: readonly string[]): BootstrapArguments {
-  const emailArguments = argumentsList.filter((argument) => argument.startsWith("--email="));
+type RuntimeValues = Readonly<Record<string, string | undefined>>;
+
+export function parseBootstrapArguments(
+  argumentsList: readonly string[],
+  values: RuntimeValues = process.env,
+): BootstrapArguments {
   const unknownArguments = argumentsList.filter(
     (argument) => !argument.startsWith("--email=") && argument !== "--synthetic-test",
   );
-  if (emailArguments.length !== 1 || unknownArguments.length > 0) {
+  if (unknownArguments.length > 0) {
     throw new Error(
-      'Usage: bun run admin:bootstrap --email="<verified-user-email>" [--synthetic-test]',
+      'Usage: OWNER_ADMIN_EMAIL="<verified-user-email>" bun run admin:bootstrap [--synthetic-test]',
     );
   }
-  const email = emailArguments[0]!.slice("--email=".length).trim().toLowerCase();
-  if (!EMAIL_PATTERN.test(email) || email.length > 254) {
+  let email: string;
+  try {
+    email = resolveOwnerEmail(
+      argumentsList.filter((argument) => argument.startsWith("--email=")),
+      values,
+    ).email;
+  } catch {
     throw new Error("The bootstrap email is invalid.");
   }
   return { email, syntheticTest: argumentsList.includes("--synthetic-test") };
 }
 
-export function selectUniqueConfirmedUser(users: readonly User[], email: string): User {
-  const matches = users.filter((user) => user.email?.trim().toLowerCase() === email);
-  if (matches.length === 0) throw new Error("No matching Supabase Auth user was found.");
-  if (matches.length > 1) throw new Error("The Supabase Auth user lookup was ambiguous.");
-  const user = matches[0]!;
-  if (!user.email_confirmed_at) throw new Error("The matching Supabase Auth user is unverified.");
-  return user;
-}
+export const selectUniqueConfirmedUser = selectUniqueConfirmedOwner;
 
-function requiredEnvironment(name: "SUPABASE_URL" | "SUPABASE_SECRET_KEY"): string {
-  const value = process.env[name]?.trim();
-  if (!value) throw new Error(`${name} is required in the trusted server environment.`);
-  return value;
-}
-
-async function listAllUsers(
-  client: ReturnType<typeof createClient<Database>>,
-): Promise<readonly User[]> {
-  const users: User[] = [];
-  for (let page = 1; page <= 100; page += 1) {
-    const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 });
-    if (error) throw new Error("Supabase Auth user lookup failed.");
-    users.push(...data.users);
-    if (data.users.length < 1000) return users;
+export async function runBootstrap(
+  argumentsList: readonly string[] = Bun.argv.slice(2),
+  values: RuntimeValues = process.env,
+): Promise<void> {
+  const argumentsValue = parseBootstrapArguments(argumentsList, values);
+  const readinessValues = {
+    ...values,
+    OWNER_ADMIN_EMAIL: undefined,
+  };
+  const evidence = await collectOwnerReadinessEvidence(
+    [`--email=${argumentsValue.email}`],
+    readinessValues,
+    "RUN_BOTOLAGO_OWNER_BOOTSTRAP_PRODUCTION",
+  );
+  if (argumentsValue.syntheticTest && evidence.runtime.environment === "production") {
+    throw new Error("Synthetic bootstrap is forbidden in production.");
   }
-  throw new Error("Supabase Auth user lookup exceeded the bounded pagination limit.");
-}
+  const secretKey = requireServerOnlyKey(
+    values,
+    "SUPABASE_SECRET_KEY",
+    evidence.runtime.environment,
+  );
 
-export async function runBootstrap(argumentsList = Bun.argv.slice(2)): Promise<void> {
-  const argumentsValue = parseBootstrapArguments(argumentsList);
-  const url = requiredEnvironment("SUPABASE_URL");
-  const secretKey = requiredEnvironment("SUPABASE_SECRET_KEY");
-  if (secretKey.startsWith("sb_publishable_")) {
-    throw new Error("SUPABASE_SECRET_KEY must be a server-only Secret API key.");
-  }
-
-  const client = createClient<Database>(url, secretKey, {
+  const client = createClient<Database>(evidence.runtime.url, secretKey, {
     auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
-    global: { headers: { "X-Client-Info": "botolago-admin-bootstrap/1" } },
+    global: {
+      fetch: createServerSupabaseFetch(secretKey),
+      headers: { "X-Client-Info": "botolago-admin-bootstrap/2" },
+    },
   });
-
-  const user = selectUniqueConfirmedUser(await listAllUsers(client), argumentsValue.email);
-  const { data: factorData, error: factorError } = await client.auth.admin.mfa.listFactors({
-    userId: user.id,
-  });
-  if (factorError) throw new Error("Supabase Auth MFA lookup failed.");
-  if (!factorData.factors.some((factor) => factor.status === "verified")) {
-    throw new Error("The matching Supabase Auth user has no verified MFA factor.");
-  }
 
   const { data, error } = await client.schema("api").rpc("admin_bootstrap_first_platform_admin", {
-    p_auth_user_id: user.id,
+    p_auth_user_id: evidence.authUserId,
     p_reason: "Initial platform administrator bootstrap",
     p_synthetic_test: argumentsValue.syntheticTest,
   });
@@ -107,15 +109,27 @@ export async function runBootstrap(argumentsList = Bun.argv.slice(2)): Promise<v
   }
 
   process.stdout.write(
-    `Platform administrator ${result.created ? "created" : "already present"}; ` +
-      `principal=${result.staffPrincipalId} assignment=${result.assignmentId}\n`,
+    `${JSON.stringify({
+      event: "admin_owner_bootstrap_completed",
+      environment: evidence.runtime.environment,
+      projectRef: evidence.runtime.projectRef,
+      created: result.created,
+      role: result.role,
+      staffPrincipalId: result.staffPrincipalId,
+      assignmentId: result.assignmentId,
+    })}\n`,
   );
 }
 
-if (import.meta.main) {
+if (isDirectAdminCommand(import.meta.url)) {
   runBootstrap().catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : "The bootstrap command failed.";
-    process.stderr.write(`${message}\n`);
+    const code =
+      error instanceof OwnerReadinessError || error instanceof AdminRuntimeError
+        ? error.code
+        : error instanceof Error
+          ? error.message
+          : "owner_bootstrap_failed";
+    process.stderr.write(`${JSON.stringify({ event: "admin_owner_bootstrap_failed", code })}\n`);
     process.exitCode = 1;
   });
 }

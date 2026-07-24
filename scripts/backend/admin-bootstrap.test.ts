@@ -12,24 +12,26 @@ function user(id: string, email: string, confirmed = true): User {
 
 describe("Admin bootstrap command", () => {
   it("requires exactly one explicit email and commits no default identity", () => {
-    expect(() => parseBootstrapArguments([])).toThrow("Usage:");
+    expect(() => parseBootstrapArguments([], {})).toThrow("bootstrap email is invalid");
     expect(() => parseBootstrapArguments(["--email=admin@example.test", "--other"])).toThrow(
       "Usage:",
     );
-    expect(parseBootstrapArguments(["--email=STAFF@EXAMPLE.TEST"])).toEqual({
+    expect(parseBootstrapArguments(["--email=STAFF@EXAMPLE.TEST"], {})).toEqual({
       email: "staff@example.test",
       syntheticTest: false,
     });
   });
 
   it("rejects missing, unverified, and ambiguous users", () => {
-    expect(() => selectUniqueConfirmedUser([], "staff@example.test")).toThrow("No matching");
+    expect(() => selectUniqueConfirmedUser([], "staff@example.test")).toThrow(
+      "staff_user_not_found",
+    );
     expect(() =>
       selectUniqueConfirmedUser(
         [user("11111111-1111-4111-8111-111111111111", "staff@example.test", false)],
         "staff@example.test",
       ),
-    ).toThrow("unverified");
+    ).toThrow("staff_user_not_verified");
     expect(() =>
       selectUniqueConfirmedUser(
         [
@@ -38,7 +40,7 @@ describe("Admin bootstrap command", () => {
         ],
         "staff@example.test",
       ),
-    ).toThrow("ambiguous");
+    ).toThrow("staff_user_ambiguous");
   });
 
   it("returns the immutable Auth UUID for one verified match", () => {

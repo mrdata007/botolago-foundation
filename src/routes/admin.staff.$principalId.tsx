@@ -11,7 +11,7 @@ import {
 import { SupabaseAdminControlPlaneRepository } from "@/backend/admin/supabase-control-plane-repository";
 import { SupabaseAdminSecurityOperationsRepository } from "@/backend/admin/supabase-security-operations-repository";
 import { SupabaseAdminAuthorizationRepository } from "@/backend/admin/supabase-repository";
-import type { StaffAssignmentDto } from "@/backend/admin/contracts";
+import type { AssignmentHistoryPageDto, StaffAssignmentDto } from "@/backend/admin/contracts";
 import type { StaffPrincipalSummaryDto } from "@/backend/admin/control-plane-contracts";
 import { mapAdminError } from "@/backend/admin/errors";
 import { useI18n } from "@/i18n/provider";
@@ -33,6 +33,7 @@ function AdminStaffDetailRoute() {
   const assignmentReads = useMemo(() => new SupabaseAdminAuthorizationRepository(), []);
   const [principal, setPrincipal] = useState<StaffPrincipalSummaryDto | null>(null);
   const [assignments, setAssignments] = useState<readonly StaffAssignmentDto[]>([]);
+  const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryPageDto["items"]>([]);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,12 +42,14 @@ function AdminStaffDetailRoute() {
     if (access.state !== "authorized") return;
     try {
       const context = adminRepositoryContext(access);
-      const [principalResult, assignmentResult] = await Promise.all([
+      const [principalResult, assignmentResult, historyResult] = await Promise.all([
         reads.getStaffPrincipal(principalId, context),
         assignmentReads.listActiveAssignments(principalId, context),
+        assignmentReads.listAssignmentHistory(principalId, null, 50, context),
       ]);
       setPrincipal(principalResult);
       setAssignments(assignmentResult);
+      setAssignmentHistory(historyResult.items);
     } catch (error) {
       setMessage(
         `${rtl ? "تعذّر تحميل السجل" : "Dossier indisponible"}: ${mapAdminError(error).code}`,
@@ -113,6 +116,7 @@ function AdminStaffDetailRoute() {
       access={access}
       title={rtl ? "سجل عضو الطاقم" : "Dossier du membre du personnel"}
       description={principalId}
+      testId="admin-staff-detail"
     >
       {access.state === "authorized" && (
         <>
@@ -137,7 +141,11 @@ function AdminStaffDetailRoute() {
                   <dd>{principal.pendingSessionRevocationCount}</dd>
                 </div>
               </dl>
-              <ul className="mt-5 grid gap-2" aria-label={rtl ? "الأدوار النشطة" : "Rôles actifs"}>
+              <ul
+                className="mt-5 grid gap-2"
+                aria-label={rtl ? "الأدوار النشطة" : "Rôles actifs"}
+                data-testid="admin-assignments"
+              >
                 {assignments.map((assignment) => (
                   <li
                     key={assignment.assignmentId}
@@ -157,6 +165,32 @@ function AdminStaffDetailRoute() {
                   </li>
                 ))}
               </ul>
+              <section
+                className="mt-6 rounded-lg border border-slate-700 p-4"
+                data-testid="admin-assignment-history"
+                aria-labelledby="admin-assignment-history-title"
+              >
+                <h3 id="admin-assignment-history-title" className="font-semibold">
+                  {rtl ? "سجل التعيينات" : "Historique des affectations"}
+                </h3>
+                {assignmentHistory.length === 0 ? (
+                  <p className="mt-2 text-sm text-slate-400">
+                    {rtl ? "لا يوجد سجل محفوظ." : "Aucun historique conservé."}
+                  </p>
+                ) : (
+                  <ol className="mt-3 grid gap-2">
+                    {assignmentHistory.map((assignment) => (
+                      <li
+                        key={assignment.assignmentId}
+                        className="rounded border border-slate-800 p-3 text-sm"
+                      >
+                        {assignment.role} · {assignment.status} ·{" "}
+                        {assignment.grantedAt ?? assignment.startsAt ?? "—"}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
               <label className="mt-5 grid gap-2 text-sm">
                 <span>{rtl ? "سبب العملية (مطلوب)" : "Motif de l’opération (requis)"}</span>
                 <input
@@ -194,6 +228,7 @@ function AdminStaffDetailRoute() {
                     type="button"
                     disabled={busy || reason.trim().length < 8}
                     onClick={() => void mutate("emergency")}
+                    data-testid="admin-emergency-revocation"
                   >
                     {rtl ? "إلغاء طارئ" : "Révocation d’urgence"}
                   </button>
