@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  expectNoHorizontalOverflow,
-  initializeLanguage,
-  observePage,
-} from "./support";
+import { expectNoHorizontalOverflow, initializeLanguage, observePage } from "./support";
 
 const firstEmail = process.env.E2E_STAGING_FIRST_EMAIL;
 const firstPassword = process.env.E2E_STAGING_FIRST_PASSWORD;
@@ -27,7 +23,10 @@ test.describe("staging-backed critical journeys", () => {
   test.skip(!hasStagingUsers, "Protected synthetic staging users were not injected.");
 
   test("invalid credentials are localized and terminate loading", async ({ page }, testInfo) => {
-    const diagnostics = observePage(page);
+    const diagnostics = observePage(page, {
+      allowResponse: (status, url) => status === 400 && url.pathname.includes("/auth/v1/token"),
+      allowExpectedResourceConsoleError: true,
+    });
     await initializeLanguage(page, "fr");
     await page.goto("/auth/login");
     await page.getByLabel(/e-?mail/i).fill(firstEmail!);

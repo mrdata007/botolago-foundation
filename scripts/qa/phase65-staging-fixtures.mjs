@@ -8,6 +8,10 @@ const managementToken = process.env.SUPABASE_ACCESS_TOKEN;
 const stateFile =
   process.env.PHASE65_STATE_FILE ?? `${process.env.RUNNER_TEMP}/phase65-functional-state.json`;
 const expectedRef = "srdrflfrfpwixsllveid";
+const gameweekId = "fa640000-0000-4000-8000-000000000002";
+const keyPrefix = "phase65_functional_";
+const secretPattern =
+  /(sb_(?:secret|publishable)_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|Bearer\s+\S+|password["'=:\s]+\S+)/gi;
 
 function required(value, name) {
   if (!value) throw new Error(`${name}_missing`);
@@ -16,6 +20,13 @@ function required(value, name) {
 
 function mask(value) {
   process.stdout.write(`::add-mask::${value}\n`);
+}
+
+function sanitize(value) {
+  return String(value)
+    .replace(secretPattern, "[REDACTED]")
+    .replaceAll(/[\r\n]+/g, " ")
+    .slice(0, 240);
 }
 
 async function jsonRequest(url, options = {}) {
@@ -29,7 +40,11 @@ async function jsonRequest(url, options = {}) {
       throw new Error(`non_json_response_${response.status}`);
     }
   }
-  if (!response.ok) throw new Error(`request_failed_${response.status}`);
+  if (!response.ok) {
+    const classification = sanitize(body?.code ?? body?.error_code ?? body?.error ?? "unknown");
+    const message = sanitize(body?.message ?? body?.msg ?? "request rejected");
+    throw new Error(`request_failed_${response.status}_${classification}_${message}`);
+  }
   return body;
 }
 
@@ -55,6 +70,23 @@ function authAdmin(secret, path, options = {}) {
   });
 }
 
+function sql(query) {
+  return management(`/v1/projects/${projectRef}/database/query`, {
+    method: "POST",
+    body: JSON.stringify({ query }),
+  });
+}
+
+async function writeState(state) {
+  await writeFile(stateFile, JSON.stringify(state), { mode: 0o600 });
+  await chmod(stateFile, 0o600);
+}
+
+function uuidArray(values) {
+  if (!values.length) return "array[]::uuid[]";
+  return `array[${values.map((value) => `'${String(value).replaceAll("'", "''")}'::uuid`).join(",")}]`;
+}
+
 async function setup() {
   if (projectRef !== expectedRef || !supabaseUrl?.includes(expectedRef)) {
     throw new Error("staging_project_guard_failed");
@@ -64,11 +96,41 @@ async function setup() {
   if (project?.ref !== expectedRef) throw new Error("management_project_mismatch");
 
   const runId = `p65-${Date.now()}-${randomBytes(4).toString("hex")}`;
+  const keyName = `${keyPrefix}${randomBytes(4).toString("hex")}`;
+  const existingKeys = await management(`/v1/projects/${projectRef}/api-keys`);
+  if (
+    Array.isArray(existingKeys) &&
+    existingKeys.some((candidate) => String(candidate?.name ?? "").startsWith(keyPrefix))
+  ) {
+    throw new Error("stale_phase65_temporary_key");
+  }
+
+  const baselineRows = await sql(
+    `set statement_timeout = '15s'; select id::text, status::text, points_state::text, deadline_at::text, finalized_at::text, lock_version, scoring_input_version, corrected_at::text from app.fantasy_gameweeks where id = '${gameweekId}'::uuid`,
+  );
+  const originalGameweek = Array.isArray(baselineRows) ? baselineRows[0] : null;
+  if (originalGameweek?.id !== gameweekId) throw new Error("synthetic_gameweek_missing");
+  const state = {
+    runId,
+    keyName,
+    keyId: null,
+    users: [],
+    originalGameweek,
+    gameweekPrepared: false,
+  };
+  await writeState(state);
+
+  await sql(
+    `set statement_timeout = '15s'; update app.fantasy_gameweeks set status = 'open', points_state = 'provisional', deadline_at = statement_timestamp() + interval '90 minutes', finalized_at = null, corrected_at = null where id = '${gameweekId}'::uuid`,
+  );
+  state.gameweekPrepared = true;
+  await writeState(state);
+
   const key = await management(`/v1/projects/${projectRef}/api-keys?reveal=true`, {
     method: "POST",
     body: JSON.stringify({
       type: "secret",
-      name: `phase65-functional-${runId}`,
+      name: keyName,
       description: "Temporary Phase 6.5 staging functional acceptance key",
     }),
   });
@@ -78,9 +140,9 @@ async function setup() {
   mask(secret);
 
   const githubEnv = required(process.env.GITHUB_ENV, "github_env");
-  const users = [];
-  await writeFile(stateFile, JSON.stringify({ runId, keyId, users }), { mode: 0o600 });
-  await chmod(stateFile, 0o600);
+  const users = state.users;
+  state.keyId = keyId;
+  await writeState(state);
   await appendFile(githubEnv, `PHASE65_RUN_ID=${runId}\nPHASE65_TEMP_SECRET=${secret}\n`, {
     mode: 0o600,
   });
@@ -103,7 +165,7 @@ async function setup() {
     });
     if (!user?.id) throw new Error(`user_creation_failed_${label}`);
     users.push({ id: user.id, email, password, label });
-    await writeFile(stateFile, JSON.stringify({ runId, keyId, users }), { mode: 0o600 });
+    await writeState(state);
   }
 
   await appendFile(
@@ -126,8 +188,7 @@ async function cleanup() {
   try {
     state = JSON.parse(await readFile(stateFile, "utf8"));
   } catch {
-    process.stdout.write("phase65_cleanup=WARNING state_unavailable\n");
-    return;
+    throw new Error("cleanup_state_unavailable");
   }
   const secret = process.env.PHASE65_TEMP_SECRET;
   const cleanupErrors = [];
@@ -162,10 +223,41 @@ async function cleanup() {
     }
   }
   const keys = await management(`/v1/projects/${projectRef}/api-keys`);
-  const remainingKeys = Array.isArray(keys)
-    ? keys.filter((key) => key.name === `phase65-functional-${state.runId}`)
-    : [];
+  const remainingKeys = Array.isArray(keys) ? keys.filter((key) => key.name === state.keyName) : [];
   if (remainingKeys.length) cleanupErrors.push(new Error("temporary_key_cleanup_failed"));
+  if (state.gameweekPrepared && state.originalGameweek) {
+    try {
+      const original = state.originalGameweek;
+      const finalizedAt = original.finalized_at
+        ? `'${String(original.finalized_at).replaceAll("'", "''")}'::timestamptz`
+        : "null";
+      const correctedAt = original.corrected_at
+        ? `'${String(original.corrected_at).replaceAll("'", "''")}'::timestamptz`
+        : "null";
+      await sql(
+        `set statement_timeout = '15s'; update app.fantasy_gameweeks set status = '${String(original.status).replaceAll("'", "''")}'::app.fantasy_gameweek_status, points_state = '${String(original.points_state).replaceAll("'", "''")}'::app.fantasy_points_state, deadline_at = '${String(original.deadline_at).replaceAll("'", "''")}'::timestamptz, finalized_at = ${finalizedAt}, lock_version = ${Number(original.lock_version)}, scoring_input_version = ${Number(original.scoring_input_version)}, corrected_at = ${correctedAt} where id = '${gameweekId}'::uuid`,
+      );
+      state.gameweekPrepared = false;
+      await writeState(state);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  const userIds = (state.users ?? []).map((user) => user.id);
+  if (userIds.length) {
+    try {
+      const inventory = await sql(
+        `set statement_timeout = '15s'; with ids as (select unnest(${uuidArray(userIds)}) as id) select (select count(*)::integer from auth.users join ids on ids.id = auth.users.id) as users, (select count(*)::integer from auth.identities join ids on ids.id = auth.identities.user_id) as identities, (select count(*)::integer from auth.sessions join ids on ids.id = auth.sessions.user_id) as sessions, (select count(*)::integer from auth.refresh_tokens join ids on ids.id = auth.refresh_tokens.user_id) as refresh_tokens, (select count(*)::integer from app.profiles join ids on ids.id = app.profiles.id) as profiles, (select count(*)::integer from app.user_preferences join ids on ids.id = app.user_preferences.user_id) as preferences, (select count(*)::integer from app.fantasy_teams join ids on ids.id = app.fantasy_teams.user_id) as fantasy_teams`,
+      );
+      const totals = Array.isArray(inventory) ? inventory[0] : null;
+      if (!totals || Object.values(totals).some((value) => Number(value) !== 0)) {
+        cleanupErrors.push(new Error("temporary_resource_inventory_nonzero"));
+      }
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
   if (cleanupErrors.length) throw new Error(`cleanup_failed_${cleanupErrors.length}`);
   process.stdout.write(
     `phase65_cleanup=PASS auth_users_deleted=${state.users?.length ?? 0} temporary_keys=0\n`,

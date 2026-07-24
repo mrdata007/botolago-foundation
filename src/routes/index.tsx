@@ -310,8 +310,7 @@ function HomeContent() {
         <div className="grid gap-2">
           {!leaguesQ.data && <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>}
           {leaguesQ.data?.map((l) => {
-            const delta =
-              l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
+            const delta = l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
             const climbed = delta > 0;
             const dropped = delta < 0;
             return (

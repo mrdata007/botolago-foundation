@@ -9,7 +9,10 @@ function repository(): FollowRepository & { actions: string[] } {
     async listTeams() {
       return {
         items: [
-          { targetId: "10000000-0000-4000-8000-000000000001", createdAt: new Date(0).toISOString() },
+          {
+            targetId: "10000000-0000-4000-8000-000000000001",
+            createdAt: new Date(0).toISOString(),
+          },
         ],
         nextCursor: null,
       };
@@ -34,9 +37,7 @@ describe("FollowService", () => {
       actorId: "20000000-0000-4000-8000-000000000001",
       requestId: "follow-test",
     }));
-    expect(await service.getFollowedTeamIds()).toEqual([
-      "10000000-0000-4000-8000-000000000001",
-    ]);
+    expect(await service.getFollowedTeamIds()).toEqual(["10000000-0000-4000-8000-000000000001"]);
   });
 
   it("uses idempotent repository mutations rather than route-local state", async () => {

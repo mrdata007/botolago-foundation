@@ -9,9 +9,7 @@ describe("Football frontend repository cutover", () => {
     expect(() => selectFootballDataMode(undefined, true)).toThrow(
       "VITE_FOOTBALL_DATA_MODE=supabase",
     );
-    expect(() => selectFootballDataMode("mock", true)).toThrow(
-      "VITE_FOOTBALL_DATA_MODE=supabase",
-    );
+    expect(() => selectFootballDataMode("mock", true)).toThrow("VITE_FOOTBALL_DATA_MODE=supabase");
     expect(selectFootballDataMode(undefined, false)).toBe("mock");
     expect(selectFootballDataMode("supabase", true)).toBe("supabase");
   });

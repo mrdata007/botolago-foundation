@@ -6,9 +6,7 @@ import { __mapAuthErrorForTests as mapError } from "./auth-supabase";
 
 describe("auth mode selector", () => {
   it("fails closed unless production explicitly selects Supabase", () => {
-    expect(() => selectAuthMode(undefined, false, true)).toThrow(
-      "VITE_AUTH_MODE=supabase",
-    );
+    expect(() => selectAuthMode(undefined, false, true)).toThrow("VITE_AUTH_MODE=supabase");
     expect(() => selectAuthMode("mock", true, true)).toThrow("VITE_AUTH_MODE=supabase");
     expect(selectAuthMode("supabase", true, true)).toBe("supabase");
   });

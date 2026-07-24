@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  expectNoHorizontalOverflow,
-  initializeLanguage,
-  observePage,
-} from "./support";
+import { expectNoHorizontalOverflow, initializeLanguage, observePage } from "./support";
 
 const viewports = [
   { name: "mobile-320", width: 320, height: 700 },
@@ -24,9 +20,12 @@ for (const language of ["fr", "ar"] as const) {
       await initializeLanguage(page, language);
 
       for (const route of routes) {
-        await page.goto(route);
+        await page.goto(route, { waitUntil: "networkidle" });
         await expect(page.locator("html")).toHaveAttribute("lang", language);
-        await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
+        await expect(page.locator("html")).toHaveAttribute(
+          "dir",
+          language === "ar" ? "rtl" : "ltr",
+        );
         await expect(page.locator("body")).toBeVisible();
         await expectNoHorizontalOverflow(page);
       }

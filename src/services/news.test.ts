@@ -6,9 +6,7 @@ const context = { actorId: null, requestId: "news-test" } as const;
 
 describe("News frontend repository cutover", () => {
   test("fails closed when production mode is not configured", () => {
-    expect(() => selectNewsDataMode(undefined, true)).toThrow(
-      "VITE_NEWS_DATA_MODE=supabase",
-    );
+    expect(() => selectNewsDataMode(undefined, true)).toThrow("VITE_NEWS_DATA_MODE=supabase");
     expect(() => selectNewsDataMode("mock", true)).toThrow("VITE_NEWS_DATA_MODE=supabase");
     expect(selectNewsDataMode(undefined, false)).toBe("mock");
     expect(selectNewsDataMode("supabase", true)).toBe("supabase");

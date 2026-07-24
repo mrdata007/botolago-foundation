@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:e2e": "playwright test",
-    "test:e2e:staging": "playwright test tests/e2e/staging.acceptance.spec.ts",
+    "test:e2e:staging": "playwright test tests/e2e/staging.acceptance.e2e.ts",
     "test:backend": "bun test src/backend",
     "lint": "eslint .",
     "format": "prettier --write .",
