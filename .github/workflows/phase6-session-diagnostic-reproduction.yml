@@ -60,12 +60,16 @@ jobs:
 
       - name: Validate manual dispatch
         shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          DIAGNOSTIC_SCALE: ${{ inputs.diagnostic_scale }}
+          CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
-          [[ "${{ inputs.expected_commit }}" =~ ^[0-9a-f]{40}$ ]]
-          case "${{ inputs.diagnostic_scale }}" in
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          case "$DIAGNOSTIC_SCALE" in
             ssh_transport_probe)
-              test "${{ inputs.confirmation }}" = "RUN_PHASE6_SSH_TRANSPORT_PROBE"
+              test "$CONFIRMATION" = "RUN_PHASE6_SSH_TRANSPORT_PROBE"
               diagnostic_flag="--ssh-transport-probe"
               diagnostic_timeout="30m"
               diagnostic_scope="ssh_transport_only"
@@ -73,7 +77,7 @@ jobs:
               expected_total_users="0"
               ;;
             small_125)
-              test "${{ inputs.confirmation }}" = "RUN_PHASE6_SESSION_DIAGNOSTIC"
+              test "$CONFIRMATION" = "RUN_PHASE6_SESSION_DIAGNOSTIC"
               diagnostic_flag="--setup-rehearsal"
               diagnostic_timeout="45m"
               diagnostic_scope="session_provisioning_only"
@@ -81,7 +85,7 @@ jobs:
               expected_total_users="125"
               ;;
             full_2500)
-              test "${{ inputs.confirmation }}" = "RUN_PHASE6_FULL_SESSION_DIAGNOSTIC"
+              test "$CONFIRMATION" = "RUN_PHASE6_FULL_SESSION_DIAGNOSTIC"
               diagnostic_flag="--full-session-diagnostic"
               diagnostic_timeout="90m"
               diagnostic_scope="session_provisioning_only"
@@ -148,9 +152,11 @@ jobs:
 
       - name: Verify checkout
         shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ inputs.expected_commit }}"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
           git merge-base --is-ancestor f6340e0eed667f730ceddc1f4dd5d89dc9085003 HEAD
 
       - name: Configure delegated AWS credentials
