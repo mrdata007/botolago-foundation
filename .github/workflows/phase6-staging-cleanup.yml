@@ -49,9 +49,11 @@ jobs:
 
       - name: Validate manual confirmation
         shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
-          test "${{ inputs.confirmation }}" = "RUN_PHASE6_STAGING_CLEANUP"
+          test "$CONFIRMATION" = "RUN_PHASE6_STAGING_CLEANUP"
 
       - name: Check out reviewed cleanup harness
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
