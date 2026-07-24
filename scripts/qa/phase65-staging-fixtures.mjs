@@ -281,7 +281,7 @@ async function cleanup() {
   if (userIds.length) {
     try {
       const inventory = await sql(
-        `set statement_timeout = '15s'; with ids as (select unnest(${uuidArray(userIds)}) as id) select (select count(*)::integer from auth.users join ids on ids.id = auth.users.id) as users, (select count(*)::integer from auth.identities join ids on ids.id = auth.identities.user_id) as identities, (select count(*)::integer from auth.sessions join ids on ids.id = auth.sessions.user_id) as sessions, (select count(*)::integer from auth.refresh_tokens join ids on ids.id = auth.refresh_tokens.user_id) as refresh_tokens, (select count(*)::integer from app.profiles join ids on ids.id = app.profiles.id) as profiles, (select count(*)::integer from app.user_preferences join ids on ids.id = app.user_preferences.user_id) as preferences, (select count(*)::integer from app.fantasy_teams join ids on ids.id = app.fantasy_teams.user_id) as fantasy_teams`,
+        `set statement_timeout = '15s'; with ids as (select unnest(${uuidArray(userIds)}) as id) select (select count(*)::integer from auth.users join ids on ids.id = auth.users.id) as users, (select count(*)::integer from auth.identities join ids on ids.id = auth.identities.user_id) as identities, (select count(*)::integer from auth.sessions join ids on ids.id = auth.sessions.user_id) as sessions, (select count(*)::integer from auth.refresh_tokens join ids on ids.id = auth.refresh_tokens.user_id::uuid) as refresh_tokens, (select count(*)::integer from app.profiles join ids on ids.id = app.profiles.id) as profiles, (select count(*)::integer from app.user_preferences join ids on ids.id = app.user_preferences.user_id) as preferences, (select count(*)::integer from app.fantasy_teams join ids on ids.id = app.fantasy_teams.user_id) as fantasy_teams`,
       );
       const totals = Array.isArray(inventory) ? inventory[0] : null;
       if (!totals || Object.values(totals).some((value) => Number(value) !== 0)) {
@@ -291,7 +291,13 @@ async function cleanup() {
       cleanupErrors.push(error);
     }
   }
-  if (cleanupErrors.length) throw new Error(`cleanup_failed_${cleanupErrors.length}`);
+  if (cleanupErrors.length) {
+    cleanupErrors.forEach((error, index) => {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`phase65_cleanup_error_${index + 1}=${sanitize(message)}\n`);
+    });
+    throw new Error(`cleanup_failed_${cleanupErrors.length}`);
+  }
   process.stdout.write(
     `phase65_cleanup=PASS auth_users_deleted=${state.users?.length ?? 0} temporary_keys=0\n`,
   );

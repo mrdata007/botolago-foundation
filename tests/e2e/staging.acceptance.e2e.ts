@@ -11,7 +11,22 @@ async function login(page: import("@playwright/test").Page, email: string, passw
   await page.goto("/auth/login");
   await page.getByLabel(/e-?mail|البريد/i).fill(email);
   await page.locator('input[type="password"]').fill(password);
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().includes("/auth/v1/token") &&
+      response.url().includes("grant_type=password"),
+  );
   await page.locator('form button[type="submit"]').click();
+  const response = await responsePromise;
+  let code = "unknown";
+  try {
+    const body = (await response.json()) as { error_code?: unknown; code?: unknown };
+    code = String(body.error_code ?? body.code ?? "unknown").replaceAll(/[^a-z0-9_-]/gi, "_");
+  } catch {
+    code = "non_json";
+  }
+  expect(response.status(), `login_http_${response.status()}_${code}`).toBe(200);
   await page.waitForURL((url) => !url.pathname.endsWith("/auth/login"));
   if (page.url().includes("/auth/profile-setup")) {
     await page.getByRole("button", { name: /Passer|تخطّي/i }).click();
@@ -32,7 +47,7 @@ test.describe("staging-backed critical journeys", () => {
     await page.getByLabel(/e-?mail/i).fill(firstEmail!);
     await page.locator('input[type="password"]').fill(`${firstPassword!}-invalid`);
     await page.locator('form button[type="submit"]').click();
-    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.getByText("E-mail ou mot de passe incorrect.")).toBeVisible();
     await expect(page.locator('form button[type="submit"]')).toBeEnabled();
     await diagnostics.verify(testInfo);
   });
