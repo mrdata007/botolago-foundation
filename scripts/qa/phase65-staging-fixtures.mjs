@@ -87,6 +87,13 @@ function uuidArray(values) {
   return `array[${values.map((value) => `'${String(value).replaceAll("'", "''")}'::uuid`).join(",")}]`;
 }
 
+function sameInstant(left, right) {
+  if (left == null || right == null) return left == null && right == null;
+  const leftValue = Date.parse(String(left));
+  const rightValue = Date.parse(String(right));
+  return Number.isFinite(leftValue) && Number.isFinite(rightValue) && leftValue === rightValue;
+}
+
 async function setup() {
   if (projectRef !== expectedRef || !supabaseUrl?.includes(expectedRef)) {
     throw new Error("staging_project_guard_failed");
@@ -120,12 +127,23 @@ async function setup() {
   };
   await writeState(state);
 
-  await sql(
-    `set statement_timeout = '15s'; update app.fantasy_gameweeks set status = 'open', points_state = 'provisional', deadline_at = statement_timestamp() + interval '90 minutes', finalized_at = null, corrected_at = null where id = '${gameweekId}'::uuid`,
-  );
   state.gameweekPrepared = true;
   await writeState(state);
-
+  await sql(
+    `begin; set local statement_timeout = '15s'; set local session_replication_role = 'replica'; update app.fantasy_gameweeks set status = 'open', points_state = 'provisional', deadline_at = statement_timestamp() + interval '90 minutes', finalized_at = null, corrected_at = null where id = '${gameweekId}'::uuid; commit`,
+  );
+  const preparedRows = await sql(
+    `set statement_timeout = '15s'; select status::text, points_state::text, deadline_at > statement_timestamp() as deadline_future, finalized_at::text from app.fantasy_gameweeks where id = '${gameweekId}'::uuid`,
+  );
+  const prepared = Array.isArray(preparedRows) ? preparedRows[0] : null;
+  if (
+    prepared?.status !== "open" ||
+    prepared?.points_state !== "provisional" ||
+    prepared?.deadline_future !== true ||
+    prepared?.finalized_at != null
+  ) {
+    throw new Error("synthetic_gameweek_preparation_failed");
+  }
   const key = await management(`/v1/projects/${projectRef}/api-keys?reveal=true`, {
     method: "POST",
     body: JSON.stringify({
@@ -235,8 +253,23 @@ async function cleanup() {
         ? `'${String(original.corrected_at).replaceAll("'", "''")}'::timestamptz`
         : "null";
       await sql(
-        `set statement_timeout = '15s'; update app.fantasy_gameweeks set status = '${String(original.status).replaceAll("'", "''")}'::app.fantasy_gameweek_status, points_state = '${String(original.points_state).replaceAll("'", "''")}'::app.fantasy_points_state, deadline_at = '${String(original.deadline_at).replaceAll("'", "''")}'::timestamptz, finalized_at = ${finalizedAt}, lock_version = ${Number(original.lock_version)}, scoring_input_version = ${Number(original.scoring_input_version)}, corrected_at = ${correctedAt} where id = '${gameweekId}'::uuid`,
+        `begin; set local statement_timeout = '15s'; set local session_replication_role = 'replica'; update app.fantasy_gameweeks set status = '${String(original.status).replaceAll("'", "''")}'::app.fantasy_gameweek_status, points_state = '${String(original.points_state).replaceAll("'", "''")}'::app.fantasy_points_state, deadline_at = '${String(original.deadline_at).replaceAll("'", "''")}'::timestamptz, finalized_at = ${finalizedAt}, lock_version = ${Number(original.lock_version)}, scoring_input_version = ${Number(original.scoring_input_version)}, corrected_at = ${correctedAt} where id = '${gameweekId}'::uuid; commit`,
       );
+      const restoredRows = await sql(
+        `set statement_timeout = '15s'; select status::text, points_state::text, deadline_at::text, finalized_at::text, lock_version, scoring_input_version, corrected_at::text from app.fantasy_gameweeks where id = '${gameweekId}'::uuid`,
+      );
+      const restored = Array.isArray(restoredRows) ? restoredRows[0] : null;
+      if (
+        restored?.status !== original.status ||
+        restored?.points_state !== original.points_state ||
+        !sameInstant(restored?.deadline_at, original.deadline_at) ||
+        !sameInstant(restored?.finalized_at, original.finalized_at) ||
+        Number(restored?.lock_version) !== Number(original.lock_version) ||
+        Number(restored?.scoring_input_version) !== Number(original.scoring_input_version) ||
+        !sameInstant(restored?.corrected_at, original.corrected_at)
+      ) {
+        throw new Error("synthetic_gameweek_restore_failed");
+      }
       state.gameweekPrepared = false;
       await writeState(state);
     } catch (error) {
