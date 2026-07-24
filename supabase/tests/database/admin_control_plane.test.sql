@@ -121,6 +121,22 @@ select extensions.ok(
   api.get_my_staff_context() -> 'permissions' ? 'security.manage_staff',
   'current context aggregates only canonical role permissions'
 );
+select extensions.lives_ok(
+  $$select api.admin_create_staff_principal(
+    '81000000-0000-4000-8000-000000000002',
+    'Create the Phase 7B security reviewer principal without an implicit role.',
+    '84000000-0000-4000-8000-000000000011'
+  )$$,
+  'control-plane staff creation remains separate from assignment'
+);
+select extensions.lives_ok(
+  $$select api.admin_create_staff_principal(
+    '81000000-0000-4000-8000-000000000003',
+    'Create the Phase 7B approval target principal without an implicit role.',
+    '84000000-0000-4000-8000-000000000012'
+  )$$,
+  'control-plane approval targets an eligible existing principal'
+);
 select extensions.is(
   jsonb_array_length(api.admin_list_role_catalog()),
   10,

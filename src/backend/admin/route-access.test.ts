@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   getAdminCopy,
   maskEmail,
+  requireAdminRoutePermission,
   resolveAdminRouteAccess,
   type AdminRouteDependencies,
 } from "./route-access";
@@ -124,5 +125,15 @@ describe("Admin route server authorization", () => {
 
   it("fails malformed identity strings closed", () => {
     expect(maskEmail("not-an-email")).toBeNull();
+  });
+
+  it("enforces route-specific permissions on the server-owned context", async () => {
+    const authorized = await resolveAdminRouteAccess(dependencies(context()));
+    expect(requireAdminRoutePermission(authorized, "security.manage_staff").state).toBe(
+      "authorized",
+    );
+    expect(requireAdminRoutePermission(authorized, "security.revoke_staff").state).toBe(
+      "forbidden",
+    );
   });
 });

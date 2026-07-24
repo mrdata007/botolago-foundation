@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { staffContextSchema } from "./contracts";
+import { staffContextSchema, type AdminPermission } from "./contracts";
 import { AdminError, mapAdminError } from "./errors";
 
 export const adminRouteStateSchema = z.discriminatedUnion("state", [
@@ -80,6 +80,14 @@ export async function resolveAdminRouteAccess(
   }
 }
 
+export function requireAdminRoutePermission(
+  state: AdminRouteState,
+  permission: AdminPermission,
+): AdminRouteState {
+  if (state.state !== "authorized") return state;
+  return state.context.permissions.includes(permission) ? state : { state: "forbidden" };
+}
+
 export function maskEmail(email: string | null): string | null {
   if (!email) return null;
   const separator = email.lastIndexOf("@");
@@ -109,7 +117,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
   fr: {
     dir: "ltr",
     title: "Administration BotolaGO",
-    subtitle: "Point d’entrée sécurisé — Phase 7B",
+    subtitle: "Opérations de sécurité — Phase 7C",
     states: {
       loading: {
         title: "Vérification de l’accès",
@@ -129,7 +137,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       },
       recent_auth_required: {
         title: "Réauthentification requise",
-        description: "Authentifiez-vous à nouveau avant d’accéder au contrôle opérationnel.",
+        description: "Authentifiez-vous à nouveau, puis soumettez de nouveau l’opération sensible.",
       },
       suspended: {
         title: "Accès suspendu",
@@ -166,7 +174,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
   ar: {
     dir: "rtl",
     title: "إدارة BotolaGO",
-    subtitle: "نقطة دخول آمنة — المرحلة 7B",
+    subtitle: "عمليات الأمان — المرحلة 7C",
     states: {
       loading: {
         title: "التحقق من الصلاحية",
@@ -186,7 +194,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       },
       recent_auth_required: {
         title: "إعادة المصادقة مطلوبة",
-        description: "سجّل الدخول من جديد قبل الوصول إلى أدوات التحكم.",
+        description: "سجّل الدخول من جديد، ثم أرسل العملية الحساسة مرة أخرى.",
       },
       suspended: {
         title: "الصلاحية معلّقة",

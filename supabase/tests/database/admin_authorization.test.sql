@@ -209,6 +209,11 @@ select extensions.is(
     select count(*)::integer
     from app_private.admin_audit_events
     where action = 'security.bootstrap_platform_admin'
+      and target_entity_id = (
+        select id
+        from app_private.staff_principals
+        where auth_user_id = '71000000-0000-4000-8000-000000000001'
+      )
   ),
   1,
   'bootstrap creates one append-only audit event'
@@ -244,6 +249,22 @@ select extensions.ok(
   'platform admin receives the explicit staff-management permission'
 );
 select extensions.lives_ok(
+  $$select api.admin_create_staff_principal(
+    '71000000-0000-4000-8000-000000000002',
+    'Create the independent security administrator principal without a role.',
+    '74000000-0000-4000-8000-000000000021'
+  )$$,
+  'staff principal creation is separate from role assignment'
+);
+select extensions.lives_ok(
+  $$select api.admin_create_staff_principal(
+    '71000000-0000-4000-8000-000000000003',
+    'Create the future platform administrator principal without a role.',
+    '74000000-0000-4000-8000-000000000022'
+  )$$,
+  'platform-admin approval targets an existing eligible principal'
+);
+select extensions.lives_ok(
   $$select api.admin_assign_role(
     '71000000-0000-4000-8000-000000000002',
     'security_admin',
@@ -275,7 +296,7 @@ select extensions.throws_ok(
     '74000000-0000-4000-8000-000000000002'
   )$$,
   'PT409',
-  'staff_role_conflict',
+  'role_assignment_conflict',
   'a second active copy of the same role is rejected'
 );
 select extensions.throws_ok(
