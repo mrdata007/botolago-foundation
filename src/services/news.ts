@@ -97,7 +97,7 @@ export const newsService = {
   async getHome(language: NewsLanguage) {
     const modules = await getNewsRepository().getHomeModules(language, 8, context());
     return {
-      lead: modules.lead ? presentArticle(modules.lead) : undefined,
+      lead: modules.lead ? presentArticle(modules.lead) : null,
       featured: modules.featured.map(presentArticle),
       latest: modules.latest.map(presentArticle),
     };

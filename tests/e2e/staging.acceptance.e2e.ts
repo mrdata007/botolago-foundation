@@ -70,6 +70,10 @@ test.describe("staging-backed critical journeys", () => {
     await initializeLanguage(page, "fr");
     await login(page, firstEmail!, firstPassword!, "fr");
     await gotoHydrated(page, "/fantasy/create", "fr");
+    const welcome = page.getByRole("dialog", { name: "Bienvenue sur Fantasy BotolaGO" });
+    if (await welcome.isVisible()) {
+      await welcome.getByRole("button", { name: "Passer" }).click();
+    }
     await page.getByLabel("Nom de l'équipe").fill("QA Acceptance FC");
     await page.getByRole("button", { name: "Compléter automatiquement" }).click();
     await expect(page.getByText("15 / 15")).toBeVisible();
