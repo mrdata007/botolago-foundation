@@ -6,7 +6,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { Trans } from "@/components/common/Trans";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { Logo } from "@/components/brand/Logo";
 import {
   UserCircle,
@@ -52,10 +52,13 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const { user, status, signOut } = useAuth();
   const navigate = useNavigate();
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const favoriteClub = user?.favoriteClubId

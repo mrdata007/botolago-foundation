@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
@@ -87,17 +87,20 @@ function MyTeamPage() {
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
 
   // Local-only mock summary. In cloud mode we derive from the owned snapshot
   // + public player prices; the mock summary is never consumed.
   const summaryQ = useQuery({
     queryKey: ownedKey("summary"),
-    queryFn: () => botolaService.getFantasySummary(),
+    queryFn: () => fantasyService.getSummary(),
     enabled: !isCloud,
   });
 

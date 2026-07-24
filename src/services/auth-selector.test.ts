@@ -1,10 +1,24 @@
 // Tests for the auth service selector and Supabase error mapping.
 // Run with: `bun test src/services/auth-selector.test.ts`
 import { describe, it, expect } from "bun:test";
-import { __testing, IS_MOCK_AUTH } from "./auth";
+import { __testing, IS_MOCK_AUTH, selectAuthMode } from "./auth";
 import { __mapAuthErrorForTests as mapError } from "./auth-supabase";
 
 describe("auth mode selector", () => {
+  it("fails closed unless production explicitly selects Supabase", () => {
+    expect(() => selectAuthMode(undefined, false, true)).toThrow(
+      "VITE_AUTH_MODE=supabase",
+    );
+    expect(() => selectAuthMode("mock", true, true)).toThrow("VITE_AUTH_MODE=supabase");
+    expect(selectAuthMode("supabase", true, true)).toBe("supabase");
+  });
+
+  it("keeps deterministic mock selection available outside production", () => {
+    expect(selectAuthMode("mock", false, false)).toBe("mock");
+    expect(selectAuthMode(undefined, false, false)).toBe("mock");
+    expect(selectAuthMode(undefined, true, false)).toBe("supabase");
+  });
+
   it("exposes a stable IS_MOCK_AUTH flag", () => {
     expect(typeof IS_MOCK_AUTH).toBe("boolean");
   });

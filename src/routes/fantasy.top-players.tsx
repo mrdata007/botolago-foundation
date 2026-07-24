@@ -13,7 +13,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
@@ -56,7 +56,7 @@ function TopPlayersPage() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
   const availableGwsQ = useQuery({
     queryKey: ["top-gws"],
@@ -74,7 +74,10 @@ function TopPlayersPage() {
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
 
   const enriched = useMemo<Enriched[]>(() => {
     if (!topQ.data || !playersQ.data || !clubsQ.data) return [];

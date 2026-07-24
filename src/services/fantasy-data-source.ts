@@ -2,7 +2,8 @@
 //
 // Contract:
 //   - Auth mode = supabase AND user is authenticated  → "cloud"
-//   - Otherwise (guest, mock auth mode, unauthenticated) → "local"
+//   - Supabase mode + anonymous                           → "guest"
+//   - Mock auth mode                                     → "local"
 // No runtime fallback from cloud to local. Cloud failures surface as
 // FantasyCloudError; the UI decides whether to retry or keep working local
 // state as read-only until the user reloads.
@@ -16,13 +17,14 @@ import type { QueryClient } from "@tanstack/react-query";
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
 
-export type FantasyDataSource = "cloud" | "local";
+export type FantasyDataSource = "cloud" | "guest" | "local";
 
 export function selectFantasyDataSource(input: {
   authMode: "supabase" | "mock";
   isAuthenticated: boolean;
 }): FantasyDataSource {
   if (input.authMode === "supabase" && input.isAuthenticated) return "cloud";
+  if (input.authMode === "supabase") return "guest";
   return "local";
 }
 

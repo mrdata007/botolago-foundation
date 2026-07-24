@@ -2,8 +2,8 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, MapPin, Trophy, CalendarClock, Share2 } from "lucide-react";
-import { botolaService } from "@/services/mock";
 import { footballService } from "@/services/football";
+import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -30,8 +30,8 @@ function MatchDetailPage() {
     queryFn: () => footballService.getMatchDetailPage(matchId, lang),
   });
   const articlesQ = useQuery({
-    queryKey: ["articles", "all"],
-    queryFn: () => botolaService.getArticles(),
+    queryKey: ["news", "feed", lang],
+    queryFn: () => newsService.getArticles(lang),
   });
 
   const match = detailQ.data?.match;

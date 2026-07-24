@@ -3,6 +3,7 @@ import "./__test-shim";
 
 import {
   applyAutocompleteTemplate,
+  buildAutocompleteDraft,
   buildEmptySlots,
   computeSummary,
   draftPurchasePrices,
@@ -110,6 +111,19 @@ describe("fantasy-create-service — validation", () => {
     expect(s.hasCaptain).toBe(true);
     expect(s.hasVice).toBe(true);
     expect(s.captainViceDistinct).toBe(true);
+  });
+
+  it("builds a deterministic valid proposal for a first-time user", () => {
+    const first = buildAutocompleteDraft(initCreateDraft("First Team"), players);
+    const second = buildAutocompleteDraft(initCreateDraft("First Team"), [...players].reverse());
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(first?.slots).toEqual(second?.slots);
+    expect(first && validateDraft(first, players).ok).toBe(true);
+  });
+
+  it("fails honestly when the active player pool cannot satisfy squad rules", () => {
+    expect(buildAutocompleteDraft(initCreateDraft("First Team"), players.slice(0, 3))).toBeNull();
   });
 
   it("club limit is flagged when more than 3 players share a club", () => {

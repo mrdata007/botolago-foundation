@@ -18,13 +18,26 @@ export * from "./auth-types";
 
 type Mode = "supabase" | "mock";
 
-function detectMode(): Mode {
-  const explicit = (import.meta.env.VITE_AUTH_MODE as string | undefined)?.toLowerCase();
+export function selectAuthMode(
+  configuredMode: string | undefined,
+  hasSupabase: boolean,
+  production: boolean,
+): Mode {
+  const explicit = configuredMode?.toLowerCase();
+  if (production && explicit !== "supabase") {
+    throw new Error("Production Auth requires VITE_AUTH_MODE=supabase.");
+  }
   if (explicit === "mock") return "mock";
   if (explicit === "supabase") return "supabase";
-  const hasSupabase =
-    !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   return hasSupabase ? "supabase" : "mock";
+}
+
+function detectMode(): Mode {
+  return selectAuthMode(
+    import.meta.env.VITE_AUTH_MODE as string | undefined,
+    !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    import.meta.env.PROD,
+  );
 }
 
 export const AUTH_MODE: Mode = detectMode();

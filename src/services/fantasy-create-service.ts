@@ -236,6 +236,47 @@ export function applyAutocompleteTemplate(
   return withDefaultCaptaincy({ ...draft, slots });
 }
 
+/**
+ * Build a deterministic first-team proposal directly from the authoritative
+ * player pool. A first-time user has no existing team to use as a template.
+ */
+export function buildAutocompleteDraft(
+  draft: CreateTeamDraft,
+  players: FantasyPlayer[],
+): CreateTeamDraft | null {
+  const candidates = players
+    .filter((player) => player.status === "available")
+    .sort((a, b) => a.price - b.price || a.id.localeCompare(b.id));
+  const clubCounts = new Map<string, number>();
+  const selected = new Set<string>();
+  let totalCost = 0;
+
+  const slots = buildEmptySlots(draft.formation).map((slot) => {
+    const player = candidates.find(
+      (candidate) =>
+        candidate.position === slot.position &&
+        !selected.has(candidate.id) &&
+        (clubCounts.get(candidate.clubId) ?? 0) < SQUAD_RULES.maxPerClub &&
+        totalCost + candidate.price <= SQUAD_RULES.budget,
+    );
+    if (!player) return slot;
+    selected.add(player.id);
+    clubCounts.set(player.clubId, (clubCounts.get(player.clubId) ?? 0) + 1);
+    totalCost += player.price;
+    return { ...slot, playerId: player.id };
+  });
+
+  if (selected.size !== SQUAD_RULES.totalSize) return null;
+  const completed = withDefaultCaptaincy({ ...draft, slots });
+  const summary = computeSummary(completed, players);
+  return summary.filled === SQUAD_RULES.totalSize &&
+    !summary.overBudget &&
+    summary.overClubLimit.length === 0 &&
+    summary.formationValid
+    ? completed
+    : null;
+}
+
 // ------ Summary + validation ------
 
 export interface DraftSummary {

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { LoadingState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
@@ -14,12 +14,15 @@ export const Route = createFileRoute("/fantasy/fixtures")({
 });
 
 function FixturesPage() {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const fdQ = useQuery({
     queryKey: ["fixture-difficulty"],
     queryFn: () => fantasyService.getFixtureDifficulty(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const [clubId, setClubId] = useState("");
   const [range, setRange] = useState<3 | 6>(6);
 

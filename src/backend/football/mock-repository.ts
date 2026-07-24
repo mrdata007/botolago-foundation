@@ -118,6 +118,9 @@ function sameLocalDate(iso: string, date: string): boolean {
 }
 
 export class MockFootballRepository implements FootballRepository {
+  async getTeams(language: FootballLanguage, limit: number) {
+    return mock.clubs.slice(0, limit).map((club) => team(club.id, language));
+  }
   async getHomeMatches(language: FootballLanguage, limit: number, _context: RepositoryContext) {
     return mock.matches
       .filter((match) => match.status === "live" || match.status === "scheduled")

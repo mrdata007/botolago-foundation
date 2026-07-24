@@ -78,6 +78,19 @@ export function encodeMatchCursor(cursor: MatchPageCursor | null): string | null
 }
 
 export class SupabaseFootballRepository implements FootballRepository {
+  async getTeams(
+    language: FootballLanguage,
+    limit: number,
+    _context: RepositoryContext,
+  ): Promise<readonly TeamSummaryDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_team_catalog", {
+      p_language: language,
+      p_limit: limit,
+    });
+    throwIfError(error);
+    return parse(z.array(teamSummarySchema), data);
+  }
+
   async getHomeMatches(
     language: FootballLanguage,
     limit: number,

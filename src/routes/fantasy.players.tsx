@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { LoadingState, EmptyState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
@@ -37,7 +37,10 @@ function PlayersPage() {
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
 
   const [q, setQ] = useState("");
   const [pos, setPos] = useState<Position | "">("");

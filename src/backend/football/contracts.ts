@@ -237,6 +237,11 @@ export interface MatchesByDateInput extends CursorPageRequest {
 }
 
 export interface FootballRepository {
+  getTeams(
+    language: FootballLanguage,
+    limit: number,
+    context: RepositoryContext,
+  ): Promise<readonly TeamSummaryDto[]>;
   getHomeMatches(
     language: FootballLanguage,
     limit: number,

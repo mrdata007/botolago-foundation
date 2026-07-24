@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { LoadingState } from "@/components/common/States";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -66,10 +66,13 @@ function TransfersPage() {
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
 
   const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>

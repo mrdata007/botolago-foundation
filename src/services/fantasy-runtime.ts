@@ -16,6 +16,7 @@ import type {
   LeagueStanding,
   TopPlayerOfWeek,
 } from "@/types/fantasy";
+import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
@@ -119,6 +120,91 @@ async function cloudTeam() {
 }
 
 export const fantasyService = {
+  async getCurrentGameweek(): Promise<Gameweek> {
+    if (mode() === "mock") {
+      const { gameweek } = await import("@/mocks/data");
+      return gameweek;
+    }
+    const current = await hub();
+    if (!current.gameweek) throw new Error("fantasy_gameweek_not_found");
+    return {
+      number: current.gameweek.sequence,
+      deadline: current.gameweek.deadlineAt,
+      isCurrent: !["finalized", "corrected", "cancelled"].includes(current.gameweek.status),
+      averagePoints: 0,
+      highestPoints: 0,
+    };
+  },
+
+  async getSummary(): Promise<FantasySummary | null> {
+    if (mode() === "mock") {
+      const [{ fantasySummary }, team] = await Promise.all([
+        import("@/mocks/data"),
+        mockFantasyService.getTeam(),
+      ]);
+      return {
+        ...fantasySummary,
+        teamName: team.teamName,
+        managerName: team.managerName,
+        transfersLeft: team.freeTransfers,
+        bankValue: team.bank,
+        teamValue: await mockFantasyService.getTeamValue(),
+      };
+    }
+    const current = await hub();
+    if (!current.team) return null;
+    const history = await cloud.getHistory(current.team.id, null, context());
+    const latest = history.items[0] ?? null;
+    const currentResult =
+      history.items.find((item) => item.gameweekId === current.gameweek?.id) ?? latest;
+    return {
+      managerName: "",
+      teamName: current.team.name,
+      totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
+      gameweekPoints: currentResult?.score ?? 0,
+      overallRank: latest?.overallRank ?? null,
+      gameweekRank: currentResult?.rank ?? null,
+      transfersLeft: current.team.freeTransfers,
+      bankValue: current.team.bank,
+      teamValue: current.team.teamValue,
+    };
+  },
+
+  async getAlerts(): Promise<FantasyAlert[]> {
+    if (mode() === "mock") {
+      const { fantasyAlerts } = await import("@/mocks/data");
+      return fantasyAlerts;
+    }
+    // The V2 Fantasy API has no approved alert projection yet. An honest
+    // empty state is safer than presenting fixture data as current.
+    return [];
+  },
+
+  async getTrendingPlayers(): Promise<Player[]> {
+    if (mode() === "mock") {
+      const [{ trendingPlayers }, players] = await Promise.all([
+        import("@/mocks/data"),
+        mockFantasyService.getPlayers(),
+      ]);
+      return trendingPlayers
+        .map((id) => players.find((player) => player.id === id))
+        .filter((player): player is FantasyPlayer => !!player);
+    }
+    const current = await hub();
+    if (!current.gameweek) return [];
+    const [top, players] = await Promise.all([
+      cloud.getTopPlayers(current.gameweek.id, context()),
+      allPlayers(),
+    ]);
+    const byId = new Map(players.map((player) => [player.id, player]));
+    return top
+      .map((entry) => {
+        const player = byId.get(entry.fantasyPlayerId);
+        return player ? { ...player, totalPoints: entry.points } : null;
+      })
+      .filter((player): player is FantasyPlayer => !!player);
+  },
+
   async getPlayers(): Promise<FantasyPlayer[]> {
     return mode() === "mock" ? mockFantasyService.getPlayers() : allPlayers();
   },

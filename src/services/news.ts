@@ -18,12 +18,12 @@ export function selectNewsDataMode(
   configuredMode: string | undefined,
   production: boolean,
 ): NewsDataMode {
-  if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
-  if (production)
+  if (production && configuredMode !== "supabase")
     throw new NewsError(
       "data_unavailable",
-      "VITE_NEWS_DATA_MODE must be configured explicitly in production.",
+      "Production News requires VITE_NEWS_DATA_MODE=supabase.",
     );
+  if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
   return "mock";
 }
 

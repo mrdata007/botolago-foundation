@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Sparkles, Trash2, Users, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { LoadingState } from "@/components/common/States";
@@ -20,7 +20,7 @@ import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import {
-  applyAutocompleteTemplate,
+  buildAutocompleteDraft,
   computeSummary,
   draftPurchasePrices,
   draftToSquad,
@@ -71,10 +71,13 @@ function CreateTeamPage() {
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
 
   // Entry conditions:
@@ -184,12 +187,8 @@ function CreateTeamPage() {
     if (autoBusy) return;
     setAutoBusy(true);
     try {
-      const template = await fantasyService.getTeam();
-      const merged = applyAutocompleteTemplate(
-        draft,
-        template.squad,
-        players.length ? players : await fantasyService.getPlayers(),
-      );
+      const availablePlayers = players.length ? players : await fantasyService.getPlayers();
+      const merged = buildAutocompleteDraft(draft, availablePlayers);
       if (!merged) {
         toast.error(t("fantasy.create.autocomplete_failed"));
         return;

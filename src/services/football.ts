@@ -17,13 +17,13 @@ export function selectFootballDataMode(
   configuredMode: string | undefined,
   production: boolean,
 ): FootballDataMode {
-  if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
-  if (production) {
+  if (production && configuredMode !== "supabase") {
     throw new FootballError(
       "data_unavailable",
-      "VITE_FOOTBALL_DATA_MODE must be configured explicitly in production.",
+      "Production Football requires VITE_FOOTBALL_DATA_MODE=supabase.",
     );
   }
+  if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
   return "mock";
 }
 
@@ -125,6 +125,10 @@ export interface FootballMatchCollection {
 }
 
 export const footballService = {
+  async getClubs(language: FootballLanguage): Promise<Club[]> {
+    return (await getFootballRepository().getTeams(language, 100, requestContext())).map(toClub);
+  },
+
   async getHomeMatches(language: FootballLanguage): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
     const matches = await repository.getHomeMatches(language, 3, requestContext());

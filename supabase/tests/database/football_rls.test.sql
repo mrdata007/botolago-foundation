@@ -60,6 +60,17 @@ select extensions.is(
   'anonymous can read the bounded public live-match RPC'
 );
 select extensions.is(
+  jsonb_array_length(api.football_team_catalog('fr', 100)),
+  2,
+  'anonymous can read the bounded active-team catalog'
+);
+select extensions.throws_ok(
+  $$select api.football_team_catalog('fr', 101)$$,
+  '22023',
+  'INVALID_LIMIT',
+  'team catalog rejects an unbounded limit'
+);
+select extensions.is(
   (select count(*)::integer from api.live_fixture_updates),
   1,
   'anonymous can read the sanitized Realtime projection'
@@ -103,6 +114,11 @@ select extensions.is(
   jsonb_array_length(api.football_live_matches(10, 'ar')),
   1,
   'authenticated users receive the same safe public Football read model'
+);
+select extensions.is(
+  jsonb_array_length(api.football_team_catalog('ar', 100)),
+  2,
+  'authenticated users receive the same bounded team catalog'
 );
 select extensions.throws_ok(
   $$update app.fixtures set home_score = 99

@@ -7,8 +7,9 @@ export function selectFantasyDataMode(
   configured: string | undefined,
   production: boolean,
 ): FantasyDataMode {
+  if (production && configured !== "supabase")
+    throw new Error("Production Fantasy requires VITE_FANTASY_DATA_MODE=supabase.");
   if (configured === "mock" || configured === "supabase") return configured;
-  if (production) throw new Error("Production Fantasy requires VITE_FANTASY_DATA_MODE=supabase.");
   return "mock";
 }
 
