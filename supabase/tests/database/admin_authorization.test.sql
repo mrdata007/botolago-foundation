@@ -209,6 +209,11 @@ select extensions.is(
     select count(*)::integer
     from app_private.admin_audit_events
     where action = 'security.bootstrap_platform_admin'
+      and target_entity_id = (
+        select id
+        from app_private.staff_principals
+        where auth_user_id = '71000000-0000-4000-8000-000000000001'
+      )
   ),
   1,
   'bootstrap creates one append-only audit event'
