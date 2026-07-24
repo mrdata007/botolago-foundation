@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       expected_commit:
-        description: Exact reviewed diagnostics commit to rehearse
+        description: Exact reviewed backend/fantasy-domain commit to rehearse
         required: true
         type: string
       confirmation:
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out diagnostics source
+      - name: Check out rehearsal source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
@@ -95,31 +95,44 @@ jobs:
           test "${{ inputs.confirmation }}" = "RUN_PHASE6_SESSION_REHEARSAL"
           [[ "${{ inputs.expected_commit }}" =~ ^[0-9a-f]{40}$ ]]
 
-      - name: Verify diagnostics branch head
+      - name: Verify PR #6 reviewed backend head
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         with:
           script: |
-            const pulls = await github.rest.pulls.list({
+            const pull = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: "open",
-              head: "mrdata007:codex/phase6-session-provisioning-diagnostics",
-              base: "backend/fantasy-domain",
+              pull_number: 6,
             });
-            if (pulls.data.length !== 1) {
-              core.setFailed("The diagnostics rehearsal requires one open stacked PR");
+            if (pull.data.state !== "open" || pull.data.draft !== true) {
+              core.setFailed("PR #6 must remain open and Draft");
               return;
             }
-            const pull = pulls.data[0];
-            if (pull.head.sha !== process.env.EXPECTED_COMMIT) {
-              core.setFailed("The reviewed commit is not the current diagnostics PR head");
+            if (pull.data.head.ref !== "backend/fantasy-domain") {
+              core.setFailed("PR #6 is not sourced from backend/fantasy-domain");
               return;
             }
-            core.info("Diagnostics PR head matches the manually approved commit");
+            const backend = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "heads/backend/fantasy-domain",
+            });
+            const backendSha = backend.data.object.sha;
+            if (
+              backend.data.object.type !== "commit" ||
+              backendSha !== process.env.EXPECTED_COMMIT ||
+              pull.data.head.sha !== process.env.EXPECTED_COMMIT
+            ) {
+              core.setFailed(
+                "expected_commit must equal backend/fantasy-domain HEAD and PR #6 head",
+              );
+              return;
+            }
+            core.info("PR #6 and backend/fantasy-domain match the approved commit");
 
-      - name: Check out reviewed diagnostics commit
+      - name: Check out reviewed backend commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.expected_commit }}
@@ -171,7 +184,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
           SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
-          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ vars.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
         shell: bash
         run: |
           set +e
@@ -190,7 +203,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
           SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
-          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ vars.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
         shell: bash
         run: |
           set +e

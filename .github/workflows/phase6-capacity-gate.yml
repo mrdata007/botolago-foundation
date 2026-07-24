@@ -32,13 +32,23 @@ jobs:
       AWS_REGION: eu-west-3
       AWS_DEFAULT_REGION: eu-west-3
       BOTOLAGO_LOAD_ENVIRONMENT: staging-v2
-      BOTOLAGO_PHASE6_RUNTIME_DIR: ${{ runner.temp }}/botolago-phase6
-      BOTOLAGO_PHASE6_EVIDENCE_DIR: ${{ runner.temp }}/botolago-phase6/evidence
       BOTOLAGO_MAX_ESTIMATED_COST_USD: "50"
       BOTOLAGO_REQUIRE_AWS_SESSION_TOKEN: "1"
       BOTOLAGO_AWS_LOAD_TEST_ROLE_ARN: ${{ vars.AWS_LOAD_TEST_ROLE_ARN }}
 
     steps:
+      - name: Initialize Phase 6 runtime environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_dir="$RUNNER_TEMP/botolago-phase6"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "BOTOLAGO_PHASE6_RUNTIME_DIR=$runtime_dir"
+            echo "BOTOLAGO_PHASE6_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+
       - name: Validate manual dispatch
         id: dispatch_guard
         shell: bash
@@ -136,7 +146,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
           SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
-          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ vars.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
         run: |
           set +e
           timeout --signal=INT --kill-after=120s 90m \
@@ -162,7 +172,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
           SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
-          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ vars.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
         run: |
           set +e
           timeout --signal=INT --kill-after=60s 20m \
