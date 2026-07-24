@@ -66,10 +66,12 @@ Set runtime values without committing them:
 export BOTOLAGO_ADMIN_ENVIRONMENT="<local|staging|production>"
 export BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF="<exact-project-ref-or-local>"
 export SUPABASE_URL="<exact-supabase-url>"
-export SUPABASE_SECRET_KEY="<server-only-secret-key>"
 export OWNER_ADMIN_EMAIL="<verified-owner-email>"
-export OWNER_ADMIN_ACCESS_TOKEN="<current-aal2-access-token>"
 ```
+
+Inject `SUPABASE_SECRET_KEY` and `OWNER_ADMIN_ACCESS_TOKEN` through the
+owner-controlled protected runtime without assigning or echoing their values in
+the shell transcript.
 
 For production only, after separate written authorization:
 
