@@ -37,3 +37,8 @@ export function getNotificationsApi() {
 export function getFantasyApi() {
   return supabaseV2.schema("api");
 }
+
+/** Admin V2 exposes only server-authorized DTO RPCs; canonical staff tables stay private. */
+export function getAdminApi() {
+  return supabaseV2.schema("api");
+}
