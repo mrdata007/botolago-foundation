@@ -357,7 +357,7 @@ function CreateTeamPage() {
   const displayedErrors = validation.errors;
 
   return (
-    <div className="pb-32">
+    <div className="pb-48">
       {/* Header */}
       <div className="flex items-start gap-2">
         <button
@@ -630,7 +630,7 @@ function CreateTeamPage() {
 
       {/* Sticky save bar */}
       <div
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-white/40 bg-white/85 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-md"
+        className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-40 border-t border-white/40 bg-white/85 px-4 pb-3 pt-3 backdrop-blur-md"
         dir={dir}
       >
         <div className="mx-auto flex max-w-2xl items-center gap-3">
