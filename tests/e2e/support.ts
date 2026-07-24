@@ -68,7 +68,18 @@ export async function initializeLanguage(page: Page, language: "fr" | "ar") {
   await page.addInitScript((lang) => {
     window.localStorage.setItem("botolago.welcomed", "1");
     window.localStorage.setItem("botolago.language", lang);
+    window.sessionStorage.setItem("botolago.splashShown", "1");
   }, language);
+}
+
+export async function gotoHydrated(page: Page, path: string, language: "fr" | "ar") {
+  await page.goto(path);
+  await expect(page.locator("html")).toHaveAttribute("data-lang", language);
+}
+
+export async function reloadHydrated(page: Page, language: "fr" | "ar") {
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-lang", language);
 }
 
 export async function expectNoHorizontalOverflow(page: Page) {

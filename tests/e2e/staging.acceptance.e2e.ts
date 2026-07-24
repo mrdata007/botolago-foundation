@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalOverflow, initializeLanguage, observePage } from "./support";
+import {
+  expectNoHorizontalOverflow,
+  gotoHydrated,
+  initializeLanguage,
+  observePage,
+  reloadHydrated,
+} from "./support";
 
 const firstEmail = process.env.E2E_STAGING_FIRST_EMAIL;
 const firstPassword = process.env.E2E_STAGING_FIRST_PASSWORD;
@@ -7,8 +13,13 @@ const secondEmail = process.env.E2E_STAGING_SECOND_EMAIL;
 const secondPassword = process.env.E2E_STAGING_SECOND_PASSWORD;
 const hasStagingUsers = !!firstEmail && !!firstPassword && !!secondEmail && !!secondPassword;
 
-async function login(page: import("@playwright/test").Page, email: string, password: string) {
-  await page.goto("/auth/login");
+async function login(
+  page: import("@playwright/test").Page,
+  email: string,
+  password: string,
+  language: "fr" | "ar",
+) {
+  await gotoHydrated(page, "/auth/login", language);
   await page.getByLabel(/e-?mail|البريد/i).fill(email);
   await page.locator('input[type="password"]').fill(password);
   const responsePromise = page.waitForResponse(
@@ -43,7 +54,7 @@ test.describe("staging-backed critical journeys", () => {
       allowExpectedResourceConsoleError: true,
     });
     await initializeLanguage(page, "fr");
-    await page.goto("/auth/login");
+    await gotoHydrated(page, "/auth/login", "fr");
     await page.getByLabel(/e-?mail/i).fill(firstEmail!);
     await page.locator('input[type="password"]').fill(`${firstPassword!}-invalid`);
     await page.locator('form button[type="submit"]').click();
@@ -57,8 +68,8 @@ test.describe("staging-backed critical journeys", () => {
   }, testInfo) => {
     const diagnostics = observePage(page);
     await initializeLanguage(page, "fr");
-    await login(page, firstEmail!, firstPassword!);
-    await page.goto("/fantasy/create");
+    await login(page, firstEmail!, firstPassword!, "fr");
+    await gotoHydrated(page, "/fantasy/create", "fr");
     await page.getByLabel("Nom de l'équipe").fill("QA Acceptance FC");
     await page.getByRole("button", { name: "Compléter automatiquement" }).click();
     await expect(page.getByText("15 / 15")).toBeVisible();
@@ -66,7 +77,7 @@ test.describe("staging-backed critical journeys", () => {
     await expect(save).toBeEnabled();
     await save.click();
     await page.waitForURL(/\/fantasy\/team$/);
-    await page.reload();
+    await reloadHydrated(page, "fr");
     await expect(page.getByText("QA Acceptance FC")).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await diagnostics.verify(testInfo);
@@ -75,16 +86,16 @@ test.describe("staging-backed critical journeys", () => {
   test("team follows persist while a second user remains isolated", async ({ page }, testInfo) => {
     const diagnostics = observePage(page);
     await initializeLanguage(page, "ar");
-    await login(page, secondEmail!, secondPassword!);
-    await page.goto("/news");
+    await login(page, secondEmail!, secondPassword!, "ar");
+    await gotoHydrated(page, "/news", "ar");
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     const follow = page.getByRole("button", { name: /^تابع$/ }).first();
     if (await follow.isVisible()) {
       await follow.click();
-      await page.reload();
+      await reloadHydrated(page, "ar");
       await expect(page.getByRole("button", { name: "متابَع" }).first()).toBeVisible();
     }
-    await page.goto("/fantasy/team");
+    await gotoHydrated(page, "/fantasy/team", "ar");
     await expect(page.getByText("QA Acceptance FC")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
     await diagnostics.verify(testInfo);
