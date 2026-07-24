@@ -2,7 +2,8 @@
 
 ## Purpose
 
-This runbook creates the first BotolaGO V2 `platform_admin`. It does not create
+This runbook documents the eventual owner bootstrap procedure for the first
+BotolaGO V2 `platform_admin`. Phase 7B does not execute it. It does not create
 an Auth user, password, session, or MFA factor. It must run once from a trusted
 developer/server environment and must never run in a browser.
 
@@ -22,6 +23,10 @@ developer/server environment and must never run in a browser.
 7. Set `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in the secure runtime.
 
 ## Execution
+
+Execution requires separate owner authorization after the account has
+completed normal registration, verified email, MFA enrollment, and an AAL2
+challenge. Do not hardcode the owner email.
 
 From the reviewed repository commit:
 
@@ -54,6 +59,10 @@ whether the same bootstrap already existed.
    - `emailVerified`, `mfaEnrolled`, and `accessAllowed` are true.
 6. Confirm an append-only `security.bootstrap_platform_admin` audit event
    exists through the authorized audit API.
+7. Open `/admin` and verify the server-protected authorized state.
+8. Remove or restrict the one-time bootstrap credential.
+9. Confirm the emergency-revocation procedure from a separate trusted
+   operator/recovery context.
 
 The command is idempotent for the same already-bootstrapped user. It refuses a
 different user after the first live platform administrator exists.

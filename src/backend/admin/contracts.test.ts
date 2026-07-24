@@ -16,6 +16,7 @@ describe("Admin authorization contracts", () => {
 
   it("requires the fixed fifteen-minute recent-auth contract", () => {
     const parsed = staffContextSchema.parse({
+      isStaff: true,
       staffPrincipalId: "11111111-1111-4111-8111-111111111111",
       status: "active",
       roles: [{ name: "security_admin", expiresAt: null }],
@@ -25,10 +26,14 @@ describe("Admin authorization contracts", () => {
       mfaEnrolled: true,
       currentAal: "aal2",
       recentAuthRequired: true,
+      recentAuthSufficient: true,
       recentAuthWindowSeconds: 900,
+      pendingSessionRevocation: false,
+      pendingSessionRevocationCount: 0,
       accessAllowed: true,
       suspended: false,
       revoked: false,
+      cachePolicy: "private, no-store",
     });
     expect(parsed.recentAuthWindowSeconds).toBe(900);
   });
