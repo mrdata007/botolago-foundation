@@ -32,3 +32,8 @@ export function getNewsApi() {
 export function getNotificationsApi() {
   return supabaseV2.schema("api");
 }
+
+/** Fantasy V2 exposes DTO reads and transactional mutations only. */
+export function getFantasyApi() {
+  return supabaseV2.schema("api");
+}

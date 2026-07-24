@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { botolaService } from "@/services/mock";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Trans } from "@/components/common/Trans";
@@ -189,8 +189,12 @@ function FantasyHub() {
               </div>
             </div>
             <div className="text-end">
-              <div className="text-sm font-black tabular-nums">#{l.rank}</div>
-              <RankChangeIndicator rank={l.rank} previousRank={l.previousRank} />
+              <div className="text-sm font-black tabular-nums">
+                {l.rank === null ? "—" : `#${l.rank}`}
+              </div>
+              {l.rank !== null && (
+                <RankChangeIndicator rank={l.rank} previousRank={l.previousRank ?? l.rank} />
+              )}
             </div>
           </Link>
         ))}
