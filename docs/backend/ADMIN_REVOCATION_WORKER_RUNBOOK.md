@@ -14,12 +14,14 @@ Set in a trusted process:
 export BOTOLAGO_ADMIN_ENVIRONMENT="<local|staging|production>"
 export BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF="<exact-ref-or-local>"
 export SUPABASE_URL="<exact-url>"
-export SUPABASE_SERVICE_ROLE_KEY="<server-only-runtime-key>"
 export BOTOLAGO_ADMIN_WORKER_ID="<unique-safe-worker-id>"
 export BOTOLAGO_ADMIN_REVOCATION_BATCH_SIZE=25
 export BOTOLAGO_ADMIN_REVOCATION_MAX_BATCHES=4
 export BOTOLAGO_ADMIN_REVOCATION_LEASE_SECONDS=120
 ```
+
+Inject `SUPABASE_SERVICE_ROLE_KEY` through the protected runtime without
+assigning or echoing its value in the shell transcript.
 
 Bounds are enforced: batch `1..50`, batches `1..20`, lease `30..600`
 seconds. Production additionally requires:
