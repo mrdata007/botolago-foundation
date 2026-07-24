@@ -24,7 +24,19 @@ describe("notification event validation", () => {
     ).toBe("match_starting");
   });
 
-  test("rejects unsupported Fantasy handling and malformed scores", () => {
+  test("accepts a target-user Fantasy event", () => {
+    expect(
+      validateNotificationEvent({
+        ...base,
+        targetUserId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        eventType: "chip_activated",
+        sourceDomain: "fantasy",
+        payload: { chip: "free_hit", gameweek: 12 },
+      }).eventType,
+    ).toBe("chip_activated");
+  });
+
+  test("rejects untargeted Fantasy handling and malformed scores", () => {
     expect(() =>
       validateNotificationEvent({
         ...base,

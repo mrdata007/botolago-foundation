@@ -77,11 +77,12 @@ export interface League {
   name: string;
   type: "private" | "public" | "cup";
   members: number;
-  rank: number;
-  previousRank: number;
+  rank: number | null;
+  previousRank: number | null;
   score: number;
   leaderName?: string;
   code?: string;
+  role?: "owner" | "admin" | "member" | "creator";
 }
 
 export interface LeagueStanding {
@@ -131,8 +132,8 @@ export interface GameweekResult {
   totalPoints: number; // includes captain multiplier
   benchPoints: number;
   captainId?: string;
-  averagePoints: number;
-  highestPoints: number;
+  averagePoints?: number;
+  highestPoints?: number;
   autoSubs: { outId: string; inId: string; reason: LocalizedString }[];
   breakdown: PlayerPointsBreakdown[];
 }

@@ -15,7 +15,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase as defaultClient } from "@/integrations/supabase/client";
 
-import type { FantasyTeam, FormationKey, SquadPlayer } from "@/types/fantasy";
+import { FORMATIONS, type FantasyTeam, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 import type { PointsViewModel } from "@/services/points-service";
 import type { FantasyPersistedState } from "@/services/fantasy-state";
 import { fantasyStateStore, DEFAULT_STATE } from "@/services/fantasy-state";
@@ -44,6 +44,9 @@ import {
   type FinalizeGameweekPayloadInput,
   type SaveTeamPayloadInput,
 } from "@/services/fantasy-payloads";
+import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
+import type { FantasyTeamDto, LineupSelection } from "@/backend/fantasy/contracts";
+import type { RepositoryContext } from "@/backend/contracts/repository";
 
 // ---------- Public normalized types ----------
 
@@ -271,6 +274,7 @@ function parseLifecycle(raw: unknown): FantasyPersistedState {
   };
 }
 
+/** @deprecated Phase 6 archive-only adapter retained for deterministic legacy contract tests. */
 export class CloudFantasyRepository implements FantasyOwnedRepository {
   readonly source: FantasyRepoSource = "cloud";
   private readonly client: SupabaseClient<Database>;
@@ -485,6 +489,167 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
   }
 }
 
+/** Production V2 compatibility adapter. It never reads or writes legacy public Fantasy tables. */
+export class V2CloudFantasyRepository implements FantasyOwnedRepository {
+  readonly source: FantasyRepoSource = "cloud";
+  private readonly repository = new SupabaseFantasyRepository();
+
+  constructor(private readonly userId: string) {}
+
+  private context(): RepositoryContext {
+    return { actorId: this.userId, requestId: crypto.randomUUID() };
+  }
+
+  private selection(input: SaveOwnedTeamInput): LineupSelection[] {
+    return input.squad.map((player) => ({
+      fantasy_player_id: player.playerId,
+      slot: player.slot <= 11 ? "starter" : "bench",
+      slot_order: player.slot <= 11 ? player.slot : player.slot - 11,
+      captain: !!player.isCaptain,
+      vice_captain: !!player.isViceCaptain,
+    }));
+  }
+
+  private snapshot(team: FantasyTeamDto | null, gameweekId: string | null): FantasySnapshot {
+    if (!team) {
+      return {
+        teamId: null,
+        version: 0,
+        team: {
+          managerName: "",
+          teamName: "",
+          formation: "4-4-2",
+          squad: [],
+          bank: 100,
+          freeTransfers: 1,
+          pendingTransfers: 0,
+        },
+        lifecycle: { ...DEFAULT_STATE },
+        finalizedResults: {},
+        source: "cloud",
+        currentGameweekId: gameweekId,
+        purchasePrices: {},
+        emptyCloudSquad: true,
+      };
+    }
+    const squad = team.lineup.map((player) => ({
+      playerId: player.fantasyPlayerId,
+      slot: player.slot === "starter" ? player.slotOrder : player.slotOrder + 11,
+      isCaptain: player.captain || undefined,
+      isViceCaptain: player.viceCaptain || undefined,
+    }));
+    const purchasePrices = Object.fromEntries(
+      team.squad.map((player) => [player.fantasyPlayerId, player.purchasePrice]),
+    );
+    const starterCounts = team.lineup
+      .filter((player) => player.slot === "starter")
+      .reduce<Record<string, number>>((counts, player) => {
+        const position = team.squad.find(
+          (candidate) => candidate.fantasyPlayerId === player.fantasyPlayerId,
+        )?.position;
+        if (position && position !== "GK") counts[position] = (counts[position] ?? 0) + 1;
+        return counts;
+      }, {});
+    const formation =
+      (Object.entries(FORMATIONS).find(
+        ([, value]) =>
+          value.DEF === starterCounts.DEF &&
+          value.MID === starterCounts.MID &&
+          value.FWD === starterCounts.FWD,
+      )?.[0] as FormationKey | undefined) ?? "4-4-2";
+    return {
+      teamId: team.id,
+      version: team.version,
+      team: {
+        managerName: "",
+        teamName: team.name,
+        formation,
+        squad,
+        bank: team.bank,
+        freeTransfers: team.freeTransfers,
+        pendingTransfers: 0,
+      },
+      lifecycle: { ...DEFAULT_STATE },
+      finalizedResults: {},
+      source: "cloud",
+      currentGameweekId: team.currentGameweekId,
+      purchasePrices,
+      emptyCloudSquad: squad.length === 0,
+    };
+  }
+
+  async loadSnapshot(): Promise<FantasySnapshot> {
+    try {
+      const hub = await this.repository.getHub("fr", this.context());
+      return this.snapshot(hub.team, hub.gameweek?.id ?? null);
+    } catch (error) {
+      throw toRepoError(error);
+    }
+  }
+
+  async saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot> {
+    try {
+      const hub = await this.repository.getHub("fr", this.context());
+      const gameweekId = input.currentGameweekId ?? hub.gameweek?.id;
+      if (!gameweekId)
+        throw new FantasyRepoError("gameweek_unresolved", "No mutable gameweek exists");
+      if (!hub.team) {
+        await this.repository.createTeam(
+          {
+            seasonId: hub.season.id,
+            gameweekId,
+            teamName: input.teamName,
+            selection: this.selection(input),
+            idempotencyKey: crypto.randomUUID(),
+          },
+          this.context(),
+        );
+      } else {
+        await this.repository.saveLineup(
+          hub.team.id,
+          gameweekId,
+          this.selection(input),
+          input.expectedVersion,
+          crypto.randomUUID(),
+          this.context(),
+        );
+      }
+      return this.loadSnapshot();
+    } catch (error) {
+      throw toRepoError(error);
+    }
+  }
+
+  async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+    const current = await this.loadSnapshot();
+    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    await this.repository.confirmTransfers(
+      current.teamId,
+      input.currentGameweekId,
+      input.transfers.map((transfer) => ({
+        player_out_id: transfer.outSourceId,
+        player_in_id: transfer.inSourceId,
+      })),
+      input.expectedVersion,
+      crypto.randomUUID(),
+      null,
+      this.context(),
+    );
+    return this.loadSnapshot();
+  }
+
+  async finalizeGameweek(_input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
+    throw new FantasyRepoError(
+      "permission_denied",
+      "Gameweek finalization is controlled by the trusted Fantasy worker.",
+    );
+  }
+
+  reload(): Promise<FantasySnapshot> {
+    return this.loadSnapshot();
+  }
+}
+
 // Re-exports for test convenience.
 export { resolveGameweekId };
 
@@ -513,16 +678,12 @@ export function createFantasyOwnedRepository(
         "Cloud repository requires an authenticated user id",
       );
     }
-    return new CloudFantasyRepository({
-      client: input.client,
-      userId: input.userId,
-      season: input.season ?? DEFAULT_SEASON,
-    });
+    return new V2CloudFantasyRepository(input.userId);
   }
   return new LocalFantasyRepository();
 }
 
-export function useFantasyOwnedRepository(opts?: { season?: string }): {
+export function useFantasyOwnedRepository(_opts?: { season?: string }): {
   repo: FantasyOwnedRepository;
   source: FantasyRepoSource;
   userId: string | null;
@@ -537,11 +698,8 @@ export function useFantasyOwnedRepository(opts?: { season?: string }): {
     const userId = user?.id ?? null;
     const repo =
       source === "cloud" && userId
-        ? new CloudFantasyRepository({
-            userId,
-            season: opts?.season ?? DEFAULT_SEASON,
-          })
+        ? new V2CloudFantasyRepository(userId)
         : new LocalFantasyRepository();
     return { repo, source, userId };
-  }, [status, user?.id, opts?.season]);
+  }, [status, user?.id]);
 }
