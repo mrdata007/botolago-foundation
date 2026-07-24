@@ -3,9 +3,75 @@
 ## Scope and environment
 
 Validation ran on **BotolaGO Staging V2**
-(`srdrflfrfpwixsllveid`, Pro plan, `eu-west-3`) through 2026-07-21. Production V2
+(`srdrflfrfpwixsllveid`, Pro plan, `eu-west-3`) through 2026-07-24. Production V2
 and Legacy were not queried or modified. No Fantasy cron extension, schedule,
 or production worker was enabled.
+
+## Measured Medium capacity envelope
+
+The final single-source ramp used the hardened harness at
+`4b1272c44f6e5de4d47f0440f3e1952d99f0ca53` against BotolaGO Staging V2 on
+the Medium tier: shared 2-core CPU, 4 GB memory, and burstable compute. It
+scheduled the merge-gate operation mix at approximately 123 RPS for 60 seconds
+with 1,000 independent authenticated users. The measured sustained-throughput
+ceiling on Medium is approximately **65 RPS** for that mix; the final run
+completed client request lifecycles at 57.6 RPS after drain, consistent with
+the earlier ceiling.
+
+The constraint is platform-layer CPU saturation, not PostgreSQL execution and
+not the load generator:
+
+- server CPU was 100% for the full 59.8-second Metrics window;
+- PostgreSQL peaked at 18 connections, with zero genuine waits, zero lock
+  waits, zero persistent blocking pairs, and 11.6 ms mean execution for
+  `save_fantasy_lineup`;
+- the load generator had zero connector waiters, at most 1,000 in-flight
+  requests against a 2,000 global/per-host connector limit, and 63% peak
+  client CPU.
+
+Above the knee, requests queued in the Kong/PostgREST layer and timed out. The
+run captured HTTP 503 responses with the sanitized message `upstream connect
+error or disconnect/reset before headers`, zero SQLSTATE `57014` statement
+timeouts, and zero integrity violations across duplicate-transfer,
+duplicate-chip, lost-update, deadline, squad, bank, and free-transfer checks.
+
+`save_fantasy_lineup` accounted for approximately 73% of tracked Fantasy RPC
+execution time and averaged approximately 476 shared-buffer hits per call. The
+cost was spread across repeated selection validation, lineup-player
+delete/reinsert work, about 30 foreign-key key-share probes, DTO
+reconstruction, idempotency, and audit writes rather than one dominant
+statement. The measured structure suggests approximately 1.3–1.5x
+optimization headroom, which is insufficient by itself to reach the
+approximately 308 RPS full-gate target.
+
+The full-gate target is approximately 4.7x the Medium ceiling. Compute scaling
+is expected to be approximately linear for this CPU-bound envelope, so
+activation-time certification should target XL (4 dedicated cores, tight) or
+2XL (8 dedicated cores, with headroom). This report does not claim either
+tier has passed before measurement.
+
+The full five-runner, 2,500-user capacity gate has **not** been executed to a
+pass. It is deferred to activation on the selected production tier. This is a
+documented deferral, not an omitted or inferred pass, and no capacity threshold
+is claimed as satisfied by the Medium measurements.
+
+### Phase 6 activation prerequisites
+
+Before production Fantasy activation:
+
+1. select the production compute tier and pass the unchanged five-runner,
+   2,500-user gate plus soak on that tier;
+2. approve the production Football provider/data plan and verify canonical
+   competition, season, gameweek, fixture, player, lineup, event, statistic,
+   and availability inputs needed by Fantasy;
+3. link the approved immutable Fantasy ruleset to the reviewed production
+   season, including the explicit short-season Wildcard split where relevant;
+4. verify the production `api` PostgREST exposure, generated-type parity,
+   secrets, Auth settings, migration promotion, monitoring, and rollback
+   controls;
+5. keep all gameweek, scoring, finalization, ranking, price, and notification
+   workers and schedules disabled until capacity certification and the
+   activation review are complete.
 
 The deterministic seed produced:
 
@@ -220,12 +286,10 @@ count query, RLS user-rank join, or network-only delay. The first-page target of
 - security advisor: deny-by-default RLS-without-policy informational findings,
   plus leaked-password protection disabled for Staging Auth;
 - performance advisor: fresh-dataset unused-index informational findings;
-- Metrics API CPU, memory, IO, pool/client utilization, lock timeout, and
-  per-interval query telemetry remain unmeasured because the same-region rerun
-  stopped during unmeasured team preparation. The temporary Staging Secret API
-  key and distributed AWS runners were successfully created and deleted;
-  credential, same-region runner, user, and session provisioning are no longer
-  the immediate blockers. The telemetry gate is **not passed by inference**.
+- Single-source Metrics API evidence captured 100% server CPU across the exact
+  59.8-second window, 43% peak memory use, zero CPU steal, and the database
+  connection/wait state summarized above. The full five-runner resource and
+  soak thresholds remain deferred and are **not passed by inference**.
 
 Staging PostgREST initially exposed only `public, graphql_public`, contrary to
 the checked-in `schemas = ["api"]` configuration. Staging was aligned to
@@ -251,19 +315,21 @@ Only evidence that passes the credential-pattern scan is uploaded or written
 to PR #6. A passing run marks PR #6 ready for review; any failure keeps or
 returns it to draft. The workflow cannot merge the PR or enable a worker.
 
-This workflow has not yet produced measured evidence. GitHub requires a manual
-workflow definition to exist on the default branch before dispatch, so the
-workflow-only bootstrap must be reviewed and landed on `main` first. The
-capacity verdict remains blocked until that protected run passes; none of the
-thresholds above are inferred from this implementation change.
+The workflow and its supporting infrastructure proved staging-only OIDC,
+temporary runner provisioning, independent session creation, Metrics access,
+and exact-zero cleanup. The full five-runner gate has not passed and is now an
+activation prerequisite rather than a merge prerequisite. The PR-specific
+workflow is intentionally removed after merge; activation will introduce a
+clean parameterized replacement for the selected production tier.
 
 ## Verdict
 
-Database correctness, finalization, rankings, read plans, and both standings
-latency gates pass. The exact 2,500-user workload and concurrent resource gate
-remain open. The hardened setup-only rehearsal stopped at AWS identity
-validation with `InvalidClientTokenId`, before runners or any measured traffic.
-PR #6 must remain draft. No capacity threshold is passed by inference. A
-reviewed protected OIDC run in `eu-west-3` is required before the PR can become
-merge-ready. GitHub quality gates pass at the latest reported head, but they do
-not substitute for the failed external rehearsal.
+Phase 6 is code-complete and mergeable on correctness and security: forced RLS,
+controlled RPC authority, fail-closed production adapters, deterministic
+correctness under saturation, disabled production schedules, clean migration
+replay, and application/database quality gates. Medium capacity is a measured
+and documented envelope rather than an unresolved correctness risk.
+
+No full-gate capacity threshold is claimed as passed. Capacity certification
+is explicitly deferred to the activation review on XL or 2XL, before any
+production worker or Fantasy schedule is enabled.
