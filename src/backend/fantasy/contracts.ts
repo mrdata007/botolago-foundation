@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { postgresUuidSchema } from "@/backend/contracts/validation";
+
+export { postgresUuidSchema } from "@/backend/contracts/validation";
 
 export const FANTASY_POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
 export const FANTASY_CHIPS = ["wildcard", "free_hit", "bench_boost", "triple_captain"] as const;
@@ -14,13 +17,6 @@ export const FANTASY_GAMEWEEK_STATUSES = [
   "corrected",
   "cancelled",
 ] as const;
-
-// PostgreSQL's uuid type accepts the canonical 8-4-4-4-12 representation
-// independently of RFC version/variant bits. Internal IDs therefore use this
-// database-compatible validator instead of Zod's narrower RFC-only validator.
-export const postgresUuidSchema = z
-  .string()
-  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
 export type FantasyPosition = (typeof FANTASY_POSITIONS)[number];
 export type FantasyChip = (typeof FANTASY_CHIPS)[number];
