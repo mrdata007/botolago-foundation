@@ -1,16 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { fantasyService } from "@/services/fantasy-mock";
-import { leaguesStore, LeagueError } from "@/services/leagues-store";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { LoadingState } from "@/components/common/States";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { TranslationKey } from "@/i18n/dictionaries";
 import { Copy, Trophy } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
+import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/leagues")({
   component: LeaguesPage,
@@ -30,21 +29,18 @@ function LeaguesPage() {
   const [tab, setTab] = useState<Tab>("private");
   const [joinCode, setJoinCode] = useState("");
   const [createName, setCreateName] = useState("");
+  const [createdCodes, setCreatedCodes] = useState<{ id: string; name: string; code: string }[]>(
+    [],
+  );
   const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(null);
 
   const { requireAuth } = useAuth();
-  const persistedQ = useQuery({
-    queryKey: ["persisted-leagues"],
-    queryFn: () => Promise.resolve(leaguesStore.list()),
-  });
   const remoteQ = useQuery({
     queryKey: ["fantasy-leagues", tab],
     queryFn: () => fantasyService.getLeagues(tab),
   });
 
-  const persisted = persistedQ.data ?? [];
-  const leagues =
-    tab === "private" ? [...persisted, ...(remoteQ.data ?? [])] : (remoteQ.data ?? []);
+  const leagues = remoteQ.data ?? [];
 
   const showToast = (msg: string, kind: "ok" | "err" = "ok") => {
     setToast({ msg, kind });
@@ -53,27 +49,33 @@ function LeaguesPage() {
 
   const handleCreate = () => {
     if (!createName.trim()) return;
-    requireAuth(() => {
+    requireAuth(async () => {
       try {
-        const l = leaguesStore.create(createName);
+        const l = await fantasyService.createLeague(createName);
+        if (l.code) {
+          setCreatedCodes((current) => [
+            { id: l.id, name: createName.trim(), code: l.code! },
+            ...current.filter((item) => item.id !== l.id),
+          ]);
+        }
         setCreateName("");
-        qc.invalidateQueries({ queryKey: ["persisted-leagues"] });
-        showToast(`${t("fantasy.leagues.created")} · ${l.code}`);
-      } catch (e) {
-        if (e instanceof LeagueError) showToast(t(e.key as TranslationKey), "err");
+        await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
+        showToast(`${t("fantasy.leagues.created")}${l.code ? ` · ${l.code}` : ""}`);
+      } catch {
+        showToast(t("fantasy.error.permission"), "err");
       }
     });
   };
   const handleJoin = () => {
     if (!joinCode.trim()) return;
-    requireAuth(() => {
+    requireAuth(async () => {
       try {
-        leaguesStore.join(joinCode);
+        await fantasyService.joinLeague(joinCode);
         setJoinCode("");
-        qc.invalidateQueries({ queryKey: ["persisted-leagues"] });
+        await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
         showToast(t("fantasy.leagues.joined"));
-      } catch (e) {
-        if (e instanceof LeagueError) showToast(t(e.key as TranslationKey), "err");
+      } catch {
+        showToast(t("fantasy.leagues.error.invalid_code"), "err");
       }
     });
   };
@@ -130,7 +132,7 @@ function LeaguesPage() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
-                {"role" in l && (l as { role?: string }).role === "creator" && (
+                {l.role === "owner" && (
                   <span className="rounded-full bg-[color:var(--brand-accent)]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
                     {t("fantasy.leagues.role.creator")}
                   </span>
@@ -142,8 +144,12 @@ function LeaguesPage() {
               </div>
             </div>
             <div className="text-end">
-              <div className="text-sm font-black tabular-nums">#{nf.format(l.rank)}</div>
-              <RankChangeIndicator rank={l.rank} previousRank={l.previousRank} />
+              <div className="text-sm font-black tabular-nums">
+                {l.rank === null ? "—" : `#${nf.format(l.rank)}`}
+              </div>
+              {l.rank !== null && (
+                <RankChangeIndicator rank={l.rank} previousRank={l.previousRank ?? l.rank} />
+              )}
             </div>
           </Link>
         ))}
@@ -183,9 +189,9 @@ function LeaguesPage() {
         </button>
       </div>
 
-      {persisted.length > 0 && tab === "private" && (
+      {createdCodes.length > 0 && tab === "private" && (
         <div className="mt-3 space-y-2">
-          {persisted.map(
+          {createdCodes.map(
             (l) =>
               l.code && (
                 <div

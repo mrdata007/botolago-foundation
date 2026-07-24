@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { botolaService } from "@/services/mock";
 import { LoadingState } from "@/components/common/States";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";

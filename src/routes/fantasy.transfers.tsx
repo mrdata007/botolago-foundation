@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { botolaService } from "@/services/mock";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { LoadingState } from "@/components/common/States";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ClubCrest } from "@/components/common/ClubCrest";

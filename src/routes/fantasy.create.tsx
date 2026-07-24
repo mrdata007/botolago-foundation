@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Sparkles, Trash2, Users, Wand2, X } from 
 import { toast } from "sonner";
 
 import { botolaService } from "@/services/mock";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { LoadingState } from "@/components/common/States";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";

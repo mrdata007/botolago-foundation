@@ -12,7 +12,7 @@ import {
   Star,
   UserPlus,
 } from "lucide-react";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { botolaService } from "@/services/mock";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";

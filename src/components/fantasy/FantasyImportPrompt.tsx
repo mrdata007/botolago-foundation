@@ -18,7 +18,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useI18n } from "@/i18n/provider";
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { validateTeam } from "@/lib/team-validation";
 import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
