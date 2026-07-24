@@ -1,6 +1,10 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  ADMIN_CONSOLE_NAV_ITEMS,
+  ADMIN_STATE_TEST_IDS,
+} from "@/backend/admin/admin-console-contracts";
 import { loadAdminRouteAccess } from "@/backend/admin/route-access.functions";
 import {
   getAdminCopy,
@@ -35,6 +39,7 @@ function AdminStatePanel({
       dir={copy.dir}
       className="min-h-dvh bg-slate-950 px-4 py-16 text-slate-100"
       data-admin-state={state}
+      data-testid={ADMIN_STATE_TEST_IDS[state]}
     >
       <section className="mx-auto max-w-2xl rounded-xl border border-slate-800 bg-slate-900 p-6">
         <ShieldCheck className="mb-5 h-8 w-8 text-emerald-400" aria-hidden />
@@ -46,6 +51,7 @@ function AdminStatePanel({
             to="/auth/login"
             search={{ next: "/admin" }}
             className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+            data-testid="admin-reauthenticate"
           >
             {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
           </Link>
@@ -72,6 +78,7 @@ function AdminRoute() {
       dir={copy.dir}
       className="min-h-dvh bg-slate-950 px-4 py-10 text-slate-100"
       data-admin-state="authorized"
+      data-testid="admin-shell"
     >
       <div className="mx-auto max-w-5xl">
         <header className="rounded-xl border border-slate-800 bg-slate-900 p-6">
@@ -85,50 +92,27 @@ function AdminRoute() {
           <nav
             className="mt-5 flex flex-wrap gap-2"
             aria-label={copy.dir === "rtl" ? "أقسام الإدارة" : "Sections administratives"}
+            data-testid="admin-navigation"
           >
-            {[
-              {
-                to: "/admin/staff" as const,
-                label: copy.dir === "rtl" ? "طاقم الإدارة" : "Personnel",
-                permission: "security.manage_staff",
-              },
-              {
-                to: "/admin/approvals" as const,
-                label: copy.dir === "rtl" ? "الموافقات" : "Approbations",
-                permission: "security.manage_staff",
-              },
-              {
-                to: "/admin/audit" as const,
-                label: copy.dir === "rtl" ? "سجل الأمان" : "Audit",
-                permission: "security.read_audit",
-              },
-              {
-                to: "/admin/security" as const,
-                label: copy.dir === "rtl" ? "الأمان" : "Sécurité",
-                permission: "security.revoke_staff",
-              },
-            ]
-              .filter((item) =>
-                result.context.permissions.includes(
-                  item.permission as (typeof result.context.permissions)[number],
-                ),
-              )
-              .map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="inline-flex min-h-11 items-center rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium outline-none hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400"
-                  activeProps={{ className: "border-emerald-500 bg-emerald-500/10" }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+            {ADMIN_CONSOLE_NAV_ITEMS.filter((item) =>
+              result.context.permissions.includes(item.permission),
+            ).map((item) => (
+              <Link
+                key={item.route}
+                to={item.route}
+                className="inline-flex min-h-11 items-center rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium outline-none hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400"
+                activeProps={{ className: "border-emerald-500 bg-emerald-500/10" }}
+                data-testid={item.testId}
+              >
+                {item.labels[lang]}
+              </Link>
+            ))}
           </nav>
         </header>
 
         {isAdminRoot && (
           <>
-            <section className="mt-6 grid gap-4 md:grid-cols-2">
+            <section className="mt-6 grid gap-4 md:grid-cols-2" data-testid="admin-home">
               <SafeCard title={copy.labels.identity}>
                 <p>{result.identity.emailSummary ?? result.identity.userId}</p>
               </SafeCard>

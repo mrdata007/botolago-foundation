@@ -151,10 +151,15 @@ function AdminStaffRoute() {
           ? "بحث مطابق ومدقّق فقط. لا توجد قائمة عامة لمستخدمي المصادقة."
           : "Recherche exacte et auditée uniquement. Aucun annuaire Auth n’est exposé."
       }
+      testId="admin-staff-list"
     >
       {access.state === "authorized" && (
         <>
-          <form className="grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={lookup}>
+          <form
+            className="grid gap-3 sm:grid-cols-[1fr_auto]"
+            onSubmit={lookup}
+            data-testid="admin-user-eligibility"
+          >
             <label className="grid gap-2 text-sm">
               <span>{rtl ? "البريد الإلكتروني المطابق" : "E-mail exact"}</span>
               <input
@@ -221,6 +226,7 @@ function AdminStaffRoute() {
                       !result.mfaVerified
                     }
                     onClick={createPrincipal}
+                    data-testid="admin-create-principal"
                   >
                     {rtl ? "إنشاء الهوية" : "Créer le principal"}
                   </button>
@@ -229,7 +235,10 @@ function AdminStaffRoute() {
 
               {result.staffPrincipal && (
                 <>
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div
+                    className="mt-5 grid gap-3 sm:grid-cols-2"
+                    data-testid="admin-role-assignment"
+                  >
                     <label className="grid gap-2 text-sm">
                       <span>{rtl ? "الدور القياسي" : "Rôle standard"}</span>
                       <select
@@ -282,6 +291,7 @@ function AdminStaffRoute() {
                       className={adminButtonClass}
                       disabled={busy || reason.trim().length < 8}
                       onClick={() => void assignRole()}
+                      data-testid="admin-assign-role"
                     >
                       {rtl ? "منح الدور القياسي" : "Affecter le rôle standard"}
                     </button>
@@ -290,9 +300,20 @@ function AdminStaffRoute() {
                       className={adminButtonClass}
                       disabled={busy || reason.trim().length < 8}
                       onClick={() => void requestPlatformAdmin()}
+                      data-testid="admin-request-platform-admin"
+                      aria-describedby="admin-platform-request-description"
                     >
                       {rtl ? "طلب platform_admin" : "Demander platform_admin"}
                     </button>
+                    <span
+                      id="admin-platform-request-description"
+                      className="sr-only"
+                      data-testid="admin-platform-request"
+                    >
+                      {rtl
+                        ? "ينشئ طلب تحكم مزدوج ولا يمنح الدور مباشرة."
+                        : "Crée une demande à double contrôle sans affecter directement le rôle."}
+                    </span>
                     <Link
                       to="/admin/staff/$principalId"
                       params={{ principalId: result.staffPrincipal.staffPrincipalId }}

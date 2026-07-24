@@ -282,7 +282,12 @@ export type Database = {
         Returns: Json
       }
       admin_get_approval: { Args: { p_approval_id: string }; Returns: Json }
+      admin_get_owner_bootstrap_readiness: {
+        Args: { p_auth_user_id: string }
+        Returns: Json
+      }
       admin_get_revocation_worker_health: { Args: never; Returns: Json }
+      admin_get_revocation_worker_runtime_status: { Args: never; Returns: Json }
       admin_get_session_revocation_status: {
         Args: { p_staff_principal_id: string }
         Returns: Json

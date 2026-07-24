@@ -93,9 +93,10 @@ function AdminApprovalsRoute() {
       title={rtl ? "الموافقات ذات التحكم المزدوج" : "Approbations à double contrôle"}
       description={
         rtl
-          ? "تقتصر المرحلة 7C على تعيين platform_admin."
-          : "Phase 7C est limitée à l’affectation platform_admin."
+          ? "تقتصر المرحلة 7D على تعيين platform_admin."
+          : "Phase 7D est limitée à l’affectation platform_admin."
       }
+      testId="admin-approvals-queue"
     >
       {access.state === "authorized" && (
         <>
@@ -116,7 +117,11 @@ function AdminApprovalsRoute() {
           ) : (
             <ul className="mt-5 grid gap-3">
               {items.map((item) => (
-                <li key={item.approvalId} className="rounded-lg border border-slate-700 p-4">
+                <li
+                  key={item.approvalId}
+                  className="rounded-lg border border-slate-700 p-4"
+                  data-testid="admin-approval-detail"
+                >
                   <p className="break-all text-sm font-medium">
                     {item.operationType} · {item.status}
                   </p>

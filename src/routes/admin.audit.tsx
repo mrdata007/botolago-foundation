@@ -44,6 +44,7 @@ function AdminAuditRoute() {
           ? "لا تُعرض الأسرار أو حمولات المصادقة الخاصة."
           : "Aucun secret ni payload Auth privé n’est exposé."
       }
+      testId="admin-audit-log"
     >
       {access.state === "authorized" && (
         <>
