@@ -171,6 +171,151 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_approve_request: {
+        Args: {
+          p_approval_id: string
+          p_idempotency_key: string
+          p_payload_fingerprint: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_assign_role: {
+        Args: {
+          p_approval_id?: string
+          p_expires_at: string
+          p_idempotency_key: string
+          p_reason: string
+          p_reference: string
+          p_role_name: string
+          p_target_auth_user_id: string
+        }
+        Returns: Json
+      }
+      admin_bootstrap_first_platform_admin: {
+        Args: {
+          p_auth_user_id: string
+          p_reason?: string
+          p_synthetic_test?: boolean
+        }
+        Returns: Json
+      }
+      admin_cancel_request: {
+        Args: {
+          p_approval_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_claim_session_revocations: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      admin_complete_session_revocation: {
+        Args: {
+          p_error_code?: string
+          p_request_id: string
+          p_succeeded: boolean
+        }
+        Returns: undefined
+      }
+      admin_emergency_revoke_staff: {
+        Args: {
+          p_idempotency_key: string
+          p_reason: string
+          p_staff_principal_id: string
+        }
+        Returns: Json
+      }
+      admin_execute_approved_platform_admin: {
+        Args: {
+          p_approval_id: string
+          p_idempotency_key: string
+          p_payload_fingerprint: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_expire_approvals: { Args: { p_limit?: number }; Returns: number }
+      admin_get_approval: { Args: { p_approval_id: string }; Returns: Json }
+      admin_list_active_assignments: {
+        Args: { p_staff_principal_id: string }
+        Returns: Json
+      }
+      admin_list_assignment_history: {
+        Args: {
+          p_before_created_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_staff_principal_id: string
+        }
+        Returns: Json
+      }
+      admin_list_audit_events: {
+        Args: {
+          p_before_id?: number
+          p_before_occurred_at?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      admin_reject_request: {
+        Args: {
+          p_approval_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_renew_role: {
+        Args: {
+          p_approval_id?: string
+          p_assignment_id: string
+          p_expires_at: string
+          p_idempotency_key: string
+          p_reason: string
+          p_reference: string
+        }
+        Returns: Json
+      }
+      admin_request_approval: {
+        Args: {
+          p_expires_at: string
+          p_idempotency_key: string
+          p_operation_type: string
+          p_reason: string
+          p_required_permission: string
+          p_safe_payload_reference: Json
+          p_target_domain: string
+          p_target_entity_id: string
+        }
+        Returns: Json
+      }
+      admin_restore_staff: {
+        Args: {
+          p_idempotency_key: string
+          p_reason: string
+          p_staff_principal_id: string
+        }
+        Returns: Json
+      }
+      admin_revoke_role: {
+        Args: {
+          p_assignment_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_suspend_staff: {
+        Args: {
+          p_idempotency_key: string
+          p_reason: string
+          p_staff_principal_id: string
+        }
+        Returns: Json
+      }
       archive_fantasy_league: {
         Args: { p_league_id: string; p_team_id: string }
         Returns: boolean
@@ -487,6 +632,7 @@ export type Database = {
       }
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
+      get_my_staff_context: { Args: never; Returns: Json }
       ingest_football_fixture: {
         Args: {
           p_external_id: string

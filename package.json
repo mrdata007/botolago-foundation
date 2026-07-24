@@ -21,6 +21,7 @@
     "backend:secrets:check": "bun scripts/backend/check-committed-secrets.mjs",
     "backend:types:generate": "bun scripts/backend/generate-database-types.mjs",
     "backend:types:check": "bun scripts/backend/check-generated-types.mjs",
+    "admin:bootstrap": "bun scripts/backend/admin-bootstrap.ts",
     "backend:local:start": "supabase start",
     "backend:db:start": "supabase start --exclude edge-runtime,gotrue,imgproxy,kong,logflare,mailpit,postgres-meta,postgrest,realtime,storage-api,studio,supavisor,vector",
     "backend:db:stop": "supabase stop --no-backup",
