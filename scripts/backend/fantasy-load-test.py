@@ -15,6 +15,7 @@ import json
 import math
 import os
 import random
+import re
 import statistics
 import time
 import uuid
@@ -41,6 +42,13 @@ EXPECTED_ERRORS = {
 }
 PREPARATION_CONCURRENCY = 10
 PREPARATION_RETRY_BASE_SECONDS = 0.5
+NON_JSON_SNIPPET_BYTES = 200
+RESPONSE_REDACTION_PATTERNS = (
+    re.compile(r"\b(?:sb_(?:publishable|secret)|sbp)_[A-Za-z0-9_-]+\b"),
+    re.compile(r"\bBearer\s+[A-Za-z0-9._~+/-]+", re.IGNORECASE),
+    re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
+    re.compile(r"\b[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\b"),
+)
 
 
 def preparation_retry_delay(attempt: int) -> float:
@@ -73,6 +81,37 @@ class Observation:
     status: int
     error_code: str | None
     expected_rejection: bool
+    content_type: str | None = None
+    body_length: int | None = None
+    response_snippet: str | None = None
+
+
+@dataclass(frozen=True)
+class ResponseDiagnostic:
+    operation: str
+    status: int
+    content_type: str
+    body_length: int
+    sanitized_snippet: str
+
+
+def sanitize_response_snippet(value: str, limit_bytes: int = NON_JSON_SNIPPET_BYTES) -> str:
+    """Return a bounded response excerpt using the harness credential patterns."""
+
+    normalized = value.replace("\r\n", "\n").replace("\r", "\n")
+    for pattern in RESPONSE_REDACTION_PATTERNS:
+        normalized = pattern.sub("[REDACTED]", normalized)
+    normalized = re.sub(
+        r'(?i)("?(?:password|access_token|refresh_token|apikey|api_key|authorization)"?'
+        r"\s*[:=]\s*)[^\s,}]+",
+        r"\1[REDACTED]",
+        normalized,
+    )
+    if not normalized:
+        return "[EMPTY]"
+    return normalized.encode("utf-8")[:limit_bytes].decode(
+        "utf-8", errors="ignore"
+    )
 
 
 class FantasyLoadRunner:
@@ -146,6 +185,7 @@ class FantasyLoadRunner:
                 "BOTOLAGO_LOAD_PROFILE must be setup_rehearsal, merge_gate, or telemetry_soak"
             )
         self.observations: list[Observation] = []
+        self.response_diagnostics: list[ResponseDiagnostic] = []
         self.states: list[UserState] = []
         self.session_tokens = load_session_tokens(
             self.session_cache_path,
@@ -217,6 +257,23 @@ class FantasyLoadRunner:
             result = self.summarize(time.perf_counter() - started)
             write_private_json(self.results_path, result)
             return result
+        except Exception:
+            if self.response_diagnostics:
+                write_private_json(
+                    self.results_path,
+                    {
+                        "profile": {
+                            "loadProfile": self.load_profile,
+                            "users": self.total_users,
+                            "shardCount": self.shard_count,
+                            "shardIndex": self.shard_index,
+                            "requests": len(self.observations),
+                        },
+                        "failure": "non_json_response",
+                        "nonJsonResponses": self.summarize_non_json_responses(),
+                    },
+                )
+            raise
         finally:
             for state in self.states:
                 state.token = ""
@@ -395,14 +452,53 @@ class FantasyLoadRunner:
         started = time.perf_counter()
         try:
             async with session.request(method, f"{self.base_url}{path}", headers=headers, json=body) as response:
-                payload = await response.json(content_type=None)
+                status = response.status
+                content_type = sanitize_response_snippet(
+                    response.headers.get("Content-Type", ""),
+                    NON_JSON_SNIPPET_BYTES,
+                )
+                raw_body = await response.read()
+                body_length = len(raw_body)
+                response_text = raw_body.decode(
+                    response.charset or "utf-8",
+                    errors="replace",
+                )
                 latency = (time.perf_counter() - started) * 1000
-                code = payload.get("message") if isinstance(payload, dict) and response.status >= 400 else None
+                try:
+                    payload = json.loads(response_text)
+                except json.JSONDecodeError as error:
+                    diagnostic = ResponseDiagnostic(
+                        operation=operation,
+                        status=status,
+                        content_type=content_type,
+                        body_length=body_length,
+                        sanitized_snippet=sanitize_response_snippet(response_text),
+                    )
+                    self.response_diagnostics.append(diagnostic)
+                    if record:
+                        self.observations.append(
+                            Observation(
+                                operation,
+                                latency,
+                                status,
+                                "non_json_response",
+                                False,
+                                content_type,
+                                body_length,
+                                diagnostic.sanitized_snippet,
+                            )
+                        )
+                    raise LoadRequestError(
+                        status,
+                        "non_json_response",
+                        diagnostic,
+                    ) from error
+                code = payload.get("message") if isinstance(payload, dict) and status >= 400 else None
                 expected = code in EXPECTED_ERRORS
                 if record:
-                    self.observations.append(Observation(operation, latency, response.status, code, expected))
-                if response.status >= 400:
-                    raise LoadRequestError(response.status, code or "unknown_error")
+                    self.observations.append(Observation(operation, latency, status, code, expected))
+                if status >= 400:
+                    raise LoadRequestError(status, code or "unknown_error")
                 return payload
         except (aiohttp.ClientError, asyncio.TimeoutError) as error:
             latency = (time.perf_counter() - started) * 1000
@@ -412,6 +508,24 @@ class FantasyLoadRunner:
                 )
             raise LoadRequestError(0, type(error).__name__) from error
 
+    def summarize_non_json_responses(self) -> dict[str, Any]:
+        return {
+            "count": len(self.response_diagnostics),
+            "statusCounts": dict(
+                Counter(str(item.status) for item in self.response_diagnostics)
+            ),
+            "observations": [
+                {
+                    "operation": item.operation,
+                    "status": item.status,
+                    "contentType": item.content_type,
+                    "bodyLength": item.body_length,
+                    "sanitizedSnippet": item.sanitized_snippet,
+                }
+                for item in self.response_diagnostics
+            ],
+        }
+
     def summarize(self, elapsed_seconds: float) -> dict[str, Any]:
         by_operation: dict[str, list[Observation]] = defaultdict(list)
         for observation in self.observations:
@@ -419,7 +533,11 @@ class FantasyLoadRunner:
         unexpected = [
             item
             for item in self.observations
-            if (item.status == 0 or item.status >= 500 or item.status >= 400)
+            if (
+                item.status == 0
+                or item.status >= 400
+                or item.error_code == "non_json_response"
+            )
             and not item.expected_rejection
         ]
         expected = [item for item in self.observations if item.expected_rejection]
@@ -467,6 +585,7 @@ class FantasyLoadRunner:
             if os.getenv("BOTOLAGO_LOAD_INCLUDE_SAMPLES") == "1"
             else None,
             "errorCodes": dict(Counter(item.error_code for item in self.observations if item.error_code)),
+            "nonJsonResponses": self.summarize_non_json_responses(),
             "passCriteria": {
                 "readP95": percentile(reads, 95) <= 500,
                 "mutationP95": percentile(mutations, 95) <= 1500,
@@ -477,9 +596,15 @@ class FantasyLoadRunner:
 
 
 class LoadRequestError(RuntimeError):
-    def __init__(self, status: int, code: str) -> None:
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        diagnostic: ResponseDiagnostic | None = None,
+    ) -> None:
         self.status = status
         self.code = code
+        self.diagnostic = diagnostic
         super().__init__(f"request failed: {status} {code}")
 
 
@@ -525,7 +650,12 @@ def summarize_observations(observations: list[Observation]) -> dict[str, Any]:
         "unexpectedErrors": sum(
             1
             for item in observations
-            if (item.status == 0 or item.status >= 400) and not item.expected_rejection
+            if (
+                item.status == 0
+                or item.status >= 400
+                or item.error_code == "non_json_response"
+            )
+            and not item.expected_rejection
         ),
         "expectedRejections": sum(1 for item in observations if item.expected_rejection),
     }
