@@ -74,10 +74,14 @@ test.describe("staging-backed critical journeys", () => {
     if (await welcome.isVisible()) {
       await welcome.getByRole("button", { name: "Passer" }).click();
     }
+    const importPrompt = page.getByRole("dialog", { name: "Équipe locale détectée" });
+    if (await importPrompt.isVisible()) {
+      await importPrompt.getByRole("button", { name: "Commencer une nouvelle équipe" }).click();
+    }
     await page.getByLabel("Nom de l'équipe").fill("QA Acceptance FC");
     await page.getByRole("button", { name: "Compléter automatiquement" }).click();
     await expect(page.getByText("15 / 15")).toBeVisible();
-    const save = page.getByRole("button", { name: "Enregistrer mon équipe" });
+    const save = page.locator('button[aria-label="Enregistrer mon équipe"]');
     await expect(save).toBeEnabled();
     await save.click();
     await page.waitForURL(/\/fantasy\/team$/);
