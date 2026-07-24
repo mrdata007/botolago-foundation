@@ -210,6 +210,69 @@ async function cleanup() {
   }
   const secret = process.env.PHASE65_TEMP_SECRET;
   const cleanupErrors = [];
+  const userIds = (state.users ?? []).map((user) => user.id);
+  if (userIds.length) {
+    try {
+      const ids = uuidArray(userIds);
+      await sql(
+        `begin;
+set local statement_timeout = '15s';
+delete from app.fantasy_transfers where transfer_batch_id in (
+  select id from app.fantasy_transfer_batches where fantasy_team_id in (
+    select id from app.fantasy_teams where user_id = any(${ids})
+  )
+);
+delete from app.fantasy_auto_substitutions where lineup_id in (
+  select id from app.fantasy_lineups where fantasy_team_id in (
+    select id from app.fantasy_teams where user_id = any(${ids})
+  )
+);
+delete from app.fantasy_lineup_players where lineup_id in (
+  select id from app.fantasy_lineups where fantasy_team_id in (
+    select id from app.fantasy_teams where user_id = any(${ids})
+  )
+);
+delete from app.fantasy_free_hit_snapshot_players where snapshot_id in (
+  select id from app.fantasy_free_hit_snapshots where fantasy_team_id in (
+    select id from app.fantasy_teams where user_id = any(${ids})
+  )
+);
+delete from app.fantasy_rankings where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_team_gameweek_results where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_league_memberships where user_id = any(${ids});
+delete from app_private.fantasy_free_transfer_rollovers where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_free_hit_snapshots where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_chip_uses where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_transfer_batches where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_lineups where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app.fantasy_squad_memberships where fantasy_team_id in (
+  select id from app.fantasy_teams where user_id = any(${ids})
+);
+delete from app_private.fantasy_mutation_audit where user_id = any(${ids})
+  or fantasy_team_id in (select id from app.fantasy_teams where user_id = any(${ids}));
+delete from app_private.fantasy_idempotency_keys where user_id = any(${ids});
+delete from app.fantasy_teams where user_id = any(${ids});
+delete from app.fantasy_leagues where owner_user_id = any(${ids});
+commit`,
+      );
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
   if (secret) {
     mask(secret);
     for (const user of state.users ?? []) {
@@ -277,7 +340,6 @@ async function cleanup() {
     }
   }
 
-  const userIds = (state.users ?? []).map((user) => user.id);
   if (userIds.length) {
     try {
       const inventory = await sql(

@@ -18,7 +18,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useI18n } from "@/i18n/provider";
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
-import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyService as localFantasyService } from "@/services/fantasy-mock";
 import { validateTeam } from "@/lib/team-validation";
 import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
@@ -64,11 +64,12 @@ export function FantasyImportPrompt() {
     if (!owned.snapshot?.emptyCloudSquad) return;
     if (importDecisionService.get(uid ?? "") !== null) return;
     (async () => {
-      const [team, players] = await Promise.all([
-        fantasyService.getTeam(),
-        fantasyService.getPlayers(),
+      const [snapshot, players] = await Promise.all([
+        new LocalFantasyRepository().loadSnapshot(),
+        localFantasyService.getPlayers(),
       ]);
       if (cancelled) return;
+      const team = snapshot.team;
       const isValid =
         team.squad.length === 15 && validateTeam(team.squad, team.formation, players).ok === true;
       setLocal({ team, players, isValid });
@@ -118,7 +119,7 @@ export function FantasyImportPrompt() {
           importLocalTeamToCloud({
             localRepo,
             cloudRepo: owned.repo,
-            loadPlayers: () => fantasyService.getPlayers(),
+            loadPlayers: () => localFantasyService.getPlayers(),
             loadGameweekIndex: () => loadGameweekIndex(supabase),
             season: DEFAULT_SEASON,
             defaultTeamName,
