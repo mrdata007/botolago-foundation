@@ -4,6 +4,7 @@ import asyncio
 import importlib.util
 import sys
 import unittest
+from collections import deque
 from pathlib import Path
 from unittest import mock
 
@@ -68,6 +69,10 @@ class PreparationHardeningTests(unittest.TestCase):
         runner.api_key = "sb_publishable_test"
         runner.observations = []
         runner.response_diagnostics = []
+        runner.client_telemetry = []
+        runner.client_telemetry_errors = []
+        runner.in_flight_requests = 0
+        runner.load_machine_cpu_sampler = None
         return runner
 
     def assert_non_json(
@@ -226,6 +231,88 @@ class PreparationHardeningTests(unittest.TestCase):
         self.assertEqual(len(runner.states), 1)
         self.assertEqual(runner.states[0].team_id, "team-id")
         self.assertEqual(runner.states[0].version, 4)
+
+
+class ClientTransportTests(unittest.TestCase):
+    def test_connector_configuration_is_explicit(self) -> None:
+        verified_context = object()
+        connector = object()
+        with (
+            mock.patch.object(
+                MODULE,
+                "create_verified_ssl_context",
+                return_value=verified_context,
+            ),
+            mock.patch.object(
+                MODULE.aiohttp,
+                "TCPConnector",
+                return_value=connector,
+            ) as constructor,
+        ):
+            self.assertIs(MODULE.build_load_connector(), connector)
+        constructor.assert_called_once_with(
+            limit=2000,
+            limit_per_host=2000,
+            force_close=False,
+            keepalive_timeout=15.0,
+            use_dns_cache=True,
+            ttl_dns_cache=300,
+            ssl=verified_context,
+        )
+
+    def test_connector_queue_depth_counts_all_host_waiters(self) -> None:
+        connector = mock.Mock()
+        connector._waiters = {
+            "one": deque((object(), object())),
+            "two": deque((object(),)),
+        }
+        self.assertEqual(MODULE.connector_queue_depth(connector), 3)
+
+    def test_machine_cpu_percent_uses_tick_delta(self) -> None:
+        with mock.patch.object(
+            MODULE,
+            "read_host_cpu_ticks",
+            side_effect=((100, 50), (200, 75)),
+        ):
+            sampler = MODULE.LoadMachineCpuSampler()
+            self.assertEqual(sampler.percent(), 75.0)
+
+    def test_client_telemetry_records_pressure_every_interval(self) -> None:
+        runner = PreparationHardeningTests().runner()
+        runner.total_seconds = 60
+        runner.in_flight_requests = 17
+        runner.load_machine_cpu_sampler = mock.Mock()
+        runner.load_machine_cpu_sampler.percent.return_value = 42.0
+        connector = mock.Mock()
+        connector._waiters = {"host": deque((object(), object(), object()))}
+
+        async def exercise() -> None:
+            stop = asyncio.Event()
+            with mock.patch.object(
+                MODULE,
+                "CLIENT_TELEMETRY_INTERVAL_SECONDS",
+                0.001,
+            ):
+                task = asyncio.create_task(
+                    runner.collect_client_telemetry(
+                        connector,
+                        MODULE.time.perf_counter(),
+                        stop,
+                    )
+                )
+                await asyncio.sleep(0.0015)
+                runner.in_flight_requests = 9
+                connector._waiters = {}
+                stop.set()
+                await task
+
+        asyncio.run(exercise())
+        summary = runner.summarize_client_telemetry()
+        self.assertGreaterEqual(summary["sampleCount"], 2)
+        self.assertEqual(summary["peakInFlightRequests"], 17)
+        self.assertEqual(summary["peakConnectorQueueDepth"], 3)
+        self.assertEqual(summary["peakLoadMachineCpuPercent"], 42.0)
+        self.assertEqual(summary["samplingErrors"], {})
 
 
 if __name__ == "__main__":

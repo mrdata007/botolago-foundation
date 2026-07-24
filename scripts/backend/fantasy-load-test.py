@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import ctypes
 import hashlib
 import json
 import math
@@ -17,10 +18,12 @@ import os
 import random
 import re
 import statistics
+import sys
 import time
 import uuid
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +46,11 @@ EXPECTED_ERRORS = {
 PREPARATION_CONCURRENCY = 10
 PREPARATION_RETRY_BASE_SECONDS = 0.5
 NON_JSON_SNIPPET_BYTES = 200
+LOAD_CONNECTOR_LIMIT = 2000
+LOAD_CONNECTOR_LIMIT_PER_HOST = 2000
+LOAD_CONNECTOR_KEEPALIVE_SECONDS = 15.0
+LOAD_CONNECTOR_DNS_CACHE_SECONDS = 300
+CLIENT_TELEMETRY_INTERVAL_SECONDS = 5.0
 RESPONSE_REDACTION_PATTERNS = (
     re.compile(r"\b(?:sb_(?:publishable|secret)|sbp)_[A-Za-z0-9_-]+\b"),
     re.compile(r"\bBearer\s+[A-Za-z0-9._~+/-]+", re.IGNORECASE),
@@ -61,6 +69,86 @@ def preparation_retry_delay(attempt: int) -> float:
 
 def deterministic_uuid(value: str) -> str:
     return str(uuid.UUID(hashlib.md5(value.encode("utf-8"), usedforsecurity=False).hexdigest()))
+
+
+def build_load_connector() -> aiohttp.TCPConnector:
+    """Build the explicit high-concurrency connector used by measured traffic."""
+
+    return aiohttp.TCPConnector(
+        limit=LOAD_CONNECTOR_LIMIT,
+        limit_per_host=LOAD_CONNECTOR_LIMIT_PER_HOST,
+        force_close=False,
+        keepalive_timeout=LOAD_CONNECTOR_KEEPALIVE_SECONDS,
+        use_dns_cache=True,
+        ttl_dns_cache=LOAD_CONNECTOR_DNS_CACHE_SECONDS,
+        ssl=create_verified_ssl_context(),
+    )
+
+
+def connector_queue_depth(connector: aiohttp.TCPConnector) -> int:
+    """Return aiohttp's current per-host waiter count without exposing requests."""
+
+    waiters = getattr(connector, "_waiters", {})
+    if not hasattr(waiters, "values"):
+        return 0
+    return sum(len(host_waiters) for host_waiters in waiters.values())
+
+
+def read_host_cpu_ticks() -> tuple[int, int]:
+    """Return total and idle host CPU ticks on supported load-runner platforms."""
+
+    if sys.platform.startswith("linux"):
+        fields = Path("/proc/stat").read_text(encoding="utf-8").splitlines()[0].split()
+        if not fields or fields[0] != "cpu" or len(fields) < 5:
+            raise RuntimeError("linux host CPU counters are unavailable")
+        counters = [int(value) for value in fields[1:9]]
+        total = sum(counters)
+        idle = counters[3] + (counters[4] if len(counters) > 4 else 0)
+        return total, idle
+    if sys.platform == "darwin":
+        cpu_ticks = ctypes.c_uint * 4
+
+        class HostCpuLoadInfo(ctypes.Structure):
+            _fields_ = [("cpu_ticks", cpu_ticks)]
+
+        system = ctypes.CDLL("/usr/lib/libSystem.B.dylib")
+        system.mach_host_self.restype = ctypes.c_uint
+        system.host_statistics.argtypes = (
+            ctypes.c_uint,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_uint),
+        )
+        info = HostCpuLoadInfo()
+        count = ctypes.c_uint(4)
+        if system.host_statistics(
+            system.mach_host_self(),
+            3,
+            ctypes.byref(info),
+            ctypes.byref(count),
+        ):
+            raise RuntimeError("macOS host CPU counters are unavailable")
+        values = [int(value) for value in info.cpu_ticks]
+        return sum(values), values[2]
+    raise RuntimeError(f"host CPU telemetry is unsupported on {sys.platform}")
+
+
+class LoadMachineCpuSampler:
+    def __init__(self) -> None:
+        self.previous_total, self.previous_idle = read_host_cpu_ticks()
+
+    def percent(self) -> float:
+        total, idle = read_host_cpu_ticks()
+        total_delta = total - self.previous_total
+        idle_delta = idle - self.previous_idle
+        self.previous_total = total
+        self.previous_idle = idle
+        if total_delta <= 0:
+            return 0.0
+        return max(
+            0.0,
+            min(100.0, (total_delta - idle_delta) / total_delta * 100),
+        )
 
 
 @dataclass
@@ -186,6 +274,10 @@ class FantasyLoadRunner:
             )
         self.observations: list[Observation] = []
         self.response_diagnostics: list[ResponseDiagnostic] = []
+        self.client_telemetry: list[dict[str, Any]] = []
+        self.client_telemetry_errors: list[str] = []
+        self.in_flight_requests = 0
+        self.load_machine_cpu_sampler: LoadMachineCpuSampler | None = None
         self.states: list[UserState] = []
         self.session_tokens = load_session_tokens(
             self.session_cache_path,
@@ -196,12 +288,7 @@ class FantasyLoadRunner:
 
     async def run(self) -> dict[str, Any]:
         timeout = aiohttp.ClientTimeout(total=15, connect=5)
-        connector = aiohttp.TCPConnector(
-            limit=1200,
-            limit_per_host=1200,
-            ttl_dns_cache=300,
-            ssl=create_verified_ssl_context(),
-        )
+        connector = build_load_connector()
         try:
             async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
                 await self.prepare_users(session)
@@ -233,7 +320,16 @@ class FantasyLoadRunner:
                     write_private_json(self.results_path, result)
                     return result
                 requests: list[asyncio.Task[None]] = []
+                telemetry_stop = asyncio.Event()
+                self.load_machine_cpu_sampler = LoadMachineCpuSampler()
                 started = time.perf_counter()
+                telemetry_task = asyncio.create_task(
+                    self.collect_client_telemetry(
+                        connector,
+                        started,
+                        telemetry_stop,
+                    )
+                )
                 request_number = 0
                 while True:
                     elapsed = time.perf_counter() - started
@@ -249,11 +345,17 @@ class FantasyLoadRunner:
                         state = self.states[request_number % self.users]
                         operation = self.pick_operation(request_number)
                         requests.append(
-                            asyncio.create_task(self.execute_serial(session, state, operation))
+                            asyncio.create_task(
+                                self.execute_serial(session, state, operation)
+                            )
                         )
                         request_number += 1
                     await asyncio.sleep(max(0.001, second + 1 - (time.perf_counter() - started)))
-                await asyncio.gather(*requests)
+                try:
+                    await asyncio.gather(*requests)
+                finally:
+                    telemetry_stop.set()
+                    await telemetry_task
             result = self.summarize(time.perf_counter() - started)
             write_private_json(self.results_path, result)
             return result
@@ -271,6 +373,7 @@ class FantasyLoadRunner:
                         },
                         "failure": "non_json_response",
                         "nonJsonResponses": self.summarize_non_json_responses(),
+                        "clientTelemetry": self.summarize_client_telemetry(),
                     },
                 )
             raise
@@ -279,6 +382,50 @@ class FantasyLoadRunner:
                 state.token = ""
             self.states.clear()
             self.session_tokens.clear()
+
+    async def collect_client_telemetry(
+        self,
+        connector: aiohttp.TCPConnector,
+        started: float,
+        stop: asyncio.Event,
+    ) -> None:
+        """Sample load-generator pressure without changing request scheduling."""
+
+        while True:
+            elapsed = time.perf_counter() - started
+            sample: dict[str, Any] = {
+                "sampledAt": datetime.now(UTC).isoformat(),
+                "elapsedSeconds": round(elapsed, 3),
+                "phase": (
+                    "scheduled_window"
+                    if elapsed <= self.total_seconds
+                    else "drain"
+                ),
+                "inFlightRequests": self.in_flight_requests,
+                "connectorQueueDepth": connector_queue_depth(connector),
+            }
+            try:
+                if self.load_machine_cpu_sampler is None:
+                    raise RuntimeError("load-machine CPU sampler is not initialized")
+                sample["loadMachineCpuPercent"] = round(
+                    self.load_machine_cpu_sampler.percent(),
+                    3,
+                )
+            except Exception as error:
+                classification = type(error).__name__
+                sample["loadMachineCpuPercent"] = None
+                sample["samplingError"] = classification
+                self.client_telemetry_errors.append(classification)
+            self.client_telemetry.append(sample)
+            if stop.is_set():
+                return
+            try:
+                await asyncio.wait_for(
+                    stop.wait(),
+                    timeout=CLIENT_TELEMETRY_INTERVAL_SECONDS,
+                )
+            except TimeoutError:
+                continue
 
     async def prepare_users(self, session: aiohttp.ClientSession) -> None:
         semaphore = asyncio.Semaphore(PREPARATION_CONCURRENCY)
@@ -443,6 +590,30 @@ class FantasyLoadRunner:
         operation: str = "setup",
         record: bool = True,
     ) -> Any:
+        self.in_flight_requests += 1
+        try:
+            return await self._request(
+                session,
+                method,
+                path,
+                token,
+                body,
+                operation,
+                record,
+            )
+        finally:
+            self.in_flight_requests -= 1
+
+    async def _request(
+        self,
+        session: aiohttp.ClientSession,
+        method: str,
+        path: str,
+        token: str | None,
+        body: dict[str, Any],
+        operation: str,
+        record: bool,
+    ) -> Any:
         headers = {"apikey": self.api_key, "Content-Type": "application/json"}
         if path.startswith("/rest/v1/"):
             headers["Accept-Profile"] = "api"
@@ -451,7 +622,12 @@ class FantasyLoadRunner:
             headers["Authorization"] = f"Bearer {token}"
         started = time.perf_counter()
         try:
-            async with session.request(method, f"{self.base_url}{path}", headers=headers, json=body) as response:
+            async with session.request(
+                method,
+                f"{self.base_url}{path}",
+                headers=headers,
+                json=body,
+            ) as response:
                 status = response.status
                 content_type = sanitize_response_snippet(
                     response.headers.get("Content-Type", ""),
@@ -526,6 +702,49 @@ class FantasyLoadRunner:
             ],
         }
 
+    def summarize_client_telemetry(self) -> dict[str, Any]:
+        in_flight = [
+            int(item["inFlightRequests"])
+            for item in self.client_telemetry
+        ]
+        queue_depths = [
+            int(item["connectorQueueDepth"])
+            for item in self.client_telemetry
+        ]
+        cpu_values = [
+            float(item["loadMachineCpuPercent"])
+            for item in self.client_telemetry
+            if item.get("loadMachineCpuPercent") is not None
+        ]
+        return {
+            "intervalSeconds": CLIENT_TELEMETRY_INTERVAL_SECONDS,
+            "connector": {
+                "limit": LOAD_CONNECTOR_LIMIT,
+                "limitPerHost": LOAD_CONNECTOR_LIMIT_PER_HOST,
+                "keepaliveEnabled": True,
+                "keepaliveTimeoutSeconds": LOAD_CONNECTOR_KEEPALIVE_SECONDS,
+                "dnsCacheEnabled": True,
+                "dnsCacheTtlSeconds": LOAD_CONNECTOR_DNS_CACHE_SECONDS,
+            },
+            "priorConnector": {
+                "limit": 1200,
+                "limitPerHost": 1200,
+                "keepaliveEnabled": True,
+                "keepaliveWasExplicit": False,
+                "dnsCacheEnabled": True,
+                "dnsCacheWasExplicit": False,
+                "dnsCacheTtlSeconds": 300,
+            },
+            "samples": self.client_telemetry,
+            "sampleCount": len(self.client_telemetry),
+            "peakInFlightRequests": max(in_flight, default=0),
+            "peakConnectorQueueDepth": max(queue_depths, default=0),
+            "peakLoadMachineCpuPercent": (
+                round(max(cpu_values), 3) if cpu_values else None
+            ),
+            "samplingErrors": dict(Counter(self.client_telemetry_errors)),
+        }
+
     def summarize(self, elapsed_seconds: float) -> dict[str, Any]:
         by_operation: dict[str, list[Observation]] = defaultdict(list)
         for observation in self.observations:
@@ -586,6 +805,7 @@ class FantasyLoadRunner:
             else None,
             "errorCodes": dict(Counter(item.error_code for item in self.observations if item.error_code)),
             "nonJsonResponses": self.summarize_non_json_responses(),
+            "clientTelemetry": self.summarize_client_telemetry(),
             "passCriteria": {
                 "readP95": percentile(reads, 95) <= 500,
                 "mutationP95": percentile(mutations, 95) <= 1500,
