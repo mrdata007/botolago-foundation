@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import { LoadingState } from "@/components/common/States";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { Pitch } from "@/components/fantasy/Pitch";
@@ -72,7 +72,7 @@ const eventLabelKey: Record<PointsEventKind, TranslationKey> = {
 const CHIP_KEYS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain", "wildcard"];
 
 function PointsPage() {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const qc = useQueryClient();
   const { requireAuth } = useAuth();
   const owned = useFantasyOwned();
@@ -110,7 +110,7 @@ function PointsPage() {
   const { key: ownedKey } = useFantasyDataSource();
   const currentGwQ = useQuery({
     queryKey: ["current-gw"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
   const gwResultQ = useQuery({
     queryKey: ownedKey("gw-result", gw),
@@ -131,7 +131,10 @@ function PointsPage() {
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
   // when advancing. Not needed in local mode.
   const gwIndexQ = useQuery({

@@ -1,5 +1,3 @@
-import logoAsset from "@/assets/botolago-logo.jpg.asset.json";
-
 interface LogoProps {
   variant?: "full" | "icon";
   className?: string;
@@ -16,13 +14,16 @@ export function Logo({ variant = "full", className }: LogoProps) {
     );
   }
   return (
-    <div className={`flex items-center ${className ?? ""}`}>
+    <div className={`flex items-center gap-2 ${className ?? ""}`} aria-label="BotolaGO">
       <img
-        src={logoAsset.url}
-        alt="BotolaGO"
-        className="h-7 w-auto select-none"
+        src="/favicon.png"
+        alt=""
+        className="h-7 w-7 select-none rounded-lg object-cover ring-1 ring-white/20"
         draggable={false}
       />
+      <span className="text-lg font-black leading-none tracking-tight text-foreground">
+        Botola<span className="text-[color:var(--brand-accent)]">GO</span>
+      </span>
     </div>
   );
 }

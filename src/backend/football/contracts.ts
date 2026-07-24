@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { CursorPageRequest, RepositoryContext } from "@/backend/contracts/repository";
+import { postgresUuidSchema } from "@/backend/contracts/validation";
 
 export const FOOTBALL_LANGUAGES = ["fr", "ar"] as const;
 export type FootballLanguage = (typeof FOOTBALL_LANGUAGES)[number];
@@ -25,10 +26,10 @@ export const FOOTBALL_POSITIONS = ["goalkeeper", "defender", "midfielder", "forw
 export type FootballPosition = (typeof FOOTBALL_POSITIONS)[number];
 
 const nullableText = z.string().nullable();
-const nullableUuid = z.string().uuid().nullable();
+const nullableUuid = postgresUuidSchema.nullable();
 
 export const teamSummarySchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   slug: z.string().min(1),
   name: z.string().min(1),
   shortName: z.string().min(1),
@@ -44,7 +45,7 @@ export const teamSummarySchema = z.object({
 export type TeamSummaryDto = z.infer<typeof teamSummarySchema>;
 
 export const competitionSummarySchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   slug: z.string().min(1),
   name: z.string().min(1),
   shortName: nullableText,
@@ -58,7 +59,7 @@ export type CompetitionSummaryDto = z.infer<typeof competitionSummarySchema>;
 
 export const venueSummarySchema = z
   .object({
-    id: z.string().uuid(),
+    id: postgresUuidSchema,
     slug: z.string().min(1),
     name: z.string().min(1),
     city: nullableText,
@@ -68,9 +69,9 @@ export const venueSummarySchema = z
   .nullable();
 
 export const matchCardSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   competition: competitionSummarySchema,
-  seasonId: z.string().uuid(),
+  seasonId: postgresUuidSchema,
   seasonLabel: z.string().min(1),
   roundId: nullableUuid,
   roundName: nullableText,
@@ -111,7 +112,7 @@ export type MatchDetailHeaderDto = MatchCardDto;
 export type LiveMatchSummaryDto = MatchCardDto;
 
 export const timelineItemSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   type: z.enum([
     "goal",
     "own_goal",
@@ -138,7 +139,7 @@ export const timelineItemSchema = z.object({
 export type MatchTimelineItemDto = z.infer<typeof timelineItemSchema>;
 
 export const lineupPlayerSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   slug: z.string().min(1),
   displayName: z.string().min(1),
   slot: z.enum(["starting", "bench"]),
@@ -148,7 +149,7 @@ export const lineupPlayerSchema = z.object({
   captain: z.boolean(),
 });
 export const lineupSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   team: teamSummarySchema,
   formation: nullableText,
   confirmed: z.boolean(),
@@ -170,7 +171,7 @@ export const matchStatisticSchema = z.object({
 export type MatchStatisticComparisonDto = z.infer<typeof matchStatisticSchema>;
 
 export const standingRowSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   rank: z.number().int().positive(),
   team: teamSummarySchema,
   played: z.number().int().nonnegative(),
@@ -188,7 +189,7 @@ export const standingRowSchema = z.object({
 export type StandingRowDto = z.infer<typeof standingRowSchema>;
 
 export const playerSummarySchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   slug: z.string().min(1),
   fullName: z.string().min(1),
   displayName: z.string().min(1),
@@ -198,7 +199,7 @@ export const playerSummarySchema = z.object({
   position: z.enum(FOOTBALL_POSITIONS),
   preferredFoot: z.enum(["left", "right", "both", "unknown"]),
   nationality: z
-    .object({ id: z.string().uuid(), code: z.string().length(2), name: z.string().min(1) })
+    .object({ id: postgresUuidSchema, code: z.string().length(2), name: z.string().min(1) })
     .nullable(),
   currentTeam: teamSummarySchema.nullable(),
   shirtNumber: z.number().int().positive().nullable(),
@@ -207,7 +208,7 @@ export const playerSummarySchema = z.object({
 export type PlayerSummaryDto = z.infer<typeof playerSummarySchema>;
 
 export const availabilitySchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   status: z.enum(["available", "injured", "suspended", "doubtful", "unknown"]),
   reason: nullableText,
   startsOn: z.string(),
@@ -237,6 +238,11 @@ export interface MatchesByDateInput extends CursorPageRequest {
 }
 
 export interface FootballRepository {
+  getTeams(
+    language: FootballLanguage,
+    limit: number,
+    context: RepositoryContext,
+  ): Promise<readonly TeamSummaryDto[]>;
   getHomeMatches(
     language: FootballLanguage,
     limit: number,

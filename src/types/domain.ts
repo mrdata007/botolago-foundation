@@ -89,8 +89,8 @@ export interface FantasySummary {
   teamName: string;
   totalPoints: number;
   gameweekPoints: number;
-  overallRank: number;
-  gameweekRank: number;
+  overallRank: number | null;
+  gameweekRank: number | null;
   transfersLeft: number;
   bankValue: number;
   teamValue: number;

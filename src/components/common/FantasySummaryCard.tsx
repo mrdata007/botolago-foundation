@@ -49,7 +49,11 @@ export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; g
       <div className="relative mt-4 grid grid-cols-4 gap-2 text-center">
         <Metric label={t("fantasy.gw_points")} value={nf.format(summary.gameweekPoints)} accent />
         <Metric label={t("fantasy.total_points")} value={nf.format(summary.totalPoints)} />
-        <Metric label={t("fantasy.overall_rank")} value={nf.format(summary.overallRank)} small />
+        <Metric
+          label={t("fantasy.overall_rank")}
+          value={summary.overallRank === null ? "—" : nf.format(summary.overallRank)}
+          small
+        />
         <Metric label={t("fantasy.transfers")} value={String(summary.transfersLeft)} />
       </div>
 

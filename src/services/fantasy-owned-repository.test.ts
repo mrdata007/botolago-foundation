@@ -3,6 +3,7 @@ import {
   selectFantasyRepoSource,
   createFantasyOwnedRepository,
   CloudFantasyRepository,
+  GuestFantasyRepository,
   LocalFantasyRepository,
 } from "./fantasy-owned-repository";
 import { FantasyRepoError, toRepoError } from "./fantasy-errors";
@@ -14,21 +15,30 @@ import { MissingIdMappingError } from "./fantasy-id-map";
 describe("selectFantasyRepoSource", () => {
   it("returns cloud only for supabase mode + authenticated", () => {
     expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: true })).toBe("cloud");
-    expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false })).toBe("local");
+    expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false })).toBe("guest");
     expect(selectFantasyRepoSource({ authMode: "mock", isAuthenticated: true })).toBe("local");
     expect(selectFantasyRepoSource({ authMode: "mock", isAuthenticated: false })).toBe("local");
   });
 });
 
 describe("createFantasyOwnedRepository", () => {
-  it("returns Local for guests", () => {
+  it("returns a read-only guest repository for anonymous Supabase mode", () => {
     const repo = createFantasyOwnedRepository({
       authMode: "supabase",
       isAuthenticated: false,
       userId: null,
     });
-    expect(repo).toBeInstanceOf(LocalFantasyRepository);
-    expect(repo.source).toBe("local");
+    expect(repo).toBeInstanceOf(GuestFantasyRepository);
+    expect(repo.source).toBe("guest");
+  });
+  it("denies every guest mutation with a stable authentication error", async () => {
+    const repo = new GuestFantasyRepository();
+    const error = await repo
+      .saveTeam({} as never)
+      .then(() => null)
+      .catch((caught) => caught);
+    expect(error).toBeInstanceOf(FantasyRepoError);
+    expect(error.code).toBe("unauthenticated");
   });
   it("throws typed unauthenticated when cloud is required but userId is null", () => {
     let e: unknown;

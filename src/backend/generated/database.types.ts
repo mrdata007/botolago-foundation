@@ -447,6 +447,10 @@ export type Database = {
         }
         Returns: Json
       }
+      football_team_catalog: {
+        Args: { p_language?: string; p_limit?: number }
+        Returns: Json
+      }
       football_team_fixtures: {
         Args: {
           p_before_id?: string

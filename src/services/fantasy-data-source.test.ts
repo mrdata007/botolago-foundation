@@ -11,8 +11,8 @@ describe("selectFantasyDataSource", () => {
   it("returns cloud only when supabase mode and authenticated", () => {
     expect(selectFantasyDataSource({ authMode: "supabase", isAuthenticated: true })).toBe("cloud");
   });
-  it("returns local for guest supabase mode", () => {
-    expect(selectFantasyDataSource({ authMode: "supabase", isAuthenticated: false })).toBe("local");
+  it("returns a non-local guest source for anonymous Supabase mode", () => {
+    expect(selectFantasyDataSource({ authMode: "supabase", isAuthenticated: false })).toBe("guest");
   });
   it("returns local for mock mode regardless of auth", () => {
     expect(selectFantasyDataSource({ authMode: "mock", isAuthenticated: true })).toBe("local");

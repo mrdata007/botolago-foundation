@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { botolaService } from "@/services/mock";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { footballService } from "@/services/football";
+import { newsService } from "@/services/news";
 import { FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Trans } from "@/components/common/Trans";
@@ -55,28 +56,31 @@ function FantasyHub() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
   const summary = useQuery({
     queryKey: ["fantasy-summary"],
-    queryFn: () => botolaService.getFantasySummary(),
+    queryFn: () => fantasyService.getSummary(),
   });
   const gw = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
   const alerts = useQuery({
     queryKey: ["alerts"],
-    queryFn: () => botolaService.getFantasyAlerts(),
+    queryFn: () => fantasyService.getAlerts(),
   });
   const trending = useQuery({
     queryKey: ["trending"],
-    queryFn: () => botolaService.getTrendingPlayers(),
+    queryFn: () => fantasyService.getTrendingPlayers(),
   });
-  const clubs = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubs = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const leagues = useQuery({
     queryKey: ["fantasy-leagues"],
     queryFn: () => fantasyService.getLeagues("private"),
   });
   const articles = useQuery({
     queryKey: ["fantasy-articles"],
-    queryFn: () => botolaService.getArticles({ category: "for_you" }),
+    queryFn: () => newsService.getArticles(lang, { category: "for_you" }),
   });
 
   const clubById = (id: string) => clubs.data?.find((c) => c.id === id);
@@ -101,6 +105,13 @@ function FantasyHub() {
       <div className="mt-4">
         {summary.data && gw.data ? (
           <FantasySummaryCard summary={summary.data} gw={gw.data} />
+        ) : summary.isSuccess && summary.data === null ? (
+          <Link
+            to="/fantasy/create"
+            className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+          >
+            {t("fantasy.create.title")}
+          </Link>
         ) : (
           <LoadingState />
         )}

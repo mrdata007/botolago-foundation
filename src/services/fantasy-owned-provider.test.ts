@@ -20,7 +20,7 @@ import { fantasyStateStore } from "./fantasy-state";
 describe("selectFantasyRepoSource", () => {
   it("returns cloud only when supabase auth mode AND authenticated", () => {
     expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: true })).toBe("cloud");
-    expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false })).toBe("local");
+    expect(selectFantasyRepoSource({ authMode: "supabase", isAuthenticated: false })).toBe("guest");
     expect(selectFantasyRepoSource({ authMode: "mock", isAuthenticated: true })).toBe("local");
     expect(selectFantasyRepoSource({ authMode: "mock", isAuthenticated: false })).toBe("local");
   });
@@ -97,7 +97,7 @@ describe("no automatic cloud mirror on fantasyStateStore mutation", () => {
 });
 
 describe("LocalFantasyRepository is untouched by cloud selection", () => {
-  it("guest snapshot loads locally", async () => {
+  it("mock-mode guest snapshot loads locally", async () => {
     const local = new LocalFantasyRepository();
     const snap = await local.loadSnapshot();
     expect(snap.source).toBe("local");

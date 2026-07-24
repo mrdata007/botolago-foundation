@@ -13,9 +13,10 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { botolaService } from "@/services/mock";
 import { newsService } from "@/services/news";
 import { footballService } from "@/services/football";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { followService } from "@/services/follows";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
@@ -98,15 +99,16 @@ function HomePage() {
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
+  const { status } = useAuth();
   const greeting = useGreeting();
 
   const summaryQ = useQuery({
     queryKey: ["fantasy-summary"],
-    queryFn: () => botolaService.getFantasySummary(),
+    queryFn: () => fantasyService.getSummary(),
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
   const matchesQ = useQuery({
     queryKey: ["football", "home-matches", lang],
@@ -114,19 +116,20 @@ function HomeContent() {
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],
-    queryFn: () => botolaService.getFantasyAlerts(),
+    queryFn: () => fantasyService.getAlerts(),
   });
   const playersQ = useQuery({
     queryKey: ["all-players-for-alerts"],
-    queryFn: () => botolaService.getTrendingPlayers(),
+    queryFn: () => fantasyService.getTrendingPlayers(),
   });
   const leadQ = useQuery({
     queryKey: ["news", "home-modules", lang],
     queryFn: () => newsService.getHome(lang).then((modules) => modules.lead),
   });
   const followedQ = useQuery({
-    queryKey: ["followed"],
-    queryFn: () => botolaService.getFollowedClubs(),
+    queryKey: ["identity", "followed-teams", status, lang],
+    queryFn: () =>
+      status === "authenticated" ? followService.getFollowedTeams(lang) : Promise.resolve([]),
   });
   const followedNewsQ = useQuery({
     queryKey: ["news", "latest", lang],
@@ -134,12 +137,15 @@ function HomeContent() {
   });
   const trendingQ = useQuery({
     queryKey: ["trending"],
-    queryFn: () => botolaService.getTrendingPlayers(),
+    queryFn: () => fantasyService.getTrendingPlayers(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const leaguesQ = useQuery({
     queryKey: ["leagues"],
-    queryFn: () => botolaService.getPrivateLeagues(),
+    queryFn: () => fantasyService.getLeagues("private"),
   });
 
   const clubById = (id: string) =>
@@ -191,6 +197,13 @@ function HomeContent() {
       >
         {summaryQ.data && gwQ.data ? (
           <FantasySummaryCard summary={summaryQ.data} gw={gwQ.data} />
+        ) : summaryQ.isSuccess && summaryQ.data === null ? (
+          <Link
+            to="/fantasy/create"
+            className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+          >
+            {t("fantasy.create.title")}
+          </Link>
         ) : (
           <HeroSkeleton />
         )}
@@ -297,7 +310,7 @@ function HomeContent() {
         <div className="grid gap-2">
           {!leaguesQ.data && <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>}
           {leaguesQ.data?.map((l) => {
-            const delta = l.previousRank - l.rank; // positive = climbed
+            const delta = l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
             const climbed = delta > 0;
             const dropped = delta < 0;
             return (
@@ -310,7 +323,7 @@ function HomeContent() {
                   style={{ backgroundImage: "var(--bg-brand-gradient)" }}
                   aria-hidden
                 >
-                  #{l.rank}
+                  {l.rank === null ? "—" : `#${l.rank}`}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-bold text-foreground">{l.name}</div>

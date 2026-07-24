@@ -50,7 +50,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 
 // ---------- Public normalized types ----------
 
-export type FantasyRepoSource = "cloud" | "local";
+export type FantasyRepoSource = "cloud" | "guest" | "local";
 
 export interface FantasySnapshot {
   teamId: string | null;
@@ -120,7 +120,61 @@ export function selectFantasyRepoSource(input: {
   isAuthenticated: boolean;
 }): FantasyRepoSource {
   if (input.authMode === "supabase" && input.isAuthenticated) return "cloud";
+  if (input.authMode === "supabase") return "guest";
   return "local";
+}
+
+// ---------- Anonymous cloud adapter ----------
+
+/**
+ * Production Supabase mode must never substitute the local/mock team for an
+ * anonymous visitor. This read-only adapter represents the honest no-team
+ * state while keeping all mutations authentication-gated.
+ */
+export class GuestFantasyRepository implements FantasyOwnedRepository {
+  readonly source: FantasyRepoSource = "guest";
+
+  async loadSnapshot(): Promise<FantasySnapshot> {
+    return {
+      teamId: null,
+      version: 0,
+      team: {
+        managerName: "",
+        teamName: "",
+        formation: "4-4-2",
+        squad: [],
+        bank: 0,
+        freeTransfers: 0,
+        pendingTransfers: 0,
+      },
+      lifecycle: { ...DEFAULT_STATE },
+      finalizedResults: {},
+      source: "guest",
+      currentGameweekId: null,
+      purchasePrices: {},
+      emptyCloudSquad: true,
+    };
+  }
+
+  private unauthorized(): never {
+    throw new FantasyRepoError("unauthenticated", "Authentication is required.");
+  }
+
+  async saveTeam(_input: SaveOwnedTeamInput): Promise<FantasySnapshot> {
+    return this.unauthorized();
+  }
+
+  async confirmTransfers(_input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+    return this.unauthorized();
+  }
+
+  async finalizeGameweek(_input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
+    return this.unauthorized();
+  }
+
+  async reload(): Promise<FantasySnapshot> {
+    return this.loadSnapshot();
+  }
 }
 
 // ---------- Local adapter ----------
@@ -680,6 +734,7 @@ export function createFantasyOwnedRepository(
     }
     return new V2CloudFantasyRepository(input.userId);
   }
+  if (source === "guest") return new GuestFantasyRepository();
   return new LocalFantasyRepository();
 }
 
@@ -699,7 +754,9 @@ export function useFantasyOwnedRepository(_opts?: { season?: string }): {
     const repo =
       source === "cloud" && userId
         ? new V2CloudFantasyRepository(userId)
-        : new LocalFantasyRepository();
+        : source === "guest"
+          ? new GuestFantasyRepository()
+          : new LocalFantasyRepository();
     return { repo, source, userId };
   }, [status, user?.id]);
 }

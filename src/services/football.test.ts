@@ -7,8 +7,9 @@ const context = { actorId: null, requestId: "test" } as const;
 describe("Football frontend repository cutover", () => {
   test("fails closed when production mode is not configured", () => {
     expect(() => selectFootballDataMode(undefined, true)).toThrow(
-      "VITE_FOOTBALL_DATA_MODE must be configured explicitly",
+      "VITE_FOOTBALL_DATA_MODE=supabase",
     );
+    expect(() => selectFootballDataMode("mock", true)).toThrow("VITE_FOOTBALL_DATA_MODE=supabase");
     expect(selectFootballDataMode(undefined, false)).toBe("mock");
     expect(selectFootballDataMode("supabase", true)).toBe("supabase");
   });

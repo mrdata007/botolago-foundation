@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { postgresUuidSchema } from "@/backend/contracts/validation";
+
+export { postgresUuidSchema } from "@/backend/contracts/validation";
 
 export const FANTASY_POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
 export const FANTASY_CHIPS = ["wildcard", "free_hit", "bench_boost", "triple_captain"] as const;
@@ -19,7 +22,7 @@ export type FantasyPosition = (typeof FANTASY_POSITIONS)[number];
 export type FantasyChip = (typeof FANTASY_CHIPS)[number];
 
 export const lineupSelectionSchema = z.object({
-  fantasy_player_id: z.string().uuid(),
+  fantasy_player_id: postgresUuidSchema,
   slot: z.enum(["starter", "bench"]),
   slot_order: z.number().int().min(1).max(11),
   captain: z.boolean(),
@@ -28,9 +31,9 @@ export const lineupSelectionSchema = z.object({
 export type LineupSelection = z.infer<typeof lineupSelectionSchema>;
 
 export const fantasyPlayerSchema = z.object({
-  id: z.string().uuid(),
-  footballPlayerId: z.string().uuid(),
-  footballTeamId: z.string().uuid(),
+  id: postgresUuidSchema,
+  footballPlayerId: postgresUuidSchema,
+  footballTeamId: postgresUuidSchema,
   name: z.string().min(1),
   fullName: z.string().min(1),
   position: z.enum(FANTASY_POSITIONS),
@@ -38,16 +41,16 @@ export const fantasyPlayerSchema = z.object({
   status: z.enum(["available", "doubtful", "injured", "suspended", "ineligible", "unavailable"]),
   teamName: z.string().min(1),
   teamShortName: z.string().min(1),
-  photoAssetId: z.string().uuid().nullable(),
-  crestAssetId: z.string().uuid().nullable(),
+  photoAssetId: postgresUuidSchema.nullable(),
+  crestAssetId: postgresUuidSchema.nullable(),
   selectedByCount: z.coerce.number().int().nonnegative(),
 });
 export type FantasyPlayerDto = z.infer<typeof fantasyPlayerSchema>;
 
 export const fantasyTeamSchema = z.object({
-  id: z.string().uuid(),
-  seasonId: z.string().uuid(),
-  currentGameweekId: z.string().uuid().nullable(),
+  id: postgresUuidSchema,
+  seasonId: postgresUuidSchema,
+  currentGameweekId: postgresUuidSchema.nullable(),
   name: z.string().min(1),
   bank: z.coerce.number().nonnegative(),
   teamValue: z.coerce.number().positive(),
@@ -58,10 +61,10 @@ export const fantasyTeamSchema = z.object({
   updatedAt: z.string(),
   squad: z.array(
     z.object({
-      membershipId: z.string().uuid(),
-      fantasyPlayerId: z.string().uuid(),
-      footballPlayerId: z.string().uuid(),
-      footballTeamId: z.string().uuid(),
+      membershipId: postgresUuidSchema,
+      fantasyPlayerId: postgresUuidSchema,
+      footballPlayerId: postgresUuidSchema,
+      footballTeamId: postgresUuidSchema,
       position: z.enum(FANTASY_POSITIONS),
       price: z.coerce.number().positive(),
       purchasePrice: z.coerce.number().positive(),
@@ -71,7 +74,7 @@ export const fantasyTeamSchema = z.object({
   ),
   lineup: z.array(
     z.object({
-      fantasyPlayerId: z.string().uuid(),
+      fantasyPlayerId: postgresUuidSchema,
       slot: z.enum(["starter", "bench"]),
       slotOrder: z.number().int().positive(),
       captain: z.boolean(),
@@ -83,10 +86,10 @@ export const fantasyTeamSchema = z.object({
 export type FantasyTeamDto = z.infer<typeof fantasyTeamSchema>;
 
 export const fantasyHubSchema = z.object({
-  season: z.object({ id: z.string().uuid(), name: z.string(), status: z.string() }),
+  season: z.object({ id: postgresUuidSchema, name: z.string(), status: z.string() }),
   gameweek: z
     .object({
-      id: z.string().uuid(),
+      id: postgresUuidSchema,
       sequence: z.number().int().positive(),
       name: z.string(),
       deadlineAt: z.string(),
@@ -101,12 +104,12 @@ export type FantasyHubDto = z.infer<typeof fantasyHubSchema>;
 
 export const playerPoolPageSchema = z.object({
   items: z.array(fantasyPlayerSchema),
-  nextCursor: z.object({ price: z.coerce.number(), id: z.string().uuid() }).nullable(),
+  nextCursor: z.object({ price: z.coerce.number(), id: postgresUuidSchema }).nullable(),
 });
 export type PlayerPoolPageDto = z.infer<typeof playerPoolPageSchema>;
 
 export const fantasyGameweekSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   sequence: z.number().int().positive(),
   name: z.string(),
   deadlineAt: z.string(),
@@ -123,7 +126,7 @@ export const fantasyGameweekPageSchema = z.object({
 });
 
 export const fantasyLeagueSchema = z.object({
-  id: z.string().uuid(),
+  id: postgresUuidSchema,
   name: z.string(),
   visibility: z.enum(["public", "private"]),
   memberCount: z.number().int().nonnegative(),
@@ -140,14 +143,14 @@ export const fantasyLeaguePageSchema = z.object({ items: z.array(fantasyLeagueSc
 
 export const fantasyLeagueStandingPageSchema = z.object({
   league: z.object({
-    id: z.string().uuid(),
+    id: postgresUuidSchema,
     name: z.string(),
     visibility: z.enum(["public", "private"]),
     memberCount: z.number().int().nonnegative(),
   }),
   items: z.array(
     z.object({
-      teamId: z.string().uuid(),
+      teamId: postgresUuidSchema,
       teamName: z.string(),
       rank: z.coerce.number().int().positive(),
       previousRank: z.coerce.number().int().positive().nullable(),
@@ -160,8 +163,8 @@ export const fantasyLeagueStandingPageSchema = z.object({
 export type FantasyLeagueStandingPageDto = z.infer<typeof fantasyLeagueStandingPageSchema>;
 
 export const fantasyPointsSchema = z.object({
-  teamId: z.string().uuid(),
-  gameweekId: z.string().uuid(),
+  teamId: postgresUuidSchema,
+  gameweekId: postgresUuidSchema,
   gameweekStatus: z.enum(FANTASY_GAMEWEEK_STATUSES),
   pointsState: z.enum(["provisional", "final"]),
   result: z
@@ -182,7 +185,7 @@ export const fantasyPointsSchema = z.object({
     .nullable(),
   players: z.array(
     z.object({
-      fantasyPlayerId: z.string().uuid(),
+      fantasyPlayerId: postgresUuidSchema,
       slot: z.enum(["starter", "bench"]),
       slotOrder: z.number().int().positive(),
       captain: z.boolean(),
@@ -200,7 +203,7 @@ export type FantasyPointsDto = z.infer<typeof fantasyPointsSchema>;
 export const fantasyHistoryPageSchema = z.object({
   items: z.array(
     z.object({
-      gameweekId: z.string().uuid(),
+      gameweekId: postgresUuidSchema,
       sequence: z.number().int().positive(),
       name: z.string(),
       score: z.number().int(),
@@ -218,7 +221,7 @@ export const fantasyHistoryPageSchema = z.object({
 export type FantasyHistoryPageDto = z.infer<typeof fantasyHistoryPageSchema>;
 
 export const fantasyTopPlayerSchema = z.object({
-  fantasyPlayerId: z.string().uuid(),
+  fantasyPlayerId: postgresUuidSchema,
   points: z.number().int(),
   minutesPlayed: z.number().int().nonnegative(),
   state: z.enum(["provisional", "final"]),

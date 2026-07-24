@@ -1,0 +1,89 @@
+import { expect, type Page, type TestInfo } from "@playwright/test";
+
+const SECRET_PATTERN =
+  /(sb_(?:secret|publishable)_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|Bearer\s+\S+)/gi;
+
+export function sanitize(value: string): string {
+  return value.replace(SECRET_PATTERN, "[REDACTED]");
+}
+
+type ObservationOptions = {
+  allowResponse?: (status: number, url: URL) => boolean;
+  allowExpectedResourceConsoleError?: boolean;
+};
+
+export function observePage(page: Page, options: ObservationOptions = {}) {
+  const consoleErrors: string[] = [];
+  const failedRequests: string[] = [];
+  const expectedNavigationAborts: string[] = [];
+  const badResponses: string[] = [];
+
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      if (
+        options.allowExpectedResourceConsoleError &&
+        /failed to load resource/i.test(message.text())
+      ) {
+        return;
+      }
+      const location = message.location();
+      const source = location.url ? ` ${new URL(location.url).pathname}` : "";
+      consoleErrors.push(`${sanitize(message.text()).slice(0, 500)}${source}`);
+    }
+  });
+  page.on("pageerror", (error) => consoleErrors.push(sanitize(error.message).slice(0, 500)));
+  page.on("requestfailed", (request) => {
+    const failure = sanitize(request.failure()?.errorText ?? "failed");
+    const record = `${request.method()} ${new URL(request.url()).origin}${new URL(request.url()).pathname}: ${failure}`;
+    if (failure.includes("ERR_ABORTED")) expectedNavigationAborts.push(record);
+    else failedRequests.push(record);
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400) {
+      const url = new URL(response.url());
+      if (options.allowResponse?.(response.status(), url)) return;
+      badResponses.push(`${response.status()} ${url.origin}${url.pathname}`);
+    }
+  });
+
+  return {
+    async verify(testInfo: TestInfo) {
+      const evidence = JSON.stringify(
+        { consoleErrors, failedRequests, expectedNavigationAborts, badResponses },
+        null,
+        2,
+      );
+      await testInfo.attach("sanitized-browser-diagnostics", {
+        body: Buffer.from(evidence),
+        contentType: "application/json",
+      });
+      expect(consoleErrors, "unexpected console errors").toEqual([]);
+      expect(failedRequests, "unexpected failed requests").toEqual([]);
+      expect(badResponses, "unexpected API/server 4xx/5xx responses").toEqual([]);
+    },
+  };
+}
+
+export async function initializeLanguage(page: Page, language: "fr" | "ar") {
+  await page.addInitScript((lang) => {
+    window.localStorage.setItem("botolago.welcomed", "1");
+    window.localStorage.setItem("botolago.language", lang);
+    window.sessionStorage.setItem("botolago.splashShown", "1");
+  }, language);
+}
+
+export async function gotoHydrated(page: Page, path: string, language: "fr" | "ar") {
+  await page.goto(path);
+  await expect(page.locator("html")).toHaveAttribute("data-lang", language);
+}
+
+export async function reloadHydrated(page: Page, language: "fr" | "ar") {
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-lang", language);
+}
+
+export async function expectNoHorizontalOverflow(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
+    .toBe(true);
+}

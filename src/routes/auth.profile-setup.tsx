@@ -16,7 +16,7 @@ import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
-import { botolaService } from "@/services/mock";
+import { footballService } from "@/services/football";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -62,7 +62,10 @@ function ProfileSetupPage() {
     }
   }, [user]);
 
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => botolaService.getClubs() });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
   const Back = dir === "rtl" ? ArrowRight : ArrowLeft;
 

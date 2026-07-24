@@ -12,15 +12,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { botolaService } from "@/services/mock";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService as mockFantasyService } from "@/services/fantasy-mock";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import type { FantasyTeam } from "@/types/fantasy";
 import type { FantasyRepoError } from "@/services/fantasy-errors";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 
 export interface UnifiedTeamRead {
-  source: "cloud" | "local";
+  source: "cloud" | "guest" | "local";
   team: FantasyTeam | null;
   lifecycle: FantasyPersistedState;
   teamId: string | null;
@@ -39,7 +39,7 @@ export function useOwnedTeam(): UnifiedTeamRead {
   const owned = useFantasyOwned();
   const localTeamQ = useQuery({
     queryKey: ["fantasy-local-team"],
-    queryFn: () => fantasyService.getTeam(),
+    queryFn: () => mockFantasyService.getTeam(),
     enabled: owned.source === "local",
     staleTime: 0,
   });
@@ -61,6 +61,21 @@ export function useOwnedTeam(): UnifiedTeamRead {
   }, [owned.source]);
 
   return useMemo<UnifiedTeamRead>(() => {
+    if (owned.source === "guest") {
+      return {
+        source: "guest",
+        team: null,
+        lifecycle: owned.snapshot?.lifecycle ?? fantasyStateStore.read(),
+        teamId: null,
+        version: 0,
+        purchasePrices: {},
+        currentGameweekId: null,
+        emptyCloudSquad: true,
+        isLoading: owned.isLoading,
+        error: owned.loadError,
+        userId: null,
+      };
+    }
     if (owned.source === "cloud") {
       const snap = owned.snapshot;
       return {
@@ -110,7 +125,7 @@ export function useOwnedTeam(): UnifiedTeamRead {
 export function useCurrentGameweekNumber(): number | null {
   const gwQ = useQuery({
     queryKey: ["gameweek"],
-    queryFn: () => botolaService.getCurrentGameweek(),
+    queryFn: () => fantasyService.getCurrentGameweek(),
     staleTime: 60_000,
   });
   return gwQ.data?.number ?? null;

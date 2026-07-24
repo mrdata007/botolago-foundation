@@ -18,12 +18,12 @@ export function selectNewsDataMode(
   configuredMode: string | undefined,
   production: boolean,
 ): NewsDataMode {
-  if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
-  if (production)
+  if (production && configuredMode !== "supabase")
     throw new NewsError(
       "data_unavailable",
-      "VITE_NEWS_DATA_MODE must be configured explicitly in production.",
+      "Production News requires VITE_NEWS_DATA_MODE=supabase.",
     );
+  if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
   return "mock";
 }
 
@@ -97,7 +97,7 @@ export const newsService = {
   async getHome(language: NewsLanguage) {
     const modules = await getNewsRepository().getHomeModules(language, 8, context());
     return {
-      lead: modules.lead ? presentArticle(modules.lead) : undefined,
+      lead: modules.lead ? presentArticle(modules.lead) : null,
       featured: modules.featured.map(presentArticle),
       latest: modules.latest.map(presentArticle),
     };

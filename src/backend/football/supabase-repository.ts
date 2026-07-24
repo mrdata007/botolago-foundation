@@ -2,6 +2,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getFootballApi } from "@/integrations/supabase/v2-client";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { postgresUuidSchema } from "@/backend/contracts/validation";
 import {
   availabilitySchema,
   competitionSummarySchema,
@@ -33,7 +34,7 @@ import { FootballError, mapFootballError } from "./errors";
 const matchPageSchema = z.object({
   items: z.array(matchCardSchema),
   nextCursor: z
-    .object({ kickoffAt: z.string().datetime({ offset: true }), id: z.string().uuid() })
+    .object({ kickoffAt: z.string().datetime({ offset: true }), id: postgresUuidSchema })
     .nullable(),
 });
 
@@ -54,7 +55,7 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 }
 
 function requireUuid(value: string): string {
-  const result = z.string().uuid().safeParse(value);
+  const result = postgresUuidSchema.safeParse(value);
   if (!result.success)
     throw new FootballError("data_unavailable", "The football identifier is invalid.");
   return result.data;
@@ -78,6 +79,19 @@ export function encodeMatchCursor(cursor: MatchPageCursor | null): string | null
 }
 
 export class SupabaseFootballRepository implements FootballRepository {
+  async getTeams(
+    language: FootballLanguage,
+    limit: number,
+    _context: RepositoryContext,
+  ): Promise<readonly TeamSummaryDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_team_catalog", {
+      p_language: language,
+      p_limit: limit,
+    });
+    throwIfError(error);
+    return parse(z.array(teamSummarySchema), data);
+  }
+
   async getHomeMatches(
     language: FootballLanguage,
     limit: number,

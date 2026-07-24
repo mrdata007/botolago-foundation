@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import {
   Newspaper,
@@ -12,6 +12,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { newsService } from "@/services/news";
+import { followService } from "@/services/follows";
+import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
@@ -54,9 +56,10 @@ const tabs: { key: ArticleCategory; label: TranslationKey }[] = [
 
 function NewsPage() {
   const { t, tr, lang } = useI18n();
+  const { status, requireAuth } = useAuth();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<ArticleCategory>("for_you");
   const [clubFilter, setClubFilter] = useState<string | null>(null);
-  const [followed, setFollowed] = useState<Record<string, boolean>>({});
   const { ids: savedIds } = useSavedArticles();
 
   const allQ = useQuery({
@@ -70,6 +73,20 @@ function NewsPage() {
   const leadQ = useQuery({
     queryKey: ["news", "home-modules", lang],
     queryFn: () => newsService.getHome(lang).then((modules) => modules.lead),
+  });
+  const followedQ = useQuery({
+    queryKey: ["identity", "followed-team-ids", status],
+    queryFn: () =>
+      status === "authenticated" ? followService.getFollowedTeamIds() : Promise.resolve([]),
+  });
+  const followedIds = useMemo(() => new Set(followedQ.data ?? []), [followedQ.data]);
+  const followMutation = useMutation({
+    mutationFn: ({ teamId, follow }: { teamId: string; follow: boolean }) =>
+      follow ? followService.followTeam(teamId) : followService.unfollowTeam(teamId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["identity", "followed-team-ids"] });
+      await queryClient.invalidateQueries({ queryKey: ["identity", "followed-teams"] });
+    },
   });
 
   const isLoading = allQ.isLoading || leadQ.isLoading;
@@ -162,17 +179,23 @@ function NewsPage() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setFollowed((f) => ({ ...f, [c.id]: !f[c.id] }));
+                    requireAuth(() =>
+                      followMutation.mutate({
+                        teamId: c.id,
+                        follow: !followedIds.has(c.id),
+                      }),
+                    );
                   }}
-                  aria-pressed={!!followed[c.id]}
+                  aria-pressed={followedIds.has(c.id)}
+                  disabled={followMutation.isPending}
                   className={cn(
                     "ms-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide",
-                    followed[c.id]
+                    followedIds.has(c.id)
                       ? "bg-[color:var(--brand-accent)] text-white"
                       : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {followed[c.id] ? t("news.following") : t("news.follow")}
+                  {followedIds.has(c.id) ? t("news.following") : t("news.follow")}
                 </button>
               }
             >

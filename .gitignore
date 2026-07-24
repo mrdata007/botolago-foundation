@@ -15,6 +15,8 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+playwright-report/
+test-results/
 *.local
 .env
 .env.*
