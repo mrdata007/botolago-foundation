@@ -1,8 +1,9 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/backend/generated/database.types";
+import type { AdminPermission } from "./contracts";
 import { AdminControlPlaneService } from "./control-plane-service";
-import { resolveAdminRouteAccess } from "./route-access";
+import { requireAdminRoutePermission, resolveAdminRouteAccess } from "./route-access";
 import { SupabaseAdminControlPlaneRepository } from "./supabase-control-plane-repository";
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -68,4 +69,9 @@ export async function loadAdminRouteAccessForRequest() {
         requestId: crypto.randomUUID(),
       }),
   });
+}
+
+export async function loadAdminRouteAccessForPermission(permission: AdminPermission) {
+  const state = await loadAdminRouteAccessForRequest();
+  return requireAdminRoutePermission(state, permission);
 }

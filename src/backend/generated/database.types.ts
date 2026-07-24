@@ -237,6 +237,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_create_staff_principal: {
+        Args: {
+          p_idempotency_key: string
+          p_reason: string
+          p_target_auth_user_id: string
+        }
+        Returns: Json
+      }
       admin_emergency_revoke_staff: {
         Args: {
           p_idempotency_key: string
@@ -382,6 +390,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_resolve_staff_user_exact: {
+        Args: { p_email: string }
+        Returns: Json
+      }
       admin_restore_staff: {
         Args: {
           p_idempotency_key: string
@@ -393,6 +405,15 @@ export type Database = {
       admin_revoke_role: {
         Args: {
           p_assignment_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_shorten_role_expiry: {
+        Args: {
+          p_assignment_id: string
+          p_expires_at: string
           p_idempotency_key: string
           p_reason: string
         }

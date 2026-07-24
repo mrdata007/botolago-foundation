@@ -36,10 +36,15 @@ import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setu
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AdminStaffRouteImport } from './routes/admin.staff'
+import { Route as AdminSecurityRouteImport } from './routes/admin.security'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
+import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
@@ -178,6 +183,26 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const AdminStaffRoute = AdminStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSecurityRoute = AdminSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => AdminRoute,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -200,6 +225,11 @@ const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
   path: '/$leagueId',
   getParentRoute: () => FantasyLeaguesRoute,
 } as any)
+const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
+  id: '/$principalId',
+  path: '/$principalId',
+  getParentRoute: () => AdminStaffRoute,
+} as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -214,7 +244,7 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRouteWithChildren
@@ -223,6 +253,10 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/security': typeof AdminSecurityRoute
+  '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -244,12 +278,13 @@ export interface FileRoutesByFullPath {
   '/fantasy/': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
@@ -257,6 +292,10 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/security': typeof AdminSecurityRoute
+  '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -278,13 +317,14 @@ export interface FileRoutesByTo {
   '/fantasy': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRouteWithChildren
@@ -293,6 +333,10 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/security': typeof AdminSecurityRoute
+  '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -314,6 +358,7 @@ export interface FileRoutesById {
   '/fantasy/': typeof FantasyIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
 }
@@ -330,6 +375,10 @@ export interface FileRouteTypes {
     | '/profile'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/approvals'
+    | '/admin/audit'
+    | '/admin/security'
+    | '/admin/staff'
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -351,6 +400,7 @@ export interface FileRouteTypes {
     | '/fantasy/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/players/$playerId'
   fileRoutesByTo: FileRoutesByTo
@@ -364,6 +414,10 @@ export interface FileRouteTypes {
     | '/profile'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/approvals'
+    | '/admin/audit'
+    | '/admin/security'
+    | '/admin/staff'
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -385,6 +439,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/players/$playerId'
   id:
@@ -399,6 +454,10 @@ export interface FileRouteTypes {
     | '/profile'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/approvals'
+    | '/admin/audit'
+    | '/admin/security'
+    | '/admin/staff'
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -420,13 +479,14 @@ export interface FileRouteTypes {
     | '/fantasy/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/players/$playerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   FantasyRoute: typeof FantasyRouteWithChildren
   MatchesRoute: typeof MatchesRouteWithChildren
@@ -630,6 +690,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/admin/staff': {
+      id: '/admin/staff'
+      path: '/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/security': {
+      id: '/admin/security'
+      path: '/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AdminSecurityRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/approvals': {
+      id: '/admin/approvals'
+      path: '/approvals'
+      fullPath: '/admin/approvals'
+      preLoaderRoute: typeof AdminApprovalsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -658,6 +746,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyLeaguesLeagueIdRouteImport
       parentRoute: typeof FantasyLeaguesRoute
     }
+    '/admin/staff/$principalId': {
+      id: '/admin/staff/$principalId'
+      path: '/$principalId'
+      fullPath: '/admin/staff/$principalId'
+      preLoaderRoute: typeof AdminStaffPrincipalIdRouteImport
+      parentRoute: typeof AdminStaffRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -674,6 +769,34 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminStaffRouteChildren {
+  AdminStaffPrincipalIdRoute: typeof AdminStaffPrincipalIdRoute
+}
+
+const AdminStaffRouteChildren: AdminStaffRouteChildren = {
+  AdminStaffPrincipalIdRoute: AdminStaffPrincipalIdRoute,
+}
+
+const AdminStaffRouteWithChildren = AdminStaffRoute._addFileChildren(
+  AdminStaffRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminApprovalsRoute: typeof AdminApprovalsRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminSecurityRoute: typeof AdminSecurityRoute
+  AdminStaffRoute: typeof AdminStaffRouteWithChildren
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminApprovalsRoute: AdminApprovalsRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminSecurityRoute: AdminSecurityRoute,
+  AdminStaffRoute: AdminStaffRouteWithChildren,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -773,7 +896,7 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
   MatchesRoute: MatchesRouteWithChildren,

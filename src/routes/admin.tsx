@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { loadAdminRouteAccess } from "@/backend/admin/route-access.functions";
@@ -41,6 +41,15 @@ function AdminStatePanel({
         <p className="text-sm text-slate-400">{copy.subtitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{content.title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
+        {(state === "recent_auth_required" || state === "mfa_required") && (
+          <Link
+            to="/auth/login"
+            search={{ next: "/admin" }}
+            className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          >
+            {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
+          </Link>
+        )}
       </section>
     </main>
   );
@@ -50,6 +59,9 @@ function AdminRoute() {
   const result = Route.useLoaderData() as AdminRouteState;
   const { lang } = useI18n();
   const copy = getAdminCopy(lang);
+  const isAdminRoot = useRouterState({
+    select: (state) => state.location.pathname === "/admin",
+  });
   if (result.state !== "authorized") {
     return <AdminStatePanel state={result.state} copy={copy} />;
   }
@@ -70,36 +82,83 @@ function AdminRoute() {
               <h1 className="text-2xl font-semibold">{copy.title}</h1>
             </div>
           </div>
+          <nav
+            className="mt-5 flex flex-wrap gap-2"
+            aria-label={copy.dir === "rtl" ? "أقسام الإدارة" : "Sections administratives"}
+          >
+            {[
+              {
+                to: "/admin/staff" as const,
+                label: copy.dir === "rtl" ? "طاقم الإدارة" : "Personnel",
+                permission: "security.manage_staff",
+              },
+              {
+                to: "/admin/approvals" as const,
+                label: copy.dir === "rtl" ? "الموافقات" : "Approbations",
+                permission: "security.manage_staff",
+              },
+              {
+                to: "/admin/audit" as const,
+                label: copy.dir === "rtl" ? "سجل الأمان" : "Audit",
+                permission: "security.read_audit",
+              },
+              {
+                to: "/admin/security" as const,
+                label: copy.dir === "rtl" ? "الأمان" : "Sécurité",
+                permission: "security.revoke_staff",
+              },
+            ]
+              .filter((item) =>
+                result.context.permissions.includes(
+                  item.permission as (typeof result.context.permissions)[number],
+                ),
+              )
+              .map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="inline-flex min-h-11 items-center rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium outline-none hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  activeProps={{ className: "border-emerald-500 bg-emerald-500/10" }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+          </nav>
         </header>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
-          <SafeCard title={copy.labels.identity}>
-            <p>{result.identity.emailSummary ?? result.identity.userId}</p>
-          </SafeCard>
-          <SafeCard title={copy.labels.roles}>
-            <p>{roleNames.length > 0 ? roleNames.join(", ") : copy.labels.none}</p>
-          </SafeCard>
-          <SafeCard title={copy.labels.permissions}>
-            <p>{result.context.permissions.length}</p>
-          </SafeCard>
-          <SafeCard title={copy.labels.security}>
-            <p>AAL2 · {result.context.recentAuthWindowSeconds / 60} min</p>
-            <p className="mt-1 text-xs text-slate-400">
-              {copy.labels.pendingRevocation}: {result.context.pendingSessionRevocationCount}
-            </p>
-          </SafeCard>
-        </section>
+        {isAdminRoot && (
+          <>
+            <section className="mt-6 grid gap-4 md:grid-cols-2">
+              <SafeCard title={copy.labels.identity}>
+                <p>{result.identity.emailSummary ?? result.identity.userId}</p>
+              </SafeCard>
+              <SafeCard title={copy.labels.roles}>
+                <p>{roleNames.length > 0 ? roleNames.join(", ") : copy.labels.none}</p>
+              </SafeCard>
+              <SafeCard title={copy.labels.permissions}>
+                <p>{result.context.permissions.length}</p>
+              </SafeCard>
+              <SafeCard title={copy.labels.security}>
+                <p>AAL2 · {result.context.recentAuthWindowSeconds / 60} min</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  {copy.labels.pendingRevocation}: {result.context.pendingSessionRevocationCount}
+                </p>
+              </SafeCard>
+            </section>
 
-        <section className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={copy.title}>
-          {copy.sections.map((section) => (
-            <div
-              key={section}
-              className="rounded-lg border border-dashed border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-300"
-            >
-              {section}
-            </div>
-          ))}
-        </section>
+            <section className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={copy.title}>
+              {copy.sections.map((section) => (
+                <div
+                  key={section}
+                  className="rounded-lg border border-dashed border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-300"
+                >
+                  {section}
+                </div>
+              ))}
+            </section>
+          </>
+        )}
+        <Outlet />
       </div>
     </main>
   );
