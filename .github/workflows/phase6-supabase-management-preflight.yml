@@ -22,6 +22,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
       EXPECTED_PROJECT_REF: srdrflfrfpwixsllveid
+      CONFIRMATION: ${{ inputs.confirmation }}
 
     steps:
       - name: Run read-only Management API preflight
@@ -32,7 +33,7 @@ jobs:
           fi
           set -euo pipefail
 
-          if [[ "${{ inputs.confirmation }}" != "RUN_SUPABASE_MANAGEMENT_PREFLIGHT" ]]; then
+          if [[ "$CONFIRMATION" != "RUN_SUPABASE_MANAGEMENT_PREFLIGHT" ]]; then
             echo "Invalid confirmation value."
             exit 2
           fi
