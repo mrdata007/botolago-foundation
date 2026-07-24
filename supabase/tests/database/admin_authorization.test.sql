@@ -1007,17 +1007,21 @@ select set_config(
   true
 );
 set local role service_role;
-select extensions.ok(
-  jsonb_array_length(api.admin_claim_session_revocations(100)) > 0,
-  'trusted worker claims bounded session-revocation requests'
+select extensions.throws_ok(
+  $$select api.admin_claim_session_revocations(100)$$,
+  '42501',
+  null,
+  'the superseded non-leased worker claim is no longer executable'
 );
-select extensions.lives_ok(
+select extensions.throws_ok(
   $$select api.admin_complete_session_revocation(
     current_setting('test.phase7a_revocation_request_id')::uuid,
     true,
     null
   )$$,
-  'trusted worker completes a claimed Auth session revocation'
+  '42501',
+  null,
+  'the superseded non-leased worker completion is no longer executable'
 );
 reset role;
 select extensions.is(
@@ -1026,8 +1030,8 @@ select extensions.is(
     from app_private.staff_session_revocation_requests
     where id = current_setting('test.phase7a_revocation_request_id')::uuid
   ),
-  'completed',
-  'session-revocation completion is independently persisted'
+  'pending',
+  'the superseded worker cannot mutate the pending revocation'
 );
 
 select extensions.throws_ok(

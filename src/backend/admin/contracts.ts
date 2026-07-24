@@ -73,6 +73,7 @@ const staffContextRoleSchema = z.object({
 });
 
 export const staffContextSchema = z.object({
+  isStaff: z.literal(true),
   staffPrincipalId: z.string().uuid(),
   status: staffPrincipalStatusSchema,
   roles: z.array(staffContextRoleSchema),
@@ -82,10 +83,14 @@ export const staffContextSchema = z.object({
   mfaEnrolled: z.boolean(),
   currentAal: z.enum(["aal1", "aal2"]),
   recentAuthRequired: z.boolean(),
+  recentAuthSufficient: z.boolean(),
   recentAuthWindowSeconds: z.literal(900),
+  pendingSessionRevocation: z.boolean(),
+  pendingSessionRevocationCount: z.number().int().nonnegative(),
   accessAllowed: z.boolean(),
   suspended: z.boolean(),
   revoked: z.boolean(),
+  cachePolicy: z.literal("private, no-store"),
 });
 
 export const staffAssignmentSchema = z.object({
@@ -141,6 +146,10 @@ export const adminAuditEventSchema = z.object({
   effectivePermissions: z.array(adminPermissionSchema),
   action: z.string().regex(/^[a-z][a-z0-9_]{1,31}\.[a-z][a-z0-9_]{2,63}$/),
   targetDomain: z.string().regex(/^[a-z][a-z0-9_]{2,31}$/),
+  targetEntityType: z
+    .string()
+    .regex(/^[a-z][a-z0-9_]{1,31}$/)
+    .optional(),
   targetEntityId: z.string().uuid().nullable(),
   reason: z.string().min(8).max(500),
   requestId: z.string().uuid(),
@@ -151,6 +160,7 @@ export const adminAuditEventSchema = z.object({
   environment: z.enum(["local", "test", "staging", "production", "unknown"]),
   outcome: z.enum(["succeeded", "denied", "failed"]),
   errorCode: z.string().nullable(),
+  syntheticTest: z.boolean().optional(),
   occurredAt: z.string().datetime({ offset: true }),
 });
 

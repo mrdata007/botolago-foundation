@@ -212,6 +212,15 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: Json
       }
+      admin_claim_session_revocations_v2: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+          p_worker_run_id: string
+        }
+        Returns: Json
+      }
       admin_complete_session_revocation: {
         Args: {
           p_error_code?: string
@@ -219,6 +228,14 @@ export type Database = {
           p_succeeded: boolean
         }
         Returns: undefined
+      }
+      admin_complete_session_revocation_v2: {
+        Args: {
+          p_lease_token: string
+          p_request_id: string
+          p_result_code: string
+        }
+        Returns: Json
       }
       admin_emergency_revoke_staff: {
         Args: {
@@ -238,9 +255,48 @@ export type Database = {
         Returns: Json
       }
       admin_expire_approvals: { Args: { p_limit?: number }; Returns: number }
+      admin_fail_session_revocation: {
+        Args: {
+          p_error_code: string
+          p_error_summary: string
+          p_lease_token: string
+          p_request_id: string
+          p_retryable: boolean
+        }
+        Returns: Json
+      }
+      admin_finish_session_revocation_worker: {
+        Args: {
+          p_error_code?: string
+          p_status: string
+          p_worker_run_id: string
+        }
+        Returns: Json
+      }
       admin_get_approval: { Args: { p_approval_id: string }; Returns: Json }
+      admin_get_revocation_worker_health: { Args: never; Returns: Json }
+      admin_get_session_revocation_status: {
+        Args: { p_staff_principal_id: string }
+        Returns: Json
+      }
+      admin_get_staff_principal: {
+        Args: { p_staff_principal_id: string }
+        Returns: Json
+      }
       admin_list_active_assignments: {
         Args: { p_staff_principal_id: string }
+        Returns: Json
+      }
+      admin_list_approval_queue: {
+        Args: {
+          p_before_id?: string
+          p_before_requested_at?: string
+          p_execution_status?: string
+          p_limit?: number
+          p_scope?: string
+          p_status?: string
+          p_target_domain?: string
+        }
         Returns: Json
       }
       admin_list_assignment_history: {
@@ -257,6 +313,36 @@ export type Database = {
           p_before_id?: number
           p_before_occurred_at?: string
           p_limit?: number
+        }
+        Returns: Json
+      }
+      admin_list_audit_events_v2: {
+        Args: {
+          p_action?: string
+          p_actor_principal_id?: string
+          p_approval_id?: string
+          p_before_id?: number
+          p_before_occurred_at?: string
+          p_correlation_id?: string
+          p_from?: string
+          p_limit?: number
+          p_outcome?: string
+          p_synthetic_test?: boolean
+          p_target_domain?: string
+          p_target_entity_type?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      admin_list_role_catalog: { Args: never; Returns: Json }
+      admin_list_staff_assignments: {
+        Args: {
+          p_assignment_status?: string
+          p_before_created_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_principal_status?: string
+          p_role_name?: string
         }
         Returns: Json
       }
@@ -277,6 +363,10 @@ export type Database = {
           p_reason: string
           p_reference: string
         }
+        Returns: Json
+      }
+      admin_replay_session_revocation_dead_letter: {
+        Args: { p_reason: string; p_request_id: string }
         Returns: Json
       }
       admin_request_approval: {
@@ -306,6 +396,10 @@ export type Database = {
           p_idempotency_key: string
           p_reason: string
         }
+        Returns: Json
+      }
+      admin_start_session_revocation_worker: {
+        Args: { p_synthetic_test?: boolean; p_worker_id: string }
         Returns: Json
       }
       admin_suspend_staff: {

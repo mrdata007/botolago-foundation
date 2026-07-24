@@ -9,62 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as FantasyRouteImport } from './routes/fantasy'
-import { Route as MatchesRouteImport } from './routes/matches'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as NewsRouteImport } from './routes/news'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
-import { Route as AuthLoginRouteImport } from './routes/auth.login'
-import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
-import { Route as AuthRegisterRouteImport } from './routes/auth.register'
-import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
-import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
+import { Route as NewsRouteImport } from './routes/news'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MatchesRouteImport } from './routes/matches'
+import { Route as FantasyRouteImport } from './routes/fantasy'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
-import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
-import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
-import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
-import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
-import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
-import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
-import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
-import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
-import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
-import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
+import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
+import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
+import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
+import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
+import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
+import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
+import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
+import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
+import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
+import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
+import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
+import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
+import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FantasyRoute = FantasyRouteImport.update({
-  id: '/fantasy',
-  path: '/fantasy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MatchesRoute = MatchesRouteImport.update({
-  id: '/matches',
-  path: '/matches',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsRoute = NewsRouteImport.update({
@@ -72,96 +53,54 @@ const NewsRoute = NewsRouteImport.update({
   path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
+const MatchesRoute = MatchesRouteImport.update({
+  id: '/matches',
+  path: '/matches',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => AuthRoute,
+const FantasyRoute = FantasyRouteImport.update({
+  id: '/fantasy',
+  path: '/fantasy',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AuthRoute,
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
-  id: '/profile-setup',
-  path: '/profile-setup',
-  getParentRoute: () => AuthRoute,
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRegisterRoute = AuthRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthUpdatePasswordRoute = AuthUpdatePasswordRouteImport.update({
-  id: '/update-password',
-  path: '/update-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthVerifyRoute = AuthVerifyRouteImport.update({
-  id: '/verify',
-  path: '/verify',
-  getParentRoute: () => AuthRoute,
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const FantasyIndexRoute = FantasyIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => FantasyRoute,
 } as any)
-const FantasyCreateRoute = FantasyCreateRouteImport.update({
-  id: '/create',
-  path: '/create',
-  getParentRoute: () => FantasyRoute,
+const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
+  id: '/$articleId',
+  path: '/$articleId',
+  getParentRoute: () => NewsRoute,
 } as any)
-const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
-  id: '/fixtures',
-  path: '/fixtures',
-  getParentRoute: () => FantasyRoute,
+const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
+  id: '/$matchId',
+  path: '/$matchId',
+  getParentRoute: () => MatchesRoute,
 } as any)
-const FantasyLeaguesRoute = FantasyLeaguesRouteImport.update({
-  id: '/leagues',
-  path: '/leagues',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyPlayersRoute = FantasyPlayersRouteImport.update({
-  id: '/players',
-  path: '/players',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyPointsRoute = FantasyPointsRouteImport.update({
-  id: '/points',
-  path: '/points',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyRulesRoute = FantasyRulesRouteImport.update({
-  id: '/rules',
-  path: '/rules',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyTeamRoute = FantasyTeamRouteImport.update({
-  id: '/team',
-  path: '/team',
+const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
   getParentRoute: () => FantasyRoute,
 } as any)
 const FantasyTopPlayersRoute = FantasyTopPlayersRouteImport.update({
@@ -169,25 +108,97 @@ const FantasyTopPlayersRoute = FantasyTopPlayersRouteImport.update({
   path: '/top-players',
   getParentRoute: () => FantasyRoute,
 } as any)
-const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
-  id: '/transfers',
-  path: '/transfers',
+const FantasyTeamRoute = FantasyTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => FantasyRoute,
 } as any)
-const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
-  id: '/$matchId',
-  path: '/$matchId',
-  getParentRoute: () => MatchesRoute,
+const FantasyRulesRoute = FantasyRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => FantasyRoute,
 } as any)
-const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
-  id: '/$articleId',
-  path: '/$articleId',
-  getParentRoute: () => NewsRoute,
+const FantasyPointsRoute = FantasyPointsRouteImport.update({
+  id: '/points',
+  path: '/points',
+  getParentRoute: () => FantasyRoute,
 } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
-  getParentRoute: () => rootRouteImport,
+const FantasyPlayersRoute = FantasyPlayersRouteImport.update({
+  id: '/players',
+  path: '/players',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyLeaguesRoute = FantasyLeaguesRouteImport.update({
+  id: '/leagues',
+  path: '/leagues',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
+  id: '/fixtures',
+  path: '/fixtures',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyCreateRoute = FantasyCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthUpdatePasswordRoute = AuthUpdatePasswordRouteImport.update({
+  id: '/update-password',
+  path: '/update-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
+  id: '/profile-setup',
+  path: '/profile-setup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
+  id: '/$playerId',
+  path: '/$playerId',
+  getParentRoute: () => FantasyPlayersRoute,
+} as any)
+const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
+  id: '/$leagueId',
+  path: '/$leagueId',
+  getParentRoute: () => FantasyLeaguesRoute,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
@@ -195,19 +206,15 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
-const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
-  id: '/$leagueId',
-  path: '/$leagueId',
-  getParentRoute: () => FantasyLeaguesRoute,
-} as any)
-const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
-  id: '/$playerId',
-  path: '/$playerId',
-  getParentRoute: () => FantasyPlayersRoute,
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRouteWithChildren
@@ -242,6 +249,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRouteWithChildren
   '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
@@ -276,6 +284,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
   '/matches': typeof MatchesRouteWithChildren
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/fantasy'
     | '/matches'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/matches'
     | '/mcp'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/fantasy'
     | '/matches'
@@ -414,6 +426,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRouteWithChildren
   FantasyRoute: typeof FantasyRouteWithChildren
   MatchesRoute: typeof MatchesRouteWithChildren
@@ -428,39 +441,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/fantasy': {
-      id: '/fantasy'
-      path: '/fantasy'
-      fullPath: '/fantasy'
-      preLoaderRoute: typeof FantasyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/matches': {
-      id: '/matches'
-      path: '/matches'
-      fullPath: '/matches'
-      preLoaderRoute: typeof MatchesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news': {
@@ -470,75 +455,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/list-tools': {
-      id: '/.mcp/list-tools'
-      path: '/.mcp/list-tools'
-      fullPath: '/.mcp/list-tools'
-      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+    '/matches': {
+      id: '/matches'
+      path: '/matches'
+      fullPath: '/matches'
+      preLoaderRoute: typeof MatchesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/fantasy': {
+      id: '/fantasy'
+      path: '/fantasy'
+      fullPath: '/fantasy'
+      preLoaderRoute: typeof FantasyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/auth/forgot-password': {
-      id: '/auth/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/auth/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
-      parentRoute: typeof AuthRoute
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/profile-setup': {
-      id: '/auth/profile-setup'
-      path: '/profile-setup'
-      fullPath: '/auth/profile-setup'
-      preLoaderRoute: typeof AuthProfileSetupRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/register': {
-      id: '/auth/register'
-      path: '/register'
-      fullPath: '/auth/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/update-password': {
-      id: '/auth/update-password'
-      path: '/update-password'
-      fullPath: '/auth/update-password'
-      preLoaderRoute: typeof AuthUpdatePasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/verify': {
-      id: '/auth/verify'
-      path: '/verify'
-      fullPath: '/auth/verify'
-      preLoaderRoute: typeof AuthVerifyRouteImport
-      parentRoute: typeof AuthRoute
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/fantasy/': {
       id: '/fantasy/'
@@ -547,53 +504,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyIndexRouteImport
       parentRoute: typeof FantasyRoute
     }
-    '/fantasy/create': {
-      id: '/fantasy/create'
-      path: '/create'
-      fullPath: '/fantasy/create'
-      preLoaderRoute: typeof FantasyCreateRouteImport
-      parentRoute: typeof FantasyRoute
+    '/news/$articleId': {
+      id: '/news/$articleId'
+      path: '/$articleId'
+      fullPath: '/news/$articleId'
+      preLoaderRoute: typeof NewsArticleIdRouteImport
+      parentRoute: typeof NewsRoute
     }
-    '/fantasy/fixtures': {
-      id: '/fantasy/fixtures'
-      path: '/fixtures'
-      fullPath: '/fantasy/fixtures'
-      preLoaderRoute: typeof FantasyFixturesRouteImport
-      parentRoute: typeof FantasyRoute
+    '/matches/$matchId': {
+      id: '/matches/$matchId'
+      path: '/$matchId'
+      fullPath: '/matches/$matchId'
+      preLoaderRoute: typeof MatchesMatchIdRouteImport
+      parentRoute: typeof MatchesRoute
     }
-    '/fantasy/leagues': {
-      id: '/fantasy/leagues'
-      path: '/leagues'
-      fullPath: '/fantasy/leagues'
-      preLoaderRoute: typeof FantasyLeaguesRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/players': {
-      id: '/fantasy/players'
-      path: '/players'
-      fullPath: '/fantasy/players'
-      preLoaderRoute: typeof FantasyPlayersRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/points': {
-      id: '/fantasy/points'
-      path: '/points'
-      fullPath: '/fantasy/points'
-      preLoaderRoute: typeof FantasyPointsRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/rules': {
-      id: '/fantasy/rules'
-      path: '/rules'
-      fullPath: '/fantasy/rules'
-      preLoaderRoute: typeof FantasyRulesRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/team': {
-      id: '/fantasy/team'
-      path: '/team'
-      fullPath: '/fantasy/team'
-      preLoaderRoute: typeof FantasyTeamRouteImport
+    '/fantasy/transfers': {
+      id: '/fantasy/transfers'
+      path: '/transfers'
+      fullPath: '/fantasy/transfers'
+      preLoaderRoute: typeof FantasyTransfersRouteImport
       parentRoute: typeof FantasyRoute
     }
     '/fantasy/top-players': {
@@ -603,40 +532,124 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyTopPlayersRouteImport
       parentRoute: typeof FantasyRoute
     }
-    '/fantasy/transfers': {
-      id: '/fantasy/transfers'
-      path: '/transfers'
-      fullPath: '/fantasy/transfers'
-      preLoaderRoute: typeof FantasyTransfersRouteImport
+    '/fantasy/team': {
+      id: '/fantasy/team'
+      path: '/team'
+      fullPath: '/fantasy/team'
+      preLoaderRoute: typeof FantasyTeamRouteImport
       parentRoute: typeof FantasyRoute
     }
-    '/matches/$matchId': {
-      id: '/matches/$matchId'
-      path: '/$matchId'
-      fullPath: '/matches/$matchId'
-      preLoaderRoute: typeof MatchesMatchIdRouteImport
-      parentRoute: typeof MatchesRoute
+    '/fantasy/rules': {
+      id: '/fantasy/rules'
+      path: '/rules'
+      fullPath: '/fantasy/rules'
+      preLoaderRoute: typeof FantasyRulesRouteImport
+      parentRoute: typeof FantasyRoute
     }
-    '/news/$articleId': {
-      id: '/news/$articleId'
-      path: '/$articleId'
-      fullPath: '/news/$articleId'
-      preLoaderRoute: typeof NewsArticleIdRouteImport
-      parentRoute: typeof NewsRoute
+    '/fantasy/points': {
+      id: '/fantasy/points'
+      path: '/points'
+      fullPath: '/fantasy/points'
+      preLoaderRoute: typeof FantasyPointsRouteImport
+      parentRoute: typeof FantasyRoute
     }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+    '/fantasy/players': {
+      id: '/fantasy/players'
+      path: '/players'
+      fullPath: '/fantasy/players'
+      preLoaderRoute: typeof FantasyPlayersRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/leagues': {
+      id: '/fantasy/leagues'
+      path: '/leagues'
+      fullPath: '/fantasy/leagues'
+      preLoaderRoute: typeof FantasyLeaguesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/fixtures': {
+      id: '/fantasy/fixtures'
+      path: '/fixtures'
+      fullPath: '/fantasy/fixtures'
+      preLoaderRoute: typeof FantasyFixturesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/create': {
+      id: '/fantasy/create'
+      path: '/create'
+      fullPath: '/fantasy/create'
+      preLoaderRoute: typeof FantasyCreateRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/update-password': {
+      id: '/auth/update-password'
+      path: '/update-password'
+      fullPath: '/auth/update-password'
+      preLoaderRoute: typeof AuthUpdatePasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/profile-setup': {
+      id: '/auth/profile-setup'
+      path: '/profile-setup'
+      fullPath: '/auth/profile-setup'
+      preLoaderRoute: typeof AuthProfileSetupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/fantasy/players/$playerId': {
+      id: '/fantasy/players/$playerId'
+      path: '/$playerId'
+      fullPath: '/fantasy/players/$playerId'
+      preLoaderRoute: typeof FantasyPlayersPlayerIdRouteImport
+      parentRoute: typeof FantasyPlayersRoute
     }
     '/fantasy/leagues/$leagueId': {
       id: '/fantasy/leagues/$leagueId'
@@ -645,12 +658,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyLeaguesLeagueIdRouteImport
       parentRoute: typeof FantasyLeaguesRoute
     }
-    '/fantasy/players/$playerId': {
-      id: '/fantasy/players/$playerId'
-      path: '/$playerId'
-      fullPath: '/fantasy/players/$playerId'
-      preLoaderRoute: typeof FantasyPlayersPlayerIdRouteImport
-      parentRoute: typeof FantasyPlayersRoute
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -753,6 +773,7 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
   MatchesRoute: MatchesRouteWithChildren,
