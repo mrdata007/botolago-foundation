@@ -1,0 +1,543 @@
+name: Phase 7E-A Production V2 read-only preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit approved for the read-only preflight
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_PHASE7E_A_PRODUCTION_PREFLIGHT
+        required: true
+        type: string
+
+concurrency:
+  group: phase7e-a-production-preflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  production-preflight:
+    name: Protected Production V2 inspection
+    if: github.repository == 'mrdata007/botolago-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      EXPECTED_PROJECT_NAME: BotolaGO Production V2
+      EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
+      EXPECTED_REGION: eu-west-3
+      EXPECTED_TARGET_ENVIRONMENT: production-v2
+      KNOWN_STAGING_REF: srdrflfrfpwixsllveid
+      BOTOLAGO_ADMIN_ENVIRONMENT: ${{ vars.BOTOLAGO_ADMIN_ENVIRONMENT }}
+      BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF: ${{ vars.BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF }}
+      BOTOLAGO_TARGET_ENVIRONMENT: ${{ vars.BOTOLAGO_TARGET_ENVIRONMENT }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+      SUPABASE_REPOSITORY_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+    steps:
+      - name: Initialize protected runtime and enforce target guard
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for secret_value in "${SUPABASE_ACCESS_TOKEN:-}" "${SUPABASE_SECRET_KEY:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+
+          if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_SECRET_KEY:-}" ]]; then
+            echo "Protected credential injection failed."
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_PHASE7E_A_PRODUCTION_PREFLIGHT" ]]; then
+            echo "Invalid manual confirmation."
+            exit 2
+          fi
+          if [[ "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "The dispatched commit is not the checked-out main commit."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ]]; then
+            echo "Production project-ref guard failed."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" == "$KNOWN_STAGING_REF" ]]; then
+            echo "Staging project selection is forbidden."
+            exit 2
+          fi
+          if [[ "$BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ]]; then
+            echo "Admin runtime project-ref guard failed."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_NAME" != "$EXPECTED_PROJECT_NAME" ]]; then
+            echo "Production project-name guard failed."
+            exit 2
+          fi
+          if [[ "$BOTOLAGO_TARGET_ENVIRONMENT" != "$EXPECTED_TARGET_ENVIRONMENT" ]]; then
+            echo "Production target-environment guard failed."
+            exit 2
+          fi
+          if [[ "$BOTOLAGO_ADMIN_ENVIRONMENT" != "production" ]]; then
+            echo "Admin environment guard failed."
+            exit 2
+          fi
+
+          configured_url="${SUPABASE_REPOSITORY_URL:-}"
+          if [[ -z "$configured_url" ]]; then
+            configured_url="${SUPABASE_PRODUCTION_URL:-}"
+          elif [[ -n "${SUPABASE_PRODUCTION_URL:-}" && "$configured_url" != "$SUPABASE_PRODUCTION_URL" ]]; then
+            echo "Production URL variables disagree."
+            exit 2
+          fi
+          configured_url="${configured_url%/}"
+          if [[ "$configured_url" != "https://${EXPECTED_PROJECT_REF}.supabase.co" ]]; then
+            echo "Production URL guard failed."
+            exit 2
+          fi
+
+          runtime_dir="$RUNNER_TEMP/botolago-phase7e-a"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "PHASE7E_RUNTIME_DIR=$runtime_dir"
+            echo "PHASE7E_EVIDENCE_DIR=$evidence_dir"
+            echo "SUPABASE_PREFLIGHT_URL=$configured_url"
+          } >> "$GITHUB_ENV"
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+
+          echo "Target guard: PASS"
+          echo "Protected credentials: present and masked"
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Collect sanitized Management API evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api_get() {
+            local endpoint="$1"
+            local output_file="$2"
+            local status
+            status="$(
+              curl --silent --show-error \
+                --proto '=https' \
+                --tlsv1.2 \
+                --connect-timeout 10 \
+                --max-time 30 \
+                --output "$output_file" \
+                --write-out '%{http_code}' \
+                --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                "https://api.supabase.com${endpoint}"
+            )"
+            if [[ "$status" != "200" ]]; then
+              echo "Management API read failed: endpoint=$endpoint status=$status"
+              exit 3
+            fi
+          }
+
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF" "$PHASE7E_RUNTIME_DIR/project.json"
+          api_get "/v1/organizations" "$PHASE7E_RUNTIME_DIR/organizations.json"
+
+          returned_ref="$(jq -r '.ref // .id // empty' "$PHASE7E_RUNTIME_DIR/project.json")"
+          returned_name="$(jq -r '.name // empty' "$PHASE7E_RUNTIME_DIR/project.json")"
+          returned_region="$(jq -r '.region // empty' "$PHASE7E_RUNTIME_DIR/project.json")"
+          returned_status="$(jq -r '.status // empty' "$PHASE7E_RUNTIME_DIR/project.json")"
+          organization_id="$(jq -r '.organization_id // empty' "$PHASE7E_RUNTIME_DIR/project.json")"
+
+          if [[ "$returned_ref" != "$EXPECTED_PROJECT_REF" ||
+                "$returned_name" != "$EXPECTED_PROJECT_NAME" ||
+                "$returned_region" != "$EXPECTED_REGION" ||
+                "$returned_status" != "ACTIVE_HEALTHY" ||
+                -z "$organization_id" ]]; then
+            echo "Management API project identity or health guard failed."
+            exit 3
+          fi
+          if ! jq -e --arg id "$organization_id" '
+            (if type == "array" then . else (.organizations // []) end)
+            | any(.id == $id)
+          ' "$PHASE7E_RUNTIME_DIR/organizations.json" >/dev/null; then
+            echo "Authenticated account does not own the selected project."
+            exit 3
+          fi
+
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/billing/addons" "$PHASE7E_RUNTIME_DIR/addons.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/database/backups" "$PHASE7E_RUNTIME_DIR/backups.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/config/auth" "$PHASE7E_RUNTIME_DIR/auth.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/config/database/postgres" "$PHASE7E_RUNTIME_DIR/postgres.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/config/disk" "$PHASE7E_RUNTIME_DIR/disk.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/postgrest" "$PHASE7E_RUNTIME_DIR/postgrest.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/config/realtime" "$PHASE7E_RUNTIME_DIR/realtime.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/config/storage" "$PHASE7E_RUNTIME_DIR/storage.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/storage/buckets" "$PHASE7E_RUNTIME_DIR/buckets.json"
+          api_get "/v1/projects/$EXPECTED_PROJECT_REF/functions" "$PHASE7E_RUNTIME_DIR/functions.json"
+
+          auth_status="$(
+            curl --silent --show-error \
+              --proto '=https' \
+              --tlsv1.2 \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              --header "apikey: $SUPABASE_SECRET_KEY" \
+              "$SUPABASE_PREFLIGHT_URL/auth/v1/settings"
+          )"
+          if [[ "$auth_status" != "200" ]]; then
+            echo "Server-only credential does not reach the guarded Auth project."
+            exit 3
+          fi
+
+          jq -n \
+            --slurpfile project "$PHASE7E_RUNTIME_DIR/project.json" \
+            --slurpfile organizations "$PHASE7E_RUNTIME_DIR/organizations.json" \
+            --slurpfile addons "$PHASE7E_RUNTIME_DIR/addons.json" \
+            --slurpfile backups "$PHASE7E_RUNTIME_DIR/backups.json" \
+            --slurpfile auth "$PHASE7E_RUNTIME_DIR/auth.json" \
+            --slurpfile postgres "$PHASE7E_RUNTIME_DIR/postgres.json" \
+            --slurpfile disk "$PHASE7E_RUNTIME_DIR/disk.json" \
+            --slurpfile postgrest "$PHASE7E_RUNTIME_DIR/postgrest.json" \
+            --slurpfile realtime "$PHASE7E_RUNTIME_DIR/realtime.json" \
+            --slurpfile storage "$PHASE7E_RUNTIME_DIR/storage.json" \
+            --slurpfile buckets "$PHASE7E_RUNTIME_DIR/buckets.json" \
+            --slurpfile functions "$PHASE7E_RUNTIME_DIR/functions.json" '
+            ($project[0]) as $p |
+            ($organizations[0] | if type == "array" then . else (.organizations // []) end) as $orgs |
+            ($backups[0]) as $backup |
+            {
+              targetGuard: "passed",
+              project: {
+                ref: ($p.ref // $p.id),
+                name: $p.name,
+                organizationName: (($orgs | map(select(.id == $p.organization_id)) | first | .name) // "unavailable"),
+                region: $p.region,
+                status: $p.status,
+                databaseVersion: ($p.database.version // null),
+                postgresEngine: ($p.database.postgres_engine // null),
+                releaseChannel: ($p.database.release_channel // null)
+              },
+              computeCandidates: [
+                $addons[0]
+                | ..
+                | objects
+                | select((.addon_type? // .type? // "") == "compute_instance")
+                | {
+                    addonType: (.addon_type // .type),
+                    addonVariant: (.addon_variant // .variant // null),
+                    name: (.name // null),
+                    status: (.status // null),
+                    selected: (.selected // .current // null)
+                  }
+              ],
+              backup: {
+                region: ($backup.region // null),
+                walgEnabled: ($backup.walg_enabled // false),
+                pitrEnabled: ($backup.pitr_enabled // false),
+                completedCount: ([$backup.backups[]? | select((.status // "") == "COMPLETED")] | length),
+                latestCompletedAt: (
+                  [$backup.backups[]? | select((.status // "") == "COMPLETED") | .inserted_at]
+                  | sort
+                  | last
+                ),
+                earliestPhysicalUnix: ($backup.physical_backup_data.earliest_physical_backup_date_unix // null),
+                latestPhysicalUnix: ($backup.physical_backup_data.latest_physical_backup_date_unix // null)
+              },
+              auth: {
+                endpointStatus: 200,
+                disableSignup: ($auth[0].disable_signup // null),
+                autoConfirm: ($auth[0].mailer_autoconfirm // null),
+                jwtExpirySeconds: ($auth[0].jwt_exp // null),
+                mfaEnabled: ($auth[0].mfa_enabled // $auth[0].security_captcha_enabled // null)
+              },
+              databaseConfig: {
+                maxConnections: ($postgres[0].max_connections // null),
+                sslMinimumProtocol: ($postgres[0].ssl_min_protocol_version // null),
+                logLockWaits: ($postgres[0].log_lock_waits // null)
+              },
+              disk: {
+                attributes: ($disk[0].attributes // {}),
+                lastModifiedAt: ($disk[0].last_modified_at // null)
+              },
+              postgrest: {
+                exposedSchemas: (($postgrest[0].db_schema // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))),
+                extraSearchPath: (($postgrest[0].db_extra_search_path // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))),
+                maxRows: ($postgrest[0].max_rows // null),
+                poolSize: ($postgrest[0].db_pool // null)
+              },
+              realtime: {
+                privateOnly: ($realtime[0].private_only // null),
+                suspended: ($realtime[0].suspend // null),
+                presenceEnabled: ($realtime[0].presence_enabled // null)
+              },
+              storage: {
+                fileSizeLimit: ($storage[0].fileSizeLimit // null),
+                migrationVersion: ($storage[0].migrationVersion // null),
+                buckets: [
+                  $buckets[0][]?
+                  | {id, name, public, createdAt: .created_at}
+                ]
+              },
+              edgeFunctions: [
+                $functions[0][]?
+                | {slug, status, version, verifyJwt: .verify_jwt}
+              ]
+            }
+          ' > "$PHASE7E_EVIDENCE_DIR/management-summary.json"
+
+          echo "Management API preflight: PASS"
+          jq . "$PHASE7E_EVIDENCE_DIR/management-summary.json"
+
+      - name: Collect sanitized read-only database inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          inventory_sql="$(cat <<'SQL'
+          select jsonb_build_object(
+            'migrationHistory',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'version', version,
+                    'name', name,
+                    'statementCount', coalesce(array_length(statements, 1), 0),
+                    'statementsMd5', md5(array_to_string(coalesce(statements, array[]::text[]), E'\n'))
+                  )
+                  order by version
+                )
+                from supabase_migrations.schema_migrations
+              ), '[]'::jsonb),
+            'schemas',
+              coalesce((
+                select jsonb_agg(nspname order by nspname)
+                from pg_namespace
+                where nspname in ('api', 'app', 'app_private', 'auth', 'public', 'storage')
+              ), '[]'::jsonb),
+            'relations',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'schema', namespace.nspname,
+                    'name', relation.relname,
+                    'kind', relation.relkind,
+                    'rls', relation.relrowsecurity,
+                    'forceRls', relation.relforcerowsecurity
+                  )
+                  order by namespace.nspname, relation.relname
+                )
+                from pg_class relation
+                join pg_namespace namespace on namespace.oid = relation.relnamespace
+                where namespace.nspname in ('api', 'app', 'app_private')
+                  and relation.relkind in ('r', 'p', 'v', 'm')
+              ), '[]'::jsonb),
+            'routines',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'schema', namespace.nspname,
+                    'name', procedure.proname,
+                    'arguments', pg_get_function_identity_arguments(procedure.oid),
+                    'kind', procedure.prokind,
+                    'securityDefiner', procedure.prosecdef
+                  )
+                  order by namespace.nspname, procedure.proname, pg_get_function_identity_arguments(procedure.oid)
+                )
+                from pg_proc procedure
+                join pg_namespace namespace on namespace.oid = procedure.pronamespace
+                where namespace.nspname in ('api', 'app', 'app_private')
+              ), '[]'::jsonb),
+            'policies',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'schema', schemaname,
+                    'table', tablename,
+                    'name', policyname,
+                    'roles', roles,
+                    'command', cmd,
+                    'using', qual,
+                    'check', with_check
+                  )
+                  order by schemaname, tablename, policyname
+                )
+                from pg_policies
+                where schemaname in ('api', 'app', 'app_private', 'storage')
+              ), '[]'::jsonb),
+            'tableGrants',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'schema', table_schema,
+                    'name', table_name,
+                    'grantee', grantee,
+                    'privilege', privilege_type
+                  )
+                  order by table_schema, table_name, grantee, privilege_type
+                )
+                from information_schema.table_privileges
+                where table_schema in ('api', 'app', 'app_private')
+                  and grantee in ('PUBLIC', 'anon', 'authenticated', 'service_role')
+              ), '[]'::jsonb),
+            'routineGrants',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'schema', routine_schema,
+                    'name', routine_name,
+                    'grantee', grantee,
+                    'privilege', privilege_type
+                  )
+                  order by routine_schema, routine_name, grantee, privilege_type
+                )
+                from information_schema.routine_privileges
+                where routine_schema in ('api', 'app', 'app_private')
+                  and grantee in ('PUBLIC', 'anon', 'authenticated', 'service_role')
+              ), '[]'::jsonb),
+            'publications',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'name', publication.pubname,
+                    'allTables', publication.puballtables,
+                    'insert', publication.pubinsert,
+                    'update', publication.pubupdate,
+                    'delete', publication.pubdelete,
+                    'truncate', publication.pubtruncate
+                  )
+                  order by publication.pubname
+                )
+                from pg_publication publication
+              ), '[]'::jsonb),
+            'publicationTables',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'publication', pubname,
+                    'schema', schemaname,
+                    'table', tablename
+                  )
+                  order by pubname, schemaname, tablename
+                )
+                from pg_publication_tables
+              ), '[]'::jsonb),
+            'cronTableExists', to_regclass('cron.job') is not null,
+            'storageBuckets',
+              coalesce((
+                select jsonb_agg(
+                  jsonb_build_object('id', id, 'name', name, 'public', public)
+                  order by id
+                )
+                from storage.buckets
+              ), '[]'::jsonb)
+          ) as inventory;
+          SQL
+          )"
+
+          payload_file="$PHASE7E_RUNTIME_DIR/database-query.json"
+          response_file="$PHASE7E_RUNTIME_DIR/database-response.json"
+          jq -n --arg query "$inventory_sql" '{query: $query, read_only: true}' > "$payload_file"
+
+          status="$(
+            curl --silent --show-error \
+              --proto '=https' \
+              --tlsv1.2 \
+              --connect-timeout 10 \
+              --max-time 60 \
+              --request POST \
+              --output "$response_file" \
+              --write-out '%{http_code}' \
+              --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              --header 'Content-Type: application/json' \
+              --data-binary "@$payload_file" \
+              "https://api.supabase.com/v1/projects/$EXPECTED_PROJECT_REF/database/query"
+          )"
+          if [[ "$status" != "201" && "$status" != "200" ]]; then
+            echo "Read-only database inventory failed with HTTP $status."
+            exit 4
+          fi
+
+          jq '
+            if type == "array" then
+              (.[0].inventory // error("missing inventory"))
+            else
+              (.result[0].inventory // .data[0].inventory // error("missing inventory"))
+            end
+          ' "$response_file" > "$PHASE7E_EVIDENCE_DIR/database-inventory.json"
+
+          if jq -e '.cronTableExists == true' "$PHASE7E_EVIDENCE_DIR/database-inventory.json" >/dev/null; then
+            cron_payload="$PHASE7E_RUNTIME_DIR/cron-query.json"
+            cron_response="$PHASE7E_RUNTIME_DIR/cron-response.json"
+            jq -n --arg query \
+              "select jobid, schedule, database, username, active, command from cron.job order by jobid" \
+              '{query: $query, read_only: true}' > "$cron_payload"
+            cron_status="$(
+              curl --silent --show-error \
+                --proto '=https' \
+                --tlsv1.2 \
+                --connect-timeout 10 \
+                --max-time 30 \
+                --request POST \
+                --output "$cron_response" \
+                --write-out '%{http_code}' \
+                --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                --header 'Content-Type: application/json' \
+                --data-binary "@$cron_payload" \
+                "https://api.supabase.com/v1/projects/$EXPECTED_PROJECT_REF/database/query"
+            )"
+            if [[ "$cron_status" != "201" && "$cron_status" != "200" ]]; then
+              echo "Read-only cron inventory failed with HTTP $cron_status."
+              exit 4
+            fi
+            jq 'if type == "array" then . else (.result // .data // []) end' \
+              "$cron_response" > "$PHASE7E_EVIDENCE_DIR/cron-jobs.json"
+          else
+            printf '[]\n' > "$PHASE7E_EVIDENCE_DIR/cron-jobs.json"
+          fi
+
+          jq -n \
+            --slurpfile inventory "$PHASE7E_EVIDENCE_DIR/database-inventory.json" \
+            --slurpfile cron "$PHASE7E_EVIDENCE_DIR/cron-jobs.json" '{
+              migrationCount: ($inventory[0].migrationHistory | length),
+              schemaCount: ($inventory[0].schemas | length),
+              relationCount: ($inventory[0].relations | length),
+              routineCount: ($inventory[0].routines | length),
+              policyCount: ($inventory[0].policies | length),
+              cronJobCount: ($cron[0] | length),
+              publicationCount: ($inventory[0].publications | length)
+            }' > "$PHASE7E_EVIDENCE_DIR/database-summary.json"
+
+          echo "Read-only database inventory: PASS"
+          jq . "$PHASE7E_EVIDENCE_DIR/database-summary.json"
+
+      - name: Upload sanitized preflight evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: phase7e-a-production-preflight-${{ github.run_id }}
+          path: ${{ steps.runtime.outputs.evidence_dir }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove protected runtime files
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${PHASE7E_RUNTIME_DIR:-}" && -d "$PHASE7E_RUNTIME_DIR" ]]; then
+            find "$PHASE7E_RUNTIME_DIR" -type f -exec chmod 0600 {} \;
+            rm -rf -- "$PHASE7E_RUNTIME_DIR"
+          fi
+          echo "Protected runtime cleanup: complete"
