@@ -309,19 +309,8 @@ jobs:
 
           inventory_sql="$(cat <<'SQL'
           select jsonb_build_object(
-            'migrationHistory',
-              coalesce((
-                select jsonb_agg(
-                  jsonb_build_object(
-                    'version', version,
-                    'name', name,
-                    'statementCount', coalesce(array_length(statements, 1), 0),
-                    'statementsMd5', md5(array_to_string(coalesce(statements, array[]::text[]), E'\n'))
-                  )
-                  order by version
-                )
-                from supabase_migrations.schema_migrations
-              ), '[]'::jsonb),
+            'migrationTableExists', to_regclass('supabase_migrations.schema_migrations') is not null,
+            'migrationHistory', '[]'::jsonb,
             'schemas',
               coalesce((
                 select jsonb_agg(nspname order by nspname)
@@ -468,6 +457,10 @@ jobs:
           )"
           if [[ "$status" != "201" && "$status" != "200" ]]; then
             echo "Read-only database inventory failed with HTTP $status."
+            jq -r '[
+              (.code // .error_code // "database_query_failed"),
+              (.message // .error // "no sanitized message")
+            ] | map(tostring) | join(": ") | .[0:500]' "$response_file"
             exit 4
           fi
 
@@ -478,6 +471,54 @@ jobs:
               (.result[0].inventory // .data[0].inventory // error("missing inventory"))
             end
           ' "$response_file" > "$PHASE7E_EVIDENCE_DIR/database-inventory.json"
+
+          if jq -e '.migrationTableExists == true' "$PHASE7E_EVIDENCE_DIR/database-inventory.json" >/dev/null; then
+            migration_payload="$PHASE7E_RUNTIME_DIR/migration-query.json"
+            migration_response="$PHASE7E_RUNTIME_DIR/migration-response.json"
+            migration_rows="$PHASE7E_RUNTIME_DIR/migration-history.json"
+            jq -n --arg query \
+              "select jsonb_build_object(
+                 'version', version,
+                 'name', name,
+                 'statementCount', coalesce(array_length(statements, 1), 0),
+                 'statementsMd5', md5(array_to_string(coalesce(statements, array[]::text[]), E'\\n'))
+               ) as migration
+               from supabase_migrations.schema_migrations
+               order by version" \
+              '{query: $query, read_only: true}' > "$migration_payload"
+            migration_status="$(
+              curl --silent --show-error \
+                --proto '=https' \
+                --tlsv1.2 \
+                --connect-timeout 10 \
+                --max-time 30 \
+                --request POST \
+                --output "$migration_response" \
+                --write-out '%{http_code}' \
+                --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                --header 'Content-Type: application/json' \
+                --data-binary "@$migration_payload" \
+                "https://api.supabase.com/v1/projects/$EXPECTED_PROJECT_REF/database/query"
+            )"
+            if [[ "$migration_status" != "201" && "$migration_status" != "200" ]]; then
+              echo "Read-only migration inventory failed with HTTP $migration_status."
+              jq -r '[
+                (.code // .error_code // "migration_query_failed"),
+                (.message // .error // "no sanitized message")
+              ] | map(tostring) | join(": ") | .[0:500]' "$migration_response"
+              exit 4
+            fi
+            jq '[
+              (if type == "array" then . else (.result // .data // []) end)[]
+              | .migration
+            ]' "$migration_response" > "$migration_rows"
+            jq --slurpfile migrations "$migration_rows" \
+              '.migrationHistory = $migrations[0]' \
+              "$PHASE7E_EVIDENCE_DIR/database-inventory.json" \
+              > "$PHASE7E_RUNTIME_DIR/database-inventory-with-migrations.json"
+            mv "$PHASE7E_RUNTIME_DIR/database-inventory-with-migrations.json" \
+              "$PHASE7E_EVIDENCE_DIR/database-inventory.json"
+          fi
 
           if jq -e '.cronTableExists == true' "$PHASE7E_EVIDENCE_DIR/database-inventory.json" >/dev/null; then
             cron_payload="$PHASE7E_RUNTIME_DIR/cron-query.json"
@@ -501,6 +542,10 @@ jobs:
             )"
             if [[ "$cron_status" != "201" && "$cron_status" != "200" ]]; then
               echo "Read-only cron inventory failed with HTTP $cron_status."
+              jq -r '[
+                (.code // .error_code // "cron_query_failed"),
+                (.message // .error // "no sanitized message")
+              ] | map(tostring) | join(": ") | .[0:500]' "$cron_response"
               exit 4
             fi
             jq 'if type == "array" then . else (.result // .data // []) end' \
