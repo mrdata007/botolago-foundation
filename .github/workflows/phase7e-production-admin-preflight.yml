@@ -231,19 +231,16 @@ jobs:
                 postgresEngine: ($p.database.postgres_engine // null),
                 releaseChannel: ($p.database.release_channel // null)
               },
-              computeCandidates: [
-                $addons[0]
-                | ..
-                | objects
-                | select((.addon_type? // .type? // "") == "compute_instance")
-                | {
-                    addonType: (.addon_type // .type),
-                    addonVariant: (.addon_variant // .variant // null),
-                    name: (.name // null),
-                    status: (.status // null),
-                    selected: (.selected // .current // null)
-                  }
-              ],
+              compute: (
+                $addons[0].selected_addons
+                | map(select(.type == "compute_instance"))
+                | first
+                | if . == null then null else {
+                    addonType: .type,
+                    variantId: (.variant.id // null),
+                    variantName: (.variant.name // null)
+                  } end
+              ),
               backup: {
                 region: ($backup.region // null),
                 walgEnabled: ($backup.walg_enabled // false),
@@ -253,6 +250,11 @@ jobs:
                   [$backup.backups[]? | select((.status // "") == "COMPLETED") | .inserted_at]
                   | sort
                   | last
+                ),
+                oldestCompletedAt: (
+                  [$backup.backups[]? | select((.status // "") == "COMPLETED") | .inserted_at]
+                  | sort
+                  | first
                 ),
                 earliestPhysicalUnix: ($backup.physical_backup_data.earliest_physical_backup_date_unix // null),
                 latestPhysicalUnix: ($backup.physical_backup_data.latest_physical_backup_date_unix // null)
