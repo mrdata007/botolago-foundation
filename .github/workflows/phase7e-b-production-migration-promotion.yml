@@ -1,0 +1,144 @@
+name: Phase 7E-B Production V2 migration promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit approved for this one production batch
+        required: true
+        type: string
+      migration_batch:
+        description: One dependency-ordered batch only
+        required: true
+        type: choice
+        options:
+          - foundation
+          - identity
+          - football
+          - news_storage
+          - notifications
+          - fantasy_phase65
+          - admin
+      confirmation:
+        description: Type the exact RUN_PHASE7E_B_PRODUCTION_<BATCH> confirmation
+        required: true
+        type: string
+
+concurrency:
+  group: phase7e-b-production-migration-promotion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote-one-batch:
+    name: Promote and verify exactly one Production V2 batch
+    if: github.repository == 'mrdata007/botolago-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      MIGRATION_BATCH: ${{ inputs.migration_batch }}
+      EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
+      KNOWN_STAGING_REF: srdrflfrfpwixsllveid
+      KNOWN_LEGACY_REF: kxpaudvntwxpahyjtxbk
+      BOTOLAGO_ADMIN_ENVIRONMENT: ${{ vars.BOTOLAGO_ADMIN_ENVIRONMENT }}
+      BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF: ${{ vars.BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF }}
+      BOTOLAGO_TARGET_ENVIRONMENT: ${{ vars.BOTOLAGO_TARGET_ENVIRONMENT }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+    steps:
+      - name: Initialize protected runtime and enforce immutable dispatch guards
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for secret_value in "${SUPABASE_ACCESS_TOKEN:-}" "${SUPABASE_SECRET_KEY:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+
+          if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_SECRET_KEY:-}" ]]; then
+            echo "Protected credential injection failed."
+            exit 2
+          fi
+          if [[ "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "The dispatched commit is not the current main commit."
+            exit 2
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Production promotion may run only from main."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ||
+                "$BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ]]; then
+            echo "Production project-ref guard failed."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" == "$KNOWN_STAGING_REF" ||
+                "$SUPABASE_PRODUCTION_PROJECT_REF" == "$KNOWN_LEGACY_REF" ]]; then
+            echo "Staging and Legacy targets are forbidden."
+            exit 2
+          fi
+
+          expected_confirmation="RUN_PHASE7E_B_PRODUCTION_${MIGRATION_BATCH^^}"
+          if [[ "$CONFIRMATION" != "$expected_confirmation" ]]; then
+            echo "Invalid manual batch confirmation."
+            exit 2
+          fi
+
+          runtime_dir="$RUNNER_TEMP/botolago-phase7e-b"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "PHASE7E_B_RUNTIME_DIR=$runtime_dir"
+            echo "PHASE7E_B_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+
+          echo "Immutable dispatch guard: PASS"
+          echo "Selected batch: $MIGRATION_BATCH"
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Promote and verify the selected batch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/backend/phase7e-production-migration-promoter.py \
+            --batch "$MIGRATION_BATCH" \
+            --confirmation "$CONFIRMATION" \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --evidence-dir "$PHASE7E_B_EVIDENCE_DIR"
+
+      - name: Upload sanitized batch evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: phase7e-b-production-${{ inputs.migration_batch }}-${{ github.run_id }}
+          path: ${{ steps.runtime.outputs.evidence_dir }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Remove protected runtime files
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${PHASE7E_B_RUNTIME_DIR:-}" && -d "$PHASE7E_B_RUNTIME_DIR" ]]; then
+            find "$PHASE7E_B_RUNTIME_DIR" -type f -exec chmod 0600 {} \;
+            rm -rf -- "$PHASE7E_B_RUNTIME_DIR"
+          fi
+          echo "Protected runtime cleanup: complete"
