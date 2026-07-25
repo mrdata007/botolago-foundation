@@ -2,228 +2,240 @@
 
 Date: 2026-07-25
 Exact main commit inspected:
-`496f7d8b4bd277c979b3afe436d22da4cfc834fc`
+`9b697151e3f1e904c67e8cce3a2162cffa7e2f6c`
+Protected run:
+`https://github.com/mrdata007/botolago-foundation/actions/runs/30151901483`
 
 ## Verdict
 
-# NOT READY
+# READY WITH HUMAN ACCOUNT PREREQUISITES
 
-The repository is ready for a controlled production diff, but this execution
-environment did not satisfy the mandatory production target or human-account
-guards. No Production V2 project-specific request was made and no production
-state was modified.
+The protected, read-only preflight proved the Production V2 target, platform
+ownership, health, backup availability, empty migration baseline and disabled
+schedule state. Production V2 was not modified.
 
-This verdict is deliberately not `READY WITH HUMAN ACCOUNT PREREQUISITES`
-because backup/PITR, migration/schema drift, hosted security configuration and
-the exact environment-supplied project ref remain unverified.
+The remaining prerequisites are human and procedural: the owner and an
+independent second operator must register normally, verify their email
+addresses, enroll separate MFA factors and prove fresh AAL2 sessions. The
+one-time owner bootstrap remains a separately authorized Phase 7E-B action
+after the seven controlled migration groups have been promoted and verified.
 
-## Scope and target guard
+## 1. Production V2 identity
 
-Protected runtime input status:
+| Field              | Inspected result                                     |
+| ------------------ | ---------------------------------------------------- |
+| Project name       | `BotolaGO Production V2`                             |
+| Project ref        | `tkewgajrljbwgwedqsxn`                               |
+| Organization       | `BotolaGO`; authenticated account ownership verified |
+| Region             | `eu-west-3`                                          |
+| Health             | `ACTIVE_HEALTHY`                                     |
+| Target environment | `production-v2`                                      |
+| Auth endpoint      | HTTP 200                                             |
+| Known staging ref  | `srdrflfrfpwixsllveid`; explicitly rejected          |
+| Legacy             | Not queried                                          |
 
-| Input                                | Status  |
-| ------------------------------------ | ------- |
-| `SUPABASE_PRODUCTION_PROJECT_REF`    | MISSING |
-| Production server-only Supabase key  | MISSING |
-| Production Management API credential | MISSING |
-| `OWNER_ADMIN_EMAIL`                  | MISSING |
-| Owner short-lived AAL2 proof         | MISSING |
-| `SECOND_OPERATOR_EMAIL`              | MISSING |
-| Second-operator AAL2 proof           | MISSING |
+The target guard validated the protected environment before any request. Both
+the Management API project response and the guarded Production URL matched the
+expected ref. Credential values were masked, kept in workflow runtime only and
+removed at job completion.
 
-The connected BotolaGO project catalog contains one candidate:
+## 2. Health, compute and PostgreSQL
 
-| Field        | Discovery result        |
-| ------------ | ----------------------- |
-| Name         | BotolaGO Production V2  |
-| Ref          | `tkewgajrljbwgwedqsxn`  |
-| Organization | BotolaGO                |
-| Region       | `eu-west-3`             |
-| Health       | `ACTIVE_HEALTHY`        |
-| Database     | PostgreSQL `17.6.1.147` |
-| Compute tier | UNVERIFIED              |
+| Field               | Result                                                       |
+| ------------------- | ------------------------------------------------------------ |
+| PostgreSQL          | `17.6.1.147`, engine `17`, GA release channel                |
+| Compute             | No selected paid compute add-on; paid-plan default **Micro** |
+| Disk                | 2 GB `gp3`, 3,000 IOPS, 125 MiB/s configured throughput      |
+| PostgREST max rows  | 1,000                                                        |
+| API exposed schemas | `public`, `graphql_public` only                              |
 
-This discovery does not replace the required independently injected
-`SUPABASE_PRODUCTION_PROJECT_REF`. Staging V2
-`srdrflfrfpwixsllveid` and Legacy `kxpaudvntwxpahyjtxbk` were not queried or
-modified.
+The Management API returned no selected compute add-on. Because successful
+daily platform backups establish a paid plan and Supabase documents Micro as
+the paid-plan default, the effective pre-activation compute is classified as
+Micro. Capacity selection remains an activation decision; no resize occurred.
 
-## Repository and CI preflight
+## 3. Backup and PITR
 
-- PR #31 was squash-merged into main at the exact inspected commit.
-- Its `application-quality` and `database-quality` checks passed.
-- The repository does not configure `backend-quality` to run on pushes to
-  `main`, so the merge commit itself has no separate check run.
-- This preflight independently reran the required local gates.
-- Working tree was clean before documentation.
-- No application, migration, RLS, function or schedule code was changed.
+Classification: **daily backup verified, PITR disabled and accepted**.
 
-Results:
+| Field                         | Result                         |
+| ----------------------------- | ------------------------------ |
+| Successful retained backups   | 7                              |
+| Latest successful backup      | `2026-07-25T01:15:31.475Z`     |
+| Oldest returned backup        | `2026-07-19T19:24:13.100Z`     |
+| Observed daily retention      | 7 retained restore points      |
+| WAL-G/physical backup process | Enabled                        |
+| PITR                          | Disabled                       |
+| PITR restore window           | Not applicable                 |
+| Restore availability          | Daily restore points available |
 
-| Gate                        | Result                                    |
-| --------------------------- | ----------------------------------------- |
-| Migration validation        | PASS — 35 migrations                      |
-| Clean zero-to-latest replay | PASS                                      |
-| pgTAP/RLS                   | PASS — 432 tests, 22 files                |
-| Database lint               | PASS — zero schema errors                 |
-| Generated-type drift        | PASS                                      |
-| Application tests           | PASS — 385 tests, 73 files                |
-| Backend Python tests        | PASS — 69 tests                           |
-| Python compilation          | PASS                                      |
-| Focused Admin tests         | PASS — 18 tests                           |
-| Typecheck                   | PASS                                      |
-| Lint                        | PASS — 0 errors, 11 pre-existing warnings |
-| Production build            | PASS                                      |
-| Secret scan                 | PASS                                      |
+PITR was not enabled and no billing setting changed. Before the migration
+window, the owner must name the incident/restore operator, confirm Dashboard
+restore permissions and accept the daily-backup recovery-point objective.
+Storage object bytes are not restored by a database backup and require a
+separate media recovery decision before Editorial activation.
 
-## Platform health and recovery
+## 4. Migration, schema, RLS and grant drift
 
-Only catalog-level discovery is available. The following required
-Production V2 facts are **UNVERIFIED** because the hard target guard blocked
-target-specific inspection:
+Production V2 is a clean, uninitialized greenfield target:
 
-- compute tier and disk utilization/status;
-- database connection/pool configuration;
-- latest successful backup and retention;
-- PITR enabled state and restore window;
-- restore ownership and rehearsal evidence;
-- exposed schemas;
-- Auth configuration;
-- Storage buckets and policies;
-- Edge Functions;
-- Realtime publications;
-- cron/schedules;
-- hosted migration history and schema drift.
+| Comparison                       | Result                                                   |
+| -------------------------------- | -------------------------------------------------------- |
+| Repository migrations            | 35                                                       |
+| Hosted migration rows            | 0                                                        |
+| Present repository migrations    | 0                                                        |
+| Pending repository migrations    | 35, in deterministic timestamp order                     |
+| Unexpected hosted migration rows | 0                                                        |
+| Checksum mismatch                | None possible; no hosted migration row exists            |
+| Repository-owned schemas         | `api`, `app`, `app_private` absent, as expected pre-push |
+| Repository-owned relations       | 0                                                        |
+| Repository-owned routines/RPCs   | 0                                                        |
+| Repository-owned RLS policies    | 0                                                        |
+| Repository-owned grants          | 0                                                        |
+| Storage buckets/policies         | 0 / 0                                                    |
+| Schema/RPC/RLS/grant drift       | No unexpected hosted V2 objects; baseline is understood  |
+| Exposed-schema drift             | None; only `public`, `graphql_public` are exposed        |
 
-Production promotion is blocked until these facts are retrieved read-only
-through the protected environment. Backup availability must be evidenced, not
-inferred from plan defaults.
+The absence of repository-owned objects is not treated as unexpected drift:
+this is the approved empty Production V2 baseline. It means every migration
+must be promoted in Phase 7E-B; it does not authorize a single unreviewed
+all-at-once push.
 
-## Migration and schema result
+## 5. Exposed schemas, Realtime, Edge Functions and schedules
 
-Repository status is healthy, but hosted comparison is blocked:
+| Surface                    | Read-only result                           |
+| -------------------------- | ------------------------------------------ |
+| PostgREST exposed schemas  | `public`, `graphql_public`                 |
+| `app_private` exposure     | Not exposed; schema not yet created        |
+| Realtime publication       | `supabase_realtime`, zero published tables |
+| Edge Functions             | 0                                          |
+| Storage buckets            | 0                                          |
+| `pg_cron` catalog          | Not installed/exposed                      |
+| Active cron jobs           | 0                                          |
+| Production worker schedule | 0                                          |
 
-- migrations present: UNVERIFIED;
-- pending migrations: UNVERIFIED;
-- unexpected/missing/checksum mismatch: UNVERIFIED;
-- schema/function/RPC/RLS/grant/Storage drift: UNVERIFIED.
+No Admin revocation, Football ingestion, News ingestion, notification
+delivery, Fantasy scoring/finalization or capacity/load schedule is active.
+Repository operational workflows remain manually dispatched and do not
+constitute production schedules.
 
-All 35 migrations are conservatively treated as candidate-pending until the
-secure comparison. The reviewed plan splits promotion into Foundation,
-Identity, Football, News/Storage, Notifications, Fantasy and Admin batches.
-Details and per-migration lock/backfill/security/repair checks are in
-`PRODUCTION_V2_MIGRATION_PREFLIGHT.md`.
+## 6. Migration promotion groups and stop points
 
-## Owner readiness
+| Group | Scope            | Phase 7E-A classification                              |
+| ----- | ---------------- | ------------------------------------------------------ |
+| 1     | Foundation       | Safe to promote; mandatory smoke-test stop             |
+| 2     | Identity         | Safe to promote after Group 1 stop                     |
+| 3     | Football         | Safe to promote after Group 2 stop                     |
+| 4     | News and Storage | Safe to promote after Group 3 stop                     |
+| 5     | Notifications    | Safe with providers/schedules disabled; mandatory stop |
+| 6     | Fantasy          | Safe with workers/schedules disabled; mandatory stop   |
+| 7     | Admin 7A–7D      | Requires separate stop before any human bootstrap      |
 
-**NOT EXECUTED.** Runtime owner email, server credential and matching AAL2
-access token were absent. The command was not run with invented or default
-identity data.
+No group is blocked by drift or backup readiness. “Safe to promote” means
+eligible for the reviewed Phase 7E-B window only: pin the manifest, apply one
+group, verify migration history, health, RLS, grants, API denial and
+fail-closed behavior, then obtain reviewer approval before continuing.
 
-Required manual sequence:
+## 7. Owner-account prerequisite
 
-1. Register normally in Production V2.
-2. Verify the email.
-3. Enroll a personal MFA factor.
-4. Authenticate at AAL2.
-5. Inject the owner email and short-lived access token through the protected
-   runtime.
-6. Rerun the read-only owner readiness preflight.
+Status: **human prerequisite incomplete; not a platform-readiness failure**.
 
-No owner account was created and bootstrap was not executed.
+Required sequence:
 
-## Second-operator readiness
+1. The intended owner registers through normal Production V2 signup.
+2. The owner verifies the email through the standard verification flow.
+3. The owner enrolls a personal MFA factor and secures recovery material.
+4. The owner reauthenticates and proves a fresh AAL2 session.
+5. The email and short-lived AAL2 proof are injected only into the protected
+   activation runtime.
+6. Run the read-only owner-readiness operation.
+7. After migrations, smoke tests and separate explicit approval, execute the
+   one-time owner bootstrap.
 
-**NOT EXECUTED.** No runtime second-operator identity or AAL2 proof was
-provided.
+No owner account, principal, assignment or role was created in Phase 7E-A.
 
-The operator must be a separate trusted person with a separate account,
-password, MFA factor and recovery material. The intended initial role is only
-`security_admin`. Until this person is ready, dual-control operations are not
-operational and high-risk production Admin mutations must remain disabled.
+## 8. Second-operator prerequisite
 
-## Admin Console readiness
+Status: **human prerequisite incomplete; not a platform-readiness failure**.
 
-Repository contracts are production-compatible:
+The second operator must be a different trusted person with a separate
+account, password, verified email, MFA factor, recovery material and fresh AAL2
+session. After owner bootstrap, the owner must create the operator principal
+through the reviewed Admin path and assign only `security_admin`. Owner and
+operator must verify both directions of dual control; self-approval remains
+forbidden.
 
-- routes exist for `/admin`, `/admin/staff`,
-  `/admin/staff/$principalId`, `/admin/approvals`, `/admin/audit` and
-  `/admin/security`;
-- access is resolved through server-owned route functions;
-- non-staff, MFA/AAL2, recent-auth, suspended and revoked states fail closed;
-- destructive actions map to server mutations;
-- French, Arabic and RTL contracts are present;
-- test IDs are unique;
-- no Admin entry was added to consumer navigation;
-- browser code contains no service-role credential or direct private-table
-  contract;
-- provider revocation language does not claim arbitrary-user global sign-out.
+## 9. Admin Console contract readiness
 
-Focused Admin tests passed. Hosted route smoke tests remain blocked until the
-migration diff and controlled promotion are approved.
+Repository contracts are ready for controlled activation:
 
-## Worker and schedule state
+- Admin routes resolve authority server-side and fail closed;
+- non-staff, AAL1, stale-auth, suspended and revoked states are denied;
+- browser code has no service-role/secret-key contract or direct
+  `app_private` access;
+- standard role assignment cannot grant `platform_admin`;
+- the one-time bootstrap is the only direct initial platform-admin path;
+- self-approval, payload mutation and last-platform-admin safeguards are
+  enforced;
+- audit records are append-only;
+- French, Arabic and RTL route contracts remain intact;
+- provider revocation does not claim unsupported arbitrary-user global
+  sign-out.
 
-Repository inspection found no `cron.schedule` call and no automatic production
-worker schedule. Admin, Editorial, Football/provider, notification and Fantasy
-workers remain implementation/manual-operation surfaces only.
+Hosted Admin smoke tests remain a Phase 7E-B stop after Group 7 because the
+Admin schema is correctly absent before migration promotion.
 
-Manual Phase 6 diagnostic/cleanup GitHub workflows still target the protected
-staging environment; they are not production schedules. No workflow was
-dispatched in Phase 7E-A.
+## 10. Security findings
 
-Hosted Production V2 cron, Edge Function schedule and provider state remain
-UNVERIFIED because the hard target guard blocked the production inspection.
+- No default Admin password or committed owner/operator email exists.
+- No browser service-role or server secret credential was found.
+- `app_private` is not exposed through PostgREST.
+- MFA/AAL2 and recent-auth requirements remain part of the Admin contracts.
+- Dual control and self-approval denial remain mandatory.
+- No production worker, Edge Function or cron schedule is active.
+- Audit authority remains server-owned and append-only.
+- Session revocation documentation accurately distinguishes BotolaGO Admin
+  denial from provider session revocation and does not promise arbitrary-user
+  global sign-out.
+- Protected workflow artifacts contain sanitized inventory only; raw
+  Management API responses and credentials were destroyed at job completion.
 
-## Security findings
+## 11. Exact Phase 7E-B sequence
 
-Repository checks confirm:
+1. Pin `9b697151e3f1e904c67e8cce3a2162cffa7e2f6c` or a newly reviewed main
+   commit and generate the 35-file SHA-256 migration manifest.
+2. Name the incident owner, restore operator and reviewer; reconfirm the latest
+   daily backup and accept PITR-disabled recovery.
+3. Freeze releases and privileged writes; prove the Production V2 guard again.
+4. Promote Group 1 (Foundation); verify history, schemas, forced-RLS defaults,
+   grants and fail-closed application behavior; stop for review.
+5. Promote Group 2 (Identity); verify profile trigger, ownership, cross-user
+   denial and Auth flows; stop for review.
+6. Promote Group 3 (Football); verify public DTO reads and browser write
+   denial; keep ingestion disabled; stop for review.
+7. Promote Group 4 (News/Storage); verify published-only reads, draft secrecy,
+   ownership and Storage policy; keep ingestion disabled; stop for review.
+8. Promote Group 5 (Notifications); verify preference ownership and
+   worker-only contracts; keep delivery disabled; stop for review.
+9. Promote Group 6 (Fantasy); verify ownership, deadlines, versions and
+   worker-only scoring/rank writes; keep workers disabled; stop for review.
+10. Promote Group 7 (Admin 7A–7D); verify private-schema denial, MFA/AAL2,
+    recent auth, audit, dual control and service-only readiness; stop.
+11. Complete the owner signup/email-verification/MFA/AAL2 sequence and run
+    owner readiness read-only.
+12. Obtain separate explicit authorization for the one-time owner bootstrap;
+    verify exactly one intended `platform_admin` and its audit event.
+13. Complete the independent operator signup/MFA/AAL2 sequence; assign only
+    `security_admin` and verify bidirectional dual control.
+14. Remove short-lived bootstrap credentials, retain sanitized evidence and
+    keep every worker/provider/schedule disabled.
+15. Stop before Editorial CMS activation; that requires a separate reviewed
+    phase.
 
-- no committed owner or second-operator email;
-- no default Admin password;
-- no client service credential;
-- no browser direct `app_private` access;
-- no standard-role path to `platform_admin`;
-- self-approval and last-platform-admin safeguards are tested;
-- MFA/AAL2 and recent-auth contracts are tested;
-- audit contracts are append-only;
-- canonical Admin denial precedes provider session work;
-- arbitrary-user global sign-out limitation is documented honestly;
-- secret scan passes.
+## 12. Mutation and rollback statement
 
-No claim is made about hosted Production V2 grants or configuration until the
-secure diff runs.
-
-## Exact Phase 7E-B plan
-
-1. Configure a protected production environment with the exact project ref,
-   URL, Management API credential and server-only key.
-2. Rerun Phase 7E-A read-only target, health, backup/PITR, migration, schema,
-   RLS, grant, Storage, Auth, Edge Function, Realtime and schedule inspection.
-3. Resolve every drift item and require a `READY` or
-   `READY WITH HUMAN ACCOUNT PREREQUISITES` verdict.
-4. Verify backup/PITR, restore owner, incident contacts and maintenance window.
-5. Promote the seven reviewed migration batches, stopping for smoke tests and
-   health review after each.
-6. Rerun owner readiness with the real owner at AAL2.
-7. Obtain explicit authorization and execute the one-time owner bootstrap.
-8. Verify exactly one owner `platform_admin` assignment, audit event and
-   protected `/admin` access.
-9. Establish the independent operator and assign only `security_admin`.
-10. Verify narrow permissions, self-approval denial and the dual-control queue.
-11. Retain staging emergency-revocation evidence or separately authorize a
-    safe non-owner rehearsal; never revoke the real owner as a drill.
-12. Remove/restrict bootstrap credentials and keep every production worker
-    schedule disabled.
-13. Record secret-free evidence and stop before Editorial CMS activation.
-
-## Rollback and next action
-
-There is nothing to roll back from Phase 7E-A: no cloud mutation, migration,
-account creation, role assignment, worker invocation or schedule change
-occurred.
-
-The next action is **not Phase 7E-B execution**. It is a repeat of this
-read-only preflight from an owner-approved protected production environment
-containing the missing target and account inputs. Only a clean repeat may
-authorize the controlled activation window.
+Phase 7E-A performed no migration, account creation, principal creation, role
+assignment, bootstrap, worker invocation, schedule change, billing change or
+Production V2 write. There is nothing to roll back. The next authorized action
+is the controlled Phase 7E-B migration window after the human/operator
+prerequisites and recovery ownership are scheduled.
