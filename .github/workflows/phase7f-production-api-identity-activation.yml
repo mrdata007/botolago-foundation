@@ -26,6 +26,7 @@ jobs:
   activate:
     name: Protected API exposure and Identity/Profile verification
     if: >-
+      always() &&
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

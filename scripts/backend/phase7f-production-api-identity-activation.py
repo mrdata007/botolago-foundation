@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import fnmatch
 import hashlib
 import importlib.util
 import json
@@ -543,18 +542,46 @@ def classic_branch_protection_safe(value: dict[str, Any]) -> bool:
     )
 
 
+def ruleset_ref_patterns(
+    value: dict[str, Any],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    conditions = value.get("conditions")
+    if not isinstance(conditions, dict):
+        raise ActivationError("GITHUB_RULESET_PATTERN_UNVERIFIED")
+    ref_name = conditions.get("ref_name")
+    if not isinstance(ref_name, dict):
+        raise ActivationError("GITHUB_RULESET_PATTERN_UNVERIFIED")
+    includes_value = ref_name.get("include")
+    excludes_value = ref_name.get("exclude")
+    if not isinstance(includes_value, list) or not isinstance(
+        excludes_value, list
+    ):
+        raise ActivationError("GITHUB_RULESET_PATTERN_UNVERIFIED")
+    if not all(isinstance(item, str) for item in includes_value) or not all(
+        isinstance(item, str) for item in excludes_value
+    ):
+        raise ActivationError("GITHUB_RULESET_PATTERN_UNVERIFIED")
+    includes = tuple(includes_value)
+    excludes = tuple(excludes_value)
+    for pattern in (*includes, *excludes):
+        if any(character in pattern for character in ("*", "?", "[", "]", "\\")):
+            raise ActivationError("GITHUB_RULESET_PATTERN_UNVERIFIED")
+        if pattern in {"~ALL", "~DEFAULT_BRANCH"}:
+            continue
+        if not pattern.startswith("refs/heads/") or not pattern.removeprefix(
+            "refs/heads/"
+        ):
+            raise ActivationError("GITHUB_RULESET_PATTERN_UNVERIFIED")
+    return includes, excludes
+
+
 def ruleset_requires_default_branch_resolution(
     value: dict[str, Any],
 ) -> bool:
-    ref_name = (value.get("conditions") or {}).get("ref_name") or {}
-    includes = [str(item) for item in ref_name.get("include") or []]
-    excludes = [str(item) for item in ref_name.get("exclude") or []]
+    includes, excludes = ruleset_ref_patterns(value)
     explicit_include_matches_main = any(
         pattern != "~DEFAULT_BRANCH"
-        and (
-            pattern == "~ALL"
-            or fnmatch.fnmatchcase("refs/heads/main", pattern)
-        )
+        and pattern in {"~ALL", "refs/heads/main"}
         for pattern in includes
     )
     return "~DEFAULT_BRANCH" in excludes or (
@@ -568,16 +595,14 @@ def ruleset_targets_main(
 ) -> bool:
     if value.get("target") != "branch":
         return False
-    ref_name = (value.get("conditions") or {}).get("ref_name") or {}
-    includes = [str(item) for item in ref_name.get("include") or []]
-    excludes = [str(item) for item in ref_name.get("exclude") or []]
+    includes, excludes = ruleset_ref_patterns(value)
 
     def matches_main(pattern: str) -> bool:
         if pattern == "~ALL":
             return True
         if pattern == "~DEFAULT_BRANCH":
             return default_branch == "main"
-        return fnmatch.fnmatchcase("refs/heads/main", pattern)
+        return pattern == "refs/heads/main"
 
     return any(matches_main(item) for item in includes) and not any(
         matches_main(item) for item in excludes

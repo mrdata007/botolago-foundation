@@ -727,6 +727,92 @@ class Phase7FActivationTests(unittest.TestCase):
                 self.assertEqual("REPOSITORY_RULESET", value["mode"])
                 self.assertEqual(3, len(http.requests))
 
+    def test_ruleset_target_parser_rejects_all_wildcards(self) -> None:
+        for pattern in (
+            "refs/*",
+            "refs/**",
+            "refs/heads/*",
+            "refs/heads/ma?n",
+            "refs/heads/[main]",
+            "refs/heads/main\\suffix",
+        ):
+            ruleset = copy.deepcopy(SAFE_RULESET)
+            ruleset["conditions"]["ref_name"]["include"] = [pattern]
+            with self.subTest(include=pattern):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_RULESET_PATTERN_UNVERIFIED",
+                ):
+                    ACTIVATION.ruleset_targets_main(ruleset)
+        ruleset = copy.deepcopy(SAFE_RULESET)
+        ruleset["conditions"]["ref_name"]["exclude"] = ["refs/heads/*"]
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError,
+            "GITHUB_RULESET_PATTERN_UNVERIFIED",
+        ):
+            ACTIVATION.ruleset_targets_main(ruleset)
+
+    def test_ruleset_literal_exclusions_use_exact_equality(self) -> None:
+        develop_excluded = copy.deepcopy(SAFE_RULESET)
+        develop_excluded["conditions"]["ref_name"]["exclude"] = [
+            "refs/heads/develop"
+        ]
+        self.assertTrue(
+            ACTIVATION.ruleset_targets_main(develop_excluded)
+        )
+        main_excluded = copy.deepcopy(SAFE_RULESET)
+        main_excluded["conditions"]["ref_name"]["exclude"] = [
+            "refs/heads/main"
+        ]
+        self.assertFalse(ACTIVATION.ruleset_targets_main(main_excluded))
+        all_excluded = copy.deepcopy(SAFE_RULESET)
+        all_excluded["conditions"]["ref_name"]["exclude"] = ["~ALL"]
+        self.assertFalse(ACTIVATION.ruleset_targets_main(all_excluded))
+        default_excluded = copy.deepcopy(SAFE_RULESET)
+        default_excluded["conditions"]["ref_name"]["exclude"] = [
+            "~DEFAULT_BRANCH"
+        ]
+        self.assertFalse(
+            ACTIVATION.ruleset_targets_main(
+                default_excluded, default_branch="main"
+            )
+        )
+        self.assertTrue(
+            ACTIVATION.ruleset_targets_main(
+                default_excluded, default_branch="develop"
+            )
+        )
+
+    def test_malformed_ruleset_ref_conditions_fail_closed(self) -> None:
+        variants: list[dict[str, object]] = []
+        missing_conditions = copy.deepcopy(SAFE_RULESET)
+        del missing_conditions["conditions"]
+        variants.append(missing_conditions)
+        malformed_ref_name = copy.deepcopy(SAFE_RULESET)
+        malformed_ref_name["conditions"]["ref_name"] = []
+        variants.append(malformed_ref_name)
+        malformed_include = copy.deepcopy(SAFE_RULESET)
+        malformed_include["conditions"]["ref_name"]["include"] = (
+            "refs/heads/main"
+        )
+        variants.append(malformed_include)
+        non_string_include = copy.deepcopy(SAFE_RULESET)
+        non_string_include["conditions"]["ref_name"]["include"] = [7]
+        variants.append(non_string_include)
+        malformed_exclude = copy.deepcopy(SAFE_RULESET)
+        malformed_exclude["conditions"]["ref_name"]["exclude"] = {}
+        variants.append(malformed_exclude)
+        non_string_exclude = copy.deepcopy(SAFE_RULESET)
+        non_string_exclude["conditions"]["ref_name"]["exclude"] = [None]
+        variants.append(non_string_exclude)
+        for ruleset in variants:
+            with self.subTest(ruleset=ruleset):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_RULESET_PATTERN_UNVERIFIED",
+                ):
+                    ACTIVATION.ruleset_targets_main(ruleset)
+
     def test_full_governance_passes_without_supabase_credentials(self) -> None:
         http = QueueHttp(
             [
@@ -841,7 +927,7 @@ class Phase7FActivationTests(unittest.TestCase):
         cases = (
             (disabled, "GITHUB_RULESET_UNSAFE"),
             (unsafe, "GITHUB_RULESET_UNSAFE"),
-            (excluded, "GITHUB_BRANCH_PROTECTION_UNVERIFIED"),
+            (excluded, "GITHUB_RULESET_PATTERN_UNVERIFIED"),
         )
         for value, code in cases:
             with self.subTest(
@@ -1704,6 +1790,66 @@ class Phase7FActivationTests(unittest.TestCase):
             workflow.index("secrets.SUPABASE_ACCESS_TOKEN"),
         )
         self.assertIn("GITHUB_WORKFLOW_RERUN_FORBIDDEN", workflow)
+
+    def test_job_cancellation_reaches_only_journal_guarded_recovery(
+        self,
+    ) -> None:
+        workflow = (
+            REPO
+            / ".github/workflows/phase7f-production-api-identity-activation.yml"
+        ).read_text()
+        job_header = workflow.split("    steps:", 1)[0]
+        self.assertIn(
+            "if: >-\n"
+            "      always() &&\n"
+            "      github.repository == "
+            "'mrdata007/botolago-foundation' &&\n"
+            "      github.ref == 'refs/heads/main'",
+            job_header,
+        )
+        ordinary_steps = (
+            "Verify protected main and exact reviewed commit",
+            "Generate run-specific second-person approval request",
+            "Wait for exact second-person issue approval",
+            "Run guarded Production V2 activation",
+        )
+        for name in ordinary_steps:
+            start = workflow.index(f"      - name: {name}")
+            end = workflow.find("      - name:", start + 1)
+            if end < 0:
+                end = len(workflow)
+            self.assertNotIn("if: always()", workflow[start:end])
+
+        state_start = workflow.index(
+            "      - name: Inspect activation journal state"
+        )
+        recovery_start = workflow.index(
+            "      - name: Independently recover or verify activation state"
+        )
+        evidence_start = workflow.index(
+            "      - name: Verify evidence contains no credential patterns"
+        )
+        state_step = workflow[state_start:recovery_start]
+        recovery_step = workflow[recovery_start:evidence_start]
+        self.assertIn("always() &&", state_step)
+        self.assertIn(
+            "steps.run_approval.outcome == 'success'", state_step
+        )
+        self.assertNotIn("secrets.SUPABASE_", state_step)
+        self.assertIn("always() &&", recovery_step)
+        self.assertIn(
+            "steps.run_approval.outcome == 'success'", recovery_step
+        )
+        self.assertIn(
+            "steps.state_check.outputs.exists == 'true'", recovery_step
+        )
+        recovery_if = recovery_step.split("        shell:", 1)[0]
+        self.assertNotIn("secrets.SUPABASE_", recovery_if)
+        self.assertIn(
+            "SUPABASE_ACCESS_TOKEN: "
+            "${{ secrets.SUPABASE_ACCESS_TOKEN }}",
+            recovery_step,
+        )
 
 
 def base64_url(value: dict[str, object]) -> str:

@@ -56,8 +56,11 @@ empty `users`, `teams`, and `apps` lists. Missing, null, malformed, unreadable,
 or non-empty bypass data cannot be replaced by an attestation or by the manual
 confirmation string. A ruleset condition using `~DEFAULT_BRANCH` establishes
 protection for `main` only after live repository metadata proves that the
-default branch is exactly `main`; explicit `refs/heads/main` and `~ALL`
-conditions do not rely on that symbolic assumption.
+default branch is exactly `main`. Ruleset wildcard targeting is deliberately
+unsupported because GitHub's matching semantics differ from Python globbing.
+A qualifying ruleset must target `main` through the literal
+`refs/heads/main`, `~ALL`, or a verified `~DEFAULT_BRANCH`; wildcard and
+otherwise unsupported include or exclude patterns fail closed.
 
 The exact-commit reviewer must differ from the dispatcher, PR author, and latest
 reviewable-push author. Bot, Copilot, dismissed, stale, commented-only, and
@@ -97,18 +100,26 @@ The `production-admin-activation` environment must define:
 - variable `BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER` as one open dedicated
   issue number; and
 - secret `BOTOLAGO_GITHUB_GOVERNANCE_TOKEN` as a fine-grained token with only
-  repository metadata, rules/branch-protection, pull-request/review,
-  issue-comment, and Actions-run read access.
+  Administration read, Contents read, Pull requests read, Issues read, Actions
+  read, and Metadata read access.
 
-That token must have no contents, pull-request, issue, Actions,
-administration, or secret-management write permission. The workflow performs
-only GET requests and never creates, edits, deletes, or reacts to an approval
-comment.
+That token has no write scope, including no contents, pull-request, issue,
+Actions, administration, or secret-management write permission. The workflow
+performs only GET requests and never creates, edits, deletes, or reacts to an
+approval comment.
 
 Phase 7E-B migration promotion and Phase 7F activation use the shared
 `botolago-production-v2-mutation` concurrency group with cancellation disabled.
 The Gate 1 preflight also fails when either production mutation workflow is
 already queued or running.
+
+The activation job condition itself uses `always()` so that a normal GitHub
+workflow cancellation can still reach journal inspection and independently
+verified recovery. Governance, approval, and activation steps do not use
+`always()` and therefore stop on cancellation or prior failure. Recovery
+remains unreachable unless per-run human approval succeeded and an activation
+state journal exists; cancellation before journal creation cannot expose a
+Supabase recovery credential.
 
 ## Exposed schemas versus database privileges
 
