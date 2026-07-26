@@ -13,10 +13,11 @@ on:
         type: string
 
 concurrency:
-  group: phase7f-production-api-identity
+  group: botolago-production-v2-mutation
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -38,12 +39,17 @@ jobs:
       BOTOLAGO_ADMIN_ENVIRONMENT: ${{ vars.BOTOLAGO_ADMIN_ENVIRONMENT }}
       BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF: ${{ vars.BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF }}
       BOTOLAGO_TARGET_ENVIRONMENT: ${{ vars.BOTOLAGO_TARGET_ENVIRONMENT }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      BOTOLAGO_AAL2_EVIDENCE_SHA256: ${{ vars.BOTOLAGO_AAL2_EVIDENCE_SHA256 }}
+      BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED: ${{ vars.BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED }}
+      BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH: ${{ vars.BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH }}
+      BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW: ${{ vars.BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW }}
+      BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256: ${{ vars.BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256 }}
+      BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT: ${{ vars.BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT }}
+      BOTOLAGO_PRODUCTION_SMOKE_USER_UUID: ${{ vars.BOTOLAGO_PRODUCTION_SMOKE_USER_UUID }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
       SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
 
     steps:
       - name: Initialize protected runtime and enforce immutable target
@@ -51,16 +57,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          for secret_value in "${SUPABASE_ACCESS_TOKEN:-}" "${SUPABASE_SECRET_KEY:-}"; do
-            if [[ -n "$secret_value" ]]; then
-              printf '::add-mask::%s\n' "$secret_value"
-            fi
-          done
-
-          if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_SECRET_KEY:-}" ]]; then
-            echo "Protected credential injection failed."
-            exit 2
-          fi
           if [[ "$CONFIRMATION" != "RUN_PHASE7F_PRODUCTION_API_IDENTITY" ]]; then
             echo "Invalid manual confirmation."
             exit 2
@@ -107,10 +103,10 @@ jobs:
           {
             echo "PHASE7F_RUNTIME_DIR=$runtime_dir"
             echo "PHASE7F_EVIDENCE_DIR=$evidence_dir"
+            echo "PHASE7F_STATE_FILE=$runtime_dir/activation-state.json"
           } >> "$GITHUB_ENV"
 
           echo "Target guard: PASS"
-          echo "Protected credentials: present and masked"
 
       - name: Check out the exact reviewed main commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -133,38 +129,106 @@ jobs:
             scripts/backend/tests/test_phase7e_production_migration_promoter.py \
             scripts/backend/tests/test_phase7f_production_api_identity_activation.py
 
-      - name: Run guarded Production V2 activation
+      - name: Verify protected environment and conflicting production runs
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --verify-github-preflight \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR"
+
+      - name: Run guarded Production V2 activation
+        id: activation
+        shell: bash
+        env:
+          BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN: ${{ secrets.BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          for secret_value in \
+            "$SUPABASE_ACCESS_TOKEN" \
+            "$SUPABASE_SECRET_KEY" \
+            "$BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN"; do
+            printf '::add-mask::%s\n' "$secret_value"
+          done
           python scripts/backend/phase7f-production-api-identity-activation.py \
             --expected-commit "$EXPECTED_COMMIT" \
             --confirmation "$CONFIRMATION" \
             --repo-root "$GITHUB_WORKSPACE" \
-            --evidence-dir "$PHASE7F_EVIDENCE_DIR"
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR" \
+            --state-file "$PHASE7F_STATE_FILE"
+
+      - name: Independently recover or verify activation state
+        id: recovery
+        if: always()
+        shell: bash
+        env:
+          PRIMARY_OUTCOME: ${{ steps.activation.outcome }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          if [[ ! -f "$PHASE7F_STATE_FILE" ]]; then
+            echo "STATE_JOURNAL_MISSING"
+            exit 1
+          fi
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --recover-from-state "$PHASE7F_STATE_FILE" \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR" \
+            --primary-outcome "$PRIMARY_OUTCOME"
 
       - name: Verify evidence contains no credential patterns
+        id: evidence_scan
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! -d "${PHASE7F_EVIDENCE_DIR:-}" ]]; then
-            echo "Evidence directory was not initialized."
-            exit 1
-          fi
-          if grep -RIE \
-            'sbp_|sb_secret_|sb_publishable_|eyJ[A-Za-z0-9._-]+|access_token|refresh_token|token_hash|hashed_token' \
-            "$PHASE7F_EVIDENCE_DIR"; then
-            echo "Credential-like material was found in evidence."
-            exit 1
-          fi
-          echo "Sanitized evidence check: PASS"
+          python scripts/backend/phase7f-scan-sanitized-evidence.py \
+            "$PHASE7F_EVIDENCE_DIR"
 
       - name: Upload sanitized activation evidence
-        if: always()
+        id: evidence_upload
+        if: always() && steps.evidence_scan.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: phase7f-production-api-identity-${{ github.run_id }}
           path: ${{ env.PHASE7F_EVIDENCE_DIR }}
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
+
+      - name: Finalize evidence verdict
+        id: evidence_finalize
+        if: always()
+        shell: bash
+        env:
+          EVIDENCE_SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          EVIDENCE_UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --finalize-evidence \
+            --state-file "$PHASE7F_STATE_FILE" \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR" \
+            --scan-outcome "$EVIDENCE_SCAN_OUTCOME" \
+            --upload-outcome "$EVIDENCE_UPLOAD_OUTCOME"
+
+      - name: Final independent recovery guard
+        if: always() && steps.evidence_finalize.outcome != 'success'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          if [[ ! -f "$PHASE7F_STATE_FILE" ]]; then
+            echo "STATE_JOURNAL_MISSING"
+            exit 1
+          fi
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --recover-from-state "$PHASE7F_STATE_FILE" \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR"

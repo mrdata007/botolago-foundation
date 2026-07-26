@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
-"""Guarded Production V2 PostgREST exposure and Identity/Profile smoke gate.
+"""Fail-closed Production V2 API/Identity activation controller.
 
-This script is deliberately pinned to BotolaGO Production V2. It changes only
-the hosted PostgREST exposed-schema setting, preserves the previous setting for
-rollback, and never applies SQL migrations or creates Auth users.
+The only production mutation implemented here is the reviewed PostgREST
+exposed-schema change.  Every mutation is journaled before it is attempted and
+can be recovered independently by ``--recover-from-state``.
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import importlib.util
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -35,53 +38,87 @@ KNOWN_STAGING_REF = "srdrflfrfpwixsllveid"
 KNOWN_LEGACY_REF = "kxpaudvntwxpahyjtxbk"
 EXPECTED_CONFIRMATION = "RUN_PHASE7F_PRODUCTION_API_IDENTITY"
 EXPECTED_MIGRATION_COUNT = 35
-EXPECTED_CANONICAL_TABLE_COUNT = 113
+EXPECTED_CANONICAL_TABLE_COUNT = 112
 TARGET_DB_SCHEMA = "api"
 TARGET_EXTRA_SEARCH_PATH = "extensions"
-ALLOWED_INITIAL_SCHEMA_SETS = {
-    ("graphql_public", "public"),
-    ("api",),
-}
+ALLOWED_INITIAL_SCHEMA_SETS = {("graphql_public", "public"), ("api",)}
 MANAGEMENT_API = "https://api.supabase.com"
-MAX_HTTP_REQUESTS = 80
+MAX_HTTP_REQUESTS = 120
+SHARED_CONCURRENCY_GROUP = "botolago-production-v2-mutation"
+ENVIRONMENT_NAME = "production-admin-activation"
 
+VERDICTS = {
+    "NOT_EXECUTED",
+    "FAILED_BEFORE_MUTATION",
+    "MUTATION_IN_PROGRESS",
+    "ACTIVATED_PENDING_TESTS",
+    "PASS",
+    "FAILED_ROLLED_BACK",
+    "ROLLBACK_FAILED",
+    "ACTIVATION_STATE_AMBIGUOUS",
+    "SESSION_CLEANUP_FAILED",
+    "EVIDENCE_FAILURE",
+}
+HTTP_CODES = {
+    400: "HTTP_BAD_REQUEST",
+    401: "HTTP_UNAUTHORIZED",
+    403: "HTTP_FORBIDDEN",
+    404: "HTTP_NOT_FOUND",
+    406: "HTTP_NOT_ACCEPTABLE",
+    409: "HTTP_CONFLICT",
+    429: "HTTP_RATE_LIMITED",
+    500: "HTTP_SERVER_ERROR",
+    502: "HTTP_UPSTREAM_ERROR",
+    503: "HTTP_UNAVAILABLE",
+    504: "HTTP_TIMEOUT",
+}
+ALLOWED_UPSTREAM_CODES = re.compile(
+    r"^(?:PGRST[0-9]{3}|PT[0-9]{3}|42501|42P01|22P02|23505)$"
+)
 SECRET_PATTERNS = (
     re.compile(r"(?i)(authorization\s*:\s*(?:bearer\s+)?)[^\s\"']+"),
     re.compile(r"\b(?:sbp|sb_secret|sb_publishable)_[A-Za-z0-9._-]+\b"),
     re.compile(r"\beyJ[A-Za-z0-9._-]+\b"),
-    re.compile(r"(?i)(refresh_token|access_token|token_hash|hashed_token)[\"'=:\s]+[^\s,\"'}]+"),
+    re.compile(
+        r"(?i)(refresh_token|access_token|token_hash|hashed_token|password)"
+        r"[\"'=:\s]+[^\s,\"'}]+"
+    ),
+    re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b"),
+)
+UUID_PATTERN = re.compile(
+    r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-"
+    r"[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b"
 )
 
 
 class ActivationError(RuntimeError):
-    """Stable, sanitized activation failure."""
+    """A stable failure code plus an optional sanitized diagnostic."""
+
+    def __init__(self, code: str, detail: object | None = None) -> None:
+        self.code = code
+        self.detail = sanitize(detail, 240) if detail is not None else None
+        super().__init__(code)
+
+
+class SignalAbort(ActivationError):
+    pass
+
+
+class AmbiguousMutation(ActivationError):
+    pass
 
 
 def sanitize(value: object, limit: int = 500) -> str:
     text = str(value).replace("\r", " ").replace("\n", " ")
     for pattern in SECRET_PATTERNS:
         text = pattern.sub(
-            lambda match: f"{match.group(1)}[REDACTED]" if match.lastindex else "[REDACTED]",
+            lambda match: f"{match.group(1)}[REDACTED]"
+            if match.lastindex
+            else "[REDACTED]",
             text,
         )
+    text = UUID_PATTERN.sub("[UUID]", text)
     return text[:limit]
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    path.chmod(0o600)
-
-
-def require_env(name: str) -> str:
-    value = os.environ.get(name, "").strip()
-    if not value:
-        raise ActivationError(f"missing protected runtime value: {name}")
-    return value
-
-
-def normalize_csv(value: object) -> tuple[str, ...]:
-    return tuple(sorted(part.strip() for part in str(value or "").split(",") if part.strip()))
 
 
 def utc_now() -> str:
@@ -92,50 +129,92 @@ def fingerprint(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
 
-def assert_repository_dependencies(repo_root: Path) -> dict[str, Any]:
-    """Prove the frozen runtime does not depend on public or GraphQL Data APIs."""
+def canonical_json(value: Any) -> str:
+    return json.dumps(value, separators=(",", ":"), sort_keys=True)
 
+
+def atomic_write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.chmod(0o700)
+    payload = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, path)
+        path.chmod(0o600)
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except Exception:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+write_json = atomic_write_json
+
+
+def require_env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise ActivationError("PROTECTED_VALUE_MISSING", name)
+    return value
+
+
+def normalize_csv(value: object) -> tuple[str, ...]:
+    return tuple(
+        sorted(part.strip() for part in str(value or "").split(",") if part.strip())
+    )
+
+
+def load_promoter(repo_root: Path) -> Any:
+    path = repo_root / "scripts/backend/phase7e-production-migration-promoter.py"
+    spec = importlib.util.spec_from_file_location("phase7e_promoter_for_phase7f", path)
+    if spec is None or spec.loader is None:
+        raise ActivationError("PROMOTER_LOAD_FAILED")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def assert_repository_dependencies(repo_root: Path) -> dict[str, Any]:
     source_root = repo_root / "src"
     forbidden = (
         "/graphql/v1",
         'schema("public")',
         "schema('public')",
-        "db: { schema: \"public\"",
+        'db: { schema: "public"',
         "db: { schema: 'public'",
     )
-    matches: list[str] = []
     for path in source_root.rglob("*"):
-        if not path.is_file() or path.suffix not in {".ts", ".tsx", ".js", ".jsx"}:
-            continue
-        if ".test." in path.name or path.name.endswith(".d.ts"):
+        if (
+            not path.is_file()
+            or path.suffix not in {".ts", ".tsx", ".js", ".jsx"}
+            or ".test." in path.name
+            or path.name.endswith(".d.ts")
+        ):
             continue
         text = path.read_text(encoding="utf-8")
-        for token in forbidden:
-            if token in text:
-                matches.append(f"{path.relative_to(repo_root)}:{token}")
-    if matches:
-        raise ActivationError("runtime depends on public or GraphQL Data API")
-    v2_client = (source_root / "integrations" / "supabase" / "v2-client.ts").read_text(
-        encoding="utf-8"
-    )
+        if any(token in text for token in forbidden):
+            raise ActivationError("FORBIDDEN_RUNTIME_SCHEMA_DEPENDENCY")
+    v2_client = (
+        source_root / "integrations/supabase/v2-client.ts"
+    ).read_text(encoding="utf-8")
     if '.schema("api")' not in v2_client:
-        raise ActivationError("V2 runtime does not explicitly select the api schema")
+        raise ActivationError("API_SCHEMA_NOT_EXPLICIT")
     return {
         "runtimePublicOrGraphqlDependencies": 0,
         "v2ApiSchemaExplicit": True,
-        "decision": "expose api only; remove public and graphql_public",
     }
-
-
-def load_promoter(repo_root: Path) -> Any:
-    path = repo_root / "scripts" / "backend" / "phase7e-production-migration-promoter.py"
-    spec = importlib.util.spec_from_file_location("phase7e_promoter_for_phase7f", path)
-    if spec is None or spec.loader is None:
-        raise ActivationError("unable to load reviewed migration verifier")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 @dataclass(frozen=True)
@@ -148,7 +227,7 @@ class HttpResult:
         try:
             return json.loads(self.body)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise ActivationError(f"non_json_response: HTTP {self.status}") from exc
+            raise ActivationError("RESPONSE_PARSE_ERROR") from exc
 
 
 class HttpClient:
@@ -163,36 +242,50 @@ class HttpClient:
         headers: dict[str, str] | None = None,
         payload: dict[str, Any] | None = None,
         timeout: int = 30,
+        mutation: bool = False,
     ) -> HttpResult:
         self.request_count += 1
         if self.request_count > MAX_HTTP_REQUESTS:
-            raise ActivationError("bounded request cap exceeded")
-        body = None if payload is None else json.dumps(payload).encode("utf-8")
+            raise ActivationError("REQUEST_CAP_EXCEEDED")
+        body = None if payload is None else json.dumps(payload).encode()
         request = urllib.request.Request(
             url,
             data=body,
             method=method,
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "BotolaGO-Phase7F/1.0",
+                "User-Agent": "BotolaGO-Phase7F/2.0",
                 **(headers or {}),
             },
         )
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return HttpResult(
-                    status=response.status,
-                    content_type=response.headers.get("Content-Type", ""),
-                    body=response.read(),
+                    response.status,
+                    response.headers.get("Content-Type", ""),
+                    response.read(),
                 )
         except urllib.error.HTTPError as exc:
             return HttpResult(
-                status=exc.code,
-                content_type=exc.headers.get("Content-Type", ""),
-                body=exc.read(),
+                exc.code, exc.headers.get("Content-Type", ""), exc.read()
             )
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            raise ActivationError(f"network_error: {sanitize(exc)}") from exc
+            if mutation:
+                raise AmbiguousMutation("MUTATION_RESPONSE_AMBIGUOUS") from exc
+            raise ActivationError("HTTP_TIMEOUT") from exc
+
+
+def stable_result_code(result: HttpResult) -> str:
+    if result.body and "json" in result.content_type.lower():
+        try:
+            parsed = result.json()
+            if isinstance(parsed, dict):
+                candidate = str(parsed.get("code") or parsed.get("error_code") or "")
+                if ALLOWED_UPSTREAM_CODES.fullmatch(candidate):
+                    return candidate
+        except ActivationError:
+            return "RESPONSE_PARSE_ERROR"
+    return HTTP_CODES.get(result.status, "UNEXPECTED_STATUS")
 
 
 class ManagementClient:
@@ -205,7 +298,9 @@ class ManagementClient:
         method: str,
         path: str,
         payload: dict[str, Any] | None = None,
+        *,
         timeout: int = 60,
+        mutation: bool = False,
     ) -> Any:
         result = self._http.request(
             method,
@@ -213,32 +308,30 @@ class ManagementClient:
             headers=self._headers,
             payload=payload,
             timeout=timeout,
+            mutation=mutation,
         )
         if result.status not in (200, 201):
-            classification = "management_api_request_failed"
-            try:
-                parsed = result.json()
-                if isinstance(parsed, dict):
-                    classification = sanitize(
-                        parsed.get("code") or parsed.get("error_code") or classification
-                    )
-            except ActivationError:
-                pass
-            raise ActivationError(f"{classification}: HTTP {result.status}")
+            raise ActivationError(
+                stable_result_code(result),
+                f"management request returned HTTP {result.status}",
+            )
         return {} if not result.body else result.json()
 
     def get(self, path: str) -> Any:
         return self.request("GET", path)
 
     def patch(self, path: str, payload: dict[str, Any]) -> Any:
-        return self.request("PATCH", path, payload)
+        return self.request("PATCH", path, payload, mutation=True)
 
-    def query(self, sql: str, *, read_only: bool, timeout: int = 60) -> list[dict[str, Any]]:
+    def query(
+        self, sql: str, *, read_only: bool, timeout: int = 60
+    ) -> list[dict[str, Any]]:
         response = self.request(
             "POST",
             f"/v1/projects/{EXPECTED_PROJECT_REF}/database/query",
             {"query": sql, "read_only": read_only},
             timeout=timeout,
+            mutation=not read_only,
         )
         if isinstance(response, list):
             return response
@@ -246,34 +339,110 @@ class ManagementClient:
             rows = response.get("result", response.get("data", []))
             if isinstance(rows, list):
                 return rows
-        raise ActivationError("management_api_database_query_shape_invalid")
+        raise ActivationError("MANAGEMENT_QUERY_SHAPE_INVALID")
 
 
-def assert_environment(expected_commit: str, repo_root: Path) -> tuple[str, str, str]:
+class StateJournal:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def create(
+        self, *, project_ref: str, commit: str, run_id: str, previous: dict[str, Any]
+    ) -> dict[str, Any]:
+        state = {
+            "projectRef": project_ref,
+            "repositoryCommit": commit,
+            "runId": sanitize(run_id, 100),
+            "createdAtUtc": utc_now(),
+            "updatedAtUtc": utc_now(),
+            "previousDbSchema": str(previous["db_schema"]),
+            "previousDbExtraSearchPath": str(previous["db_extra_search_path"]),
+            "mutationAttempted": False,
+            "mutationConfirmed": False,
+            "rollbackRequired": False,
+            "rollbackAttempted": False,
+            "rollbackVerified": False,
+            "sessionCleanupVerified": False,
+            "verdict": "NOT_EXECUTED",
+        }
+        atomic_write_json(self.path, state)
+        return state
+
+    def read(self) -> dict[str, Any]:
+        try:
+            state = json.loads(self.path.read_text(encoding="utf-8"))
+        except FileNotFoundError as exc:
+            raise ActivationError("STATE_JOURNAL_MISSING") from exc
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ActivationError("STATE_JOURNAL_CORRUPT") from exc
+        required = {
+            "projectRef",
+            "repositoryCommit",
+            "previousDbSchema",
+            "previousDbExtraSearchPath",
+            "mutationAttempted",
+            "mutationConfirmed",
+            "rollbackRequired",
+            "rollbackAttempted",
+            "rollbackVerified",
+            "verdict",
+        }
+        if not isinstance(state, dict) or not required.issubset(state):
+            raise ActivationError("STATE_JOURNAL_CORRUPT")
+        if state["projectRef"] != EXPECTED_PROJECT_REF or state["verdict"] not in VERDICTS:
+            raise ActivationError("STATE_JOURNAL_TARGET_INVALID")
+        return state
+
+    def update(self, **changes: Any) -> dict[str, Any]:
+        state = self.read()
+        if "verdict" in changes and changes["verdict"] not in VERDICTS:
+            raise ActivationError("STATE_VERDICT_INVALID")
+        state.update(changes)
+        state["updatedAtUtc"] = utc_now()
+        atomic_write_json(self.path, state)
+        return state
+
+
+def assert_environment(
+    expected_commit: str, repo_root: Path
+) -> tuple[str, str, str, str, str]:
     token = require_env("SUPABASE_ACCESS_TOKEN")
     secret_key = require_env("SUPABASE_SECRET_KEY")
+    smoke_user_id = require_env("BOTOLAGO_PRODUCTION_SMOKE_USER_UUID")
+    aal2_token = require_env("BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN")
+    try:
+        uuid.UUID(smoke_user_id)
+    except ValueError as exc:
+        raise ActivationError("SMOKE_USER_UUID_INVALID") from exc
+    if len(require_env("BOTOLAGO_AAL2_EVIDENCE_SHA256")) != 64:
+        raise ActivationError("AAL2_ATTESTATION_INVALID")
+
     configured_ref = require_env("SUPABASE_PRODUCTION_PROJECT_REF")
-    configured_name = require_env("SUPABASE_PRODUCTION_PROJECT_NAME")
-    target_environment = require_env("BOTOLAGO_TARGET_ENVIRONMENT")
-    admin_environment = require_env("BOTOLAGO_ADMIN_ENVIRONMENT")
-    admin_ref = require_env("BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF")
+    if (
+        configured_ref != EXPECTED_PROJECT_REF
+        or require_env("BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF")
+        != EXPECTED_PROJECT_REF
+    ):
+        raise ActivationError("PROJECT_REF_GUARD_FAILED")
+    if configured_ref in (KNOWN_STAGING_REF, KNOWN_LEGACY_REF):
+        raise ActivationError("FORBIDDEN_PROJECT_TARGET")
+    if require_env("SUPABASE_PRODUCTION_PROJECT_NAME") != EXPECTED_PROJECT_NAME:
+        raise ActivationError("PROJECT_NAME_GUARD_FAILED")
+    if (
+        require_env("BOTOLAGO_TARGET_ENVIRONMENT")
+        != EXPECTED_TARGET_ENVIRONMENT
+        or require_env("BOTOLAGO_ADMIN_ENVIRONMENT") != "production"
+    ):
+        raise ActivationError("ENVIRONMENT_GUARD_FAILED")
     repository_url = os.environ.get("SUPABASE_URL", "").strip()
     production_url = os.environ.get("SUPABASE_PRODUCTION_URL", "").strip()
-    configured_url = repository_url or production_url
-
-    if configured_ref != EXPECTED_PROJECT_REF or admin_ref != EXPECTED_PROJECT_REF:
-        raise ActivationError("production project-ref guard failed")
-    if configured_ref in (KNOWN_STAGING_REF, KNOWN_LEGACY_REF):
-        raise ActivationError("staging or legacy target is forbidden")
-    if configured_name != EXPECTED_PROJECT_NAME:
-        raise ActivationError("production project-name guard failed")
-    if target_environment != EXPECTED_TARGET_ENVIRONMENT or admin_environment != "production":
-        raise ActivationError("production environment guard failed")
-    if repository_url and production_url and repository_url.rstrip("/") != production_url.rstrip("/"):
-        raise ActivationError("production URL variables disagree")
-    if configured_url.rstrip("/") != f"https://{EXPECTED_PROJECT_REF}.supabase.co":
-        raise ActivationError("production URL guard failed")
-
+    if repository_url and production_url and repository_url.rstrip(
+        "/"
+    ) != production_url.rstrip("/"):
+        raise ActivationError("PROJECT_URL_GUARD_FAILED")
+    configured_url = (repository_url or production_url).rstrip("/")
+    if configured_url != f"https://{EXPECTED_PROJECT_REF}.supabase.co":
+        raise ActivationError("PROJECT_URL_GUARD_FAILED")
     actual_commit = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=repo_root,
@@ -282,15 +451,151 @@ def assert_environment(expected_commit: str, repo_root: Path) -> tuple[str, str,
         capture_output=True,
     ).stdout.strip()
     if actual_commit != expected_commit:
-        raise ActivationError("checked-out repository commit differs from expected_commit")
-    return token, secret_key, configured_url.rstrip("/")
+        raise ActivationError("COMMIT_GUARD_FAILED")
+    return token, secret_key, configured_url, smoke_user_id, aal2_token
+
+
+def github_request(http: HttpClient, token: str, path: str) -> HttpResult:
+    return http.request(
+        "GET",
+        f"https://api.github.com{path}",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+
+
+def verify_github_protection(http: HttpClient) -> dict[str, Any]:
+    token = require_env("GITHUB_TOKEN")
+    repository = require_env("GITHUB_REPOSITORY")
+    run_id = require_env("GITHUB_RUN_ID")
+    environment = github_request(
+        http, token, f"/repos/{repository}/environments/{ENVIRONMENT_NAME}"
+    )
+    live: dict[str, Any] | None = None
+    mode = "LIVE_API"
+    if environment.status == 200:
+        parsed = environment.json()
+        if not isinstance(parsed, dict):
+            raise ActivationError("GITHUB_ENVIRONMENT_RESPONSE_INVALID")
+        rules = parsed.get("protection_rules") or []
+        reviewer_rules = [
+            rule for rule in rules if rule.get("type") == "required_reviewers"
+        ]
+        reviewer_count = sum(
+            len(rule.get("reviewers") or []) for rule in reviewer_rules
+        )
+        prevent_self = any(
+            bool(rule.get("prevent_self_review")) for rule in reviewer_rules
+        )
+        branch_policy = parsed.get("deployment_branch_policy") or {}
+        branch_response = github_request(
+            http,
+            token,
+            f"/repos/{repository}/environments/{ENVIRONMENT_NAME}"
+            "/deployment-branch-policies",
+        )
+        branches: list[str] = []
+        if branch_response.status == 200:
+            branch_body = branch_response.json()
+            branches = sorted(
+                str(row.get("name"))
+                for row in branch_body.get("branch_policies", [])
+                if isinstance(row, dict)
+            )
+        live = {
+            "environment": ENVIRONMENT_NAME,
+            "requiredReviewerCount": reviewer_count,
+            "preventSelfReview": prevent_self,
+            "protectedBranches": bool(branch_policy.get("protected_branches")),
+            "customBranchPolicies": bool(
+                branch_policy.get("custom_branch_policies")
+            ),
+            "deploymentBranches": branches,
+        }
+        if reviewer_count < 1 or not prevent_self:
+            raise ActivationError("GITHUB_ENVIRONMENT_UNPROTECTED")
+        if branches != ["main"] and not (
+            branch_policy.get("protected_branches") and not branches
+        ):
+            raise ActivationError("GITHUB_DEPLOYMENT_BRANCH_UNPROTECTED")
+    elif environment.status in (403, 404):
+        mode = "HUMAN_ATTESTATION"
+    else:
+        raise ActivationError("GITHUB_ENVIRONMENT_VERIFICATION_FAILED")
+
+    attestation = {
+        "sha256": require_env(
+            "BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256"
+        ),
+        "requiredReviewerCount": require_env(
+            "BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT"
+        ),
+        "preventSelfReview": require_env(
+            "BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW"
+        ),
+        "deploymentBranch": require_env(
+            "BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH"
+        ),
+        "adminBypassDisabled": require_env(
+            "BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED"
+        ),
+    }
+    if (
+        not re.fullmatch(r"[a-f0-9]{64}", attestation["sha256"])
+        or int(attestation["requiredReviewerCount"]) < 1
+        or attestation["preventSelfReview"].lower() != "true"
+        or attestation["deploymentBranch"] != "main"
+        or attestation["adminBypassDisabled"].lower() != "true"
+    ):
+        raise ActivationError("GITHUB_ENVIRONMENT_ATTESTATION_INVALID")
+
+    conflicts: list[dict[str, Any]] = []
+    for status in ("queued", "in_progress"):
+        response = github_request(
+            http,
+            token,
+            f"/repos/{repository}/actions/runs?"
+            + urllib.parse.urlencode({"status": status, "per_page": 100}),
+        )
+        if response.status != 200:
+            raise ActivationError("GITHUB_CONFLICT_CHECK_UNVERIFIED")
+        for row in response.json().get("workflow_runs", []):
+            path = str(row.get("path") or "")
+            if (
+                path
+                in {
+                    ".github/workflows/phase7e-b-production-migration-promotion.yml",
+                    ".github/workflows/phase7f-production-api-identity-activation.yml",
+                }
+                and str(row.get("id")) != run_id
+            ):
+                conflicts.append(
+                    {
+                        "workflow": Path(path).name,
+                        "status": str(row.get("status")),
+                        "runIdHash": fingerprint(str(row.get("id"))),
+                    }
+                )
+    if conflicts:
+        raise ActivationError("CONFLICTING_PRODUCTION_WORKFLOW")
+    return {
+        "verificationMode": mode,
+        "live": live,
+        "attestationHash": attestation["sha256"],
+        "adminBypassDisabledAttested": True,
+        "conflictingProductionRuns": 0,
+        "concurrencyGroup": SHARED_CONCURRENCY_GROUP,
+    }
 
 
 def assert_management_target(client: ManagementClient) -> dict[str, Any]:
     project = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}")
     organizations = client.get("/v1/organizations")
     if not isinstance(project, dict):
-        raise ActivationError("management project response is invalid")
+        raise ActivationError("MANAGEMENT_PROJECT_RESPONSE_INVALID")
     returned_ref = project.get("ref") or project.get("id")
     if (
         returned_ref != EXPECTED_PROJECT_REF
@@ -298,14 +603,17 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
         or project.get("region") != EXPECTED_REGION
         or project.get("status") != "ACTIVE_HEALTHY"
     ):
-        raise ActivationError("management project identity or health guard failed")
+        raise ActivationError("MANAGEMENT_TARGET_GUARD_FAILED")
     organization_id = project.get("organization_id")
     organization_rows = (
-        organizations if isinstance(organizations, list) else organizations.get("organizations", [])
+        organizations
+        if isinstance(organizations, list)
+        else organizations.get("organizations", [])
     )
-    if not organization_id or not any(row.get("id") == organization_id for row in organization_rows):
-        raise ActivationError("authenticated account does not own the selected project")
-
+    if not organization_id or not any(
+        row.get("id") == organization_id for row in organization_rows
+    ):
+        raise ActivationError("MANAGEMENT_OWNERSHIP_GUARD_FAILED")
     backups = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/database/backups")
     completed = [
         row
@@ -313,101 +621,51 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
         if isinstance(row, dict) and row.get("status") == "COMPLETED"
     ]
     if not completed:
-        raise ActivationError("backup readiness insufficient")
+        raise ActivationError("BACKUP_READINESS_INSUFFICIENT")
+    if backups.get("walg_enabled") is not True:
+        raise ActivationError("WALG_STATE_UNVERIFIED")
     functions = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/functions")
     if functions:
-        raise ActivationError("Edge Functions must remain absent")
+        raise ActivationError("EDGE_FUNCTION_STATE_ACTIVE")
     return {
         "ref": returned_ref,
         "name": project.get("name"),
         "region": project.get("region"),
         "status": project.get("status"),
         "databaseVersion": (project.get("database") or {}).get("version"),
-        "completedBackupCount": len(completed),
-        "latestCompletedBackup": max(row.get("inserted_at", "") for row in completed),
-        "pitrEnabled": bool(backups.get("pitr_enabled")),
+        "latestCompletedBackup": max(
+            row.get("inserted_at", "") for row in completed
+        ),
+        "walGEnabled": True,
+        "pitrState": "ENABLED"
+        if backups.get("pitr_enabled")
+        else "DISABLED_ACCEPTED",
         "edgeFunctionCount": 0,
     }
 
 
 INVARIANT_SQL = """
 select jsonb_build_object(
-  'canonicalTableCount', (
-    select count(*)::integer
-    from pg_class relation
-    join pg_namespace namespace on namespace.oid = relation.relnamespace
-    where namespace.nspname in ('app', 'app_private')
-      and relation.relkind in ('r', 'p')
-  ),
-  'forcedRlsCount', (
-    select count(*)::integer
-    from pg_class relation
-    join pg_namespace namespace on namespace.oid = relation.relnamespace
-    where namespace.nspname in ('app', 'app_private')
-      and relation.relkind in ('r', 'p')
-      and relation.relrowsecurity
-      and relation.relforcerowsecurity
-  ),
-  'nonForcedTables', coalesce((
-    select jsonb_agg(namespace.nspname || '.' || relation.relname order by 1)
-    from pg_class relation
-    join pg_namespace namespace on namespace.oid = relation.relnamespace
-    where namespace.nspname in ('app', 'app_private')
-      and relation.relkind in ('r', 'p')
-      and (not relation.relrowsecurity or not relation.relforcerowsecurity)
-  ), '[]'::jsonb),
-  'anonApiUsage', has_schema_privilege('anon', 'api', 'USAGE'),
-  'authenticatedApiUsage', has_schema_privilege('authenticated', 'api', 'USAGE'),
-  'anonAppUsage', has_schema_privilege('anon', 'app', 'USAGE'),
-  'authenticatedAppUsage', has_schema_privilege('authenticated', 'app', 'USAGE'),
-  'anonPrivateUsage', has_schema_privilege('anon', 'app_private', 'USAGE'),
-  'authenticatedPrivateUsage', has_schema_privilege('authenticated', 'app_private', 'USAGE'),
-  'cronJobCount', case
-    when to_regclass('cron.job') is null then 0
-    else (select count(*)::integer from cron.job)
-  end,
-  'authUserCount', (select count(*)::integer from auth.users),
-  'profileCount', (select count(*)::integer from app.profiles),
-  'preferenceCount', (select count(*)::integer from app.user_preferences),
-  'missingProfileCount', (
-    select count(*)::integer from auth.users users
-    left join app.profiles profile on profile.id = users.id
-    where profile.id is null
-  ),
-  'missingPreferenceCount', (
-    select count(*)::integer from auth.users users
-    left join app.user_preferences preference on preference.user_id = users.id
-    where preference.user_id is null
-  ),
-  'orphanProfileCount', (
-    select count(*)::integer from app.profiles profile
-    left join auth.users users on users.id = profile.id
-    where users.id is null
-  ),
-  'identityTriggerCount', (
-    select count(*)::integer
-    from pg_trigger trigger
-    where trigger.tgrelid = 'auth.users'::regclass
-      and trigger.tgname = 'botolago_v2_auth_user_created'
-      and not trigger.tgisinternal
-  ),
+  'canonicalTableCount', (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('app','app_private') and c.relkind in ('r','p')),
+  'forcedRlsCount', (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('app','app_private') and c.relkind in ('r','p') and c.relrowsecurity and c.relforcerowsecurity),
+  'nonForcedTableCount', (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('app','app_private') and c.relkind in ('r','p') and (not c.relrowsecurity or not c.relforcerowsecurity)),
+  'cronJobCount', case when to_regclass('cron.job') is null then 0 else (select count(*)::integer from cron.job) end,
+  'missingProfileCount', (select count(*)::integer from auth.users u left join app.profiles p on p.id=u.id where p.id is null),
+  'missingPreferenceCount', (select count(*)::integer from auth.users u left join app.user_preferences p on p.user_id=u.id where p.user_id is null),
+  'orphanProfileCount', (select count(*)::integer from app.profiles p left join auth.users u on u.id=p.id where u.id is null),
+  'identityTriggerCount', (select count(*)::integer from pg_trigger where tgrelid='auth.users'::regclass and tgname='botolago_v2_auth_user_created' and not tgisinternal),
   'staffPrincipalCount', (select count(*)::integer from app_private.staff_principals),
-  'activePlatformAdminCount', (
-    select count(*)::integer
-    from app_private.staff_role_assignments assignment
-    join app_private.admin_roles role on role.id = assignment.role_id
-    where role.name = 'platform_admin'
-      and assignment.status = 'active'
-      and assignment.starts_at <= statement_timestamp()
-      and (assignment.expires_at is null or assignment.expires_at > statement_timestamp())
-  ),
-  'realtimeApiPublicationCount', (
-    select count(*)::integer
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'api'
-      and tablename = 'live_fixture_updates'
-  )
+  'activePlatformAdminCount', (select count(*)::integer from app_private.staff_role_assignments a join app_private.admin_roles r on r.id=a.role_id where r.name='platform_admin' and a.status='active' and a.starts_at<=statement_timestamp() and (a.expires_at is null or a.expires_at>statement_timestamp())),
+  'ownerBootstrapAuditCount', (select count(*)::integer from app_private.admin_audit_events where action='security.bootstrap_platform_admin' and outcome='succeeded'),
+  'pendingPrivilegedApprovalCount', (select count(*)::integer from app_private.admin_approval_requests where status='pending'),
+  'footballActiveRunCount', (select count(*)::integer from app_private.football_ingestion_runs where status in ('pending','running')),
+  'newsActiveRunCount', (select count(*)::integer from app_private.news_ingestion_runs where status in ('pending','running')),
+  'notificationActiveRunCount', (select count(*)::integer from app_private.notification_fanout_runs where status in ('pending','processing')),
+  'notificationActiveScheduleCount', (select count(*)::integer from app_private.notification_schedules where status in ('scheduled','claimed','retry_scheduled')),
+  'fantasyActiveRunCount', (select count(*)::integer from app_private.fantasy_job_runs where status in ('pending','running')),
+  'adminActiveWorkerCount', (select count(*)::integer from app_private.admin_worker_runs where status='running'),
+  'adminPendingRevocationCount', (select count(*)::integer from app_private.staff_session_revocation_requests where status in ('pending','processing','failed')),
+  'realtimeApiPublicationCount', (select count(*)::integer from pg_publication_tables where pubname='supabase_realtime' and schemaname='api' and tablename='live_fixture_updates')
 ) as invariant
 """.strip()
 
@@ -415,18 +673,12 @@ select jsonb_build_object(
 def collect_invariants(client: ManagementClient) -> dict[str, Any]:
     rows = client.query(INVARIANT_SQL, read_only=True)
     if not rows or not isinstance(rows[0].get("invariant"), dict):
-        raise ActivationError("production invariant query returned no result")
+        raise ActivationError("RUNTIME_INVARIANT_QUERY_INVALID")
     value = rows[0]["invariant"]
     expected = {
         "canonicalTableCount": EXPECTED_CANONICAL_TABLE_COUNT,
         "forcedRlsCount": EXPECTED_CANONICAL_TABLE_COUNT,
-        "nonForcedTables": [],
-        "anonApiUsage": True,
-        "authenticatedApiUsage": True,
-        "anonAppUsage": False,
-        "authenticatedAppUsage": False,
-        "anonPrivateUsage": False,
-        "authenticatedPrivateUsage": False,
+        "nonForcedTableCount": 0,
         "cronJobCount": 0,
         "missingProfileCount": 0,
         "missingPreferenceCount": 0,
@@ -434,43 +686,185 @@ def collect_invariants(client: ManagementClient) -> dict[str, Any]:
         "identityTriggerCount": 1,
         "staffPrincipalCount": 0,
         "activePlatformAdminCount": 0,
+        "ownerBootstrapAuditCount": 0,
+        "pendingPrivilegedApprovalCount": 0,
+        "footballActiveRunCount": 0,
+        "newsActiveRunCount": 0,
+        "notificationActiveRunCount": 0,
+        "notificationActiveScheduleCount": 0,
+        "fantasyActiveRunCount": 0,
+        "adminActiveWorkerCount": 0,
+        "adminPendingRevocationCount": 0,
         "realtimeApiPublicationCount": 1,
     }
     for key, expected_value in expected.items():
         if value.get(key) != expected_value:
-            raise ActivationError(f"production security invariant failed: {key}")
-    if int(value.get("authUserCount") or 0) < 1:
-        raise ActivationError("no existing Production V2 Auth user is available for smoke testing")
+            raise ActivationError("RUNTIME_INVARIANT_FAILED", key)
+    value["workersMeasured"] = True
+    value["schedulesMeasured"] = True
     return value
 
 
-def assert_migration_parity(client: ManagementClient, repo_root: Path) -> dict[str, Any]:
+def assert_migration_parity(
+    client: ManagementClient, repo_root: Path
+) -> dict[str, Any]:
     promoter = load_promoter(repo_root)
     migrations = promoter.load_migrations(repo_root)
     history = promoter.read_history(client)
     completed = promoter.assert_history("admin", history, migrations)
-    if len(history) != EXPECTED_MIGRATION_COUNT or completed != len(promoter.BATCHES["admin"]):
-        raise ActivationError("Production V2 migration history is not the exact 35-file chain")
-    return {"historyCount": len(history), "checksumParity": "exact"}
+    if (
+        len(history) != EXPECTED_MIGRATION_COUNT
+        or completed != len(promoter.BATCHES["admin"])
+    ):
+        raise ActivationError("MIGRATION_PARITY_FAILED")
+    return {"historyCount": len(history), "checksumParity": "EXACT"}
 
 
-def get_postgrest_config(client: ManagementClient) -> dict[str, Any]:
-    value = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/postgrest")
-    if not isinstance(value, dict):
-        raise ActivationError("PostgREST configuration response is invalid")
-    schemas = normalize_csv(value.get("db_schema"))
-    if schemas not in ALLOWED_INITIAL_SCHEMA_SETS:
-        raise ActivationError("PostgREST exposed schemas differ from the approved before/after sets")
+def load_expected_manifest(repo_root: Path) -> tuple[dict[str, Any], str]:
+    path = repo_root / "scripts/backend/phase7f-api-surface-manifest.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise ActivationError("API_MANIFEST_INVALID") from exc
+    digest = hashlib.sha256(canonical_json(manifest).encode()).hexdigest()
+    return manifest, digest
+
+
+def validate_manifest_security(manifest: dict[str, Any]) -> None:
+    schemas = {row["schema_name"]: row for row in manifest["schemas"]}
+    if schemas["app"]["role_privileges"]["authenticatedUsage"] is not True:
+        raise ActivationError("CANONICAL_APP_USAGE_MISSING")
+    if (
+        schemas["app"]["role_privileges"]["anonUsage"]
+        or schemas["app_private"]["role_privileges"]["anonUsage"]
+        or schemas["app_private"]["role_privileges"]["authenticatedUsage"]
+    ):
+        raise ActivationError("CANONICAL_SCHEMA_PRIVILEGE_UNSAFE")
+    forbidden = {
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "TRIGGER",
+        "REFERENCES",
+    }
+    if any(
+        row["privilege"] in forbidden
+        for row in manifest["browserRelationPrivileges"]
+    ):
+        raise ActivationError("CANONICAL_BROWSER_WRITE_GRANT")
+    if any(not row["forceRowSecurity"] for row in manifest["canonicalTables"]):
+        raise ActivationError("CANONICAL_FORCE_RLS_MISSING")
+    for routine in manifest["apiRoutines"]:
+        grantees = {grant["grantee"] for grant in routine["grants"]}
+        if "PUBLIC" in grantees:
+            raise ActivationError("CANONICAL_PUBLIC_EXECUTE_GRANT")
+        if routine["security_definer"] and 'search_path=""' not in routine[
+            "configuration"
+        ]:
+            raise ActivationError("CANONICAL_DEFINER_SEARCH_PATH_UNSAFE")
+
+
+def assert_api_manifest(
+    client: ManagementClient, repo_root: Path
+) -> dict[str, Any]:
+    expected, expected_digest = load_expected_manifest(repo_root)
+    validate_manifest_security(expected)
+    sql = (
+        repo_root / "scripts/backend/phase7f-api-surface-manifest.sql"
+    ).read_text(encoding="utf-8")
+    rows = client.query(sql, read_only=True, timeout=90)
+    if len(rows) != 1 or not isinstance(rows[0].get("manifest"), dict):
+        raise ActivationError("API_MANIFEST_QUERY_INVALID")
+    actual = rows[0]["manifest"]
+    if canonical_json(actual) != canonical_json(expected):
+        raise ActivationError("API_MANIFEST_DRIFT")
     return {
-        "db_schema": str(value.get("db_schema") or ""),
-        "db_extra_search_path": str(value.get("db_extra_search_path") or ""),
-        "max_rows": value.get("max_rows"),
-        "db_pool": value.get("db_pool"),
-        "db_pool_acquisition_timeout": value.get("db_pool_acquisition_timeout"),
+        "manifestVersion": expected["manifestVersion"],
+        "manifestSha256": expected_digest,
+        "apiRelationCount": len(expected["apiRelations"]),
+        "apiRoutineCount": len(expected["apiRoutines"]),
+        "canonicalPolicyCount": len(expected["canonicalPolicies"]),
+        "canonicalTableCount": len(expected["canonicalTables"]),
+        "result": "EXACT_MATCH",
     }
 
 
-def set_postgrest_config(client: ManagementClient, db_schema: str, extra_search_path: str) -> None:
+def validate_smoke_user(
+    client: ManagementClient, smoke_user_id: str
+) -> dict[str, Any]:
+    quoted = str(uuid.UUID(smoke_user_id))
+    rows = client.query(
+        f"""
+select
+  users.id::text as id,
+  users.email,
+  (users.email_confirmed_at is not null) as email_verified,
+  (users.banned_until is not null and users.banned_until > statement_timestamp()) as banned,
+  (users.deleted_at is not null) as deleted,
+  (select count(*)::integer from app.profiles where id=users.id) as profile_count,
+  (select count(*)::integer from app_private.staff_principals where auth_user_id=users.id) as staff_count,
+  (select count(*)::integer from app_private.staff_role_assignments a join app_private.staff_principals s on s.id=a.staff_principal_id where s.auth_user_id=users.id and a.status='active') as role_count,
+  (select count(*)::integer from app_private.admin_approval_requests a join app_private.staff_principals s on s.id=a.requester_principal_id where s.auth_user_id=users.id and a.status='pending') as pending_approval_count,
+  (select count(*)::integer from auth.mfa_factors where user_id=users.id and status::text='verified') as verified_factor_count,
+  (select count(*)::integer from auth.sessions where user_id=users.id) as baseline_session_count
+from auth.users users
+where users.id='{quoted}'::uuid
+""".strip(),
+        read_only=True,
+    )
+    if len(rows) != 1 or rows[0].get("id") != quoted:
+        raise ActivationError("APPROVED_SMOKE_USER_NOT_FOUND")
+    row = rows[0]
+    if not row.get("email_verified") or row.get("banned") or row.get("deleted"):
+        raise ActivationError("APPROVED_SMOKE_USER_DISABLED")
+    for field, code in (
+        ("profile_count", "APPROVED_SMOKE_PROFILE_INVALID"),
+        ("staff_count", "APPROVED_SMOKE_USER_STAFF_LINKED"),
+        ("role_count", "APPROVED_SMOKE_USER_HAS_ROLE"),
+        ("pending_approval_count", "APPROVED_SMOKE_USER_HAS_APPROVAL"),
+    ):
+        expected = 1 if field == "profile_count" else 0
+        if int(row.get(field) or 0) != expected:
+            raise ActivationError(code)
+    if int(row.get("verified_factor_count") or 0) < 1:
+        raise ActivationError("AAL2_SMOKE_FACTOR_MISSING")
+    return {
+        "id": quoted,
+        "email": str(row["email"]),
+        "fingerprint": fingerprint(quoted),
+        "baselineSessionCount": int(row.get("baseline_session_count") or 0),
+        "verifiedMfaFactorCount": int(row.get("verified_factor_count") or 0),
+    }
+
+
+def read_postgrest_config(client: ManagementClient) -> dict[str, Any]:
+    value = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/postgrest")
+    if not isinstance(value, dict):
+        raise ActivationError("POSTGREST_CONFIG_RESPONSE_INVALID")
+    return {
+        "db_schema": str(value.get("db_schema") or ""),
+        "db_extra_search_path": str(
+            value.get("db_extra_search_path") or ""
+        ),
+        "max_rows": value.get("max_rows"),
+        "db_pool": value.get("db_pool"),
+        "db_pool_acquisition_timeout": value.get(
+            "db_pool_acquisition_timeout"
+        ),
+    }
+
+
+def get_postgrest_config(client: ManagementClient) -> dict[str, Any]:
+    value = read_postgrest_config(client)
+    if normalize_csv(value.get("db_schema")) not in ALLOWED_INITIAL_SCHEMA_SETS:
+        raise ActivationError("POSTGREST_CONFIG_UNEXPECTED")
+    return value
+
+
+def set_postgrest_config(
+    client: ManagementClient, db_schema: str, extra_search_path: str
+) -> None:
     client.patch(
         f"/v1/projects/{EXPECTED_PROJECT_REF}/postgrest",
         {
@@ -489,417 +883,35 @@ def wait_for_postgrest(
         config = get_postgrest_config(client)
         if (
             normalize_csv(config["db_schema"]) == expected_schemas
-            and normalize_csv(config["db_extra_search_path"]) == expected_extra_search_path
+            and normalize_csv(config["db_extra_search_path"])
+            == expected_extra_search_path
         ):
             return config
         time.sleep(5)
-    raise ActivationError("PostgREST effective configuration did not converge")
+    raise ActivationError("POSTGREST_CONVERGENCE_TIMEOUT")
 
 
-def get_publishable_key(client: ManagementClient) -> str:
-    keys = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/api-keys?reveal=true")
-    if not isinstance(keys, list):
-        raise ActivationError("API key inventory response is invalid")
-    publishable = [
-        str(row.get("api_key") or "")
-        for row in keys
-        if isinstance(row, dict) and row.get("type") == "publishable"
-    ]
-    if len(publishable) != 1 or not publishable[0].startswith("sb_publishable_"):
-        raise ActivationError("exactly one Production V2 publishable key is required")
-    return publishable[0]
-
-
-def project_request(
-    http: HttpClient,
-    project_url: str,
-    method: str,
-    path: str,
-    *,
-    api_key: str,
-    access_token: str | None = None,
-    schema: str | None = None,
-    payload: dict[str, Any] | None = None,
-) -> HttpResult:
-    headers = {"apikey": api_key}
-    if access_token:
-        headers["Authorization"] = f"Bearer {access_token}"
-    if schema:
-        headers["Accept-Profile"] = schema
-        headers["Content-Profile"] = schema
-    return http.request(method, f"{project_url}{path}", headers=headers, payload=payload)
-
-
-def result_code(result: HttpResult) -> str | None:
-    try:
-        body = result.json()
-    except ActivationError:
-        return None
-    if isinstance(body, dict):
-        return str(body.get("code") or body.get("error_code") or body.get("message") or "")[:100]
-    return None
-
-
-def record_case(
-    cases: list[dict[str, Any]],
-    name: str,
-    result: HttpResult,
-    expected_statuses: set[int],
-    *,
-    expected_rows: int | None = None,
-) -> Any:
-    parsed: Any = None
-    if result.body and "json" in result.content_type.lower():
-        parsed = result.json()
-    row_count = len(parsed) if isinstance(parsed, list) else None
-    passed = result.status in expected_statuses
-    if expected_rows is not None:
-        passed = passed and row_count == expected_rows
-    cases.append(
-        {
-            "case": name,
-            "status": result.status,
-            "errorCode": result_code(result) if result.status >= 400 else None,
-            "rowCount": row_count,
-            "passed": passed,
-        }
+def classify_effective_config(
+    current: dict[str, Any] | None, previous: dict[str, Any]
+) -> str:
+    if current is None:
+        return "UNVERIFIED"
+    current_pair = (
+        normalize_csv(current["db_schema"]),
+        normalize_csv(current["db_extra_search_path"]),
     )
-    if not passed:
-        raise ActivationError(f"Identity/Profile smoke case failed: {name}")
-    return parsed
-
-
-def select_existing_ordinary_user(client: ManagementClient) -> tuple[str, str]:
-    rows = client.query(
-        """
-select users.id::text as id, users.email
-from auth.users users
-left join app_private.staff_principals staff on staff.auth_user_id = users.id
-where users.email_confirmed_at is not null
-  and users.email is not null
-  and staff.id is null
-order by users.created_at, users.id
-limit 1
-""".strip(),
-        read_only=True,
+    previous_pair = (
+        normalize_csv(previous["db_schema"]),
+        normalize_csv(previous["db_extra_search_path"]),
     )
-    if len(rows) != 1 or not rows[0].get("id") or not rows[0].get("email"):
-        raise ActivationError("no verified ordinary Auth user is available for smoke testing")
-    return str(rows[0]["id"]), str(rows[0]["email"])
-
-
-def mint_ephemeral_existing_user_session(
-    http: HttpClient,
-    project_url: str,
-    secret_key: str,
-    publishable_key: str,
-    email: str,
-) -> tuple[str, str | None]:
-    link = project_request(
-        http,
-        project_url,
-        "POST",
-        "/auth/v1/admin/generate_link",
-        api_key=secret_key,
-        access_token=secret_key,
-        payload={"type": "magiclink", "email": email},
-    )
-    if link.status != 200:
-        raise ActivationError(f"existing-user session link failed: HTTP {link.status}")
-    properties = (link.json().get("properties") or {}) if isinstance(link.json(), dict) else {}
-    token_hash = properties.get("hashed_token")
-    if not token_hash:
-        raise ActivationError("existing-user session link omitted the token hash")
-    verified = project_request(
-        http,
-        project_url,
-        "POST",
-        "/auth/v1/verify",
-        api_key=publishable_key,
-        payload={"type": "magiclink", "token_hash": token_hash},
-    )
-    if verified.status != 200:
-        raise ActivationError(f"existing-user session verification failed: HTTP {verified.status}")
-    session = verified.json()
-    if not isinstance(session, dict) or not session.get("access_token"):
-        raise ActivationError("existing-user session response is incomplete")
-    return str(session["access_token"]), session.get("refresh_token")
-
-
-def revoke_ephemeral_session(
-    http: HttpClient,
-    project_url: str,
-    publishable_key: str,
-    access_token: str,
-) -> None:
-    result = project_request(
-        http,
-        project_url,
-        "POST",
-        "/auth/v1/logout?scope=local",
-        api_key=publishable_key,
-        access_token=access_token,
-    )
-    if result.status not in (200, 204):
-        raise ActivationError(f"ephemeral smoke session revocation failed: HTTP {result.status}")
-
-
-def run_smoke(
-    http: HttpClient,
-    client: ManagementClient,
-    project_url: str,
-    secret_key: str,
-) -> dict[str, Any]:
-    publishable_key = get_publishable_key(client)
-    user_id, user_email = select_existing_ordinary_user(client)
-    cases: list[dict[str, Any]] = []
-    access_token: str | None = None
-    try:
-        record_case(
-            cases,
-            "anon_explicit_username_availability",
-            project_request(
-                http,
-                project_url,
-                "POST",
-                "/rest/v1/rpc/username_availability",
-                api_key=publishable_key,
-                schema="api",
-                payload={"candidate": "activation_probe_reserved"},
-            ),
-            {200},
-        )
-        record_case(
-            cases,
-            "anon_profile_is_empty",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                "/rest/v1/my_profile?select=*",
-                api_key=publishable_key,
-                schema="api",
-            ),
-            {200},
-            expected_rows=0,
-        )
-        record_case(
-            cases,
-            "anon_app_schema_unexposed",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                "/rest/v1/profiles?select=id&limit=1",
-                api_key=publishable_key,
-                schema="app",
-            ),
-            {406},
-        )
-        record_case(
-            cases,
-            "anon_private_schema_unexposed",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                "/rest/v1/staff_principals?select=id&limit=1",
-                api_key=publishable_key,
-                schema="app_private",
-            ),
-            {406},
-        )
-        record_case(
-            cases,
-            "public_schema_unexposed",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                "/rest/v1/nonexistent_activation_probe?select=*",
-                api_key=publishable_key,
-                schema="public",
-            ),
-            {406},
-        )
-        record_case(
-            cases,
-            "graphql_not_exposed",
-            project_request(
-                http,
-                project_url,
-                "POST",
-                "/graphql/v1",
-                api_key=publishable_key,
-                payload={"query": "query ActivationProbe { __typename }"},
-            ),
-            {400, 401, 403, 404, 406},
-        )
-        record_case(
-            cases,
-            "invalid_token_rejected",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                "/rest/v1/my_profile?select=*",
-                api_key=publishable_key,
-                access_token="invalid.activation.token",
-                schema="api",
-            ),
-            {401},
-        )
-
-        access_token, _refresh_token = mint_ephemeral_existing_user_session(
-            http, project_url, secret_key, publishable_key, user_email
-        )
-        profile = record_case(
-            cases,
-            "authenticated_reads_own_profile",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                "/rest/v1/my_profile?select=*",
-                api_key=publishable_key,
-                access_token=access_token,
-                schema="api",
-            ),
-            {200},
-            expected_rows=1,
-        )
-        if not isinstance(profile, list) or str(profile[0].get("id")) != user_id:
-            raise ActivationError("authenticated profile identity mismatch")
-        record_case(
-            cases,
-            "authenticated_cannot_read_unrelated_profile",
-            project_request(
-                http,
-                project_url,
-                "GET",
-                f"/rest/v1/my_profile?select=*&id=eq.{uuid.uuid4()}",
-                api_key=publishable_key,
-                access_token=access_token,
-                schema="api",
-            ),
-            {200},
-            expected_rows=0,
-        )
-        record_case(
-            cases,
-            "ordinary_user_denied_admin_context",
-            project_request(
-                http,
-                project_url,
-                "POST",
-                "/rest/v1/rpc/get_my_staff_context",
-                api_key=publishable_key,
-                access_token=access_token,
-                schema="api",
-                payload={},
-            ),
-            {403},
-        )
-        record_case(
-            cases,
-            "authenticated_direct_canonical_write_unexposed",
-            project_request(
-                http,
-                project_url,
-                "PATCH",
-                f"/rest/v1/profiles?id=eq.{user_id}",
-                api_key=publishable_key,
-                access_token=access_token,
-                schema="app",
-                payload={"display_name": "must-not-write"},
-            ),
-            {406},
-        )
-    finally:
-        if access_token:
-            revoke_ephemeral_session(http, project_url, publishable_key, access_token)
-
-    return {
-        "actorFingerprint": fingerprint(user_id),
-        "existingUserReused": True,
-        "newAuthUsersCreated": 0,
-        "temporarySessionRevoked": True,
-        "caseCount": len(cases),
-        "cases": cases,
-    }
-
-
-def query_logs(
-    client: ManagementClient,
-    started_at: str,
-    completed_at: str,
-) -> dict[str, Any]:
-    sql = """
-SELECT source_name, count() AS event_count
-FROM logs
-WHERE timestamp >= parseDateTimeBestEffort({started:String})
-  AND timestamp <= parseDateTimeBestEffort({completed:String})
-  AND (
-    toInt32OrZero(log_attributes['response.status_code']) >= 500
-    OR positionCaseInsensitive(event_message, 'row-level security') > 0
-    OR positionCaseInsensitive(event_message, 'permission denied') > 0
-  )
-GROUP BY source_name
-ORDER BY event_count DESC
-LIMIT 20
-""".strip()
-    params = urllib.parse.urlencode(
-        {
-            "sql": sql.replace("{started:String}", f"'{started_at}'").replace(
-                "{completed:String}", f"'{completed_at}'"
-            ),
-            "iso_timestamp_start": started_at,
-            "iso_timestamp_end": completed_at,
-        }
-    )
-    response = client.get(
-        f"/v1/projects/{EXPECTED_PROJECT_REF}/analytics/endpoints/logs?{params}"
-    )
-    if not isinstance(response, dict) or response.get("error"):
-        raise ActivationError("post-change unified log inspection failed")
-    rows = response.get("result", [])
-    if not isinstance(rows, list):
-        raise ActivationError("post-change unified log response is invalid")
-    total = sum(int(row.get("event_count") or 0) for row in rows if isinstance(row, dict))
-    return {
-        "queryOutcome": "QUERIED_ZERO" if total == 0 else "QUERIED_NONZERO",
-        "errorEventCount": total,
-        "sources": [
-            {
-                "source": sanitize(row.get("source_name") or "unknown", 100),
-                "count": int(row.get("event_count") or 0),
-            }
-            for row in rows
-            if isinstance(row, dict)
-        ],
-    }
-
-
-def preflight(
-    client: ManagementClient,
-    repo_root: Path,
-) -> dict[str, Any]:
-    target = assert_management_target(client)
-    migrations = assert_migration_parity(client, repo_root)
-    invariants = collect_invariants(client)
-    postgrest = get_postgrest_config(client)
-    dependency_audit = assert_repository_dependencies(repo_root)
-    return {
-        "timestampUtc": utc_now(),
-        "target": target,
-        "migrations": migrations,
-        "security": invariants,
-        "postgrest": postgrest,
-        "dependencyAudit": dependency_audit,
-        "schedules": "disabled",
-        "workers": "disabled",
-        "result": "PASS",
-    }
+    if current_pair == previous_pair:
+        return "UNCHANGED"
+    if current_pair == (
+        (TARGET_DB_SCHEMA,),
+        (TARGET_EXTRA_SEARCH_PATH,),
+    ):
+        return "INTENDED_ACTIVATION_APPLIED"
+    return "UNEXPECTED_CONFIGURATION"
 
 
 def rollback(
@@ -920,127 +932,1078 @@ def rollback(
     )
     evidence = {
         "timestampUtc": utc_now(),
-        "reason": sanitize(reason),
+        "reasonCode": sanitize(reason, 100),
         "restored": restored,
-        "dataMutations": 0,
-        "migrationRollbacks": 0,
-        "result": "ROLLED_BACK",
+        "result": "FAILED_ROLLED_BACK",
     }
     write_json(evidence_dir / "rollback.json", evidence)
     return evidence
 
 
+def recover_from_state(
+    client: ManagementClient,
+    journal: StateJournal,
+    evidence_dir: Path,
+    *,
+    preserve_pending_activation: bool = False,
+) -> dict[str, Any]:
+    state = journal.read()
+    preserved_verdict = (
+        state["verdict"]
+        if state["verdict"] in {"SESSION_CLEANUP_FAILED", "EVIDENCE_FAILURE"}
+        else None
+    )
+    if state["verdict"] == "PASS":
+        return {"result": "PASS", "recoveryAction": "NONE"}
+    if (
+        state["verdict"] == "EVIDENCE_FAILURE"
+        and state["rollbackVerified"]
+    ):
+        return {
+            "result": "EVIDENCE_FAILURE",
+            "recoveryAction": "ROLLBACK_ALREADY_VERIFIED",
+        }
+    previous = {
+        "db_schema": state["previousDbSchema"],
+        "db_extra_search_path": state["previousDbExtraSearchPath"],
+    }
+    try:
+        current = read_postgrest_config(client)
+    except Exception:
+        journal.update(verdict="ACTIVATION_STATE_AMBIGUOUS")
+        raise ActivationError("ACTIVATION_STATE_AMBIGUOUS")
+    classification = classify_effective_config(current, previous)
+    if (
+        preserve_pending_activation
+        and state["verdict"] == "ACTIVATED_PENDING_TESTS"
+        and classification == "INTENDED_ACTIVATION_APPLIED"
+    ):
+        return {
+            "result": "ACTIVATED_PENDING_TESTS",
+            "recoveryAction": "EFFECTIVE_STATE_VERIFIED",
+        }
+    if classification == "UNCHANGED":
+        state = journal.update(
+            rollbackRequired=False,
+            rollbackVerified=True,
+            verdict=preserved_verdict
+            or (
+                "FAILED_ROLLED_BACK"
+                if state["mutationAttempted"]
+                else "FAILED_BEFORE_MUTATION"
+            ),
+        )
+        write_json(evidence_dir / "recovery.json", {
+            "configurationClassification": classification,
+            "result": state["verdict"],
+        })
+        return state
+    if classification in (
+        "INTENDED_ACTIVATION_APPLIED",
+        "UNEXPECTED_CONFIGURATION",
+    ):
+        journal.update(rollbackRequired=True, rollbackAttempted=True)
+        try:
+            rollback(
+                client,
+                previous,
+                evidence_dir,
+                "INDEPENDENT_RECOVERY",
+            )
+        except AmbiguousMutation as exc:
+            try:
+                verified = read_postgrest_config(client)
+            except Exception as verify_error:
+                journal.update(
+                    rollbackVerified=False,
+                    verdict="ROLLBACK_FAILED",
+                )
+                raise ActivationError(
+                    "ROLLBACK_FAILED", verify_error
+                ) from verify_error
+            if classify_effective_config(verified, previous) != "UNCHANGED":
+                journal.update(
+                    rollbackVerified=False,
+                    verdict="ROLLBACK_FAILED",
+                )
+                raise ActivationError("ROLLBACK_FAILED", exc) from exc
+            write_json(
+                evidence_dir / "rollback.json",
+                {
+                    "timestampUtc": utc_now(),
+                    "reasonCode": "AMBIGUOUS_RESPONSE_VERIFIED",
+                    "restored": verified,
+                    "result": "FAILED_ROLLED_BACK",
+                },
+            )
+        except Exception as exc:
+            journal.update(
+                rollbackVerified=False,
+                verdict="ROLLBACK_FAILED",
+            )
+            raise ActivationError("ROLLBACK_FAILED", exc) from exc
+        state = journal.update(
+            rollbackRequired=False,
+            rollbackVerified=True,
+            verdict=preserved_verdict or "FAILED_ROLLED_BACK",
+        )
+        return state
+    journal.update(verdict="ACTIVATION_STATE_AMBIGUOUS")
+    raise ActivationError("ACTIVATION_STATE_AMBIGUOUS")
+
+
+def get_publishable_key(client: ManagementClient) -> str:
+    keys = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/api-keys?reveal=true")
+    if not isinstance(keys, list):
+        raise ActivationError("PUBLISHABLE_KEY_INVENTORY_INVALID")
+    values = [
+        str(row.get("api_key") or "")
+        for row in keys
+        if isinstance(row, dict) and row.get("type") == "publishable"
+    ]
+    if len(values) != 1 or not values[0].startswith("sb_publishable_"):
+        raise ActivationError("PUBLISHABLE_KEY_INVENTORY_INVALID")
+    return values[0]
+
+
+def project_request(
+    http: HttpClient,
+    project_url: str,
+    method: str,
+    path: str,
+    *,
+    api_key: str,
+    access_token: str | None = None,
+    schema: str | None = None,
+    payload: dict[str, Any] | None = None,
+    mutation: bool = False,
+) -> HttpResult:
+    headers = {"apikey": api_key}
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+    if schema:
+        headers["Accept-Profile"] = schema
+        headers["Content-Profile"] = schema
+    return http.request(
+        method,
+        f"{project_url}{path}",
+        headers=headers,
+        payload=payload,
+        mutation=mutation,
+    )
+
+
+def decode_jwt_claims(token: str) -> dict[str, Any]:
+    try:
+        encoded = token.split(".")[1]
+        encoded += "=" * (-len(encoded) % 4)
+        value = json.loads(base64.urlsafe_b64decode(encoded))
+    except Exception as exc:
+        raise ActivationError("SESSION_TOKEN_CLAIMS_INVALID") from exc
+    if not isinstance(value, dict):
+        raise ActivationError("SESSION_TOKEN_CLAIMS_INVALID")
+    return value
+
+
+def record_case(
+    cases: list[dict[str, Any]],
+    name: str,
+    actor: str,
+    category: str,
+    result: HttpResult,
+    expected_status: int,
+    expected_code: str | None,
+    *,
+    expected_rows: int | None = None,
+) -> Any:
+    parsed: Any = None
+    if result.body and "json" in result.content_type.lower():
+        parsed = result.json()
+    actual_code = stable_result_code(result) if result.status >= 400 else None
+    row_count = len(parsed) if isinstance(parsed, list) else None
+    passed = result.status == expected_status and actual_code == expected_code
+    if expected_rows is not None:
+        passed = passed and row_count == expected_rows
+    cases.append(
+        {
+            "case": name,
+            "actorClass": actor,
+            "requestCategory": category,
+            "expectedStatus": expected_status,
+            "expectedErrorCode": expected_code,
+            "actualStatus": result.status,
+            "actualErrorCode": actual_code,
+            "rowCount": row_count,
+            "result": "PASS" if passed else "FAIL",
+        }
+    )
+    if not passed:
+        raise ActivationError("SMOKE_CASE_FAILED", name)
+    return parsed
+
+
+def mint_session(
+    http: HttpClient,
+    project_url: str,
+    secret_key: str,
+    publishable_key: str,
+    email: str,
+) -> tuple[str, str]:
+    link = project_request(
+        http,
+        project_url,
+        "POST",
+        "/auth/v1/admin/generate_link",
+        api_key=secret_key,
+        access_token=secret_key,
+        payload={"type": "magiclink", "email": email},
+    )
+    if link.status != 200:
+        raise ActivationError(stable_result_code(link))
+    parsed_link = link.json()
+    properties = (
+        parsed_link.get("properties") or {}
+        if isinstance(parsed_link, dict)
+        else {}
+    )
+    token_hash = properties.get("hashed_token")
+    if not token_hash:
+        raise ActivationError("SESSION_LINK_RESPONSE_INVALID")
+    verified = project_request(
+        http,
+        project_url,
+        "POST",
+        "/auth/v1/verify",
+        api_key=publishable_key,
+        payload={"type": "magiclink", "token_hash": token_hash},
+        mutation=True,
+    )
+    if verified.status != 200:
+        raise ActivationError(stable_result_code(verified))
+    session = verified.json()
+    if not isinstance(session, dict) or not session.get("access_token"):
+        raise ActivationError("SESSION_RESPONSE_INVALID")
+    access_token = str(session["access_token"])
+    claims = decode_jwt_claims(access_token)
+    session_id = str(claims.get("session_id") or "")
+    try:
+        uuid.UUID(session_id)
+    except ValueError as exc:
+        raise ActivationError("SESSION_IDENTIFIER_MISSING") from exc
+    return access_token, session_id
+
+
+def session_exists(client: ManagementClient, session_id: str) -> bool:
+    value = str(uuid.UUID(session_id))
+    rows = client.query(
+        f"select exists(select 1 from auth.sessions where id='{value}'::uuid) as present",
+        read_only=True,
+    )
+    return bool(rows and rows[0].get("present"))
+
+
+def session_count(client: ManagementClient, user_id: str) -> int:
+    value = str(uuid.UUID(user_id))
+    rows = client.query(
+        f"select count(*)::integer as count from auth.sessions "
+        f"where user_id='{value}'::uuid",
+        read_only=True,
+    )
+    if len(rows) != 1:
+        raise ActivationError("SESSION_INVENTORY_INVALID")
+    return int(rows[0].get("count") or 0)
+
+
+def revoke_session(
+    http: HttpClient,
+    client: ManagementClient,
+    project_url: str,
+    publishable_key: str,
+    access_token: str,
+    session_id: str,
+) -> None:
+    result = project_request(
+        http,
+        project_url,
+        "POST",
+        "/auth/v1/logout?scope=local",
+        api_key=publishable_key,
+        access_token=access_token,
+    )
+    if result.status not in (200, 204):
+        fallback = project_request(
+            http,
+            project_url,
+            "POST",
+            "/auth/v1/logout?scope=global",
+            api_key=publishable_key,
+            access_token=access_token,
+        )
+        if fallback.status not in (200, 204):
+            raise ActivationError("SESSION_ADMIN_CLEANUP_FAILED")
+    for _ in range(6):
+        if not session_exists(client, session_id):
+            return
+        time.sleep(2)
+    raise ActivationError("SESSION_RESIDUAL_VERIFICATION_FAILED")
+
+
+def fallback_revoke_all_smoke_sessions(
+    http: HttpClient,
+    client: ManagementClient,
+    project_url: str,
+    secret_key: str,
+    publishable_key: str,
+    user_id: str,
+    email: str,
+) -> None:
+    """Use a supported Auth session to globally revoke an ambiguous session."""
+
+    cleanup_token, _cleanup_session_id = mint_session(
+        http, project_url, secret_key, publishable_key, email
+    )
+    result = project_request(
+        http,
+        project_url,
+        "POST",
+        "/auth/v1/logout?scope=global",
+        api_key=publishable_key,
+        access_token=cleanup_token,
+    )
+    if result.status not in (200, 204):
+        raise ActivationError("SESSION_ADMIN_CLEANUP_FAILED")
+    for _ in range(6):
+        if session_count(client, user_id) == 0:
+            return
+        time.sleep(2)
+    raise ActivationError("SESSION_RESIDUAL_VERIFICATION_FAILED")
+
+
+def verify_aal2_token(token: str, smoke_user_id: str) -> None:
+    claims = decode_jwt_claims(token)
+    if claims.get("sub") != smoke_user_id or claims.get("aal") != "aal2":
+        raise ActivationError("AAL2_SESSION_PREREQUISITE_INVALID")
+
+
+def verify_aal2_runtime_session(
+    http: HttpClient,
+    client: ManagementClient,
+    project_url: str,
+    aal2_token: str,
+    smoke_user_id: str,
+) -> dict[str, Any]:
+    verify_aal2_token(aal2_token, smoke_user_id)
+    publishable_key = get_publishable_key(client)
+    result = project_request(
+        http,
+        project_url,
+        "GET",
+        "/auth/v1/user",
+        api_key=publishable_key,
+        access_token=aal2_token,
+    )
+    if result.status != 200:
+        raise ActivationError("AAL2_SESSION_PREREQUISITE_INVALID")
+    user = result.json()
+    claims = decode_jwt_claims(aal2_token)
+    session_id = str(claims.get("session_id") or "")
+    if (
+        not isinstance(user, dict)
+        or user.get("id") != smoke_user_id
+        or not session_exists(client, session_id)
+    ):
+        raise ActivationError("AAL2_SESSION_PREREQUISITE_INVALID")
+    return {
+        "actorFingerprint": fingerprint(smoke_user_id),
+        "sessionFingerprint": fingerprint(session_id),
+        "assuranceLevel": "aal2",
+        "activeSessionVerified": True,
+    }
+
+
+def run_smoke(
+    http: HttpClient,
+    client: ManagementClient,
+    project_url: str,
+    secret_key: str,
+    smoke_user: dict[str, Any],
+    aal2_token: str,
+) -> dict[str, Any]:
+    publishable_key = get_publishable_key(client)
+    user_id = smoke_user["id"]
+    verify_aal2_token(aal2_token, user_id)
+    cases: list[dict[str, Any]] = []
+    access_token: str | None = None
+    session_id: str | None = None
+    cleanup_verified = False
+
+    def request(
+        method: str,
+        path: str,
+        *,
+        actor_token: str | None = None,
+        schema: str = "api",
+        payload: dict[str, Any] | None = None,
+    ) -> HttpResult:
+        return project_request(
+            http,
+            project_url,
+            method,
+            path,
+            api_key=publishable_key,
+            access_token=actor_token,
+            schema=schema,
+            payload=payload,
+        )
+
+    try:
+        record_case(
+            cases,
+            "anon_my_profile_rejected",
+            "ANONYMOUS",
+            "PROFILE_READ",
+            request("GET", "/rest/v1/my_profile?select=*"),
+            401,
+            "42501",
+        )
+        record_case(
+            cases,
+            "anon_profile_mutation_rejected",
+            "ANONYMOUS",
+            "PROFILE_MUTATION",
+            request(
+                "PATCH",
+                "/rest/v1/my_profile?id=not.is.null",
+                payload={"display_name": "denied"},
+            ),
+            401,
+            "42501",
+        )
+        for name, path, schema in (
+            ("anon_app_unexposed", "/rest/v1/profiles?select=id&limit=1", "app"),
+            (
+                "anon_app_private_unexposed",
+                "/rest/v1/staff_principals?select=id&limit=1",
+                "app_private",
+            ),
+        ):
+            record_case(
+                cases,
+                name,
+                "ANONYMOUS",
+                "SCHEMA_BOUNDARY",
+                request("GET", path, schema=schema),
+                406,
+                "PGRST106",
+            )
+        record_case(
+            cases,
+            "anon_staff_context_rejected",
+            "ANONYMOUS",
+            "ADMIN_RPC",
+            request("POST", "/rest/v1/rpc/get_my_staff_context", payload={}),
+            401,
+            "PT401",
+        )
+        record_case(
+            cases,
+            "anon_owner_bootstrap_rejected",
+            "ANONYMOUS",
+            "BOOTSTRAP_RPC",
+            request(
+                "POST",
+                "/rest/v1/rpc/admin_bootstrap_first_platform_admin",
+                payload={
+                    "p_auth_user_id": user_id,
+                    "p_reason": "Gate One denial probe",
+                    "p_synthetic_test": False,
+                },
+            ),
+            404,
+            "PGRST202",
+        )
+        record_case(
+            cases,
+            "anon_role_assignment_rejected",
+            "ANONYMOUS",
+            "ADMIN_RPC",
+            request(
+                "POST",
+                "/rest/v1/rpc/admin_assign_role",
+                payload={
+                    "p_target_auth_user_id": user_id,
+                    "p_role_name": "platform_admin",
+                    "p_expires_at": None,
+                    "p_reason": "Gate One denial probe",
+                    "p_reference": "gate-one",
+                    "p_idempotency_key": str(uuid.uuid4()),
+                    "p_approval_id": None,
+                },
+            ),
+            404,
+            "PGRST202",
+        )
+        record_case(
+            cases,
+            "anon_approval_rejected",
+            "ANONYMOUS",
+            "ADMIN_RPC",
+            request(
+                "POST",
+                "/rest/v1/rpc/admin_request_approval",
+                payload={
+                    "p_required_permission": "security.manage_staff",
+                    "p_target_domain": "security",
+                    "p_target_entity_id": user_id,
+                    "p_operation_type": "staff.assign_platform_admin",
+                    "p_safe_payload_reference": {},
+                    "p_reason": "Gate One denial probe",
+                    "p_expires_at": utc_now(),
+                    "p_idempotency_key": str(uuid.uuid4()),
+                },
+            ),
+            404,
+            "PGRST202",
+        )
+        record_case(
+            cases,
+            "malformed_token_rejected",
+            "MALFORMED_TOKEN",
+            "PROFILE_READ",
+            request(
+                "GET",
+                "/rest/v1/my_profile?select=*",
+                actor_token="invalid.activation.token",
+            ),
+            401,
+            "PGRST301",
+        )
+        record_case(
+            cases,
+            "graphql_schema_removed",
+            "ANONYMOUS",
+            "GRAPHQL",
+            project_request(
+                http,
+                project_url,
+                "POST",
+                "/graphql/v1",
+                api_key=publishable_key,
+                payload={"query": "query GateOne { __typename }"},
+            ),
+            404,
+            "PGRST202",
+        )
+
+        access_token, session_id = mint_session(
+            http,
+            project_url,
+            secret_key,
+            publishable_key,
+            smoke_user["email"],
+        )
+        claims = decode_jwt_claims(access_token)
+        if claims.get("sub") != user_id or claims.get("aal") != "aal1":
+            raise ActivationError("AAL1_SESSION_IDENTITY_INVALID")
+        profile = record_case(
+            cases,
+            "ordinary_reads_own_profile",
+            "AUTHENTICATED_AAL1",
+            "PROFILE_READ",
+            request(
+                "GET",
+                "/rest/v1/my_profile?select=*",
+                actor_token=access_token,
+            ),
+            200,
+            None,
+            expected_rows=1,
+        )
+        if not isinstance(profile, list) or str(profile[0].get("id")) != user_id:
+            raise ActivationError("SMOKE_PROFILE_IDENTITY_MISMATCH")
+        other = str(uuid.uuid4())
+        record_case(
+            cases,
+            "ordinary_cannot_read_other_profile",
+            "AUTHENTICATED_AAL1",
+            "PROFILE_ISOLATION",
+            request(
+                "GET",
+                f"/rest/v1/my_profile?select=*&id=eq.{other}",
+                actor_token=access_token,
+            ),
+            200,
+            None,
+            expected_rows=0,
+        )
+        record_case(
+            cases,
+            "ordinary_profile_mutation_rejected",
+            "AUTHENTICATED_AAL1",
+            "PROFILE_MUTATION",
+            request(
+                "PATCH",
+                f"/rest/v1/my_profile?id=eq.{other}",
+                actor_token=access_token,
+                payload={"display_name": "denied"},
+            ),
+            403,
+            "42501",
+        )
+        for actor, token in (
+            ("AUTHENTICATED_AAL1", access_token),
+            ("AUTHENTICATED_AAL2_NON_STAFF", aal2_token),
+        ):
+            for name, path, payload in (
+                (
+                    "staff_context",
+                    "/rest/v1/rpc/get_my_staff_context",
+                    {},
+                ),
+                (
+                    "role_assignment",
+                    "/rest/v1/rpc/admin_assign_role",
+                    {
+                        "p_target_auth_user_id": other,
+                        "p_role_name": "platform_admin",
+                        "p_expires_at": None,
+                        "p_reason": "denial probe",
+                        "p_reference": "gate-one",
+                        "p_idempotency_key": str(uuid.uuid4()),
+                        "p_approval_id": None,
+                    },
+                ),
+                (
+                    "approval",
+                    "/rest/v1/rpc/admin_request_approval",
+                    {
+                        "p_required_permission": "security.manage_staff",
+                        "p_target_domain": "security",
+                        "p_target_entity_id": other,
+                        "p_operation_type": "staff.assign_platform_admin",
+                        "p_safe_payload_reference": {},
+                        "p_reason": "Gate One denial probe",
+                        "p_expires_at": utc_now(),
+                        "p_idempotency_key": str(uuid.uuid4()),
+                    },
+                ),
+            ):
+                record_case(
+                    cases,
+                    f"{actor.lower()}_{name}_rejected",
+                    actor,
+                    "ADMIN_RPC",
+                    request("POST", path, actor_token=token, payload=payload),
+                    403,
+                    "PT403",
+                )
+            record_case(
+                cases,
+                f"{actor.lower()}_bootstrap_rejected",
+                actor,
+                "BOOTSTRAP_RPC",
+                request(
+                    "POST",
+                    "/rest/v1/rpc/admin_bootstrap_first_platform_admin",
+                    actor_token=token,
+                    payload={
+                        "p_auth_user_id": user_id,
+                        "p_reason": "Gate One denial probe",
+                        "p_synthetic_test": False,
+                    },
+                ),
+                404,
+                "PGRST202",
+            )
+    except (AmbiguousMutation, SignalAbort) as exc:
+        try:
+            fallback_revoke_all_smoke_sessions(
+                http,
+                client,
+                project_url,
+                secret_key,
+                publishable_key,
+                user_id,
+                smoke_user["email"],
+            )
+            cleanup_verified = True
+            access_token = None
+            session_id = None
+        except Exception as cleanup_error:
+            raise ActivationError(
+                "SESSION_CLEANUP_FAILED", cleanup_error
+            ) from cleanup_error
+        if isinstance(exc, SignalAbort):
+            raise
+        raise ActivationError("SESSION_CREATION_AMBIGUOUS") from exc
+    finally:
+        if access_token and session_id:
+            try:
+                revoke_session(
+                    http,
+                    client,
+                    project_url,
+                    publishable_key,
+                    access_token,
+                    session_id,
+                )
+                cleanup_verified = True
+            except Exception as exc:
+                raise ActivationError("SESSION_CLEANUP_FAILED", exc) from exc
+    if not cleanup_verified:
+        raise ActivationError("SESSION_CLEANUP_FAILED")
+    return {
+        "actorFingerprint": smoke_user["fingerprint"],
+        "approvedImmutableUser": True,
+        "newAuthUsersCreated": 0,
+        "temporarySessionIdHash": fingerprint(session_id or ""),
+        "temporarySessionCleanupVerified": True,
+        "aal2NonStaffPrerequisiteVerified": True,
+        "caseCount": len(cases),
+        "cases": cases,
+    }
+
+
+def query_logs(
+    client: ManagementClient, started_at: str, completed_at: str
+) -> dict[str, Any]:
+    sql = """
+SELECT source_name, count() AS event_count
+FROM logs
+WHERE timestamp >= parseDateTimeBestEffort({started:String})
+  AND timestamp <= parseDateTimeBestEffort({completed:String})
+  AND (
+    toInt32OrZero(log_attributes['response.status_code']) >= 500
+    OR positionCaseInsensitive(event_message, 'row-level security') > 0
+    OR positionCaseInsensitive(event_message, 'permission denied') > 0
+  )
+GROUP BY source_name
+ORDER BY event_count DESC
+LIMIT 20
+""".strip()
+    params = urllib.parse.urlencode(
+        {
+            "sql": sql.replace(
+                "{started:String}", f"'{started_at}'"
+            ).replace("{completed:String}", f"'{completed_at}'"),
+            "iso_timestamp_start": started_at,
+            "iso_timestamp_end": completed_at,
+        }
+    )
+    response = client.get(
+        f"/v1/projects/{EXPECTED_PROJECT_REF}/analytics/endpoints/logs?{params}"
+    )
+    if not isinstance(response, dict) or response.get("error"):
+        raise ActivationError("LOG_QUERY_FAILED")
+    rows = response.get("result", [])
+    if not isinstance(rows, list):
+        raise ActivationError("LOG_QUERY_FAILED")
+    total = sum(
+        int(row.get("event_count") or 0)
+        for row in rows
+        if isinstance(row, dict)
+    )
+    return {
+        "queryOutcome": "QUERIED_ZERO" if total == 0 else "QUERIED_NONZERO",
+        "errorEventCount": total,
+        "sources": [
+            {
+                "source": sanitize(row.get("source_name") or "unknown", 80),
+                "count": int(row.get("event_count") or 0),
+            }
+            for row in rows
+            if isinstance(row, dict)
+        ],
+    }
+
+
+def preflight(
+    client: ManagementClient,
+    repo_root: Path,
+    smoke_user_id: str,
+) -> dict[str, Any]:
+    return {
+        "timestampUtc": utc_now(),
+        "target": assert_management_target(client),
+        "migrations": assert_migration_parity(client, repo_root),
+        "apiSurface": assert_api_manifest(client, repo_root),
+        "runtime": collect_invariants(client),
+        "smokeUser": {
+            key: value
+            for key, value in validate_smoke_user(
+                client, smoke_user_id
+            ).items()
+            if key not in {"id", "email"}
+        },
+        "postgrest": get_postgrest_config(client),
+        "dependencyAudit": assert_repository_dependencies(repo_root),
+        "result": "PASS",
+    }
+
+
 def run(args: argparse.Namespace) -> None:
     repo_root = Path(args.repo_root).resolve()
     evidence_dir = Path(args.evidence_dir).resolve()
+    state_path = Path(args.state_file).resolve()
     if args.confirmation != EXPECTED_CONFIRMATION:
-        raise ActivationError("manual activation confirmation is invalid")
-    token, secret_key, project_url = assert_environment(args.expected_commit, repo_root)
+        raise ActivationError("CONFIRMATION_INVALID")
+    token, secret_key, project_url, smoke_user_id, aal2_token = (
+        assert_environment(args.expected_commit, repo_root)
+    )
     http = HttpClient()
     client = ManagementClient(http, token)
+    journal = StateJournal(state_path)
     started_at = utc_now()
-    preflight_value = preflight(client, repo_root)
-    write_json(evidence_dir / "preflight.json", preflight_value)
-
-    previous = preflight_value["postgrest"]
-    already_active = normalize_csv(previous["db_schema"]) == (TARGET_DB_SCHEMA,)
-    changed = False
     try:
+        preflight_value = preflight(client, repo_root, smoke_user_id)
+        preflight_value["aal2Prerequisite"] = verify_aal2_runtime_session(
+            http,
+            client,
+            project_url,
+            aal2_token,
+            smoke_user_id,
+        )
+        write_json(evidence_dir / "preflight.json", preflight_value)
+        previous = preflight_value["postgrest"]
+        journal.create(
+            project_ref=EXPECTED_PROJECT_REF,
+            commit=args.expected_commit,
+            run_id=os.environ.get("GITHUB_RUN_ID", "local"),
+            previous=previous,
+        )
+        already_active = normalize_csv(previous["db_schema"]) == (
+            TARGET_DB_SCHEMA,
+        )
         if not already_active:
-            # Treat the PATCH outcome as ambiguous until the read-after-write
-            # converges. A connection failure after the server commits must
-            # still take the exact-prior rollback path.
-            changed = True
-            set_postgrest_config(
-                client,
-                TARGET_DB_SCHEMA,
-                TARGET_EXTRA_SEARCH_PATH,
+            journal.update(
+                mutationAttempted=True,
+                rollbackRequired=True,
+                verdict="MUTATION_IN_PROGRESS",
             )
+            try:
+                set_postgrest_config(
+                    client, TARGET_DB_SCHEMA, TARGET_EXTRA_SEARCH_PATH
+                )
+            except AmbiguousMutation:
+                current: dict[str, Any] | None
+                try:
+                    current = read_postgrest_config(client)
+                except Exception:
+                    current = None
+                classification = classify_effective_config(current, previous)
+                if classification == "INTENDED_ACTIVATION_APPLIED":
+                    journal.update(mutationConfirmed=True)
+                else:
+                    raise ActivationError(
+                        "ACTIVATION_STATE_AMBIGUOUS", classification
+                    )
+            else:
+                journal.update(mutationConfirmed=True)
         effective = wait_for_postgrest(
             client,
             (TARGET_DB_SCHEMA,),
             (TARGET_EXTRA_SEARCH_PATH,),
         )
-        smoke = run_smoke(http, client, project_url, secret_key)
-        postflight_value = preflight(client, repo_root)
-        if normalize_csv(postflight_value["postgrest"]["db_schema"]) != (TARGET_DB_SCHEMA,):
-            raise ActivationError("post-change api exposure invariant failed")
+        journal.update(verdict="ACTIVATED_PENDING_TESTS")
+        smoke_user = validate_smoke_user(client, smoke_user_id)
+        smoke = run_smoke(
+            http,
+            client,
+            project_url,
+            secret_key,
+            smoke_user,
+            aal2_token,
+        )
+        journal.update(sessionCleanupVerified=True)
+        postflight_value = preflight(client, repo_root, smoke_user_id)
+        if normalize_csv(
+            postflight_value["postgrest"]["db_schema"]
+        ) != (TARGET_DB_SCHEMA,):
+            raise ActivationError("POSTFLIGHT_SCHEMA_FAILED")
         completed_at = utc_now()
         logs = query_logs(client, started_at, completed_at)
         if logs["errorEventCount"] > 0:
-            raise ActivationError("unexpected production errors appeared during activation window")
+            raise ActivationError("UNEXPECTED_PRODUCTION_ERROR_LOGS")
         result = {
             "timestampUtc": completed_at,
             "repositoryCommit": args.expected_commit,
             "projectRef": EXPECTED_PROJECT_REF,
             "before": previous,
             "after": effective,
-            "postgrestChanged": changed,
+            "mutationAttempted": not already_active,
+            "mutationConfirmed": True,
+            "rollbackAttempted": False,
+            "rollbackVerified": False,
+            "sessionCleanupVerified": True,
             "identityProfileSmoke": smoke,
-            "profileBackfill": {
-                "authUsers": postflight_value["security"]["authUserCount"],
-                "profiles": postflight_value["security"]["profileCount"],
-                "preferences": postflight_value["security"]["preferenceCount"],
-                "missingProfiles": 0,
-                "missingPreferences": 0,
-                "orphanProfiles": 0,
-                "staffPrincipals": 0,
-                "platformAdministrators": 0,
-                "idempotentTriggerVerified": True,
-            },
             "logs": logs,
             "postflight": postflight_value,
             "httpRequestCount": http.request_count,
-            "prohibitedActions": {
-                "migrationsApplied": 0,
-                "newAuthUsersCreated": 0,
-                "ownerBootstraps": 0,
-                "secondOperatorsAssigned": 0,
-                "workersEnabled": 0,
-                "schedulesEnabled": 0,
-                "edgeFunctionsCreated": 0,
-                "capacityTraffic": False,
-                "stagingTouched": False,
-                "legacyTouched": False,
-            },
             "result": "PASS",
         }
         write_json(evidence_dir / "activation-report.json", result)
+        state = journal.update(
+            rollbackRequired=not already_active,
+            rollbackVerified=False,
+            sessionCleanupVerified=True,
+            verdict="ACTIVATED_PENDING_TESTS",
+        )
+        write_json(evidence_dir / "activation-state.json", state)
         print(
             json.dumps(
                 {
-                    "projectRef": EXPECTED_PROJECT_REF,
+                    "project": EXPECTED_PROJECT_NAME,
                     "effectiveSchemas": ["api"],
                     "smokeCases": smoke["caseCount"],
-                    "httpRequestCount": http.request_count,
-                    "result": "PASS",
+                    "result": "PASS_PENDING_EVIDENCE",
                 },
                 sort_keys=True,
             )
         )
     except Exception as exc:
-        if changed:
-            rollback(client, previous, evidence_dir, sanitize(exc))
+        if state_path.exists():
+            if isinstance(exc, ActivationError) and exc.code == "SESSION_CLEANUP_FAILED":
+                journal.update(verdict="SESSION_CLEANUP_FAILED")
+            try:
+                recover_from_state(client, journal, evidence_dir)
+            except Exception:
+                pass
+            try:
+                write_json(
+                    evidence_dir / "activation-state.json", journal.read()
+                )
+            except Exception:
+                pass
+        else:
+            try:
+                write_json(
+                    evidence_dir / "activation-report.json",
+                    {
+                        "timestampUtc": utc_now(),
+                        "mutationAttempted": False,
+                        "mutationConfirmed": False,
+                        "rollbackAttempted": False,
+                        "rollbackVerified": False,
+                        "sessionCleanupVerified": False,
+                        "result": "FAILED_BEFORE_MUTATION",
+                        "errorCode": exc.code
+                        if isinstance(exc, ActivationError)
+                        else f"UNEXPECTED_{type(exc).__name__.upper()}",
+                    },
+                )
+            except Exception:
+                pass
         raise
+
+
+def mark_evidence_outcome(
+    client: ManagementClient,
+    state_file: Path,
+    evidence_dir: Path,
+    upload_outcome: str,
+    scan_outcome: str,
+) -> None:
+    journal = StateJournal(state_file)
+    if upload_outcome != "success" or scan_outcome != "success":
+        recover_from_state(client, journal, evidence_dir)
+        journal.update(verdict="EVIDENCE_FAILURE")
+        raise ActivationError("EVIDENCE_FAILURE")
+    state = journal.read()
+    if (
+        state["verdict"] != "ACTIVATED_PENDING_TESTS"
+        or not state["sessionCleanupVerified"]
+    ):
+        raise ActivationError("ACTIVATION_DID_NOT_PASS")
+    journal.update(rollbackRequired=False, verdict="PASS")
+
+
+def install_signal_handlers() -> None:
+    def handler(signum: int, _frame: Any) -> None:
+        name = signal.Signals(signum).name
+        raise SignalAbort("PROCESS_SIGNALLED", name)
+
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expected-commit", required=True)
-    parser.add_argument("--confirmation", required=True)
-    parser.add_argument("--repo-root", required=True)
-    parser.add_argument("--evidence-dir", required=True)
-    return parser.parse_args()
+    parser.add_argument("--expected-commit")
+    parser.add_argument("--confirmation")
+    parser.add_argument("--repo-root")
+    parser.add_argument("--evidence-dir")
+    parser.add_argument("--state-file")
+    parser.add_argument("--recover-from-state")
+    parser.add_argument("--verify-github-preflight", action="store_true")
+    parser.add_argument("--finalize-evidence", action="store_true")
+    parser.add_argument("--upload-outcome")
+    parser.add_argument("--scan-outcome")
+    parser.add_argument("--primary-outcome")
+    args = parser.parse_args()
+    if args.verify_github_preflight:
+        if not args.evidence_dir:
+            parser.error("--evidence-dir is required")
+        return args
+    if args.finalize_evidence:
+        if not args.state_file or not args.evidence_dir:
+            parser.error("--state-file and --evidence-dir are required")
+        return args
+    if args.recover_from_state:
+        if not args.evidence_dir:
+            parser.error("--evidence-dir is required")
+        return args
+    required = (
+        "expected_commit",
+        "confirmation",
+        "repo_root",
+        "evidence_dir",
+        "state_file",
+    )
+    if any(not getattr(args, name) for name in required):
+        parser.error("activation arguments are incomplete")
+    return args
 
 
 def main() -> int:
+    install_signal_handlers()
+    args = parse_args()
     try:
-        run(parse_args())
+        if args.verify_github_preflight:
+            evidence = verify_github_protection(HttpClient())
+            write_json(
+                Path(args.evidence_dir) / "github-protection.json", evidence
+            )
+            return 0
+        if args.finalize_evidence:
+            token = require_env("SUPABASE_ACCESS_TOKEN")
+            mark_evidence_outcome(
+                ManagementClient(HttpClient(), token),
+                Path(args.state_file),
+                Path(args.evidence_dir),
+                args.upload_outcome or "",
+                args.scan_outcome or "",
+            )
+            return 0
+        if args.recover_from_state:
+            token = require_env("SUPABASE_ACCESS_TOKEN")
+            client = ManagementClient(HttpClient(), token)
+            recover_from_state(
+                client,
+                StateJournal(Path(args.recover_from_state)),
+                Path(args.evidence_dir),
+                preserve_pending_activation=args.primary_outcome == "success",
+            )
+            return 0
+        run(args)
     except ActivationError as exc:
-        print(f"activation_failed: {sanitize(exc)}", file=sys.stderr)
+        suffix = f": {exc.detail}" if exc.detail else ""
+        print(f"activation_failed: {exc.code}{suffix}", file=sys.stderr)
         return 1
     except Exception as exc:
-        print(f"activation_failed: unexpected_{type(exc).__name__}", file=sys.stderr)
+        print(
+            f"activation_failed: UNEXPECTED_{type(exc).__name__.upper()}",
+            file=sys.stderr,
+        )
         return 1
     return 0
 
