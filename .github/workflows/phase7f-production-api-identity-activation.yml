@@ -1,0 +1,170 @@
+name: Phase 7F Production V2 API and Identity activation
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit approved for Production V2 activation
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_PHASE7F_PRODUCTION_API_IDENTITY
+        required: true
+        type: string
+
+concurrency:
+  group: phase7f-production-api-identity
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  activate:
+    name: Protected API exposure and Identity/Profile verification
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      EXPECTED_PROJECT_NAME: BotolaGO Production V2
+      EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
+      EXPECTED_TARGET_ENVIRONMENT: production-v2
+      KNOWN_STAGING_REF: srdrflfrfpwixsllveid
+      BOTOLAGO_ADMIN_ENVIRONMENT: ${{ vars.BOTOLAGO_ADMIN_ENVIRONMENT }}
+      BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF: ${{ vars.BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF }}
+      BOTOLAGO_TARGET_ENVIRONMENT: ${{ vars.BOTOLAGO_TARGET_ENVIRONMENT }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+    steps:
+      - name: Initialize protected runtime and enforce immutable target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for secret_value in "${SUPABASE_ACCESS_TOKEN:-}" "${SUPABASE_SECRET_KEY:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+
+          if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_SECRET_KEY:-}" ]]; then
+            echo "Protected credential injection failed."
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_PHASE7F_PRODUCTION_API_IDENTITY" ]]; then
+            echo "Invalid manual confirmation."
+            exit 2
+          fi
+          if [[ "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "The dispatched commit is not the checked-out main commit."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ||
+                "$BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ]]; then
+            echo "Production project-ref guard failed."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" == "$KNOWN_STAGING_REF" ]]; then
+            echo "Staging project selection is forbidden."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_NAME" != "$EXPECTED_PROJECT_NAME" ]]; then
+            echo "Production project-name guard failed."
+            exit 2
+          fi
+          if [[ "$BOTOLAGO_TARGET_ENVIRONMENT" != "$EXPECTED_TARGET_ENVIRONMENT" ||
+                "$BOTOLAGO_ADMIN_ENVIRONMENT" != "production" ]]; then
+            echo "Production environment guard failed."
+            exit 2
+          fi
+
+          configured_url="${SUPABASE_URL:-}"
+          if [[ -z "$configured_url" ]]; then
+            configured_url="${SUPABASE_PRODUCTION_URL:-}"
+          elif [[ -n "${SUPABASE_PRODUCTION_URL:-}" &&
+                  "${configured_url%/}" != "${SUPABASE_PRODUCTION_URL%/}" ]]; then
+            echo "Production URL variables disagree."
+            exit 2
+          fi
+          if [[ "${configured_url%/}" != "https://${EXPECTED_PROJECT_REF}.supabase.co" ]]; then
+            echo "Production URL guard failed."
+            exit 2
+          fi
+
+          runtime_dir="$RUNNER_TEMP/botolago-phase7f"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "PHASE7F_RUNTIME_DIR=$runtime_dir"
+            echo "PHASE7F_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+
+          echo "Target guard: PASS"
+          echo "Protected credentials: present and masked"
+
+      - name: Check out the exact reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Validate the activation harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            scripts/backend/phase7e-production-migration-promoter.py \
+            scripts/backend/phase7f-production-api-identity-activation.py
+          python -m unittest \
+            scripts/backend/tests/test_phase7e_production_migration_promoter.py \
+            scripts/backend/tests/test_phase7f_production_api_identity_activation.py
+
+      - name: Run guarded Production V2 activation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --expected-commit "$EXPECTED_COMMIT" \
+            --confirmation "$CONFIRMATION" \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR"
+
+      - name: Verify evidence contains no credential patterns
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -d "${PHASE7F_EVIDENCE_DIR:-}" ]]; then
+            echo "Evidence directory was not initialized."
+            exit 1
+          fi
+          if grep -RIE \
+            'sbp_|sb_secret_|sb_publishable_|eyJ[A-Za-z0-9._-]+|access_token|refresh_token|token_hash|hashed_token' \
+            "$PHASE7F_EVIDENCE_DIR"; then
+            echo "Credential-like material was found in evidence."
+            exit 1
+          fi
+          echo "Sanitized evidence check: PASS"
+
+      - name: Upload sanitized activation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase7f-production-api-identity-${{ github.run_id }}
+          path: ${{ env.PHASE7F_EVIDENCE_DIR }}
+          if-no-files-found: warn
+          retention-days: 30
