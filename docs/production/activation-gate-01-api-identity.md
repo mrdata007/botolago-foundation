@@ -18,6 +18,7 @@ send capacity traffic.
 | --------------------- | ------------------------------------- |
 | Repository            | `mrdata007/botolago-foundation`       |
 | Event                 | manual `workflow_dispatch` only       |
+| Run attempt           | exactly `1`; reruns are forbidden     |
 | Git ref               | `refs/heads/main`                     |
 | Approved commit       | exact current `main` SHA              |
 | Confirmation          | `RUN_PHASE7F_PRODUCTION_API_IDENTITY` |
@@ -47,6 +48,17 @@ Independent approval is enforced by all three controls:
 3. a fresh exact issue comment from that same separate human for each workflow
    run.
 
+The protected-main proof fails closed unless bypass data is authoritative.
+Repository rulesets must expose `bypass_actors` as an explicitly empty list.
+Classic branch protection must expose
+`required_pull_request_reviews.bypass_pull_request_allowances` with explicitly
+empty `users`, `teams`, and `apps` lists. Missing, null, malformed, unreadable,
+or non-empty bypass data cannot be replaced by an attestation or by the manual
+confirmation string. A ruleset condition using `~DEFAULT_BRANCH` establishes
+protection for `main` only after live repository metadata proves that the
+default branch is exactly `main`; explicit `refs/heads/main` and `~ALL`
+conditions do not rely on that symbolic assumption.
+
 The exact-commit reviewer must differ from the dispatcher, PR author, and latest
 reviewable-push author. Bot, Copilot, dismissed, stale, commented-only, and
 changes-requested reviews do not authorize activation. No attestation or manual
@@ -64,6 +76,13 @@ unedited, and is valid only for that exact run ID, run attempt, full commit,
 Production ref, and nonce. A prior-run or prior-attempt comment cannot be
 reused. The manual confirmation string is an operator anti-mistake control,
 not independent approval.
+
+GitHub Actions reruns are forbidden for Gate 1 because GitHub preserves the
+original run actor while another person may initiate a later attempt. Every
+failed attempt requires a completely new `workflow_dispatch` run with run
+attempt `1`, a new run ID, a new random nonce, and a new second-person approval
+comment. A comment from a previous attempt or run cannot authorize the new
+dispatch.
 
 The governance token is a fine-grained, repository-scoped, read-only secret.
 It is injected only into the live-governance and issue-approval steps. No

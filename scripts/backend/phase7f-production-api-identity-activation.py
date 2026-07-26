@@ -481,6 +481,12 @@ def require_positive_integer(name: str) -> int:
     return int(value)
 
 
+def require_first_run_attempt() -> int:
+    if require_env("GITHUB_RUN_ATTEMPT") != "1":
+        raise ActivationError("GITHUB_WORKFLOW_RERUN_FORBIDDEN")
+    return 1
+
+
 def parse_github_timestamp(value: object) -> datetime:
     if not isinstance(value, str) or not value.strip():
         raise ActivationError("GITHUB_TIMESTAMP_INVALID")
@@ -513,9 +519,19 @@ def classic_branch_protection_safe(value: dict[str, Any]) -> bool:
     enforce_admins = value.get("enforce_admins")
     force_pushes = value.get("allow_force_pushes")
     deletions = value.get("allow_deletions")
+    if not isinstance(reviews, dict):
+        return False
+    bypass = reviews.get("bypass_pull_request_allowances")
+    if not isinstance(bypass, dict):
+        raise ActivationError("GITHUB_BRANCH_PROTECTION_UNVERIFIED")
+    for actor_type in ("users", "teams", "apps"):
+        actors = bypass.get(actor_type)
+        if not isinstance(actors, list):
+            raise ActivationError("GITHUB_BRANCH_PROTECTION_UNVERIFIED")
+        if actors:
+            raise ActivationError("GITHUB_BRANCH_PROTECTION_UNSAFE")
     return bool(
-        isinstance(reviews, dict)
-        and int(reviews.get("required_approving_review_count") or 0) >= 1
+        int(reviews.get("required_approving_review_count") or 0) >= 1
         and reviews.get("dismiss_stale_reviews") is True
         and reviews.get("require_last_push_approval") is True
         and isinstance(enforce_admins, dict)
@@ -527,7 +543,29 @@ def classic_branch_protection_safe(value: dict[str, Any]) -> bool:
     )
 
 
-def ruleset_targets_main(value: dict[str, Any]) -> bool:
+def ruleset_requires_default_branch_resolution(
+    value: dict[str, Any],
+) -> bool:
+    ref_name = (value.get("conditions") or {}).get("ref_name") or {}
+    includes = [str(item) for item in ref_name.get("include") or []]
+    excludes = [str(item) for item in ref_name.get("exclude") or []]
+    explicit_include_matches_main = any(
+        pattern != "~DEFAULT_BRANCH"
+        and (
+            pattern == "~ALL"
+            or fnmatch.fnmatchcase("refs/heads/main", pattern)
+        )
+        for pattern in includes
+    )
+    return "~DEFAULT_BRANCH" in excludes or (
+        "~DEFAULT_BRANCH" in includes
+        and not explicit_include_matches_main
+    )
+
+
+def ruleset_targets_main(
+    value: dict[str, Any], *, default_branch: str | None = None
+) -> bool:
     if value.get("target") != "branch":
         return False
     ref_name = (value.get("conditions") or {}).get("ref_name") or {}
@@ -535,25 +573,39 @@ def ruleset_targets_main(value: dict[str, Any]) -> bool:
     excludes = [str(item) for item in ref_name.get("exclude") or []]
 
     def matches_main(pattern: str) -> bool:
-        return pattern in {"~ALL", "~DEFAULT_BRANCH"} or fnmatch.fnmatchcase(
-            "refs/heads/main", pattern
-        )
+        if pattern == "~ALL":
+            return True
+        if pattern == "~DEFAULT_BRANCH":
+            return default_branch == "main"
+        return fnmatch.fnmatchcase("refs/heads/main", pattern)
 
     return any(matches_main(item) for item in includes) and not any(
         matches_main(item) for item in excludes
     )
 
 
-def ruleset_applies_to_main(value: dict[str, Any]) -> bool:
+def ruleset_applies_to_main(
+    value: dict[str, Any], *, default_branch: str | None = None
+) -> bool:
     return (
-        ruleset_targets_main(value)
+        ruleset_targets_main(value, default_branch=default_branch)
         and value.get("enforcement") == "active"
     )
 
 
-def branch_ruleset_safe(value: dict[str, Any]) -> bool:
-    if not ruleset_applies_to_main(value) or value.get("bypass_actors"):
+def branch_ruleset_safe(
+    value: dict[str, Any], *, default_branch: str | None = None
+) -> bool:
+    if not ruleset_applies_to_main(
+        value, default_branch=default_branch
+    ):
         return False
+    if "bypass_actors" not in value or not isinstance(
+        value["bypass_actors"], list
+    ):
+        raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+    if value["bypass_actors"]:
+        raise ActivationError("GITHUB_RULESET_UNSAFE")
     rules = {
         str(row.get("type")): row
         for row in value.get("rules") or []
@@ -627,6 +679,8 @@ def verify_main_governance(
         raise ActivationError("GITHUB_RULESET_UNVERIFIED")
     applicable_seen = False
     unsafe_seen = False
+    default_branch: str | None = None
+    default_branch_loaded = False
     for summary in summaries:
         if not isinstance(summary, dict) or not isinstance(
             summary.get("id"), int
@@ -644,9 +698,27 @@ def verify_main_governance(
         )
         if not isinstance(detail, dict):
             raise ActivationError("GITHUB_RULESET_UNVERIFIED")
-        if ruleset_targets_main(detail):
+        if (
+            ruleset_requires_default_branch_resolution(detail)
+            and not default_branch_loaded
+        ):
+            repository_response = github_request(
+                http, token, f"/repos/{repository}"
+            )
+            repository_value = github_response_json(
+                repository_response, "GITHUB_RULESET_UNVERIFIED"
+            )
+            if not isinstance(repository_value, dict) or not isinstance(
+                repository_value.get("default_branch"), str
+            ):
+                raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+            default_branch = repository_value["default_branch"]
+            default_branch_loaded = True
+        if ruleset_targets_main(detail, default_branch=default_branch):
             applicable_seen = True
-            if branch_ruleset_safe(detail):
+            if branch_ruleset_safe(
+                detail, default_branch=default_branch
+            ):
                 pull_rule = next(
                     row
                     for row in detail["rules"]
@@ -841,6 +913,7 @@ def verify_conflicting_runs(
 def verify_github_governance(
     http: HttpClient, expected_commit: str
 ) -> dict[str, Any]:
+    require_first_run_attempt()
     token = require_env("BOTOLAGO_GITHUB_GOVERNANCE_TOKEN")
     repository = require_env("GITHUB_REPOSITORY")
     run_id = require_env("GITHUB_RUN_ID")
@@ -883,13 +956,13 @@ def create_run_approval_request(
     now: datetime | None = None,
     nonce: str | None = None,
 ) -> dict[str, Any]:
+    run_attempt = require_first_run_attempt()
     requested_at = (now or datetime.now(timezone.utc)).astimezone(
         timezone.utc
     )
     repository = require_env("GITHUB_REPOSITORY")
     workflow = require_env("GITHUB_WORKFLOW")
     run_id = require_positive_integer("GITHUB_RUN_ID")
-    run_attempt = require_positive_integer("GITHUB_RUN_ATTEMPT")
     commit = require_env("GITHUB_SHA")
     issue_number = require_positive_integer(
         "BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER"
@@ -938,6 +1011,7 @@ def normalized_comment(value: object) -> str:
 
 
 def validate_run_approval_request(request: dict[str, Any]) -> None:
+    run_attempt = require_first_run_attempt()
     requested_at = parse_github_timestamp(request.get("requestedAt"))
     expires_at = parse_github_timestamp(request.get("expiresAt"))
     nonce = str(request.get("nonce") or "")
@@ -951,7 +1025,7 @@ def validate_run_approval_request(request: dict[str, Any]) -> None:
         "repository": require_env("GITHUB_REPOSITORY"),
         "workflow": require_env("GITHUB_WORKFLOW"),
         "runId": require_positive_integer("GITHUB_RUN_ID"),
-        "runAttempt": require_positive_integer("GITHUB_RUN_ATTEMPT"),
+        "runAttempt": run_attempt,
         "commit": require_env("GITHUB_SHA"),
         "projectRef": EXPECTED_PROJECT_REF,
         "issueNumber": require_positive_integer(

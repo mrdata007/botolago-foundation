@@ -49,6 +49,11 @@ SAFE_CLASSIC = {
         "required_approving_review_count": 1,
         "dismiss_stale_reviews": True,
         "require_last_push_approval": True,
+        "bypass_pull_request_allowances": {
+            "users": [],
+            "teams": [],
+            "apps": [],
+        },
     },
     "enforce_admins": {"enabled": True},
     "allow_force_pushes": {"enabled": False},
@@ -96,6 +101,7 @@ def governance_env(**overrides: str) -> dict[str, str]:
         "GITHUB_EVENT_NAME": "workflow_dispatch",
         "GITHUB_REF": "refs/heads/main",
         "GITHUB_REPOSITORY": "mrdata007/botolago-foundation",
+        "GITHUB_RUN_ATTEMPT": "1",
         "GITHUB_RUN_ID": "42",
         "GITHUB_SHA": COMMIT,
     }
@@ -529,6 +535,198 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertEqual("REPOSITORY_RULESET", value["mode"])
 
+    def test_classic_bypass_allowances_must_be_explicitly_empty(
+        self,
+    ) -> None:
+        for actor_type in ("users", "teams", "apps"):
+            protection = copy.deepcopy(SAFE_CLASSIC)
+            protection["required_pull_request_reviews"][
+                "bypass_pull_request_allowances"
+            ][actor_type] = [{"id": 99}]
+            with self.subTest(actor_type=actor_type):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_BRANCH_PROTECTION_UNSAFE",
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp([result(protection)]),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+
+    def test_unverifiable_classic_bypass_allowances_fail_closed(
+        self,
+    ) -> None:
+        missing = copy.deepcopy(SAFE_CLASSIC)
+        del missing["required_pull_request_reviews"][
+            "bypass_pull_request_allowances"
+        ]
+        null = copy.deepcopy(SAFE_CLASSIC)
+        null["required_pull_request_reviews"][
+            "bypass_pull_request_allowances"
+        ] = None
+        malformed = copy.deepcopy(SAFE_CLASSIC)
+        malformed["required_pull_request_reviews"][
+            "bypass_pull_request_allowances"
+        ] = {"users": [], "teams": [], "apps": {}}
+        unreadable = copy.deepcopy(SAFE_CLASSIC)
+        unreadable["required_pull_request_reviews"][
+            "bypass_pull_request_allowances"
+        ] = {"users": [], "teams": []}
+        for protection in (missing, null, malformed, unreadable):
+            with self.subTest(protection=protection):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_BRANCH_PROTECTION_UNVERIFIED",
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp([result(protection)]),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+
+    def test_ruleset_bypass_actors_must_be_authoritative_and_empty(
+        self,
+    ) -> None:
+        missing = copy.deepcopy(SAFE_RULESET)
+        del missing["bypass_actors"]
+        null = copy.deepcopy(SAFE_RULESET)
+        null["bypass_actors"] = None
+        malformed = copy.deepcopy(SAFE_RULESET)
+        malformed["bypass_actors"] = {}
+        unsafe = (
+            [{"actor_type": "User", "actor_id": 1}],
+            [
+                {
+                    "actor_type": "Team",
+                    "actor_id": 2,
+                    "bypass_mode": "pull_request",
+                }
+            ],
+            [
+                {
+                    "actor_type": "Integration",
+                    "actor_id": 3,
+                    "bypass_mode": "always",
+                }
+            ],
+        )
+        for value in (missing, null, malformed):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_RULESET_UNVERIFIED",
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp(
+                            [
+                                result({}, 404),
+                                result([{"id": 77}]),
+                                result(value),
+                            ]
+                        ),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+        for bypass_actors in unsafe:
+            value = copy.deepcopy(SAFE_RULESET)
+            value["bypass_actors"] = bypass_actors
+            with self.subTest(bypass_actors=bypass_actors):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_RULESET_UNSAFE",
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp(
+                            [
+                                result({}, 404),
+                                result([{"id": 77}]),
+                                result(value),
+                            ]
+                        ),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+
+    def test_symbolic_default_branch_requires_live_main_metadata(
+        self,
+    ) -> None:
+        symbolic = copy.deepcopy(SAFE_RULESET)
+        symbolic["conditions"]["ref_name"]["include"] = [
+            "~DEFAULT_BRANCH"
+        ]
+        value = ACTIVATION.verify_main_governance(
+            QueueHttp(
+                [
+                    result({}, 404),
+                    result([{"id": 77}]),
+                    result(symbolic),
+                    result({"default_branch": "main"}),
+                ]
+            ),
+            "placeholder",
+            "mrdata007/botolago-foundation",
+        )
+        self.assertEqual("REPOSITORY_RULESET", value["mode"])
+
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError,
+            "GITHUB_BRANCH_PROTECTION_UNVERIFIED",
+        ):
+            ACTIVATION.verify_main_governance(
+                QueueHttp(
+                    [
+                        result({}, 404),
+                        result([{"id": 77}]),
+                        result(symbolic),
+                        result({"default_branch": "develop"}),
+                    ]
+                ),
+                "placeholder",
+                "mrdata007/botolago-foundation",
+            )
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "GITHUB_RULESET_UNVERIFIED"
+        ):
+            ACTIVATION.verify_main_governance(
+                QueueHttp(
+                    [
+                        result({}, 404),
+                        result([{"id": 77}]),
+                        result(symbolic),
+                        result({}, 403),
+                    ]
+                ),
+                "placeholder",
+                "mrdata007/botolago-foundation",
+            )
+
+    def test_explicit_main_and_all_rulesets_need_no_default_metadata(
+        self,
+    ) -> None:
+        for includes in (
+            ["refs/heads/main"],
+            ["~ALL"],
+            ["refs/heads/main", "~DEFAULT_BRANCH"],
+        ):
+            ruleset = copy.deepcopy(SAFE_RULESET)
+            ruleset["conditions"]["ref_name"]["include"] = includes
+            http = QueueHttp(
+                [
+                    result({}, 404),
+                    result([{"id": 77}]),
+                    result(ruleset),
+                ]
+            )
+            with self.subTest(includes=includes):
+                value = ACTIVATION.verify_main_governance(
+                    http,
+                    "placeholder",
+                    "mrdata007/botolago-foundation",
+                )
+                self.assertEqual("REPOSITORY_RULESET", value["mode"])
+                self.assertEqual(3, len(http.requests))
+
     def test_full_governance_passes_without_supabase_credentials(self) -> None:
         http = QueueHttp(
             [
@@ -546,6 +744,27 @@ class Phase7FActivationTests(unittest.TestCase):
             value = ACTIVATION.verify_github_governance(http, COMMIT)
         self.assertEqual("PASS", value["result"])
         self.assertNotIn("SUPABASE", json.dumps(value))
+
+    def test_first_run_attempt_is_required_before_governance(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            governance_env(GITHUB_RUN_ATTEMPT="1"),
+            clear=True,
+        ):
+            self.assertEqual(1, ACTIVATION.require_first_run_attempt())
+
+        http = QueueHttp([])
+        with mock.patch.dict(
+            os.environ,
+            governance_env(GITHUB_RUN_ATTEMPT="2"),
+            clear=True,
+        ):
+            with self.assertRaisesRegex(
+                ACTIVATION.ActivationError,
+                "GITHUB_WORKFLOW_RERUN_FORBIDDEN",
+            ):
+                ACTIVATION.verify_github_governance(http, COMMIT)
+        self.assertEqual([], http.requests)
 
     def test_missing_or_unreadable_main_governance_fails_closed(self) -> None:
         cases = (
@@ -864,6 +1083,30 @@ class Phase7FActivationTests(unittest.TestCase):
         expiry = ACTIVATION.parse_github_timestamp(request["expiresAt"])
         self.assertLessEqual((expiry - now).total_seconds(), 900)
 
+    def test_rerun_fails_before_approval_request_or_journal_creation(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            request_file = root / "approval-request.json"
+            evidence_dir = root / "evidence"
+            journal_file = root / "activation-state.json"
+            environment = approval_env(GITHUB_RUN_ATTEMPT="2")
+            self.assertFalse(
+                any(name.startswith("SUPABASE_") for name in environment)
+            )
+            with mock.patch.dict(os.environ, environment, clear=True):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_WORKFLOW_RERUN_FORBIDDEN",
+                ):
+                    ACTIVATION.create_run_approval_files(
+                        request_file, evidence_dir
+                    )
+            self.assertFalse(request_file.exists())
+            self.assertFalse(journal_file.exists())
+            self.assertFalse(evidence_dir.exists())
+
     def test_exact_fresh_run_approval_comment_passes(self) -> None:
         request, now = make_approval_request()
         clock = FakeClock(now)
@@ -882,6 +1125,42 @@ class Phase7FActivationTests(unittest.TestCase):
             )
         self.assertEqual("PASS", value["result"])
         self.assertNotIn(str(REVIEWER_ID), json.dumps(value))
+
+    def test_prior_run_attempt_comment_cannot_authorize_new_dispatch(
+        self,
+    ) -> None:
+        now = datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc)
+        current_env = approval_env(GITHUB_RUN_ID="43")
+        with mock.patch.dict(os.environ, current_env, clear=True):
+            current_request = ACTIVATION.create_run_approval_request(
+                now=now,
+                nonce="0123456789abcdef0123456789abcdef",
+            )
+        old_body = str(current_request["expectedComment"]).replace(
+            "run_id=43", "run_id=42"
+        )
+        with mock.patch.dict(os.environ, current_env, clear=True):
+            with self.assertRaisesRegex(
+                ACTIVATION.ActivationError,
+                "GITHUB_RUN_APPROVAL_INVALID",
+            ):
+                ACTIVATION.wait_for_run_approval(
+                    QueueHttp(
+                        [
+                            result({"number": 123, "state": "open"}),
+                            result(
+                                [
+                                    approval_comment(
+                                        current_request, body=old_body
+                                    )
+                                ]
+                            ),
+                        ]
+                    ),
+                    current_request,
+                    now_fn=lambda: now,
+                    sleep_fn=lambda _seconds: None,
+                )
 
     def test_wrong_run_bound_approval_fields_fail(self) -> None:
         request, now = make_approval_request()
@@ -1407,6 +1686,24 @@ class Phase7FActivationTests(unittest.TestCase):
         self.assertIn("--recover-from-state", workflow)
         self.assertIn("if-no-files-found: error", workflow)
         self.assertNotIn("grep -R", workflow)
+        rerun_guard = workflow.index(
+            'if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]'
+        )
+        self.assertLess(rerun_guard, workflow.index("runtime_dir="))
+        self.assertLess(
+            rerun_guard, workflow.index("--verify-github-governance")
+        )
+        self.assertLess(
+            rerun_guard, workflow.index("--create-run-approval-request")
+        )
+        self.assertLess(
+            rerun_guard, workflow.index("--wait-for-run-approval")
+        )
+        self.assertLess(
+            rerun_guard,
+            workflow.index("secrets.SUPABASE_ACCESS_TOKEN"),
+        )
+        self.assertIn("GITHUB_WORKFLOW_RERUN_FORBIDDEN", workflow)
 
 
 def base64_url(value: dict[str, object]) -> str:

@@ -56,6 +56,10 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
           if [[ "$CONFIRMATION" != "RUN_PHASE7F_PRODUCTION_API_IDENTITY" ]]; then
             echo "Invalid manual confirmation."
             exit 2
