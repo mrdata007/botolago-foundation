@@ -19,6 +19,8 @@ concurrency:
 permissions:
   actions: read
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   activate:
@@ -27,7 +29,7 @@ jobs:
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     environment: production-admin-activation
     env:
       CONFIRMATION: ${{ inputs.confirmation }}
@@ -40,11 +42,8 @@ jobs:
       BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF: ${{ vars.BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF }}
       BOTOLAGO_TARGET_ENVIRONMENT: ${{ vars.BOTOLAGO_TARGET_ENVIRONMENT }}
       BOTOLAGO_AAL2_EVIDENCE_SHA256: ${{ vars.BOTOLAGO_AAL2_EVIDENCE_SHA256 }}
-      BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED: ${{ vars.BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED }}
-      BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH: ${{ vars.BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH }}
-      BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW: ${{ vars.BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW }}
-      BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256: ${{ vars.BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256 }}
-      BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT: ${{ vars.BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT }}
+      BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID: ${{ vars.BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID }}
+      BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER: ${{ vars.BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER }}
       BOTOLAGO_PRODUCTION_SMOKE_USER_UUID: ${{ vars.BOTOLAGO_PRODUCTION_SMOKE_USER_UUID }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
@@ -104,6 +103,7 @@ jobs:
             echo "PHASE7F_RUNTIME_DIR=$runtime_dir"
             echo "PHASE7F_EVIDENCE_DIR=$evidence_dir"
             echo "PHASE7F_STATE_FILE=$runtime_dir/activation-state.json"
+            echo "PHASE7F_APPROVAL_REQUEST_FILE=$runtime_dir/run-approval-request.json"
           } >> "$GITHUB_ENV"
 
           echo "Target guard: PASS"
@@ -129,14 +129,40 @@ jobs:
             scripts/backend/tests/test_phase7e_production_migration_promoter.py \
             scripts/backend/tests/test_phase7f_production_api_identity_activation.py
 
-      - name: Verify protected environment and conflicting production runs
+      - name: Verify protected main and exact reviewed commit
+        id: governance
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          BOTOLAGO_GITHUB_GOVERNANCE_TOKEN: ${{ secrets.BOTOLAGO_GITHUB_GOVERNANCE_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$BOTOLAGO_GITHUB_GOVERNANCE_TOKEN"
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --verify-github-governance \
+            --expected-commit "$EXPECTED_COMMIT" \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR"
+
+      - name: Generate run-specific second-person approval request
+        id: approval_request
+        shell: bash
         run: |
           set -euo pipefail
           python scripts/backend/phase7f-production-api-identity-activation.py \
-            --verify-github-preflight \
+            --create-run-approval-request \
+            --approval-request-file "$PHASE7F_APPROVAL_REQUEST_FILE" \
+            --evidence-dir "$PHASE7F_EVIDENCE_DIR"
+
+      - name: Wait for exact second-person issue approval
+        id: run_approval
+        shell: bash
+        env:
+          BOTOLAGO_GITHUB_GOVERNANCE_TOKEN: ${{ secrets.BOTOLAGO_GITHUB_GOVERNANCE_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$BOTOLAGO_GITHUB_GOVERNANCE_TOKEN"
+          python scripts/backend/phase7f-production-api-identity-activation.py \
+            --wait-for-run-approval \
+            --approval-request-file "$PHASE7F_APPROVAL_REQUEST_FILE" \
             --evidence-dir "$PHASE7F_EVIDENCE_DIR"
 
       - name: Run guarded Production V2 activation
@@ -161,9 +187,34 @@ jobs:
             --evidence-dir "$PHASE7F_EVIDENCE_DIR" \
             --state-file "$PHASE7F_STATE_FILE"
 
+      - name: Inspect activation journal state
+        id: state_check
+        if: >-
+          always() &&
+          steps.run_approval.outcome == 'success' &&
+          steps.activation.outcome != 'skipped'
+        shell: bash
+        env:
+          PRIMARY_OUTCOME: ${{ steps.activation.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ -f "$PHASE7F_STATE_FILE" ]]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+          if [[ "$PRIMARY_OUTCOME" == "success" ]]; then
+            echo "STATE_JOURNAL_MISSING"
+            exit 1
+          fi
+          echo "No mutation journal exists; activation failed before mutation."
+
       - name: Independently recover or verify activation state
         id: recovery
-        if: always()
+        if: >-
+          always() &&
+          steps.run_approval.outcome == 'success' &&
+          steps.state_check.outputs.exists == 'true'
         shell: bash
         env:
           PRIMARY_OUTCOME: ${{ steps.activation.outcome }}
@@ -171,10 +222,6 @@ jobs:
         run: |
           set -euo pipefail
           printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
-          if [[ ! -f "$PHASE7F_STATE_FILE" ]]; then
-            echo "STATE_JOURNAL_MISSING"
-            exit 1
-          fi
           python scripts/backend/phase7f-production-api-identity-activation.py \
             --recover-from-state "$PHASE7F_STATE_FILE" \
             --evidence-dir "$PHASE7F_EVIDENCE_DIR" \
@@ -201,7 +248,10 @@ jobs:
 
       - name: Finalize evidence verdict
         id: evidence_finalize
-        if: always()
+        if: >-
+          always() &&
+          steps.run_approval.outcome == 'success' &&
+          steps.state_check.outputs.exists == 'true'
         shell: bash
         env:
           EVIDENCE_SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
@@ -218,17 +268,17 @@ jobs:
             --upload-outcome "$EVIDENCE_UPLOAD_OUTCOME"
 
       - name: Final independent recovery guard
-        if: always() && steps.evidence_finalize.outcome != 'success'
+        if: >-
+          always() &&
+          steps.run_approval.outcome == 'success' &&
+          steps.state_check.outputs.exists == 'true' &&
+          steps.evidence_finalize.outcome != 'success'
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
           printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
-          if [[ ! -f "$PHASE7F_STATE_FILE" ]]; then
-            echo "STATE_JOURNAL_MISSING"
-            exit 1
-          fi
           python scripts/backend/phase7f-production-api-identity-activation.py \
             --recover-from-state "$PHASE7F_STATE_FILE" \
             --evidence-dir "$PHASE7F_EVIDENCE_DIR"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import os
@@ -10,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -38,6 +40,147 @@ ACTIVE = {
     "db_schema": "api",
     "db_extra_search_path": "extensions",
 }
+COMMIT = "a" * 40
+HEAD_COMMIT = "b" * 40
+REVIEWER_ID = 2002
+ACTOR_ID = 1001
+SAFE_CLASSIC = {
+    "required_pull_request_reviews": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews": True,
+        "require_last_push_approval": True,
+    },
+    "enforce_admins": {"enabled": True},
+    "allow_force_pushes": {"enabled": False},
+    "allow_deletions": {"enabled": False},
+}
+SAFE_RULESET = {
+    "id": 77,
+    "target": "branch",
+    "enforcement": "active",
+    "conditions": {
+        "ref_name": {
+            "include": ["refs/heads/main"],
+            "exclude": [],
+        }
+    },
+    "bypass_actors": [],
+    "rules": [
+        {
+            "type": "pull_request",
+            "parameters": {
+                "required_approving_review_count": 1,
+                "dismiss_stale_reviews_on_push": True,
+                "require_last_push_approval": True,
+            },
+        },
+        {"type": "non_fast_forward"},
+        {"type": "deletion"},
+    ],
+}
+
+
+def result(value: object, status: int = 200) -> ACTIVATION.HttpResult:
+    return ACTIVATION.HttpResult(
+        status,
+        "application/json",
+        json.dumps(value).encode("utf-8"),
+    )
+
+
+def governance_env(**overrides: str) -> dict[str, str]:
+    values = {
+        "BOTOLAGO_GITHUB_GOVERNANCE_TOKEN": "placeholder",
+        "BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID": str(REVIEWER_ID),
+        "GITHUB_ACTOR_ID": str(ACTOR_ID),
+        "GITHUB_EVENT_NAME": "workflow_dispatch",
+        "GITHUB_REF": "refs/heads/main",
+        "GITHUB_REPOSITORY": "mrdata007/botolago-foundation",
+        "GITHUB_RUN_ID": "42",
+        "GITHUB_SHA": COMMIT,
+    }
+    values.update(overrides)
+    return values
+
+
+def pull_value(**overrides: object) -> dict[str, object]:
+    value: dict[str, object] = {
+        "number": 38,
+        "state": "closed",
+        "merged_at": "2026-07-26T12:00:00Z",
+        "merge_commit_sha": COMMIT,
+        "base": {"ref": "main"},
+        "head": {"sha": HEAD_COMMIT},
+        "user": {"id": 3003, "type": "User", "login": "author"},
+    }
+    value.update(overrides)
+    return value
+
+
+def review_value(**overrides: object) -> dict[str, object]:
+    value: dict[str, object] = {
+        "id": 501,
+        "state": "APPROVED",
+        "commit_id": HEAD_COMMIT,
+        "submitted_at": "2026-07-26T11:55:00Z",
+        "user": {
+            "id": REVIEWER_ID,
+            "type": "User",
+            "login": "reviewer",
+        },
+    }
+    value.update(overrides)
+    return value
+
+
+def approval_env(**overrides: str) -> dict[str, str]:
+    values = {
+        "BOTOLAGO_GITHUB_GOVERNANCE_TOKEN": "placeholder",
+        "BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID": str(REVIEWER_ID),
+        "BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER": "123",
+        "GITHUB_ACTOR_ID": str(ACTOR_ID),
+        "GITHUB_REPOSITORY": "mrdata007/botolago-foundation",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_RUN_ID": "42",
+        "GITHUB_SHA": COMMIT,
+        "GITHUB_WORKFLOW": "Phase 7F Production V2 API and Identity activation",
+    }
+    values.update(overrides)
+    return values
+
+
+def make_approval_request(
+    *, expiry_seconds: int = 60
+) -> tuple[dict[str, object], datetime]:
+    now = datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc)
+    with mock.patch.dict(os.environ, approval_env(), clear=True):
+        request = ACTIVATION.create_run_approval_request(
+            now=now,
+            nonce="0123456789abcdef0123456789abcdef",
+        )
+    request["expiresAt"] = ACTIVATION.format_timestamp(
+        now + timedelta(seconds=expiry_seconds)
+    )
+    return request, now
+
+
+def approval_comment(
+    request: dict[str, object], **overrides: object
+) -> dict[str, object]:
+    created = "2026-07-26T12:00:05Z"
+    value: dict[str, object] = {
+        "id": 701,
+        "body": request["expectedComment"],
+        "created_at": created,
+        "updated_at": created,
+        "user": {
+            "id": REVIEWER_ID,
+            "type": "User",
+            "login": "reviewer",
+        },
+    }
+    value.update(overrides)
+    return value
 
 
 class FakeManagementClient:
@@ -77,11 +220,24 @@ class QueryClient:
 class QueueHttp:
     def __init__(self, results: list[ACTIVATION.HttpResult]) -> None:
         self.results = list(results)
+        self.requests: list[tuple[tuple[object, ...], dict[str, object]]] = []
 
-    def request(self, *_args, **_kwargs):
+    def request(self, *args, **kwargs):
+        self.requests.append((args, kwargs))
         if not self.results:
             raise AssertionError("unexpected HTTP request")
         return self.results.pop(0)
+
+
+class FakeClock:
+    def __init__(self, value: datetime) -> None:
+        self.value = value
+
+    def now(self) -> datetime:
+        return self.value
+
+    def sleep(self, seconds: float) -> None:
+        self.value += timedelta(seconds=seconds)
 
 
 def make_journal(directory: str, *, current: str = "MUTATION_IN_PROGRESS"):
@@ -351,55 +507,577 @@ class Phase7FActivationTests(unittest.TestCase):
         ):
             handler(signal.SIGTERM, None)
 
-    def test_unprotected_live_environment_is_rejected(self) -> None:
-        http = QueueHttp(
-            [
-                ACTIVATION.HttpResult(
-                    200,
-                    "application/json",
-                    b'{"protection_rules":[],"deployment_branch_policy":null}',
-                ),
-                ACTIVATION.HttpResult(
-                    200,
-                    "application/json",
-                    b'{"branch_policies":[]}',
-                ),
-            ]
+    def test_safe_classic_main_governance_passes(self) -> None:
+        value = ACTIVATION.verify_main_governance(
+            QueueHttp([result(SAFE_CLASSIC)]),
+            "placeholder",
+            "mrdata007/botolago-foundation",
         )
-        env = {
-            "GITHUB_TOKEN": "placeholder",
-            "GITHUB_REPOSITORY": "mrdata007/botolago-foundation",
-            "GITHUB_RUN_ID": "42",
-        }
-        with mock.patch.dict(os.environ, env, clear=True):
-            with self.assertRaisesRegex(
-                ACTIVATION.ActivationError,
-                "GITHUB_ENVIRONMENT_UNPROTECTED",
-            ):
-                ACTIVATION.verify_github_protection(http)
+        self.assertEqual("CLASSIC_BRANCH_PROTECTION", value["mode"])
 
-    def test_unverifiable_environment_requires_valid_attestation(self) -> None:
+    def test_safe_active_ruleset_passes(self) -> None:
+        value = ACTIVATION.verify_main_governance(
+            QueueHttp(
+                [
+                    result({}, 404),
+                    result([{"id": 77}]),
+                    result(SAFE_RULESET),
+                ]
+            ),
+            "placeholder",
+            "mrdata007/botolago-foundation",
+        )
+        self.assertEqual("REPOSITORY_RULESET", value["mode"])
+
+    def test_full_governance_passes_without_supabase_credentials(self) -> None:
         http = QueueHttp(
             [
-                ACTIVATION.HttpResult(403, "application/json", b"{}"),
+                result(SAFE_CLASSIC),
+                result([pull_value()]),
+                result([review_value()]),
+                result({"author": {"id": 4004}}),
+                result({"workflow_runs": []}),
+                result({"workflow_runs": []}),
             ]
         )
-        env = {
-            "GITHUB_TOKEN": "placeholder",
-            "GITHUB_REPOSITORY": "mrdata007/botolago-foundation",
-            "GITHUB_RUN_ID": "42",
-            "BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256": "invalid",
-            "BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT": "1",
-            "BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW": "true",
-            "BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH": "main",
-            "BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED": "true",
+        with mock.patch.dict(
+            os.environ, governance_env(), clear=True
+        ):
+            value = ACTIVATION.verify_github_governance(http, COMMIT)
+        self.assertEqual("PASS", value["result"])
+        self.assertNotIn("SUPABASE", json.dumps(value))
+
+    def test_missing_or_unreadable_main_governance_fails_closed(self) -> None:
+        cases = (
+            (
+                [result({}, 404), result([])],
+                "GITHUB_BRANCH_PROTECTION_UNVERIFIED",
+            ),
+            (
+                [result({}, 403), result({}, 403)],
+                "GITHUB_BRANCH_PROTECTION_UNVERIFIED",
+            ),
+        )
+        for responses, code in cases:
+            with self.subTest(code=code):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError, code
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp(responses),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+
+    def test_each_unsafe_classic_control_fails_closed(self) -> None:
+        variants: dict[str, dict[str, object]] = {}
+        no_pull_request = copy.deepcopy(SAFE_CLASSIC)
+        no_pull_request["required_pull_request_reviews"] = None
+        variants["pull request not required"] = no_pull_request
+        zero_approvals = copy.deepcopy(SAFE_CLASSIC)
+        zero_approvals["required_pull_request_reviews"][
+            "required_approving_review_count"
+        ] = 0
+        variants["zero approvals"] = zero_approvals
+        stale_allowed = copy.deepcopy(SAFE_CLASSIC)
+        stale_allowed["required_pull_request_reviews"][
+            "dismiss_stale_reviews"
+        ] = False
+        variants["stale reviews retained"] = stale_allowed
+        latest_push_missing = copy.deepcopy(SAFE_CLASSIC)
+        latest_push_missing["required_pull_request_reviews"][
+            "require_last_push_approval"
+        ] = False
+        variants["latest push approval absent"] = latest_push_missing
+        admin_bypass = copy.deepcopy(SAFE_CLASSIC)
+        admin_bypass["enforce_admins"]["enabled"] = False
+        variants["administrator bypass"] = admin_bypass
+        force_push = copy.deepcopy(SAFE_CLASSIC)
+        force_push["allow_force_pushes"]["enabled"] = True
+        variants["force push"] = force_push
+        deletion = copy.deepcopy(SAFE_CLASSIC)
+        deletion["allow_deletions"]["enabled"] = True
+        variants["deletion"] = deletion
+        for name, protection in variants.items():
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_BRANCH_PROTECTION_UNSAFE",
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp([result(protection), result([])]),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+
+    def test_disabled_or_unsafe_ruleset_fails_closed(self) -> None:
+        disabled = copy.deepcopy(SAFE_RULESET)
+        disabled["enforcement"] = "disabled"
+        unsafe = copy.deepcopy(SAFE_RULESET)
+        unsafe["bypass_actors"] = [{"actor_type": "RepositoryRole"}]
+        excluded = copy.deepcopy(SAFE_RULESET)
+        excluded["conditions"]["ref_name"]["exclude"] = [
+            "refs/heads/*"
+        ]
+        cases = (
+            (disabled, "GITHUB_RULESET_UNSAFE"),
+            (unsafe, "GITHUB_RULESET_UNSAFE"),
+            (excluded, "GITHUB_BRANCH_PROTECTION_UNVERIFIED"),
+        )
+        for value, code in cases:
+            with self.subTest(
+                enforcement=value["enforcement"], code=code
+            ):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    code,
+                ):
+                    ACTIVATION.verify_main_governance(
+                        QueueHttp(
+                            [
+                                result({}, 404),
+                                result([{"id": 77}]),
+                                result(value),
+                            ]
+                        ),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                    )
+
+    def test_unreadable_ruleset_detail_fails_closed(self) -> None:
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "GITHUB_RULESET_UNVERIFIED"
+        ):
+            ACTIVATION.verify_main_governance(
+                QueueHttp(
+                    [
+                        result({}, 404),
+                        result([{"id": 77}]),
+                        result({}, 403),
+                    ]
+                ),
+                "placeholder",
+                "mrdata007/botolago-foundation",
+            )
+
+    def test_exact_merged_pr_and_designated_review_passes(self) -> None:
+        value = ACTIVATION.verify_exact_reviewed_commit(
+            QueueHttp(
+                [
+                    result([pull_value()]),
+                    result([review_value()]),
+                    result({"author": {"id": 4004}}),
+                ]
+            ),
+            "placeholder",
+            "mrdata007/botolago-foundation",
+            COMMIT,
+            REVIEWER_ID,
+            ACTOR_ID,
+        )
+        self.assertEqual(38, value["pullRequestNumber"])
+        self.assertNotIn(str(REVIEWER_ID), json.dumps(value))
+        self.assertNotIn('"login"', json.dumps(value))
+
+    def test_missing_or_inapplicable_merged_pr_fails(self) -> None:
+        cases = (
+            [],
+            [pull_value(state="open", merged_at=None)],
+            [pull_value(base={"ref": "develop"})],
+            [pull_value(merge_commit_sha="c" * 40)],
+        )
+        for pulls in cases:
+            with self.subTest(pulls=pulls):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_APPROVED_PR_NOT_FOUND",
+                ):
+                    ACTIVATION.verify_exact_reviewed_commit(
+                        QueueHttp([result(pulls)]),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                        COMMIT,
+                        REVIEWER_ID,
+                        ACTOR_ID,
+                    )
+
+    def test_multiple_applicable_prs_fail(self) -> None:
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "GITHUB_MULTIPLE_PR_MATCHES"
+        ):
+            ACTIVATION.verify_exact_reviewed_commit(
+                QueueHttp([result([pull_value(), pull_value(number=39)])]),
+                "placeholder",
+                "mrdata007/botolago-foundation",
+                COMMIT,
+                REVIEWER_ID,
+                ACTOR_ID,
+            )
+
+    def test_wrong_dismissed_bot_or_changes_requested_review_fails(self) -> None:
+        cases = (
+            (
+                [review_value(user={"id": 9999, "type": "User"})],
+                "GITHUB_REQUIRED_REVIEWER_MISSING",
+            ),
+            (
+                [review_value(state="DISMISSED")],
+                "GITHUB_REQUIRED_REVIEWER_MISSING",
+            ),
+            (
+                [review_value(state="COMMENTED")],
+                "GITHUB_REQUIRED_REVIEWER_MISSING",
+            ),
+            (
+                [
+                    review_value(
+                        user={
+                            "id": REVIEWER_ID,
+                            "type": "Bot",
+                            "login": "review-bot",
+                        }
+                    )
+                ],
+                "GITHUB_REQUIRED_REVIEWER_MISSING",
+            ),
+            (
+                [
+                    review_value(
+                        user={
+                            "id": REVIEWER_ID,
+                            "type": "User",
+                            "login": "copilot-pull-request-reviewer",
+                        }
+                    )
+                ],
+                "GITHUB_REQUIRED_REVIEWER_MISSING",
+            ),
+            (
+                [
+                    review_value(),
+                    review_value(
+                        id=502,
+                        state="CHANGES_REQUESTED",
+                        user={"id": 9999, "type": "User"},
+                        submitted_at="2026-07-26T11:56:00Z",
+                    ),
+                ],
+                "GITHUB_PR_GOVERNANCE_UNVERIFIED",
+            ),
+        )
+        for reviews, code in cases:
+            with self.subTest(code=code):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError, code
+                ):
+                    ACTIVATION.verify_exact_reviewed_commit(
+                        QueueHttp(
+                            [result([pull_value()]), result(reviews)]
+                        ),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                        COMMIT,
+                        REVIEWER_ID,
+                        ACTOR_ID,
+                    )
+
+    def test_stale_review_for_older_head_fails(self) -> None:
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "GITHUB_REVIEW_STALE"
+        ):
+            ACTIVATION.verify_exact_reviewed_commit(
+                QueueHttp(
+                    [
+                        result([pull_value()]),
+                        result([review_value(commit_id="c" * 40)]),
+                    ]
+                ),
+                "placeholder",
+                "mrdata007/botolago-foundation",
+                COMMIT,
+                REVIEWER_ID,
+                ACTOR_ID,
+            )
+
+    def test_reviewer_must_be_independent(self) -> None:
+        cases = (
+            (REVIEWER_ID, 3003, 4004),
+            (ACTOR_ID, REVIEWER_ID, 4004),
+            (ACTOR_ID, 3003, REVIEWER_ID),
+        )
+        for actor_id, author_id, push_author_id in cases:
+            with self.subTest(
+                actor=actor_id,
+                author=author_id,
+                pusher=push_author_id,
+            ):
+                with self.assertRaisesRegex(
+                    ACTIVATION.ActivationError,
+                    "GITHUB_REVIEWER_NOT_INDEPENDENT",
+                ):
+                    ACTIVATION.verify_exact_reviewed_commit(
+                        QueueHttp(
+                            [
+                                result(
+                                    [
+                                        pull_value(
+                                            user={
+                                                "id": author_id,
+                                                "type": "User",
+                                            }
+                                        )
+                                    ]
+                                ),
+                                result([review_value()]),
+                                result(
+                                    {
+                                        "author": {
+                                            "id": push_author_id
+                                        }
+                                    }
+                                ),
+                            ]
+                        ),
+                        "placeholder",
+                        "mrdata007/botolago-foundation",
+                        COMMIT,
+                        REVIEWER_ID,
+                        actor_id,
+                    )
+
+    def test_approval_request_is_run_bound_and_needs_no_supabase_secret(
+        self,
+    ) -> None:
+        now = datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc)
+        with mock.patch.dict(os.environ, approval_env(), clear=True):
+            request = ACTIVATION.create_run_approval_request(
+                now=now,
+                nonce="0123456789abcdef0123456789abcdef",
+            )
+        self.assertEqual(42, request["runId"])
+        self.assertEqual(1, request["runAttempt"])
+        self.assertEqual(COMMIT, request["commit"])
+        self.assertEqual(
+            ACTIVATION.EXPECTED_PROJECT_REF, request["projectRef"]
+        )
+        self.assertNotIn("SUPABASE", json.dumps(request))
+        expiry = ACTIVATION.parse_github_timestamp(request["expiresAt"])
+        self.assertLessEqual((expiry - now).total_seconds(), 900)
+
+    def test_exact_fresh_run_approval_comment_passes(self) -> None:
+        request, now = make_approval_request()
+        clock = FakeClock(now)
+        http = QueueHttp(
+            [
+                result({"number": 123, "state": "open"}),
+                result([approval_comment(request)]),
+            ]
+        )
+        with mock.patch.dict(os.environ, approval_env(), clear=True):
+            value = ACTIVATION.wait_for_run_approval(
+                http,
+                request,
+                now_fn=clock.now,
+                sleep_fn=clock.sleep,
+            )
+        self.assertEqual("PASS", value["result"])
+        self.assertNotIn(str(REVIEWER_ID), json.dumps(value))
+
+    def test_wrong_run_bound_approval_fields_fail(self) -> None:
+        request, now = make_approval_request()
+        expected = str(request["expectedComment"])
+        variants = {
+            "run id": expected.replace("run_id=42", "run_id=41"),
+            "run attempt": expected.replace(
+                "run_attempt=1", "run_attempt=2"
+            ),
+            "commit": expected.replace(COMMIT, "c" * 40),
+            "project": expected.replace(
+                ACTIVATION.EXPECTED_PROJECT_REF,
+                ACTIVATION.KNOWN_STAGING_REF,
+            ),
+            "nonce": expected.replace(
+                str(request["nonce"]), "f" * 32
+            ),
+            "extra command": expected + " force=true",
+            "previous run": expected.replace("run_id=42", "run_id=7"),
         }
-        with mock.patch.dict(os.environ, env, clear=True):
+        for name, body in variants.items():
+            with self.subTest(name=name):
+                http = QueueHttp(
+                    [
+                        result({"number": 123, "state": "open"}),
+                        result(
+                            [approval_comment(request, body=body)]
+                        ),
+                    ]
+                )
+                with mock.patch.dict(
+                    os.environ, approval_env(), clear=True
+                ):
+                    with self.assertRaisesRegex(
+                        ACTIVATION.ActivationError,
+                        "GITHUB_RUN_APPROVAL_INVALID",
+                    ):
+                        ACTIVATION.wait_for_run_approval(
+                            http,
+                            request,
+                            now_fn=lambda: now,
+                            sleep_fn=lambda _seconds: None,
+                        )
+
+    def test_wrong_or_self_run_approver_fails(self) -> None:
+        request, now = make_approval_request()
+        cases = (
+            (
+                {
+                    "id": 9999,
+                    "type": "User",
+                    "login": "other",
+                },
+                "GITHUB_RUN_APPROVER_MISMATCH",
+            ),
+            (
+                {
+                    "id": ACTOR_ID,
+                    "type": "User",
+                    "login": "dispatcher",
+                },
+                "GITHUB_RUN_SELF_APPROVAL_FORBIDDEN",
+            ),
+        )
+        for author, code in cases:
+            with self.subTest(code=code):
+                with mock.patch.dict(
+                    os.environ, approval_env(), clear=True
+                ):
+                    with self.assertRaisesRegex(
+                        ACTIVATION.ActivationError, code
+                    ):
+                        ACTIVATION.wait_for_run_approval(
+                            QueueHttp(
+                                [
+                                    result(
+                                        {
+                                            "number": 123,
+                                            "state": "open",
+                                        }
+                                    ),
+                                    result(
+                                        [
+                                            approval_comment(
+                                                request, user=author
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            request,
+                            now_fn=lambda: now,
+                            sleep_fn=lambda _seconds: None,
+                        )
+
+    def test_expired_or_edited_run_approval_fails(self) -> None:
+        request, now = make_approval_request(expiry_seconds=10)
+        cases = (
+            (
+                approval_comment(
+                    request,
+                    created_at="2026-07-26T12:00:11Z",
+                    updated_at="2026-07-26T12:00:11Z",
+                ),
+                "GITHUB_RUN_APPROVAL_EXPIRED",
+            ),
+            (
+                approval_comment(
+                    request,
+                    updated_at="2026-07-26T12:00:06Z",
+                ),
+                "GITHUB_RUN_APPROVAL_INVALID",
+            ),
+        )
+        for comment, code in cases:
+            with self.subTest(code=code):
+                with mock.patch.dict(
+                    os.environ, approval_env(), clear=True
+                ):
+                    with self.assertRaisesRegex(
+                        ACTIVATION.ActivationError, code
+                    ):
+                        ACTIVATION.wait_for_run_approval(
+                            QueueHttp(
+                                [
+                                    result(
+                                        {
+                                            "number": 123,
+                                            "state": "open",
+                                        }
+                                    ),
+                                    result([comment]),
+                                ]
+                            ),
+                            request,
+                            now_fn=lambda: now,
+                            sleep_fn=lambda _seconds: None,
+                        )
+
+    def test_old_and_unrelated_comments_are_ignored_until_timeout(
+        self,
+    ) -> None:
+        request, now = make_approval_request(expiry_seconds=1)
+        old = approval_comment(
+            request,
+            created_at="2026-07-26T11:59:59Z",
+            updated_at="2026-07-26T11:59:59Z",
+        )
+        unrelated = approval_comment(
+            request,
+            body="ordinary issue discussion",
+        )
+        clock = FakeClock(now)
+        with mock.patch.dict(os.environ, approval_env(), clear=True):
             with self.assertRaisesRegex(
                 ACTIVATION.ActivationError,
-                "GITHUB_ENVIRONMENT_ATTESTATION_INVALID",
+                "GITHUB_RUN_APPROVAL_TIMEOUT",
             ):
-                ACTIVATION.verify_github_protection(http)
+                ACTIVATION.wait_for_run_approval(
+                    QueueHttp(
+                        [
+                            result(
+                                {"number": 123, "state": "open"}
+                            ),
+                            result([old, unrelated]),
+                            result([]),
+                        ]
+                    ),
+                    request,
+                    now_fn=clock.now,
+                    sleep_fn=clock.sleep,
+                )
+
+    def test_wrong_issue_or_issue_api_failure_fails_before_mutation(
+        self,
+    ) -> None:
+        request, now = make_approval_request()
+        responses = (
+            result({"number": 999, "state": "open"}),
+            result({}, 403),
+        )
+        for response in responses:
+            with self.subTest(status=response.status):
+                with mock.patch.dict(
+                    os.environ, approval_env(), clear=True
+                ):
+                    with self.assertRaisesRegex(
+                        ACTIVATION.ActivationError,
+                        "GITHUB_APPROVAL_ISSUE_UNVERIFIED",
+                    ):
+                        ACTIVATION.wait_for_run_approval(
+                            QueueHttp([response]),
+                            request,
+                            now_fn=lambda: now,
+                            sleep_fn=lambda _seconds: None,
+                        )
 
     def test_manifest_is_versioned_and_canonical_security_valid(self) -> None:
         value = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -685,6 +1363,10 @@ class Phase7FActivationTests(unittest.TestCase):
         self.assertEqual(1, promotion.count(marker))
         self.assertIn("cancel-in-progress: false", activation)
         self.assertIn("cancel-in-progress: false", promotion)
+        self.assertEqual(
+            "d133bad575aab75b4691821d02b6e01aef6308488c8db54b6b2a540f8b0fcecb",
+            hashlib.sha256(promotion.encode()).hexdigest(),
+        )
 
     def test_workflow_scopes_secrets_and_uses_independent_recovery(self) -> None:
         workflow = (
@@ -692,8 +1374,36 @@ class Phase7FActivationTests(unittest.TestCase):
             / ".github/workflows/phase7f-production-api-identity-activation.yml"
         ).read_text()
         job_env = workflow.split("    steps:", 1)[0]
+        pre_activation = workflow.split(
+            "      - name: Run guarded Production V2 activation", 1
+        )[0]
+        self.assertIn(
+            "environment: production-admin-activation", workflow
+        )
         self.assertNotIn("secrets.SUPABASE_ACCESS_TOKEN", job_env)
         self.assertNotIn("secrets.SUPABASE_SECRET_KEY", job_env)
+        self.assertNotIn("secrets.SUPABASE_ACCESS_TOKEN", pre_activation)
+        self.assertNotIn("secrets.SUPABASE_SECRET_KEY", pre_activation)
+        self.assertNotIn(
+            "secrets.BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN",
+            pre_activation,
+        )
+        self.assertEqual(
+            2,
+            workflow.count(
+                "secrets.BOTOLAGO_GITHUB_GOVERNANCE_TOKEN"
+            ),
+        )
+        self.assertNotIn("BOTOLAGO_ENVIRONMENT_", workflow)
+        self.assertIn("--verify-github-governance", workflow)
+        self.assertIn("--create-run-approval-request", workflow)
+        self.assertIn("--wait-for-run-approval", workflow)
+        self.assertIn(
+            "steps.run_approval.outcome == 'success'", workflow
+        )
+        self.assertIn(
+            "steps.state_check.outputs.exists == 'true'", workflow
+        )
         self.assertIn("--recover-from-state", workflow)
         self.assertIn("if-no-files-found: error", workflow)
         self.assertNotIn("grep -R", workflow)

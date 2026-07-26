@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import argparse
 import base64
+import fnmatch
 import hashlib
 import importlib.util
 import json
 import os
 import re
+import secrets
 import signal
 import subprocess
 import sys
@@ -25,9 +27,9 @@ import urllib.parse
 import urllib.request
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 EXPECTED_PROJECT_REF = "tkewgajrljbwgwedqsxn"
@@ -45,7 +47,12 @@ ALLOWED_INITIAL_SCHEMA_SETS = {("graphql_public", "public"), ("api",)}
 MANAGEMENT_API = "https://api.supabase.com"
 MAX_HTTP_REQUESTS = 120
 SHARED_CONCURRENCY_GROUP = "botolago-production-v2-mutation"
-ENVIRONMENT_NAME = "production-admin-activation"
+EXPECTED_REPOSITORY = "mrdata007/botolago-foundation"
+EXPECTED_GITHUB_REF = "refs/heads/main"
+EXPECTED_GITHUB_EVENT = "workflow_dispatch"
+APPROVAL_COMMENT_PREFIX = "APPROVE_PHASE7F"
+APPROVAL_WINDOW_SECONDS = 600
+APPROVAL_POLL_INTERVAL_SECONDS = 10
 
 VERDICTS = {
     "NOT_EXECUTED",
@@ -467,91 +474,330 @@ def github_request(http: HttpClient, token: str, path: str) -> HttpResult:
     )
 
 
-def verify_github_protection(http: HttpClient) -> dict[str, Any]:
-    token = require_env("GITHUB_TOKEN")
-    repository = require_env("GITHUB_REPOSITORY")
-    run_id = require_env("GITHUB_RUN_ID")
-    environment = github_request(
-        http, token, f"/repos/{repository}/environments/{ENVIRONMENT_NAME}"
+def require_positive_integer(name: str) -> int:
+    value = require_env(name)
+    if not value.isascii() or not value.isdigit() or int(value) < 1:
+        raise ActivationError("PROTECTED_VALUE_INVALID", name)
+    return int(value)
+
+
+def parse_github_timestamp(value: object) -> datetime:
+    if not isinstance(value, str) or not value.strip():
+        raise ActivationError("GITHUB_TIMESTAMP_INVALID")
+    text = value.strip().replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError as exc:
+        raise ActivationError("GITHUB_TIMESTAMP_INVALID") from exc
+    if parsed.tzinfo is None:
+        raise ActivationError("GITHUB_TIMESTAMP_INVALID")
+    return parsed.astimezone(timezone.utc)
+
+
+def github_response_json(
+    response: HttpResult, failure_code: str
+) -> dict[str, Any] | list[Any]:
+    if response.status != 200:
+        raise ActivationError(failure_code)
+    try:
+        parsed = response.json()
+    except ActivationError as exc:
+        raise ActivationError(failure_code) from exc
+    if not isinstance(parsed, (dict, list)):
+        raise ActivationError(failure_code)
+    return parsed
+
+
+def classic_branch_protection_safe(value: dict[str, Any]) -> bool:
+    reviews = value.get("required_pull_request_reviews")
+    enforce_admins = value.get("enforce_admins")
+    force_pushes = value.get("allow_force_pushes")
+    deletions = value.get("allow_deletions")
+    return bool(
+        isinstance(reviews, dict)
+        and int(reviews.get("required_approving_review_count") or 0) >= 1
+        and reviews.get("dismiss_stale_reviews") is True
+        and reviews.get("require_last_push_approval") is True
+        and isinstance(enforce_admins, dict)
+        and enforce_admins.get("enabled") is True
+        and isinstance(force_pushes, dict)
+        and force_pushes.get("enabled") is False
+        and isinstance(deletions, dict)
+        and deletions.get("enabled") is False
     )
-    live: dict[str, Any] | None = None
-    mode = "LIVE_API"
-    if environment.status == 200:
-        parsed = environment.json()
+
+
+def ruleset_targets_main(value: dict[str, Any]) -> bool:
+    if value.get("target") != "branch":
+        return False
+    ref_name = (value.get("conditions") or {}).get("ref_name") or {}
+    includes = [str(item) for item in ref_name.get("include") or []]
+    excludes = [str(item) for item in ref_name.get("exclude") or []]
+
+    def matches_main(pattern: str) -> bool:
+        return pattern in {"~ALL", "~DEFAULT_BRANCH"} or fnmatch.fnmatchcase(
+            "refs/heads/main", pattern
+        )
+
+    return any(matches_main(item) for item in includes) and not any(
+        matches_main(item) for item in excludes
+    )
+
+
+def ruleset_applies_to_main(value: dict[str, Any]) -> bool:
+    return (
+        ruleset_targets_main(value)
+        and value.get("enforcement") == "active"
+    )
+
+
+def branch_ruleset_safe(value: dict[str, Any]) -> bool:
+    if not ruleset_applies_to_main(value) or value.get("bypass_actors"):
+        return False
+    rules = {
+        str(row.get("type")): row
+        for row in value.get("rules") or []
+        if isinstance(row, dict)
+    }
+    pull_request = rules.get("pull_request")
+    parameters = (
+        pull_request.get("parameters")
+        if isinstance(pull_request, dict)
+        else None
+    )
+    return bool(
+        isinstance(parameters, dict)
+        and int(parameters.get("required_approving_review_count") or 0) >= 1
+        and parameters.get("dismiss_stale_reviews_on_push") is True
+        and parameters.get("require_last_push_approval") is True
+        and "non_fast_forward" in rules
+        and "deletion" in rules
+    )
+
+
+def verify_main_governance(
+    http: HttpClient, token: str, repository: str
+) -> dict[str, Any]:
+    classic = github_request(
+        http, token, f"/repos/{repository}/branches/main/protection"
+    )
+    classic_value: dict[str, Any] | None = None
+    if classic.status == 200:
+        parsed = github_response_json(
+            classic, "GITHUB_BRANCH_PROTECTION_UNVERIFIED"
+        )
         if not isinstance(parsed, dict):
-            raise ActivationError("GITHUB_ENVIRONMENT_RESPONSE_INVALID")
-        rules = parsed.get("protection_rules") or []
-        reviewer_rules = [
-            rule for rule in rules if rule.get("type") == "required_reviewers"
-        ]
-        reviewer_count = sum(
-            len(rule.get("reviewers") or []) for rule in reviewer_rules
-        )
-        prevent_self = any(
-            bool(rule.get("prevent_self_review")) for rule in reviewer_rules
-        )
-        branch_policy = parsed.get("deployment_branch_policy") or {}
-        branch_response = github_request(
+            raise ActivationError("GITHUB_BRANCH_PROTECTION_UNVERIFIED")
+        classic_value = parsed
+        if classic_branch_protection_safe(parsed):
+            return {
+                "mode": "CLASSIC_BRANCH_PROTECTION",
+                "branch": "main",
+                "requiredApprovals": int(
+                    parsed["required_pull_request_reviews"][
+                        "required_approving_review_count"
+                    ]
+                ),
+                "staleReviewsDismissed": True,
+                "latestPushApprovalRequired": True,
+                "administratorBypassAllowed": False,
+                "forcePushAllowed": False,
+                "deletionAllowed": False,
+                "result": "PASS",
+            }
+
+    rulesets_response = github_request(
+        http,
+        token,
+        f"/repos/{repository}/rulesets?"
+        + urllib.parse.urlencode(
+            {"includes_parents": "true", "targets": "branch"}
+        ),
+    )
+    if rulesets_response.status != 200:
+        if classic.status not in (200, 404):
+            raise ActivationError("GITHUB_BRANCH_PROTECTION_UNVERIFIED")
+        if classic_value is not None:
+            raise ActivationError("GITHUB_BRANCH_PROTECTION_UNSAFE")
+        raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+    summaries = github_response_json(
+        rulesets_response, "GITHUB_RULESET_UNVERIFIED"
+    )
+    if not isinstance(summaries, list):
+        raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+    applicable_seen = False
+    unsafe_seen = False
+    for summary in summaries:
+        if not isinstance(summary, dict) or not isinstance(
+            summary.get("id"), int
+        ):
+            raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+        detail_response = github_request(
             http,
             token,
-            f"/repos/{repository}/environments/{ENVIRONMENT_NAME}"
-            "/deployment-branch-policies",
+            f"/repos/{repository}/rulesets/{summary['id']}",
         )
-        branches: list[str] = []
-        if branch_response.status == 200:
-            branch_body = branch_response.json()
-            branches = sorted(
-                str(row.get("name"))
-                for row in branch_body.get("branch_policies", [])
-                if isinstance(row, dict)
-            )
-        live = {
-            "environment": ENVIRONMENT_NAME,
-            "requiredReviewerCount": reviewer_count,
-            "preventSelfReview": prevent_self,
-            "protectedBranches": bool(branch_policy.get("protected_branches")),
-            "customBranchPolicies": bool(
-                branch_policy.get("custom_branch_policies")
-            ),
-            "deploymentBranches": branches,
-        }
-        if reviewer_count < 1 or not prevent_self:
-            raise ActivationError("GITHUB_ENVIRONMENT_UNPROTECTED")
-        if branches != ["main"] and not (
-            branch_policy.get("protected_branches") and not branches
+        if detail_response.status != 200:
+            raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+        detail = github_response_json(
+            detail_response, "GITHUB_RULESET_UNVERIFIED"
+        )
+        if not isinstance(detail, dict):
+            raise ActivationError("GITHUB_RULESET_UNVERIFIED")
+        if ruleset_targets_main(detail):
+            applicable_seen = True
+            if branch_ruleset_safe(detail):
+                pull_rule = next(
+                    row
+                    for row in detail["rules"]
+                    if row.get("type") == "pull_request"
+                )
+                return {
+                    "mode": "REPOSITORY_RULESET",
+                    "branch": "main",
+                    "rulesetIdHash": fingerprint(str(detail["id"])),
+                    "requiredApprovals": int(
+                        pull_rule["parameters"][
+                            "required_approving_review_count"
+                        ]
+                    ),
+                    "staleReviewsDismissed": True,
+                    "latestPushApprovalRequired": True,
+                    "administratorBypassAllowed": False,
+                    "forcePushAllowed": False,
+                    "deletionAllowed": False,
+                    "result": "PASS",
+                }
+            unsafe_seen = True
+    if classic_value is not None:
+        raise ActivationError("GITHUB_BRANCH_PROTECTION_UNSAFE")
+    if applicable_seen or unsafe_seen:
+        raise ActivationError("GITHUB_RULESET_UNSAFE")
+    raise ActivationError("GITHUB_BRANCH_PROTECTION_UNVERIFIED")
+
+
+def github_list(
+    http: HttpClient,
+    token: str,
+    path: str,
+    failure_code: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for page in range(1, 11):
+        separator = "&" if "?" in path else "?"
+        response = github_request(
+            http,
+            token,
+            f"{path}{separator}"
+            + urllib.parse.urlencode({"per_page": 100, "page": page}),
+        )
+        parsed = github_response_json(response, failure_code)
+        if not isinstance(parsed, list) or not all(
+            isinstance(row, dict) for row in parsed
         ):
-            raise ActivationError("GITHUB_DEPLOYMENT_BRANCH_UNPROTECTED")
-    elif environment.status in (403, 404):
-        mode = "HUMAN_ATTESTATION"
-    else:
-        raise ActivationError("GITHUB_ENVIRONMENT_VERIFICATION_FAILED")
+            raise ActivationError(failure_code)
+        rows.extend(parsed)
+        if len(parsed) < 100:
+            return rows
+    raise ActivationError(failure_code)
 
-    attestation = {
-        "sha256": require_env(
-            "BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256"
+
+def verify_exact_reviewed_commit(
+    http: HttpClient,
+    token: str,
+    repository: str,
+    commit: str,
+    required_reviewer_id: int,
+    actor_id: int,
+) -> dict[str, Any]:
+    pulls = github_list(
+        http,
+        token,
+        f"/repos/{repository}/commits/{commit}/pulls",
+        "GITHUB_PR_GOVERNANCE_UNVERIFIED",
+    )
+    applicable = [
+        row
+        for row in pulls
+        if (row.get("base") or {}).get("ref") == "main"
+        and row.get("state") == "closed"
+        and row.get("merged_at")
+        and row.get("merge_commit_sha") == commit
+    ]
+    if not applicable:
+        raise ActivationError("GITHUB_APPROVED_PR_NOT_FOUND")
+    if len(applicable) != 1:
+        raise ActivationError("GITHUB_MULTIPLE_PR_MATCHES")
+    pull = applicable[0]
+    number = pull.get("number")
+    head_commit = (pull.get("head") or {}).get("sha")
+    author_id = ((pull.get("user") or {}).get("id"))
+    if not isinstance(number, int) or not isinstance(head_commit, str):
+        raise ActivationError("GITHUB_PR_GOVERNANCE_UNVERIFIED")
+
+    reviews = github_list(
+        http,
+        token,
+        f"/repos/{repository}/pulls/{number}/reviews",
+        "GITHUB_PR_GOVERNANCE_UNVERIFIED",
+    )
+    latest_by_reviewer: dict[int, dict[str, Any]] = {}
+    for review in sorted(
+        reviews,
+        key=lambda row: (
+            str(row.get("submitted_at") or ""),
+            int(row.get("id") or 0),
         ),
-        "requiredReviewerCount": require_env(
-            "BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT"
-        ),
-        "preventSelfReview": require_env(
-            "BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW"
-        ),
-        "deploymentBranch": require_env(
-            "BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH"
-        ),
-        "adminBypassDisabled": require_env(
-            "BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED"
-        ),
-    }
-    if (
-        not re.fullmatch(r"[a-f0-9]{64}", attestation["sha256"])
-        or int(attestation["requiredReviewerCount"]) < 1
-        or attestation["preventSelfReview"].lower() != "true"
-        or attestation["deploymentBranch"] != "main"
-        or attestation["adminBypassDisabled"].lower() != "true"
     ):
-        raise ActivationError("GITHUB_ENVIRONMENT_ATTESTATION_INVALID")
+        reviewer_id = (review.get("user") or {}).get("id")
+        if isinstance(reviewer_id, int):
+            latest_by_reviewer[reviewer_id] = review
+    for review in latest_by_reviewer.values():
+        if (
+            review.get("state") == "CHANGES_REQUESTED"
+            and review.get("commit_id") == head_commit
+        ):
+            raise ActivationError("GITHUB_PR_GOVERNANCE_UNVERIFIED")
+    designated = latest_by_reviewer.get(required_reviewer_id)
+    reviewer = (designated or {}).get("user") or {}
+    if (
+        designated is None
+        or designated.get("state") != "APPROVED"
+        or reviewer.get("type") != "User"
+        or "copilot" in str(reviewer.get("login") or "").lower()
+    ):
+        raise ActivationError("GITHUB_REQUIRED_REVIEWER_MISSING")
+    if designated.get("commit_id") != head_commit:
+        raise ActivationError("GITHUB_REVIEW_STALE")
 
+    head_response = github_request(
+        http, token, f"/repos/{repository}/commits/{head_commit}"
+    )
+    head_value = github_response_json(
+        head_response, "GITHUB_PR_GOVERNANCE_UNVERIFIED"
+    )
+    if not isinstance(head_value, dict):
+        raise ActivationError("GITHUB_PR_GOVERNANCE_UNVERIFIED")
+    latest_push_author_id = (head_value.get("author") or {}).get("id")
+    if required_reviewer_id in {
+        actor_id,
+        author_id,
+        latest_push_author_id,
+    }:
+        raise ActivationError("GITHUB_REVIEWER_NOT_INDEPENDENT")
+    return {
+        "pullRequestNumber": number,
+        "reviewedHeadPrefix": head_commit[:12],
+        "mergeCommitPrefix": commit[:12],
+        "reviewerIdHash": fingerprint(str(required_reviewer_id)),
+        "approvalTimestamp": str(designated.get("submitted_at")),
+        "result": "PASS",
+    }
+
+
+def verify_conflicting_runs(
+    http: HttpClient, token: str, repository: str, run_id: str
+) -> dict[str, Any]:
     conflicts: list[dict[str, Any]] = []
     for status in ("queued", "in_progress"):
         response = github_request(
@@ -560,9 +806,14 @@ def verify_github_protection(http: HttpClient) -> dict[str, Any]:
             f"/repos/{repository}/actions/runs?"
             + urllib.parse.urlencode({"status": status, "per_page": 100}),
         )
-        if response.status != 200:
+        parsed = github_response_json(
+            response, "GITHUB_CONFLICT_CHECK_UNVERIFIED"
+        )
+        if not isinstance(parsed, dict):
             raise ActivationError("GITHUB_CONFLICT_CHECK_UNVERIFIED")
-        for row in response.json().get("workflow_runs", []):
+        for row in parsed.get("workflow_runs", []):
+            if not isinstance(row, dict):
+                raise ActivationError("GITHUB_CONFLICT_CHECK_UNVERIFIED")
             path = str(row.get("path") or "")
             if (
                 path
@@ -582,13 +833,250 @@ def verify_github_protection(http: HttpClient) -> dict[str, Any]:
     if conflicts:
         raise ActivationError("CONFLICTING_PRODUCTION_WORKFLOW")
     return {
-        "verificationMode": mode,
-        "live": live,
-        "attestationHash": attestation["sha256"],
-        "adminBypassDisabledAttested": True,
         "conflictingProductionRuns": 0,
         "concurrencyGroup": SHARED_CONCURRENCY_GROUP,
     }
+
+
+def verify_github_governance(
+    http: HttpClient, expected_commit: str
+) -> dict[str, Any]:
+    token = require_env("BOTOLAGO_GITHUB_GOVERNANCE_TOKEN")
+    repository = require_env("GITHUB_REPOSITORY")
+    run_id = require_env("GITHUB_RUN_ID")
+    required_reviewer_id = require_positive_integer(
+        "BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID"
+    )
+    actor_id = require_positive_integer("GITHUB_ACTOR_ID")
+    if (
+        repository != EXPECTED_REPOSITORY
+        or require_env("GITHUB_REF") != EXPECTED_GITHUB_REF
+        or require_env("GITHUB_EVENT_NAME") != EXPECTED_GITHUB_EVENT
+        or require_env("GITHUB_SHA") != expected_commit
+    ):
+        raise ActivationError("GITHUB_PR_GOVERNANCE_UNVERIFIED")
+    return {
+        "mainGovernance": verify_main_governance(
+            http, token, repository
+        ),
+        "exactCommitReview": verify_exact_reviewed_commit(
+            http,
+            token,
+            repository,
+            expected_commit,
+            required_reviewer_id,
+            actor_id,
+        ),
+        "conflicts": verify_conflicting_runs(
+            http, token, repository, run_id
+        ),
+        "result": "PASS",
+    }
+
+
+def format_timestamp(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def create_run_approval_request(
+    *,
+    now: datetime | None = None,
+    nonce: str | None = None,
+) -> dict[str, Any]:
+    requested_at = (now or datetime.now(timezone.utc)).astimezone(
+        timezone.utc
+    )
+    repository = require_env("GITHUB_REPOSITORY")
+    workflow = require_env("GITHUB_WORKFLOW")
+    run_id = require_positive_integer("GITHUB_RUN_ID")
+    run_attempt = require_positive_integer("GITHUB_RUN_ATTEMPT")
+    commit = require_env("GITHUB_SHA")
+    issue_number = require_positive_integer(
+        "BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER"
+    )
+    required_reviewer_id = require_positive_integer(
+        "BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID"
+    )
+    actor_id = require_positive_integer("GITHUB_ACTOR_ID")
+    if (
+        repository != EXPECTED_REPOSITORY
+        or not re.fullmatch(r"[a-f0-9]{40}", commit)
+    ):
+        raise ActivationError("GITHUB_APPROVAL_ISSUE_UNVERIFIED")
+    if required_reviewer_id == actor_id:
+        raise ActivationError("GITHUB_RUN_SELF_APPROVAL_FORBIDDEN")
+    approval_nonce = nonce or secrets.token_hex(16)
+    if not re.fullmatch(r"[a-f0-9]{32,}", approval_nonce):
+        raise ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+    expires_at = requested_at + timedelta(
+        seconds=APPROVAL_WINDOW_SECONDS
+    )
+    expected_comment = (
+        f"{APPROVAL_COMMENT_PREFIX} run_id={run_id} "
+        f"run_attempt={run_attempt} commit={commit} "
+        f"project_ref={EXPECTED_PROJECT_REF} nonce={approval_nonce}"
+    )
+    return {
+        "repository": repository,
+        "workflow": workflow,
+        "runId": run_id,
+        "runAttempt": run_attempt,
+        "commit": commit,
+        "projectRef": EXPECTED_PROJECT_REF,
+        "issueNumber": issue_number,
+        "requiredReviewerId": required_reviewer_id,
+        "dispatcherId": actor_id,
+        "nonce": approval_nonce,
+        "requestedAt": format_timestamp(requested_at),
+        "expiresAt": format_timestamp(expires_at),
+        "expectedComment": expected_comment,
+    }
+
+
+def normalized_comment(value: object) -> str:
+    return " ".join(str(value or "").strip().split())
+
+
+def validate_run_approval_request(request: dict[str, Any]) -> None:
+    requested_at = parse_github_timestamp(request.get("requestedAt"))
+    expires_at = parse_github_timestamp(request.get("expiresAt"))
+    nonce = str(request.get("nonce") or "")
+    expected_comment = (
+        f"{APPROVAL_COMMENT_PREFIX} run_id={require_env('GITHUB_RUN_ID')} "
+        f"run_attempt={require_env('GITHUB_RUN_ATTEMPT')} "
+        f"commit={require_env('GITHUB_SHA')} "
+        f"project_ref={EXPECTED_PROJECT_REF} nonce={nonce}"
+    )
+    expected = {
+        "repository": require_env("GITHUB_REPOSITORY"),
+        "workflow": require_env("GITHUB_WORKFLOW"),
+        "runId": require_positive_integer("GITHUB_RUN_ID"),
+        "runAttempt": require_positive_integer("GITHUB_RUN_ATTEMPT"),
+        "commit": require_env("GITHUB_SHA"),
+        "projectRef": EXPECTED_PROJECT_REF,
+        "issueNumber": require_positive_integer(
+            "BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER"
+        ),
+        "requiredReviewerId": require_positive_integer(
+            "BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID"
+        ),
+        "dispatcherId": require_positive_integer("GITHUB_ACTOR_ID"),
+        "expectedComment": expected_comment,
+    }
+    if any(request.get(key) != value for key, value in expected.items()):
+        raise ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+    if (
+        expected["repository"] != EXPECTED_REPOSITORY
+        or not re.fullmatch(r"[a-f0-9]{40}", str(expected["commit"]))
+        or not re.fullmatch(r"[a-f0-9]{32,}", nonce)
+        or expires_at <= requested_at
+        or (expires_at - requested_at).total_seconds()
+        > APPROVAL_WINDOW_SECONDS
+    ):
+        raise ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+    if expected["requiredReviewerId"] == expected["dispatcherId"]:
+        raise ActivationError("GITHUB_RUN_SELF_APPROVAL_FORBIDDEN")
+
+
+def wait_for_run_approval(
+    http: HttpClient,
+    request: dict[str, Any],
+    *,
+    now_fn: Callable[[], datetime] | None = None,
+    sleep_fn: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    validate_run_approval_request(request)
+    token = require_env("BOTOLAGO_GITHUB_GOVERNANCE_TOKEN")
+    repository = str(request["repository"])
+    issue_number = int(request["issueNumber"])
+    reviewer_id = int(request["requiredReviewerId"])
+    dispatcher_id = int(request["dispatcherId"])
+    requested_at = parse_github_timestamp(request["requestedAt"])
+    expires_at = parse_github_timestamp(request["expiresAt"])
+    clock = now_fn or (lambda: datetime.now(timezone.utc))
+    if reviewer_id == dispatcher_id:
+        raise ActivationError("GITHUB_RUN_SELF_APPROVAL_FORBIDDEN")
+
+    issue_response = github_request(
+        http, token, f"/repos/{repository}/issues/{issue_number}"
+    )
+    issue = github_response_json(
+        issue_response, "GITHUB_APPROVAL_ISSUE_UNVERIFIED"
+    )
+    if (
+        not isinstance(issue, dict)
+        or issue.get("number") != issue_number
+        or issue.get("state") != "open"
+        or issue.get("pull_request") is not None
+    ):
+        raise ActivationError("GITHUB_APPROVAL_ISSUE_UNVERIFIED")
+
+    expected = str(request["expectedComment"])
+    while clock().astimezone(timezone.utc) <= expires_at:
+        comments = github_list(
+            http,
+            token,
+            f"/repos/{repository}/issues/{issue_number}/comments?"
+            + urllib.parse.urlencode(
+                {
+                    "since": format_timestamp(requested_at),
+                }
+            ),
+            "GITHUB_APPROVAL_ISSUE_UNVERIFIED",
+        )
+        for comment in comments:
+            body = normalized_comment(comment.get("body"))
+            created_at = parse_github_timestamp(comment.get("created_at"))
+            if created_at <= requested_at:
+                continue
+            author = comment.get("user") or {}
+            author_id = author.get("id")
+            starts_approval = body.startswith(
+                f"{APPROVAL_COMMENT_PREFIX} "
+            )
+            if body == expected:
+                if author_id == dispatcher_id:
+                    raise ActivationError(
+                        "GITHUB_RUN_SELF_APPROVAL_FORBIDDEN"
+                    )
+                if (
+                    author_id != reviewer_id
+                    or author.get("type") != "User"
+                    or "copilot"
+                    in str(author.get("login") or "").lower()
+                ):
+                    raise ActivationError(
+                        "GITHUB_RUN_APPROVER_MISMATCH"
+                    )
+                if created_at > expires_at:
+                    raise ActivationError("GITHUB_RUN_APPROVAL_EXPIRED")
+                updated_at = parse_github_timestamp(
+                    comment.get("updated_at")
+                )
+                if updated_at != created_at:
+                    raise ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+                return {
+                    "commentIdHash": fingerprint(
+                        str(comment.get("id"))
+                    ),
+                    "reviewerIdHash": fingerprint(str(reviewer_id)),
+                    "approvalTimestamp": format_timestamp(created_at),
+                    "runId": int(request["runId"]),
+                    "runAttempt": int(request["runAttempt"]),
+                    "commitPrefix": str(request["commit"])[:12],
+                    "result": "PASS",
+                }
+            if starts_approval and author_id == reviewer_id:
+                if created_at > expires_at:
+                    raise ActivationError("GITHUB_RUN_APPROVAL_EXPIRED")
+                raise ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+        remaining = (
+            expires_at - clock().astimezone(timezone.utc)
+        ).total_seconds()
+        if remaining <= 0:
+            break
+        sleep_fn(min(APPROVAL_POLL_INTERVAL_SECONDS, remaining))
+    raise ActivationError("GITHUB_RUN_APPROVAL_TIMEOUT")
 
 
 def assert_management_target(client: ManagementClient) -> dict[str, Any]:
@@ -1926,6 +2414,49 @@ def install_signal_handlers() -> None:
     signal.signal(signal.SIGTERM, handler)
 
 
+def record_github_failure(
+    evidence_dir: Path, filename: str, exc: ActivationError
+) -> None:
+    write_json(
+        evidence_dir / filename,
+        {
+            "timestampUtc": utc_now(),
+            "result": "FAILED_BEFORE_MUTATION",
+            "errorCode": exc.code,
+        },
+    )
+
+
+def create_run_approval_files(
+    request_file: Path, evidence_dir: Path
+) -> None:
+    request = create_run_approval_request()
+    write_json(request_file, request)
+    write_json(
+        evidence_dir / "github-approval-request.json",
+        {
+            "repository": request["repository"],
+            "workflow": request["workflow"],
+            "runId": request["runId"],
+            "runAttempt": request["runAttempt"],
+            "commitPrefix": str(request["commit"])[:12],
+            "projectRef": request["projectRef"],
+            "issueNumber": request["issueNumber"],
+            "requestedAt": request["requestedAt"],
+            "expiresAt": request["expiresAt"],
+            "nonceHash": fingerprint(str(request["nonce"])),
+            "result": "AWAITING_SECOND_PERSON_APPROVAL",
+        },
+    )
+    summary_path = Path(require_env("GITHUB_STEP_SUMMARY"))
+    with summary_path.open("a", encoding="utf-8") as summary:
+        summary.write("## Phase 7F second-person approval required\n\n")
+        summary.write("Post this exact one-line comment on the dedicated ")
+        summary.write("production approval issue before expiry:\n\n")
+        summary.write(f"`{request['expectedComment']}`\n\n")
+        summary.write(f"Expires: `{request['expiresAt']}`\n")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-commit")
@@ -1934,15 +2465,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--evidence-dir")
     parser.add_argument("--state-file")
     parser.add_argument("--recover-from-state")
-    parser.add_argument("--verify-github-preflight", action="store_true")
+    parser.add_argument("--verify-github-governance", action="store_true")
+    parser.add_argument("--create-run-approval-request", action="store_true")
+    parser.add_argument("--wait-for-run-approval", action="store_true")
+    parser.add_argument("--approval-request-file")
     parser.add_argument("--finalize-evidence", action="store_true")
     parser.add_argument("--upload-outcome")
     parser.add_argument("--scan-outcome")
     parser.add_argument("--primary-outcome")
     args = parser.parse_args()
-    if args.verify_github_preflight:
-        if not args.evidence_dir:
-            parser.error("--evidence-dir is required")
+    if args.verify_github_governance:
+        if not args.evidence_dir or not args.expected_commit:
+            parser.error("--evidence-dir and --expected-commit are required")
+        return args
+    if args.create_run_approval_request or args.wait_for_run_approval:
+        if not args.evidence_dir or not args.approval_request_file:
+            parser.error(
+                "--evidence-dir and --approval-request-file are required"
+            )
         return args
     if args.finalize_evidence:
         if not args.state_file or not args.evidence_dir:
@@ -1968,10 +2508,59 @@ def main() -> int:
     install_signal_handlers()
     args = parse_args()
     try:
-        if args.verify_github_preflight:
-            evidence = verify_github_protection(HttpClient())
+        if args.verify_github_governance:
+            evidence_dir = Path(args.evidence_dir)
+            try:
+                evidence = verify_github_governance(
+                    HttpClient(), args.expected_commit
+                )
+            except ActivationError as exc:
+                record_github_failure(
+                    evidence_dir, "github-governance.json", exc
+                )
+                raise
+            write_json(evidence_dir / "github-governance.json", evidence)
+            return 0
+        if args.create_run_approval_request:
+            evidence_dir = Path(args.evidence_dir)
+            try:
+                create_run_approval_files(
+                    Path(args.approval_request_file),
+                    evidence_dir,
+                )
+            except ActivationError as exc:
+                record_github_failure(
+                    evidence_dir, "github-approval-request.json", exc
+                )
+                raise
+            return 0
+        if args.wait_for_run_approval:
+            evidence_dir = Path(args.evidence_dir)
+            try:
+                request = json.loads(
+                    Path(args.approval_request_file).read_text(
+                        encoding="utf-8"
+                    )
+                )
+                if not isinstance(request, dict):
+                    raise ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+                evidence = wait_for_run_approval(HttpClient(), request)
+            except (
+                ActivationError,
+                FileNotFoundError,
+                json.JSONDecodeError,
+            ) as exc:
+                failure = (
+                    exc
+                    if isinstance(exc, ActivationError)
+                    else ActivationError("GITHUB_RUN_APPROVAL_INVALID")
+                )
+                record_github_failure(
+                    evidence_dir, "github-run-approval.json", failure
+                )
+                raise failure
             write_json(
-                Path(args.evidence_dir) / "github-protection.json", evidence
+                evidence_dir / "github-run-approval.json", evidence
             )
             return 0
         if args.finalize_evidence:

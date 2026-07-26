@@ -12,44 +12,79 @@ configuration. It does not apply migrations, create users, bootstrap an owner,
 assign staff roles, activate a worker or schedule, enable an Edge Function, or
 send capacity traffic.
 
-## Immutable target and external approval
+## Immutable target and independent human approval
 
-| Guard                 | Required value                |
-| --------------------- | ----------------------------- |
-| Project               | BotolaGO Production V2        |
-| Project ref           | `tkewgajrljbwgwedqsxn`        |
-| Region                | `eu-west-3`                   |
-| Environment           | `production-v2`               |
-| GitHub environment    | `production-admin-activation` |
-| Forbidden staging ref | `srdrflfrfpwixsllveid`        |
-| Forbidden legacy ref  | `kxpaudvntwxpahyjtxbk`        |
+| Guard                 | Required value                        |
+| --------------------- | ------------------------------------- |
+| Repository            | `mrdata007/botolago-foundation`       |
+| Event                 | manual `workflow_dispatch` only       |
+| Git ref               | `refs/heads/main`                     |
+| Approved commit       | exact current `main` SHA              |
+| Confirmation          | `RUN_PHASE7F_PRODUCTION_API_IDENTITY` |
+| Project               | BotolaGO Production V2                |
+| Project ref           | `tkewgajrljbwgwedqsxn`                |
+| Region                | `eu-west-3`                           |
+| Environment           | `production-v2`                       |
+| GitHub environment    | `production-admin-activation`         |
+| Forbidden staging ref | `srdrflfrfpwixsllveid`                |
+| Forbidden legacy ref  | `kxpaudvntwxpahyjtxbk`                |
 
-An authorized GitHub administrator must configure the live
-`production-admin-activation` environment with:
+The current GitHub plan does not expose the required environment-review,
+prevent-self-review, or administrator-bypass controls for this private
+repository. The `production-admin-activation` environment remains bound only
+to scope Production variables and secrets; it is not the independent approval
+mechanism.
 
-- at least one required reviewer;
-- prevent-self-review enabled;
-- deployment restricted to `main`;
-- administrator bypass disabled where the GitHub plan supports that control.
+Independent approval is enforced by all three controls:
 
-The read-only remediation check on 2026-07-26 reported zero protection rules
-and no deployment-branch policy. That is an external activation blocker; this
-PR does not change repository-environment administration.
+1. live `main` branch protection or an active repository ruleset requiring a
+   pull request, at least one approval, stale-review dismissal, approval of the
+   latest reviewable push, administrator enforcement, and disabled force-push
+   and deletion;
+2. an APPROVED review of the exact merged PR head by the separate human whose
+   immutable numeric GitHub ID is configured in
+   `BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID`; and
+3. a fresh exact issue comment from that same separate human for each workflow
+   run.
 
-The workflow does not treat an `environment:` reference as proof of protection.
-It queries the GitHub environment and active Actions runs before any Supabase
-credential is injected. An observed unprotected environment fails closed. If
-the workflow token cannot read the environment configuration, these protected
-variables must carry a separately captured and human-reviewed attestation:
+The exact-commit reviewer must differ from the dispatcher, PR author, and latest
+reviewable-push author. Bot, Copilot, dismissed, stale, commented-only, and
+changes-requested reviews do not authorize activation. No attestation or manual
+confirmation can override unsafe or unreadable live governance.
 
-- `BOTOLAGO_ENVIRONMENT_PROTECTION_ATTESTATION_SHA256`;
-- `BOTOLAGO_ENVIRONMENT_REQUIRED_REVIEWER_COUNT`;
-- `BOTOLAGO_ENVIRONMENT_PREVENT_SELF_REVIEW`;
-- `BOTOLAGO_ENVIRONMENT_DEPLOYMENT_BRANCH` (`main`);
-- `BOTOLAGO_ENVIRONMENT_ADMIN_BYPASS_DISABLED`.
+The workflow generates a random nonce with at least 128 bits of entropy and
+waits no longer than ten minutes for this exact comment on the dedicated issue:
 
-Attestation cannot override an observed unsafe live configuration. The
-attestation artifact itself is maintained outside repository history.
+```text
+APPROVE_PHASE7F run_id=<RUN_ID> run_attempt=<RUN_ATTEMPT> commit=<FULL_SHA> project_ref=tkewgajrljbwgwedqsxn nonce=<NONCE>
+```
+
+The comment must be created after the request and before expiry, must be
+unedited, and is valid only for that exact run ID, run attempt, full commit,
+Production ref, and nonce. A prior-run or prior-attempt comment cannot be
+reused. The manual confirmation string is an operator anti-mistake control,
+not independent approval.
+
+The governance token is a fine-grained, repository-scoped, read-only secret.
+It is injected only into the live-governance and issue-approval steps. No
+Supabase secret is referenced until the fresh second-person approval passes.
+One person may not author or push the code, approve the PR, dispatch the
+workflow, and approve the run.
+
+The `production-admin-activation` environment must define:
+
+- variable `BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID` as the separate reviewer's
+  immutable numeric GitHub user ID;
+- variable `BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER` as one open dedicated
+  issue number; and
+- secret `BOTOLAGO_GITHUB_GOVERNANCE_TOKEN` as a fine-grained token with only
+  repository metadata, rules/branch-protection, pull-request/review,
+  issue-comment, and Actions-run read access.
+
+That token must have no contents, pull-request, issue, Actions,
+administration, or secret-management write permission. The workflow performs
+only GET requests and never creates, edits, deletes, or reacts to an approval
+comment.
 
 Phase 7E-B migration promotion and Phase 7F activation use the shared
 `botolago-production-v2-mutation` concurrency group with cancellation disabled.
@@ -230,8 +265,10 @@ Third-party actions remain pinned to immutable commits.
 
 ## Dispatch and prohibited actions
 
-After security re-review and external environment configuration, the owner may
-dispatch from the exact approved `main` commit with:
+After security re-review, live protected-main verification, designated reviewer
+configuration, dedicated issue configuration, and read-only governance-token
+configuration, the owner may dispatch from the exact approved `main` commit
+with:
 
 ```text
 expected_commit=<exact approved main SHA>
@@ -243,3 +280,5 @@ bootstrap, staff assignment, worker/schedule activation, ingestion,
 notifications, Fantasy processing, load traffic, or any Staging/Legacy action.
 Even a successful future run means only controlled API exposure and
 Identity/Profile validation—not full Production V2 activation.
+
+Gate 2 remains blocked until this Gate 1 workflow executes and returns PASS.
