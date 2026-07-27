@@ -12,11 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as McpRouteImport } from './routes/mcp'
-import { Route as MatchesRouteImport } from './routes/matches'
 import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
@@ -63,11 +63,6 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MatchesRoute = MatchesRouteImport.update({
-  id: '/matches',
-  path: '/matches',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FantasyRoute = FantasyRouteImport.update({
   id: '/fantasy',
   path: '/fantasy',
@@ -88,6 +83,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MatchesIndexRoute = MatchesIndexRouteImport.update({
+  id: '/matches/',
+  path: '/matches/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FantasyIndexRoute = FantasyIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -99,9 +99,9 @@ const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   getParentRoute: () => NewsRoute,
 } as any)
 const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
-  id: '/$matchId',
-  path: '/$matchId',
-  getParentRoute: () => MatchesRoute,
+  id: '/matches/$matchId',
+  path: '/matches/$matchId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
   id: '/transfers',
@@ -247,7 +247,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
-  '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
@@ -276,6 +275,7 @@ export interface FileRoutesByFullPath {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy/': typeof FantasyIndexRoute
+  '/matches/': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
@@ -286,7 +286,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
-  '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
@@ -315,6 +314,7 @@ export interface FileRoutesByTo {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy': typeof FantasyIndexRoute
+  '/matches': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
@@ -327,7 +327,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
-  '/matches': typeof MatchesRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/profile': typeof ProfileRoute
@@ -356,6 +355,7 @@ export interface FileRoutesById {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/fantasy/': typeof FantasyIndexRoute
+  '/matches/': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
@@ -369,7 +369,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/fantasy'
-    | '/matches'
     | '/mcp'
     | '/news'
     | '/profile'
@@ -398,6 +397,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/news/$articleId'
     | '/fantasy/'
+    | '/matches/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
@@ -408,7 +408,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
-    | '/matches'
     | '/mcp'
     | '/news'
     | '/profile'
@@ -437,6 +436,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/news/$articleId'
     | '/fantasy'
+    | '/matches'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
@@ -448,7 +448,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/fantasy'
-    | '/matches'
     | '/mcp'
     | '/news'
     | '/profile'
@@ -477,6 +476,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/news/$articleId'
     | '/fantasy/'
+    | '/matches/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
@@ -489,12 +489,13 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   FantasyRoute: typeof FantasyRouteWithChildren
-  MatchesRoute: typeof MatchesRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
   ProfileRoute: typeof ProfileRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  MatchesMatchIdRoute: typeof MatchesMatchIdRoute
+  MatchesIndexRoute: typeof MatchesIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -520,13 +521,6 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/matches': {
-      id: '/matches'
-      path: '/matches'
-      fullPath: '/matches'
-      preLoaderRoute: typeof MatchesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fantasy': {
@@ -557,6 +551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/matches/': {
+      id: '/matches/'
+      path: '/matches'
+      fullPath: '/matches/'
+      preLoaderRoute: typeof MatchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fantasy/': {
       id: '/fantasy/'
       path: '/'
@@ -573,10 +574,10 @@ declare module '@tanstack/react-router' {
     }
     '/matches/$matchId': {
       id: '/matches/$matchId'
-      path: '/$matchId'
+      path: '/matches/$matchId'
       fullPath: '/matches/$matchId'
       preLoaderRoute: typeof MatchesMatchIdRouteImport
-      parentRoute: typeof MatchesRoute
+      parentRoute: typeof rootRouteImport
     }
     '/fantasy/transfers': {
       id: '/fantasy/transfers'
@@ -873,17 +874,6 @@ const FantasyRouteChildren: FantasyRouteChildren = {
 const FantasyRouteWithChildren =
   FantasyRoute._addFileChildren(FantasyRouteChildren)
 
-interface MatchesRouteChildren {
-  MatchesMatchIdRoute: typeof MatchesMatchIdRoute
-}
-
-const MatchesRouteChildren: MatchesRouteChildren = {
-  MatchesMatchIdRoute: MatchesMatchIdRoute,
-}
-
-const MatchesRouteWithChildren =
-  MatchesRoute._addFileChildren(MatchesRouteChildren)
-
 interface NewsRouteChildren {
   NewsArticleIdRoute: typeof NewsArticleIdRoute
 }
@@ -899,13 +889,14 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
-  MatchesRoute: MatchesRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
   ProfileRoute: ProfileRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  MatchesMatchIdRoute: MatchesMatchIdRoute,
+  MatchesIndexRoute: MatchesIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }

@@ -1,6 +1,7 @@
-import type { FantasySummary, Gameweek } from "@/types/domain";
+import type { Club, FantasySummary, Gameweek } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { DeadlineCountdown } from "./DeadlineCountdown";
+import { ClubCrest } from "./ClubCrest";
 import { Trophy, Shirt, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
@@ -8,9 +9,25 @@ import { Link } from "@tanstack/react-router";
 // Level-4 glass surface with a brand-gradient inner glow and a premium
 // primary CTA. Preserves layout, i18n, and RTL behaviour.
 
-export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; gw: Gameweek }) {
+export function FantasySummaryCard({
+  summary,
+  gw,
+  club,
+}: {
+  summary: FantasySummary;
+  gw: Gameweek;
+  club?: Club;
+}) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+  const initials =
+    summary.teamName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "BG";
   return (
     <div className="surface-4 relative overflow-hidden p-4">
       {/* Subtle brand glow overlay — decorative. */}
@@ -24,16 +41,31 @@ export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; g
         }}
       />
       <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-        <div className="min-w-0">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[color:var(--brand-accent)]">
-            <Trophy className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="truncate">
-              {t("home.gameweek")} {gw.number}
-            </span>
-          </div>
-          <div className="mt-1 truncate text-lg font-black text-foreground">{summary.teamName}</div>
-          <div className="truncate text-xs text-[color:var(--text-secondary)]">
-            {summary.managerName}
+        <div className="flex min-w-0 items-start gap-2.5">
+          {club ? (
+            <ClubCrest club={club} size="md" className="mt-0.5 rounded-full" />
+          ) : (
+            <div
+              aria-hidden
+              className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-black text-white shadow-inner ring-1 ring-white/20"
+              style={{ backgroundImage: "var(--bg-brand-gradient)" }}
+            >
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[color:var(--brand-accent)]">
+              <Trophy className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="truncate">
+                {t("home.gameweek")} {gw.number}
+              </span>
+            </div>
+            <div className="mt-1 truncate text-lg font-black text-foreground">
+              {summary.teamName}
+            </div>
+            <div className="truncate text-xs text-[color:var(--text-secondary)]">
+              {summary.managerName}
+            </div>
           </div>
         </div>
         <div className="text-end">

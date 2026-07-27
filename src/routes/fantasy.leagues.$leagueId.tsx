@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { footballService } from "@/services/football";
 import { LoadingState, EmptyState } from "@/components/common/States";
 import { LeagueTable } from "@/components/fantasy/LeagueTable";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
@@ -36,6 +37,10 @@ function LeagueDetailPage() {
   const leagueQ = useQuery({
     queryKey: ["league", leagueId],
     queryFn: () => fantasyService.getLeague(leagueId),
+  });
+  const clubsQ = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
   });
   const standingsQ = useQuery({
     queryKey: ["standings", leagueId],
@@ -141,7 +146,7 @@ function LeagueDetailPage() {
           </div>
           <button
             onClick={copy}
-            className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-xs font-semibold text-white"
+            className="inline-flex items-center gap-1 rounded-lg cta-brand px-2 py-1 text-xs font-semibold"
           >
             <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
           </button>
@@ -177,7 +182,7 @@ function LeagueDetailPage() {
         <div className="mb-2 text-sm font-black text-foreground">
           {t("fantasy.leagues.standings")}
         </div>
-        {standings.length > 0 ? <LeagueTable standings={standings} meId="me" /> : <EmptyState />}
+        {standings.length > 0 ? <LeagueTable standings={standings} meId="me" clubs={clubsQ.data ?? []} /> : <EmptyState />}
       </div>
 
       {toast && (

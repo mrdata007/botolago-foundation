@@ -16,6 +16,7 @@ import { followService } from "@/services/follows";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
+import { ClubCrest } from "@/components/common/ClubCrest";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
@@ -174,6 +175,7 @@ function NewsPage() {
               key={c.id}
               active={clubFilter === c.id}
               onClick={() => setClubFilter(clubFilter === c.id ? null : c.id)}
+              leading={<ClubCrest club={c} size="sm" className="h-8 w-8 rounded-full" />}
               trailing={
                 <button
                   type="button"
@@ -232,7 +234,7 @@ function NewsPage() {
           ) : (
             <div className="grid gap-3">
               {filteredForTab.map((a) => (
-                <ArticleCard key={a.id} article={a} />
+                <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
               ))}
             </div>
           )}
@@ -247,7 +249,7 @@ function NewsPage() {
                 icon={Sparkles}
                 title={t("news.section.lead")}
               />
-              <ArticleCard article={lead} variant="lead" />
+              <ArticleCard article={lead} variant="lead" clubs={clubsQ.data ?? []} />
             </Section>
           )}
 
@@ -261,12 +263,12 @@ function NewsPage() {
               />
               <div className="grid grid-cols-2 gap-3">
                 {topStories.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="imageLed" />
+                  <ArticleCard key={a.id} article={a} variant="imageLed" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
               {topStories[2] && (
                 <div className="mt-3">
-                  <ArticleCard article={topStories[2]} variant="horizontal" />
+                  <ArticleCard article={topStories[2]} variant="horizontal" clubs={clubsQ.data ?? []} />
                 </div>
               )}
             </Section>
@@ -282,7 +284,7 @@ function NewsPage() {
               />
               <div className="grid gap-2.5">
                 {latest.slice(0, 5).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" />
+                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -298,7 +300,7 @@ function NewsPage() {
               />
               <div className="grid gap-3">
                 {transfers.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} />
+                  <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -314,7 +316,7 @@ function NewsPage() {
               />
               <div className="grid gap-3">
                 {analysis.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} />
+                  <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -330,7 +332,7 @@ function NewsPage() {
               />
               <div className="grid gap-2.5">
                 {interviews.slice(0, 3).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" />
+                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -348,7 +350,7 @@ function NewsPage() {
             ) : (
               <div className="grid gap-2.5">
                 {savedList.map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="compact" />
+                  <ArticleCard key={a.id} article={a} variant="compact" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             )}
@@ -363,11 +365,13 @@ function FilterChip({
   active,
   onClick,
   children,
+  leading,
   trailing,
 }: {
   active?: boolean;
   onClick?: () => void;
   children: React.ReactNode;
+  leading?: React.ReactNode;
   trailing?: React.ReactNode;
 }) {
   // Rendered as a role="button" span so a nested follow-toggle <button> is valid.
@@ -384,12 +388,14 @@ function FilterChip({
       }}
       aria-pressed={active}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border py-1 pe-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        leading ? "ps-1" : "ps-3",
         active
           ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
           : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
       )}
     >
+      {leading}
       <span>{children}</span>
       {trailing}
     </span>

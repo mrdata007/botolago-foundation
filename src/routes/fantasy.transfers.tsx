@@ -509,7 +509,7 @@ function TransfersPage() {
                         <button
                           onClick={() => startReplace(p.id)}
                           disabled={locked}
-                          className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-3 py-2 text-[11px] font-semibold text-white disabled:opacity-40"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg cta-brand px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
                         >
                           <ArrowRightLeft className="h-3 w-3" aria-hidden />{" "}
                           {t("fantasy.transfers.title")}
@@ -534,7 +534,7 @@ function TransfersPage() {
         <button
           onClick={() => requireAuth(() => openReview())}
           disabled={!canReview}
-          className="min-h-11 rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+          className="min-h-11 rounded-xl cta-brand px-4 py-2 text-sm font-bold disabled:opacity-40"
         >
           {t("fantasy.review")}
         </button>

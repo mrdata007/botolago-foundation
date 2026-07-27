@@ -661,7 +661,7 @@ function MyTeamPage() {
           <button
             onClick={() => requireAuth(() => setEditing(true))}
             disabled={locked}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[color:var(--brand-primary)] px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl cta-brand px-3 py-2 text-xs font-semibold disabled:opacity-40"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.edit_lineup")}
           </button>
@@ -927,7 +927,7 @@ function EmptyCloudBuilder({ team }: { team: unknown }) {
         type="button"
         onClick={seed}
         disabled={busy}
-        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl cta-brand px-4 py-2 text-xs font-bold disabled:opacity-50"
       >
         {busy ? t("fantasy.status.saving") : t("fantasy.empty.builder_open")}
       </button>

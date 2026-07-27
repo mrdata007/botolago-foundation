@@ -57,7 +57,7 @@ function ArticlePage() {
           </p>
           <Link
             to="/news"
-            className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[color:var(--brand-primary)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg cta-brand px-4 text-sm font-semibold"
           >
             {t("article.back")}
           </Link>
@@ -233,7 +233,7 @@ function ArticlePage() {
           <SectionHeader title={t("article.related")} eyebrow={t("article.related")} />
           <div className="grid gap-2.5">
             {related.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="horizontal" />
+              <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
             ))}
           </div>
         </Section>

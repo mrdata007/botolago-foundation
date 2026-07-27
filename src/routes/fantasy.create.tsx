@@ -653,10 +653,11 @@ function CreateTeamPage() {
             disabled={!canSave}
             aria-label={t("fantasy.create.cta_primary")}
             className={cn(
-              "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black text-white transition-opacity",
+              "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black transition-opacity",
               canSave
-                ? "bg-[color:var(--brand-primary)] hover:opacity-90"
-                : "cursor-not-allowed bg-muted-foreground/40",
+                ? "cta-brand"
+                : "cursor-not-allowed bg-muted-foreground/40 text-white",
+
             )}
           >
             {saving ? (

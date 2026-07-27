@@ -22,9 +22,10 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-subtle)] hover:bg-primary/90 hover:shadow-[var(--shadow-card)]",
+          "cta-brand text-primary-foreground",
         premium:
-          "text-primary-foreground shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-floating)] [background-image:var(--bg-brand-gradient)] bg-[length:150%_150%] hover:bg-[position:100%_100%]",
+          "cta-brand text-primary-foreground",
+
         destructive:
           "bg-destructive text-destructive-foreground shadow-[var(--shadow-subtle)] hover:bg-destructive/90",
         outline:

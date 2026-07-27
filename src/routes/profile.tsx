@@ -75,7 +75,7 @@ function ProfilePage() {
   return (
     <AppShell>
       <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand">{t("profile.title")}</span>
+        <span className="text-brand whitespace-pre-wrap">{t("profile.title")}</span>
       </h1>
 
       {status === "authenticated" && user ? (
@@ -100,7 +100,7 @@ function ProfilePage() {
           <div className="mt-2 grid gap-2">
             <button
               onClick={() => onSignOut(false)}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[color:var(--brand-primary)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-95"
+              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold transition-opacity hover:opacity-95"
             >
               <Check className="h-4 w-4" aria-hidden /> {t("profile.sign_out_keep")}
             </button>
@@ -388,7 +388,7 @@ function GuestProfile() {
           <div className="mt-4 grid gap-2">
             <button
               onClick={() => navigate({ to: "/auth/register" })}
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[color:var(--brand-primary)] px-4 text-sm font-bold text-white shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
+              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
             >
               <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
             </button>
@@ -432,7 +432,7 @@ function AnonymousProfile() {
         <div className="mt-4 grid gap-2">
           <button
             onClick={() => navigate({ to: "/auth/register" })}
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[color:var(--brand-primary)] px-4 text-sm font-bold text-white shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
           >
             <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
           </button>

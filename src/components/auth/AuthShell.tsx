@@ -103,7 +103,7 @@ export function AuthPrimaryButton({
     <button
       {...props}
       className={
-        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--brand-primary)] px-5 text-sm font-bold text-white shadow-lg shadow-blue-950/20 transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/50 disabled:cursor-not-allowed disabled:opacity-60"
+        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl cta-brand px-5 text-sm font-bold shadow-lg shadow-blue-950/20 transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/50 disabled:cursor-not-allowed disabled:opacity-60"
       }
     >
       {children}

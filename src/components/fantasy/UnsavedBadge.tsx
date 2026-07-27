@@ -60,7 +60,7 @@ export function UnsavedBadge({
           type="button"
           onClick={onSave}
           disabled={saving}
-          className="ms-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-[color:var(--brand-primary)] px-3 py-1 text-[12px] font-bold text-white disabled:opacity-50"
+          className="ms-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg cta-brand px-3 py-1 text-[12px] font-bold disabled:opacity-50"
         >
           {saving ? t("fantasy.status.saving") : t("fantasy.action.save")}
         </button>
