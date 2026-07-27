@@ -16,6 +16,7 @@ import { followService } from "@/services/follows";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
+import { ClubCrest } from "@/components/common/ClubCrest";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
