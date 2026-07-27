@@ -70,8 +70,10 @@ class QueryClient:
     def __init__(self, rows: list[dict[str, object]]) -> None:
         self.rows = rows
 
-    def query(self, _sql: str, *, read_only: bool, timeout: int = 60):
+    def query(self, sql: str, *, read_only: bool, timeout: int = 60):
         assert read_only
+        if "to_regclass('cron.job')" in sql:
+            return [{"exists": False}]
         return self.rows
 
 
@@ -511,6 +513,24 @@ class Phase7FActivationTests(unittest.TestCase):
                 QueryClient([{"invariant": zeroes}])
             )
 
+    def test_cron_job_count_does_not_reference_missing_relation(self) -> None:
+        client = mock.Mock()
+        client.query.return_value = [{"exists": False}]
+        self.assertEqual(0, ACTIVATION.cron_job_count(client))
+        client.query.assert_called_once_with(
+            "select to_regclass('cron.job') is not null as exists",
+            read_only=True,
+        )
+
+    def test_cron_job_count_queries_present_relation(self) -> None:
+        client = mock.Mock()
+        client.query.side_effect = [
+            [{"exists": True}],
+            [{"count": 3}],
+        ]
+        self.assertEqual(3, ACTIVATION.cron_job_count(client))
+        self.assertEqual(2, client.query.call_count)
+
     def test_environment_guard_requires_approved_uuid(self) -> None:
         env = {
             "SUPABASE_ACCESS_TOKEN": "placeholder",
@@ -745,6 +765,9 @@ class Phase7FActivationTests(unittest.TestCase):
         self.assertNotIn("BOTOLAGO_AAL2_EVIDENCE_SHA256", workflow)
         self.assertNotIn("BOTOLAGO_ENVIRONMENT_", workflow)
         self.assertIn(
+            "secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY", workflow
+        )
+        self.assertNotIn(
             "vars.SUPABASE_PRODUCTION_PUBLISHABLE_KEY", workflow
         )
         self.assertIn("--verify-single-operator-context", workflow)
