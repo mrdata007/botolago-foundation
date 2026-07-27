@@ -1,6 +1,12 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
+import {
+  buildGlobalRankings,
+  selectRankingsPage,
+  type RankingsPage,
+  type RankingsQuery,
+} from "./fantasy-rankings";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FantasyPlayerDto,
@@ -260,6 +266,25 @@ export const fantasyService = {
       gameweekScore: standing.gameweekPoints ?? 0,
       totalScore: standing.totalPoints,
     }));
+  },
+  /**
+   * Season-wide leaderboard across every fantasy team.
+   *
+   * Mock mode builds a deterministic 500-manager board. Cloud mode reads the
+   * largest public league (the global board) and maps its standings; no
+   * schema change is required.
+   */
+  async getGlobalRankings(query: RankingsQuery): Promise<RankingsPage> {
+    if (mode() === "mock") {
+      return selectRankingsPage(buildGlobalRankings(), query);
+    }
+    const publicLeagues = await this.getLeagues("public");
+    const global = [...publicLeagues].sort((a, b) => b.members - a.members)[0];
+    if (!global) {
+      return { rows: [], total: 0, podium: [], myRank: undefined };
+    }
+    const standings = await this.getLeagueStandings(global.id);
+    return selectRankingsPage(standings, query);
   },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
