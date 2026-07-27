@@ -386,7 +386,7 @@ export const dictionaries = {
     "common.away": "Extérieur",
     "common.vs": "vs",
 
-    "profile.title": "Profil",
+    "profile.title": "Profile\n\n",
     "profile.coming_soon": "Votre profil personnalisé arrive bientôt.",
     "profile.language": "Langue de l'application",
     "profile.followed_clubs": "Clubs suivis",
@@ -1166,7 +1166,7 @@ export const dictionaries = {
     "common.away": "خارج أرضه",
     "common.vs": "ضد",
 
-    "profile.title": "الملف الشخصي",
+    "profile.title": "Profile\n\n",
     "profile.coming_soon": "ملفك الشخصي قريباً.",
     "profile.language": "لغة التطبيق",
     "profile.followed_clubs": "الأندية المتابَعة",
