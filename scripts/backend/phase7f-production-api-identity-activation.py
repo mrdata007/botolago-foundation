@@ -319,6 +319,7 @@ class ManagementClient:
         *,
         timeout: int = 60,
         mutation: bool = False,
+        operation: str | None = None,
     ) -> Any:
         result = self._http.request(
             method,
@@ -329,10 +330,10 @@ class ManagementClient:
             mutation=mutation,
         )
         if result.status not in (200, 201):
-            operation = management_operation(method, path)
+            operation_name = operation or management_operation(method, path)
             raise ActivationError(
                 stable_result_code(result),
-                f"{operation} returned HTTP {result.status}",
+                f"{operation_name} returned HTTP {result.status}",
             )
         return {} if not result.body else result.json()
 
@@ -343,7 +344,12 @@ class ManagementClient:
         return self.request("PATCH", path, payload, mutation=True)
 
     def query(
-        self, sql: str, *, read_only: bool, timeout: int = 60
+        self,
+        sql: str,
+        *,
+        read_only: bool,
+        timeout: int = 60,
+        operation: str | None = None,
     ) -> list[dict[str, Any]]:
         response = self.request(
             "POST",
@@ -351,6 +357,7 @@ class ManagementClient:
             {"query": sql, "read_only": read_only},
             timeout=timeout,
             mutation=not read_only,
+            operation=f"POST_{operation}" if operation else None,
         )
         if isinstance(response, list):
             return response
@@ -717,11 +724,54 @@ def assert_api_manifest(
     validate_manifest_security(expected)
     sql = (
         repo_root / "scripts/backend/phase7f-api-surface-manifest.sql"
-    ).read_text(encoding="utf-8")
-    rows = client.query(sql, read_only=True, timeout=90)
-    if len(rows) != 1 or not isinstance(rows[0].get("manifest"), dict):
+    ).read_text(encoding="utf-8").strip().removesuffix(";")
+    summary_rows = client.query(
+        f"""
+select
+  manifest - 'apiRoutines' as manifest,
+  jsonb_array_length(manifest->'apiRoutines')::integer as api_routine_count
+from ({sql}) actual_manifest
+""".strip(),
+        read_only=True,
+        timeout=90,
+        operation="API_MANIFEST_SUMMARY",
+    )
+    if (
+        len(summary_rows) != 1
+        or not isinstance(summary_rows[0].get("manifest"), dict)
+        or "api_routine_count" not in summary_rows[0]
+    ):
         raise ActivationError("API_MANIFEST_QUERY_INVALID")
-    actual = rows[0]["manifest"]
+    actual = summary_rows[0]["manifest"]
+    routine_count = int(summary_rows[0]["api_routine_count"])
+    expected_routine_count = len(expected["apiRoutines"])
+    if routine_count != expected_routine_count:
+        raise ActivationError("API_MANIFEST_DRIFT")
+    routines: list[dict[str, Any]] = []
+    page_size = 25
+    for offset in range(0, routine_count, page_size):
+        routine_rows = client.query(
+            f"""
+select routine as value
+from ({sql}) actual_manifest
+cross join lateral jsonb_array_elements(
+  actual_manifest.manifest->'apiRoutines'
+) with ordinality as routines(routine, ordinality)
+where routines.ordinality > {offset}
+  and routines.ordinality <= {offset + page_size}
+order by routines.ordinality
+""".strip(),
+            read_only=True,
+            timeout=90,
+            operation="API_MANIFEST_ROUTINE_PAGE",
+        )
+        if (
+            len(routine_rows) != min(page_size, routine_count - offset)
+            or any(not isinstance(row.get("value"), dict) for row in routine_rows)
+        ):
+            raise ActivationError("API_MANIFEST_QUERY_INVALID")
+        routines.extend(row["value"] for row in routine_rows)
+    actual["apiRoutines"] = routines
     if canonical_json(actual) != canonical_json(expected):
         raise ActivationError("API_MANIFEST_DRIFT")
     return {
