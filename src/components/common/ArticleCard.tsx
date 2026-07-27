@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
-import type { Article } from "@/types/domain";
+import type { Article, Club } from "@/types/domain";
+import { ClubCrest } from "./ClubCrest";
 import { useI18n } from "@/i18n/provider";
 import { formatRelativeTime } from "@/lib/format-time";
 import { SavedButton } from "@/components/news/SavedButton";
@@ -21,11 +22,35 @@ import { cn } from "@/lib/utils";
 export function ArticleCard({
   article,
   variant = "row",
+  clubs,
 }: {
   article: Article;
   variant?: "row" | "lead" | "compact" | "horizontal" | "imageLed";
+  /** Optional club directory used to render team crest badges. */
+  clubs?: readonly Club[];
 }) {
   const { tr, t, lang } = useI18n();
+  const articleClubs = (clubs ?? [])
+    .filter((c) => article.clubIds.includes(c.id))
+    .slice(0, 2);
+  const crestRow = (tone: "light" | "dark" = "light") =>
+    articleClubs.length > 0 ? (
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        {articleClubs.map((c) => (
+          <span key={c.id} className="inline-flex min-w-0 items-center gap-1">
+            <ClubCrest club={c} size="sm" className="h-5 w-5 rounded-md text-[8px]" />
+            <span
+              className={cn(
+                "truncate text-[10px] font-bold",
+                tone === "dark" ? "text-white/90" : "text-[color:var(--text-secondary)]",
+              )}
+            >
+              {tr(c.shortName)}
+            </span>
+          </span>
+        ))}
+      </span>
+    ) : null;
   const time = formatRelativeTime(article.publishedAt, lang);
   const to = "/news/$articleId";
   const params = { articleId: article.id };
@@ -86,6 +111,7 @@ export function ArticleCard({
           >
             {tr(article.excerpt)}
           </p>
+          {articleClubs.length > 0 && <div className="mt-2.5">{crestRow("dark")}</div>}
           <div className="mt-3 flex items-center gap-3 text-[11px] font-medium text-white/85">
             <span className="truncate">{tr(article.authorName)}</span>
             <span className="h-1 w-1 shrink-0 rounded-full bg-white/50" aria-hidden />
@@ -134,6 +160,7 @@ export function ArticleCard({
             {tr(article.title)}
           </h4>
           <div className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-[color:var(--text-muted)]">
+            {crestRow()}
             <span className="truncate">{tr(article.authorName)}</span>
             {time && (
               <>
@@ -189,6 +216,7 @@ export function ArticleCard({
             <h3 className="mt-0.5 line-clamp-3 text-[14px] font-black leading-snug tracking-tight text-foreground">
               {tr(article.title)}
             </h3>
+            {articleClubs.length > 0 && <div className="mt-1.5">{crestRow()}</div>}
           </div>
           <div className="mt-2 flex items-center justify-between gap-2 text-[10.5px] text-[color:var(--text-muted)]">
             <span className="inline-flex items-center gap-1 truncate">
@@ -252,6 +280,7 @@ export function ArticleCard({
             <h3 className="line-clamp-3 text-[15px] font-black leading-snug tracking-tight text-white drop-shadow">
               {tr(article.title)}
             </h3>
+            {articleClubs.length > 0 && <div className="mt-1.5">{crestRow("dark")}</div>}
             <div className="mt-1.5 flex items-center gap-2 text-[10px] text-white/85">
               {time && <span>{time}</span>}
               <span className="inline-flex items-center gap-1">
@@ -315,6 +344,7 @@ export function ArticleCard({
         >
           {tr(article.excerpt)}
         </p>
+        {articleClubs.length > 0 && <div className="mt-2.5">{crestRow()}</div>}
         <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-[color:var(--text-muted)]">
           <span className="inline-flex items-center gap-1.5 truncate">
             <span className="truncate">{tr(article.authorName)}</span>

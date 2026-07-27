@@ -257,7 +257,7 @@ function HomeContent() {
       <Section index={3}>
         <SectionHeader eyebrow={t("nav.news")} icon={Newspaper} title={t("home.lead_story")} />
         {leadQ.data ? (
-          <ArticleCard article={leadQ.data} variant="lead" />
+          <ArticleCard article={leadQ.data} variant="lead" clubs={clubsQ.data ?? []} />
         ) : (
           <ArticleCardSkeleton variant="lead" />
         )}
@@ -279,7 +279,7 @@ function HomeContent() {
             <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
           )}
           {followedNewsQ.data?.slice(0, 3).map((a) => (
-            <ArticleCard key={a.id} article={a} />
+            <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
           ))}
         </div>
       </Section>

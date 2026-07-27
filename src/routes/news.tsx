@@ -234,7 +234,7 @@ function NewsPage() {
           ) : (
             <div className="grid gap-3">
               {filteredForTab.map((a) => (
-                <ArticleCard key={a.id} article={a} />
+                <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
               ))}
             </div>
           )}
@@ -249,7 +249,7 @@ function NewsPage() {
                 icon={Sparkles}
                 title={t("news.section.lead")}
               />
-              <ArticleCard article={lead} variant="lead" />
+              <ArticleCard article={lead} variant="lead" clubs={clubsQ.data ?? []} />
             </Section>
           )}
 
@@ -263,12 +263,12 @@ function NewsPage() {
               />
               <div className="grid grid-cols-2 gap-3">
                 {topStories.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="imageLed" />
+                  <ArticleCard key={a.id} article={a} variant="imageLed" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
               {topStories[2] && (
                 <div className="mt-3">
-                  <ArticleCard article={topStories[2]} variant="horizontal" />
+                  <ArticleCard article={topStories[2]} variant="horizontal" clubs={clubsQ.data ?? []} />
                 </div>
               )}
             </Section>
@@ -284,7 +284,7 @@ function NewsPage() {
               />
               <div className="grid gap-2.5">
                 {latest.slice(0, 5).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" />
+                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -300,7 +300,7 @@ function NewsPage() {
               />
               <div className="grid gap-3">
                 {transfers.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} />
+                  <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -316,7 +316,7 @@ function NewsPage() {
               />
               <div className="grid gap-3">
                 {analysis.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} />
+                  <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -332,7 +332,7 @@ function NewsPage() {
               />
               <div className="grid gap-2.5">
                 {interviews.slice(0, 3).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" />
+                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             </Section>
@@ -350,7 +350,7 @@ function NewsPage() {
             ) : (
               <div className="grid gap-2.5">
                 {savedList.map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="compact" />
+                  <ArticleCard key={a.id} article={a} variant="compact" clubs={clubsQ.data ?? []} />
                 ))}
               </div>
             )}

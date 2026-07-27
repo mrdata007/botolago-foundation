@@ -322,7 +322,7 @@ function MatchDetailPage() {
           <SectionHeader title={t("matches.detail.related_news")} eyebrow={t("news.title")} />
           <div className="grid gap-2.5">
             {related.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="horizontal" />
+              <ArticleCard key={a.id} article={a} variant="horizontal" clubs={detailQ.data?.clubs ?? []} />
             ))}
           </div>
         </Section>

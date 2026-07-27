@@ -233,7 +233,7 @@ function ArticlePage() {
           <SectionHeader title={t("article.related")} eyebrow={t("article.related")} />
           <div className="grid gap-2.5">
             {related.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="horizontal" />
+              <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
             ))}
           </div>
         </Section>
