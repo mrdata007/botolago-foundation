@@ -1,6 +1,7 @@
-import type { FantasySummary, Gameweek } from "@/types/domain";
+import type { Club, FantasySummary, Gameweek } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { DeadlineCountdown } from "./DeadlineCountdown";
+import { ClubCrest } from "./ClubCrest";
 import { Trophy, Shirt, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
@@ -8,9 +9,25 @@ import { Link } from "@tanstack/react-router";
 // Level-4 glass surface with a brand-gradient inner glow and a premium
 // primary CTA. Preserves layout, i18n, and RTL behaviour.
 
-export function FantasySummaryCard({ summary, gw }: { summary: FantasySummary; gw: Gameweek }) {
+export function FantasySummaryCard({
+  summary,
+  gw,
+  club,
+}: {
+  summary: FantasySummary;
+  gw: Gameweek;
+  club?: Club;
+}) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+  const initials =
+    summary.teamName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "BG";
   return (
     <div className="surface-4 relative overflow-hidden p-4">
       {/* Subtle brand glow overlay — decorative. */}
