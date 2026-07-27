@@ -1,52 +1,35 @@
-## Diagnosis
+## Goal
 
-`https://botolago.lovable.app/` returns HTTP 500 with the app's own `renderErrorPage()` fallback (the HTML served is byte-for-byte the one in `src/lib/error-page.ts`, reached via the `src/server.ts` wrapper). Published worker logs show, for every request:
+Make the blue brand gradient seen on the Fantasy card's "Voir mon équipe" button the standard look for **every primary call-to-action** across BotolaGO — Home, News, Matches, Fantasy, Profile, Auth, Onboarding — at the same intensity as today.
 
-```
-Error: h3 swallowed SSR error: {"status":500,"unhandled":true,"message":"HTTPError"}
-GET https://botolago.lovable.app/ → 500
-```
+## Approach
 
-That is the masked-error path: the original throw never reached the wrapper's `console.error`, so it happens during SSR module evaluation.
+One shared style, applied everywhere — no per-page copies of gradient CSS.
 
-### Root cause (verified by reading the code and the env file)
+1. **Add a single reusable utility** in `src/styles.css`:
+   - `@utility cta-brand` — gradient background (`--bg-brand-gradient`), white/primary-foreground text, rounded pill/2xl, `min-h-11` tap target, card→floating shadow on hover, subtle press translate, brand focus ring, disabled opacity.
+   - It reproduces exactly the current Fantasy CTA look, so nothing changes visually on that button.
 
-`src/services/auth.ts` runs mode detection at **module scope**:
+2. **Make it the default for the shared Button component** (`src/components/ui/button.tsx`):
+   - The `default` variant adopts the gradient (the existing `premium` variant becomes an alias of it).
+   - `secondary`, `outline`, `ghost`, `link`, `destructive` are untouched, so only true primary actions get the gradient.
 
-```ts
-export function selectAuthMode(configuredMode, hasSupabase, production) {
-  const explicit = configuredMode?.toLowerCase();
-  if (production && explicit !== "supabase") {
-    throw new Error("Production Auth requires VITE_AUTH_MODE=supabase.");
-  }
-  ...
-}
-export const AUTH_MODE: Mode = detectMode();          // executes on import
-export const authService: AuthService = createService();
-```
+3. **Convert the hand-rolled primary buttons** that currently use flat `bg-primary` or `bg-[var(--brand-primary)]` to the shared utility:
+   - `src/routes/index.tsx` (Home CTA)
+   - `src/routes/fantasy.index.tsx`, `fantasy.team.tsx`, `fantasy.transfers.tsx` (confirm transfers), `fantasy.points.tsx` (recompute / advance), `fantasy.create.tsx` (create-team primary step)
+   - `src/routes/profile.tsx`
+   - `src/components/shell/FirstLaunchLanguage.tsx`
+   - `src/routes/__root.tsx` error/not-found actions
+   - Auth screens (`auth.login`, `auth.register`, `auth.forgot-password`, `auth.update-password`, `auth.profile-setup`) — their submit buttons
+   - Leave destructive (red), cancel/secondary, and chip/toggle buttons as they are.
 
-`detectMode()` passes `import.meta.env.VITE_AUTH_MODE` and `import.meta.env.PROD`.
+4. **Keep everything else intact**: no copy changes, no i18n changes, RTL still works (logical properties only), all tap targets stay ≥44px.
 
-- The project's `.env` contains only `SUPABASE_*` / `VITE_SUPABASE_*`. **`VITE_AUTH_MODE` is not set anywhere** (only `.env.example` has `VITE_AUTH_MODE=mock`).
-- In a published build `import.meta.env.PROD === true` and `VITE_AUTH_MODE` inlines to `undefined`, so the guard throws immediately.
+## Verification
 
-This module is on the root import chain — `src/routes/__root.tsx` → `@/auth/AuthProvider` → `@/services/auth` (plus `AuthModeBadge`, `FantasyOwnedProvider`, `routes/index.tsx`) — so **every route** 500s, not just one. It does not reproduce in preview/dev because `import.meta.env.PROD` is `false` there, which is exactly why the audit's typecheck/tests/build all passed.
+- Typecheck + full test suite (currently 212/212) must stay green.
+- Visual pass on Home, News article, Matches, Fantasy hub/team/transfers/points/create, Profile, and Login in both FR and AR (RTL).
 
-## Precise blocker
+## Technical notes
 
-Missing production environment variable `VITE_AUTH_MODE=supabase`. It is a configuration gap, not a code defect.
-
-## Smallest safe next action
-
-Add `VITE_AUTH_MODE=supabase` to the project's environment (the `.env` used for the published build) and re-publish. Nothing else changes: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are already present, so `selectAuthMode` resolves to the Supabase adapter — the exact mode the guard was written to enforce.
-
-### Verify after re-publish
-1. `curl -o /dev/null -w "%{http_code}" https://botolago.lovable.app/` → expect `200`.
-2. Re-read published worker logs; the `h3 swallowed SSR error` lines should stop.
-3. Spot-check `/news`, `/matches`, `/fantasy` for 200s.
-
-### If it still 500s
-The next-smallest step is to unmask the real error rather than guess: the current `error-capture.ts` `globalThis` listeners are not catching this class of throw. A temporary local production build (`bun run build` + running the built worker) reproduces the same PROD-inlined env and surfaces the stack directly.
-
-## Explicitly not doing
-No code edits, no Supabase changes, no UI changes, no commits — this plan only identifies the env var to set and the verification steps.
+The gradient token `--bg-brand-gradient` already exists in `src/styles.css`; the change is centralising its use rather than defining new colors. Gradient text contrast against `--primary-foreground` is unchanged from the current CTA, so contrast stays as-is.
