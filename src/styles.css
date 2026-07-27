@@ -252,6 +252,33 @@
   color: var(--brand-accent);
 }
 
+/* --- Primary call-to-action (brand gradient) ---------------------- */
+@utility cta-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  background-image: var(--bg-brand-gradient);
+  background-size: 150% 150%;
+  color: var(--primary-foreground);
+  font-weight: 800;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--duration-quick) var(--ease-standard),
+              background-position var(--duration-quick) var(--ease-standard),
+              transform var(--duration-quick) var(--ease-standard),
+              opacity var(--duration-quick) var(--ease-standard);
+  &:hover { box-shadow: var(--shadow-floating); background-position: 100% 100%; }
+  &:active { transform: translateY(1px); }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--brand-accent);
+  }
+  &:disabled { opacity: 0.5; pointer-events: none; }
+}
+
+
+
 /* --- Surface levels ----------------------------------------------- */
 /* L1 base                                                            */
 @utility surface-1 {
