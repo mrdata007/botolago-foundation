@@ -65,7 +65,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           className="pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl"
           style={{
             background:
-              "radial-gradient(closest-side, hsl(214 100% 72% / 0.35), transparent 75%)",
+              "radial-gradient(closest-side, hsl(214 100% 75% / 0.45), transparent 75%)",
           }}
         />
 
@@ -73,7 +73,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           <img
             src={wordmark.url}
             alt="BotolaGO"
-            className="h-11 w-auto select-none object-contain drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:h-14"
+            className="h-14 w-auto select-none object-contain drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:h-20"
             style={{ filter: "brightness(1.18) saturate(1.1)" }}
             draggable={false}
           />
