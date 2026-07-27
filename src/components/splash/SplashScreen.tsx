@@ -64,8 +64,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         <div
           className="pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl"
           style={{
-            background:
-              "radial-gradient(closest-side, hsl(214 100% 75% / 0.45), transparent 75%)",
+            background: "radial-gradient(closest-side, hsl(214 100% 75% / 0.45), transparent 75%)",
           }}
         />
 
@@ -82,8 +81,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate-[splash-sweep_1100ms_cubic-bezier(0.4,0,0.2,1)_220ms_both]"
             style={{
-              background:
-                "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.55), transparent)",
+              background: "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.55), transparent)",
             }}
           />
         </div>

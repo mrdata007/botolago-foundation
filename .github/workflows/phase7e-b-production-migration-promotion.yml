@@ -25,7 +25,7 @@ on:
         type: string
 
 concurrency:
-  group: phase7e-b-production-migration-promotion
+  group: botolago-production-v2-mutation
   cancel-in-progress: false
 
 permissions:

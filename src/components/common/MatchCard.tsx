@@ -246,6 +246,7 @@ export function MatchCard({
     <Link
       to="/matches/$matchId"
       params={{ matchId: match.id }}
+      search={{ tab: "summary" }}
       aria-label={a11yLabel}
       className={cn(
         "group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",

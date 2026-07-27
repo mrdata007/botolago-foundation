@@ -1,0 +1,2964 @@
+{
+  "schemas": [
+    {
+      "owner": "postgres",
+      "schema_name": "api",
+      "role_privileges": { "anonUsage": true, "serviceRoleUsage": true, "authenticatedUsage": true }
+    },
+    {
+      "owner": "postgres",
+      "schema_name": "app",
+      "role_privileges": {
+        "anonUsage": false,
+        "serviceRoleUsage": false,
+        "authenticatedUsage": true
+      }
+    },
+    {
+      "owner": "postgres",
+      "schema_name": "app_private",
+      "role_privileges": {
+        "anonUsage": false,
+        "serviceRoleUsage": true,
+        "authenticatedUsage": false
+      }
+    }
+  ],
+  "apiRoutines": [
+    {
+      "kind": "f",
+      "name": "activate_fantasy_chip",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_gameweek_id uuid, p_chip_type app.fantasy_chip_type, p_expected_version bigint, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_approve_request",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_approval_id uuid, p_payload_fingerprint text, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_assign_role",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_target_auth_user_id uuid, p_role_name text, p_expires_at timestamp with time zone, p_reason text, p_reference text, p_idempotency_key uuid, p_approval_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_bootstrap_first_platform_admin",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_auth_user_id uuid, p_reason text, p_synthetic_test boolean"
+    },
+    {
+      "kind": "f",
+      "name": "admin_cancel_request",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_approval_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_claim_session_revocations",
+      "owner": "postgres",
+      "grants": [{ "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_claim_session_revocations_v2",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_worker_run_id uuid, p_worker_id text, p_limit integer, p_lease_seconds integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_complete_session_revocation",
+      "owner": "postgres",
+      "grants": [{ "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_request_id uuid, p_succeeded boolean, p_error_code text"
+    },
+    {
+      "kind": "f",
+      "name": "admin_complete_session_revocation_v2",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_request_id uuid, p_lease_token uuid, p_result_code text"
+    },
+    {
+      "kind": "f",
+      "name": "admin_create_staff_principal",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_target_auth_user_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_emergency_revoke_staff",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_execute_approved_platform_admin",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_approval_id uuid, p_payload_fingerprint text, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_expire_approvals",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "integer",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_fail_session_revocation",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_request_id uuid, p_lease_token uuid, p_error_code text, p_error_summary text, p_retryable boolean"
+    },
+    {
+      "kind": "f",
+      "name": "admin_finish_session_revocation_worker",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_worker_run_id uuid, p_status text, p_error_code text"
+    },
+    {
+      "kind": "f",
+      "name": "admin_get_approval",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_approval_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_get_owner_bootstrap_readiness",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_auth_user_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_get_revocation_worker_health",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "admin_get_revocation_worker_runtime_status",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "admin_get_session_revocation_status",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_get_staff_principal",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_active_assignments",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_approval_queue",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_scope text, p_status text, p_execution_status text, p_target_domain text, p_before_requested_at timestamp with time zone, p_before_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_assignment_history",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid, p_before_created_at timestamp with time zone, p_before_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_audit_events",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_before_occurred_at timestamp with time zone, p_before_id bigint, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_audit_events_v2",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_from timestamp with time zone, p_to timestamp with time zone, p_actor_principal_id uuid, p_action text, p_target_domain text, p_target_entity_type text, p_outcome text, p_correlation_id uuid, p_approval_id uuid, p_synthetic_test boolean, p_before_occurred_at timestamp with time zone, p_before_id bigint, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_role_catalog",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "admin_list_staff_assignments",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_role_name text, p_principal_status text, p_assignment_status text, p_before_created_at timestamp with time zone, p_before_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "admin_reject_request",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_approval_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_renew_role",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_assignment_id uuid, p_expires_at timestamp with time zone, p_reason text, p_reference text, p_idempotency_key uuid, p_approval_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_replay_session_revocation_dead_letter",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_request_id uuid, p_reason text"
+    },
+    {
+      "kind": "f",
+      "name": "admin_request_approval",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_required_permission text, p_target_domain text, p_target_entity_id uuid, p_operation_type text, p_safe_payload_reference jsonb, p_reason text, p_expires_at timestamp with time zone, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_resolve_staff_user_exact",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_email text"
+    },
+    {
+      "kind": "f",
+      "name": "admin_restore_staff",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_revoke_role",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_assignment_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_shorten_role_expiry",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_assignment_id uuid, p_expires_at timestamp with time zone, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "admin_start_session_revocation_worker",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_worker_id text, p_synthetic_test boolean"
+    },
+    {
+      "kind": "f",
+      "name": "admin_suspend_staff",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_staff_principal_id uuid, p_reason text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "archive_fantasy_league",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_league_id uuid, p_team_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "begin_football_ingestion",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_provider_name text, p_job_type text, p_target_scope jsonb, p_checkpoint jsonb"
+    },
+    {
+      "kind": "f",
+      "name": "cancel_account_deletion",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "cancel_fantasy_chip",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_gameweek_id uuid, p_expected_version bigint"
+    },
+    {
+      "kind": "f",
+      "name": "complete_football_ingestion",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_run_id uuid, p_status text, p_checkpoint jsonb, p_records_fetched integer, p_records_validated integer, p_records_inserted integer, p_records_updated integer, p_records_skipped integer, p_records_rejected integer, p_retry_count integer, p_error_code text, p_error_summary text"
+    },
+    {
+      "kind": "f",
+      "name": "complete_onboarding",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "display_name text, username text, avatar_path text, preferred_language app.language_code, favorite_team_id uuid, favorite_team_provisional_ref text, match_alerts boolean, breaking_news boolean, fantasy_deadline_reminders boolean"
+    },
+    {
+      "kind": "f",
+      "name": "confirm_fantasy_transfers",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_gameweek_id uuid, p_transfers jsonb, p_expected_version bigint, p_idempotency_key uuid, p_chip_type app.fantasy_chip_type"
+    },
+    {
+      "kind": "f",
+      "name": "create_fantasy_league",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_team_id uuid, p_name text, p_visibility app.fantasy_league_visibility, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "create_fantasy_team",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_gameweek_id uuid, p_team_name text, p_selection jsonb, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "disable_my_notification_device",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_device_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "dismiss_my_notification",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_notification_id uuid, p_archive boolean"
+    },
+    {
+      "kind": "f",
+      "name": "editorial_create_draft",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_slug text, p_title text, p_summary text, p_body_format app.article_body_format, p_body_source text, p_body_html text, p_reading_time_minutes smallint, p_sanitizer_version text, p_story_id uuid, p_author_id uuid, p_publisher_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "editorial_set_placement",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_article_edition_id uuid, p_placement_type app.placement_type, p_scope_type app.placement_scope, p_scope_id uuid, p_priority smallint, p_starts_at timestamp with time zone, p_ends_at timestamp with time zone"
+    },
+    {
+      "kind": "f",
+      "name": "editorial_soft_delete_story",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_story_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "editorial_transition_article",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_article_edition_id uuid, p_target_status app.publication_status, p_scheduled_at timestamp with time zone, p_visibility app.article_visibility"
+    },
+    {
+      "kind": "f",
+      "name": "editorial_update_article",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_article_edition_id uuid, p_expected_updated_at timestamp with time zone, p_slug text, p_title text, p_subtitle text, p_summary text, p_body_format app.article_body_format, p_body_source text, p_body_html text, p_reading_time_minutes smallint, p_sanitizer_version text, p_hero_asset_id uuid, p_seo_title text, p_seo_description text"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_gameweeks",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_before_sequence integer, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_hub",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_league_standings",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_league_id uuid, p_gameweek_id uuid, p_after_rank bigint, p_after_team_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_leagues",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_visibility app.fantasy_league_visibility, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_player_pool",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_position text, p_team_id uuid, p_max_price numeric, p_search text, p_after_price numeric, p_after_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_rules",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "fantasy_top_players",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_gameweek_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "follow_competition",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_competition_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "follow_team",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "football_competition_fixtures",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_competition_id uuid, p_season_id uuid, p_after_kickoff timestamp with time zone, p_after_id uuid, p_limit integer, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_competition_summary",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_competition_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_head_to_head",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_fixture_id uuid, p_limit integer, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_home_matches",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_live_matches",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_match_detail",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_fixture_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_match_lineups",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_fixture_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_match_statistics",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_fixture_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_match_timeline",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_fixture_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_matches_by_date",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_date date, p_language text, p_timezone text, p_statuses text[], p_competition_id uuid, p_after_kickoff timestamp with time zone, p_after_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "football_player_availability",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_player_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "football_player_summary",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_player_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_standings",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_group_key text, p_table_type text, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_team_catalog",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "football_team_fixtures",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_before_kickoff timestamp with time zone, p_before_id uuid, p_limit integer, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_team_squad",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_season_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_team_summary",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "football_upcoming_matches",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer, p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "get_my_fantasy_history",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_before_gameweek_sequence integer, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "get_my_fantasy_points",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_gameweek_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "get_my_fantasy_team",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "get_my_notification_preferences",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "get_my_staff_context",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "ingest_football_fixture",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_provider_name text, p_external_id text, p_fixture jsonb"
+    },
+    {
+      "kind": "f",
+      "name": "join_fantasy_league",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_invite_code text, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "leave_fantasy_league",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_league_id uuid, p_team_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "list_my_notification_devices",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "list_my_notifications",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_category app.notification_category, p_before_created_at timestamp with time zone, p_before_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "mark_all_my_notifications_read",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "integer",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_category app.notification_category"
+    },
+    {
+      "kind": "f",
+      "name": "mark_my_notification_read",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_notification_id uuid, p_read boolean"
+    },
+    {
+      "kind": "f",
+      "name": "my_notification_unread_count",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "bigint",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_category app.notification_category"
+    },
+    {
+      "kind": "f",
+      "name": "news_article_detail",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_identifier text"
+    },
+    {
+      "kind": "f",
+      "name": "news_begin_ingestion_run",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_publisher_id uuid, p_job_type text, p_target_scope text, p_cursor text"
+    },
+    {
+      "kind": "f",
+      "name": "news_complete_ingestion_run",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_run_id uuid, p_status app_private.news_ingestion_status, p_cursor text, p_fetched integer, p_validated integer, p_inserted integer, p_updated integer, p_skipped integer, p_rejected integer, p_error_code text, p_error_summary text"
+    },
+    {
+      "kind": "f",
+      "name": "news_feed",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_limit integer, p_after_published_at timestamp with time zone, p_after_id uuid, p_category_slug text, p_topic_slug text, p_competition_id uuid, p_team_id uuid, p_player_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "news_home_modules",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "news_record_ingestion_rejection",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_run_id uuid, p_external_id text, p_reason app_private.news_rejection_reason, p_error_code text, p_sanitized_summary text"
+    },
+    {
+      "kind": "f",
+      "name": "news_register_source_article",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_publisher_id uuid, p_external_id text, p_story_id uuid, p_article_edition_id uuid, p_canonical_url text, p_content_fingerprint text, p_source_version text, p_source_published_at timestamp with time zone, p_source_updated_at timestamp with time zone"
+    },
+    {
+      "kind": "f",
+      "name": "news_related_articles",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_article_edition_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "news_saved_articles",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer, p_after_created_at timestamp with time zone, p_after_article_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "news_search",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_query text, p_limit integer, p_after_rank real, p_after_published_at timestamp with time zone, p_after_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "news_taxonomies",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text, p_type text"
+    },
+    {
+      "kind": "f",
+      "name": "news_team_filters",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_language text"
+    },
+    {
+      "kind": "f",
+      "name": "preview_fantasy_transfers",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_gameweek_id uuid, p_transfers jsonb, p_expected_version bigint, p_chip_type app.fantasy_chip_type"
+    },
+    {
+      "kind": "f",
+      "name": "record_football_ingestion_rejection",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_run_id uuid, p_entity_type text, p_external_id text, p_payload_fingerprint text, p_error_code text, p_validation_issues jsonb"
+    },
+    {
+      "kind": "f",
+      "name": "record_session_revocation",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "scope text"
+    },
+    {
+      "kind": "f",
+      "name": "register_my_notification_device",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_device_id text, p_platform app.notification_device_platform, p_push_provider app.notification_push_provider, p_destination text, p_locale app.language_code, p_timezone text, p_app_version text"
+    },
+    {
+      "kind": "f",
+      "name": "request_account_deletion",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": ""
+    },
+    {
+      "kind": "f",
+      "name": "resolve_football_mapping",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_provider_name text, p_entity_type text, p_external_id text, p_internal_entity_id uuid, p_source_version text, p_last_seen_at timestamp with time zone"
+    },
+    {
+      "kind": "f",
+      "name": "save_article",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_article_edition_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "save_fantasy_lineup",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid, p_gameweek_id uuid, p_selection jsonb, p_expected_version bigint, p_idempotency_key uuid"
+    },
+    {
+      "kind": "f",
+      "name": "service_apply_fantasy_price_changes",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_gameweek_id uuid, p_source_version bigint, p_after_player_id uuid, p_batch_size integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_begin_fantasy_job",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_job_type text, p_season_id uuid, p_gameweek_id uuid, p_calculation_version bigint"
+    },
+    {
+      "kind": "f",
+      "name": "service_cancel_notification_schedule",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_schedule_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "service_checkpoint_notification_fanout",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_event_id uuid, p_checkpoint_user_id uuid, p_audience_count integer, p_notifications_created integer, p_deliveries_queued integer, p_skipped_count integer, p_rejected_count integer, p_complete boolean"
+    },
+    {
+      "kind": "f",
+      "name": "service_claim_notification_deliveries",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer, p_lease_seconds integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_claim_notification_event",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_event_id uuid, p_lease_seconds integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_claim_notification_schedules",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_limit integer, p_lease_seconds integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_complete_fantasy_gameweek",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_gameweek_id uuid, p_calculation_version bigint"
+    },
+    {
+      "kind": "f",
+      "name": "service_complete_fantasy_job",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_run_id uuid, p_status app.fantasy_run_status, p_processed integer, p_skipped integer, p_failed integer, p_error_code text, p_error_summary text"
+    },
+    {
+      "kind": "f",
+      "name": "service_create_user_notification",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_event_id uuid, p_user_id uuid, p_variables jsonb, p_priority app.notification_priority, p_deep_link_target app.notification_deep_link_target, p_deep_link_entity_id uuid, p_expires_at timestamp with time zone, p_push_provider_key text, p_email_provider_key text"
+    },
+    {
+      "kind": "f",
+      "name": "service_finalize_fantasy_team_results",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_gameweek_id uuid, p_calculation_version bigint, p_after_team_id uuid, p_batch_size integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_ingest_notification_event",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_event_id uuid, p_event_type app.notification_type, p_source_domain app.notification_source_domain, p_source_entity_id uuid, p_target_user_id uuid, p_occurred_at timestamp with time zone, p_schema_version integer, p_deduplication_key text, p_correlation_id uuid, p_safe_payload jsonb"
+    },
+    {
+      "kind": "f",
+      "name": "service_invalidate_notification_device",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_device_registration_id uuid, p_reason_code text"
+    },
+    {
+      "kind": "f",
+      "name": "service_list_notification_audience",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_event_id uuid, p_after_user_id uuid, p_limit integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_notification_metrics",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_since timestamp with time zone"
+    },
+    {
+      "kind": "f",
+      "name": "service_recalculate_fantasy_rankings",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "integer",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_gameweek_id uuid, p_league_id uuid, p_calculation_version bigint"
+    },
+    {
+      "kind": "f",
+      "name": "service_record_notification_delivery_attempt",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "app.notification_delivery_status",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_delivery_id uuid, p_outcome text, p_retryable boolean, p_provider_message_id text, p_stable_error_code text, p_sanitized_summary text, p_provider_latency_ms integer, p_rate_limit_remaining integer, p_max_attempts integer, p_retry_after_seconds integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_request_notification_dead_letter_replay",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_dead_letter_id uuid, p_idempotency_key text"
+    },
+    {
+      "kind": "f",
+      "name": "service_restore_free_hit",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_gameweek_id uuid, p_batch_size integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_roll_fantasy_free_transfers",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_gameweek_id uuid, p_batch_size integer"
+    },
+    {
+      "kind": "f",
+      "name": "service_upsert_fantasy_player_points",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_fantasy_player_id uuid, p_gameweek_id uuid, p_fixture_id uuid, p_category text, p_points integer, p_source_key text, p_source_sequence bigint, p_scoring_version integer, p_state app.fantasy_points_state"
+    },
+    {
+      "kind": "f",
+      "name": "service_upsert_notification_schedule",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "uuid",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_idempotency_key text, p_notification_type app.notification_type, p_source_domain app.notification_source_domain, p_source_entity_id uuid, p_target_user_id uuid, p_due_at timestamp with time zone, p_timezone_basis text, p_safe_payload jsonb"
+    },
+    {
+      "kind": "f",
+      "name": "set_my_notification_subscription",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_kind app.notification_subscription_kind, p_target_id uuid, p_enabled boolean"
+    },
+    {
+      "kind": "f",
+      "name": "unfollow_competition",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_competition_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "unfollow_team",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_team_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "unregister_my_notification_device",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "boolean",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_device_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "unsave_article",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_article_edition_id uuid"
+    },
+    {
+      "kind": "f",
+      "name": "update_my_notification_preferences",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_notifications_enabled boolean, p_in_app_enabled boolean, p_push_enabled boolean, p_email_enabled boolean, p_match_alerts boolean, p_breaking_news boolean, p_fantasy_deadlines boolean, p_timezone text, p_quiet_hours_enabled boolean, p_quiet_hours_start time without time zone, p_quiet_hours_end time without time zone, p_digest_mode app.notification_digest_mode, p_fantasy_deadline_offset_minutes integer"
+    },
+    {
+      "kind": "f",
+      "name": "update_my_preferences",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "v",
+      "result_type": "void",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "match_alerts boolean, breaking_news boolean, fantasy_deadline_reminders boolean, preferred_language app.language_code"
+    },
+    {
+      "kind": "f",
+      "name": "username_availability",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "TABLE(available boolean, normalized_username text, reason text)",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "candidate text"
+    }
+  ],
+  "apiRelations": [
+    {
+      "kind": "r",
+      "name": "live_fixture_updates",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "DELETE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "INSERT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "MAINTAIN" },
+        { "grantee": "postgres", "grantable": false, "privilege": "REFERENCES" },
+        { "grantee": "postgres", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRIGGER" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRUNCATE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "UPDATE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "SELECT" }
+      ],
+      "options": [],
+      "row_security": true,
+      "force_row_security": true
+    },
+    {
+      "kind": "v",
+      "name": "my_account_deletion_requests",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "DELETE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "INSERT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "MAINTAIN" },
+        { "grantee": "postgres", "grantable": false, "privilege": "REFERENCES" },
+        { "grantee": "postgres", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRIGGER" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRUNCATE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "UPDATE" }
+      ],
+      "options": ["security_invoker=true"],
+      "row_security": false,
+      "force_row_security": false
+    },
+    {
+      "kind": "v",
+      "name": "my_followed_competitions",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "DELETE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "INSERT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "MAINTAIN" },
+        { "grantee": "postgres", "grantable": false, "privilege": "REFERENCES" },
+        { "grantee": "postgres", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRIGGER" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRUNCATE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "UPDATE" }
+      ],
+      "options": ["security_invoker=true"],
+      "row_security": false,
+      "force_row_security": false
+    },
+    {
+      "kind": "v",
+      "name": "my_followed_teams",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "DELETE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "INSERT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "MAINTAIN" },
+        { "grantee": "postgres", "grantable": false, "privilege": "REFERENCES" },
+        { "grantee": "postgres", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRIGGER" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRUNCATE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "UPDATE" }
+      ],
+      "options": ["security_invoker=true"],
+      "row_security": false,
+      "force_row_security": false
+    },
+    {
+      "kind": "v",
+      "name": "my_profile",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "authenticated", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "DELETE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "INSERT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "MAINTAIN" },
+        { "grantee": "postgres", "grantable": false, "privilege": "REFERENCES" },
+        { "grantee": "postgres", "grantable": false, "privilege": "SELECT" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRIGGER" },
+        { "grantee": "postgres", "grantable": false, "privilege": "TRUNCATE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "UPDATE" }
+      ],
+      "options": ["security_invoker=true"],
+      "row_security": false,
+      "force_row_security": false
+    }
+  ],
+  "canonicalTables": [
+    {
+      "name": "account_deletion_requests",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "article_editions", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "article_revisions", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "article_search_documents",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "authors", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "competition_translations",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "competitions", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "countries", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "country_translations",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "device_registrations",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "editorial_placements",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_auto_substitutions",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_chip_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_chip_uses", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_competitions",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_deadline_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_fixture_assignments",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_fixture_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_free_hit_snapshot_players",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_free_hit_snapshots",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_gameweeks", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_league_memberships",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_leagues", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_lineup_players",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_lineups", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_player_gameweek_points",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_player_point_events",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_player_price_history",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_players", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_position_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_positions", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_price_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_ranking_tiebreak_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_rankings", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_ruleset_features",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_rulesets", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_scoring_rules",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_seasons", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_squad_memberships",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_team_gameweek_results",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_teams", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fantasy_transfer_batches",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fantasy_transfers", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "fixture_team_statistics",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "fixtures", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "followed_competitions",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "followed_teams", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "lineup_players", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "lineups", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "match_events", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "media_assets", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "notification_deliveries",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_subscriptions",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_templates",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "notifications", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "player_availability",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "players", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "profiles", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "publishers", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "rounds", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "saved_articles", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "seasons", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "standings", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "statistic_definitions",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "stories", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "story_competitions",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "story_countries", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "story_players", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "story_taxonomies", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "story_teams", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "taxonomies", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "taxonomy_translations",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "team_memberships", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "teams", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    { "name": "user_preferences", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "venue_translations",
+      "schema": "app",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    { "name": "venues", "schema": "app", "rowSecurity": true, "forceRowSecurity": true },
+    {
+      "name": "admin_approval_requests",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "admin_audit_events",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "admin_idempotency_keys",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "admin_permissions",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "admin_role_permissions",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "admin_roles",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "admin_worker_runs",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "editorial_audit_events",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "editorial_memberships",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_corrections",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_deadline_change_audit",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_free_transfer_rollovers",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_idempotency_keys",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_job_runs",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "fantasy_mutation_audit",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "football_ingestion_rejections",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "football_ingestion_runs",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "football_provider_mappings",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "football_providers",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "news_duplicate_decisions",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "news_ingestion_rejections",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "news_ingestion_runs",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "news_source_articles",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_dead_letters",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_delivery_attempts",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_events",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_fanout_runs",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_operational_audit",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "notification_schedules",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "push_destinations",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "reserved_usernames",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "security_audit_log",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "staff_principals",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "staff_role_assignments",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    },
+    {
+      "name": "staff_session_revocation_requests",
+      "schema": "app_private",
+      "rowSecurity": true,
+      "forceRowSecurity": true
+    }
+  ],
+  "manifestVersion": 1,
+  "canonicalPolicies": [
+    {
+      "name": "account_deletion_requests_insert_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "account_deletion_requests",
+      "schema": "app",
+      "command": "INSERT",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "account_deletion_requests_select_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "account_deletion_requests",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "account_deletion_requests_update_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "account_deletion_requests",
+      "schema": "app",
+      "command": "UPDATE",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_league_memberships_member_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_league_memberships",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "70d1f4d49370dcc2807c1f0aa64d395dd5807488564d3941e54105716a618dfb",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_leagues_visible_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_leagues",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "e2d78b40c0ee7c1fe2a613bf96463aafba3f9da2ec3421a8b71311b333a2a6fd",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_lineup_players_owner_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_lineup_players",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "c156e5f135889311d042ed8884aad0b763b3359ef87a464763245bc94b64b3aa",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_lineups_owner_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_lineups",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "9418d147ac93015d27b04754516ef9e9bfc7fbfd35b3061ddd5286064969e809",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_squad_owner_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_squad_memberships",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "e7460dfdd2fdf438d9ff1ad1fc7c6a199e26c41d286e47118fe873b7768e4e98",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_results_owner_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_team_gameweek_results",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "62fde713871aae19d89d047a7d19fdcbbc2b98204547e746c7ebab5a3333c960",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "fantasy_teams_owner_select",
+      "roles": ["authenticated"],
+      "table": "fantasy_teams",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "abb2d82683183540acec49069ec5c2b403521340fc0e48e77b80ca1a0f449c54",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "followed_competitions_delete_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "followed_competitions",
+      "schema": "app",
+      "command": "DELETE",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "followed_competitions_insert_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "followed_competitions",
+      "schema": "app",
+      "command": "INSERT",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "followed_competitions_select_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "followed_competitions",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "followed_teams_delete_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "followed_teams",
+      "schema": "app",
+      "command": "DELETE",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "followed_teams_insert_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "followed_teams",
+      "schema": "app",
+      "command": "INSERT",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "followed_teams_select_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "followed_teams",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "profiles_select_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "profiles",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "d05069b66ef67a9cdcf1987b5bab9a5fc76ad344f950ea1bcbeb33775c330567",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "profiles_update_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "profiles",
+      "schema": "app",
+      "command": "UPDATE",
+      "checkHash": "d05069b66ef67a9cdcf1987b5bab9a5fc76ad344f950ea1bcbeb33775c330567",
+      "usingHash": "d05069b66ef67a9cdcf1987b5bab9a5fc76ad344f950ea1bcbeb33775c330567",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "saved_articles_delete_own",
+      "roles": ["authenticated"],
+      "table": "saved_articles",
+      "schema": "app",
+      "command": "DELETE",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "saved_articles_insert_own",
+      "roles": ["authenticated"],
+      "table": "saved_articles",
+      "schema": "app",
+      "command": "INSERT",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "saved_articles_select_own",
+      "roles": ["authenticated"],
+      "table": "saved_articles",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "user_preferences_insert_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "user_preferences",
+      "schema": "app",
+      "command": "INSERT",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "user_preferences_select_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "user_preferences",
+      "schema": "app",
+      "command": "SELECT",
+      "checkHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    },
+    {
+      "name": "user_preferences_update_own_authenticated",
+      "roles": ["authenticated"],
+      "table": "user_preferences",
+      "schema": "app",
+      "command": "UPDATE",
+      "checkHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "usingHash": "1b29cc1f6c0017f447260789db013ce3e4e626934472e2d6330af3984baee68b",
+      "permissive": "PERMISSIVE"
+    }
+  ],
+  "browserRelationPrivileges": [
+    {
+      "schema": "app",
+      "grantee": "authenticated",
+      "relation": "account_deletion_requests",
+      "grantable": false,
+      "privilege": "SELECT"
+    },
+    {
+      "schema": "app",
+      "grantee": "authenticated",
+      "relation": "followed_competitions",
+      "grantable": false,
+      "privilege": "SELECT"
+    },
+    {
+      "schema": "app",
+      "grantee": "authenticated",
+      "relation": "followed_teams",
+      "grantable": false,
+      "privilege": "SELECT"
+    },
+    {
+      "schema": "app",
+      "grantee": "authenticated",
+      "relation": "profiles",
+      "grantable": false,
+      "privilege": "SELECT"
+    },
+    {
+      "schema": "app",
+      "grantee": "authenticated",
+      "relation": "user_preferences",
+      "grantable": false,
+      "privilege": "SELECT"
+    }
+  ],
+  "browserSequencePrivileges": []
+}

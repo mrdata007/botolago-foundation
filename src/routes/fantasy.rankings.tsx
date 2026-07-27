@@ -41,10 +41,7 @@ export const Route = createFileRoute("/fantasy/rankings")({
 
 function RankingsPage() {
   const { t, lang } = useI18n();
-  const nf = useMemo(
-    () => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"),
-    [lang],
-  );
+  const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
 
   const [sort, setSort] = useState<RankingsSort>("overall");
   const [page, setPage] = useState(1);
@@ -55,7 +52,10 @@ function RankingsPage() {
     queryKey: ["fantasy-summary"],
     queryFn: () => fantasyService.getSummary(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs", lang], queryFn: () => footballService.getClubs(lang) });
+  const clubsQ = useQuery({
+    queryKey: ["clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+  });
 
   const summary = summaryQ.data ?? null;
   const me: LeagueStanding | undefined = summary
@@ -135,9 +135,7 @@ function RankingsPage() {
                   onClick={() => setSort(key)}
                   className={cn(
                     "min-h-11 rounded-xl px-4 text-sm font-bold transition-colors",
-                    sort === key
-                      ? "cta-brand"
-                      : "text-muted-foreground hover:text-foreground",
+                    sort === key ? "cta-brand" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {t(
