@@ -136,22 +136,36 @@ export function matchesQuery(row: LeagueStanding, query: string): boolean {
   );
 }
 
+/**
+ * Merges the signed-in manager into the board (if not already there) and
+ * recomputes overall ranks by total score.
+ */
+export function mergeMe(all: LeagueStanding[], me?: LeagueStanding): LeagueStanding[] {
+  if (!me) return all;
+  const without = all.filter((row) => row.managerId !== me.managerId);
+  return [...without, me]
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
 /** Applies sort, search and pagination to a full board. Pure. */
 export function selectRankingsPage(
   all: LeagueStanding[],
-  { page, pageSize, sort, query, meId }: RankingsQuery,
+  { page, pageSize, sort, query, meId, me }: RankingsQuery,
 ): RankingsPage {
-  const sorted = sortRows(all, sort);
+  const board = mergeMe(all, me);
+  const sorted = sortRows(board, sort);
   const filtered = query.trim() ? sorted.filter((row) => matchesQuery(row, query)) : sorted;
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.max(1, Math.min(pageCount, Math.floor(page) || 1));
   const start = (safePage - 1) * pageSize;
+  const id = me?.managerId ?? meId;
   return {
     rows: filtered.slice(start, start + pageSize),
     total,
     podium: sorted.slice(0, 3),
-    myRank: meId ? sorted.find((row) => row.managerId === meId) : undefined,
+    myRank: id ? sorted.find((row) => row.managerId === id) : undefined,
   };
 }
 
