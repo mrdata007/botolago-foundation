@@ -128,6 +128,7 @@ function PlayersPage() {
           </Chip>
           {clubs.map((c) => (
             <Chip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>
+              <ClubCrest club={c} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
               {tr(c.shortName)}
             </Chip>
           ))}
