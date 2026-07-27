@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "momentum", "h2h"];
 
 export const Route = createFileRoute("/matches/$matchId")({
-  validateSearch: (search: Partial<{ tab: string }>): { tab: MatchTabKey } => {
-    const raw = (search.tab ?? "summary") as MatchTabKey;
+  validateSearch: (search: Record<string, unknown>): { tab: MatchTabKey } => {
+    const raw = (typeof search.tab === "string" ? search.tab : "summary") as MatchTabKey;
     return { tab: TAB_KEYS.includes(raw) ? raw : "summary" };
   },
   component: MatchDetailPage,
