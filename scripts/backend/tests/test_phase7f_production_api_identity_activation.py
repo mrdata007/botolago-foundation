@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import signal
 import stat
 import subprocess
@@ -75,6 +76,43 @@ class QueryClient:
         if "to_regclass('cron.job')" in sql:
             return [{"exists": False}]
         return self.rows
+
+
+class ManifestQueryClient:
+    def __init__(self, manifest: dict[str, object]) -> None:
+        self.manifest = copy.deepcopy(manifest)
+        self.operations: list[str | None] = []
+        self.page_lengths: list[int] = []
+
+    def query(
+        self,
+        sql: str,
+        *,
+        read_only: bool,
+        timeout: int = 60,
+        operation: str | None = None,
+    ):
+        assert read_only
+        self.operations.append(operation)
+        routines = self.manifest["apiRoutines"]
+        assert isinstance(routines, list)
+        if "manifest - 'apiRoutines'" in sql:
+            summary = copy.deepcopy(self.manifest)
+            summary.pop("apiRoutines")
+            return [
+                {
+                    "manifest": summary,
+                    "api_routine_count": len(routines),
+                }
+            ]
+        if "jsonb_array_elements" in sql:
+            lower = re.search(r"ordinality > ([0-9]+)", sql)
+            upper = re.search(r"ordinality <= ([0-9]+)", sql)
+            assert lower and upper
+            page = routines[int(lower.group(1)) : int(upper.group(1))]
+            self.page_lengths.append(len(page))
+            return [{"value": copy.deepcopy(row)} for row in page]
+        raise AssertionError("unexpected manifest query")
 
 
 def make_journal(directory: str, *, current: str = "MUTATION_IN_PROGRESS"):
@@ -454,7 +492,7 @@ class Phase7FActivationTests(unittest.TestCase):
                 "grants": [],
             }
         )
-        client = QueryClient([{"manifest": actual}])
+        client = ManifestQueryClient(actual)
         with self.assertRaisesRegex(
             ACTIVATION.ActivationError, "API_MANIFEST_DRIFT"
         ):
@@ -462,10 +500,16 @@ class Phase7FActivationTests(unittest.TestCase):
 
     def test_live_api_manifest_exact_match_passes(self) -> None:
         expected = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        result = ACTIVATION.assert_api_manifest(
-            QueryClient([{"manifest": expected}]), REPO
-        )
+        client = ManifestQueryClient(expected)
+        result = ACTIVATION.assert_api_manifest(client, REPO)
         self.assertEqual("EXACT_MATCH", result["result"])
+        self.assertEqual(
+            ["API_MANIFEST_SUMMARY"]
+            + ["API_MANIFEST_ROUTINE_PAGE"] * len(client.page_lengths),
+            client.operations,
+        )
+        self.assertTrue(client.page_lengths)
+        self.assertLessEqual(max(client.page_lengths), 25)
 
     def test_unexpected_routine_grant_is_rejected(self) -> None:
         value = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -497,7 +541,7 @@ class Phase7FActivationTests(unittest.TestCase):
         expected = json.loads(MANIFEST.read_text(encoding="utf-8"))
         actual = copy.deepcopy(expected)
         actual["canonicalPolicies"][0]["usingHash"] = "0" * 64
-        client = QueryClient([{"manifest": actual}])
+        client = ManifestQueryClient(actual)
         with self.assertRaisesRegex(
             ACTIVATION.ActivationError, "API_MANIFEST_DRIFT"
         ):
