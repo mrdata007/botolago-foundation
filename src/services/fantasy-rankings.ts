@@ -14,6 +14,8 @@ export interface RankingsQuery {
   sort: RankingsSort;
   query: string;
   meId?: string;
+  /** The signed-in manager's entry, merged into the board by score. */
+  me?: LeagueStanding;
 }
 
 export interface RankingsPage {
