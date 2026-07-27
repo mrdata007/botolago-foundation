@@ -24,6 +24,7 @@ import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
 import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
+import { Route as FantasyRankingsRouteImport } from './routes/fantasy.rankings'
 import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
 import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
 import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
@@ -121,6 +122,11 @@ const FantasyTeamRoute = FantasyTeamRouteImport.update({
 const FantasyRulesRoute = FantasyRulesRouteImport.update({
   id: '/rules',
   path: '/rules',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyRankingsRoute = FantasyRankingsRouteImport.update({
+  id: '/rankings',
+  path: '/rankings',
   getParentRoute: () => FantasyRoute,
 } as any)
 const FantasyPointsRoute = FantasyPointsRouteImport.update({
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
   '/fantasy/points': typeof FantasyPointsRoute
+  '/fantasy/rankings': typeof FantasyRankingsRoute
   '/fantasy/rules': typeof FantasyRulesRoute
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
@@ -307,6 +314,7 @@ export interface FileRoutesByTo {
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
   '/fantasy/points': typeof FantasyPointsRoute
+  '/fantasy/rankings': typeof FantasyRankingsRoute
   '/fantasy/rules': typeof FantasyRulesRoute
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
   '/fantasy/points': typeof FantasyPointsRoute
+  '/fantasy/rankings': typeof FantasyRankingsRoute
   '/fantasy/rules': typeof FantasyRulesRoute
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
@@ -390,6 +399,7 @@ export interface FileRouteTypes {
     | '/fantasy/leagues'
     | '/fantasy/players'
     | '/fantasy/points'
+    | '/fantasy/rankings'
     | '/fantasy/rules'
     | '/fantasy/team'
     | '/fantasy/top-players'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/fantasy/leagues'
     | '/fantasy/players'
     | '/fantasy/points'
+    | '/fantasy/rankings'
     | '/fantasy/rules'
     | '/fantasy/team'
     | '/fantasy/top-players'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/fantasy/leagues'
     | '/fantasy/players'
     | '/fantasy/points'
+    | '/fantasy/rankings'
     | '/fantasy/rules'
     | '/fantasy/team'
     | '/fantasy/top-players'
@@ -605,6 +617,13 @@ declare module '@tanstack/react-router' {
       path: '/rules'
       fullPath: '/fantasy/rules'
       preLoaderRoute: typeof FantasyRulesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/rankings': {
+      id: '/fantasy/rankings'
+      path: '/rankings'
+      fullPath: '/fantasy/rankings'
+      preLoaderRoute: typeof FantasyRankingsRouteImport
       parentRoute: typeof FantasyRoute
     }
     '/fantasy/points': {
@@ -851,6 +870,7 @@ interface FantasyRouteChildren {
   FantasyLeaguesRoute: typeof FantasyLeaguesRouteWithChildren
   FantasyPlayersRoute: typeof FantasyPlayersRouteWithChildren
   FantasyPointsRoute: typeof FantasyPointsRoute
+  FantasyRankingsRoute: typeof FantasyRankingsRoute
   FantasyRulesRoute: typeof FantasyRulesRoute
   FantasyTeamRoute: typeof FantasyTeamRoute
   FantasyTopPlayersRoute: typeof FantasyTopPlayersRoute
@@ -864,6 +884,7 @@ const FantasyRouteChildren: FantasyRouteChildren = {
   FantasyLeaguesRoute: FantasyLeaguesRouteWithChildren,
   FantasyPlayersRoute: FantasyPlayersRouteWithChildren,
   FantasyPointsRoute: FantasyPointsRoute,
+  FantasyRankingsRoute: FantasyRankingsRoute,
   FantasyRulesRoute: FantasyRulesRoute,
   FantasyTeamRoute: FantasyTeamRoute,
   FantasyTopPlayersRoute: FantasyTopPlayersRoute,
