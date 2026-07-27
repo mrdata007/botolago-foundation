@@ -27,7 +27,7 @@ export function ArticleCard({
   article: Article;
   variant?: "row" | "lead" | "compact" | "horizontal" | "imageLed";
   /** Optional club directory used to render team crest badges. */
-  clubs?: Club[];
+  clubs?: readonly Club[];
 }) {
   const { tr, t, lang } = useI18n();
   const articleClubs = (clubs ?? [])
