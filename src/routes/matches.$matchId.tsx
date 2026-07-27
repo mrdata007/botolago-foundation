@@ -69,7 +69,7 @@ function MatchDetailPage() {
           </p>
           <Link
             to="/matches"
-            className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[color:var(--brand-primary)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg cta-brand px-4 text-sm font-semibold"
           >
             {t("article.back")}
           </Link>

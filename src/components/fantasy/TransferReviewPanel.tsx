@@ -102,7 +102,7 @@ export function TransferReviewPanel({
         </button>
         <button
           onClick={onConfirm}
-          className="flex-1 rounded-xl bg-[color:var(--brand-primary)] px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="flex-1 rounded-xl cta-brand px-3 py-2 text-sm font-semibold hover:opacity-90"
         >
           {t("fantasy.transfers.confirm")}
         </button>

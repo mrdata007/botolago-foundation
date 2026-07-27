@@ -141,7 +141,7 @@ function LeagueDetailPage() {
           </div>
           <button
             onClick={copy}
-            className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--brand-primary)] px-2 py-1 text-xs font-semibold text-white"
+            className="inline-flex items-center gap-1 rounded-lg cta-brand px-2 py-1 text-xs font-semibold"
           >
             <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
           </button>

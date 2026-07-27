@@ -82,7 +82,7 @@ export function FantasyOnboarding() {
           </button>
           <button
             onClick={() => (isLast ? finish() : setStep(step + 1))}
-            className="rounded-xl bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="rounded-xl cta-brand px-4 py-2 text-sm font-semibold hover:opacity-90"
           >
             {isLast ? t("fantasy.onboarding.start") : t("fantasy.onboarding.next")}
           </button>

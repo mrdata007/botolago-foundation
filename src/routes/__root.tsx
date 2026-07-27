@@ -41,7 +41,7 @@ function NotFoundBody() {
           <Link
             to="/"
             aria-label={t("state.go_home")}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center gap-2 rounded-md cta-brand px-4 py-2 text-sm font-medium transition-colors"
           >
             <Home className="h-4 w-4" aria-hidden />
             <span>{t("state.go_home")}</span>
@@ -79,7 +79,7 @@ function ErrorBody({ reset }: { reset: () => void }) {
               reset();
             }}
             aria-label={t("state.retry")}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center gap-2 rounded-md cta-brand px-4 py-2 text-sm font-medium transition-colors"
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             <span>{t("state.retry")}</span>
