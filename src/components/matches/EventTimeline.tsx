@@ -155,7 +155,7 @@ function EventRow({
       )}
       {isGoal && (
         <div className="mt-1 inline-flex items-center gap-1.5 font-mono text-[11px] font-black tabular-nums text-[color:var(--brand-primary)]">
-          <ClubCrest club={club} size="xs" />
+          <ClubCrest club={club} size="sm" />
           {event.homeScore}–{event.awayScore}
         </div>
       )}
