@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { LeagueStanding } from "@/types/fantasy";
+import type { Club } from "@/types/domain";
+import { ClubCrest } from "@/components/common/ClubCrest";
 import { useI18n } from "@/i18n/provider";
 import { RankChangeIndicator } from "./RankChangeIndicator";
 import { Search } from "lucide-react";
@@ -8,17 +10,27 @@ import { cn } from "@/lib/utils";
 export function LeagueTable({
   standings,
   meId,
+  clubs,
   showSearch = true,
   compact = false,
 }: {
   standings: LeagueStanding[];
   meId?: string;
+  clubs?: Club[];
   showSearch?: boolean;
   compact?: boolean;
 }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const [q, setQ] = useState("");
+  const crestFor = (s: LeagueStanding): Club | undefined => {
+    if (!clubs || clubs.length === 0) return undefined;
+    if (s.clubId) return clubs.find((c) => c.id === s.clubId);
+    // Deterministic visual badge so every row carries a crest slot.
+    let hash = 0;
+    for (const ch of s.managerId) hash = (hash * 31 + ch.charCodeAt(0)) % 100000;
+    return clubs[hash % clubs.length];
+  };
   const filtered = q.trim()
     ? standings.filter(
         (s) =>
@@ -83,6 +95,18 @@ export function LeagueTable({
                     </span>
                   </td>
                   <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const club = crestFor(s);
+                        return club ? (
+                          <ClubCrest club={club} size="sm" />
+                        ) : (
+                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[color:var(--brand-accent)]/15 text-[10px] font-black text-[color:var(--brand-accent)] ring-1 ring-black/5">
+                            {s.teamName.slice(0, 2).toUpperCase()}
+                          </span>
+                        );
+                      })()}
+                      <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <div className="truncate font-bold text-foreground">{s.managerName}</div>
                       {isMe && (
@@ -92,6 +116,8 @@ export function LeagueTable({
                       )}
                     </div>
                     <div className="truncate text-[10px] text-muted-foreground">{s.teamName}</div>
+                      </div>
+                    </div>
                   </td>
                   {!compact && (
                     <td className="px-2 py-2 text-center font-semibold tabular-nums text-muted-foreground">

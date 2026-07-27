@@ -89,6 +89,8 @@ export interface LeagueStanding {
   managerId: string;
   managerName: string;
   teamName: string;
+  /** Optional club affiliation used for the crest badge in league tables. */
+  clubId?: string;
   rank: number;
   previousRank: number;
   gameweekScore: number;
