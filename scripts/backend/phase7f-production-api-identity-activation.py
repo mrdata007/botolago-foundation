@@ -291,6 +291,21 @@ def stable_result_code(result: HttpResult) -> str:
     return HTTP_CODES.get(result.status, "UNEXPECTED_STATUS")
 
 
+def management_operation(method: str, path: str) -> str:
+    normalized_path = path.split("?", 1)[0]
+    suffixes = {
+        f"/v1/projects/{EXPECTED_PROJECT_REF}": "PROJECT",
+        "/v1/organizations": "ORGANIZATIONS",
+        f"/v1/projects/{EXPECTED_PROJECT_REF}/database/backups": "BACKUPS",
+        f"/v1/projects/{EXPECTED_PROJECT_REF}/functions": "FUNCTIONS",
+        f"/v1/projects/{EXPECTED_PROJECT_REF}/database/query": "DATABASE_QUERY",
+        f"/v1/projects/{EXPECTED_PROJECT_REF}/postgrest": "POSTGREST_CONFIG",
+        f"/v1/projects/{EXPECTED_PROJECT_REF}/analytics/endpoints/logs": "LOGS",
+    }
+    resource = suffixes.get(normalized_path, "UNCLASSIFIED")
+    return f"{method.upper()}_{resource}"
+
+
 class ManagementClient:
     def __init__(self, http: HttpClient, token: str) -> None:
         self._http = http
@@ -314,9 +329,10 @@ class ManagementClient:
             mutation=mutation,
         )
         if result.status not in (200, 201):
+            operation = management_operation(method, path)
             raise ActivationError(
                 stable_result_code(result),
-                f"management request returned HTTP {result.status}",
+                f"{operation} returned HTTP {result.status}",
             )
         return {} if not result.body else result.json()
 
@@ -1811,6 +1827,9 @@ def run(args: argparse.Namespace) -> None:
                         "errorCode": exc.code
                         if isinstance(exc, ActivationError)
                         else f"UNEXPECTED_{type(exc).__name__.upper()}",
+                        "errorDetail": exc.detail
+                        if isinstance(exc, ActivationError)
+                        else None,
                     },
                 )
             except Exception:

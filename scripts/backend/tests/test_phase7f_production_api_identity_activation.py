@@ -137,6 +137,26 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertEqual("42501", ACTIVATION.stable_result_code(result))
 
+    def test_management_error_identifies_sanitized_operation(self) -> None:
+        http = mock.Mock()
+        http.request.return_value = ACTIVATION.HttpResult(
+            400, "application/json", b'{"message":"invalid request"}'
+        )
+        client = ACTIVATION.ManagementClient(http, "placeholder")
+        with self.assertRaises(ACTIVATION.ActivationError) as raised:
+            client.get(
+                f"/v1/projects/{ACTIVATION.EXPECTED_PROJECT_REF}/postgrest"
+            )
+        self.assertEqual("HTTP_BAD_REQUEST", raised.exception.code)
+        self.assertEqual(
+            "GET_POSTGREST_CONFIG returned HTTP 400",
+            raised.exception.detail,
+        )
+        self.assertNotIn(
+            ACTIVATION.EXPECTED_PROJECT_REF,
+            raised.exception.detail,
+        )
+
     def test_secret_sanitizer_covers_tokens_email_and_uuid(self) -> None:
         raw = (
             "Authorization: Bearer sbp_example "
