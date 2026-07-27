@@ -3,20 +3,20 @@
 Status: **NOT EXECUTED**.
 
 PR #38 is an activation package, not evidence that activation occurred. The
-workflow must not be dispatched until this package has passed security review
-and every protected-environment prerequisite below has been independently
-verified.
+workflow must not be dispatched until this package has passed validation and
+every protected-environment prerequisite below has been verified.
 
 Gate 1 changes only the BotolaGO Production V2 PostgREST exposed-schema
 configuration. It does not apply migrations, create users, bootstrap an owner,
 assign staff roles, activate a worker or schedule, enable an Edge Function, or
 send capacity traffic.
 
-## Immutable target and independent human approval
+## Immutable target and temporary single-operator control
 
 | Guard                 | Required value                        |
 | --------------------- | ------------------------------------- |
 | Repository            | `mrdata007/botolago-foundation`       |
+| Actor                 | `mrdata007`                           |
 | Event                 | manual `workflow_dispatch` only       |
 | Run attempt           | exactly `1`; reruns are forbidden     |
 | Git ref               | `refs/heads/main`                     |
@@ -30,96 +30,33 @@ send capacity traffic.
 | Forbidden staging ref | `srdrflfrfpwixsllveid`                |
 | Forbidden legacy ref  | `kxpaudvntwxpahyjtxbk`                |
 
-The current GitHub plan does not expose the required environment-review,
-prevent-self-review, or administrator-bypass controls for this private
-repository. The `production-admin-activation` environment remains bound only
-to scope Production variables and secrets; it is not the independent approval
-mechanism.
+The owner explicitly accepted a temporary single-operator activation model for
+Gate 1. Independent PR and per-run approval are deferred and must be
+reassessed before later privileged activation. The workflow therefore accepts
+only a first-attempt manual dispatch by the fixed repository owner from the
+exact current `main` commit. The confirmation string is an operator
+anti-mistake control.
 
-Independent approval is enforced by all three controls:
+`main` remains protected by a required pull-request workflow, the
+`application-quality` and `database-quality` checks, administrator
+enforcement, conversation resolution, and disabled force-push and deletion.
+The required approval count is temporarily zero to avoid a single-maintainer
+deadlock.
 
-1. live `main` branch protection or an active repository ruleset requiring a
-   pull request, at least one approval, stale-review dismissal, approval of the
-   latest reviewable push, administrator enforcement, and disabled force-push
-   and deletion;
-2. an APPROVED review of the exact merged PR head by the separate human whose
-   immutable numeric GitHub ID is configured in
-   `BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID`; and
-3. a fresh exact issue comment from that same separate human for each workflow
-   run.
-
-The protected-main proof fails closed unless bypass data is authoritative.
-Repository rulesets must expose `bypass_actors` as an explicitly empty list.
-Classic branch protection must expose
-`required_pull_request_reviews.bypass_pull_request_allowances` with explicitly
-empty `users`, `teams`, and `apps` lists. Missing, null, malformed, unreadable,
-or non-empty bypass data cannot be replaced by an attestation or by the manual
-confirmation string. A ruleset condition using `~DEFAULT_BRANCH` establishes
-protection for `main` only after live repository metadata proves that the
-default branch is exactly `main`. Ruleset wildcard targeting is deliberately
-unsupported because GitHub's matching semantics differ from Python globbing.
-A qualifying ruleset must target `main` through the literal
-`refs/heads/main`, `~ALL`, or a verified `~DEFAULT_BRANCH`; wildcard and
-otherwise unsupported include or exclude patterns fail closed.
-
-The exact-commit reviewer must differ from the dispatcher, PR author, and latest
-reviewable-push author. Bot, Copilot, dismissed, stale, commented-only, and
-changes-requested reviews do not authorize activation. No attestation or manual
-confirmation can override unsafe or unreadable live governance.
-
-The workflow generates a random nonce with at least 128 bits of entropy and
-waits no longer than ten minutes for this exact comment on the dedicated issue:
-
-```text
-APPROVE_PHASE7F run_id=<RUN_ID> run_attempt=<RUN_ATTEMPT> commit=<FULL_SHA> project_ref=tkewgajrljbwgwedqsxn nonce=<NONCE>
-```
-
-The comment must be created after the request and before expiry, must be
-unedited, and is valid only for that exact run ID, run attempt, full commit,
-Production ref, and nonce. A prior-run or prior-attempt comment cannot be
-reused. The manual confirmation string is an operator anti-mistake control,
-not independent approval.
-
-GitHub Actions reruns are forbidden for Gate 1 because GitHub preserves the
-original run actor while another person may initiate a later attempt. Every
-failed attempt requires a completely new `workflow_dispatch` run with run
-attempt `1`, a new run ID, a new random nonce, and a new second-person approval
-comment. A comment from a previous attempt or run cannot authorize the new
-dispatch.
-
-The governance token is a fine-grained, repository-scoped, read-only secret.
-It is injected only into the live-governance and issue-approval steps. No
-Supabase secret is referenced until the fresh second-person approval passes.
-One person may not author or push the code, approve the PR, dispatch the
-workflow, and approve the run.
-
-The `production-admin-activation` environment must define:
-
-- variable `BOTOLAGO_GITHUB_REQUIRED_REVIEWER_ID` as the separate reviewer's
-  immutable numeric GitHub user ID;
-- variable `BOTOLAGO_PRODUCTION_APPROVAL_ISSUE_NUMBER` as one open dedicated
-  issue number; and
-- secret `BOTOLAGO_GITHUB_GOVERNANCE_TOKEN` as a fine-grained token with only
-  Administration read, Contents read, Pull requests read, Issues read, Actions
-  read, and Metadata read access.
-
-That token has no write scope, including no contents, pull-request, issue,
-Actions, administration, or secret-management write permission. The workflow
-performs only GET requests and never creates, edits, deletes, or reacts to an
-approval comment.
+GitHub Actions reruns are forbidden. Every failed attempt requires a new
+`workflow_dispatch` run with run attempt `1`. No GitHub governance token,
+reviewer ID, approval issue, nonce, or issue comment is used by Gate 1.
 
 Phase 7E-B migration promotion and Phase 7F activation use the shared
 `botolago-production-v2-mutation` concurrency group with cancellation disabled.
-The Gate 1 preflight also fails when either production mutation workflow is
-already queued or running.
 
 The activation job condition itself uses `always()` so that a normal GitHub
 workflow cancellation can still reach journal inspection and independently
-verified recovery. Governance, approval, and activation steps do not use
-`always()` and therefore stop on cancellation or prior failure. Recovery
-remains unreachable unless per-run human approval succeeded and an activation
-state journal exists; cancellation before journal creation cannot expose a
-Supabase recovery credential.
+verified recovery. The single-operator context check and activation step do
+not use `always()` and therefore stop on cancellation or prior failure.
+Recovery remains unreachable unless the owner context check succeeded and an
+activation state journal exists; cancellation before journal creation cannot
+expose a Supabase recovery credential.
 
 ## Exposed schemas versus database privileges
 
@@ -201,15 +138,13 @@ Before mutation, the controller proves that this exact Auth UUID:
 - links to exactly one application profile;
 - has no staff principal, Admin role, or pending privileged approval;
 - has a verified MFA factor;
-- is the separately approved dedicated Gate 1 actor.
+- is the owner-selected existing Gate 1 actor.
 
-The complete runtime matrix also requires a separately approved AAL2 non-staff
-session in the protected secret
-`BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN`, plus the human-reviewed evidence digest
-`BOTOLAGO_AAL2_EVIDENCE_SHA256`. The token subject must equal the approved UUID
-and its JWT assurance claim must be `aal2`. Missing or mismatched proof fails
-before mutation. No administrator is created and owner bootstrap is never
-executed.
+The complete runtime matrix also requires a current AAL2 non-staff session in
+the protected secret `BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN`. The token subject
+must equal the configured UUID, its JWT assurance claim must be `aal2`, and its
+session must be active. Missing or mismatched proof fails before mutation. No
+administrator is created and owner bootstrap is never executed.
 
 ## Authorization smoke matrix
 
@@ -289,16 +224,15 @@ an evidence failure invokes the same independently verified rollback before
 the evidence verdict is finalized.
 
 Production credentials are scoped only to the activation or independent
-recovery steps. Checkout, Python setup, static validation, GitHub protection
-verification, scanning, and artifact upload do not receive Supabase secrets.
+recovery steps. Checkout, Python setup, static validation, the owner-context
+check, scanning, and artifact upload do not receive Supabase secrets.
 Third-party actions remain pinned to immutable commits.
 
 ## Dispatch and prohibited actions
 
-After security re-review, live protected-main verification, designated reviewer
-configuration, dedicated issue configuration, and read-only governance-token
-configuration, the owner may dispatch from the exact approved `main` commit
-with:
+After PR validation, protected-main configuration, smoke-user verification, and
+fresh AAL2 session configuration, the owner may dispatch from the exact merged
+`main` commit with:
 
 ```text
 expected_commit=<exact approved main SHA>
