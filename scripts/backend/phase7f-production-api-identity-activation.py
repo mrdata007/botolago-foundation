@@ -408,11 +408,14 @@ class StateJournal:
 
 def assert_environment(
     expected_commit: str, repo_root: Path
-) -> tuple[str, str, str, str, str]:
+) -> tuple[str, str, str, str, str, str]:
     token = require_env("SUPABASE_ACCESS_TOKEN")
     secret_key = require_env("SUPABASE_SECRET_KEY")
+    publishable_key = require_env("SUPABASE_PRODUCTION_PUBLISHABLE_KEY")
     smoke_user_id = require_env("BOTOLAGO_PRODUCTION_SMOKE_USER_UUID")
     aal2_token = require_env("BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN")
+    if not publishable_key.startswith("sb_publishable_"):
+        raise ActivationError("PUBLISHABLE_KEY_INVALID")
     try:
         uuid.UUID(smoke_user_id)
     except ValueError as exc:
@@ -453,7 +456,14 @@ def assert_environment(
     ).stdout.strip()
     if actual_commit != expected_commit:
         raise ActivationError("COMMIT_GUARD_FAILED")
-    return token, secret_key, configured_url, smoke_user_id, aal2_token
+    return (
+        token,
+        secret_key,
+        configured_url,
+        smoke_user_id,
+        aal2_token,
+        publishable_key,
+    )
 
 
 def require_positive_integer(name: str) -> int:
@@ -953,20 +963,6 @@ def recover_from_state(
     raise ActivationError("ACTIVATION_STATE_AMBIGUOUS")
 
 
-def get_publishable_key(client: ManagementClient) -> str:
-    keys = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/api-keys?reveal=true")
-    if not isinstance(keys, list):
-        raise ActivationError("PUBLISHABLE_KEY_INVENTORY_INVALID")
-    values = [
-        str(row.get("api_key") or "")
-        for row in keys
-        if isinstance(row, dict) and row.get("type") == "publishable"
-    ]
-    if len(values) != 1 or not values[0].startswith("sb_publishable_"):
-        raise ActivationError("PUBLISHABLE_KEY_INVENTORY_INVALID")
-    return values[0]
-
-
 def project_request(
     http: HttpClient,
     project_url: str,
@@ -1192,9 +1188,9 @@ def verify_aal2_runtime_session(
     project_url: str,
     aal2_token: str,
     smoke_user_id: str,
+    publishable_key: str,
 ) -> dict[str, Any]:
     verify_aal2_token(aal2_token, smoke_user_id)
-    publishable_key = get_publishable_key(client)
     result = project_request(
         http,
         project_url,
@@ -1229,8 +1225,8 @@ def run_smoke(
     secret_key: str,
     smoke_user: dict[str, Any],
     aal2_token: str,
+    publishable_key: str,
 ) -> dict[str, Any]:
-    publishable_key = get_publishable_key(client)
     user_id = smoke_user["id"]
     verify_aal2_token(aal2_token, user_id)
     cases: list[dict[str, Any]] = []
@@ -1648,9 +1644,14 @@ def run(args: argparse.Namespace) -> None:
     state_path = Path(args.state_file).resolve()
     if args.confirmation != EXPECTED_CONFIRMATION:
         raise ActivationError("CONFIRMATION_INVALID")
-    token, secret_key, project_url, smoke_user_id, aal2_token = (
-        assert_environment(args.expected_commit, repo_root)
-    )
+    (
+        token,
+        secret_key,
+        project_url,
+        smoke_user_id,
+        aal2_token,
+        publishable_key,
+    ) = assert_environment(args.expected_commit, repo_root)
     http = HttpClient()
     client = ManagementClient(http, token)
     journal = StateJournal(state_path)
@@ -1663,6 +1664,7 @@ def run(args: argparse.Namespace) -> None:
             project_url,
             aal2_token,
             smoke_user_id,
+            publishable_key,
         )
         write_json(evidence_dir / "preflight.json", preflight_value)
         previous = preflight_value["postgrest"]
@@ -1714,6 +1716,7 @@ def run(args: argparse.Namespace) -> None:
             secret_key,
             smoke_user,
             aal2_token,
+            publishable_key,
         )
         journal.update(sessionCleanupVerified=True)
         postflight_value = preflight(client, repo_root, smoke_user_id)

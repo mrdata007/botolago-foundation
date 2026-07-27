@@ -546,6 +546,26 @@ class Phase7FActivationTests(unittest.TestCase):
             with self.assertRaises(ACTIVATION.ActivationError):
                 ACTIVATION.assert_environment("unused", Path.cwd())
 
+    def test_environment_guard_rejects_invalid_publishable_key(self) -> None:
+        env = {
+            "SUPABASE_ACCESS_TOKEN": "placeholder",
+            "SUPABASE_SECRET_KEY": "placeholder",
+            "SUPABASE_PRODUCTION_PUBLISHABLE_KEY": "not-a-publishable-key",
+            "SUPABASE_PRODUCTION_PROJECT_REF": ACTIVATION.EXPECTED_PROJECT_REF,
+            "SUPABASE_PRODUCTION_PROJECT_NAME": ACTIVATION.EXPECTED_PROJECT_NAME,
+            "BOTOLAGO_TARGET_ENVIRONMENT": ACTIVATION.EXPECTED_TARGET_ENVIRONMENT,
+            "BOTOLAGO_ADMIN_ENVIRONMENT": "production",
+            "BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF": ACTIVATION.EXPECTED_PROJECT_REF,
+            "SUPABASE_URL": f"https://{ACTIVATION.EXPECTED_PROJECT_REF}.supabase.co",
+            "BOTOLAGO_PRODUCTION_SMOKE_USER_UUID": "123e4567-e89b-42d3-a456-426614174000",
+            "BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN": "placeholder",
+        }
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaisesRegex(
+                ACTIVATION.ActivationError, "PUBLISHABLE_KEY_INVALID"
+            ):
+                ACTIVATION.assert_environment("unused", Path.cwd())
+
     def test_aal2_token_must_belong_to_approved_nonstaff_actor(self) -> None:
         payload = base64_url({"sub": str(os.urandom(16).hex()), "aal": "aal2"})
         token = f"x.{payload}.x"
@@ -724,6 +744,9 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertNotIn("BOTOLAGO_AAL2_EVIDENCE_SHA256", workflow)
         self.assertNotIn("BOTOLAGO_ENVIRONMENT_", workflow)
+        self.assertIn(
+            "vars.SUPABASE_PRODUCTION_PUBLISHABLE_KEY", workflow
+        )
         self.assertIn("--verify-single-operator-context", workflow)
         self.assertNotIn("--verify-github-governance", workflow)
         self.assertNotIn("--create-run-approval-request", workflow)
@@ -749,6 +772,10 @@ class Phase7FActivationTests(unittest.TestCase):
             workflow.index("secrets.SUPABASE_ACCESS_TOKEN"),
         )
         self.assertIn("GITHUB_WORKFLOW_RERUN_FORBIDDEN", workflow)
+
+    def test_controller_does_not_reveal_api_keys_through_management(self) -> None:
+        controller = SCRIPT.read_text(encoding="utf-8")
+        self.assertNotIn("/api-keys?reveal=true", controller)
 
     def test_job_cancellation_reaches_only_journal_guarded_recovery(
         self,
