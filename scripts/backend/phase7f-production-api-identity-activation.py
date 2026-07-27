@@ -560,7 +560,6 @@ select jsonb_build_object(
   'canonicalTableCount', (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('app','app_private') and c.relkind in ('r','p')),
   'forcedRlsCount', (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('app','app_private') and c.relkind in ('r','p') and c.relrowsecurity and c.relforcerowsecurity),
   'nonForcedTableCount', (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('app','app_private') and c.relkind in ('r','p') and (not c.relrowsecurity or not c.relforcerowsecurity)),
-  'cronJobCount', case when to_regclass('cron.job') is null then 0 else (select count(*)::integer from cron.job) end,
   'missingProfileCount', (select count(*)::integer from auth.users u left join app.profiles p on p.id=u.id where p.id is null),
   'missingPreferenceCount', (select count(*)::integer from auth.users u left join app.user_preferences p on p.user_id=u.id where p.user_id is null),
   'orphanProfileCount', (select count(*)::integer from app.profiles p left join auth.users u on u.id=p.id where u.id is null),
@@ -581,11 +580,30 @@ select jsonb_build_object(
 """.strip()
 
 
+def cron_job_count(client: ManagementClient) -> int:
+    relation_rows = client.query(
+        "select to_regclass('cron.job') is not null as exists",
+        read_only=True,
+    )
+    if len(relation_rows) != 1 or "exists" not in relation_rows[0]:
+        raise ActivationError("CRON_RELATION_STATE_INVALID")
+    if not relation_rows[0]["exists"]:
+        return 0
+    count_rows = client.query(
+        "select count(*)::integer as count from cron.job",
+        read_only=True,
+    )
+    if len(count_rows) != 1 or "count" not in count_rows[0]:
+        raise ActivationError("CRON_JOB_INVENTORY_INVALID")
+    return int(count_rows[0]["count"])
+
+
 def collect_invariants(client: ManagementClient) -> dict[str, Any]:
     rows = client.query(INVARIANT_SQL, read_only=True)
     if not rows or not isinstance(rows[0].get("invariant"), dict):
         raise ActivationError("RUNTIME_INVARIANT_QUERY_INVALID")
     value = rows[0]["invariant"]
+    value["cronJobCount"] = cron_job_count(client)
     expected = {
         "canonicalTableCount": EXPECTED_CANONICAL_TABLE_COUNT,
         "forcedRlsCount": EXPECTED_CANONICAL_TABLE_COUNT,
