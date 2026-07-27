@@ -363,11 +363,13 @@ function FilterChip({
   active,
   onClick,
   children,
+  leading,
   trailing,
 }: {
   active?: boolean;
   onClick?: () => void;
   children: React.ReactNode;
+  leading?: React.ReactNode;
   trailing?: React.ReactNode;
 }) {
   // Rendered as a role="button" span so a nested follow-toggle <button> is valid.
@@ -384,12 +386,14 @@ function FilterChip({
       }}
       aria-pressed={active}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border py-1 pe-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        leading ? "ps-1" : "ps-3",
         active
           ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
           : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
       )}
     >
+      {leading}
       <span>{children}</span>
       {trailing}
     </span>
