@@ -263,12 +263,21 @@ function NewsPage() {
               />
               <div className="grid grid-cols-2 gap-3">
                 {topStories.slice(0, 2).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="imageLed" clubs={clubsQ.data ?? []} />
+                  <ArticleCard
+                    key={a.id}
+                    article={a}
+                    variant="imageLed"
+                    clubs={clubsQ.data ?? []}
+                  />
                 ))}
               </div>
               {topStories[2] && (
                 <div className="mt-3">
-                  <ArticleCard article={topStories[2]} variant="horizontal" clubs={clubsQ.data ?? []} />
+                  <ArticleCard
+                    article={topStories[2]}
+                    variant="horizontal"
+                    clubs={clubsQ.data ?? []}
+                  />
                 </div>
               )}
             </Section>
@@ -284,7 +293,12 @@ function NewsPage() {
               />
               <div className="grid gap-2.5">
                 {latest.slice(0, 5).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
+                  <ArticleCard
+                    key={a.id}
+                    article={a}
+                    variant="horizontal"
+                    clubs={clubsQ.data ?? []}
+                  />
                 ))}
               </div>
             </Section>
@@ -332,7 +346,12 @@ function NewsPage() {
               />
               <div className="grid gap-2.5">
                 {interviews.slice(0, 3).map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
+                  <ArticleCard
+                    key={a.id}
+                    article={a}
+                    variant="horizontal"
+                    clubs={clubsQ.data ?? []}
+                  />
                 ))}
               </div>
             </Section>

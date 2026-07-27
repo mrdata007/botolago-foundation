@@ -182,7 +182,11 @@ function LeagueDetailPage() {
         <div className="mb-2 text-sm font-black text-foreground">
           {t("fantasy.leagues.standings")}
         </div>
-        {standings.length > 0 ? <LeagueTable standings={standings} meId="me" clubs={clubsQ.data ?? []} /> : <EmptyState />}
+        {standings.length > 0 ? (
+          <LeagueTable standings={standings} meId="me" clubs={clubsQ.data ?? []} />
+        ) : (
+          <EmptyState />
+        )}
       </div>
 
       {toast && (

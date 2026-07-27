@@ -26,4 +26,3 @@ export function Logo({ variant = "full", className }: LogoProps) {
     </div>
   );
 }
-

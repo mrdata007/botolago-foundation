@@ -30,9 +30,7 @@ export function ArticleCard({
   clubs?: readonly Club[];
 }) {
   const { tr, t, lang } = useI18n();
-  const articleClubs = (clubs ?? [])
-    .filter((c) => article.clubIds.includes(c.id))
-    .slice(0, 2);
+  const articleClubs = (clubs ?? []).filter((c) => article.clubIds.includes(c.id)).slice(0, 2);
   const crestRow = (tone: "light" | "dark" = "light") =>
     articleClubs.length > 0 ? (
       <span className="inline-flex min-w-0 items-center gap-1.5">

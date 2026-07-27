@@ -42,8 +42,7 @@ function MatchDetailPage() {
     queryKey: ["football", "match-detail", matchId, lang],
     queryFn: () => footballService.getMatchDetailPage(matchId, lang),
     // Live matches refresh on a calm cadence; paused while the tab is hidden.
-    refetchInterval: (query) =>
-      query.state.data?.match.status === "live" ? 30_000 : false,
+    refetchInterval: (query) => (query.state.data?.match.status === "live" ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
   const articlesQ = useQuery({

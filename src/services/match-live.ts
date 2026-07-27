@@ -10,14 +10,7 @@ import type { LocalizedString, Match } from "@/types/domain";
  * output, on server and client (no Date.now, no Math.random).
  */
 
-export type MatchEventType =
-  | "goal"
-  | "own_goal"
-  | "penalty"
-  | "yellow"
-  | "red"
-  | "sub"
-  | "var";
+export type MatchEventType = "goal" | "own_goal" | "penalty" | "yellow" | "red" | "sub" | "var";
 
 export interface MatchEvent {
   readonly id: string;

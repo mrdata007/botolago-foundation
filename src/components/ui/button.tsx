@@ -21,10 +21,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "cta-brand text-primary-foreground",
-        premium:
-          "cta-brand text-primary-foreground",
+        default: "cta-brand text-primary-foreground",
+        premium: "cta-brand text-primary-foreground",
 
         destructive:
           "bg-destructive text-destructive-foreground shadow-[var(--shadow-subtle)] hover:bg-destructive/90",

@@ -85,15 +85,7 @@ function eventIcon(type: MatchEvent["type"]) {
   }
 }
 
-function EventRow({
-  event,
-  club,
-  isLatest,
-}: {
-  event: MatchEvent;
-  club: Club;
-  isLatest: boolean;
-}) {
+function EventRow({ event, club, isLatest }: { event: MatchEvent; club: Club; isLatest: boolean }) {
   const { t, tr } = useI18n();
   const isGoal = event.homeScore !== undefined;
   const isHome = event.side === "home";

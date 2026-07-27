@@ -916,7 +916,8 @@ export const dictionaries = {
     "matches.detail.stats_title": "إحصائيات الفريقين",
     "matches.detail.momentum_title": "أفضلية المباراة",
     "matches.detail.momentum_desc": "أي فريق يضغط أكثر، دقيقة بدقيقة.",
-    "matches.detail.momentum_a11y": "رسم الأفضلية: {home} سيطر {homePct}% من الوقت، و{away} {awayPct}%.",
+    "matches.detail.momentum_a11y":
+      "رسم الأفضلية: {home} سيطر {homePct}% من الوقت، و{away} {awayPct}%.",
     "matches.detail.live_updating": "تحديث تلقائي",
     "matches.detail.starts_in": "تنطلق بعد",
     "matches.detail.elapsed": "زمن اللعب",

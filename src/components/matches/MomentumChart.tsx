@@ -39,9 +39,7 @@ export function MomentumChart({
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.minute)},${y(p.value)}`).join(" ");
   const area = `${line} L${W},${mid} L0,${mid} Z`;
 
-  const homeShare = Math.round(
-    (points.filter((p) => p.value > 0).length / points.length) * 100,
-  );
+  const homeShare = Math.round((points.filter((p) => p.value > 0).length / points.length) * 100);
   const summary = t("matches.detail.momentum_a11y")
     .replace("{home}", homeName)
     .replace("{homePct}", String(homeShare))
@@ -67,11 +65,7 @@ export function MomentumChart({
       >
         <defs>
           <linearGradient id="momentum-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="0%"
-              stopColor="var(--brand-primary)"
-              stopOpacity="0.45"
-            />
+            <stop offset="0%" stopColor="var(--brand-primary)" stopOpacity="0.45" />
             <stop offset="50%" stopColor="var(--brand-primary)" stopOpacity="0.04" />
             <stop offset="100%" stopColor="var(--color-live)" stopOpacity="0.32" />
           </linearGradient>
