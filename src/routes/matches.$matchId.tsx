@@ -1,26 +1,39 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, MapPin, Trophy, CalendarClock, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Share2 } from "lucide-react";
 import { footballService } from "@/services/football";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
-import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { LoadingState } from "@/components/common/States";
+import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
+import { MatchTabs, type MatchTabKey } from "@/components/matches/MatchTabs";
+import { EventTimeline } from "@/components/matches/EventTimeline";
+import { StatComparison } from "@/components/matches/StatComparison";
+import { MomentumChart } from "@/components/matches/MomentumChart";
+import { buildMatchLiveDetail } from "@/services/match-live";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
+const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "momentum", "h2h"];
+
 export const Route = createFileRoute("/matches/$matchId")({
+  validateSearch: (search: Record<string, unknown>): { tab: MatchTabKey } => {
+    const raw = (typeof search.tab === "string" ? search.tab : "summary") as MatchTabKey;
+    return { tab: TAB_KEYS.includes(raw) ? raw : "summary" };
+  },
   component: MatchDetailPage,
 });
 
 function MatchDetailPage() {
   const { matchId } = Route.useParams();
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang, dir } = useI18n();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -28,6 +41,10 @@ function MatchDetailPage() {
   const detailQ = useQuery({
     queryKey: ["football", "match-detail", matchId, lang],
     queryFn: () => footballService.getMatchDetailPage(matchId, lang),
+    // Live matches refresh on a calm cadence; paused while the tab is hidden.
+    refetchInterval: (query) =>
+      query.state.data?.match.status === "live" ? 30_000 : false,
+    refetchIntervalInBackground: false,
   });
   const articlesQ = useQuery({
     queryKey: ["news", "feed", lang],
@@ -41,6 +58,8 @@ function MatchDetailPage() {
   const away = clubById(match?.awayClubId);
 
   const h2h = detailQ.data?.headToHead ?? [];
+
+  const live = useMemo(() => (match ? buildMatchLiveDetail(match) : null), [match]);
 
   const related = useMemo(() => {
     if (!match || !articlesQ.data) return [];
@@ -57,7 +76,7 @@ function MatchDetailPage() {
     );
   }
 
-  if (!match || !home || !away) {
+  if (!match || !home || !away || !live) {
     return (
       <AppShell backgroundVariant="matches">
         <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] p-6 text-center shadow-card">
@@ -78,23 +97,15 @@ function MatchDetailPage() {
     );
   }
 
-  const kickoff = new Date(match.kickoff);
+  const isLive = match.status === "live";
+  const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  const timeFmt = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
-    kickoff,
-  );
   const dateFmt = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
-  }).format(kickoff);
-
-  const isLive = match.status === "live";
-  const isFinished = match.status === "finished";
-  const isScheduled = match.status === "scheduled";
-  const isPostponed = match.status === "postponed";
-
-  const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+  }).format(new Date(match.kickoff));
 
   const share = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -121,14 +132,6 @@ function MatchDetailPage() {
 
   const homeRow = detailQ.data?.standings.find((row) => row.clubId === home.id);
   const awayRow = detailQ.data?.standings.find((row) => row.clubId === away.id);
-
-  const hs = match.homeScore ?? 0;
-  const as = match.awayScore ?? 0;
-  const scoreA11y = t("matches.a11y.score")
-    .replace("{home}", tr(home.shortName))
-    .replace("{hs}", String(hs))
-    .replace("{away}", tr(away.shortName))
-    .replace("{as}", String(as));
 
   return (
     <AppShell backgroundVariant="matches">
@@ -168,161 +171,99 @@ function MatchDetailPage() {
         </div>
       )}
 
-      {/* Score header */}
-      <header
-        className={cn(
-          "relative mt-4 overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)]",
-          "bg-[color:var(--background-elevated)] shadow-card px-4 py-5 sm:px-6 sm:py-6",
-          "animate-in fade-in-0 slide-in-from-bottom-1 duration-500 ease-out",
-        )}
-        aria-label={scoreA11y}
-      >
-        {/* Ambient brand gradient wash for live and finished */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-24 h-40 opacity-40"
-          style={{
-            background:
-              "radial-gradient(600px 240px at 50% 100%, color-mix(in oklab, var(--brand-primary) 22%, transparent) 0%, transparent 70%)",
-          }}
-        />
+      <MatchScoreHeader match={match} home={home} away={away} elapsed={live.elapsed} />
 
-        {/* Competition + status */}
-        <div className="relative flex items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--brand-accent)]">
-            <Trophy className="h-3.5 w-3.5" aria-hidden />
-            {t("matches.competition.botola")} · {t("matches.gameweek")} {match.gameweek}
-          </div>
-          <div>
-            {isLive ? (
-              <LiveIndicator minute={match.minute} size="md" />
-            ) : isFinished ? (
-              <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-[color:var(--text-secondary)]">
-                {t("matches.status.ft")}
-              </span>
-            ) : isScheduled ? (
-              <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                {t("matches.status.scheduled")}
-              </span>
-            ) : isPostponed ? (
-              <span
-                className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em]"
-                style={{
-                  background: "color-mix(in oklab, var(--color-warning) 14%, transparent)",
-                  color: "color-mix(in oklab, var(--color-warning) 60%, black)",
-                }}
-              >
-                {t("matches.status.postponed")}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Teams + score / time */}
-        <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-4">
-          <div className="flex min-w-0 flex-col items-center gap-2">
-            <ClubCrest club={home} size="lg" />
-            <div className="min-w-0 text-center text-sm font-black tracking-tight text-foreground">
-              <div className="truncate">{tr(home.shortName)}</div>
-              <div className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                {tr(home.city)}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center px-1">
-            {isLive || isFinished ? (
-              <div
-                className="flex items-baseline gap-2 font-mono text-4xl font-black tabular-nums tracking-tight text-foreground sm:text-5xl"
-                aria-hidden
-              >
-                <span>{hs}</span>
-                <span className="text-[color:var(--text-muted)]">–</span>
-                <span>{as}</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <div className="font-mono text-3xl font-black tabular-nums text-foreground sm:text-4xl">
-                  {timeFmt}
-                </div>
-                <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
-                  {t("matches.kickoff")}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-col items-center gap-2">
-            <ClubCrest club={away} size="lg" />
-            <div className="min-w-0 text-center text-sm font-black tracking-tight text-foreground">
-              <div className="truncate">{tr(away.shortName)}</div>
-              <div className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                {tr(away.city)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Meta row */}
-        <div className="relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3 sm:grid-cols-3">
-          <MetaCell
-            icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
-            label={t("matches.detail.kickoff")}
-            value={`${dateFmt} · ${timeFmt}`}
-          />
-          <MetaCell
-            icon={<Trophy className="h-3.5 w-3.5" aria-hidden />}
-            label={t("matches.detail.competition")}
-            value={t("matches.competition.botola")}
-          />
-          <MetaCell
-            icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
-            label={t("matches.detail.venue")}
-            value={tr(match.venue)}
-          />
-        </div>
-      </header>
-
-      {/* Table context */}
-      {(homeRow || awayRow) && (
-        <Section index={0}>
-          <SectionHeader
-            title={t("matches.detail.table_context")}
-            eyebrow={t("matches.table_preview")}
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <StandingsCard clubName={tr(home.shortName)} club={home} row={homeRow} />
-            <StandingsCard clubName={tr(away.shortName)} club={away} row={awayRow} />
-          </div>
-        </Section>
+      {isLive && (
+        <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+          {t("matches.detail.live_updating")}
+        </p>
       )}
 
-      {/* Head-to-head */}
-      <Section index={1}>
-        <SectionHeader title={t("matches.detail.head_to_head")} eyebrow="H2H" />
-        {h2h.length === 0 ? (
-          <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-6 text-center text-sm text-[color:var(--text-secondary)]">
-            {t("matches.detail.no_h2h")}
-          </div>
-        ) : (
-          <div className="grid gap-2">
-            {h2h.map((m) => {
-              const h = clubById(m.homeClubId);
-              const a = clubById(m.awayClubId);
-              if (!h || !a) return null;
-              return <MatchCard key={m.id} match={m} home={h} away={a} variant="compact" />;
-            })}
+      <MatchTabs
+        active={tab}
+        onChange={(key) => navigate({ search: { tab: key }, replace: true })}
+      />
+
+      <div role="tabpanel" className="mt-5">
+        {tab === "summary" && (
+          <EventTimeline events={live.events} home={home} away={away} isLive={isLive} />
+        )}
+
+        {tab === "stats" && (
+          <StatComparison
+            stats={live.stats}
+            homeName={tr(home.shortName)}
+            awayName={tr(away.shortName)}
+            available={live.elapsed > 0}
+          />
+        )}
+
+        {tab === "momentum" && (
+          <div>
+            <SectionHeader
+              title={t("matches.detail.momentum_title")}
+              eyebrow={t("matches.detail.tab.momentum")}
+            />
+            <p className="-mt-2 mb-3 text-xs text-[color:var(--text-secondary)]">
+              {t("matches.detail.momentum_desc")}
+            </p>
+            <MomentumChart
+              points={live.momentum}
+              events={live.events}
+              homeName={tr(home.shortName)}
+              awayName={tr(away.shortName)}
+            />
           </div>
         )}
-      </Section>
+
+        {tab === "h2h" && (
+          <div>
+            {(homeRow || awayRow) && (
+              <>
+                <SectionHeader
+                  title={t("matches.detail.table_context")}
+                  eyebrow={t("matches.table_preview")}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <StandingsCard clubName={tr(home.shortName)} club={home} row={homeRow} />
+                  <StandingsCard clubName={tr(away.shortName)} club={away} row={awayRow} />
+                </div>
+              </>
+            )}
+
+            <Section index={0}>
+              <SectionHeader title={t("matches.detail.head_to_head")} eyebrow="H2H" />
+              {h2h.length === 0 ? (
+                <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-6 text-center text-sm text-[color:var(--text-secondary)]">
+                  {t("matches.detail.no_h2h")}
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {h2h.map((m) => {
+                    const h = clubById(m.homeClubId);
+                    const a = clubById(m.awayClubId);
+                    if (!h || !a) return null;
+                    return <MatchCard key={m.id} match={m} home={h} away={a} variant="compact" />;
+                  })}
+                </div>
+              )}
+            </Section>
+          </div>
+        )}
+      </div>
 
       {/* Related news */}
       {related.length > 0 && (
-        <Section index={2}>
+        <Section index={1}>
           <SectionHeader title={t("matches.detail.related_news")} eyebrow={t("news.title")} />
           <div className="grid gap-2.5">
             {related.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="horizontal" clubs={detailQ.data?.clubs ?? []} />
+              <ArticleCard
+                key={a.id}
+                article={a}
+                variant="horizontal"
+                clubs={detailQ.data?.clubs ?? []}
+              />
             ))}
           </div>
         </Section>
@@ -330,18 +271,6 @@ function MatchDetailPage() {
 
       <div className="h-6" aria-hidden />
     </AppShell>
-  );
-}
-
-function MetaCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-        {icon}
-        <span>{label}</span>
-      </div>
-      <div className="mt-0.5 truncate text-[13px] font-semibold text-foreground">{value}</div>
-    </div>
   );
 }
 
