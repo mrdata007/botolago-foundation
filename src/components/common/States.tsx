@@ -71,7 +71,7 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
         <button
           onClick={onRetry}
           className={cn(
-            "min-h-9 rounded-lg bg-[color:var(--brand-primary)] px-3 py-1.5 text-xs font-semibold text-white",
+            "min-h-9 rounded-lg cta-brand px-3 py-1.5 text-xs font-semibold",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2",
           )}
         >

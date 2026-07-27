@@ -125,7 +125,7 @@ function Consent() {
         <button
           disabled={busy}
           onClick={() => decide(true)}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl cta-brand px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           Approve

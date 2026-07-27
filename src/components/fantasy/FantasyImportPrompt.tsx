@@ -216,7 +216,7 @@ export function FantasyImportPrompt() {
           type="button"
           onClick={importNow}
           disabled={phase === "saving" || phase === "success"}
-          className="min-h-11 flex-1 rounded-xl bg-[color:var(--brand-primary)] px-3 py-2 text-xs font-bold text-white disabled:opacity-40"
+          className="min-h-11 flex-1 rounded-xl cta-brand px-3 py-2 text-xs font-bold disabled:opacity-40"
         >
           {t("fantasy.import.cta_save")}
         </button>

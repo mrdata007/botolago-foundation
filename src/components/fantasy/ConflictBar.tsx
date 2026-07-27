@@ -69,7 +69,7 @@ export function ConflictBar({
           type="button"
           onClick={onReloadLatest}
           disabled={busy}
-          className="inline-flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg bg-[color:var(--brand-primary)] px-3 py-1 text-[12px] font-bold text-white disabled:opacity-50"
+          className="inline-flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-lg cta-brand px-3 py-1 text-[12px] font-bold disabled:opacity-50"
         >
           {t("fantasy.conflict.reload_latest")}
         </button>

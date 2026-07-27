@@ -73,7 +73,7 @@ export function FirstLaunchLanguage() {
         <button
           type="button"
           onClick={() => setLanguage(selected)}
-          className="mt-6 w-full rounded-2xl bg-[var(--bg-brand-gradient)] px-4 py-3 text-base font-bold text-white shadow-lg shadow-[color:var(--brand-primary)]/30 transition-transform hover:-translate-y-0.5"
+          className="mt-6 w-full rounded-2xl cta-brand px-4 py-3 text-base font-bold shadow-lg shadow-[color:var(--brand-primary)]/30 transition-transform hover:-translate-y-0.5"
         >
           {selected === "ar"
             ? dictionaries.ar["language.continue"]

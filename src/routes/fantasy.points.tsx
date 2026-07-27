@@ -582,7 +582,7 @@ function PointsPage() {
           <button
             type="button"
             onClick={() => setConfirmFinalize(true)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full cta-brand px-3 py-1 text-xs font-bold ring-1 ring-black/10"
           >
             <LockIcon className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.points.finalize")}
           </button>
@@ -591,7 +591,7 @@ function PointsPage() {
           <button
             type="button"
             onClick={() => setConfirmAdvance(true)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-white ring-1 ring-black/10"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full cta-brand px-3 py-1 text-xs font-bold ring-1 ring-black/10"
           >
             {t("fantasy.points.advance")}{" "}
             <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
