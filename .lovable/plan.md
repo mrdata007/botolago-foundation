@@ -1,35 +1,47 @@
 ## Goal
 
-Make the blue brand gradient seen on the Fantasy card's "Voir mon équipe" button the standard look for **every primary call-to-action** across BotolaGO — Home, News, Matches, Fantasy, Profile, Auth, Onboarding — at the same intensity as today.
+Redesign `/matches/:id` into a flagship live match experience: a live-first scoreboard header, a key-events timeline, team stat comparison bars, and a momentum graph — in Design System V2, fully bilingual FR/AR with RTL, mobile-first.
 
-## Approach
+## Current state (verified)
 
-One shared style, applied everywhere — no per-page copies of gradient CSS.
+- `src/routes/matches.$matchId.tsx` (388 lines) already renders a score header with `LiveIndicator`, head-to-head, standings rows, share, and related news.
+- `footballService.getMatchDetailPage` returns `{ match, clubs, standings, headToHead }`.
+- The `Match` domain type has only `status`, `minute`, scores, venue, gameweek — **no events, no stats, no momentum**. Those need a new typed layer.
 
-1. **Add a single reusable utility** in `src/styles.css`:
-   - `@utility cta-brand` — gradient background (`--bg-brand-gradient`), white/primary-foreground text, rounded pill/2xl, `min-h-11` tap target, card→floating shadow on hover, subtle press translate, brand focus ring, disabled opacity.
-   - It reproduces exactly the current Fantasy CTA look, so nothing changes visually on that button.
+## What gets built
 
-2. **Make it the default for the shared Button component** (`src/components/ui/button.tsx`):
-   - The `default` variant adopts the gradient (the existing `premium` variant becomes an alias of it).
-   - `secondary`, `outline`, `ghost`, `link`, `destructive` are untouched, so only true primary actions get the gradient.
+### 1. Typed live-detail data (mock, deterministic)
 
-3. **Convert the hand-rolled primary buttons** that currently use flat `bg-primary` or `bg-[var(--brand-primary)]` to the shared utility:
-   - `src/routes/index.tsx` (Home CTA)
-   - `src/routes/fantasy.index.tsx`, `fantasy.team.tsx`, `fantasy.transfers.tsx` (confirm transfers), `fantasy.points.tsx` (recompute / advance), `fantasy.create.tsx` (create-team primary step)
-   - `src/routes/profile.tsx`
-   - `src/components/shell/FirstLaunchLanguage.tsx`
-   - `src/routes/__root.tsx` error/not-found actions
-   - Auth screens (`auth.login`, `auth.register`, `auth.forgot-password`, `auth.update-password`, `auth.profile-setup`) — their submit buttons
-   - Leave destructive (red), cancel/secondary, and chip/toggle buttons as they are.
+Extend the domain with new read-only types: `MatchEvent` (`goal | own_goal | penalty | yellow | red | sub | var`, minute, clubId, player name as `LocalizedString`, optional assist), `MatchTeamStats` (possession, shots, shots on target, corners, fouls, offsides, saves, pass accuracy), and `MatchMomentumPoint` (minute bucket, -100..100 pressure value).
 
-4. **Keep everything else intact**: no copy changes, no i18n changes, RTL still works (logical properties only), all tap targets stay ≥44px.
+Add `footballService.getMatchLiveDetail(id, lang)` returning `{ events, stats, momentum }`. Values are generated deterministically from the match id + current score so they are stable across renders and consistent with the scoreline (goal events always sum to the displayed score). No Supabase, no schema change.
 
-## Verification
+### 2. Live-first header
 
-- Typecheck + full test suite (currently 212/212) must stay green.
-- Visual pass on Home, News article, Matches, Fantasy hub/team/transfers/points/create, Profile, and Login in both FR and AR (RTL).
+- Larger crest-vs-crest scoreboard, big score, pulsing live chip with minute and stoppage.
+- Live-only progress bar of match time (first half / half-time / second half), venue + gameweek meta row.
+- State-aware: scheduled shows countdown to kickoff, finished shows FT badge, postponed shows its own notice.
+- Live polling: refetch every 30s while `status === "live"` only (React Query `refetchInterval`), paused when the tab is hidden.
+
+### 3. Tabbed body
+
+Sticky segmented control: **Summary · Stats · Momentum · H2H**. Tabs are URL-driven via `validateSearch` so a tab is shareable and back-navigable.
+
+- **Summary** — vertical timeline of key events, alternating home/away sides (mirrored in RTL), icons per event type, goal rows showing the running score, half-time divider, and a "latest" highlight for the most recent live event.
+- **Stats** — possession donut/split bar plus dual-direction comparison bars per metric, with the leading side accented in brand blue and numeric labels on both ends.
+- **Momentum** — smooth area chart above/below a centre line showing which team is pressing, with goal markers pinned on the timeline.
+- **H2H** — existing head-to-head and standings-row comparison, kept and restyled.
+
+### 4. Polish
+
+- New keys in FR + AR dictionaries for every label (no hardcoded strings); numbers formatted with locale.
+- Skeletons per tab reusing the shimmer utilities; empty state when a match has no events yet ("no key moments yet").
+- All controls ≥44px, `aria-live="polite"` on the live score and latest event, chart has a text summary for screen readers.
+- Route `head()` keeps a unique title/description built from the two club names.
 
 ## Technical notes
 
-The gradient token `--bg-brand-gradient` already exists in `src/styles.css`; the change is centralising its use rather than defining new colors. Gradient text contrast against `--primary-foreground` is unchanged from the current CTA, so contrast stays as-is.
+- New components under `src/components/matches/`: `MatchScoreHeader.tsx`, `MatchTabs.tsx`, `EventTimeline.tsx`, `StatComparison.tsx`, `MomentumChart.tsx` (SVG, no new dependency).
+- New `src/services/match-live.ts` with pure generators + unit tests (score consistency, momentum bounds, RTL-agnostic ordering).
+- `matches.$matchId.tsx` becomes composition only; existing H2H/related-news sections are moved into tabs rather than rewritten.
+- Verification: `tsgo` typecheck, full vitest suite, and a Playwright screenshot pass on a live, finished, and scheduled match in both FR and AR.
