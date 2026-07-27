@@ -75,7 +75,7 @@ function ProfilePage() {
   return (
     <AppShell>
       <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand">{t("profile.title")}</span>
+        <span className="text-brand whitespace-pre-wrap">{t("profile.title")}</span>
       </h1>
 
       {status === "authenticated" && user ? (
