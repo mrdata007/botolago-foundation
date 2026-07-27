@@ -17,7 +17,7 @@ export const dictionaries = {
     "nav.home": "Accueil",
     "nav.news": "Actualités",
     "nav.fantasy": "Fantasy",
-    "nav.matches": "Matchs",
+    "nav.matches": "Matches",
     "nav.profile": "Profil",
 
     "home.greeting_morning": "Bonjour",
