@@ -174,6 +174,7 @@ function NewsPage() {
               key={c.id}
               active={clubFilter === c.id}
               onClick={() => setClubFilter(clubFilter === c.id ? null : c.id)}
+              leading={<ClubCrest club={c} size="sm" className="h-8 w-8 rounded-full" />}
               trailing={
                 <button
                   type="button"
