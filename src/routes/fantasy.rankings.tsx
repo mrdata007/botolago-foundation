@@ -55,7 +55,7 @@ function RankingsPage() {
     queryKey: ["fantasy-summary"],
     queryFn: () => fantasyService.getSummary(),
   });
-  const clubsQ = useQuery({ queryKey: ["clubs"], queryFn: () => footballService.getClubs() });
+  const clubsQ = useQuery({ queryKey: ["clubs", lang], queryFn: () => footballService.getClubs(lang) });
 
   const summary = summaryQ.data ?? null;
   const me: LeagueStanding | undefined = summary
@@ -179,7 +179,7 @@ function RankingsPage() {
             </div>
 
             {data.rows.length === 0 ? (
-              <EmptyState title={t("fantasy.rankings.empty")} />
+              <EmptyState>{t("fantasy.rankings.empty")}</EmptyState>
             ) : (
               <ul>
                 {data.rows.map((row) => (
