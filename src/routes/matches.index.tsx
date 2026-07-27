@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match, MatchStatus } from "@/types/domain";
 
-export const Route = createFileRoute("/matches")({
+export const Route = createFileRoute("/matches/")({
   head: () => ({
     meta: [
       { title: "Matchs — BotolaGO" },
