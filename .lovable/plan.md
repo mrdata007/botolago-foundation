@@ -1,32 +1,35 @@
 ## Goal
 
-Replace the current splash (small icon on a flat navy gradient) with a dark cinematic brand moment that shows the **full BotolaGO wordmark**, not just the ball icon. Background stays deep navy — never white.
+Add a global rankings page for fantasy teams — a season-wide leaderboard of every manager, not just private leagues.
 
-## Why the wordmark isn't used today
+Route: `/fantasy/rankings`, added as a new tab in the existing fantasy sub-navigation.
 
-`Logo.tsx` renders the brand wordmark from a **JPG** (`botolago-logo.jpg`), which has a baked-in white background. Dropping it on the navy splash would show a white rectangle, which is why the splash currently uses the icon-only PNG.
+## What the page shows
 
-## Steps
+1. **Header** — title + subtitle, with the current gameweek badge.
+2. **My rank card** — a highlighted glass card at the top with the signed-in manager's overall rank, total points, gameweek points, and rank movement. Falls back to a "create your team" prompt when the user has no team.
+3. **Podium** — top 3 managers rendered as a premium podium (crest, manager name, team name, points), with the leader raised.
+4. **Ranking table** — rows 1..N with rank badge, club crest, manager/team name, gameweek score, total score, and rank-change indicator. Reuses the existing `LeagueTable` presentation language (its row markup is extracted/shared rather than duplicated).
+5. **Controls** — Overall / Gameweek sort toggle, manager search, and "Jump to my rank" action. Sort and search live in the URL via `validateSearch` so the view is shareable.
+6. **Pagination** — page through the leaderboard in chunks (50 per page), URL-driven.
 
-**1. Transparent wordmark asset**
-Derive a transparent-background PNG of the BotolaGO wordmark from the existing logo (background removed, blue mark kept intact). Saved as a new asset used only where the logo sits on dark surfaces. The existing header logo is untouched.
+All copy goes through i18n with new `fantasy.rankings.*` keys added identically to the `fr` and `ar` blocks. Full RTL support, ≥44px tap targets, glass surfaces per Design System V2.
 
-**2. Rebuild `SplashScreen.tsx` — dark cinematic**
-- Deep navy base with a subtle mesh/radial glow behind the mark (brand blue at low opacity, plus a warm-free cool highlight top-left).
-- Full wordmark centered, fading up with a small scale (0.97 → 1) and a **light sweep** that travels once across the letterforms.
-- Thin brand-blue accent bar beneath the wordmark that draws from center outward as the loading beat.
-- Faint stadium-arc line motif at very low opacity for depth, consistent with the app's background system.
-- Exit: whole layer fades and lifts slightly, revealing the app.
+## Data
 
-**3. Timing**
-~1100ms total (hold ~800ms + 350ms fade), long enough for the sweep to read. `prefers-reduced-motion`: no sweep, no scale — straight fade at ~450ms total.
+The service layer today only exposes per-league standings (`getLeagues`, `getLeague`, `getLeagueStandings`) and the `LeagueStanding` type. Global rankings need a new read:
 
-**4. Correctness details**
-- Keep the existing `LaunchGate` contract (`onDone`) and once-per-session behavior — no changes to root gating logic.
-- No hardcoded color utilities: colors come from DS V2 tokens / inline brand gradient values already in use.
-- `alt="BotolaGO"`, `aria-hidden` on exit, no layout shift, no scrollbar flash.
-- Direction-agnostic (centered), so RTL is unaffected.
+- Add `getGlobalRankings({ page, pageSize, sort, query })` to the fantasy service contract, returning `{ rows: LeagueStanding[]; total: number; myRank?: LeagueStanding }`.
+- Implement it in the mock service (`fantasy-mock.ts`) by generating a deterministic seeded leaderboard of ~500 managers derived from the existing mock managers and clubs, so ordering is stable across reloads.
+- Implement the cloud path in `fantasy-runtime.ts` / the Supabase repository by ranking `fantasy_teams` joined to the latest `fantasy_gameweek_results` (total points desc, tie-broken by gameweek points then team name), with the caller's own row resolved separately. Note: this is a read of existing tables — no schema change, no new migration — and the exact query shape will be verified against the repository before wiring.
 
-## Verification
+Mock vs cloud selection continues to flow through the existing `selectFantasyDataMode` switch, so nothing changes for mock mode users.
 
-Screenshot the splash mid-animation and at exit in both FR and AR, confirm no white flash between splash and app, and run typecheck + the test suite.
+## Technical details
+
+- New route file `src/routes/fantasy.rankings.tsx` with `createFileRoute("/fantasy/rankings")`, its own `head()` metadata (unique title/description/og), `validateSearch` for `{ page, sort, q }`, `errorComponent` and `notFoundComponent`.
+- Data read uses `queryOptions` + `useQuery` (keyed on lang/page/sort/query) consistent with other fantasy routes; the personal "my rank" read stays client-side so a public route never calls an auth-protected loader.
+- New components under `src/components/fantasy/`: `RankingsPodium.tsx`, `MyRankCard.tsx`, and a shared `RankingRow.tsx` extracted from `LeagueTable.tsx` so both surfaces stay visually identical.
+- `FantasySubNav.tsx` gains `{ to: "/fantasy/rankings", labelKey: "fantasy.tab.rankings" }`.
+- Skeleton loading states matching the existing shimmer utilities; empty state when search returns nothing.
+- Unit tests for the mock ranking generator (stable ordering, pagination boundaries, search filtering) and for rank-movement formatting.
