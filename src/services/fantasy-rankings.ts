@@ -104,7 +104,7 @@ export function buildGlobalRankings(size = GLOBAL_RANKINGS_SIZE): LeagueStanding
       TEAM_SUFFIX[(seed >> 9) % TEAM_SUFFIX.length]
     }`;
     // Monotonically decreasing totals with a small deterministic jitter.
-    const totalScore = 1240 - i * 2 - (seed % 3);
+    const totalScore = 1600 - i * 3 - (seed % 3);
     const gameweekScore = 28 + (seed % 51);
     const drift = ((seed >> 11) % 9) - 4;
     const rank = i + 1;
