@@ -131,9 +131,7 @@ function sortRows(rows: LeagueStanding[], sort: RankingsSort): LeagueStanding[] 
 export function matchesQuery(row: LeagueStanding, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return (
-    row.managerName.toLowerCase().includes(q) || row.teamName.toLowerCase().includes(q)
-  );
+  return row.managerName.toLowerCase().includes(q) || row.teamName.toLowerCase().includes(q);
 }
 
 /**

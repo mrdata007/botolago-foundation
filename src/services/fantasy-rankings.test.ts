@@ -1,9 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  buildGlobalRankings,
-  pageForRank,
-  selectRankingsPage,
-} from "./fantasy-rankings";
+import { buildGlobalRankings, pageForRank, selectRankingsPage } from "./fantasy-rankings";
 
 describe("fantasy global rankings", () => {
   it("builds a deterministic board", () => {
