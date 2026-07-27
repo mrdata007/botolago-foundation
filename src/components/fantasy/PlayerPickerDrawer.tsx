@@ -187,7 +187,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
         active
           ? "bg-[color:var(--brand-primary)] text-white"
           : "bg-white/60 text-foreground ring-1 ring-black/5 hover:bg-white",
