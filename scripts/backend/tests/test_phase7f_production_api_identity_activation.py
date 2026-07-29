@@ -21,6 +21,7 @@ REPO = BACKEND.parents[1]
 SCRIPT = BACKEND / "phase7f-production-api-identity-activation.py"
 SCANNER = BACKEND / "phase7f-scan-sanitized-evidence.py"
 MANIFEST = BACKEND / "phase7f-api-surface-manifest.json"
+MANIFEST_SQL = BACKEND / "phase7f-api-surface-manifest.sql"
 SPEC = importlib.util.spec_from_file_location("phase7f_activation", SCRIPT)
 assert SPEC and SPEC.loader
 ACTIVATION = importlib.util.module_from_spec(SPEC)
@@ -477,6 +478,13 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertTrue(app["role_privileges"]["authenticatedUsage"])
         self.assertFalse(app["role_privileges"]["anonUsage"])
+
+    def test_manifest_schema_qualifies_pgcrypto_digest(self) -> None:
+        sql = MANIFEST_SQL.read_text(encoding="utf-8")
+        self.assertEqual(2, sql.count("extensions.digest("))
+        self.assertIsNone(
+            re.search(r"(?<![A-Za-z0-9_.])digest\s*\(", sql)
+        )
 
     def test_unexpected_api_view_causes_manifest_drift(self) -> None:
         expected = json.loads(MANIFEST.read_text(encoding="utf-8"))
