@@ -86,8 +86,8 @@ select jsonb_build_object(
         'permissive', policy.permissive,
         'roles', to_jsonb(policy.roles),
         'command', policy.cmd,
-        'usingHash', encode(digest(coalesce(policy.qual, ''), 'sha256'), 'hex'),
-        'checkHash', encode(digest(coalesce(policy.with_check, ''), 'sha256'), 'hex')
+        'usingHash', encode(extensions.digest(coalesce(policy.qual, ''), 'sha256'), 'hex'),
+        'checkHash', encode(extensions.digest(coalesce(policy.with_check, ''), 'sha256'), 'hex')
       )
       order by policy.schemaname, policy.tablename, policy.policyname
     )
