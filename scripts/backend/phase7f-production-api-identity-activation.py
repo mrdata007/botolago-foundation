@@ -45,6 +45,15 @@ ALLOWED_INITIAL_SCHEMA_SETS = {("graphql_public", "public"), ("api",)}
 MANAGEMENT_API = "https://api.supabase.com"
 MAX_HTTP_REQUESTS = 120
 POSTGREST_DATA_PLANE_ATTEMPTS = 18
+READ_ONLY_QUERY_ATTEMPTS = 3
+READ_ONLY_QUERY_RETRY_CODES = frozenset(
+    {
+        "HTTP_RATE_LIMITED",
+        "HTTP_UPSTREAM_ERROR",
+        "HTTP_UNAVAILABLE",
+        "HTTP_TIMEOUT",
+    }
+)
 SHARED_CONCURRENCY_GROUP = "botolago-production-v2-mutation"
 EXPECTED_REPOSITORY = "mrdata007/botolago-foundation"
 EXPECTED_GITHUB_REF = "refs/heads/main"
@@ -352,14 +361,27 @@ class ManagementClient:
         timeout: int = 60,
         operation: str | None = None,
     ) -> list[dict[str, Any]]:
-        response = self.request(
-            "POST",
-            f"/v1/projects/{EXPECTED_PROJECT_REF}/database/query",
-            {"query": sql, "read_only": read_only},
-            timeout=timeout,
-            mutation=not read_only,
-            operation=f"POST_{operation}" if operation else None,
-        )
+        attempts = READ_ONLY_QUERY_ATTEMPTS if read_only else 1
+        for attempt in range(1, attempts + 1):
+            try:
+                response = self.request(
+                    "POST",
+                    f"/v1/projects/{EXPECTED_PROJECT_REF}/database/query",
+                    {"query": sql, "read_only": read_only},
+                    timeout=timeout,
+                    mutation=not read_only,
+                    operation=f"POST_{operation}" if operation else None,
+                )
+                break
+            except ActivationError as exc:
+                retryable = (
+                    read_only
+                    and exc.code in READ_ONLY_QUERY_RETRY_CODES
+                    and attempt < attempts
+                )
+                if not retryable:
+                    raise
+                time.sleep(2 ** (attempt - 1))
         if isinstance(response, list):
             return response
         if isinstance(response, dict):

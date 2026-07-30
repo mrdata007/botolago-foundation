@@ -196,6 +196,68 @@ class Phase7FActivationTests(unittest.TestCase):
             raised.exception.detail,
         )
 
+    def test_read_only_management_query_retries_transient_502(self) -> None:
+        http = mock.Mock()
+        http.request.side_effect = [
+            ACTIVATION.HttpResult(
+                502,
+                "application/json",
+                b'{"message":"temporary upstream failure"}',
+            ),
+            ACTIVATION.HttpResult(
+                200,
+                "application/json",
+                b'[{"ok":true}]',
+            ),
+        ]
+        client = ACTIVATION.ManagementClient(http, "placeholder")
+        with mock.patch.object(ACTIVATION.time, "sleep") as sleep:
+            rows = client.query(
+                "select true as ok",
+                read_only=True,
+                operation="API_MANIFEST_SUMMARY",
+            )
+        self.assertEqual([{"ok": True}], rows)
+        self.assertEqual(2, http.request.call_count)
+        sleep.assert_called_once_with(1)
+
+    def test_read_only_management_query_has_bounded_retries(self) -> None:
+        http = mock.Mock()
+        http.request.return_value = ACTIVATION.HttpResult(
+            502,
+            "application/json",
+            b'{"message":"temporary upstream failure"}',
+        )
+        client = ACTIVATION.ManagementClient(http, "placeholder")
+        with mock.patch.object(ACTIVATION.time, "sleep") as sleep:
+            with self.assertRaises(ACTIVATION.ActivationError) as raised:
+                client.query(
+                    "select true as ok",
+                    read_only=True,
+                    operation="API_MANIFEST_SUMMARY",
+                )
+        self.assertEqual("HTTP_UPSTREAM_ERROR", raised.exception.code)
+        self.assertEqual(3, http.request.call_count)
+        self.assertEqual([mock.call(1), mock.call(2)], sleep.call_args_list)
+
+    def test_mutating_management_query_never_retries(self) -> None:
+        http = mock.Mock()
+        http.request.return_value = ACTIVATION.HttpResult(
+            502,
+            "application/json",
+            b'{"message":"temporary upstream failure"}',
+        )
+        client = ACTIVATION.ManagementClient(http, "placeholder")
+        with mock.patch.object(ACTIVATION.time, "sleep") as sleep:
+            with self.assertRaises(ACTIVATION.ActivationError):
+                client.query(
+                    "select true as ok",
+                    read_only=False,
+                    operation="MUTATING_QUERY",
+                )
+        self.assertEqual(1, http.request.call_count)
+        sleep.assert_not_called()
+
     def test_secret_sanitizer_covers_tokens_email_and_uuid(self) -> None:
         raw = (
             "Authorization: Bearer sbp_example "
