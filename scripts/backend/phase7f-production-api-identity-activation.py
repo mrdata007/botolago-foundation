@@ -59,7 +59,8 @@ EXPECTED_REPOSITORY = "mrdata007/botolago-foundation"
 EXPECTED_GITHUB_REF = "refs/heads/main"
 EXPECTED_GITHUB_EVENT = "workflow_dispatch"
 EXPECTED_OWNER_ACTOR = "mrdata007"
-ANON_STAFF_CONTEXT_DENIAL = (401, "42501")
+ANON_RPC_PRIVILEGE_DENIAL = (401, "42501")
+AUTHENTICATED_RPC_PRIVILEGE_DENIAL = (403, "42501")
 
 VERDICTS = {
     "NOT_EXECUTED",
@@ -1461,7 +1462,7 @@ def run_smoke(
             "ANONYMOUS",
             "ADMIN_RPC",
             request("POST", "/rest/v1/rpc/get_my_staff_context", payload={}),
-            *ANON_STAFF_CONTEXT_DENIAL,
+            *ANON_RPC_PRIVILEGE_DENIAL,
         )
         record_case(
             cases,
@@ -1477,8 +1478,7 @@ def run_smoke(
                     "p_synthetic_test": False,
                 },
             ),
-            404,
-            "PGRST202",
+            *ANON_RPC_PRIVILEGE_DENIAL,
         )
         record_case(
             cases,
@@ -1498,8 +1498,7 @@ def run_smoke(
                     "p_approval_id": None,
                 },
             ),
-            404,
-            "PGRST202",
+            *ANON_RPC_PRIVILEGE_DENIAL,
         )
         record_case(
             cases,
@@ -1520,8 +1519,7 @@ def run_smoke(
                     "p_idempotency_key": str(uuid.uuid4()),
                 },
             ),
-            404,
-            "PGRST202",
+            *ANON_RPC_PRIVILEGE_DENIAL,
         )
         record_case(
             cases,
@@ -1670,8 +1668,7 @@ def run_smoke(
                         "p_synthetic_test": False,
                     },
                 ),
-                404,
-                "PGRST202",
+                *AUTHENTICATED_RPC_PRIVILEGE_DENIAL,
             )
     except (AmbiguousMutation, SignalAbort) as exc:
         try:
