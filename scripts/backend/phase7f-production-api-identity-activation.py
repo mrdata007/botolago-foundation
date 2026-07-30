@@ -61,6 +61,7 @@ EXPECTED_GITHUB_EVENT = "workflow_dispatch"
 EXPECTED_OWNER_ACTOR = "mrdata007"
 ANON_RPC_PRIVILEGE_DENIAL = (401, "42501")
 AUTHENTICATED_RPC_PRIVILEGE_DENIAL = (403, "42501")
+GRAPHQL_SCHEMA_REMOVED_RESPONSE = (406, "PGRST106")
 
 VERDICTS = {
     "NOT_EXECUTED",
@@ -1547,8 +1548,7 @@ def run_smoke(
                 api_key=publishable_key,
                 payload={"query": "query GateOne { __typename }"},
             ),
-            404,
-            "PGRST202",
+            *GRAPHQL_SCHEMA_REMOVED_RESPONSE,
         )
 
         access_token, session_id = mint_session(
