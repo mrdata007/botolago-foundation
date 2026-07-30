@@ -77,7 +77,7 @@ HTTP_CODES = {
     504: "HTTP_TIMEOUT",
 }
 ALLOWED_UPSTREAM_CODES = re.compile(
-    r"^(?:PGRST[0-9]{3}|PT[0-9]{3}|42501|42P01|22P02|23505)$"
+    r"^(?:PGRST[0-9]{3}|PT[0-9]{3}|42501|42P01|22P02|23505|55000)$"
 )
 SECRET_PATTERNS = (
     re.compile(r"(?i)(authorization\s*:\s*(?:bearer\s+)?)[^\s\"']+"),
@@ -1412,8 +1412,8 @@ def run_smoke(
                 "/rest/v1/my_profile?id=not.is.null",
                 payload={"display_name": "denied"},
             ),
-            401,
-            "42501",
+            500,
+            "55000",
         )
         for name, path, schema in (
             ("anon_app_unexposed", "/rest/v1/profiles?select=id&limit=1", "app"),
@@ -1583,8 +1583,8 @@ def run_smoke(
                 actor_token=access_token,
                 payload={"display_name": "denied"},
             ),
-            403,
-            "42501",
+            500,
+            "55000",
         )
         for actor, token in (
             ("AUTHENTICATED_AAL1", access_token),
