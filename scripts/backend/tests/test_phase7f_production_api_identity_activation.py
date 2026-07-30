@@ -361,6 +361,46 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertTrue(all(case["result"] == "PASS" for case in cases))
 
+    def test_graphql_removal_uses_schema_boundary_response(self) -> None:
+        self.assertEqual(
+            (406, "PGRST106"),
+            ACTIVATION.GRAPHQL_SCHEMA_REMOVED_RESPONSE,
+        )
+        cases: list[dict[str, object]] = []
+        ACTIVATION.record_case(
+            cases,
+            "graphql_schema_removed",
+            "ANONYMOUS",
+            "GRAPHQL",
+            ACTIVATION.HttpResult(
+                406,
+                "application/json",
+                b'{"code":"PGRST106"}',
+            ),
+            *ACTIVATION.GRAPHQL_SCHEMA_REMOVED_RESPONSE,
+        )
+        self.assertEqual("PASS", cases[0]["result"])
+        with self.assertRaises(ACTIVATION.ActivationError) as raised:
+            ACTIVATION.record_case(
+                [],
+                "graphql_schema_removed",
+                "ANONYMOUS",
+                "GRAPHQL",
+                ACTIVATION.HttpResult(
+                    404,
+                    "application/json",
+                    b'{"code":"PGRST202"}',
+                ),
+                *ACTIVATION.GRAPHQL_SCHEMA_REMOVED_RESPONSE,
+            )
+        self.assertEqual(
+            (
+                "graphql_schema_removed status=404 "
+                "code=PGRST202 rows=None"
+            ),
+            raised.exception.detail,
+        )
+
     def test_read_only_profile_mutation_accepts_exact_55000(self) -> None:
         cases: list[dict[str, object]] = []
         result = ACTIVATION.HttpResult(
