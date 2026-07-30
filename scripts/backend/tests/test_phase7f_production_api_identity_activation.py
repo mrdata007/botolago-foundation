@@ -286,6 +286,36 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertEqual("PASS", cases[0]["result"])
 
+    def test_anonymous_staff_context_uses_privilege_denial(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        routine = next(
+            row
+            for row in manifest["apiRoutines"]
+            if row["name"] == "get_my_staff_context"
+            and row["identity_arguments"] == ""
+        )
+        grantees = {grant["grantee"] for grant in routine["grants"]}
+        self.assertNotIn("anon", grantees)
+        self.assertIn("authenticated", grantees)
+        self.assertEqual(
+            (401, "42501"),
+            ACTIVATION.ANON_STAFF_CONTEXT_DENIAL,
+        )
+        cases: list[dict[str, object]] = []
+        ACTIVATION.record_case(
+            cases,
+            "anon_staff_context_rejected",
+            "ANONYMOUS",
+            "ADMIN_RPC",
+            ACTIVATION.HttpResult(
+                401,
+                "application/json",
+                b'{"code":"42501"}',
+            ),
+            *ACTIVATION.ANON_STAFF_CONTEXT_DENIAL,
+        )
+        self.assertEqual("PASS", cases[0]["result"])
+
     def test_read_only_profile_mutation_accepts_exact_55000(self) -> None:
         cases: list[dict[str, object]] = []
         result = ACTIVATION.HttpResult(
