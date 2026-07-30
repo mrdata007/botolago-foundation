@@ -286,35 +286,80 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertEqual("PASS", cases[0]["result"])
 
-    def test_anonymous_staff_context_uses_privilege_denial(self) -> None:
+    def test_protected_rpc_denials_match_manifest_grants(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        routine = next(
-            row
+        routines = {
+            row["name"]: row
             for row in manifest["apiRoutines"]
-            if row["name"] == "get_my_staff_context"
-            and row["identity_arguments"] == ""
+            if row["name"]
+            in {
+                "get_my_staff_context",
+                "admin_bootstrap_first_platform_admin",
+                "admin_assign_role",
+                "admin_request_approval",
+            }
+        }
+        self.assertEqual(
+            {
+                "get_my_staff_context",
+                "admin_bootstrap_first_platform_admin",
+                "admin_assign_role",
+                "admin_request_approval",
+            },
+            set(routines),
         )
-        grantees = {grant["grantee"] for grant in routine["grants"]}
-        self.assertNotIn("anon", grantees)
-        self.assertIn("authenticated", grantees)
+        for routine in routines.values():
+            grantees = {grant["grantee"] for grant in routine["grants"]}
+            self.assertNotIn("anon", grantees)
+        bootstrap_grantees = {
+            grant["grantee"]
+            for grant in routines["admin_bootstrap_first_platform_admin"]["grants"]
+        }
+        self.assertNotIn("authenticated", bootstrap_grantees)
+        for name in (
+            "get_my_staff_context",
+            "admin_assign_role",
+            "admin_request_approval",
+        ):
+            grantees = {
+                grant["grantee"] for grant in routines[name]["grants"]
+            }
+            self.assertIn("authenticated", grantees)
         self.assertEqual(
             (401, "42501"),
-            ACTIVATION.ANON_STAFF_CONTEXT_DENIAL,
+            ACTIVATION.ANON_RPC_PRIVILEGE_DENIAL,
+        )
+        self.assertEqual(
+            (403, "42501"),
+            ACTIVATION.AUTHENTICATED_RPC_PRIVILEGE_DENIAL,
         )
         cases: list[dict[str, object]] = []
+        for name in routines:
+            ACTIVATION.record_case(
+                cases,
+                f"anon_{name}_rejected",
+                "ANONYMOUS",
+                "ADMIN_RPC",
+                ACTIVATION.HttpResult(
+                    401,
+                    "application/json",
+                    b'{"code":"42501"}',
+                ),
+                *ACTIVATION.ANON_RPC_PRIVILEGE_DENIAL,
+            )
         ACTIVATION.record_case(
             cases,
-            "anon_staff_context_rejected",
-            "ANONYMOUS",
-            "ADMIN_RPC",
+            "authenticated_bootstrap_rejected",
+            "AUTHENTICATED_AAL1",
+            "BOOTSTRAP_RPC",
             ACTIVATION.HttpResult(
-                401,
+                403,
                 "application/json",
                 b'{"code":"42501"}',
             ),
-            *ACTIVATION.ANON_STAFF_CONTEXT_DENIAL,
+            *ACTIVATION.AUTHENTICATED_RPC_PRIVILEGE_DENIAL,
         )
-        self.assertEqual("PASS", cases[0]["result"])
+        self.assertTrue(all(case["result"] == "PASS" for case in cases))
 
     def test_read_only_profile_mutation_accepts_exact_55000(self) -> None:
         cases: list[dict[str, object]] = []
