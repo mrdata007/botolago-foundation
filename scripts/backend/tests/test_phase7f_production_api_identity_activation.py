@@ -79,6 +79,16 @@ class QueryClient:
         return self.rows
 
 
+class SmokeUserQueryClient:
+    def __init__(self, row: dict[str, object]) -> None:
+        self.row = row
+
+    def query(self, sql: str, *, read_only: bool, timeout: int = 60):
+        assert read_only
+        assert "app.user_preferences" in sql
+        return [self.row]
+
+
 class ManifestQueryClient:
     def __init__(self, manifest: dict[str, object]) -> None:
         self.manifest = copy.deepcopy(manifest)
@@ -285,6 +295,146 @@ class Phase7FActivationTests(unittest.TestCase):
             "42501",
         )
         self.assertEqual("PASS", cases[0]["result"])
+
+    def test_generate_link_parser_accepts_flat_raw_auth_response(self) -> None:
+        user_id = "123e4567-e89b-42d3-a456-426614174000"
+        self.assertEqual(
+            "hashed-token",
+            ACTIVATION.parse_session_link_response(
+                {
+                    "id": user_id,
+                    "hashed_token": "hashed-token",
+                    "verification_type": "magiclink",
+                },
+                user_id,
+            ),
+        )
+
+    def test_generate_link_parser_rejects_client_library_wrapper(self) -> None:
+        user_id = "123e4567-e89b-42d3-a456-426614174000"
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "SESSION_LINK_RESPONSE_INVALID"
+        ):
+            ACTIVATION.parse_session_link_response(
+                {
+                    "id": user_id,
+                    "properties": {
+                        "hashed_token": "hashed-token",
+                        "verification_type": "magiclink",
+                    },
+                },
+                user_id,
+            )
+
+    def test_generate_link_parser_fails_closed_on_mismatched_fields(self) -> None:
+        user_id = "123e4567-e89b-42d3-a456-426614174000"
+        invalid_payloads = (
+            None,
+            {},
+            {
+                "id": user_id,
+                "hashed_token": "",
+                "verification_type": "magiclink",
+            },
+            {
+                "id": user_id,
+                "hashed_token": " token ",
+                "verification_type": "magiclink",
+            },
+            {
+                "id": user_id,
+                "hashed_token": "hashed-token",
+                "verification_type": "recovery",
+            },
+            {
+                "id": "123e4567-e89b-42d3-a456-426614174001",
+                "hashed_token": "hashed-token",
+                "verification_type": "magiclink",
+            },
+        )
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload), self.assertRaisesRegex(
+                ACTIVATION.ActivationError, "SESSION_LINK_RESPONSE_INVALID"
+            ):
+                ACTIVATION.parse_session_link_response(payload, user_id)
+
+    def test_smoke_user_requires_profile_preference_pair(self) -> None:
+        user_id = "123e4567-e89b-42d3-a456-426614174000"
+        valid_row = {
+            "id": user_id,
+            "email": "smoke@example.invalid",
+            "email_verified": True,
+            "banned": False,
+            "deleted": False,
+            "profile_count": 1,
+            "preference_count": 1,
+            "staff_count": 0,
+            "role_count": 0,
+            "pending_approval_count": 0,
+            "verified_factor_count": 1,
+            "baseline_session_count": 0,
+        }
+        result = ACTIVATION.validate_smoke_user(
+            SmokeUserQueryClient(valid_row), user_id
+        )
+        self.assertEqual(user_id, result["id"])
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "APPROVED_SMOKE_PROFILE_INVALID"
+        ):
+            ACTIVATION.validate_smoke_user(
+                SmokeUserQueryClient({**valid_row, "preference_count": 0}),
+                user_id,
+            )
+
+    def test_mint_session_uses_raw_link_hash_for_magiclink_verification(
+        self,
+    ) -> None:
+        user_id = "123e4567-e89b-42d3-a456-426614174000"
+        session_id = "123e4567-e89b-42d3-a456-426614174001"
+        token = f"x.{base64_url({'session_id': session_id})}.x"
+        responses = (
+            ACTIVATION.HttpResult(
+                200,
+                "application/json",
+                json.dumps(
+                    {
+                        "id": user_id,
+                        "hashed_token": "hashed-token",
+                        "verification_type": "magiclink",
+                    }
+                ).encode(),
+            ),
+            ACTIVATION.HttpResult(
+                200,
+                "application/json",
+                json.dumps({"access_token": token}).encode(),
+            ),
+        )
+        with mock.patch.object(
+            ACTIVATION, "project_request", side_effect=responses
+        ) as request:
+            result = ACTIVATION.mint_session(
+                mock.Mock(),
+                "https://example.invalid",
+                "secret",
+                "publishable",
+                user_id,
+                "smoke@example.invalid",
+            )
+        self.assertEqual((token, session_id), result)
+        self.assertEqual(2, request.call_count)
+        self.assertEqual(
+            {
+                "type": "magiclink",
+                "email": "smoke@example.invalid",
+            },
+            request.call_args_list[0].kwargs["payload"],
+        )
+        self.assertEqual(
+            {"type": "magiclink", "token_hash": "hashed-token"},
+            request.call_args_list[1].kwargs["payload"],
+        )
+        self.assertTrue(request.call_args_list[1].kwargs["mutation"])
 
     def test_protected_rpc_denials_match_manifest_grants(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
