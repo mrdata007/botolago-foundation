@@ -224,6 +224,46 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertEqual("PASS", cases[0]["result"])
 
+    def test_read_only_profile_mutation_accepts_exact_55000(self) -> None:
+        cases: list[dict[str, object]] = []
+        result = ACTIVATION.HttpResult(
+            500, "application/json", b'{"code":"55000"}'
+        )
+        ACTIVATION.record_case(
+            cases,
+            "anon_profile_mutation_rejected",
+            "ANONYMOUS",
+            "PROFILE_MUTATION",
+            result,
+            500,
+            "55000",
+        )
+        self.assertEqual("PASS", cases[0]["result"])
+        self.assertEqual("55000", cases[0]["actualErrorCode"])
+
+    def test_read_only_profile_mutation_rejects_generic_500(self) -> None:
+        with self.assertRaises(ACTIVATION.ActivationError) as raised:
+            ACTIVATION.record_case(
+                [],
+                "anon_profile_mutation_rejected",
+                "ANONYMOUS",
+                "PROFILE_MUTATION",
+                ACTIVATION.HttpResult(
+                    500,
+                    "application/json",
+                    b'{"message":"unexpected server failure"}',
+                ),
+                500,
+                "55000",
+            )
+        self.assertEqual(
+            (
+                "anon_profile_mutation_rejected status=500 "
+                "code=HTTP_SERVER_ERROR rows=None"
+            ),
+            raised.exception.detail,
+        )
+
     def test_data_plane_readiness_retries_schema_cache_then_passes(self) -> None:
         responses = [
             ACTIVATION.HttpResult(
