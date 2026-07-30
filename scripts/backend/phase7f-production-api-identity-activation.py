@@ -824,6 +824,7 @@ select
   (users.banned_until is not null and users.banned_until > statement_timestamp()) as banned,
   (users.deleted_at is not null) as deleted,
   (select count(*)::integer from app.profiles where id=users.id) as profile_count,
+  (select count(*)::integer from app.user_preferences where user_id=users.id) as preference_count,
   (select count(*)::integer from app_private.staff_principals where auth_user_id=users.id) as staff_count,
   (select count(*)::integer from app_private.staff_role_assignments a join app_private.staff_principals s on s.id=a.staff_principal_id where s.auth_user_id=users.id and a.status='active') as role_count,
   (select count(*)::integer from app_private.admin_approval_requests a join app_private.staff_principals s on s.id=a.requester_principal_id where s.auth_user_id=users.id and a.status='pending') as pending_approval_count,
@@ -841,11 +842,12 @@ where users.id='{quoted}'::uuid
         raise ActivationError("APPROVED_SMOKE_USER_DISABLED")
     for field, code in (
         ("profile_count", "APPROVED_SMOKE_PROFILE_INVALID"),
+        ("preference_count", "APPROVED_SMOKE_PROFILE_INVALID"),
         ("staff_count", "APPROVED_SMOKE_USER_STAFF_LINKED"),
         ("role_count", "APPROVED_SMOKE_USER_HAS_ROLE"),
         ("pending_approval_count", "APPROVED_SMOKE_USER_HAS_APPROVAL"),
     ):
-        expected = 1 if field == "profile_count" else 0
+        expected = 1 if field in {"profile_count", "preference_count"} else 0
         if int(row.get(field) or 0) != expected:
             raise ActivationError(code)
     if int(row.get("verified_factor_count") or 0) < 1:
@@ -1203,11 +1205,30 @@ def record_case(
     return parsed
 
 
+def parse_session_link_response(
+    payload: Any,
+    expected_user_id: str,
+) -> str:
+    if not isinstance(payload, dict):
+        raise ActivationError("SESSION_LINK_RESPONSE_INVALID")
+    token_hash = payload.get("hashed_token")
+    if (
+        not isinstance(token_hash, str)
+        or not token_hash
+        or token_hash != token_hash.strip()
+        or payload.get("verification_type") != "magiclink"
+        or payload.get("id") != expected_user_id
+    ):
+        raise ActivationError("SESSION_LINK_RESPONSE_INVALID")
+    return token_hash
+
+
 def mint_session(
     http: HttpClient,
     project_url: str,
     secret_key: str,
     publishable_key: str,
+    expected_user_id: str,
     email: str,
 ) -> tuple[str, str]:
     link = project_request(
@@ -1221,15 +1242,7 @@ def mint_session(
     )
     if link.status != 200:
         raise ActivationError(stable_result_code(link))
-    parsed_link = link.json()
-    properties = (
-        parsed_link.get("properties") or {}
-        if isinstance(parsed_link, dict)
-        else {}
-    )
-    token_hash = properties.get("hashed_token")
-    if not token_hash:
-        raise ActivationError("SESSION_LINK_RESPONSE_INVALID")
+    token_hash = parse_session_link_response(link.json(), expected_user_id)
     verified = project_request(
         http,
         project_url,
@@ -1321,7 +1334,12 @@ def fallback_revoke_all_smoke_sessions(
     """Use a supported Auth session to globally revoke an ambiguous session."""
 
     cleanup_token, _cleanup_session_id = mint_session(
-        http, project_url, secret_key, publishable_key, email
+        http,
+        project_url,
+        secret_key,
+        publishable_key,
+        user_id,
+        email,
     )
     result = project_request(
         http,
@@ -1556,6 +1574,7 @@ def run_smoke(
             project_url,
             secret_key,
             publishable_key,
+            user_id,
             smoke_user["email"],
         )
         claims = decode_jwt_claims(access_token)
