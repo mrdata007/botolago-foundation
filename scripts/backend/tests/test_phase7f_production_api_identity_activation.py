@@ -224,8 +224,55 @@ class Phase7FActivationTests(unittest.TestCase):
         )
         self.assertEqual("PASS", cases[0]["result"])
 
+    def test_data_plane_readiness_retries_schema_cache_then_passes(self) -> None:
+        responses = [
+            ACTIVATION.HttpResult(
+                404,
+                "application/json",
+                b'{"code":"PGRST205"}',
+            ),
+            ACTIVATION.HttpResult(
+                401,
+                "application/json",
+                b'{"code":"42501"}',
+            ),
+        ]
+        with mock.patch.object(
+            ACTIVATION,
+            "project_request",
+            side_effect=responses,
+        ) as request, mock.patch.object(ACTIVATION.time, "sleep"):
+            result = ACTIVATION.wait_for_postgrest_data_plane(
+                mock.Mock(),
+                "https://example.invalid",
+                "publishable",
+            )
+        self.assertEqual("READY", result["result"])
+        self.assertEqual(2, result["attemptCount"])
+        self.assertEqual(2, request.call_count)
+
+    def test_data_plane_readiness_rejects_anonymous_access(self) -> None:
+        with mock.patch.object(
+            ACTIVATION,
+            "project_request",
+            return_value=ACTIVATION.HttpResult(
+                200,
+                "application/json",
+                b"[]",
+            ),
+        ):
+            with self.assertRaisesRegex(
+                ACTIVATION.ActivationError,
+                "POSTGREST_DATA_PLANE_UNEXPECTED",
+            ):
+                ACTIVATION.wait_for_postgrest_data_plane(
+                    mock.Mock(),
+                    "https://example.invalid",
+                    "publishable",
+                )
+
     def test_anonymous_profile_success_is_rejected(self) -> None:
-        with self.assertRaises(ACTIVATION.ActivationError):
+        with self.assertRaises(ACTIVATION.ActivationError) as raised:
             ACTIVATION.record_case(
                 [],
                 "anon_my_profile",
@@ -235,6 +282,10 @@ class Phase7FActivationTests(unittest.TestCase):
                 401,
                 "42501",
             )
+        self.assertEqual(
+            "anon_my_profile status=200 code=NONE rows=0",
+            raised.exception.detail,
+        )
 
     def test_dependency_audit_accepts_explicit_api_runtime(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

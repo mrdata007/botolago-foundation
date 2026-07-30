@@ -44,6 +44,7 @@ TARGET_EXTRA_SEARCH_PATH = "extensions"
 ALLOWED_INITIAL_SCHEMA_SETS = {("graphql_public", "public"), ("api",)}
 MANAGEMENT_API = "https://api.supabase.com"
 MAX_HTTP_REQUESTS = 120
+POSTGREST_DATA_PLANE_ATTEMPTS = 18
 SHARED_CONCURRENCY_GROUP = "botolago-production-v2-mutation"
 EXPECTED_REPOSITORY = "mrdata007/botolago-foundation"
 EXPECTED_GITHUB_REF = "refs/heads/main"
@@ -1074,6 +1075,54 @@ def project_request(
     )
 
 
+def wait_for_postgrest_data_plane(
+    http: HttpClient,
+    project_url: str,
+    publishable_key: str,
+) -> dict[str, Any]:
+    """Wait until the exposed API schema is loaded by the PostgREST data plane."""
+
+    transient_results = {
+        (404, "PGRST205"),
+        (406, "PGRST106"),
+        (502, "HTTP_UPSTREAM_ERROR"),
+        (503, "HTTP_UNAVAILABLE"),
+        (504, "HTTP_TIMEOUT"),
+    }
+    last_status: int | None = None
+    last_code: str | None = None
+    for attempt in range(1, POSTGREST_DATA_PLANE_ATTEMPTS + 1):
+        result = project_request(
+            http,
+            project_url,
+            "GET",
+            "/rest/v1/my_profile?select=*",
+            api_key=publishable_key,
+            schema=TARGET_DB_SCHEMA,
+        )
+        actual_code = stable_result_code(result) if result.status >= 400 else None
+        if result.status == 401 and actual_code == "42501":
+            return {
+                "attemptCount": attempt,
+                "status": result.status,
+                "errorCode": actual_code,
+                "result": "READY",
+            }
+        last_status = result.status
+        last_code = actual_code
+        if (result.status, actual_code) not in transient_results:
+            raise ActivationError(
+                "POSTGREST_DATA_PLANE_UNEXPECTED",
+                f"status={result.status} code={actual_code or 'NONE'}",
+            )
+        if attempt < POSTGREST_DATA_PLANE_ATTEMPTS:
+            time.sleep(5)
+    raise ActivationError(
+        "POSTGREST_DATA_PLANE_TIMEOUT",
+        f"status={last_status} code={last_code or 'NONE'}",
+    )
+
+
 def decode_jwt_claims(token: str) -> dict[str, Any]:
     try:
         encoded = token.split(".")[1]
@@ -1119,7 +1168,13 @@ def record_case(
         }
     )
     if not passed:
-        raise ActivationError("SMOKE_CASE_FAILED", name)
+        raise ActivationError(
+            "SMOKE_CASE_FAILED",
+            (
+                f"{name} status={result.status} "
+                f"code={actual_code or 'NONE'} rows={row_count}"
+            ),
+        )
     return parsed
 
 
@@ -1791,6 +1846,11 @@ def run(args: argparse.Namespace) -> None:
             (TARGET_DB_SCHEMA,),
             (TARGET_EXTRA_SEARCH_PATH,),
         )
+        data_plane = wait_for_postgrest_data_plane(
+            http,
+            project_url,
+            publishable_key,
+        )
         journal.update(verdict="ACTIVATED_PENDING_TESTS")
         smoke_user = validate_smoke_user(client, smoke_user_id)
         smoke = run_smoke(
@@ -1818,6 +1878,7 @@ def run(args: argparse.Namespace) -> None:
             "projectRef": EXPECTED_PROJECT_REF,
             "before": previous,
             "after": effective,
+            "dataPlaneReadiness": data_plane,
             "mutationAttempted": not already_active,
             "mutationConfirmed": True,
             "rollbackAttempted": False,
