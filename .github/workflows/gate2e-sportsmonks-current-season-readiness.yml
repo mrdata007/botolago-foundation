@@ -59,7 +59,8 @@ jobs:
           fi
           evidence_dir="$RUNNER_TEMP/botolago-gate2e/evidence"
           install -d -m 0700 "$evidence_dir"
-          echo "GATE2E_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"\n          echo "GATE2B_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
+          echo "GATE2E_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
+          echo "GATE2B_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
           echo "Read-only target guard: PASS"
 
       - name: Check out the exact reviewed main commit
