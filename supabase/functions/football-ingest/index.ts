@@ -8,6 +8,10 @@ import {
   handleSportsMonksFixtureRequest,
   type FixtureRpcClient,
 } from "../_shared/sportsmonks-fixtures.ts";
+import {
+  handleSportsMonksHistoricalContentRequest,
+  type ContentRpcClient,
+} from "../_shared/sportsmonks-historical-content.ts";
 
 const environment = Deno.env.toObject();
 const supabaseUrl = environment.SUPABASE_URL?.trim();
@@ -26,10 +30,17 @@ const client = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 Deno.serve((request) => {
-  if (request.headers.get("x-botolago-ingestion-job") === "fixtures") {
+  const job = request.headers.get("x-botolago-ingestion-job");
+  if (job === "fixtures") {
     return handleSportsMonksFixtureRequest(request, {
       environment,
       client: client as unknown as FixtureRpcClient,
+    });
+  }
+  if (job === "historical_content") {
+    return handleSportsMonksHistoricalContentRequest(request, {
+      environment,
+      client: client as unknown as ContentRpcClient,
     });
   }
   return handleSportsMonksCatalogRequest(request, {
