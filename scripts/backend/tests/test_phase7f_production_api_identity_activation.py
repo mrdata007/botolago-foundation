@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
@@ -550,6 +551,65 @@ class Phase7FActivationTests(unittest.TestCase):
             ),
             raised.exception.detail,
         )
+
+    def test_log_audit_uses_current_unified_source_contract(self) -> None:
+        client = mock.Mock()
+        client.get.return_value = {
+            "result": [{"source": "edge_logs", "event_count": "2"}]
+        }
+        result = ACTIVATION.query_logs(
+            client,
+            "2026-07-31T14:30:00Z",
+            "2026-07-31T14:31:30Z",
+        )
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlsplit(client.get.call_args.args[0]).query
+        )["sql"][0]
+        self.assertIn("SELECT source, count() AS event_count", query)
+        self.assertIn("GROUP BY source", query)
+        self.assertNotIn("source_name", query)
+        self.assertEqual("QUERIED_NONZERO", result["queryOutcome"])
+        self.assertEqual(2, result["errorEventCount"])
+        self.assertEqual("edge_logs", result["sources"][0]["source"])
+
+    def test_log_audit_excludes_only_verified_smoke_denials(self) -> None:
+        client = mock.Mock()
+        client.get.return_value = {"result": []}
+        result = ACTIVATION.query_logs(
+            client,
+            "2026-07-31T14:30:00Z",
+            "2026-07-31T14:31:30Z",
+        )
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlsplit(client.get.call_args.args[0]).query
+        )["sql"][0]
+        self.assertIn("source = 'edge_logs'", query)
+        self.assertIn("log_attributes['request.method'] = 'PATCH'", query)
+        self.assertIn("'/rest/v1/my_profile'", query)
+        self.assertIn("source = 'postgres_logs'", query)
+        for expected_denial in (
+            "permission denied for view my_profile",
+            "permission denied for function get_my_staff_context",
+            "permission denied for function admin_bootstrap_first_platform_admin",
+            "permission denied for function admin_assign_role",
+            "permission denied for function admin_request_approval",
+        ):
+            self.assertIn(expected_denial, query)
+        self.assertIn("row-level security", query)
+        self.assertEqual("QUERIED_ZERO", result["queryOutcome"])
+        self.assertEqual(0, result["errorEventCount"])
+
+    def test_log_audit_fails_closed_on_management_error(self) -> None:
+        client = mock.Mock()
+        client.get.return_value = {"result": [], "error": "bad query"}
+        with self.assertRaisesRegex(
+            ACTIVATION.ActivationError, "LOG_QUERY_FAILED"
+        ):
+            ACTIVATION.query_logs(
+                client,
+                "2026-07-31T14:30:00Z",
+                "2026-07-31T14:31:30Z",
+            )
 
     def test_read_only_profile_mutation_accepts_exact_55000(self) -> None:
         cases: list[dict[str, object]] = []
