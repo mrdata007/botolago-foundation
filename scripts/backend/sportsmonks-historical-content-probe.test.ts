@@ -25,7 +25,7 @@ function squadResponse(teamId: number): Response {
         player_id: teamId + 600_000,
         team_id: teamId,
         season_id: HISTORICAL_SEASON_ID,
-        position_id: 25,
+        position_id: teamId === 306 ? null : 25,
         jersey_number: 10,
         player: {
           id: teamId + 600_000,
@@ -33,7 +33,7 @@ function squadResponse(teamId: number): Response {
           date_of_birth: "1998-01-02",
           nationality_id: 153,
         },
-        position: { id: 25, developer_name: "MIDFIELDER" },
+        position: teamId === 306 ? null : { id: 25, developer_name: "MIDFIELDER" },
       },
     ],
   });
@@ -110,6 +110,7 @@ describe("SportsMonks historical content coverage probe", () => {
         playersWithDateOfBirth: 16,
         playersWithNationality: 16,
         membershipsWithJerseyNumber: 16,
+        membershipsWithPosition: 15,
         duplicateMemberships: 0,
       },
       standings: {
