@@ -695,6 +695,10 @@ export type Database = {
         }
         Returns: Json
       }
+      football_player_availability: {
+        Args: { p_limit?: number; p_player_id: string }
+        Returns: Json
+      }
       football_player_rating_candidates: {
         Args: { p_provider_name: string; p_season_external_id: string }
         Returns: Json
@@ -707,10 +711,6 @@ export type Database = {
           p_position?: string
           p_season_id: string
         }
-        Returns: Json
-      }
-      football_player_availability: {
-        Args: { p_limit?: number; p_player_id: string }
         Returns: Json
       }
       football_player_summary: {
@@ -795,16 +795,6 @@ export type Database = {
         }
         Returns: Json
       }
-      ingest_player_season_ratings: {
-        Args: {
-          p_algorithm_version: string
-          p_observed_at: string
-          p_provider_name: string
-          p_rows: Json
-          p_season_external_id: string
-        }
-        Returns: Json
-      }
       ingest_football_standings: {
         Args: {
           p_observed_at: string
@@ -812,6 +802,16 @@ export type Database = {
           p_rows: Json
           p_season_external_id: string
           p_source_sequence: number
+        }
+        Returns: Json
+      }
+      ingest_player_season_ratings: {
+        Args: {
+          p_algorithm_version: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
         }
         Returns: Json
       }
@@ -853,14 +853,6 @@ export type Database = {
         Args: { p_identifier: string; p_language: string }
         Returns: Json
       }
-      news_begin_provider_ingestion: {
-        Args: {
-          p_job_type: string
-          p_provider_slug: string
-          p_target_scope?: string
-        }
-        Returns: Json
-      }
       news_begin_ingestion_run: {
         Args: {
           p_cursor?: string
@@ -869,6 +861,14 @@ export type Database = {
           p_target_scope?: string
         }
         Returns: string
+      }
+      news_begin_provider_ingestion: {
+        Args: {
+          p_job_type: string
+          p_provider_slug: string
+          p_target_scope?: string
+        }
+        Returns: Json
       }
       news_complete_ingestion_run: {
         Args: {
