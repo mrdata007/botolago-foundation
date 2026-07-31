@@ -87,9 +87,7 @@ describe("SportsMonks historical content coverage probe", () => {
           if (url.pathname === `/v3/football/standings/seasons/${HISTORICAL_SEASON_ID}`) {
             return standingsResponse();
           }
-          const match = /^\/v3\/football\/squads\/seasons\/(\d+)\/teams\/(\d+)$/.exec(
-            url.pathname,
-          );
+          const match = /^\/v3\/football\/squads\/seasons\/(\d+)\/teams\/(\d+)$/.exec(url.pathname);
           if (!match) return json({}, 404);
           expect(Number(match[1])).toBe(HISTORICAL_SEASON_ID);
           return squadResponse(Number(match[2]));
@@ -133,18 +131,18 @@ describe("SportsMonks historical content coverage probe", () => {
       expect(request.method).toBe("GET");
       expect(request.authorization).toBe(TOKEN);
     }
+    expect(requests.filter((request) => request.url.pathname.includes("/squads/"))).toHaveLength(
+      16,
+    );
     expect(
-      requests.filter((request) => request.url.pathname.includes("/squads/")),
-    ).toHaveLength(16);
-    expect(
-      requests.find((request) => request.url.pathname.includes("/squads/"))?.url.searchParams.get(
-        "include",
-      ),
+      requests
+        .find((request) => request.url.pathname.includes("/squads/"))
+        ?.url.searchParams.get("include"),
     ).toBe("player;position");
     expect(
-      requests.find((request) => request.url.pathname.includes("/standings/"))?.url.searchParams.get(
-        "include",
-      ),
+      requests
+        .find((request) => request.url.pathname.includes("/standings/"))
+        ?.url.searchParams.get("include"),
     ).toBe("participant;details");
     expect(JSON.stringify(evidence)).not.toContain(TOKEN);
     expect(JSON.stringify(evidence)).not.toContain("Player ");
