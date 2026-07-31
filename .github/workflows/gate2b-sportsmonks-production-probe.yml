@@ -1,4 +1,4 @@
-name: Gate 2B SportsMonks production access probe
+name: Gate 2B SportsMonks historical readiness probe
 
 on:
   push:
@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   probe:
-    name: Verify paid Botola access and discover current season
+    name: Discover newest populated historical Botola season
     if: >-
       always() &&
       github.repository == 'mrdata007/botolago-foundation' &&
@@ -79,8 +79,8 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate2b-sportsmonks-production-probe-2026-07-31-03",
-              "mode": "read_only",
+              "requestId": "gate2b-sportsmonks-historical-probe-2026-07-31-01",
+              "mode": "read_only_historical_discovery",
               "leagueId": 860,
               "confirmation": "RUN_GATE2B_SPORTSMONKS_PROBE",
           }
@@ -99,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bun test scripts/backend/sportsmonks-production-probe.test.ts
+          bun test scripts/backend/sportsmonks-historical-season-probe.test.ts
 
       - name: Run the protected SportsMonks probe
         id: provider_probe
@@ -109,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
-          bun scripts/backend/sportsmonks-production-probe.ts
+          bun scripts/backend/sportsmonks-historical-season-probe.ts
 
       - name: Verify evidence contains no credential patterns
         id: evidence_scan
@@ -132,7 +132,7 @@ jobs:
         if: always() && steps.evidence_scan.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: gate2b-sportsmonks-probe-${{ github.run_id }}
+          name: gate2b-sportsmonks-historical-probe-${{ github.run_id }}
           path: ${{ env.GATE2B_EVIDENCE_DIR }}
           if-no-files-found: error
           retention-days: 30
@@ -149,10 +149,10 @@ jobs:
           if [[ "$PROBE_OUTCOME" != "success" ||
                 "$SCAN_OUTCOME" != "success" ||
                 "$UPLOAD_OUTCOME" != "success" ]]; then
-            echo "GATE2B_SPORTSMONKS_PROBE_FAILED"
+            echo "GATE2B_SPORTSMONKS_HISTORICAL_PROBE_FAILED"
             exit 1
           fi
-          echo "GATE2B_SPORTSMONKS_PROBE_PASS"
+          echo "GATE2B_SPORTSMONKS_HISTORICAL_PROBE_PASS"
 
       - name: Publish sanitized probe status
         if: always()
@@ -166,12 +166,12 @@ jobs:
           set -euo pipefail
           printf '::add-mask::%s\n' "$GITHUB_TOKEN"
           state="failure"
-          description="Protected SportsMonks probe failed"
+          description="Protected historical SportsMonks probe failed"
           if [[ "$PROBE_OUTCOME" == "success" &&
                 "$SCAN_OUTCOME" == "success" &&
                 "$UPLOAD_OUTCOME" == "success" ]]; then
             state="success"
-            description="Protected SportsMonks probe passed"
+            description="Protected historical SportsMonks probe passed"
           fi
           payload=$(printf \
             '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate2b-sportsmonks-probe"}' \
