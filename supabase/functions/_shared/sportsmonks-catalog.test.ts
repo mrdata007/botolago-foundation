@@ -53,6 +53,7 @@ function providerFetch(urls: string[]) {
     init?: RequestInit,
   ): Promise<Response> => {
     const url = String(input);
+    const pathname = new URL(url).pathname;
     urls.push(url);
     expect(url).not.toContain(environment.SPORTSMONKS_API_TOKEN);
     expect(new Headers(init?.headers).get("authorization")).toBe(
@@ -65,7 +66,7 @@ function providerFetch(urls: string[]) {
     }
     if (url.includes("/rounds/seasons/28647"))
       return Response.json({ data: [] });
-    if (url.includes("/seasons/28647")) {
+    if (pathname.endsWith("/seasons/28647")) {
       return Response.json({
         data: {
           id: 28647,
