@@ -147,6 +147,12 @@ select api.ingest_football_squad(
   ),
   statement_timestamp(), 104
 );
+select set_config(
+  'test.rating_season_id',
+  (select internal_entity_id::text from app_private.football_provider_mappings
+   where provider_name = 'sportsmonks' and entity_type = 'season' and external_id = 'rating-season'),
+  true
+);
 
 set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
@@ -197,12 +203,6 @@ select extensions.is(
   ) ->> 'skipped',
   '1',
   'an identical rating retry is idempotently skipped'
-);
-select set_config(
-  'test.rating_season_id',
-  (select internal_entity_id::text from app_private.football_provider_mappings
-   where provider_name = 'sportsmonks' and entity_type = 'season' and external_id = 'rating-season'),
-  true
 );
 reset role;
 
