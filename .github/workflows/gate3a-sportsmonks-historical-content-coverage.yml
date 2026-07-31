@@ -1,0 +1,229 @@
+name: Gate 3A SportsMonks historical content coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/production/gate3a-historical-content-probe-trigger.json"
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for the read-only provider probe
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_GATE3A_HISTORICAL_CONTENT_PROBE
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-gate3a-historical-content-probe
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  probe:
+    name: Verify historical squad and standings coverage
+    if: >-
+      always() &&
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-football-ingestion
+    env:
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_GATE3A_HISTORICAL_CONTENT_PROBE' }}
+      EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
+
+    steps:
+      - name: Initialize protected read-only runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_GATE3A_HISTORICAL_CONTENT_PROBE" ]]; then
+            echo "Invalid manual confirmation."
+            exit 2
+          fi
+          if [[ "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "The dispatched commit is not the reviewed main commit."
+            exit 2
+          fi
+          evidence_dir="$RUNNER_TEMP/botolago-gate3a/evidence"
+          install -d -m 0700 "$evidence_dir"
+          echo "GATE3A_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
+          echo "Read-only target guard: PASS"
+
+      - name: Check out the exact reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify the reviewed one-time activation ticket
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemaVersion": 1,
+              "requestId": "gate3a-historical-content-coverage-2026-07-31-01",
+              "mode": "read_only_historical_content_coverage",
+              "seasonId": 26027,
+              "teamIds": [
+                  306, 2846, 6856, 9369, 9535, 16845, 16847, 16849,
+                  16850, 16851, 16853, 16858, 16937, 227263, 270260, 274759,
+              ],
+              "confirmation": "RUN_GATE3A_HISTORICAL_CONTENT_PROBE",
+          }
+          path = Path("docs/production/gate3a-historical-content-probe-trigger.json")
+          if json.loads(path.read_text(encoding="utf-8")) != expected:
+              raise SystemExit("INVALID_GATE3A_ACTIVATION_TICKET")
+          print("Reviewed activation ticket: PASS")
+          PY
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Validate the no-write probe harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun test scripts/backend/sportsmonks-historical-content-probe.test.ts
+
+      - name: Run the protected SportsMonks coverage probe
+        id: provider_probe
+        shell: bash
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          bun scripts/backend/sportsmonks-historical-content-probe.ts
+
+      - name: Classify historical content readiness
+        id: readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["GATE3A_EVIDENCE_DIR"]) / "sportsmonks-historical-content-probe.json"
+          evidence = json.loads(path.read_text(encoding="utf-8"))
+          scope = evidence["teamScope"]
+          squads = evidence["squads"]
+          standings = evidence["standings"]
+          squads_ready = (
+              scope["withSquad"] == scope["expected"]
+              and squads["memberships"] > 0
+              and squads["uniquePlayers"] > 0
+              and squads["namedPlayers"] == squads["uniquePlayers"]
+              and squads["duplicateMemberships"] == 0
+          )
+          standings_ready = (
+              standings["rows"] >= scope["expected"]
+              and standings["uniqueTeams"] == scope["expected"]
+              and standings["rankedRows"] == standings["rows"]
+              and standings["detailRecords"] > 0
+              and standings["unknownParticipants"] == 0
+          )
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"squads_ready={'true' if squads_ready else 'false'}\n")
+              output.write(f"standings_ready={'true' if standings_ready else 'false'}\n")
+          print(
+              "Historical content readiness: "
+              f"squads={str(squads_ready).lower()} "
+              f"standings={str(standings_ready).lower()} "
+              f"memberships={squads['memberships']} "
+              f"players={squads['uniquePlayers']} "
+              f"standingRows={standings['rows']}"
+          )
+          PY
+
+      - name: Verify evidence contains no credential patterns
+        id: evidence_scan
+        if: always()
+        shell: bash
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$GATE3A_EVIDENCE_DIR"
+          if grep -R -F -q -- "$SPORTSMONKS_API_TOKEN" "$GATE3A_EVIDENCE_DIR"; then
+            echo "SPORTSMONKS_CREDENTIAL_FOUND_IN_EVIDENCE"
+            exit 1
+          fi
+          echo "SportsMonks credential scan: PASS"
+
+      - name: Upload sanitized provider evidence
+        id: evidence_upload
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gate3a-historical-content-coverage-${{ github.run_id }}
+          path: ${{ env.GATE3A_EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Finalize probe verdict
+        if: always()
+        shell: bash
+        env:
+          PROBE_OUTCOME: ${{ steps.provider_probe.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$PROBE_OUTCOME" != "success" ||
+                "$SCAN_OUTCOME" != "success" ||
+                "$UPLOAD_OUTCOME" != "success" ||
+                "$READINESS_OUTCOME" != "success" ]]; then
+            echo "GATE3A_HISTORICAL_CONTENT_PROBE_FAILED"
+            exit 1
+          fi
+          echo "GATE3A_HISTORICAL_CONTENT_PROBE_PASS"
+
+      - name: Publish sanitized probe status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PROBE_OUTCOME: ${{ steps.provider_probe.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          SQUADS_READY: ${{ steps.readiness.outputs.squads_ready }}
+          STANDINGS_READY: ${{ steps.readiness.outputs.standings_ready }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$GITHUB_TOKEN"
+          state="failure"
+          description="Protected historical content coverage probe failed"
+          if [[ "$PROBE_OUTCOME" == "success" &&
+                "$SCAN_OUTCOME" == "success" &&
+                "$UPLOAD_OUTCOME" == "success" &&
+                "$READINESS_OUTCOME" == "success" ]]; then
+            state="success"
+            description="Historical coverage classified: squads=$SQUADS_READY standings=$STANDINGS_READY"
+          fi
+          payload=$(printf             '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate3a-historical-content-coverage"}'             "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
+          curl --silent --show-error --fail --output /dev/null             --request POST             --header "Accept: application/vnd.github+json"             --header "Authorization: Bearer $GITHUB_TOKEN"             --header "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"             --data "$payload"
