@@ -1,0 +1,421 @@
+name: Gate 2D Production historical fixture canary
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/production/gate2d-historical-fixture-canary-trigger.json"
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for the historical fixture canary
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_GATE2D_HISTORICAL_FIXTURE_CANARY
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  canary:
+    name: Deploy and ingest the bounded historical Botola fixture window
+    if: >-
+      always() &&
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_GATE2D_HISTORICAL_FIXTURE_CANARY' }}
+      EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
+      EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
+      EXPECTED_PROJECT_NAME: BotolaGO Production V2
+      EXPECTED_SEASON_ID: "26027"
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_PRODUCTION_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY }}
+      BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN: ${{ secrets.BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN }}
+      SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+
+    steps:
+      - name: Initialize protected runtime and enforce immutable target
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          for secret_value in \
+            "$SUPABASE_ACCESS_TOKEN" \
+            "$SUPABASE_SECRET_KEY" \
+            "$SUPABASE_PRODUCTION_PUBLISHABLE_KEY" \
+            "$BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN" \
+            "$SPORTSMONKS_API_TOKEN"; do
+            if [[ -n "$secret_value" ]]; then printf '::add-mask::%s\n' "$secret_value"; fi
+          done
+          if [[ -z "$SUPABASE_ACCESS_TOKEN" ||
+                -z "$SUPABASE_SECRET_KEY" ||
+                -z "$SUPABASE_PRODUCTION_PUBLISHABLE_KEY" ||
+                -z "$BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN" ||
+                -z "$SPORTSMONKS_API_TOKEN" ]]; then
+            echo "Protected credential injection failed before mutation."
+            exit 2
+          fi
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_GATE2D_HISTORICAL_FIXTURE_CANARY" ||
+                "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "Immutable dispatch confirmation failed."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ||
+                "$SUPABASE_PRODUCTION_PROJECT_NAME" != "$EXPECTED_PROJECT_NAME" ||
+                "${SUPABASE_PRODUCTION_URL%/}" != "https://${EXPECTED_PROJECT_REF}.supabase.co" ]]; then
+            echo "Production project guard failed."
+            exit 2
+          fi
+          runtime_dir="$RUNNER_TEMP/botolago-gate2d"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "GATE2D_RUNTIME_DIR=$runtime_dir"
+            echo "GATE2D_EVIDENCE_DIR=$evidence_dir"
+            echo "GATE2D_SECRET_FILE=$runtime_dir/function-secrets.env"
+            echo "GATE2D_RESPONSE_FILE=$runtime_dir/canary-response.json"
+          } >> "$GITHUB_ENV"
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+          echo "Immutable target guard: PASS"
+
+      - name: Check out the exact reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify the reviewed one-time activation ticket
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemaVersion": 1,
+              "requestId": "gate2d-historical-fixture-canary-2026-07-31-01",
+              "mode": "production_historical_fixture_canary",
+              "projectRef": "tkewgajrljbwgwedqsxn",
+              "leagueId": 860,
+              "seasonId": 26027,
+              "fixtureFrom": "2026-03-28",
+              "fixtureTo": "2026-07-05",
+              "confirmation": "RUN_GATE2D_HISTORICAL_FIXTURE_CANARY",
+          }
+          path = Path("docs/production/gate2d-historical-fixture-canary-trigger.json")
+          if json.loads(path.read_text(encoding="utf-8")) != expected:
+              raise SystemExit("INVALID_GATE2D_ACTIVATION_TICKET")
+          print("Reviewed activation ticket: PASS")
+          PY
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install the reviewed toolchain
+        shell: bash
+        run: bun install --frozen-lockfile
+
+      - name: Validate the exact canary runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun test supabase/functions/_shared/sportsmonks-catalog.test.ts supabase/functions/_shared/sportsmonks-fixtures.test.ts
+          test -x ./node_modules/.bin/supabase
+          ./node_modules/.bin/supabase --version
+
+      - name: Deploy the exact reviewed fixture runtime
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/supabase functions deploy --help > /dev/null
+          if ! ./node_modules/.bin/supabase functions deploy football-ingest \
+            --project-ref "$EXPECTED_PROJECT_REF" \
+            > "$GATE2D_RUNTIME_DIR/function-deploy.log" 2>&1; then
+            echo "Reviewed fixture runtime deployment failed."
+            exit 1
+          fi
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+          echo "Reviewed fixture runtime deployed with JWT verification."
+
+      - name: Install pinned production function secrets
+        id: secrets
+        shell: bash
+        env:
+          FOOTBALL_PROVIDER: sportsmonks
+          FOOTBALL_PROVIDER_BASE_URL: https://api.sportmonks.com/v3/football
+          FOOTBALL_SPORTSMONKS_LEAGUE_ID: "860"
+          FOOTBALL_SPORTSMONKS_SEASON_ID: "26027"
+          FOOTBALL_SPORTSMONKS_COUNTRY_CODE: MA
+          FOOTBALL_SPORTSMONKS_COMPETITION_TYPE: league
+          FOOTBALL_SPORTSMONKS_SEASON_START: "2025-09-12"
+          FOOTBALL_SPORTSMONKS_SEASON_END: "2026-07-05"
+          FOOTBALL_SPORTSMONKS_FIXTURE_FROM: "2026-03-28"
+          FOOTBALL_SPORTSMONKS_FIXTURE_TO: "2026-07-05"
+          FOOTBALL_PROVIDER_TIMEOUT_MS: "15000"
+          FOOTBALL_PROVIDER_MAX_RETRIES: "2"
+        run: |
+          set -euo pipefail
+          trigger_secret=$(openssl rand -hex 32)
+          printf '::add-mask::%s\n' "$trigger_secret"
+          echo "GATE2D_TRIGGER_SECRET=$trigger_secret" >> "$GITHUB_ENV"
+          export FOOTBALL_INGESTION_TRIGGER_SECRET="$trigger_secret"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          names = (
+              "SPORTSMONKS_API_TOKEN",
+              "FOOTBALL_INGESTION_TRIGGER_SECRET",
+              "FOOTBALL_PROVIDER",
+              "FOOTBALL_PROVIDER_BASE_URL",
+              "FOOTBALL_SPORTSMONKS_LEAGUE_ID",
+              "FOOTBALL_SPORTSMONKS_SEASON_ID",
+              "FOOTBALL_SPORTSMONKS_COUNTRY_CODE",
+              "FOOTBALL_SPORTSMONKS_COMPETITION_TYPE",
+              "FOOTBALL_SPORTSMONKS_SEASON_START",
+              "FOOTBALL_SPORTSMONKS_SEASON_END",
+              "FOOTBALL_SPORTSMONKS_FIXTURE_FROM",
+              "FOOTBALL_SPORTSMONKS_FIXTURE_TO",
+              "FOOTBALL_PROVIDER_TIMEOUT_MS",
+              "FOOTBALL_PROVIDER_MAX_RETRIES",
+          )
+          path = Path(os.environ["GATE2D_SECRET_FILE"])
+          path.write_text("".join(f"{name}={os.environ[name]}\n" for name in names), encoding="utf-8")
+          path.chmod(0o600)
+          PY
+          if ! ./node_modules/.bin/supabase secrets set \
+            --project-ref "$EXPECTED_PROJECT_REF" \
+            --env-file "$GATE2D_SECRET_FILE" \
+            > "$GATE2D_RUNTIME_DIR/secrets-set.log" 2>&1; then
+            echo "Supabase rejected the protected secret batch."
+            exit 1
+          fi
+          echo "installed=true" >> "$GITHUB_OUTPUT"
+          echo "Pinned function configuration installed."
+
+      - name: Run bounded historical fixture canary
+        id: canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="https://${EXPECTED_PROJECT_REF}.supabase.co/functions/v1/football-ingest"
+          payload='{"job":"fixtures","pageSize":50,"maxPages":3}'
+          invoke_with_user_token() {
+            curl --silent --show-error \
+              --output "$GATE2D_RESPONSE_FILE" \
+              --write-out '%{http_code}' \
+              --request POST "$endpoint" \
+              --header 'content-type: application/json' \
+              --header 'x-botolago-ingestion-job: fixtures' \
+              --header "apikey: $SUPABASE_PRODUCTION_PUBLISHABLE_KEY" \
+              --header "Authorization: Bearer $BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN" \
+              --header "x-botolago-ingestion-key: $GATE2D_TRIGGER_SECRET" \
+              --data "$payload"
+          }
+          invoke_with_service_key() {
+            curl --silent --show-error \
+              --output "$GATE2D_RESPONSE_FILE" \
+              --write-out '%{http_code}' \
+              --request POST "$endpoint" \
+              --header 'content-type: application/json' \
+              --header 'x-botolago-ingestion-job: fixtures' \
+              --header "apikey: $SUPABASE_SECRET_KEY" \
+              --header "Authorization: Bearer $SUPABASE_SECRET_KEY" \
+              --header "x-botolago-ingestion-key: $GATE2D_TRIGGER_SECRET" \
+              --data "$payload"
+          }
+          http_status=$(invoke_with_user_token)
+          auth_path="aal2_user_jwt"
+          if [[ "$http_status" == "401" || "$http_status" == "403" ]]; then
+            http_status=$(invoke_with_service_key)
+            auth_path="service_key_fallback"
+          fi
+          export GATE2D_HTTP_STATUS="$http_status"
+          export GATE2D_AUTH_PATH="$auth_path"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          if os.environ["GATE2D_HTTP_STATUS"] != "200":
+              raise SystemExit(f"CANARY_HTTP_{os.environ['GATE2D_HTTP_STATUS']}")
+          response = json.loads(Path(os.environ["GATE2D_RESPONSE_FILE"]).read_text(encoding="utf-8"))
+          expected_window = {"from": "2026-03-28", "to": "2026-07-05"}
+          if (
+              response.get("provider") != "sportsmonks"
+              or response.get("window") != expected_window
+              or not isinstance(response.get("jobs"), dict)
+          ):
+              raise SystemExit("INVALID_CANARY_RESPONSE")
+          counts = response["jobs"].get("fixtures")
+          required = ("fetched", "validated", "inserted", "updated", "skipped", "rejected")
+          if not isinstance(counts, dict) or any(type(counts.get(name)) is not int for name in required):
+              raise SystemExit("INVALID_FIXTURE_CANARY_COUNTS")
+          if (
+              counts["fetched"] < 1
+              or counts["fetched"] > 150
+              or counts["validated"] != counts["fetched"]
+              or counts["rejected"] != 0
+              or counts["inserted"] + counts["updated"] + counts["skipped"] != counts["fetched"]
+          ):
+              raise SystemExit("FIXTURE_CANARY_COUNT_MISMATCH")
+          evidence = {
+              "schemaVersion": 1,
+              "mode": "production_historical_fixture_canary",
+              "expectedCommit": os.environ["EXPECTED_COMMIT"],
+              "projectRef": os.environ["EXPECTED_PROJECT_REF"],
+              "leagueId": 860,
+              "seasonId": int(os.environ["EXPECTED_SEASON_ID"]),
+              "fixtureWindow": expected_window,
+              "authPath": os.environ["GATE2D_AUTH_PATH"],
+              "jobs": {"fixtures": {name: counts[name] for name in required}},
+              "verdict": "pass",
+          }
+          output = Path(os.environ["GATE2D_EVIDENCE_DIR"]) / "gate2d-historical-fixture-canary.json"
+          output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+          output.chmod(0o600)
+          PY
+          echo "Historical fixture canary: PASS"
+
+      - name: Verify evidence contains no credential patterns
+        id: evidence_scan
+        if: steps.canary.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$GATE2D_EVIDENCE_DIR"
+          for secret_value in \
+            "$SUPABASE_ACCESS_TOKEN" \
+            "$SUPABASE_SECRET_KEY" \
+            "$SUPABASE_PRODUCTION_PUBLISHABLE_KEY" \
+            "$BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN" \
+            "$SPORTSMONKS_API_TOKEN" \
+            "${GATE2D_TRIGGER_SECRET:-}"; do
+            if [[ -n "$secret_value" ]] && grep -R -F -q -- "$secret_value" "$GATE2D_EVIDENCE_DIR"; then
+              echo "CREDENTIAL_FOUND_IN_GATE2D_EVIDENCE"
+              exit 1
+            fi
+          done
+          echo "Gate 2D evidence credential scan: PASS"
+
+      - name: Upload sanitized canary evidence
+        id: evidence_upload
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gate2d-historical-fixture-canary-${{ github.run_id }}
+          path: ${{ steps.runtime.outputs.evidence_dir }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Disable the one-time trigger and remove runtime files
+        id: cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup_failed=0
+          if [[ "${{ steps.secrets.outputs.installed }}" == "true" && -x ./node_modules/.bin/supabase ]]; then
+            if ! ./node_modules/.bin/supabase secrets unset \
+              FOOTBALL_INGESTION_TRIGGER_SECRET \
+              --project-ref "$EXPECTED_PROJECT_REF" \
+              > /dev/null 2>&1; then
+              cleanup_failed=1
+            fi
+          fi
+          if [[ -n "${GATE2D_RUNTIME_DIR:-}" && -d "$GATE2D_RUNTIME_DIR" ]]; then
+            find "$GATE2D_RUNTIME_DIR" -type f -exec chmod 0600 {} \;
+            find "$GATE2D_RUNTIME_DIR" -type f -delete
+            rmdir "$GATE2D_EVIDENCE_DIR" 2>/dev/null || true
+            rmdir "$GATE2D_RUNTIME_DIR" 2>/dev/null || true
+          fi
+          if [[ "$cleanup_failed" != "0" ]]; then
+            echo "ONE_TIME_TRIGGER_DISABLE_FAILED"
+            exit 1
+          fi
+          echo "One-time trigger disabled and runtime files removed."
+
+      - name: Finalize canary verdict
+        if: always()
+        shell: bash
+        env:
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          CANARY_OUTCOME: ${{ steps.canary.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$DEPLOY_OUTCOME" != "success" ||
+                "$CANARY_OUTCOME" != "success" ||
+                "$SCAN_OUTCOME" != "success" ||
+                "$UPLOAD_OUTCOME" != "success" ||
+                "$CLEANUP_OUTCOME" != "success" ]]; then
+            echo "GATE2D_HISTORICAL_FIXTURE_CANARY_FAILED"
+            exit 1
+          fi
+          echo "GATE2D_HISTORICAL_FIXTURE_CANARY_PASS"
+
+
+      - name: Publish sanitized canary status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          CANARY_OUTCOME: ${{ steps.canary.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$GITHUB_TOKEN"
+          state="failure"
+          description="Gate 2D historical fixture canary failed"
+          if [[ "$RUNTIME_OUTCOME" == "success" &&
+                "$DEPLOY_OUTCOME" == "success" &&
+                "$CANARY_OUTCOME" == "success" &&
+                "$SCAN_OUTCOME" == "success" &&
+                "$UPLOAD_OUTCOME" == "success" &&
+                "$CLEANUP_OUTCOME" == "success" ]]; then
+            state="success"
+            description="Gate 2D historical fixture canary passed"
+          fi
+          payload=$(printf \
+            '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate2d-historical-fixture-canary"}' \
+            "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
+          curl --silent --show-error --fail --output /dev/null \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            --data "$payload"
