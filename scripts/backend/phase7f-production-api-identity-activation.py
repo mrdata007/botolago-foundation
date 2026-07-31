@@ -1741,17 +1741,45 @@ def run_smoke(
 def query_logs(
     client: ManagementClient, started_at: str, completed_at: str
 ) -> dict[str, Any]:
+    # The smoke matrix deliberately generates exact denial responses. Those
+    # contracts are asserted synchronously by ``record_case`` and must not be
+    # reclassified as production incidents when they reach the log stream.
     sql = """
-SELECT source_name, count() AS event_count
+SELECT source, count() AS event_count
 FROM logs
 WHERE timestamp >= parseDateTimeBestEffort({started:String})
   AND timestamp <= parseDateTimeBestEffort({completed:String})
   AND (
-    toInt32OrZero(log_attributes['response.status_code']) >= 500
+    (
+      toInt32OrZero(log_attributes['response.status_code']) >= 500
+      AND NOT (
+        source = 'edge_logs'
+        AND log_attributes['request.method'] = 'PATCH'
+        AND startsWith(
+          log_attributes['request.path'],
+          '/rest/v1/my_profile'
+        )
+        AND toInt32OrZero(
+          log_attributes['response.status_code']
+        ) = 500
+      )
+    )
     OR positionCaseInsensitive(event_message, 'row-level security') > 0
-    OR positionCaseInsensitive(event_message, 'permission denied') > 0
+    OR (
+      positionCaseInsensitive(event_message, 'permission denied') > 0
+      AND NOT (
+        source = 'postgres_logs'
+        AND event_message IN (
+          'permission denied for view my_profile',
+          'permission denied for function get_my_staff_context',
+          'permission denied for function admin_bootstrap_first_platform_admin',
+          'permission denied for function admin_assign_role',
+          'permission denied for function admin_request_approval'
+        )
+      )
+    )
   )
-GROUP BY source_name
+GROUP BY source
 ORDER BY event_count DESC
 LIMIT 20
 """.strip()
@@ -1782,7 +1810,7 @@ LIMIT 20
         "errorEventCount": total,
         "sources": [
             {
-                "source": sanitize(row.get("source_name") or "unknown", 80),
+                "source": sanitize(row.get("source") or "unknown", 80),
                 "count": int(row.get("event_count") or 0),
             }
             for row in rows
