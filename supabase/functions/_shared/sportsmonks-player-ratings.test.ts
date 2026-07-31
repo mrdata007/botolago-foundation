@@ -169,9 +169,7 @@ describe("preseason player rating algorithm", () => {
       ]),
     );
     const ratings = calculatePreseasonRatings(candidates, values);
-    expect(ratings.map((rating) => rating.fantasyEquivalentPoints)).toEqual([
-      17, 12, 8, 6,
-    ]);
+    expect(ratings.map((rating) => rating.fantasyEquivalentPoints)).toEqual([17, 12, 8, 6]);
   });
 });
 
@@ -214,12 +212,8 @@ describe("SportsMonks player rating runtime", () => {
       now: () => NOW,
       fetch: async (input, init) => {
         fetched += 1;
-        const url = new URL(
-          input instanceof Request ? input.url : input.toString(),
-        );
-        expect(url.pathname).toBe(
-          "/v3/football/statistics/seasons/players/26027",
-        );
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        expect(url.pathname).toBe("/v3/football/statistics/seasons/players/26027");
         expect(url.searchParams.get("include")).toBe("details");
         expect(url.searchParams.get("per_page")).toBe("50");
         expect(url.href).not.toContain(TOKEN);
@@ -274,9 +268,7 @@ describe("SportsMonks player rating runtime", () => {
       },
     });
     expect(fetched).toBe(1);
-    const persisted = calls.find(
-      (call) => call.name === "ingest_player_season_ratings",
-    );
+    const persisted = calls.find((call) => call.name === "ingest_player_season_ratings");
     expect(persisted?.args.p_rows).toMatchObject([
       {
         externalPlayerId: "101",
@@ -311,17 +303,14 @@ describe("SportsMonks player rating runtime", () => {
         },
       }),
     };
-    const result = await handleSportsMonksPlayerRatingsRequest(
-      request("wrong"),
-      {
-        environment: environment(),
-        client,
-        fetch: async () => {
-          fetched = true;
-          return response({});
-        },
+    const result = await handleSportsMonksPlayerRatingsRequest(request("wrong"), {
+      environment: environment(),
+      client,
+      fetch: async () => {
+        fetched = true;
+        return response({});
       },
-    );
+    });
     expect(result.status).toBe(401);
     expect(fetched).toBe(false);
     expect(calls).toHaveLength(0);
