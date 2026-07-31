@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  handleSportsMonksCatalogRequest,
-  type CatalogRpcClient,
-} from "./sportsmonks-catalog";
+import { handleSportsMonksCatalogRequest, type CatalogRpcClient } from "./sportsmonks-catalog";
 
 const environment = {
   FOOTBALL_INGESTION_TRIGGER_SECRET: "0123456789abcdef0123456789abcdef",
@@ -32,8 +29,7 @@ function rpcClient(calls: RpcCall[]): CatalogRpcClient {
       return {
         async rpc(rpcName, args) {
           calls.push({ name: rpcName, args });
-          if (rpcName === "begin_football_ingestion")
-            return { data: `run-${++run}`, error: null };
+          if (rpcName === "begin_football_ingestion") return { data: `run-${++run}`, error: null };
           if (rpcName === "ingest_football_catalog_entity") {
             return {
               data: { id: `id-${args.p_external_id}`, outcome: "inserted" },
@@ -48,24 +44,18 @@ function rpcClient(calls: RpcCall[]): CatalogRpcClient {
 }
 
 function providerFetch(urls: string[]) {
-  return async (
-    input: string | URL | Request,
-    init?: RequestInit,
-  ): Promise<Response> => {
+  return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const url = String(input);
     const pathname = new URL(url).pathname;
     urls.push(url);
     expect(url).not.toContain(environment.SPORTSMONKS_API_TOKEN);
-    expect(new Headers(init?.headers).get("authorization")).toBe(
-      environment.SPORTSMONKS_API_TOKEN,
-    );
+    expect(new Headers(init?.headers).get("authorization")).toBe(environment.SPORTSMONKS_API_TOKEN);
     if (url.includes("/leagues/860")) {
       return Response.json({
         data: { id: 860, name: "Botola Pro", short_code: "BPL" },
       });
     }
-    if (url.includes("/rounds/seasons/28647"))
-      return Response.json({ data: [] });
+    if (url.includes("/rounds/seasons/28647")) return Response.json({ data: [] });
     if (pathname === "/v3/football/seasons/28647") {
       return Response.json({
         data: {
@@ -118,8 +108,7 @@ describe("protected SportsMonks catalog function", () => {
       new Request("https://example.test/football-ingest", {
         method: "POST",
         headers: {
-          "x-botolago-ingestion-key":
-            environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+          "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
         },
         body: JSON.stringify({ job: "catalog", pageSize: 50, maxPages: 1 }),
       }),
