@@ -66,12 +66,7 @@ function squad(teamId: number): Response {
   });
 }
 
-function detail(
-  id: number,
-  typeId: number,
-  developerName: string,
-  value: number,
-) {
+function detail(id: number, typeId: number, developerName: string, value: number) {
   return {
     id,
     type_id: typeId,
@@ -101,12 +96,7 @@ function standing(teamId: number, rank: number) {
       detail(4 + teamId, 132, "OVERALL_LOST", lost),
       detail(5 + teamId, 133, "OVERALL_SCORED", goalsFor),
       detail(6 + teamId, 134, "OVERALL_CONCEDED", goalsAgainst),
-      detail(
-        7 + teamId,
-        135,
-        "OVERALL_GOAL_DIFFERENCE",
-        goalsFor - goalsAgainst,
-      ),
+      detail(7 + teamId, 135, "OVERALL_GOAL_DIFFERENCE", goalsFor - goalsAgainst),
       detail(8 + teamId, 136, "TOTAL_POINTS", points),
     ],
   };
@@ -155,35 +145,26 @@ describe("SportsMonks historical content runtime", () => {
   it("persists classified squad rows and a complete mapped standings table", async () => {
     const requests: URL[] = [];
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
-    const response = await handleSportsMonksHistoricalContentRequest(
-      request(),
-      {
-        environment: environment(),
-        client: rpcClient(calls),
-        now: () => NOW,
-        fetch: async (input, init) => {
-          const url = new URL(
-            input instanceof Request ? input.url : input.toString(),
-          );
-          requests.push(url);
-          expect(init?.method).toBe("GET");
-          expect(new Headers(init?.headers).get("Authorization")).toBe(TOKEN);
-          expect(url.href).not.toContain(TOKEN);
-          if (url.pathname.endsWith("/standings/seasons/26027")) {
-            expect(url.searchParams.get("include")).toBe(
-              "participant;details.type",
-            );
-            return json({ data: [standing(306, 1), standing(2_846, 2)] });
-          }
-          const match = /\/squads\/seasons\/26027\/teams\/(\d+)$/.exec(
-            url.pathname,
-          );
-          if (!match) return json({}, 404);
-          expect(url.searchParams.get("include")).toBe("player;position");
-          return squad(Number(match[1]));
-        },
+    const response = await handleSportsMonksHistoricalContentRequest(request(), {
+      environment: environment(),
+      client: rpcClient(calls),
+      now: () => NOW,
+      fetch: async (input, init) => {
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        requests.push(url);
+        expect(init?.method).toBe("GET");
+        expect(new Headers(init?.headers).get("Authorization")).toBe(TOKEN);
+        expect(url.href).not.toContain(TOKEN);
+        if (url.pathname.endsWith("/standings/seasons/26027")) {
+          expect(url.searchParams.get("include")).toBe("participant;details.type");
+          return json({ data: [standing(306, 1), standing(2_846, 2)] });
+        }
+        const match = /\/squads\/seasons\/26027\/teams\/(\d+)$/.exec(url.pathname);
+        if (!match) return json({}, 404);
+        expect(url.searchParams.get("include")).toBe("player;position");
+        return squad(Number(match[1]));
       },
-    );
+    });
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
@@ -215,19 +196,11 @@ describe("SportsMonks historical content runtime", () => {
       },
     });
     expect(requests).toHaveLength(3);
-    expect(
-      requests.every((url) => url.origin === "https://api.sportmonks.com"),
-    ).toBe(true);
-    expect(
-      calls.filter((call) => call.name === "ingest_football_squad"),
-    ).toHaveLength(2);
-    expect(
-      calls.filter((call) => call.name === "ingest_football_standings"),
-    ).toHaveLength(1);
+    expect(requests.every((url) => url.origin === "https://api.sportmonks.com")).toBe(true);
+    expect(calls.filter((call) => call.name === "ingest_football_squad")).toHaveLength(2);
+    expect(calls.filter((call) => call.name === "ingest_football_standings")).toHaveLength(1);
     const persisted = calls.find(
-      (call) =>
-        call.name === "ingest_football_squad" &&
-        call.args.p_team_external_id === "2846",
+      (call) => call.name === "ingest_football_squad" && call.args.p_team_external_id === "2846",
     );
     expect(persisted?.args.p_memberships).toEqual([
       {
@@ -252,17 +225,14 @@ describe("SportsMonks historical content runtime", () => {
   it("rejects requests without the one-time trigger secret before external work", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     let fetched = false;
-    const response = await handleSportsMonksHistoricalContentRequest(
-      request("wrong"),
-      {
-        environment: environment(),
-        client: rpcClient(calls),
-        fetch: async () => {
-          fetched = true;
-          return json({});
-        },
+    const response = await handleSportsMonksHistoricalContentRequest(request("wrong"), {
+      environment: environment(),
+      client: rpcClient(calls),
+      fetch: async () => {
+        fetched = true;
+        return json({});
       },
-    );
+    });
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "unauthorized" });
     expect(fetched).toBe(false);
@@ -271,53 +241,46 @@ describe("SportsMonks historical content runtime", () => {
 
   it("drops malformed optional player metadata without rejecting the squad membership", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
-    const response = await handleSportsMonksHistoricalContentRequest(
-      request(),
-      {
-        environment: {
-          ...environment(),
-          FOOTBALL_SPORTSMONKS_TEAM_IDS: "2846",
-        },
-        client: rpcClient(calls),
-        now: () => NOW,
-        fetch: async (input) => {
-          const url = new URL(
-            input instanceof Request ? input.url : input.toString(),
-          );
-          if (url.pathname.endsWith("/standings/seasons/26027")) {
-            return json({ data: [standing(2_846, 1)] });
-          }
-          return json({
-            data: [
-              {
-                id: 3_846,
-                player_id: 4_846,
-                team_id: 2_846,
-                season_id: 26_027,
-                position_id: 25,
-                jersey_number: 120,
-                player: {
-                  id: 4_846,
-                  name: "Player 2846",
-                  display_name: "P. 2846",
-                  firstname: { malformed: true },
-                  lastname: 2_846,
-                  date_of_birth: "0000-00-00",
-                  last_played_at: "not-a-timestamp",
-                  updated_at: "2026-07-01 12:00:00",
-                },
-                position: { id: 25, developer_name: "DEFENDER" },
-              },
-            ],
-          });
-        },
+    const response = await handleSportsMonksHistoricalContentRequest(request(), {
+      environment: {
+        ...environment(),
+        FOOTBALL_SPORTSMONKS_TEAM_IDS: "2846",
       },
-    );
+      client: rpcClient(calls),
+      now: () => NOW,
+      fetch: async (input) => {
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        if (url.pathname.endsWith("/standings/seasons/26027")) {
+          return json({ data: [standing(2_846, 1)] });
+        }
+        return json({
+          data: [
+            {
+              id: 3_846,
+              player_id: 4_846,
+              team_id: 2_846,
+              season_id: 26_027,
+              position_id: 25,
+              jersey_number: 120,
+              player: {
+                id: 4_846,
+                name: "Player 2846",
+                display_name: "P. 2846",
+                firstname: { malformed: true },
+                lastname: 2_846,
+                date_of_birth: "0000-00-00",
+                last_played_at: "not-a-timestamp",
+                updated_at: "2026-07-01 12:00:00",
+              },
+              position: { id: 25, developer_name: "DEFENDER" },
+            },
+          ],
+        });
+      },
+    });
 
     expect(response.status).toBe(200);
-    const persisted = calls.find(
-      (call) => call.name === "ingest_football_squad",
-    );
+    const persisted = calls.find((call) => call.name === "ingest_football_squad");
     expect(persisted?.args.p_memberships).toEqual([
       {
         externalPlayerId: "4846",
@@ -345,13 +308,10 @@ describe("SportsMonks historical content runtime", () => {
       headers: { "x-botolago-ingestion-key": SECRET },
       body: JSON.stringify({ job: "historical_content", teamIds: [999] }),
     });
-    const response = await handleSportsMonksHistoricalContentRequest(
-      mutableRequest,
-      {
-        environment: environment(),
-        client: rpcClient(calls),
-      },
-    );
+    const response = await handleSportsMonksHistoricalContentRequest(mutableRequest, {
+      environment: environment(),
+      client: rpcClient(calls),
+    });
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "invalid_request" });
     expect(calls).toHaveLength(0);
