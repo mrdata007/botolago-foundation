@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { handleGnewsRequest, type NewsRpcClient } from "./gnews-runtime";
+import { handleGnewsRequest, type NewsRpcClient } from "./gnews";
 
 const API_KEY = "gnews-test-key-1234567890";
 const SECRET = "gnews-trigger-secret-1234567890abcdef";
