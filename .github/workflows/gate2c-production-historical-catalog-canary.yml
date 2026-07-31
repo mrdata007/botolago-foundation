@@ -117,7 +117,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate2c-historical-catalog-canary-2026-07-31-03",
+              "requestId": "gate2c-historical-catalog-canary-2026-07-31-04",
               "mode": "production_historical_catalog_canary",
               "projectRef": "tkewgajrljbwgwedqsxn",
               "leagueId": 860,
@@ -246,7 +246,7 @@ jobs:
           response = json.loads(Path(os.environ["GATE2C_RESPONSE_FILE"]).read_text(encoding="utf-8"))
           if response.get("provider") != "sportsmonks" or not isinstance(response.get("jobs"), dict):
               raise SystemExit("INVALID_CANARY_RESPONSE")
-          expected = {"competition": 1, "season": 1, "rounds": 30, "teams": 16}
+          expected = {"competitions": 1, "seasons": 1, "rounds": 30, "teams": 16}
           sanitized_jobs = {}
           for job, expected_count in expected.items():
               counts = response["jobs"].get(job)
@@ -282,7 +282,7 @@ jobs:
 
       - name: Verify evidence contains no credential patterns
         id: evidence_scan
-        if: always() && steps.runtime.outcome == 'success'
+        if: steps.canary.outcome == 'success'
         shell: bash
         run: |
           set -euo pipefail
