@@ -22,6 +22,7 @@ concurrency:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   canary:
@@ -116,7 +117,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate2c-historical-catalog-canary-2026-07-31-01",
+              "requestId": "gate2c-historical-catalog-canary-2026-07-31-02",
               "mode": "production_historical_catalog_canary",
               "projectRef": "tkewgajrljbwgwedqsxn",
               "leagueId": 860,
@@ -355,3 +356,38 @@ jobs:
             exit 1
           fi
           echo "GATE2C_HISTORICAL_CATALOG_CANARY_PASS"
+
+
+      - name: Publish sanitized canary status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+          CANARY_OUTCOME: ${{ steps.canary.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$GITHUB_TOKEN"
+          state="failure"
+          description="Gate 2C historical catalog canary failed"
+          if [[ "$RUNTIME_OUTCOME" == "success" &&
+                "$CANARY_OUTCOME" == "success" &&
+                "$SCAN_OUTCOME" == "success" &&
+                "$UPLOAD_OUTCOME" == "success" &&
+                "$CLEANUP_OUTCOME" == "success" ]]; then
+            state="success"
+            description="Gate 2C historical catalog canary passed"
+          fi
+          payload=$(printf \
+            '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate2c-historical-catalog-canary"}' \
+            "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
+          curl --silent --show-error --fail --output /dev/null \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            --data "$payload"
