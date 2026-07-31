@@ -121,7 +121,10 @@ function historicalSeason(value: unknown): HistoricalSeason | null {
 }
 
 function validateFixtureSample(value: unknown, seasonId: number): void {
-  const fixtures = array(record(value, "invalid_historical_fixtures_response").data, "invalid_historical_fixtures_data");
+  const fixtures = array(
+    record(value, "invalid_historical_fixtures_response").data,
+    "invalid_historical_fixtures_data",
+  );
   if (fixtures.length === 0) throw new SportsMonksProbeError("historical_fixture_sample_missing");
   const fixture = record(fixtures[0], "invalid_historical_fixture_sample");
   positiveInteger(fixture.id, "invalid_historical_fixture_id");
@@ -203,11 +206,7 @@ export async function runSportsMonksHistoricalSeasonProbe(
   }
   if (!selected) throw new SportsMonksProbeError("populated_historical_season_not_available");
 
-  const fixtureWindow = boundedFixtureWindow(
-    selected.startingAt,
-    selected.endingAt,
-    observedAt,
-  );
+  const fixtureWindow = boundedFixtureWindow(selected.startingAt, selected.endingAt, observedAt);
   const fixturesResponse = await requestSportsMonksJson(
     `${SPORTSMONKS_BASE_PATH}/fixtures/between/${fixtureWindow.from}/${fixtureWindow.to}`,
     {
