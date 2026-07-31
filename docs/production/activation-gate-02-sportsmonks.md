@@ -1,6 +1,6 @@
 # Gate 2 — SportsMonks football provider activation
 
-Status: **Gate 2A merged; protected Gate 2B read-only access probe ready**
+Status: **Gate 2B read-only access probe passed; production writes remain disabled**
 
 Target project: BotolaGO Production V2 (`tkewgajrljbwgwedqsxn`)
 
@@ -14,6 +14,18 @@ Gate 2 replaces the deterministic football fixture adapter with a reviewed Sport
 Merging Gate 2A performs no database write, deploys no Edge Function, creates no cron job, and does not make a live SportsMonks request.
 
 The Gate 2B access probe is also no-write. It discovers the provider's current season for Botola Pro league `860`, verifies the season-scoped rounds and teams endpoints, and samples a fixture window of at most 100 inclusive days. It does not receive any Supabase credential and cannot create production rows.
+
+## Gate 2B production access evidence
+
+The protected probe passed on 2026-07-31 in [GitHub Actions run 30646676316](https://github.com/mrdata007/botolago-foundation/actions/runs/30646676316) against exact `main` commit `f4d92ea18e3fad50ed97d3b02bfa844a5c0e3f7d`.
+
+- League: Botola Pro, SportsMonks ID `860`, active.
+- Provider-designated current season: `2026/2027`, SportsMonks ID `28647`, 2026-09-12 through 2027-07-05.
+- Verified maximum fixture probe window: 2026-09-12 through 2026-12-20, 100 inclusive days.
+- Provider response at the evidence timestamp: zero rounds, zero teams, and no fixture sample.
+- Sanitized evidence artifact digest: `sha256:83a89c803ecf9881eb6a87a33d0b5e290cb6da13ec277131aa43d7ee4f759b2b`.
+
+The zero-row catalog is a provider-data readiness boundary, not authorization to fabricate or import placeholders. A production catalog canary must wait until SportsMonks publishes season `28647` teams/rounds, or until a separate reviewed decision explicitly selects a populated historical season.
 
 ## Gate 2A contract
 
