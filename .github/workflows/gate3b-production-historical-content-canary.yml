@@ -108,7 +108,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate3b-historical-content-canary-2026-07-31-01",
+              "requestId": "gate3b-historical-content-canary-2026-07-31-02",
               "mode": "production_historical_content_canary",
               "projectRef": "tkewgajrljbwgwedqsxn",
               "leagueId": 860,
@@ -147,7 +147,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! ./node_modules/.bin/supabase functions deploy football-ingest +            --project-ref "$EXPECTED_PROJECT_REF" +            > "$GATE3B_RUNTIME_DIR/function-deploy.log" 2>&1; then
+          if ! ./node_modules/.bin/supabase functions deploy football-ingest \
+            --project-ref "$EXPECTED_PROJECT_REF" \
+            > "$GATE3B_RUNTIME_DIR/function-deploy.log" 2>&1; then
             echo "Reviewed content runtime deployment failed."
             exit 1
           fi
@@ -202,7 +204,10 @@ jobs:
           path.write_text("".join(f"{name}={os.environ[name]}\n" for name in names), encoding="utf-8")
           path.chmod(0o600)
           PY
-          if ! ./node_modules/.bin/supabase secrets set +            --project-ref "$EXPECTED_PROJECT_REF" +            --env-file "$GATE3B_SECRET_FILE" +            > "$GATE3B_RUNTIME_DIR/secrets-set.log" 2>&1; then
+          if ! ./node_modules/.bin/supabase secrets set \
+            --project-ref "$EXPECTED_PROJECT_REF" \
+            --env-file "$GATE3B_SECRET_FILE" \
+            > "$GATE3B_RUNTIME_DIR/secrets-set.log" 2>&1; then
             echo "Supabase rejected the protected secret batch."
             exit 1
           fi
@@ -215,7 +220,16 @@ jobs:
         run: |
           set -euo pipefail
           endpoint="https://${EXPECTED_PROJECT_REF}.supabase.co/functions/v1/football-ingest"
-          http_status=$(curl --silent --show-error +            --output "$GATE3B_RESPONSE_FILE" +            --write-out '%{http_code}' +            --request POST "$endpoint" +            --header 'content-type: application/json' +            --header 'x-botolago-ingestion-job: historical_content' +            --header "apikey: $SUPABASE_SECRET_KEY" +            --header "Authorization: Bearer $SUPABASE_SECRET_KEY" +            --header "x-botolago-ingestion-key: $GATE3B_TRIGGER_SECRET" +            --data '{"job":"historical_content"}')
+          http_status=$(curl --silent --show-error \
+            --output "$GATE3B_RESPONSE_FILE" \
+            --write-out '%{http_code}' \
+            --request POST "$endpoint" \
+            --header 'content-type: application/json' \
+            --header 'x-botolago-ingestion-job: historical_content' \
+            --header "apikey: $SUPABASE_SECRET_KEY" \
+            --header "Authorization: Bearer $SUPABASE_SECRET_KEY" \
+            --header "x-botolago-ingestion-key: $GATE3B_TRIGGER_SECRET" \
+            --data '{"job":"historical_content"}')
           export GATE3B_HTTP_STATUS="$http_status"
           python - <<'PY'
           import json
@@ -287,7 +301,11 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/backend/phase7f-scan-sanitized-evidence.py "$GATE3B_EVIDENCE_DIR"
-          for secret_value in +            "$SUPABASE_ACCESS_TOKEN" +            "$SUPABASE_SECRET_KEY" +            "$SPORTSMONKS_API_TOKEN" +            "${GATE3B_TRIGGER_SECRET:-}"; do
+          for secret_value in \
+            "$SUPABASE_ACCESS_TOKEN" \
+            "$SUPABASE_SECRET_KEY" \
+            "$SPORTSMONKS_API_TOKEN" \
+            "${GATE3B_TRIGGER_SECRET:-}"; do
             if [[ -n "$secret_value" ]] && grep -R -F -q -- "$secret_value" "$GATE3B_EVIDENCE_DIR"; then
               echo "CREDENTIAL_FOUND_IN_GATE3B_EVIDENCE"
               exit 1
@@ -313,7 +331,10 @@ jobs:
           set -euo pipefail
           cleanup_failed=0
           if [[ "${{ steps.secrets.outputs.installed }}" == "true" && -x ./node_modules/.bin/supabase ]]; then
-            if ! ./node_modules/.bin/supabase secrets unset +              FOOTBALL_INGESTION_TRIGGER_SECRET +              --project-ref "$EXPECTED_PROJECT_REF" +              > /dev/null 2>&1; then
+            if ! ./node_modules/.bin/supabase secrets unset \
+              FOOTBALL_INGESTION_TRIGGER_SECRET \
+              --project-ref "$EXPECTED_PROJECT_REF" \
+              > /dev/null 2>&1; then
               cleanup_failed=1
             fi
           fi
@@ -369,5 +390,13 @@ jobs:
             state="success"
             description="Gate 3B historical content canary passed"
           fi
-          payload=$(printf +            '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate3b-historical-content-canary"}' +            "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
-          curl --silent --show-error --fail --output /dev/null +            --request POST +            --header "Accept: application/vnd.github+json" +            --header "Authorization: Bearer $GITHUB_TOKEN" +            --header "X-GitHub-Api-Version: 2022-11-28" +            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" +            --data "$payload"
+          payload=$(printf \
+            '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate3b-historical-content-canary"}' \
+            "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
+          curl --silent --show-error --fail --output /dev/null \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            --data "$payload"
