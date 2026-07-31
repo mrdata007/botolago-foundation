@@ -63,6 +63,8 @@ function providerFetch(urls: string[]) {
         data: { id: 860, name: "Botola Pro", short_code: "BPL" },
       });
     }
+    if (url.includes("/rounds/seasons/28647"))
+      return Response.json({ data: [] });
     if (url.includes("/seasons/28647")) {
       return Response.json({
         data: {
@@ -75,8 +77,6 @@ function providerFetch(urls: string[]) {
         },
       });
     }
-    if (url.includes("/rounds/seasons/28647"))
-      return Response.json({ data: [] });
     if (url.includes("/teams/seasons/28647")) {
       return Response.json({
         data: [{ id: 1001, name: "Raja Club Athletic", short_code: "RCA" }],
