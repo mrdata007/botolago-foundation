@@ -1,8 +1,17 @@
 # Gate 2 — SportsMonks football provider activation
 
-Status: **Gate 2B catalog persistence and protected runtime implemented; production deployment and writes remain disabled**
+Status: **Gate 2D historical catalog and fixture activation complete; Gate 2E current-season writes remain blocked on provider publication**
 
 Target project: BotolaGO Production V2 (`tkewgajrljbwgwedqsxn`)
+
+
+## Current production state
+
+- Production V2 API and identity activation is complete.
+- The protected SportsMonks catalog canary persisted one competition, one season, 30 rounds, and 16 teams for historical season `26027`.
+- [Gate 2D run 30657793279](https://github.com/mrdata007/botolago-foundation/actions/runs/30657793279) persisted 130 historical fixtures with 130 unique provider mappings, zero rejections, and verified anonymous pagination.
+- The `football-ingest` Edge Function is active with JWT verification; ingestion RPCs remain service-role-only and `app.fixtures` has forced RLS.
+- No Supabase Cron or `pg_net` extension is enabled. Historical ingestion is not scheduled.
 
 ## Purpose
 
@@ -26,6 +35,17 @@ The protected probe passed on 2026-07-31 in [GitHub Actions run 30646676316](htt
 - Sanitized evidence artifact digest: `sha256:83a89c803ecf9881eb6a87a33d0b5e290cb6da13ec277131aa43d7ee4f759b2b`.
 
 The zero-row catalog is a provider-data readiness boundary, not authorization to fabricate or import placeholders. A production catalog canary must wait until SportsMonks publishes season `28647` teams/rounds, or until a separate reviewed decision explicitly selects a populated historical season.
+
+## Gate 2E current-season evidence and cadence
+
+The protected current-season probe passed on 2026-07-31 in [GitHub Actions run 30659337465](https://github.com/mrdata007/botolago-foundation/actions/runs/30659337465) against exact `main` commit `7d3f16a2b771c1f90a1bb5727012c7b75553b4a3`.
+
+- SportsMonks still designates season `28647` (`2026/2027`) as current.
+- The provider still returns zero rounds, zero teams, and no fixture sample.
+- Sanitized evidence artifact digest: `sha256:fc08e9bfc36bf9cfdfff2856c4a295638a0633d41ca4a363c3a07d3f95d5a0e9`.
+- Current-season catalog and fixture writes remain disabled.
+
+Gate 2E runs one read-only readiness check daily at `06:17 UTC` from the latest reviewed default-branch commit. The off-hour minute follows GitHub's guidance to reduce scheduled-run delay. Each run makes exactly four bounded GET requests, receives no Supabase credential, writes no database row, uploads only credential-scanned evidence, and publishes whether rounds, teams, and a fixture sample are all present. Publication readiness triggers a separate reviewed activation; it never enables ingestion automatically.
 
 ## Gate 2A contract
 
@@ -84,22 +104,18 @@ The focused test suite must prove all of the following:
 
 ## Gate 2B implementation boundary
 
-The repository now contains an additive, service-role-only catalog RPC for normalized competition, season, round, and team identities plus the authenticated `football-ingest` Edge Function. The function requires both Supabase JWT verification and a separate high-entropy `FOOTBALL_INGESTION_TRIGGER_SECRET`, pins the SportsMonks origin, bounds request/response sizes, pages, retries, and timeouts, and records every run through the private ingestion ledger.
+Production V2 now contains the service-role-only catalog and fixture ingestion RPCs plus the authenticated `football-ingest` Edge Function. The runtime requires Supabase JWT verification and a separate high-entropy one-time trigger secret, pins the SportsMonks origin, bounds request/response sizes, pages, retries, and timeouts, and records every run through the private ingestion ledger.
 
-This merge does not apply the migration to Production V2, deploy the Edge Function, copy the SportsMonks token into Supabase, invoke the function, or create a schedule. The first production invocation must remain a separately reviewed one-page catalog canary. Because the provider probe returned zero current-season rounds and teams, fixture ingestion stays blocked until the catalog canary proves those prerequisite mappings exist.
+Historical season `26027` completed both catalog and fixture canaries. The one-time trigger secret was removed after each invocation, and no historical write cadence exists. Current-season `28647` ingestion remains fail-closed until the readiness evidence proves its prerequisite rounds, teams, and fixtures are published.
 
 ## Gate 2B sequence
 
-Gate 2B is allowed only after Gate 2A CI is green.
+Gate 2A through the bounded Gate 2D historical import are complete. The remaining Gate 2 sequence is:
 
-1. Confirm the SportsMonks plan includes the reviewed Botola league, season, and required includes.
-2. Create or select the API token in SportsMonks without pasting it into chat, source code, terminal history, or a workflow input.
-3. Store it as the protected GitHub Environment secret `SPORTSMONKS_API_TOKEN` for the no-write probe. Add a Supabase server secret only when the reviewed ingestion function is ready to deploy.
-4. Run `.github/workflows/gate2b-sportsmonks-production-probe.yml` from the exact reviewed `main` commit and retain only its sanitized evidence artifact.
-5. Add reviewed persistence for competition, season, round, and team identities before fixture writes are enabled.
-6. Deploy an authenticated ingestion function with a fixed project ref and a bounded fixture window.
-7. Run a one-page catalog canary, then the bounded fixture import.
-8. Verify API rows, freshness ordering, rejection journal, and application reads before enabling a schedule.
-9. Start with a low-frequency schedule; expand to live cadence only after rate-limit headroom and error rate are observed.
+1. Run the daily read-only Gate 2E readiness check for current season `28647`.
+2. When rounds, teams, and a fixture sample are all present, review and run a current-season catalog canary.
+3. Run a bounded current-season fixture canary and independently verify API rows, mappings, freshness, and rejection journals.
+4. Enable a low-frequency write cadence only after the canaries pass.
+5. Expand toward live cadence only after rate-limit headroom, duration, and error rate are observed.
 
 Any failure stops before the next step. Re-running the whole activation without identifying the failed invariant is prohibited.
