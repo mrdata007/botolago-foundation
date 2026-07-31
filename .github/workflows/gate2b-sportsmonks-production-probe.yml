@@ -79,7 +79,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate2b-sportsmonks-production-probe-2026-07-31-02",
+              "requestId": "gate2b-sportsmonks-production-probe-2026-07-31-03",
               "mode": "read_only",
               "leagueId": 860,
               "confirmation": "RUN_GATE2B_SPORTSMONKS_PROBE",
