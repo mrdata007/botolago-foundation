@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  handleSportsMonksFixtureRequest,
-  type FixtureRpcClient,
-} from "./sportsmonks-fixtures";
+import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sportsmonks-fixtures";
 
 const environment = {
   FOOTBALL_INGESTION_TRIGGER_SECRET: "0123456789abcdef0123456789abcdef",
@@ -117,8 +114,7 @@ describe("protected SportsMonks fixture function", () => {
       new Request("https://example.test/football-ingest", {
         method: "POST",
         headers: {
-          "x-botolago-ingestion-key":
-            environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+          "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
         },
         body: JSON.stringify({ job: "fixtures", pageSize: 50, maxPages: 1 }),
       }),
@@ -154,9 +150,7 @@ describe("protected SportsMonks fixture function", () => {
         fixtures: { fetched: 1, validated: 1, inserted: 1, rejected: 0 },
       },
     });
-    const ingest = calls.find(
-      (call) => call.name === "ingest_football_fixture",
-    );
+    const ingest = calls.find((call) => call.name === "ingest_football_fixture");
     expect(ingest?.args.p_fixture).toMatchObject({
       kickoffAt: "2026-04-01T20:00:00.000Z",
       status: "finished",
@@ -177,8 +171,7 @@ describe("protected SportsMonks fixture function", () => {
       new Request("https://example.test/football-ingest", {
         method: "POST",
         headers: {
-          "x-botolago-ingestion-key":
-            environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+          "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
         },
         body: JSON.stringify({ job: "fixtures", pageSize: 50, maxPages: 1 }),
       }),
@@ -202,12 +195,8 @@ describe("protected SportsMonks fixture function", () => {
 
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "fixture_item_rejected" });
-    expect(
-      calls.some((call) => call.name === "record_football_ingestion_rejection"),
-    ).toBe(true);
-    expect(calls.some((call) => call.name === "ingest_football_fixture")).toBe(
-      false,
-    );
+    expect(calls.some((call) => call.name === "record_football_ingestion_rejection")).toBe(true);
+    expect(calls.some((call) => call.name === "ingest_football_fixture")).toBe(false);
     expect(calls.at(-1)).toMatchObject({
       name: "complete_football_ingestion",
       args: { p_status: "partial", p_records_rejected: 1 },
