@@ -9,7 +9,7 @@ const NOW = new Date("2026-07-31T12:00:00.000Z");
 function config(fetch: SportsmonksProviderConfig["fetch"]): SportsmonksProviderConfig {
   return {
     token: TOKEN,
-    leagueId: 501,
+    leagueId: 860,
     seasonId: 23_636,
     countryCode: "MA",
     competitionType: "league",
@@ -43,7 +43,7 @@ function fixturePayload(state = "FT") {
     data: [
       {
         id: 19_100_001,
-        league_id: 501,
+        league_id: 860,
         season_id: 23_636,
         round_id: 12,
         venue_id: 77,
@@ -79,7 +79,7 @@ describe("SportsmonksFootballProvider", () => {
         requestedUrl = String(input);
         authorization = new Headers(init?.headers).get("authorization") ?? "";
         return jsonResponse({
-          data: { id: 501, name: "Botola Pro", short_code: "BPL" },
+          data: { id: 860, name: "Botola Pro", short_code: "BPL" },
         });
       }),
     );
@@ -87,12 +87,12 @@ describe("SportsmonksFootballProvider", () => {
     const page = await provider.listCompetitions({ limit: 10 });
 
     expect(authorization).toBe(TOKEN);
-    expect(requestedUrl).toBe("https://api.sportmonks.com/v3/football/leagues/501");
+    expect(requestedUrl).toBe("https://api.sportmonks.com/v3/football/leagues/860");
     expect(requestedUrl).not.toContain(TOKEN);
     expect(requestedUrl).not.toContain("api_token");
     expect(page.items).toEqual([
       expect.objectContaining({
-        externalId: "501",
+        externalId: "860",
         name: "Botola Pro",
         shortName: "BPL",
         type: "league",
@@ -117,7 +117,7 @@ describe("SportsmonksFootballProvider", () => {
     const url = new URL(requestedUrl);
 
     expect(url.pathname).toBe("/v3/football/fixtures/between/2026-01-01/2026-06-30");
-    expect(url.searchParams.get("filters")).toBe("fixtureLeagues:501");
+    expect(url.searchParams.get("filters")).toBe("fixtureLeagues:860");
     expect(url.searchParams.get("include")).toBe("participants;state;scores");
     expect(url.searchParams.get("timezone")).toBe("UTC");
     expect(url.searchParams.get("per_page")).toBe("50");
@@ -182,7 +182,7 @@ describe("SportsmonksFootballProvider", () => {
             "retry-after": "2",
           });
         return jsonResponse({
-          data: { id: 501, name: "Botola Pro", short_code: "BPL" },
+          data: { id: 860, name: "Botola Pro", short_code: "BPL" },
         });
       }),
       maxRetries: 1,
@@ -197,6 +197,49 @@ describe("SportsmonksFootballProvider", () => {
     expect(waits).toEqual([2_000]);
   });
 
+  test("maps every actionable state in the current SportsMonks state reference", async () => {
+    const cases = [
+      ["NS", "not_started", "pre_match"],
+      ["INPLAY_1ST_HALF", "live_first_half", "first_half"],
+      ["HT", "half_time", "half_time"],
+      ["BREAK", "extra_time", "extra_time"],
+      ["FT", "finished", "post_match"],
+      ["INPLAY_ET", "extra_time", "extra_time"],
+      ["AET", "finished", "post_match"],
+      ["FT_PEN", "finished", "post_match"],
+      ["INPLAY_PENALTIES", "penalties", "penalties"],
+      ["POSTPONED", "postponed", "pre_match"],
+      ["SUSPENDED", "suspended", "pre_match"],
+      ["CANCELLED", "cancelled", "pre_match"],
+      ["TBA", "scheduled", "pre_match"],
+      ["WO", "finished", "post_match"],
+      ["ABANDONED", "abandoned", "post_match"],
+      ["DELAYED", "delayed", "pre_match"],
+      ["AWARDED", "finished", "post_match"],
+      ["INTERRUPTED", "suspended", "pre_match"],
+      ["DELETED", "cancelled", "pre_match"],
+      ["EXTRA_TIME_BREAK", "extra_time", "extra_time"],
+      ["PEN_BREAK", "penalties", "penalties"],
+    ] as const;
+
+    for (const [state, status, period] of cases) {
+      const provider = new SportsmonksFootballProvider(
+        config(async () => jsonResponse(fixturePayload(state))),
+      );
+      const page = await provider.listFixtures({ limit: 1 });
+      expect(page.items[0]).toEqual(expect.objectContaining({ status, period }));
+    }
+
+    const scheduled = new SportsmonksFootballProvider(
+      config(async () => jsonResponse(fixturePayload("NS"))),
+    );
+    const finished = new SportsmonksFootballProvider(
+      config(async () => jsonResponse(fixturePayload("FT"))),
+    );
+    expect((await scheduled.listFixtures({ limit: 1 })).items[0]?.freshness.provisional).toBe(true);
+    expect((await finished.listFixtures({ limit: 1 })).items[0]?.freshness.provisional).toBe(false);
+  });
+
   test("fails closed for an unknown state and for Gate 2B-only capabilities", async () => {
     const provider = new SportsmonksFootballProvider(
       config(async () => jsonResponse(fixturePayload("NEW_UNKNOWN_STATE"))),
@@ -208,6 +251,15 @@ describe("SportsmonksFootballProvider", () => {
     await expect(provider.listLineups({ limit: 1 })).rejects.toMatchObject({
       code: "data_unavailable",
     });
+
+    for (const state of ["AWAITING_UPDATES", "PENDING"]) {
+      const awaitingProvider = new SportsmonksFootballProvider(
+        config(async () => jsonResponse(fixturePayload(state))),
+      );
+      await expect(awaitingProvider.listFixtures({ limit: 1 })).rejects.toMatchObject({
+        code: "provider_unavailable",
+      });
+    }
   });
 });
 
@@ -216,7 +268,7 @@ describe("createSportsmonksFootballProvider", () => {
     FOOTBALL_PROVIDER: "sportsmonks",
     FOOTBALL_PROVIDER_BASE_URL: "https://api.sportmonks.com/v3/football",
     SPORTSMONKS_API_TOKEN: TOKEN,
-    FOOTBALL_SPORTSMONKS_LEAGUE_ID: "501",
+    FOOTBALL_SPORTSMONKS_LEAGUE_ID: "860",
     FOOTBALL_SPORTSMONKS_SEASON_ID: "23636",
     FOOTBALL_SPORTSMONKS_COUNTRY_CODE: "MA",
     FOOTBALL_SPORTSMONKS_COMPETITION_TYPE: "league",
