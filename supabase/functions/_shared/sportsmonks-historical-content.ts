@@ -5,18 +5,12 @@ export interface ContentRpcResult {
 
 export interface ContentRpcClient {
   schema(name: "api"): {
-    rpc(
-      name: string,
-      args: Record<string, unknown>,
-    ): PromiseLike<ContentRpcResult>;
+    rpc(name: string, args: Record<string, unknown>): PromiseLike<ContentRpcResult>;
   };
 }
 
 type JsonRecord = Record<string, unknown>;
-type FetchLike = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>;
+type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export interface ContentRuntimeDependencies {
   readonly environment: Readonly<Record<string, string | undefined>>;
@@ -120,10 +114,7 @@ function nonNegativeInteger(value: unknown): number {
   return value;
 }
 
-function required(
-  environment: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string {
+function required(environment: Readonly<Record<string, string | undefined>>, name: string): string {
   const value = environment[name]?.trim();
   if (!value) throw new ContentRuntimeError("invalid_runtime_configuration");
   return value;
@@ -136,8 +127,7 @@ function integerSetting(
   maximum: number,
 ): number {
   const raw = required(environment, name);
-  if (!/^\d+$/.test(raw))
-    throw new ContentRuntimeError("invalid_runtime_configuration");
+  if (!/^\d+$/.test(raw)) throw new ContentRuntimeError("invalid_runtime_configuration");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
     throw new ContentRuntimeError("invalid_runtime_configuration");
@@ -156,25 +146,19 @@ function configuration(
   environment: Readonly<Record<string, string | undefined>>,
 ): ContentConfiguration {
   const token = required(environment, "SPORTSMONKS_API_TOKEN");
-  if (
-    token.length < 16 ||
-    token.length > 512 ||
-    hasControlOrWhitespace(token)
-  ) {
+  if (token.length < 16 || token.length > 512 || hasControlOrWhitespace(token)) {
     throw new ContentRuntimeError("invalid_runtime_configuration");
   }
   if (
     required(environment, "FOOTBALL_PROVIDER") !== "sportsmonks" ||
-    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !==
-      OFFICIAL_BASE_URL
+    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !== OFFICIAL_BASE_URL
   ) {
     throw new ContentRuntimeError("invalid_runtime_configuration");
   }
   const teamIds = required(environment, "FOOTBALL_SPORTSMONKS_TEAM_IDS")
     .split(",")
     .map((value) => {
-      if (!/^\d+$/.test(value))
-        throw new ContentRuntimeError("invalid_runtime_configuration");
+      if (!/^\d+$/.test(value)) throw new ContentRuntimeError("invalid_runtime_configuration");
       const id = Number(value);
       if (!Number.isSafeInteger(id) || id < 1) {
         throw new ContentRuntimeError("invalid_runtime_configuration");
@@ -190,25 +174,10 @@ function configuration(
   }
   return {
     token,
-    seasonId: integerSetting(
-      environment,
-      "FOOTBALL_SPORTSMONKS_SEASON_ID",
-      1,
-      1_000_000_000,
-    ),
+    seasonId: integerSetting(environment, "FOOTBALL_SPORTSMONKS_SEASON_ID", 1, 1_000_000_000),
     teamIds,
-    timeoutMs: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_TIMEOUT_MS",
-      250,
-      60_000,
-    ),
-    maxRetries: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_MAX_RETRIES",
-      0,
-      8,
-    ),
+    timeoutMs: integerSetting(environment, "FOOTBALL_PROVIDER_TIMEOUT_MS", 250, 60_000),
+    maxRetries: integerSetting(environment, "FOOTBALL_PROVIDER_MAX_RETRIES", 0, 8),
   };
 }
 
@@ -240,8 +209,7 @@ async function parseRequest(request: Request): Promise<void> {
     throw new ContentRuntimeError("request_too_large");
   }
   const source = await request.text();
-  if (source.length > MAX_REQUEST_BYTES)
-    throw new ContentRuntimeError("request_too_large");
+  if (source.length > MAX_REQUEST_BYTES) throw new ContentRuntimeError("request_too_large");
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -249,10 +217,7 @@ async function parseRequest(request: Request): Promise<void> {
     throw new ContentRuntimeError("invalid_request");
   }
   const body = record(value, "invalid_request");
-  if (
-    body.job !== "historical_content" ||
-    Object.keys(body).some((key) => key !== "job")
-  ) {
+  if (body.job !== "historical_content" || Object.keys(body).some((key) => key !== "job")) {
     throw new ContentRuntimeError("invalid_request");
   }
 }
@@ -285,18 +250,12 @@ async function providerRequest(
     throw new ContentRuntimeError("invalid_provider_path");
   }
   const url = new URL(`${OFFICIAL_BASE_URL}${path}`);
-  for (const [name, value] of Object.entries(query))
-    url.searchParams.set(name, value);
-  if (
-    url.origin !== "https://api.sportmonks.com" ||
-    url.href.includes(config.token)
-  ) {
+  for (const [name, value] of Object.entries(query)) url.searchParams.set(name, value);
+  if (url.origin !== "https://api.sportmonks.com" || url.href.includes(config.token)) {
     throw new ContentRuntimeError("provider_origin_guard_failed");
   }
   const fetcher = dependencies.fetch ?? globalThis.fetch.bind(globalThis);
-  const sleep =
-    dependencies.sleep ??
-    ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const sleep = dependencies.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -308,18 +267,13 @@ async function providerRequest(
         signal: controller.signal,
       });
       if (response.ok) return responseJson(response);
-      if (
-        (response.status === 429 || response.status >= 500) &&
-        attempt < config.maxRetries
-      ) {
+      if ((response.status === 429 || response.status >= 500) && attempt < config.maxRetries) {
         counts.retries += 1;
         await sleep(250 * 2 ** attempt);
         continue;
       }
       throw new ContentRuntimeError(
-        response.status === 429
-          ? "provider_rate_limited"
-          : "provider_unavailable",
+        response.status === 429 ? "provider_rate_limited" : "provider_unavailable",
       );
     } catch (error) {
       if (error instanceof ContentRuntimeError) throw error;
@@ -337,8 +291,7 @@ async function providerRequest(
 }
 
 function nonEmptyString(value: unknown, maximum: number): string {
-  if (typeof value !== "string")
-    throw new ContentRuntimeError("invalid_provider_payload");
+  if (typeof value !== "string") throw new ContentRuntimeError("invalid_provider_payload");
   const normalized = value.trim();
   if (!normalized || normalized.length > maximum) {
     throw new ContentRuntimeError("invalid_provider_payload");
@@ -369,10 +322,7 @@ function optionalDate(value: unknown): string | null {
     return null;
   }
   const parsed = new Date(`${value}T00:00:00.000Z`);
-  if (
-    Number.isNaN(parsed.getTime()) ||
-    parsed.toISOString().slice(0, 10) !== value
-  ) {
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
     return null;
   }
   return value;
@@ -380,20 +330,13 @@ function optionalDate(value: unknown): string | null {
 
 function optionalShirtNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
-  if (
-    typeof value !== "number" ||
-    !Number.isSafeInteger(value) ||
-    value <= 0 ||
-    value > 99
-  ) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0 || value > 99) {
     return null;
   }
   return value;
 }
 
-function canonicalPosition(
-  value: unknown,
-): NormalizedMembership["position"] | null {
+function canonicalPosition(value: unknown): NormalizedMembership["position"] | null {
   if (value === null || value === undefined) return null;
   const position = record(value);
   const developerName = nonEmptyString(position.developer_name, 80)
@@ -418,10 +361,7 @@ function normalizeMembership(
   observedAt: string,
 ): NormalizedMembership | null {
   const playerId = positiveInteger(raw.player_id);
-  if (
-    positiveInteger(raw.team_id) !== teamId ||
-    positiveInteger(raw.season_id) !== seasonId
-  ) {
+  if (positiveInteger(raw.team_id) !== teamId || positiveInteger(raw.season_id) !== seasonId) {
     throw new ContentRuntimeError("invalid_provider_payload");
   }
   const positionId = nullablePositiveInteger(raw.position_id);
@@ -439,19 +379,10 @@ function normalizeMembership(
   if (positiveInteger(player.id) !== playerId) {
     throw new ContentRuntimeError("invalid_provider_payload");
   }
-  const fullName = nonEmptyString(
-    player.name ?? player.display_name ?? player.common_name,
-    200,
-  );
-  const displayName = nonEmptyString(
-    player.display_name ?? player.common_name ?? player.name,
-    120,
-  );
+  const fullName = nonEmptyString(player.name ?? player.display_name ?? player.common_name, 200);
+  const displayName = nonEmptyString(player.display_name ?? player.common_name ?? player.name, 120);
   const shirtNumber = optionalShirtNumber(raw.jersey_number);
-  const updatedAt = timestamp(
-    player.last_played_at,
-    timestamp(player.updated_at, observedAt),
-  );
+  const updatedAt = timestamp(player.last_played_at, timestamp(player.updated_at, observedAt));
   const sourceSequence = Date.parse(updatedAt);
   return {
     externalPlayerId: String(playerId),
@@ -472,8 +403,7 @@ function normalizeMembership(
 }
 
 function standingDetails(raw: JsonRecord): ReadonlyMap<string, number> {
-  if (!Array.isArray(raw.details))
-    throw new ContentRuntimeError("invalid_provider_payload");
+  if (!Array.isArray(raw.details)) throw new ContentRuntimeError("invalid_provider_payload");
   const details = new Map<string, number>();
   for (const candidate of raw.details) {
     const detail = record(candidate);
@@ -483,30 +413,20 @@ function standingDetails(raw: JsonRecord): ReadonlyMap<string, number> {
       throw new ContentRuntimeError("invalid_provider_payload");
     }
     const name = nonEmptyString(type.developer_name, 80);
-    if (
-      typeof detail.value !== "number" ||
-      !Number.isSafeInteger(detail.value)
-    ) {
+    if (typeof detail.value !== "number" || !Number.isSafeInteger(detail.value)) {
       throw new ContentRuntimeError("invalid_provider_payload");
     }
-    if (details.has(name))
-      throw new ContentRuntimeError("invalid_provider_payload");
+    if (details.has(name)) throw new ContentRuntimeError("invalid_provider_payload");
     details.set(name, detail.value);
   }
   return details;
 }
 
-function requiredMetric(
-  details: ReadonlyMap<string, number>,
-  name: string,
-): number {
+function requiredMetric(details: ReadonlyMap<string, number>, name: string): number {
   return nonNegativeInteger(details.get(name));
 }
 
-function normalizeStanding(
-  raw: JsonRecord,
-  config: ContentConfiguration,
-): NormalizedStanding {
+function normalizeStanding(raw: JsonRecord, config: ContentConfiguration): NormalizedStanding {
   if (positiveInteger(raw.season_id) !== config.seasonId) {
     throw new ContentRuntimeError("invalid_provider_payload");
   }
@@ -555,8 +475,7 @@ async function rpc(
   const result = await client.schema("api").rpc(name, args);
   if (result.error) {
     const code =
-      result.error.code === "P0002" ||
-      result.error.message === "MAPPING_NOT_FOUND"
+      result.error.code === "P0002" || result.error.message === "MAPPING_NOT_FOUND"
         ? "mapping_not_found"
         : "database_unavailable";
     throw new ContentRuntimeError(code);
@@ -581,9 +500,7 @@ async function fingerprint(value: unknown): Promise<string> {
     "SHA-256",
     new TextEncoder().encode(JSON.stringify(value)),
   );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function recordRejection(
@@ -593,10 +510,7 @@ async function recordRejection(
   raw: JsonRecord,
   error: unknown,
 ): Promise<void> {
-  const code =
-    error instanceof ContentRuntimeError
-      ? error.code
-      : "content_ingestion_failed";
+  const code = error instanceof ContentRuntimeError ? error.code : "content_ingestion_failed";
   const id = raw.player_id ?? raw.participant_id ?? raw.id;
   await rpc(client, "record_football_ingestion_rejection", {
     p_run_id: runId,
@@ -627,22 +541,14 @@ async function completeRun(
     p_records_rejected: counts.rejected,
     p_retry_count: counts.retries,
     p_error_code: errorCode,
-    p_error_summary: errorCode
-      ? "The protected historical content job did not complete."
-      : null,
+    p_error_summary: errorCode ? "The protected historical content job did not complete." : null,
   });
 }
 
-function rpcCounts(
-  value: unknown,
-  fields: readonly string[],
-): Readonly<Record<string, number>> {
+function rpcCounts(value: unknown, fields: readonly string[]): Readonly<Record<string, number>> {
   const result = record(value, "database_unavailable");
   for (const field of fields) {
-    if (
-      typeof result[field] !== "number" ||
-      !Number.isSafeInteger(result[field])
-    ) {
+    if (typeof result[field] !== "number" || !Number.isSafeInteger(result[field])) {
       throw new ContentRuntimeError("database_unavailable");
     }
   }
@@ -687,12 +593,7 @@ async function runSquads(
       for (const candidate of response.data) {
         activeRaw = record(candidate);
         counts.fetched += 1;
-        const membership = normalizeMembership(
-          activeRaw,
-          teamId,
-          config.seasonId,
-          observedAt,
-        );
+        const membership = normalizeMembership(activeRaw, teamId, config.seasonId, observedAt);
         if (membership === null) {
           counts.skipped += 1;
           continue;
@@ -732,17 +633,8 @@ async function runSquads(
     return counts;
   } catch (error) {
     counts.rejected += 1;
-    await recordRejection(
-      dependencies.client,
-      runId,
-      "player",
-      activeRaw,
-      error,
-    );
-    const code =
-      error instanceof ContentRuntimeError
-        ? error.code
-        : "content_ingestion_failed";
+    await recordRejection(dependencies.client, runId, "player", activeRaw, error);
+    const code = error instanceof ContentRuntimeError ? error.code : "content_ingestion_failed";
     await completeRun(
       dependencies.client,
       runId,
@@ -777,10 +669,7 @@ async function runStandings(
       dependencies,
       counts,
     );
-    if (
-      !Array.isArray(response.data) ||
-      response.data.length !== config.teamIds.length
-    ) {
+    if (!Array.isArray(response.data) || response.data.length !== config.teamIds.length) {
       throw new ContentRuntimeError("invalid_provider_payload");
     }
     const rows: NormalizedStanding[] = [];
@@ -818,10 +707,7 @@ async function runStandings(
   } catch (error) {
     counts.rejected += 1;
     await recordRejection(dependencies.client, runId, "team", activeRaw, error);
-    const code =
-      error instanceof ContentRuntimeError
-        ? error.code
-        : "content_ingestion_failed";
+    const code = error instanceof ContentRuntimeError ? error.code : "content_ingestion_failed";
     await completeRun(
       dependencies.client,
       runId,
@@ -837,15 +723,10 @@ export async function handleSportsMonksHistoricalContentRequest(
   request: Request,
   dependencies: ContentRuntimeDependencies,
 ): Promise<Response> {
-  if (request.method !== "POST")
-    return json(405, { error: "method_not_allowed" });
-  const expectedSecret =
-    dependencies.environment.FOOTBALL_INGESTION_TRIGGER_SECRET?.trim() ?? "";
+  if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const expectedSecret = dependencies.environment.FOOTBALL_INGESTION_TRIGGER_SECRET?.trim() ?? "";
   const receivedSecret = request.headers.get("x-botolago-ingestion-key") ?? "";
-  if (
-    expectedSecret.length < 32 ||
-    !timingSafeEqual(receivedSecret, expectedSecret)
-  ) {
+  if (expectedSecret.length < 32 || !timingSafeEqual(receivedSecret, expectedSecret)) {
     return json(401, { error: "unauthorized" });
   }
   try {
@@ -860,16 +741,8 @@ export async function handleSportsMonksHistoricalContentRequest(
       jobs: { squads, standings },
     });
   } catch (error) {
-    const code =
-      error instanceof ContentRuntimeError
-        ? error.code
-        : "content_ingestion_failed";
-    const status =
-      code === "invalid_request"
-        ? 400
-        : code === "request_too_large"
-          ? 413
-          : 502;
+    const code = error instanceof ContentRuntimeError ? error.code : "content_ingestion_failed";
+    const status = code === "invalid_request" ? 400 : code === "request_too_large" ? 413 : 502;
     return json(status, { error: code });
   }
 }
