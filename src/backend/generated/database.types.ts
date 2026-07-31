@@ -770,6 +770,27 @@ export type Database = {
         }
         Returns: string
       }
+      ingest_football_squad: {
+        Args: {
+          p_memberships: Json
+          p_observed_at: string
+          p_provider_name: string
+          p_season_external_id: string
+          p_source_sequence: number
+          p_team_external_id: string
+        }
+        Returns: Json
+      }
+      ingest_football_standings: {
+        Args: {
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+          p_source_sequence: number
+        }
+        Returns: Json
+      }
       join_fantasy_league: {
         Args: {
           p_idempotency_key: string
