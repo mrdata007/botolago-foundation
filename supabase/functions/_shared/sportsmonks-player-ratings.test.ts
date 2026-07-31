@@ -75,7 +75,14 @@ function detail(typeId: number, value: number, key = "total") {
 function providerRow(
   playerId: number,
   positionId: 24 | 25 | 26 | 27,
-  values: { minutes: number; appearances: number; starts: number; goals: number; assists: number; rating: number },
+  values: {
+    minutes: number;
+    appearances: number;
+    starts: number;
+    goals: number;
+    assists: number;
+    rating: number;
+  },
 ) {
   return {
     id: playerId + 1_000_000,
@@ -162,7 +169,9 @@ describe("preseason player rating algorithm", () => {
       ]),
     );
     const ratings = calculatePreseasonRatings(candidates, values);
-    expect(ratings.map((rating) => rating.fantasyEquivalentPoints)).toEqual([17, 12, 8, 6]);
+    expect(ratings.map((rating) => rating.fantasyEquivalentPoints)).toEqual([
+      17, 12, 8, 6,
+    ]);
   });
 });
 
@@ -179,14 +188,20 @@ describe("SportsMonks player rating runtime", () => {
         rpc: async (name, args) => {
           calls.push({ name, args });
           if (name === "begin_football_ingestion") {
-            return { data: "11111111-1111-4111-8111-111111111111", error: null };
+            return {
+              data: "11111111-1111-4111-8111-111111111111",
+              error: null,
+            };
           }
           if (name === "football_player_rating_candidates") {
             return { data: candidates, error: null };
           }
           if (name === "ingest_player_season_ratings") {
             const rows = args.p_rows as unknown[];
-            return { data: { inserted: rows.length, updated: 0, skipped: 0 }, error: null };
+            return {
+              data: { inserted: rows.length, updated: 0, skipped: 0 },
+              error: null,
+            };
           }
           return { data: null, error: null };
         },
@@ -199,16 +214,34 @@ describe("SportsMonks player rating runtime", () => {
       now: () => NOW,
       fetch: async (input, init) => {
         fetched += 1;
-        const url = new URL(input instanceof Request ? input.url : input.toString());
-        expect(url.pathname).toBe("/v3/football/statistics/seasons/players/26027");
+        const url = new URL(
+          input instanceof Request ? input.url : input.toString(),
+        );
+        expect(url.pathname).toBe(
+          "/v3/football/statistics/seasons/players/26027",
+        );
         expect(url.searchParams.get("include")).toBe("details");
         expect(url.searchParams.get("per_page")).toBe("50");
         expect(url.href).not.toContain(TOKEN);
         expect(new Headers(init?.headers).get("Authorization")).toBe(TOKEN);
         return response({
           data: [
-            providerRow(101, 27, { minutes: 1_800, appearances: 20, starts: 20, goals: 15, assists: 8, rating: 8 }),
-            providerRow(102, 27, { minutes: 1_800, appearances: 20, starts: 20, goals: 0, assists: 0, rating: 5 }),
+            providerRow(101, 27, {
+              minutes: 1_800,
+              appearances: 20,
+              starts: 20,
+              goals: 15,
+              assists: 8,
+              rating: 8,
+            }),
+            providerRow(102, 27, {
+              minutes: 1_800,
+              appearances: 20,
+              starts: 20,
+              goals: 0,
+              assists: 0,
+              rating: 5,
+            }),
             {
               id: 1_000_103,
               player_id: 103,
@@ -241,15 +274,29 @@ describe("SportsMonks player rating runtime", () => {
       },
     });
     expect(fetched).toBe(1);
-    const persisted = calls.find((call) => call.name === "ingest_player_season_ratings");
+    const persisted = calls.find(
+      (call) => call.name === "ingest_player_season_ratings",
+    );
     expect(persisted?.args.p_rows).toMatchObject([
-      { externalPlayerId: "101", rating: 10, algorithmVersion: "botolago-preseason-rating-v1" },
-      { externalPlayerId: "102", rating: 5.5, algorithmVersion: "botolago-preseason-rating-v1" },
+      {
+        externalPlayerId: "101",
+        rating: 10,
+        algorithmVersion: "botolago-preseason-rating-v1",
+      },
+      {
+        externalPlayerId: "102",
+        rating: 5.5,
+        algorithmVersion: "botolago-preseason-rating-v1",
+      },
       { externalPlayerId: "103", rating: 6, confidence: 0 },
     ]);
     expect(calls.at(-1)).toMatchObject({
       name: "complete_football_ingestion",
-      args: { p_status: "succeeded", p_records_validated: 3, p_records_inserted: 3 },
+      args: {
+        p_status: "succeeded",
+        p_records_validated: 3,
+        p_records_inserted: 3,
+      },
     });
   });
 
@@ -264,14 +311,17 @@ describe("SportsMonks player rating runtime", () => {
         },
       }),
     };
-    const result = await handleSportsMonksPlayerRatingsRequest(request("wrong"), {
-      environment: environment(),
-      client,
-      fetch: async () => {
-        fetched = true;
-        return response({});
+    const result = await handleSportsMonksPlayerRatingsRequest(
+      request("wrong"),
+      {
+        environment: environment(),
+        client,
+        fetch: async () => {
+          fetched = true;
+          return response({});
+        },
       },
-    });
+    );
     expect(result.status).toBe(401);
     expect(fetched).toBe(false);
     expect(calls).toHaveLength(0);
