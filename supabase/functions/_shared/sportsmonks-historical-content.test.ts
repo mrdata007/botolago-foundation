@@ -337,26 +337,38 @@ describe("SportsMonks historical content runtime", () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body.jobs.squads).toMatchObject({
-      fetched: 1,
-      validated: 0,
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      rejected: 1,
-    });
-    expect(body.jobs.standings).toMatchObject({
-      fetched: 1,
-      validated: 1,
-      inserted: 1,
-      rejected: 0,
+    expect(await response.json()).toEqual({
+      provider: "sportsmonks",
+      seasonId: 26_027,
+      jobs: {
+        squads: {
+          fetched: 1,
+          validated: 0,
+          inserted: 0,
+          updated: 0,
+          skipped: 0,
+          rejected: 1,
+          retries: 0,
+          uniquePlayers: 0,
+          playersInserted: 0,
+          playersUpdated: 0,
+          playersSkipped: 0,
+        },
+        standings: {
+          fetched: 1,
+          validated: 1,
+          inserted: 1,
+          updated: 0,
+          skipped: 0,
+          rejected: 0,
+          retries: 0,
+        },
+      },
     });
     expect(
       calls.some(
         (call) =>
-          call.name === "record_football_ingestion_rejection" &&
-          call.args.p_external_id === "4846",
+          call.name === "record_football_ingestion_rejection" && call.args.p_external_id === "4846",
       ),
     ).toBe(true);
     expect(
