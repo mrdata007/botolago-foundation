@@ -41,17 +41,17 @@ security invoker
 set search_path = ''
 as $$
 declare
-  country_id uuid;
+  resolved_country_id uuid;
 begin
   if p_iso_alpha2 is null then return null; end if;
   if p_iso_alpha2 !~ '^[A-Z]{2}$' then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
   end if;
 
-  select id into country_id
+  select id into resolved_country_id
   from app.countries
   where iso_alpha2 = p_iso_alpha2 and active;
-  if country_id is not null then return country_id; end if;
+  if resolved_country_id is not null then return resolved_country_id; end if;
 
   -- Gate 2 is deliberately scoped to Morocco. Other countries must be added
   -- through a reviewed reference-data migration before they can be ingested.
@@ -62,12 +62,12 @@ begin
   insert into app.countries (iso_alpha2, iso_alpha3, flag_emoji)
   values ('MA', 'MAR', '🇲🇦')
   on conflict (iso_alpha2) do update set active = true
-  returning id into country_id;
+  returning id into resolved_country_id;
 
   insert into app.country_translations (country_id, language, display_name)
-  values (country_id, 'fr', 'Maroc'), (country_id, 'ar', 'المغرب')
+  values (resolved_country_id, 'fr', 'Maroc'), (resolved_country_id, 'ar', 'المغرب')
   on conflict (country_id, language) do nothing;
-  return country_id;
+  return resolved_country_id;
 end;
 $$;
 
