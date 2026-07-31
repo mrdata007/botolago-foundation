@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "requestId": "gate3b-historical-content-canary-2026-07-31-01",
+  "mode": "production_historical_content_canary",
+  "projectRef": "tkewgajrljbwgwedqsxn",
+  "leagueId": 860,
+  "seasonId": 26027,
+  "teamIds": [
+    306,
+    2846,
+    6856,
+    9369,
+    9535,
+    16845,
+    16847,
+    16849,
+    16850,
+    16851,
+    16853,
+    16858,
+    16937,
+    227263,
+    270260,
+    274759
+  ],
+  "confirmation": "RUN_GATE3B_HISTORICAL_CONTENT_CANARY"
+}
