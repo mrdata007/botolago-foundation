@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/backend-quality.yml"
+      - ".github/workflows/gate2b-sportsmonks-production-probe.yml"
       - "docs/backend/**"
       - "scripts/backend/**"
       - "src/backend/**"
