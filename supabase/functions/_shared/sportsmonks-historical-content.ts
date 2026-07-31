@@ -593,7 +593,20 @@ async function runSquads(
       for (const candidate of response.data) {
         activeRaw = record(candidate);
         counts.fetched += 1;
-        const membership = normalizeMembership(activeRaw, teamId, config.seasonId, observedAt);
+        let membership: NormalizedMembership | null;
+        try {
+          membership = normalizeMembership(activeRaw, teamId, config.seasonId, observedAt);
+        } catch (error) {
+          if (
+            !(error instanceof ContentRuntimeError) ||
+            error.code !== "invalid_provider_payload"
+          ) {
+            throw error;
+          }
+          counts.rejected += 1;
+          await recordRejection(dependencies.client, runId, "player", activeRaw, error);
+          continue;
+        }
         if (membership === null) {
           counts.skipped += 1;
           continue;
@@ -629,7 +642,13 @@ async function runSquads(
     if (counts.inserted + counts.updated !== counts.validated) {
       throw new ContentRuntimeError("database_unavailable");
     }
-    await completeRun(dependencies.client, runId, "succeeded", counts, null);
+    await completeRun(
+      dependencies.client,
+      runId,
+      counts.rejected === 0 ? "succeeded" : "partial",
+      counts,
+      counts.rejected === 0 ? null : "invalid_provider_payload",
+    );
     return counts;
   } catch (error) {
     counts.rejected += 1;
