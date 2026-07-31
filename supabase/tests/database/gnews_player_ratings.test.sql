@@ -53,6 +53,7 @@ select extensions.is(
   'skipped',
   'an identical retry is idempotently skipped'
 );
+reset role;
 select extensions.is((select count(*)::integer from app.stories), 1, 'one story exists after a retry');
 select extensions.is((select count(*)::integer from app.article_editions), 1, 'one edition exists after a retry');
 select extensions.is(
@@ -66,7 +67,6 @@ select extensions.is(
   'the original source is attributed without silently marking it trusted'
 );
 
-reset role;
 set local role anon;
 select set_config('request.jwt.claim.role', 'anon', true);
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
