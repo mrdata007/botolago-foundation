@@ -753,6 +753,15 @@ export type Database = {
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
+      ingest_football_catalog_entity: {
+        Args: {
+          p_entity: Json
+          p_entity_type: string
+          p_external_id: string
+          p_provider_name: string
+        }
+        Returns: Json
+      }
       ingest_football_fixture: {
         Args: {
           p_external_id: string

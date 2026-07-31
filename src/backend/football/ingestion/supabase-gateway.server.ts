@@ -1,7 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/backend/generated/database.types";
 import { FootballError, mapFootballError } from "../errors";
-import type { ProviderFixture } from "../provider/contracts";
+import type {
+  ProviderCompetition,
+  ProviderFixture,
+  ProviderRound,
+  ProviderSeason,
+  ProviderTeam,
+} from "../provider/contracts";
 import type {
   FootballIngestionJob,
   IngestionCounts,
@@ -9,14 +15,34 @@ import type {
   IngestionRunContext,
 } from "./contracts";
 
+type CatalogJob = "competitions" | "seasons" | "rounds" | "teams";
+type CatalogItem = ProviderCompetition | ProviderSeason | ProviderRound | ProviderTeam;
+
+const catalogEntityByJob: Record<CatalogJob, "competition" | "season" | "round" | "team"> = {
+  competitions: "competition",
+  seasons: "season",
+  rounds: "round",
+  teams: "team",
+};
+
 function serverClient(): SupabaseClient<Database> {
-  const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const environment =
+    (
+      globalThis as {
+        process?: { env?: Readonly<Record<string, string | undefined>> };
+      }
+    ).process?.env ?? {};
+  const url = environment.SUPABASE_URL;
+  const serviceRoleKey = environment.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRoleKey) {
     throw new FootballError("data_unavailable", "Server Football credentials are not configured.");
   }
   return createClient<Database>(url, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
   });
 }
 
@@ -28,6 +54,21 @@ async function sha256(value: unknown): Promise<string> {
 
 function stableCode(error: unknown): string {
   return mapFootballError(error).code;
+}
+
+function isCatalogJob(job: FootballIngestionJob): job is CatalogJob {
+  return job in catalogEntityByJob;
+}
+
+function catalogOutcome(value: Json): "inserted" | "updated" | "skipped" {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new FootballError("data_unavailable", "Catalog persistence returned an invalid result.");
+  }
+  const outcome = value.outcome;
+  if (outcome !== "inserted" && outcome !== "updated" && outcome !== "skipped") {
+    throw new FootballError("data_unavailable", "Catalog persistence returned an invalid result.");
+  }
+  return outcome;
 }
 
 const rejectionEntityByJob: Record<FootballIngestionJob, string> = {
@@ -81,10 +122,24 @@ export class SupabaseFootballIngestionGateway implements IngestionPersistence {
     item: unknown,
     context: IngestionRunContext,
   ): Promise<"inserted" | "updated" | "skipped"> {
+    if (isCatalogJob(job)) {
+      const entity = item as CatalogItem;
+      const { data, error } = await this.client
+        .schema("api")
+        .rpc("ingest_football_catalog_entity", {
+          p_provider_name: context.provider,
+          p_entity_type: catalogEntityByJob[job],
+          p_external_id: entity.externalId,
+          p_entity: entity as unknown as Json,
+        });
+      if (error) throw mapFootballError(error);
+      return catalogOutcome(data);
+    }
+
     if (job !== "fixtures") {
       throw new FootballError(
         "data_unavailable",
-        `Trusted persistence for ${job} is disabled until a production provider is selected.`,
+        `Trusted persistence for ${job} is not activated.`,
       );
     }
     const fixture = item as ProviderFixture;
