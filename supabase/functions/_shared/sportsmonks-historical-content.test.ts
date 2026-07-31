@@ -381,6 +381,122 @@ describe("SportsMonks historical content runtime", () => {
     ).toBe(true);
   });
 
+  it("bisects a database-rejected squad batch and quarantines only the invalid row", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const defaultClient = rpcClient(calls);
+    const client: ContentRpcClient = {
+      schema: () => ({
+        rpc: async (name, args) => {
+          const memberships = args.p_memberships as
+            Array<{ externalPlayerId?: string }> | undefined;
+          if (
+            name === "ingest_football_squad" &&
+            memberships?.some((membership) => membership.externalPlayerId === "5846")
+          ) {
+            calls.push({ name, args });
+            return {
+              data: null,
+              error: { code: "22023", message: "INVALID_PROVIDER_PAYLOAD" },
+            };
+          }
+          return defaultClient.schema("api").rpc(name, args);
+        },
+      }),
+    };
+    const response = await handleSportsMonksHistoricalContentRequest(request(), {
+      environment: {
+        ...environment(),
+        FOOTBALL_SPORTSMONKS_TEAM_IDS: "2846",
+      },
+      client,
+      now: () => NOW,
+      fetch: async (input) => {
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        if (url.pathname.endsWith("/standings/seasons/26027")) {
+          return json({ data: [standing(2_846, 1)] });
+        }
+        return json({
+          data: [
+            {
+              id: 3_846,
+              player_id: 4_846,
+              team_id: 2_846,
+              season_id: 26_027,
+              position_id: 25,
+              jersey_number: 5,
+              player: {
+                id: 4_846,
+                name: "Valid player",
+                display_name: "Valid player",
+              },
+              position: { id: 25, developer_name: "DEFENDER" },
+            },
+            {
+              id: 4_846,
+              player_id: 5_846,
+              team_id: 2_846,
+              season_id: 26_027,
+              position_id: 25,
+              jersey_number: 6,
+              player: {
+                id: 5_846,
+                name: "Database-invalid player",
+                display_name: "Database-invalid player",
+              },
+              position: { id: 25, developer_name: "DEFENDER" },
+            },
+          ],
+        });
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      provider: "sportsmonks",
+      seasonId: 26_027,
+      jobs: {
+        squads: {
+          fetched: 2,
+          validated: 1,
+          inserted: 1,
+          updated: 0,
+          skipped: 0,
+          rejected: 1,
+          retries: 0,
+          uniquePlayers: 1,
+          playersInserted: 1,
+          playersUpdated: 0,
+          playersSkipped: 0,
+        },
+        standings: {
+          fetched: 1,
+          validated: 1,
+          inserted: 1,
+          updated: 0,
+          skipped: 0,
+          rejected: 0,
+          retries: 0,
+        },
+      },
+    });
+    expect(calls.filter((call) => call.name === "ingest_football_squad")).toHaveLength(3);
+    expect(
+      calls.some(
+        (call) =>
+          call.name === "record_football_ingestion_rejection" && call.args.p_external_id === "5846",
+      ),
+    ).toBe(true);
+    expect(
+      calls.some(
+        (call) =>
+          call.name === "complete_football_ingestion" &&
+          call.args.p_status === "partial" &&
+          call.args.p_records_validated === 1 &&
+          call.args.p_records_rejected === 1,
+      ),
+    ).toBe(true);
+  });
+
   it("rejects mutable request scope instead of accepting caller-supplied team IDs", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const mutableRequest = new Request("https://example.test/football-ingest", {
