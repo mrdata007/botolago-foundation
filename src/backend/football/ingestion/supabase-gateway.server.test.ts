@@ -45,10 +45,7 @@ describe("SupabaseFootballIngestionGateway catalog persistence", () => {
   test("routes a normalized competition to the trusted catalog RPC", async () => {
     const calls: RpcCall[] = [];
     const gateway = new SupabaseFootballIngestionGateway(
-      clientWith(
-        { data: { id: "catalog-id", outcome: "inserted" }, error: null },
-        calls,
-      ),
+      clientWith({ data: { id: "catalog-id", outcome: "inserted" }, error: null }, calls),
     );
 
     const outcome = await gateway.upsert("competitions", competition, {
@@ -73,10 +70,7 @@ describe("SupabaseFootballIngestionGateway catalog persistence", () => {
 
   test("accepts the database skipped outcome for idempotent delivery", async () => {
     const gateway = new SupabaseFootballIngestionGateway(
-      clientWith(
-        { data: { id: "catalog-id", outcome: "skipped" }, error: null },
-        [],
-      ),
+      clientWith({ data: { id: "catalog-id", outcome: "skipped" }, error: null }, []),
     );
     await expect(
       gateway.upsert("competitions", competition, {
