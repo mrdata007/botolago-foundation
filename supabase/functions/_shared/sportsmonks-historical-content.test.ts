@@ -388,7 +388,8 @@ describe("SportsMonks historical content runtime", () => {
       schema: () => ({
         rpc: async (name, args) => {
           const memberships = args.p_memberships as
-            Array<{ externalPlayerId?: string }> | undefined;
+            | Array<{ externalPlayerId?: string }>
+            | undefined;
           if (
             name === "ingest_football_squad" &&
             memberships?.some((membership) => membership.externalPlayerId === "5846")
