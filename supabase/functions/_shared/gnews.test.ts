@@ -30,7 +30,11 @@ function request(secret = SECRET, body: unknown = { job: "gnews" }): Request {
   });
 }
 
-function response(data: unknown, status = 200, headers?: HeadersInit): Response {
+function response(
+  data: unknown,
+  status = 200,
+  headers?: HeadersInit,
+): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "content-type": "application/json", ...headers },
@@ -48,7 +52,8 @@ function article(language: "fr" | "ar", suffix: string) {
       language === "fr"
         ? "Une mise à jour vérifiée sur le championnat marocain <script>alert(1)</script>."
         : "تحديث موثوق حول منافسات البطولة الاحترافية المغربية.",
-    content: "This provider content must never be copied into the article body.",
+    content:
+      "This provider content must never be copied into the article body.",
     url: `https://publisher.example/${language}/${suffix}?utm_source=gnews`,
     image: "https://publisher.example/image.jpg",
     publishedAt: "2026-07-31T20:30:00Z",
@@ -80,7 +85,10 @@ function client(
           };
         }
         if (name === "news_ingest_provider_article") {
-          return { data: { outcome: outcomes.shift() ?? "skipped" }, error: null };
+          return {
+            data: { outcome: outcomes.shift() ?? "skipped" },
+            error: null,
+          };
         }
         return { data: null, error: null };
       },
@@ -97,7 +105,9 @@ describe("GNews ingestion runtime", () => {
       client: client(calls),
       now: () => NOW,
       fetch: async (input, init) => {
-        const url = new URL(input instanceof Request ? input.url : input.toString());
+        const url = new URL(
+          input instanceof Request ? input.url : input.toString(),
+        );
         requests.push(url);
         expect(url.origin).toBe("https://gnews.io");
         expect(url.pathname).toBe("/api/v4/search");
@@ -107,7 +117,10 @@ describe("GNews ingestion runtime", () => {
         expect(new Headers(init?.headers).get("X-Api-Key")).toBe(API_KEY);
         expect(init?.redirect).toBe("error");
         const language = url.searchParams.get("lang") as "fr" | "ar";
-        return response({ totalArticles: 1, articles: [article(language, "one")] });
+        return response({
+          totalArticles: 1,
+          articles: [article(language, "one")],
+        });
       },
     });
 
@@ -126,11 +139,19 @@ describe("GNews ingestion runtime", () => {
       },
     });
     expect(requests).toHaveLength(2);
-    const persisted = calls.filter((call) => call.name === "news_ingest_provider_article");
+    const persisted = calls.filter(
+      (call) => call.name === "news_ingest_provider_article",
+    );
     expect(persisted).toHaveLength(2);
-    expect(persisted[0].args.p_canonical_url).toBe("https://publisher.example/fr/one");
-    expect(String(persisted[0].args.p_body_html)).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
-    expect(String(persisted[0].args.p_body_html)).not.toContain("provider content");
+    expect(persisted[0].args.p_canonical_url).toBe(
+      "https://publisher.example/fr/one",
+    );
+    expect(String(persisted[0].args.p_body_html)).toContain(
+      "&lt;script&gt;alert(1)&lt;/script&gt;",
+    );
+    expect(String(persisted[0].args.p_body_html)).not.toContain(
+      "provider content",
+    );
     expect(persisted[0].args.p_sanitizer_version).toBe("gnews-excerpt-v1");
     expect(calls.at(-1)).toMatchObject({
       name: "news_complete_ingestion_run",
@@ -162,11 +183,16 @@ describe("GNews ingestion runtime", () => {
       client: client(calls, ["inserted", "inserted"]),
       now: () => NOW,
       fetch: async (input) => {
-        const url = new URL(input instanceof Request ? input.url : input.toString());
+        const url = new URL(
+          input instanceof Request ? input.url : input.toString(),
+        );
         const language = url.searchParams.get("lang") as "fr" | "ar";
         const rows =
           language === "fr"
-            ? [article("fr", "valid"), { ...article("fr", "bad"), url: "http://unsafe.example" }]
+            ? [
+                article("fr", "valid"),
+                { ...article("fr", "bad"), url: "http://unsafe.example" },
+              ]
             : [article("ar", "valid")];
         return response({ totalArticles: rows.length, articles: rows });
       },
@@ -175,7 +201,9 @@ describe("GNews ingestion runtime", () => {
     expect(await result.json()).toMatchObject({
       counters: { fetched: 3, validated: 2, inserted: 2, rejected: 1 },
     });
-    expect(calls.filter((call) => call.name === "news_record_ingestion_rejection")).toHaveLength(1);
+    expect(
+      calls.filter((call) => call.name === "news_record_ingestion_rejection"),
+    ).toHaveLength(1);
     expect(calls.at(-1)).toMatchObject({
       name: "news_complete_ingestion_run",
       args: { p_status: "partially_succeeded" },
@@ -192,14 +220,24 @@ describe("GNews ingestion runtime", () => {
       sleep: async () => undefined,
       fetch: async (input) => {
         attempts += 1;
-        const url = new URL(input instanceof Request ? input.url : input.toString());
-        if (attempts === 1) return response({ errors: ["rate_limited"] }, 429, { "retry-after": "0" });
+        const url = new URL(
+          input instanceof Request ? input.url : input.toString(),
+        );
+        if (attempts === 1)
+          return response({ errors: ["rate_limited"] }, 429, {
+            "retry-after": "0",
+          });
         const language = url.searchParams.get("lang") as "fr" | "ar";
-        return response({ totalArticles: 1, articles: [article(language, "retry")] });
+        return response({
+          totalArticles: 1,
+          articles: [article(language, "retry")],
+        });
       },
     });
     expect(result.status).toBe(200);
-    expect(await result.json()).toMatchObject({ counters: { retries: 1, skipped: 2 } });
+    expect(await result.json()).toMatchObject({
+      counters: { retries: 1, skipped: 2 },
+    });
     expect(attempts).toBe(3);
   });
 });
