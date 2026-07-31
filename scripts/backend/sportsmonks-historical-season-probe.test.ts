@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  BOTOLA_PRO_LEAGUE_ID,
-  type ProbeDependencies,
-} from "./sportsmonks-production-probe";
+import { BOTOLA_PRO_LEAGUE_ID, type ProbeDependencies } from "./sportsmonks-production-probe";
 import { runSportsMonksHistoricalSeasonProbe } from "./sportsmonks-historical-season-probe";
 
 const TOKEN = "sportsmonks-test-token-1234567890";
