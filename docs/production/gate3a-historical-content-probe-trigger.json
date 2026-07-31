@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "requestId": "gate3a-historical-content-coverage-2026-07-31-01",
+  "mode": "read_only_historical_content_coverage",
+  "seasonId": 26027,
+  "teamIds": [
+    306,
+    2846,
+    6856,
+    9369,
+    9535,
+    16845,
+    16847,
+    16849,
+    16850,
+    16851,
+    16853,
+    16858,
+    16937,
+    227263,
+    270260,
+    274759
+  ],
+  "confirmation": "RUN_GATE3A_HISTORICAL_CONTENT_PROBE"
+}
