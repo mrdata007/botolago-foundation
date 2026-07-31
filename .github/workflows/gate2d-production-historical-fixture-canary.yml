@@ -155,7 +155,9 @@ jobs:
         run: |
           set -euo pipefail
           ./node_modules/.bin/supabase functions deploy --help > /dev/null
-          if ! ./node_modules/.bin/supabase functions deploy football-ingest             --project-ref "$EXPECTED_PROJECT_REF"             > "$GATE2D_RUNTIME_DIR/function-deploy.log" 2>&1; then
+          if ! ./node_modules/.bin/supabase functions deploy football-ingest \
+            --project-ref "$EXPECTED_PROJECT_REF" \
+            > "$GATE2D_RUNTIME_DIR/function-deploy.log" 2>&1; then
             echo "Reviewed fixture runtime deployment failed."
             exit 1
           fi
@@ -226,10 +228,28 @@ jobs:
           endpoint="https://${EXPECTED_PROJECT_REF}.supabase.co/functions/v1/football-ingest"
           payload='{"job":"fixtures","pageSize":50,"maxPages":3}'
           invoke_with_user_token() {
-            curl --silent --show-error               --output "$GATE2D_RESPONSE_FILE"               --write-out '%{http_code}'               --request POST "$endpoint"               --header 'content-type: application/json'               --header 'x-botolago-ingestion-job: fixtures'               --header "apikey: $SUPABASE_PRODUCTION_PUBLISHABLE_KEY"               --header "Authorization: Bearer $BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN"               --header "x-botolago-ingestion-key: $GATE2D_TRIGGER_SECRET"               --data "$payload"
+            curl --silent --show-error \
+              --output "$GATE2D_RESPONSE_FILE" \
+              --write-out '%{http_code}' \
+              --request POST "$endpoint" \
+              --header 'content-type: application/json' \
+              --header 'x-botolago-ingestion-job: fixtures' \
+              --header "apikey: $SUPABASE_PRODUCTION_PUBLISHABLE_KEY" \
+              --header "Authorization: Bearer $BOTOLAGO_AAL2_NON_STAFF_ACCESS_TOKEN" \
+              --header "x-botolago-ingestion-key: $GATE2D_TRIGGER_SECRET" \
+              --data "$payload"
           }
           invoke_with_service_key() {
-            curl --silent --show-error               --output "$GATE2D_RESPONSE_FILE"               --write-out '%{http_code}'               --request POST "$endpoint"               --header 'content-type: application/json'               --header 'x-botolago-ingestion-job: fixtures'               --header "apikey: $SUPABASE_SECRET_KEY"               --header "Authorization: Bearer $SUPABASE_SECRET_KEY"               --header "x-botolago-ingestion-key: $GATE2D_TRIGGER_SECRET"               --data "$payload"
+            curl --silent --show-error \
+              --output "$GATE2D_RESPONSE_FILE" \
+              --write-out '%{http_code}' \
+              --request POST "$endpoint" \
+              --header 'content-type: application/json' \
+              --header 'x-botolago-ingestion-job: fixtures' \
+              --header "apikey: $SUPABASE_SECRET_KEY" \
+              --header "Authorization: Bearer $SUPABASE_SECRET_KEY" \
+              --header "x-botolago-ingestion-key: $GATE2D_TRIGGER_SECRET" \
+              --data "$payload"
           }
           http_status=$(invoke_with_user_token)
           auth_path="aal2_user_jwt"
@@ -358,10 +378,10 @@ jobs:
                 "$SCAN_OUTCOME" != "success" ||
                 "$UPLOAD_OUTCOME" != "success" ||
                 "$CLEANUP_OUTCOME" != "success" ]]; then
-            echo "GATE2D_HISTORICAL_CATALOG_CANARY_FAILED"
+            echo "GATE2D_HISTORICAL_FIXTURE_CANARY_FAILED"
             exit 1
           fi
-          echo "GATE2D_HISTORICAL_CATALOG_CANARY_PASS"
+          echo "GATE2D_HISTORICAL_FIXTURE_CANARY_PASS"
 
 
       - name: Publish sanitized canary status
