@@ -234,12 +234,12 @@ begin
     if not found then
       raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
     end if;
-    if expected_position <> case target_player.position
+    if expected_position <> (case target_player.position
       when 'goalkeeper' then 'GK'
       when 'defender' then 'DEF'
       when 'midfielder' then 'MID'
       when 'forward' then 'FWD'
-    end then
+    end) then
       raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
     end if;
     if not exists (
