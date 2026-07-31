@@ -1,6 +1,6 @@
 # Gate 2 — SportsMonks football provider activation
 
-Status: **Gate 2A implementation package — production is not activated**
+Status: **Gate 2A merged; protected Gate 2B read-only access probe ready**
 
 Target project: BotolaGO Production V2 (`tkewgajrljbwgwedqsxn`)
 
@@ -12,6 +12,8 @@ Gate 2 replaces the deterministic football fixture adapter with a reviewed Sport
 - Gate 2B adds database catalog persistence, a protected ingestion runtime, a bounded initial import, and only then a schedule.
 
 Merging Gate 2A performs no database write, deploys no Edge Function, creates no cron job, and does not make a live SportsMonks request.
+
+The Gate 2B access probe is also no-write. It discovers the provider's current season for Botola Pro league `860`, verifies the season-scoped rounds and teams endpoints, and samples a fixture window of at most 100 inclusive days. It does not receive any Supabase credential and cannot create production rows.
 
 ## Gate 2A contract
 
@@ -74,11 +76,12 @@ Gate 2B is allowed only after Gate 2A CI is green.
 
 1. Confirm the SportsMonks plan includes the reviewed Botola league, season, and required includes.
 2. Create or select the API token in SportsMonks without pasting it into chat, source code, terminal history, or a workflow input.
-3. Store it as a protected GitHub Environment secret and a Supabase server secret named `SPORTSMONKS_API_TOKEN`.
-4. Add reviewed persistence for competition, season, round, and team identities before fixture writes are enabled.
-5. Deploy an authenticated ingestion function with a fixed project ref and a bounded fixture window.
-6. Run a no-write provider probe, then a one-page catalog canary, then the bounded fixture import.
-7. Verify API rows, freshness ordering, rejection journal, and application reads before enabling a schedule.
-8. Start with a low-frequency schedule; expand to live cadence only after rate-limit headroom and error rate are observed.
+3. Store it as the protected GitHub Environment secret `SPORTSMONKS_API_TOKEN` for the no-write probe. Add a Supabase server secret only when the reviewed ingestion function is ready to deploy.
+4. Run `.github/workflows/gate2b-sportsmonks-production-probe.yml` from the exact reviewed `main` commit and retain only its sanitized evidence artifact.
+5. Add reviewed persistence for competition, season, round, and team identities before fixture writes are enabled.
+6. Deploy an authenticated ingestion function with a fixed project ref and a bounded fixture window.
+7. Run a one-page catalog canary, then the bounded fixture import.
+8. Verify API rows, freshness ordering, rejection journal, and application reads before enabling a schedule.
+9. Start with a low-frequency schedule; expand to live cadence only after rate-limit headroom and error rate are observed.
 
 Any failure stops before the next step. Re-running the whole activation without identifying the failed invariant is prohibited.
