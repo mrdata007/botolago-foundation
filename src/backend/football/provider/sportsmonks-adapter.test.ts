@@ -1,17 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { FootballError } from "../errors";
-import {
-  SportsmonksFootballProvider,
-  type SportsmonksProviderConfig,
-} from "./sportsmonks-adapter";
+import { SportsmonksFootballProvider, type SportsmonksProviderConfig } from "./sportsmonks-adapter";
 import { createSportsmonksFootballProvider } from "./sportsmonks-config.server";
 
 const TOKEN = "test_sportsmonks_token_123456";
 const NOW = new Date("2026-07-31T12:00:00.000Z");
 
-function config(
-  fetch: SportsmonksProviderConfig["fetch"],
-): SportsmonksProviderConfig {
+function config(fetch: SportsmonksProviderConfig["fetch"]): SportsmonksProviderConfig {
   return {
     token: TOKEN,
     leagueId: 501,
@@ -92,9 +87,7 @@ describe("SportsmonksFootballProvider", () => {
     const page = await provider.listCompetitions({ limit: 10 });
 
     expect(authorization).toBe(TOKEN);
-    expect(requestedUrl).toBe(
-      "https://api.sportmonks.com/v3/football/leagues/501",
-    );
+    expect(requestedUrl).toBe("https://api.sportmonks.com/v3/football/leagues/501");
     expect(requestedUrl).not.toContain(TOKEN);
     expect(requestedUrl).not.toContain("api_token");
     expect(page.items).toEqual([
@@ -123,9 +116,7 @@ describe("SportsmonksFootballProvider", () => {
     const page = await provider.listFixtures({ limit: 100 });
     const url = new URL(requestedUrl);
 
-    expect(url.pathname).toBe(
-      "/v3/football/fixtures/between/2026-01-01/2026-06-30",
-    );
+    expect(url.pathname).toBe("/v3/football/fixtures/between/2026-01-01/2026-06-30");
     expect(url.searchParams.get("filters")).toBe("fixtureLeagues:501");
     expect(url.searchParams.get("include")).toBe("participants;state;scores");
     expect(url.searchParams.get("timezone")).toBe("UTC");
@@ -142,9 +133,7 @@ describe("SportsmonksFootballProvider", () => {
         awayScore: 1,
       }),
     );
-    expect(page.rateLimit).toEqual(
-      expect.objectContaining({ limit: 3000, remaining: 2999 }),
-    );
+    expect(page.rateLimit).toEqual(expect.objectContaining({ limit: 3000, remaining: 2999 }));
   });
 
   test("uses an opaque resource-bound cursor for SportsMonks pagination", async () => {
