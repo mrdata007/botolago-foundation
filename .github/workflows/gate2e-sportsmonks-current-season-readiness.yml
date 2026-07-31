@@ -197,6 +197,8 @@ jobs:
           PROBE_OUTCOME: ${{ steps.provider_probe.outcome }}
           SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
           UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          CURRENT_SEASON_READY: ${{ steps.readiness.outputs.ready }}
         run: |
           set -euo pipefail
           printf '::add-mask::%s\n' "$GITHUB_TOKEN"
