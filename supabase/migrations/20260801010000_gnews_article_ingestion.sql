@@ -141,7 +141,7 @@ begin
     raise exception using errcode = 'P0002', message = 'news_provider_not_found';
   end if;
 
-  source_slug := 'gnews-source-' || left(encode(digest(lower(p_source_url), 'sha256'), 'hex'), 20);
+  source_slug := 'gnews-source-' || left(encode(extensions.digest(lower(p_source_url), 'sha256'), 'hex'), 20);
   insert into app.publishers (
     slug, name, source_type, trust_status, ingestion_mode, website_url, active
   ) values (
@@ -210,7 +210,7 @@ begin
     where id = target_story_id;
   end if;
 
-  stable_slug := 'gnews-' || p_language || '-' || left(encode(digest(p_external_id, 'sha256'), 'hex'), 24);
+  stable_slug := 'gnews-' || p_language || '-' || left(encode(extensions.digest(p_external_id, 'sha256'), 'hex'), 24);
   if target_edition_id is null then
     insert into app.article_editions (
       story_id, language, slug, title, subtitle, summary,
