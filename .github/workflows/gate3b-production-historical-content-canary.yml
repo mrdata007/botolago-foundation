@@ -108,7 +108,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate3b-historical-content-canary-2026-07-31-04",
+              "requestId": "gate3b-historical-content-canary-2026-07-31-05",
               "mode": "production_historical_content_canary",
               "projectRef": "tkewgajrljbwgwedqsxn",
               "leagueId": 860,
@@ -257,14 +257,14 @@ jobs:
               raise SystemExit("INVALID_CONTENT_CANARY_COUNTS")
           if (
               squads["fetched"] != 602
-              or squads["validated"] != 598
+              or squads["validated"] != 597
               or squads["skipped"] != 3
-              or squads["rejected"] != 1
-              or squads["inserted"] + squads["updated"] != 598
-              or not 562 <= squads.get("uniquePlayers", -1) <= 566
+              or squads["rejected"] != 2
+              or squads["inserted"] + squads["updated"] != 597
+              or not 561 <= squads.get("uniquePlayers", -1) <= 566
               or squads.get("playersInserted", -1)
                  + squads.get("playersUpdated", -1)
-                 + squads.get("playersSkipped", -1) != 598
+                 + squads.get("playersSkipped", -1) != 597
           ):
               raise SystemExit("SQUAD_CANARY_COUNT_MISMATCH")
           if (

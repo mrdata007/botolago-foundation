@@ -62,6 +62,11 @@ interface NormalizedMembership {
   };
 }
 
+interface PendingMembership {
+  readonly normalized: NormalizedMembership;
+  readonly raw: JsonRecord;
+}
+
 interface NormalizedStanding {
   readonly teamExternalId: string;
   readonly rank: number;
@@ -477,7 +482,9 @@ async function rpc(
     const code =
       result.error.code === "P0002" || result.error.message === "MAPPING_NOT_FOUND"
         ? "mapping_not_found"
-        : "database_unavailable";
+        : result.error.code === "22023" || result.error.message === "INVALID_PROVIDER_PAYLOAD"
+          ? "invalid_provider_payload"
+          : "database_unavailable";
     throw new ContentRuntimeError(code);
   }
   return result.data;
@@ -555,6 +562,83 @@ function rpcCounts(value: unknown, fields: readonly string[]): Readonly<Record<s
   return result as Readonly<Record<string, number>>;
 }
 
+const SQUAD_RESULT_FIELDS = [
+  "playersInserted",
+  "playersUpdated",
+  "playersSkipped",
+  "membershipsInserted",
+  "membershipsUpdated",
+] as const;
+
+async function persistSquadBatch(
+  config: ContentConfiguration,
+  dependencies: ContentRuntimeDependencies,
+  observedAt: string,
+  runId: string,
+  teamId: number,
+  batch: readonly PendingMembership[],
+  counts: SquadJobCounts,
+  uniquePlayers: Set<string>,
+): Promise<void> {
+  let persisted: Readonly<Record<string, number>>;
+  try {
+    persisted = rpcCounts(
+      await rpc(dependencies.client, "ingest_football_squad", {
+        p_provider_name: "sportsmonks",
+        p_season_external_id: String(config.seasonId),
+        p_team_external_id: String(teamId),
+        p_memberships: batch.map((membership) => membership.normalized),
+        p_observed_at: observedAt,
+        p_source_sequence: Date.parse(observedAt),
+      }),
+      SQUAD_RESULT_FIELDS,
+    );
+  } catch (error) {
+    if (!(error instanceof ContentRuntimeError) || error.code !== "invalid_provider_payload") {
+      throw error;
+    }
+    if (batch.length > 1) {
+      const middle = Math.floor(batch.length / 2);
+      await persistSquadBatch(
+        config,
+        dependencies,
+        observedAt,
+        runId,
+        teamId,
+        batch.slice(0, middle),
+        counts,
+        uniquePlayers,
+      );
+      await persistSquadBatch(
+        config,
+        dependencies,
+        observedAt,
+        runId,
+        teamId,
+        batch.slice(middle),
+        counts,
+        uniquePlayers,
+      );
+      return;
+    }
+    if (batch.length === 1) {
+      counts.validated -= 1;
+      counts.rejected += 1;
+      await recordRejection(dependencies.client, runId, "player", batch[0].raw, error);
+      return;
+    }
+    throw error;
+  }
+  counts.playersInserted += persisted.playersInserted;
+  counts.playersUpdated += persisted.playersUpdated;
+  counts.playersSkipped += persisted.playersSkipped;
+  counts.inserted += persisted.membershipsInserted;
+  counts.updated += persisted.membershipsUpdated;
+  for (const membership of batch) {
+    uniquePlayers.add(membership.normalized.externalPlayerId);
+  }
+}
+
 async function runSquads(
   config: ContentConfiguration,
   dependencies: ContentRuntimeDependencies,
@@ -589,7 +673,7 @@ async function runSquads(
       if (!Array.isArray(response.data)) {
         throw new ContentRuntimeError("invalid_provider_payload");
       }
-      const normalized: NormalizedMembership[] = [];
+      const normalized: PendingMembership[] = [];
       for (const candidate of response.data) {
         activeRaw = record(candidate);
         counts.fetched += 1;
@@ -612,31 +696,18 @@ async function runSquads(
           continue;
         }
         counts.validated += 1;
-        normalized.push(membership);
-        uniquePlayers.add(membership.externalPlayerId);
+        normalized.push({ normalized: membership, raw: activeRaw });
       }
-      const persisted = rpcCounts(
-        await rpc(dependencies.client, "ingest_football_squad", {
-          p_provider_name: "sportsmonks",
-          p_season_external_id: String(config.seasonId),
-          p_team_external_id: String(teamId),
-          p_memberships: normalized,
-          p_observed_at: observedAt,
-          p_source_sequence: Date.parse(observedAt),
-        }),
-        [
-          "playersInserted",
-          "playersUpdated",
-          "playersSkipped",
-          "membershipsInserted",
-          "membershipsUpdated",
-        ],
+      await persistSquadBatch(
+        config,
+        dependencies,
+        observedAt,
+        runId,
+        teamId,
+        normalized,
+        counts,
+        uniquePlayers,
       );
-      counts.playersInserted += persisted.playersInserted;
-      counts.playersUpdated += persisted.playersUpdated;
-      counts.playersSkipped += persisted.playersSkipped;
-      counts.inserted += persisted.membershipsInserted;
-      counts.updated += persisted.membershipsUpdated;
     }
     counts.uniquePlayers = uniquePlayers.size;
     if (counts.inserted + counts.updated !== counts.validated) {
