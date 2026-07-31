@@ -376,6 +376,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/football-ingest/index.ts"
 
+[functions.news-ingest]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/news-ingest/index.ts"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
