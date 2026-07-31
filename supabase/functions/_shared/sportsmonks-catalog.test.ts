@@ -66,7 +66,7 @@ function providerFetch(urls: string[]) {
     }
     if (url.includes("/rounds/seasons/28647"))
       return Response.json({ data: [] });
-    if (pathname.endsWith("/seasons/28647")) {
+    if (pathname === "/v3/football/seasons/28647") {
       return Response.json({
         data: {
           id: 28647,
