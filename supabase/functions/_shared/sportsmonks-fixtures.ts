@@ -5,18 +5,12 @@ export interface FixtureRpcResult {
 
 export interface FixtureRpcClient {
   schema(name: "api"): {
-    rpc(
-      name: string,
-      args: Record<string, unknown>,
-    ): PromiseLike<FixtureRpcResult>;
+    rpc(name: string, args: Record<string, unknown>): PromiseLike<FixtureRpcResult>;
   };
 }
 
 type JsonRecord = Record<string, unknown>;
-type FetchLike = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>;
+type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export interface FixtureRuntimeDependencies {
   readonly environment: Readonly<Record<string, string | undefined>>;
@@ -107,10 +101,7 @@ function nullablePositiveInteger(value: unknown): number | null {
   return value === null || value === undefined ? null : positiveInteger(value);
 }
 
-function required(
-  environment: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string {
+function required(environment: Readonly<Record<string, string | undefined>>, name: string): string {
   const value = environment[name]?.trim();
   if (!value) throw new FixtureRuntimeError("invalid_runtime_configuration");
   return value;
@@ -123,8 +114,7 @@ function integerSetting(
   maximum: number,
 ): number {
   const raw = required(environment, name);
-  if (!/^\d+$/.test(raw))
-    throw new FixtureRuntimeError("invalid_runtime_configuration");
+  if (!/^\d+$/.test(raw)) throw new FixtureRuntimeError("invalid_runtime_configuration");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
     throw new FixtureRuntimeError("invalid_runtime_configuration");
@@ -132,16 +122,10 @@ function integerSetting(
   return value;
 }
 
-function isoDate(
-  value: string,
-  code = "invalid_runtime_configuration",
-): string {
+function isoDate(value: string, code = "invalid_runtime_configuration"): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new FixtureRuntimeError(code);
   const parsed = new Date(`${value}T00:00:00.000Z`);
-  if (
-    Number.isNaN(parsed.getTime()) ||
-    parsed.toISOString().slice(0, 10) !== value
-  ) {
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
     throw new FixtureRuntimeError(code);
   }
   return value;
@@ -155,8 +139,7 @@ function timestamp(value: unknown): string {
     ? `${value.replace(" ", "T")}Z`
     : value;
   const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime()))
-    throw new FixtureRuntimeError("invalid_provider_payload");
+  if (Number.isNaN(parsed.getTime())) throw new FixtureRuntimeError("invalid_provider_payload");
   return parsed.toISOString();
 }
 
@@ -177,26 +160,17 @@ function configuration(
   environment: Readonly<Record<string, string | undefined>>,
 ): FixtureConfiguration {
   const token = required(environment, "SPORTSMONKS_API_TOKEN");
-  if (
-    token.length < 16 ||
-    token.length > 512 ||
-    hasControlOrWhitespace(token)
-  ) {
+  if (token.length < 16 || token.length > 512 || hasControlOrWhitespace(token)) {
     throw new FixtureRuntimeError("invalid_runtime_configuration");
   }
   if (
     required(environment, "FOOTBALL_PROVIDER") !== "sportsmonks" ||
-    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !==
-      OFFICIAL_BASE_URL
+    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !== OFFICIAL_BASE_URL
   ) {
     throw new FixtureRuntimeError("invalid_runtime_configuration");
   }
-  const fixtureFrom = isoDate(
-    required(environment, "FOOTBALL_SPORTSMONKS_FIXTURE_FROM"),
-  );
-  const fixtureTo = isoDate(
-    required(environment, "FOOTBALL_SPORTSMONKS_FIXTURE_TO"),
-  );
+  const fixtureFrom = isoDate(required(environment, "FOOTBALL_SPORTSMONKS_FIXTURE_FROM"));
+  const fixtureTo = isoDate(required(environment, "FOOTBALL_SPORTSMONKS_FIXTURE_TO"));
   const fromMs = Date.parse(`${fixtureFrom}T00:00:00.000Z`);
   const toMs = Date.parse(`${fixtureTo}T00:00:00.000Z`);
   const inclusiveDays = Math.floor((toMs - fromMs) / 86_400_000) + 1;
@@ -205,32 +179,12 @@ function configuration(
   }
   return {
     token,
-    leagueId: integerSetting(
-      environment,
-      "FOOTBALL_SPORTSMONKS_LEAGUE_ID",
-      1,
-      1_000_000_000,
-    ),
-    seasonId: integerSetting(
-      environment,
-      "FOOTBALL_SPORTSMONKS_SEASON_ID",
-      1,
-      1_000_000_000,
-    ),
+    leagueId: integerSetting(environment, "FOOTBALL_SPORTSMONKS_LEAGUE_ID", 1, 1_000_000_000),
+    seasonId: integerSetting(environment, "FOOTBALL_SPORTSMONKS_SEASON_ID", 1, 1_000_000_000),
     fixtureFrom,
     fixtureTo,
-    timeoutMs: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_TIMEOUT_MS",
-      250,
-      60_000,
-    ),
-    maxRetries: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_MAX_RETRIES",
-      0,
-      8,
-    ),
+    timeoutMs: integerSetting(environment, "FOOTBALL_PROVIDER_TIMEOUT_MS", 250, 60_000),
+    maxRetries: integerSetting(environment, "FOOTBALL_PROVIDER_MAX_RETRIES", 0, 8),
   };
 }
 
@@ -262,8 +216,7 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
     throw new FixtureRuntimeError("request_too_large");
   }
   const source = await request.text();
-  if (source.length > MAX_REQUEST_BYTES)
-    throw new FixtureRuntimeError("request_too_large");
+  if (source.length > MAX_REQUEST_BYTES) throw new FixtureRuntimeError("request_too_large");
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -316,18 +269,12 @@ async function providerRequest(
     throw new FixtureRuntimeError("invalid_provider_path");
   }
   const url = new URL(`${OFFICIAL_BASE_URL}${path}`);
-  for (const [name, value] of Object.entries(query))
-    url.searchParams.set(name, value);
-  if (
-    url.origin !== "https://api.sportmonks.com" ||
-    url.href.includes(config.token)
-  ) {
+  for (const [name, value] of Object.entries(query)) url.searchParams.set(name, value);
+  if (url.origin !== "https://api.sportmonks.com" || url.href.includes(config.token)) {
     throw new FixtureRuntimeError("provider_origin_guard_failed");
   }
   const fetcher = dependencies.fetch ?? globalThis.fetch.bind(globalThis);
-  const sleep =
-    dependencies.sleep ??
-    ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const sleep = dependencies.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -339,17 +286,12 @@ async function providerRequest(
         signal: controller.signal,
       });
       if (response.ok) return responseJson(response);
-      if (
-        (response.status === 429 || response.status >= 500) &&
-        attempt < config.maxRetries
-      ) {
+      if ((response.status === 429 || response.status >= 500) && attempt < config.maxRetries) {
         await sleep(250 * 2 ** attempt);
         continue;
       }
       throw new FixtureRuntimeError(
-        response.status === 429
-          ? "provider_rate_limited"
-          : "provider_unavailable",
+        response.status === 429 ? "provider_rate_limited" : "provider_unavailable",
       );
     } catch (error) {
       if (error instanceof FixtureRuntimeError) throw error;
@@ -368,14 +310,11 @@ async function providerRequest(
 function hasMore(value: JsonRecord, count: number, pageSize: number): boolean {
   const root = isRecord(value.pagination) ? value.pagination : null;
   const meta =
-    isRecord(value.meta) && isRecord(value.meta.pagination)
-      ? value.meta.pagination
-      : null;
+    isRecord(value.meta) && isRecord(value.meta.pagination) ? value.meta.pagination : null;
   const pagination = root ?? meta;
   if (pagination) {
     if (typeof pagination.has_more === "boolean") return pagination.has_more;
-    if (pagination.next_page !== null && pagination.next_page !== undefined)
-      return true;
+    if (pagination.next_page !== null && pagination.next_page !== undefined) return true;
   }
   return count === pageSize;
 }
@@ -398,8 +337,7 @@ async function providerPage(
     config,
     dependencies,
   );
-  if (!Array.isArray(response.data))
-    throw new FixtureRuntimeError("invalid_provider_payload");
+  if (!Array.isArray(response.data)) throw new FixtureRuntimeError("invalid_provider_payload");
   const rows = response.data.map((value) => record(value));
   return {
     rows,
@@ -408,20 +346,14 @@ async function providerPage(
 }
 
 function participant(raw: JsonRecord, location: "home" | "away"): number {
-  if (!Array.isArray(raw.participants))
-    throw new FixtureRuntimeError("invalid_provider_payload");
+  if (!Array.isArray(raw.participants)) throw new FixtureRuntimeError("invalid_provider_payload");
   const matches = raw.participants.filter((value) => {
-    if (
-      !isRecord(value) ||
-      !isRecord(value.meta) ||
-      typeof value.meta.location !== "string"
-    ) {
+    if (!isRecord(value) || !isRecord(value.meta) || typeof value.meta.location !== "string") {
       return false;
     }
     return value.meta.location.toLowerCase() === location;
   });
-  if (matches.length !== 1)
-    throw new FixtureRuntimeError("invalid_provider_payload");
+  if (matches.length !== 1) throw new FixtureRuntimeError("invalid_provider_payload");
   return positiveInteger((matches[0] as JsonRecord).id);
 }
 
@@ -429,10 +361,8 @@ function currentScore(raw: JsonRecord): {
   home: number | null;
   away: number | null;
 } {
-  if (raw.scores === undefined || raw.scores === null)
-    return { home: null, away: null };
-  if (!Array.isArray(raw.scores))
-    throw new FixtureRuntimeError("invalid_provider_payload");
+  if (raw.scores === undefined || raw.scores === null) return { home: null, away: null };
+  if (!Array.isArray(raw.scores)) throw new FixtureRuntimeError("invalid_provider_payload");
   const current = raw.scores.filter(
     (value) =>
       isRecord(value) &&
@@ -445,19 +375,11 @@ function currentScore(raw: JsonRecord): {
       const score = isRecord((value as JsonRecord).score)
         ? ((value as JsonRecord).score as JsonRecord)
         : null;
-      return (
-        typeof score?.participant === "string" &&
-        score.participant.toLowerCase() === location
-      );
+      return typeof score?.participant === "string" && score.participant.toLowerCase() === location;
     });
-    if (matches.length !== 1)
-      throw new FixtureRuntimeError("invalid_provider_payload");
+    if (matches.length !== 1) throw new FixtureRuntimeError("invalid_provider_payload");
     const score = record((matches[0] as JsonRecord).score);
-    if (
-      typeof score.goals !== "number" ||
-      !Number.isInteger(score.goals) ||
-      score.goals < 0
-    ) {
+    if (typeof score.goals !== "number" || !Number.isInteger(score.goals) || score.goals < 0) {
       throw new FixtureRuntimeError("invalid_provider_payload");
     }
     return score.goals;
@@ -472,8 +394,7 @@ function currentScore(raw: JsonRecord): {
 function fixtureState(raw: JsonRecord): { status: string; period: string } {
   const state = record(raw.state);
   const source = [state.developer_name, state.state, state.name].find(
-    (value): value is string =>
-      typeof value === "string" && value.trim().length > 0,
+    (value): value is string => typeof value === "string" && value.trim().length > 0,
   );
   if (!source) throw new FixtureRuntimeError("invalid_provider_payload");
   const key = source
@@ -483,42 +404,41 @@ function fixtureState(raw: JsonRecord): { status: string; period: string } {
   if (key === "AWAITING_UPDATES" || key === "PENDING") {
     throw new FixtureRuntimeError("provider_unavailable");
   }
-  const mappings: Readonly<Record<string, { status: string; period: string }>> =
-    {
-      NS: { status: "not_started", period: "pre_match" },
-      TBA: { status: "scheduled", period: "pre_match" },
-      TBD: { status: "scheduled", period: "pre_match" },
-      INPLAY_1ST_HALF: { status: "live_first_half", period: "first_half" },
-      FIRST_HALF: { status: "live_first_half", period: "first_half" },
-      HT: { status: "half_time", period: "half_time" },
-      HALF_TIME: { status: "half_time", period: "half_time" },
-      BREAK: { status: "extra_time", period: "extra_time" },
-      INPLAY_2ND_HALF: { status: "live_second_half", period: "second_half" },
-      SECOND_HALF: { status: "live_second_half", period: "second_half" },
-      INPLAY_ET: { status: "extra_time", period: "extra_time" },
-      EXTRA_TIME: { status: "extra_time", period: "extra_time" },
-      EXTRA_TIME_BREAK: { status: "extra_time", period: "extra_time" },
-      INPLAY_PENALTIES: { status: "penalties", period: "penalties" },
-      PEN_LIVE: { status: "penalties", period: "penalties" },
-      PEN_BREAK: { status: "penalties", period: "penalties" },
-      FT: { status: "finished", period: "post_match" },
-      AET: { status: "finished", period: "post_match" },
-      FTP: { status: "finished", period: "post_match" },
-      FT_PEN: { status: "finished", period: "post_match" },
-      WO: { status: "finished", period: "post_match" },
-      AWARDED: { status: "finished", period: "post_match" },
-      POSTP: { status: "postponed", period: "pre_match" },
-      POSTPONED: { status: "postponed", period: "pre_match" },
-      CANCL: { status: "cancelled", period: "pre_match" },
-      CANCELLED: { status: "cancelled", period: "pre_match" },
-      DELETED: { status: "cancelled", period: "pre_match" },
-      SUSP: { status: "suspended", period: "pre_match" },
-      SUSPENDED: { status: "suspended", period: "pre_match" },
-      DELAYED: { status: "delayed", period: "pre_match" },
-      ABAN: { status: "abandoned", period: "post_match" },
-      ABANDONED: { status: "abandoned", period: "post_match" },
-      INTERRUPTED: { status: "suspended", period: "pre_match" },
-    };
+  const mappings: Readonly<Record<string, { status: string; period: string }>> = {
+    NS: { status: "not_started", period: "pre_match" },
+    TBA: { status: "scheduled", period: "pre_match" },
+    TBD: { status: "scheduled", period: "pre_match" },
+    INPLAY_1ST_HALF: { status: "live_first_half", period: "first_half" },
+    FIRST_HALF: { status: "live_first_half", period: "first_half" },
+    HT: { status: "half_time", period: "half_time" },
+    HALF_TIME: { status: "half_time", period: "half_time" },
+    BREAK: { status: "extra_time", period: "extra_time" },
+    INPLAY_2ND_HALF: { status: "live_second_half", period: "second_half" },
+    SECOND_HALF: { status: "live_second_half", period: "second_half" },
+    INPLAY_ET: { status: "extra_time", period: "extra_time" },
+    EXTRA_TIME: { status: "extra_time", period: "extra_time" },
+    EXTRA_TIME_BREAK: { status: "extra_time", period: "extra_time" },
+    INPLAY_PENALTIES: { status: "penalties", period: "penalties" },
+    PEN_LIVE: { status: "penalties", period: "penalties" },
+    PEN_BREAK: { status: "penalties", period: "penalties" },
+    FT: { status: "finished", period: "post_match" },
+    AET: { status: "finished", period: "post_match" },
+    FTP: { status: "finished", period: "post_match" },
+    FT_PEN: { status: "finished", period: "post_match" },
+    WO: { status: "finished", period: "post_match" },
+    AWARDED: { status: "finished", period: "post_match" },
+    POSTP: { status: "postponed", period: "pre_match" },
+    POSTPONED: { status: "postponed", period: "pre_match" },
+    CANCL: { status: "cancelled", period: "pre_match" },
+    CANCELLED: { status: "cancelled", period: "pre_match" },
+    DELETED: { status: "cancelled", period: "pre_match" },
+    SUSP: { status: "suspended", period: "pre_match" },
+    SUSPENDED: { status: "suspended", period: "pre_match" },
+    DELAYED: { status: "delayed", period: "pre_match" },
+    ABAN: { status: "abandoned", period: "post_match" },
+    ABANDONED: { status: "abandoned", period: "post_match" },
+    INTERRUPTED: { status: "suspended", period: "pre_match" },
+  };
   const mapped = mappings[key];
   if (!mapped) throw new FixtureRuntimeError("invalid_provider_payload");
   return mapped;
@@ -537,16 +457,11 @@ function normalizeFixture(
   }
   const state = fixtureState(raw);
   const scores = currentScore(raw);
-  if (
-    state.status === "finished" &&
-    (scores.home === null || scores.away === null)
-  ) {
+  if (state.status === "finished" && (scores.home === null || scores.away === null)) {
     throw new FixtureRuntimeError("invalid_provider_payload");
   }
   const updatedAt =
-    optionalTimestamp(raw.last_processed_at) ??
-    optionalTimestamp(raw.updated_at) ??
-    observedAt;
+    optionalTimestamp(raw.last_processed_at) ?? optionalTimestamp(raw.updated_at) ?? observedAt;
   return {
     externalId: String(id),
     competitionExternalId: String(leagueId),
@@ -575,8 +490,7 @@ async function rpc(
   const result = await client.schema("api").rpc(name, args);
   if (result.error) {
     const code =
-      result.error.code === "P0002" ||
-      result.error.message === "MAPPING_NOT_FOUND"
+      result.error.code === "P0002" || result.error.message === "MAPPING_NOT_FOUND"
         ? "mapping_not_found"
         : "database_unavailable";
     throw new FixtureRuntimeError(code);
@@ -600,19 +514,12 @@ async function resolveMapping(
   return value;
 }
 
-async function fixtureExists(
-  client: FixtureRpcClient,
-  externalId: string,
-): Promise<boolean> {
+async function fixtureExists(client: FixtureRpcClient, externalId: string): Promise<boolean> {
   try {
     await resolveMapping(client, "fixture", externalId);
     return true;
   } catch (error) {
-    if (
-      error instanceof FixtureRuntimeError &&
-      error.code === "mapping_not_found"
-    )
-      return false;
+    if (error instanceof FixtureRuntimeError && error.code === "mapping_not_found") return false;
     throw error;
   }
 }
@@ -622,16 +529,15 @@ async function persistFixture(
   fixture: NormalizedFixture,
 ): Promise<"inserted" | "updated"> {
   const existed = await fixtureExists(client, fixture.externalId);
-  const [competitionId, seasonId, roundId, homeTeamId, awayTeamId] =
-    await Promise.all([
-      resolveMapping(client, "competition", fixture.competitionExternalId),
-      resolveMapping(client, "season", fixture.seasonExternalId),
-      fixture.roundExternalId
-        ? resolveMapping(client, "round", fixture.roundExternalId)
-        : Promise.resolve(null),
-      resolveMapping(client, "team", fixture.homeTeamExternalId),
-      resolveMapping(client, "team", fixture.awayTeamExternalId),
-    ]);
+  const [competitionId, seasonId, roundId, homeTeamId, awayTeamId] = await Promise.all([
+    resolveMapping(client, "competition", fixture.competitionExternalId),
+    resolveMapping(client, "season", fixture.seasonExternalId),
+    fixture.roundExternalId
+      ? resolveMapping(client, "round", fixture.roundExternalId)
+      : Promise.resolve(null),
+    resolveMapping(client, "team", fixture.homeTeamExternalId),
+    resolveMapping(client, "team", fixture.awayTeamExternalId),
+  ]);
   const value = await rpc(client, "ingest_football_fixture", {
     p_provider_name: "sportsmonks",
     p_external_id: fixture.externalId,
@@ -677,15 +583,11 @@ async function fingerprint(value: unknown): Promise<string> {
     "SHA-256",
     new TextEncoder().encode(JSON.stringify(value)),
   );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function externalId(raw: JsonRecord): string {
-  return typeof raw.id === "number" &&
-    Number.isSafeInteger(raw.id) &&
-    raw.id > 0
+  return typeof raw.id === "number" && Number.isSafeInteger(raw.id) && raw.id > 0
     ? String(raw.id)
     : "unknown";
 }
@@ -696,10 +598,7 @@ async function recordRejection(
   raw: JsonRecord,
   error: unknown,
 ): Promise<void> {
-  const code =
-    error instanceof FixtureRuntimeError
-      ? error.code
-      : "fixture_ingestion_failed";
+  const code = error instanceof FixtureRuntimeError ? error.code : "fixture_ingestion_failed";
   await rpc(client, "record_football_ingestion_rejection", {
     p_run_id: runId,
     p_entity_type: "fixture",
@@ -730,9 +629,7 @@ async function completeRun(
     p_records_rejected: counts.rejected,
     p_retry_count: counts.retries,
     p_error_code: errorCode,
-    p_error_summary: errorCode
-      ? "The protected historical fixture job did not complete."
-      : null,
+    p_error_summary: errorCode ? "The protected historical fixture job did not complete." : null,
   });
 }
 
@@ -759,12 +656,7 @@ async function runFixtureJob(
   let finalized = false;
   try {
     for (let pageIndex = 0; pageIndex < parsed.maxPages; pageIndex += 1) {
-      const result = await providerPage(
-        page,
-        parsed.pageSize,
-        config,
-        dependencies,
-      );
+      const result = await providerPage(page, parsed.pageSize, config, dependencies);
       for (const raw of result.rows) {
         counts.fetched += 1;
         try {
@@ -794,14 +686,7 @@ async function runFixtureJob(
         throw new FixtureRuntimeError("fixture_item_rejected");
       }
       if (result.nextPage === null) {
-        await completeRun(
-          dependencies.client,
-          runId,
-          "succeeded",
-          counts,
-          {},
-          null,
-        );
+        await completeRun(dependencies.client, runId, "succeeded", counts, {}, null);
         finalized = true;
         return counts;
       }
@@ -819,10 +704,7 @@ async function runFixtureJob(
     throw new FixtureRuntimeError("page_budget_exhausted");
   } catch (error) {
     if (!finalized) {
-      const code =
-        error instanceof FixtureRuntimeError
-          ? error.code
-          : "fixture_ingestion_failed";
+      const code = error instanceof FixtureRuntimeError ? error.code : "fixture_ingestion_failed";
       await completeRun(
         dependencies.client,
         runId,
@@ -840,15 +722,10 @@ export async function handleSportsMonksFixtureRequest(
   request: Request,
   dependencies: FixtureRuntimeDependencies,
 ): Promise<Response> {
-  if (request.method !== "POST")
-    return json(405, { error: "method_not_allowed" });
-  const expectedSecret =
-    dependencies.environment.FOOTBALL_INGESTION_TRIGGER_SECRET?.trim() ?? "";
+  if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const expectedSecret = dependencies.environment.FOOTBALL_INGESTION_TRIGGER_SECRET?.trim() ?? "";
   const receivedSecret = request.headers.get("x-botolago-ingestion-key") ?? "";
-  if (
-    expectedSecret.length < 32 ||
-    !timingSafeEqual(receivedSecret, expectedSecret)
-  ) {
+  if (expectedSecret.length < 32 || !timingSafeEqual(receivedSecret, expectedSecret)) {
     return json(401, { error: "unauthorized" });
   }
   try {
@@ -861,16 +738,8 @@ export async function handleSportsMonksFixtureRequest(
       jobs: { fixtures: counts },
     });
   } catch (error) {
-    const code =
-      error instanceof FixtureRuntimeError
-        ? error.code
-        : "fixture_ingestion_failed";
-    const status =
-      code === "invalid_request"
-        ? 400
-        : code === "request_too_large"
-          ? 413
-          : 502;
+    const code = error instanceof FixtureRuntimeError ? error.code : "fixture_ingestion_failed";
+    const status = code === "invalid_request" ? 400 : code === "request_too_large" ? 413 : 502;
     return json(status, { error: code });
   }
 }
