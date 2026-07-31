@@ -12,6 +12,10 @@ import {
   handleSportsMonksHistoricalContentRequest,
   type ContentRpcClient,
 } from "../_shared/sportsmonks-historical-content.ts";
+import {
+  handleSportsMonksPlayerRatingsRequest,
+  type RatingsRpcClient,
+} from "../_shared/sportsmonks-player-ratings.ts";
 
 const environment = Deno.env.toObject();
 const supabaseUrl = environment.SUPABASE_URL?.trim();
@@ -41,6 +45,12 @@ Deno.serve((request) => {
     return handleSportsMonksHistoricalContentRequest(request, {
       environment,
       client: client as unknown as ContentRpcClient,
+    });
+  }
+  if (job === "preseason_ratings") {
+    return handleSportsMonksPlayerRatingsRequest(request, {
+      environment,
+      client: client as unknown as RatingsRpcClient,
     });
   }
   return handleSportsMonksCatalogRequest(request, {
