@@ -66,6 +66,7 @@ create index player_season_ratings_player_idx
   on app.player_season_ratings (player_id, football_season_id desc, calculated_at desc);
 
 alter table app.player_season_ratings enable row level security;
+alter table app.player_season_ratings force row level security;
 revoke all on table app.player_season_ratings from public, anon, authenticated;
 grant select, insert, update on table app.player_season_ratings to service_role;
 
@@ -249,7 +250,7 @@ begin
       raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
     end if;
 
-    candidate_source_version := 'sportsmonks:' || left(encode(digest(candidate::text, 'sha256'), 'hex'), 64);
+    candidate_source_version := 'sportsmonks:' || left(encode(extensions.digest(candidate::text, 'sha256'), 'hex'), 64);
     select * into existing from app.player_season_ratings rating
     where rating.football_season_id = target_season_id
       and rating.player_id = target_player.id
