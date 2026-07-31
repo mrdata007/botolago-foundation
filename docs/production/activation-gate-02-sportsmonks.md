@@ -1,6 +1,6 @@
 # Gate 2 — SportsMonks football provider activation
 
-Status: **Gate 2B read-only access probe passed; production writes remain disabled**
+Status: **Gate 2B catalog persistence and protected runtime implemented; production deployment and writes remain disabled**
 
 Target project: BotolaGO Production V2 (`tkewgajrljbwgwedqsxn`)
 
@@ -81,6 +81,12 @@ The focused test suite must prove all of the following:
 - HTTP 429 honors `Retry-After` and retries are bounded;
 - unknown states and Gate 2B-only capabilities fail closed;
 - only the official SportsMonks API origin and complete bounded settings are accepted.
+
+## Gate 2B implementation boundary
+
+The repository now contains an additive, service-role-only catalog RPC for normalized competition, season, round, and team identities plus the authenticated `football-ingest` Edge Function. The function requires both Supabase JWT verification and a separate high-entropy `FOOTBALL_INGESTION_TRIGGER_SECRET`, pins the SportsMonks origin, bounds request/response sizes, pages, retries, and timeouts, and records every run through the private ingestion ledger.
+
+This merge does not apply the migration to Production V2, deploy the Edge Function, copy the SportsMonks token into Supabase, invoke the function, or create a schedule. The first production invocation must remain a separately reviewed one-page catalog canary. Because the provider probe returned zero current-season rounds and teams, fixture ingestion stays blocked until the catalog canary proves those prerequisite mappings exist.
 
 ## Gate 2B sequence
 
