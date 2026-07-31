@@ -209,6 +209,14 @@ describe("SportsMonks player rating runtime", () => {
           data: [
             providerRow(101, 27, { minutes: 1_800, appearances: 20, starts: 20, goals: 15, assists: 8, rating: 8 }),
             providerRow(102, 27, { minutes: 1_800, appearances: 20, starts: 20, goals: 0, assists: 0, rating: 5 }),
+            {
+              id: 1_000_103,
+              player_id: 103,
+              team_id: 2_846,
+              season_id: 26_027,
+              has_values: false,
+              position_id: 27,
+            },
           ],
           pagination: { has_more: false },
         });
@@ -223,7 +231,7 @@ describe("SportsMonks player rating runtime", () => {
       candidates: 3,
       ratingRange: { minimum: 5.5, maximum: 10 },
       counters: {
-        fetched: 2,
+        fetched: 3,
         validated: 3,
         inserted: 3,
         updated: 0,
