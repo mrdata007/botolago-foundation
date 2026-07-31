@@ -341,7 +341,7 @@ begin
     'skipped', skipped_count
   );
 exception
-  when invalid_text_representation or numeric_value_out_of_range then
+  when invalid_text_representation or numeric_value_out_of_range or not_null_violation or check_violation then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
 end;
 $$;
