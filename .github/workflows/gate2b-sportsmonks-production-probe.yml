@@ -1,6 +1,11 @@
 name: Gate 2B SportsMonks production access probe
 
 on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+    paths:
+      - "docs/production/gate2b-sportsmonks-production-probe-trigger.json"
   workflow_dispatch:
     inputs:
       expected_commit:
@@ -26,13 +31,18 @@ jobs:
       always() &&
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
-      github.actor == 'mrdata007'
+      github.actor == 'mrdata007' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request' &&
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.base.ref == 'main'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production-football-ingestion
     env:
-      CONFIRMATION: ${{ inputs.confirmation }}
-      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_GATE2B_SPORTSMONKS_PROBE' }}
+      EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
 
     steps:
       - name: Initialize protected read-only runtime
@@ -60,6 +70,29 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify the reviewed one-time activation ticket
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemaVersion": 1,
+              "requestId": "gate2b-sportsmonks-production-probe-2026-07-31",
+              "mode": "read_only",
+              "leagueId": 860,
+              "confirmation": "RUN_GATE2B_SPORTSMONKS_PROBE",
+          }
+          path = Path("docs/production/gate2b-sportsmonks-production-probe-trigger.json")
+          if json.loads(path.read_text(encoding="utf-8")) != expected:
+              raise SystemExit("INVALID_GATE2B_ACTIVATION_TICKET")
+          print("Reviewed activation ticket: PASS")
+          PY
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
