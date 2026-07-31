@@ -27,6 +27,7 @@ interface SquadTotals {
   playersWithDateOfBirth: number;
   playersWithNationality: number;
   membershipsWithJerseyNumber: number;
+  membershipsWithPosition: number;
   duplicateMemberships: number;
 }
 
@@ -109,11 +110,13 @@ function parseSquad(
 ): {
   memberships: number;
   withJerseyNumber: number;
+  withPosition: number;
   duplicates: number;
 } {
   const response = record(value, "invalid_squad_response");
   const rows = array(response.data, "invalid_squad_data");
   let withJerseyNumber = 0;
+  let withPosition = 0;
   let duplicates = 0;
 
   for (const candidate of rows) {
@@ -122,7 +125,7 @@ function parseSquad(
     const playerId = positiveInteger(row.player_id, "invalid_squad_player_id");
     const teamId = positiveInteger(row.team_id, "invalid_squad_team_id");
     const seasonId = positiveInteger(row.season_id, "invalid_squad_season_id");
-    const positionId = positiveInteger(row.position_id, "invalid_squad_position_id");
+    const positionId = optionalPositiveInteger(row.position_id, "invalid_squad_position_id");
     if (teamId !== expectedTeamId || seasonId !== HISTORICAL_SEASON_ID) {
       throw new SportsMonksProbeError("squad_scope_mismatch");
     }
@@ -131,9 +134,14 @@ function parseSquad(
     if (positiveInteger(player.id, "invalid_player_id") !== playerId || !hasUsableName(player)) {
       throw new SportsMonksProbeError("invalid_squad_player_include");
     }
-    const position = record(row.position, "missing_squad_position_include");
-    if (positiveInteger(position.id, "invalid_position_id") !== positionId) {
-      throw new SportsMonksProbeError("invalid_squad_position_include");
+    if (positionId !== null) {
+      const position = record(row.position, "missing_squad_position_include");
+      if (positiveInteger(position.id, "invalid_position_id") !== positionId) {
+        throw new SportsMonksProbeError("invalid_squad_position_include");
+      }
+      withPosition += 1;
+    } else if (row.position !== null && row.position !== undefined) {
+      throw new SportsMonksProbeError("unexpected_squad_position_include");
     }
 
     const jersey = optionalPositiveInteger(row.jersey_number, "invalid_jersey_number");
@@ -148,7 +156,7 @@ function parseSquad(
     if (!playerProfiles.has(playerId)) playerProfiles.set(playerId, player);
   }
 
-  return { memberships: rows.length, withJerseyNumber, duplicates };
+  return { memberships: rows.length, withJerseyNumber, withPosition, duplicates };
 }
 
 function parseStandings(value: unknown): StandingTotals {
@@ -217,6 +225,7 @@ export async function runSportsMonksHistoricalContentProbe(
   let memberships = 0;
   let withSquad = 0;
   let membershipsWithJerseyNumber = 0;
+  let membershipsWithPosition = 0;
   let duplicateMemberships = 0;
 
   for (const teamId of HISTORICAL_TEAM_IDS) {
@@ -229,6 +238,7 @@ export async function runSportsMonksHistoricalContentProbe(
     const parsed = parseSquad(response, teamId, playerProfiles, membershipKeys);
     memberships += parsed.memberships;
     membershipsWithJerseyNumber += parsed.withJerseyNumber;
+    membershipsWithPosition += parsed.withPosition;
     duplicateMemberships += parsed.duplicates;
     if (parsed.memberships > 0) withSquad += 1;
   }
@@ -279,6 +289,7 @@ export async function runSportsMonksHistoricalContentProbe(
       playersWithDateOfBirth,
       playersWithNationality,
       membershipsWithJerseyNumber,
+      membershipsWithPosition,
       duplicateMemberships,
     },
     standings,
