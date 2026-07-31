@@ -351,7 +351,7 @@ function emptyStatistics(candidate: RatingCandidate): PlayerSeasonStatistics {
 
 function normalizedStatistics(value: unknown, seasonId: number): PlayerSeasonStatistics {
   const raw = record(value);
-  if (positiveInteger(raw.season_id) !== seasonId || raw.has_values === false || !Array.isArray(raw.details)) {
+  if (positiveInteger(raw.season_id) !== seasonId) {
     throw new RatingsRuntimeError("invalid_provider_payload");
   }
   const candidate: RatingCandidate = {
@@ -359,6 +359,8 @@ function normalizedStatistics(value: unknown, seasonId: number): PlayerSeasonSta
     position: positionFromId(raw.position_id),
   };
   const metrics = emptyStatistics(candidate);
+  if (raw.has_values === false) return metrics;
+  if (!Array.isArray(raw.details)) throw new RatingsRuntimeError("invalid_provider_payload");
   const seen = new Set<number>();
   let providerRating: number | null = null;
   for (const item of raw.details) {
