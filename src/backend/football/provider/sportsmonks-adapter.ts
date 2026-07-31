@@ -719,6 +719,12 @@ function mapFixtureState(raw: z.infer<typeof fixtureSchema>["state"]): FixtureSt
     .trim()
     .toUpperCase()
     .replace(/[\s-]+/g, "_");
+  if (state === "AWAITING_UPDATES" || state === "PENDING") {
+    throw new FootballError(
+      "provider_unavailable",
+      "The football provider is awaiting a verified fixture update.",
+    );
+  }
   const mappings: Readonly<Record<string, FixtureState>> = {
     NS: { status: "not_started", period: "pre_match" },
     TBA: { status: "scheduled", period: "pre_match" },
@@ -727,26 +733,32 @@ function mapFixtureState(raw: z.infer<typeof fixtureSchema>["state"]): FixtureSt
     FIRST_HALF: { status: "live_first_half", period: "first_half" },
     HT: { status: "half_time", period: "half_time" },
     HALF_TIME: { status: "half_time", period: "half_time" },
+    BREAK: { status: "extra_time", period: "extra_time" },
     INPLAY_2ND_HALF: { status: "live_second_half", period: "second_half" },
     SECOND_HALF: { status: "live_second_half", period: "second_half" },
     INPLAY_ET: { status: "extra_time", period: "extra_time" },
     EXTRA_TIME: { status: "extra_time", period: "extra_time" },
+    EXTRA_TIME_BREAK: { status: "extra_time", period: "extra_time" },
     INPLAY_PENALTIES: { status: "penalties", period: "penalties" },
     PEN_LIVE: { status: "penalties", period: "penalties" },
+    PEN_BREAK: { status: "penalties", period: "penalties" },
     FT: { status: "finished", period: "post_match" },
     AET: { status: "finished", period: "post_match" },
     FTP: { status: "finished", period: "post_match" },
+    FT_PEN: { status: "finished", period: "post_match" },
+    WO: { status: "finished", period: "post_match" },
     AWARDED: { status: "finished", period: "post_match" },
     POSTP: { status: "postponed", period: "pre_match" },
     POSTPONED: { status: "postponed", period: "pre_match" },
     CANCL: { status: "cancelled", period: "pre_match" },
     CANCELLED: { status: "cancelled", period: "pre_match" },
+    DELETED: { status: "cancelled", period: "pre_match" },
     SUSP: { status: "suspended", period: "pre_match" },
     SUSPENDED: { status: "suspended", period: "pre_match" },
     DELAYED: { status: "delayed", period: "pre_match" },
     ABAN: { status: "abandoned", period: "post_match" },
     ABANDONED: { status: "abandoned", period: "post_match" },
-    INTERRUPTED: { status: "abandoned", period: "post_match" },
+    INTERRUPTED: { status: "suspended", period: "pre_match" },
   };
   const mapped = mappings[state];
   if (!mapped) throw invalidPayload();
@@ -754,7 +766,5 @@ function mapFixtureState(raw: z.infer<typeof fixtureSchema>["state"]): FixtureSt
 }
 
 function isProvisionalStatus(status: ProviderFixture["status"]): boolean {
-  return ["live_first_half", "half_time", "live_second_half", "extra_time", "penalties"].includes(
-    status,
-  );
+  return !["finished", "cancelled", "abandoned"].includes(status);
 }
