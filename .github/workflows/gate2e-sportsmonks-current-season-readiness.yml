@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       confirmation:
-        description: Type RUN_GATE2B_SPORTSMONKS_PROBE
+        description: Type RUN_GATE2E_CURRENT_SEASON_READINESS
         required: true
         type: string
 
@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 10
     environment: production-football-ingestion
     env:
-      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_GATE2B_SPORTSMONKS_PROBE' }}
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_GATE2E_CURRENT_SEASON_READINESS' }}
       EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
 
     steps:
@@ -49,7 +49,7 @@ jobs:
             echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
             exit 2
           fi
-          if [[ "$CONFIRMATION" != "RUN_GATE2B_SPORTSMONKS_PROBE" ]]; then
+          if [[ "$CONFIRMATION" != "RUN_GATE2E_CURRENT_SEASON_READINESS" ]]; then
             echo "Invalid manual confirmation."
             exit 2
           fi
@@ -83,7 +83,7 @@ jobs:
               "requestId": "gate2e-current-season-readiness-2026-07-31-01",
               "mode": "read_only_current_season_readiness",
               "leagueId": 860,
-              "confirmation": "RUN_GATE2B_SPORTSMONKS_PROBE",
+              "confirmation": "RUN_GATE2E_CURRENT_SEASON_READINESS",
           }
           path = Path("docs/production/gate2e-current-season-readiness-trigger.json")
           if json.loads(path.read_text(encoding="utf-8")) != expected:
