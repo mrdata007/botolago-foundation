@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/backend-quality.yml"
       - ".github/workflows/gate2b-sportsmonks-production-probe.yml"
+      - "docs/production/gate2b-sportsmonks-production-probe-trigger.json"
       - "docs/backend/**"
       - "scripts/backend/**"
       - "src/backend/**"
