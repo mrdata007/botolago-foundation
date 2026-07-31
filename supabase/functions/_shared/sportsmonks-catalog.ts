@@ -1,17 +1,9 @@
-export const CATALOG_JOBS = [
-  "competitions",
-  "seasons",
-  "rounds",
-  "teams",
-] as const;
+export const CATALOG_JOBS = ["competitions", "seasons", "rounds", "teams"] as const;
 export type CatalogJob = (typeof CATALOG_JOBS)[number];
 export type CatalogRequestJob = CatalogJob | "catalog";
 
 type JsonRecord = Record<string, unknown>;
-type FetchLike = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>;
+type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 interface RpcResult {
   readonly data: unknown;
@@ -86,14 +78,12 @@ function record(value: unknown, code = "invalid_provider_payload"): JsonRecord {
 }
 
 function array(value: unknown): unknown[] {
-  if (!Array.isArray(value))
-    throw new CatalogRuntimeError("invalid_provider_payload");
+  if (!Array.isArray(value)) throw new CatalogRuntimeError("invalid_provider_payload");
   return value;
 }
 
 function text(value: unknown, minimum: number, maximum: number): string {
-  if (typeof value !== "string")
-    throw new CatalogRuntimeError("invalid_provider_payload");
+  if (typeof value !== "string") throw new CatalogRuntimeError("invalid_provider_payload");
   const normalized = value.trim();
   if (normalized.length < minimum || normalized.length > maximum) {
     throw new CatalogRuntimeError("invalid_provider_payload");
@@ -126,10 +116,7 @@ function timestamp(value: unknown): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-function required(
-  environment: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string {
+function required(environment: Readonly<Record<string, string | undefined>>, name: string): string {
   const value = environment[name]?.trim();
   if (!value) throw new CatalogRuntimeError("invalid_runtime_configuration");
   return value;
@@ -142,8 +129,7 @@ function integerSetting(
   maximum: number,
 ): number {
   const raw = required(environment, name);
-  if (!/^\d+$/.test(raw))
-    throw new CatalogRuntimeError("invalid_runtime_configuration");
+  if (!/^\d+$/.test(raw)) throw new CatalogRuntimeError("invalid_runtime_configuration");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
     throw new CatalogRuntimeError("invalid_runtime_configuration");
@@ -155,61 +141,28 @@ function configuration(
   environment: Readonly<Record<string, string | undefined>>,
 ): CatalogConfiguration {
   const token = required(environment, "SPORTSMONKS_API_TOKEN");
-  if (
-    token.length < 16 ||
-    token.length > 512 ||
-    /[\s\u0000-\u001f\u007f]/.test(token)
-  ) {
+  if (token.length < 16 || token.length > 512 || /[\s\u0000-\u001f\u007f]/.test(token)) {
     throw new CatalogRuntimeError("invalid_runtime_configuration");
   }
   if (
     required(environment, "FOOTBALL_PROVIDER") !== "sportsmonks" ||
-    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !==
-      OFFICIAL_BASE_URL ||
+    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !== OFFICIAL_BASE_URL ||
     required(environment, "FOOTBALL_SPORTSMONKS_COMPETITION_TYPE") !== "league"
   ) {
     throw new CatalogRuntimeError("invalid_runtime_configuration");
   }
-  const countryCode = required(
-    environment,
-    "FOOTBALL_SPORTSMONKS_COUNTRY_CODE",
-  ).toUpperCase();
-  if (countryCode !== "MA")
-    throw new CatalogRuntimeError("invalid_runtime_configuration");
+  const countryCode = required(environment, "FOOTBALL_SPORTSMONKS_COUNTRY_CODE").toUpperCase();
+  if (countryCode !== "MA") throw new CatalogRuntimeError("invalid_runtime_configuration");
   return {
     token,
-    leagueId: integerSetting(
-      environment,
-      "FOOTBALL_SPORTSMONKS_LEAGUE_ID",
-      1,
-      1_000_000_000,
-    ),
-    seasonId: integerSetting(
-      environment,
-      "FOOTBALL_SPORTSMONKS_SEASON_ID",
-      1,
-      1_000_000_000,
-    ),
+    leagueId: integerSetting(environment, "FOOTBALL_SPORTSMONKS_LEAGUE_ID", 1, 1_000_000_000),
+    seasonId: integerSetting(environment, "FOOTBALL_SPORTSMONKS_SEASON_ID", 1, 1_000_000_000),
     countryCode,
     competitionType: "league",
-    seasonStart: isoDate(
-      required(environment, "FOOTBALL_SPORTSMONKS_SEASON_START"),
-    ),
-    seasonEnd: isoDate(
-      required(environment, "FOOTBALL_SPORTSMONKS_SEASON_END"),
-    ),
-    timeoutMs: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_TIMEOUT_MS",
-      250,
-      60_000,
-    ),
-    maxRetries: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_MAX_RETRIES",
-      0,
-      8,
-    ),
+    seasonStart: isoDate(required(environment, "FOOTBALL_SPORTSMONKS_SEASON_START")),
+    seasonEnd: isoDate(required(environment, "FOOTBALL_SPORTSMONKS_SEASON_END")),
+    timeoutMs: integerSetting(environment, "FOOTBALL_PROVIDER_TIMEOUT_MS", 250, 60_000),
+    maxRetries: integerSetting(environment, "FOOTBALL_PROVIDER_MAX_RETRIES", 0, 8),
   };
 }
 
@@ -241,8 +194,7 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
     throw new CatalogRuntimeError("request_too_large");
   }
   const source = await request.text();
-  if (source.length > MAX_REQUEST_BYTES)
-    throw new CatalogRuntimeError("request_too_large");
+  if (source.length > MAX_REQUEST_BYTES) throw new CatalogRuntimeError("request_too_large");
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -298,19 +250,14 @@ async function providerRequest(
     throw new CatalogRuntimeError("invalid_provider_path");
   }
   const url = new URL(`${OFFICIAL_BASE_URL}${path}`);
-  for (const [name, value] of Object.entries(query))
-    url.searchParams.set(name, value);
-  if (
-    url.origin !== "https://api.sportmonks.com" ||
-    url.href.includes(config.token)
-  ) {
+  for (const [name, value] of Object.entries(query)) url.searchParams.set(name, value);
+  if (url.origin !== "https://api.sportmonks.com" || url.href.includes(config.token)) {
     throw new CatalogRuntimeError("provider_origin_guard_failed");
   }
   const fetcher = dependencies.fetch ?? globalThis.fetch.bind(globalThis);
   const sleep =
     dependencies.sleep ??
-    ((milliseconds) =>
-      new Promise((resolve) => setTimeout(resolve, milliseconds)));
+    ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
     const controller = new AbortController();
@@ -323,17 +270,12 @@ async function providerRequest(
         signal: controller.signal,
       });
       if (response.ok) return responseJson(response);
-      if (
-        (response.status === 429 || response.status >= 500) &&
-        attempt < config.maxRetries
-      ) {
+      if ((response.status === 429 || response.status >= 500) && attempt < config.maxRetries) {
         await sleep(250 * 2 ** attempt);
         continue;
       }
       throw new CatalogRuntimeError(
-        response.status === 429
-          ? "provider_rate_limited"
-          : "provider_unavailable",
+        response.status === 429 ? "provider_rate_limited" : "provider_unavailable",
       );
     } catch (error) {
       if (error instanceof CatalogRuntimeError) throw error;
@@ -376,14 +318,11 @@ function rows(value: JsonRecord): JsonRecord[] {
 function hasMore(value: JsonRecord, count: number, pageSize: number): boolean {
   const root = isRecord(value.pagination) ? value.pagination : null;
   const meta =
-    isRecord(value.meta) && isRecord(value.meta.pagination)
-      ? value.meta.pagination
-      : null;
+    isRecord(value.meta) && isRecord(value.meta.pagination) ? value.meta.pagination : null;
   const pagination = root ?? meta;
   if (pagination) {
     if (typeof pagination.has_more === "boolean") return pagination.has_more;
-    if (pagination.next_page !== null && pagination.next_page !== undefined)
-      return true;
+    if (pagination.next_page !== null && pagination.next_page !== undefined) return true;
   }
   return count === pageSize;
 }
@@ -417,12 +356,7 @@ async function providerPage(
 ): Promise<ProviderPage> {
   if (job === "competitions") {
     const raw = oneData(
-      await providerRequest(
-        `/leagues/${config.leagueId}`,
-        {},
-        config,
-        dependencies,
-      ),
+      await providerRequest(`/leagues/${config.leagueId}`, {}, config, dependencies),
     );
     if (positiveInteger(raw.id) !== config.leagueId)
       throw new CatalogRuntimeError("invalid_provider_payload");
@@ -431,8 +365,7 @@ async function providerPage(
         {
           externalId: String(raw.id),
           name: text(raw.name, 2, 160),
-          shortName:
-            raw.short_code == null ? null : text(raw.short_code, 1, 40),
+          shortName: raw.short_code == null ? null : text(raw.short_code, 1, 40),
           type: config.competitionType,
           countryCode: config.countryCode,
           freshness: freshness(raw, observedAt),
@@ -443,12 +376,7 @@ async function providerPage(
   }
   if (job === "seasons") {
     const raw = oneData(
-      await providerRequest(
-        `/seasons/${config.seasonId}`,
-        {},
-        config,
-        dependencies,
-      ),
+      await providerRequest(`/seasons/${config.seasonId}`, {}, config, dependencies),
     );
     if (
       positiveInteger(raw.id) !== config.seasonId ||
@@ -456,12 +384,9 @@ async function providerPage(
     ) {
       throw new CatalogRuntimeError("invalid_provider_payload");
     }
-    const startsOn =
-      raw.starting_at == null ? config.seasonStart : isoDate(raw.starting_at);
-    const endsOn =
-      raw.ending_at == null ? config.seasonEnd : isoDate(raw.ending_at);
-    if (startsOn > endsOn)
-      throw new CatalogRuntimeError("invalid_provider_payload");
+    const startsOn = raw.starting_at == null ? config.seasonStart : isoDate(raw.starting_at);
+    const endsOn = raw.ending_at == null ? config.seasonEnd : isoDate(raw.ending_at);
+    if (startsOn > endsOn) throw new CatalogRuntimeError("invalid_provider_payload");
     return {
       items: [
         {
@@ -509,8 +434,7 @@ async function providerPage(
   const sourceRows = rows(response);
   const items = sourceRows.map((raw) => {
     const name = text(raw.name, 2, 160);
-    const shortName =
-      raw.short_code == null ? name.slice(0, 40) : text(raw.short_code, 1, 40);
+    const shortName = raw.short_code == null ? name.slice(0, 40) : text(raw.short_code, 1, 40);
     return {
       externalId: String(positiveInteger(raw.id)),
       name,
@@ -553,9 +477,7 @@ async function fingerprint(value: unknown): Promise<string> {
     "SHA-256",
     new TextEncoder().encode(JSON.stringify(value)),
   );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function entityType(job: CatalogJob): string {
@@ -574,11 +496,7 @@ function externalId(item: JsonRecord): string {
 
 function ingestOutcome(value: unknown): "inserted" | "updated" | "skipped" {
   const outcome = record(value, "database_unavailable").outcome;
-  if (
-    outcome !== "inserted" &&
-    outcome !== "updated" &&
-    outcome !== "skipped"
-  ) {
+  if (outcome !== "inserted" && outcome !== "updated" && outcome !== "skipped") {
     throw new CatalogRuntimeError("database_unavailable");
   }
   return outcome;
@@ -604,9 +522,7 @@ async function completeRun(
     p_records_rejected: counts.rejected,
     p_retry_count: counts.retries,
     p_error_code: errorCode,
-    p_error_summary: errorCode
-      ? "The protected catalog ingestion job did not complete."
-      : null,
+    p_error_summary: errorCode ? "The protected catalog ingestion job did not complete." : null,
   });
 }
 
@@ -651,22 +567,15 @@ async function runJob(
           counts[outcome] += 1;
         } catch (error) {
           counts.rejected += 1;
-          const code =
-            error instanceof CatalogRuntimeError
-              ? error.code
-              : "database_unavailable";
-          await rpc(
-            dependencies.client,
-            "record_football_ingestion_rejection",
-            {
-              p_run_id: runId,
-              p_entity_type: entityType(job),
-              p_external_id: externalId(item),
-              p_payload_fingerprint: await fingerprint(item),
-              p_error_code: code,
-              p_validation_issues: [{ code }],
-            },
-          );
+          const code = error instanceof CatalogRuntimeError ? error.code : "database_unavailable";
+          await rpc(dependencies.client, "record_football_ingestion_rejection", {
+            p_run_id: runId,
+            p_entity_type: entityType(job),
+            p_external_id: externalId(item),
+            p_payload_fingerprint: await fingerprint(item),
+            p_error_code: code,
+            p_validation_issues: [{ code }],
+          });
         }
       }
       if (counts.rejected > 0) {
@@ -681,14 +590,7 @@ async function runJob(
         throw new CatalogRuntimeError("catalog_item_rejected");
       }
       if (result.nextPage === null) {
-        await completeRun(
-          dependencies.client,
-          runId,
-          "succeeded",
-          counts,
-          {},
-          null,
-        );
+        await completeRun(dependencies.client, runId, "succeeded", counts, {}, null);
         return counts;
       }
       page = result.nextPage;
@@ -703,10 +605,7 @@ async function runJob(
     );
     throw new CatalogRuntimeError("page_budget_exhausted");
   } catch (error) {
-    const code =
-      error instanceof CatalogRuntimeError
-        ? error.code
-        : "catalog_ingestion_failed";
+    const code = error instanceof CatalogRuntimeError ? error.code : "catalog_ingestion_failed";
     if (code !== "catalog_item_rejected" && code !== "page_budget_exhausted") {
       await completeRun(
         dependencies.client,
@@ -725,15 +624,10 @@ export async function handleSportsMonksCatalogRequest(
   request: Request,
   dependencies: CatalogRuntimeDependencies,
 ): Promise<Response> {
-  if (request.method !== "POST")
-    return json(405, { error: "method_not_allowed" });
-  const expectedSecret =
-    dependencies.environment.FOOTBALL_INGESTION_TRIGGER_SECRET?.trim() ?? "";
+  if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const expectedSecret = dependencies.environment.FOOTBALL_INGESTION_TRIGGER_SECRET?.trim() ?? "";
   const receivedSecret = request.headers.get("x-botolago-ingestion-key") ?? "";
-  if (
-    expectedSecret.length < 32 ||
-    !timingSafeEqual(receivedSecret, expectedSecret)
-  ) {
+  if (expectedSecret.length < 32 || !timingSafeEqual(receivedSecret, expectedSecret)) {
     return json(401, { error: "unauthorized" });
   }
 
@@ -742,20 +636,11 @@ export async function handleSportsMonksCatalogRequest(
     const config = configuration(dependencies.environment);
     const jobs = parsed.job === "catalog" ? CATALOG_JOBS : [parsed.job];
     const result: Record<string, CatalogCounts> = {};
-    for (const job of jobs)
-      result[job] = await runJob(job, parsed, config, dependencies);
+    for (const job of jobs) result[job] = await runJob(job, parsed, config, dependencies);
     return json(200, { provider: "sportsmonks", jobs: result });
   } catch (error) {
-    const code =
-      error instanceof CatalogRuntimeError
-        ? error.code
-        : "catalog_ingestion_failed";
-    const status =
-      code === "invalid_request"
-        ? 400
-        : code === "request_too_large"
-          ? 413
-          : 502;
+    const code = error instanceof CatalogRuntimeError ? error.code : "catalog_ingestion_failed";
+    const status = code === "invalid_request" ? 400 : code === "request_too_large" ? 413 : 502;
     return json(status, { error: code });
   }
 }
