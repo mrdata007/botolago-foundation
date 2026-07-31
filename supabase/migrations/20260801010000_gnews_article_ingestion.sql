@@ -163,8 +163,10 @@ begin
   if found then
     target_story_id := mapped.story_id;
     target_edition_id := mapped.article_edition_id;
-    if mapped.source_updated_at >= p_source_updated_at
-      and mapped.content_fingerprint = p_content_fingerprint
+    if (
+      mapped.content_fingerprint = p_content_fingerprint
+      and mapped.source_version = p_source_version
+    ) or mapped.source_updated_at >= p_source_updated_at
     then
       update app_private.news_source_articles
       set last_seen_at = statement_timestamp(), active = true
