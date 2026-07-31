@@ -19,20 +19,13 @@ import type {
   ProviderStanding,
   ProviderTeam,
 } from "./contracts";
-import {
-  providerCompetitionSchema,
-  providerFixtureSchema,
-  providerTeamSchema,
-} from "./schemas";
+import { providerCompetitionSchema, providerFixtureSchema, providerTeamSchema } from "./schemas";
 
 const SPORTSMONKS_BASE_URL = "https://api.sportmonks.com/v3/football";
 const MAX_PAGE_SIZE = 50;
 const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
-type FetchLike = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<Response>;
+type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 type CompetitionType = ProviderCompetition["type"];
 type FixtureState = Pick<ProviderFixture, "status" | "period">;
 
@@ -198,20 +191,13 @@ export class SportsmonksFootballProvider implements FootballProvider {
     this.fetchImpl = config.fetch ?? globalThis.fetch.bind(globalThis);
     this.sleepImpl =
       config.sleep ??
-      ((milliseconds) =>
-        new Promise((resolve) => setTimeout(resolve, milliseconds)));
+      ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
     this.now = config.now ?? (() => new Date());
   }
 
-  async listCompetitions(
-    request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderCompetition>> {
+  async listCompetitions(request: ProviderPageRequest): Promise<ProviderPage<ProviderCompetition>> {
     const offset = decodeLocalCursor("competitions", request.cursor);
-    const result = await this.request(
-      `/leagues/${this.leagueId}`,
-      {},
-      request.signal,
-    );
+    const result = await this.request(`/leagues/${this.leagueId}`, {}, request.signal);
     const raw = this.parseSingle(result.envelope.data, leagueSchema);
     const all = [
       providerCompetitionSchema.parse({
@@ -223,24 +209,12 @@ export class SportsmonksFootballProvider implements FootballProvider {
         freshness: this.freshness(raw, false),
       }),
     ];
-    return localPage(
-      "competitions",
-      all,
-      offset,
-      request.limit,
-      result.rateLimit,
-    );
+    return localPage("competitions", all, offset, request.limit, result.rateLimit);
   }
 
-  async listSeasons(
-    request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderSeason>> {
+  async listSeasons(request: ProviderPageRequest): Promise<ProviderPage<ProviderSeason>> {
     const offset = decodeLocalCursor("seasons", request.cursor);
-    const result = await this.request(
-      `/seasons/${this.seasonId}`,
-      {},
-      request.signal,
-    );
+    const result = await this.request(`/seasons/${this.seasonId}`, {}, request.signal);
     const raw = this.parseSingle(result.envelope.data, seasonSchema);
     if (raw.league_id !== this.leagueId) {
       throw invalidPayload();
@@ -261,15 +235,9 @@ export class SportsmonksFootballProvider implements FootballProvider {
     return localPage("seasons", all, offset, request.limit, result.rateLimit);
   }
 
-  async listRounds(
-    request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderRound>> {
+  async listRounds(request: ProviderPageRequest): Promise<ProviderPage<ProviderRound>> {
     const offset = decodeLocalCursor("rounds", request.cursor);
-    const result = await this.request(
-      `/rounds/seasons/${this.seasonId}`,
-      {},
-      request.signal,
-    );
+    const result = await this.request(`/rounds/seasons/${this.seasonId}`, {}, request.signal);
     const rows = this.parseArray(result.envelope.data, roundSchema);
     const all = rows.map((raw): ProviderRound => {
       if (raw.season_id !== this.seasonId) throw invalidPayload();
@@ -285,9 +253,7 @@ export class SportsmonksFootballProvider implements FootballProvider {
     return localPage("rounds", all, offset, request.limit, result.rateLimit);
   }
 
-  async listTeams(
-    request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderTeam>> {
+  async listTeams(request: ProviderPageRequest): Promise<ProviderPage<ProviderTeam>> {
     const page = decodeRemoteCursor("teams", request.cursor);
     const result = await this.request(
       `/teams/seasons/${this.seasonId}`,
@@ -314,9 +280,7 @@ export class SportsmonksFootballProvider implements FootballProvider {
     };
   }
 
-  async listFixtures(
-    request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderFixture>> {
+  async listFixtures(request: ProviderPageRequest): Promise<ProviderPage<ProviderFixture>> {
     const page = decodeRemoteCursor("fixtures", request.cursor);
     const result = await this.request(
       `/fixtures/between/${this.fixtureFrom}/${this.fixtureTo}`,
@@ -340,33 +304,23 @@ export class SportsmonksFootballProvider implements FootballProvider {
     };
   }
 
-  listPlayers(
-    _request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderPlayer>> {
+  listPlayers(_request: ProviderPageRequest): Promise<ProviderPage<ProviderPlayer>> {
     return unsupported("players");
   }
 
-  listSquads(
-    _request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderSquadMembership>> {
+  listSquads(_request: ProviderPageRequest): Promise<ProviderPage<ProviderSquadMembership>> {
     return unsupported("squads");
   }
 
-  listStandings(
-    _request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderStanding>> {
+  listStandings(_request: ProviderPageRequest): Promise<ProviderPage<ProviderStanding>> {
     return unsupported("standings");
   }
 
-  listLineups(
-    _request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderLineup>> {
+  listLineups(_request: ProviderPageRequest): Promise<ProviderPage<ProviderLineup>> {
     return unsupported("lineups");
   }
 
-  listMatchEvents(
-    _request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderMatchEvent>> {
+  listMatchEvents(_request: ProviderPageRequest): Promise<ProviderPage<ProviderMatchEvent>> {
     return unsupported("match events");
   }
 
@@ -376,9 +330,7 @@ export class SportsmonksFootballProvider implements FootballProvider {
     return unsupported("match statistics");
   }
 
-  listAvailability(
-    _request: ProviderPageRequest,
-  ): Promise<ProviderPage<ProviderAvailability>> {
+  listAvailability(_request: ProviderPageRequest): Promise<ProviderPage<ProviderAvailability>> {
     return unsupported("player availability");
   }
 
@@ -389,8 +341,7 @@ export class SportsmonksFootballProvider implements FootballProvider {
   ): Promise<RequestResult> {
     this.assertCircuitClosed();
     const url = new URL(`${SPORTSMONKS_BASE_URL}${path}`);
-    for (const [key, value] of Object.entries(parameters))
-      url.searchParams.set(key, value);
+    for (const [key, value] of Object.entries(parameters)) url.searchParams.set(key, value);
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
       const controller = new AbortController();
@@ -406,13 +357,8 @@ export class SportsmonksFootballProvider implements FootballProvider {
         });
         const retryAfterMs = retryAfter(response.headers, this.now());
         if (!response.ok) {
-          if (
-            RETRYABLE_STATUSES.has(response.status) &&
-            attempt < this.maxRetries
-          ) {
-            await this.sleepImpl(
-              retryAfterMs ?? this.retryBaseMs * 2 ** attempt,
-            );
+          if (RETRYABLE_STATUSES.has(response.status) && attempt < this.maxRetries) {
+            await this.sleepImpl(retryAfterMs ?? this.retryBaseMs * 2 ** attempt);
             continue;
           }
           const failure =
@@ -421,9 +367,7 @@ export class SportsmonksFootballProvider implements FootballProvider {
                   "provider_rate_limited",
                   "The football provider rate limit was reached.",
                 )
-              : response.status === 401 ||
-                  response.status === 403 ||
-                  response.status >= 500
+              : response.status === 401 || response.status === 403 || response.status >= 500
                 ? new FootballError(
                     "provider_unavailable",
                     "The football provider is temporarily unavailable.",
@@ -432,17 +376,11 @@ export class SportsmonksFootballProvider implements FootballProvider {
           this.recordFailure();
           throw failure;
         }
-        const envelope = envelopeSchema.parse(
-          await response.json(),
-        ) as ParsedEnvelope;
+        const envelope = envelopeSchema.parse(await response.json()) as ParsedEnvelope;
         this.recordSuccess();
         return {
           envelope,
-          rateLimit: parseRateLimit(
-            response.headers,
-            envelope.rate_limit,
-            this.now(),
-          ),
+          rateLimit: parseRateLimit(response.headers, envelope.rate_limit, this.now()),
         };
       } catch (error) {
         if (error instanceof FootballError) throw error;
@@ -488,11 +426,8 @@ export class SportsmonksFootballProvider implements FootballProvider {
     }
   }
 
-  private normalizeFixture(
-    raw: z.infer<typeof fixtureSchema>,
-  ): ProviderFixture {
-    if (raw.league_id !== this.leagueId || raw.season_id !== this.seasonId)
-      throw invalidPayload();
+  private normalizeFixture(raw: z.infer<typeof fixtureSchema>): ProviderFixture {
+    if (raw.league_id !== this.leagueId || raw.season_id !== this.seasonId) throw invalidPayload();
     const home = exactlyOneParticipant(raw.participants, "home");
     const away = exactlyOneParticipant(raw.participants, "away");
     const state = mapFixtureState(raw.state);
@@ -516,20 +451,11 @@ export class SportsmonksFootballProvider implements FootballProvider {
     });
   }
 
-  private freshness(
-    raw: Record<string, unknown>,
-    provisional: boolean,
-  ): ProviderFreshness {
-    const sourceTime = [
-      raw.last_processed_at,
-      raw.updated_at,
-      raw.last_played_at,
-    ].find(
+  private freshness(raw: Record<string, unknown>, provisional: boolean): ProviderFreshness {
+    const sourceTime = [raw.last_processed_at, raw.updated_at, raw.last_played_at].find(
       (value): value is string => typeof value === "string" && value.length > 0,
     );
-    const updatedAt = sourceTime
-      ? parseTimestamp(sourceTime)
-      : this.now().toISOString();
+    const updatedAt = sourceTime ? parseTimestamp(sourceTime) : this.now().toISOString();
     return {
       updatedAt,
       sourceSequence: Math.max(0, Date.parse(updatedAt)),
@@ -570,16 +496,13 @@ export class SportsmonksFootballProvider implements FootballProvider {
 
 function validateConfig(config: SportsmonksProviderConfig): void {
   const token = config.token.trim();
-  if (!token || token.length > 512 || hasControlOrWhitespace(token))
-    throw configurationError();
+  if (!token || token.length > 512 || hasControlOrWhitespace(token)) throw configurationError();
   for (const id of [config.leagueId, config.seasonId]) {
     if (!Number.isSafeInteger(id) || id <= 0) throw configurationError();
   }
   if (!/^[A-Za-z]{2}$/.test(config.countryCode)) throw configurationError();
   if (
-    !["league", "cup", "super_cup", "international", "friendly"].includes(
-      config.competitionType,
-    )
+    !["league", "cup", "super_cup", "international", "friendly"].includes(config.competitionType)
   ) {
     throw configurationError();
   }
@@ -590,29 +513,18 @@ function validateConfig(config: SportsmonksProviderConfig): void {
     config.fixtureTo,
   ])
     parseDate(date);
-  if (
-    config.seasonStartsOn > config.seasonEndsOn ||
-    config.fixtureFrom > config.fixtureTo
-  )
+  if (config.seasonStartsOn > config.seasonEndsOn || config.fixtureFrom > config.fixtureTo)
     throw configurationError();
   validateIntegerOption(config.timeoutMs, 250, 60_000);
   validateIntegerOption(config.maxRetries, 0, 8);
   validateIntegerOption(config.retryBaseMs, 10, 60_000);
   validateIntegerOption(config.circuitFailureThreshold, 1, 100);
   validateIntegerOption(config.circuitResetMs, 1_000, 3_600_000);
-  if (!config.fetch && typeof globalThis.fetch !== "function")
-    throw configurationError();
+  if (!config.fetch && typeof globalThis.fetch !== "function") throw configurationError();
 }
 
-function validateIntegerOption(
-  value: number | undefined,
-  minimum: number,
-  maximum: number,
-): void {
-  if (
-    value !== undefined &&
-    (!Number.isInteger(value) || value < minimum || value > maximum)
-  )
+function validateIntegerOption(value: number | undefined, minimum: number, maximum: number): void {
+  if (value !== undefined && (!Number.isInteger(value) || value < minimum || value > maximum))
     throw configurationError();
 }
 
@@ -649,8 +561,7 @@ function unsupported(capability: string): Promise<never> {
 }
 
 function pageSize(limit: number): number {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 500)
-    throw invalidPayload();
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw invalidPayload();
   return Math.min(limit, MAX_PAGE_SIZE);
 }
 
@@ -689,44 +600,30 @@ function localPage<T>(
   const nextOffset = offset + items.length;
   return {
     items,
-    nextCursor:
-      nextOffset < all.length ? encodeRemoteCursor(resource, nextOffset) : null,
+    nextCursor: nextOffset < all.length ? encodeRemoteCursor(resource, nextOffset) : null,
     rateLimit,
   };
 }
 
-function hasMore(
-  envelope: ParsedEnvelope,
-  count: number,
-  size: number,
-): boolean {
+function hasMore(envelope: ParsedEnvelope, count: number, size: number): boolean {
   const root = asRecord(envelope.pagination);
   const meta = asRecord(asRecord(envelope.meta)?.pagination);
   const pagination = root ?? meta;
   if (pagination) {
     if (typeof pagination.has_more === "boolean") return pagination.has_more;
-    if (pagination.next_page !== null && pagination.next_page !== undefined)
-      return true;
+    if (pagination.next_page !== null && pagination.next_page !== undefined) return true;
   }
   return count === size;
 }
 
-function parseRateLimit(
-  headers: Headers,
-  body: unknown,
-  now: Date,
-): ProviderRateLimit {
+function parseRateLimit(headers: Headers, body: unknown, now: Date): ProviderRateLimit {
   const rate = asRecord(body);
-  const limit =
-    integerHeader(headers.get("x-ratelimit-limit")) ??
-    integerValue(rate?.limit);
+  const limit = integerHeader(headers.get("x-ratelimit-limit")) ?? integerValue(rate?.limit);
   const remaining =
-    integerHeader(headers.get("x-ratelimit-remaining")) ??
-    integerValue(rate?.remaining);
+    integerHeader(headers.get("x-ratelimit-remaining")) ?? integerValue(rate?.remaining);
   const retryAfterMs = retryAfter(headers, now);
   const resetHeader = headers.get("x-ratelimit-reset");
-  const resetSeconds =
-    integerHeader(resetHeader) ?? integerValue(rate?.resets_in_seconds);
+  const resetSeconds = integerHeader(resetHeader) ?? integerValue(rate?.resets_in_seconds);
   const resetsAt =
     resetSeconds === null
       ? null
@@ -742,12 +639,9 @@ function retryAfter(headers: Headers, now: Date): number | null {
   const value = headers.get("retry-after");
   if (!value) return null;
   const seconds = Number(value);
-  if (Number.isFinite(seconds) && seconds >= 0)
-    return Math.ceil(seconds * 1_000);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds * 1_000);
   const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp)
-    ? null
-    : Math.max(0, timestamp - now.getTime());
+  return Number.isNaN(timestamp) ? null : Math.max(0, timestamp - now.getTime());
 }
 
 function integerHeader(value: string | null): number | null {
@@ -756,9 +650,7 @@ function integerHeader(value: string | null): number | null {
 }
 
 function integerValue(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0
-    ? value
-    : null;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -770,10 +662,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 function parseDate(value: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw invalidPayload();
   const parsed = new Date(`${value}T00:00:00.000Z`);
-  if (
-    Number.isNaN(parsed.getTime()) ||
-    parsed.toISOString().slice(0, 10) !== value
-  )
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value)
     throw invalidPayload();
   return value;
 }
@@ -813,23 +702,17 @@ function currentScore(scores: readonly z.infer<typeof scoreSchema>[]): {
   home: number | null;
   away: number | null;
 } {
-  const current = scores.filter(
-    (score) => score.description?.toUpperCase() === "CURRENT",
-  );
+  const current = scores.filter((score) => score.description?.toUpperCase() === "CURRENT");
   if (current.length === 0) return { home: null, away: null };
   const home =
-    current.find((score) => score.score.participant.toLowerCase() === "home")
-      ?.score.goals ?? null;
+    current.find((score) => score.score.participant.toLowerCase() === "home")?.score.goals ?? null;
   const away =
-    current.find((score) => score.score.participant.toLowerCase() === "away")
-      ?.score.goals ?? null;
+    current.find((score) => score.score.participant.toLowerCase() === "away")?.score.goals ?? null;
   if ((home === null) !== (away === null)) throw invalidPayload();
   return { home, away };
 }
 
-function mapFixtureState(
-  raw: z.infer<typeof fixtureSchema>["state"],
-): FixtureState {
+function mapFixtureState(raw: z.infer<typeof fixtureSchema>["state"]): FixtureState {
   const source = raw.developer_name ?? raw.state ?? raw.name;
   if (!source) throw invalidPayload();
   const state = source
@@ -871,11 +754,7 @@ function mapFixtureState(
 }
 
 function isProvisionalStatus(status: ProviderFixture["status"]): boolean {
-  return [
-    "live_first_half",
-    "half_time",
-    "live_second_half",
-    "extra_time",
-    "penalties",
-  ].includes(status);
+  return ["live_first_half", "half_time", "live_second_half", "extra_time", "penalties"].includes(
+    status,
+  );
 }
