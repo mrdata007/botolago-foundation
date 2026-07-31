@@ -122,6 +122,14 @@ function required(environment: Readonly<Record<string, string | undefined>>, nam
   return value;
 }
 
+function hasControlOrWhitespace(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint <= 0x20 || codePoint === 0x7f) return true;
+  }
+  return false;
+}
+
 function integerSetting(
   environment: Readonly<Record<string, string | undefined>>,
   name: string,
@@ -141,7 +149,7 @@ function configuration(
   environment: Readonly<Record<string, string | undefined>>,
 ): CatalogConfiguration {
   const token = required(environment, "SPORTSMONKS_API_TOKEN");
-  if (token.length < 16 || token.length > 512 || /[\s\u0000-\u001f\u007f]/.test(token)) {
+  if (token.length < 16 || token.length > 512 || hasControlOrWhitespace(token)) {
     throw new CatalogRuntimeError("invalid_runtime_configuration");
   }
   if (
