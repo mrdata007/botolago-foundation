@@ -699,6 +699,20 @@ export type Database = {
         Args: { p_limit?: number; p_player_id: string }
         Returns: Json
       }
+      football_player_rating_candidates: {
+        Args: { p_provider_name: string; p_season_external_id: string }
+        Returns: Json
+      }
+      football_player_season_ratings: {
+        Args: {
+          p_after_player_id?: string
+          p_after_rating?: number
+          p_limit?: number
+          p_position?: string
+          p_season_id: string
+        }
+        Returns: Json
+      }
       football_player_summary: {
         Args: { p_language?: string; p_player_id: string }
         Returns: Json
@@ -791,6 +805,16 @@ export type Database = {
         }
         Returns: Json
       }
+      ingest_player_season_ratings: {
+        Args: {
+          p_algorithm_version: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
       join_fantasy_league: {
         Args: {
           p_idempotency_key: string
@@ -838,6 +862,14 @@ export type Database = {
         }
         Returns: string
       }
+      news_begin_provider_ingestion: {
+        Args: {
+          p_job_type: string
+          p_provider_slug: string
+          p_target_scope?: string
+        }
+        Returns: Json
+      }
       news_complete_ingestion_run: {
         Args: {
           p_cursor: string
@@ -876,6 +908,26 @@ export type Database = {
       }
       news_home_modules: {
         Args: { p_language: string; p_limit?: number }
+        Returns: Json
+      }
+      news_ingest_provider_article: {
+        Args: {
+          p_body_html: string
+          p_canonical_url: string
+          p_content_fingerprint: string
+          p_external_id: string
+          p_language: string
+          p_provider_slug: string
+          p_reading_time_minutes: number
+          p_sanitizer_version: string
+          p_source_name: string
+          p_source_published_at: string
+          p_source_updated_at: string
+          p_source_url: string
+          p_source_version: string
+          p_summary: string
+          p_title: string
+        }
         Returns: Json
       }
       news_record_ingestion_rejection: {
@@ -4578,6 +4630,123 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_season_ratings: {
+        Row: {
+          active: boolean
+          algorithm_version: string
+          appearances: number
+          assists: number
+          calculated_at: string
+          clean_sheets: number
+          confidence: number
+          created_at: string
+          fantasy_equivalent_points: number
+          football_season_id: string
+          goals: number
+          goals_conceded: number
+          id: string
+          minutes: number
+          own_goals: number
+          penalties_missed: number
+          penalties_saved: number
+          player_id: string
+          points_per_90: number
+          position: Database["app"]["Enums"]["football_position"]
+          provider_rating: number | null
+          rating: number
+          red_cards: number
+          saves: number
+          second_yellow_dismissals: number
+          source_provider: string
+          source_updated_at: string
+          source_version: string
+          starts: number
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          active?: boolean
+          algorithm_version: string
+          appearances: number
+          assists: number
+          calculated_at?: string
+          clean_sheets: number
+          confidence: number
+          created_at?: string
+          fantasy_equivalent_points: number
+          football_season_id: string
+          goals: number
+          goals_conceded: number
+          id?: string
+          minutes: number
+          own_goals: number
+          penalties_missed: number
+          penalties_saved: number
+          player_id: string
+          points_per_90: number
+          position: Database["app"]["Enums"]["football_position"]
+          provider_rating?: number | null
+          rating: number
+          red_cards: number
+          saves: number
+          second_yellow_dismissals: number
+          source_provider: string
+          source_updated_at: string
+          source_version: string
+          starts: number
+          updated_at?: string
+          yellow_cards: number
+        }
+        Update: {
+          active?: boolean
+          algorithm_version?: string
+          appearances?: number
+          assists?: number
+          calculated_at?: string
+          clean_sheets?: number
+          confidence?: number
+          created_at?: string
+          fantasy_equivalent_points?: number
+          football_season_id?: string
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          minutes?: number
+          own_goals?: number
+          penalties_missed?: number
+          penalties_saved?: number
+          player_id?: string
+          points_per_90?: number
+          position?: Database["app"]["Enums"]["football_position"]
+          provider_rating?: number | null
+          rating?: number
+          red_cards?: number
+          saves?: number
+          second_yellow_dismissals?: number
+          source_provider?: string
+          source_updated_at?: string
+          source_version?: string
+          starts?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_ratings_football_season_id_fkey"
+            columns: ["football_season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_season_ratings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
