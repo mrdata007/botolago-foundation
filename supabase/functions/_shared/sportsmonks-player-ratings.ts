@@ -56,18 +56,12 @@ export interface RatingsRpcResult {
 
 export interface RatingsRpcClient {
   schema(name: "api"): {
-    rpc(
-      name: string,
-      args: Record<string, unknown>,
-    ): PromiseLike<RatingsRpcResult>;
+    rpc(name: string, args: Record<string, unknown>): PromiseLike<RatingsRpcResult>;
   };
 }
 
 type JsonRecord = Record<string, unknown>;
-type FetchLike = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>;
+type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export interface RatingsRuntimeDependencies {
   readonly environment: Readonly<Record<string, string | undefined>>;
@@ -136,10 +130,7 @@ function record(value: unknown, code = "invalid_provider_payload"): JsonRecord {
   return value;
 }
 
-function required(
-  environment: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string {
+function required(environment: Readonly<Record<string, string | undefined>>, name: string): string {
   const value = environment[name]?.trim();
   if (!value) throw new RatingsRuntimeError("invalid_runtime_configuration");
   return value;
@@ -152,8 +143,7 @@ function integerSetting(
   maximum: number,
 ): number {
   const raw = required(environment, name);
-  if (!/^\d+$/.test(raw))
-    throw new RatingsRuntimeError("invalid_runtime_configuration");
+  if (!/^\d+$/.test(raw)) throw new RatingsRuntimeError("invalid_runtime_configuration");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
     throw new RatingsRuntimeError("invalid_runtime_configuration");
@@ -168,14 +158,9 @@ function hasControlOrWhitespace(value: string): boolean {
   });
 }
 
-function configuration(
-  environment: Readonly<Record<string, string | undefined>>,
-): Configuration {
+function configuration(environment: Readonly<Record<string, string | undefined>>): Configuration {
   const token = required(environment, "SPORTSMONKS_API_TOKEN");
-  const triggerSecret = required(
-    environment,
-    "FOOTBALL_INGESTION_TRIGGER_SECRET",
-  );
+  const triggerSecret = required(environment, "FOOTBALL_INGESTION_TRIGGER_SECRET");
   if (
     token.length < 16 ||
     token.length > 512 ||
@@ -184,32 +169,16 @@ function configuration(
     hasControlOrWhitespace(token) ||
     hasControlOrWhitespace(triggerSecret) ||
     required(environment, "FOOTBALL_PROVIDER") !== "sportsmonks" ||
-    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !==
-      OFFICIAL_BASE_URL
+    required(environment, "FOOTBALL_PROVIDER_BASE_URL").replace(/\/$/, "") !== OFFICIAL_BASE_URL
   ) {
     throw new RatingsRuntimeError("invalid_runtime_configuration");
   }
   return {
     token,
     triggerSecret,
-    seasonId: integerSetting(
-      environment,
-      "FOOTBALL_SPORTSMONKS_SEASON_ID",
-      1,
-      1_000_000_000,
-    ),
-    timeoutMs: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_TIMEOUT_MS",
-      250,
-      60_000,
-    ),
-    maxRetries: integerSetting(
-      environment,
-      "FOOTBALL_PROVIDER_MAX_RETRIES",
-      0,
-      8,
-    ),
+    seasonId: integerSetting(environment, "FOOTBALL_SPORTSMONKS_SEASON_ID", 1, 1_000_000_000),
+    timeoutMs: integerSetting(environment, "FOOTBALL_PROVIDER_TIMEOUT_MS", 250, 60_000),
+    maxRetries: integerSetting(environment, "FOOTBALL_PROVIDER_MAX_RETRIES", 0, 8),
   };
 }
 
@@ -241,8 +210,7 @@ async function parseRequest(request: Request): Promise<void> {
     throw new RatingsRuntimeError("request_too_large");
   }
   const source = await request.text();
-  if (source.length > MAX_REQUEST_BYTES)
-    throw new RatingsRuntimeError("request_too_large");
+  if (source.length > MAX_REQUEST_BYTES) throw new RatingsRuntimeError("request_too_large");
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -250,10 +218,7 @@ async function parseRequest(request: Request): Promise<void> {
     throw new RatingsRuntimeError("invalid_request");
   }
   const body = record(value, "invalid_request");
-  if (
-    body.job !== "preseason_ratings" ||
-    Object.keys(body).some((key) => key !== "job")
-  ) {
+  if (body.job !== "preseason_ratings" || Object.keys(body).some((key) => key !== "job")) {
     throw new RatingsRuntimeError("invalid_request");
   }
 }
@@ -280,22 +245,15 @@ async function providerRequest(
   dependencies: RatingsRuntimeDependencies,
   counts: Counters,
 ): Promise<JsonRecord> {
-  const url = new URL(
-    `${OFFICIAL_BASE_URL}/statistics/seasons/players/${config.seasonId}`,
-  );
+  const url = new URL(`${OFFICIAL_BASE_URL}/statistics/seasons/players/${config.seasonId}`);
   url.searchParams.set("include", "details");
   url.searchParams.set("page", String(page));
   url.searchParams.set("per_page", String(PAGE_SIZE));
-  if (
-    url.origin !== "https://api.sportmonks.com" ||
-    url.href.includes(config.token)
-  ) {
+  if (url.origin !== "https://api.sportmonks.com" || url.href.includes(config.token)) {
     throw new RatingsRuntimeError("provider_origin_guard_failed");
   }
   const fetcher = dependencies.fetch ?? globalThis.fetch.bind(globalThis);
-  const sleep =
-    dependencies.sleep ??
-    ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const sleep = dependencies.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -307,18 +265,13 @@ async function providerRequest(
         signal: controller.signal,
       });
       if (response.ok) return responseJson(response);
-      if (
-        (response.status === 429 || response.status >= 500) &&
-        attempt < config.maxRetries
-      ) {
+      if ((response.status === 429 || response.status >= 500) && attempt < config.maxRetries) {
         counts.retries += 1;
         await sleep(250 * 2 ** attempt);
         continue;
       }
       throw new RatingsRuntimeError(
-        response.status === 429
-          ? "provider_rate_limited"
-          : "provider_unavailable",
+        response.status === 429 ? "provider_rate_limited" : "provider_unavailable",
       );
     } catch (error) {
       if (error instanceof RatingsRuntimeError) throw error;
@@ -366,22 +319,15 @@ function detailNumber(detail: JsonRecord, rating: boolean): number {
   const value = detail.value;
   let candidate: unknown = value;
   if (isRecord(value)) {
-    candidate = rating
-      ? (value.average ?? value.total)
-      : (value.total ?? value.count);
+    candidate = rating ? (value.average ?? value.total) : (value.total ?? value.count);
   }
-  if (
-    typeof candidate !== "number" ||
-    !Number.isFinite(candidate) ||
-    candidate < 0
-  ) {
+  if (typeof candidate !== "number" || !Number.isFinite(candidate) || candidate < 0) {
     throw new RatingsRuntimeError("invalid_provider_payload");
   }
   if (!rating && !Number.isSafeInteger(candidate)) {
     throw new RatingsRuntimeError("invalid_provider_payload");
   }
-  if (rating && candidate > 10)
-    throw new RatingsRuntimeError("invalid_provider_payload");
+  if (rating && candidate > 10) throw new RatingsRuntimeError("invalid_provider_payload");
   return candidate;
 }
 
@@ -407,10 +353,7 @@ function emptyStatistics(candidate: RatingCandidate): PlayerSeasonStatistics {
   };
 }
 
-function normalizedStatistics(
-  value: unknown,
-  seasonId: number,
-): PlayerSeasonStatistics {
+function normalizedStatistics(value: unknown, seasonId: number): PlayerSeasonStatistics {
   const raw = record(value);
   if (positiveInteger(raw.season_id) !== seasonId) {
     throw new RatingsRuntimeError("invalid_provider_payload");
@@ -421,28 +364,23 @@ function normalizedStatistics(
   };
   const metrics = emptyStatistics(candidate);
   if (raw.has_values === false) return metrics;
-  if (!Array.isArray(raw.details))
-    throw new RatingsRuntimeError("invalid_provider_payload");
+  if (!Array.isArray(raw.details)) throw new RatingsRuntimeError("invalid_provider_payload");
   const seen = new Set<number>();
   let providerRating: number | null = null;
   for (const item of raw.details) {
     const detail = record(item);
     const typeId = positiveInteger(detail.type_id);
-    if (seen.has(typeId))
-      throw new RatingsRuntimeError("invalid_provider_payload");
+    if (seen.has(typeId)) throw new RatingsRuntimeError("invalid_provider_payload");
     seen.add(typeId);
-    const key = (
-      Object.entries(TYPE) as Array<[keyof typeof TYPE, number]>
-    ).find((entry) => entry[1] === typeId)?.[0];
+    const key = (Object.entries(TYPE) as Array<[keyof typeof TYPE, number]>).find(
+      (entry) => entry[1] === typeId,
+    )?.[0];
     if (!key) continue;
     const number = detailNumber(detail, key === "providerRating");
     if (key === "providerRating") providerRating = number;
     else metrics[key] = number;
   }
-  if (
-    metrics.starts > metrics.appearances ||
-    metrics.minutes > metrics.appearances * 130
-  ) {
+  if (metrics.starts > metrics.appearances || metrics.minutes > metrics.appearances * 130) {
     throw new RatingsRuntimeError("invalid_provider_payload");
   }
   if (providerRating !== null) {
@@ -453,14 +391,8 @@ function normalizedStatistics(
   return metrics;
 }
 
-function mergeStatistics(
-  target: PlayerSeasonStatistics,
-  source: PlayerSeasonStatistics,
-): void {
-  if (
-    target.externalPlayerId !== source.externalPlayerId ||
-    target.position !== source.position
-  ) {
+function mergeStatistics(target: PlayerSeasonStatistics, source: PlayerSeasonStatistics): void {
+  if (target.externalPlayerId !== source.externalPlayerId || target.position !== source.position) {
     throw new RatingsRuntimeError("invalid_provider_payload");
   }
   for (const key of [
@@ -498,15 +430,10 @@ function fantasyEquivalentPoints(stats: PlayerSeasonStatistics): number {
     MID: 1,
     FWD: 0,
   };
-  const fullAppearances = Math.min(
-    stats.appearances,
-    Math.floor(stats.minutes / 60),
-  );
+  const fullAppearances = Math.min(stats.appearances, Math.floor(stats.minutes / 60));
   const appearancePoints = stats.appearances + fullAppearances;
   const conceded =
-    stats.position === "GK" || stats.position === "DEF"
-      ? -Math.floor(stats.goalsConceded / 2)
-      : 0;
+    stats.position === "GK" || stats.position === "DEF" ? -Math.floor(stats.goalsConceded / 2) : 0;
   const saves = stats.position === "GK" ? Math.floor(stats.saves / 3) : 0;
   return (
     appearancePoints +
@@ -533,11 +460,9 @@ function percentRanks(values: readonly number[]): readonly number[] {
   let index = 0;
   while (index < sorted.length) {
     let end = index + 1;
-    while (end < sorted.length && sorted[end].value === sorted[index].value)
-      end += 1;
+    while (end < sorted.length && sorted[end].value === sorted[index].value) end += 1;
     const rank = index / (sorted.length - 1);
-    for (let cursor = index; cursor < end; cursor += 1)
-      output[sorted[cursor].index] = rank;
+    for (let cursor = index; cursor < end; cursor += 1) output[sorted[cursor].index] = rank;
     index = end;
   }
   return output;
@@ -559,16 +484,13 @@ export function calculatePreseasonRatings(
   statistics: ReadonlyMap<string, PlayerSeasonStatistics>,
 ): readonly CalculatedPlayerRating[] {
   if (
-    new Set(candidates.map((candidate) => candidate.externalPlayerId)).size !==
-    candidates.length
+    new Set(candidates.map((candidate) => candidate.externalPlayerId)).size !== candidates.length
   ) {
     throw new RatingsRuntimeError("duplicate_rating_candidate");
   }
   const base = candidates.map((candidate) => {
-    const stats =
-      statistics.get(candidate.externalPlayerId) ?? emptyStatistics(candidate);
-    if (stats.position !== candidate.position)
-      throw new RatingsRuntimeError("position_mismatch");
+    const stats = statistics.get(candidate.externalPlayerId) ?? emptyStatistics(candidate);
+    if (stats.position !== candidate.position) throw new RatingsRuntimeError("position_mismatch");
     const points = fantasyEquivalentPoints(stats);
     const pointsPer90 = stats.minutes > 0 ? (points * 90) / stats.minutes : 0;
     const providerRating =
@@ -586,16 +508,13 @@ export function calculatePreseasonRatings(
     const totalRanks = percentRanks(group.map(({ row }) => row.points));
     const rateRanks = percentRanks(group.map(({ row }) => row.pointsPer90));
     const rated = group.filter(({ row }) => row.providerRating !== null);
-    const providerRanks = percentRanks(
-      rated.map(({ row }) => row.providerRating as number),
-    );
+    const providerRanks = percentRanks(rated.map(({ row }) => row.providerRating as number));
     const providerByIndex = new Map(
       rated.map(({ index }, cursor) => [index, providerRanks[cursor]]),
     );
     group.forEach(({ row, index }, cursor) => {
       const providerRank = providerByIndex.get(index) ?? 0.5;
-      const performance =
-        providerRank * 0.5 + totalRanks[cursor] * 0.3 + rateRanks[cursor] * 0.2;
+      const performance = providerRank * 0.5 + totalRanks[cursor] * 0.3 + rateRanks[cursor] * 0.2;
       const confidence = Math.min(1, row.stats.minutes / 900);
       const unshrunk = 4 + 6 * performance;
       const rating = Math.min(10, Math.max(4, 6 + confidence * (unshrunk - 6)));
@@ -616,8 +535,7 @@ export function calculatePreseasonRatings(
         redCards: row.stats.redCards,
         secondYellowDismissals: row.stats.secondYellowDismissals,
         ownGoals: row.stats.ownGoals,
-        providerRating:
-          row.providerRating === null ? null : rounded(row.providerRating, 2),
+        providerRating: row.providerRating === null ? null : rounded(row.providerRating, 2),
         fantasyEquivalentPoints: row.points,
         pointsPer90: rounded(row.pointsPer90, 3),
         confidence: rounded(confidence, 3),
@@ -636,10 +554,8 @@ async function rpc(
 ): Promise<unknown> {
   const result = await client.schema("api").rpc(name, args);
   if (result.error) {
-    if (result.error.code === "P0002")
-      throw new RatingsRuntimeError("mapping_not_found");
-    if (result.error.code === "22023")
-      throw new RatingsRuntimeError("invalid_provider_payload");
+    if (result.error.code === "P0002") throw new RatingsRuntimeError("mapping_not_found");
+    if (result.error.code === "22023") throw new RatingsRuntimeError("invalid_provider_payload");
     throw new RatingsRuntimeError("database_unavailable");
   }
   return result.data;
@@ -651,10 +567,8 @@ function candidateRows(value: unknown): RatingCandidate[] {
   }
   return value.map((item) => {
     const row = record(item, "invalid_database_response");
-    const externalPlayerId =
-      typeof row.externalPlayerId === "string" ? row.externalPlayerId : "";
-    if (!/^\d+$/.test(externalPlayerId))
-      throw new RatingsRuntimeError("invalid_database_response");
+    const externalPlayerId = typeof row.externalPlayerId === "string" ? row.externalPlayerId : "";
+    if (!/^\d+$/.test(externalPlayerId)) throw new RatingsRuntimeError("invalid_database_response");
     if (
       row.position !== "GK" &&
       row.position !== "DEF" &&
@@ -686,8 +600,7 @@ function hasMore(payload: JsonRecord, rowCount: number): boolean {
     : isRecord(payload.meta) && isRecord(payload.meta.pagination)
       ? payload.meta.pagination
       : null;
-  if (pagination && typeof pagination.has_more === "boolean")
-    return pagination.has_more;
+  if (pagination && typeof pagination.has_more === "boolean") return pagination.has_more;
   return rowCount === PAGE_SIZE;
 }
 
@@ -696,9 +609,7 @@ async function sha256(value: unknown): Promise<string> {
     "SHA-256",
     new TextEncoder().encode(JSON.stringify(value)),
   );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function recordRejection(
@@ -708,17 +619,13 @@ async function recordRejection(
   error: unknown,
 ): Promise<void> {
   const row = isRecord(raw) ? raw : {};
-  const externalId =
-    typeof row.player_id === "number" ? String(row.player_id) : "";
+  const externalId = typeof row.player_id === "number" ? String(row.player_id) : "";
   await rpc(client, "record_football_ingestion_rejection", {
     p_run_id: runId,
     p_entity_type: "player",
     p_external_id: externalId,
     p_payload_fingerprint: await sha256(raw),
-    p_error_code:
-      error instanceof RatingsRuntimeError
-        ? error.code
-        : "invalid_provider_payload",
+    p_error_code: error instanceof RatingsRuntimeError ? error.code : "invalid_provider_payload",
     p_validation_issues: [],
   });
 }
@@ -743,9 +650,7 @@ async function complete(
     p_retry_count: counts.retries,
     p_error_code: status === "failed" ? "player_ratings_failed" : null,
     p_error_summary:
-      status === "failed"
-        ? "Player ratings failed; inspect correlated server logs."
-        : null,
+      status === "failed" ? "Player ratings failed; inspect correlated server logs." : null,
   });
 }
 
@@ -761,18 +666,14 @@ export async function handleSportsMonksPlayerRatingsRequest(
   }
   if (
     request.method !== "POST" ||
-    !timingSafeEqual(
-      request.headers.get("x-botolago-ingestion-key") ?? "",
-      config.triggerSecret,
-    )
+    !timingSafeEqual(request.headers.get("x-botolago-ingestion-key") ?? "", config.triggerSecret)
   ) {
     return json(401, { error: "unauthorized" });
   }
   try {
     await parseRequest(request);
   } catch (error) {
-    const code =
-      error instanceof RatingsRuntimeError ? error.code : "invalid_request";
+    const code = error instanceof RatingsRuntimeError ? error.code : "invalid_request";
     return json(code === "request_too_large" ? 413 : 400, { error: code });
   }
 
@@ -805,15 +706,11 @@ export async function handleSportsMonksPlayerRatingsRequest(
       }),
     );
     const byId = new Map(
-      candidates.map((candidate) => [
-        candidate.externalPlayerId,
-        emptyStatistics(candidate),
-      ]),
+      candidates.map((candidate) => [candidate.externalPlayerId, emptyStatistics(candidate)]),
     );
     for (let page = 1; page <= MAX_PAGES; page += 1) {
       const payload = await providerRequest(page, config, dependencies, counts);
-      if (!Array.isArray(payload.data))
-        throw new RatingsRuntimeError("invalid_provider_payload");
+      if (!Array.isArray(payload.data)) throw new RatingsRuntimeError("invalid_provider_payload");
       for (const raw of payload.data) {
         counts.fetched += 1;
         try {
@@ -830,8 +727,7 @@ export async function handleSportsMonksPlayerRatingsRequest(
         }
       }
       if (!hasMore(payload, payload.data.length)) break;
-      if (page === MAX_PAGES)
-        throw new RatingsRuntimeError("provider_page_limit_exceeded");
+      if (page === MAX_PAGES) throw new RatingsRuntimeError("provider_page_limit_exceeded");
     }
     const ratings = calculatePreseasonRatings(candidates, byId);
     counts.validated = ratings.length;
@@ -873,21 +769,12 @@ export async function handleSportsMonksPlayerRatingsRequest(
   } catch (error) {
     if (runId) {
       try {
-        await complete(
-          dependencies.client,
-          runId,
-          "failed",
-          counts,
-          config.seasonId,
-        );
+        await complete(dependencies.client, runId, "failed", counts, config.seasonId);
       } catch {
         // Preserve the original failure without returning database details.
       }
     }
-    const code =
-      error instanceof RatingsRuntimeError
-        ? error.code
-        : "player_ratings_failed";
+    const code = error instanceof RatingsRuntimeError ? error.code : "player_ratings_failed";
     return json(code === "provider_rate_limited" ? 429 : 503, { error: code });
   }
 }
