@@ -5,18 +5,12 @@ export interface NewsRpcResult {
 
 export interface NewsRpcClient {
   schema(name: "api"): {
-    rpc(
-      name: string,
-      args: Record<string, unknown>,
-    ): PromiseLike<NewsRpcResult>;
+    rpc(name: string, args: Record<string, unknown>): PromiseLike<NewsRpcResult>;
   };
 }
 
 type JsonRecord = Record<string, unknown>;
-type FetchLike = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>;
+type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export interface GnewsRuntimeDependencies {
   readonly environment: Readonly<Record<string, string | undefined>>;
@@ -86,10 +80,7 @@ function record(value: unknown, code = "invalid_provider_payload"): JsonRecord {
   return value;
 }
 
-function required(
-  environment: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string {
+function required(environment: Readonly<Record<string, string | undefined>>, name: string): string {
   const value = environment[name]?.trim();
   if (!value) throw new GnewsRuntimeError("invalid_runtime_configuration");
   return value;
@@ -102,8 +93,7 @@ function integerSetting(
   maximum: number,
 ): number {
   const raw = required(environment, name);
-  if (!/^\d+$/.test(raw))
-    throw new GnewsRuntimeError("invalid_runtime_configuration");
+  if (!/^\d+$/.test(raw)) throw new GnewsRuntimeError("invalid_runtime_configuration");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
     throw new GnewsRuntimeError("invalid_runtime_configuration");
@@ -118,9 +108,7 @@ function hasControlOrWhitespace(value: string): boolean {
   });
 }
 
-function configuration(
-  environment: Readonly<Record<string, string | undefined>>,
-): Configuration {
+function configuration(environment: Readonly<Record<string, string | undefined>>): Configuration {
   const apiKey = required(environment, "GNEWS_API_KEY");
   const triggerSecret = required(environment, "NEWS_INGESTION_TRIGGER_SECRET");
   if (
@@ -130,8 +118,7 @@ function configuration(
     triggerSecret.length > 512 ||
     hasControlOrWhitespace(apiKey) ||
     hasControlOrWhitespace(triggerSecret) ||
-    required(environment, "GNEWS_API_ORIGIN").replace(/\/$/, "") !==
-      OFFICIAL_ORIGIN
+    required(environment, "GNEWS_API_ORIGIN").replace(/\/$/, "") !== OFFICIAL_ORIGIN
   ) {
     throw new GnewsRuntimeError("invalid_runtime_configuration");
   }
@@ -179,8 +166,7 @@ async function parseRequest(request: Request): Promise<void> {
     throw new GnewsRuntimeError("request_too_large");
   }
   const source = await request.text();
-  if (source.length > MAX_REQUEST_BYTES)
-    throw new GnewsRuntimeError("request_too_large");
+  if (source.length > MAX_REQUEST_BYTES) throw new GnewsRuntimeError("request_too_large");
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -214,9 +200,7 @@ function retryAfter(response: Response): number | null {
   const value = response.headers.get("retry-after");
   if (!value) return null;
   const seconds = Number(value);
-  return Number.isFinite(seconds) && seconds >= 0
-    ? Math.ceil(seconds * 1_000)
-    : null;
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds * 1_000) : null;
 }
 
 async function providerRequest(
@@ -235,9 +219,7 @@ async function providerRequest(
     throw new GnewsRuntimeError("provider_origin_guard_failed");
   }
   const fetcher = dependencies.fetch ?? globalThis.fetch.bind(globalThis);
-  const sleep =
-    dependencies.sleep ??
-    ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const sleep = dependencies.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -249,18 +231,13 @@ async function providerRequest(
         signal: controller.signal,
       });
       if (response.ok) return responseJson(response);
-      if (
-        (response.status === 429 || response.status >= 500) &&
-        attempt < config.maxRetries
-      ) {
+      if ((response.status === 429 || response.status >= 500) && attempt < config.maxRetries) {
         counters.retries += 1;
         await sleep(retryAfter(response) ?? 250 * 2 ** attempt);
         continue;
       }
       throw new GnewsRuntimeError(
-        response.status === 429
-          ? "provider_rate_limited"
-          : "provider_unavailable",
+        response.status === 429 ? "provider_rate_limited" : "provider_unavailable",
       );
     } catch (error) {
       if (error instanceof GnewsRuntimeError) throw error;
@@ -277,13 +254,8 @@ async function providerRequest(
   throw new GnewsRuntimeError("provider_unavailable");
 }
 
-function nonEmptyString(
-  value: unknown,
-  minimum: number,
-  maximum: number,
-): string {
-  if (typeof value !== "string")
-    throw new GnewsRuntimeError("invalid_provider_payload");
+function nonEmptyString(value: unknown, minimum: number, maximum: number): string {
+  if (typeof value !== "string") throw new GnewsRuntimeError("invalid_provider_payload");
   const normalized = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
   if (normalized.length < minimum || normalized.length > maximum) {
     throw new GnewsRuntimeError("invalid_provider_payload");
@@ -320,8 +292,7 @@ function safeHttpsUrl(value: unknown): URL {
 }
 
 function timestamp(value: unknown, now: Date): string {
-  if (typeof value !== "string")
-    throw new GnewsRuntimeError("invalid_provider_payload");
+  if (typeof value !== "string") throw new GnewsRuntimeError("invalid_provider_payload");
   const parsed = new Date(value);
   const time = parsed.getTime();
   if (
@@ -344,13 +315,8 @@ function escapeHtml(value: string): string {
 }
 
 async function sha256(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function normalizeArticle(
@@ -360,8 +326,7 @@ async function normalizeArticle(
 ): Promise<NormalizedArticle> {
   const raw = record(value);
   const language = nonEmptyString(raw.lang, 2, 2);
-  if (language !== expectedLanguage)
-    throw new GnewsRuntimeError("unsupported_language");
+  if (language !== expectedLanguage) throw new GnewsRuntimeError("unsupported_language");
   const externalId = nonEmptyString(raw.id, 1, 250);
   const canonicalUrl = safeHttpsUrl(raw.url).toString();
   const source = record(raw.source);
@@ -376,9 +341,7 @@ async function normalizeArticle(
       : `Lire l’article original sur ${sourceName}`;
   const bodyHtml = `<p>${escapeHtml(summary)}</p><p><a href="${escapeHtml(canonicalUrl)}" rel="nofollow noopener noreferrer">${escapeHtml(linkLabel)}</a></p>`;
   const contentFingerprint = await sha256(
-    [language, title.toLowerCase(), summary.toLowerCase(), canonicalUrl].join(
-      "\u001f",
-    ),
+    [language, title.toLowerCase(), summary.toLowerCase(), canonicalUrl].join("\u001f"),
   );
   return {
     externalId,
@@ -390,10 +353,7 @@ async function normalizeArticle(
     bodyHtml,
     publishedAt,
     sourceUpdatedAt: publishedAt,
-    sourceVersion: `gnews:${externalId}:${Date.parse(publishedAt)}`.slice(
-      0,
-      100,
-    ),
+    sourceVersion: `gnews:${externalId}:${Date.parse(publishedAt)}`.slice(0, 100),
     sourceName,
     sourceUrl,
     readingTimeMinutes: 1,
@@ -408,12 +368,9 @@ async function rpc(
 ): Promise<unknown> {
   const result = await client.schema("api").rpc(name, args);
   if (result.error) {
-    if (result.error.code === "23505")
-      throw new GnewsRuntimeError("duplicate_conflict");
-    if (result.error.code === "42501")
-      throw new GnewsRuntimeError("source_blocked");
-    if (result.error.code === "22023")
-      throw new GnewsRuntimeError("invalid_provider_payload");
+    if (result.error.code === "23505") throw new GnewsRuntimeError("duplicate_conflict");
+    if (result.error.code === "42501") throw new GnewsRuntimeError("source_blocked");
+    if (result.error.code === "22023") throw new GnewsRuntimeError("invalid_provider_payload");
     throw new GnewsRuntimeError("database_unavailable");
   }
   return result.data;
@@ -442,10 +399,7 @@ async function reject(
   externalId: string | null,
   error: unknown,
 ): Promise<void> {
-  const code =
-    error instanceof GnewsRuntimeError
-      ? error.code
-      : "invalid_provider_payload";
+  const code = error instanceof GnewsRuntimeError ? error.code : "invalid_provider_payload";
   const reasons = new Set([
     "mapping_collision",
     "duplicate_conflict",
@@ -489,9 +443,7 @@ async function complete(
     p_rejected: value.rejected,
     p_error_code: status === "failed" ? "news_ingestion_failed" : null,
     p_error_summary:
-      status === "failed"
-        ? "News ingestion failed; inspect correlated server logs."
-        : null,
+      status === "failed" ? "News ingestion failed; inspect correlated server logs." : null,
   });
 }
 
@@ -507,33 +459,25 @@ export async function handleGnewsRequest(
   }
   if (
     request.method !== "POST" ||
-    !timingSafeEqual(
-      request.headers.get("x-botolago-ingestion-key") ?? "",
-      config.triggerSecret,
-    )
+    !timingSafeEqual(request.headers.get("x-botolago-ingestion-key") ?? "", config.triggerSecret)
   ) {
     return json(401, { error: "unauthorized" });
   }
   try {
     await parseRequest(request);
   } catch (error) {
-    const code =
-      error instanceof GnewsRuntimeError ? error.code : "invalid_request";
+    const code = error instanceof GnewsRuntimeError ? error.code : "invalid_request";
     return json(code === "request_too_large" ? 413 : 400, { error: code });
   }
 
   const value = counters();
   let runId: string | null = null;
   try {
-    const begin = await rpc(
-      dependencies.client,
-      "news_begin_provider_ingestion",
-      {
-        p_provider_slug: "gnews",
-        p_job_type: "latest_articles",
-        p_target_scope: "fr,ar",
-      },
-    );
+    const begin = await rpc(dependencies.client, "news_begin_provider_ingestion", {
+      p_provider_slug: "gnews",
+      p_job_type: "latest_articles",
+      p_target_scope: "fr,ar",
+    });
     runId = objectString(begin, "runId");
     const now = dependencies.now?.() ?? new Date();
     for (const language of ["fr", "ar"] as const) {
@@ -544,14 +488,12 @@ export async function handleGnewsRequest(
         dependencies,
         value,
       );
-      if (!Array.isArray(payload.articles))
-        throw new GnewsRuntimeError("invalid_provider_payload");
+      if (!Array.isArray(payload.articles)) throw new GnewsRuntimeError("invalid_provider_payload");
       for (const raw of payload.articles) {
         value.fetched += 1;
         let externalId: string | null = null;
         try {
-          if (isRecord(raw) && typeof raw.id === "string")
-            externalId = raw.id.slice(0, 250);
+          if (isRecord(raw) && typeof raw.id === "string") externalId = raw.id.slice(0, 250);
           const article = await normalizeArticle(raw, language, now);
           externalId = article.externalId;
           value.validated += 1;
@@ -576,11 +518,7 @@ export async function handleGnewsRequest(
             "invalid_database_response",
           );
           const outcome = result.outcome;
-          if (
-            outcome !== "inserted" &&
-            outcome !== "updated" &&
-            outcome !== "skipped"
-          ) {
+          if (outcome !== "inserted" && outcome !== "updated" && outcome !== "skipped") {
             throw new GnewsRuntimeError("invalid_database_response");
           }
           value[outcome] += 1;
@@ -609,8 +547,7 @@ export async function handleGnewsRequest(
         // Preserve the original failure without returning database details.
       }
     }
-    const code =
-      error instanceof GnewsRuntimeError ? error.code : "news_ingestion_failed";
+    const code = error instanceof GnewsRuntimeError ? error.code : "news_ingestion_failed";
     const status = code === "provider_rate_limited" ? 429 : 503;
     return json(status, { error: code });
   }
