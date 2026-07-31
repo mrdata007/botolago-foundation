@@ -51,13 +51,15 @@ function standingsResponse(): Response {
       details: [
         {
           id: 800_000 + index,
-          developer_name: "OVERALL_MATCHES_PLAYED",
+          type_id: 129,
           value: 30,
+          type: { id: 129, developer_name: "OVERALL_MATCHES_PLAYED" },
         },
         {
           id: 900_000 + index,
-          developer_name: "OVERALL_WON",
+          type_id: 130,
           value: 15,
+          type: { id: 130, developer_name: "OVERALL_WON" },
         },
       ],
     })),
@@ -144,7 +146,7 @@ describe("SportsMonks historical content coverage probe", () => {
       requests
         .find((request) => request.url.pathname.includes("/standings/"))
         ?.url.searchParams.get("include"),
-    ).toBe("participant;details");
+    ).toBe("participant;details.type");
     expect(JSON.stringify(evidence)).not.toContain(TOKEN);
     expect(JSON.stringify(evidence)).not.toContain("Player ");
   });

@@ -191,7 +191,12 @@ function parseStandings(value: unknown): StandingTotals {
     for (const detailCandidate of array(row.details, "missing_standing_details_include")) {
       const detail = record(detailCandidate, "invalid_standing_detail");
       positiveInteger(detail.id, "invalid_standing_detail_id");
-      const developerName = detail.developer_name;
+      const typeId = positiveInteger(detail.type_id, "invalid_standing_detail_type_id");
+      const type = record(detail.type, "missing_standing_detail_type_include");
+      if (positiveInteger(type.id, "invalid_standing_detail_type_include") !== typeId) {
+        throw new SportsMonksProbeError("invalid_standing_detail_type_include");
+      }
+      const developerName = type.developer_name;
       if (typeof developerName !== "string" || !DETAIL_NAME_PATTERN.test(developerName)) {
         throw new SportsMonksProbeError("invalid_standing_detail_name");
       }
@@ -246,7 +251,7 @@ export async function runSportsMonksHistoricalContentProbe(
   const standings = parseStandings(
     await requestSportsMonksJson(
       `${SPORTSMONKS_BASE_PATH}/standings/seasons/${HISTORICAL_SEASON_ID}`,
-      { include: "participant;details" },
+      { include: "participant;details.type" },
       token,
       dependencies,
     ),
