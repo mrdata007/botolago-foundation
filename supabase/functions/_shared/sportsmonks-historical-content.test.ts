@@ -301,6 +301,86 @@ describe("SportsMonks historical content runtime", () => {
     ]);
   });
 
+  it("quarantines an inconsistent required player identity and continues standings", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const response = await handleSportsMonksHistoricalContentRequest(request(), {
+      environment: {
+        ...environment(),
+        FOOTBALL_SPORTSMONKS_TEAM_IDS: "2846",
+      },
+      client: rpcClient(calls),
+      now: () => NOW,
+      fetch: async (input) => {
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        if (url.pathname.endsWith("/standings/seasons/26027")) {
+          return json({ data: [standing(2_846, 1)] });
+        }
+        return json({
+          data: [
+            {
+              id: 3_846,
+              player_id: 4_846,
+              team_id: 2_846,
+              season_id: 26_027,
+              position_id: 25,
+              jersey_number: 5,
+              player: {
+                id: 999_999,
+                name: "Mismatched player",
+                display_name: "Mismatched player",
+              },
+              position: { id: 25, developer_name: "DEFENDER" },
+            },
+          ],
+        });
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      provider: "sportsmonks",
+      seasonId: 26_027,
+      jobs: {
+        squads: {
+          fetched: 1,
+          validated: 0,
+          inserted: 0,
+          updated: 0,
+          skipped: 0,
+          rejected: 1,
+          retries: 0,
+          uniquePlayers: 0,
+          playersInserted: 0,
+          playersUpdated: 0,
+          playersSkipped: 0,
+        },
+        standings: {
+          fetched: 1,
+          validated: 1,
+          inserted: 1,
+          updated: 0,
+          skipped: 0,
+          rejected: 0,
+          retries: 0,
+        },
+      },
+    });
+    expect(
+      calls.some(
+        (call) =>
+          call.name === "record_football_ingestion_rejection" && call.args.p_external_id === "4846",
+      ),
+    ).toBe(true);
+    expect(
+      calls.some(
+        (call) =>
+          call.name === "complete_football_ingestion" &&
+          call.args.p_status === "partial" &&
+          call.args.p_error_code === "invalid_provider_payload",
+      ),
+    ).toBe(true);
+  });
+
   it("rejects mutable request scope instead of accepting caller-supplied team IDs", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const mutableRequest = new Request("https://example.test/football-ingest", {
