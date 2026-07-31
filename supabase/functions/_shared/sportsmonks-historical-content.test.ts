@@ -239,6 +239,68 @@ describe("SportsMonks historical content runtime", () => {
     expect(calls).toHaveLength(0);
   });
 
+  it("drops malformed optional player metadata without rejecting the squad membership", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const response = await handleSportsMonksHistoricalContentRequest(request(), {
+      environment: {
+        ...environment(),
+        FOOTBALL_SPORTSMONKS_TEAM_IDS: "2846",
+      },
+      client: rpcClient(calls),
+      now: () => NOW,
+      fetch: async (input) => {
+        const url = new URL(input instanceof Request ? input.url : input.toString());
+        if (url.pathname.endsWith("/standings/seasons/26027")) {
+          return json({ data: [standing(2_846, 1)] });
+        }
+        return json({
+          data: [
+            {
+              id: 3_846,
+              player_id: 4_846,
+              team_id: 2_846,
+              season_id: 26_027,
+              position_id: 25,
+              jersey_number: 120,
+              player: {
+                id: 4_846,
+                name: "Player 2846",
+                display_name: "P. 2846",
+                firstname: { malformed: true },
+                lastname: 2_846,
+                date_of_birth: "0000-00-00",
+                last_played_at: "not-a-timestamp",
+                updated_at: "2026-07-01 12:00:00",
+              },
+              position: { id: 25, developer_name: "DEFENDER" },
+            },
+          ],
+        });
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const persisted = calls.find((call) => call.name === "ingest_football_squad");
+    expect(persisted?.args.p_memberships).toEqual([
+      {
+        externalPlayerId: "4846",
+        fullName: "Player 2846",
+        displayName: "P. 2846",
+        firstName: null,
+        lastName: null,
+        dateOfBirth: null,
+        position: "defender",
+        preferredFoot: "unknown",
+        shirtNumber: null,
+        freshness: {
+          updatedAt: "2026-07-01T12:00:00.000Z",
+          sourceSequence: 1_782_907_200_000,
+          sourceVersion: "sportsmonks:4846:1782907200000",
+        },
+      },
+    ]);
+  });
+
   it("rejects mutable request scope instead of accepting caller-supplied team IDs", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const mutableRequest = new Request("https://example.test/football-ingest", {

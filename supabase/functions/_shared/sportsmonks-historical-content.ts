@@ -301,7 +301,9 @@ function nonEmptyString(value: unknown, maximum: number): string {
 
 function optionalString(value: unknown, maximum: number): string | null {
   if (value === null || value === undefined || value === "") return null;
-  return nonEmptyString(value, maximum);
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized && normalized.length <= maximum ? normalized : null;
 }
 
 function timestamp(value: unknown, fallback: string): string {
@@ -310,18 +312,26 @@ function timestamp(value: unknown, fallback: string): string {
     ? `${value.replace(" ", "T")}Z`
     : value;
   const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime())) throw new ContentRuntimeError("invalid_provider_payload");
+  if (Number.isNaN(parsed.getTime())) return fallback;
   return parsed.toISOString();
 }
 
 function optionalDate(value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new ContentRuntimeError("invalid_provider_payload");
+    return null;
   }
   const parsed = new Date(`${value}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
-    throw new ContentRuntimeError("invalid_provider_payload");
+    return null;
+  }
+  return value;
+}
+
+function optionalShirtNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0 || value > 99) {
+    return null;
   }
   return value;
 }
@@ -371,11 +381,8 @@ function normalizeMembership(
   }
   const fullName = nonEmptyString(player.name ?? player.display_name ?? player.common_name, 200);
   const displayName = nonEmptyString(player.display_name ?? player.common_name ?? player.name, 120);
-  const shirtNumber = nullablePositiveInteger(raw.jersey_number);
-  if (shirtNumber !== null && shirtNumber > 99) {
-    throw new ContentRuntimeError("invalid_provider_payload");
-  }
-  const updatedAt = timestamp(player.last_played_at ?? player.updated_at, observedAt);
+  const shirtNumber = optionalShirtNumber(raw.jersey_number);
+  const updatedAt = timestamp(player.last_played_at, timestamp(player.updated_at, observedAt));
   const sourceSequence = Date.parse(updatedAt);
   return {
     externalPlayerId: String(playerId),
