@@ -71,7 +71,24 @@ jobs:
       - run: bun run backend:db:reset
       - run: bun run backend:db:test
       - run: bun run backend:db:lint
-      - run: bun run backend:types:check
+      - name: Verify generated database types
+        id: generated_types
+        continue-on-error: true
+        run: bun run backend:types:check
+      - name: Regenerate stale database types for recovery
+        if: steps.generated_types.outcome == 'failure'
+        run: bun run backend:types:generate
+      - name: Upload authoritative generated database types
+        if: steps.generated_types.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: generated-database-types-${{ github.run_id }}
+          path: src/backend/generated/database.types.ts
+          if-no-files-found: error
+          retention-days: 1
+      - name: Fail on generated database type drift
+        if: steps.generated_types.outcome == 'failure'
+        run: exit 1
       - name: Stop local Supabase
         if: always()
         run: ./node_modules/.bin/supabase stop --no-backup
