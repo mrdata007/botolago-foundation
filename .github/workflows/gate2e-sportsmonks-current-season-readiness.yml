@@ -1,6 +1,8 @@
 name: Gate 2E SportsMonks current-season readiness probe
 
 on:
+  schedule:
+    - cron: "17 6 * * *"
   push:
     branches: [main]
     paths:
@@ -32,7 +34,7 @@ jobs:
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
       github.actor == 'mrdata007' &&
-      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production-football-ingestion
@@ -80,8 +82,8 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate2e-current-season-readiness-2026-07-31-01",
-              "mode": "read_only_current_season_readiness",
+              "requestId": "gate2e-current-season-readiness-schedule-2026-07-31-01",
+              "mode": "read_only_current_season_readiness_schedule",
               "leagueId": 860,
               "confirmation": "RUN_GATE2E_CURRENT_SEASON_READINESS",
           }
@@ -111,6 +113,36 @@ jobs:
           set -euo pipefail
           printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
           bun scripts/backend/sportsmonks-production-probe.ts
+
+      - name: Classify current-season readiness
+        id: readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          evidence_path = Path(os.environ["GATE2E_EVIDENCE_DIR"]) / "sportsmonks-production-probe.json"
+          evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+          rounds = evidence["verifiedResources"]["rounds"]
+          teams = evidence["verifiedResources"]["teams"]
+          fixtures = evidence["fixtureSample"]["available"]
+          if not isinstance(rounds, int) or rounds < 0:
+              raise SystemExit("INVALID_ROUND_COUNT")
+          if not isinstance(teams, int) or teams < 0:
+              raise SystemExit("INVALID_TEAM_COUNT")
+          if not isinstance(fixtures, bool):
+              raise SystemExit("INVALID_FIXTURE_AVAILABILITY")
+          ready = rounds > 0 and teams > 0 and fixtures
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"ready={'true' if ready else 'false'}\n")
+          print(
+              f"Current-season readiness: ready={str(ready).lower()} "
+              f"rounds={rounds} teams={teams} fixtureSample={str(fixtures).lower()}"
+          )
+          PY
 
       - name: Verify evidence contains no credential patterns
         id: evidence_scan
@@ -145,11 +177,13 @@ jobs:
           PROBE_OUTCOME: ${{ steps.provider_probe.outcome }}
           SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
           UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
         run: |
           set -euo pipefail
           if [[ "$PROBE_OUTCOME" != "success" ||
                 "$SCAN_OUTCOME" != "success" ||
-                "$UPLOAD_OUTCOME" != "success" ]]; then
+                "$UPLOAD_OUTCOME" != "success" ||
+                "$READINESS_OUTCOME" != "success" ]]; then
             echo "GATE2E_CURRENT_SEASON_READINESS_FAILED"
             exit 1
           fi
@@ -163,6 +197,8 @@ jobs:
           PROBE_OUTCOME: ${{ steps.provider_probe.outcome }}
           SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
           UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          CURRENT_SEASON_READY: ${{ steps.readiness.outputs.ready }}
         run: |
           set -euo pipefail
           printf '::add-mask::%s\n' "$GITHUB_TOKEN"
@@ -170,9 +206,14 @@ jobs:
           description="Protected current-season SportsMonks probe failed"
           if [[ "$PROBE_OUTCOME" == "success" &&
                 "$SCAN_OUTCOME" == "success" &&
-                "$UPLOAD_OUTCOME" == "success" ]]; then
+                "$UPLOAD_OUTCOME" == "success" &&
+                "$READINESS_OUTCOME" == "success" ]]; then
             state="success"
-            description="Protected current-season SportsMonks probe passed"
+            if [[ "$CURRENT_SEASON_READY" == "true" ]]; then
+              description="Current Botola season is published and ready"
+            else
+              description="Current Botola season is not published yet"
+            fi
           fi
           payload=$(printf \
             '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/gate2e-current-season-readiness"}' \
