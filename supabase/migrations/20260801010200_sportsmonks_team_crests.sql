@@ -87,18 +87,18 @@ begin
   if target_asset_id is null then
     insert into app.media_assets (
       kind,
-      source_url,
       storage_path,
       attribution,
+      attribution_url,
       validation_status,
       validated_at,
       mime_type,
       alt_text
     ) values (
       'team_crest',
-      p_source_url,
       p_storage_path,
       'SportsMonks Football API',
+      p_source_url,
       'validated',
       p_observed_at,
       p_mime_type,
@@ -107,8 +107,9 @@ begin
     returning id into target_asset_id;
   else
     update app.media_assets
-    set source_url = p_source_url,
+    set source_url = null,
         attribution = 'SportsMonks Football API',
+        attribution_url = p_source_url,
         validation_status = 'validated',
         validated_at = p_observed_at,
         mime_type = p_mime_type,
