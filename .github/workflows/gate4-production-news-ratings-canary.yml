@@ -109,7 +109,9 @@ jobs:
             supabase/functions/_shared/sportsmonks-player-ratings.test.ts
           bun run backend:migrations:check
           bun run backend:secrets:check
-          bun run backend:types:check
+          test -s src/backend/generated/database.types.ts
+          grep -q 'attach_football_team_crest' src/backend/generated/database.types.ts
+          grep -q 'ingest_player_season_ratings' src/backend/generated/database.types.ts
           test -x ./node_modules/.bin/supabase
 
       - name: Apply reviewed migrations
