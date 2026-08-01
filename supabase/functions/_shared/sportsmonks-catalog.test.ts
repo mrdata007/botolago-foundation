@@ -63,10 +63,16 @@ function rpcClient(calls: RpcCall[], uploads: string[] = []): CatalogRpcClient {
 function providerFetch(urls: string[]) {
   return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const url = String(input);
-    const pathname = new URL(url).pathname;
+    const parsed = new URL(url);
+    const pathname = parsed.pathname;
     urls.push(url);
     expect(url).not.toContain(environment.SPORTSMONKS_API_TOKEN);
-    expect(new Headers(init?.headers).get("authorization")).toBe(environment.SPORTSMONKS_API_TOKEN);
+    const authorization = new Headers(init?.headers).get("authorization");
+    if (parsed.origin === "https://api.sportmonks.com") {
+      expect(authorization).toBe(environment.SPORTSMONKS_API_TOKEN);
+    } else {
+      expect(authorization).toBeNull();
+    }
     if (url.includes("/leagues/860")) {
       return Response.json({
         data: { id: 860, name: "Botola Pro", short_code: "BPL" },
