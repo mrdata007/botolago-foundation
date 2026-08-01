@@ -93,12 +93,14 @@ function providerFetch(urls: string[]) {
     }
     if (url.includes("/teams/seasons/28647")) {
       return Response.json({
-        data: [{
-          id: 1001,
-          name: "Raja Club Athletic",
-          short_code: "RCA",
-          image_path: "https://cdn.sportmonks.com/images/soccer/teams/1001.png",
-        }],
+        data: [
+          {
+            id: 1001,
+            name: "Raja Club Athletic",
+            short_code: "RCA",
+            image_path: "https://cdn.sportmonks.com/images/soccer/teams/1001.png",
+          },
+        ],
         pagination: { has_more: false },
       });
     }
