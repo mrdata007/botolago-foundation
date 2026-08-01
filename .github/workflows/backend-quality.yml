@@ -10,6 +10,7 @@ on:
       - ".github/workflows/gate2e-sportsmonks-current-season-readiness.yml"
       - ".github/workflows/gate3a-sportsmonks-historical-content-coverage.yml"
       - ".github/workflows/gate3b-production-historical-content-canary.yml"
+      - ".github/workflows/gate4-production-news-ratings-canary.yml"
       - "docs/production/gate2b-sportsmonks-production-probe-trigger.json"
       - "docs/production/gate2c-historical-catalog-canary-trigger.json"
       - "docs/production/gate2d-historical-fixture-canary-trigger.json"
