@@ -21,7 +21,11 @@ interface RpcCall {
   readonly args: Record<string, unknown>;
 }
 
-function rpcClient(calls: RpcCall[], uploads: string[] = []): CatalogRpcClient {
+function rpcClient(
+  calls: RpcCall[],
+  uploads: string[] = [],
+  teamIngestError?: { readonly message: string; readonly code: string },
+): CatalogRpcClient {
   let run = 0;
   return {
     storage: {
@@ -48,6 +52,9 @@ function rpcClient(calls: RpcCall[], uploads: string[] = []): CatalogRpcClient {
           calls.push({ name: rpcName, args });
           if (rpcName === "begin_football_ingestion") return { data: `run-${++run}`, error: null };
           if (rpcName === "ingest_football_catalog_entity") {
+            if (args.p_entity_type === "team" && teamIngestError) {
+              return { data: null, error: teamIngestError };
+            }
             return {
               data: { id: `id-${args.p_external_id}`, outcome: "inserted" },
               error: null,
@@ -173,5 +180,72 @@ describe("protected SportsMonks catalog function", () => {
     const serialized = await response.text();
     expect(serialized).not.toContain(environment.SPORTSMONKS_API_TOKEN);
     expect(JSON.parse(serialized)).toMatchObject({ provider: "sportsmonks" });
+  });
+
+  test("keeps stale team metadata protected while independently storing its crest", async () => {
+    const calls: RpcCall[] = [];
+    const urls: string[] = [];
+    const uploads: string[] = [];
+    const response = await handleSportsMonksCatalogRequest(
+      new Request("https://example.test/football-ingest", {
+        method: "POST",
+        headers: {
+          "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+        },
+        body: JSON.stringify({ job: "teams", pageSize: 50, maxPages: 1 }),
+      }),
+      {
+        environment,
+        client: rpcClient(calls, uploads, { message: "STALE_UPDATE", code: "P0001" }),
+        fetch: providerFetch(urls),
+        now: () => new Date("2026-07-31T15:00:00.000Z"),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      jobs: { teams: { validated: 1, skipped: 1, rejected: 0 } },
+    });
+    expect(uploads).toEqual(["football/teams/1001/crest.png"]);
+    expect(calls.some((call) => call.name === "attach_football_team_crest")).toBe(true);
+    expect(calls.some((call) => call.name === "record_football_ingestion_rejection")).toBe(false);
+  });
+
+  test("records only sanitized RPC and SQLSTATE diagnostics for database failures", async () => {
+    const calls: RpcCall[] = [];
+    const response = await handleSportsMonksCatalogRequest(
+      new Request("https://example.test/football-ingest", {
+        method: "POST",
+        headers: {
+          "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+        },
+        body: JSON.stringify({ job: "teams", pageSize: 50, maxPages: 1 }),
+      }),
+      {
+        environment,
+        client: rpcClient(calls, [], {
+          message: "sensitive database detail must not escape",
+          code: "23514",
+        }),
+        fetch: providerFetch([]),
+      },
+    );
+
+    expect(response.status).toBe(502);
+    expect(await response.text()).not.toContain("sensitive database detail");
+    expect(calls.find((call) => call.name === "record_football_ingestion_rejection")).toMatchObject(
+      {
+        args: {
+          p_error_code: "database_unavailable",
+          p_validation_issues: [
+            {
+              code: "database_unavailable",
+              rpc_name: "ingest_football_catalog_entity",
+              sqlstate: "23514",
+            },
+          ],
+        },
+      },
+    );
   });
 });

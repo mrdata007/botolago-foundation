@@ -203,6 +203,14 @@ function retryAfter(response: Response): number | null {
   return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds * 1_000) : null;
 }
 
+function providerErrorCode(status: number): string {
+  if (status === 400) return "provider_invalid_request";
+  if (status === 401) return "provider_unauthorized";
+  if (status === 403) return "provider_forbidden";
+  if (status === 429) return "provider_rate_limited";
+  return "provider_unavailable";
+}
+
 async function providerRequest(
   language: "fr" | "ar",
   query: string,
@@ -236,9 +244,7 @@ async function providerRequest(
         await sleep(retryAfter(response) ?? 250 * 2 ** attempt);
         continue;
       }
-      throw new GnewsRuntimeError(
-        response.status === 429 ? "provider_rate_limited" : "provider_unavailable",
-      );
+      throw new GnewsRuntimeError(providerErrorCode(response.status));
     } catch (error) {
       if (error instanceof GnewsRuntimeError) throw error;
       if (attempt < config.maxRetries) {
@@ -430,7 +436,9 @@ async function complete(
   runId: string,
   status: "succeeded" | "partially_succeeded" | "failed",
   value: Counters,
+  errorCode: string | null = null,
 ): Promise<void> {
+  const terminalErrorCode = status === "failed" ? (errorCode ?? "news_ingestion_failed") : null;
   await rpc(client, "news_complete_ingestion_run", {
     p_run_id: runId,
     p_status: status,
@@ -441,7 +449,7 @@ async function complete(
     p_updated: value.updated,
     p_skipped: value.skipped,
     p_rejected: value.rejected,
-    p_error_code: status === "failed" ? "news_ingestion_failed" : null,
+    p_error_code: terminalErrorCode,
     p_error_summary:
       status === "failed" ? "News ingestion failed; inspect correlated server logs." : null,
   });
@@ -540,14 +548,14 @@ export async function handleGnewsRequest(
       counters: value,
     });
   } catch (error) {
+    const code = error instanceof GnewsRuntimeError ? error.code : "news_ingestion_failed";
     if (runId) {
       try {
-        await complete(dependencies.client, runId, "failed", value);
+        await complete(dependencies.client, runId, "failed", value, code);
       } catch {
         // Preserve the original failure without returning database details.
       }
     }
-    const code = error instanceof GnewsRuntimeError ? error.code : "news_ingestion_failed";
     const status = code === "provider_rate_limited" ? 429 : 503;
     return json(status, { error: code });
   }

@@ -216,4 +216,36 @@ describe("GNews ingestion runtime", () => {
     });
     expect(attempts).toBe(3);
   });
+
+  it("persists a distinct sanitized terminal code for each relevant provider failure", async () => {
+    const cases = [
+      [400, "provider_invalid_request", 503],
+      [401, "provider_unauthorized", 503],
+      [403, "provider_forbidden", 503],
+      [429, "provider_rate_limited", 429],
+      [500, "provider_unavailable", 503],
+    ] as const;
+
+    for (const [providerStatus, expectedCode, expectedStatus] of cases) {
+      const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const result = await handleGnewsRequest(request(), {
+        environment: { ...environment(), GNEWS_MAX_RETRIES: "0" },
+        client: client(calls),
+        fetch: async () =>
+          response({ errors: [`sensitive provider detail ${API_KEY}`] }, providerStatus),
+      });
+
+      expect(result.status).toBe(expectedStatus);
+      const serialized = await result.text();
+      expect(JSON.parse(serialized)).toEqual({ error: expectedCode });
+      expect(serialized).not.toContain(API_KEY);
+      expect(calls.find((call) => call.name === "news_complete_ingestion_run")).toMatchObject({
+        args: {
+          p_status: "failed",
+          p_error_code: expectedCode,
+          p_error_summary: "News ingestion failed; inspect correlated server logs.",
+        },
+      });
+    }
+  });
 });
