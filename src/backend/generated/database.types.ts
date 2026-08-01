@@ -440,6 +440,17 @@ export type Database = {
         Args: { p_league_id: string; p_team_id: string }
         Returns: boolean
       }
+      attach_football_team_crest: {
+        Args: {
+          p_external_team_id: string
+          p_mime_type: string
+          p_observed_at: string
+          p_provider_name: string
+          p_source_url: string
+          p_storage_path: string
+        }
+        Returns: Json
+      }
       begin_football_ingestion: {
         Args: {
           p_checkpoint?: Json

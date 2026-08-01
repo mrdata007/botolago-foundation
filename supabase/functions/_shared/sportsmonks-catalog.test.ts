@@ -21,9 +21,26 @@ interface RpcCall {
   readonly args: Record<string, unknown>;
 }
 
-function rpcClient(calls: RpcCall[]): CatalogRpcClient {
+function rpcClient(calls: RpcCall[], uploads: string[] = []): CatalogRpcClient {
   let run = 0;
   return {
+    storage: {
+      from(bucket) {
+        expect(bucket).toBe("football-media");
+        return {
+          async upload(path, body, options) {
+            uploads.push(path);
+            expect(body.byteLength).toBeGreaterThan(0);
+            expect(options).toMatchObject({
+              contentType: "image/png",
+              cacheControl: "86400",
+              upsert: true,
+            });
+            return { data: { path }, error: null };
+          },
+        };
+      },
+    },
     schema(name) {
       expect(name).toBe("api");
       return {
@@ -46,10 +63,16 @@ function rpcClient(calls: RpcCall[]): CatalogRpcClient {
 function providerFetch(urls: string[]) {
   return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const url = String(input);
-    const pathname = new URL(url).pathname;
+    const parsed = new URL(url);
+    const pathname = parsed.pathname;
     urls.push(url);
     expect(url).not.toContain(environment.SPORTSMONKS_API_TOKEN);
-    expect(new Headers(init?.headers).get("authorization")).toBe(environment.SPORTSMONKS_API_TOKEN);
+    const authorization = new Headers(init?.headers).get("authorization");
+    if (parsed.origin === "https://api.sportmonks.com") {
+      expect(authorization).toBe(environment.SPORTSMONKS_API_TOKEN);
+    } else {
+      expect(authorization).toBeNull();
+    }
     if (url.includes("/leagues/860")) {
       return Response.json({
         data: { id: 860, name: "Botola Pro", short_code: "BPL" },
@@ -70,8 +93,20 @@ function providerFetch(urls: string[]) {
     }
     if (url.includes("/teams/seasons/28647")) {
       return Response.json({
-        data: [{ id: 1001, name: "Raja Club Athletic", short_code: "RCA" }],
+        data: [
+          {
+            id: 1001,
+            name: "Raja Club Athletic",
+            short_code: "RCA",
+            image_path: "https://cdn.sportmonks.com/images/soccer/teams/1001.png",
+          },
+        ],
         pagination: { has_more: false },
+      });
+    }
+    if (url === "https://cdn.sportmonks.com/images/soccer/teams/1001.png") {
+      return new Response(new Uint8Array([137, 80, 78, 71]), {
+        headers: { "content-type": "image/png", "content-length": "4" },
       });
     }
     return new Response(null, { status: 404 });
@@ -104,6 +139,7 @@ describe("protected SportsMonks catalog function", () => {
   test("ingests the catalog dependency chain in order with bounded provider requests", async () => {
     const calls: RpcCall[] = [];
     const urls: string[] = [];
+    const uploads: string[] = [];
     const response = await handleSportsMonksCatalogRequest(
       new Request("https://example.test/football-ingest", {
         method: "POST",
@@ -114,14 +150,16 @@ describe("protected SportsMonks catalog function", () => {
       }),
       {
         environment,
-        client: rpcClient(calls),
+        client: rpcClient(calls, uploads),
         fetch: providerFetch(urls),
         now: () => new Date("2026-07-31T15:00:00.000Z"),
       },
     );
 
     expect(response.status).toBe(200);
-    expect(urls).toHaveLength(4);
+    expect(urls).toHaveLength(5);
+    expect(uploads).toEqual(["football/teams/1001/crest.png"]);
+    expect(calls.some((call) => call.name === "attach_football_team_crest")).toBe(true);
     expect(
       calls
         .filter((call) => call.name === "begin_football_ingestion")

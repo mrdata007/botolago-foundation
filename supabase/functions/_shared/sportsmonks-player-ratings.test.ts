@@ -171,6 +171,31 @@ describe("preseason player rating algorithm", () => {
     const ratings = calculatePreseasonRatings(candidates, values);
     expect(ratings.map((rating) => rating.fantasyEquivalentPoints)).toEqual([17, 12, 8, 6]);
   });
+
+  it("assigns identical ratings to players tied on every last-season metric", () => {
+    const candidates: RatingCandidate[] = [
+      { externalPlayerId: "20", position: "MID" },
+      { externalPlayerId: "21", position: "MID" },
+      { externalPlayerId: "22", position: "MID" },
+    ];
+    const values = new Map(
+      candidates.map((candidate) => [
+        candidate.externalPlayerId,
+        stats(candidate, {
+          appearances: 20,
+          starts: 20,
+          minutes: 1_800,
+          goals: 5,
+          assists: 5,
+          providerRatingWeighted: 7 * 1_800,
+          providerRatingMinutes: 1_800,
+        }),
+      ]),
+    );
+
+    const ratings = calculatePreseasonRatings(candidates, values);
+    expect(ratings.map((rating) => rating.rating)).toEqual([7, 7, 7]);
+  });
 });
 
 describe("SportsMonks player rating runtime", () => {

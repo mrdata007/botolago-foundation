@@ -14,6 +14,15 @@ export interface CatalogRpcClient {
   schema(name: "api"): {
     rpc(name: string, args: Record<string, unknown>): PromiseLike<RpcResult>;
   };
+  storage: {
+    from(bucket: "football-media"): {
+      upload(
+        path: string,
+        body: ArrayBuffer,
+        options: { contentType: string; cacheControl: string; upsert: boolean },
+      ): PromiseLike<RpcResult>;
+    };
+  };
 }
 
 export interface CatalogRuntimeDependencies {
@@ -60,6 +69,14 @@ interface ProviderPage {
 const OFFICIAL_BASE_URL = "https://api.sportmonks.com/v3/football";
 const MAX_RESPONSE_BYTES = 2_000_000;
 const MAX_REQUEST_BYTES = 4_096;
+const MAX_CREST_BYTES = 2_000_000;
+const CREST_BUCKET = "football-media" as const;
+const CREST_MIME_EXTENSIONS = {
+  "image/avif": "avif",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+} as const;
 
 class CatalogRuntimeError extends Error {
   constructor(readonly code: string) {
@@ -341,6 +358,84 @@ function teamCode(value: unknown): string | null {
   return /^[A-Z0-9]{2,8}$/.test(code) ? code : null;
 }
 
+function safeCrestUrl(value: unknown): string {
+  const source = text(value, 8, 2_048);
+  let url: URL;
+  try {
+    url = new URL(source);
+  } catch {
+    throw new CatalogRuntimeError("invalid_provider_payload");
+  }
+  const hostname = url.hostname.toLowerCase();
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    (hostname !== "sportmonks.com" && !hostname.endsWith(".sportmonks.com")) ||
+    Array.from(url.searchParams.keys()).some((key) =>
+      /^(access[_-]?token|api[_-]?key|signature|credential)$/i.test(key),
+    )
+  ) {
+    throw new CatalogRuntimeError("invalid_provider_payload");
+  }
+  url.hash = "";
+  return url.toString();
+}
+
+async function storeTeamCrest(
+  item: JsonRecord,
+  config: CatalogConfiguration,
+  dependencies: CatalogRuntimeDependencies,
+): Promise<void> {
+  const sourceUrl = safeCrestUrl(item.crestSourceUrl);
+  const externalTeamId = externalId(item);
+  const fetcher = dependencies.fetch ?? globalThis.fetch.bind(globalThis);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+  let response: Response;
+  try {
+    response = await fetcher(sourceUrl, {
+      method: "GET",
+      headers: { Accept: Object.keys(CREST_MIME_EXTENSIONS).join(", ") },
+      redirect: "error",
+      signal: controller.signal,
+    });
+  } catch {
+    throw new CatalogRuntimeError("crest_download_failed");
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (!response.ok) throw new CatalogRuntimeError("crest_download_failed");
+  const mimeType = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
+  const extension = CREST_MIME_EXTENSIONS[mimeType as keyof typeof CREST_MIME_EXTENSIONS];
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (
+    !extension ||
+    (Number.isFinite(declaredLength) && (declaredLength < 1 || declaredLength > MAX_CREST_BYTES))
+  ) {
+    throw new CatalogRuntimeError("invalid_crest_media");
+  }
+  const body = await response.arrayBuffer();
+  if (body.byteLength < 1 || body.byteLength > MAX_CREST_BYTES) {
+    throw new CatalogRuntimeError("invalid_crest_media");
+  }
+  const storagePath = `football/teams/${externalTeamId}/crest.${extension}`;
+  const upload = await dependencies.client.storage.from(CREST_BUCKET).upload(storagePath, body, {
+    contentType: mimeType,
+    cacheControl: "86400",
+    upsert: true,
+  });
+  if (upload.error) throw new CatalogRuntimeError("crest_upload_failed");
+  await rpc(dependencies.client, "attach_football_team_crest", {
+    p_provider_name: "sportsmonks",
+    p_external_team_id: externalTeamId,
+    p_source_url: sourceUrl,
+    p_storage_path: storagePath,
+    p_mime_type: mimeType,
+    p_observed_at: (dependencies.now ?? (() => new Date()))().toISOString(),
+  });
+}
+
 function roundNumber(raw: JsonRecord, name: string): number | null {
   if (
     typeof raw.number === "number" &&
@@ -449,6 +544,7 @@ async function providerPage(
       shortName,
       code: teamCode(raw.short_code),
       countryCode: config.countryCode,
+      crestSourceUrl: safeCrestUrl(raw.image_path),
       freshness: freshness(raw, observedAt),
     };
   });
@@ -572,6 +668,7 @@ async function runJob(
               p_entity: item,
             }),
           );
+          if (job === "teams") await storeTeamCrest(item, config, dependencies);
           counts[outcome] += 1;
         } catch (error) {
           counts.rejected += 1;

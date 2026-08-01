@@ -82,6 +82,7 @@ jobs:
             echo "GATE4_EVIDENCE_DIR=$evidence_dir"
             echo "GATE4_SECRET_FILE=$runtime_dir/function-secrets.env"
             echo "GATE4_RATINGS_RESPONSE=$runtime_dir/ratings-response.json"
+            echo "GATE4_CREST_RESPONSE=$runtime_dir/crest-response.json"
             echo "GATE4_NEWS_RESPONSE=$runtime_dir/news-response.json"
           } >> "$GITHUB_ENV"
           echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
@@ -104,6 +105,7 @@ jobs:
           bun install --frozen-lockfile
           bun test \
             supabase/functions/_shared/gnews.test.ts \
+            supabase/functions/_shared/sportsmonks-catalog.test.ts \
             supabase/functions/_shared/sportsmonks-player-ratings.test.ts
           bun run backend:migrations:check
           bun run backend:secrets:check
@@ -137,7 +139,12 @@ jobs:
         env:
           FOOTBALL_PROVIDER: sportsmonks
           FOOTBALL_PROVIDER_BASE_URL: https://api.sportmonks.com/v3/football
+          FOOTBALL_SPORTSMONKS_LEAGUE_ID: "860"
           FOOTBALL_SPORTSMONKS_SEASON_ID: "26027"
+          FOOTBALL_SPORTSMONKS_COUNTRY_CODE: MA
+          FOOTBALL_SPORTSMONKS_COMPETITION_TYPE: league
+          FOOTBALL_SPORTSMONKS_SEASON_START: "2025-09-12"
+          FOOTBALL_SPORTSMONKS_SEASON_END: "2026-07-05"
           FOOTBALL_PROVIDER_TIMEOUT_MS: "15000"
           FOOTBALL_PROVIDER_MAX_RETRIES: "2"
           GNEWS_API_ORIGIN: https://gnews.io
@@ -159,8 +166,13 @@ jobs:
           names = (
               "SPORTSMONKS_API_TOKEN", "FOOTBALL_INGESTION_TRIGGER_SECRET",
               "FOOTBALL_PROVIDER", "FOOTBALL_PROVIDER_BASE_URL",
-              "FOOTBALL_SPORTSMONKS_SEASON_ID", "FOOTBALL_PROVIDER_TIMEOUT_MS",
-              "FOOTBALL_PROVIDER_MAX_RETRIES", "GNEWS_API_KEY",
+              "FOOTBALL_SPORTSMONKS_LEAGUE_ID", "FOOTBALL_SPORTSMONKS_SEASON_ID",
+              "FOOTBALL_SPORTSMONKS_COUNTRY_CODE",
+              "FOOTBALL_SPORTSMONKS_COMPETITION_TYPE",
+              "FOOTBALL_SPORTSMONKS_SEASON_START",
+              "FOOTBALL_SPORTSMONKS_SEASON_END",
+              "FOOTBALL_PROVIDER_TIMEOUT_MS", "FOOTBALL_PROVIDER_MAX_RETRIES",
+              "GNEWS_API_KEY",
               "NEWS_INGESTION_TRIGGER_SECRET", "GNEWS_API_ORIGIN",
               "GNEWS_QUERY_FR", "GNEWS_QUERY_AR", "GNEWS_PAGE_SIZE",
               "GNEWS_TIMEOUT_MS", "GNEWS_MAX_RETRIES",
@@ -190,6 +202,15 @@ jobs:
             --header "Authorization: Bearer $SUPABASE_SECRET_KEY" \
             --header "x-botolago-ingestion-key: $GATE4_RATINGS_TRIGGER" \
             --data '{"job":"preseason_ratings"}')
+          crest_status=$(curl --silent --show-error \
+            --output "$GATE4_CREST_RESPONSE" --write-out '%{http_code}' \
+            --request POST "$base/football-ingest" \
+            --header 'content-type: application/json' \
+            --header 'x-botolago-ingestion-job: catalog' \
+            --header "apikey: $SUPABASE_SECRET_KEY" \
+            --header "Authorization: Bearer $SUPABASE_SECRET_KEY" \
+            --header "x-botolago-ingestion-key: $GATE4_RATINGS_TRIGGER" \
+            --data '{"job":"teams","pageSize":50,"maxPages":1}')
           news_status=$(curl --silent --show-error \
             --output "$GATE4_NEWS_RESPONSE" --write-out '%{http_code}' \
             --request POST "$base/news-ingest" \
@@ -198,7 +219,7 @@ jobs:
             --header "Authorization: Bearer $SUPABASE_SECRET_KEY" \
             --header "x-botolago-ingestion-key: $NEWS_INGESTION_TRIGGER_SECRET" \
             --data '{"job":"gnews"}')
-          export GATE4_RATINGS_STATUS="$ratings_status" GATE4_NEWS_STATUS="$news_status"
+          export GATE4_RATINGS_STATUS="$ratings_status" GATE4_CREST_STATUS="$crest_status" GATE4_NEWS_STATUS="$news_status"
           python - <<'PY'
           import json
           import os
@@ -206,11 +227,15 @@ jobs:
 
           if os.environ["GATE4_RATINGS_STATUS"] != "200":
               raise SystemExit(f"RATINGS_HTTP_{os.environ['GATE4_RATINGS_STATUS']}")
+          if os.environ["GATE4_CREST_STATUS"] != "200":
+              raise SystemExit(f"CRESTS_HTTP_{os.environ['GATE4_CREST_STATUS']}")
           if os.environ["GATE4_NEWS_STATUS"] != "200":
               raise SystemExit(f"NEWS_HTTP_{os.environ['GATE4_NEWS_STATUS']}")
           ratings = json.loads(Path(os.environ["GATE4_RATINGS_RESPONSE"]).read_text())
+          crests = json.loads(Path(os.environ["GATE4_CREST_RESPONSE"]).read_text())
           news = json.loads(Path(os.environ["GATE4_NEWS_RESPONSE"]).read_text())
           rc = ratings.get("counters", {})
+          cc = crests.get("jobs", {}).get("teams", {})
           nc = news.get("counters", {})
           if (
               ratings.get("provider") != "sportsmonks"
@@ -224,6 +249,14 @@ jobs:
           bounds = ratings.get("ratingRange", {})
           if not (4 <= bounds.get("minimum", -1) <= bounds.get("maximum", 11) <= 10):
               raise SystemExit("INVALID_RATING_RANGE")
+          if (
+              crests.get("provider") != "sportsmonks"
+              or cc.get("fetched") != 16
+              or cc.get("validated") != 16
+              or cc.get("rejected") != 0
+              or sum(cc.get(key, -1000000) for key in ("inserted", "updated", "skipped")) != 16
+          ):
+              raise SystemExit("INVALID_CREST_CANARY")
           if (
               news.get("provider") != "gnews"
               or news.get("languages") != ["fr", "ar"]
@@ -244,6 +277,7 @@ jobs:
                   "ratingRange": ratings["ratingRange"],
                   "counters": rc,
               },
+              "crests": {"teams": cc},
               "news": {"languages": news["languages"], "counters": nc},
               "verdict": "pass",
           }
