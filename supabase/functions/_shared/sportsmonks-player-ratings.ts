@@ -463,7 +463,7 @@ function percentRanks(values: readonly number[]): readonly number[] {
     while (end < sorted.length && sorted[end].value === sorted[index].value) end += 1;
     // Equal values share their average percentile rank. Using the first tied
     // index would systematically underrate every player in a tied group.
-    const rank = ((index + end - 1) / 2) / (sorted.length - 1);
+    const rank = (index + end - 1) / 2 / (sorted.length - 1);
     for (let cursor = index; cursor < end; cursor += 1) output[sorted[cursor].index] = rank;
     index = end;
   }
