@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "requestId": "g7-historical-performance-coverage-2026-08-02-01",
+  "mode": "read_only_historical_player_performance_coverage",
+  "leagueId": 860,
+  "fixtures": [
+    { "seasonId": 26027, "fixtureId": 19489211 },
+    { "seasonId": 26027, "fixtureId": 19662879 },
+    { "seasonId": 26027, "fixtureId": 19734478 },
+    { "seasonId": 24319, "fixtureId": 19263646 },
+    { "seasonId": 24319, "fixtureId": 19334647 },
+    { "seasonId": 24319, "fixtureId": 19420617 }
+  ],
+  "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE"
+}
