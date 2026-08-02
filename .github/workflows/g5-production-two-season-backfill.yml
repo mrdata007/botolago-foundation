@@ -1,0 +1,338 @@
+name: G5 Production two-season historical backfill
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/production/g5-two-season-backfill-trigger.json"
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for the two-season backfill
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_G5_TWO_SEASON_BACKFILL
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  backfill:
+    name: Backfill completed Botola seasons 26027 and 24319
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production-admin-activation
+    env:
+      EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_G5_TWO_SEASON_BACKFILL' }}
+      EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
+      EXPECTED_PROJECT_NAME: BotolaGO Production V2
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+
+    steps:
+      - name: Enforce immutable production target
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          for value in "$SUPABASE_ACCESS_TOKEN" "$SUPABASE_SECRET_KEY" "$SPORTSMONKS_API_TOKEN"; do
+            if [[ -n "$value" ]]; then printf '::add-mask::%s\n' "$value"; fi
+          done
+          if [[ -z "$SUPABASE_ACCESS_TOKEN" || -z "$SUPABASE_SECRET_KEY" ||
+                -z "$SPORTSMONKS_API_TOKEN" ]]; then
+            echo "Protected credential injection failed before mutation."
+            exit 2
+          fi
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_G5_TWO_SEASON_BACKFILL" ||
+                "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "Immutable dispatch confirmation failed."
+            exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ||
+                "$SUPABASE_PRODUCTION_PROJECT_NAME" != "$EXPECTED_PROJECT_NAME" ||
+                "${SUPABASE_PRODUCTION_URL%/}" != "https://${EXPECTED_PROJECT_REF}.supabase.co" ]]; then
+            echo "Production project guard failed."
+            exit 2
+          fi
+          runtime_dir="$RUNNER_TEMP/botolago-g5-two-season-backfill"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "G5_BACKFILL_RUNTIME_DIR=$runtime_dir"
+            echo "G5_BACKFILL_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+          G5_CONTEXT_PATH="$evidence_dir/g5-two-season-backfill-context.json" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          output = Path(os.environ["G5_CONTEXT_PATH"])
+          output.write_text(json.dumps({
+              "schemaVersion": 1,
+              "mode": "production_two_season_historical_backfill",
+              "expectedCommit": os.environ["EXPECTED_COMMIT"],
+              "projectRef": os.environ["EXPECTED_PROJECT_REF"],
+              "requestedSeasonIds": [26027, 24319],
+              "runId": os.environ["GITHUB_RUN_ID"],
+          }, indent=2) + "\n", encoding="utf-8")
+          output.chmod(0o600)
+          PY
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+          echo "Immutable production target: PASS"
+
+      - name: Check out exact reviewed main commit
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Verify the one-time activation ticket
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemaVersion": 1,
+              "requestId": "g5-two-season-backfill-2026-08-02-03",
+              "approvedBaseCommit": "df1548aa18ffcae8f8a5dc29107eab989eadae3a",
+              "requestedSeasonIds": [26027, 24319],
+              "confirmation": "RUN_G5_TWO_SEASON_BACKFILL",
+          }
+          actual = json.loads(
+              Path("docs/production/g5-two-season-backfill-trigger.json").read_text(encoding="utf-8")
+          )
+          if actual != expected:
+              raise SystemExit("G5_ACTIVATION_TICKET_MISMATCH")
+          PY
+          read -r first_parent second_parent extra_parent \
+            <<< "$(git show -s --format=%P "$GITHUB_SHA")" || true
+          if [[ "$first_parent" != "df1548aa18ffcae8f8a5dc29107eab989eadae3a" ||
+                -z "$second_parent" || -n "${extra_parent:-}" ]]; then
+            echo "G5_ACTIVATION_PARENT_MISMATCH"
+            exit 2
+          fi
+          echo "One-time activation ticket: PASS"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install and verify reviewed runtime
+        id: quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun test \
+            scripts/backend/gate4-sanitize-command-log.test.ts \
+            scripts/backend/g5-two-season-backfill-activation.test.ts \
+            scripts/backend/sportsmonks-two-season-backfill-preflight.test.ts \
+            scripts/backend/g5-two-season-backfill-runner.test.ts \
+            supabase/functions/_shared/sportsmonks-catalog.test.ts \
+            supabase/functions/_shared/sportsmonks-fixtures.test.ts \
+            supabase/functions/_shared/sportsmonks-historical-content.test.ts \
+            supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+          bun run typecheck
+          bun run backend:migrations:check
+          bun run backend:secrets:check
+          test -x ./node_modules/.bin/supabase
+          ./node_modules/.bin/supabase --version
+
+      - name: Prove the exact two-season provider scope without writes
+        id: preflight
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun scripts/backend/sportsmonks-two-season-backfill-preflight.ts
+
+      - name: Deploy the exact reviewed football ingestion runtime
+        id: deploy
+        if: steps.preflight.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/supabase functions deploy football-ingest \
+            --project-ref "$EXPECTED_PROJECT_REF" \
+            > "$G5_BACKFILL_RUNTIME_DIR/deploy-football-ingest.raw.log" 2>&1
+
+      - name: Run the bounded two-season backfill
+        id: mutation
+        if: steps.preflight.outcome == 'success' && steps.deploy.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun scripts/backend/g5-two-season-backfill-runner.ts
+
+      - name: Preserve sanitized command evidence
+        id: command_logs
+        if: always()
+        shell: bash
+        env:
+          FOOTBALL_INGESTION_TRIGGER_SECRET: ${{ env.G5_BACKFILL_TRIGGER }}
+        run: |
+          set -euo pipefail
+          if [[ ! -d "${G5_BACKFILL_RUNTIME_DIR:-}" || ! -d "${G5_BACKFILL_EVIDENCE_DIR:-}" ]]; then
+            echo "G5_RUNTIME_NOT_INITIALIZED"
+            exit 1
+          fi
+          shopt -s nullglob
+          for source in "$G5_BACKFILL_RUNTIME_DIR"/*.raw.log; do
+            operation=$(basename "$source" .raw.log)
+            if [[ "$operation" == "deploy-football-ingest" ]]; then
+              exit_code="${{ steps.deploy.outcome == 'success' && '0' || '1' }}"
+            else
+              exit_code=$(grep -F "\"operation\": \"$operation\"" -A 1 \
+                "$G5_BACKFILL_EVIDENCE_DIR/g5-two-season-backfill-result.json" 2>/dev/null \
+                | sed -n 's/.*"exitCode": \([0-9][0-9]*\).*/\1/p' | head -n 1 || true)
+            fi
+            if [[ -z "$exit_code" ]]; then
+              echo "G5_COMMAND_EXIT_CODE_MISSING operation=$operation"
+              exit 1
+            fi
+            GATE4_COMMAND_LOG_SOURCE="$source" \
+              GATE4_COMMAND_LOG_DESTINATION="$G5_BACKFILL_EVIDENCE_DIR/${operation}.log" \
+              GATE4_COMMAND_OPERATION="$operation" \
+              GATE4_COMMAND_EXIT_CODE="$exit_code" \
+              bun scripts/backend/gate4-sanitize-command-log.ts
+          done
+          echo "Sanitized command evidence preserved."
+
+      - name: Verify evidence contains no credentials
+        id: evidence_scan
+        if: always()
+        shell: bash
+        env:
+          FOOTBALL_INGESTION_TRIGGER_SECRET: ${{ env.G5_BACKFILL_TRIGGER }}
+        run: |
+          set -euo pipefail
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$G5_BACKFILL_EVIDENCE_DIR"
+          for secret_value in \
+            "$SUPABASE_ACCESS_TOKEN" \
+            "$SUPABASE_SECRET_KEY" \
+            "$SPORTSMONKS_API_TOKEN" \
+            "${FOOTBALL_INGESTION_TRIGGER_SECRET:-}"; do
+            if [[ -n "$secret_value" ]] && grep -R -F -q -- "$secret_value" "$G5_BACKFILL_EVIDENCE_DIR"; then
+              echo "CREDENTIAL_FOUND_IN_G5_BACKFILL_EVIDENCE"
+              exit 1
+            fi
+          done
+          echo "G5 evidence credential scan: PASS"
+
+      - name: Upload sanitized backfill evidence
+        id: evidence_upload
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: g5-production-two-season-backfill-${{ github.run_id }}
+          path: ${{ steps.runtime.outputs.evidence_dir }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove protected runtime files
+        id: cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${G5_BACKFILL_RUNTIME_DIR:-}" && -d "$G5_BACKFILL_RUNTIME_DIR" ]]; then
+            find "$G5_BACKFILL_RUNTIME_DIR" -type f -exec chmod 0600 {} \;
+            find "$G5_BACKFILL_RUNTIME_DIR" -type f -delete
+            rmdir "$G5_BACKFILL_EVIDENCE_DIR" 2>/dev/null || true
+            rmdir "$G5_BACKFILL_RUNTIME_DIR" 2>/dev/null || true
+          fi
+          echo "Protected runtime files removed."
+
+      - name: Finalize two-season backfill verdict
+        if: always()
+        shell: bash
+        env:
+          QUALITY_OUTCOME: ${{ steps.quality.outcome }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          MUTATION_OUTCOME: ${{ steps.mutation.outcome }}
+          LOG_OUTCOME: ${{ steps.command_logs.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$QUALITY_OUTCOME" != "success" ||
+                "$PREFLIGHT_OUTCOME" != "success" ||
+                "$DEPLOY_OUTCOME" != "success" ||
+                "$MUTATION_OUTCOME" != "success" ||
+                "$LOG_OUTCOME" != "success" ||
+                "$SCAN_OUTCOME" != "success" ||
+                "$UPLOAD_OUTCOME" != "success" ||
+                "$CLEANUP_OUTCOME" != "success" ]]; then
+            echo "G5_PRODUCTION_TWO_SEASON_BACKFILL_FAILED"
+            exit 1
+          fi
+          echo "G5_PRODUCTION_TWO_SEASON_BACKFILL_PASS"
+
+      - name: Publish sanitized backfill status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          QUALITY_OUTCOME: ${{ steps.quality.outcome }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          MUTATION_OUTCOME: ${{ steps.mutation.outcome }}
+          LOG_OUTCOME: ${{ steps.command_logs.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$GITHUB_TOKEN"
+          state="failure"
+          description="G5 two-season production backfill failed"
+          if [[ "$QUALITY_OUTCOME" == "success" && "$PREFLIGHT_OUTCOME" == "success" &&
+                "$DEPLOY_OUTCOME" == "success" && "$MUTATION_OUTCOME" == "success" &&
+                "$LOG_OUTCOME" == "success" && "$SCAN_OUTCOME" == "success" &&
+                "$UPLOAD_OUTCOME" == "success" && "$CLEANUP_OUTCOME" == "success" ]]; then
+            state="success"
+            description="G5 two-season production backfill passed"
+          fi
+          payload=$(printf \
+            '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/g5-two-season-backfill"}' \
+            "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
+          curl --silent --show-error --fail --output /dev/null \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            --data "$payload"
