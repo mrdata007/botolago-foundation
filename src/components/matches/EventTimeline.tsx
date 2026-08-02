@@ -1,17 +1,19 @@
-import { ArrowLeftRight, CircleAlert, Goal, Square } from "lucide-react";
+import {
+  ArrowLeftRight,
+  CircleAlert,
+  Goal,
+  HeartPulse,
+  Play,
+  Square,
+  SquareStop,
+} from "lucide-react";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club } from "@/types/domain";
 import { ClubCrest } from "@/components/common/ClubCrest";
 
-/**
- * Vertical key-events timeline.
- *
- * Home events sit on the inline-start side, away events on the inline-end
- * side; because the layout is built with logical grid columns, the mirroring
- * happens automatically in RTL.
- */
+/** Provider-backed key-events timeline. Unknown team attribution stays centred. */
 export function EventTimeline({
   events,
   home,
@@ -34,11 +36,10 @@ export function EventTimeline({
   }
 
   const latestId = isLive ? events[events.length - 1]?.id : undefined;
-  const firstSecondHalf = events.find((e) => e.minute > 45)?.id;
+  const firstSecondHalf = events.find((event) => event.minute > 45)?.id;
 
   return (
     <ol className="relative grid gap-1.5">
-      {/* Centre rail */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-[var(--border-subtle)] rtl:translate-x-1/2"
@@ -48,7 +49,7 @@ export function EventTimeline({
           {event.id === firstSecondHalf && <HalfTimeDivider />}
           <EventRow
             event={event}
-            club={event.side === "home" ? home : away}
+            club={event.side === "home" ? home : event.side === "away" ? away : undefined}
             isLatest={event.id === latestId}
           />
         </li>
@@ -73,45 +74,67 @@ function HalfTimeDivider() {
 function eventIcon(type: MatchEvent["type"]) {
   switch (type) {
     case "goal":
-    case "penalty":
+    case "penalty_goal":
     case "own_goal":
+    case "missed_penalty":
       return <Goal className="h-3.5 w-3.5" aria-hidden />;
-    case "sub":
+    case "substitution":
       return <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden />;
     case "var":
       return <CircleAlert className="h-3.5 w-3.5" aria-hidden />;
+    case "injury":
+      return <HeartPulse className="h-3.5 w-3.5" aria-hidden />;
+    case "period_start":
+      return <Play className="h-3.5 w-3.5" aria-hidden />;
+    case "period_end":
+      return <SquareStop className="h-3.5 w-3.5" aria-hidden />;
     default:
       return <Square className="h-3.5 w-3.5" aria-hidden />;
   }
 }
 
-function EventRow({ event, club, isLatest }: { event: MatchEvent; club: Club; isLatest: boolean }) {
-  const { t, tr } = useI18n();
-  const isGoal = event.homeScore !== undefined;
+function EventRow({
+  event,
+  club,
+  isLatest,
+}: {
+  event: MatchEvent;
+  club?: Club;
+  isLatest: boolean;
+}) {
+  const { t } = useI18n();
+  const isGoal = ["goal", "penalty_goal", "own_goal"].includes(event.type);
   const isHome = event.side === "home";
+  const isAway = event.side === "away";
 
   const typeLabel = t(
     (
       {
         goal: "matches.event.goal",
-        penalty: "matches.event.penalty",
+        penalty_goal: "matches.event.penalty",
         own_goal: "matches.event.own_goal",
-        yellow: "matches.event.yellow",
-        red: "matches.event.red",
-        sub: "matches.event.sub",
+        missed_penalty: "matches.event.missed_penalty",
+        yellow_card: "matches.event.yellow",
+        second_yellow: "matches.event.second_yellow",
+        red_card: "matches.event.red",
+        substitution: "matches.event.sub",
         var: "matches.event.var",
+        injury: "matches.event.injury",
+        period_start: "matches.event.period_start",
+        period_end: "matches.event.period_end",
       } as const
     )[event.type],
   );
 
   const accent =
-    event.type === "red"
+    event.type === "red_card"
       ? "var(--color-live)"
-      : event.type === "yellow"
+      : event.type === "yellow_card" || event.type === "second_yellow"
         ? "var(--color-warning)"
         : isGoal
           ? "var(--brand-primary)"
           : "var(--text-muted)";
+  const minute = `${event.minute}${event.addedTime > 0 ? `+${event.addedTime}` : ""}′`;
 
   const card = (
     <div
@@ -121,38 +144,34 @@ function EventRow({ event, club, isLatest }: { event: MatchEvent; club: Club; is
           ? "border-[color:color-mix(in_oklab,var(--brand-primary)_28%,transparent)] bg-[color:color-mix(in_oklab,var(--brand-primary)_7%,var(--background-elevated))] shadow-subtle"
           : "border-[var(--border-subtle)] bg-[color:var(--background-elevated)]",
         isLatest && "ring-2 ring-[color:var(--brand-accent)]/40",
-        isHome ? "text-start" : "text-end",
+        isAway ? "text-end" : "text-start",
       )}
     >
       <div
         className={cn(
           "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em]",
-          !isHome && "flex-row-reverse",
+          isAway && "flex-row-reverse",
         )}
         style={{ color: accent }}
       >
         {eventIcon(event.type)}
         <span>{typeLabel}</span>
-        <span className="tabular-nums text-[color:var(--text-muted)]">{event.minute}′</span>
+        <span className="tabular-nums text-[color:var(--text-muted)]">{minute}</span>
       </div>
-      <div className="mt-0.5 truncate text-[13px] font-bold text-foreground">
-        {tr(event.player)}
-      </div>
-      {event.secondary && (
-        <div className="truncate text-[11px] text-[color:var(--text-secondary)]">
-          {event.type === "sub"
-            ? `${t("matches.event.sub_in")} ${tr(event.secondary)}`
-            : `${t("matches.event.assist")} ${tr(event.secondary)}`}
-        </div>
+      {event.detail && (
+        <div className="mt-0.5 text-[12px] font-semibold text-foreground">{event.detail}</div>
       )}
-      {isGoal && (
-        <div className="mt-1 inline-flex items-center gap-1.5 font-mono text-[11px] font-black tabular-nums text-[color:var(--brand-primary)]">
+      {club && (
+        <div className={cn("mt-1 flex", isAway && "justify-end")}>
           <ClubCrest club={club} size="sm" />
-          {event.homeScore}–{event.awayScore}
         </div>
       )}
     </div>
   );
+
+  if (!isHome && !isAway) {
+    return <div className="relative mx-auto w-[min(100%,22rem)]">{card}</div>;
+  }
 
   return (
     <div className="relative grid grid-cols-[1fr_28px_1fr] items-center gap-2">

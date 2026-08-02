@@ -10,13 +10,11 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import { MatchTabs, type MatchTabKey } from "@/components/matches/MatchTabs";
 import { EventTimeline } from "@/components/matches/EventTimeline";
 import { StatComparison } from "@/components/matches/StatComparison";
-import { MomentumChart } from "@/components/matches/MomentumChart";
-import { buildMatchLiveDetail } from "@/services/match-live";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +56,7 @@ function MatchDetailPage() {
 
   const h2h = detailQ.data?.headToHead ?? [];
 
-  const live = useMemo(() => (match ? buildMatchLiveDetail(match) : null), [match]);
+  const live = detailQ.data?.live;
 
   const related = useMemo(() => {
     if (!match || !articlesQ.data) return [];
@@ -71,6 +69,16 @@ function MatchDetailPage() {
     return (
       <AppShell backgroundVariant="matches">
         <LoadingState />
+      </AppShell>
+    );
+  }
+
+  if (detailQ.isError) {
+    return (
+      <AppShell backgroundVariant="matches">
+        <div className="mt-8">
+          <ErrorState onRetry={() => void detailQ.refetch()} />
+        </div>
       </AppShell>
     );
   }
@@ -193,7 +201,6 @@ function MatchDetailPage() {
             stats={live.stats}
             homeName={tr(home.shortName)}
             awayName={tr(away.shortName)}
-            available={live.elapsed > 0}
           />
         )}
 
@@ -203,15 +210,9 @@ function MatchDetailPage() {
               title={t("matches.detail.momentum_title")}
               eyebrow={t("matches.detail.tab.momentum")}
             />
-            <p className="-mt-2 mb-3 text-xs text-[color:var(--text-secondary)]">
-              {t("matches.detail.momentum_desc")}
-            </p>
-            <MomentumChart
-              points={live.momentum}
-              events={live.events}
-              homeName={tr(home.shortName)}
-              awayName={tr(away.shortName)}
-            />
+            <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
+              {t("matches.detail.momentum_unavailable")}
+            </div>
           </div>
         )}
 
