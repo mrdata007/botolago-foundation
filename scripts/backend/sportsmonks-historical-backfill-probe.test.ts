@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { BOTOLA_PRO_LEAGUE_ID, type ProbeDependencies } from "./sportsmonks-production-probe";
-import { runSportsMonksHistoricalBackfillProbe } from "./sportsmonks-historical-backfill-probe";
+import {
+  HistoricalBackfillProbeError,
+  runSportsMonksHistoricalBackfillProbe,
+} from "./sportsmonks-historical-backfill-probe";
 
 const TOKEN = "sportsmonks-test-token-1234567890";
 const COMMIT = "c".repeat(40);
@@ -144,8 +147,9 @@ describe("SportsMonks last-three-completed-seasons probe", () => {
   });
 
   it("fails closed when fewer than three completed seasons are available", async () => {
-    await expect(
-      runSportsMonksHistoricalBackfillProbe(
+    let failure: unknown;
+    try {
+      await runSportsMonksHistoricalBackfillProbe(
         { SPORTSMONKS_API_TOKEN: TOKEN, EXPECTED_COMMIT: COMMIT },
         {
           fetch: async () =>
@@ -159,8 +163,25 @@ describe("SportsMonks last-three-completed-seasons probe", () => {
             }),
           now: () => NOW,
         },
-      ),
-    ).rejects.toThrow("three_completed_seasons_not_available");
+      );
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(HistoricalBackfillProbeError);
+    expect((failure as HistoricalBackfillProbeError).message).toBe(
+      "three_completed_seasons_not_available",
+    );
+    expect((failure as HistoricalBackfillProbeError).discoveredSeasons).toEqual(
+      completedSeasons.slice(0, 2).map((season) => ({
+        id: season.id,
+        leagueId: season.league_id,
+        name: season.name,
+        current: false,
+        finished: true,
+        startingAt: season.starting_at,
+        endingAt: season.ending_at,
+      })),
+    );
   });
 
   it("fails closed when a fixture sample escapes its season", async () => {
