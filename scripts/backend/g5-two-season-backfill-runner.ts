@@ -71,36 +71,37 @@ function persisted(counts: Counters): number {
   return counts.inserted + counts.updated + counts.skipped;
 }
 
-export function validateCatalogResponse(
+type BackfillCatalogJob = "seasons" | "rounds" | "teams";
+
+export function catalogJobsForSeason(seasonId: number): readonly BackfillCatalogJob[] {
+  if (seasonId === 26_027) return [];
+  if (seasonId === 24_319) return ["seasons", "rounds", "teams"];
+  throw new BackfillRunnerError("unsupported_catalog_season");
+}
+
+export function validateCatalogJobResponse(
   value: unknown,
-  expectedRounds: number,
-  expectedTeams: number,
-): Record<string, Counters> {
+  job: BackfillCatalogJob,
+  expectedCount: number,
+): Counters {
   const response = object(value, "invalid_catalog_response");
   if (response.provider !== "sportsmonks") {
     throw new BackfillRunnerError("catalog_provider_mismatch");
   }
   const jobs = object(response.jobs, "invalid_catalog_jobs");
-  const expected = {
-    competitions: 1,
-    seasons: 1,
-    rounds: expectedRounds,
-    teams: expectedTeams,
-  };
-  const result: Record<string, Counters> = {};
-  for (const [job, count] of Object.entries(expected)) {
-    const values = counters(jobs[job], `invalid_catalog_${job}_counts`);
-    if (
-      values.fetched !== count ||
-      values.validated !== count ||
-      values.rejected !== 0 ||
-      persisted(values) !== count
-    ) {
-      throw new BackfillRunnerError(`catalog_${job}_count_mismatch`);
-    }
-    result[job] = values;
+  if (Object.keys(jobs).length !== 1 || !(job in jobs)) {
+    throw new BackfillRunnerError("catalog_job_scope_mismatch");
   }
-  return result;
+  const values = counters(jobs[job], `invalid_catalog_${job}_counts`);
+  if (
+    values.fetched !== expectedCount ||
+    values.validated !== expectedCount ||
+    values.rejected !== 0 ||
+    persisted(values) !== expectedCount
+  ) {
+    throw new BackfillRunnerError(`catalog_${job}_count_mismatch`);
+  }
+  return values;
 }
 
 export function validateContentResponse(
@@ -435,23 +436,29 @@ async function main(): Promise<void> {
         throw new BackfillRunnerError(`season_${season.id}_configuration_failed`);
       }
 
-      const catalog = await invoke(
-        `season-${season.id}-catalog`,
-        "catalog",
-        { job: "catalog", pageSize: 50, maxPages: 20 },
-        evidenceDirectory,
-        trigger,
-      );
-      item.catalog = validateCatalogResponse(
-        catalog.response,
-        season.rounds,
-        season.teamIds.length,
-      );
-      requests.push({
-        operation: catalog.operation,
-        httpStatus: catalog.httpStatus,
-        responseFile: catalog.responseFile,
-      });
+      const catalogJobs = catalogJobsForSeason(season.id);
+      const catalogEvidence: JsonRecord = {
+        competitions: "existing_production_dependency",
+      };
+      item.catalog = catalogEvidence;
+      if (catalogJobs.length === 0) catalogEvidence.season = "existing_production_baseline";
+      for (const job of catalogJobs) {
+        const expectedCount =
+          job === "seasons" ? 1 : job === "rounds" ? season.rounds : season.teamIds.length;
+        const catalog = await invoke(
+          `season-${season.id}-catalog-${job}`,
+          "catalog",
+          { job, pageSize: 50, maxPages: 20 },
+          evidenceDirectory,
+          trigger,
+        );
+        catalogEvidence[job] = validateCatalogJobResponse(catalog.response, job, expectedCount);
+        requests.push({
+          operation: catalog.operation,
+          httpStatus: catalog.httpStatus,
+          responseFile: catalog.responseFile,
+        });
+      }
 
       const content = await invoke(
         `season-${season.id}-historical-content`,

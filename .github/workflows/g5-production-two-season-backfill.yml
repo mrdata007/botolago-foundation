@@ -121,8 +121,8 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "g5-two-season-backfill-2026-08-02-02",
-              "approvedBaseCommit": "9f48f8beecda2be215a35bb4bba1bda6325331a3",
+              "requestId": "g5-two-season-backfill-2026-08-02-03",
+              "approvedBaseCommit": "df1548aa18ffcae8f8a5dc29107eab989eadae3a",
               "requestedSeasonIds": [26027, 24319],
               "confirmation": "RUN_G5_TWO_SEASON_BACKFILL",
           }
@@ -134,7 +134,7 @@ jobs:
           PY
           read -r first_parent second_parent extra_parent \
             <<< "$(git show -s --format=%P "$GITHUB_SHA")" || true
-          if [[ "$first_parent" != "9f48f8beecda2be215a35bb4bba1bda6325331a3" ||
+          if [[ "$first_parent" != "df1548aa18ffcae8f8a5dc29107eab989eadae3a" ||
                 -z "$second_parent" || -n "${extra_parent:-}" ]]; then
             echo "G5_ACTIVATION_PARENT_MISMATCH"
             exit 2
@@ -210,23 +210,22 @@ jobs:
           shopt -s nullglob
           for source in "$G5_BACKFILL_RUNTIME_DIR"/*.raw.log; do
             operation=$(basename "$source" .raw.log)
+            if [[ "$operation" == "deploy-football-ingest" ]]; then
+              exit_code="${{ steps.deploy.outcome == 'success' && '0' || '1' }}"
+            else
+              exit_code=$(grep -F "\"operation\": \"$operation\"" -A 1 \
+                "$G5_BACKFILL_EVIDENCE_DIR/g5-two-season-backfill-result.json" 2>/dev/null \
+                | sed -n 's/.*"exitCode": \([0-9][0-9]*\).*/\1/p' | head -n 1 || true)
+            fi
+            if [[ -z "$exit_code" ]]; then
+              echo "G5_COMMAND_EXIT_CODE_MISSING operation=$operation"
+              exit 1
+            fi
             GATE4_COMMAND_LOG_SOURCE="$source" \
               GATE4_COMMAND_LOG_DESTINATION="$G5_BACKFILL_EVIDENCE_DIR/${operation}.log" \
               GATE4_COMMAND_OPERATION="$operation" \
-              GATE4_COMMAND_EXIT_CODE="$(grep -F "\"operation\": \"$operation\"" -A 1 \
-                "$G5_BACKFILL_EVIDENCE_DIR/g5-two-season-backfill-result.json" 2>/dev/null \
-                | sed -n 's/.*"exitCode": \([0-9][0-9]*\).*/\1/p' | head -n 1 || true)" \
-              bun scripts/backend/gate4-sanitize-command-log.ts || {
-                if [[ "$operation" == "deploy-football-ingest" ]]; then
-                  GATE4_COMMAND_LOG_SOURCE="$source" \
-                    GATE4_COMMAND_LOG_DESTINATION="$G5_BACKFILL_EVIDENCE_DIR/${operation}.log" \
-                    GATE4_COMMAND_OPERATION="$operation" \
-                    GATE4_COMMAND_EXIT_CODE="${{ steps.deploy.outcome == 'success' && '0' || '1' }}" \
-                    bun scripts/backend/gate4-sanitize-command-log.ts
-                else
-                  exit 1
-                fi
-              }
+              GATE4_COMMAND_EXIT_CODE="$exit_code" \
+              bun scripts/backend/gate4-sanitize-command-log.ts
           done
           echo "Sanitized command evidence preserved."
 
