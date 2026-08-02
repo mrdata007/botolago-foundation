@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-const APPROVED_BASE_COMMIT = "802f929e84635369d8c4f35d3777ee30184547be";
+const APPROVED_BASE_COMMIT = "9f48f8beecda2be215a35bb4bba1bda6325331a3";
 const TICKET_PATH = "docs/production/g5-two-season-backfill-trigger.json";
 const WORKFLOW_PATH = ".github/workflows/g5-production-two-season-backfill.yml";
 
@@ -9,7 +9,7 @@ describe("G5 one-time two-season backfill activation", () => {
     const ticket = await Bun.file(TICKET_PATH).json();
     expect(ticket).toEqual({
       schemaVersion: 1,
-      requestId: "g5-two-season-backfill-2026-08-02-01",
+      requestId: "g5-two-season-backfill-2026-08-02-02",
       approvedBaseCommit: APPROVED_BASE_COMMIT,
       requestedSeasonIds: [26_027, 24_319],
       confirmation: "RUN_G5_TWO_SEASON_BACKFILL",
@@ -19,6 +19,8 @@ describe("G5 one-time two-season backfill activation", () => {
     expect(workflow).toContain(`      - "${TICKET_PATH}"`);
     expect(workflow).toContain(`"approvedBaseCommit": "${APPROVED_BASE_COMMIT}"`);
     expect(workflow).toContain(`"$first_parent" != "${APPROVED_BASE_COMMIT}"`);
+    expect(workflow).toContain("fetch-depth: 2");
+    expect(workflow).toContain(`<<< "$(git show -s --format=%P "$GITHUB_SHA")" || true`);
     expect(workflow).toContain("GITHUB_WORKFLOW_RERUN_FORBIDDEN");
   });
 });
