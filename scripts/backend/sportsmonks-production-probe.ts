@@ -11,6 +11,7 @@ const MAX_ATTEMPTS = 3;
 const MAX_RETRY_AFTER_MS = 30_000;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/;
+const ERROR_CODE_PATTERN = /^[a-z][a-z0-9_]{1,79}$/;
 
 type JsonRecord = Record<string, unknown>;
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -69,6 +70,16 @@ export interface SportsMonksProbeEvidence {
   readonly verdict: "pass";
 }
 
+export interface SportsMonksProbeFailureEvidence {
+  readonly schemaVersion: 1;
+  readonly provider: "sportsmonks";
+  readonly mode: "read_only_current_season_readiness";
+  readonly expectedCommit: string | null;
+  readonly observedAt: string;
+  readonly verdict: "fail";
+  readonly errorCode: string;
+}
+
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -119,6 +130,23 @@ export function requireSportsMonksToken(value: string | undefined): string {
     throw new SportsMonksProbeError("invalid_sportsmonks_token");
   }
   return value;
+}
+
+export function sportsMonksProbeFailureEvidence(
+  error: unknown,
+  expectedCommit: string | undefined,
+  observedAt = new Date(),
+): SportsMonksProbeFailureEvidence {
+  const rawCode = error instanceof SportsMonksProbeError ? error.code : "unexpected_probe_failure";
+  return {
+    schemaVersion: 1,
+    provider: "sportsmonks",
+    mode: "read_only_current_season_readiness",
+    expectedCommit: COMMIT_PATTERN.test(expectedCommit ?? "") ? expectedCommit! : null,
+    observedAt: observedAt.toISOString(),
+    verdict: "fail",
+    errorCode: ERROR_CODE_PATTERN.test(rawCode) ? rawCode : "unexpected_probe_failure",
+  };
 }
 
 function requireCommit(value: string | undefined): string {
@@ -397,9 +425,15 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch((error: unknown) => {
-    const code = error instanceof SportsMonksProbeError ? error.code : "unexpected_probe_failure";
-    console.error(`SPORTSMONKS_PRODUCTION_PROBE_FAIL code=${code}`);
+  main().catch(async (error: unknown) => {
+    const evidence = sportsMonksProbeFailureEvidence(error, process.env.EXPECTED_COMMIT);
+    const evidenceDirectory = process.env.GATE2B_EVIDENCE_DIR?.trim();
+    if (evidenceDirectory) {
+      const outputPath = resolve(evidenceDirectory, "sportsmonks-production-probe-failure.json");
+      await Bun.write(outputPath, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 });
+      await chmod(outputPath, 0o600);
+    }
+    console.error(`SPORTSMONKS_PRODUCTION_PROBE_FAIL code=${evidence.errorCode}`);
     process.exitCode = 1;
   });
 }
