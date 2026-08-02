@@ -20,7 +20,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
-import { EmptyState } from "@/components/common/States";
+import { EmptyState, ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { useSavedArticles } from "@/lib/saved-articles";
 import type { Article, ArticleCategory } from "@/types/domain";
@@ -98,6 +98,7 @@ function NewsPage() {
   });
 
   const isLoading = allQ.isLoading || leadQ.isLoading;
+  const isError = allQ.isError || leadQ.isError;
   const list = useMemo(() => allQ.data ?? [], [allQ.data]);
   const lead = leadQ.data;
 
@@ -218,6 +219,15 @@ function NewsPage() {
         <div className="mt-4 space-y-4">
           <ArticleCardSkeleton variant="lead" />
           <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+        </div>
+      ) : isError ? (
+        <div className="mt-4">
+          <ErrorState
+            onRetry={() => {
+              void allQ.refetch();
+              void leadQ.refetch();
+            }}
+          />
         </div>
       ) : filteredForTab ? (
         <Section index={1}>
