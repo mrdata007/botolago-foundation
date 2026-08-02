@@ -123,6 +123,7 @@ jobs:
           set -euo pipefail
           bun install --frozen-lockfile
           bun test \
+            scripts/backend/gate4-sanitize-command-log.test.ts \
             scripts/backend/write-gate4-function-secrets.test.ts \
             supabase/functions/_shared/gnews.test.ts \
             supabase/functions/_shared/sportsmonks-catalog.test.ts \
@@ -139,43 +140,48 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sanitize_log() {
-            GATE4_LOG_PATH="$1" python - <<'PY'
-          import os
-          from pathlib import Path
+          run_and_preserve_log() {
+            local operation="$1"
+            local raw_name="$2"
+            local evidence_name="$3"
+            shift 3
+            local raw_path="$GATE4_RUNTIME_DIR/$raw_name"
+            local evidence_path="$GATE4_EVIDENCE_DIR/$evidence_name"
+            local exit_code
 
-          path = Path(os.environ["GATE4_LOG_PATH"])
-          content = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else "log unavailable"
-          for name in (
-              "SUPABASE_ACCESS_TOKEN", "SUPABASE_SECRET_KEY", "SUPABASE_DB_PASSWORD",
-              "SPORTSMONKS_API_TOKEN", "GNEWS_API_KEY", "NEWS_INGESTION_TRIGGER_SECRET",
-          ):
-              value = os.environ.get(name, "")
-              if value:
-                  content = content.replace(value, "***")
-          print("\n".join(content.splitlines()[-80:]))
-          PY
+            set +e
+            "$@" > "$raw_path" 2>&1
+            exit_code=$?
+            set -e
+
+            GATE4_COMMAND_LOG_SOURCE="$raw_path" \
+              GATE4_COMMAND_LOG_DESTINATION="$evidence_path" \
+              GATE4_COMMAND_OPERATION="$operation" \
+              GATE4_COMMAND_EXIT_CODE="$exit_code" \
+              bun scripts/backend/gate4-sanitize-command-log.ts
+            return "$exit_code"
           }
-          if ! ./node_modules/.bin/supabase link \
+
+          if ! run_and_preserve_log \
+            project-link project-link.raw.log project-link.log \
+            ./node_modules/.bin/supabase link \
             --project-ref "$EXPECTED_PROJECT_REF" \
-            --password "$SUPABASE_DB_PASSWORD" \
-            > "$GATE4_RUNTIME_DIR/project-link.log" 2>&1; then
+            --password "$SUPABASE_DB_PASSWORD"; then
             echo "Supabase project link failed."
-            sanitize_log "$GATE4_RUNTIME_DIR/project-link.log"
             exit 1
           fi
-          if ! ./node_modules/.bin/supabase db push --linked \
-            --password "$SUPABASE_DB_PASSWORD" --dry-run \
-            > "$GATE4_RUNTIME_DIR/db-push-dry-run.log" 2>&1; then
+          if ! run_and_preserve_log \
+            db-push-dry-run db-push-dry-run.raw.log db-push-dry-run.log \
+            ./node_modules/.bin/supabase db push --linked \
+            --password "$SUPABASE_DB_PASSWORD" --dry-run; then
             echo "Supabase migration dry-run failed."
-            sanitize_log "$GATE4_RUNTIME_DIR/db-push-dry-run.log"
             exit 1
           fi
-          if ! ./node_modules/.bin/supabase db push --linked \
-            --password "$SUPABASE_DB_PASSWORD" \
-            > "$GATE4_RUNTIME_DIR/db-push.log" 2>&1; then
+          if ! run_and_preserve_log \
+            db-push db-push.raw.log db-push.log \
+            ./node_modules/.bin/supabase db push --linked \
+            --password "$SUPABASE_DB_PASSWORD"; then
             echo "Supabase migration apply failed."
-            sanitize_log "$GATE4_RUNTIME_DIR/db-push.log"
             exit 1
           fi
 
@@ -184,12 +190,44 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./node_modules/.bin/supabase functions deploy football-ingest \
-            --project-ref "$EXPECTED_PROJECT_REF" \
-            > "$GATE4_RUNTIME_DIR/football-deploy.log" 2>&1
-          ./node_modules/.bin/supabase functions deploy news-ingest \
-            --project-ref "$EXPECTED_PROJECT_REF" \
-            > "$GATE4_RUNTIME_DIR/news-deploy.log" 2>&1
+          run_and_preserve_log() {
+            local operation="$1"
+            local raw_name="$2"
+            local evidence_name="$3"
+            shift 3
+            local raw_path="$GATE4_RUNTIME_DIR/$raw_name"
+            local evidence_path="$GATE4_EVIDENCE_DIR/$evidence_name"
+            local exit_code
+
+            set +e
+            "$@" > "$raw_path" 2>&1
+            exit_code=$?
+            set -e
+
+            GATE4_COMMAND_LOG_SOURCE="$raw_path" \
+              GATE4_COMMAND_LOG_DESTINATION="$evidence_path" \
+              GATE4_COMMAND_OPERATION="$operation" \
+              GATE4_COMMAND_EXIT_CODE="$exit_code" \
+              bun scripts/backend/gate4-sanitize-command-log.ts
+            return "$exit_code"
+          }
+
+          if ! run_and_preserve_log \
+            functions-deploy-football-ingest \
+            football-deploy.raw.log football-deploy.log \
+            ./node_modules/.bin/supabase functions deploy football-ingest \
+            --project-ref "$EXPECTED_PROJECT_REF"; then
+            echo "football-ingest deployment failed."
+            exit 1
+          fi
+          if ! run_and_preserve_log \
+            functions-deploy-news-ingest \
+            news-deploy.raw.log news-deploy.log \
+            ./node_modules/.bin/supabase functions deploy news-ingest \
+            --project-ref "$EXPECTED_PROJECT_REF"; then
+            echo "news-ingest deployment failed."
+            exit 1
+          fi
 
       - name: Install pinned function configuration
         id: secrets
@@ -213,15 +251,41 @@ jobs:
           GNEWS_MAX_RETRIES: "2"
         run: |
           set -euo pipefail
+          run_and_preserve_log() {
+            local operation="$1"
+            local raw_name="$2"
+            local evidence_name="$3"
+            shift 3
+            local raw_path="$GATE4_RUNTIME_DIR/$raw_name"
+            local evidence_path="$GATE4_EVIDENCE_DIR/$evidence_name"
+            local exit_code
+
+            set +e
+            "$@" > "$raw_path" 2>&1
+            exit_code=$?
+            set -e
+
+            GATE4_COMMAND_LOG_SOURCE="$raw_path" \
+              GATE4_COMMAND_LOG_DESTINATION="$evidence_path" \
+              GATE4_COMMAND_OPERATION="$operation" \
+              GATE4_COMMAND_EXIT_CODE="$exit_code" \
+              bun scripts/backend/gate4-sanitize-command-log.ts
+            return "$exit_code"
+          }
+
           ratings_trigger=$(openssl rand -hex 32)
           printf '::add-mask::%s\n' "$ratings_trigger"
           echo "GATE4_RATINGS_TRIGGER=$ratings_trigger" >> "$GITHUB_ENV"
           export FOOTBALL_INGESTION_TRIGGER_SECRET="$ratings_trigger"
           bun scripts/backend/write-gate4-function-secrets.ts
-          ./node_modules/.bin/supabase secrets set \
+          if ! run_and_preserve_log \
+            secrets-set secrets-set.raw.log secrets-set.log \
+            ./node_modules/.bin/supabase secrets set \
             --project-ref "$EXPECTED_PROJECT_REF" \
-            --env-file "$GATE4_SECRET_FILE" \
-            > "$GATE4_RUNTIME_DIR/secrets-set.log" 2>&1
+            --env-file "$GATE4_SECRET_FILE"; then
+            echo "Pinned function configuration installation failed."
+            exit 1
+          fi
           echo "installed=true" >> "$GITHUB_OUTPUT"
 
       - name: Run bounded ratings and GNews canaries
