@@ -6,7 +6,7 @@ import { newsService } from "@/services/news";
 import { FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Trans } from "@/components/common/Trans";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
@@ -103,7 +103,14 @@ function FantasyHub() {
       </div>
 
       <div className="mt-4">
-        {summary.data && gw.data ? (
+        {summary.isError || gw.isError ? (
+          <ErrorState
+            onRetry={() => {
+              void summary.refetch();
+              void gw.refetch();
+            }}
+          />
+        ) : summary.data && gw.data ? (
           <FantasySummaryCard summary={summary.data} gw={gw.data} />
         ) : summary.isSuccess && summary.data === null ? (
           <Link
@@ -148,7 +155,14 @@ function FantasyHub() {
       </div>
 
       <SectionHeader title={t("fantasy.injury_alerts")} />
-      {alerts.data && trending.data ? (
+      {alerts.isError || trending.isError ? (
+        <ErrorState
+          onRetry={() => {
+            void alerts.refetch();
+            void trending.refetch();
+          }}
+        />
+      ) : alerts.data && trending.data ? (
         <FantasyAlertList alerts={alerts.data} players={trending.data} />
       ) : (
         <LoadingState />
@@ -156,9 +170,13 @@ function FantasyHub() {
 
       <SectionHeader title={t("fantasy.recent_news")} />
       <div className="grid gap-3">
-        {articles.data?.slice(0, 2).map((a) => (
-          <ArticleCard key={a.id} article={a} />
-        ))}
+        {articles.isError ? (
+          <ErrorState onRetry={() => void articles.refetch()} />
+        ) : articles.isLoading ? (
+          <LoadingState />
+        ) : (
+          articles.data?.slice(0, 2).map((a) => <ArticleCard key={a.id} article={a} />)
+        )}
       </div>
 
       <SectionHeader
@@ -166,9 +184,13 @@ function FantasyHub() {
         action={<TrendingUp className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />}
       />
       <div className="grid gap-2">
-        {trending.data?.map((p) => (
-          <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} />
-        ))}
+        {trending.isError ? (
+          <ErrorState onRetry={() => void trending.refetch()} />
+        ) : trending.isLoading ? (
+          <LoadingState />
+        ) : (
+          trending.data?.map((p) => <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} />)
+        )}
       </div>
 
       <SectionHeader
@@ -183,32 +205,38 @@ function FantasyHub() {
         }
       />
       <div className="grid gap-2">
-        {leagues.data?.map((l) => (
-          <Link
-            key={l.id}
-            to="/fantasy/leagues/$leagueId"
-            params={{ leagueId: l.id }}
-            className="glass-surface glass-regular flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] px-3 py-3"
-          >
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-sm font-black text-white">
-              <Trophy className="h-4 w-4" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {l.members} {t("fantasy.leagues.members")}
+        {leagues.isError ? (
+          <ErrorState onRetry={() => void leagues.refetch()} />
+        ) : leagues.isLoading ? (
+          <LoadingState />
+        ) : (
+          leagues.data?.map((l) => (
+            <Link
+              key={l.id}
+              to="/fantasy/leagues/$leagueId"
+              params={{ leagueId: l.id }}
+              className="glass-surface glass-regular flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] px-3 py-3"
+            >
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-sm font-black text-white">
+                <Trophy className="h-4 w-4" aria-hidden />
               </div>
-            </div>
-            <div className="text-end">
-              <div className="text-sm font-black tabular-nums">
-                {l.rank === null ? "—" : `#${l.rank}`}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {l.members} {t("fantasy.leagues.members")}
+                </div>
               </div>
-              {l.rank !== null && (
-                <RankChangeIndicator rank={l.rank} previousRank={l.previousRank ?? l.rank} />
-              )}
-            </div>
-          </Link>
-        ))}
+              <div className="text-end">
+                <div className="text-sm font-black tabular-nums">
+                  {l.rank === null ? "—" : `#${l.rank}`}
+                </div>
+                {l.rank !== null && (
+                  <RankChangeIndicator rank={l.rank} previousRank={l.previousRank ?? l.rank} />
+                )}
+              </div>
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
