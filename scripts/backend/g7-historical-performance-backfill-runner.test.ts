@@ -20,6 +20,17 @@ describe("G7 historical performance production response validation", () => {
         artifactId: 8_838_423_340,
         failureCode: "season-26027-performance-batch-01_mapping_not_found",
       },
+      diagnosticOf: {
+        runId: 30_767_229_746,
+        artifactId: 8_839_345_194,
+        failureCode: "season-26027-performance-batch-02_historical_fixture_coverage_incomplete",
+      },
+      coverageDiagnostics: {
+        providerPayloadIncluded: false,
+        fixtureIdIncluded: true,
+        boundedCountsIncluded: true,
+        failedInvariantsIncluded: true,
+      },
       mappingQuarantine: {
         unmappedPlayerRows: "exclude",
         requiredMappedStartersPerFixture: 22,

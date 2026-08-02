@@ -372,6 +372,18 @@ async function main(): Promise<void> {
       artifactSha256: "88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc",
       failureCode: "season-26027-performance-batch-01_mapping_not_found",
     },
+    diagnosticOf: {
+      runId: 30_767_229_746,
+      artifactId: 8_839_345_194,
+      artifactSha256: "10fa610f2e606c42f7b40bbf13a1b1c33927f168c78f2e3a08c9565a84cddd44",
+      failureCode: "season-26027-performance-batch-02_historical_fixture_coverage_incomplete",
+    },
+    coverageDiagnostics: {
+      providerPayloadIncluded: false,
+      fixtureIdIncluded: true,
+      boundedCountsIncluded: true,
+      failedInvariantsIncluded: true,
+    },
     mappingQuarantine: {
       unmappedPlayerRows: "exclude",
       requiredMappedStartersPerFixture: 22,
