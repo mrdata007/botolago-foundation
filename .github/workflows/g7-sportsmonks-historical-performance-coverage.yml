@@ -1,0 +1,248 @@
+name: G7 SportsMonks historical performance coverage
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for the read-only provider probe
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_G7_HISTORICAL_PERFORMANCE_PROBE
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-g7-historical-performance-coverage
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  probe:
+    name: Verify completed-season player performance coverage
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-football-ingestion
+    env:
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+
+    steps:
+      - name: Initialize protected read-only runtime
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_G7_HISTORICAL_PERFORMANCE_PROBE" ||
+                "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "Immutable read-only probe confirmation failed."
+            exit 2
+          fi
+          runtime_dir="$RUNNER_TEMP/botolago-g7-performance"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          {
+            echo "G7_PERFORMANCE_RUNTIME_DIR=$runtime_dir"
+            echo "G7_PERFORMANCE_EVIDENCE_DIR=$evidence_dir"
+          } >> "$GITHUB_ENV"
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+          echo "Read-only provider target guard: PASS"
+
+      - name: Check out the exact reviewed main commit
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Verify the reviewed probe ticket
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemaVersion": 1,
+              "requestId": "g7-historical-performance-coverage-2026-08-02-01",
+              "mode": "read_only_historical_player_performance_coverage",
+              "leagueId": 860,
+              "fixtures": [
+                  {"seasonId": 26027, "fixtureId": 19489211},
+                  {"seasonId": 26027, "fixtureId": 19662879},
+                  {"seasonId": 26027, "fixtureId": 19734478},
+                  {"seasonId": 24319, "fixtureId": 19263646},
+                  {"seasonId": 24319, "fixtureId": 19334647},
+                  {"seasonId": 24319, "fixtureId": 19420617},
+              ],
+              "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE",
+          }
+          path = Path("docs/production/g7-historical-performance-probe-trigger.json")
+          if json.loads(path.read_text(encoding="utf-8")) != expected:
+              raise SystemExit("INVALID_G7_HISTORICAL_PERFORMANCE_TICKET")
+          print("Reviewed historical performance ticket: PASS")
+          PY
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Validate the no-write performance probe
+        id: quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun test \
+            scripts/backend/sportsmonks-historical-performance-probe.test.ts \
+            scripts/backend/sportsmonks-production-probe.test.ts
+          bun run backend:secrets:check
+
+      - name: Query fixed completed-season fixture samples
+        id: performance_probe
+        continue-on-error: true
+        shell: bash
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          bun scripts/backend/sportsmonks-historical-performance-probe.ts
+
+      - name: Classify preseason derivation coverage
+        id: coverage
+        if: always() && steps.performance_probe.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["G7_PERFORMANCE_EVIDENCE_DIR"]) / "sportsmonks-historical-performance.json"
+          evidence = json.loads(path.read_text(encoding="utf-8"))
+          usable = evidence["usableForPreseasonDerivation"]
+          if not isinstance(usable, bool):
+              raise SystemExit("INVALID_HISTORICAL_PERFORMANCE_COVERAGE")
+          for season in evidence["seasons"]:
+              print(
+                  f"season={season['seasonId']} samples={season['sampledFixtures']} "
+                  f"lineups={season['fixturesWithLineups']} "
+                  f"details={season['fixturesWithPlayerDetails']} "
+                  f"fantasyDetails={season['fixturesWithFantasyDetails']}"
+              )
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"usable={'true' if usable else 'false'}\n")
+          print(f"Historical performance usable={str(usable).lower()}")
+          PY
+
+      - name: Verify evidence contains no credential patterns
+        id: evidence_scan
+        if: always() && steps.runtime.outcome == 'success' && steps.checkout.outcome == 'success'
+        shell: bash
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$G7_PERFORMANCE_EVIDENCE_DIR"
+          if [[ -n "$SPORTSMONKS_API_TOKEN" ]] &&
+             grep -R -F -q -- "$SPORTSMONKS_API_TOKEN" "$G7_PERFORMANCE_EVIDENCE_DIR"; then
+            echo "SPORTSMONKS_CREDENTIAL_FOUND_IN_G7_EVIDENCE"
+            exit 1
+          fi
+          echo "SportsMonks credential scan: PASS"
+
+      - name: Upload sanitized historical performance evidence
+        id: evidence_upload
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: g7-historical-performance-${{ github.run_id }}
+          path: ${{ steps.runtime.outputs.evidence_dir }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove protected runtime files
+        id: cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${G7_PERFORMANCE_RUNTIME_DIR:-}" && -d "$G7_PERFORMANCE_RUNTIME_DIR" ]]; then
+            find "$G7_PERFORMANCE_RUNTIME_DIR" -type f -exec chmod 0600 {} \;
+            find "$G7_PERFORMANCE_RUNTIME_DIR" -type f -delete
+            rmdir "$G7_PERFORMANCE_EVIDENCE_DIR" 2>/dev/null || true
+            rmdir "$G7_PERFORMANCE_RUNTIME_DIR" 2>/dev/null || true
+          fi
+
+      - name: Finalize historical performance verdict
+        if: always()
+        shell: bash
+        env:
+          QUALITY_OUTCOME: ${{ steps.quality.outcome }}
+          PROBE_OUTCOME: ${{ steps.performance_probe.outcome }}
+          COVERAGE_OUTCOME: ${{ steps.coverage.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$QUALITY_OUTCOME" != "success" || "$PROBE_OUTCOME" != "success" ||
+                "$COVERAGE_OUTCOME" != "success" || "$SCAN_OUTCOME" != "success" ||
+                "$UPLOAD_OUTCOME" != "success" || "$CLEANUP_OUTCOME" != "success" ]]; then
+            echo "G7_HISTORICAL_PERFORMANCE_PROBE_FAILED"
+            exit 1
+          fi
+          echo "G7_HISTORICAL_PERFORMANCE_PROBE_PASS"
+
+      - name: Publish sanitized historical coverage status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          QUALITY_OUTCOME: ${{ steps.quality.outcome }}
+          PROBE_OUTCOME: ${{ steps.performance_probe.outcome }}
+          COVERAGE_OUTCOME: ${{ steps.coverage.outcome }}
+          SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          PERFORMANCE_USABLE: ${{ steps.coverage.outputs.usable }}
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$GITHUB_TOKEN"
+          state="failure"
+          description="Historical SportsMonks performance probe failed"
+          if [[ "$QUALITY_OUTCOME" == "success" && "$PROBE_OUTCOME" == "success" &&
+                "$COVERAGE_OUTCOME" == "success" && "$SCAN_OUTCOME" == "success" &&
+                "$UPLOAD_OUTCOME" == "success" && "$CLEANUP_OUTCOME" == "success" ]]; then
+            state="success"
+            if [[ "$PERFORMANCE_USABLE" == "true" ]]; then
+              description="Historical player performance coverage is usable"
+            else
+              description="Historical player performance coverage is unavailable"
+            fi
+          fi
+          payload=$(printf \
+            '{"state":"%s","target_url":"https://github.com/%s/actions/runs/%s","description":"%s","context":"botolago/g7-historical-performance"}' \
+            "$state" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$description")
+          curl --silent --show-error --fail --output /dev/null \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            --data "$payload"
