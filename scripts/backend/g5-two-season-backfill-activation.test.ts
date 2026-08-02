@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-const APPROVED_BASE_COMMIT = "9f48f8beecda2be215a35bb4bba1bda6325331a3";
+const APPROVED_BASE_COMMIT = "df1548aa18ffcae8f8a5dc29107eab989eadae3a";
 const TICKET_PATH = "docs/production/g5-two-season-backfill-trigger.json";
 const WORKFLOW_PATH = ".github/workflows/g5-production-two-season-backfill.yml";
 
@@ -9,7 +9,7 @@ describe("G5 one-time two-season backfill activation", () => {
     const ticket = await Bun.file(TICKET_PATH).json();
     expect(ticket).toEqual({
       schemaVersion: 1,
-      requestId: "g5-two-season-backfill-2026-08-02-02",
+      requestId: "g5-two-season-backfill-2026-08-02-03",
       approvedBaseCommit: APPROVED_BASE_COMMIT,
       requestedSeasonIds: [26_027, 24_319],
       confirmation: "RUN_G5_TWO_SEASON_BACKFILL",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
-  validateCatalogResponse,
+  catalogJobsForSeason,
+  validateCatalogJobResponse,
   validateContentResponse,
   validateFixtureResponse,
   validateRatingsResponse,
@@ -18,21 +19,23 @@ const counts = (overrides: Record<string, number> = {}) => ({
 });
 
 describe("G5 two-season backfill response validation", () => {
+  it("skips existing catalog dependencies and scopes the new season to three jobs", () => {
+    expect(catalogJobsForSeason(26_027)).toEqual([]);
+    expect(catalogJobsForSeason(24_319)).toEqual(["seasons", "rounds", "teams"]);
+  });
+
   it("accepts exact catalog and fixture reconciliation", () => {
     expect(
-      validateCatalogResponse(
+      validateCatalogJobResponse(
         {
           provider: "sportsmonks",
           jobs: {
-            competitions: counts({ fetched: 1, validated: 1, inserted: 0, updated: 1 }),
-            seasons: counts({ fetched: 1, validated: 1, inserted: 0, updated: 1 }),
             rounds: counts({ fetched: 30, validated: 30, inserted: 0, updated: 30 }),
-            teams: counts({ inserted: 0, updated: 16 }),
           },
         },
+        "rounds",
         30,
-        16,
-      ).rounds.validated,
+      ).validated,
     ).toBe(30);
     expect(
       validateFixtureResponse(
@@ -88,18 +91,15 @@ describe("G5 two-season backfill response validation", () => {
       ),
     ).toThrow("fixture_scope_mismatch");
     expect(() =>
-      validateCatalogResponse(
+      validateCatalogJobResponse(
         {
           provider: "sportsmonks",
           jobs: {
-            competitions: counts({ fetched: 1, validated: 1, inserted: 1 }),
-            seasons: counts({ fetched: 1, validated: 1, inserted: 1 }),
             rounds: counts({ fetched: 30, validated: 29, inserted: 29, rejected: 1 }),
-            teams: counts(),
           },
         },
+        "rounds",
         30,
-        16,
       ),
     ).toThrow("catalog_rounds_count_mismatch");
   });
