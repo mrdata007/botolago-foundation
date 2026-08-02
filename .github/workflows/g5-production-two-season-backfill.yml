@@ -108,6 +108,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
+          fetch-depth: 2
 
       - name: Verify the one-time activation ticket
         if: github.event_name == 'push'
@@ -120,8 +121,8 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "g5-two-season-backfill-2026-08-02-01",
-              "approvedBaseCommit": "802f929e84635369d8c4f35d3777ee30184547be",
+              "requestId": "g5-two-season-backfill-2026-08-02-02",
+              "approvedBaseCommit": "9f48f8beecda2be215a35bb4bba1bda6325331a3",
               "requestedSeasonIds": [26027, 24319],
               "confirmation": "RUN_G5_TWO_SEASON_BACKFILL",
           }
@@ -132,8 +133,8 @@ jobs:
               raise SystemExit("G5_ACTIVATION_TICKET_MISMATCH")
           PY
           read -r first_parent second_parent extra_parent \
-            <<< "$(git show -s --format=%P "$GITHUB_SHA")"
-          if [[ "$first_parent" != "802f929e84635369d8c4f35d3777ee30184547be" ||
+            <<< "$(git show -s --format=%P "$GITHUB_SHA")" || true
+          if [[ "$first_parent" != "9f48f8beecda2be215a35bb4bba1bda6325331a3" ||
                 -z "$second_parent" || -n "${extra_parent:-}" ]]; then
             echo "G5_ACTIVATION_PARENT_MISMATCH"
             exit 2
