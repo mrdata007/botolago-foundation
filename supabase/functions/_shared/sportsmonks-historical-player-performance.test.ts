@@ -58,6 +58,14 @@ function fixturePayload(withPlaceholder = false): Record<string, unknown> {
   };
 }
 
+function incompleteStarterFixturePayload(): Record<string, unknown> {
+  const payload = fixturePayload();
+  const data = payload.data as Record<string, unknown>;
+  const lineups = data.lineups as Array<Record<string, unknown>>;
+  lineups[21] = { ...lineups[21], type_id: 12 };
+  return payload;
+}
+
 function request(body: Record<string, unknown>, key = TRIGGER): Request {
   return new Request("https://example.test/functions/v1/football-ingest", {
     method: "POST",
@@ -193,6 +201,57 @@ describe("SportsMonks completed-fixture player performances", () => {
       "ingest_historical_player_fixture_performance",
       "complete_football_ingestion",
     ]);
+  });
+
+  it("returns only bounded fixture coverage diagnostics when provider lineups are incomplete", async () => {
+    const response = await handleSportsMonksHistoricalPlayerPerformanceRequest(
+      request({
+        job: "historical_player_performances",
+        action: "ingest_batch",
+        afterFixtureExternalId: "19489214",
+        batchSize: 5,
+      }),
+      {
+        environment,
+        fetch: async () => Response.json(incompleteStarterFixturePayload()),
+        client: rpcClient((name) => {
+          if (name === "begin_historical_performance_ingestion") {
+            return "33333333-3333-4333-8333-333333333333";
+          }
+          if (name === "football_historical_performance_fixture_batch") {
+            return {
+              seasonExternalId: String(SEASON_ID),
+              expectedFixtureCount: 240,
+              items: [
+                {
+                  externalFixtureId: String(FIXTURE_ID),
+                  kickoffAt: "2025-09-13T16:00:00Z",
+                },
+              ],
+              nextCursor: null,
+              hasMore: false,
+            };
+          }
+          if (name === "complete_football_ingestion") return true;
+          throw new Error(`unexpected rpc ${name}`);
+        }),
+      },
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "historical_fixture_coverage_incomplete",
+      diagnostic: {
+        fixtureId: FIXTURE_ID,
+        lineupRowsSeen: 23,
+        validPlayerRows: 23,
+        excludedIncompleteRows: 0,
+        starterRows: 21,
+        teamCount: 2,
+        invalidDetailRows: 0,
+        failures: ["starter_rows_mismatch"],
+      },
+    });
   });
 
   it("derives v2 ratings only after exact fixture coverage is asserted by the database", async () => {

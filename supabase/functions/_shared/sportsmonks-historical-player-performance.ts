@@ -133,7 +133,10 @@ const DETAIL_KEY_BY_ID = new Map<number, keyof typeof TYPE>(
 );
 
 export class HistoricalPerformanceRuntimeError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly diagnostic?: Readonly<JsonRecord>,
+  ) {
     super(code);
     this.name = "HistoricalPerformanceRuntimeError";
   }
@@ -497,17 +500,30 @@ export async function normalizeHistoricalFixture(
   }
 
   rows.sort((left, right) => Number(left.externalPlayerId) - Number(right.externalPlayerId));
-  if (
-    fixture.lineups.length < 22 ||
-    fixture.lineups.length > 100 ||
-    rows.length < 22 ||
-    rows.length > 100 ||
-    excludedIncompleteRows > 20 ||
-    starterRows !== 22 ||
-    teamIds.size !== 2 ||
-    invalidDetailRows !== 0
-  ) {
-    throw new HistoricalPerformanceRuntimeError("historical_fixture_coverage_incomplete");
+  const coverageFailures: string[] = [];
+  if (fixture.lineups.length < 22 || fixture.lineups.length > 100) {
+    coverageFailures.push("lineup_rows_out_of_range");
+  }
+  if (rows.length < 22 || rows.length > 100) {
+    coverageFailures.push("valid_player_rows_out_of_range");
+  }
+  if (excludedIncompleteRows > 20) {
+    coverageFailures.push("incomplete_rows_limit_exceeded");
+  }
+  if (starterRows !== 22) coverageFailures.push("starter_rows_mismatch");
+  if (teamIds.size !== 2) coverageFailures.push("team_count_mismatch");
+  if (invalidDetailRows !== 0) coverageFailures.push("invalid_detail_rows_present");
+  if (coverageFailures.length > 0) {
+    throw new HistoricalPerformanceRuntimeError("historical_fixture_coverage_incomplete", {
+      fixtureId,
+      lineupRowsSeen: fixture.lineups.length,
+      validPlayerRows: rows.length,
+      excludedIncompleteRows,
+      starterRows,
+      teamCount: teamIds.size,
+      invalidDetailRows,
+      failures: coverageFailures,
+    });
   }
   const sourceVersion = `sportsmonks-fixture:${await sha256({ fixtureId, seasonId, rows })}`;
   return {
@@ -1024,6 +1040,11 @@ export async function handleSportsMonksHistoricalPlayerPerformanceRequest(
         ? error.code
         : "historical_performance_failed";
     const status = code === "provider_rate_limited" ? 429 : 503;
-    return json(status, { error: code });
+    return json(status, {
+      error: code,
+      ...(error instanceof HistoricalPerformanceRuntimeError && error.diagnostic
+        ? { diagnostic: error.diagnostic }
+        : {}),
+    });
   }
 }
