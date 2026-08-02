@@ -160,6 +160,11 @@ describe("Gate 4 canary evidence", () => {
     );
 
     expect(source).toContain('echo "GATE4_RATINGS_RESPONSE=$evidence_dir/ratings-response.json"');
+    expect(source).toContain("scripts/backend/gate4-sanitize-command-log.test.ts");
+    expect(source).toContain('GATE4_COMMAND_LOG_DESTINATION="$evidence_path"');
+    expect(source).toContain("football-deploy.raw.log football-deploy.log");
+    expect(source).toContain("news-deploy.raw.log news-deploy.log");
+    expect(source).toContain("secrets-set.raw.log secrets-set.log");
     expect(source).toContain("if: always() && steps.runtime.outcome == 'success'");
     expect(source).toContain("if: always() && steps.evidence_scan.outcome == 'success'");
     expect(scanIndex).toBeGreaterThan(0);
