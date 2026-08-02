@@ -77,9 +77,20 @@ const CREST_MIME_EXTENSIONS = {
   "image/png": "png",
   "image/webp": "webp",
 } as const;
+const SAFE_RPC_NAMES = new Set([
+  "attach_football_team_crest",
+  "begin_football_ingestion",
+  "complete_football_ingestion",
+  "ingest_football_catalog_entity",
+  "record_football_ingestion_rejection",
+]);
 
 class CatalogRuntimeError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly rpcName?: string,
+    readonly sqlState?: string,
+  ) {
     super(code);
     this.name = "CatalogRuntimeError";
   }
@@ -560,7 +571,22 @@ async function rpc(
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const result = await client.schema("api").rpc(name, args);
-  if (result.error) throw new CatalogRuntimeError("database_unavailable");
+  if (result.error) {
+    const rpcName = SAFE_RPC_NAMES.has(name) ? name : undefined;
+    const sqlState = /^[0-9A-Z]{5}$/.test(result.error.code ?? "") ? result.error.code : undefined;
+    const message = result.error.message?.trim().toUpperCase();
+    const code =
+      sqlState === "P0001" && message === "STALE_UPDATE"
+        ? "stale_update"
+        : sqlState === "P0001" && message === "MAPPING_COLLISION"
+          ? "mapping_collision"
+          : sqlState === "P0002" && message === "MAPPING_NOT_FOUND"
+            ? "mapping_not_found"
+            : sqlState === "22023"
+              ? "invalid_provider_payload"
+              : "database_unavailable";
+    throw new CatalogRuntimeError(code, rpcName, sqlState);
+  }
   return result.data;
 }
 
@@ -660,26 +686,44 @@ async function runJob(
       for (const item of result.items) {
         counts.validated += 1;
         try {
-          const outcome = ingestOutcome(
-            await rpc(dependencies.client, "ingest_football_catalog_entity", {
-              p_provider_name: "sportsmonks",
-              p_entity_type: entityType(job),
-              p_external_id: externalId(item),
-              p_entity: item,
-            }),
-          );
+          let outcome: "inserted" | "updated" | "skipped";
+          try {
+            outcome = ingestOutcome(
+              await rpc(dependencies.client, "ingest_football_catalog_entity", {
+                p_provider_name: "sportsmonks",
+                p_entity_type: entityType(job),
+                p_external_id: externalId(item),
+                p_entity: item,
+              }),
+            );
+          } catch (error) {
+            if (
+              job !== "teams" ||
+              !(error instanceof CatalogRuntimeError) ||
+              error.code !== "stale_update" ||
+              error.rpcName !== "ingest_football_catalog_entity"
+            ) {
+              throw error;
+            }
+            outcome = "skipped";
+          }
           if (job === "teams") await storeTeamCrest(item, config, dependencies);
           counts[outcome] += 1;
         } catch (error) {
           counts.rejected += 1;
           const code = error instanceof CatalogRuntimeError ? error.code : "database_unavailable";
+          const validationIssue: JsonRecord = { code };
+          if (error instanceof CatalogRuntimeError) {
+            if (error.rpcName) validationIssue.rpc_name = error.rpcName;
+            if (error.sqlState) validationIssue.sqlstate = error.sqlState;
+          }
           await rpc(dependencies.client, "record_football_ingestion_rejection", {
             p_run_id: runId,
             p_entity_type: entityType(job),
             p_external_id: externalId(item),
             p_payload_fingerprint: await fingerprint(item),
             p_error_code: code,
-            p_validation_issues: [{ code }],
+            p_validation_issues: [validationIssue],
           });
         }
       }
