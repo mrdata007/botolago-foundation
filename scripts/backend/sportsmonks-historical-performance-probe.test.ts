@@ -2,6 +2,8 @@ import { describe, expect, it } from "bun:test";
 
 import {
   HISTORICAL_PERFORMANCE_FIXTURES,
+  HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+  HISTORICAL_PERFORMANCE_REQUEST_ID,
   historicalPerformanceFailureEvidence,
   runHistoricalPerformanceProbe,
 } from "./sportsmonks-historical-performance-probe";
@@ -22,7 +24,7 @@ function fixtureResponse(fixtureId: number, withDetails = true): Response {
         {
           player_id: fixture.fixtureId + 1,
           team_id: 100,
-          position_id: 24,
+          position_id: null,
           type_id: 11,
           details: withDetails
             ? [
@@ -45,6 +47,29 @@ function fixtureResponse(fixtureId: number, withDetails = true): Response {
 }
 
 describe("SportsMonks historical performance coverage probe", () => {
+  it("anchors the repair to the preserved first-run failure", async () => {
+    const ticket = (await Bun.file(
+      "docs/production/g7-historical-performance-probe-trigger.json",
+    ).json()) as Record<string, unknown>;
+    expect(ticket).toMatchObject({
+      requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
+      repairsRun: {
+        runId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+        headSha: "21fb29e6224db136dda91430b53686360fc2f4e4",
+        artifactId: 8835025623,
+        artifactSha256: "8536a83be03a506bcd6cd67769a0865ea7043e3c60a2b14d4d92c4b1b179b6bc",
+        errorCode: "invalid_lineup_position_id",
+      },
+      confirmation: "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_REPAIR",
+    });
+
+    const workflow = await Bun.file(
+      ".github/workflows/g7-sportsmonks-historical-performance-coverage.yml",
+    ).text();
+    expect(workflow).toContain("RUN_G7_HISTORICAL_PERFORMANCE_PROBE_REPAIR");
+    expect(workflow).toContain("GITHUB_WORKFLOW_RERUN_FORBIDDEN");
+  });
+
   it("uses six fixed read-only requests and records only aggregate coverage", async () => {
     const requests: URL[] = [];
     const evidence = await runHistoricalPerformanceProbe(
@@ -66,6 +91,8 @@ describe("SportsMonks historical performance coverage probe", () => {
     expect(requests).toHaveLength(6);
     expect(evidence).toMatchObject({
       schemaVersion: 1,
+      requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
+      repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
       provider: "sportsmonks",
       mode: "read_only_historical_player_performance_coverage",
       expectedCommit: COMMIT,
@@ -147,6 +174,8 @@ describe("SportsMonks historical performance coverage probe", () => {
     );
     expect(evidence).toEqual({
       schemaVersion: 1,
+      requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
+      repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
       provider: "sportsmonks",
       mode: "read_only_historical_player_performance_coverage",
       expectedCommit: COMMIT,
