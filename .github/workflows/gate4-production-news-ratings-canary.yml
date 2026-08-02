@@ -123,6 +123,7 @@ jobs:
           set -euo pipefail
           bun install --frozen-lockfile
           bun test \
+            scripts/backend/write-gate4-function-secrets.test.ts \
             supabase/functions/_shared/gnews.test.ts \
             supabase/functions/_shared/sportsmonks-catalog.test.ts \
             supabase/functions/_shared/sportsmonks-player-ratings.test.ts
@@ -216,28 +217,7 @@ jobs:
           printf '::add-mask::%s\n' "$ratings_trigger"
           echo "GATE4_RATINGS_TRIGGER=$ratings_trigger" >> "$GITHUB_ENV"
           export FOOTBALL_INGESTION_TRIGGER_SECRET="$ratings_trigger"
-          python - <<'PY'
-          import os
-          from pathlib import Path
-
-          names = (
-              "SPORTSMONKS_API_TOKEN", "FOOTBALL_INGESTION_TRIGGER_SECRET",
-              "FOOTBALL_PROVIDER", "FOOTBALL_PROVIDER_BASE_URL",
-              "FOOTBALL_SPORTSMONKS_LEAGUE_ID", "FOOTBALL_SPORTSMONKS_SEASON_ID",
-              "FOOTBALL_SPORTSMONKS_COUNTRY_CODE",
-              "FOOTBALL_SPORTSMONKS_COMPETITION_TYPE",
-              "FOOTBALL_SPORTSMONKS_SEASON_START",
-              "FOOTBALL_SPORTSMONKS_SEASON_END",
-              "FOOTBALL_PROVIDER_TIMEOUT_MS", "FOOTBALL_PROVIDER_MAX_RETRIES",
-              "GNEWS_API_KEY",
-              "NEWS_INGESTION_TRIGGER_SECRET", "GNEWS_API_ORIGIN",
-              "GNEWS_QUERY_FR", "GNEWS_QUERY_AR", "GNEWS_PAGE_SIZE",
-              "GNEWS_TIMEOUT_MS", "GNEWS_MAX_RETRIES",
-          )
-          path = Path(os.environ["GATE4_SECRET_FILE"])
-          path.write_text("".join(f"{name}={os.environ[name]}\n" for name in names), encoding="utf-8")
-          path.chmod(0o600)
-          PY
+          bun scripts/backend/write-gate4-function-secrets.ts
           ./node_modules/.bin/supabase secrets set \
             --project-ref "$EXPECTED_PROJECT_REF" \
             --env-file "$GATE4_SECRET_FILE" \
