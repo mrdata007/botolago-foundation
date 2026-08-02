@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { FollowRepository } from "@/backend/identity/contracts";
-import { FollowService } from "./follows";
+import { FollowService, LocalFollowRepository } from "./follows";
 
 function repository(): FollowRepository & { actions: string[] } {
   const actions: string[] = [];
@@ -38,6 +38,29 @@ describe("FollowService", () => {
       requestId: "follow-test",
     }));
     expect(await service.getFollowedTeamIds()).toEqual(["10000000-0000-4000-8000-000000000001"]);
+  });
+
+  it("persists mock-mode team follows without initializing Supabase", async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+        },
+      },
+    });
+    const context = { actorId: "mock-user", requestId: "mock-follow" };
+    const repo = new LocalFollowRepository();
+    await repo.followTeam("war", context);
+    await repo.followTeam("war", context);
+    expect(
+      (await repo.listTeams({ limit: 10 }, context)).items.map((item) => item.targetId),
+    ).toEqual(["war"]);
+    await repo.unfollowTeam("war", context);
+    expect((await repo.listTeams({ limit: 10 }, context)).items).toEqual([]);
+    delete (globalThis as { window?: unknown }).window;
   });
 
   it("uses idempotent repository mutations rather than route-local state", async () => {

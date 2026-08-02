@@ -2,10 +2,18 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { supabase } from "./client";
 
+export function hasBrowserSupabaseConfig(environment: Record<string, unknown>): boolean {
+  return Boolean(environment.VITE_SUPABASE_URL && environment.VITE_SUPABASE_PUBLISHABLE_KEY);
+}
+
 // Must be registered as a global `functionMiddleware` in `src/start.ts`; otherwise
 // the browser never attaches the bearer token to serverFn RPCs.
 export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
   async ({ next }) => {
+    // Local mock mode deliberately has no Supabase configuration. Server
+    // functions such as the Admin access gate must still fail closed instead
+    // of crashing before their server-side denial logic runs.
+    if (!hasBrowserSupabaseConfig(import.meta.env)) return next();
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     return next({

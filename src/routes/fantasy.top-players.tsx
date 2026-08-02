@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -202,6 +202,33 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
   const navigate = useNavigate();
   const { player, club, top } = entry;
   const kit = getKitForClub(club, player.kitPattern);
+  const [isWatched, setIsWatched] = useState(false);
+
+  useEffect(() => {
+    try {
+      const ids = JSON.parse(
+        window.localStorage.getItem("botolago.fantasy.watchlist") ?? "[]",
+      ) as string[];
+      setIsWatched(ids.includes(player.id));
+    } catch {
+      setIsWatched(false);
+    }
+  }, [player.id]);
+
+  const toggleWatchlist = () => {
+    try {
+      const ids = JSON.parse(
+        window.localStorage.getItem("botolago.fantasy.watchlist") ?? "[]",
+      ) as string[];
+      const next = isWatched
+        ? ids.filter((id) => id !== player.id)
+        : [...new Set([...ids, player.id])];
+      window.localStorage.setItem("botolago.fantasy.watchlist", JSON.stringify(next));
+      setIsWatched(next.includes(player.id));
+    } catch {
+      /* local persistence is unavailable */
+    }
+  };
 
   return (
     <article
@@ -300,10 +327,15 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
         </button>
         <button
           type="button"
+          onClick={toggleWatchlist}
+          aria-pressed={isWatched}
+          aria-label={
+            isWatched ? t("fantasy.players.remove_watch") : t("fantasy.top.add_watchlist")
+          }
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2.5 text-xs font-semibold text-white backdrop-blur"
         >
-          <Bookmark className="h-4 w-4" aria-hidden />
-          {t("fantasy.top.add_watchlist")}
+          <Bookmark className={cn("h-4 w-4", isWatched && "fill-current")} aria-hidden />
+          {isWatched ? t("fantasy.players.remove_watch") : t("fantasy.top.add_watchlist")}
         </button>
         <button
           type="button"

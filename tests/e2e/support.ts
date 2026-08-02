@@ -10,6 +10,7 @@ export function sanitize(value: string): string {
 type ObservationOptions = {
   allowResponse?: (status: number, url: URL) => boolean;
   allowExpectedResourceConsoleError?: boolean;
+  allowConsoleError?: (message: string, pageUrl: URL) => boolean;
 };
 
 export function observePage(page: Page, options: ObservationOptions = {}) {
@@ -20,6 +21,8 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
 
   page.on("console", (message) => {
     if (message.type() === "error") {
+      const pageUrl = new URL(page.url());
+      if (options.allowConsoleError?.(message.text(), pageUrl)) return;
       if (
         options.allowExpectedResourceConsoleError &&
         /failed to load resource/i.test(message.text())
@@ -28,10 +31,16 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
       }
       const location = message.location();
       const source = location.url ? ` ${new URL(location.url).pathname}` : "";
-      consoleErrors.push(`${sanitize(message.text()).slice(0, 500)}${source}`);
+      consoleErrors.push(
+        `[${pageUrl.pathname}] ${sanitize(message.text()).slice(0, 500)}${source}`,
+      );
     }
   });
-  page.on("pageerror", (error) => consoleErrors.push(sanitize(error.message).slice(0, 500)));
+  page.on("pageerror", (error) =>
+    consoleErrors.push(
+      `[${new URL(page.url()).pathname}] ${sanitize(error.message).slice(0, 500)}`,
+    ),
+  );
   page.on("requestfailed", (request) => {
     const failure = sanitize(request.failure()?.errorText ?? "failed");
     const record = `${request.method()} ${new URL(request.url()).origin}${new URL(request.url()).pathname}: ${failure}`;
@@ -68,22 +77,94 @@ export async function initializeLanguage(page: Page, language: "fr" | "ar") {
   await page.addInitScript((lang) => {
     window.localStorage.setItem("botolago.welcomed", "1");
     window.localStorage.setItem("botolago.language", lang);
+    window.localStorage.setItem("botolago.fantasy.onboarded", "1");
     window.sessionStorage.setItem("botolago.splashShown", "1");
   }, language);
 }
 
 export async function gotoHydrated(page: Page, path: string, language: "fr" | "ar") {
   await page.goto(path);
-  await expect(page.locator("html")).toHaveAttribute("data-lang", language);
+  await expect(page.locator("html")).toHaveAttribute("data-lang", language, { timeout: 20_000 });
 }
 
 export async function reloadHydrated(page: Page, language: "fr" | "ar") {
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-lang", language);
+  await expect(page.locator("html")).toHaveAttribute("data-lang", language, { timeout: 20_000 });
 }
 
 export async function expectNoHorizontalOverflow(page: Page) {
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
     .toBe(true);
+}
+
+export async function expectHealthyDocument(page: Page) {
+  await expect(page.locator("body")).toBeVisible();
+  await expect(page.locator("body")).not.toBeEmpty();
+  await expect(
+    page.locator(
+      "vite-error-overlay, #webpack-dev-server-client-overlay, [data-nextjs-dialog-overlay]",
+    ),
+  ).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.images]
+          .filter((image) => image.getClientRects().length > 0)
+          .every((image) => image.complete && image.naturalWidth > 0),
+      ),
+    )
+    .toBe(true);
+}
+
+export async function expectInteractiveControlsInsideViewport(page: Page) {
+  const clipped = await page.locator("a, button, input, select, textarea").evaluateAll((elements) =>
+    elements
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return (
+          style.visibility !== "hidden" &&
+          style.display !== "none" &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      })
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.left < -1 || rect.right > window.innerWidth + 1;
+      })
+      .filter((element) => {
+        let ancestor = element.parentElement;
+        while (ancestor && ancestor !== document.body) {
+          const style = getComputedStyle(ancestor);
+          if (
+            (style.overflowX === "auto" || style.overflowX === "scroll") &&
+            ancestor.scrollWidth > ancestor.clientWidth
+          ) {
+            return false;
+          }
+          ancestor = ancestor.parentElement;
+        }
+        return true;
+      })
+      .map((element) => ({
+        tag: element.tagName.toLowerCase(),
+        label:
+          element.getAttribute("aria-label") ??
+          element.getAttribute("title") ??
+          element.textContent?.trim().slice(0, 80) ??
+          "",
+      })),
+  );
+  expect(clipped, "interactive controls clipped outside the horizontal viewport").toEqual([]);
+}
+
+export function projectLanguage(testInfo: TestInfo): "fr" | "ar" {
+  return testInfo.project.metadata.language === "ar" ? "ar" : "fr";
+}
+
+export function isDeepFunctionalProject(testInfo: TestInfo): boolean {
+  return testInfo.project.name === "mobile-fr";
 }

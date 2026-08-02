@@ -1,6 +1,7 @@
 // Run with: `bun test src/services/leagues-store.test.ts`
 import { describe, it, expect, beforeEach } from "bun:test";
 import { leaguesStore, LEAGUE_ERROR } from "./leagues-store";
+import { fantasyService } from "./fantasy-runtime";
 
 // jsdom-like localStorage shim for bun test.
 if (typeof globalThis.window === "undefined") {
@@ -64,5 +65,17 @@ describe("leaguesStore", () => {
     const created = leaguesStore.create("Fez Foxes");
     leaguesStore.delete(created.id);
     expect(leaguesStore.list()).toHaveLength(1); // only joined left
+  });
+
+  it("exposes temporary leagues and standings through the frontend runtime", async () => {
+    const created = await fantasyService.createLeague("Runtime QA");
+    expect(
+      (await fantasyService.getLeagues("private")).some((league) => league.id === created.id),
+    ).toBe(true);
+    expect((await fantasyService.getLeague(created.id))?.role).toBe("creator");
+    expect(await fantasyService.getLeagueStandings(created.id)).not.toHaveLength(0);
+
+    await fantasyService.archiveLeague(created.id);
+    expect(await fantasyService.getLeague(created.id)).toBeUndefined();
   });
 });

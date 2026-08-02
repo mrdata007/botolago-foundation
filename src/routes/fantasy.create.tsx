@@ -11,7 +11,13 @@ import { LoadingState } from "@/components/common/States";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
@@ -542,6 +548,9 @@ function CreateTeamPage() {
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{t("fantasy.set_captain")}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {t("fantasy.captain_full")} / {t("fantasy.vice_full")}
+            </SheetDescription>
           </SheetHeader>
           <ul className="mt-3 grid gap-1.5">
             {xiIds.map((id) => {

@@ -33,19 +33,18 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession>(() => authService.getSession());
+  // Keep the server and first client render identical. Browser-backed auth
+  // state is resolved by the subscription immediately after hydration.
+  const [session, setSession] = useState<AuthSession>({ user: null, status: "loading" });
   const [prompt, setPrompt] = useState<AuthPromptState>({ open: false });
   const { lang } = useI18n();
   const langRef = useRef(lang);
   langRef.current = lang;
   const qc = useQueryClient();
-  const prevUidRef = useRef<string | null>(session.user?.id ?? null);
+  const prevUidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const unsub = authService.subscribeToSession(setSession);
-    return () => {
-      unsub();
-    };
+    return authService.subscribeToSession(setSession);
   }, []);
 
   // Sign-out / account-switch cleanup: purge owned Fantasy cache + drafts for

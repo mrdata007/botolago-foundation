@@ -234,7 +234,20 @@ export const fantasyService = {
     return (await cloudTeam()).team.teamValue;
   },
   async getLeagues(type?: League["type"]): Promise<League[]> {
-    if (mode() === "mock") return mockFantasyService.getLeagues(type);
+    if (mode() === "mock") {
+      const [{ leaguesStore }, seeded] = await Promise.all([
+        import("./leagues-store"),
+        mockFantasyService.getLeagues(type),
+      ]);
+      const persisted = leaguesStore
+        .list()
+        .filter((league) => !type || league.type === type)
+        .map(({ standings: _standings, ...league }) => league);
+      return [
+        ...persisted,
+        ...seeded.filter((league) => !persisted.some((p) => p.id === league.id)),
+      ];
+    }
     if (type === "cup") return [];
     const current = await hub();
     const leagues = await cloud.getLeagues(current.season.id, type ?? null, context());
@@ -251,11 +264,24 @@ export const fantasyService = {
     }));
   },
   async getLeague(id: string): Promise<League | undefined> {
-    if (mode() === "mock") return mockFantasyService.getLeague(id);
+    if (mode() === "mock") {
+      const { leaguesStore } = await import("./leagues-store");
+      const persisted = leaguesStore.get(id);
+      if (persisted) {
+        const { standings: _standings, ...league } = persisted;
+        return league;
+      }
+      return mockFantasyService.getLeague(id);
+    }
     return (await this.getLeagues()).find((league) => league.id === id);
   },
   async getLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
-    if (mode() === "mock") return mockFantasyService.getLeagueStandings(leagueId);
+    if (mode() === "mock") {
+      const { leaguesStore } = await import("./leagues-store");
+      return (
+        leaguesStore.get(leagueId)?.standings ?? mockFantasyService.getLeagueStandings(leagueId)
+      );
+    }
     const page = await cloud.getLeagueStandings(leagueId, null, context());
     return page.items.map((standing) => ({
       managerId: standing.teamId,

@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/provider";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Trophy, Target, Users } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
@@ -8,14 +14,15 @@ const STORAGE = "botolago.fantasy.onboarded";
 
 export function FantasyOnboarding() {
   const { t } = useI18n();
-  const [open, setOpen] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
     try {
-      return window.localStorage.getItem(STORAGE) !== "1";
+      setOpen(window.localStorage.getItem(STORAGE) !== "1");
     } catch {
-      return false;
+      setOpen(false);
     }
-  });
+  }, []);
   const [step, setStep] = useState(0);
 
   const steps: {
@@ -63,7 +70,9 @@ export function FantasyOnboarding() {
             <Icon className="h-7 w-7" aria-hidden />
           </div>
           <div className="text-base font-black text-foreground">{t(steps[step].titleKey)}</div>
-          <p className="text-sm text-muted-foreground">{t(steps[step].bodyKey)}</p>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {t(steps[step].bodyKey)}
+          </DialogDescription>
           <div className="mt-1 flex gap-1">
             {steps.map((_, i) => (
               <span

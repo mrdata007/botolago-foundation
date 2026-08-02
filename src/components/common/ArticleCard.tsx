@@ -56,18 +56,20 @@ export function ArticleCard({
 
   if (variant === "lead") {
     return (
-      <Link
-        to={to}
-        params={params}
-        aria-label={ariaLabel}
+      <article
         className={cn(
           "group relative block overflow-hidden rounded-[var(--radius-hero)]",
           "border border-[var(--border-subtle)] shadow-card",
           "transition-[transform,box-shadow] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
           "hover:shadow-floating active:translate-y-px",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-offset-2",
         )}
       >
+        <Link
+          to={to}
+          params={params}
+          aria-label={ariaLabel}
+          className="absolute inset-0 z-10 rounded-[var(--radius-hero)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-inset"
+        />
         <div
           className="aspect-[16/10] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02]"
           style={
@@ -89,7 +91,7 @@ export function ArticleCard({
           className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-black/25 to-transparent"
           aria-hidden
         />
-        <div className="absolute end-3 top-3 z-10">
+        <div className="absolute end-3 top-3 z-20">
           <SavedButton articleId={article.id} variant="overlay" />
         </div>
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
@@ -125,7 +127,7 @@ export function ArticleCard({
             )}
           </div>
         </div>
-      </Link>
+      </article>
     );
   }
 
@@ -177,18 +179,20 @@ export function ArticleCard({
 
   if (variant === "horizontal") {
     return (
-      <Link
-        to={to}
-        params={params}
-        aria-label={ariaLabel}
+      <article
         className={cn(
-          "group grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 overflow-hidden rounded-[var(--radius-card)]",
+          "group relative grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 overflow-hidden rounded-[var(--radius-card)]",
           "border border-[var(--border-subtle)] bg-[color:var(--surface)] p-2",
           "shadow-subtle transition-[transform,box-shadow] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
           "hover:shadow-card active:translate-y-px",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         )}
       >
+        <Link
+          to={to}
+          params={params}
+          aria-label={ariaLabel}
+          className="absolute inset-0 z-10 rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-inset"
+        />
         <div className="relative overflow-hidden rounded-[calc(var(--radius-card)-4px)]">
           <div
             className="aspect-square w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
@@ -230,10 +234,14 @@ export function ArticleCard({
                 {article.readMinutes} {t("news.read_min")}
               </span>
             </span>
-            <SavedButton articleId={article.id} variant="icon" className="h-9 w-9 -me-1" />
+            <SavedButton
+              articleId={article.id}
+              variant="icon"
+              className="relative z-20 h-9 w-9 -me-1"
+            />
           </div>
         </div>
-      </Link>
+      </article>
     );
   }
 
@@ -294,18 +302,20 @@ export function ArticleCard({
 
   // default: row
   return (
-    <Link
-      to={to}
-      params={params}
-      aria-label={ariaLabel}
+    <article
       className={cn(
-        "group block overflow-hidden rounded-[var(--radius-card-lg)]",
+        "group relative block overflow-hidden rounded-[var(--radius-card-lg)]",
         "border border-[var(--border-subtle)] bg-[color:var(--surface)]",
         "shadow-card transition-[transform,box-shadow] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
         "hover:shadow-floating active:translate-y-px",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-offset-2",
       )}
     >
+      <Link
+        to={to}
+        params={params}
+        aria-label={ariaLabel}
+        className="absolute inset-0 z-10 rounded-[var(--radius-card-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-inset"
+      />
       <div className="relative overflow-hidden">
         <div
           className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
@@ -364,9 +374,13 @@ export function ArticleCard({
               {article.readMinutes} {t("news.read_min")}
             </span>
           </span>
-          <SavedButton articleId={article.id} variant="icon" className="h-9 w-9 -me-1" />
+          <SavedButton
+            articleId={article.id}
+            variant="icon"
+            className="relative z-20 h-9 w-9 -me-1"
+          />
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

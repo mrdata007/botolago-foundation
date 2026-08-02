@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -12,8 +12,17 @@ import { useAuth } from "@/auth/AuthProvider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/leagues")({
-  component: LeaguesPage,
+  component: LeaguesRoute,
 });
+
+function LeaguesRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return pathname === "/fantasy/leagues" || pathname === "/fantasy/leagues/" ? (
+    <LeaguesPage />
+  ) : (
+    <Outlet />
+  );
+}
 
 type Tab = "private" | "public" | "cup";
 const tabs: { key: Tab; label: TranslationKey }[] = [
@@ -79,9 +88,9 @@ function LeaguesPage() {
       }
     });
   };
-  const copy = (code: string) => {
+  const copy = async (code: string) => {
     try {
-      navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(code);
       showToast(t("fantasy.leagues.copied"));
     } catch {
       /* ignore */
@@ -203,7 +212,7 @@ function LeaguesPage() {
                     <div className="font-mono font-black text-foreground">{l.code}</div>
                   </div>
                   <button
-                    onClick={() => copy(l.code!)}
+                    onClick={() => void copy(l.code!)}
                     className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-xs font-semibold ring-1 ring-black/10"
                   >
                     <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}

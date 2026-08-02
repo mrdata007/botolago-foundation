@@ -196,11 +196,8 @@ function LaunchGate() {
   const showSplash = mounted && !splashDone;
   const showLanguage = mounted && splashDone && isHydrated && !hasChosen;
 
-  return (
-    <>
-      <Outlet />
-      {showLanguage && <FirstLaunchLanguage />}
-      {showSplash && <SplashScreen onDone={() => setSplashDone(true)} />}
-    </>
-  );
+  if (showSplash) return <SplashScreen onDone={() => setSplashDone(true)} />;
+  if (showLanguage) return <FirstLaunchLanguage />;
+
+  return <Outlet />;
 }

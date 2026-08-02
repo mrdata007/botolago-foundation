@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import wordmark from "@/assets/botolago-wordmark-light.png.asset.json";
 
 interface SplashScreenProps {
   onDone: () => void;
@@ -68,14 +67,20 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           }}
         />
 
-        <div className="relative overflow-hidden motion-safe:animate-[splash-in_640ms_cubic-bezier(0.22,1,0.36,1)_both]">
+        <div
+          aria-label="BotolaGO"
+          className="relative flex items-center gap-3 overflow-hidden motion-safe:animate-[splash-in_640ms_cubic-bezier(0.22,1,0.36,1)_both]"
+        >
           <img
-            src={wordmark.url}
-            alt="BotolaGO"
-            className="h-14 w-auto select-none object-contain drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:h-20"
-            style={{ filter: "brightness(1.18) saturate(1.1)" }}
+            src="/favicon.png"
+            alt=""
+            aria-hidden="true"
+            className="h-14 w-14 select-none rounded-2xl object-cover drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:h-20 sm:w-20"
             draggable={false}
           />
+          <span className="text-4xl font-black tracking-tight text-white drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:text-6xl">
+            Botola<span className="text-blue-300">GO</span>
+          </span>
           {/* light sweep */}
           <span
             aria-hidden="true"

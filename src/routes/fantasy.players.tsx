@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import { LoadingState, EmptyState } from "@/components/common/States";
@@ -14,8 +14,17 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
-  component: PlayersPage,
+  component: PlayersRoute,
 });
+
+function PlayersRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return pathname === "/fantasy/players" || pathname === "/fantasy/players/" ? (
+    <PlayersPage />
+  ) : (
+    <Outlet />
+  );
+}
 
 type SortKey = "points" | "form" | "price" | "ownership";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
@@ -47,7 +56,9 @@ function PlayersPage() {
   const [clubId, setClubId] = useState("");
   const [sort, setSort] = useState<SortKey>("points");
   const [compare, setCompare] = useState<string[]>([]); // up to 2
-  const [watch, setWatch] = useState<string[]>(readWatch());
+  const [watch, setWatch] = useState<string[]>([]);
+
+  useEffect(() => setWatch(readWatch()), []);
 
   const toggleWatch = (id: string) => {
     const next = watch.includes(id) ? watch.filter((x) => x !== id) : [...watch, id];
@@ -147,7 +158,7 @@ function PlayersPage() {
 
       {compare.length === 2 && (
         <div className="glass-surface glass-strong mt-3 rounded-2xl border border-[var(--glass-border)] p-3">
-          <div className="mb-2 text-sm font-black">{t("fantasy.players.compare_title")}</div>
+          <h2 className="mb-2 text-sm font-black">{t("fantasy.players.compare_title")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {compare.map((id) => {
               const p = playerOf(id);

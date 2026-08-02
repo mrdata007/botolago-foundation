@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -44,8 +44,13 @@ export const Route = createFileRoute("/news")({
       },
     ],
   }),
-  component: NewsPage,
+  component: NewsRoute,
 });
+
+function NewsRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return pathname === "/news" || pathname === "/news/" ? <NewsPage /> : <Outlet />;
+}
 
 const tabs: { key: ArticleCategory; label: TranslationKey }[] = [
   { key: "for_you", label: "news.tab.for_you" },
@@ -393,29 +398,27 @@ function FilterChip({
   leading?: React.ReactNode;
   trailing?: React.ReactNode;
 }) {
-  // Rendered as a role="button" span so a nested follow-toggle <button> is valid.
   return (
     <span
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
-      aria-pressed={active}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border py-1 pe-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-        leading ? "ps-1" : "ps-3",
+        "inline-flex min-h-11 select-none items-center rounded-full border text-xs font-semibold transition-colors",
         active
           ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
           : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
       )}
     >
-      {leading}
-      <span>{children}</span>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        className={cn(
+          "inline-flex min-h-11 items-center gap-1 rounded-full py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+          leading ? "ps-1 pe-2" : "px-3",
+        )}
+      >
+        {leading}
+        <span>{children}</span>
+      </button>
       {trailing}
     </span>
   );

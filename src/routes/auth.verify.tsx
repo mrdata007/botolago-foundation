@@ -72,6 +72,7 @@ function VerifyPage() {
           <InputOTP
             maxLength={6}
             value={code}
+            aria-label={t("auth.verify.code_label")}
             onChange={(v) => {
               setCode(v);
               setError(null);

@@ -14,7 +14,11 @@ import {
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin")({
-  ssr: false,
+  // Resolve the security gate on the server, but keep the privileged console
+  // itself client-rendered. A fully client-only loader can resolve before
+  // TanStack Router's Transitioner mounts and trigger a React state-update
+  // warning during hydration.
+  ssr: "data-only",
   loader: () => loadAdminRouteAccess(),
   pendingComponent: AdminLoadingShell,
   component: AdminRoute,

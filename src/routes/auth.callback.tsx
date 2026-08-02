@@ -9,17 +9,12 @@ import { AuthShell, AuthFieldError, AuthSecondaryButton } from "@/components/aut
 import { useI18n } from "@/i18n/provider";
 import { supabase } from "@/integrations/supabase/client";
 import { IS_MOCK_AUTH } from "@/services/auth";
+import { safeAuthRedirect } from "@/lib/safe-auth-redirect";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({ meta: [{ title: "Connexion — BotolaGO" }] }),
   component: CallbackPage,
 });
-
-function sanitizeNext(raw: string | null): string {
-  if (!raw) return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
-}
 
 function CallbackPage() {
   const { t } = useI18n();
@@ -47,7 +42,7 @@ function CallbackPage() {
           return;
         }
 
-        const next = sanitizeNext(params.get("next"));
+        const next = safeAuthRedirect(params.get("next")) ?? "/";
         const code = params.get("code");
         const tokenHash = params.get("token_hash");
         const type = params.get("type");

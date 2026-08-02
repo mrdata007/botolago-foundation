@@ -16,17 +16,12 @@ import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
-
-function sanitizeNext(raw: unknown): string | undefined {
-  if (typeof raw !== "string" || !raw) return undefined;
-  if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
-  return raw;
-}
+import { safeAuthRedirect } from "@/lib/safe-auth-redirect";
 
 export const Route = createFileRoute("/auth/login")({
   head: () => ({ meta: [{ title: "Se connecter — BotolaGO" }] }),
   validateSearch: (s: Record<string, unknown>) => {
-    const next = sanitizeNext(s.next);
+    const next = safeAuthRedirect(s.next);
     return next ? { next } : {};
   },
   component: LoginPage,
