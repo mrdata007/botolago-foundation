@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -44,8 +44,15 @@ export const Route = createFileRoute("/news")({
       },
     ],
   }),
-  component: NewsPage,
+  component: NewsRoute,
 });
+
+function NewsRoute() {
+  const isArticle = useRouterState({
+    select: (state) => state.matches.some((match) => match.routeId === "/news/$articleId"),
+  });
+  return isArticle ? <Outlet /> : <NewsPage />;
+}
 
 const tabs: { key: ArticleCategory; label: TranslationKey }[] = [
   { key: "for_you", label: "news.tab.for_you" },

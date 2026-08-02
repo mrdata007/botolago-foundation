@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import wordmark from "@/assets/botolago-wordmark-light.png.asset.json";
+import lightWordmark from "@/assets/brand/botolago-wordmark-light.svg";
 
 interface SplashScreenProps {
   onDone: () => void;
@@ -70,9 +70,13 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
 
         <div className="relative overflow-hidden motion-safe:animate-[splash-in_640ms_cubic-bezier(0.22,1,0.36,1)_both]">
           <img
-            src={wordmark.url}
+            src={lightWordmark}
             alt="BotolaGO"
-            className="h-14 w-auto select-none object-contain drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:h-20"
+            width={1615}
+            height={288}
+            decoding="async"
+            fetchPriority="high"
+            className="h-14 max-w-full w-auto select-none object-contain drop-shadow-[0_6px_24px_hsl(214_100%_60%_/_0.45)] sm:h-20"
             style={{ filter: "brightness(1.18) saturate(1.1)" }}
             draggable={false}
           />

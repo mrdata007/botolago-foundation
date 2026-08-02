@@ -11,6 +11,7 @@ import { MockNewsRepository } from "@/backend/news/mock-repository";
 import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { authService } from "@/services/auth";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
+import { resolveMediaUrl } from "@/lib/media";
 
 export type NewsDataMode = "mock" | "supabase";
 
@@ -63,7 +64,10 @@ function fallbackGradient(id: string): string {
   ][Number.isNaN(variant) ? 0 : variant]!;
 }
 
-export function presentArticle(dto: ArticleCardDto | ArticleDetailDto): Article {
+export function presentArticle(
+  dto: ArticleCardDto | ArticleDetailDto,
+  supabaseUrl?: string | null,
+): Article {
   return {
     id: dto.id,
     title: localized(dto.title),
@@ -74,7 +78,8 @@ export function presentArticle(dto: ArticleCardDto | ArticleDetailDto): Article 
     publishedAt: dto.publishedAt,
     readMinutes: dto.readingTimeMinutes,
     heroGradient: fallbackGradient(dto.id),
-    heroUrl: dto.hero?.sourceUrl ?? undefined,
+    heroUrl: resolveMediaUrl(dto.hero, supabaseUrl),
+    heroAlt: dto.hero?.alt ?? undefined,
     isLead: dto.placement === "home_lead" || dto.placement === "news_lead",
     tag: dto.tags[0] ? localized(dto.tags[0].name) : undefined,
     bodyHtml: "bodyHtml" in dto ? dto.bodyHtml : undefined,
@@ -98,8 +103,8 @@ export const newsService = {
     const modules = await getNewsRepository().getHomeModules(language, 8, context());
     return {
       lead: modules.lead ? presentArticle(modules.lead) : null,
-      featured: modules.featured.map(presentArticle),
-      latest: modules.latest.map(presentArticle),
+      featured: modules.featured.map((article) => presentArticle(article)),
+      latest: modules.latest.map((article) => presentArticle(article)),
     };
   },
 
@@ -119,7 +124,7 @@ export const newsService = {
       },
       context(),
     );
-    return page.items.map(presentArticle);
+    return page.items.map((article) => presentArticle(article));
   },
 
   async getTeamFilters(language: NewsLanguage): Promise<Club[]> {
@@ -138,7 +143,7 @@ export const newsService = {
 
   async search(language: NewsLanguage, query: string): Promise<Article[]> {
     const page = await getNewsRepository().search({ language, query, limit: 30 }, context());
-    return page.items.map(presentArticle);
+    return page.items.map((article) => presentArticle(article));
   },
 
   async getSavedIds(): Promise<string[]> {

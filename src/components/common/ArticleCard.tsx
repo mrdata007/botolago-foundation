@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { formatRelativeTime } from "@/lib/format-time";
 import { SavedButton } from "@/components/news/SavedButton";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "./FailureAwareImage";
 
 /**
  * Design System V2 — Article card, five variants:
@@ -68,18 +69,13 @@ export function ArticleCard({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-offset-2",
         )}
       >
-        <div
+        <MediaImage
+          src={article.heroUrl}
+          alt=""
+          fallback={article.heroGradient}
+          loading="eager"
+          fetchPriority="high"
           className="aspect-[16/10] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02]"
-          style={
-            article.heroUrl
-              ? {
-                  backgroundImage: `url(${article.heroUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : { background: article.heroGradient }
-          }
-          aria-hidden
         />
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
@@ -140,18 +136,11 @@ export function ArticleCard({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         )}
       >
-        <div
+        <MediaImage
+          src={article.heroUrl}
+          alt=""
+          fallback={article.heroGradient}
           className="h-14 w-14 shrink-0 rounded-xl shadow-inner"
-          style={
-            article.heroUrl
-              ? {
-                  backgroundImage: `url(${article.heroUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : { background: article.heroGradient }
-          }
-          aria-hidden
         />
         <div className="min-w-0 flex-1">
           <h4 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
@@ -190,18 +179,11 @@ export function ArticleCard({
         )}
       >
         <div className="relative overflow-hidden rounded-[calc(var(--radius-card)-4px)]">
-          <div
+          <MediaImage
+            src={article.heroUrl}
+            alt=""
+            fallback={article.heroGradient}
             className="aspect-square w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
-            style={
-              article.heroUrl
-                ? {
-                    backgroundImage: `url(${article.heroUrl})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }
-                : { background: article.heroGradient }
-            }
-            aria-hidden
           />
         </div>
         <div className="flex min-w-0 flex-col justify-between py-1 pe-1">
@@ -252,18 +234,11 @@ export function ArticleCard({
         )}
       >
         <div className="relative overflow-hidden">
-          <div
+          <MediaImage
+            src={article.heroUrl}
+            alt=""
+            fallback={article.heroGradient}
             className="aspect-[4/5] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
-            style={
-              article.heroUrl
-                ? {
-                    backgroundImage: `url(${article.heroUrl})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }
-                : { background: article.heroGradient }
-            }
-            aria-hidden
           />
           <div
             className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"
@@ -307,18 +282,11 @@ export function ArticleCard({
       )}
     >
       <div className="relative overflow-hidden">
-        <div
+        <MediaImage
+          src={article.heroUrl}
+          alt=""
+          fallback={article.heroGradient}
           className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
-          style={
-            article.heroUrl
-              ? {
-                  backgroundImage: `url(${article.heroUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : { background: article.heroGradient }
-          }
-          aria-hidden
         />
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent"
