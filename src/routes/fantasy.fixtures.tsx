@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState } from "@/components/common/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { selectFixtureGameweeks } from "@/lib/fixture-gameweeks";
 
 export const Route = createFileRoute("/fantasy/fixtures")({
   component: FixturesPage,
@@ -22,6 +23,10 @@ function FixturesPage() {
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+  });
+  const gameweekQ = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => fantasyService.getCurrentGameweek(),
   });
   const [clubId, setClubId] = useState("");
   const [range, setRange] = useState<3 | 6>(6);
@@ -39,11 +44,29 @@ function FixturesPage() {
     for (const arr of rows.values()) arr.sort((a, b) => a.gameweek - b.gameweek);
     return rows;
   }, [fdData, clubId]);
+  const gameweeks = useMemo(() => {
+    if (!fdData) return [];
+    return selectFixtureGameweeks(
+      fdData.map((fixture) => fixture.gameweek),
+      gameweekQ.data?.number,
+      range,
+    );
+  }, [fdData, gameweekQ.data?.number, range]);
 
+  if (fdQ.isLoading || clubsQ.isLoading) return <LoadingState />;
+  if (fdQ.isError || clubsQ.isError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void fdQ.refetch();
+          void clubsQ.refetch();
+        }}
+      />
+    );
+  }
   if (!fdQ.data || !clubsQ.data || !grid) return <LoadingState />;
   const clubs = clubsQ.data;
   const clubOf = (id: string) => clubs.find((c) => c.id === id);
-  const gws = Array.from({ length: range }, (_, i) => 14 + i);
 
   return (
     <div>
@@ -77,51 +100,55 @@ function FixturesPage() {
         </Chip>
       </div>
 
-      <div className="mt-3 overflow-x-auto rounded-2xl bg-card ring-1 ring-black/5">
-        <table className="w-full border-collapse text-xs">
-          <thead className="bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="sticky start-0 z-10 bg-muted/60 px-2 py-2 text-start">
-                {t("fantasy.fixtures.club")}
-              </th>
-              {gws.map((gw) => (
-                <th key={gw} className="px-1 py-2 text-center">
-                  GW{gw}
+      {grid.size === 0 || gameweeks.length === 0 ? (
+        <EmptyState className="mt-3">{t("state.empty")}</EmptyState>
+      ) : (
+        <div className="mt-3 overflow-x-auto rounded-2xl bg-card ring-1 ring-black/5">
+          <table className="w-full border-collapse text-xs">
+            <thead className="bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="sticky start-0 z-10 bg-muted/60 px-2 py-2 text-start">
+                  {t("fantasy.fixtures.club")}
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from(grid.entries()).map(([cid, list]) => {
-              const c = clubOf(cid);
-              if (!c) return null;
-              return (
-                <tr key={cid} className="border-t border-border/70">
-                  <th className="sticky start-0 z-10 bg-card px-2 py-2 text-start">
-                    <div className="flex items-center gap-1.5">
-                      <ClubCrest club={c} size="sm" />
-                      <span className="truncate font-semibold">{tr(c.shortName)}</span>
-                    </div>
+                {gameweeks.map((gw) => (
+                  <th key={gw} className="px-1 py-2 text-center">
+                    GW{gw}
                   </th>
-                  {gws.map((gw) => {
-                    const f = list.find((x) => x.gameweek === gw);
-                    if (!f) return <td key={gw} className="px-1 py-2" />;
-                    const opp = clubOf(f.opponentClubId);
-                    return (
-                      <td key={gw} className="px-1 py-1">
-                        <DifficultyBadge
-                          difficulty={f.difficulty}
-                          label={`${opp?.crestPlaceholder ?? "?"}${f.isHome ? " (H)" : ""}${f.isDouble ? " ×2" : ""}${f.isBlank ? " —" : ""}`}
-                        />
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from(grid.entries()).map(([cid, list]) => {
+                const c = clubOf(cid);
+                if (!c) return null;
+                return (
+                  <tr key={cid} className="border-t border-border/70">
+                    <th className="sticky start-0 z-10 bg-card px-2 py-2 text-start">
+                      <div className="flex items-center gap-1.5">
+                        <ClubCrest club={c} size="sm" />
+                        <span className="truncate font-semibold">{tr(c.shortName)}</span>
+                      </div>
+                    </th>
+                    {gameweeks.map((gw) => {
+                      const f = list.find((x) => x.gameweek === gw);
+                      if (!f) return <td key={gw} className="px-1 py-2" />;
+                      const opp = clubOf(f.opponentClubId);
+                      return (
+                        <td key={gw} className="px-1 py-1">
+                          <DifficultyBadge
+                            difficulty={f.difficulty}
+                            label={`${opp?.crestPlaceholder ?? "?"}${f.isHome ? " (H)" : ""}${f.isDouble ? " ×2" : ""}${f.isBlank ? " —" : ""}`}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
         <Legend color="bg-emerald-500" text="1-2" />
