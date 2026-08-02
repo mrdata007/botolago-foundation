@@ -22,11 +22,16 @@ export function DateStrip({
   selected,
   onSelect,
   rangeDays = 7,
+  minDate,
+  maxDate,
 }: {
   selected: Date;
   onSelect: (d: Date) => void;
   /** Days on each side of the pivot; total = 2*rangeDays + 1. */
   rangeDays?: number;
+  /** Optional season boundaries. */
+  minDate?: Date;
+  maxDate?: Date;
 }) {
   const { t, lang, dir } = useI18n();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -39,16 +44,20 @@ export function DateStrip({
   };
   const today = useMemo(() => startOfDay(new Date()), []);
   const selectedDay = useMemo(() => startOfDay(selected), [selected]);
+  const minimumDay = useMemo(() => (minDate ? startOfDay(minDate) : null), [minDate]);
+  const maximumDay = useMemo(() => (maxDate ? startOfDay(maxDate) : null), [maxDate]);
 
   const days = useMemo(() => {
     const list: Date[] = [];
     for (let i = -rangeDays; i <= rangeDays; i++) {
       const d = new Date(selectedDay);
       d.setDate(d.getDate() + i);
+      if (minimumDay && d < minimumDay) continue;
+      if (maximumDay && d > maximumDay) continue;
       list.push(d);
     }
     return list;
-  }, [selectedDay, rangeDays]);
+  }, [selectedDay, rangeDays, minimumDay, maximumDay]);
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
@@ -67,6 +76,8 @@ export function DateStrip({
   const shiftBy = (delta: number) => {
     const d = new Date(selectedDay);
     d.setDate(d.getDate() + delta);
+    if (minimumDay && d < minimumDay) return;
+    if (maximumDay && d > maximumDay) return;
     onSelect(d);
   };
 
@@ -76,6 +87,9 @@ export function DateStrip({
     a.getDate() === b.getDate();
 
   const isToday = isSameDay(selectedDay, today);
+  const todayInRange = (!minimumDay || today >= minimumDay) && (!maximumDay || today <= maximumDay);
+  const canGoPrevious = !minimumDay || selectedDay > minimumDay;
+  const canGoNext = !maximumDay || selectedDay < maximumDay;
 
   // Chevron flipping: chevrons should always look like "go earlier / later"
   // regardless of RTL, which is what users expect. `dir` tells us runtime.
@@ -100,7 +114,7 @@ export function DateStrip({
             {heading}
           </div>
         </div>
-        {!isToday && (
+        {!isToday && todayInRange && (
           <button
             type="button"
             onClick={() => onSelect(today)}
@@ -123,9 +137,11 @@ export function DateStrip({
           type="button"
           onClick={() => shiftBy(-1)}
           aria-label={t("matches.date.prev")}
+          disabled={!canGoPrevious}
           className={cn(
             "grid h-11 w-11 shrink-0 place-items-center rounded-xl text-foreground",
             "hover:bg-[color:var(--surface-hover)]",
+            "disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
           )}
         >
@@ -140,7 +156,7 @@ export function DateStrip({
             "[&::-webkit-scrollbar]:hidden",
           )}
           role="tablist"
-          aria-label={t("matches.title")}
+          aria-label={t("matches.a11y.date_navigation")}
         >
           {days.map((d) => {
             const active = isSameDay(d, selectedDay);
@@ -184,9 +200,11 @@ export function DateStrip({
           type="button"
           onClick={() => shiftBy(1)}
           aria-label={t("matches.date.next")}
+          disabled={!canGoNext}
           className={cn(
             "grid h-11 w-11 shrink-0 place-items-center rounded-xl text-foreground",
             "hover:bg-[color:var(--surface-hover)]",
+            "disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
           )}
         >
