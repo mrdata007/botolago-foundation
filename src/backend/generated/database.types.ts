@@ -460,6 +460,15 @@ export type Database = {
         }
         Returns: string
       }
+      begin_historical_performance_ingestion: {
+        Args: {
+          p_checkpoint?: Json
+          p_provider_name: string
+          p_season_external_id: string
+          p_target_scope?: Json
+        }
+        Returns: string
+      }
       cancel_account_deletion: { Args: never; Returns: boolean }
       cancel_fantasy_chip: {
         Args: {
@@ -669,6 +678,19 @@ export type Database = {
         Args: { p_fixture_id: string; p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_historical_performance_fixture_batch: {
+        Args: {
+          p_after_fixture_external_id?: string
+          p_limit?: number
+          p_provider_name: string
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
+      football_historical_player_rating_inputs: {
+        Args: { p_provider_name: string; p_season_external_id: string }
+        Returns: Json
+      }
       football_home_matches: {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
@@ -813,6 +835,28 @@ export type Database = {
           p_rows: Json
           p_season_external_id: string
           p_source_sequence: number
+        }
+        Returns: Json
+      }
+      ingest_historical_player_fixture_performance: {
+        Args: {
+          p_coverage: Json
+          p_fixture_external_id: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+          p_source_version: string
+        }
+        Returns: Json
+      }
+      ingest_historical_player_season_ratings: {
+        Args: {
+          p_algorithm_version: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
         }
         Returns: Json
       }
@@ -4638,6 +4682,125 @@ export type Database = {
           },
           {
             foreignKeyName: "player_availability_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_fixture_performances: {
+        Row: {
+          active: boolean
+          appeared: boolean
+          assists: number
+          clean_sheets: number
+          created_at: string
+          fixture_id: string
+          football_season_id: string
+          goals: number
+          goals_conceded: number
+          id: string
+          minutes: number
+          own_goals: number
+          penalties_missed: number
+          penalties_saved: number
+          player_id: string
+          position: Database["app"]["Enums"]["football_position"]
+          provider_observed_at: string
+          provider_rating: number | null
+          red_cards: number
+          saves: number
+          second_yellow_dismissals: number
+          source_provider: string
+          source_version: string
+          started: boolean
+          team_id: string
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          active?: boolean
+          appeared: boolean
+          assists: number
+          clean_sheets: number
+          created_at?: string
+          fixture_id: string
+          football_season_id: string
+          goals: number
+          goals_conceded: number
+          id?: string
+          minutes: number
+          own_goals: number
+          penalties_missed: number
+          penalties_saved: number
+          player_id: string
+          position: Database["app"]["Enums"]["football_position"]
+          provider_observed_at: string
+          provider_rating?: number | null
+          red_cards: number
+          saves: number
+          second_yellow_dismissals: number
+          source_provider: string
+          source_version: string
+          started: boolean
+          team_id: string
+          updated_at?: string
+          yellow_cards: number
+        }
+        Update: {
+          active?: boolean
+          appeared?: boolean
+          assists?: number
+          clean_sheets?: number
+          created_at?: string
+          fixture_id?: string
+          football_season_id?: string
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          minutes?: number
+          own_goals?: number
+          penalties_missed?: number
+          penalties_saved?: number
+          player_id?: string
+          position?: Database["app"]["Enums"]["football_position"]
+          provider_observed_at?: string
+          provider_rating?: number | null
+          red_cards?: number
+          saves?: number
+          second_yellow_dismissals?: number
+          source_provider?: string
+          source_version?: string
+          started?: boolean
+          team_id?: string
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_fixture_performances_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_fixture_performances_football_season_id_fkey"
+            columns: ["football_season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_fixture_performances_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_fixture_performances_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"

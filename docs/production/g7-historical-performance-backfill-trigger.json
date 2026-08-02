@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "requestId": "g7-two-season-historical-performance-backfill-2026-08-02-01",
+  "mode": "production_two_season_historical_player_performance_backfill",
+  "requestedSeasonIds": [26027, 24319],
+  "expectedFixturesPerSeason": 240,
+  "batchSize": 5,
+  "algorithmVersion": "botolago-preseason-rating-v2-fixture-performance",
+  "historicalOnly": true,
+  "currentSeasonActivated": false,
+  "confirmation": "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL"
+}
