@@ -23,12 +23,12 @@ const environment = {
 };
 
 function fixturePayload(withPlaceholder = false): Record<string, unknown> {
-  const lineups = Array.from({ length: 22 }, (_, index) => ({
+  const lineups = Array.from({ length: 23 }, (_, index) => ({
     id: 1_000 + index,
     fixture_id: FIXTURE_ID,
     player_id: 10_000 + index,
     team_id: index < 11 ? 500 : 600,
-    type_id: 11,
+    type_id: index < 22 ? 11 : 12,
     details: [
       {
         type_id: 118,
@@ -91,17 +91,17 @@ describe("SportsMonks completed-fixture player performances", () => {
       fixtureId: FIXTURE_ID,
       seasonId: SEASON_ID,
       coverage: {
-        lineupRowsSeen: 23,
-        validPlayerRows: 22,
+        lineupRowsSeen: 24,
+        validPlayerRows: 23,
         excludedIncompleteRows: 1,
         starterRows: 22,
         teamCount: 2,
-        detailRows: 66,
+        detailRows: 69,
         invalidDetailRows: 0,
       },
     });
     expect(normalized.sourceVersion).toMatch(/^sportsmonks-fixture:[0-9a-f]{64}$/);
-    expect(normalized.rows).toHaveLength(22);
+    expect(normalized.rows).toHaveLength(23);
     expect(normalized.rows[0]).toMatchObject({
       externalPlayerId: "10000",
       externalTeamId: "500",
@@ -152,12 +152,20 @@ describe("SportsMonks completed-fixture player performances", () => {
             };
           }
           if (name === "ingest_historical_player_fixture_performance") {
-            expect(args.p_rows).toHaveLength(22);
+            expect(args.p_rows).toHaveLength(23);
             expect(args.p_coverage).toMatchObject({
               excludedIncompleteRows: 1,
               invalidDetailRows: 0,
             });
-            return { inserted: 22, updated: 0, skipped: 0, active: 22, reconciled: true };
+            return {
+              inserted: 22,
+              updated: 0,
+              skipped: 0,
+              active: 22,
+              excludedMappingRows: 1,
+              excludedIncompleteRows: 2,
+              reconciled: true,
+            };
           }
           if (name === "complete_football_ingestion") return true;
           throw new Error(`unexpected rpc ${name}`);
@@ -173,10 +181,11 @@ describe("SportsMonks completed-fixture player performances", () => {
       expectedFixtureCount: 240,
       fixturesProcessed: 1,
       performanceRows: 22,
-      excludedIncompleteRows: 1,
+      excludedIncompleteRows: 2,
+      excludedMappingRows: 1,
       nextCursor: null,
       hasMore: false,
-      counters: { fetched: 23, validated: 22, inserted: 22, rejected: 0 },
+      counters: { fetched: 24, validated: 22, inserted: 22, skipped: 2, rejected: 0 },
     });
     expect(calls.map((call) => call.name)).toEqual([
       "begin_historical_performance_ingestion",

@@ -2,9 +2,15 @@
 
 ## Status and launch boundary
 
-`botolago-preseason-rating-v2-fixture-performance` replaces the neutral v1
-fallback with normalized SportsMonks `lineups.details` facts from the completed
+`botolago-preseason-rating-v2-fixture-performance` is designed to replace the
+neutral v1 fallback with normalized SportsMonks `lineups.details` facts from the completed
 2025/26 (`26027`) and 2024/25 (`24319`) Botola Pro seasons.
+
+Production run `30764205550` applied the forward schema and runtime but stopped
+on the first 2025/26 batch with `mapping_not_found`. It published no v2 ratings,
+restored the pinned function configuration, removed the one-time trigger, and
+uploaded credential-scanned evidence. The repair is a new dispatch from a new
+reviewed main commit; the failed GitHub run itself must not be rerun.
 
 This data is historical preseason/offseason input only. It does not:
 
@@ -40,6 +46,13 @@ Each normalized player/fixture row is versioned by a SHA-256 digest. A provider
 correction creates a new active source version while retaining the old version
 as inactive evidence. Browser roles have no table or RPC access to raw player
 performance facts.
+
+Provider lineup rows without a canonical player mapping are explicitly
+quarantined and counted. They are never synthesized into players or assigned a
+guessed position. A fixture still fails unless it has exactly 22 mapped
+starters, exactly two mapped participant teams, at least 22 mapped performance
+rows, and exact accounting of mapped rows plus all exclusions. Season, fixture,
+and team mapping failures remain fatal.
 
 A season rating cannot be derived until all 240 canonical finished fixtures
 have one reconciled coverage record and each coverage count exactly matches its

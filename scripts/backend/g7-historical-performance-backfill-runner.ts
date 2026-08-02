@@ -57,6 +57,7 @@ interface ValidatedBatch {
   readonly fixturesProcessed: number;
   readonly performanceRows: number;
   readonly excludedIncompleteRows: number;
+  readonly excludedMappingRows: number;
   readonly nextCursor: string | null;
   readonly hasMore: boolean;
 }
@@ -80,6 +81,10 @@ export function validateHistoricalPerformanceBatch(
     response.excludedIncompleteRows,
     "invalid_historical_excluded_count",
   );
+  const excludedMappingRows = nonNegativeInteger(
+    response.excludedMappingRows,
+    "invalid_historical_mapping_excluded_count",
+  );
   if (
     response.provider !== "sportsmonks" ||
     response.seasonId !== expectedSeasonId ||
@@ -88,6 +93,7 @@ export function validateHistoricalPerformanceBatch(
     fixturesProcessed > BATCH_SIZE ||
     performanceRows < fixturesProcessed * 22 ||
     performanceRows > fixturesProcessed * 100 ||
+    excludedMappingRows > excludedIncompleteRows ||
     counters.rejected !== 0 ||
     nonNegativeInteger(counters.validated, "invalid_historical_validated_count") !==
       performanceRows ||
@@ -110,6 +116,7 @@ export function validateHistoricalPerformanceBatch(
     fixturesProcessed,
     performanceRows,
     excludedIncompleteRows,
+    excludedMappingRows,
     nextCursor,
     hasMore: response.hasMore,
   };
@@ -359,6 +366,18 @@ async function main(): Promise<void> {
     expectedFixturesPerSeason: EXPECTED_FIXTURES_PER_SEASON,
     batchSize: BATCH_SIZE,
     algorithmVersion: ALGORITHM_VERSION,
+    repairOf: {
+      runId: 30_764_205_550,
+      artifactId: 8_838_423_340,
+      artifactSha256: "88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc",
+      failureCode: "season-26027-performance-batch-01_mapping_not_found",
+    },
+    mappingQuarantine: {
+      unmappedPlayerRows: "exclude",
+      requiredMappedStartersPerFixture: 22,
+      requiredMappedTeamsPerFixture: 2,
+      maxTotalExcludedRowsPerFixture: 20,
+    },
     commands: [],
     seasons: [],
     restoration: { attempted: false, succeeded: false },
@@ -388,6 +407,7 @@ async function main(): Promise<void> {
       let fixturesProcessed = 0;
       let performanceRows = 0;
       let excludedIncompleteRows = 0;
+      let excludedMappingRows = 0;
       const requests: JsonRecord[] = [];
       for (let batchNumber = 1; batchNumber <= MAX_BATCHES_PER_SEASON; batchNumber += 1) {
         const invocation = await invoke(
@@ -405,6 +425,7 @@ async function main(): Promise<void> {
         fixturesProcessed += batch.fixturesProcessed;
         performanceRows += batch.performanceRows;
         excludedIncompleteRows += batch.excludedIncompleteRows;
+        excludedMappingRows += batch.excludedMappingRows;
         requests.push({
           batchNumber,
           status: invocation.status,
@@ -412,6 +433,7 @@ async function main(): Promise<void> {
           fixturesProcessed: batch.fixturesProcessed,
           performanceRows: batch.performanceRows,
           excludedIncompleteRows: batch.excludedIncompleteRows,
+          excludedMappingRows: batch.excludedMappingRows,
         });
         cursor = batch.nextCursor;
         if (!batch.hasMore) break;
@@ -442,6 +464,7 @@ async function main(): Promise<void> {
         fixturesProcessed,
         performanceRows,
         excludedIncompleteRows,
+        excludedMappingRows,
         batches: requests.length,
         requests,
         rating: {

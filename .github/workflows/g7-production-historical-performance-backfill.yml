@@ -95,6 +95,19 @@ jobs:
               "projectRef": os.environ["EXPECTED_PROJECT_REF"],
               "requestedSeasonIds": [26027, 24319],
               "expectedFixturesPerSeason": 240,
+              "repairOf": {
+                  "runId": 30764205550,
+                  "headSha": "f5793ef88a3ae7aeb397f64a995eff71220e79c0",
+                  "artifactId": 8838423340,
+                  "artifactSha256": "88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc",
+                  "failureCode": "season-26027-performance-batch-01_mapping_not_found",
+              },
+              "mappingQuarantine": {
+                  "unmappedPlayerRows": "exclude",
+                  "requiredMappedStartersPerFixture": 22,
+                  "requiredMappedTeamsPerFixture": 2,
+                  "maxTotalExcludedRowsPerFixture": 20,
+              },
               "runId": os.environ["GITHUB_RUN_ID"],
           }, indent=2) + "\n", encoding="utf-8")
           output.chmod(0o600)
@@ -121,12 +134,25 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "g7-two-season-historical-performance-backfill-2026-08-02-01",
+              "requestId": "g7-two-season-historical-performance-backfill-2026-08-02-02",
               "mode": "production_two_season_historical_player_performance_backfill",
               "requestedSeasonIds": [26027, 24319],
               "expectedFixturesPerSeason": 240,
               "batchSize": 5,
               "algorithmVersion": "botolago-preseason-rating-v2-fixture-performance",
+              "repairOf": {
+                  "runId": 30764205550,
+                  "headSha": "f5793ef88a3ae7aeb397f64a995eff71220e79c0",
+                  "artifactId": 8838423340,
+                  "artifactSha256": "88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc",
+                  "failureCode": "season-26027-performance-batch-01_mapping_not_found",
+              },
+              "mappingQuarantine": {
+                  "unmappedPlayerRows": "exclude",
+                  "requiredMappedStartersPerFixture": 22,
+                  "requiredMappedTeamsPerFixture": 2,
+                  "maxTotalExcludedRowsPerFixture": 20,
+              },
               "historicalOnly": True,
               "currentSeasonActivated": False,
               "confirmation": "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL",

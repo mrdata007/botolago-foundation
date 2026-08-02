@@ -195,10 +195,30 @@ select extensions.is(
         'providerRating', 6.0 + number / 10.0
       ) order by number)
       from generate_series(1, 22) number
+    ) || jsonb_build_array(
+      jsonb_build_object(
+        'externalPlayerId', '89999',
+        'externalTeamId', '68002',
+        'started', false,
+        'appeared', false,
+        'minutes', 0,
+        'goals', 0,
+        'assists', 0,
+        'cleanSheets', 0,
+        'goalsConceded', 0,
+        'saves', 0,
+        'penaltiesSaved', 0,
+        'penaltiesMissed', 0,
+        'yellowCards', 0,
+        'redCards', 0,
+        'secondYellowDismissals', 0,
+        'ownGoals', 0,
+        'providerRating', null
+      )
     ),
     jsonb_build_object(
-      'lineupRowsSeen', 22,
-      'validPlayerRows', 22,
+      'lineupRowsSeen', 23,
+      'validPlayerRows', 23,
       'excludedIncompleteRows', 0,
       'starterRows', 22,
       'teamCount', 2,
@@ -215,6 +235,18 @@ select extensions.is(
   (select count(*)::integer from app.player_fixture_performances where active),
   22,
   'all 22 normalized player facts are active'
+);
+select extensions.is(
+  (select excluded_mapping_rows
+   from app_private.historical_performance_fixture_coverage),
+  1,
+  'one unmappable substitute is quarantined explicitly'
+);
+select extensions.is(
+  (select excluded_incomplete_rows
+   from app_private.historical_performance_fixture_coverage),
+  1,
+  'fixture accounting includes every provider lineup row'
 );
 set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);

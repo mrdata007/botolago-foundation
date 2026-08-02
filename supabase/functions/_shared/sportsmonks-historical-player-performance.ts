@@ -535,7 +535,14 @@ async function rpc(
   const result = await client.schema("api").rpc(name, args);
   if (result.error) {
     if (result.error.code === "P0002") {
-      throw new HistoricalPerformanceRuntimeError("mapping_not_found");
+      const mappingCode: Readonly<Record<string, string>> = {
+        SEASON_MAPPING_NOT_FOUND: "season_mapping_not_found",
+        FIXTURE_MAPPING_NOT_FOUND: "fixture_mapping_not_found",
+        TEAM_MAPPING_NOT_FOUND: "team_mapping_not_found",
+      };
+      throw new HistoricalPerformanceRuntimeError(
+        mappingCode[result.error.message ?? ""] ?? "mapping_not_found",
+      );
     }
     if (result.error.code === "22023") {
       throw new HistoricalPerformanceRuntimeError(
@@ -599,6 +606,33 @@ function persistedCounts(value: unknown): {
     skipped: nonNegativeInteger(row.skipped, "invalid_database_response"),
     active: positiveInteger(row.active, "invalid_database_response"),
   };
+}
+
+function performancePersistedCounts(
+  value: unknown,
+  coverage: NormalizedHistoricalFixture["coverage"],
+): ReturnType<typeof persistedCounts> & {
+  readonly excludedMappingRows: number;
+  readonly excludedIncompleteRows: number;
+} {
+  const counts = persistedCounts(value);
+  const row = record(value, "invalid_database_response");
+  const excludedMappingRows = nonNegativeInteger(
+    row.excludedMappingRows,
+    "invalid_database_response",
+  );
+  const excludedIncompleteRows = nonNegativeInteger(
+    row.excludedIncompleteRows,
+    "invalid_database_response",
+  );
+  if (
+    excludedIncompleteRows !== coverage.excludedIncompleteRows + excludedMappingRows ||
+    counts.active + excludedIncompleteRows !== coverage.lineupRowsSeen ||
+    counts.active !== coverage.validPlayerRows - excludedMappingRows
+  ) {
+    throw new HistoricalPerformanceRuntimeError("invalid_database_response");
+  }
+  return { ...counts, excludedMappingRows, excludedIncompleteRows };
 }
 
 function ratingInputs(
@@ -762,6 +796,7 @@ async function ingestBatch(
       throw new HistoricalPerformanceRuntimeError("historical_fixture_batch_empty");
     }
     let excludedIncompleteRows = 0;
+    let excludedMappingRows = 0;
     let performanceRows = 0;
     for (const fixture of batch.items) {
       const payload = await providerFixtureRequest(
@@ -776,10 +811,7 @@ async function ingestBatch(
         config.seasonId,
       );
       counts.fetched += normalized.coverage.lineupRowsSeen;
-      counts.validated += normalized.rows.length;
-      excludedIncompleteRows += normalized.coverage.excludedIncompleteRows;
-      performanceRows += normalized.rows.length;
-      const persisted = persistedCounts(
+      const persisted = performancePersistedCounts(
         await rpc(dependencies.client, "ingest_historical_player_fixture_performance", {
           p_provider_name: "sportsmonks",
           p_season_external_id: String(config.seasonId),
@@ -789,13 +821,15 @@ async function ingestBatch(
           p_coverage: normalized.coverage,
           p_observed_at: (dependencies.now?.() ?? new Date()).toISOString(),
         }),
+        normalized.coverage,
       );
-      if (persisted.active !== normalized.rows.length) {
-        throw new HistoricalPerformanceRuntimeError("performance_reconciliation_failed");
-      }
+      counts.validated += persisted.active;
+      performanceRows += persisted.active;
+      excludedIncompleteRows += persisted.excludedIncompleteRows;
+      excludedMappingRows += persisted.excludedMappingRows;
       counts.inserted += persisted.inserted;
       counts.updated += persisted.updated;
-      counts.skipped += persisted.skipped + normalized.coverage.excludedIncompleteRows;
+      counts.skipped += persisted.skipped + persisted.excludedIncompleteRows;
     }
     await complete(
       dependencies.client,
@@ -817,6 +851,7 @@ async function ingestBatch(
       fixturesProcessed: batch.items.length,
       performanceRows,
       excludedIncompleteRows,
+      excludedMappingRows,
       nextCursor: batch.nextCursor,
       hasMore: batch.hasMore,
       counters: counts,
