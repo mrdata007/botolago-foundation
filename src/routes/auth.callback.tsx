@@ -9,17 +9,12 @@ import { AuthShell, AuthFieldError, AuthSecondaryButton } from "@/components/aut
 import { useI18n } from "@/i18n/provider";
 import { supabase } from "@/integrations/supabase/client";
 import { IS_MOCK_AUTH } from "@/services/auth";
+import { cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({ meta: [{ title: "Connexion — BotolaGO" }] }),
   component: CallbackPage,
 });
-
-function sanitizeNext(raw: string | null): string {
-  if (!raw) return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
-}
 
 function CallbackPage() {
   const { t } = useI18n();
@@ -29,6 +24,7 @@ function CallbackPage() {
 
   useEffect(() => {
     if (IS_MOCK_AUTH) {
+      scrubUrl();
       navigate({ to: "/" });
       return;
     }
@@ -39,20 +35,23 @@ function CallbackPage() {
         const url = new URL(window.location.href);
         const params = url.searchParams;
         const hash = new URLSearchParams(url.hash.startsWith("#") ? url.hash.slice(1) : url.hash);
-
-        const errDesc = params.get("error_description") ?? hash.get("error_description");
-        if (errDesc) {
-          setError(errDesc);
-          setBusy(false);
-          return;
-        }
-
-        const next = sanitizeNext(params.get("next"));
+        const hasProviderError = params.has("error_description") || hash.has("error_description");
+        const next = sanitizeAuthCallbackNext(params.get("next"));
         const code = params.get("code");
         const tokenHash = params.get("token_hash");
         const type = params.get("type");
         const accessToken = hash.get("access_token");
         const refreshToken = hash.get("refresh_token");
+
+        // Capture all required values, then remove credentials before any
+        // asynchronous work or failure branch can leave them in history.
+        scrubUrl();
+
+        if (hasProviderError) {
+          setError("callback_error");
+          setBusy(false);
+          return;
+        }
 
         let handled = false;
 
@@ -77,7 +76,6 @@ function CallbackPage() {
           handled = true;
           if (otpType === "recovery" && next === "/") {
             // Land on update-password so the user completes the reset.
-            scrubUrl();
             if (!cancelled) navigate({ to: "/auth/update-password" });
             return;
           }
@@ -90,16 +88,14 @@ function CallbackPage() {
           handled = true;
         }
 
-        scrubUrl();
-
         if (!handled) {
           // Nothing to exchange — probably already authenticated or a plain visit.
         }
 
         if (!cancelled) navigate({ to: next });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        setError(msg);
+      } catch {
+        scrubUrl();
+        setError("callback_error");
         setBusy(false);
       }
     })();
@@ -130,10 +126,7 @@ function CallbackPage() {
 
 function scrubUrl() {
   try {
-    const clean = new URL(window.location.href);
-    clean.search = "";
-    clean.hash = "";
-    window.history.replaceState({}, "", clean.toString());
+    window.history.replaceState({}, "", cleanAuthCallbackUrl(window.location.href));
   } catch {
     /* ignore */
   }
