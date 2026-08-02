@@ -12,6 +12,14 @@ restored the pinned function configuration, removed the one-time trigger, and
 uploaded credential-scanned evidence. The repair is a new dispatch from a new
 reviewed main commit; the failed GitHub run itself must not be rerun.
 
+Repair run `30767229746` proved the mapping quarantine on its first five
+fixtures, then stopped in the second batch because one provider fixture failed
+the hard lineup-coverage contract. It published no v2 ratings, restored the
+pinned configuration, disabled the one-time trigger, and uploaded scanned
+evidence. Because that response omitted the fixture and failed dimensions, the
+next reviewed runtime adds only bounded coverage diagnostics; it does not
+include the provider payload or relax any coverage invariant.
+
 This data is historical preseason/offseason input only. It does not:
 
 - mark a completed fixture current or live;
