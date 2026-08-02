@@ -12,6 +12,7 @@ on:
       - ".github/workflows/gate3b-production-historical-content-canary.yml"
       - ".github/workflows/gate4-production-news-ratings-canary.yml"
       - ".github/workflows/g5-sportsmonks-historical-backfill-discovery.yml"
+      - ".github/workflows/g5-production-gnews-schedule.yml"
       - "docs/production/gate2b-sportsmonks-production-probe-trigger.json"
       - "docs/production/gate2c-historical-catalog-canary-trigger.json"
       - "docs/production/gate2d-historical-fixture-canary-trigger.json"
