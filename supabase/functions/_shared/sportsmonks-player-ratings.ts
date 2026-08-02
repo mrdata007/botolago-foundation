@@ -46,7 +46,9 @@ export interface CalculatedPlayerRating {
   readonly pointsPer90: number;
   readonly confidence: number;
   readonly rating: number;
-  readonly algorithmVersion: "botolago-preseason-rating-v1";
+  readonly algorithmVersion:
+    | "botolago-preseason-rating-v1"
+    | "botolago-preseason-rating-v2-fixture-performance";
 }
 
 export interface RatingsRpcResult {
@@ -90,7 +92,10 @@ interface Counters {
 }
 
 const OFFICIAL_BASE_URL = "https://api.sportmonks.com/v3/football";
-const ALGORITHM_VERSION = "botolago-preseason-rating-v1" as const;
+export const PRESEASON_RATING_V1 = "botolago-preseason-rating-v1" as const;
+export const PRESEASON_RATING_V2 = "botolago-preseason-rating-v2-fixture-performance" as const;
+type PreseasonRatingAlgorithm = typeof PRESEASON_RATING_V1 | typeof PRESEASON_RATING_V2;
+const ALGORITHM_VERSION = PRESEASON_RATING_V1;
 const MAX_REQUEST_BYTES = 1_024;
 const MAX_RESPONSE_BYTES = 2_000_000;
 const MAX_PAGES = 20;
@@ -484,6 +489,7 @@ function rounded(value: number, places: number): number {
 export function calculatePreseasonRatings(
   candidates: readonly RatingCandidate[],
   statistics: ReadonlyMap<string, PlayerSeasonStatistics>,
+  algorithmVersion: PreseasonRatingAlgorithm = PRESEASON_RATING_V1,
 ): readonly CalculatedPlayerRating[] {
   if (
     new Set(candidates.map((candidate) => candidate.externalPlayerId)).size !== candidates.length
@@ -542,7 +548,7 @@ export function calculatePreseasonRatings(
         pointsPer90: rounded(row.pointsPer90, 3),
         confidence: rounded(confidence, 3),
         rating: rounded(rating, 1),
-        algorithmVersion: ALGORITHM_VERSION,
+        algorithmVersion,
       };
     });
   }

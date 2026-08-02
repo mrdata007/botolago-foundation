@@ -46,6 +46,7 @@ describe("Gate 4 command log sanitizer", () => {
     const accessToken = "sbp_exact-production-access-token";
     const secretKey = "sb_secret_exact-production-secret-key";
     const databasePassword = "p@ssword/value+with=symbols";
+    const g7Trigger = "g7-one-time-trigger-value-that-must-never-leak";
     const jwt = `eyJ${"a".repeat(36)}`;
     const {
       destination,
@@ -57,6 +58,7 @@ describe("Gate 4 command log sanitizer", () => {
         `Authorization: Bearer ${jwt}`,
         `apikey=${secretKey}`,
         `connection=postgresql://postgres:${encodeURIComponent(databasePassword)}@db.example.test/postgres`,
+        `trigger=${g7Trigger}`,
         "\u001b[31mpassword authentication failed\u001b[0m",
       ].join("\n"),
     );
@@ -66,6 +68,7 @@ describe("Gate 4 command log sanitizer", () => {
       SUPABASE_ACCESS_TOKEN: accessToken,
       SUPABASE_DB_PASSWORD: databasePassword,
       SUPABASE_SECRET_KEY: secretKey,
+      G7_BACKFILL_TRIGGER: g7Trigger,
     });
     const evidence = readFileSync(destination, "utf8");
 
@@ -75,6 +78,7 @@ describe("Gate 4 command log sanitizer", () => {
     expect(evidence).not.toContain(databasePassword);
     expect(evidence).not.toContain(encodeURIComponent(databasePassword));
     expect(evidence).not.toContain(jwt);
+    expect(evidence).not.toContain(g7Trigger);
     expect(evidence).not.toContain("\u001b");
     expect(statSync(destination).mode & 0o777).toBe(0o600);
     expect(evidence).toContain("operation=functions-deploy-football-ingest");

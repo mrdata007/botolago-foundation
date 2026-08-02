@@ -26,6 +26,7 @@ const protectedValues = [
   "NEWS_INGESTION_TRIGGER_SECRET",
   "FOOTBALL_INGESTION_TRIGGER_SECRET",
   "GATE4_RATINGS_TRIGGER",
+  "G7_BACKFILL_TRIGGER",
 ]
   .map((name) => process.env[name] ?? "")
   .filter(Boolean)
