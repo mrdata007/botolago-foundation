@@ -16,7 +16,7 @@ const BACKFILL_SEASON_COUNT = 3;
 
 type JsonRecord = Record<string, unknown>;
 
-interface CompletedSeason {
+export interface CompletedSeason {
   readonly id: number;
   readonly leagueId: number;
   readonly name: string;
@@ -24,6 +24,16 @@ interface CompletedSeason {
   readonly finished: true;
   readonly startingAt: string;
   readonly endingAt: string;
+}
+
+export class HistoricalBackfillProbeError extends SportsMonksProbeError {
+  constructor(
+    code: string,
+    readonly discoveredSeasons: readonly CompletedSeason[],
+  ) {
+    super(code);
+    this.name = "HistoricalBackfillProbeError";
+  }
 }
 
 interface VerifiedCompletedSeason extends CompletedSeason {
@@ -173,7 +183,7 @@ export async function runSportsMonksHistoricalBackfillProbe(
     .sort((left, right) => right.endingAt.localeCompare(left.endingAt))
     .slice(0, BACKFILL_SEASON_COUNT);
   if (candidates.length !== BACKFILL_SEASON_COUNT) {
-    throw new SportsMonksProbeError("three_completed_seasons_not_available");
+    throw new HistoricalBackfillProbeError("three_completed_seasons_not_available", candidates);
   }
 
   const seasons: VerifiedCompletedSeason[] = [];
@@ -199,7 +209,7 @@ export async function runSportsMonksHistoricalBackfillProbe(
     const rounds = array(roundsResponse.data, "invalid_backfill_rounds_data").length;
     const teams = array(teamsResponse.data, "invalid_backfill_teams_data").length;
     if (rounds <= 0 || teams <= 0) {
-      throw new SportsMonksProbeError("backfill_season_not_populated");
+      throw new HistoricalBackfillProbeError("backfill_season_not_populated", candidates);
     }
 
     const fixtureWindow = boundedFixtureWindow(
@@ -267,6 +277,8 @@ if (import.meta.main) {
     console.error(`SPORTSMONKS_HISTORICAL_BACKFILL_PROBE_FAIL code=${code}`);
     const evidenceDirectory = process.env.G5_DISCOVERY_EVIDENCE_DIR?.trim();
     if (evidenceDirectory) {
+      const discoveredSeasons =
+        error instanceof HistoricalBackfillProbeError ? error.discoveredSeasons : [];
       const outputPath = resolve(
         evidenceDirectory,
         "sportsmonks-last-three-completed-seasons-failure.json",
@@ -284,6 +296,8 @@ if (import.meta.main) {
             observedAt: new Date().toISOString(),
             verdict: "fail",
             errorCode: code,
+            discoveredSeasonCount: discoveredSeasons.length,
+            discoveredSeasons,
           },
           null,
           2,
