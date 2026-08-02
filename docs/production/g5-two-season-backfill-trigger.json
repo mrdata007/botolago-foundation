@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "requestId": "g5-two-season-backfill-2026-08-02-01",
+  "approvedBaseCommit": "802f929e84635369d8c4f35d3777ee30184547be",
+  "requestedSeasonIds": [26027, 24319],
+  "confirmation": "RUN_G5_TWO_SEASON_BACKFILL"
+}

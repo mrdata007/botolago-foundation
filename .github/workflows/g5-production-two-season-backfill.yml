@@ -1,6 +1,10 @@
 name: G5 Production two-season historical backfill
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/production/g5-two-season-backfill-trigger.json"
   workflow_dispatch:
     inputs:
       expected_commit:
@@ -26,13 +30,14 @@ jobs:
     if: >-
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
-      github.actor == 'mrdata007'
+      github.actor == 'mrdata007' &&
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: production-admin-activation
     env:
-      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
-      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_G5_TWO_SEASON_BACKFILL' }}
       EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
       EXPECTED_PROJECT_NAME: BotolaGO Production V2
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -56,8 +61,11 @@ jobs:
             echo "Protected credential injection failed before mutation."
             exit 2
           fi
-          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ||
-                "$CONFIRMATION" != "RUN_G5_TWO_SEASON_BACKFILL" ||
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_G5_TWO_SEASON_BACKFILL" ||
                 "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
             echo "Immutable dispatch confirmation failed."
             exit 2
@@ -101,6 +109,37 @@ jobs:
           persist-credentials: false
           ref: ${{ github.sha }}
 
+      - name: Verify the one-time activation ticket
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemaVersion": 1,
+              "requestId": "g5-two-season-backfill-2026-08-02-01",
+              "approvedBaseCommit": "802f929e84635369d8c4f35d3777ee30184547be",
+              "requestedSeasonIds": [26027, 24319],
+              "confirmation": "RUN_G5_TWO_SEASON_BACKFILL",
+          }
+          actual = json.loads(
+              Path("docs/production/g5-two-season-backfill-trigger.json").read_text(encoding="utf-8")
+          )
+          if actual != expected:
+              raise SystemExit("G5_ACTIVATION_TICKET_MISMATCH")
+          PY
+          read -r first_parent second_parent extra_parent \
+            <<< "$(git show -s --format=%P "$GITHUB_SHA")"
+          if [[ "$first_parent" != "802f929e84635369d8c4f35d3777ee30184547be" ||
+                -z "$second_parent" || -n "${extra_parent:-}" ]]; then
+            echo "G5_ACTIVATION_PARENT_MISMATCH"
+            exit 2
+          fi
+          echo "One-time activation ticket: PASS"
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -114,6 +153,7 @@ jobs:
           bun install --frozen-lockfile
           bun test \
             scripts/backend/gate4-sanitize-command-log.test.ts \
+            scripts/backend/g5-two-season-backfill-activation.test.ts \
             scripts/backend/sportsmonks-two-season-backfill-preflight.test.ts \
             scripts/backend/g5-two-season-backfill-runner.test.ts \
             supabase/functions/_shared/sportsmonks-catalog.test.ts \
