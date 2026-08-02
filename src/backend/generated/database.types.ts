@@ -701,6 +701,7 @@ export type Database = {
           p_date: string
           p_language?: string
           p_limit?: number
+          p_season_id?: string
           p_statuses?: string[]
           p_timezone?: string
         }
@@ -722,6 +723,10 @@ export type Database = {
           p_position?: string
           p_season_id: string
         }
+        Returns: Json
+      }
+      football_season_catalog: {
+        Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
       football_player_summary: {

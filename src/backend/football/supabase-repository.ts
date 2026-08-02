@@ -10,6 +10,7 @@ import {
   matchCardSchema,
   matchStatisticSchema,
   playerSummarySchema,
+  seasonSummarySchema,
   standingRowSchema,
   teamSummarySchema,
   timelineItemSchema,
@@ -26,6 +27,7 @@ import {
   type MatchStatisticComparisonDto,
   type MatchTimelineItemDto,
   type PlayerSummaryDto,
+  type SeasonSummaryDto,
   type StandingRowDto,
   type TeamSummaryDto,
 } from "./contracts";
@@ -79,6 +81,19 @@ export function encodeMatchCursor(cursor: MatchPageCursor | null): string | null
 }
 
 export class SupabaseFootballRepository implements FootballRepository {
+  async getSeasons(
+    language: FootballLanguage,
+    limit: number,
+    _context: RepositoryContext,
+  ): Promise<readonly SeasonSummaryDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_season_catalog", {
+      p_language: language,
+      p_limit: limit,
+    });
+    throwIfError(error);
+    return parse(z.array(seasonSummarySchema), data);
+  }
+
   async getTeams(
     language: FootballLanguage,
     limit: number,
@@ -125,6 +140,7 @@ export class SupabaseFootballRepository implements FootballRepository {
       p_timezone: input.timezone ?? "Africa/Casablanca",
       p_statuses: input.statuses ? [...input.statuses] : undefined,
       p_competition_id: input.competitionId ?? undefined,
+      p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
       p_after_kickoff: cursor?.kickoffAt,
       p_after_id: cursor?.id,
       p_limit: input.limit ?? 50,

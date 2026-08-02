@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Radio, CalendarClock, CheckCircle2 } from "lucide-react";
-import { footballService } from "@/services/football";
+import { useEffect, useMemo, useState } from "react";
+import { Radio, CalendarClock, CalendarRange, CheckCircle2 } from "lucide-react";
+import { footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -12,10 +12,17 @@ import { DateStrip } from "@/components/matches/DateStrip";
 import { CompetitionHeader } from "@/components/matches/CompetitionHeader";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import type { Match, MatchStatus } from "@/types/domain";
+import type { Match } from "@/types/domain";
 
 export const Route = createFileRoute("/matches/")({
   head: () => ({
@@ -44,6 +51,8 @@ const filterTabs: { key: StatusFilter; label: TranslationKey }[] = [
   { key: "finished", label: "matches.tab.results" },
 ];
 
+const EMPTY_SEASONS: readonly FootballSeason[] = [];
+
 /** Groups a match into a display bucket driven purely by domain status. */
 function bucketOf(m: Match): "live" | "upcoming" | "finished" | "other" {
   if (m.status === "live") return "live";
@@ -60,20 +69,94 @@ function sameDay(a: Date, b: Date) {
   );
 }
 
+function dateFromKey(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year!, month! - 1, day!);
+}
+
+function startOfDay(value: Date): Date {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function dateForSeason(season: FootballSeason): Date {
+  const today = startOfDay(new Date());
+  const startsOn = dateFromKey(season.startsOn);
+  const endsOn = dateFromKey(season.endsOn);
+  if (today >= startsOn && today <= endsOn) return today;
+  if (today < startsOn) return dateFromKey(season.firstMatchDate ?? season.startsOn);
+  return dateFromKey(season.lastMatchDate ?? season.endsOn);
+}
+
+function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
+  if (!season) return date;
+  const day = startOfDay(date);
+  const startsOn = dateFromKey(season.startsOn);
+  const endsOn = dateFromKey(season.endsOn);
+  if (day < startsOn) return startsOn;
+  if (day > endsOn) return endsOn;
+  return day;
+}
+
 function MatchesPage() {
   const { t, tr, lang } = useI18n();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
+
+  const seasonsQ = useQuery({
+    queryKey: ["football", "seasons", lang],
+    queryFn: () => footballService.getSeasons(lang),
+  });
+
+  const seasons = seasonsQ.data ?? EMPTY_SEASONS;
+  const selectedSeason = seasons.find((season) => season.id === selectedSeasonId);
+
+  useEffect(() => {
+    if (seasons.length === 0 || selectedSeason) return;
+    const initialSeason = seasons.find((season) => season.isCurrent) ?? seasons[0]!;
+    setSelectedSeasonId(initialSeason.id);
+    setSelectedDate(dateForSeason(initialSeason));
+  }, [seasons, selectedSeason]);
+
+  const canLoadMatches =
+    seasonsQ.isError || (seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null));
 
   const matchesQ = useQuery({
     queryKey: [
       "football",
       "matches",
       `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`,
+      selectedSeason?.id ?? "default",
       lang,
     ],
-    queryFn: () => footballService.getMatchDay(selectedDate, lang),
+    queryFn: () => footballService.getMatchDay(selectedDate, lang, selectedSeason?.id),
+    enabled: canLoadMatches,
   });
+
+  const seasonBounds = useMemo(
+    () =>
+      selectedSeason
+        ? {
+            minDate: dateFromKey(selectedSeason.startsOn),
+            maxDate: dateFromKey(selectedSeason.endsOn),
+          }
+        : undefined,
+    [selectedSeason],
+  );
+
+  const handleSeasonChange = (seasonId: string) => {
+    const season = seasons.find((item) => item.id === seasonId);
+    if (!season) return;
+    setSelectedSeasonId(season.id);
+    setSelectedDate(dateForSeason(season));
+    setFilter("all");
+  };
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(clampToSeason(date, selectedSeason));
+  };
 
   const clubById = (id: string) => matchesQ.data?.clubs.find((club) => club.id === id);
 
@@ -124,24 +207,71 @@ function MatchesPage() {
     month: "long",
   }).format(selectedDate);
 
-  const loading = matchesQ.isLoading;
+  const loading = seasonsQ.isLoading || !canLoadMatches || matchesQ.isLoading;
 
   return (
     <AppShell backgroundVariant="matches">
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand">{t("matches.title")}</span>
-      </h1>
+      <header className="flex items-end gap-3 pt-2">
+        <h1 className="min-w-0 text-2xl font-black tracking-tight text-foreground">
+          <span className="text-brand">{t("matches.title")}</span>
+        </h1>
+
+        <div className="ms-auto w-[10.5rem] shrink-0">
+          <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+            <CalendarRange className="h-3.5 w-3.5 text-[color:var(--brand-accent)]" aria-hidden />
+            <span>{t("matches.season.label")}</span>
+          </div>
+          <Select
+            value={selectedSeason?.id}
+            onValueChange={handleSeasonChange}
+            disabled={seasons.length === 0}
+          >
+            <SelectTrigger
+              aria-label={t("matches.season.label")}
+              className={cn(
+                "surface-3 h-11 rounded-xl border-[var(--glass-border)] px-3 font-bold shadow-none",
+                "focus:ring-2 focus:ring-[color:var(--brand-accent)]",
+              )}
+            >
+              <SelectValue
+                placeholder={
+                  seasonsQ.isLoading ? t("matches.season.loading") : t("matches.season.unavailable")
+                }
+              />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-[var(--border-subtle)] bg-[color:var(--background-elevated)]">
+              {seasons.map((season) => (
+                <SelectItem key={season.id} value={season.id} className="min-h-11 rounded-lg">
+                  <span className="flex items-center gap-2">
+                    <span className="font-bold tabular-nums">{season.label}</span>
+                    {season.isCurrent && (
+                      <span className="rounded-full bg-[color:var(--surface-selected)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-[color:var(--brand-primary)]">
+                        {t("matches.season.current")}
+                      </span>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </header>
 
       {/* Date navigation */}
       <div className="mt-3">
-        <DateStrip selected={selectedDate} onSelect={setSelectedDate} />
+        <DateStrip
+          selected={selectedDate}
+          onSelect={handleDateChange}
+          minDate={seasonBounds?.minDate}
+          maxDate={seasonBounds?.maxDate}
+        />
       </div>
 
       {/* Sticky status filters */}
       <div className={cn("sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1")}>
         <div
           role="tablist"
-          aria-label={t("matches.title")}
+          aria-label={t("matches.a11y.status_filters")}
           className={cn(
             "glass-surface glass-strong flex items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--glass-border)] p-1",
             "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
@@ -313,18 +443,37 @@ function MatchesPage() {
           title={t("matches.table_preview")}
           eyebrow={t("matches.competition.botola")}
         />
-        {matchesQ.isLoading ? (
+        {loading ? (
           <LoadingState />
+        ) : (matchesQ.data?.standings.length ?? 0) === 0 ? (
+          <EmptyState compact>{t("matches.table.empty")}</EmptyState>
         ) : (
           <div className="overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] shadow-card">
             <table className="w-full text-sm">
               <thead className="bg-[color:var(--surface-hover)] text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
                 <tr>
-                  <th className="px-3 py-2 text-start">#</th>
-                  <th className="px-3 py-2 text-start">{t("matches.title")}</th>
-                  <th className="px-2 py-2 text-center">J</th>
-                  <th className="px-2 py-2 text-center">+/-</th>
-                  <th className="px-3 py-2 text-end">Pts</th>
+                  <th
+                    scope="col"
+                    aria-label={t("matches.table.rank")}
+                    className="px-3 py-2 text-start"
+                  >
+                    #
+                  </th>
+                  <th scope="col" className="px-3 py-2 text-start">
+                    {t("matches.table.team")}
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-center">
+                    <span aria-hidden>{t("matches.table.played_short")}</span>
+                    <span className="sr-only">{t("matches.table.played")}</span>
+                  </th>
+                  <th scope="col" className="px-2 py-2 text-center">
+                    <span aria-hidden>{t("matches.table.goal_difference_short")}</span>
+                    <span className="sr-only">{t("matches.table.goal_difference")}</span>
+                  </th>
+                  <th scope="col" className="px-3 py-2 text-end">
+                    <span aria-hidden>{t("matches.table.points_short")}</span>
+                    <span className="sr-only">{t("matches.table.points")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -362,17 +511,6 @@ function MatchesPage() {
 
       {/* An intentional spacer so the last card clears the bottom nav shadow. */}
       <div className="h-6" aria-hidden />
-      <UnusedStatusSink dummy={"scheduled" as MatchStatus} />
     </AppShell>
   );
-}
-
-/**
- * Presentational placeholder that references the `MatchStatus` type so
- * TypeScript keeps the domain import bound to a use-site — the sink itself
- * renders nothing. This lets the file continue to reference the domain type
- * without triggering unused-import warnings on strict builds.
- */
-function UnusedStatusSink(_: { dummy: MatchStatus }) {
-  return null;
 }

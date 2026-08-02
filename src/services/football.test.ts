@@ -32,4 +32,27 @@ describe("Football frontend repository cutover", () => {
     expect(detail.id).toBe(matches[0]!.id);
     expect(Array.isArray(headToHead)).toBe(true);
   });
+
+  test("browses current and historical seasons with season-scoped match dates", async () => {
+    const repository = new MockFootballRepository();
+    const seasons = await repository.getSeasons("fr", 12, context);
+    expect(seasons).toHaveLength(4);
+    expect(seasons[0]?.isCurrent).toBe(true);
+
+    const historical = seasons[1]!;
+    expect(historical.lastMatchDate).not.toBeNull();
+    const page = await repository.getMatchesByDate(
+      {
+        date: historical.lastMatchDate!,
+        language: "fr",
+        seasonId: historical.id,
+        limit: 100,
+      },
+      context,
+    );
+
+    expect(page.items.length).toBeGreaterThan(0);
+    expect(page.items.every((match) => match.seasonId === historical.id)).toBe(true);
+    expect(page.items.every((match) => match.status === "finished")).toBe(true);
+  });
 });
