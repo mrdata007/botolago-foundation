@@ -61,8 +61,11 @@ jobs:
             echo "Protected credential injection failed before mutation."
             exit 2
           fi
-          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ||
-                "$CONFIRMATION" != "RUN_G5_TWO_SEASON_BACKFILL" ||
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
+            exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_G5_TWO_SEASON_BACKFILL" ||
                 "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then
             echo "Immutable dispatch confirmation failed."
             exit 2
@@ -150,6 +153,7 @@ jobs:
           bun install --frozen-lockfile
           bun test \
             scripts/backend/gate4-sanitize-command-log.test.ts \
+            scripts/backend/g5-two-season-backfill-activation.test.ts \
             scripts/backend/sportsmonks-two-season-backfill-preflight.test.ts \
             scripts/backend/g5-two-season-backfill-runner.test.ts \
             supabase/functions/_shared/sportsmonks-catalog.test.ts \
