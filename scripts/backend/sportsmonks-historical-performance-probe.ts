@@ -23,6 +23,10 @@ export const HISTORICAL_PERFORMANCE_FIXTURES = [
   { seasonId: 24319, fixtureId: 19420617 },
 ] as const;
 
+export const HISTORICAL_PERFORMANCE_REQUEST_ID =
+  "g7-historical-performance-coverage-2026-08-02-02" as const;
+export const HISTORICAL_PERFORMANCE_PRIOR_RUN_ID = 30752931530 as const;
+
 const FANTASY_DETAIL_TYPE_IDS = new Set([
   52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 119, 194, 321, 322, 324,
 ]);
@@ -63,6 +67,8 @@ interface SeasonCoverage {
 
 export interface HistoricalPerformanceEvidence {
   readonly schemaVersion: 1;
+  readonly requestId: typeof HISTORICAL_PERFORMANCE_REQUEST_ID;
+  readonly repairsRunId: typeof HISTORICAL_PERFORMANCE_PRIOR_RUN_ID;
   readonly provider: "sportsmonks";
   readonly mode: "read_only_historical_player_performance_coverage";
   readonly expectedCommit: string;
@@ -76,6 +82,8 @@ export interface HistoricalPerformanceEvidence {
 
 export interface HistoricalPerformanceFailureEvidence {
   readonly schemaVersion: 1;
+  readonly requestId: typeof HISTORICAL_PERFORMANCE_REQUEST_ID;
+  readonly repairsRunId: typeof HISTORICAL_PERFORMANCE_PRIOR_RUN_ID;
   readonly provider: "sportsmonks";
   readonly mode: "read_only_historical_player_performance_coverage";
   readonly expectedCommit: string | null;
@@ -149,7 +157,9 @@ function fixtureCoverage(
     const lineup = record(value, "invalid_lineup");
     positiveInteger(lineup.player_id, "invalid_lineup_player_id");
     positiveInteger(lineup.team_id, "invalid_lineup_team_id");
-    positiveInteger(lineup.position_id, "invalid_lineup_position_id");
+    // Historical lineups can legitimately omit position metadata. Position is
+    // not used for this aggregate coverage decision, so do not reject the
+    // player-performance details that the probe is explicitly checking.
     const participationType = positiveInteger(lineup.type_id, "invalid_lineup_type_id");
     if (participationType === 11) starterCount += 1;
     if (participationType === 12) substituteCount += 1;
@@ -223,6 +233,8 @@ export function historicalPerformanceFailureEvidence(
       : "unexpected_historical_performance_probe_failure";
   return {
     schemaVersion: 1,
+    requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
+    repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
     provider: "sportsmonks",
     mode: "read_only_historical_player_performance_coverage",
     expectedCommit: COMMIT_PATTERN.test(commit ?? "") ? commit! : null,
@@ -254,6 +266,8 @@ export async function runHistoricalPerformanceProbe(
   const seasons = [26027, 24319].map((seasonId) => seasonCoverage(seasonId, fixtures));
   const evidence: HistoricalPerformanceEvidence = {
     schemaVersion: 1,
+    requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
+    repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
     provider: "sportsmonks",
     mode: "read_only_historical_player_performance_coverage",
     expectedCommit: commit,
