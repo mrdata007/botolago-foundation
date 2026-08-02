@@ -127,7 +127,9 @@ const TYPE = {
   ownGoals: 324,
 } as const;
 
-const REQUESTED_DETAIL_TYPES = Object.values(TYPE).sort((left, right) => left - right);
+export const HISTORICAL_PERFORMANCE_DETAIL_TYPE_IDS = Object.values(TYPE).sort(
+  (left, right) => left - right,
+);
 const DETAIL_KEY_BY_ID = new Map<number, keyof typeof TYPE>(
   Object.entries(TYPE).map(([key, id]) => [id, key as keyof typeof TYPE]),
 );
@@ -325,7 +327,10 @@ async function providerFixtureRequest(
 ): Promise<JsonRecord> {
   const url = new URL(`${OFFICIAL_BASE_URL}/fixtures/${fixtureId}`);
   url.searchParams.set("include", "lineups.details");
-  url.searchParams.set("filters", `lineupDetailTypes:${REQUESTED_DETAIL_TYPES.join(",")}`);
+  url.searchParams.set(
+    "filters",
+    `lineupDetailTypes:${HISTORICAL_PERFORMANCE_DETAIL_TYPE_IDS.join(",")}`,
+  );
   if (url.origin !== "https://api.sportmonks.com" || url.href.includes(config.token)) {
     throw new HistoricalPerformanceRuntimeError("provider_origin_guard_failed");
   }

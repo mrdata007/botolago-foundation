@@ -20,6 +20,14 @@ evidence. Because that response omitted the fixture and failed dimensions, the
 next reviewed runtime adds only bounded coverage diagnostics; it does not
 include the provider payload or relax any coverage invariant.
 
+Diagnostic run `30767752509` identified SportsMonks fixture `19489216` with
+40 lineup rows, 38 identifiable players, two incomplete rows, two teams, and
+only 21 identifiable starters. Before any coverage policy changes, the separate
+provider-only audit enumerates all 480 fixture payloads using the repository
+SportsMonks credential. It has no Supabase credentials, performs no database
+writes, excludes provider payloads from evidence, and preserves only aggregate
+counts plus bounded failure records.
+
 This data is historical preseason/offseason input only. It does not:
 
 - mark a completed fixture current or live;

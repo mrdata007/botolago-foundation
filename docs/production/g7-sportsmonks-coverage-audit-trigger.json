@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "requestId": "g7-sportsmonks-two-season-coverage-audit-2026-08-02-01",
+  "mode": "read_only_two_season_historical_fixture_coverage_audit",
+  "requestedSeasonIds": [26027, 24319],
+  "expectedFixturesPerSeason": 240,
+  "providerPayloadIncluded": false,
+  "supabaseAccess": false,
+  "databaseWrites": false,
+  "diagnosticOf": {
+    "runId": 30767752509,
+    "headSha": "5577bdb987e0212ed8c63a84c53e025d40a275be",
+    "artifactId": 8839509446,
+    "artifactSha256": "97b3db1a6542a0316958841a4ce2238ba03c313d3997706b498ec627e04387b0",
+    "failureCode": "season-26027-performance-batch-02_historical_fixture_coverage_incomplete",
+    "fixtureId": 19489216,
+    "lineupRowsSeen": 40,
+    "validPlayerRows": 38,
+    "excludedIncompleteRows": 2,
+    "starterRows": 21,
+    "teamCount": 2,
+    "failedInvariant": "starter_rows_mismatch"
+  },
+  "confirmation": "RUN_G7_SPORTSMONKS_COVERAGE_AUDIT"
+}
