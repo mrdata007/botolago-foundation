@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { KitConfig } from "@/lib/kits";
+import { FailureAwareImage } from "@/components/common/FailureAwareImage";
 
 interface JerseyVisualProps {
   kit: KitConfig;
@@ -28,35 +28,6 @@ export function JerseyVisual({
   ariaLabel,
   selected,
 }: JerseyVisualProps) {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  if (imageUrl && !imgFailed) {
-    return (
-      <div className={cn("relative", className)}>
-        {selected && (
-          <span
-            aria-hidden
-            className="absolute inset-0 -m-1 rounded-full"
-            style={{
-              background:
-                "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 55%, transparent), transparent 70%)",
-              filter: "blur(2px)",
-            }}
-          />
-        )}
-        <img
-          src={imageUrl}
-          alt={ariaLabel ?? ""}
-          width={size}
-          height={size * 1.15}
-          onError={() => setImgFailed(true)}
-          className="relative select-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
-          draggable={false}
-        />
-      </div>
-    );
-  }
-
   const { primary, secondary, pattern } = kit;
   const w = 48;
   const h = 56;
@@ -163,6 +134,14 @@ export function JerseyVisual({
           strokeWidth="0.6"
         />
       </svg>
+      <FailureAwareImage
+        src={imageUrl}
+        alt={ariaLabel ?? ""}
+        width={size}
+        height={size * (h / w)}
+        className="absolute inset-0 z-10 h-full w-full select-none object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+        draggable={false}
+      />
     </div>
   );
 }

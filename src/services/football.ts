@@ -11,6 +11,8 @@ import type {
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
+import { resolveMediaUrl } from "@/lib/media";
+import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
 
 export type FootballDataMode = "mock" | "supabase";
 
@@ -56,7 +58,7 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
   return "scheduled";
 }
 
-function toClub(team: TeamSummaryDto): Club {
+export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
   const placeholder = team.code ?? team.shortName.slice(0, 3).toUpperCase();
   return {
     id: team.id,
@@ -66,6 +68,10 @@ function toClub(team: TeamSummaryDto): Club {
     primaryColor: team.primaryColor ?? "#0a2540",
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: placeholder,
+    crestUrl: resolveMediaUrl(
+      { sourceUrl: team.crestUrl, storagePath: team.crestPath },
+      supabaseUrl,
+    ),
   };
 }
 
@@ -138,7 +144,7 @@ function uniqueClubs(
     teams.set(match.awayTeam.id, match.awayTeam);
   }
   for (const row of standings) teams.set(row.team.id, row.team);
-  return [...teams.values()].map(toClub);
+  return [...teams.values()].map((team) => presentFootballClub(team));
 }
 
 function dateKey(date: Date): string {
@@ -157,7 +163,9 @@ export const footballService = {
   },
 
   async getClubs(language: FootballLanguage): Promise<Club[]> {
-    return (await getFootballRepository().getTeams(language, 100, requestContext())).map(toClub);
+    return (await getFootballRepository().getTeams(language, 100, requestContext())).map((team) =>
+      presentFootballClub(team),
+    );
   },
 
   async getHomeMatches(language: FootballLanguage): Promise<FootballMatchCollection> {
@@ -199,17 +207,27 @@ export const footballService = {
   async getMatchDetailPage(
     id: string,
     language: FootballLanguage,
-  ): Promise<FootballMatchCollection & { match: Match; headToHead: readonly Match[] }> {
+  ): Promise<
+    FootballMatchCollection & {
+      match: Match;
+      headToHead: readonly Match[];
+      live: MatchLiveDetail;
+    }
+  > {
     const repository = getFootballRepository();
     const detail = await repository.getMatchDetail(id, language, requestContext());
-    const [headToHead, standings] = await Promise.all([
+    const match = toMatch(detail);
+    const [headToHead, standings, timeline, statistics] = await Promise.all([
       repository.getHeadToHead(id, language, 5, requestContext()),
       repository.getStandings(detail.seasonId, language, requestContext()),
+      repository.getTimeline(id, language, requestContext()),
+      repository.getStatistics(id, language, requestContext()),
     ]);
     const allMatches = [detail, ...headToHead];
     return {
-      match: toMatch(detail),
+      match,
       headToHead: headToHead.map(toMatch),
+      live: presentMatchLiveDetail(match, timeline, statistics),
       matches: allMatches.map(toMatch),
       clubs: uniqueClubs(allMatches, standings),
       standings: standings.map(toTableRow),

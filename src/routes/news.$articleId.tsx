@@ -8,12 +8,25 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { SavedButton } from "@/components/news/SavedButton";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "@/components/common/FailureAwareImage";
+import { buildArticleHead } from "@/lib/article-meta";
 
 export const Route = createFileRoute("/news/$articleId")({
+  loader: async ({ params, context }) => {
+    try {
+      return await context.queryClient.ensureQueryData({
+        queryKey: ["news", "article", "fr", params.articleId],
+        queryFn: () => newsService.getArticle(params.articleId, "fr"),
+      });
+    } catch {
+      return null;
+    }
+  },
+  head: ({ loaderData, params }) => buildArticleHead(loaderData, params.articleId),
   component: ArticlePage,
 });
 
@@ -22,10 +35,12 @@ function ArticlePage() {
   const { t, tr, lang, dir } = useI18n();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const initialArticle = Route.useLoaderData();
 
   const articleQ = useQuery({
     queryKey: ["news", "article", lang, articleId],
     queryFn: () => newsService.getArticle(articleId, lang),
+    initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
   });
   const relatedQ = useQuery({
     queryKey: ["news", "related", lang, articleId],
@@ -43,6 +58,16 @@ function ArticlePage() {
     return (
       <AppShell backgroundVariant="news">
         <LoadingState />
+      </AppShell>
+    );
+  }
+
+  if (articleQ.isError) {
+    return (
+      <AppShell backgroundVariant="news">
+        <div className="mt-8">
+          <ErrorState onRetry={() => void articleQ.refetch()} />
+        </div>
       </AppShell>
     );
   }
@@ -139,19 +164,13 @@ function ArticlePage() {
 
       {/* Hero image */}
       <div className="mt-4 overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)] shadow-card">
-        <div
+        <MediaImage
+          src={article.heroUrl}
+          alt={article.heroAlt ?? tr(article.title)}
+          fallback={article.heroGradient}
+          loading="eager"
+          fetchPriority="high"
           className="aspect-[16/10] w-full animate-in fade-in duration-500"
-          style={
-            article.heroUrl
-              ? {
-                  backgroundImage: `url(${article.heroUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : { background: article.heroGradient }
-          }
-          role="img"
-          aria-label={tr(article.title)}
         />
       </div>
 

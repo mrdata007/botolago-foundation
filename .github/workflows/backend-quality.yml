@@ -1,31 +1,8 @@
 name: Backend quality
 
 on:
+  # Branch protection requires both quality jobs for every pull request.
   pull_request:
-    paths:
-      - ".github/workflows/backend-quality.yml"
-      - ".github/workflows/gate2b-sportsmonks-production-probe.yml"
-      - ".github/workflows/gate2c-production-historical-catalog-canary.yml"
-      - ".github/workflows/gate2d-production-historical-fixture-canary.yml"
-      - ".github/workflows/gate2e-sportsmonks-current-season-readiness.yml"
-      - ".github/workflows/gate3a-sportsmonks-historical-content-coverage.yml"
-      - ".github/workflows/gate3b-production-historical-content-canary.yml"
-      - ".github/workflows/gate4-production-news-ratings-canary.yml"
-      - ".github/workflows/g5-sportsmonks-historical-backfill-discovery.yml"
-      - "docs/production/gate2b-sportsmonks-production-probe-trigger.json"
-      - "docs/production/gate2c-historical-catalog-canary-trigger.json"
-      - "docs/production/gate2d-historical-fixture-canary-trigger.json"
-      - "docs/production/gate2e-current-season-readiness-trigger.json"
-      - "docs/production/gate3a-historical-content-coverage-trigger.json"
-      - "docs/production/gate3b-historical-content-canary-trigger.json"
-      - "docs/production/activation-gate-02-sportsmonks.md"
-      - "docs/backend/**"
-      - "scripts/backend/**"
-      - "src/backend/**"
-      - "supabase/**"
-      - ".env.example"
-      - "package.json"
-      - "bun.lock"
   push:
     branches:
       - backend/greenfield-foundation
@@ -57,6 +34,18 @@ jobs:
       - run: bun run test
       - run: bun run lint
       - run: bun run build
+      - run: bunx playwright install --with-deps chromium
+      - run: bunx playwright test tests/e2e/anonymous.acceptance.e2e.ts
+      - name: Upload sanitized browser evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: anonymous-browser-evidence-${{ github.run_id }}
+          path: |
+            playwright-report
+            test-results/playwright
+          if-no-files-found: ignore
+          retention-days: 3
 
   database-quality:
     runs-on: ubuntu-latest

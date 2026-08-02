@@ -25,7 +25,7 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
-import { EmptyState } from "@/components/common/States";
+import { EmptyState, ErrorState } from "@/components/common/States";
 import {
   HeroSkeleton,
   MatchCardSkeleton,
@@ -195,7 +195,14 @@ function HomeContent() {
         className="mt-5 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 ease-out"
         style={{ animationDelay: "60ms", animationFillMode: "both" }}
       >
-        {summaryQ.data && gwQ.data ? (
+        {summaryQ.isError || gwQ.isError ? (
+          <ErrorState
+            onRetry={() => {
+              void summaryQ.refetch();
+              void gwQ.refetch();
+            }}
+          />
+        ) : summaryQ.data && gwQ.data ? (
           <FantasySummaryCard summary={summaryQ.data} gw={gwQ.data} />
         ) : summaryQ.isSuccess && summaryQ.data === null ? (
           <Link
@@ -223,6 +230,7 @@ function HomeContent() {
           {matchesQ.isLoading && (
             <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
           )}
+          {matchesQ.isError && <ErrorState onRetry={() => void matchesQ.refetch()} />}
           {!matchesQ.isLoading && matchesQ.data?.matches.length === 0 && (
             <EmptyState compact>{t("state.empty")}</EmptyState>
           )}
@@ -240,7 +248,14 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       <Section index={2}>
         <SectionHeader eyebrow={t("nav.fantasy")} icon={Bell} title={t("home.fantasy_alerts")} />
-        {alertsQ.data && playersQ.data ? (
+        {alertsQ.isError || playersQ.isError ? (
+          <ErrorState
+            onRetry={() => {
+              void alertsQ.refetch();
+              void playersQ.refetch();
+            }}
+          />
+        ) : alertsQ.data && playersQ.data ? (
           alertsQ.data.length === 0 ? (
             <EmptyState compact>{t("state.empty")}</EmptyState>
           ) : (
@@ -256,7 +271,9 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       <Section index={3}>
         <SectionHeader eyebrow={t("nav.news")} icon={Newspaper} title={t("home.lead_story")} />
-        {leadQ.data ? (
+        {leadQ.isError ? (
+          <ErrorState onRetry={() => void leadQ.refetch()} />
+        ) : leadQ.data ? (
           <ArticleCard article={leadQ.data} variant="lead" clubs={clubsQ.data ?? []} />
         ) : (
           <ArticleCardSkeleton variant="lead" />
@@ -275,9 +292,11 @@ function HomeContent() {
           action={<ViewAllLink to="/news" />}
         />
         <div className="grid gap-3">
-          {!followedNewsQ.data && (
+          {followedNewsQ.isError ? (
+            <ErrorState onRetry={() => void followedNewsQ.refetch()} />
+          ) : !followedNewsQ.data ? (
             <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
-          )}
+          ) : null}
           {followedNewsQ.data?.slice(0, 3).map((a) => (
             <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
           ))}
@@ -290,7 +309,11 @@ function HomeContent() {
       <Section index={5}>
         <SectionHeader eyebrow={t("nav.fantasy")} icon={TrendingUp} title={t("home.trending")} />
         <div className="grid gap-2">
-          {!trendingQ.data && <SkeletonList count={4}>{() => <PlayerRowSkeleton />}</SkeletonList>}
+          {trendingQ.isError ? (
+            <ErrorState onRetry={() => void trendingQ.refetch()} />
+          ) : !trendingQ.data ? (
+            <SkeletonList count={4}>{() => <PlayerRowSkeleton />}</SkeletonList>
+          ) : null}
           {trendingQ.data?.map((p, i) => (
             <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} rank={i + 1} />
           ))}
@@ -308,7 +331,11 @@ function HomeContent() {
           action={<ViewAllLink to="/fantasy" />}
         />
         <div className="grid gap-2">
-          {!leaguesQ.data && <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>}
+          {leaguesQ.isError ? (
+            <ErrorState onRetry={() => void leaguesQ.refetch()} />
+          ) : !leaguesQ.data ? (
+            <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>
+          ) : null}
           {leaguesQ.data?.map((l) => {
             const delta = l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
             const climbed = delta > 0;

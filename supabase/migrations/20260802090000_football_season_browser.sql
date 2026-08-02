@@ -3,6 +3,9 @@
 -- Exposes a narrow season catalog DTO and adds an optional season constraint
 -- to the date-based match read model. Canonical football tables remain hidden.
 
+create index if not exists fixtures_season_kickoff_idx
+  on app.fixtures (season_id, kickoff_at, id);
+
 create or replace function api.football_season_catalog(
   p_language text default 'fr',
   p_limit integer default 12
@@ -16,7 +19,7 @@ as $$
 declare result jsonb;
 begin
   perform app_private.football_language(p_language);
-  if p_limit not between 1 and 20 then
+  if p_limit is null or p_limit not between 1 and 20 then
     raise exception using errcode = '22023', message = 'INVALID_PAGE_LIMIT';
   end if;
 
@@ -94,7 +97,7 @@ declare
   result jsonb;
 begin
   perform app_private.football_language(p_language);
-  if p_limit not between 1 and 100 then
+  if p_limit is null or p_limit not between 1 and 100 then
     raise exception using errcode = '22023', message = 'INVALID_PAGE_LIMIT';
   end if;
   if (p_after_kickoff is null) <> (p_after_id is null) then

@@ -120,8 +120,7 @@ function MatchesPage() {
     setSelectedDate(dateForSeason(initialSeason));
   }, [seasons, selectedSeason]);
 
-  const canLoadMatches =
-    seasonsQ.isError || (seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null));
+  const canLoadMatches = seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null);
 
   const matchesQ = useQuery({
     queryKey: [
@@ -222,7 +221,7 @@ function MatchesPage() {
             <span>{t("matches.season.label")}</span>
           </div>
           <Select
-            value={selectedSeason?.id}
+            value={selectedSeason?.id ?? ""}
             onValueChange={handleSeasonChange}
             disabled={seasons.length === 0}
           >
@@ -342,12 +341,17 @@ function MatchesPage() {
           <SkeletonList count={3}>{() => <MatchCardSkeleton />}</SkeletonList>
         </div>
       )}
-      {matchesQ.isError && (
+      {(seasonsQ.isError || matchesQ.isError) && (
         <div className="mt-3">
-          <ErrorState onRetry={() => matchesQ.refetch()} />
+          <ErrorState
+            onRetry={() => {
+              void seasonsQ.refetch();
+              if (seasonsQ.isSuccess) void matchesQ.refetch();
+            }}
+          />
         </div>
       )}
-      {!loading && !matchesQ.isError && totalDay === 0 && (
+      {!loading && !seasonsQ.isError && !matchesQ.isError && totalDay === 0 && (
         <div className="mt-3">
           <EmptyState>{t("matches.section.no_matches_today")}</EmptyState>
         </div>
@@ -445,7 +449,8 @@ function MatchesPage() {
         />
         {loading ? (
           <LoadingState />
-        ) : (matchesQ.data?.standings.length ?? 0) === 0 ? (
+        ) : seasonsQ.isError || matchesQ.isError ? null : (matchesQ.data?.standings.length ?? 0) ===
+          0 ? (
           <EmptyState compact>{t("matches.table.empty")}</EmptyState>
         ) : (
           <div className="overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] shadow-card">

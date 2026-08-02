@@ -100,8 +100,8 @@ domain suite pass.
   proxy
 - **Reproduction:** Load each critical route and inspect the console/network.
 - **Expected:** No unexpected console error or missing critical brand media.
-- **Actual:** Every route requested a Lovable-only `/__l5e/assets-v1/...` URL
-  and received HTTP 404.
+- **Actual:** Every route requested a Lovable-only editor asset proxy URL and
+  received HTTP 404.
 - **Evidence:** Playwright captured five repeat 404s in the first critical
   route pass.
 - **Root cause:** The full logo referenced metadata for an editor-owned asset,

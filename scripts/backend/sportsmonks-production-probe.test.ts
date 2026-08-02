@@ -5,6 +5,7 @@ import {
   requestSportsMonksJson,
   requireSportsMonksToken,
   runSportsMonksProductionProbe,
+  sportsMonksProbeFailureEvidence,
 } from "./sportsmonks-production-probe";
 
 const TOKEN = "sportsmonks-test-token-1234567890";
@@ -64,6 +65,24 @@ describe("SportsMonks production access probe", () => {
     expect(() => requireSportsMonksToken(undefined)).toThrow("invalid_sportsmonks_token");
     expect(() => requireSportsMonksToken("short")).toThrow("invalid_sportsmonks_token");
     expect(() => requireSportsMonksToken(`${TOKEN}\n`)).toThrow("invalid_sportsmonks_token");
+  });
+
+  it("creates bounded sanitized failure evidence without provider credentials", () => {
+    const evidence = sportsMonksProbeFailureEvidence(
+      new Error(`${TOKEN}: provider exploded`),
+      COMMIT,
+      NOW,
+    );
+    expect(evidence).toEqual({
+      schemaVersion: 1,
+      provider: "sportsmonks",
+      mode: "read_only_current_season_readiness",
+      expectedCommit: COMMIT,
+      observedAt: NOW.toISOString(),
+      verdict: "fail",
+      errorCode: "unexpected_probe_failure",
+    });
+    expect(JSON.stringify(evidence)).not.toContain(TOKEN);
   });
 
   it("keeps the fixture range within the provider's 100-day maximum", () => {

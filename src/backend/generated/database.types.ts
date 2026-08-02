@@ -725,12 +725,12 @@ export type Database = {
         }
         Returns: Json
       }
-      football_season_catalog: {
-        Args: { p_language?: string; p_limit?: number }
-        Returns: Json
-      }
       football_player_summary: {
         Args: { p_language?: string; p_player_id: string }
+        Returns: Json
+      }
+      football_season_catalog: {
+        Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
       football_standings: {

@@ -60,6 +60,33 @@ select extensions.is(
   'anonymous can read the bounded public live-match RPC'
 );
 select extensions.is(
+  jsonb_array_length(api.football_season_catalog('fr', 12)),
+  1,
+  'anonymous can read the bounded public season catalog'
+);
+select extensions.throws_ok(
+  $$select api.football_season_catalog('fr', null)$$,
+  '22023',
+  'INVALID_PAGE_LIMIT',
+  'season catalog rejects an explicit null limit'
+);
+select extensions.is(
+  jsonb_array_length(
+    api.football_matches_by_date(
+      '2030-01-02',
+      p_season_id => '42000000-0000-4000-8000-000000000001'
+    ) -> 'items'
+  ),
+  1,
+  'anonymous can constrain date-based matches to a canonical season'
+);
+select extensions.throws_ok(
+  $$select api.football_matches_by_date('2030-01-02', p_limit => null)$$,
+  '22023',
+  'INVALID_PAGE_LIMIT',
+  'date-based matches reject an explicit null limit'
+);
+select extensions.is(
   jsonb_array_length(api.football_team_catalog('fr', 100)),
   2,
   'anonymous can read the bounded active-team catalog'

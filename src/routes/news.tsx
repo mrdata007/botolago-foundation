@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -20,7 +20,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
-import { EmptyState } from "@/components/common/States";
+import { EmptyState, ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { useSavedArticles } from "@/lib/saved-articles";
 import type { Article, ArticleCategory } from "@/types/domain";
@@ -44,8 +44,15 @@ export const Route = createFileRoute("/news")({
       },
     ],
   }),
-  component: NewsPage,
+  component: NewsRoute,
 });
+
+function NewsRoute() {
+  const isArticle = useRouterState({
+    select: (state) => state.matches.some((match) => match.routeId === "/news/$articleId"),
+  });
+  return isArticle ? <Outlet /> : <NewsPage />;
+}
 
 const tabs: { key: ArticleCategory; label: TranslationKey }[] = [
   { key: "for_you", label: "news.tab.for_you" },
@@ -91,6 +98,7 @@ function NewsPage() {
   });
 
   const isLoading = allQ.isLoading || leadQ.isLoading;
+  const isError = allQ.isError || leadQ.isError;
   const list = useMemo(() => allQ.data ?? [], [allQ.data]);
   const lead = leadQ.data;
 
@@ -211,6 +219,15 @@ function NewsPage() {
         <div className="mt-4 space-y-4">
           <ArticleCardSkeleton variant="lead" />
           <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+        </div>
+      ) : isError ? (
+        <div className="mt-4">
+          <ErrorState
+            onRetry={() => {
+              void allQ.refetch();
+              void leadQ.refetch();
+            }}
+          />
         </div>
       ) : filteredForTab ? (
         <Section index={1}>
