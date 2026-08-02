@@ -1,13 +1,22 @@
 {
   "schemaVersion": 1,
-  "requestId": "g7-historical-performance-coverage-2026-08-02-02",
-  "repairsRun": {
-    "runId": 30752931530,
-    "headSha": "21fb29e6224db136dda91430b53686360fc2f4e4",
-    "artifactId": 8835025623,
-    "artifactSha256": "8536a83be03a506bcd6cd67769a0865ea7043e3c60a2b14d4d92c4b1b179b6bc",
-    "errorCode": "invalid_lineup_position_id"
-  },
+  "requestId": "g7-historical-performance-coverage-2026-08-02-03",
+  "repairsRuns": [
+    {
+      "runId": 30752931530,
+      "headSha": "21fb29e6224db136dda91430b53686360fc2f4e4",
+      "artifactId": 8835025623,
+      "artifactSha256": "8536a83be03a506bcd6cd67769a0865ea7043e3c60a2b14d4d92c4b1b179b6bc",
+      "errorCode": "invalid_lineup_position_id"
+    },
+    {
+      "runId": 30753527952,
+      "headSha": "713f6914725d772c51d3026a49bb628c0119e08a",
+      "artifactId": 8835206440,
+      "artifactSha256": "a29ca84d999558ea373ff3520d45eb948ae56ec57e326e9b6f48519561235bd2",
+      "errorCode": "invalid_lineup_player_id"
+    }
+  ],
   "mode": "read_only_historical_player_performance_coverage",
   "leagueId": 860,
   "fixtures": [
@@ -18,5 +27,5 @@
     { "seasonId": 24319, "fixtureId": 19334647 },
     { "seasonId": 24319, "fixtureId": 19420617 }
   ],
-  "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_REPAIR"
+  "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY"
 }

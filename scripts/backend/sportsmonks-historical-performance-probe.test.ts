@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   HISTORICAL_PERFORMANCE_FIXTURES,
-  HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+  HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS,
   HISTORICAL_PERFORMANCE_REQUEST_ID,
   historicalPerformanceFailureEvidence,
   runHistoricalPerformanceProbe,
@@ -21,6 +21,14 @@ function fixtureResponse(fixtureId: number, withDetails = true): Response {
       league_id: 860,
       season_id: fixture.seasonId,
       lineups: [
+        null,
+        {
+          player_id: null,
+          team_id: null,
+          position_id: null,
+          type_id: null,
+          details: [{ type_id: null }],
+        },
         {
           player_id: fixture.fixtureId + 1,
           team_id: 100,
@@ -47,26 +55,35 @@ function fixtureResponse(fixtureId: number, withDetails = true): Response {
 }
 
 describe("SportsMonks historical performance coverage probe", () => {
-  it("anchors the repair to the preserved first-run failure", async () => {
+  it("anchors the repair to both preserved failures", async () => {
     const ticket = (await Bun.file(
       "docs/production/g7-historical-performance-probe-trigger.json",
     ).json()) as Record<string, unknown>;
     expect(ticket).toMatchObject({
       requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
-      repairsRun: {
-        runId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
-        headSha: "21fb29e6224db136dda91430b53686360fc2f4e4",
-        artifactId: 8835025623,
-        artifactSha256: "8536a83be03a506bcd6cd67769a0865ea7043e3c60a2b14d4d92c4b1b179b6bc",
-        errorCode: "invalid_lineup_position_id",
-      },
-      confirmation: "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_REPAIR",
+      repairsRuns: [
+        {
+          runId: 30752931530,
+          headSha: "21fb29e6224db136dda91430b53686360fc2f4e4",
+          artifactId: 8835025623,
+          artifactSha256: "8536a83be03a506bcd6cd67769a0865ea7043e3c60a2b14d4d92c4b1b179b6bc",
+          errorCode: "invalid_lineup_position_id",
+        },
+        {
+          runId: 30753527952,
+          headSha: "713f6914725d772c51d3026a49bb628c0119e08a",
+          artifactId: 8835206440,
+          artifactSha256: "a29ca84d999558ea373ff3520d45eb948ae56ec57e326e9b6f48519561235bd2",
+          errorCode: "invalid_lineup_player_id",
+        },
+      ],
+      confirmation: "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY",
     });
 
     const workflow = await Bun.file(
       ".github/workflows/g7-sportsmonks-historical-performance-coverage.yml",
     ).text();
-    expect(workflow).toContain("RUN_G7_HISTORICAL_PERFORMANCE_PROBE_REPAIR");
+    expect(workflow).toContain("RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY");
     expect(workflow).toContain("GITHUB_WORKFLOW_RERUN_FORBIDDEN");
   });
 
@@ -92,7 +109,7 @@ describe("SportsMonks historical performance coverage probe", () => {
     expect(evidence).toMatchObject({
       schemaVersion: 1,
       requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
-      repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+      repairsRunIds: HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS,
       provider: "sportsmonks",
       mode: "read_only_historical_player_performance_coverage",
       expectedCommit: COMMIT,
@@ -107,8 +124,11 @@ describe("SportsMonks historical performance coverage probe", () => {
           fixturesWithLineups: 3,
           fixturesWithPlayerDetails: 3,
           fixturesWithFantasyDetails: 3,
-          totalLineups: 6,
+          totalLineups: 12,
+          totalPlayerLineups: 6,
+          totalIncompleteLineups: 6,
           totalDetails: 6,
+          totalInvalidDetails: 3,
           totalEvents: 3,
           usableForPreseasonDerivation: true,
         },
@@ -146,6 +166,36 @@ describe("SportsMonks historical performance coverage probe", () => {
     });
   });
 
+  it("classifies malformed optional collections instead of crashing", async () => {
+    const evidence = await runHistoricalPerformanceProbe(
+      { SPORTSMONKS_API_TOKEN: TOKEN, EXPECTED_COMMIT: COMMIT },
+      {
+        now: () => NOW,
+        fetch: async (input) => {
+          const url = new URL(input instanceof Request ? input.url : input.toString());
+          const fixtureId = Number(url.pathname.split("/").at(-1));
+          const response = await fixtureResponse(fixtureId).json();
+          return Response.json({
+            ...response,
+            data: {
+              ...(response as { data: object }).data,
+              lineups: { legacy: true },
+              events: { legacy: true },
+            },
+          });
+        },
+      },
+    );
+
+    expect(evidence.usableForPreseasonDerivation).toBe(false);
+    expect(evidence.seasons[0].fixtures[0]).toMatchObject({
+      lineupCollectionValid: false,
+      eventCollectionValid: false,
+      lineupCount: 0,
+      invalidEventCount: 1,
+    });
+  });
+
   it("fails closed when a provider fixture escapes its reviewed season", async () => {
     await expect(
       runHistoricalPerformanceProbe(
@@ -175,7 +225,7 @@ describe("SportsMonks historical performance coverage probe", () => {
     expect(evidence).toEqual({
       schemaVersion: 1,
       requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
-      repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+      repairsRunIds: HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS,
       provider: "sportsmonks",
       mode: "read_only_historical_player_performance_coverage",
       expectedCommit: COMMIT,

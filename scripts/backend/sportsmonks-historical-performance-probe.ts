@@ -24,8 +24,8 @@ export const HISTORICAL_PERFORMANCE_FIXTURES = [
 ] as const;
 
 export const HISTORICAL_PERFORMANCE_REQUEST_ID =
-  "g7-historical-performance-coverage-2026-08-02-02" as const;
-export const HISTORICAL_PERFORMANCE_PRIOR_RUN_ID = 30752931530 as const;
+  "g7-historical-performance-coverage-2026-08-02-03" as const;
+export const HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS = [30752931530, 30753527952] as const;
 
 const FANTASY_DETAIL_TYPE_IDS = new Set([
   52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 119, 194, 321, 322, 324,
@@ -41,14 +41,23 @@ export class HistoricalPerformanceProbeError extends Error {
 interface FixtureCoverage {
   readonly fixtureId: number;
   readonly seasonId: number;
+  readonly lineupCollectionValid: boolean;
+  readonly eventCollectionValid: boolean;
   readonly lineupCount: number;
+  readonly playerLineupCount: number;
+  readonly malformedLineupCount: number;
+  readonly lineupsWithoutPlayerId: number;
+  readonly lineupsWithoutTeamId: number;
+  readonly lineupsWithoutParticipationType: number;
   readonly starterCount: number;
   readonly substituteCount: number;
   readonly playersWithDetails: number;
   readonly playersWithFantasyDetails: number;
   readonly detailCount: number;
+  readonly invalidDetailCount: number;
   readonly detailTypeIds: number[];
   readonly eventCount: number;
+  readonly invalidEventCount: number;
   readonly eventTypeIds: number[];
 }
 
@@ -56,11 +65,16 @@ interface SeasonCoverage {
   readonly seasonId: number;
   readonly sampledFixtures: number;
   readonly fixturesWithLineups: number;
+  readonly fixturesWithPlayerLineups: number;
   readonly fixturesWithPlayerDetails: number;
   readonly fixturesWithFantasyDetails: number;
   readonly totalLineups: number;
+  readonly totalPlayerLineups: number;
+  readonly totalIncompleteLineups: number;
   readonly totalDetails: number;
+  readonly totalInvalidDetails: number;
   readonly totalEvents: number;
+  readonly totalInvalidEvents: number;
   readonly usableForPreseasonDerivation: boolean;
   readonly fixtures: FixtureCoverage[];
 }
@@ -68,7 +82,7 @@ interface SeasonCoverage {
 export interface HistoricalPerformanceEvidence {
   readonly schemaVersion: 1;
   readonly requestId: typeof HISTORICAL_PERFORMANCE_REQUEST_ID;
-  readonly repairsRunId: typeof HISTORICAL_PERFORMANCE_PRIOR_RUN_ID;
+  readonly repairsRunIds: typeof HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS;
   readonly provider: "sportsmonks";
   readonly mode: "read_only_historical_player_performance_coverage";
   readonly expectedCommit: string;
@@ -83,7 +97,7 @@ export interface HistoricalPerformanceEvidence {
 export interface HistoricalPerformanceFailureEvidence {
   readonly schemaVersion: 1;
   readonly requestId: typeof HISTORICAL_PERFORMANCE_REQUEST_ID;
-  readonly repairsRunId: typeof HISTORICAL_PERFORMANCE_PRIOR_RUN_ID;
+  readonly repairsRunIds: typeof HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS;
   readonly provider: "sportsmonks";
   readonly mode: "read_only_historical_player_performance_coverage";
   readonly expectedCommit: string | null;
@@ -101,11 +115,6 @@ function record(value: unknown, code: string): JsonRecord {
   return value;
 }
 
-function array(value: unknown, code: string): unknown[] {
-  if (!Array.isArray(value)) throw new HistoricalPerformanceProbeError(code);
-  return value;
-}
-
 function positiveInteger(value: unknown, code: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
     throw new HistoricalPerformanceProbeError(code);
@@ -113,18 +122,48 @@ function positiveInteger(value: unknown, code: string): number {
   return value;
 }
 
-function optionalArray(value: unknown, code: string): unknown[] {
-  if (value === undefined || value === null) return [];
-  return array(value, code);
+interface OptionalCollection {
+  readonly values: unknown[];
+  readonly valid: boolean;
 }
 
-function sortedTypeIds(values: unknown[], code: string): number[] {
+function optionalCollection(value: unknown): OptionalCollection {
+  if (value === undefined || value === null) return { values: [], valid: true };
+  return Array.isArray(value) ? { values: value, valid: true } : { values: [], valid: false };
+}
+
+function optionalPositiveInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+interface TypeCoverage {
+  readonly typeIds: number[];
+  readonly validCount: number;
+  readonly invalidCount: number;
+}
+
+function typeCoverage(values: unknown[]): TypeCoverage {
   const ids = new Set<number>();
+  let validCount = 0;
+  let invalidCount = 0;
   for (const value of values) {
-    const item = record(value, code);
-    ids.add(positiveInteger(item.type_id, code));
+    if (!isRecord(value)) {
+      invalidCount += 1;
+      continue;
+    }
+    const typeId = optionalPositiveInteger(value.type_id);
+    if (typeId === null) {
+      invalidCount += 1;
+      continue;
+    }
+    ids.add(typeId);
+    validCount += 1;
   }
-  return [...ids].sort((left, right) => left - right);
+  return {
+    typeIds: [...ids].sort((left, right) => left - right),
+    validCount,
+    invalidCount,
+  };
 }
 
 function fixtureCoverage(
@@ -144,47 +183,75 @@ function fixtureCoverage(
     throw new HistoricalPerformanceProbeError("fixture_scope_mismatch");
   }
 
-  const lineups = optionalArray(fixture.lineups, "invalid_fixture_lineups");
-  const events = optionalArray(fixture.events, "invalid_fixture_events");
+  const lineupCollection = optionalCollection(fixture.lineups);
+  const eventCollection = optionalCollection(fixture.events);
+  const lineups = lineupCollection.values;
+  const events = eventCollection.values;
   let starterCount = 0;
   let substituteCount = 0;
+  let playerLineupCount = 0;
+  let malformedLineupCount = 0;
+  let lineupsWithoutPlayerId = 0;
+  let lineupsWithoutTeamId = 0;
+  let lineupsWithoutParticipationType = 0;
   let playersWithDetails = 0;
   let playersWithFantasyDetails = 0;
   let detailCount = 0;
+  let invalidDetailCount = 0;
   const detailTypeIds = new Set<number>();
 
   for (const value of lineups) {
-    const lineup = record(value, "invalid_lineup");
-    positiveInteger(lineup.player_id, "invalid_lineup_player_id");
-    positiveInteger(lineup.team_id, "invalid_lineup_team_id");
-    // Historical lineups can legitimately omit position metadata. Position is
-    // not used for this aggregate coverage decision, so do not reject the
-    // player-performance details that the probe is explicitly checking.
-    const participationType = positiveInteger(lineup.type_id, "invalid_lineup_type_id");
+    if (!isRecord(value)) {
+      malformedLineupCount += 1;
+      continue;
+    }
+    const lineup = value;
+    const playerId = optionalPositiveInteger(lineup.player_id);
+    const teamId = optionalPositiveInteger(lineup.team_id);
+    const participationType = optionalPositiveInteger(lineup.type_id);
+    if (playerId === null) lineupsWithoutPlayerId += 1;
+    else playerLineupCount += 1;
+    if (teamId === null) lineupsWithoutTeamId += 1;
+    if (participationType === null) lineupsWithoutParticipationType += 1;
     if (participationType === 11) starterCount += 1;
     if (participationType === 12) substituteCount += 1;
-    const details = optionalArray(lineup.details, "invalid_lineup_details");
-    if (details.length > 0) playersWithDetails += 1;
-    const playerTypeIds = sortedTypeIds(details, "invalid_lineup_detail");
-    if (playerTypeIds.some((typeId) => FANTASY_DETAIL_TYPE_IDS.has(typeId))) {
+    const detailCollection = optionalCollection(lineup.details);
+    const playerDetails = typeCoverage(detailCollection.values);
+    if (playerId !== null && playerDetails.validCount > 0) playersWithDetails += 1;
+    if (
+      playerId !== null &&
+      playerDetails.typeIds.some((typeId) => FANTASY_DETAIL_TYPE_IDS.has(typeId))
+    ) {
       playersWithFantasyDetails += 1;
     }
-    detailCount += details.length;
-    for (const typeId of playerTypeIds) detailTypeIds.add(typeId);
+    detailCount += playerDetails.validCount;
+    invalidDetailCount += playerDetails.invalidCount + (detailCollection.valid ? 0 : 1);
+    for (const typeId of playerDetails.typeIds) detailTypeIds.add(typeId);
   }
+
+  const eventCoverage = typeCoverage(events);
 
   return {
     fixtureId,
     seasonId,
+    lineupCollectionValid: lineupCollection.valid,
+    eventCollectionValid: eventCollection.valid,
     lineupCount: lineups.length,
+    playerLineupCount,
+    malformedLineupCount,
+    lineupsWithoutPlayerId,
+    lineupsWithoutTeamId,
+    lineupsWithoutParticipationType,
     starterCount,
     substituteCount,
     playersWithDetails,
     playersWithFantasyDetails,
     detailCount,
+    invalidDetailCount,
     detailTypeIds: [...detailTypeIds].sort((left, right) => left - right),
-    eventCount: events.length,
-    eventTypeIds: sortedTypeIds(events, "invalid_fixture_event"),
+    eventCount: eventCoverage.validCount,
+    invalidEventCount: eventCoverage.invalidCount + (eventCollection.valid ? 0 : 1),
+    eventTypeIds: eventCoverage.typeIds,
   };
 }
 
@@ -194,6 +261,9 @@ function seasonCoverage(seasonId: number, fixtures: FixtureCoverage[]): SeasonCo
     throw new HistoricalPerformanceProbeError("historical_fixture_sample_incomplete");
   }
   const fixturesWithLineups = sampled.filter((fixture) => fixture.lineupCount > 0).length;
+  const fixturesWithPlayerLineups = sampled.filter(
+    (fixture) => fixture.playerLineupCount > 0,
+  ).length;
   const fixturesWithPlayerDetails = sampled.filter(
     (fixture) => fixture.playersWithDetails > 0,
   ).length;
@@ -204,13 +274,21 @@ function seasonCoverage(seasonId: number, fixtures: FixtureCoverage[]): SeasonCo
     seasonId,
     sampledFixtures: sampled.length,
     fixturesWithLineups,
+    fixturesWithPlayerLineups,
     fixturesWithPlayerDetails,
     fixturesWithFantasyDetails,
     totalLineups: sampled.reduce((total, fixture) => total + fixture.lineupCount, 0),
+    totalPlayerLineups: sampled.reduce((total, fixture) => total + fixture.playerLineupCount, 0),
+    totalIncompleteLineups: sampled.reduce(
+      (total, fixture) => total + fixture.malformedLineupCount + fixture.lineupsWithoutPlayerId,
+      0,
+    ),
     totalDetails: sampled.reduce((total, fixture) => total + fixture.detailCount, 0),
+    totalInvalidDetails: sampled.reduce((total, fixture) => total + fixture.invalidDetailCount, 0),
     totalEvents: sampled.reduce((total, fixture) => total + fixture.eventCount, 0),
+    totalInvalidEvents: sampled.reduce((total, fixture) => total + fixture.invalidEventCount, 0),
     usableForPreseasonDerivation:
-      fixturesWithLineups === sampled.length && fixturesWithFantasyDetails === sampled.length,
+      fixturesWithPlayerLineups === sampled.length && fixturesWithFantasyDetails === sampled.length,
     fixtures: sampled,
   };
 }
@@ -234,7 +312,7 @@ export function historicalPerformanceFailureEvidence(
   return {
     schemaVersion: 1,
     requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
-    repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+    repairsRunIds: HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS,
     provider: "sportsmonks",
     mode: "read_only_historical_player_performance_coverage",
     expectedCommit: COMMIT_PATTERN.test(commit ?? "") ? commit! : null,
@@ -267,7 +345,7 @@ export async function runHistoricalPerformanceProbe(
   const evidence: HistoricalPerformanceEvidence = {
     schemaVersion: 1,
     requestId: HISTORICAL_PERFORMANCE_REQUEST_ID,
-    repairsRunId: HISTORICAL_PERFORMANCE_PRIOR_RUN_ID,
+    repairsRunIds: HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS,
     provider: "sportsmonks",
     mode: "read_only_historical_player_performance_coverage",
     expectedCommit: commit,
