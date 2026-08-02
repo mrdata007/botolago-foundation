@@ -82,8 +82,8 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "gate2e-current-season-readiness-schedule-2026-07-31-01",
-              "mode": "read_only_current_season_readiness_schedule",
+              "requestId": "gate2e-current-season-readiness-2026-08-02-01",
+              "mode": "read_only_current_season_readiness_probe",
               "leagueId": 860,
               "confirmation": "RUN_GATE2E_CURRENT_SEASON_READINESS",
           }
