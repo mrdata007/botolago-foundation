@@ -12,6 +12,7 @@ import { LoadingState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "@/components/common/FailureAwareImage";
 
 export const Route = createFileRoute("/news/$articleId")({
   component: ArticlePage,
@@ -139,19 +140,13 @@ function ArticlePage() {
 
       {/* Hero image */}
       <div className="mt-4 overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)] shadow-card">
-        <div
+        <MediaImage
+          src={article.heroUrl}
+          alt={article.heroAlt ?? tr(article.title)}
+          fallback={article.heroGradient}
+          loading="eager"
+          fetchPriority="high"
           className="aspect-[16/10] w-full animate-in fade-in duration-500"
-          style={
-            article.heroUrl
-              ? {
-                  backgroundImage: `url(${article.heroUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : { background: article.heroGradient }
-          }
-          role="img"
-          aria-label={tr(article.title)}
         />
       </div>
 

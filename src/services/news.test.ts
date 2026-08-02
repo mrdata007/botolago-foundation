@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { MockNewsRepository } from "@/backend/news/mock-repository";
-import { selectNewsDataMode } from "./news";
+import { presentArticle, selectNewsDataMode } from "./news";
 
 const context = { actorId: null, requestId: "news-test" } as const;
 
@@ -26,5 +26,33 @@ describe("News frontend repository cutover", () => {
     const detail = await repository.getArticle(feed.items[0]!.id, "fr", context);
     expect(detail.bodyHtml).toContain("<p>");
     expect(Array.isArray(await repository.getRelated(detail.id, 6, context))).toBe(true);
+  });
+
+  test("maps news storage media and editorial alt text into presentation", async () => {
+    const repository = new MockNewsRepository();
+    const feed = await repository.getFeed({ language: "fr", limit: 1 }, context);
+    const dto = feed.items[0]!;
+    const article = presentArticle(
+      {
+        ...dto,
+        hero: {
+          id: "90000000-0000-4000-8000-000000000001",
+          sourceUrl: null,
+          storagePath: "news/articles/derby hero.webp",
+          alt: "Supporters dans les tribunes",
+          caption: null,
+          credit: null,
+          width: 1600,
+          height: 1000,
+          mimeType: "image/webp",
+        },
+      },
+      "https://botolago-test.supabase.co",
+    );
+
+    expect(article.heroUrl).toBe(
+      "https://botolago-test.supabase.co/storage/v1/object/public/news-media/news/articles/derby%20hero.webp",
+    );
+    expect(article.heroAlt).toBe("Supporters dans les tribunes");
   });
 });

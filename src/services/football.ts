@@ -10,6 +10,7 @@ import type {
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
+import { resolveMediaUrl } from "@/lib/media";
 
 export type FootballDataMode = "mock" | "supabase";
 
@@ -55,7 +56,7 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
   return "scheduled";
 }
 
-function toClub(team: TeamSummaryDto): Club {
+export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
   const placeholder = team.code ?? team.shortName.slice(0, 3).toUpperCase();
   return {
     id: team.id,
@@ -65,6 +66,10 @@ function toClub(team: TeamSummaryDto): Club {
     primaryColor: team.primaryColor ?? "#0a2540",
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: placeholder,
+    crestUrl: resolveMediaUrl(
+      { sourceUrl: team.crestUrl, storagePath: team.crestPath },
+      supabaseUrl,
+    ),
   };
 }
 
@@ -111,7 +116,7 @@ function uniqueClubs(
     teams.set(match.awayTeam.id, match.awayTeam);
   }
   for (const row of standings) teams.set(row.team.id, row.team);
-  return [...teams.values()].map(toClub);
+  return [...teams.values()].map((team) => presentFootballClub(team));
 }
 
 function dateKey(date: Date): string {
@@ -126,7 +131,9 @@ export interface FootballMatchCollection {
 
 export const footballService = {
   async getClubs(language: FootballLanguage): Promise<Club[]> {
-    return (await getFootballRepository().getTeams(language, 100, requestContext())).map(toClub);
+    return (await getFootballRepository().getTeams(language, 100, requestContext())).map((team) =>
+      presentFootballClub(team),
+    );
   },
 
   async getHomeMatches(language: FootballLanguage): Promise<FootballMatchCollection> {

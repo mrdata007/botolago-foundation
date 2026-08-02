@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
-import { selectFootballDataMode } from "./football";
+import { presentFootballClub, selectFootballDataMode } from "./football";
 
 const context = { actorId: null, requestId: "test" } as const;
 
@@ -31,5 +31,20 @@ describe("Football frontend repository cutover", () => {
     const headToHead = await repository.getHeadToHead(detail.id, "fr", 5, context);
     expect(detail.id).toBe(matches[0]!.id);
     expect(Array.isArray(headToHead)).toBe(true);
+  });
+
+  test("maps football crest storage into the club presentation model", async () => {
+    const repository = new MockFootballRepository();
+    const matches = await repository.getHomeMatches("fr", 1, context);
+    const team = matches[0]!.homeTeam;
+    const club = presentFootballClub(
+      { ...team, crestUrl: null, crestPath: "football/teams/1001/crest.png" },
+      "https://botolago-test.supabase.co",
+    );
+
+    expect(club.crestUrl).toBe(
+      "https://botolago-test.supabase.co/storage/v1/object/public/football-media/football/teams/1001/crest.png",
+    );
+    expect(club.crestPlaceholder).toBe(team.code);
   });
 });

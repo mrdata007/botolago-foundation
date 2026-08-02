@@ -14,6 +14,8 @@ export interface Club {
   /** Optional second club color used for jersey patterns. Falls back to a derived tone. */
   secondaryColor?: string;
   crestPlaceholder: string; // 2-3 letter abbreviation
+  /** Validated provider URL or a resolved public football-media object URL. */
+  crestUrl?: string;
 }
 
 export interface Player {
@@ -42,6 +44,8 @@ export interface Article {
   heroGradient: string; // CSS gradient string
   /** Trusted media URL supplied by the V2 News read model. */
   heroUrl?: string;
+  /** Editorial alt text supplied alongside the hero media. */
+  heroAlt?: string;
   /** Sanitized server-authored HTML, present only on article detail. */
   bodyHtml?: string;
   isLead?: boolean;

@@ -1,5 +1,6 @@
 import type { Club } from "@/types/domain";
 import { cn } from "@/lib/utils";
+import { FailureAwareImage } from "./FailureAwareImage";
 
 export function ClubCrest({
   club,
@@ -15,7 +16,7 @@ export function ClubCrest({
   return (
     <div
       className={cn(
-        "grid shrink-0 place-items-center rounded-xl font-black text-white shadow-inner ring-1 ring-white/20",
+        "relative grid shrink-0 place-items-center overflow-hidden rounded-xl font-black text-white shadow-inner ring-1 ring-white/20",
         dims,
         className,
       )}
@@ -25,7 +26,14 @@ export function ClubCrest({
       aria-hidden
       title={club.name.fr}
     >
-      {club.crestPlaceholder}
+      <span>{club.crestPlaceholder}</span>
+      <FailureAwareImage
+        src={club.crestUrl}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full bg-white/95 object-contain p-0.5"
+        draggable={false}
+      />
     </div>
   );
 }
