@@ -34,9 +34,24 @@ function ForgotPage() {
     setError(err);
     if (err) return;
     setSubmitting(true);
-    await authService.requestPasswordReset(email);
-    setSubmitting(false);
-    setSent(true);
+    try {
+      const result = await authService.requestPasswordReset(email);
+      if (!result.ok) {
+        setError(
+          result.errorCode === "rate_limited"
+            ? "auth.error.rate_limited"
+            : result.errorCode === "network"
+              ? "auth.error.network"
+              : "auth.error.generic",
+        );
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("auth.error.network");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (sent) {

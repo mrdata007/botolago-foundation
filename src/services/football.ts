@@ -11,6 +11,7 @@ import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { resolveMediaUrl } from "@/lib/media";
+import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
 
 export type FootballDataMode = "mock" | "supabase";
 
@@ -162,17 +163,27 @@ export const footballService = {
   async getMatchDetailPage(
     id: string,
     language: FootballLanguage,
-  ): Promise<FootballMatchCollection & { match: Match; headToHead: readonly Match[] }> {
+  ): Promise<
+    FootballMatchCollection & {
+      match: Match;
+      headToHead: readonly Match[];
+      live: MatchLiveDetail;
+    }
+  > {
     const repository = getFootballRepository();
     const detail = await repository.getMatchDetail(id, language, requestContext());
-    const [headToHead, standings] = await Promise.all([
+    const match = toMatch(detail);
+    const [headToHead, standings, timeline, statistics] = await Promise.all([
       repository.getHeadToHead(id, language, 5, requestContext()),
       repository.getStandings(detail.seasonId, language, requestContext()),
+      repository.getTimeline(id, language, requestContext()),
+      repository.getStatistics(id, language, requestContext()),
     ]);
     const allMatches = [detail, ...headToHead];
     return {
-      match: toMatch(detail),
+      match,
       headToHead: headToHead.map(toMatch),
+      live: presentMatchLiveDetail(match, timeline, statistics),
       matches: allMatches.map(toMatch),
       clubs: uniqueClubs(allMatches, standings),
       standings: standings.map(toTableRow),
