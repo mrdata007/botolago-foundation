@@ -57,6 +57,19 @@ export const competitionSummarySchema = z.object({
 });
 export type CompetitionSummaryDto = z.infer<typeof competitionSummarySchema>;
 
+export const seasonSummarySchema = z.object({
+  id: postgresUuidSchema,
+  competition: competitionSummarySchema,
+  label: z.string().min(1),
+  startsOn: z.string().date(),
+  endsOn: z.string().date(),
+  status: z.enum(["planned", "active", "completed", "cancelled"]),
+  isCurrent: z.boolean(),
+  firstMatchDate: z.string().date().nullable(),
+  lastMatchDate: z.string().date().nullable(),
+});
+export type SeasonSummaryDto = z.infer<typeof seasonSummarySchema>;
+
 export const venueSummarySchema = z
   .object({
     id: postgresUuidSchema,
@@ -235,9 +248,15 @@ export interface MatchesByDateInput extends CursorPageRequest {
   readonly timezone?: string;
   readonly statuses?: readonly FixtureStatus[];
   readonly competitionId?: string | null;
+  readonly seasonId?: string | null;
 }
 
 export interface FootballRepository {
+  getSeasons(
+    language: FootballLanguage,
+    limit: number,
+    context: RepositoryContext,
+  ): Promise<readonly SeasonSummaryDto[]>;
   getTeams(
     language: FootballLanguage,
     limit: number,

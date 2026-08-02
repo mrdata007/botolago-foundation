@@ -4,6 +4,7 @@ import type {
   FootballLanguage,
   FootballRepository,
   MatchCardDto,
+  SeasonSummaryDto,
   StandingRowDto,
   TeamSummaryDto,
 } from "@/backend/football/contracts";
@@ -107,6 +108,32 @@ function toTableRow(row: StandingRowDto): TableRow {
   };
 }
 
+export interface FootballSeason {
+  readonly id: string;
+  readonly label: string;
+  readonly startsOn: string;
+  readonly endsOn: string;
+  readonly status: SeasonSummaryDto["status"];
+  readonly isCurrent: boolean;
+  readonly firstMatchDate: string | null;
+  readonly lastMatchDate: string | null;
+  readonly competitionName: string;
+}
+
+function toSeason(season: SeasonSummaryDto): FootballSeason {
+  return {
+    id: season.id,
+    label: season.label,
+    startsOn: season.startsOn,
+    endsOn: season.endsOn,
+    status: season.status,
+    isCurrent: season.isCurrent,
+    firstMatchDate: season.firstMatchDate,
+    lastMatchDate: season.lastMatchDate,
+    competitionName: season.competition.name,
+  };
+}
+
 function uniqueClubs(
   matches: readonly MatchCardDto[],
   standings: readonly StandingRowDto[] = [],
@@ -131,6 +158,10 @@ export interface FootballMatchCollection {
 }
 
 export const footballService = {
+  async getSeasons(language: FootballLanguage): Promise<FootballSeason[]> {
+    return (await getFootballRepository().getSeasons(language, 12, requestContext())).map(toSeason);
+  },
+
   async getClubs(language: FootballLanguage): Promise<Club[]> {
     return (await getFootballRepository().getTeams(language, 100, requestContext())).map((team) =>
       presentFootballClub(team),
@@ -143,19 +174,32 @@ export const footballService = {
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 
-  async getMatchDay(date: Date, language: FootballLanguage): Promise<FootballMatchCollection> {
+  async getMatchDay(
+    date: Date,
+    language: FootballLanguage,
+    seasonId?: string,
+  ): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
     const page = await repository.getMatchesByDate(
-      { date: dateKey(date), language, timezone: "Africa/Casablanca", limit: 100 },
+      {
+        date: dateKey(date),
+        language,
+        timezone: "Africa/Casablanca",
+        seasonId,
+        limit: 100,
+      },
       requestContext(),
     );
-    const firstSeason = page.items[0]?.seasonId;
-    const standings = firstSeason
-      ? await repository.getStandings(firstSeason, language, requestContext())
+    const matches = seasonId
+      ? page.items.filter((match) => match.seasonId === seasonId)
+      : page.items;
+    const standingsSeasonId = seasonId ?? matches[0]?.seasonId;
+    const standings = standingsSeasonId
+      ? await repository.getStandings(standingsSeasonId, language, requestContext())
       : [];
     return {
-      matches: page.items.map(toMatch),
-      clubs: uniqueClubs(page.items, standings),
+      matches: matches.map(toMatch),
+      clubs: uniqueClubs(matches, standings),
       standings: standings.map(toTableRow),
     };
   },
