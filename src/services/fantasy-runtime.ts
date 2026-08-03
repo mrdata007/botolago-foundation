@@ -308,9 +308,53 @@ export const fantasyService = {
   },
   async getFixtureDifficulty(): Promise<FixtureDifficulty[]> {
     if (mode() === "mock") return mockFantasyService.getFixtureDifficulty();
-    // Difficulty ratings require an approved versioned Fantasy rule. Returning
-    // an empty read model is preferable to fabricating ratings from Football.
-    return [];
+    const current = await hub();
+    if (!current.gameweek) return [];
+    const rows = await cloud.getFixtureDifficulty(
+      current.season.id,
+      current.gameweek.sequence,
+      6,
+      context(),
+    );
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      const key = `${row.clubId}:${row.gameweek}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return rows.map((row) => ({
+      clubId: row.clubId,
+      gameweek: row.gameweek,
+      opponentClubId: row.opponentClubId,
+      isHome: row.isHome,
+      difficulty: row.difficulty as 1 | 2 | 3 | 4 | 5,
+      isDouble: (counts.get(`${row.clubId}:${row.gameweek}`) ?? 0) > 1,
+    }));
+  },
+  async getRules() {
+    if (mode() === "mock") {
+      return {
+        seasonId: "00000000-0000-4000-8000-000000000001",
+        rulesetId: "00000000-0000-4000-8000-000000000002",
+        rulesetCode: "botolago-fantasy-preview",
+        rulesetVersion: 1,
+        rulesetSemanticVersion: "1.0",
+        squadSize: 15,
+        budget: 100,
+        maxPlayersPerClub: 3,
+        initialFreeTransfers: 1,
+        maxFreeTransferRollover: 2,
+        transferHitCost: 4,
+        captainMultiplier: 2,
+        tripleCaptainMultiplier: 3,
+        deadline: { minutesBeforeFirstFixture: 90, gracePeriodSeconds: 0 },
+        positions: [],
+        scoring: [],
+        chips: [],
+        features: null,
+      };
+    }
+    const current = await hub();
+    return cloud.getRules(current.season.id, context());
   },
   async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
     if (mode() === "mock") return mockFantasyService.getTopPlayersOfWeek(gameweek);

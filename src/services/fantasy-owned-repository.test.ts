@@ -1,4 +1,5 @@
-import { describe, it, expect } from "bun:test";
+import "./__test-shim";
+import { afterEach, beforeEach, describe, it, expect } from "bun:test";
 import {
   selectFantasyRepoSource,
   createFantasyOwnedRepository,
@@ -9,6 +10,7 @@ import {
 import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { FantasyCloudError } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
+import { removeKey, STORAGE_KEYS } from "@/lib/storage";
 
 // ---------- source selector ----------
 
@@ -53,6 +55,35 @@ describe("createFantasyOwnedRepository", () => {
     }
     expect(e).toBeInstanceOf(FantasyRepoError);
     expect((e as FantasyRepoError).code).toBe("unauthenticated");
+  });
+});
+
+describe("LocalFantasyRepository.saveTeam", () => {
+  beforeEach(() => removeKey(STORAGE_KEYS.FANTASY_TEAM));
+  afterEach(() => removeKey(STORAGE_KEYS.FANTASY_TEAM));
+
+  it("persists the user-facing team and manager names with the squad", async () => {
+    const repo = new LocalFantasyRepository();
+    const initial = await repo.loadSnapshot();
+
+    const saved = await repo.saveTeam({
+      teamName: "Test Atlas",
+      managerName: "Rachid Demo",
+      formation: initial.team.formation,
+      bank: 17,
+      freeTransfers: initial.team.freeTransfers,
+      pendingTransfers: initial.team.pendingTransfers,
+      squad: initial.team.squad,
+      purchasePrices: initial.purchasePrices,
+      expectedVersion: initial.version,
+      currentGameweekId: initial.currentGameweekId,
+      lifecycle: initial.lifecycle,
+    });
+
+    expect(saved.team.teamName).toBe("Test Atlas");
+    expect(saved.team.managerName).toBe("Rachid Demo");
+    expect(saved.team.bank).toBe(17);
+    expect(saved.team.squad).toEqual(initial.team.squad);
   });
 });
 

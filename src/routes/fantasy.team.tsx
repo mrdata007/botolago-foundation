@@ -10,12 +10,18 @@ import { SquadListView } from "@/components/fantasy/SquadListView";
 import { FantasyChipsRow, type FantasyChip } from "@/components/fantasy/FantasyChipCard";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -114,7 +120,7 @@ function MyTeamPage() {
 
   const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
 
-  const { requireAuth } = useAuth();
+  const { requireAuth, user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [captainSheet, setCaptainSheet] = useState(false);
@@ -220,18 +226,11 @@ function MyTeamPage() {
     fantasyDraftsStore.remove(draftKey);
   };
 
-  // Cloud-mode chip commit: persist the lifecycle transition via saveTeam so
-  // fantasyStateStore is NEVER written to in cloud mode. Reverts fState on
-  // failure. `team` guarantees we have the current squad/formation/etc.
-  const commitCloudLifecycle = async (
-    next: FantasyPersistedState,
+  const commitCloudChip = async (
+    action: () => Promise<NonNullable<typeof owned.snapshot>>,
     successKey: TranslationKey,
-    prev: FantasyPersistedState,
   ) => {
     if (!isCloud || !team) return false;
-    setFState(next);
-    const squadToSave = localSquad ?? team.squad;
-    const formationToSave = localFormation ?? team.formation;
     const res = await runOwnedMutation(
       {
         qc,
@@ -243,20 +242,7 @@ function MyTeamPage() {
         invalidateOwned: owned.invalidateOwned,
       },
       {
-        action: () =>
-          owned.repo.saveTeam({
-            teamName: team.teamName,
-            managerName: team.managerName || null,
-            formation: formationToSave,
-            bank: team.bank,
-            freeTransfers: team.freeTransfers,
-            pendingTransfers: team.pendingTransfers,
-            squad: squadToSave,
-            purchasePrices: owned.snapshot?.purchasePrices ?? {},
-            expectedVersion: baseVersion,
-            currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
-            lifecycle: next,
-          }),
+        action,
         args: undefined,
         savedIdleAfterMs: 2400,
       },
@@ -265,8 +251,6 @@ function MyTeamPage() {
       toast.success(t(successKey));
       return true;
     }
-    // Revert transient lifecycle change on error.
-    setFState(prev);
     const c = classifyRepoError(res.error);
     if (c.isConflict) setConflictOpen(true);
     const key: TranslationKey = c.isConflict
@@ -287,12 +271,25 @@ function MyTeamPage() {
       return;
     }
     if (chipsState.active === key) {
-      const next = deactivateChip(chipsState);
-      const prev = fState;
-      const nextState: FantasyPersistedState = { ...fState, chips: next };
       if (isCloud) {
-        void commitCloudLifecycle(nextState, "fantasy.chip.cancelled", prev);
+        if (
+          !owned.snapshot?.teamId ||
+          !owned.snapshot.currentGameweekId ||
+          !owned.snapshot.activeChipCancellable
+        ) {
+          toast.error(t("fantasy.chip.state.unavailable"));
+          return;
+        }
+        void commitCloudChip(
+          () =>
+            owned.repo.cancelChip({
+              gameweekId: owned.snapshot!.currentGameweekId!,
+              expectedVersion: owned.snapshot!.version,
+            }),
+          "fantasy.chip.cancelled",
+        );
       } else {
+        const next = deactivateChip(chipsState);
         fantasyStateStore.write({ chips: next });
         setFState(fantasyStateStore.read());
         toast.success(t("fantasy.chip.cancelled"));
@@ -315,11 +312,23 @@ function MyTeamPage() {
       return;
     }
     const nextChips = activateChip(chipsState, chipConfirm, { gameweek: currentGw, team });
-    const prev = fState;
-    const nextState: FantasyPersistedState = { ...fState, chips: nextChips };
     if (isCloud) {
+      if (!owned.snapshot?.teamId || !owned.snapshot.currentGameweekId) {
+        toast.error(t("fantasy.chip.state.unavailable"));
+        setChipConfirm(null);
+        return;
+      }
+      const selectedChip = chipConfirm;
       setChipConfirm(null);
-      void commitCloudLifecycle(nextState, "fantasy.chip.activated", prev);
+      void commitCloudChip(
+        () =>
+          owned.repo.activateChip({
+            gameweekId: owned.snapshot!.currentGameweekId!,
+            chip: selectedChip,
+            expectedVersion: owned.snapshot!.version,
+          }),
+        "fantasy.chip.activated",
+      );
       return;
     }
     fantasyStateStore.write({ chips: nextChips });
@@ -329,9 +338,21 @@ function MyTeamPage() {
   };
 
   // Early loading state — we need players/clubs/team for any render below.
+  if (playersQ.isError || clubsQ.isError || gwQ.isError || owned.loadError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void playersQ.refetch();
+          void clubsQ.refetch();
+          void gwQ.refetch();
+          void owned.reload();
+        }}
+      />
+    );
+  }
   if (!playersQ.data || !clubsQ.data) return <LoadingState />;
   if (isCloud && owned.isLoading && !owned.snapshot) return <LoadingState />;
-  if (!isCloud && !team) return <LoadingState />;
+  if (!isCloud && localTeamQ.isLoading) return <LoadingState />;
 
   const players = playersQ.data;
   const clubs = clubsQ.data;
@@ -350,10 +371,7 @@ function MyTeamPage() {
     return <RedirectToCreate />;
   }
 
-  if (!team || team.squad.length === 0) {
-    // Defensive: unexpected empty squad state with no builder branch.
-    return <LoadingState />;
-  }
+  if (!team || team.squad.length === 0) return <RedirectToCreate />;
 
   const squad = localSquad ?? team.squad;
   const formation = localFormation ?? team.formation;
@@ -498,7 +516,7 @@ function MyTeamPage() {
           action: () =>
             owned.repo.saveTeam({
               teamName: team.teamName,
-              managerName: team.managerName || null,
+              managerName: user?.displayName?.trim() || team.managerName || null,
               formation: formationToSave,
               bank: team.bank,
               freeTransfers: team.freeTransfers,
@@ -599,7 +617,9 @@ function MyTeamPage() {
             {t("fantasy.team")}
           </div>
           <h1 className="text-xl font-black text-foreground">{team.teamName}</h1>
-          <div className="text-xs text-muted-foreground">{team.managerName}</div>
+          <div className="text-xs text-muted-foreground">
+            {user?.displayName?.trim() || team.managerName}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {gwQ.data && <DeadlineCountdown iso={gwQ.data.deadline} />}
@@ -786,6 +806,9 @@ function MyTeamPage() {
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{t("fantasy.set_captain")}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {t("fantasy.rules.captaincy_desc")}
+            </SheetDescription>
           </SheetHeader>
           <ul className="mt-3 grid gap-1.5">
             {xiIds.map((id) => {
@@ -804,6 +827,7 @@ function MyTeamPage() {
                   </div>
                   <button
                     onClick={() => setCaptain(id, false)}
+                    aria-label={`${t("fantasy.set_captain")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       sq.isCaptain
@@ -815,6 +839,7 @@ function MyTeamPage() {
                   </button>
                   <button
                     onClick={() => setCaptain(id, true)}
+                    aria-label={`${t("fantasy.set_vice")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       sq.isViceCaptain

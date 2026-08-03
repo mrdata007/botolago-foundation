@@ -99,7 +99,7 @@ function HomePage() {
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const greeting = useGreeting();
 
   const summaryQ = useQuery({
@@ -182,7 +182,7 @@ function HomeContent() {
           </span>
         </div>
         <h1 className="mt-1.5 truncate text-[28px] font-black leading-[1.05] tracking-tight text-foreground sm:text-[32px]">
-          {summaryQ.data?.managerName ?? "Manager"}
+          {user?.displayName?.trim() || summaryQ.data?.managerName || "Manager"}
         </h1>
         <p className="mt-1 truncate text-[13px] text-[color:var(--text-secondary)]">
           {gwQ.data ? `${t("home.gameweek")} ${gwQ.data.number}` : ""}
@@ -203,7 +203,13 @@ function HomeContent() {
             }}
           />
         ) : summaryQ.data && gwQ.data ? (
-          <FantasySummaryCard summary={summaryQ.data} gw={gwQ.data} />
+          <FantasySummaryCard
+            summary={{
+              ...summaryQ.data,
+              managerName: user?.displayName?.trim() || summaryQ.data.managerName,
+            }}
+            gw={gwQ.data}
+          />
         ) : summaryQ.isSuccess && summaryQ.data === null ? (
           <Link
             to="/fantasy/create"

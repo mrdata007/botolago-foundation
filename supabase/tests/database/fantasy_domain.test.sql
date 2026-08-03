@@ -27,7 +27,7 @@ select ('f5' || lpad(i::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid,
     when i <= 7 then 'defender'::app.football_position
     when i <= 12 then 'midfielder'::app.football_position
     else 'forward'::app.football_position end
-from generate_series(1, 15) i;
+from generate_series(1, 16) i;
 
 insert into app.fantasy_competitions (id, football_competition_id, slug, name, active)
 values ('f6000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001',
@@ -50,11 +50,12 @@ insert into app.fantasy_players (
 select ('f7' || lpad(i::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid,
   'f6300000-0000-4000-8000-000000000001',
   ('f5' || lpad(i::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid,
-  ('f4' || lpad((((i - 1) % 5) + 1)::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid,
+  ('f4' || lpad((case when i = 16 then 5 else ((i - 1) % 5) + 1 end)::text, 6, '0')
+    || '-0000-4000-8000-000000000001')::uuid,
   (select id from app.fantasy_positions where code = case
     when i <= 2 then 'GK' when i <= 7 then 'DEF' when i <= 12 then 'MID' else 'FWD' end),
   6
-from generate_series(1, 15) i;
+from generate_series(1, 16) i;
 
 insert into auth.users (
   id, instance_id, aud, role, email, email_confirmed_at, encrypted_password,
@@ -78,6 +79,7 @@ select set_config('test.fantasy_selection', (
     'captain', player_number = 8, 'vice_captain', player_number = 13
   ) order by player_number)::text from (
     select id, row_number() over (order by id) as player_number from app.fantasy_players
+    order by id limit 15
   ) player
 ), true);
 
@@ -127,6 +129,74 @@ select extensions.throws_ok(
   'PT409', 'chip_conflict',
   'only one chip can be active in a gameweek'
 );
+select extensions.is(
+  api.get_my_fantasy_team('f6300000-0000-4000-8000-000000000001')
+    -> 'chips' ->> 'active',
+  'bench_boost',
+  'the canonical team DTO persists the active chip across reloads'
+);
+select extensions.is(
+  api.get_my_fantasy_team('f6300000-0000-4000-8000-000000000001')
+    -> 'chips' ->> 'activeCancellable',
+  'false',
+  'the canonical team DTO exposes the ruleset cancellation decision'
+);
+select extensions.throws_ok(
+  $$select api.cancel_fantasy_chip(
+      (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+      'f6400000-0000-4000-8000-000000000001', 2
+    )$$,
+  'PT409', 'chip_unavailable',
+  'a non-cancellable active chip cannot be cancelled by the browser'
+);
+select extensions.throws_ok(
+  $$select api.preview_fantasy_transfers(
+      (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+      'f6400000-0000-4000-8000-000000000001',
+      ('[{"player_out_id":"f7000015-0000-4000-8000-000000000001",' ||
+        '"player_in_id":"f7000014-0000-4000-8000-000000000001"}]')::jsonb,
+      2, null
+    )$$,
+  'PT400', 'invalid_transfer',
+  'the server rejects an incoming player already owned by the squad'
+);
+select extensions.is(
+  api.preview_fantasy_transfers(
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    'f6400000-0000-4000-8000-000000000001',
+    ('[{"player_out_id":"f7000015-0000-4000-8000-000000000001",' ||
+      '"player_in_id":"f7000016-0000-4000-8000-000000000001"}]')::jsonb,
+    2, null
+  ) ->> 'resultingVersion',
+  '3',
+  'a valid server-derived transfer preview advances the expected version'
+);
+select set_config('test.fantasy_transfer_response', api.confirm_fantasy_transfers(
+  (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+  'f6400000-0000-4000-8000-000000000001',
+  ('[{"player_out_id":"f7000015-0000-4000-8000-000000000001",' ||
+    '"player_in_id":"f7000016-0000-4000-8000-000000000001"}]')::jsonb,
+  2, 'f9000000-0000-4000-8000-000000000005', null
+)::text, true);
+select extensions.is(
+  current_setting('test.fantasy_transfer_response')::jsonb -> 'team' ->> 'version',
+  '3',
+  'transfer confirmation advances the authoritative team version atomically'
+);
+select extensions.ok(
+  jsonb_path_exists(
+    current_setting('test.fantasy_transfer_response')::jsonb,
+    '$.team.squad[*] ? (@.fantasyPlayerId == "f7000016-0000-4000-8000-000000000001")'
+  ),
+  'transfer confirmation replaces active squad membership'
+);
+select extensions.ok(
+  jsonb_path_exists(
+    current_setting('test.fantasy_transfer_response')::jsonb,
+    '$.team.lineup[*] ? (@.fantasyPlayerId == "f7000016-0000-4000-8000-000000000001")'
+  ),
+  'transfer confirmation updates the current gameweek lineup in the same transaction'
+);
 
 select set_config(
   'request.jwt.claims',
@@ -143,7 +213,7 @@ reset role;
 select extensions.is((select count(*)::integer from app.fantasy_teams), 2,
   'failed mutations do not create partial teams');
 select extensions.is((select count(*)::integer from app_private.fantasy_mutation_audit
-  where operation in ('create_team','activate_chip')), 3,
+  where operation in ('create_team','activate_chip','confirm_transfers')), 4,
   'accepted sensitive mutations append audit entries');
 
 insert into app.fantasy_leagues (
