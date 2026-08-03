@@ -1,7 +1,43 @@
 import { describe, expect, it } from "bun:test";
-import { applyPriceMovement, calculatePriceMovement, calculateSalePrice } from "./pricing";
+import {
+  applyPriceMovement,
+  BOTOLAGO_INITIAL_PRICE_ALGORITHM_V1,
+  calculateInitialCatalogPrice,
+  calculatePriceMovement,
+  calculateSalePrice,
+} from "./pricing";
 
 describe("BotolaGO Fantasy price rules v1.0", () => {
+  it("publishes a stable initial catalog pricing algorithm", () => {
+    expect(BOTOLAGO_INITIAL_PRICE_ALGORITHM_V1).toBe("botolago-initial-price-v1.0");
+    expect(calculateInitialCatalogPrice("GK", 6, 0)).toBe(4.8);
+    expect(calculateInitialCatalogPrice("DEF", 6, 0)).toBe(5);
+    expect(calculateInitialCatalogPrice("MID", 6, 0)).toBe(7.2);
+    expect(calculateInitialCatalogPrice("FWD", 6, 0)).toBe(7.2);
+  });
+
+  it("maps full-confidence position-relative ratings into bounded price bands", () => {
+    expect(calculateInitialCatalogPrice("GK", 4, 1)).toBe(4);
+    expect(calculateInitialCatalogPrice("GK", 10, 1)).toBe(6.5);
+    expect(calculateInitialCatalogPrice("DEF", 10, 1)).toBe(7);
+    expect(calculateInitialCatalogPrice("MID", 4, 1)).toBe(4.5);
+    expect(calculateInitialCatalogPrice("FWD", 10, 1)).toBe(12.5);
+  });
+
+  it("shrinks incomplete historical evidence toward the neutral price", () => {
+    expect(calculateInitialCatalogPrice("MID", 10, 0.5)).toBe(9.8);
+    expect(calculateInitialCatalogPrice("MID", 4, 0.5)).toBe(5.8);
+  });
+
+  it("rejects invalid initial-pricing evidence", () => {
+    expect(() => calculateInitialCatalogPrice("MID", 3.9, 1)).toThrow(
+      "invalid_initial_price_input",
+    );
+    expect(() => calculateInitialCatalogPrice("FWD", 6, 1.1)).toThrow(
+      "invalid_initial_price_input",
+    );
+  });
+
   it("applies the approved net-transfer thresholds", () => {
     expect(calculatePriceMovement(1_499, 0, 50_000)).toBe(0);
     expect(calculatePriceMovement(1_500, 0, 50_000)).toBe(0.1);
