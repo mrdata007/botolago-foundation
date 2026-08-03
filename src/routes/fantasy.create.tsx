@@ -11,7 +11,13 @@ import { LoadingState } from "@/components/common/States";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
@@ -553,6 +559,9 @@ function CreateTeamPage() {
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{t("fantasy.set_captain")}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {t("fantasy.rules.captaincy_desc")}
+            </SheetDescription>
           </SheetHeader>
           <ul className="mt-3 grid gap-1.5">
             {xiIds.map((id) => {
@@ -573,6 +582,7 @@ function CreateTeamPage() {
                   <button
                     type="button"
                     onClick={() => onSetCaptain(id, false)}
+                    aria-label={`${t("fantasy.set_captain")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       s.isCaptain
@@ -585,6 +595,7 @@ function CreateTeamPage() {
                   <button
                     type="button"
                     onClick={() => onSetCaptain(id, true)}
+                    aria-label={`${t("fantasy.set_vice")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       s.isViceCaptain
