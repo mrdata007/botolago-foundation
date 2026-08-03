@@ -15,7 +15,13 @@ import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -800,6 +806,9 @@ function MyTeamPage() {
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{t("fantasy.set_captain")}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {t("fantasy.rules.captaincy_desc")}
+            </SheetDescription>
           </SheetHeader>
           <ul className="mt-3 grid gap-1.5">
             {xiIds.map((id) => {
@@ -818,6 +827,7 @@ function MyTeamPage() {
                   </div>
                   <button
                     onClick={() => setCaptain(id, false)}
+                    aria-label={`${t("fantasy.set_captain")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       sq.isCaptain
@@ -829,6 +839,7 @@ function MyTeamPage() {
                   </button>
                   <button
                     onClick={() => setCaptain(id, true)}
+                    aria-label={`${t("fantasy.set_vice")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       sq.isViceCaptain
