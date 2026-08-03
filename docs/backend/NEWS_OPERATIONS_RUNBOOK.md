@@ -1,5 +1,9 @@
 # News and Editorial operations runbook
 
+ElBotola link-metadata discovery is documented separately in
+`ELBOTOLA_INTEGRATION.md`. It is database-disabled and unscheduled by default;
+do not activate it without archived written syndication/reuse permission.
+
 This runbook covers BotolaGO Production V2 Phase 4. It does not authorize production deployment, production cron activation, or an Admin CMS UI.
 
 ## Runtime modes
