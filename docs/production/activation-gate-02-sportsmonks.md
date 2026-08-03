@@ -1,9 +1,8 @@
 # Gate 2 — SportsMonks football provider activation
 
-Status: **Gate 2D historical catalog and fixture activation complete; Gate 2E current-season writes remain blocked on provider publication**
+Status: **Gate 2D historical catalog and fixture activation complete; Gate 2E current-season writes remain blocked on provider publication; Gate 2F manual catalog canary is prepared but not authorized**
 
 Target project: BotolaGO Production V2 (`tkewgajrljbwgwedqsxn`)
-
 
 ## Current production state
 
@@ -46,6 +45,8 @@ The protected current-season probe passed on 2026-07-31 in [GitHub Actions run 3
 - Current-season catalog and fixture writes remain disabled.
 
 Gate 2E runs one read-only readiness check daily at `06:17 UTC` from the latest reviewed default-branch commit. The off-hour minute follows GitHub's guidance to reduce scheduled-run delay. Each run makes exactly four bounded GET requests, receives no Supabase credential, writes no database row, uploads only credential-scanned evidence, and publishes whether rounds, teams, and a fixture sample are all present. Publication readiness triggers a separate reviewed activation; it never enables ingestion automatically.
+
+Gate 2F is the prepared, manual-only current-season catalog canary. It cannot run from a push or schedule. A first-attempt owner dispatch must name the exact reviewed `main` commit and supply `RUN_GATE2F_CURRENT_SEASON_CATALOG_CANARY`. Before its first production mutation, it repeats the four-request read-only probe and requires the exact reviewed league and season plus non-zero rounds, teams, and an in-scope fixture sample. A failed readiness check stops before deployment, secret changes, or ingestion. A post-configuration failure removes the one-time trigger and restores the last verified historical provider configuration; success retains the current-season configuration with the trigger removed. Gate 2F remains undispatched until the readiness evidence is green and the owner explicitly authorizes that exact run.
 
 ## Gate 2A contract
 
@@ -113,7 +114,7 @@ Historical season `26027` completed both catalog and fixture canaries. The one-t
 Gate 2A through the bounded Gate 2D historical import are complete. The remaining Gate 2 sequence is:
 
 1. Run the daily read-only Gate 2E readiness check for current season `28647`.
-2. When rounds, teams, and a fixture sample are all present, review and run a current-season catalog canary.
+2. When rounds, teams, and a fixture sample are all present, explicitly authorize and run the prepared manual Gate 2F current-season catalog canary.
 3. Run a bounded current-season fixture canary and independently verify API rows, mappings, freshness, and rejection journals.
 4. Enable a low-frequency write cadence only after the canaries pass.
 5. Expand toward live cadence only after rate-limit headroom, duration, and error rate are observed.
