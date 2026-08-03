@@ -11,6 +11,9 @@ import {
   fantasyPointsSchema,
   fantasyTeamSchema,
   fantasyTopPlayerSchema,
+  fantasyTransferPreviewSchema,
+  fantasyRulesSchema,
+  fantasyFixtureDifficultySchema,
   playerPoolPageSchema,
   type CreateFantasyTeamInput,
   type FantasyChip,
@@ -115,7 +118,7 @@ export class SupabaseFantasyRepository implements FantasyRepository {
       p_chip_type: chip ?? undefined,
     });
     check(error);
-    return data;
+    return parse(fantasyTransferPreviewSchema, data);
   }
 
   async confirmTransfers(
@@ -159,6 +162,44 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return data;
+  }
+
+  async cancelChip(
+    teamId: string,
+    gameweekId: string,
+    expectedVersion: number,
+    _context: RepositoryContext,
+  ) {
+    const { data, error } = await getFantasyApi().rpc("cancel_fantasy_chip", {
+      p_team_id: teamId,
+      p_gameweek_id: gameweekId,
+      p_expected_version: expectedVersion,
+    });
+    check(error);
+    return data;
+  }
+
+  async getRules(seasonId: string, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_rules", {
+      p_season_id: seasonId,
+    });
+    check(error);
+    return parse(fantasyRulesSchema, data);
+  }
+
+  async getFixtureDifficulty(
+    seasonId: string,
+    fromGameweek: number,
+    gameweekCount: number,
+    _context: RepositoryContext,
+  ) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_fixture_difficulty", {
+      p_season_id: seasonId,
+      p_from_gameweek: fromGameweek,
+      p_gameweek_count: gameweekCount,
+    });
+    check(error);
+    return parse(z.array(fantasyFixtureDifficultySchema), data);
   }
 
   async getGameweeks(seasonId: string, beforeSequence: number | null, _context: RepositoryContext) {

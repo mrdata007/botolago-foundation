@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState, EmptyState } from "@/components/common/States";
+import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
@@ -14,8 +14,16 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
-  component: PlayersPage,
+  component: PlayersRoute,
 });
+
+function PlayersRoute() {
+  const isPlayerDetail = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/fantasy/players/$playerId"),
+  });
+  return isPlayerDetail ? <Outlet /> : <PlayersPage />;
+}
 
 type SortKey = "points" | "form" | "price" | "ownership";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
@@ -83,6 +91,16 @@ function PlayersPage() {
     return l;
   }, [playersQ.data, pos, clubId, q, sort]);
 
+  if (playersQ.isError || clubsQ.isError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void playersQ.refetch();
+          void clubsQ.refetch();
+        }}
+      />
+    );
+  }
   if (!playersQ.data || !clubsQ.data) return <LoadingState />;
   const clubs = clubsQ.data;
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);

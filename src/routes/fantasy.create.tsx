@@ -11,7 +11,13 @@ import { LoadingState } from "@/components/common/States";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
@@ -59,6 +65,13 @@ const VALIDATION_KEYS: Record<DraftValidationCode, TranslationKey> = {
   vice_not_in_xi: "fantasy.create.error.vice_not_in_xi",
 };
 
+const GUEST_CREATE_DRAFT_KEY: FantasyDraftKey = {
+  uid: "__guest__",
+  teamId: "new",
+  baseVersion: 0,
+  kind: "create-team",
+};
+
 function CreateTeamPage() {
   const { t, tr, lang, dir } = useI18n();
   const nav = useNavigate();
@@ -81,32 +94,28 @@ function CreateTeamPage() {
   });
 
   // Entry conditions:
-  //   1. Authenticated cloud user.
-  //   2. Cloud snapshot loaded AND empty (or the user explicitly picked start_new).
-  // Otherwise, redirect to /fantasy/team (which handles local and existing-team paths).
+  // Authenticated users persist only through the cloud. Anonymous visitors may
+  // build a draft, but authentication is required before the save mutation.
   const isCloud = owned.source === "cloud";
-  const emptyCloud = !!owned.snapshot?.emptyCloudSquad;
-  const hasCloudTeam = !!owned.snapshot?.team && owned.snapshot.team.squad.length > 0;
+  const isGuest = owned.source === "guest";
+  const hasExistingTeam = !!owned.snapshot?.team && owned.snapshot.team.squad.length > 0;
 
   useEffect(() => {
-    if (owned.isLoading && !owned.snapshot) return;
-    if (!isCloud) {
-      void nav({ to: "/fantasy/team" });
-      return;
-    }
-    if (hasCloudTeam) {
+    if (isCloud && owned.isLoading && !owned.snapshot) return;
+    if (isCloud && hasExistingTeam) {
       void nav({ to: "/fantasy/team" });
     }
-  }, [isCloud, hasCloudTeam, owned.isLoading, owned.snapshot, nav]);
+  }, [isCloud, hasExistingTeam, owned.isLoading, owned.snapshot, nav]);
 
   // ---- Draft key + persistence ----
 
   const teamId = owned.snapshot?.teamId ?? "new";
   const baseVersion = owned.snapshot?.version ?? 0;
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
+    if (isGuest || owned.source === "local") return GUEST_CREATE_DRAFT_KEY;
     if (!isCloud || !owned.userId) return null;
     return { uid: owned.userId, teamId, baseVersion, kind: "create-team" };
-  }, [isCloud, owned.userId, teamId, baseVersion]);
+  }, [isCloud, isGuest, owned.source, owned.userId, teamId, baseVersion]);
 
   const [draft, setDraft] = useState<CreateTeamDraft>(() => initCreateDraft());
   const initedRef = useRef(false);
@@ -118,7 +127,15 @@ function CreateTeamPage() {
 
   useEffect(() => {
     if (initedRef.current || !draftKey) return;
-    const entry = fantasyDraftsStore.read<CreateTeamDraft>(draftKey);
+    let entry = fantasyDraftsStore.read<CreateTeamDraft>(draftKey);
+    if (!entry && isCloud) {
+      const guestEntry = fantasyDraftsStore.read<CreateTeamDraft>(GUEST_CREATE_DRAFT_KEY);
+      if (guestEntry && isCreateDraft(guestEntry.payload)) {
+        fantasyDraftsStore.save(draftKey, guestEntry.payload);
+        fantasyDraftsStore.remove(GUEST_CREATE_DRAFT_KEY);
+        entry = fantasyDraftsStore.read<CreateTeamDraft>(draftKey);
+      }
+    }
     if (entry && isCreateDraft(entry.payload)) {
       setDraft(entry.payload);
     } else {
@@ -129,7 +146,7 @@ function CreateTeamPage() {
       setDraft(initCreateDraft(defaultName));
     }
     initedRef.current = true;
-  }, [draftKey, user?.displayName]);
+  }, [draftKey, isCloud, user?.displayName]);
 
   // Persist draft on every change (once initialized).
   useEffect(() => {
@@ -170,7 +187,7 @@ function CreateTeamPage() {
   const commit = (next: CreateTeamDraft) => setDraft(next);
 
   const onSlotClick = (slot: number) => {
-    requireAuth(() => setPickerSlot(slot));
+    setPickerSlot(slot);
   };
 
   const onPickPlayer = (p: FantasyPlayer) => {
@@ -207,7 +224,7 @@ function CreateTeamPage() {
   };
 
   const onSave = async () => {
-    if (!validation.ok || saving || !isCloud || !draftKey) return;
+    if (!validation.ok || saving || isGuest || !draftKey) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -283,7 +300,7 @@ function CreateTeamPage() {
 
   // ---- Loading gate ----
 
-  if (playersQ.isLoading || clubsQ.isLoading || (owned.isLoading && !owned.snapshot)) {
+  if (playersQ.isLoading || clubsQ.isLoading || (isCloud && owned.isLoading && !owned.snapshot)) {
     return <LoadingState />;
   }
   if (playersQ.error || clubsQ.error || !playersQ.data || !clubsQ.data) {
@@ -542,6 +559,9 @@ function CreateTeamPage() {
         <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{t("fantasy.set_captain")}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {t("fantasy.rules.captaincy_desc")}
+            </SheetDescription>
           </SheetHeader>
           <ul className="mt-3 grid gap-1.5">
             {xiIds.map((id) => {
@@ -562,6 +582,7 @@ function CreateTeamPage() {
                   <button
                     type="button"
                     onClick={() => onSetCaptain(id, false)}
+                    aria-label={`${t("fantasy.set_captain")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       s.isCaptain
@@ -574,6 +595,7 @@ function CreateTeamPage() {
                   <button
                     type="button"
                     onClick={() => onSetCaptain(id, true)}
+                    aria-label={`${t("fantasy.set_vice")} ${tr(p.name)}`}
                     className={cn(
                       "min-h-11 min-w-11 rounded-lg px-3 py-2 text-[11px] font-semibold",
                       s.isViceCaptain

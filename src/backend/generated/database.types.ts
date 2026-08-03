@@ -609,6 +609,14 @@ export type Database = {
         }
         Returns: Json
       }
+      fantasy_fixture_difficulty: {
+        Args: {
+          p_from_gameweek: number
+          p_gameweek_count?: number
+          p_season_id: string
+        }
+        Returns: Json
+      }
       fantasy_gameweeks: {
         Args: {
           p_before_sequence?: number
@@ -2216,6 +2224,68 @@ export type Database = {
             columns: ["original_gameweek_id"]
             isOneToOne: false
             referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_fixture_difficulty_rules: {
+        Row: {
+          algorithm_code: string
+          away_difficulty_adjustment: number
+          created_at: string
+          goal_difference_weight: number
+          level_1_upper: number
+          level_2_upper: number
+          level_3_upper: number
+          level_4_upper: number
+          minimum_current_season_matches: number
+          points_per_match_weight: number
+          rank_weight: number
+          recent_form_matches: number
+          recent_form_weight: number
+          ruleset_id: string
+          updated_at: string
+        }
+        Insert: {
+          algorithm_code: string
+          away_difficulty_adjustment: number
+          created_at?: string
+          goal_difference_weight: number
+          level_1_upper: number
+          level_2_upper: number
+          level_3_upper: number
+          level_4_upper: number
+          minimum_current_season_matches: number
+          points_per_match_weight: number
+          rank_weight: number
+          recent_form_matches: number
+          recent_form_weight: number
+          ruleset_id: string
+          updated_at?: string
+        }
+        Update: {
+          algorithm_code?: string
+          away_difficulty_adjustment?: number
+          created_at?: string
+          goal_difference_weight?: number
+          level_1_upper?: number
+          level_2_upper?: number
+          level_3_upper?: number
+          level_4_upper?: number
+          minimum_current_season_matches?: number
+          points_per_match_weight?: number
+          rank_weight?: number
+          recent_form_matches?: number
+          recent_form_weight?: number
+          ruleset_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_fixture_difficulty_rules_ruleset_id_fkey"
+            columns: ["ruleset_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_rulesets"
             referencedColumns: ["id"]
           },
         ]

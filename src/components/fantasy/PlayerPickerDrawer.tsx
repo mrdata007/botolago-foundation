@@ -3,7 +3,13 @@ import { useI18n } from "@/i18n/provider";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
 import type { Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "./PlayerStatusBadge";
 import { cn } from "@/lib/utils";
@@ -71,6 +77,7 @@ export function PlayerPickerDrawer({
       <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
         <SheetHeader>
           <SheetTitle>{title ?? t("fantasy.picker.title")}</SheetTitle>
+          <SheetDescription className="sr-only">{t("fantasy.picker.search")}</SheetDescription>
         </SheetHeader>
 
         <div className="mt-3 space-y-2">

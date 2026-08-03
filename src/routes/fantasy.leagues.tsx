@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { useI18n } from "@/i18n/provider";
@@ -12,8 +12,16 @@ import { useAuth } from "@/auth/AuthProvider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/leagues")({
-  component: LeaguesPage,
+  component: LeaguesRoute,
 });
+
+function LeaguesRoute() {
+  const isLeagueDetail = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/fantasy/leagues/$leagueId"),
+  });
+  return isLeagueDetail ? <Outlet /> : <LeaguesPage />;
+}
 
 type Tab = "private" | "public" | "cup";
 const tabs: { key: Tab; label: TranslationKey }[] = [
@@ -113,8 +121,12 @@ function LeaguesPage() {
       </div>
 
       <div className="mt-4 grid gap-2">
-        {remoteQ.isLoading && <LoadingState />}
-        {leagues.length === 0 && !remoteQ.isLoading && (
+        {remoteQ.isError ? (
+          <ErrorState onRetry={() => void remoteQ.refetch()} />
+        ) : remoteQ.isLoading ? (
+          <LoadingState />
+        ) : null}
+        {leagues.length === 0 && !remoteQ.isLoading && !remoteQ.isError && (
           <div className="rounded-xl bg-white/60 px-3 py-6 text-center text-xs text-muted-foreground ring-1 ring-black/5">
             {t("fantasy.leagues.empty")}
           </div>

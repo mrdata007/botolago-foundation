@@ -108,16 +108,18 @@ export function LeagueTable({
                       })()}
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <div className="truncate font-bold text-foreground">{s.managerName}</div>
+                          <div className="truncate font-bold text-foreground">{s.teamName}</div>
                           {isMe && (
                             <span className="rounded-full bg-[color:var(--brand-accent)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
                               {t("fantasy.leagues.me")}
                             </span>
                           )}
                         </div>
-                        <div className="truncate text-[10px] text-muted-foreground">
-                          {s.teamName}
-                        </div>
+                        {s.managerName && s.managerName !== s.teamName && (
+                          <div className="truncate text-[10px] text-muted-foreground">
+                            {s.managerName}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
