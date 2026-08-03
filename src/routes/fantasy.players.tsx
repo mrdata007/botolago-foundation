@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -14,8 +14,16 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
-  component: PlayersPage,
+  component: PlayersRoute,
 });
+
+function PlayersRoute() {
+  const isPlayerDetail = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/fantasy/players/$playerId"),
+  });
+  return isPlayerDetail ? <Outlet /> : <PlayersPage />;
+}
 
 type SortKey = "points" | "form" | "price" | "ownership";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];

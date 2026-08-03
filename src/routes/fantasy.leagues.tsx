@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -12,8 +12,16 @@ import { useAuth } from "@/auth/AuthProvider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/leagues")({
-  component: LeaguesPage,
+  component: LeaguesRoute,
 });
+
+function LeaguesRoute() {
+  const isLeagueDetail = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/fantasy/leagues/$leagueId"),
+  });
+  return isLeagueDetail ? <Outlet /> : <LeaguesPage />;
+}
 
 type Tab = "private" | "public" | "cup";
 const tabs: { key: Tab; label: TranslationKey }[] = [
