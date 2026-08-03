@@ -82,6 +82,14 @@ export const fantasyTeamSchema = z.object({
       multiplier: z.coerce.number().nonnegative(),
     }),
   ),
+  chips: z
+    .object({
+      active: z.enum(FANTASY_CHIPS).nullable(),
+      activeCancellable: z.boolean(),
+      used: z.array(z.enum(FANTASY_CHIPS)),
+    })
+    .optional()
+    .default({ active: null, activeCancellable: false, used: [] }),
 });
 export type FantasyTeamDto = z.infer<typeof fantasyTeamSchema>;
 
@@ -228,6 +236,75 @@ export const fantasyTopPlayerSchema = z.object({
 });
 export type FantasyTopPlayerDto = z.infer<typeof fantasyTopPlayerSchema>;
 
+export const fantasyTransferPreviewSchema = z.object({
+  transferCount: z.number().int().positive(),
+  bankBefore: z.coerce.number().nonnegative(),
+  bankAfter: z.coerce.number().nonnegative(),
+  freeTransfersBefore: z.number().int().nonnegative(),
+  freeTransfersUsed: z.number().int().nonnegative(),
+  pointHit: z.number().int().nonnegative(),
+  resultingVersion: z.coerce.number().int().positive(),
+  deadlineAt: z.string(),
+  chipType: z.enum(FANTASY_CHIPS).nullable(),
+});
+export type FantasyTransferPreviewDto = z.infer<typeof fantasyTransferPreviewSchema>;
+
+export const fantasyRulesSchema = z.object({
+  seasonId: postgresUuidSchema,
+  rulesetId: postgresUuidSchema,
+  rulesetCode: z.string(),
+  rulesetVersion: z.number().int().positive(),
+  rulesetSemanticVersion: z.string(),
+  squadSize: z.number().int().positive(),
+  budget: z.coerce.number().positive(),
+  maxPlayersPerClub: z.number().int().positive(),
+  initialFreeTransfers: z.number().int().nonnegative(),
+  maxFreeTransferRollover: z.number().int().nonnegative(),
+  transferHitCost: z.number().int().nonnegative(),
+  captainMultiplier: z.coerce.number().positive(),
+  tripleCaptainMultiplier: z.coerce.number().positive(),
+  deadline: z.object({
+    minutesBeforeFirstFixture: z.number().int().nonnegative(),
+    gracePeriodSeconds: z.number().int().nonnegative(),
+  }),
+  positions: z.array(
+    z.object({
+      code: z.enum(FANTASY_POSITIONS),
+      squadQuota: z.number().int().positive(),
+      startingMinimum: z.number().int().nonnegative(),
+      startingMaximum: z.number().int().positive(),
+      goalPoints: z.number().int(),
+      cleanSheetPoints: z.number().int(),
+    }),
+  ),
+  scoring: z.array(z.unknown()),
+  chips: z.array(
+    z.object({
+      allocationCode: z.string(),
+      chipType: z.enum(FANTASY_CHIPS),
+      startsAtGameweek: z.number().int().positive(),
+      endsAtGameweek: z.number().int().positive().nullable(),
+      cancellable: z.boolean(),
+    }),
+  ),
+  features: z.record(z.string(), z.unknown()).nullable(),
+});
+export type FantasyRulesDto = z.infer<typeof fantasyRulesSchema>;
+
+export const fantasyFixtureDifficultySchema = z.object({
+  fixtureId: postgresUuidSchema,
+  gameweekId: postgresUuidSchema,
+  gameweek: z.number().int().positive(),
+  clubId: postgresUuidSchema,
+  opponentClubId: postgresUuidSchema,
+  kickoffAt: z.string(),
+  isHome: z.boolean(),
+  difficulty: z.number().int().min(1).max(5),
+  confidence: z.enum(["low", "medium", "high"]),
+  algorithmVersion: z.string(),
+});
+export type FantasyFixtureDifficultyDto = z.infer<typeof fantasyFixtureDifficultySchema>;
+
 export interface FantasyPlayerPoolInput {
   readonly seasonId: string;
   readonly position?: FantasyPosition;
@@ -274,7 +351,7 @@ export interface FantasyRepository {
     expectedVersion: number,
     chip: FantasyChip | null,
     context: RepositoryContext,
-  ): Promise<unknown>;
+  ): Promise<FantasyTransferPreviewDto>;
   confirmTransfers(
     teamId: string,
     gameweekId: string,
@@ -292,6 +369,19 @@ export interface FantasyRepository {
     idempotencyKey: string,
     context: RepositoryContext,
   ): Promise<unknown>;
+  cancelChip(
+    teamId: string,
+    gameweekId: string,
+    expectedVersion: number,
+    context: RepositoryContext,
+  ): Promise<unknown>;
+  getRules(seasonId: string, context: RepositoryContext): Promise<FantasyRulesDto>;
+  getFixtureDifficulty(
+    seasonId: string,
+    fromGameweek: number,
+    gameweekCount: number,
+    context: RepositoryContext,
+  ): Promise<readonly FantasyFixtureDifficultyDto[]>;
   getGameweeks(
     seasonId: string,
     beforeSequence: number | null,

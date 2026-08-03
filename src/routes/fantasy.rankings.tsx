@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, Trophy } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useAuth } from "@/auth/AuthProvider";
 import { footballService } from "@/services/football";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
 import { RankingsPodium } from "@/components/fantasy/RankingsPodium";
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/fantasy/rankings")({
 
 function RankingsPage() {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
   const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
 
   const [sort, setSort] = useState<RankingsSort>("overall");
@@ -61,7 +63,7 @@ function RankingsPage() {
   const me: LeagueStanding | undefined = summary
     ? {
         managerId: "me",
-        managerName: summary.managerName,
+        managerName: user?.displayName?.trim() || summary.managerName,
         teamName: summary.teamName,
         rank: summary.overallRank ?? 0,
         previousRank: summary.overallRank ?? 0,
@@ -297,7 +299,9 @@ function RankingRow({
       )}
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-bold text-foreground">{row.teamName}</div>
-        <div className="truncate text-[11px] text-muted-foreground">{row.managerName}</div>
+        {row.managerName && row.managerName !== row.teamName && (
+          <div className="truncate text-[11px] text-muted-foreground">{row.managerName}</div>
+        )}
       </div>
       <RankChangeIndicator rank={row.rank} previousRank={row.previousRank} />
       <span className="w-12 text-end text-xs font-bold tabular-nums text-muted-foreground">

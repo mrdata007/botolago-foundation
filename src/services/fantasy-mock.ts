@@ -20,6 +20,8 @@ const delay = <T>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v)
 // Locally persisted overrides on top of the mock team. Kept partial so we
 // only store what the user actually changed.
 export interface FantasyTeamPatch {
+  teamName?: string;
+  managerName?: string;
   formation?: FormationKey;
   squad?: SquadPlayer[];
   bank?: number;
@@ -34,6 +36,8 @@ function loadPatch(): FantasyTeamPatch {
 function mergeTeam(base: FantasyTeam, patch: FantasyTeamPatch): FantasyTeam {
   return {
     ...base,
+    teamName: patch.teamName ?? base.teamName,
+    managerName: patch.managerName ?? base.managerName,
     formation: patch.formation ?? base.formation,
     squad: patch.squad ?? base.squad,
     bank: patch.bank ?? base.bank,

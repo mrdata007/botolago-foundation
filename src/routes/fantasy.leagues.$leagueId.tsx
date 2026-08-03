@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState, EmptyState } from "@/components/common/States";
+import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { LeagueTable } from "@/components/fantasy/LeagueTable";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
@@ -48,7 +48,18 @@ function LeagueDetailPage() {
   });
 
   const league = leagueQ.data;
-  if (leagueQ.isLoading) return <LoadingState />;
+  if (leagueQ.isError || clubsQ.isError || standingsQ.isError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void leagueQ.refetch();
+          void clubsQ.refetch();
+          void standingsQ.refetch();
+        }}
+      />
+    );
+  }
+  if (leagueQ.isLoading || clubsQ.isLoading || standingsQ.isLoading) return <LoadingState />;
   if (!league) return <EmptyState />;
   const standings = standingsQ.data ?? [];
 
