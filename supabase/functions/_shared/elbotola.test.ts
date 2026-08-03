@@ -35,6 +35,13 @@ function articleHtml(
   return `<a href="https://www.elbotola.com/article/${id}.html"><time data-value="${timestamp}"></time><span>metadata only</span><h3>${heading}</h3></a>`;
 }
 
+function articleImage(
+  id: string,
+  image = "//images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg",
+): string {
+  return `<a href="/article/${id}.html"><img src="${image}" alt="صورة الخبر" /></a>`;
+}
+
 function homepage(...articles: string[]): string {
   return `<!doctype html><html lang="ar"><body>${articles.join("\n")}</body></html>`;
 }
@@ -106,7 +113,18 @@ describe("ElBotola metadata ingestion runtime", () => {
         expect(init?.redirect).toBe("error");
         if (url.pathname === "/robots.txt") return response("not found", 404, "text/plain");
         expect(url.pathname).toBe("/");
-        return response(homepage(first, first, second));
+        return response(
+          homepage(
+            articleImage("2026-08-03-20-42-503"),
+            articleImage(
+              "2026-08-03-19-32-411",
+              "https://images2.elbotola.com/article/6a7108717a2769642ab813ef_thumb.webp",
+            ),
+            first,
+            first,
+            second,
+          ),
+        );
       },
     });
 
@@ -130,6 +148,33 @@ describe("ElBotola metadata ingestion runtime", () => {
     expect(persisted[0].args.p_title).toBe('خبر موثوق عن البطولة "الاحترافية"');
     expect(String(persisted[0].args.p_body_html)).toContain("اقرأ المقال الأصلي على البطولة");
     expect(String(persisted[0].args.p_body_html)).not.toContain("metadata only");
+
+    const attached = calls.filter((call) => call.name === "news_attach_elbotola_hero");
+    expect(attached).toHaveLength(2);
+    expect(attached[0].args).toEqual({
+      p_external_id: "2026-08-03-20-42-503",
+      p_source_url: "https://images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg",
+      p_alt_text: 'خبر موثوق عن البطولة "الاحترافية"',
+    });
+  });
+
+  it("ignores non-allowlisted or credential-bearing image URLs", () => {
+    const parsed = parseElbotolaHomepage(
+      homepage(
+        articleImage("2026-08-03-20-42-503", "https://copy.example/article/stolen.jpg"),
+        articleImage(
+          "2026-08-03-19-32-411",
+          "https://images2.elbotola.com/article/photo.jpg?signature=secret",
+        ),
+        articleHtml("2026-08-03-20-42-503"),
+        articleHtml("2026-08-03-19-32-411"),
+      ),
+      10,
+      NOW,
+    );
+
+    expect(parsed.items).toHaveLength(2);
+    expect(parsed.items.every((item) => item.heroSourceUrl === undefined)).toBe(true);
   });
 
   it("honors a robots rule that disallows homepage collection", async () => {

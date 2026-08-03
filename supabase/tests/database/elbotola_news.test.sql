@@ -20,6 +20,14 @@ select extensions.ok(
   ),
   'anonymous users cannot persist ElBotola metadata'
 );
+select extensions.ok(
+  not has_function_privilege(
+    'anon',
+    'api.news_attach_elbotola_hero(text,text,text)',
+    'execute'
+  ),
+  'anonymous users cannot attach ElBotola hero media'
+);
 
 -- Simulate the separately reviewed publisher-activation migration under the
 -- local database owner. The runtime service role intentionally cannot do this.
@@ -73,6 +81,35 @@ select extensions.is(
   'an identical ElBotola retry is idempotently skipped'
 );
 
+select extensions.ok(
+  (api.news_attach_elbotola_hero(
+    '2026-08-03-20-42-503',
+    'https://images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg',
+    'خبر موثوق عن منافسات البطولة الاحترافية المغربية'
+  ) ->> 'heroAssetId') is not null,
+  'the permissioned ElBotola hero image is attached through the allowlisted media RPC'
+);
+
+select extensions.ok(
+  (api.news_attach_elbotola_hero(
+    '2026-08-03-20-42-503',
+    'https://images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg',
+    'خبر موثوق عن منافسات البطولة الاحترافية المغربية'
+  ) ->> 'heroAssetId') is not null,
+  'reattaching the same hero image is idempotent'
+);
+
+select extensions.throws_ok(
+  $$select api.news_attach_elbotola_hero(
+    '2026-08-03-20-42-503',
+    'https://copy.example/article/stolen.jpg',
+    'خبر موثوق عن منافسات البطولة الاحترافية المغربية'
+  )$$,
+  '22023',
+  null,
+  'hero media from a non-ElBotola host is rejected'
+);
+
 reset role;
 
 select extensions.is(
@@ -103,6 +140,25 @@ select extensions.is(
   ),
   1,
   'the stored edition contains only sanitized link metadata'
+);
+select extensions.is(
+  (
+    select media.source_url
+    from app.article_editions edition
+    join app.media_assets media on media.id = edition.hero_asset_id
+    where edition.sanitizer_version = 'elbotola-link-v1'
+  ),
+  'https://images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg',
+  'the public article DTO can resolve the validated remote ElBotola hero image'
+);
+select extensions.is(
+  (
+    select count(*)::integer
+    from app.media_assets
+    where source_url = 'https://images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg'
+  ),
+  1,
+  'hero retries do not create duplicate media assets'
 );
 
 set local role service_role;
@@ -155,6 +211,16 @@ select extensions.throws_ok(
   '42501',
   null,
   'anonymous clients cannot call ElBotola persistence'
+);
+select extensions.throws_ok(
+  $$select api.news_attach_elbotola_hero(
+    '2026-08-03-20-42-503',
+    'https://images2.elbotola.com/article/6a7108717a2769642ab813ee_default.jpg',
+    'خبر موثوق عن منافسات البطولة الاحترافية المغربية'
+  )$$,
+  '42501',
+  null,
+  'anonymous clients cannot attach ElBotola hero media'
 );
 reset role;
 
