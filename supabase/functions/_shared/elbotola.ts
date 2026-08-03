@@ -42,6 +42,7 @@ interface ParsedArticle {
   readonly canonicalUrl: string;
   readonly title: string;
   readonly publishedAt: string;
+  readonly heroSourceUrl?: string;
 }
 
 interface NormalizedArticle extends ParsedArticle {
@@ -68,6 +69,9 @@ const FUTURE_TOLERANCE_MS = 5 * 60 * 1_000;
 const USER_AGENT = "BotolaGO-NewsMetadata/1.0 (+https://botolago.app)";
 const ARTICLE_URL =
   /^https:\/\/www\.elbotola\.com\/article\/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d+)\.html$/u;
+const ARTICLE_PATH = /^\/?article\/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d+)\.html$/u;
+const HERO_URL =
+  /^https:\/\/images2?\.elbotola\.com\/article\/[a-z0-9/_-]+\.(?:avif|jpe?g|png|webp)$/iu;
 
 export class ElbotolaRuntimeError extends Error {
   constructor(readonly code: string) {
@@ -300,6 +304,57 @@ function publishedTimestamp(value: string, now: Date): string {
   return parsed.toISOString();
 }
 
+function attribute(tag: string, name: string): string | null {
+  const match = new RegExp(`\\b${name}=(['"])([^'"]{1,1000})\\1`, "iu").exec(tag);
+  return match ? decodeHtml(match[2]) : null;
+}
+
+function articleExternalId(value: string): string | null {
+  try {
+    const url = new URL(value, OFFICIAL_ORIGIN);
+    if (url.origin !== OFFICIAL_ORIGIN || url.username || url.password || url.search || url.hash) {
+      return null;
+    }
+    return ARTICLE_PATH.exec(url.pathname)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function heroSourceUrl(value: string): string | null {
+  try {
+    const url = new URL(value.startsWith("//") ? `https:${value}` : value);
+    if (
+      !HERO_URL.test(url.href) ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      /(?:access[_-]?token|api[_-]?key|signature|credential)=/iu.test(url.href)
+    ) {
+      return null;
+    }
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+function homepageHeroImages(source: string): ReadonlyMap<string, string> {
+  const images = new Map<string, string>();
+  for (const anchor of source.matchAll(/<a\b([^>]{0,1000})>([\s\S]{0,2000}?)<\/a>/giu)) {
+    const href = attribute(anchor[1], "href");
+    const externalId = href ? articleExternalId(href) : null;
+    if (!externalId || images.has(externalId)) continue;
+    const imageTag = /<img\b[^>]{0,1500}>/iu.exec(anchor[2])?.[0];
+    if (!imageTag) continue;
+    const sourceUrl = attribute(imageTag, "data-original") ?? attribute(imageTag, "src");
+    const safeUrl = sourceUrl ? heroSourceUrl(sourceUrl) : null;
+    if (safeUrl) images.set(externalId, safeUrl);
+  }
+  return images;
+}
+
 export function parseElbotolaHomepage(
   source: string,
   limit: number,
@@ -311,6 +366,7 @@ export function parseElbotolaHomepage(
   if (source.length > MAX_HOMEPAGE_BYTES) {
     throw new ElbotolaRuntimeError("provider_response_too_large");
   }
+  const heroImages = homepageHeroImages(source);
   const candidates = source.matchAll(
     /<a\b[^>]{0,1000}\bhref=(['"])(https:\/\/www\.elbotola\.com\/article\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d+\.html)\1[^>]*>([\s\S]{0,3000}?)<\/a>/giu,
   );
@@ -334,6 +390,7 @@ export function parseElbotolaHomepage(
         canonicalUrl,
         title: title(headingMatch[1]),
         publishedAt: publishedTimestamp(timeMatch[2], now),
+        heroSourceUrl: heroImages.get(urlMatch[1]),
       });
       if (items.length >= limit) break;
     } catch {
@@ -559,6 +616,13 @@ export async function handleElbotolaRequest(
         const outcome = result.outcome;
         if (outcome !== "inserted" && outcome !== "updated" && outcome !== "skipped") {
           throw new ElbotolaRuntimeError("invalid_database_response");
+        }
+        if (article.heroSourceUrl) {
+          await rpc(dependencies.client, "news_attach_elbotola_hero", {
+            p_external_id: article.externalId,
+            p_source_url: article.heroSourceUrl,
+            p_alt_text: article.title,
+          });
         }
         value[outcome] += 1;
       } catch (error) {

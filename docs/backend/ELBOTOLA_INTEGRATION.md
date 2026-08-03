@@ -1,10 +1,11 @@
-# ElBotola link-metadata integration
+# ElBotola metadata and hero-image integration
 
 ## Decision
 
-BotolaGO may use ElBotola only as an attributed link-metadata source after
-written syndication/reuse approval. This integration is deliberately not a
-full-article scraper.
+BotolaGO may use ElBotola as an attributed link-metadata and remote hero-image
+source. The BotolaGO owner confirmed on 2026-08-03 that permission is held for
+this integration; the underlying evidence must remain in the private legal and
+operations record. This integration is deliberately not a full-article scraper.
 
 The public ElBotola terms state that Moroccan and international copyright law
 protect the site's content, and the site footer states that all rights are
@@ -14,10 +15,10 @@ at <https://www.elbotola.com/contact/terms-and-conditions/>. The publisher's
 public submissions/contact page is
 <https://www.elbotola.com/contact/publish/> and lists `press@elbotola.com`.
 
-Absence of a robots file is not a content licence. Production activation
-therefore requires written permission covering commercial link aggregation,
-headline metadata, the intended request cadence, attribution, and any image
-use. Image reuse is not implemented by this change.
+Absence of a robots file is not a content licence. The recorded permission must
+cover commercial link aggregation, headline metadata, the intended request
+cadence, attribution, and hero-image display. BotolaGO does not infer permission
+for full article bodies, galleries, video, or unrelated ElBotola assets.
 
 ## What the adapter stores
 
@@ -25,14 +26,17 @@ use. Image reuse is not implemented by this change.
 - canonical HTTPS article URL;
 - Arabic headline;
 - publication timestamp exposed on the public homepage;
+- one declared article hero/thumbnail URL from the exact allowlisted ElBotola
+  media origin, with title-derived alt text and ElBotola attribution;
 - a BotolaGO-authored generic source summary;
 - an outbound `nofollow noopener noreferrer` link;
 - explicit `ElBotola` publisher attribution;
 - source version and content fingerprint for idempotency.
 
 It does **not** store the article body, remote HTML, author biography, user
-data, video, gallery media, or remote image binaries. It does not visit the
-individual article pages.
+data, video, gallery media, or remote image binaries. The validated image stays
+on ElBotola's media origin; BotolaGO does not copy it into Storage. The adapter
+does not visit individual article pages.
 
 ## Runtime safety
 
@@ -49,11 +53,14 @@ production schedule. It fails closed unless all of these conditions hold:
 6. the response is bounded HTML from the allowlisted origin;
 7. database validation confirms Arabic language, exact publisher identity,
    exact source origin, exact article URL shape, safe link-only HTML, and the
-   `elbotola-link-v1` sanitizer contract.
+   `elbotola-link-v1` sanitizer contract;
+8. hero URLs use HTTPS, contain no credentials or query parameters, match the
+   exact ElBotola article-media path, and resolve only from
+   `images.elbotola.com` or `images2.elbotola.com`.
 
 The migration intentionally creates the publisher with `active = false` and
-`trust_status = review_required`. Merging or deploying this code cannot begin
-collection.
+`trust_status = review_required`. The permission is recorded, but merging or
+deploying this code still cannot begin collection.
 
 ## Server-only configuration
 
@@ -71,9 +78,10 @@ the inactive database publisher guard.
 
 ## Approval and activation sequence
 
-1. Obtain and archive written permission from ElBotola.
-2. Confirm permitted fields, cadence, attribution wording, retention, and
-   image rights. Keep images disabled unless rights are explicit.
+1. Retain the existing permission evidence in the private legal record; never
+   commit it or credentials to the repository.
+2. Confirm the permission still covers the approved fields, cadence,
+   attribution wording, retention, and remote hero-image display.
 3. Re-check the current terms and `robots.txt`.
 4. Review the exact production function SHA and migration state.
 5. Set the server-only approval flag but keep the publisher inactive.
@@ -84,5 +92,6 @@ the inactive database publisher guard.
 9. Add a schedule only in a later reviewed change, with a conservative cadence
    and a documented stop switch.
 
-If permission is denied, expires, or becomes ambiguous, leave the publisher
-inactive, remove the approval flag, and do not invoke the function.
+If permission is revoked, expires, or becomes ambiguous, leave the publisher
+inactive, remove the approval flag, and do not invoke the function. Existing
+remote images can be detached without deleting canonical article history.

@@ -1,7 +1,7 @@
--- ElBotola is prepared as a link-metadata source only. It remains inactive
--- until written syndication/reuse approval is recorded and the separate
--- server-side runtime approval flag is enabled. No article bodies or images
--- are copied by this integration.
+-- ElBotola is prepared as an attributed link-metadata and remote hero-image
+-- source. BotolaGO's owner confirmed permission on 2026-08-03. Article bodies
+-- and image binaries are never copied; the publisher and runtime remain
+-- disabled until a separate reviewed activation.
 
 insert into app.publishers (
   slug, name, source_type, trust_status, ingestion_mode, website_url, active
@@ -261,3 +261,113 @@ comment on function api.news_ingest_provider_article(
   timestamptz, timestamptz, integer, text
 ) is
   'Service-role-only atomic allowlisted provider link/excerpt ingestion with source attribution and idempotent deduplication.';
+
+create or replace function api.news_attach_elbotola_hero(
+  p_external_id text,
+  p_source_url text,
+  p_alt_text text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  source_mapping app_private.news_source_articles%rowtype;
+  target_asset_id uuid;
+  target_mime_type text;
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), auth.role()) <> 'service_role' then
+    raise exception using errcode = '42501', message = 'news_service_role_required';
+  end if;
+  if p_external_id is null
+    or p_external_id <> btrim(p_external_id)
+    or p_external_id !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]+$'
+    or p_source_url is null
+    or p_source_url <> btrim(p_source_url)
+    or p_source_url !~* '^https://images2?[.]elbotola[.]com/article/[a-z0-9/_-]+[.](avif|jpg|jpeg|png|webp)$'
+    or p_source_url ~* '(access[_-]?token|api[_-]?key|signature|credential)='
+    or p_alt_text is null
+    or p_alt_text <> btrim(p_alt_text)
+    or char_length(p_alt_text) not between 5 and 500
+    or p_alt_text ~ '[<>]'
+  then
+    raise exception using errcode = '22023', message = 'news_invalid_provider_media';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('elbotola-media:' || p_source_url, 0));
+
+  select source_article.* into source_mapping
+  from app_private.news_source_articles source_article
+  join app.publishers publisher on publisher.id = source_article.publisher_id
+  where publisher.slug = 'elbotola'
+    and publisher.active
+    and publisher.trust_status <> 'blocked'
+    and source_article.external_id = p_external_id
+    and source_article.active
+  for update of source_article;
+  if not found then
+    raise exception using errcode = 'P0002', message = 'news_source_article_not_found';
+  end if;
+
+  target_mime_type := case
+    when lower(p_source_url) ~ '[.]avif$' then 'image/avif'
+    when lower(p_source_url) ~ '[.]png$' then 'image/png'
+    when lower(p_source_url) ~ '[.]webp$' then 'image/webp'
+    else 'image/jpeg'
+  end;
+
+  select media.id into target_asset_id
+  from app.media_assets media
+  where media.kind = 'article_hero'
+    and media.source_url = p_source_url
+  order by media.created_at, media.id
+  limit 1
+  for update;
+
+  if target_asset_id is null then
+    insert into app.media_assets (
+      kind, source_url, attribution, license_code, validation_status,
+      validated_at, mime_type, alt_text, credit, copyright_owner,
+      attribution_url
+    ) values (
+      'article_hero', p_source_url, 'ElBotola', 'permission-on-file', 'validated',
+      statement_timestamp(), target_mime_type, p_alt_text, 'ElBotola', 'ElBotola',
+      source_mapping.canonical_url
+    ) returning id into target_asset_id;
+  else
+    update app.media_assets
+    set validation_status = 'validated',
+        validated_at = statement_timestamp(),
+        mime_type = target_mime_type,
+        alt_text = p_alt_text,
+        attribution = 'ElBotola',
+        credit = 'ElBotola',
+        copyright_owner = 'ElBotola',
+        license_code = 'permission-on-file',
+        attribution_url = source_mapping.canonical_url,
+        updated_at = statement_timestamp()
+    where id = target_asset_id;
+  end if;
+
+  update app.article_editions
+  set hero_asset_id = target_asset_id,
+      updated_at = statement_timestamp()
+  where id = source_mapping.article_edition_id;
+  if not found then
+    raise exception using errcode = 'P0002', message = 'news_article_edition_not_found';
+  end if;
+
+  return jsonb_build_object(
+    'articleId', source_mapping.article_edition_id,
+    'heroAssetId', target_asset_id
+  );
+end;
+$$;
+
+revoke all on function api.news_attach_elbotola_hero(text, text, text)
+  from public, anon, authenticated;
+grant execute on function api.news_attach_elbotola_hero(text, text, text)
+  to service_role;
+
+comment on function api.news_attach_elbotola_hero(text, text, text) is
+  'Service-role-only attachment of permissioned, allowlisted ElBotola remote hero images; image binaries are not copied.';
