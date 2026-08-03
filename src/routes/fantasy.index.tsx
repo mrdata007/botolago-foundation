@@ -24,6 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { useAuth } from "@/auth/AuthProvider";
 
 export const Route = createFileRoute("/fantasy/")({
   component: FantasyHub,
@@ -53,6 +54,7 @@ const quickActions: QuickAction[] = [
 
 function FantasyHub() {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
   const summary = useQuery({
     queryKey: ["fantasy-summary"],
@@ -111,7 +113,13 @@ function FantasyHub() {
             }}
           />
         ) : summary.data && gw.data ? (
-          <FantasySummaryCard summary={summary.data} gw={gw.data} />
+          <FantasySummaryCard
+            summary={{
+              ...summary.data,
+              managerName: user?.displayName?.trim() || summary.data.managerName,
+            }}
+            gw={gw.data}
+          />
         ) : summary.isSuccess && summary.data === null ? (
           <Link
             to="/fantasy/create"

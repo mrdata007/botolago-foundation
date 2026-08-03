@@ -45,7 +45,12 @@ import {
   type SaveTeamPayloadInput,
 } from "@/services/fantasy-payloads";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import type { FantasyTeamDto, LineupSelection } from "@/backend/fantasy/contracts";
+import type {
+  FantasyChip,
+  FantasyTeamDto,
+  FantasyTransferPreviewDto,
+  LineupSelection,
+} from "@/backend/fantasy/contracts";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 
 // ---------- Public normalized types ----------
@@ -61,8 +66,16 @@ export interface FantasySnapshot {
   source: FantasyRepoSource;
   currentGameweekId: string | null;
   purchasePrices: Record<string, number>;
+  activeChipCancellable: boolean;
   /** True when authenticated cloud team exists but has zero squad rows. */
   emptyCloudSquad?: boolean;
+}
+
+export interface PreviewOwnedTransfersInput {
+  expectedVersion: number;
+  currentGameweekId: string;
+  transfers: ConfirmTransfersPayloadInput["transfers"];
+  chip: FantasyChip | null;
 }
 
 export interface SaveOwnedTeamInput {
@@ -108,7 +121,14 @@ export interface FantasyOwnedRepository {
   readonly source: FantasyRepoSource;
   loadSnapshot(): Promise<FantasySnapshot>;
   saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot>;
+  previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto>;
   confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot>;
+  activateChip(input: {
+    gameweekId: string;
+    chip: FantasyChip;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot>;
+  cancelChip(input: { gameweekId: string; expectedVersion: number }): Promise<FantasySnapshot>;
   finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot>;
   reload(): Promise<FantasySnapshot>;
 }
@@ -152,6 +172,7 @@ export class GuestFantasyRepository implements FantasyOwnedRepository {
       source: "guest",
       currentGameweekId: null,
       purchasePrices: {},
+      activeChipCancellable: false,
       emptyCloudSquad: true,
     };
   }
@@ -164,7 +185,26 @@ export class GuestFantasyRepository implements FantasyOwnedRepository {
     return this.unauthorized();
   }
 
+  async previewTransfers(_input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+    return this.unauthorized();
+  }
+
   async confirmTransfers(_input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+    return this.unauthorized();
+  }
+
+  async activateChip(_input: {
+    gameweekId: string;
+    chip: FantasyChip;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    return this.unauthorized();
+  }
+
+  async cancelChip(_input: {
+    gameweekId: string;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
     return this.unauthorized();
   }
 
@@ -208,6 +248,7 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
       source: "local",
       currentGameweekId: null,
       purchasePrices,
+      activeChipCancellable: false,
     };
   }
 
@@ -223,6 +264,10 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
       fantasyStateStore.write(input.lifecycle, { internal: true });
     }
     return this.loadSnapshot();
+  }
+
+  async previewTransfers(_input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+    throw new FantasyRepoError("validation", "Server preview is unavailable in local mode.");
   }
 
   async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
@@ -259,6 +304,24 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
       { internal: true },
     );
     return this.loadSnapshot();
+  }
+
+  async activateChip(_input: {
+    gameweekId: string;
+    chip: FantasyChip;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    throw new FantasyRepoError("validation", "Cloud chip activation is unavailable in local mode.");
+  }
+
+  async cancelChip(_input: {
+    gameweekId: string;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    throw new FantasyRepoError(
+      "validation",
+      "Cloud chip cancellation is unavailable in local mode.",
+    );
   }
 
   async finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
@@ -376,6 +439,7 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
           source: "cloud",
           currentGameweekId: null,
           purchasePrices: {},
+          activeChipCancellable: false,
           emptyCloudSquad: true,
         };
       }
@@ -442,6 +506,7 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
       source: "cloud",
       currentGameweekId: row.current_gameweek_id,
       purchasePrices,
+      activeChipCancellable: false,
       emptyCloudSquad: squad.length === 0,
     };
   }
@@ -475,6 +540,13 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
     }
   }
 
+  async previewTransfers(_input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+    throw new FantasyRepoError(
+      "validation",
+      "The archived compatibility adapter does not expose V2 transfer previews.",
+    );
+  }
+
   async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
     try {
       const idMap = await this.loadMap();
@@ -504,6 +576,27 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
     } catch (err) {
       throw toRepoError(err);
     }
+  }
+
+  async activateChip(_input: {
+    gameweekId: string;
+    chip: FantasyChip;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    throw new FantasyRepoError(
+      "validation",
+      "The archived compatibility adapter does not expose V2 chip operations.",
+    );
+  }
+
+  async cancelChip(_input: {
+    gameweekId: string;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    throw new FantasyRepoError(
+      "validation",
+      "The archived compatibility adapter does not expose V2 chip operations.",
+    );
   }
 
   async finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
@@ -583,6 +676,7 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
         source: "cloud",
         currentGameweekId: gameweekId,
         purchasePrices: {},
+        activeChipCancellable: false,
         emptyCloudSquad: true,
       };
     }
@@ -623,11 +717,18 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
         freeTransfers: team.freeTransfers,
         pendingTransfers: 0,
       },
-      lifecycle: { ...DEFAULT_STATE },
+      lifecycle: {
+        ...DEFAULT_STATE,
+        chips: {
+          active: team.chips.active,
+          used: [...team.chips.used],
+        },
+      },
       finalizedResults: {},
       source: "cloud",
       currentGameweekId: team.currentGameweekId,
       purchasePrices,
+      activeChipCancellable: team.chips.activeCancellable,
       emptyCloudSquad: squad.length === 0,
     };
   }
@@ -674,6 +775,22 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     }
   }
 
+  async previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+    const current = await this.loadSnapshot();
+    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    return this.repository.previewTransfers(
+      current.teamId,
+      input.currentGameweekId,
+      input.transfers.map((transfer) => ({
+        player_out_id: transfer.outSourceId,
+        player_in_id: transfer.inSourceId,
+      })),
+      input.expectedVersion,
+      input.chip,
+      this.context(),
+    );
+  }
+
   async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
     const current = await this.loadSnapshot();
     if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
@@ -686,7 +803,40 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       })),
       input.expectedVersion,
       crypto.randomUUID(),
-      null,
+      input.lifecycle.chips.active,
+      this.context(),
+    );
+    return this.loadSnapshot();
+  }
+
+  async activateChip(input: {
+    gameweekId: string;
+    chip: FantasyChip;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    const current = await this.loadSnapshot();
+    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    await this.repository.activateChip(
+      current.teamId,
+      input.gameweekId,
+      input.chip,
+      input.expectedVersion,
+      crypto.randomUUID(),
+      this.context(),
+    );
+    return this.loadSnapshot();
+  }
+
+  async cancelChip(input: {
+    gameweekId: string;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot> {
+    const current = await this.loadSnapshot();
+    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    await this.repository.cancelChip(
+      current.teamId,
+      input.gameweekId,
+      input.expectedVersion,
       this.context(),
     );
     return this.loadSnapshot();

@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { Pitch } from "@/components/fantasy/Pitch";
 import { PlayerShirt } from "@/components/fantasy/PlayerShirt";
@@ -187,8 +187,48 @@ function PointsPage() {
     }
   }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent]);
 
-  if (!team || !playersQ.data || !clubsQ.data || gwResultQ.isPending || currentGwQ.isPending) {
+  if (
+    currentGwQ.isError ||
+    gwResultQ.isError ||
+    historyQ.isError ||
+    localTeamQ.isError ||
+    playersQ.isError ||
+    clubsQ.isError ||
+    owned.loadError
+  ) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void currentGwQ.refetch();
+          void gwResultQ.refetch();
+          void historyQ.refetch();
+          void localTeamQ.refetch();
+          void playersQ.refetch();
+          void clubsQ.refetch();
+          void owned.reload();
+        }}
+      />
+    );
+  }
+  if (
+    (isCloud && owned.isLoading) ||
+    localTeamQ.isLoading ||
+    !playersQ.data ||
+    !clubsQ.data ||
+    gwResultQ.isPending ||
+    currentGwQ.isPending
+  ) {
     return <LoadingState />;
+  }
+  if (!team) {
+    return (
+      <Link
+        to="/fantasy/create"
+        className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+      >
+        {t("fantasy.create.title")}
+      </Link>
+    );
   }
 
   if (vm === "error") {
@@ -578,7 +618,7 @@ function PointsPage() {
             {t("fantasy.points.finalized_badge")}
           </span>
         )}
-        {isCurrent && !finalized && deadlineLocked && vm.source === "engine" && (
+        {!isCloud && isCurrent && !finalized && deadlineLocked && vm.source === "engine" && (
           <button
             type="button"
             onClick={() => setConfirmFinalize(true)}
@@ -587,7 +627,7 @@ function PointsPage() {
             <LockIcon className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.points.finalize")}
           </button>
         )}
-        {isCurrent && finalized && (
+        {!isCloud && isCurrent && finalized && (
           <button
             type="button"
             onClick={() => setConfirmAdvance(true)}

@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { Users, Coins, LayoutGrid, Star, ArrowRightLeft, Timer, Trophy, Medal } from "lucide-react";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { ErrorState, LoadingState } from "@/components/common/States";
 
 export const Route = createFileRoute("/fantasy/rules")({
   component: RulesPage,
@@ -9,6 +12,16 @@ export const Route = createFileRoute("/fantasy/rules")({
 
 function RulesPage() {
   const { t } = useI18n();
+  const rulesQ = useQuery({
+    queryKey: ["fantasy-rules"],
+    queryFn: () => fantasyService.getRules(),
+  });
+
+  if (rulesQ.isLoading) return <LoadingState />;
+  if (rulesQ.isError || !rulesQ.data) {
+    return <ErrorState onRetry={() => void rulesQ.refetch()} />;
+  }
+  const rules = rulesQ.data;
 
   const sections: {
     icon: React.ComponentType<{ className?: string }>;
@@ -40,6 +53,19 @@ function RulesPage() {
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.rules.intro")}</p>
 
+      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
+        <RuleValue label={t("fantasy.rules.budget")} value={String(rules.budget)} />
+        <RuleValue
+          label={t("fantasy.rules.transfers_r")}
+          value={`${rules.initialFreeTransfers} / -${rules.transferHitCost}`}
+        />
+        <RuleValue
+          label={t("fantasy.rules.deadlines")}
+          value={`${rules.deadline.minutesBeforeFirstFixture} min`}
+        />
+      </dl>
+
       <div className="mt-4 grid gap-2">
         {sections.map((s) => (
           <section
@@ -56,6 +82,17 @@ function RulesPage() {
           </section>
         ))}
       </div>
+    </div>
+  );
+}
+
+function RuleValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white/60 p-3 text-center ring-1 ring-black/5">
+      <dt className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 text-lg font-black tabular-nums text-foreground">{value}</dd>
     </div>
   );
 }

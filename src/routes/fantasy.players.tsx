@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState, EmptyState } from "@/components/common/States";
+import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
@@ -83,6 +83,16 @@ function PlayersPage() {
     return l;
   }, [playersQ.data, pos, clubId, q, sort]);
 
+  if (playersQ.isError || clubsQ.isError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void playersQ.refetch();
+          void clubsQ.refetch();
+        }}
+      />
+    );
+  }
   if (!playersQ.data || !clubsQ.data) return <LoadingState />;
   const clubs = clubsQ.data;
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);

@@ -130,15 +130,28 @@ function FixturesPage() {
                       </div>
                     </th>
                     {gameweeks.map((gw) => {
-                      const f = list.find((x) => x.gameweek === gw);
-                      if (!f) return <td key={gw} className="px-1 py-2" />;
-                      const opp = clubOf(f.opponentClubId);
+                      const fixtures = list.filter((fixture) => fixture.gameweek === gw);
+                      if (!fixtures.length) {
+                        return (
+                          <td key={gw} className="px-1 py-2 text-center text-muted-foreground">
+                            —
+                          </td>
+                        );
+                      }
                       return (
                         <td key={gw} className="px-1 py-1">
-                          <DifficultyBadge
-                            difficulty={f.difficulty}
-                            label={`${opp?.crestPlaceholder ?? "?"}${f.isHome ? " (H)" : ""}${f.isDouble ? " ×2" : ""}${f.isBlank ? " —" : ""}`}
-                          />
+                          <div className="grid gap-1">
+                            {fixtures.map((fixture) => {
+                              const opponent = clubOf(fixture.opponentClubId);
+                              return (
+                                <DifficultyBadge
+                                  key={`${fixture.clubId}:${fixture.opponentClubId}:${fixture.gameweek}:${fixture.isHome}`}
+                                  difficulty={fixture.difficulty}
+                                  label={`${opponent?.crestPlaceholder ?? "?"}${fixture.isHome ? " (H)" : " (A)"}`}
+                                />
+                              );
+                            })}
+                          </div>
                         </td>
                       );
                     })}

@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { LoadingState } from "@/components/common/States";
+import { ErrorState, LoadingState } from "@/components/common/States";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
@@ -148,7 +148,80 @@ function TransfersPage() {
     setDraftRestored(false);
   };
 
-  if (!team || !playersQ.data || !clubsQ.data) return <LoadingState />;
+  const previewPlayers = playersQ.data ?? [];
+  const transferPairs = outIds.map((outSourceId, index) => {
+    const outPlayer = previewPlayers.find((player) => player.id === outSourceId);
+    const inSourceId = inIds[index] ?? "";
+    const inPlayer = previewPlayers.find((player) => player.id === inSourceId);
+    return {
+      outSourceId,
+      inSourceId,
+      priceOut: outPlayer?.price ?? 0,
+      priceIn: inPlayer?.price ?? 0,
+      cost: (inPlayer?.price ?? 0) - (outPlayer?.price ?? 0),
+      hit: 0,
+      chip: fantasyState.chips.active,
+    };
+  });
+  const serverPreviewQ = useQuery({
+    queryKey: [
+      "fantasy-transfer-preview",
+      owned.snapshot?.teamId,
+      owned.snapshot?.version,
+      owned.snapshot?.currentGameweekId,
+      transferPairs.map((pair) => `${pair.outSourceId}:${pair.inSourceId}`).join("|"),
+      fantasyState.chips.active,
+    ],
+    queryFn: () =>
+      owned.repo.previewTransfers({
+        expectedVersion: owned.snapshot!.version,
+        currentGameweekId: owned.snapshot!.currentGameweekId!,
+        transfers: transferPairs,
+        chip: fantasyState.chips.active,
+      }),
+    enabled:
+      isCloud &&
+      !!owned.snapshot?.teamId &&
+      !!owned.snapshot.currentGameweekId &&
+      outIds.length > 0 &&
+      outIds.length === inIds.length &&
+      inIds.every(Boolean),
+    retry: false,
+  });
+
+  if (playersQ.isError || clubsQ.isError || gwQ.isError || localTeamQ.isError || owned.loadError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void playersQ.refetch();
+          void clubsQ.refetch();
+          void gwQ.refetch();
+          void localTeamQ.refetch();
+          void owned.reload();
+        }}
+      />
+    );
+  }
+  if (
+    (isCloud && owned.isLoading) ||
+    localTeamQ.isLoading ||
+    playersQ.isLoading ||
+    clubsQ.isLoading ||
+    gwQ.isLoading
+  ) {
+    return <LoadingState />;
+  }
+  if (!team) {
+    return (
+      <Link
+        to="/fantasy/create"
+        className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+      >
+        {t("fantasy.create.title")}
+      </Link>
+    );
+  }
+  if (!playersQ.data || !clubsQ.data) return <LoadingState />;
   const players = playersQ.data;
   const clubs = clubsQ.data;
   const playerOf = (id: string) => players.find((p) => p.id === id)!;
@@ -170,7 +243,7 @@ function TransfersPage() {
   const inPlayers = inIds.map(playerOf).filter(Boolean) as FantasyPlayer[];
 
   const impact = computeBudgetImpact({ outPlayers, inPlayers, bank: team.bank });
-  const preview = previewTransfers({
+  const localPreview = previewTransfers({
     team,
     chips: fantasyState.chips,
     outIds,
@@ -178,9 +251,28 @@ function TransfersPage() {
     netCost:
       outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
   });
+  const preview =
+    isCloud && serverPreviewQ.data
+      ? {
+          ...localPreview,
+          totalTransfers: serverPreviewQ.data.transferCount,
+          bankAfter: serverPreviewQ.data.bankAfter,
+          freeTransfersAfter:
+            serverPreviewQ.data.freeTransfersBefore - serverPreviewQ.data.freeTransfersUsed,
+          free: serverPreviewQ.data.freeTransfersUsed,
+          paid: serverPreviewQ.data.transferCount - serverPreviewQ.data.freeTransfersUsed,
+          hitPoints: serverPreviewQ.data.pointHit,
+          chipActive: serverPreviewQ.data.chipType,
+          overBudget: false,
+        }
+      : localPreview;
 
   const canReview =
-    preview.totalTransfers > 0 && outIds.length === inIds.length && !impact.overBudget && !locked;
+    preview.totalTransfers > 0 &&
+    outIds.length === inIds.length &&
+    !impact.overBudget &&
+    !locked &&
+    (!isCloud || (!!serverPreviewQ.data && !serverPreviewQ.isError));
   const hasWorkingChanges = outIds.length > 0 || inIds.length > 0;
 
   const startReplace = (playerId: string) => {
@@ -427,6 +519,15 @@ function TransfersPage() {
           className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-800"
         >
           <Check className="h-4 w-4 shrink-0" aria-hidden /> {t("fantasy.transfers.success")}
+        </div>
+      )}
+
+      {isCloud && serverPreviewQ.isError && (
+        <div
+          role="alert"
+          className="mt-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm font-semibold text-red-800"
+        >
+          {t("fantasy.error.transfer_failed")}
         </div>
       )}
 
