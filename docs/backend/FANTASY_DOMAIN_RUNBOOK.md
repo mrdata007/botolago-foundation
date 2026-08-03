@@ -18,13 +18,19 @@ workers use service-role RPCs. No worker schedule is enabled by this phase.
 Production mode fails closed if the Fantasy data mode is omitted. Local
 storage is permitted only for drafts keyed by user/team/base version.
 
-## Ruleset activation
+## Ruleset and catalog activation
 
-The approved global template is `botolago-fantasy-v1.0`; its exact immutable
-decision record is `FANTASY_RULES_V1.md`. Before opening registration, link it
-to one reviewed Fantasy season and publish the explicit short-season Wildcard
-split when applicable. Never edit a historical ruleset in place; create a new
-version and choose an explicit effective date.
+The immutable launch rules are recorded in `FANTASY_RULES_V1.md`; the active
+pre-activation template is `botolago-fantasy-v1.1`, which preserves the v1.0
+game rules and adds the reviewed fixture-difficulty contract. Before opening
+registration, link the template to one reviewed Fantasy season and persist the
+explicit short-season Wildcard split when applicable. Never edit a historical
+ruleset in place; create a new version and choose an explicit effective date.
+
+The exact two-step source preview, deterministic opening-price model, catalog
+stage, registration-open, verification, idempotency, and rollback procedure is
+documented in `FANTASY_CATALOG_ACTIVATION_RUNBOOK.md`. Staging a catalog does
+not authorize registration or activate any worker schedule.
 
 ## Staging capacity validation
 

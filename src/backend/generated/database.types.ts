@@ -1059,6 +1059,18 @@ export type Database = {
         Returns: Json
       }
       news_team_filters: { Args: { p_language: string }; Returns: Json }
+      preview_fantasy_catalog_activation: {
+        Args: {
+          p_expected_fixture_count?: number
+          p_expected_round_count?: number
+          p_expected_team_count?: number
+          p_football_season_id: string
+          p_maximum_player_count?: number
+          p_minimum_player_count?: number
+          p_ruleset_code?: string
+        }
+        Returns: Json
+      }
       preview_fantasy_transfers: {
         Args: {
           p_chip_type?: Database["app"]["Enums"]["fantasy_chip_type"]
@@ -1229,6 +1241,14 @@ export type Database = {
         Args: { p_since?: string }
         Returns: Json
       }
+      service_open_fantasy_registration: {
+        Args: {
+          p_catalog_activation_id: string
+          p_expected_source_digest: string
+          p_idempotency_key: string
+        }
+        Returns: Json
+      }
       service_recalculate_fantasy_rankings: {
         Args: {
           p_calculation_version?: number
@@ -1263,6 +1283,27 @@ export type Database = {
       }
       service_roll_fantasy_free_transfers: {
         Args: { p_batch_size?: number; p_gameweek_id: string }
+        Returns: Json
+      }
+      service_rollback_fantasy_catalog: {
+        Args: {
+          p_catalog_activation_id: string
+          p_expected_source_digest: string
+        }
+        Returns: Json
+      }
+      service_stage_fantasy_catalog: {
+        Args: {
+          p_expected_fixture_count: number
+          p_expected_round_count: number
+          p_expected_source_digest: string
+          p_expected_team_count: number
+          p_football_season_id: string
+          p_idempotency_key: string
+          p_maximum_player_count: number
+          p_minimum_player_count: number
+          p_ruleset_code: string
+        }
         Returns: Json
       }
       service_upsert_fantasy_player_points: {
