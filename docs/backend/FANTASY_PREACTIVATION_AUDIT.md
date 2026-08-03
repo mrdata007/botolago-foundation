@@ -75,13 +75,30 @@ denied, and only the safe `api.fantasy_fixture_difficulty` RPC is public.
   Supabase calls.
 - Generated V2 database types were regenerated from a clean local schema.
 
+## Deterministic mock acceptance
+
+The complete first-user journey was repeated in browser mock mode after the
+audit changes. An anonymous visitor could open the player pool, autocomplete a
+valid 15-player squad, keep the draft through navigation and authentication,
+and save it without a redirect loop. The saved team preserved the entered name
+(`Test Atlas`), displayed the authenticated profile name (`Rachid Demo`) as the
+manager, and retained the calculated bank (`17`). Bench Boost activation and
+cancellation both persisted, and a goalkeeper transfer preview and confirmation
+updated the player, bank, and free-transfer count without an unexpected error.
+
+The route matrix covered hub, create, team, transfers, points, top players,
+rankings, leagues, player pool, fixtures, and rules. Every route completed its
+mock query and rendered its expected content without a permanent loading or
+error state. Mock values prove UI and repository integration only; they are not
+evidence that production scoring, rankings, or catalog activation has run.
+
 ## Verification completed
 
 - clean migration replay from zero: pass;
 - migration validation: pass;
 - generated-type drift check: pass;
 - pgTAP/RLS: 516 tests pass;
-- application/unit tests: 507 tests pass;
+- application/unit tests: 508 tests pass;
 - TypeScript typecheck: pass;
 - production build: pass;
 - lint: pass with no errors (12 pre-existing warnings);

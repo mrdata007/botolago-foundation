@@ -346,7 +346,7 @@ function MyTeamPage() {
   }
   if (!playersQ.data || !clubsQ.data) return <LoadingState />;
   if (isCloud && owned.isLoading && !owned.snapshot) return <LoadingState />;
-  if (!isCloud && !team) return <LoadingState />;
+  if (!isCloud && localTeamQ.isLoading) return <LoadingState />;
 
   const players = playersQ.data;
   const clubs = clubsQ.data;

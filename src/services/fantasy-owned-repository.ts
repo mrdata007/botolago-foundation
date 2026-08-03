@@ -254,6 +254,8 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
 
   async saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot> {
     fantasyService.saveTeam({
+      teamName: input.teamName,
+      managerName: input.managerName ?? undefined,
       formation: input.formation,
       squad: input.squad,
       bank: input.bank,

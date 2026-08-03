@@ -92,29 +92,24 @@ function CreateTeamPage() {
   // build a draft, but authentication is required before the save mutation.
   const isCloud = owned.source === "cloud";
   const isGuest = owned.source === "guest";
-  const emptyCloud = !!owned.snapshot?.emptyCloudSquad;
-  const hasCloudTeam = !!owned.snapshot?.team && owned.snapshot.team.squad.length > 0;
+  const hasExistingTeam = !!owned.snapshot?.team && owned.snapshot.team.squad.length > 0;
 
   useEffect(() => {
-    if (owned.isLoading && !owned.snapshot) return;
-    if (!isCloud && !isGuest) {
-      void nav({ to: "/fantasy/team" });
-      return;
-    }
-    if (hasCloudTeam) {
+    if (isCloud && owned.isLoading && !owned.snapshot) return;
+    if (isCloud && hasExistingTeam) {
       void nav({ to: "/fantasy/team" });
     }
-  }, [isCloud, isGuest, hasCloudTeam, owned.isLoading, owned.snapshot, nav]);
+  }, [isCloud, hasExistingTeam, owned.isLoading, owned.snapshot, nav]);
 
   // ---- Draft key + persistence ----
 
   const teamId = owned.snapshot?.teamId ?? "new";
   const baseVersion = owned.snapshot?.version ?? 0;
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
-    if (isGuest) return GUEST_CREATE_DRAFT_KEY;
+    if (isGuest || owned.source === "local") return GUEST_CREATE_DRAFT_KEY;
     if (!isCloud || !owned.userId) return null;
     return { uid: owned.userId, teamId, baseVersion, kind: "create-team" };
-  }, [isCloud, isGuest, owned.userId, teamId, baseVersion]);
+  }, [isCloud, isGuest, owned.source, owned.userId, teamId, baseVersion]);
 
   const [draft, setDraft] = useState<CreateTeamDraft>(() => initCreateDraft());
   const initedRef = useRef(false);
@@ -223,7 +218,7 @@ function CreateTeamPage() {
   };
 
   const onSave = async () => {
-    if (!validation.ok || saving || !isCloud || !draftKey) return;
+    if (!validation.ok || saving || isGuest || !draftKey) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -299,7 +294,7 @@ function CreateTeamPage() {
 
   // ---- Loading gate ----
 
-  if (playersQ.isLoading || clubsQ.isLoading || (owned.isLoading && !owned.snapshot)) {
+  if (playersQ.isLoading || clubsQ.isLoading || (isCloud && owned.isLoading && !owned.snapshot)) {
     return <LoadingState />;
   }
   if (playersQ.error || clubsQ.error || !playersQ.data || !clubsQ.data) {
