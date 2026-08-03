@@ -921,6 +921,14 @@ export type Database = {
         Args: { p_identifier: string; p_language: string }
         Returns: Json
       }
+      news_attach_elbotola_hero: {
+        Args: {
+          p_alt_text: string
+          p_external_id: string
+          p_source_url: string
+        }
+        Returns: Json
+      }
       news_begin_ingestion_run: {
         Args: {
           p_cursor?: string

@@ -1,5 +1,11 @@
 # News and Editorial operations runbook
 
+ElBotola metadata and hero-image discovery is documented separately in
+`ELBOTOLA_INTEGRATION.md`. BotolaGO's owner confirmed metadata/link and remote
+hero-image permission on 2026-08-03. It remains database-disabled,
+runtime-disabled, and unscheduled by default; retain the permission evidence
+privately and revalidate scope before activation.
+
 This runbook covers BotolaGO Production V2 Phase 4. It does not authorize production deployment, production cron activation, or an Admin CMS UI.
 
 ## Runtime modes
@@ -82,7 +88,7 @@ No production schedule is active in Phase 4.
 
 The `news-media` bucket is public-read and trusted-server/editorial-write only. There are no browser upload policies. Canonical media records support source or storage location, dimensions, MIME type, alt text, caption, credit, copyright owner, license, and attribution URL.
 
-Do not copy third-party images into Storage until redistribution rights are documented. Keep remote media as validated HTTPS references when copying is not licensed. Never proxy credentials in media URLs. UI gradient fallbacks remain valid when an asset is unavailable.
+Do not copy third-party images into Storage until redistribution rights are documented. Keep remote media as validated HTTPS references when copying is not licensed. ElBotola hero images use this remote-reference path under the separately documented permission and strict host/path allowlist. Never proxy credentials in media URLs. UI gradient fallbacks remain valid when an asset is unavailable.
 
 ## Retention
 
