@@ -8,7 +8,6 @@ import {
   AuthDivider,
   AuthFieldError,
   AuthFieldLabel,
-  AuthLink,
 } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
@@ -22,10 +21,14 @@ import {
 } from "@/lib/validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { markWelcomeDone } from "@/lib/welcome";
+import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Créer un compte — BotolaGO" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    next: sanitizeAuthCallbackNext(typeof search.next === "string" ? search.next : null),
+  }),
   component: RegisterPage,
 });
 
@@ -42,6 +45,7 @@ type Errors = {
 function RegisterPage() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const ids = {
     name: useId(),
     username: useId(),
@@ -93,6 +97,7 @@ function RegisterPage() {
       email,
       password,
       language: lang,
+      next,
     });
     setSubmitting(false);
 
@@ -106,22 +111,26 @@ function RegisterPage() {
       return;
     }
     toast.success(t("auth.success.register"));
-    navigate({ to: "/auth/verify", search: { email: res.data!.email } });
+    navigate({ to: "/auth/verify", search: { email: res.data!.email, next } });
   };
 
   const onSocial = async (provider: "google" | "apple") => {
     setSubmitting(true);
     const res =
       provider === "google"
-        ? await authService.signInWithGoogle()
-        : await authService.signInWithApple();
+        ? await authService.signInWithGoogle(next)
+        : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
       setErrors({ form: "auth.error.generic" });
       return;
     }
     markWelcomeDone();
-    navigate({ to: res.data?.profileComplete ? "/" : "/auth/profile-setup" });
+    if (res.data?.profileComplete) {
+      navigate({ to: next });
+      return;
+    }
+    navigate({ to: "/auth/profile-setup", search: { next } });
   };
 
   return (
@@ -131,7 +140,13 @@ function RegisterPage() {
       footer={
         <span>
           {t("auth.register.have_account")}{" "}
-          <AuthLink to="/auth/login">{t("auth.register.login_link")}</AuthLink>
+          <Link
+            to="/auth/login"
+            search={{ next }}
+            className="font-bold text-white underline-offset-4 hover:underline"
+          >
+            {t("auth.register.login_link")}
+          </Link>
         </span>
       }
     >
@@ -306,6 +321,7 @@ function RegisterPage() {
           {t("auth.terms_notice")}{" "}
           <Link
             to="/auth/login"
+            search={{ next }}
             className="font-semibold text-[color:var(--brand-primary)] hover:underline"
           >
             {t("auth.register.login_link")}
