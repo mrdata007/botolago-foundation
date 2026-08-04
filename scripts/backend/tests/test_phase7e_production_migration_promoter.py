@@ -18,6 +18,26 @@ SPEC.loader.exec_module(PROMOTER)
 
 
 class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
+    @staticmethod
+    def production_history_row(migration: PROMOTER.Migration) -> dict[str, object]:
+        pinned = PROMOTER.EXPECTED_MULTI_STATEMENT_HISTORY.get(migration.version)
+        if pinned is not None:
+            name, statement_count, statements_md5 = pinned
+            return {
+                "version": migration.version,
+                "name": name,
+                "statement_count": statement_count,
+                "statements_md5": statements_md5,
+                "statement_hex": None,
+            }
+        return {
+            "version": migration.version,
+            "name": migration.name,
+            "statement_count": 1,
+            "statements_md5": hashlib.md5(migration.sql.encode("utf-8")).hexdigest(),
+            "statement_hex": migration.sql.encode("utf-8").hex(),
+        }
+
     def test_batches_cover_the_exact_ordered_migration_chain(self) -> None:
         expected = sorted(
             path.name
@@ -86,6 +106,26 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             with self.assertRaises(PROMOTER.PromotionError):
                 PROMOTER.assert_history("identity", invalid, migrations)
 
+    def test_read_history_requests_the_exact_multi_statement_digest(self) -> None:
+        class Client:
+            def __init__(self) -> None:
+                self.queries: list[str] = []
+
+            def query(self, sql: str, *, read_only: bool):
+                self.assert_read_only = read_only
+                self.queries.append(sql)
+                if "to_regclass" in sql:
+                    return [{"exists": True}]
+                return []
+
+        client = Client()
+        self.assertEqual([], PROMOTER.read_history(client))
+        self.assertTrue(client.assert_read_only)
+        self.assertIn(
+            "md5(array_to_string(coalesce(statements, array[]::text[]), E'\\n'))",
+            client.queries[-1],
+        )
+
     def test_release_activation_starts_only_after_the_44_file_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -98,12 +138,7 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             prefix = PROMOTER.batch_history_prefix("release_activation")
             self.assertEqual(44, len(prefix))
             history = [
-                {
-                    "version": migrations[filename].version,
-                    "name": migrations[filename].name,
-                    "statement_count": 1,
-                    "statement_hex": migrations[filename].sql.encode("utf-8").hex(),
-                }
+                self.production_history_row(migrations[filename])
                 for filename in prefix
             ]
             self.assertEqual(
@@ -124,6 +159,71 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                 1,
                 PROMOTER.assert_history("release_activation", history, migrations),
             )
+
+    def test_release_activation_accepts_only_the_pinned_multi_statement_history(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            migration_dir = root / "supabase" / "migrations"
+            migration_dir.mkdir(parents=True)
+            for files in PROMOTER.BATCHES.values():
+                for filename in files:
+                    (migration_dir / filename).write_text(f"-- {filename}\n", encoding="utf-8")
+            migrations = PROMOTER.load_migrations(root)
+            prefix = PROMOTER.batch_history_prefix("release_activation")
+            history = [
+                self.production_history_row(migrations[filename])
+                for filename in prefix
+            ]
+
+            self.assertEqual(
+                0,
+                PROMOTER.assert_history("release_activation", history, migrations),
+            )
+            self.assertEqual(
+                {
+                    "20260801010000",
+                    "20260801010100",
+                    "20260801010200",
+                    "20260802010100",
+                    "20260802010200",
+                    "20260802090000",
+                },
+                set(PROMOTER.EXPECTED_MULTI_STATEMENT_HISTORY),
+            )
+
+            first_pinned_index = next(
+                index
+                for index, row in enumerate(history)
+                if row["version"] in PROMOTER.EXPECTED_MULTI_STATEMENT_HISTORY
+            )
+            wrong_count = [dict(row) for row in history]
+            wrong_count[first_pinned_index]["statement_count"] = 1
+            with self.assertRaisesRegex(
+                PROMOTER.PromotionError,
+                "multi-statement history mismatch",
+            ):
+                PROMOTER.assert_history("release_activation", wrong_count, migrations)
+
+            wrong_digest = [dict(row) for row in history]
+            wrong_digest[first_pinned_index]["statements_md5"] = "0" * 32
+            with self.assertRaisesRegex(
+                PROMOTER.PromotionError,
+                "multi-statement history mismatch",
+            ):
+                PROMOTER.assert_history("release_activation", wrong_digest, migrations)
+
+            unpinned_index = next(
+                index
+                for index, row in enumerate(history)
+                if row["version"] not in PROMOTER.EXPECTED_MULTI_STATEMENT_HISTORY
+            )
+            unpinned_multi = [dict(row) for row in history]
+            unpinned_multi[unpinned_index]["statement_count"] = 2
+            with self.assertRaisesRegex(
+                PROMOTER.PromotionError,
+                "statement history is non-canonical",
+            ):
+                PROMOTER.assert_history("release_activation", unpinned_multi, migrations)
 
     def test_secret_sanitizer_redacts_supported_credentials(self) -> None:
         value = (

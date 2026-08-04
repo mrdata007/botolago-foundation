@@ -118,6 +118,43 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "release_activation": frozenset({"football-ingest", "news-ingest"}),
 }
 
+# These migrations were promoted through separately reviewed provider canaries
+# whose CLI-compatible history rows preserve the SQL as multiple statements.
+# Pin the exact Production V2 representation observed by the protected
+# read-only preflight instead of weakening history validation for any other row.
+EXPECTED_MULTI_STATEMENT_HISTORY: dict[str, tuple[str, int, str]] = {
+    "20260801010000": (
+        "gnews_article_ingestion",
+        9,
+        "5daf7ec90bf06ce266f44d72d2aae3e1",
+    ),
+    "20260801010100": (
+        "player_season_ratings",
+        21,
+        "b5dd99ec340264b3a0a3420a55fddeea",
+    ),
+    "20260801010200": (
+        "sportsmonks_team_crests",
+        5,
+        "97c70743872e74481d28ebdef7462a34",
+    ),
+    "20260802010100": (
+        "historical_player_performances",
+        33,
+        "c20c667d706bc11729f571630818f2a5",
+    ),
+    "20260802010200": (
+        "historical_performance_mapping_quarantine",
+        6,
+        "316e6fccf87c8299ec07fe19425fb206",
+    ),
+    "20260802090000": (
+        "football_season_browser",
+        8,
+        "5c8c1dbe68ef55bc3bc87f0ca62abb8d",
+    ),
+}
+
 
 class PromotionError(RuntimeError):
     """Stable, sanitized promotion failure."""
@@ -399,6 +436,7 @@ select
   version,
   coalesce(name, '') as name,
   coalesce(array_length(statements, 1), 0) as statement_count,
+  md5(array_to_string(coalesce(statements, array[]::text[]), E'\\n')) as statements_md5,
   case
     when coalesce(array_length(statements, 1), 0) = 1
       then encode(convert_to(statements[1], 'UTF8'), 'hex')
@@ -434,6 +472,18 @@ def assert_history(
         expected = migrations[filename]
         if row.get("name") != expected.name:
             raise PromotionError(f"migration name mismatch: {expected.version}")
+        pinned_multi_statement = EXPECTED_MULTI_STATEMENT_HISTORY.get(expected.version)
+        if pinned_multi_statement is not None:
+            pinned_name, pinned_count, pinned_md5 = pinned_multi_statement
+            if (
+                expected.name != pinned_name
+                or int(row.get("statement_count") or 0) != pinned_count
+                or row.get("statements_md5") != pinned_md5
+            ):
+                raise PromotionError(
+                    f"migration multi-statement history mismatch: {expected.version}"
+                )
+            continue
         if int(row.get("statement_count") or 0) != 1:
             raise PromotionError(f"migration statement history is non-canonical: {expected.version}")
         encoded_statement = row.get("statement_hex")
