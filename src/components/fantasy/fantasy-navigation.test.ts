@@ -28,16 +28,12 @@ describe("Fantasy navigation", () => {
   });
 
   test("contains no duplicate destinations", () => {
-    const destinations = [...fantasyPrimaryItems, ...fantasySecondaryItems].map(
-      (item) => item.to,
-    );
+    const destinations = [...fantasyPrimaryItems, ...fantasySecondaryItems].map((item) => item.to);
     expect(new Set(destinations).size).toBe(destinations.length);
   });
 
   test("keeps nested player routes active without activating the hub", () => {
-    expect(isFantasyRouteActive("/fantasy/players/player-42", "/fantasy/players")).toBe(
-      true,
-    );
+    expect(isFantasyRouteActive("/fantasy/players/player-42", "/fantasy/players")).toBe(true);
     expect(isFantasyRouteActive("/fantasy/players/player-42", "/fantasy")).toBe(false);
   });
 });
