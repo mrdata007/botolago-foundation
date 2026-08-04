@@ -95,10 +95,7 @@ export function GameweekStatusStrip() {
             label={t("fantasy.overall_rank")}
             value={data.overallRank === null ? "—" : numberFormat.format(data.overallRank)}
           />
-          <Metric
-            label={t("fantasy.free_transfers")}
-            value={String(data.transfersLeft)}
-          />
+          <Metric label={t("fantasy.free_transfers")} value={String(data.transfersLeft)} />
           <Metric
             label={t("fantasy.bank")}
             value={numberFormat.format(data.bankValue)}
