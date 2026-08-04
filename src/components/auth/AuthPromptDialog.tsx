@@ -18,11 +18,7 @@ export function AuthPromptDialog() {
 
   const go = (to: "/auth/login" | "/auth/register") => {
     closePrompt();
-    if (to === "/auth/login") {
-      navigate({ to, search: { next: pathname } });
-      return;
-    }
-    navigate({ to });
+    navigate({ to, search: { next: pathname } });
   };
 
   return (
