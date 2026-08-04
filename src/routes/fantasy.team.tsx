@@ -343,11 +343,7 @@ function MyTeamPage() {
 
   // Early loading state — we need players/clubs/team for any render below.
   if (owned.source === "guest") {
-    return authStatus === "loading" ? (
-      <LoadingState />
-    ) : (
-      <FantasyAccessGate next="/fantasy/team" />
-    );
+    return authStatus === "loading" ? <LoadingState /> : <FantasyAccessGate next="/fantasy/team" />;
   }
 
   if (playersQ.isError || clubsQ.isError || gwQ.isError || owned.loadError) {
