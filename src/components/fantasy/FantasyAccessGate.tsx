@@ -45,7 +45,10 @@ export function FantasyAccessGate({
       </div>
       <h1
         id="fantasy-access-title"
-        className={cn("relative font-black text-foreground", compact ? "mt-3 text-lg" : "mt-4 text-2xl")}
+        className={cn(
+          "relative font-black text-foreground",
+          compact ? "mt-3 text-lg" : "mt-4 text-2xl",
+        )}
       >
         {t("auth.prompt.title")}
       </h1>
