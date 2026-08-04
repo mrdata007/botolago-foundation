@@ -6,6 +6,12 @@ hero-image permission on 2026-08-03. It remains database-disabled,
 runtime-disabled, and unscheduled by default; retain the permission evidence
 privately and revalidate scope before activation.
 
+NewsData.io metadata/excerpt discovery is documented separately in
+`NEWSDATA_INTEGRATION.md`. It is implemented as an isolated, inactive provider
+with no production schedule. It must remain inactive until current commercial
+terms, the account plan, queries, source attribution, image exclusions, and a
+bounded canary are reviewed.
+
 This runbook covers BotolaGO Production V2 Phase 4. It does not authorize production deployment, production cron activation, or an Admin CMS UI.
 
 ## Runtime modes
@@ -19,7 +25,16 @@ Development defaults to mock only when the variable is absent. Production fails 
 
 ## Provider status
 
-`NEWS_PROVIDER=fixture` is the only Phase 4 adapter. It validates pagination and normalization but is not a live integration. Canonical provider persistence remains deliberately disabled in `SupabaseNewsIngestionGateway` until a source contract, redistribution rights, deduplication policy, and staging samples are approved.
+The deterministic fixture adapter remains the local/test default. Production
+provider implementations are isolated behind server-only Edge Functions:
+
+- GNews: metadata/excerpt transport, subject to a commercial production plan;
+- ElBotola: permissioned Arabic link metadata and allowlisted remote hero URLs;
+- NewsData.io: French/Arabic metadata/excerpt transport with provider images
+  deliberately excluded.
+
+None of these providers silently replaces the fixture adapter, bypasses the
+canonical ingestion RPCs, or enables its own production schedule.
 
 Provider selection must evaluate Moroccan-football coverage, French/Arabic metadata, canonical URLs, correction semantics, quotas, full-text reuse rights, image rights, attribution, source availability, and deletion obligations.
 
