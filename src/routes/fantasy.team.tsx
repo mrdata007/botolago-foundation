@@ -53,6 +53,7 @@ import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-dra
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
 import { ConflictBar } from "@/components/fantasy/ConflictBar";
+import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { importDecisionService } from "@/services/fantasy-import-decision";
 
 export const Route = createFileRoute("/fantasy/team")({
@@ -92,14 +93,17 @@ function MyTeamPage() {
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
+    enabled: owned.source !== "guest",
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+    enabled: owned.source !== "guest",
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
+    enabled: owned.source !== "guest",
   });
 
   // Local-only mock summary. In cloud mode we derive from the owned snapshot
@@ -107,7 +111,7 @@ function MyTeamPage() {
   const summaryQ = useQuery({
     queryKey: ownedKey("summary"),
     queryFn: () => fantasyService.getSummary(),
-    enabled: !isCloud,
+    enabled: owned.source === "local",
   });
 
   // Local-mode team read; in cloud mode we consume owned.snapshot directly
@@ -115,12 +119,12 @@ function MyTeamPage() {
   const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
     queryFn: () => fantasyService.getTeam(),
-    enabled: !isCloud,
+    enabled: owned.source === "local",
   });
 
   const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
 
-  const { requireAuth, user } = useAuth();
+  const { requireAuth, user, status: authStatus } = useAuth();
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [captainSheet, setCaptainSheet] = useState(false);
@@ -338,6 +342,14 @@ function MyTeamPage() {
   };
 
   // Early loading state — we need players/clubs/team for any render below.
+  if (owned.source === "guest") {
+    return authStatus === "loading" ? (
+      <LoadingState />
+    ) : (
+      <FantasyAccessGate next="/fantasy/team" />
+    );
+  }
+
   if (playersQ.isError || clubsQ.isError || gwQ.isError || owned.loadError) {
     return (
       <ErrorState
