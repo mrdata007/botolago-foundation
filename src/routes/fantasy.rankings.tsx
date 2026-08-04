@@ -6,6 +6,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { useAuth } from "@/auth/AuthProvider";
 import { footballService } from "@/services/football";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { RankingsPodium } from "@/components/fantasy/RankingsPodium";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/fantasy/rankings")({
 function RankingsPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
+  const { source, key } = useFantasyDataSource();
   const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
 
   const [sort, setSort] = useState<RankingsSort>("overall");
@@ -51,15 +53,16 @@ function RankingsPage() {
   const tableRef = useRef<HTMLDivElement>(null);
 
   const summaryQ = useQuery({
-    queryKey: ["fantasy-summary"],
+    queryKey: key("summary"),
     queryFn: () => fantasyService.getSummary(),
+    enabled: source !== "guest",
   });
   const clubsQ = useQuery({
     queryKey: ["clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
 
-  const summary = summaryQ.data ?? null;
+  const summary = source === "guest" ? null : (summaryQ.data ?? null);
   const me: LeagueStanding | undefined = summary
     ? {
         managerId: "me",
@@ -73,7 +76,7 @@ function RankingsPage() {
     : undefined;
 
   const rankingsQ = useQuery({
-    queryKey: ["fantasy-rankings", sort, page, search, me?.totalScore ?? null],
+    queryKey: key("rankings", sort, page, search, me?.totalScore ?? null),
     queryFn: () =>
       fantasyService.getGlobalRankings({
         page,
