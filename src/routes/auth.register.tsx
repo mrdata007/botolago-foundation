@@ -26,9 +26,11 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Créer un compte — BotolaGO" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    next: sanitizeAuthCallbackNext(typeof search.next === "string" ? search.next : null),
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const next =
+      typeof search.next === "string" ? sanitizeAuthCallbackNext(search.next) : undefined;
+    return next && next !== "/" ? { next } : {};
+  },
   component: RegisterPage,
 });
 
@@ -45,7 +47,7 @@ type Errors = {
 function RegisterPage() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
-  const { next } = Route.useSearch();
+  const { next = "/" } = Route.useSearch();
   const ids = {
     name: useId(),
     username: useId(),
