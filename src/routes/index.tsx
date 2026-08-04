@@ -363,47 +363,49 @@ function HomeContent() {
           ) : !leaguesQ.data ? (
             <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>
           ) : null}
-          {source !== "guest" && leaguesQ.data?.map((l) => {
-            const delta = l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
-            const climbed = delta > 0;
-            const dropped = delta < 0;
-            return (
-              <div
-                key={l.id}
-                className={cn("surface-2-interactive flex items-center gap-3 px-3 py-3")}
-              >
+          {source !== "guest" &&
+            leaguesQ.data?.map((l) => {
+              const delta =
+                l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
+              const climbed = delta > 0;
+              const dropped = delta < 0;
+              return (
                 <div
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-black text-white shadow-inner"
-                  style={{ backgroundImage: "var(--bg-brand-gradient)" }}
-                  aria-hidden
+                  key={l.id}
+                  className={cn("surface-2-interactive flex items-center gap-3 px-3 py-3")}
                 >
-                  {l.rank === null ? "—" : `#${l.rank}`}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
-                  <div className="truncate text-[11px] text-[color:var(--text-muted)]">
-                    {nf.format(l.members)} managers
+                  <div
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-black text-white shadow-inner"
+                    style={{ backgroundImage: "var(--bg-brand-gradient)" }}
+                    aria-hidden
+                  >
+                    {l.rank === null ? "—" : `#${l.rank}`}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
+                    <div className="truncate text-[11px] text-[color:var(--text-muted)]">
+                      {nf.format(l.members)} managers
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-black tabular-nums",
+                      climbed &&
+                        "bg-[color:color-mix(in_oklab,var(--color-success)_14%,transparent)] text-[color:var(--color-success)]",
+                      dropped &&
+                        "bg-[color:color-mix(in_oklab,var(--color-danger)_14%,transparent)] text-[color:var(--color-danger)]",
+                      !climbed &&
+                        !dropped &&
+                        "bg-[color:var(--surface-hover)] text-[color:var(--text-secondary)]",
+                    )}
+                    aria-label={climbed ? `+${delta}` : dropped ? `${delta}` : "0"}
+                  >
+                    <span aria-hidden>{climbed ? "▲" : dropped ? "▼" : "="}</span>
+                    {Math.abs(delta) || 0}
                   </div>
                 </div>
-                <div
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-black tabular-nums",
-                    climbed &&
-                      "bg-[color:color-mix(in_oklab,var(--color-success)_14%,transparent)] text-[color:var(--color-success)]",
-                    dropped &&
-                      "bg-[color:color-mix(in_oklab,var(--color-danger)_14%,transparent)] text-[color:var(--color-danger)]",
-                    !climbed &&
-                      !dropped &&
-                      "bg-[color:var(--surface-hover)] text-[color:var(--text-secondary)]",
-                  )}
-                  aria-label={climbed ? `+${delta}` : dropped ? `${delta}` : "0"}
-                >
-                  <span aria-hidden>{climbed ? "▲" : dropped ? "▼" : "="}</span>
-                  {Math.abs(delta) || 0}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </Section>
     </AppShell>
