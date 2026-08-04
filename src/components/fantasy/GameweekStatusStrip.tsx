@@ -34,10 +34,7 @@ export function GameweekStatusStrip() {
           ? "locked"
           : "finalized"
       : "scheduled");
-  const presentation = getGameweekPresentation(
-    status,
-    gameweek.data?.pointsState ?? "provisional",
-  );
+  const presentation = getGameweekPresentation(status, gameweek.data?.pointsState ?? "provisional");
   const summary = useQuery({
     queryKey: key("summary"),
     queryFn: () => fantasyService.getSummary(),
