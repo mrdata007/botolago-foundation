@@ -20,7 +20,7 @@ export const Route = createFileRoute("/fantasy/")({
 
 function FantasyHub() {
   const { t, lang } = useI18n();
-  const { source } = useFantasyDataSource();
+  const { source, key } = useFantasyDataSource();
   const gw = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
@@ -38,7 +38,7 @@ function FantasyHub() {
     queryFn: () => footballService.getClubs(lang),
   });
   const leagues = useQuery({
-    queryKey: ["fantasy-leagues"],
+    queryKey: key("leagues", "private"),
     queryFn: () => fantasyService.getLeagues("private"),
     enabled: source !== "guest",
   });
