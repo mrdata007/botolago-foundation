@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AppShell } from "@/components/shell/AppShell";
 import { FantasySubNav } from "@/components/fantasy/FantasySubNav";
+import { FantasyMobileNav } from "@/components/fantasy/FantasyMobileNav";
+import { GameweekStatusStrip } from "@/components/fantasy/GameweekStatusStrip";
 import { FantasyOnboarding } from "@/components/fantasy/FantasyOnboarding";
 import { CloudSyncBanner } from "@/components/fantasy/CloudSyncBanner";
 import { FantasyImportPrompt } from "@/components/fantasy/FantasyImportPrompt";
@@ -25,8 +27,9 @@ export const Route = createFileRoute("/fantasy")({
 
 function FantasyLayout() {
   return (
-    <AppShell>
+    <AppShell contentWidth="wide" bottomNav={<FantasyMobileNav />}>
       <FantasySubNav />
+      <GameweekStatusStrip />
       <CloudSyncBanner />
       <FantasyImportPrompt />
       <div className="pt-3">
