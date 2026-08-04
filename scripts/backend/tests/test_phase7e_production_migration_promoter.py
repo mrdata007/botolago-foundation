@@ -27,8 +27,16 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
         self.assertEqual(expected, sorted(actual))
         versions = [filename.split("_", 1)[0] for filename in actual]
         self.assertEqual(versions, sorted(versions))
-        self.assertEqual(35, len(actual))
-        self.assertEqual(35, len(set(actual)))
+        self.assertEqual(47, len(actual))
+        self.assertEqual(47, len(set(actual)))
+        self.assertEqual(
+            (
+                "20260803173344_fantasy_preactivation_hardening.sql",
+                "20260803210943_fantasy_catalog_activation.sql",
+                "20260803212218_elbotola_metadata_ingestion.sql",
+            ),
+            PROMOTER.BATCHES["release_activation"],
+        )
 
     def test_transaction_preserves_exact_sql_and_history_metadata(self) -> None:
         sql = "create schema app;\nselect '✓';\n"
@@ -78,6 +86,45 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             with self.assertRaises(PROMOTER.PromotionError):
                 PROMOTER.assert_history("identity", invalid, migrations)
 
+    def test_release_activation_starts_only_after_the_44_file_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            migration_dir = root / "supabase" / "migrations"
+            migration_dir.mkdir(parents=True)
+            for files in PROMOTER.BATCHES.values():
+                for filename in files:
+                    (migration_dir / filename).write_text(f"-- {filename}\n", encoding="utf-8")
+            migrations = PROMOTER.load_migrations(root)
+            prefix = PROMOTER.batch_history_prefix("release_activation")
+            self.assertEqual(44, len(prefix))
+            history = [
+                {
+                    "version": migrations[filename].version,
+                    "name": migrations[filename].name,
+                    "statement_count": 1,
+                    "statement_hex": migrations[filename].sql.encode("utf-8").hex(),
+                }
+                for filename in prefix
+            ]
+            self.assertEqual(
+                0,
+                PROMOTER.assert_history("release_activation", history, migrations),
+            )
+
+            first = PROMOTER.BATCHES["release_activation"][0]
+            history.append(
+                {
+                    "version": migrations[first].version,
+                    "name": migrations[first].name,
+                    "statement_count": 1,
+                    "statement_hex": migrations[first].sql.encode("utf-8").hex(),
+                }
+            )
+            self.assertEqual(
+                1,
+                PROMOTER.assert_history("release_activation", history, migrations),
+            )
+
     def test_secret_sanitizer_redacts_supported_credentials(self) -> None:
         value = (
             "Authorization: Bearer sbp_example "
@@ -94,6 +141,87 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             "RUN_PHASE7E_B_PRODUCTION_FOUNDATION",
             PROMOTER.CONFIRMATIONS["foundation"],
         )
+        self.assertEqual(
+            "RUN_PHASE7E_B_PRODUCTION_RELEASE_ACTIVATION",
+            PROMOTER.CONFIRMATIONS["release_activation"],
+        )
+
+    def test_release_activation_accepts_only_the_reviewed_edge_functions(self) -> None:
+        class Client:
+            def __init__(self, functions: list[dict[str, object]]) -> None:
+                self.functions = functions
+
+            def get(self, path: str):
+                if path.endswith("/functions"):
+                    return self.functions
+                if path.endswith("/database/backups"):
+                    return {
+                        "pitr_enabled": False,
+                        "backups": [{"status": "COMPLETED", "inserted_at": "2026-08-04T01:15:34Z"}],
+                    }
+                if path == "/v1/organizations":
+                    return [{"id": "organization"}]
+                return {
+                    "ref": PROMOTER.EXPECTED_PROJECT_REF,
+                    "name": PROMOTER.EXPECTED_PROJECT_NAME,
+                    "region": PROMOTER.EXPECTED_REGION,
+                    "status": "ACTIVE_HEALTHY",
+                    "organization_id": "organization",
+                    "database": {"version": "17.6"},
+                }
+
+        functions = [
+            {"slug": "football-ingest", "status": "ACTIVE", "verify_jwt": True},
+            {"slug": "news-ingest", "status": "ACTIVE", "verify_jwt": True},
+        ]
+        target = PROMOTER.assert_management_target(Client(functions), "release_activation")
+        self.assertEqual(["football-ingest", "news-ingest"], target["edgeFunctionSlugs"])
+
+        with self.assertRaises(PROMOTER.PromotionError):
+            PROMOTER.assert_management_target(
+                Client(functions + [{"slug": "unexpected", "status": "ACTIVE", "verify_jwt": True}]),
+                "release_activation",
+            )
+        with self.assertRaises(PROMOTER.PromotionError):
+            PROMOTER.assert_management_target(
+                Client([dict(functions[0], verify_jwt=False), functions[1]]),
+                "release_activation",
+            )
+
+    def test_release_activation_postflight_proves_inactive_empty_runtime(self) -> None:
+        verification = {
+            "serviceRoutineCount": 6,
+            "browserExecuteGrantCount": 0,
+            "elbotolaPublisher": {
+                "active": False,
+                "trustStatus": "review_required",
+                "ingestionMode": "api",
+                "websiteUrl": "https://www.elbotola.com/",
+            },
+            "catalogActivationRunCount": 0,
+            "registrationActivationRunCount": 0,
+            "initialPriceEvidenceCount": 0,
+        }
+
+        class Client:
+            def __init__(self, value: dict[str, object]) -> None:
+                self.value = value
+
+            def query(self, _sql: str, *, read_only: bool):
+                self.assert_read_only = read_only
+                return [{"verification": self.value}]
+
+        client = Client(verification)
+        self.assertEqual(
+            verification,
+            PROMOTER.release_activation_verification(client),
+        )
+        self.assertTrue(client.assert_read_only)
+
+        unsafe = dict(verification)
+        unsafe["browserExecuteGrantCount"] = 1
+        with self.assertRaises(PROMOTER.PromotionError):
+            PROMOTER.release_activation_verification(Client(unsafe))
 
 
 if __name__ == "__main__":

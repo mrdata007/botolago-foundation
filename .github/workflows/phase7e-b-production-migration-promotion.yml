@@ -19,6 +19,7 @@ on:
           - notifications
           - fantasy_phase65
           - admin
+          - release_activation
       confirmation:
         description: Type the exact RUN_PHASE7E_B_PRODUCTION_<BATCH> confirmation
         required: true
@@ -34,7 +35,11 @@ permissions:
 jobs:
   promote-one-batch:
     name: Promote and verify exactly one Production V2 batch
-    if: github.repository == 'mrdata007/botolago-foundation'
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production-admin-activation
@@ -70,6 +75,10 @@ jobs:
 
           if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_SECRET_KEY:-}" ]]; then
             echo "Protected credential injection failed."
+            exit 2
+          fi
+          if [[ "${GITHUB_RUN_ATTEMPT:-}" != "1" ]]; then
+            echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"
             exit 2
           fi
           if [[ "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]]; then

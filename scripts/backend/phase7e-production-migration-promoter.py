@@ -81,6 +81,25 @@ BATCHES: dict[str, tuple[str, ...]] = {
         "20260724185438_admin_security_operations.sql",
         "20260724225105_admin_activation_operations.sql",
     ),
+    # This immutable baseline was promoted through separately reviewed provider
+    # canaries. It remains in the manifest so later batches can prove the full
+    # remote migration chain and checksums before writing anything.
+    "post_gate4_baseline": (
+        "20260731180229_gate2b_football_catalog_ingestion.sql",
+        "20260731203317_gate3b_historical_squads_standings.sql",
+        "20260801010000_gnews_article_ingestion.sql",
+        "20260801010100_player_season_ratings.sql",
+        "20260801010200_sportsmonks_team_crests.sql",
+        "20260802010000_historical_player_performance_job.sql",
+        "20260802010100_historical_player_performances.sql",
+        "20260802010200_historical_performance_mapping_quarantine.sql",
+        "20260802090000_football_season_browser.sql",
+    ),
+    "release_activation": (
+        "20260803173344_fantasy_preactivation_hardening.sql",
+        "20260803210943_fantasy_catalog_activation.sql",
+        "20260803212218_elbotola_metadata_ingestion.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -94,6 +113,10 @@ SECRET_PATTERNS = (
     re.compile(r"\b(?:sbp|sb_secret|sb_publishable)_[A-Za-z0-9._-]+\b"),
     re.compile(r"\beyJ[A-Za-z0-9._-]+\b"),
 )
+
+EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
+    "release_activation": frozenset({"football-ingest", "news-ingest"}),
+}
 
 
 class PromotionError(RuntimeError):
@@ -146,7 +169,9 @@ def load_migrations(repo_root: Path) -> dict[str, Migration]:
     expected_files = [filename for files in BATCHES.values() for filename in files]
     actual_files = sorted(path.name for path in migration_dir.glob("*.sql"))
     if actual_files != sorted(expected_files):
-        raise PromotionError("repository migration inventory differs from the reviewed 35-file chain")
+        raise PromotionError(
+            "repository migration inventory differs from the reviewed migration chain"
+        )
     migrations = {
         filename: migration_from_path(migration_dir / filename)
         for filename in expected_files
@@ -286,7 +311,7 @@ def assert_target_environment() -> tuple[str, str]:
     return token, secret_key
 
 
-def assert_management_target(client: ManagementClient) -> dict[str, Any]:
+def assert_management_target(client: ManagementClient, batch: str) -> dict[str, Any]:
     project = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}")
     organizations = client.get("/v1/organizations")
     if not isinstance(project, dict):
@@ -313,8 +338,19 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
     if not completed:
         raise PromotionError("backup readiness insufficient")
     functions = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/functions")
-    if functions:
-        raise PromotionError("Edge Functions must remain absent during migration promotion")
+    if not isinstance(functions, list):
+        raise PromotionError("management Edge Function inventory is invalid")
+    expected_functions = EXPECTED_EDGE_FUNCTIONS_BY_BATCH.get(batch, frozenset())
+    actual_functions: dict[str, dict[str, Any]] = {}
+    for function in functions:
+        if not isinstance(function, dict) or not isinstance(function.get("slug"), str):
+            raise PromotionError("management Edge Function inventory is invalid")
+        actual_functions[function["slug"]] = function
+    if frozenset(actual_functions) != expected_functions:
+        raise PromotionError("deployed Edge Function inventory differs from the reviewed baseline")
+    for slug, function in actual_functions.items():
+        if function.get("status") != "ACTIVE" or function.get("verify_jwt") is not True:
+            raise PromotionError(f"deployed Edge Function guard failed: {slug}")
     return {
         "ref": returned_ref,
         "name": project.get("name"),
@@ -324,7 +360,8 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
         "completedBackupCount": len(completed),
         "latestCompletedBackup": max(row.get("inserted_at", "") for row in completed),
         "pitrEnabled": bool(backups.get("pitr_enabled")),
-        "edgeFunctionCount": 0,
+        "edgeFunctionCount": len(actual_functions),
+        "edgeFunctionSlugs": sorted(actual_functions),
     }
 
 
@@ -465,6 +502,84 @@ select jsonb_build_object(
     return verification
 
 
+def release_activation_verification(client: ManagementClient) -> dict[str, Any]:
+    rows = client.query(
+        """
+select jsonb_build_object(
+  'serviceRoutineCount', (
+    select count(distinct procedure.proname)::integer
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    where namespace.nspname = 'api'
+      and procedure.proname in (
+        'preview_fantasy_catalog_activation',
+        'service_stage_fantasy_catalog',
+        'service_open_fantasy_registration',
+        'service_rollback_fantasy_catalog',
+        'news_ingest_provider_article',
+        'news_attach_elbotola_hero'
+      )
+  ),
+  'browserExecuteGrantCount', (
+    select count(*)::integer
+    from information_schema.routine_privileges
+    where routine_schema = 'api'
+      and routine_name in (
+        'preview_fantasy_catalog_activation',
+        'service_stage_fantasy_catalog',
+        'service_open_fantasy_registration',
+        'service_rollback_fantasy_catalog',
+        'news_ingest_provider_article',
+        'news_attach_elbotola_hero'
+      )
+      and grantee in ('PUBLIC', 'anon', 'authenticated')
+  ),
+  'elbotolaPublisher', (
+    select jsonb_build_object(
+      'active', active,
+      'trustStatus', trust_status,
+      'ingestionMode', ingestion_mode,
+      'websiteUrl', website_url
+    )
+    from app.publishers
+    where slug = 'elbotola'
+  ),
+  'catalogActivationRunCount', (
+    select count(*)::integer from app_private.fantasy_catalog_activation_runs
+  ),
+  'registrationActivationRunCount', (
+    select count(*)::integer from app_private.fantasy_registration_activation_runs
+  ),
+  'initialPriceEvidenceCount', (
+    select count(*)::integer from app_private.fantasy_initial_price_evidence
+  )
+) as verification
+""".strip(),
+        read_only=True,
+    )
+    verification = rows[0]["verification"]
+    if int(verification.get("serviceRoutineCount") or 0) != 6:
+        raise PromotionError("release activation routine verification failed")
+    if int(verification.get("browserExecuteGrantCount") or 0) != 0:
+        raise PromotionError("release activation browser grant verification failed")
+    publisher = verification.get("elbotolaPublisher")
+    if not isinstance(publisher, dict) or publisher != {
+        "active": False,
+        "trustStatus": "review_required",
+        "ingestionMode": "api",
+        "websiteUrl": "https://www.elbotola.com/",
+    }:
+        raise PromotionError("ElBotola inactive publisher verification failed")
+    for key in (
+        "catalogActivationRunCount",
+        "registrationActivationRunCount",
+        "initialPriceEvidenceCount",
+    ):
+        if int(verification.get(key) or 0) != 0:
+            raise PromotionError(f"release activation unexpectedly created runtime data: {key}")
+    return verification
+
+
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -481,7 +596,7 @@ def run_batch(args: argparse.Namespace) -> None:
     migrations = load_migrations(repo_root)
     client = ManagementClient(token, EXPECTED_PROJECT_REF)
 
-    target = assert_management_target(client)
+    target = assert_management_target(client, batch)
     auth_health(secret_key)
     if cron_job_count(client) != 0:
         raise PromotionError("production cron schedules must be empty before promotion")
@@ -519,7 +634,7 @@ def run_batch(args: argparse.Namespace) -> None:
         )
         write_json(evidence_dir / "applied-migrations.json", applied)
 
-    target_after = assert_management_target(client)
+    target_after = assert_management_target(client, batch)
     auth_health(secret_key)
     final_cron_count = cron_job_count(client)
     if final_cron_count != 0:
@@ -532,6 +647,8 @@ def run_batch(args: argparse.Namespace) -> None:
     batch_verification: dict[str, Any] = {}
     if batch == "foundation":
         batch_verification = foundation_verification(client)
+    elif batch == "release_activation":
+        batch_verification = release_activation_verification(client)
 
     postflight = {
         "batch": batch,
