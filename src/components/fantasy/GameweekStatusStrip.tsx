@@ -9,7 +9,7 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 
 export function GameweekStatusStrip() {
   const { t, lang } = useI18n();
-  const { source } = useFantasyDataSource();
+  const { source, key } = useFantasyDataSource();
   const numberFormat = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     maximumFractionDigits: 1,
   });
@@ -20,7 +20,7 @@ export function GameweekStatusStrip() {
     staleTime: 60_000,
   });
   const summary = useQuery({
-    queryKey: ["fantasy-summary"],
+    queryKey: key("summary"),
     queryFn: () => fantasyService.getSummary(),
     enabled: source !== "guest",
     staleTime: 30_000,
@@ -38,7 +38,7 @@ export function GameweekStatusStrip() {
 
   if (gameweek.isError || !gameweek.data) return null;
 
-  const data = summary.data;
+  const data = source === "guest" ? undefined : summary.data;
 
   return (
     <section
