@@ -135,8 +135,7 @@ function ActiveSurface({ active }: { active: boolean }) {
       style={{
         background:
           "linear-gradient(180deg, color-mix(in oklab, var(--brand-accent) 18%, transparent), color-mix(in oklab, var(--brand-primary) 12%, transparent))",
-        boxShadow:
-          "inset 0 0 0 1px color-mix(in oklab, var(--brand-accent) 34%, transparent)",
+        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--brand-accent) 34%, transparent)",
       }}
     />
   );
