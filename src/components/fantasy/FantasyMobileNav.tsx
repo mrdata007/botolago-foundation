@@ -28,7 +28,7 @@ const icons: Partial<Record<FantasyRoute, LucideIcon>> = {
 const mobileItems = fantasyPrimaryItems.filter((item) => item.to !== "/fantasy/leagues");
 
 export function FantasyMobileNav() {
-  const { t } = useI18n();
+  const { t, dir } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const secondaryActive =
     isFantasyRouteActive(pathname, "/fantasy/leagues") ||
@@ -68,11 +68,12 @@ export function FantasyMobileNav() {
           );
         })}
 
-        <DropdownMenu>
+        <DropdownMenu dir={dir}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label={t("fantasy.tab.more")}
+              aria-current={secondaryActive ? "page" : undefined}
               className={cn(
                 "relative flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold",
                 "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
