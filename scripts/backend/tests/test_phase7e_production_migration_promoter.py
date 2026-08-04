@@ -30,6 +30,18 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                 "statements_md5": statements_md5,
                 "statement_hex": None,
             }
+        pinned = PROMOTER.EXPECTED_PINNED_SINGLE_STATEMENT_HISTORY.get(
+            migration.version
+        )
+        if pinned is not None:
+            name, statement_count, statements_md5 = pinned
+            return {
+                "version": migration.version,
+                "name": name,
+                "statement_count": statement_count,
+                "statements_md5": statements_md5,
+                "statement_hex": b"separately promoted representation".hex(),
+            }
         return {
             "version": migration.version,
             "name": migration.name,
@@ -87,7 +99,9 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             migration_dir.mkdir(parents=True)
             for files in PROMOTER.BATCHES.values():
                 for filename in files:
-                    (migration_dir / filename).write_text(f"-- {filename}\n", encoding="utf-8")
+                    (migration_dir / filename).write_text(
+                        f"-- {filename}\n", encoding="utf-8"
+                    )
             migrations = PROMOTER.load_migrations(root)
             foundation = migrations[PROMOTER.BATCHES["foundation"][0]]
             valid = [
@@ -224,6 +238,35 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                 "statement history is non-canonical",
             ):
                 PROMOTER.assert_history("release_activation", unpinned_multi, migrations)
+
+            self.assertEqual(
+                {"20260802010000"},
+                set(PROMOTER.EXPECTED_PINNED_SINGLE_STATEMENT_HISTORY),
+            )
+            pinned_single_index = next(
+                index
+                for index, row in enumerate(history)
+                if row["version"]
+                in PROMOTER.EXPECTED_PINNED_SINGLE_STATEMENT_HISTORY
+            )
+            for field, value in (
+                ("statements_md5", "0" * 32),
+                ("statement_count", 2),
+            ):
+                changed = [dict(row) for row in history]
+                changed[pinned_single_index][field] = value
+                with self.assertRaisesRegex(
+                    PROMOTER.PromotionError,
+                    "pinned single-statement history mismatch",
+                ):
+                    PROMOTER.assert_history("release_activation", changed, migrations)
+
+            wrong_name = [dict(row) for row in history]
+            wrong_name[pinned_single_index]["name"] = "unexpected"
+            with self.assertRaisesRegex(
+                PROMOTER.PromotionError, "migration name mismatch"
+            ):
+                PROMOTER.assert_history("release_activation", wrong_name, migrations)
 
     def test_secret_sanitizer_redacts_supported_credentials(self) -> None:
         value = (
