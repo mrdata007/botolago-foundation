@@ -24,6 +24,7 @@ import type {
 import { defaultNotifications } from "./auth-types";
 import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
+import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
@@ -45,6 +46,11 @@ function context(actorId: string | null): RepositoryContext {
 function getRedirectBase(): string {
   if (!hasWindow()) return "";
   return window.location.origin;
+}
+
+function getCallbackUrl(next?: string): string {
+  const safeNext = sanitizeAuthCallbackNext(next ?? null);
+  return `${getRedirectBase()}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 }
 
 function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
@@ -201,7 +207,7 @@ export class SupabaseAuthService implements AuthService {
       email: input.email.trim(),
       password: input.password,
       options: {
-        emailRedirectTo: hasWindow() ? `${getRedirectBase()}/auth/callback` : undefined,
+        emailRedirectTo: hasWindow() ? getCallbackUrl(input.next) : undefined,
         data: {
           display_name: input.fullName.trim(),
           username: input.username.trim(),
@@ -259,32 +265,33 @@ export class SupabaseAuthService implements AuthService {
     return { ok: true, data: user };
   }
 
-  async resendCode(email: string): Promise<AuthResult> {
+  async resendCode(email: string, next?: string): Promise<AuthResult> {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
-      options: { emailRedirectTo: hasWindow() ? `${getRedirectBase()}/auth/callback` : undefined },
+      options: { emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined },
     });
     return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
   private async signInWithOAuthProvider(
     provider: "google" | "apple",
+    next?: string,
   ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${getRedirectBase()}/auth/callback` },
+      options: { redirectTo: getCallbackUrl(next) },
     });
     return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
-  signInWithGoogle() {
-    return this.signInWithOAuthProvider("google");
+  signInWithGoogle(next?: string) {
+    return this.signInWithOAuthProvider("google", next);
   }
 
-  signInWithApple() {
-    return this.signInWithOAuthProvider("apple");
+  signInWithApple(next?: string) {
+    return this.signInWithOAuthProvider("apple", next);
   }
 
   async continueAsGuest(): Promise<AuthResult> {
