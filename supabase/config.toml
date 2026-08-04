@@ -386,6 +386,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/news-ingest-elbotola/index.ts"
 
+[functions.news-ingest-newsdata]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/news-ingest-newsdata/index.ts"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
