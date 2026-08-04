@@ -53,11 +53,7 @@ function LeagueDetailPage() {
   });
 
   if (source === "guest") {
-    return authStatus === "loading" ? (
-      <LoadingState />
-    ) : (
-      <FantasyAccessGate next="/fantasy/leagues" />
-    );
+    return authStatus === "loading" ? <LoadingState /> : <FantasyAccessGate next="/fantasy/leagues" />;
   }
 
   const league = leagueQ.data;
