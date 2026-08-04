@@ -16,6 +16,7 @@ import {
 import { newsService } from "@/services/news";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { followService } from "@/services/follows";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -100,11 +101,13 @@ function HomePage() {
 function HomeContent() {
   const { t, tr, lang } = useI18n();
   const { status, user } = useAuth();
+  const { source, key } = useFantasyDataSource();
   const greeting = useGreeting();
 
   const summaryQ = useQuery({
-    queryKey: ["fantasy-summary"],
+    queryKey: key("summary"),
     queryFn: () => fantasyService.getSummary(),
+    enabled: source !== "guest",
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
@@ -144,8 +147,9 @@ function HomeContent() {
     queryFn: () => footballService.getClubs(lang),
   });
   const leaguesQ = useQuery({
-    queryKey: ["leagues"],
+    queryKey: key("leagues", "private"),
     queryFn: () => fantasyService.getLeagues("private"),
+    enabled: source !== "guest",
   });
 
   const clubById = (id: string) =>
@@ -195,7 +199,16 @@ function HomeContent() {
         className="mt-5 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 ease-out"
         style={{ animationDelay: "60ms", animationFillMode: "both" }}
       >
-        {summaryQ.isError || gwQ.isError ? (
+        {status === "loading" ? (
+          <HeroSkeleton />
+        ) : source === "guest" ? (
+          <Link
+            to="/fantasy/create"
+            className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+          >
+            {t("fantasy.create.title")}
+          </Link>
+        ) : summaryQ.isError || gwQ.isError ? (
           <ErrorState
             onRetry={() => {
               void summaryQ.refetch();
@@ -337,12 +350,20 @@ function HomeContent() {
           action={<ViewAllLink to="/fantasy" />}
         />
         <div className="grid gap-2">
-          {leaguesQ.isError ? (
+          {source === "guest" ? (
+            <Link
+              to="/auth/login"
+              search={{ next: "/fantasy/leagues" }}
+              className="surface-2-interactive flex min-h-20 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+            >
+              {t("auth.prompt.login")}
+            </Link>
+          ) : leaguesQ.isError ? (
             <ErrorState onRetry={() => void leaguesQ.refetch()} />
           ) : !leaguesQ.data ? (
             <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>
           ) : null}
-          {leaguesQ.data?.map((l) => {
+          {source !== "guest" && leaguesQ.data?.map((l) => {
             const delta = l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
             const climbed = delta > 0;
             const dropped = delta < 0;
