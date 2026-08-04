@@ -34,5 +34,7 @@ export const fantasySecondaryItems: FantasyNavItem[] = [
 ];
 
 export function isFantasyRouteActive(pathname: string, route: FantasyRoute): boolean {
-  return route === "/fantasy" ? pathname === "/fantasy" : pathname.startsWith(route);
+  const normalizedPathname = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (route === "/fantasy") return normalizedPathname === route;
+  return normalizedPathname === route || normalizedPathname.startsWith(`${route}/`);
 }
