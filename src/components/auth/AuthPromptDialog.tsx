@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,14 @@ export function AuthPromptDialog() {
   const { prompt, closePrompt } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   const go = (to: "/auth/login" | "/auth/register") => {
     closePrompt();
+    if (to === "/auth/login") {
+      navigate({ to, search: { next: pathname } });
+      return;
+    }
     navigate({ to });
   };
 
