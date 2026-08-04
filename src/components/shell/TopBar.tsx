@@ -21,7 +21,10 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
       >
         <Logo />
 
-        <nav aria-label={t("nav.primary")} className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
+        <nav
+          aria-label={t("nav.primary")}
+          className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex"
+        >
           {primaryNavItems.map((item) => {
             const active = isPrimaryRouteActive(pathname, item.to);
             return (
