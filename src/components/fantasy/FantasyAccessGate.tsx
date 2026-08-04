@@ -67,6 +67,7 @@ export function FantasyAccessGate({
         </Link>
         <Link
           to="/auth/register"
+          search={{ next }}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[color:var(--surface)] px-4 text-sm font-bold text-foreground hover:bg-white"
         >
           <UserPlus className="h-4 w-4" aria-hidden />
