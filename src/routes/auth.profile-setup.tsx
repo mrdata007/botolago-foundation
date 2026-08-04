@@ -24,9 +24,11 @@ import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/profile-setup")({
   head: () => ({ meta: [{ title: "Personnalisez votre profil — BotolaGO" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    next: sanitizeAuthCallbackNext(typeof search.next === "string" ? search.next : null),
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const next =
+      typeof search.next === "string" ? sanitizeAuthCallbackNext(search.next) : undefined;
+    return next && next !== "/" ? { next } : {};
+  },
   component: ProfileSetupPage,
 });
 
@@ -36,7 +38,7 @@ function ProfileSetupPage() {
   const { t, tr, lang, setLanguage, dir } = useI18n();
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
-  const { next } = Route.useSearch();
+  const { next = "/" } = Route.useSearch();
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
