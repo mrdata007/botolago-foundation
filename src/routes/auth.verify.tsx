@@ -12,17 +12,20 @@ import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/verify")({
   head: () => ({ meta: [{ title: "Vérification — BotolaGO" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    email: typeof s.email === "string" ? s.email : "",
-    next: sanitizeAuthCallbackNext(typeof s.next === "string" ? s.next : null),
-  }),
+  validateSearch: (s: Record<string, unknown>) => {
+    const next = typeof s.next === "string" ? sanitizeAuthCallbackNext(s.next) : undefined;
+    return {
+      email: typeof s.email === "string" ? s.email : "",
+      ...(next && next !== "/" ? { next } : {}),
+    };
+  },
   component: VerifyPage,
 });
 
 function VerifyPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { email, next } = Route.useSearch();
+  const { email, next = "/" } = Route.useSearch();
   const [code, setCode] = useState("");
   const [error, setError] = useState<TranslationKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
