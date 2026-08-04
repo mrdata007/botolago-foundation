@@ -195,7 +195,7 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             "elbotolaPublisher": {
                 "active": False,
                 "trustStatus": "review_required",
-                "ingestionMode": "crawler",
+                "ingestionMode": "api",
                 "websiteUrl": "https://www.elbotola.com/",
             },
             "catalogActivationRunCount": 0,
