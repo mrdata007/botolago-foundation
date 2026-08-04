@@ -16,7 +16,7 @@ import {
 } from "./fantasy-navigation";
 
 export function FantasySubNav() {
-  const { t } = useI18n();
+  const { t, dir } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const secondaryActive = fantasySecondaryItems.some((item) =>
     isFantasyRouteActive(pathname, item.to),
@@ -55,10 +55,11 @@ export function FantasySubNav() {
           );
         })}
 
-        <DropdownMenu>
+        <DropdownMenu dir={dir}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              aria-current={secondaryActive ? "page" : undefined}
               className={cn(
                 "ms-auto inline-flex min-h-9 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
