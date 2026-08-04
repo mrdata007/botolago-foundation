@@ -12,6 +12,7 @@ import { PlayerRow } from "@/components/common/PlayerRow";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
 import { Sparkles, TrendingUp, Trophy } from "lucide-react";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 
 export const Route = createFileRoute("/fantasy/")({
   component: FantasyHub,
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/fantasy/")({
 
 function FantasyHub() {
   const { t, lang } = useI18n();
+  const { source } = useFantasyDataSource();
   const gw = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
@@ -38,6 +40,7 @@ function FantasyHub() {
   const leagues = useQuery({
     queryKey: ["fantasy-leagues"],
     queryFn: () => fantasyService.getLeagues("private"),
+    enabled: source !== "guest",
   });
   const articles = useQuery({
     queryKey: ["fantasy-articles"],
@@ -105,16 +108,26 @@ function FantasyHub() {
       <SectionHeader
         title={t("fantasy.mini_league")}
         action={
-          <Link
-            to="/fantasy/leagues"
-            className="text-xs font-semibold text-[color:var(--brand-accent)]"
-          >
-            {t("home.view_all")}
-          </Link>
+          source === "guest" ? undefined : (
+            <Link
+              to="/fantasy/leagues"
+              className="text-xs font-semibold text-[color:var(--brand-accent)]"
+            >
+              {t("home.view_all")}
+            </Link>
+          )
         }
       />
       <div className="grid gap-2">
-        {leagues.isError ? (
+        {source === "guest" ? (
+          <Link
+            to="/auth/login"
+            search={{ next: "/fantasy/leagues" }}
+            className="surface-2-interactive flex min-h-20 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+          >
+            {t("auth.prompt.login")}
+          </Link>
+        ) : leagues.isError ? (
           <ErrorState onRetry={() => void leagues.refetch()} />
         ) : leagues.isLoading ? (
           <LoadingState />
