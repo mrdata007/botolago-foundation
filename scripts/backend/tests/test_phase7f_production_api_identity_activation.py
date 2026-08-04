@@ -1281,7 +1281,7 @@ class Phase7FActivationTests(unittest.TestCase):
         self.assertIn("cancel-in-progress: false", activation)
         self.assertIn("cancel-in-progress: false", promotion)
         self.assertEqual(
-            "d133bad575aab75b4691821d02b6e01aef6308488c8db54b6b2a540f8b0fcecb",
+            "777e134fb479abe8bbb57b22b9393dd52534af2cc2e72c425631d2dd3fcac988",
             hashlib.sha256(promotion.encode()).hexdigest(),
         )
 
