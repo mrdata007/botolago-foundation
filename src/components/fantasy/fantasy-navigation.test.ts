@@ -35,5 +35,7 @@ describe("Fantasy navigation", () => {
   test("keeps nested player routes active without activating the hub", () => {
     expect(isFantasyRouteActive("/fantasy/players/player-42", "/fantasy/players")).toBe(true);
     expect(isFantasyRouteActive("/fantasy/players/player-42", "/fantasy")).toBe(false);
+    expect(isFantasyRouteActive("/fantasy/teamwork", "/fantasy/team")).toBe(false);
+    expect(isFantasyRouteActive("/fantasy/team/", "/fantasy/team")).toBe(true);
   });
 });
