@@ -137,6 +137,10 @@ export const fantasyService = {
       number: current.gameweek.sequence,
       deadline: current.gameweek.deadlineAt,
       isCurrent: !["finalized", "corrected", "cancelled"].includes(current.gameweek.status),
+      name: current.gameweek.name,
+      status: current.gameweek.status,
+      pointsState: current.gameweek.pointsState,
+      rankingAvailable: current.rankingAvailable,
       averagePoints: 0,
       highestPoints: 0,
     };
