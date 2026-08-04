@@ -566,7 +566,7 @@ select jsonb_build_object(
     if not isinstance(publisher, dict) or publisher != {
         "active": False,
         "trustStatus": "review_required",
-        "ingestionMode": "crawler",
+        "ingestionMode": "api",
         "websiteUrl": "https://www.elbotola.com/",
     }:
         raise PromotionError("ElBotola inactive publisher verification failed")
