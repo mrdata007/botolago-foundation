@@ -155,6 +155,18 @@ EXPECTED_MULTI_STATEMENT_HISTORY: dict[str, tuple[str, int, str]] = {
     ),
 }
 
+# This enum-value migration was promoted through a separately reviewed path
+# whose one-statement history representation differs from the repository file.
+# Pin the exact Production V2 row observed by the protected read-only preflight;
+# all other one-statement rows continue to require the repository SHA-256.
+EXPECTED_PINNED_SINGLE_STATEMENT_HISTORY: dict[str, tuple[str, int, str]] = {
+    "20260802010000": (
+        "historical_player_performance_job",
+        1,
+        "017029b2d467e255cffef2c679afa033",
+    ),
+}
+
 
 class PromotionError(RuntimeError):
     """Stable, sanitized promotion failure."""
@@ -482,6 +494,20 @@ def assert_history(
             ):
                 raise PromotionError(
                     f"migration multi-statement history mismatch: {expected.version}"
+                )
+            continue
+        pinned_single_statement = EXPECTED_PINNED_SINGLE_STATEMENT_HISTORY.get(
+            expected.version
+        )
+        if pinned_single_statement is not None:
+            pinned_name, pinned_count, pinned_md5 = pinned_single_statement
+            if (
+                expected.name != pinned_name
+                or int(row.get("statement_count") or 0) != pinned_count
+                or row.get("statements_md5") != pinned_md5
+            ):
+                raise PromotionError(
+                    f"migration pinned single-statement history mismatch: {expected.version}"
                 )
             continue
         if int(row.get("statement_count") or 0) != 1:
