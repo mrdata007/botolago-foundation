@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ArrowRightLeft, Home, ListChecks, Menu, Shirt } from "lucide-react";
+import { ArrowRightLeft, Home, ListChecks, Menu, Shirt, type LucideIcon } from "lucide-react";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -18,21 +18,21 @@ import {
   type FantasyRoute,
 } from "./fantasy-navigation";
 
-const icons = {
+const icons: Partial<Record<FantasyRoute, LucideIcon>> = {
   "/fantasy": Home,
   "/fantasy/team": Shirt,
   "/fantasy/points": ListChecks,
   "/fantasy/transfers": ArrowRightLeft,
-} satisfies Partial<Record<FantasyRoute, typeof Home>>;
+};
 
 const mobileItems = fantasyPrimaryItems.filter((item) => item.to !== "/fantasy/leagues");
 
 export function FantasyMobileNav() {
   const { t } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const secondaryActive = fantasySecondaryItems.some((item) =>
-    isFantasyRouteActive(pathname, item.to),
-  );
+  const secondaryActive =
+    isFantasyRouteActive(pathname, "/fantasy/leagues") ||
+    fantasySecondaryItems.some((item) => isFantasyRouteActive(pathname, item.to));
 
   return (
     <nav
