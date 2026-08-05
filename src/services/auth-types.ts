@@ -65,6 +65,7 @@ export interface RegisterInput {
   email: string;
   password: string;
   language: Language;
+  next?: string;
 }
 
 export interface CompleteProfileInput {
@@ -105,9 +106,9 @@ export interface AuthService {
   refreshSession(): Promise<AuthResult<AuthUser>>;
   updatePassword(input: UpdatePasswordInput): Promise<AuthResult>;
   verifyCode(email: string, code: string): Promise<AuthResult<AuthUser>>;
-  resendCode(email: string): Promise<AuthResult>;
-  signInWithGoogle(): Promise<AuthResult<AuthUser>>;
-  signInWithApple(): Promise<AuthResult<AuthUser>>;
+  resendCode(email: string, next?: string): Promise<AuthResult>;
+  signInWithGoogle(next?: string): Promise<AuthResult<AuthUser>>;
+  signInWithApple(next?: string): Promise<AuthResult<AuthUser>>;
   continueAsGuest(): Promise<AuthResult>;
   completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>>;
   requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>>;

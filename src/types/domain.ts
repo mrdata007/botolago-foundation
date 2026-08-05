@@ -79,10 +79,27 @@ export interface TableRow {
   form: ("W" | "D" | "L")[];
 }
 
+export type FantasyGameweekStatus =
+  | "scheduled"
+  | "open"
+  | "locked"
+  | "live"
+  | "provisional"
+  | "finalizing"
+  | "finalized"
+  | "corrected"
+  | "cancelled";
+
+export type FantasyPointsState = "provisional" | "final";
+
 export interface Gameweek {
   number: number;
   deadline: string; // ISO
   isCurrent: boolean;
+  name?: string;
+  status?: FantasyGameweekStatus;
+  pointsState?: FantasyPointsState;
+  rankingAvailable?: boolean;
   averagePoints: number;
   highestPoints: number;
   chipActive?: LocalizedString;

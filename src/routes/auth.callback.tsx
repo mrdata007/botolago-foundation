@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 import { AuthShell, AuthFieldError, AuthSecondaryButton } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
 import { supabase } from "@/integrations/supabase/client";
-import { IS_MOCK_AUTH } from "@/services/auth";
+import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -24,8 +24,9 @@ function CallbackPage() {
 
   useEffect(() => {
     if (IS_MOCK_AUTH) {
+      const next = sanitizeAuthCallbackNext(new URL(window.location.href).searchParams.get("next"));
       scrubUrl();
-      navigate({ to: "/" });
+      navigate({ to: next });
       return;
     }
     let cancelled = false;
@@ -92,6 +93,11 @@ function CallbackPage() {
           // Nothing to exchange — probably already authenticated or a plain visit.
         }
 
+        const session = await authService.refreshSession();
+        if (!cancelled && session.ok && session.data && !session.data.profileComplete) {
+          navigate({ to: "/auth/profile-setup", search: { next } });
+          return;
+        }
         if (!cancelled) navigate({ to: next });
       } catch {
         scrubUrl();

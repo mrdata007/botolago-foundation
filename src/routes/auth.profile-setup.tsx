@@ -20,9 +20,15 @@ import { footballService } from "@/services/football";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/profile-setup")({
   head: () => ({ meta: [{ title: "Personnalisez votre profil — BotolaGO" }] }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const next =
+      typeof search.next === "string" ? sanitizeAuthCallbackNext(search.next) : undefined;
+    return next && next !== "/" ? { next } : {};
+  },
   component: ProfileSetupPage,
 });
 
@@ -32,6 +38,7 @@ function ProfileSetupPage() {
   const { t, tr, lang, setLanguage, dir } = useI18n();
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
+  const { next = "/" } = Route.useSearch();
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -47,9 +54,9 @@ function ProfileSetupPage() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (status === "anonymous") navigate({ to: "/auth/login" });
+    if (status === "anonymous") navigate({ to: "/auth/login", search: { next } });
     if (status === "guest") navigate({ to: "/" });
-  }, [status, navigate]);
+  }, [status, navigate, next]);
 
   useEffect(() => {
     if (user) {
@@ -101,7 +108,7 @@ function ProfileSetupPage() {
     }
     refresh();
     toast.success(t("auth.setup.success"));
-    navigate({ to: "/" });
+    navigate({ to: next });
   };
 
   const canNext = useMemo(() => {

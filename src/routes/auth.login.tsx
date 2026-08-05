@@ -9,7 +9,6 @@ import {
   AuthDivider,
   AuthFieldError,
   AuthFieldLabel,
-  AuthLink,
 } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
@@ -44,7 +43,11 @@ function LoginPage() {
       window.location.href = next;
       return;
     }
-    navigate({ to: profileComplete ? "/" : "/auth/profile-setup" });
+    if (profileComplete) {
+      navigate({ to: "/" });
+      return;
+    }
+    navigate({ to: "/auth/profile-setup", search: { next: next ?? "/" } });
   };
 
   const [email, setEmail] = useState("");
@@ -80,8 +83,8 @@ function LoginPage() {
     setSubmitting(true);
     const res =
       provider === "google"
-        ? await authService.signInWithGoogle()
-        : await authService.signInWithApple();
+        ? await authService.signInWithGoogle(next)
+        : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
       setErrors({ form: "auth.error.generic" });
@@ -99,7 +102,13 @@ function LoginPage() {
       footer={
         <span>
           {t("auth.login.no_account")}{" "}
-          <AuthLink to="/auth/register">{t("auth.login.create_link")}</AuthLink>
+          <Link
+            to="/auth/register"
+            search={{ next: next ?? "/" }}
+            className="font-bold text-white underline-offset-4 hover:underline"
+          >
+            {t("auth.login.create_link")}
+          </Link>
         </span>
       }
     >

@@ -11,6 +11,7 @@ import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { TransferReviewPanel } from "@/components/fantasy/TransferReviewPanel";
 import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
 import { ConflictBar } from "@/components/fantasy/ConflictBar";
+import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { computeBudgetImpact, maxAffordableReplacement } from "@/lib/budget";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { useI18n } from "@/i18n/provider";
@@ -58,21 +59,24 @@ function TransfersPage() {
   const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
     queryFn: () => fantasyService.getTeam(),
-    enabled: !isCloud,
+    enabled: owned.source === "local",
   });
   const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
 
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
+    enabled: owned.source !== "guest",
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+    enabled: owned.source !== "guest",
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
+    enabled: owned.source !== "guest",
   });
 
   const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
@@ -100,7 +104,7 @@ function TransfersPage() {
   const [conflictOpen, setConflictOpen] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const draftInitRef = useRef(false);
-  const { requireAuth } = useAuth();
+  const { requireAuth, status: authStatus } = useAuth();
 
   // H5 — Draft key (cloud-only).
   const teamId = isCloud ? (owned.snapshot?.teamId ?? "new") : null;
@@ -188,6 +192,14 @@ function TransfersPage() {
       inIds.every(Boolean),
     retry: false,
   });
+
+  if (owned.source === "guest") {
+    return authStatus === "loading" ? (
+      <LoadingState />
+    ) : (
+      <FantasyAccessGate next="/fantasy/transfers" />
+    );
+  }
 
   if (playersQ.isError || clubsQ.isError || gwQ.isError || localTeamQ.isError || owned.loadError) {
     return (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
+import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { LeagueTable } from "@/components/fantasy/LeagueTable";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
@@ -19,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
   component: LeagueDetailPage,
@@ -28,24 +30,35 @@ function LeagueDetailPage() {
   const { leagueId } = Route.useParams();
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const { requireAuth } = useAuth();
+  const { requireAuth, status: authStatus } = useAuth();
+  const { source, key } = useFantasyDataSource();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [toast, setToast] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"leave" | "delete" | null>(null);
 
   const leagueQ = useQuery({
-    queryKey: ["league", leagueId],
+    queryKey: key("league", leagueId),
     queryFn: () => fantasyService.getLeague(leagueId),
+    enabled: source !== "guest",
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
   const standingsQ = useQuery({
-    queryKey: ["standings", leagueId],
+    queryKey: key("standings", leagueId),
     queryFn: () => fantasyService.getLeagueStandings(leagueId),
+    enabled: source !== "guest",
   });
+
+  if (source === "guest") {
+    return authStatus === "loading" ? (
+      <LoadingState />
+    ) : (
+      <FantasyAccessGate next="/fantasy/leagues" />
+    );
+  }
 
   const league = leagueQ.data;
   if (leagueQ.isError || clubsQ.isError || standingsQ.isError) {
@@ -79,7 +92,7 @@ function LeagueDetailPage() {
   const handleLeave = async () => {
     try {
       await fantasyService.leaveLeague(league.id);
-      await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
+      await qc.invalidateQueries({ queryKey: key("leagues") });
       navigate({ to: "/fantasy/leagues" });
     } catch {
       showToast(t("fantasy.error.permission"));
@@ -90,7 +103,7 @@ function LeagueDetailPage() {
   const handleDelete = async () => {
     try {
       await fantasyService.archiveLeague(league.id);
-      await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
+      await qc.invalidateQueries({ queryKey: key("leagues") });
       navigate({ to: "/fantasy/leagues" });
     } catch {
       showToast(t("fantasy.error.permission"));

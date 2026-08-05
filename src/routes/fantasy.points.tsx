@@ -48,6 +48,7 @@ import { DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
 import { ConflictBar } from "@/components/fantasy/ConflictBar";
+import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
@@ -74,7 +75,7 @@ const CHIP_KEYS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain", "wild
 function PointsPage() {
   const { t, tr, lang } = useI18n();
   const qc = useQueryClient();
-  const { requireAuth } = useAuth();
+  const { requireAuth, status: authStatus } = useAuth();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
   const [state, setState] = useState<FantasyPersistedState>(() =>
@@ -111,29 +112,34 @@ function PointsPage() {
   const currentGwQ = useQuery({
     queryKey: ["current-gw"],
     queryFn: () => fantasyService.getCurrentGameweek(),
+    enabled: owned.source !== "guest",
   });
   const gwResultQ = useQuery({
     queryKey: ownedKey("gw-result", gw),
     queryFn: () => fantasyService.getGameweekResult(gw),
+    enabled: owned.source !== "guest",
   });
   const historyQ = useQuery({
     queryKey: ownedKey("gw-history"),
     queryFn: () => fantasyService.getGameweekHistory(),
+    enabled: owned.source !== "guest",
   });
   // H7 — Consume owned.snapshot directly in cloud mode; no parallel Team query.
   const localTeamQ = useQuery({
     queryKey: ownedKey("team"),
     queryFn: () => fantasyService.getTeam(),
-    enabled: !isCloud,
+    enabled: owned.source === "local",
   });
   const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
+    enabled: owned.source !== "guest",
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+    enabled: owned.source !== "guest",
   });
   // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
   // when advancing. Not needed in local mode.
@@ -186,6 +192,14 @@ function PointsPage() {
       return "error";
     }
   }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent]);
+
+  if (owned.source === "guest") {
+    return authStatus === "loading" ? (
+      <LoadingState />
+    ) : (
+      <FantasyAccessGate next="/fantasy/points" />
+    );
+  }
 
   if (
     currentGwQ.isError ||

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { ErrorState, LoadingState } from "@/components/common/States";
+import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { useI18n } from "@/i18n/provider";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Copy, Trophy } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
 
 export const Route = createFileRoute("/fantasy/leagues")({
   component: LeaguesRoute,
@@ -42,11 +44,21 @@ function LeaguesPage() {
   );
   const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(null);
 
-  const { requireAuth } = useAuth();
+  const { requireAuth, status: authStatus } = useAuth();
+  const { source, key } = useFantasyDataSource();
   const remoteQ = useQuery({
-    queryKey: ["fantasy-leagues", tab],
+    queryKey: key("leagues", tab),
     queryFn: () => fantasyService.getLeagues(tab),
+    enabled: source !== "guest",
   });
+
+  if (source === "guest") {
+    return authStatus === "loading" ? (
+      <LoadingState />
+    ) : (
+      <FantasyAccessGate next="/fantasy/leagues" />
+    );
+  }
 
   const leagues = remoteQ.data ?? [];
 
@@ -67,7 +79,7 @@ function LeaguesPage() {
           ]);
         }
         setCreateName("");
-        await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
+        await qc.invalidateQueries({ queryKey: key("leagues") });
         showToast(`${t("fantasy.leagues.created")}${l.code ? ` · ${l.code}` : ""}`);
       } catch {
         showToast(t("fantasy.error.permission"), "err");
@@ -80,7 +92,7 @@ function LeaguesPage() {
       try {
         await fantasyService.joinLeague(joinCode);
         setJoinCode("");
-        await qc.invalidateQueries({ queryKey: ["fantasy-leagues"] });
+        await qc.invalidateQueries({ queryKey: key("leagues") });
         showToast(t("fantasy.leagues.joined"));
       } catch {
         showToast(t("fantasy.leagues.error.invalid_code"), "err");

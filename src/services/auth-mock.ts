@@ -265,7 +265,7 @@ export class LocalMockAuthService implements AuthService {
     return { ok: true, data: stripPassword(user) };
   }
 
-  async resendCode(email: string): Promise<AuthResult> {
+  async resendCode(email: string, _next?: string): Promise<AuthResult> {
     this.init();
     await simulateLatency();
     const pending = safeGet<PendingRecord>(K_PENDING);
@@ -302,10 +302,10 @@ export class LocalMockAuthService implements AuthService {
     return { ok: true, data: stripPassword(user) };
   }
 
-  signInWithGoogle() {
+  signInWithGoogle(_next?: string) {
     return this.signInWithProvider("google");
   }
-  signInWithApple() {
+  signInWithApple(_next?: string) {
     return this.signInWithProvider("apple");
   }
 
