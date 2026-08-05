@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { useI18n } from "@/i18n/provider";
-import type { FantasyPlayer, Position } from "@/types/fantasy";
-import type { Club } from "@/types/domain";
-import type { TranslationKey } from "@/i18n/dictionaries";
+import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
+
+import { ClubCrest } from "@/components/common/ClubCrest";
+import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
+import { selectUpcomingFixture } from "@/components/fantasy/player-decision-presentation";
 import {
   Sheet,
   SheetContent,
@@ -10,12 +12,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ClubCrest } from "@/components/common/ClubCrest";
-import { PlayerStatusBadge } from "./PlayerStatusBadge";
+import { useI18n } from "@/i18n/provider";
+import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { fantasyService } from "@/services/fantasy-runtime";
+import type { Player } from "@/types/domain";
+import type { Club } from "@/types/domain";
+import type { FantasyPlayer, Position } from "@/types/fantasy";
 
-type SortKey = "price" | "form" | "points" | "ownership";
+type SortKey = "fixture" | "price" | "name" | "availability";
+const statusOrder: Record<Player["status"], number> = {
+  available: 0,
+  doubtful: 1,
+  injured: 2,
+  suspended: 3,
+};
 
 export function PlayerPickerDrawer({
   open,
@@ -30,7 +41,7 @@ export function PlayerPickerDrawer({
 }: {
   open: boolean;
   onClose: () => void;
-  onPick: (p: FantasyPlayer) => void;
+  onPick: (player: FantasyPlayer) => void;
   players: FantasyPlayer[];
   clubs: Club[];
   position?: Position;
@@ -39,53 +50,86 @@ export function PlayerPickerDrawer({
   title?: string;
 }) {
   const { t, tr, lang, dir } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  const fixturesQ = useQuery({
+    queryKey: ["fixture-difficulty"],
+    queryFn: () => fantasyService.getFixtureDifficulty(),
+    enabled: open,
+  });
+  const fixtures = fixturesQ.data ?? [];
   const [q, setQ] = useState("");
-  const [clubId, setClubId] = useState<string>("");
+  const [clubId, setClubId] = useState("");
   const [pos, setPos] = useState<Position | "">(position ?? "");
-  const [sort, setSort] = useState<SortKey>("points");
+  const [sort, setSort] = useState<SortKey>("fixture");
 
   const filtered = useMemo(() => {
     let list = players.slice();
-    if (position) list = list.filter((p) => p.position === position);
-    else if (pos) list = list.filter((p) => p.position === pos);
-    if (clubId) list = list.filter((p) => p.clubId === clubId);
+    if (position) list = list.filter((player) => player.position === position);
+    else if (pos) list = list.filter((player) => player.position === pos);
+    if (clubId) list = list.filter((player) => player.clubId === clubId);
     if (q.trim()) {
-      const s = q.toLowerCase();
-      list = list.filter((p) => p.name.fr.toLowerCase().includes(s) || p.name.ar.includes(q));
+      const normalized = q.toLowerCase();
+      list = list.filter(
+        (player) =>
+          player.name.fr.toLowerCase().includes(normalized) ||
+          player.name.ar.includes(q),
+      );
     }
-    if (typeof maxPrice === "number") list = list.filter((p) => p.price <= maxPrice + 0.001);
-    list.sort((a, b) => {
-      if (sort === "price") return b.price - a.price;
-      if (sort === "form") return b.form - a.form;
-      if (sort === "ownership") return b.ownership - a.ownership;
-      return b.totalPoints - a.totalPoints;
+    if (typeof maxPrice === "number") {
+      list = list.filter((player) => player.price <= maxPrice + 0.001);
+    }
+
+    list.sort((left, right) => {
+      if (sort === "price") return right.price - left.price;
+      if (sort === "name")
+        return left.name[lang].localeCompare(right.name[lang], lang);
+      if (sort === "availability") {
+        return (
+          statusOrder[left.status] - statusOrder[right.status] ||
+          right.price - left.price
+        );
+      }
+
+      const leftFixture = selectUpcomingFixture(left.clubId, fixtures);
+      const rightFixture = selectUpcomingFixture(right.clubId, fixtures);
+      if (!leftFixture && !rightFixture) return right.price - left.price;
+      if (!leftFixture) return 1;
+      if (!rightFixture) return -1;
+      return (
+        leftFixture.gameweek - rightFixture.gameweek ||
+        leftFixture.difficulty - rightFixture.difficulty ||
+        right.price - left.price
+      );
     });
     return list;
-  }, [players, position, pos, clubId, q, maxPrice, sort]);
+  }, [players, position, pos, clubId, q, maxPrice, sort, lang, fixtures]);
 
   const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
-  const sorts: { k: SortKey; labelKey: TranslationKey }[] = [
-    { k: "points", labelKey: "fantasy.picker.sort.points" },
-    { k: "form", labelKey: "fantasy.picker.sort.form" },
-    { k: "price", labelKey: "fantasy.picker.sort.price" },
-    { k: "ownership", labelKey: "fantasy.picker.sort.ownership" },
+  const sorts: { key: SortKey; labelKey: TranslationKey }[] = [
+    { key: "fixture", labelKey: "fantasy.picker.sort.fixture" },
+    { key: "price", labelKey: "fantasy.picker.sort.price" },
+    { key: "availability", labelKey: "fantasy.picker.sort.availability" },
+    { key: "name", labelKey: "fantasy.picker.sort.name" },
   ];
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
-        <SheetHeader>
+    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent
+        side={dir === "rtl" ? "left" : "right"}
+        className="w-full sm:max-w-md"
+      >
+        <SheetHeader className="text-start">
           <SheetTitle>{title ?? t("fantasy.picker.title")}</SheetTitle>
-          <SheetDescription className="sr-only">{t("fantasy.picker.search")}</SheetDescription>
+          <SheetDescription>
+            {t("fantasy.players.decision_intro")}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="mt-3 space-y-2">
-          <label className="glass-surface glass-regular flex items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 py-2">
+          <label className="glass-surface glass-regular flex min-h-11 items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 py-2">
             <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(event) => setQ(event.target.value)}
               placeholder={t("fantasy.picker.search")}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
@@ -96,9 +140,13 @@ export function PlayerPickerDrawer({
               <FilterChip active={pos === ""} onClick={() => setPos("")}>
                 {t("common.all")}
               </FilterChip>
-              {positions.map((p) => (
-                <FilterChip key={p} active={pos === p} onClick={() => setPos(p)}>
-                  {t(`player.pos.${p}` as TranslationKey)}
+              {positions.map((item) => (
+                <FilterChip
+                  key={item}
+                  active={pos === item}
+                  onClick={() => setPos(item)}
+                >
+                  {t(`player.pos.${item}` as TranslationKey)}
                 </FilterChip>
               ))}
             </div>
@@ -108,10 +156,18 @@ export function PlayerPickerDrawer({
             <FilterChip active={clubId === ""} onClick={() => setClubId("")}>
               {t("common.all")}
             </FilterChip>
-            {clubs.map((c) => (
-              <FilterChip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>
-                <ClubCrest club={c} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
-                {tr(c.shortName)}
+            {clubs.map((club) => (
+              <FilterChip
+                key={club.id}
+                active={clubId === club.id}
+                onClick={() => setClubId(club.id)}
+              >
+                <ClubCrest
+                  club={club}
+                  size="sm"
+                  className="h-5 w-5 rounded-full text-[8px]"
+                />
+                {tr(club.shortName)}
               </FilterChip>
             ))}
           </div>
@@ -120,9 +176,13 @@ export function PlayerPickerDrawer({
             <span className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
               {t("fantasy.picker.sort")}:
             </span>
-            {sorts.map((s) => (
-              <FilterChip key={s.k} active={sort === s.k} onClick={() => setSort(s.k)}>
-                {t(s.labelKey)}
+            {sorts.map((item) => (
+              <FilterChip
+                key={item.key}
+                active={sort === item.key}
+                onClick={() => setSort(item.key)}
+              >
+                {t(item.labelKey)}
               </FilterChip>
             ))}
           </div>
@@ -134,41 +194,32 @@ export function PlayerPickerDrawer({
               {t("state.empty")}
             </div>
           )}
-          <ul className="grid gap-1.5">
-            {filtered.map((p) => {
-              const club = clubs.find((c) => c.id === p.clubId);
-              const disabled = disabledIds.includes(p.id);
+          <ul className="grid gap-2">
+            {filtered.map((player) => {
+              const club = clubs.find(
+                (candidate) => candidate.id === player.clubId,
+              );
+              const disabled = disabledIds.includes(player.id);
               return (
-                <li key={p.id}>
+                <li key={player.id}>
                   <button
                     type="button"
                     disabled={disabled}
-                    onClick={() => onPick(p)}
+                    onClick={() => onPick(player)}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-xl bg-white/60 px-3 py-2 text-start ring-1 ring-black/5 transition-colors",
-                      !disabled && "hover:bg-white/90",
+                      "surface-4 w-full min-w-0 p-3 text-start transition-[transform,box-shadow,background-color]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
+                      !disabled &&
+                        "hover:bg-white/90 hover:shadow-card active:translate-y-px",
                       disabled && "cursor-not-allowed opacity-40",
                     )}
                   >
-                    {club && <ClubCrest club={club} size="sm" />}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <div className="truncate text-sm font-bold text-foreground">
-                          {tr(p.name)}
-                        </div>
-                        {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
-                      </div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">
-                        {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
-                        {nf.format(p.form)} · {nf.format(p.ownership)}%
-                      </div>
-                    </div>
-                    <div className="text-end">
-                      <div className="text-sm font-black tabular-nums">{nf.format(p.price)}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {p.totalPoints} pts
-                      </div>
-                    </div>
+                    <PlayerDecisionSummary
+                      player={player}
+                      club={club}
+                      clubs={clubs}
+                      fixtures={fixtures}
+                    />
                   </button>
                 </li>
               );
@@ -194,7 +245,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
+        "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
         active
           ? "bg-[color:var(--brand-primary)] text-white"
           : "bg-white/60 text-foreground ring-1 ring-black/5 hover:bg-white",
