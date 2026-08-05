@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
-import { buildPlayerDecisionPresentation } from "@/components/fantasy/player-decision-presentation";
+import {
+  buildPlayerDecisionPresentation,
+  compareFixtureSchedule,
+  isUpcomingFixture,
+  type PlayerFixtureDataState,
+} from "@/components/fantasy/player-decision-presentation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -64,22 +69,35 @@ function PlayerDetailPage() {
   const clubs = clubsQ.data;
   if (!player || !clubs) return <EmptyState />;
 
+  const fixtureState: PlayerFixtureDataState =
+    fixturesQ.data !== undefined ? "ready" : fixturesQ.isError ? "error" : "loading";
+  const fixtureReferenceTime = fixtureState === "ready" ? fixturesQ.dataUpdatedAt : undefined;
+  const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
   const club = clubs.find((candidate) => candidate.id === player.clubId);
   const decision = buildPlayerDecisionPresentation({
     player,
     fixtures: fixturesQ.data ?? [],
+    fixtureReferenceTime,
   });
   const nextFixture = decision.nextFixture;
-  const nextOpponent = nextFixture
-    ? clubs.find((candidate) => candidate.id === nextFixture.opponentClubId)
-    : undefined;
-  const nextFixtureValue = !nextFixture
-    ? "—"
-    : nextOpponent
-      ? `${tr(nextOpponent.shortName)} · ${t(
-          nextFixture.isHome ? "common.home" : "common.away",
-        )} · ${number.format(nextFixture.difficulty)}/5`
-      : `${t("fantasy.fixtures.difficulty")} ${number.format(nextFixture.difficulty)}/5`;
+  const nextOpponent =
+    nextFixture && !nextFixture.isBlank
+      ? clubs.find((candidate) => candidate.id === nextFixture.opponentClubId)
+      : undefined;
+  const nextFixtureValue =
+    fixtureState === "loading"
+      ? t("fantasy.players.fixture_loading")
+      : fixtureState === "error"
+        ? t("fantasy.players.fixture_error")
+        : !nextFixture
+          ? t("fantasy.players.no_fixture")
+          : nextFixture.isBlank
+            ? t("fantasy.fixtures.blank")
+            : nextOpponent
+              ? `${tr(nextOpponent.shortName)} · ${t(
+                  nextFixture.isHome ? "common.home" : "common.away",
+                )} · ${number.format(nextFixture.difficulty)}/5`
+              : `${t("fantasy.fixtures.difficulty")} ${number.format(nextFixture.difficulty)}/5`;
   const news = player.news ? tr(player.news).trim() : "";
   const tabItems: Array<{ key: Tab; label: TranslationKey }> = [
     { key: "overview", label: "fantasy.players.tab.overview" },
@@ -88,15 +106,11 @@ function PlayerDetailPage() {
   if (news) tabItems.push({ key: "news", label: "fantasy.players.tab.news" });
 
   const playerFixtures = (fixturesQ.data ?? [])
-    .filter((fixture) => fixture.clubId === player.clubId && !fixture.isBlank)
-    .slice()
-    .sort(
-      (left, right) =>
-        left.gameweek - right.gameweek ||
-        (left.kickoffAt ? Date.parse(left.kickoffAt) : Number.POSITIVE_INFINITY) -
-          (right.kickoffAt ? Date.parse(right.kickoffAt) : Number.POSITIVE_INFINITY) ||
-        left.opponentClubId.localeCompare(right.opponentClubId),
+    .filter(
+      (fixture) =>
+        fixture.clubId === player.clubId && isUpcomingFixture(fixture, fixtureReferenceTime),
     )
+    .sort(compareFixtureSchedule)
     .slice(0, 6);
 
   return (
@@ -105,7 +119,7 @@ function PlayerDetailPage() {
         to="/fantasy/players"
         className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]"
       >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+        <BackIcon className="h-3.5 w-3.5" aria-hidden />
         {t("common.back")}
       </Link>
 
@@ -116,6 +130,8 @@ function PlayerDetailPage() {
           club={club}
           clubs={clubs}
           fixtures={fixturesQ.data}
+          fixtureState={fixtureState}
+          fixtureReferenceTime={fixtureReferenceTime}
           density="comfortable"
         />
       </section>
@@ -171,18 +187,31 @@ function PlayerDetailPage() {
                     key={`${fixture.clubId}:${fixture.gameweek}:${fixture.opponentClubId}:${fixture.isHome ? "home" : "away"}:${fixture.kickoffAt ?? "tbd"}:${index}`}
                     className="surface-2 flex min-w-0 items-center gap-3 p-3"
                   >
-                    {opponent && <ClubCrest club={opponent} size="sm" />}
+                    {!fixture.isBlank && opponent && <ClubCrest club={opponent} size="sm" />}
                     <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                         {t("home.gameweek")} {number.format(fixture.gameweek)}
                       </div>
-                      <div className="mt-0.5 truncate text-sm font-semibold text-foreground">
-                        {opponent ? tr(opponent.shortName) : "—"} ·{" "}
-                        <span className="text-muted-foreground">
-                          {t(fixture.isHome ? "common.home" : "common.away")}
-                        </span>
+                      <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1 text-sm font-semibold text-foreground">
+                        {fixture.isBlank ? (
+                          <span>{t("fantasy.fixtures.blank")}</span>
+                        ) : (
+                          <>
+                            <span className="truncate">
+                              {opponent ? tr(opponent.shortName) : "—"}
+                            </span>
+                            <span className="text-muted-foreground">
+                              · {t(fixture.isHome ? "common.home" : "common.away")}
+                            </span>
+                          </>
+                        )}
+                        {fixture.isDouble && (
+                          <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-700">
+                            {t("fantasy.fixtures.double")}
+                          </span>
+                        )}
                       </div>
-                      {kickoff && fixture.kickoffAt && (
+                      {!fixture.isBlank && kickoff && fixture.kickoffAt && (
                         <time
                           dateTime={fixture.kickoffAt}
                           className="mt-0.5 block truncate text-[11px] text-muted-foreground"
@@ -191,11 +220,13 @@ function PlayerDetailPage() {
                         </time>
                       )}
                     </div>
-                    <DifficultyBadge
-                      difficulty={fixture.difficulty}
-                      label={`${number.format(fixture.difficulty)} / ${number.format(5)}`}
-                      className="w-12 shrink-0"
-                    />
+                    {!fixture.isBlank && (
+                      <DifficultyBadge
+                        difficulty={fixture.difficulty}
+                        label={`${number.format(fixture.difficulty)} / ${number.format(5)}`}
+                        className="w-12 shrink-0"
+                      />
+                    )}
                   </article>
                 );
               })}
