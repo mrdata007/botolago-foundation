@@ -46,7 +46,11 @@ import {
   evaluateDeadline,
   type ChipKey,
 } from "@/lib/fantasy-engine";
-import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
+import {
+  hasSquadCatalogCoverage,
+  validateTeam,
+  type TeamValidationError,
+} from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
@@ -423,6 +427,16 @@ function MyTeamPage() {
 
   const players = playersQ.data;
   const clubs = clubsQ.data;
+  if (team && !hasSquadCatalogCoverage(team.squad, players)) {
+    return (
+      <FantasyCatalogUnavailable
+        onRetry={() => {
+          void playersQ.refetch();
+          void owned.reload();
+        }}
+      />
+    );
+  }
 
   // H4 — Empty-cloud builder for start_new. When the cloud team exists but has
   // zero squad rows AND the import prompt won't render (user picked start_new,

@@ -11,6 +11,7 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { AtlasMatchdayLanding } from "@/components/fantasy/AtlasMatchdayLanding";
+import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
 import { useAtlasMatchdayAccess } from "@/components/fantasy/use-atlas-matchday-access";
 import { useI18n } from "@/i18n/provider";
 import { ArrowRightLeft, ChevronRight, Shirt, Sparkles, TrendingUp, Trophy } from "lucide-react";
@@ -21,10 +22,13 @@ export const Route = createFileRoute("/fantasy/")({
 });
 
 function FantasyHub() {
-  const { isResolving, showAtlasMatchday } = useAtlasMatchdayAccess();
+  const { isResolving, isUnavailable, showAtlasMatchday, retry } = useAtlasMatchdayAccess();
 
   if (showAtlasMatchday) return <AtlasMatchdayLanding />;
   if (isResolving) return <LoadingState />;
+  if (isUnavailable) {
+    return <FantasyCatalogUnavailable onRetry={() => void retry()} backTo="/" />;
+  }
 
   return <FantasyDashboard />;
 }
