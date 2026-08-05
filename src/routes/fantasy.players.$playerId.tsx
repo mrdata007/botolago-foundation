@@ -1,37 +1,46 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
+
+import { ClubCrest } from "@/components/common/ClubCrest";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "@/components/common/States";
+import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
+import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
+import { buildPlayerDecisionPresentation } from "@/components/fantasy/player-decision-presentation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useI18n } from "@/i18n/provider";
+import type { TranslationKey } from "@/i18n/dictionaries";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState, EmptyState } from "@/components/common/States";
-import { ClubCrest } from "@/components/common/ClubCrest";
-import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
-import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
-import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
-import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
   component: PlayerDetailPage,
 });
 
-type Tab = "overview" | "history" | "fixtures" | "stats" | "news";
-const tabs: { key: Tab; label: TranslationKey }[] = [
-  { key: "overview", label: "fantasy.players.tab.overview" },
-  { key: "history", label: "fantasy.players.tab.history" },
-  { key: "fixtures", label: "fantasy.players.tab.fixtures" },
-  { key: "stats", label: "fantasy.players.tab.stats" },
-  { key: "news", label: "fantasy.players.tab.news" },
-];
+type Tab = "overview" | "fixtures" | "news";
 
 function PlayerDetailPage() {
   const { playerId } = Route.useParams();
-  const { t, tr, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  const { t, tr, lang, dir } = useI18n();
+  const locale = lang === "ar" ? "ar-MA" : "fr-MA";
+  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const dateTime = new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   const playerQ = useQuery({
-    queryKey: ["fantasy-player", playerId],
-    queryFn: () => fantasyService.getPlayer(playerId),
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+    select: (players) => players.find((player) => player.id === playerId),
+    staleTime: 60_000,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -40,164 +49,196 @@ function PlayerDetailPage() {
   const fixturesQ = useQuery({
     queryKey: ["fixture-difficulty"],
     queryFn: () => fantasyService.getFixtureDifficulty(),
+    staleTime: 60_000,
   });
-  const [tab, setTab] = useState<Tab>("overview");
 
-  if (playerQ.isLoading) return <LoadingState />;
-  const p = playerQ.data;
-  if (!p || !clubsQ.data) return <EmptyState />;
+  if (playerQ.isLoading || clubsQ.isLoading) return <LoadingState />;
+  if (playerQ.isError || clubsQ.isError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void playerQ.refetch();
+          void clubsQ.refetch();
+        }}
+      />
+    );
+  }
+
+  const player = playerQ.data;
   const clubs = clubsQ.data;
-  const club = clubs.find((c) => c.id === p.clubId);
-  const playerFixtures = (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId).slice(0, 5);
+  if (!player || !clubs) return <EmptyState />;
+
+  const club = clubs.find((candidate) => candidate.id === player.clubId);
+  const decision = buildPlayerDecisionPresentation({
+    player,
+    fixtures: fixturesQ.data ?? [],
+  });
+  const nextFixture = decision.nextFixture;
+  const nextOpponent = nextFixture
+    ? clubs.find((candidate) => candidate.id === nextFixture.opponentClubId)
+    : undefined;
+  const nextFixtureValue = !nextFixture
+    ? "—"
+    : nextOpponent
+      ? `${tr(nextOpponent.shortName)} · ${t(
+          nextFixture.isHome ? "common.home" : "common.away",
+        )} · ${number.format(nextFixture.difficulty)}/5`
+      : `${t("fantasy.fixtures.difficulty")} ${number.format(nextFixture.difficulty)}/5`;
+  const news = player.news ? tr(player.news).trim() : "";
+  const tabItems: Array<{ key: Tab; label: TranslationKey }> = [
+    { key: "overview", label: "fantasy.players.tab.overview" },
+    { key: "fixtures", label: "fantasy.players.tab.fixtures" },
+  ];
+  if (news) tabItems.push({ key: "news", label: "fantasy.players.tab.news" });
+
+  const playerFixtures = (fixturesQ.data ?? [])
+    .filter((fixture) => fixture.clubId === player.clubId && !fixture.isBlank)
+    .slice()
+    .sort(
+      (left, right) =>
+        left.gameweek - right.gameweek ||
+        (left.kickoffAt
+          ? Date.parse(left.kickoffAt)
+          : Number.POSITIVE_INFINITY) -
+          (right.kickoffAt
+            ? Date.parse(right.kickoffAt)
+            : Number.POSITIVE_INFINITY) ||
+        left.opponentClubId.localeCompare(right.opponentClubId),
+    )
+    .slice(0, 6);
 
   return (
     <div>
       <Link
         to="/fantasy/players"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]"
       >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t("common.back")}
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+        {t("common.back")}
       </Link>
 
-      <div className="mt-2 glass-surface glass-strong flex items-center gap-3 rounded-3xl border border-[var(--glass-border)] p-4">
-        {club && <ClubCrest club={club} size="lg" />}
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-lg font-black text-foreground">{tr(p.name)}</div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">
-              {t(`player.pos.${p.position}` as TranslationKey)}
-            </span>
-            {club && <span className="text-muted-foreground">· {tr(club.name)}</span>}
-            {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
-          </div>
-        </div>
-        <div className="text-end">
-          <div className="text-lg font-black tabular-nums text-brand-accent">
-            {nf.format(p.price)}
-          </div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            {t("fantasy.price")}
-          </div>
-        </div>
-      </div>
+      <h1 className="sr-only">{tr(player.name)}</h1>
+      <section className="surface-4 mt-2 p-4 sm:p-5">
+        <PlayerDecisionSummary
+          player={player}
+          club={club}
+          clubs={clubs}
+          fixtures={fixturesQ.data}
+          density="comfortable"
+        />
+      </section>
 
-      <div className="mt-3 flex gap-1 overflow-x-auto scrollbar-none">
-        {tabs.map((it) => (
-          <button
-            key={it.key}
-            onClick={() => setTab(it.key)}
-            className={cn(
-              "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold",
-              tab === it.key
-                ? "bg-[color:var(--brand-primary)] text-white"
-                : "bg-white/60 ring-1 ring-black/5",
-            )}
-            aria-pressed={tab === it.key}
-          >
-            {t(it.label)}
-          </button>
-        ))}
-      </div>
+      <Tabs defaultValue="overview" dir={dir}>
+        <TabsList
+          aria-label={t("fantasy.players.title")}
+          className="mt-3 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0 scrollbar-none"
+        >
+          {tabItems.map((item) => (
+            <TabsTrigger
+              key={item.key}
+              value={item.key}
+              className="min-h-11 rounded-full bg-white/60 px-3 py-2 text-xs font-semibold ring-1 ring-black/5 data-[state=active]:bg-[color:var(--brand-primary)] data-[state=active]:text-white"
+            >
+              {t(item.label)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <div className="mt-3">
-        {tab === "overview" && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label={t("fantasy.total_points")} value={String(p.totalPoints)} />
-            <Stat label={t("fantasy.form")} value={nf.format(p.form)} />
-            <Stat label={t("fantasy.ownership")} value={`${nf.format(p.ownership)}%`} />
-            <Stat label={t("fantasy.expected_points")} value={String(p.expectedPoints ?? "—")} />
-          </div>
-        )}
-
-        {tab === "history" && (
-          <div className="rounded-2xl bg-card ring-1 ring-black/5 p-3">
-            <div className="text-sm text-muted-foreground">
-              {tr(p.name)}: {p.totalPoints} pts sur la saison ({nf.format(p.form)} / journée en
-              moyenne).
-            </div>
-          </div>
-        )}
-
-        {tab === "fixtures" && (
-          <div className="grid gap-1.5">
-            {playerFixtures.length === 0 && <EmptyState />}
-            {playerFixtures.map((f) => {
-              const opp = clubs.find((c) => c.id === f.opponentClubId);
-              return (
-                <div
-                  key={f.gameweek}
-                  className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
-                >
-                  <div className="w-14 shrink-0 text-[11px] font-bold text-muted-foreground">
-                    GW {f.gameweek}
-                  </div>
-                  {opp && <ClubCrest club={opp} size="sm" />}
-                  <div className="flex-1 text-sm font-semibold">
-                    {opp && tr(opp.shortName)}{" "}
-                    <span className="text-muted-foreground">
-                      ({f.isHome ? t("common.home") : t("common.away")})
-                    </span>
-                    {f.isDouble && (
-                      <span className="ms-1 rounded bg-emerald-500/15 px-1 text-[9px] font-black text-emerald-700">
-                        DGW
-                      </span>
-                    )}
-                    {f.isBlank && (
-                      <span className="ms-1 rounded bg-neutral-500/20 px-1 text-[9px] font-black text-neutral-700">
-                        BGW
-                      </span>
-                    )}
-                  </div>
-                  <DifficultyBadge
-                    difficulty={f.difficulty}
-                    label={String(f.difficulty)}
-                    className="w-8"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {tab === "stats" && (
-          <dl className="grid grid-cols-2 gap-2">
-            <StatDl k={t("fantasy.form")} v={nf.format(p.form)} />
-            <StatDl k={t("fantasy.total_points")} v={String(p.totalPoints)} />
-            <StatDl k={t("fantasy.expected_points")} v={String(p.expectedPoints ?? "—")} />
-            <StatDl k={t("fantasy.ownership")} v={`${nf.format(p.ownership)}%`} />
-            <StatDl k={t("fantasy.price")} v={nf.format(p.price)} />
+        <TabsContent value="overview" className="mt-3">
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <StatDl
-              k={t("fantasy.picker.filter_status")}
-              v={t(`player.status.${p.status}` as TranslationKey)}
+              label={t("fantasy.picker.filter_position")}
+              value={t(`player.pos.${player.position}` as TranslationKey)}
+            />
+            <StatDl
+              label={t("fantasy.price")}
+              value={number.format(player.price)}
+            />
+            <StatDl
+              label={t("fantasy.picker.filter_status")}
+              value={t(`player.status.${player.status}` as TranslationKey)}
+            />
+            <StatDl
+              label={t("fantasy.players.next")}
+              value={nextFixtureValue}
             />
           </dl>
-        )}
+        </TabsContent>
 
-        {tab === "news" && (
-          <div className="rounded-2xl bg-card p-4 text-sm text-muted-foreground ring-1 ring-black/5">
-            {p.news ? tr(p.news) : t("state.empty")}
-          </div>
+        <TabsContent value="fixtures" className="mt-3">
+          {fixturesQ.isError ? (
+            <ErrorState onRetry={() => void fixturesQ.refetch()} />
+          ) : fixturesQ.isLoading ? (
+            <LoadingState />
+          ) : playerFixtures.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {playerFixtures.map((fixture, index) => {
+                const opponent = clubs.find(
+                  (candidate) => candidate.id === fixture.opponentClubId,
+                );
+                const kickoff =
+                  fixture.kickoffAt &&
+                  !Number.isNaN(Date.parse(fixture.kickoffAt))
+                    ? dateTime.format(new Date(fixture.kickoffAt))
+                    : null;
+                return (
+                  <article
+                    key={`${fixture.clubId}:${fixture.gameweek}:${fixture.opponentClubId}:${fixture.isHome ? "home" : "away"}:${fixture.kickoffAt ?? "tbd"}:${index}`}
+                    className="surface-2 flex min-w-0 items-center gap-3 p-3"
+                  >
+                    {opponent && <ClubCrest club={opponent} size="sm" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        {t("home.gameweek")} {number.format(fixture.gameweek)}
+                      </div>
+                      <div className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                        {opponent ? tr(opponent.shortName) : "—"} ·{" "}
+                        <span className="text-muted-foreground">
+                          {t(fixture.isHome ? "common.home" : "common.away")}
+                        </span>
+                      </div>
+                      {kickoff && fixture.kickoffAt && (
+                        <time
+                          dateTime={fixture.kickoffAt}
+                          className="mt-0.5 block truncate text-[11px] text-muted-foreground"
+                        >
+                          {kickoff}
+                        </time>
+                      )}
+                    </div>
+                    <DifficultyBadge
+                      difficulty={fixture.difficulty}
+                      label={`${number.format(fixture.difficulty)} / ${number.format(5)}`}
+                      className="w-12 shrink-0"
+                    />
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {news && (
+          <TabsContent value="news" className="mt-3">
+            <div className="rounded-2xl bg-card p-4 text-sm leading-relaxed text-muted-foreground ring-1 ring-black/5">
+              {news}
+            </div>
+          </TabsContent>
         )}
-      </div>
+      </Tabs>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] px-2 py-3 text-center">
-      <div className="text-lg font-black tabular-nums text-brand-accent">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-    </div>
-  );
-}
-function StatDl({ k, v }: { k: string; v: string }) {
+function StatDl({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{k}</div>
-      <div className="text-sm font-black tabular-nums text-foreground">{v}</div>
+      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-sm font-black text-foreground">{value}</dd>
     </div>
   );
 }
