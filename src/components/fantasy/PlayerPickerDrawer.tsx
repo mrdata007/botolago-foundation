@@ -69,9 +69,7 @@ export function PlayerPickerDrawer({
     if (q.trim()) {
       const normalized = q.toLowerCase();
       list = list.filter(
-        (player) =>
-          player.name.fr.toLowerCase().includes(normalized) ||
-          player.name.ar.includes(q),
+        (player) => player.name.fr.toLowerCase().includes(normalized) || player.name.ar.includes(q),
       );
     }
     if (typeof maxPrice === "number") {
@@ -87,13 +85,9 @@ export function PlayerPickerDrawer({
 
     list.sort((left, right) => {
       if (sort === "price") return right.price - left.price;
-      if (sort === "name")
-        return left.name[lang].localeCompare(right.name[lang], lang);
+      if (sort === "name") return left.name[lang].localeCompare(right.name[lang], lang);
       if (sort === "availability") {
-        return (
-          statusOrder[left.status] - statusOrder[right.status] ||
-          right.price - left.price
-        );
+        return statusOrder[left.status] - statusOrder[right.status] || right.price - left.price;
       }
 
       const leftFixture = nextFixtureByClub.get(left.clubId);
@@ -120,15 +114,10 @@ export function PlayerPickerDrawer({
 
   return (
     <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent
-        side={dir === "rtl" ? "left" : "right"}
-        className="w-full sm:max-w-md"
-      >
+      <SheetContent side={dir === "rtl" ? "left" : "right"} className="w-full sm:max-w-md">
         <SheetHeader className="text-start">
           <SheetTitle>{title ?? t("fantasy.picker.title")}</SheetTitle>
-          <SheetDescription>
-            {t("fantasy.players.decision_intro")}
-          </SheetDescription>
+          <SheetDescription>{t("fantasy.players.decision_intro")}</SheetDescription>
         </SheetHeader>
 
         <div className="mt-3 space-y-2">
@@ -148,11 +137,7 @@ export function PlayerPickerDrawer({
                 {t("common.all")}
               </FilterChip>
               {positions.map((item) => (
-                <FilterChip
-                  key={item}
-                  active={pos === item}
-                  onClick={() => setPos(item)}
-                >
+                <FilterChip key={item} active={pos === item} onClick={() => setPos(item)}>
                   {t(`player.pos.${item}` as TranslationKey)}
                 </FilterChip>
               ))}
@@ -169,11 +154,7 @@ export function PlayerPickerDrawer({
                 active={clubId === club.id}
                 onClick={() => setClubId(club.id)}
               >
-                <ClubCrest
-                  club={club}
-                  size="sm"
-                  className="h-5 w-5 rounded-full text-[8px]"
-                />
+                <ClubCrest club={club} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
                 {tr(club.shortName)}
               </FilterChip>
             ))}
@@ -203,9 +184,7 @@ export function PlayerPickerDrawer({
           )}
           <ul className="grid gap-2">
             {filtered.map((player) => {
-              const club = clubs.find(
-                (candidate) => candidate.id === player.clubId,
-              );
+              const club = clubs.find((candidate) => candidate.id === player.clubId);
               const disabled = disabledIds.includes(player.id);
               return (
                 <li key={player.id}>
@@ -216,8 +195,7 @@ export function PlayerPickerDrawer({
                     className={cn(
                       "surface-4 w-full min-w-0 p-3 text-start transition-[transform,box-shadow,background-color]",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
-                      !disabled &&
-                        "hover:bg-white/90 hover:shadow-card active:translate-y-px",
+                      !disabled && "hover:bg-white/90 hover:shadow-card active:translate-y-px",
                       disabled && "cursor-not-allowed opacity-40",
                     )}
                   >
