@@ -1,10 +1,6 @@
 import type { FantasyPlayer, FixtureDifficulty } from "@/types/fantasy";
 
-export type PlayerPerformanceMetric =
-  | "totalPoints"
-  | "form"
-  | "ownership"
-  | "expectedPoints";
+export type PlayerPerformanceMetric = "totalPoints" | "form" | "ownership" | "expectedPoints";
 
 export type PlayerPerformanceAvailability = Readonly<
   Partial<Record<PlayerPerformanceMetric, boolean>>
@@ -40,10 +36,7 @@ function kickoffEpoch(fixture: FixtureDifficulty): number {
   return Number.isNaN(value) ? Number.POSITIVE_INFINITY : value;
 }
 
-function compareFixtures(
-  left: FixtureDifficulty,
-  right: FixtureDifficulty,
-): number {
+function compareFixtures(left: FixtureDifficulty, right: FixtureDifficulty): number {
   if (left.gameweek !== right.gameweek) return left.gameweek - right.gameweek;
 
   const leftKickoff = kickoffEpoch(left);
@@ -57,9 +50,7 @@ function isAvailableMetric(
   value: number | undefined,
   available: boolean | undefined,
 ): value is number {
-  return (
-    available === true && typeof value === "number" && Number.isFinite(value)
-  );
+  return available === true && typeof value === "number" && Number.isFinite(value);
 }
 
 export function selectUpcomingFixture(
@@ -68,9 +59,7 @@ export function selectUpcomingFixture(
 ): FixtureDifficulty | null {
   return (
     fixtures
-      .filter(
-        (fixture) => fixture.clubId === clubId && fixture.isBlank !== true,
-      )
+      .filter((fixture) => fixture.clubId === clubId && fixture.isBlank !== true)
       .slice()
       .sort(compareFixtures)[0] ?? null
   );
@@ -82,22 +71,14 @@ export function buildPlayerDecisionPresentation({
   performanceAvailability,
 }: BuildPlayerDecisionPresentationInput): PlayerDecisionPresentation {
   const performance: PlayerDecisionPerformance = {
-    ...(isAvailableMetric(
-      player.totalPoints,
-      performanceAvailability?.totalPoints,
-    )
+    ...(isAvailableMetric(player.totalPoints, performanceAvailability?.totalPoints)
       ? { totalPoints: player.totalPoints }
       : {}),
-    ...(isAvailableMetric(player.form, performanceAvailability?.form)
-      ? { form: player.form }
-      : {}),
+    ...(isAvailableMetric(player.form, performanceAvailability?.form) ? { form: player.form } : {}),
     ...(isAvailableMetric(player.ownership, performanceAvailability?.ownership)
       ? { ownership: player.ownership }
       : {}),
-    ...(isAvailableMetric(
-      player.expectedPoints,
-      performanceAvailability?.expectedPoints,
-    )
+    ...(isAvailableMetric(player.expectedPoints, performanceAvailability?.expectedPoints)
       ? { expectedPoints: player.expectedPoints }
       : {}),
   };
