@@ -59,7 +59,7 @@ export function PlayerPickerDrawer({
   const [q, setQ] = useState("");
   const [clubId, setClubId] = useState("");
   const [pos, setPos] = useState<Position | "">(position ?? "");
-  const [sort, setSort] = useState<SortKey>("fixture");
+  const [sort, setSort] = useState<SortKey>("price");
 
   const filtered = useMemo(() => {
     let list = players.slice();
