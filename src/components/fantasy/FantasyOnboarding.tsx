@@ -39,8 +39,7 @@ export function FantasyOnboarding() {
   }, [isHydrated]);
 
   const totalSteps = fantasyOnboardingSteps.length;
-  const currentStep =
-    fantasyOnboardingSteps[stepIndex] ?? fantasyOnboardingSteps[0];
+  const currentStep = fantasyOnboardingSteps[stepIndex] ?? fantasyOnboardingSteps[0];
   const isLastStep = stepIndex === totalSteps - 1;
   const progressLabel = `${t("fantasy.onboarding.step")} ${stepIndex + 1} ${t(
     "fantasy.onboarding.of",
@@ -72,9 +71,7 @@ export function FantasyOnboarding() {
         className="max-h-[calc(100dvh-2rem)] max-w-md overflow-y-auto p-5 sm:p-6 [&>button:last-child]:hidden"
       >
         <DialogHeader className="text-start sm:text-start">
-          <DialogTitle className="text-xl font-black">
-            {t("fantasy.onboarding.title")}
-          </DialogTitle>
+          <DialogTitle className="text-xl font-black">{t("fantasy.onboarding.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex min-h-11 items-center justify-between gap-3">
@@ -107,9 +104,7 @@ export function FantasyOnboarding() {
               aria-hidden
               className={[
                 "h-1.5 flex-1 rounded-full transition-colors duration-[var(--duration-quick)]",
-                index <= stepIndex
-                  ? "bg-[color:var(--brand-primary)]"
-                  : "bg-muted-foreground/25",
+                index <= stepIndex ? "bg-[color:var(--brand-primary)]" : "bg-muted-foreground/25",
               ].join(" ")}
             />
           ))}
@@ -123,9 +118,7 @@ export function FantasyOnboarding() {
           <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[var(--bg-brand-gradient)] text-white">
             <FantasyGuideStepIcon stepId={currentStep.id} className="h-8 w-8" />
           </div>
-          <div className="text-lg font-black text-foreground">
-            {t(currentStep.titleKey)}
-          </div>
+          <div className="text-lg font-black text-foreground">{t(currentStep.titleKey)}</div>
           <DialogDescription className="max-w-sm text-center leading-relaxed">
             {t(currentStep.bodyKey)}
           </DialogDescription>
@@ -137,9 +130,7 @@ export function FantasyOnboarding() {
               type="button"
               variant="outline"
               size="xl"
-              onClick={() =>
-                setStepIndex((current) => Math.max(0, current - 1))
-              }
+              onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
               className="min-w-0 flex-1"
             >
               {t("fantasy.onboarding.previous")}
@@ -152,9 +143,7 @@ export function FantasyOnboarding() {
             onClick={advance}
             className="min-w-0 flex-1"
           >
-            {isLastStep
-              ? t("fantasy.onboarding.start")
-              : t("fantasy.onboarding.next")}
+            {isLastStep ? t("fantasy.onboarding.start") : t("fantasy.onboarding.next")}
           </Button>
         </div>
       </DialogContent>
