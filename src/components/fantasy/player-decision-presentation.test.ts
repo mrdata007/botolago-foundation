@@ -58,12 +58,8 @@ describe("selectUpcomingFixture", () => {
     ];
     const originalOrder = fixtures.map((fixture) => fixture.opponentClubId);
 
-    expect(selectUpcomingFixture("club-a", fixtures)?.opponentClubId).toBe(
-      "earlier-kickoff",
-    );
-    expect(fixtures.map((fixture) => fixture.opponentClubId)).toEqual(
-      originalOrder,
-    );
+    expect(selectUpcomingFixture("club-a", fixtures)?.opponentClubId).toBe("earlier-kickoff");
+    expect(fixtures.map((fixture) => fixture.opponentClubId)).toEqual(originalOrder);
   });
 
   test("returns null when the club has no playable fixture", () => {
