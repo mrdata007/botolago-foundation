@@ -1,4 +1,5 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
+import { buildFixtureDifficultyContext } from "./fantasy-fixture-context";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
 import {
@@ -306,26 +307,18 @@ export const fantasyService = {
     if (mode() === "mock") return mockFantasyService.getFixtureDifficulty();
     const current = await hub();
     if (!current.gameweek) return [];
-    const rows = await cloud.getFixtureDifficulty(
-      current.season.id,
-      current.gameweek.sequence,
-      6,
-      context(),
-    );
-    const counts = new Map<string, number>();
-    for (const row of rows) {
-      const key = `${row.clubId}:${row.gameweek}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return rows.map((row) => ({
-      clubId: row.clubId,
-      gameweek: row.gameweek,
-      opponentClubId: row.opponentClubId,
-      kickoffAt: row.kickoffAt,
-      isHome: row.isHome,
-      difficulty: row.difficulty as 1 | 2 | 3 | 4 | 5,
-      isDouble: (counts.get(`${row.clubId}:${row.gameweek}`) ?? 0) > 1,
-    }));
+    const currentSequence = current.gameweek.sequence;
+    const [rows, gameweeks] = await Promise.all([
+      cloud.getFixtureDifficulty(current.season.id, currentSequence, 6, context()),
+      cloud.getGameweeks(current.season.id, null, context()),
+    ]);
+    const endGameweek = currentSequence + 6;
+    return buildFixtureDifficultyContext({
+      rows,
+      gameweeks: gameweeks.items
+        .map((gameweek) => gameweek.sequence)
+        .filter((sequence) => sequence >= currentSequence && sequence < endGameweek),
+    });
   },
   async getRules() {
     if (mode() === "mock") {
