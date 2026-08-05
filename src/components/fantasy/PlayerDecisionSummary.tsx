@@ -54,8 +54,7 @@ export function PlayerDecisionSummary({
     fixtures,
     performanceAvailability,
   });
-  const resolvedClub =
-    club ?? clubs.find((candidate) => candidate.id === presentation.clubId);
+  const resolvedClub = club ?? clubs.find((candidate) => candidate.id === presentation.clubId);
   const fixture = presentation.nextFixture;
   const opponent = fixture
     ? clubs.find((candidate) => candidate.id === fixture.opponentClubId)
@@ -63,8 +62,7 @@ export function PlayerDecisionSummary({
   const kickoffAt = fixture?.kickoffAt;
   const kickoffLabel = kickoffAt ? formatKickoff(kickoffAt, locale) : null;
 
-  const performanceItems: Array<{ key: string; label: string; value: string }> =
-    [];
+  const performanceItems: Array<{ key: string; label: string; value: string }> = [];
   if (presentation.performance.totalPoints !== undefined) {
     performanceItems.push({
       key: "totalPoints",
@@ -105,31 +103,21 @@ export function PlayerDecisionSummary({
     >
       <div className="flex min-w-0 items-center gap-2.5">
         {resolvedClub && (
-          <ClubCrest
-            club={resolvedClub}
-            size={density === "comfortable" ? "md" : "sm"}
-          />
+          <ClubCrest club={resolvedClub} size={density === "comfortable" ? "md" : "sm"} />
         )}
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="min-w-0 truncate text-sm font-black text-foreground">
               {tr(presentation.name)}
             </span>
-            <PlayerStatusBadge
-              status={presentation.status}
-              className="shrink-0"
-            />
+            <PlayerStatusBadge status={presentation.status} className="shrink-0" />
           </div>
           <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-[color:var(--text-muted)]">
-            <span>
-              {t(`player.pos.${presentation.position}` as TranslationKey)}
-            </span>
+            <span>{t(`player.pos.${presentation.position}` as TranslationKey)}</span>
             {resolvedClub && (
               <>
                 <span aria-hidden>·</span>
-                <span className="min-w-0 truncate">
-                  {tr(resolvedClub.shortName)}
-                </span>
+                <span className="min-w-0 truncate">{tr(resolvedClub.shortName)}</span>
               </>
             )}
           </div>
@@ -149,8 +137,7 @@ export function PlayerDecisionSummary({
           {opponent && <ClubCrest club={opponent} size="sm" />}
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-black uppercase tracking-wide text-[color:var(--text-muted)]">
-              {t("fantasy.players.next")} · {t("home.gameweek")}{" "}
-              {number.format(fixture.gameweek)}
+              {t("fantasy.players.next")} · {t("home.gameweek")} {number.format(fixture.gameweek)}
             </div>
             <div className="mt-0.5 truncate text-xs font-bold text-foreground">
               {opponent ? tr(opponent.shortName) : "—"}{" "}
@@ -160,8 +147,7 @@ export function PlayerDecisionSummary({
             </div>
             {kickoffAt && kickoffLabel && (
               <div className="mt-0.5 truncate text-[10px] text-[color:var(--text-muted)]">
-                {t("matches.kickoff")} ·{" "}
-                <time dateTime={kickoffAt}>{kickoffLabel}</time>
+                {t("matches.kickoff")} · <time dateTime={kickoffAt}>{kickoffLabel}</time>
               </div>
             )}
           </div>
@@ -187,9 +173,7 @@ export function PlayerDecisionSummary({
           {performanceItems.map((item) => (
             <div key={item.key} className="flex items-baseline gap-1">
               <dt className="text-[color:var(--text-muted)]">{item.label}</dt>
-              <dd className="font-black tabular-nums text-foreground">
-                {item.value}
-              </dd>
+              <dd className="font-black tabular-nums text-foreground">{item.value}</dd>
             </div>
           ))}
         </dl>
