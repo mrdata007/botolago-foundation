@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { Users, Coins, LayoutGrid, Star, ArrowRightLeft, Timer, Trophy, Medal } from "lucide-react";
+import { Users, Coins, LayoutGrid, Star, ArrowRightLeft, Timer, Trophy } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { ErrorState, LoadingState } from "@/components/common/States";
 
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/fantasy/rules")({
 });
 
 function RulesPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const rulesQ = useQuery({
     queryKey: ["fantasy-rules"],
     queryFn: () => fantasyService.getRules(),
@@ -22,28 +22,82 @@ function RulesPage() {
     return <ErrorState onRetry={() => void rulesQ.refetch()} />;
   }
   const rules = rulesQ.data;
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    maximumFractionDigits: 1,
+  });
+  const positionLabel = (position: (typeof rules.positions)[number]["code"]) =>
+    t(`player.pos.${position}` as TranslationKey);
+  const positions = rules.positions
+    .map((position) => `${positionLabel(position.code)} ${position.squadQuota}`)
+    .join(" · ");
+  const formationRanges = rules.positions
+    .map(
+      (position) =>
+        `${positionLabel(position.code)} ${position.startingMinimum}–${position.startingMaximum}`,
+    )
+    .join(" · ");
+  const scoring = rules.positions
+    .map(
+      (position) =>
+        `${positionLabel(position.code)} ${position.goalPoints}/${position.cleanSheetPoints}`,
+    )
+    .join(" · ");
 
   const sections: {
     icon: React.ComponentType<{ className?: string }>;
     titleKey: TranslationKey;
-    descKey: TranslationKey;
+    description: string;
   }[] = [
-    { icon: Users, titleKey: "fantasy.rules.squad", descKey: "fantasy.rules.squad_desc" },
-    { icon: Coins, titleKey: "fantasy.rules.budget", descKey: "fantasy.rules.budget_desc" },
+    {
+      icon: Users,
+      titleKey: "fantasy.rules.squad",
+      description: t("fantasy.rules.squad_desc_dynamic")
+        .replace("{total}", String(rules.squadSize))
+        .replace("{positions}", positions),
+    },
+    {
+      icon: Coins,
+      titleKey: "fantasy.rules.budget",
+      description: t("fantasy.rules.budget_desc_dynamic")
+        .replace("{budget}", nf.format(rules.budget))
+        .replace("{clubLimit}", String(rules.maxPlayersPerClub)),
+    },
     {
       icon: LayoutGrid,
       titleKey: "fantasy.rules.formation",
-      descKey: "fantasy.rules.formation_desc",
+      description: t("fantasy.rules.formation_desc_dynamic")
+        .replace("{starters}", "11")
+        .replace("{ranges}", formationRanges),
     },
-    { icon: Star, titleKey: "fantasy.rules.captaincy", descKey: "fantasy.rules.captaincy_desc" },
+    {
+      icon: Star,
+      titleKey: "fantasy.rules.captaincy",
+      description: t("fantasy.rules.captaincy_desc_dynamic").replace(
+        "{multiplier}",
+        nf.format(rules.captainMultiplier),
+      ),
+    },
     {
       icon: ArrowRightLeft,
       titleKey: "fantasy.rules.transfers_r",
-      descKey: "fantasy.rules.transfers_desc",
+      description: t("fantasy.rules.transfers_desc_dynamic")
+        .replace("{free}", String(rules.initialFreeTransfers))
+        .replace("{rollover}", String(rules.maxFreeTransferRollover))
+        .replace("{cost}", String(rules.transferHitCost)),
     },
-    { icon: Timer, titleKey: "fantasy.rules.deadlines", descKey: "fantasy.rules.deadlines_desc" },
-    { icon: Trophy, titleKey: "fantasy.rules.scoring", descKey: "fantasy.rules.scoring_desc" },
-    { icon: Medal, titleKey: "fantasy.rules.tiebreak", descKey: "fantasy.rules.tiebreak_desc" },
+    {
+      icon: Timer,
+      titleKey: "fantasy.rules.deadlines",
+      description: t("fantasy.rules.deadlines_desc_dynamic").replace(
+        "{minutes}",
+        String(rules.deadline.minutesBeforeFirstFixture),
+      ),
+    },
+    {
+      icon: Trophy,
+      titleKey: "fantasy.rules.scoring",
+      description: t("fantasy.rules.scoring_desc_dynamic").replace("{scoring}", scoring),
+    },
   ];
 
   return (
@@ -78,7 +132,7 @@ function RulesPage() {
               </div>
               <h2 className="text-sm font-black text-foreground">{t(s.titleKey)}</h2>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(s.descKey)}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
           </section>
         ))}
       </div>

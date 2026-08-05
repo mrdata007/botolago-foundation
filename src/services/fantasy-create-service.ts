@@ -48,6 +48,9 @@ export interface CreateTeamRules {
   budget: number;
   maxPerClub: number;
   initialFreeTransfers: number;
+  maxFreeTransferRollover: number;
+  transferHitCost: number;
+  captainMultiplier: number;
   perPosition: Record<Position, number>;
   startingMinimum: Record<Position, number>;
   startingMaximum: Record<Position, number>;
@@ -74,6 +77,9 @@ export const DEFAULT_CREATE_TEAM_RULES: CreateTeamRules = {
   budget: SQUAD_RULES.budget,
   maxPerClub: SQUAD_RULES.maxPerClub,
   initialFreeTransfers: SQUAD_RULES.freeTransfersPerWeek,
+  maxFreeTransferRollover: 5,
+  transferHitCost: SQUAD_RULES.transferHitPoints,
+  captainMultiplier: 2,
   perPosition: { ...SQUAD_RULES.perPosition },
   startingMinimum: { GK: 1, DEF: 3, MID: 2, FWD: 1 },
   startingMaximum: { GK: 1, DEF: 5, MID: 5, FWD: 3 },
@@ -91,6 +97,9 @@ export function adaptFantasyRules(dto: FantasyRulesDto): CreateTeamRules | null 
     budget: dto.budget,
     maxPerClub: dto.maxPlayersPerClub,
     initialFreeTransfers: dto.initialFreeTransfers,
+    maxFreeTransferRollover: dto.maxFreeTransferRollover,
+    transferHitCost: dto.transferHitCost,
+    captainMultiplier: dto.captainMultiplier,
     perPosition: { GK: 0, DEF: 0, MID: 0, FWD: 0 },
     startingMinimum: { GK: 0, DEF: 0, MID: 0, FWD: 0 },
     startingMaximum: { GK: 0, DEF: 0, MID: 0, FWD: 0 },

@@ -6,6 +6,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
 import { TransferReviewPanel } from "@/components/fantasy/TransferReviewPanel";
@@ -15,7 +16,7 @@ import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { computeBudgetImpact, maxAffordableReplacement } from "@/lib/budget";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { useI18n } from "@/i18n/provider";
-import { ArrowRightLeft, Check, Lock } from "lucide-react";
+import { ArrowRightLeft, Check, CircleHelp, Lock } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
@@ -29,6 +30,8 @@ import {
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
+import { adaptFantasyRules } from "@/services/fantasy-create-service";
+import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
@@ -55,13 +58,9 @@ function TransfersPage() {
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
 
-  // H7 — Consume owned.snapshot directly in cloud mode; no parallel query.
-  const localTeamQ = useQuery({
-    queryKey: ownedKey("team"),
-    queryFn: () => fantasyService.getTeam(),
-    enabled: owned.source === "local",
-  });
-  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
+  // One authoritative owned snapshot for cloud and deterministic local mode.
+  // Creation, Team, and Transfers now observe the same state immediately.
+  const team = owned.snapshot?.team ?? null;
 
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
@@ -78,6 +77,21 @@ function TransfersPage() {
     queryFn: () => fantasyService.getCurrentGameweek(),
     enabled: owned.source !== "guest",
   });
+  const rulesQ = useQuery({
+    queryKey: ["fantasy-create", "rules"],
+    queryFn: () => fantasyService.getRules(),
+    enabled: owned.source !== "guest",
+  });
+  const fixturesQ = useQuery({
+    queryKey: ["fantasy-create", "fixtures"],
+    queryFn: () => fantasyService.getFixtureDifficulty(),
+    enabled: owned.source !== "guest",
+    retry: 1,
+  });
+  const activeRules = useMemo(
+    () => (rulesQ.data ? adaptFantasyRules(rulesQ.data) : null),
+    [rulesQ.data],
+  );
 
   const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
     isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
@@ -105,6 +119,17 @@ function TransfersPage() {
   const [draftRestored, setDraftRestored] = useState(false);
   const draftInitRef = useRef(false);
   const { requireAuth, status: authStatus } = useAuth();
+  const hasWorkingChanges = outIds.length > 0 || inIds.length > 0;
+
+  useEffect(() => {
+    if (!hasWorkingChanges) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasWorkingChanges]);
 
   // H5 — Draft key (cloud-only).
   const teamId = isCloud ? (owned.snapshot?.teamId ?? "new") : null;
@@ -201,14 +226,14 @@ function TransfersPage() {
     );
   }
 
-  if (playersQ.isError || clubsQ.isError || gwQ.isError || localTeamQ.isError || owned.loadError) {
+  if (playersQ.isError || clubsQ.isError || gwQ.isError || rulesQ.isError || owned.loadError) {
     return (
       <ErrorState
         onRetry={() => {
           void playersQ.refetch();
           void clubsQ.refetch();
           void gwQ.refetch();
-          void localTeamQ.refetch();
+          void rulesQ.refetch();
           void owned.reload();
         }}
       />
@@ -216,10 +241,10 @@ function TransfersPage() {
   }
   if (
     (isCloud && owned.isLoading) ||
-    localTeamQ.isLoading ||
     playersQ.isLoading ||
     clubsQ.isLoading ||
-    gwQ.isLoading
+    gwQ.isLoading ||
+    rulesQ.isLoading
   ) {
     return <LoadingState />;
   }
@@ -234,6 +259,24 @@ function TransfersPage() {
     );
   }
   if (!playersQ.data || !clubsQ.data) return <LoadingState />;
+  if (!activeRules || playersQ.data.length === 0 || clubsQ.data.length === 0) {
+    return (
+      <FantasyCatalogUnavailable
+        detailKey={
+          clubsQ.data.length === 0
+            ? "fantasy.atlas.create.unavailable.clubs"
+            : !activeRules
+              ? "fantasy.atlas.create.unavailable.rules"
+              : "fantasy.atlas.create.unavailable.catalog"
+        }
+        onRetry={() => {
+          void playersQ.refetch();
+          void clubsQ.refetch();
+          void rulesQ.refetch();
+        }}
+      />
+    );
+  }
   const players = playersQ.data;
   const clubs = clubsQ.data;
   const playerOf = (id: string) => players.find((p) => p.id === id)!;
@@ -262,6 +305,7 @@ function TransfersPage() {
     inIds,
     netCost:
       outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+    hitCost: activeRules.transferHitCost,
   });
   const preview =
     isCloud && serverPreviewQ.data
@@ -285,7 +329,6 @@ function TransfersPage() {
     !impact.overBudget &&
     !locked &&
     (!isCloud || (!!serverPreviewQ.data && !serverPreviewQ.isError));
-  const hasWorkingChanges = outIds.length > 0 || inIds.length > 0;
 
   const startReplace = (playerId: string) => {
     if (locked) return;
@@ -309,7 +352,7 @@ function TransfersPage() {
     }
     const nextIds = currentSquadIdsAfter.map((id) => (id === pickerFor ? p.id : id));
     const clubCount = nextIds.filter((id) => playerOf(id).clubId === p.clubId).length;
-    if (clubCount > 3) {
+    if (clubCount > activeRules.maxPerClub) {
       toast.error(t("fantasy.validation.club_limit"));
       return;
     }
@@ -361,6 +404,7 @@ function TransfersPage() {
       inIds,
       netCost:
         outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+      hitCost: activeRules.transferHitCost,
       deadlineIso: gwQ.data?.deadline,
     });
     if (!res.ok) {
@@ -485,6 +529,14 @@ function TransfersPage() {
   const pickerMaxPrice = pickerOut
     ? maxAffordableReplacement(pickerOut.price, team.bank)
     : undefined;
+  const transferDisabledReasonFor = (candidate: FantasyPlayer) => {
+    if (!pickerFor) return null;
+    const candidateSquad = currentSquadIdsAfter.map((id) => (id === pickerFor ? candidate.id : id));
+    const clubCount = candidateSquad.filter(
+      (id) => playerOf(id).clubId === candidate.clubId,
+    ).length;
+    return clubCount > activeRules.maxPerClub ? t("fantasy.validation.club_limit") : null;
+  };
 
   const chipLabel: string | null =
     preview.chipActive === "wildcard"
@@ -500,6 +552,7 @@ function TransfersPage() {
           <span className="text-brand">{t("fantasy.transfers.title")}</span>
         </h1>
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {gwQ.data && <DeadlineCountdown iso={gwQ.data.deadline} />}
           <Stat
             label={t("fantasy.bank")}
             value={nf.format(preview.bankAfter)}
@@ -542,6 +595,30 @@ function TransfersPage() {
           {t("fantasy.error.transfer_failed")}
         </div>
       )}
+
+      <details className="mt-3 rounded-2xl border border-[var(--glass-border)] bg-white/60 p-3">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]">
+          <CircleHelp className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />
+          {t("fantasy.transfers.help_title")}
+        </summary>
+        <ul className="mt-2 grid gap-2 text-xs leading-relaxed text-muted-foreground">
+          <li>
+            {t("fantasy.transfers.help_allowance")
+              .replace("{free}", String(team.freeTransfers))
+              .replace("{rollover}", String(activeRules.maxFreeTransferRollover))}
+          </li>
+          <li>
+            {t("fantasy.transfers.help_cost").replace(
+              "{cost}",
+              String(activeRules.transferHitCost),
+            )}
+          </li>
+          <li>
+            {t("fantasy.transfers.help_club").replace("{count}", String(activeRules.maxPerClub))}
+          </li>
+          <li>{t("fantasy.transfers.help_cancel")}</li>
+        </ul>
+      </details>
 
       {/* H5 — Unsaved-changes badge (cloud mode only). */}
       {isCloud && (
@@ -679,6 +756,10 @@ function TransfersPage() {
         clubs={clubs}
         position={pickerOut?.position}
         maxPrice={pickerMaxPrice}
+        disabledReasonFor={transferDisabledReasonFor}
+        fixtures={fixturesQ.data ?? []}
+        gameweek={gwQ.data?.number}
+        inspectBeforePick
         title={t("fantasy.transfers.select_in")}
       />
     </div>

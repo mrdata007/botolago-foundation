@@ -13,7 +13,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Club } from "@/types/domain";
-import type { FantasyPlayer, Position } from "@/types/fantasy";
+import type { FantasyPlayer, FixtureDifficulty, Position } from "@/types/fantasy";
 import { PlayerStatusBadge } from "./PlayerStatusBadge";
 
 type SortKey = "price" | "form" | "points" | "ownership";
@@ -31,6 +31,8 @@ export function PlayerPickerDrawer({
   maxPrice,
   title,
   inspectBeforePick = false,
+  fixtures = [],
+  gameweek,
 }: {
   open: boolean;
   onClose: () => void;
@@ -43,6 +45,8 @@ export function PlayerPickerDrawer({
   maxPrice?: number;
   title?: string;
   inspectBeforePick?: boolean;
+  fixtures?: FixtureDifficulty[];
+  gameweek?: number;
 }) {
   const { t, tr, lang, dir } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -103,6 +107,16 @@ export function PlayerPickerDrawer({
   ];
   const detail = detailId ? players.find((player) => player.id === detailId) : null;
   const detailClub = detail ? clubs.find((club) => club.id === detail.clubId) : null;
+  const detailFixture = detail
+    ? fixtures.find(
+        (fixture) =>
+          fixture.clubId === detail.clubId &&
+          (typeof gameweek !== "number" || fixture.gameweek === gameweek),
+      )
+    : null;
+  const detailOpponent = detailFixture
+    ? clubs.find((club) => club.id === detailFixture.opponentClubId)
+    : null;
   const disabledReason = detail
     ? (disabledReasonFor?.(detail) ??
       (disabledIds.includes(detail.id) ? t("fantasy.atlas.create.picker.already_selected") : null))
@@ -164,7 +178,11 @@ export function PlayerPickerDrawer({
                 <Metric label={t("fantasy.form")} value={nf.format(detail.form)} />
                 <Metric
                   label={t("fantasy.picker.sort.ownership")}
-                  value={`${nf.format(detail.ownership)}%`}
+                  value={
+                    typeof detail.selectionCount === "number"
+                      ? nf.format(detail.selectionCount)
+                      : `${nf.format(detail.ownership)}%`
+                  }
                 />
                 {typeof detail.chanceOfPlaying === "number" && (
                   <Metric
@@ -180,6 +198,23 @@ export function PlayerPickerDrawer({
                 <p className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm leading-relaxed text-amber-950">
                   {tr(detail.news)}
                 </p>
+              )}
+              {detailFixture && detailOpponent && (
+                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                  <ClubCrest club={detailOpponent} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      {t("fantasy.atlas.create.review.next_fixture")}
+                    </div>
+                    <div className="mt-0.5 truncate text-sm font-black">
+                      {tr(detailOpponent.name)} ·{" "}
+                      {detailFixture.isHome ? t("common.home") : t("common.away")}
+                    </div>
+                  </div>
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-800">
+                    {detailFixture.difficulty}
+                  </span>
+                </div>
               )}
               {disabledReason && (
                 <p

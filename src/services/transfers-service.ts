@@ -21,6 +21,8 @@ export interface TransfersPreviewInput {
   inIds: string[];
   /** Net bank cost of the pending in↔out swap. */
   netCost: number;
+  /** Active ruleset point cost for each transfer beyond the free allowance. */
+  hitCost?: number;
 }
 
 export interface TransfersPreview {
@@ -44,6 +46,7 @@ export function previewTransfers(input: TransfersPreviewInput): TransfersPreview
     freeTransfers: input.team.freeTransfers,
     wildcardActive,
     freeHitActive,
+    hitCost: input.hitCost,
   });
   const bankAfter = Math.round((input.team.bank - input.netCost) * 10) / 10;
   // While Wildcard or Free Hit is active, free transfers are not consumed —
@@ -72,6 +75,7 @@ export interface ApplyTransfersInput {
   outIds: string[];
   inIds: string[];
   netCost: number;
+  hitCost?: number;
   deadlineIso?: string;
   now?: Date;
 }
@@ -114,6 +118,7 @@ export function applyConfirmedTransfers(input: ApplyTransfersInput): ApplyResult
     freeTransfers: input.team.freeTransfers,
     wildcardActive,
     freeHitActive,
+    hitCost: input.hitCost,
   });
 
   const nextBank = Math.round((input.team.bank - input.netCost) * 10) / 10;

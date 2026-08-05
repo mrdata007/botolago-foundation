@@ -39,6 +39,7 @@ function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
     totalPoints: 0,
     form: 0,
     ownership: 0,
+    selectionCount: dto.selectedByCount,
     status: dto.status,
   };
 }

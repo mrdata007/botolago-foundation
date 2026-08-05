@@ -42,8 +42,18 @@ const validationKeys: Record<DraftValidationCode, TranslationKey> = {
 function AtlasSquadPage() {
   const { t, lang, dir } = useI18n();
   const nav = useNavigate();
-  const { draft, players, clubs, rules, gameweek, summary, validation, identityValid, commit } =
-    useAtlasCreate();
+  const {
+    draft,
+    players,
+    clubs,
+    rules,
+    gameweek,
+    fixtures,
+    summary,
+    validation,
+    identityValid,
+    commit,
+  } = useAtlasCreate();
   const [view, setView] = useState<AtlasSquadView>("pitch");
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -256,6 +266,8 @@ function AtlasSquadPage() {
         maxPrice={pickerMaxPrice}
         disabledReasonFor={(player) => reasonLabel(selectionIssue(player))}
         inspectBeforePick
+        fixtures={fixtures}
+        gameweek={gameweek.number}
         title={
           activeSlot
             ? `${t("fantasy.create.pick_for")} ${t(`player.pos.${activeSlot.position}` as TranslationKey)}`

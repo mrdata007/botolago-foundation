@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -10,8 +10,9 @@ import {
   Loader2,
   Map,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -20,6 +21,7 @@ import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { AtlasCreateShell, AtlasStickyAction } from "@/components/fantasy/AtlasCreateShell";
 import { useAtlasCreate } from "@/components/fantasy/AtlasCreateProvider";
 import { AtlasDraftSquad, type AtlasSquadView } from "@/components/fantasy/AtlasDraftSquad";
+import { AtlasTeamShirt } from "@/components/fantasy/AtlasTeamShirt";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import {
   Sheet,
@@ -44,6 +46,13 @@ import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { FORMATIONS, type FantasyPlayer, type FormationKey } from "@/types/fantasy";
+import type { Club } from "@/types/domain";
+
+interface CreatedTeamConfirmation {
+  teamName: string;
+  favoriteClubId: string | null;
+  captainId: string | null;
+}
 
 export const Route = createFileRoute("/fantasy/create/review")({
   component: AtlasReviewPage,
@@ -52,7 +61,6 @@ export const Route = createFileRoute("/fantasy/create/review")({
 function AtlasReviewPage() {
   const { t, tr, lang, dir } = useI18n();
   const { user } = useAuth();
-  const nav = useNavigate();
   const qc = useQueryClient();
   const owned = useFantasyOwned();
   const {
@@ -74,9 +82,32 @@ function AtlasReviewPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<TranslationKey | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [created, setCreated] = useState<CreatedTeamConfirmation | null>(null);
+  const successHeadingRef = useRef<HTMLHeadingElement>(null);
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     maximumFractionDigits: 1,
   });
+
+  useEffect(() => {
+    if (!created) return;
+    successHeadingRef.current?.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [created]);
+
+  if (created) {
+    const captain = players.find((player) => player.id === created.captainId) ?? null;
+    const favoriteClub = clubs.find((club) => club.id === created.favoriteClubId) ?? null;
+    return (
+      <CreationSuccess
+        teamName={created.teamName}
+        favoriteClub={favoriteClub}
+        captain={captain}
+        deadline={gameweek?.deadline ?? null}
+        headingRef={successHeadingRef}
+        onViewTeam={() => window.location.assign("/fantasy/team")}
+      />
+    );
+  }
 
   if (!identityValid) return <Navigate to="/fantasy/create" replace />;
   if (!rules || !summary || !validation || !gameweek) return null;
@@ -129,11 +160,15 @@ function AtlasReviewPage() {
         },
       );
       if (result.ok) {
+        const persistedCaptain = result.snapshot.team.squad.find((slot) => slot.isCaptain);
+        setCreated({
+          teamName: result.snapshot.team.teamName,
+          favoriteClubId: draft.favoriteClubId,
+          captainId: persistedCaptain?.playerId ?? null,
+        });
         importDecisionService.markImported(user.id);
         setAnnouncement(t("fantasy.atlas.create.review.success"));
         toast.success(t("fantasy.atlas.create.review.success"));
-        await owned.reload();
-        void nav({ to: "/fantasy" });
         return;
       }
       const classified = classifyRepoError(result.error);
@@ -450,6 +485,107 @@ function AtlasReviewPage() {
         }
       />
     </AtlasCreateShell>
+  );
+}
+
+function CreationSuccess({
+  teamName,
+  favoriteClub,
+  captain,
+  deadline,
+  headingRef,
+  onViewTeam,
+}: {
+  teamName: string;
+  favoriteClub: Club | null;
+  captain: FantasyPlayer | null;
+  deadline: string | null;
+  headingRef: React.RefObject<HTMLHeadingElement | null>;
+  onViewTeam: () => void;
+}) {
+  const { t, tr } = useI18n();
+  const { clubs } = useAtlasCreate();
+  const captainClub = captain
+    ? (clubs.find((candidate) => candidate.id === captain.clubId) ?? null)
+    : null;
+  return (
+    <section
+      data-testid="atlas-creation-success"
+      className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-[#061b3c] px-4 py-8 text-white shadow-2xl sm:px-8 sm:py-12"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 78% 18%, rgb(45 127 249 / 0.42), transparent 30%), radial-gradient(circle at 15% 82%, rgb(27 194 123 / 0.2), transparent 34%)",
+        }}
+      />
+      <div className="relative grid items-center gap-7 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid place-items-center">
+          <AtlasTeamShirt club={favoriteClub} />
+        </div>
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-blue-200">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            {t("fantasy.atlas.create.success.eyebrow")}
+          </div>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="mt-4 text-3xl font-black tracking-tight outline-none sm:text-5xl"
+          >
+            {t("fantasy.atlas.create.success.title")}
+          </h1>
+          <p className="mt-3 break-words text-2xl font-black text-blue-200" dir="auto">
+            {teamName}
+          </p>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
+            {t("fantasy.atlas.create.success.description")}
+          </p>
+
+          <dl className="mt-5 grid gap-2 sm:grid-cols-2">
+            {favoriteClub && (
+              <div className="flex min-h-16 items-center gap-3 rounded-2xl border border-white/10 bg-white/8 p-3">
+                <ClubCrest club={favoriteClub} size="sm" />
+                <div className="min-w-0">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/50">
+                    {t("fantasy.atlas.create.success.club")}
+                  </dt>
+                  <dd className="truncate text-sm font-black">{tr(favoriteClub.name)}</dd>
+                </div>
+              </div>
+            )}
+            {captain && (
+              <div className="flex min-h-16 items-center gap-3 rounded-2xl border border-white/10 bg-white/8 p-3">
+                {captainClub && <ClubCrest club={captainClub} size="sm" />}
+                <div className="min-w-0">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/50">
+                    {t("fantasy.captain_full")}
+                  </dt>
+                  <dd className="truncate text-sm font-black">{tr(captain.name)}</dd>
+                </div>
+              </div>
+            )}
+          </dl>
+
+          {deadline && (
+            <div className="mt-4 inline-flex min-h-12 items-center rounded-2xl border border-white/10 bg-white/8 px-4">
+              <DeadlineCountdown iso={deadline} />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onViewTeam}
+            className="cta-brand mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black sm:w-auto"
+          >
+            {t("fantasy.atlas.create.success.cta")}
+            <Check className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 

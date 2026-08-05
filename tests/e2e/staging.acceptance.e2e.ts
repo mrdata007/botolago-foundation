@@ -18,8 +18,9 @@ async function login(
   email: string,
   password: string,
   language: "fr" | "ar",
+  navigateToLogin = true,
 ) {
-  await gotoHydrated(page, "/auth/login", language);
+  if (navigateToLogin) await gotoHydrated(page, "/auth/login", language);
   await page.getByLabel(/e-?mail|البريد/i).fill(email);
   await page.locator('input[type="password"]').fill(password);
   const responsePromise = page.waitForResponse(
@@ -68,8 +69,11 @@ test.describe("staging-backed critical journeys", () => {
   }, testInfo) => {
     const diagnostics = observePage(page);
     await initializeLanguage(page, "fr");
-    await login(page, firstEmail!, firstPassword!, "fr");
-    await gotoHydrated(page, "/fantasy/create", "fr");
+    await gotoHydrated(page, "/fantasy", "fr");
+    await page.getByRole("link", { name: "Créer mon équipe" }).click();
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Ffantasy%2Fcreate/);
+    await login(page, firstEmail!, firstPassword!, "fr", false);
+    await expect(page).toHaveURL(/\/fantasy\/create\/?$/);
     const welcome = page.getByRole("dialog", { name: "Bienvenue sur Fantasy BotolaGO" });
     if (await welcome.isVisible()) {
       await welcome.getByRole("button", { name: "Passer" }).click();
@@ -80,6 +84,9 @@ test.describe("staging-backed critical journeys", () => {
     }
     await page.getByLabel("Nom de l'équipe").fill("QA Acceptance FC");
     await page.getByRole("checkbox").check();
+    await reloadHydrated(page, "fr");
+    await expect(page.getByLabel("Nom de l'équipe")).toHaveValue("QA Acceptance FC");
+    await expect(page.getByRole("checkbox")).toBeChecked();
     await page.getByRole("button", { name: "Continuer" }).click();
     await page.waitForURL(/\/fantasy\/create\/squad$/);
     for (let index = 0; index < 15; index += 1) {
@@ -102,8 +109,11 @@ test.describe("staging-backed critical journeys", () => {
     const save = page.getByRole("button", { name: "Créer mon équipe" });
     await expect(save).toBeEnabled();
     await save.click();
-    await page.waitForURL(/\/fantasy\/?$/);
-    await gotoHydrated(page, "/fantasy/team", "fr");
+    const success = page.getByTestId("atlas-creation-success");
+    await expect(success).toBeVisible();
+    await expect(success.getByText("QA Acceptance FC")).toBeVisible();
+    await success.getByRole("button", { name: "Voir mon équipe" }).click();
+    await page.waitForURL(/\/fantasy\/team$/);
     await reloadHydrated(page, "fr");
     await expect(page.getByText("QA Acceptance FC")).toBeVisible();
     await expectNoHorizontalOverflow(page);

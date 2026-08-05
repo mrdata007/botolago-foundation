@@ -67,6 +67,7 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
 export async function initializeLanguage(page: Page, language: "fr" | "ar") {
   await page.addInitScript((lang) => {
     window.localStorage.setItem("botolago.welcomed", "1");
+    window.localStorage.setItem("botolago.fantasy.onboarded", "1");
     window.localStorage.setItem("botolago.language", lang);
     window.sessionStorage.setItem("botolago.splashShown", "1");
   }, language);

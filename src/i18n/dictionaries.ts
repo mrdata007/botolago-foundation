@@ -307,6 +307,12 @@ export const dictionaries = {
     "fantasy.atlas.create.review.ready": "Prête à être envoyée",
     "fantasy.atlas.create.review.submit": "Créer mon équipe",
     "fantasy.atlas.create.review.success": "Votre équipe Atlas Matchday est créée.",
+    "fantasy.atlas.create.success.eyebrow": "Création confirmée",
+    "fantasy.atlas.create.success.title": "Bienvenue sur le terrain",
+    "fantasy.atlas.create.success.description":
+      "Votre équipe a bien été enregistrée. Elle est prête pour la prochaine journée Fantasy.",
+    "fantasy.atlas.create.success.club": "Club favori",
+    "fantasy.atlas.create.success.cta": "Voir mon équipe",
     "fantasy.atlas.create.review.invalid":
       "Le serveur a refusé cette équipe. Vérifiez les règles actives puis réessayez.",
     "fantasy.atlas.create.review.player_details": "Données officielles et prochaine affiche",
@@ -348,6 +354,14 @@ export const dictionaries = {
     "fantasy.confirm": "Confirmer",
     "fantasy.review": "Vérifier",
     "fantasy.success": "Modifications enregistrées",
+    "fantasy.team.help_title": "Aide composition",
+    "fantasy.team.help_formation": "Formations autorisées : {formations}.",
+    "fantasy.team.help_captain":
+      "Le capitaine applique le multiplicateur actif ×{multiplier}; le vice doit être un autre titulaire.",
+    "fantasy.team.help_bench":
+      "L'ordre du banc est conservé et utilisé par les règles de remplacement du serveur.",
+    "fantasy.team.help_deadline":
+      "Les modifications non enregistrées restent locales et ne sont jamais appliquées après la deadline.",
     "fantasy.tab.hub": "Accueil",
     "fantasy.tab.team": "Mon équipe",
     "fantasy.tab.transfers": "Transferts",
@@ -409,6 +423,14 @@ export const dictionaries = {
     "fantasy.transfers.reset": "Réinitialiser",
     "fantasy.transfers.review_title": "Résumé des transferts",
     "fantasy.transfers.success": "Transferts confirmés",
+    "fantasy.transfers.help_title": "Aide transferts",
+    "fantasy.transfers.help_allowance":
+      "Vous avez {free} transfert(s) libre(s). Le règlement autorise jusqu'à {rollover} en réserve.",
+    "fantasy.transfers.help_cost":
+      "Chaque transfert payant coûte {cost} point(s), sauf si le serveur confirme un chip sans pénalité.",
+    "fantasy.transfers.help_club": "Le nouvel effectif reste limité à {count} joueurs par club.",
+    "fantasy.transfers.help_cancel":
+      "Réinitialiser ou annuler la revue restaure l'effectif enregistré sans écriture serveur.",
     "fantasy.transfers.transfers_total": "Transferts",
     "fantasy.transfers.projected_bank": "Banque projetée",
     "fantasy.transfers.chip_active": "Chip actif",
@@ -537,6 +559,18 @@ export const dictionaries = {
     "fantasy.rules.tiebreak": "Départages",
     "fantasy.rules.tiebreak_desc":
       "En cas d'égalité, la place la plus élevée revient au manager avec le plus de bonus, puis le plus de buts marqués.",
+    "fantasy.rules.squad_desc_dynamic": "{total} joueurs : {positions}.",
+    "fantasy.rules.budget_desc_dynamic":
+      "Budget initial de {budget} M. Maximum {clubLimit} joueurs par club.",
+    "fantasy.rules.formation_desc_dynamic":
+      "Alignez {starters} titulaires. Plages autorisées : {ranges}.",
+    "fantasy.rules.captaincy_desc_dynamic":
+      "Le capitaine applique un multiplicateur ×{multiplier}. Le vice-capitaine doit être un autre titulaire.",
+    "fantasy.rules.transfers_desc_dynamic":
+      "{free} transfert(s) libre(s) initial(aux), jusqu'à {rollover} en réserve. Chaque transfert payant coûte {cost} point(s).",
+    "fantasy.rules.deadlines_desc_dynamic":
+      "La deadline est fixée {minutes} minute(s) avant le premier match. Les modifications ultérieures sont refusées.",
+    "fantasy.rules.scoring_desc_dynamic": "Points par but / cage inviolée : {scoring}.",
     "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
     "fantasy.onboarding.step1_title": "Composez votre équipe",
     "fantasy.onboarding.step1_body":
@@ -1270,6 +1304,12 @@ export const dictionaries = {
     "fantasy.atlas.create.review.ready": "جاهز للإرسال",
     "fantasy.atlas.create.review.submit": "إنشاء فريقي",
     "fantasy.atlas.create.review.success": "تم إنشاء فريق Atlas Matchday.",
+    "fantasy.atlas.create.success.eyebrow": "تم تأكيد الإنشاء",
+    "fantasy.atlas.create.success.title": "مرحباً بك في الملعب",
+    "fantasy.atlas.create.success.description":
+      "تم حفظ فريقك بنجاح، وهو جاهز للجولة القادمة من الفانتازي.",
+    "fantasy.atlas.create.success.club": "النادي المفضل",
+    "fantasy.atlas.create.success.cta": "عرض فريقي",
     "fantasy.atlas.create.review.invalid":
       "رفض الخادم هذا الفريق. راجع القواعد النشطة ثم أعد المحاولة.",
     "fantasy.atlas.create.review.player_details": "البيانات الرسمية والمباراة القادمة",
@@ -1311,6 +1351,13 @@ export const dictionaries = {
     "fantasy.confirm": "تأكيد",
     "fantasy.review": "مراجعة",
     "fantasy.success": "تم حفظ التعديلات",
+    "fantasy.team.help_title": "مساعدة التشكيلة",
+    "fantasy.team.help_formation": "التشكيلات المسموحة: {formations}.",
+    "fantasy.team.help_captain":
+      "يطبق القائد المعامل النشط ×{multiplier}، ويجب أن يكون النائب لاعباً أساسياً مختلفاً.",
+    "fantasy.team.help_bench": "يُحفظ ترتيب الاحتياط وتستخدمه قواعد الاستبدال في الخادم.",
+    "fantasy.team.help_deadline":
+      "تبقى التعديلات غير المحفوظة محلية ولا تُطبق أبداً بعد الموعد النهائي.",
     "fantasy.tab.hub": "الرئيسية",
     "fantasy.tab.team": "فريقي",
     "fantasy.tab.transfers": "الانتقالات",
@@ -1372,6 +1419,14 @@ export const dictionaries = {
     "fantasy.transfers.reset": "إعادة تعيين",
     "fantasy.transfers.review_title": "ملخص الانتقالات",
     "fantasy.transfers.success": "تم تأكيد الانتقالات",
+    "fantasy.transfers.help_title": "مساعدة الانتقالات",
+    "fantasy.transfers.help_allowance":
+      "لديك {free} انتقال حر، ويمكن الاحتفاظ بما يصل إلى {rollover} حسب القواعد.",
+    "fantasy.transfers.help_cost":
+      "كل انتقال مدفوع يخصم {cost} نقطة، إلا إذا أكد الخادم رقاقة بلا خصم.",
+    "fantasy.transfers.help_club": "يبقى الفريق الجديد محدوداً في {count} لاعبين من كل نادٍ.",
+    "fantasy.transfers.help_cancel":
+      "إعادة الضبط أو إلغاء المراجعة يعيدان الفريق المحفوظ دون كتابة في الخادم.",
     "fantasy.transfers.transfers_total": "الانتقالات",
     "fantasy.transfers.projected_bank": "الرصيد المتوقع",
     "fantasy.transfers.chip_active": "الرقاقة النشطة",
@@ -1497,6 +1552,18 @@ export const dictionaries = {
     "fantasy.rules.tiebreak": "الترجيح",
     "fantasy.rules.tiebreak_desc":
       "عند التعادل، يتقدم صاحب النقاط الإضافية الأعلى ثم صاحب الأهداف الأكثر.",
+    "fantasy.rules.squad_desc_dynamic": "{total} لاعباً: {positions}.",
+    "fantasy.rules.budget_desc_dynamic":
+      "الميزانية الأولية {budget} مليون، وبحد أقصى {clubLimit} لاعبين من كل نادٍ.",
+    "fantasy.rules.formation_desc_dynamic":
+      "اختر {starters} لاعباً أساسياً. الحدود المسموحة: {ranges}.",
+    "fantasy.rules.captaincy_desc_dynamic":
+      "يطبق القائد معاملاً ×{multiplier}، ويجب أن يكون النائب لاعباً أساسياً مختلفاً.",
+    "fantasy.rules.transfers_desc_dynamic":
+      "{free} انتقال حر في البداية، مع إمكانية الاحتفاظ حتى {rollover}. كل انتقال مدفوع يخصم {cost} نقطة.",
+    "fantasy.rules.deadlines_desc_dynamic":
+      "يُحدد الموعد النهائي قبل أول مباراة بـ {minutes} دقيقة، وتُرفض التعديلات اللاحقة.",
+    "fantasy.rules.scoring_desc_dynamic": "نقاط الهدف / الشباك النظيفة: {scoring}.",
     "fantasy.onboarding.title": "أهلاً بك في فانتازي BotolaGO",
     "fantasy.onboarding.step1_title": "شكّل فريقك",
     "fantasy.onboarding.step1_body":

@@ -80,6 +80,19 @@ describe("validateTeam", () => {
       error: "invalid_formation",
     });
   });
+  it("rejects a formation disabled by the active ruleset", () => {
+    const rules = {
+      totalSize: 15,
+      startingSize: 11,
+      perPosition: { GK: 2, DEF: 5, MID: 5, FWD: 3 },
+      startingMinimum: { GK: 1, DEF: 5, MID: 3, FWD: 2 },
+      startingMaximum: { GK: 1, DEF: 5, MID: 4, FWD: 3 },
+    } as const;
+    expect(validateTeam(build442(), "4-4-2", players, rules)).toEqual({
+      ok: false,
+      error: "invalid_formation",
+    });
+  });
   it("rejects captain and vice being the same player", () => {
     const s = build442().map((sp) => ({
       ...sp,

@@ -70,6 +70,19 @@ describe("previewTransfers", () => {
     expect(p.hitPoints).toBe(4);
   });
 
+  it("uses the active ruleset hit cost instead of a fixed league value", () => {
+    const p = previewTransfers({
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
+      hitCost: 7,
+    });
+    expect(p.paid).toBe(1);
+    expect(p.hitPoints).toBe(7);
+  });
+
   it("zeroes cost when Wildcard is active regardless of transfer count", () => {
     const chips: ChipsState = { ...DEFAULT_CHIPS, active: "wildcard" };
     const p = previewTransfers({
@@ -128,6 +141,20 @@ describe("applyConfirmedTransfers", () => {
     expect(res.value.nextFreeTransfers).toBe(0);
     expect(res.value.hitPointsApplied).toBe(0);
     expect(res.value.freeHitSnapshotTaken).toBe(false);
+  });
+
+  it("applies the active ruleset hit cost on confirmation", () => {
+    const res = applyConfirmedTransfers({
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
+      hitCost: 6,
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.hitPointsApplied).toBe(6);
   });
 
   it("rejects when the deadline has passed", () => {

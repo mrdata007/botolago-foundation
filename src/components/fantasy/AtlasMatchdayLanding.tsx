@@ -218,7 +218,7 @@ export function AtlasMatchdayLanding() {
           {authStatus === "authenticated" ? (
             <Link
               to="/fantasy/create"
-              className="flex min-h-[43px] w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {t("fantasy.atlas.create")}
               <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
@@ -227,7 +227,7 @@ export function AtlasMatchdayLanding() {
             <Link
               to="/auth/login"
               search={{ next: "/fantasy/create" }}
-              className="flex min-h-[43px] w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {t("fantasy.atlas.create")}
               <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />

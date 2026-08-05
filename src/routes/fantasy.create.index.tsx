@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Check, ChevronRight, Loader2, Shirt, Sparkles } from "lucide-react";
+import { Check, ChevronRight, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { AtlasTeamShirt } from "@/components/fantasy/AtlasTeamShirt";
 import { AtlasCreateShell, AtlasStickyAction } from "@/components/fantasy/AtlasCreateShell";
 import { useAtlasCreate } from "@/components/fantasy/AtlasCreateProvider";
 import { useI18n } from "@/i18n/provider";
@@ -80,30 +81,7 @@ function AtlasIdentityPage() {
               className="mt-5 grid place-items-center"
               aria-label={t("fantasy.atlas.create.identity.shirt_alt")}
             >
-              <div className="relative grid h-52 w-52 place-items-center sm:h-64 sm:w-64">
-                <Shirt
-                  className="h-full w-full drop-shadow-[0_24px_34px_rgb(0_0_0/0.35)]"
-                  strokeWidth={0.85}
-                  color={selectedClub?.primaryColor ?? "#2d7ff9"}
-                  aria-hidden
-                />
-                <img
-                  src="/favicon.png"
-                  alt="BotolaGO"
-                  width={64}
-                  height={64}
-                  className="absolute top-[40%] h-12 w-12 rounded-2xl bg-white/95 object-contain p-1 shadow-lg sm:h-14 sm:w-14"
-                />
-                {selectedClub && (
-                  <span className="absolute end-[22%] top-[27%] rounded-full bg-white p-1 shadow-lg">
-                    <ClubCrest
-                      club={selectedClub}
-                      size="sm"
-                      className="h-8 w-8 rounded-full shadow-none"
-                    />
-                  </span>
-                )}
-              </div>
+              <AtlasTeamShirt club={selectedClub} />
             </div>
             <div className="mt-3 rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
               <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">

@@ -255,4 +255,40 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(source).toContain("sm:left-0 sm:right-auto");
     expect(source).toContain("sm:right-0 sm:left-auto");
   });
+
+  it("shows creation confirmation only after an authoritative persistence result", () => {
+    const source = readFileSync(
+      new URL("../routes/fantasy.create.review.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain("if (result.ok)");
+    expect(source).toContain("result.snapshot.team.teamName");
+    expect(source).toContain('data-testid="atlas-creation-success"');
+    expect(source.indexOf("setCreated({")).toBeGreaterThan(source.indexOf("if (result.ok)"));
+  });
+
+  it("uses the real BotolaGO logo asset in the shared team shirt", () => {
+    const source = readFileSync(
+      new URL("../components/fantasy/AtlasTeamShirt.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain('src="/favicon.png"');
+    expect(source).toContain('alt="BotolaGO"');
+    expect(source).toContain("<ClubCrest");
+  });
+
+  it("keeps recurring edits safe across interruption and reads active rules", () => {
+    const teamSource = readFileSync(new URL("../routes/fantasy.team.tsx", import.meta.url), "utf8");
+    const transferSource = readFileSync(
+      new URL("../routes/fantasy.transfers.tsx", import.meta.url),
+      "utf8",
+    );
+    for (const source of [teamSource, transferSource]) {
+      expect(source).toContain('window.addEventListener("beforeunload"');
+      expect(source).toContain("adaptFantasyRules");
+      expect(source).toContain("FantasyCatalogUnavailable");
+    }
+    expect(transferSource).toContain("activeRules.maxPerClub");
+    expect(transferSource).toContain("activeRules.transferHitCost");
+  });
 });
