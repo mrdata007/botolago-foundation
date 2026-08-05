@@ -3,6 +3,8 @@ import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import {
   buildPlayerDecisionPresentation,
+  getPlayerFixtureFallbackKey,
+  type PlayerFixtureDataState,
   type PlayerPerformanceAvailability,
 } from "./player-decision-presentation";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,8 @@ export interface PlayerDecisionSummaryProps {
   club?: Club;
   clubs: readonly Club[];
   fixtures?: readonly FixtureDifficulty[];
+  fixtureState?: PlayerFixtureDataState;
+  fixtureReferenceTime?: number;
   performanceAvailability?: PlayerPerformanceAvailability;
   density?: "compact" | "comfortable";
   className?: string;
@@ -37,7 +41,9 @@ export function PlayerDecisionSummary({
   player,
   club,
   clubs,
-  fixtures = [],
+  fixtures,
+  fixtureState,
+  fixtureReferenceTime,
   performanceAvailability,
   density = "compact",
   className,
@@ -51,16 +57,20 @@ export function PlayerDecisionSummary({
   });
   const presentation = buildPlayerDecisionPresentation({
     player,
-    fixtures,
+    fixtures: fixtures ?? [],
+    fixtureReferenceTime,
     performanceAvailability,
   });
+  const resolvedFixtureState = fixtureState ?? (fixtures ? "ready" : "loading");
   const resolvedClub = club ?? clubs.find((candidate) => candidate.id === presentation.clubId);
   const fixture = presentation.nextFixture;
-  const opponent = fixture
-    ? clubs.find((candidate) => candidate.id === fixture.opponentClubId)
-    : undefined;
+  const opponent =
+    fixture && !fixture.isBlank
+      ? clubs.find((candidate) => candidate.id === fixture.opponentClubId)
+      : undefined;
   const kickoffAt = fixture?.kickoffAt;
   const kickoffLabel = kickoffAt ? formatKickoff(kickoffAt, locale) : null;
+  const fixtureFallbackLabel = t(getPlayerFixtureFallbackKey(resolvedFixtureState));
 
   const performanceItems: Array<{ key: string; label: string; value: string }> = [];
   if (presentation.performance.totalPoints !== undefined) {
@@ -100,6 +110,7 @@ export function PlayerDecisionSummary({
         className,
       )}
       data-player-id={presentation.id}
+      aria-busy={resolvedFixtureState === "loading" || undefined}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         {resolvedClub && (
@@ -132,39 +143,52 @@ export function PlayerDecisionSummary({
         </div>
       </div>
 
-      {fixture ? (
+      {resolvedFixtureState === "ready" && fixture ? (
         <div className="flex min-w-0 items-center gap-2 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[color:var(--surface-hover)] px-2.5 py-2">
-          {opponent && <ClubCrest club={opponent} size="sm" />}
+          {!fixture.isBlank && opponent && <ClubCrest club={opponent} size="sm" />}
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-black uppercase tracking-wide text-[color:var(--text-muted)]">
               {t("fantasy.players.next")} · {t("home.gameweek")} {number.format(fixture.gameweek)}
             </div>
-            <div className="mt-0.5 truncate text-xs font-bold text-foreground">
-              {opponent ? tr(opponent.shortName) : "—"}{" "}
-              <span className="font-medium text-[color:var(--text-secondary)]">
-                · {t(fixture.isHome ? "common.home" : "common.away")}
-              </span>
+            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1 text-xs font-bold text-foreground">
+              {fixture.isBlank ? (
+                <span>{t("fantasy.fixtures.blank")}</span>
+              ) : (
+                <>
+                  <span className="truncate">{opponent ? tr(opponent.shortName) : "—"}</span>
+                  <span className="font-medium text-[color:var(--text-secondary)]">
+                    · {t(fixture.isHome ? "common.home" : "common.away")}
+                  </span>
+                </>
+              )}
+              {fixture.isDouble && (
+                <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-700">
+                  {t("fantasy.fixtures.double")}
+                </span>
+              )}
             </div>
-            {kickoffAt && kickoffLabel && (
+            {!fixture.isBlank && kickoffAt && kickoffLabel && (
               <div className="mt-0.5 truncate text-[10px] text-[color:var(--text-muted)]">
                 {t("matches.kickoff")} · <time dateTime={kickoffAt}>{kickoffLabel}</time>
               </div>
             )}
           </div>
-          <div className="shrink-0 text-end">
-            <div className="mb-1 text-[9px] font-bold text-[color:var(--text-muted)]">
-              {t("fantasy.fixtures.difficulty")}
+          {!fixture.isBlank && (
+            <div className="shrink-0 text-end">
+              <div className="mb-1 text-[9px] font-bold text-[color:var(--text-muted)]">
+                {t("fantasy.fixtures.difficulty")}
+              </div>
+              <DifficultyBadge
+                difficulty={fixture.difficulty}
+                label={`${number.format(fixture.difficulty)} / ${number.format(5)}`}
+                className="min-h-7 w-12 rounded-md"
+              />
             </div>
-            <DifficultyBadge
-              difficulty={fixture.difficulty}
-              label={`${number.format(fixture.difficulty)} / ${number.format(5)}`}
-              className="min-h-7 w-12 rounded-md"
-            />
-          </div>
+          )}
         </div>
       ) : (
         <div className="rounded-[var(--radius-control)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface-hover)] px-2.5 py-2 text-[11px] font-semibold text-[color:var(--text-secondary)]">
-          {t("fantasy.players.no_fixture")}
+          {fixtureFallbackLabel}
         </div>
       )}
 
