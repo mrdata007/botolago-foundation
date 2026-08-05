@@ -5,7 +5,10 @@ import "./__test-shim";
 import type { FantasyRulesDto } from "@/backend/fantasy/contracts";
 import { fantasyPlayers } from "@/mocks/fantasy-data";
 import { clubs } from "@/mocks/data";
+import { footballService } from "@/services/football";
 import type { FantasyPlayer } from "@/types/fantasy";
+import { selectAtlasMatchdayAccess } from "@/components/fantasy/use-atlas-matchday-access";
+import type { FantasySnapshot } from "@/services/fantasy-owned-repository";
 import {
   adaptFantasyRules,
   buildAutocompleteDraft,
@@ -24,6 +27,7 @@ import {
   validateDraft,
   validateTeamName,
 } from "./fantasy-create-service";
+import { fantasyService as runtimeFantasyService } from "./fantasy-runtime";
 
 const players = fantasyPlayers;
 
@@ -93,6 +97,27 @@ function completeDraft() {
 }
 
 describe("Atlas Matchday onboarding matrix", () => {
+  it("aligns mock Fantasy players and fixtures with the Football club catalog", async () => {
+    const [runtimePlayers, runtimeFixtures, runtimeClubs] = await Promise.all([
+      runtimeFantasyService.getPlayers(),
+      runtimeFantasyService.getFixtureDifficulty(),
+      footballService.getClubs("fr"),
+    ]);
+    const clubIds = new Set(runtimeClubs.map((club) => club.id));
+
+    expect(runtimePlayers.every((player) => clubIds.has(player.clubId))).toBe(true);
+    expect(
+      runtimePlayers.every(
+        (player) => !player.nextOpponentClubId || clubIds.has(player.nextOpponentClubId),
+      ),
+    ).toBe(true);
+    expect(
+      runtimeFixtures.every(
+        (fixture) => clubIds.has(fixture.clubId) && clubIds.has(fixture.opponentClubId),
+      ),
+    ).toBe(true);
+  });
+
   it("adapts the active ruleset without changing its authoritative limits", () => {
     const rules = adaptFantasyRules(activeRulesDto());
     expect(rules).toEqual(DEFAULT_CREATE_TEAM_RULES);
@@ -220,6 +245,58 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(payload.find((slot) => slot.isCaptain)?.playerId).toBe(starters[0].playerId);
     expect(payload.find((slot) => slot.isViceCaptain)?.playerId).toBe(starters[1].playerId);
     expect(payload.find((slot) => slot.slot === bench[0].slot)?.playerId).toBe(bench[1].playerId);
+  });
+
+  it("preserves a cross-position bench order when a persisted draft is reconciled", () => {
+    const complete = completeDraft();
+    const bench = complete.slots.filter((slot) => slot.slot > 11);
+    const reordered = swapSlots(complete, bench[0].slot, bench[1].slot);
+    const expected = reordered.slots.filter((slot) => slot.slot > 11).map((slot) => slot.playerId);
+
+    const restored = reconcileCreateDraft(reordered, players, clubs);
+
+    expect(restored.slots.filter((slot) => slot.slot > 11).map((slot) => slot.playerId)).toEqual(
+      expected,
+    );
+  });
+
+  it("keeps cloud access fail-closed and distinguishes no-team from existing-team snapshots", () => {
+    const snapshot = {
+      teamId: null,
+      team: { squad: [] },
+    } as unknown as FantasySnapshot;
+    const base = {
+      enabled: true,
+      authStatus: "authenticated" as const,
+      source: "cloud" as const,
+      snapshot,
+      ownedLoading: false,
+      ownedError: false,
+      localSummaryState: "team" as const,
+    };
+    expect(selectAtlasMatchdayAccess({ ...base, snapshot: undefined, ownedError: true })).toBe(
+      "unavailable",
+    );
+    expect(selectAtlasMatchdayAccess(base)).toBe("landing");
+    expect(
+      selectAtlasMatchdayAccess({
+        ...base,
+        snapshot: {
+          ...snapshot,
+          teamId: "team-1",
+          team: { ...snapshot.team, squad: [{ playerId: "p1", slot: 1 }] },
+        },
+      }),
+    ).toBe("hub");
+    expect(
+      selectAtlasMatchdayAccess({
+        ...base,
+        authStatus: "anonymous",
+        source: "local",
+        localSummaryState: "team",
+      }),
+    ).toBe("landing");
+    expect(selectAtlasMatchdayAccess({ ...base, authStatus: "loading" })).toBe("resolving");
   });
 
   it("opens the final submit gate only for a complete valid team", () => {

@@ -371,19 +371,63 @@ export function reconcileCreateDraft(
     : [];
   const captainId = selected.find((slot) => slot.isCaptain)?.playerId ?? null;
   const viceId = selected.find((slot) => slot.isViceCaptain)?.playerId ?? null;
-  const byPosition: Record<Position, string[]> = { GK: [], DEF: [], MID: [], FWD: [] };
+  const validSelections: Array<{
+    playerId: string;
+    position: Position;
+    wasStarter: boolean;
+  }> = [];
   for (const slot of selected) {
     if (!slot.playerId || seen.has(slot.playerId)) continue;
     const player = players.find((candidate) => candidate.id === slot.playerId);
     if (!player || player.status === "ineligible" || player.status === "unavailable") continue;
     seen.add(player.id);
-    byPosition[player.position].push(player.id);
+    validSelections.push({
+      playerId: player.id,
+      position: player.position,
+      wasStarter: Number(slot.slot) <= rules.startingSize,
+    });
   }
-  draft.slots = draft.slots.map((slot) => {
-    const playerId = byPosition[slot.position].shift() ?? null;
+
+  const used = new Set<string>();
+  const starterSlots = draft.slots
+    .filter((slot) => slot.slot <= rules.startingSize)
+    .map((slot) => {
+      const match =
+        validSelections.find(
+          (selection) =>
+            !used.has(selection.playerId) &&
+            selection.position === slot.position &&
+            selection.wasStarter,
+        ) ??
+        validSelections.find(
+          (selection) => !used.has(selection.playerId) && selection.position === slot.position,
+        );
+      const playerId = match?.playerId ?? null;
+      if (playerId) used.add(playerId);
+      return {
+        ...slot,
+        playerId,
+        isCaptain: !!playerId && playerId === captainId,
+        isViceCaptain: !!playerId && playerId === viceId && playerId !== captainId,
+      };
+    });
+  const remaining = validSelections.filter((selection) => !used.has(selection.playerId));
+  const benchSlots = draft.slots
+    .filter((slot) => slot.slot > rules.startingSize)
+    .map((slot, index) => {
+      const selection = remaining[index];
+      return {
+        ...slot,
+        position: selection?.position ?? slot.position,
+        playerId: selection?.playerId ?? null,
+        isCaptain: false,
+        isViceCaptain: false,
+      };
+    });
+  draft.slots = [...starterSlots, ...benchSlots].map((slot) => {
+    const playerId = slot.playerId;
     return {
       ...slot,
-      playerId,
       isCaptain: !!playerId && playerId === captainId && slot.slot <= rules.startingSize,
       isViceCaptain:
         !!playerId &&

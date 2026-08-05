@@ -32,6 +32,11 @@ export type TeamValidationError =
 
 export type TeamValidationResult = { ok: true } | { ok: false; error: TeamValidationError };
 
+export function hasSquadCatalogCoverage(squad: SquadPlayer[], players: FantasyPlayer[]): boolean {
+  const catalogIds = new Set(players.map((player) => player.id));
+  return squad.every((slot) => catalogIds.has(slot.playerId));
+}
+
 export function validateTeam(
   squad: SquadPlayer[],
   formation: FormationKey,

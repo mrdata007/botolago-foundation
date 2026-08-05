@@ -25,29 +25,23 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import {
   applyConfirmedTransfers,
   previewTransfers,
+  reconcileTransfersDraft,
   transfersDeadline,
+  type TransfersDraftSelection,
 } from "@/services/transfers-service";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { adaptFantasyRules } from "@/services/fantasy-create-service";
 import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
+import { hasSquadCatalogCoverage } from "@/lib/team-validation";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
 });
 
 // H5 — Persisted working state for the Transfers route.
-interface TransfersDraftPayload {
-  outIds: string[];
-  inIds: string[];
-}
-
-function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
-  if (!v || typeof v !== "object") return false;
-  const p = v as Partial<TransfersDraftPayload>;
-  return Array.isArray(p.outIds) && Array.isArray(p.inIds);
-}
+type TransfersDraftPayload = TransfersDraftSelection;
 
 function TransfersPage() {
   const { t, tr, lang } = useI18n();
@@ -152,17 +146,21 @@ function TransfersPage() {
 
   // Hydrate draft on mount.
   useEffect(() => {
-    if (!isCloud || !draftKey || !team) return;
+    if (!isCloud || !draftKey || !team || !playersQ.data) return;
     if (draftInitRef.current) return;
     const entry = fantasyDraftsStore.read<TransfersDraftPayload>(draftKey);
-    if (entry && isTransfersDraftPayload(entry.payload)) {
-      // Only restore ids that still map to current squad or exist in players.
-      setOutIds(entry.payload.outIds);
-      setInIds(entry.payload.inIds);
-      setDraftRestored(true);
+    if (entry) {
+      const reconciled = reconcileTransfersDraft(entry.payload, team, playersQ.data);
+      setOutIds(reconciled.outIds);
+      setInIds(reconciled.inIds);
+      setDraftRestored(reconciled.outIds.length > 0);
+      if (reconciled.outIds.length === 0) fantasyDraftsStore.remove(draftKey);
+      else if (JSON.stringify(reconciled) !== JSON.stringify(entry.payload)) {
+        fantasyDraftsStore.save(draftKey, reconciled);
+      }
     }
     draftInitRef.current = true;
-  }, [isCloud, draftKey, team]);
+  }, [isCloud, draftKey, playersQ.data, team]);
 
   const persistDraft = (nextOut: string[], nextIn: string[]) => {
     if (!isCloud || !draftKey) return;
@@ -279,6 +277,16 @@ function TransfersPage() {
   }
   const players = playersQ.data;
   const clubs = clubsQ.data;
+  if (!hasSquadCatalogCoverage(team.squad, players)) {
+    return (
+      <FantasyCatalogUnavailable
+        onRetry={() => {
+          void playersQ.refetch();
+          void owned.reload();
+        }}
+      />
+    );
+  }
   const playerOf = (id: string) => players.find((p) => p.id === id)!;
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
 
@@ -559,7 +567,7 @@ function TransfersPage() {
             accent={preview.overBudget}
           />
           <Stat label={t("fantasy.transfers.free")} value={String(preview.freeTransfersAfter)} />
-          <Stat label={t("fantasy.transfers.hit")} value={`-${preview.hitPoints}`} />
+          <Stat label={t("fantasy.transfers.hit")} value={String(-preview.hitPoints)} />
           {chipLabel && <Stat label={t("fantasy.transfers.chip_active")} value={chipLabel} />}
         </div>
       </div>
