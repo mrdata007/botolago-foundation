@@ -78,6 +78,13 @@ export function PlayerPickerDrawer({
       list = list.filter((player) => player.price <= maxPrice + 0.001);
     }
 
+    const nextFixtureByClub = new Map(
+      Array.from(new Set(list.map((player) => player.clubId))).map((id) => [
+        id,
+        selectUpcomingFixture(id, fixtures),
+      ]),
+    );
+
     list.sort((left, right) => {
       if (sort === "price") return right.price - left.price;
       if (sort === "name")
@@ -89,8 +96,8 @@ export function PlayerPickerDrawer({
         );
       }
 
-      const leftFixture = selectUpcomingFixture(left.clubId, fixtures);
-      const rightFixture = selectUpcomingFixture(right.clubId, fixtures);
+      const leftFixture = nextFixtureByClub.get(left.clubId);
+      const rightFixture = nextFixtureByClub.get(right.clubId);
       if (!leftFixture && !rightFixture) return right.price - left.price;
       if (!leftFixture) return 1;
       if (!rightFixture) return -1;
