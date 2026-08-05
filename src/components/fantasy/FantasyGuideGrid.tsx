@@ -1,18 +1,9 @@
 import { useId } from "react";
-import {
-  Activity,
-  ArrowRightLeft,
-  LayoutGrid,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Activity, ArrowRightLeft, LayoutGrid, Users, type LucideIcon } from "lucide-react";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import {
-  fantasyOnboardingSteps,
-  type FantasyOnboardingStepId,
-} from "./fantasy-onboarding-model";
+import { fantasyOnboardingSteps, type FantasyOnboardingStepId } from "./fantasy-onboarding-model";
 
 const guideIcons = {
   squad: Users,
@@ -38,11 +29,7 @@ export function FantasyGuideGrid({ className }: { className?: string }) {
   const headingId = useId();
 
   return (
-    <section
-      aria-labelledby={headingId}
-      dir={dir}
-      className={cn("mt-5 text-start", className)}
-    >
+    <section aria-labelledby={headingId} dir={dir} className={cn("mt-5 text-start", className)}>
       <div className="max-w-2xl">
         <h2 id={headingId} className="text-lg font-black text-foreground">
           {t("fantasy.guide.title")}
@@ -67,9 +54,7 @@ export function FantasyGuideGrid({ className }: { className?: string }) {
                 <div className="text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
                   {t("fantasy.onboarding.step")} {index + 1}
                 </div>
-                <h3 className="mt-1 text-sm font-black text-foreground">
-                  {t(step.titleKey)}
-                </h3>
+                <h3 className="mt-1 text-sm font-black text-foreground">{t(step.titleKey)}</h3>
                 <p className="mt-1 break-words text-sm leading-relaxed text-muted-foreground">
                   {t(step.bodyKey)}
                 </p>
