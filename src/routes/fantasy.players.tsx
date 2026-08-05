@@ -1,18 +1,28 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Star } from "lucide-react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
-import { selectUpcomingFixture } from "@/components/fantasy/player-decision-presentation";
+import {
+  PLAYER_STATUS_SORT_ORDER,
+  selectUpcomingFixture,
+} from "@/components/fantasy/player-decision-presentation";
+import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import type { Player } from "@/types/domain";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import {
+  fantasyWatchlistStorageKey,
+  readFantasyWatchlist,
+  writeFantasyWatchlist,
+  type FantasyWatchlistStorage,
+} from "@/services/fantasy-watchlist";
 import type { Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
@@ -29,28 +39,25 @@ function PlayersRoute() {
 
 type SortKey = "fixture" | "price" | "name" | "availability";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
-const WATCH_KEY = "botolago.fantasy.watchlist";
-const statusOrder: Record<Player["status"], number> = {
-  available: 0,
-  doubtful: 1,
-  injured: 2,
-  suspended: 3,
-};
 
-function readWatch(): string[] {
-  if (typeof window === "undefined") return [];
+function getBrowserStorage(): FantasyWatchlistStorage | null {
+  if (typeof window === "undefined") return null;
+
   try {
-    const value: unknown = JSON.parse(window.localStorage.getItem(WATCH_KEY) ?? "[]");
-    return Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === "string")
-      : [];
+    return window.localStorage;
   } catch {
-    return [];
+    return null;
   }
 }
 
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
+  const { user, status: authStatus } = useAuth();
+  const { source } = useFantasyDataSource();
+  const watchStorageKey = useMemo(
+    () => fantasyWatchlistStorageKey({ source, authStatus, userId: user?.id }),
+    [source, authStatus, user?.id],
+  );
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
@@ -63,21 +70,33 @@ function PlayersPage() {
     queryKey: ["fixture-difficulty"],
     queryFn: () => fantasyService.getFixtureDifficulty(),
   });
+  const fixtureReferenceTime = fixturesQ.data === undefined ? undefined : fixturesQ.dataUpdatedAt;
 
   const [q, setQ] = useState("");
   const [pos, setPos] = useState<Position | "">("");
   const [clubId, setClubId] = useState("");
   const [sort, setSort] = useState<SortKey>("fixture");
-  const [watch, setWatch] = useState<string[]>(readWatch());
+  const [watchState, setWatchState] = useState<{ key: string | null; ids: string[] }>({
+    key: null,
+    ids: [],
+  });
+
+  useEffect(() => {
+    setWatchState({
+      key: watchStorageKey,
+      ids: watchStorageKey ? readFantasyWatchlist(getBrowserStorage(), watchStorageKey) : [],
+    });
+  }, [watchStorageKey]);
+
+  const watchReady = watchStorageKey !== null && watchState.key === watchStorageKey;
+  const watch = watchReady ? watchState.ids : [];
 
   const toggleWatch = (id: string) => {
+    if (!watchReady || !watchStorageKey) return;
+
     const next = watch.includes(id) ? watch.filter((item) => item !== id) : [...watch, id];
-    setWatch(next);
-    try {
-      window.localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-    } catch {
-      // The current session still reflects the watchlist change.
-    }
+    setWatchState({ key: watchStorageKey, ids: next });
+    writeFantasyWatchlist(getBrowserStorage(), watchStorageKey, next);
   };
 
   const list = useMemo(() => {
@@ -95,7 +114,7 @@ function PlayersPage() {
     const nextFixtureByClub = new Map(
       Array.from(new Set(result.map((player) => player.clubId))).map((id) => [
         id,
-        selectUpcomingFixture(id, fixtures),
+        selectUpcomingFixture(id, fixtures, fixtureReferenceTime),
       ]),
     );
 
@@ -103,7 +122,10 @@ function PlayersPage() {
       if (sort === "price") return right.price - left.price;
       if (sort === "name") return left.name[lang].localeCompare(right.name[lang], lang);
       if (sort === "availability") {
-        return statusOrder[left.status] - statusOrder[right.status] || right.price - left.price;
+        return (
+          PLAYER_STATUS_SORT_ORDER[left.status] - PLAYER_STATUS_SORT_ORDER[right.status] ||
+          right.price - left.price
+        );
       }
 
       const leftFixture = nextFixtureByClub.get(left.clubId);
@@ -111,6 +133,7 @@ function PlayersPage() {
       if (!leftFixture && !rightFixture) return right.price - left.price;
       if (!leftFixture) return 1;
       if (!rightFixture) return -1;
+      if (leftFixture.isBlank !== rightFixture.isBlank) return leftFixture.isBlank ? 1 : -1;
       return (
         leftFixture.gameweek - rightFixture.gameweek ||
         leftFixture.difficulty - rightFixture.difficulty ||
@@ -118,7 +141,7 @@ function PlayersPage() {
       );
     });
     return result;
-  }, [playersQ.data, fixturesQ.data, pos, clubId, q, sort, lang]);
+  }, [playersQ.data, fixturesQ.data, fixtureReferenceTime, pos, clubId, q, sort, lang]);
 
   if (playersQ.isError || clubsQ.isError || fixturesQ.isError) {
     return (
@@ -212,11 +235,13 @@ function PlayersPage() {
                   club={club}
                   clubs={clubsQ.data}
                   fixtures={fixturesQ.data}
+                  fixtureReferenceTime={fixtureReferenceTime}
                 />
                 <span className="sr-only">{t("fantasy.players.open_profile")}</span>
               </Link>
               <button
                 type="button"
+                disabled={!watchReady}
                 onClick={() => toggleWatch(player.id)}
                 aria-label={
                   inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
@@ -227,6 +252,7 @@ function PlayersPage() {
                   inWatch
                     ? "bg-[color:color-mix(in_oklab,var(--brand-accent)_18%,transparent)] text-[color:var(--brand-accent)]"
                     : "bg-[color:var(--surface-hover)] text-[color:var(--text-muted)] hover:text-foreground",
+                  !watchReady && "cursor-not-allowed opacity-50",
                 )}
               >
                 <Star className={cn("h-4 w-4", inWatch && "fill-current")} aria-hidden />
