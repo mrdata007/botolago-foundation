@@ -1275,8 +1275,7 @@ export const dictionaries = {
     "fantasy.rules.tiebreak_desc":
       "عند التعادل، يتقدم صاحب النقاط الإضافية الأعلى ثم صاحب الأهداف الأكثر.",
     "fantasy.guide.title": "طريقة اللعب",
-    "fantasy.guide.subtitle":
-      "أربع خطوات لاتخاذ قراراتك ومتابعة كل جولة في فانتازي BotolaGO.",
+    "fantasy.guide.subtitle": "أربع خطوات لاتخاذ قراراتك ومتابعة كل جولة في فانتازي BotolaGO.",
     "fantasy.onboarding.title": "أهلاً بك في فانتازي BotolaGO",
     "fantasy.onboarding.step": "الخطوة",
     "fantasy.onboarding.of": "من",
@@ -1290,8 +1289,7 @@ export const dictionaries = {
     "fantasy.onboarding.step3_body":
       "الأهداف والتمريرات الحاسمة والشباك النظيفة والمكافآت تُحدّث رصيدك مع المباريات.",
     "fantasy.onboarding.step4_title": "أدر انتقالاتك ودورياتك",
-    "fantasy.onboarding.step4_body":
-      "طوّر فريقك كل جولة وتحدَّ أصدقاءك في دوريات خاصة.",
+    "fantasy.onboarding.step4_body": "طوّر فريقك كل جولة وتحدَّ أصدقاءك في دوريات خاصة.",
     "fantasy.onboarding.skip": "تخطي",
     "fantasy.onboarding.previous": "السابق",
     "fantasy.onboarding.next": "التالي",
