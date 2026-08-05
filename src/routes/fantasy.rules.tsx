@@ -19,10 +19,6 @@ function RulesPage() {
     queryFn: () => fantasyService.getRules(),
   });
 
-  if (rulesQ.isLoading) return <LoadingState />;
-  if (rulesQ.isError || !rulesQ.data) {
-    return <ErrorState onRetry={() => void rulesQ.refetch()} />;
-  }
   const rules = rulesQ.data;
 
   const sections: {
@@ -81,18 +77,28 @@ function RulesPage() {
 
       <FantasyGuideGrid />
 
-      <dl className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
-        <RuleValue label={t("fantasy.rules.budget")} value={String(rules.budget)} />
-        <RuleValue
-          label={t("fantasy.rules.transfers_r")}
-          value={`${rules.initialFreeTransfers} / -${rules.transferHitCost}`}
-        />
-        <RuleValue
-          label={t("fantasy.rules.deadlines")}
-          value={`${rules.deadline.minutesBeforeFirstFixture} min`}
-        />
-      </dl>
+      {rulesQ.isLoading ? (
+        <div className="mt-6">
+          <LoadingState />
+        </div>
+      ) : rulesQ.isError || !rules ? (
+        <div className="mt-6">
+          <ErrorState onRetry={() => void rulesQ.refetch()} />
+        </div>
+      ) : (
+        <dl className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
+          <RuleValue label={t("fantasy.rules.budget")} value={String(rules.budget)} />
+          <RuleValue
+            label={t("fantasy.rules.transfers_r")}
+            value={`${rules.initialFreeTransfers} / -${rules.transferHitCost}`}
+          />
+          <RuleValue
+            label={t("fantasy.rules.deadlines")}
+            value={`${rules.deadline.minutesBeforeFirstFixture} min`}
+          />
+        </dl>
+      )}
 
       <div className="mt-4 grid gap-2">
         {sections.map((section) => (
