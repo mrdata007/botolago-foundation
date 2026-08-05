@@ -1,15 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRightLeft,
-  Coins,
-  LayoutGrid,
-  Medal,
-  Star,
-  Timer,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { ArrowRightLeft, Coins, LayoutGrid, Medal, Star, Timer, Trophy, Users } from "lucide-react";
 
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { FantasyGuideGrid } from "@/components/fantasy/FantasyGuideGrid";
@@ -86,21 +77,13 @@ function RulesPage() {
       <h1 className="text-xl font-black text-foreground">
         <span className="text-brand">{t("fantasy.rules.title")}</span>
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {t("fantasy.rules.intro")}
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.rules.intro")}</p>
 
       <FantasyGuideGrid />
 
       <dl className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <RuleValue
-          label={t("fantasy.rules.squad")}
-          value={String(rules.squadSize)}
-        />
-        <RuleValue
-          label={t("fantasy.rules.budget")}
-          value={String(rules.budget)}
-        />
+        <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
+        <RuleValue label={t("fantasy.rules.budget")} value={String(rules.budget)} />
         <RuleValue
           label={t("fantasy.rules.transfers_r")}
           value={`${rules.initialFreeTransfers} / -${rules.transferHitCost}`}
@@ -121,9 +104,7 @@ function RulesPage() {
               <div className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white">
                 <section.icon className="h-4 w-4" aria-hidden />
               </div>
-              <h2 className="text-sm font-black text-foreground">
-                {t(section.titleKey)}
-              </h2>
+              <h2 className="text-sm font-black text-foreground">{t(section.titleKey)}</h2>
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {t(section.descKey)}
@@ -141,9 +122,7 @@ function RuleValue({ label, value }: { label: string; value: string }) {
       <dt className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
         {label}
       </dt>
-      <dd className="mt-1 text-lg font-black tabular-nums text-foreground">
-        {value}
-      </dd>
+      <dd className="mt-1 text-lg font-black tabular-nums text-foreground">{value}</dd>
     </div>
   );
 }
