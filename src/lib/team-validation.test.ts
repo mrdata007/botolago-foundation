@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { validateTeam } from "./team-validation";
+import { hasSquadCatalogCoverage, validateTeam } from "./team-validation";
 import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
 
 // Minimal fixture: 15 players — 2 GK, 5 DEF, 5 MID, 3 FWD.
@@ -66,6 +66,16 @@ function build442(): SquadPlayer[] {
 }
 
 describe("validateTeam", () => {
+  it("detects when the refreshed catalog no longer covers the authoritative squad", () => {
+    expect(hasSquadCatalogCoverage(build442(), players)).toBe(true);
+    expect(
+      hasSquadCatalogCoverage(
+        build442(),
+        players.filter((player) => player.id !== "f2"),
+      ),
+    ).toBe(false);
+  });
+
   it("accepts a legal 4-4-2 squad", () => {
     expect(validateTeam(build442(), "4-4-2", players)).toEqual({ ok: true });
   });

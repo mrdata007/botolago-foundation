@@ -7,9 +7,11 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 export function FantasyCatalogUnavailable({
   detailKey = "fantasy.atlas.create.unavailable.catalog",
   onRetry,
+  backTo = "/fantasy",
 }: {
   detailKey?: TranslationKey;
   onRetry: () => void;
+  backTo?: "/" | "/fantasy";
 }) {
   const { t } = useI18n();
   return (
@@ -33,7 +35,7 @@ export function FantasyCatalogUnavailable({
           {t("state.retry")}
         </button>
         <Link
-          to="/fantasy"
+          to={backTo}
           className="inline-flex min-h-11 items-center rounded-xl border border-amber-900/20 bg-white/70 px-4 text-sm font-black text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2"
         >
           {t("common.back")}

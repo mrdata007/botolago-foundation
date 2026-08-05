@@ -6,6 +6,7 @@ import { GameweekStatusStrip } from "@/components/fantasy/GameweekStatusStrip";
 import { FantasyOnboarding } from "@/components/fantasy/FantasyOnboarding";
 import { CloudSyncBanner } from "@/components/fantasy/CloudSyncBanner";
 import { FantasyImportPrompt } from "@/components/fantasy/FantasyImportPrompt";
+import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
 import { useAtlasMatchdayAccess } from "@/components/fantasy/use-atlas-matchday-access";
 import { useI18n } from "@/i18n/provider";
 
@@ -33,7 +34,8 @@ function FantasyLayout() {
   const normalizedPathname = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const isFantasyHub = normalizedPathname === "/fantasy";
   const isCreateFlow = normalizedPathname.startsWith("/fantasy/create");
-  const { isResolving, showAtlasMatchday } = useAtlasMatchdayAccess(isFantasyHub);
+  const { isResolving, isUnavailable, showAtlasMatchday, retry } =
+    useAtlasMatchdayAccess(isFantasyHub);
 
   if (isResolving) {
     return (
@@ -48,6 +50,14 @@ function FantasyLayout() {
   }
 
   if (showAtlasMatchday) return <Outlet />;
+
+  if (isUnavailable) {
+    return (
+      <AppShell contentWidth="wide" bottomNav={false}>
+        <FantasyCatalogUnavailable onRetry={() => void retry()} backTo="/" />
+      </AppShell>
+    );
+  }
 
   if (isCreateFlow) {
     return (

@@ -1,4 +1,5 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
+import { mockFootballTeamId } from "@/backend/football/mock-repository";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
 import {
@@ -28,6 +29,28 @@ const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
 const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
+
+function mockPlayer(player: FantasyPlayer): FantasyPlayer {
+  return {
+    ...player,
+    clubId: mockFootballTeamId(player.clubId),
+    nextOpponentClubId: player.nextOpponentClubId
+      ? mockFootballTeamId(player.nextOpponentClubId)
+      : undefined,
+  };
+}
+
+async function mockPlayers(): Promise<FantasyPlayer[]> {
+  return (await mockFantasyService.getPlayers()).map(mockPlayer);
+}
+
+function mockFixture(fixture: FixtureDifficulty): FixtureDifficulty {
+  return {
+    ...fixture,
+    clubId: mockFootballTeamId(fixture.clubId),
+    opponentClubId: mockFootballTeamId(fixture.opponentClubId),
+  };
+}
 
 function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
   return {
@@ -187,7 +210,7 @@ export const fantasyService = {
     if (mode() === "mock") {
       const [{ trendingPlayers }, players] = await Promise.all([
         import("@/mocks/data"),
-        mockFantasyService.getPlayers(),
+        mockPlayers(),
       ]);
       return trendingPlayers
         .map((id) => players.find((player) => player.id === id))
@@ -209,10 +232,13 @@ export const fantasyService = {
   },
 
   async getPlayers(): Promise<FantasyPlayer[]> {
-    return mode() === "mock" ? mockFantasyService.getPlayers() : allPlayers();
+    return mode() === "mock" ? mockPlayers() : allPlayers();
   },
   async getPlayer(id: string): Promise<FantasyPlayer | undefined> {
-    if (mode() === "mock") return mockFantasyService.getPlayer(id);
+    if (mode() === "mock") {
+      const player = await mockFantasyService.getPlayer(id);
+      return player ? mockPlayer(player) : undefined;
+    }
     return (await allPlayers()).find((player) => player.id === id);
   },
   async getTeam(): Promise<FantasyTeam> {
@@ -304,7 +330,9 @@ export const fantasyService = {
     }));
   },
   async getFixtureDifficulty(): Promise<FixtureDifficulty[]> {
-    if (mode() === "mock") return mockFantasyService.getFixtureDifficulty();
+    if (mode() === "mock") {
+      return (await mockFantasyService.getFixtureDifficulty()).map(mockFixture);
+    }
     const current = await hub();
     if (!current.gameweek) return [];
     const rows = await cloud.getFixtureDifficulty(
