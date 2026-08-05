@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { FantasyPlayer, FixtureDifficulty } from "@/types/fantasy";
 import {
   buildPlayerDecisionPresentation,
+  getPlayerFixtureFallbackKey,
   selectUpcomingFixture,
 } from "./player-decision-presentation";
 
@@ -24,7 +25,7 @@ describe("selectUpcomingFixture", () => {
   test("chooses the earliest real fixture without mutating the input", () => {
     const fixtures: FixtureDifficulty[] = [
       {
-        clubId: "club-a",
+        clubId: "club-b",
         gameweek: 1,
         opponentClubId: "blank-opponent",
         isHome: true,
@@ -58,23 +59,81 @@ describe("selectUpcomingFixture", () => {
     ];
     const originalOrder = fixtures.map((fixture) => fixture.opponentClubId);
 
-    expect(selectUpcomingFixture("club-a", fixtures)?.opponentClubId).toBe("earlier-kickoff");
+    expect(
+      selectUpcomingFixture("club-a", fixtures, Date.parse("2026-08-01T00:00:00Z"))?.opponentClubId,
+    ).toBe("earlier-kickoff");
     expect(fixtures.map((fixture) => fixture.opponentClubId)).toEqual(originalOrder);
   });
 
-  test("returns null when the club has no playable fixture", () => {
+  test("excludes fixtures that have already kicked off", () => {
+    const fixtures: FixtureDifficulty[] = [
+      {
+        clubId: "club-a",
+        gameweek: 2,
+        opponentClubId: "live-opponent",
+        isHome: true,
+        difficulty: 2,
+        kickoffAt: "2026-08-05T18:00:00Z",
+      },
+      {
+        clubId: "club-a",
+        gameweek: 2,
+        opponentClubId: "future-opponent",
+        isHome: false,
+        difficulty: 3,
+        kickoffAt: "2026-08-06T18:00:00Z",
+      },
+    ];
+
     expect(
-      selectUpcomingFixture("club-a", [
-        {
-          clubId: "club-a",
-          gameweek: 2,
-          opponentClubId: "blank-opponent",
-          isHome: true,
-          difficulty: 2,
-          isBlank: true,
-        },
-      ]),
-    ).toBeNull();
+      selectUpcomingFixture("club-a", fixtures, Date.parse("2026-08-05T18:00:00Z"))?.opponentClubId,
+    ).toBe("future-opponent");
+  });
+
+  test("keeps a fixture with no authoritative kickoff instead of assuming it is finished", () => {
+    const fixture: FixtureDifficulty = {
+      clubId: "club-a",
+      gameweek: 2,
+      opponentClubId: "tbd-opponent",
+      isHome: true,
+      difficulty: 2,
+    };
+
+    expect(selectUpcomingFixture("club-a", [fixture], Date.parse("2026-08-05T18:00:00Z"))).toEqual(
+      fixture,
+    );
+  });
+
+  test("preserves blank and double gameweek decision signals", () => {
+    const blank: FixtureDifficulty = {
+      clubId: "club-a",
+      gameweek: 2,
+      opponentClubId: "blank-opponent",
+      isHome: true,
+      difficulty: 2,
+      isBlank: true,
+    };
+    const double: FixtureDifficulty = {
+      clubId: "club-a",
+      gameweek: 3,
+      opponentClubId: "double-opponent",
+      isHome: false,
+      difficulty: 3,
+      isDouble: true,
+    };
+
+    expect(selectUpcomingFixture("club-a", [double, blank])).toEqual(blank);
+    expect(selectUpcomingFixture("club-a", [double])).toEqual(double);
+  });
+
+  test("returns null when the club has no fixture context", () => {
+    expect(selectUpcomingFixture("club-a", [])).toBeNull();
+  });
+
+  test("maps query states to honest fixture fallback copy", () => {
+    expect(getPlayerFixtureFallbackKey("loading")).toBe("fantasy.players.fixture_loading");
+    expect(getPlayerFixtureFallbackKey("error")).toBe("fantasy.players.fixture_error");
+    expect(getPlayerFixtureFallbackKey("ready")).toBe("fantasy.players.no_fixture");
   });
 });
 
@@ -97,6 +156,14 @@ describe("buildPlayerDecisionPresentation", () => {
     });
     expect(presentation.performance).toEqual({});
     expect("chanceOfPlaying" in presentation).toBe(false);
+  });
+
+  test("preserves non-medical availability statuses", () => {
+    for (const status of ["unavailable", "ineligible"] as const) {
+      expect(buildPlayerDecisionPresentation({ player: { ...player, status } }).status).toBe(
+        status,
+      );
+    }
   });
 
   test("includes only metrics whose availability is explicitly confirmed", () => {
