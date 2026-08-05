@@ -3,11 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-} from "@/components/common/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
 import { buildPlayerDecisionPresentation } from "@/components/fantasy/player-decision-presentation";
@@ -97,12 +93,8 @@ function PlayerDetailPage() {
     .sort(
       (left, right) =>
         left.gameweek - right.gameweek ||
-        (left.kickoffAt
-          ? Date.parse(left.kickoffAt)
-          : Number.POSITIVE_INFINITY) -
-          (right.kickoffAt
-            ? Date.parse(right.kickoffAt)
-            : Number.POSITIVE_INFINITY) ||
+        (left.kickoffAt ? Date.parse(left.kickoffAt) : Number.POSITIVE_INFINITY) -
+          (right.kickoffAt ? Date.parse(right.kickoffAt) : Number.POSITIVE_INFINITY) ||
         left.opponentClubId.localeCompare(right.opponentClubId),
     )
     .slice(0, 6);
@@ -150,18 +142,12 @@ function PlayerDetailPage() {
               label={t("fantasy.picker.filter_position")}
               value={t(`player.pos.${player.position}` as TranslationKey)}
             />
-            <StatDl
-              label={t("fantasy.price")}
-              value={number.format(player.price)}
-            />
+            <StatDl label={t("fantasy.price")} value={number.format(player.price)} />
             <StatDl
               label={t("fantasy.picker.filter_status")}
               value={t(`player.status.${player.status}` as TranslationKey)}
             />
-            <StatDl
-              label={t("fantasy.players.next")}
-              value={nextFixtureValue}
-            />
+            <StatDl label={t("fantasy.players.next")} value={nextFixtureValue} />
           </dl>
         </TabsContent>
 
@@ -175,12 +161,9 @@ function PlayerDetailPage() {
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {playerFixtures.map((fixture, index) => {
-                const opponent = clubs.find(
-                  (candidate) => candidate.id === fixture.opponentClubId,
-                );
+                const opponent = clubs.find((candidate) => candidate.id === fixture.opponentClubId);
                 const kickoff =
-                  fixture.kickoffAt &&
-                  !Number.isNaN(Date.parse(fixture.kickoffAt))
+                  fixture.kickoffAt && !Number.isNaN(Date.parse(fixture.kickoffAt))
                     ? dateTime.format(new Date(fixture.kickoffAt))
                     : null;
                 return (
@@ -235,9 +218,7 @@ function PlayerDetailPage() {
 function StatDl({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
+      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-sm font-black text-foreground">{value}</dd>
     </div>
   );
