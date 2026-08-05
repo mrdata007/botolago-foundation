@@ -108,6 +108,14 @@ function PlayersPage() {
       );
     }
 
+    const fixtures = fixturesQ.data ?? [];
+    const nextFixtureByClub = new Map(
+      Array.from(new Set(result.map((player) => player.clubId))).map((id) => [
+        id,
+        selectUpcomingFixture(id, fixtures),
+      ]),
+    );
+
     result.sort((left, right) => {
       if (sort === "price") return right.price - left.price;
       if (sort === "name")
@@ -119,14 +127,8 @@ function PlayersPage() {
         );
       }
 
-      const leftFixture = selectUpcomingFixture(
-        left.clubId,
-        fixturesQ.data ?? [],
-      );
-      const rightFixture = selectUpcomingFixture(
-        right.clubId,
-        fixturesQ.data ?? [],
-      );
+      const leftFixture = nextFixtureByClub.get(left.clubId);
+      const rightFixture = nextFixtureByClub.get(right.clubId);
       if (!leftFixture && !rightFixture) return right.price - left.price;
       if (!leftFixture) return 1;
       if (!rightFixture) return -1;
