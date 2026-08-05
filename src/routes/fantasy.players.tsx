@@ -1,19 +1,10 @@
-import {
-  createFileRoute,
-  Link,
-  Outlet,
-  useRouterState,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Search, Star } from "lucide-react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-} from "@/components/common/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
 import { selectUpcomingFixture } from "@/components/fantasy/player-decision-presentation";
 import { useI18n } from "@/i18n/provider";
@@ -31,9 +22,7 @@ export const Route = createFileRoute("/fantasy/players")({
 function PlayersRoute() {
   const isPlayerDetail = useRouterState({
     select: (state) =>
-      state.matches.some(
-        (match) => match.routeId === "/fantasy/players/$playerId",
-      ),
+      state.matches.some((match) => match.routeId === "/fantasy/players/$playerId"),
   });
   return isPlayerDetail ? <Outlet /> : <PlayersPage />;
 }
@@ -51,9 +40,7 @@ const statusOrder: Record<Player["status"], number> = {
 function readWatch(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const value: unknown = JSON.parse(
-      window.localStorage.getItem(WATCH_KEY) ?? "[]",
-    );
+    const value: unknown = JSON.parse(window.localStorage.getItem(WATCH_KEY) ?? "[]");
     return Array.isArray(value)
       ? value.filter((item): item is string => typeof item === "string")
       : [];
@@ -84,9 +71,7 @@ function PlayersPage() {
   const [watch, setWatch] = useState<string[]>(readWatch());
 
   const toggleWatch = (id: string) => {
-    const next = watch.includes(id)
-      ? watch.filter((item) => item !== id)
-      : [...watch, id];
+    const next = watch.includes(id) ? watch.filter((item) => item !== id) : [...watch, id];
     setWatch(next);
     try {
       window.localStorage.setItem(WATCH_KEY, JSON.stringify(next));
@@ -102,9 +87,7 @@ function PlayersPage() {
     if (q.trim()) {
       const normalized = q.toLowerCase();
       result = result.filter(
-        (player) =>
-          player.name.fr.toLowerCase().includes(normalized) ||
-          player.name.ar.includes(q),
+        (player) => player.name.fr.toLowerCase().includes(normalized) || player.name.ar.includes(q),
       );
     }
 
@@ -118,13 +101,9 @@ function PlayersPage() {
 
     result.sort((left, right) => {
       if (sort === "price") return right.price - left.price;
-      if (sort === "name")
-        return left.name[lang].localeCompare(right.name[lang], lang);
+      if (sort === "name") return left.name[lang].localeCompare(right.name[lang], lang);
       if (sort === "availability") {
-        return (
-          statusOrder[left.status] - statusOrder[right.status] ||
-          right.price - left.price
-        );
+        return statusOrder[left.status] - statusOrder[right.status] || right.price - left.price;
       }
 
       const leftFixture = nextFixtureByClub.get(left.clubId);
@@ -152,8 +131,7 @@ function PlayersPage() {
       />
     );
   }
-  if (!playersQ.data || !clubsQ.data || !fixturesQ.data)
-    return <LoadingState />;
+  if (!playersQ.data || !clubsQ.data || !fixturesQ.data) return <LoadingState />;
 
   const sorts: { key: SortKey; labelKey: TranslationKey }[] = [
     { key: "fixture", labelKey: "fantasy.picker.sort.fixture" },
@@ -187,11 +165,7 @@ function PlayersPage() {
             {t("common.all")}
           </Chip>
           {positions.map((position) => (
-            <Chip
-              key={position}
-              active={pos === position}
-              onClick={() => setPos(position)}
-            >
+            <Chip key={position} active={pos === position} onClick={() => setPos(position)}>
               {t(`player.pos.${position}` as TranslationKey)}
             </Chip>
           ))}
@@ -202,16 +176,8 @@ function PlayersPage() {
             {t("common.all")}
           </Chip>
           {clubsQ.data.map((club) => (
-            <Chip
-              key={club.id}
-              active={clubId === club.id}
-              onClick={() => setClubId(club.id)}
-            >
-              <ClubCrest
-                club={club}
-                size="sm"
-                className="h-5 w-5 rounded-full text-[8px]"
-              />
+            <Chip key={club.id} active={clubId === club.id} onClick={() => setClubId(club.id)}>
+              <ClubCrest club={club} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
               {tr(club.shortName)}
             </Chip>
           ))}
@@ -222,11 +188,7 @@ function PlayersPage() {
             {t("fantasy.picker.sort")}:
           </span>
           {sorts.map((item) => (
-            <Chip
-              key={item.key}
-              active={sort === item.key}
-              onClick={() => setSort(item.key)}
-            >
+            <Chip key={item.key} active={sort === item.key} onClick={() => setSort(item.key)}>
               {t(item.labelKey)}
             </Chip>
           ))}
@@ -239,10 +201,7 @@ function PlayersPage() {
           const inWatch = watch.includes(player.id);
           const club = clubsQ.data.find((item) => item.id === player.clubId);
           return (
-            <article
-              key={player.id}
-              className="surface-4 flex min-w-0 items-start gap-2 p-2.5"
-            >
+            <article key={player.id} className="surface-4 flex min-w-0 items-start gap-2 p-2.5">
               <Link
                 to="/fantasy/players/$playerId"
                 params={{ playerId: player.id }}
@@ -254,17 +213,13 @@ function PlayersPage() {
                   clubs={clubsQ.data}
                   fixtures={fixturesQ.data}
                 />
-                <span className="sr-only">
-                  {t("fantasy.players.open_profile")}
-                </span>
+                <span className="sr-only">{t("fantasy.players.open_profile")}</span>
               </Link>
               <button
                 type="button"
                 onClick={() => toggleWatch(player.id)}
                 aria-label={
-                  inWatch
-                    ? t("fantasy.players.remove_watch")
-                    : t("fantasy.players.add_watch")
+                  inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
                 }
                 className={cn(
                   "grid min-h-11 min-w-11 shrink-0 place-items-center rounded-xl transition-colors",
@@ -274,10 +229,7 @@ function PlayersPage() {
                     : "bg-[color:var(--surface-hover)] text-[color:var(--text-muted)] hover:text-foreground",
                 )}
               >
-                <Star
-                  className={cn("h-4 w-4", inWatch && "fill-current")}
-                  aria-hidden
-                />
+                <Star className={cn("h-4 w-4", inWatch && "fill-current")} aria-hidden />
               </button>
             </article>
           );
