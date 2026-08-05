@@ -10,6 +10,8 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
+import { AtlasMatchdayLanding } from "@/components/fantasy/AtlasMatchdayLanding";
+import { useAtlasMatchdayAccess } from "@/components/fantasy/use-atlas-matchday-access";
 import { useI18n } from "@/i18n/provider";
 import { Sparkles, TrendingUp, Trophy } from "lucide-react";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -19,6 +21,15 @@ export const Route = createFileRoute("/fantasy/")({
 });
 
 function FantasyHub() {
+  const { isResolving, showAtlasMatchday } = useAtlasMatchdayAccess();
+
+  if (showAtlasMatchday) return <AtlasMatchdayLanding />;
+  if (isResolving) return <LoadingState />;
+
+  return <FantasyDashboard />;
+}
+
+function FantasyDashboard() {
   const { t, lang } = useI18n();
   const { source, key } = useFantasyDataSource();
   const gw = useQuery({
