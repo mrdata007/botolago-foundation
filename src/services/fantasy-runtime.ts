@@ -30,14 +30,6 @@ const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
 
 function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
-  const status =
-    dto.status === "available"
-      ? "available"
-      : dto.status === "doubtful"
-        ? "doubtful"
-        : dto.status === "suspended"
-          ? "suspended"
-          : "injured";
   return {
     id: dto.id,
     name: { fr: dto.name, ar: dto.name },
@@ -47,7 +39,7 @@ function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
     totalPoints: 0,
     form: 0,
     ownership: 0,
-    status,
+    status: dto.status,
   };
 }
 
