@@ -30,14 +30,6 @@ const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
 
 function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
-  const status =
-    dto.status === "available"
-      ? "available"
-      : dto.status === "doubtful"
-        ? "doubtful"
-        : dto.status === "suspended"
-          ? "suspended"
-          : "injured";
   return {
     id: dto.id,
     name: { fr: dto.name, ar: dto.name },
@@ -47,7 +39,7 @@ function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
     totalPoints: 0,
     form: 0,
     ownership: 0,
-    status,
+    status: dto.status,
   };
 }
 
@@ -351,7 +343,40 @@ export const fantasyService = {
         captainMultiplier: 2,
         tripleCaptainMultiplier: 3,
         deadline: { minutesBeforeFirstFixture: 90, gracePeriodSeconds: 0 },
-        positions: [],
+        positions: [
+          {
+            code: "GK" as const,
+            squadQuota: 2,
+            startingMinimum: 1,
+            startingMaximum: 1,
+            goalPoints: 6,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "DEF" as const,
+            squadQuota: 5,
+            startingMinimum: 3,
+            startingMaximum: 5,
+            goalPoints: 6,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "MID" as const,
+            squadQuota: 5,
+            startingMinimum: 2,
+            startingMaximum: 5,
+            goalPoints: 5,
+            cleanSheetPoints: 1,
+          },
+          {
+            code: "FWD" as const,
+            squadQuota: 3,
+            startingMinimum: 1,
+            startingMaximum: 3,
+            goalPoints: 4,
+            cleanSheetPoints: 0,
+          },
+        ],
         scoring: [],
         chips: [],
         features: null,

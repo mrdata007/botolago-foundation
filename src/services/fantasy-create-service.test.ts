@@ -6,12 +6,14 @@ import {
   buildAutocompleteDraft,
   buildEmptySlots,
   computeSummary,
+  DEFAULT_CREATE_TEAM_RULES,
   draftPurchasePrices,
   draftToSquad,
   initCreateDraft,
   placePlayer,
   removePlayer,
   setCaptain,
+  setConsentAccepted,
   setTeamName,
   TEAM_NAME_MAX_LENGTH,
   validateDraft,
@@ -34,6 +36,7 @@ describe("fantasy-create-service — team name", () => {
     expect(validateTeamName("").ok).toBe(false);
     expect(validateTeamName("   ").ok).toBe(false);
     expect(validateTeamName("a").ok).toBe(false);
+    expect(validateTeamName("ab").ok).toBe(false);
   });
   it("accepts normal names and truncates on write", () => {
     expect(validateTeamName("Wydad FC").ok).toBe(true);
@@ -97,25 +100,22 @@ describe("fantasy-create-service — validation", () => {
     expect(v.errors).toContain("size");
   });
 
-  it("valid template autocompletes to a full 15-player draft with captain/vice", async () => {
+  it("rejects a template that no longer satisfies the active club limit", async () => {
     const template = await fantasyService.getTeam();
     const d0 = setTeamName(initCreateDraft(), "Test XI");
     const merged = applyAutocompleteTemplate(d0, template.squad, players);
-    expect(merged).not.toBeNull();
-    const s = computeSummary(merged!, players);
-    expect(s.filled).toBe(15);
-    expect(s.perPosition.GK).toEqual({ filled: 2, required: 2 });
-    expect(s.perPosition.DEF).toEqual({ filled: 5, required: 5 });
-    expect(s.perPosition.MID).toEqual({ filled: 5, required: 5 });
-    expect(s.perPosition.FWD).toEqual({ filled: 3, required: 3 });
-    expect(s.hasCaptain).toBe(true);
-    expect(s.hasVice).toBe(true);
-    expect(s.captainViceDistinct).toBe(true);
+    expect(merged).toBeNull();
   });
 
   it("builds a deterministic valid proposal for a first-time user", () => {
-    const first = buildAutocompleteDraft(initCreateDraft("First Team"), players);
-    const second = buildAutocompleteDraft(initCreateDraft("First Team"), [...players].reverse());
+    const first = buildAutocompleteDraft(
+      setConsentAccepted(initCreateDraft("First Team"), true),
+      players,
+    );
+    const second = buildAutocompleteDraft(
+      setConsentAccepted(initCreateDraft("First Team"), true),
+      [...players].reverse(),
+    );
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
     expect(first?.slots).toEqual(second?.slots);
@@ -152,17 +152,15 @@ describe("fantasy-create-service — validation", () => {
     // Force a tiny bank so any single pick trips the flag.
     const [any] = pick("GK", 1);
     const d1 = placePlayer(d0, 1, any);
-    const s = computeSummary(d1, players, 0);
+    const s = computeSummary(d1, players, DEFAULT_CREATE_TEAM_RULES, 0);
     expect(s.overBudget).toBe(true);
   });
 });
 
 describe("fantasy-create-service — save payload", () => {
-  it("draftToSquad preserves captain / vice / slot", async () => {
-    const template = await fantasyService.getTeam();
-    const d = applyAutocompleteTemplate(
-      setTeamName(initCreateDraft(), "T"),
-      template.squad,
+  it("draftToSquad preserves captain / vice / slot", () => {
+    const d = buildAutocompleteDraft(
+      setConsentAccepted(initCreateDraft("Atlas Test"), true),
       players,
     )!;
     const squad = draftToSquad(d);

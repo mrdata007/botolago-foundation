@@ -32,6 +32,7 @@ function FantasyLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const normalizedPathname = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const isFantasyHub = normalizedPathname === "/fantasy";
+  const isCreateFlow = normalizedPathname.startsWith("/fantasy/create");
   const { isResolving, showAtlasMatchday } = useAtlasMatchdayAccess(isFantasyHub);
 
   if (isResolving) {
@@ -47,6 +48,14 @@ function FantasyLayout() {
   }
 
   if (showAtlasMatchday) return <Outlet />;
+
+  if (isCreateFlow) {
+    return (
+      <AppShell contentWidth="wide" bottomNav={false}>
+        <Outlet />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell contentWidth="wide" bottomNav={<FantasyMobileNav />}>

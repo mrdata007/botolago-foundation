@@ -79,12 +79,31 @@ test.describe("staging-backed critical journeys", () => {
       await importPrompt.getByRole("button", { name: "Commencer une nouvelle équipe" }).click();
     }
     await page.getByLabel("Nom de l'équipe").fill("QA Acceptance FC");
-    await page.getByRole("button", { name: "Compléter automatiquement" }).click();
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Continuer" }).click();
+    await page.waitForURL(/\/fantasy\/create\/squad$/);
+    for (let index = 0; index < 15; index += 1) {
+      await page
+        .getByRole("button", { name: /^Ajouter / })
+        .first()
+        .click();
+      const selectable = page
+        .locator('[data-testid="atlas-player-row"][data-player-selectable="true"]')
+        .first();
+      await expect(selectable).toBeVisible();
+      await selectable.click();
+      await page.getByTestId("atlas-player-add").click();
+    }
     await expect(page.getByText("15 / 15")).toBeVisible();
-    const save = page.locator('button[aria-label="Enregistrer mon équipe"]');
+    const review = page.getByRole("button", { name: "Vérifier l'équipe" });
+    await expect(review).toBeEnabled();
+    await review.click();
+    await page.waitForURL(/\/fantasy\/create\/review$/);
+    const save = page.getByRole("button", { name: "Créer mon équipe" });
     await expect(save).toBeEnabled();
     await save.click();
-    await page.waitForURL(/\/fantasy\/team$/);
+    await page.waitForURL(/\/fantasy\/?$/);
+    await gotoHydrated(page, "/fantasy/team", "fr");
     await reloadHydrated(page, "fr");
     await expect(page.getByText("QA Acceptance FC")).toBeVisible();
     await expectNoHorizontalOverflow(page);

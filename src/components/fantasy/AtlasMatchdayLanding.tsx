@@ -19,6 +19,7 @@ import { primaryNavItems } from "@/components/shell/primary-nav";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useAuth } from "@/auth/AuthProvider";
 
 type Step = {
   titleKey:
@@ -52,9 +53,15 @@ const steps: Step[] = [
 
 export function AtlasMatchdayLanding() {
   const { t, lang, dir } = useI18n();
+  const { status: authStatus } = useAuth();
   const gameweek = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
+    staleTime: 60_000,
+  });
+  const rules = useQuery({
+    queryKey: ["fantasy-create", "rules"],
+    queryFn: () => fantasyService.getRules(),
     staleTime: 60_000,
   });
 
@@ -71,7 +78,7 @@ export function AtlasMatchdayLanding() {
       : t("fantasy.atlas.deadline_fallback");
   const daysRemaining = deadline
     ? Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 86_400_000))
-    : 1;
+    : null;
 
   return (
     <div className="min-h-dvh bg-[#07101f] sm:grid sm:place-items-center">
@@ -146,7 +153,7 @@ export function AtlasMatchdayLanding() {
           <CalendarDays className="h-[18px] w-[18px] text-white/85" aria-hidden />
           <strong className="text-[13px] tabular-nums">
             {t("fantasy.atlas.day_prefix")}
-            {daysRemaining}
+            {daysRemaining ?? "—"}
           </strong>
         </section>
 
@@ -163,7 +170,9 @@ export function AtlasMatchdayLanding() {
             <Coins className="h-6 w-6 shrink-0 text-[#2c80f8]" aria-hidden />
             <span className="flex flex-col">
               <span className="text-[10px] text-white/75">{t("fantasy.atlas.budget")}</span>
-              <strong className="text-sm leading-none">100 M</strong>
+              <strong className="text-sm leading-none">
+                {rules.data ? `${rules.data.budget} M` : "—"}
+              </strong>
             </span>
           </div>
         </section>
@@ -206,13 +215,24 @@ export function AtlasMatchdayLanding() {
         </section>
 
         <div className="absolute inset-x-[13px] top-[680px] grid justify-items-center">
-          <Link
-            to="/fantasy/create"
-            className="flex min-h-[43px] w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            {t("fantasy.atlas.create")}
-            <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
-          </Link>
+          {authStatus === "authenticated" ? (
+            <Link
+              to="/fantasy/create"
+              className="flex min-h-[43px] w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              {t("fantasy.atlas.create")}
+              <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+            </Link>
+          ) : (
+            <Link
+              to="/auth/login"
+              search={{ next: "/fantasy/create" }}
+              className="flex min-h-[43px] w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              {t("fantasy.atlas.create")}
+              <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+            </Link>
+          )}
           <Link
             to="/fantasy/rules"
             className="mt-2.5 text-xs font-semibold text-[#2481f7] transition-colors hover:text-[#62a5ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
