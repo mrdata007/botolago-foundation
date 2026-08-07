@@ -63,6 +63,13 @@ describe("buildV2CloudSnapshot", () => {
     expect(snapshot.currentGameweekId).toBe(gameweek.id);
     expect(snapshot.lifecycle.currentGameweek).toBe(1);
   });
+
+  it("falls back to gameweek 1 when the provider has not published a gameweek", () => {
+    const snapshot = buildV2CloudSnapshot(null, null);
+
+    expect(snapshot.currentGameweekId).toBeNull();
+    expect(snapshot.lifecycle.currentGameweek).toBe(1);
+  });
 });
 
 // ---------- source selector ----------
