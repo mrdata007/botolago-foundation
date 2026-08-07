@@ -722,6 +722,36 @@ export function buildV2CloudSnapshot(
   };
 }
 
+const V2_FANTASY_PLAYER_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isV2FantasyPlayerId(playerId: string): boolean {
+  return V2_FANTASY_PLAYER_ID.test(playerId);
+}
+
+export function buildV2LineupSelection(
+  input: Pick<SaveOwnedTeamInput, "squad">,
+): LineupSelection[] {
+  const incompatibleIds = input.squad
+    .map((player) => player.playerId)
+    .filter((playerId) => !isV2FantasyPlayerId(playerId));
+  if (incompatibleIds.length > 0) {
+    throw new FantasyRepoError(
+      "mapping_incomplete",
+      "The local squad does not contain V2 Fantasy player identifiers.",
+      undefined,
+      { players: incompatibleIds },
+    );
+  }
+  return input.squad.map((player) => ({
+    fantasy_player_id: player.playerId,
+    slot: player.slot <= 11 ? "starter" : "bench",
+    slot_order: player.slot <= 11 ? player.slot : player.slot - 11,
+    captain: !!player.isCaptain,
+    vice_captain: !!player.isViceCaptain,
+  }));
+}
+
 /** Production V2 compatibility adapter. It never reads or writes legacy public Fantasy tables. */
 export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   readonly source: FantasyRepoSource = "cloud";
@@ -734,13 +764,7 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   }
 
   private selection(input: SaveOwnedTeamInput): LineupSelection[] {
-    return input.squad.map((player) => ({
-      fantasy_player_id: player.playerId,
-      slot: player.slot <= 11 ? "starter" : "bench",
-      slot_order: player.slot <= 11 ? player.slot : player.slot - 11,
-      captain: !!player.isCaptain,
-      vice_captain: !!player.isViceCaptain,
-    }));
+    return buildV2LineupSelection(input);
   }
 
   async loadSnapshot(): Promise<FantasySnapshot> {
