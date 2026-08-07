@@ -92,15 +92,18 @@ export function AtlasCreateProvider({ children }: { children: ReactNode }) {
   const rules = useMemo(() => (rulesQ.data ? adaptFantasyRules(rulesQ.data) : null), [rulesQ.data]);
   const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
   const clubs = useMemo(() => clubsQ.data ?? [], [clubsQ.data]);
+  // A creation draft is always scoped to the pre-persistence identity. Keeping
+  // this key at new/0 prevents the authoritative post-save snapshot from
+  // re-keying the provider and unmounting the success confirmation.
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
     if (authStatus !== "authenticated" || !user?.id) return null;
     return {
       uid: user.id,
-      teamId: owned.source === "cloud" ? (owned.snapshot?.teamId ?? "new") : "new",
-      baseVersion: owned.source === "cloud" ? (owned.snapshot?.version ?? 0) : 0,
+      teamId: "new",
+      baseVersion: 0,
       kind: "create-team",
     };
-  }, [authStatus, owned.snapshot?.teamId, owned.snapshot?.version, owned.source, user?.id]);
+  }, [authStatus, user?.id]);
 
   const [draft, setDraft] = useState<CreateTeamDraft>(() => initCreateDraft());
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
