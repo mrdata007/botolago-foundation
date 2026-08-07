@@ -93,25 +93,40 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
   };
 }
 
-function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | undefined {
+export function mapFantasyPointsDto(
+  sequence: number,
+  dto: FantasyPointsDto,
+): GameweekResult | undefined {
   if (!dto.result) return undefined;
-  const captain = dto.players.find((player) => player.captain);
+  const captain =
+    dto.players.find((player) => player.multiplier > 1) ??
+    dto.players.find((player) => player.captain);
   return {
     gameweek: sequence,
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
     benchPoints: dto.result.benchPoints,
+    startingPoints: dto.result.startingPoints,
+    captainPoints: dto.result.captainPoints,
+    transferHitPoints: dto.result.transferHit,
+    activeChip: dto.result.chipType ?? undefined,
+    finalized: dto.result.state === "final",
+    finalizedAt: dto.result.finalizedAt ?? undefined,
     captainId: captain?.fantasyPlayerId,
     autoSubs: [],
-    breakdown: dto.players.map((player) => ({
-      playerId: player.fantasyPlayerId,
-      totalPoints: player.finalPoints ?? player.provisionalPoints,
-      minutesPlayed: player.minutesPlayed,
-      isCaptain: player.captain || undefined,
-      isViceCaptain: player.viceCaptain || undefined,
-      isBench: player.slot === "bench" || undefined,
-      status: dto.pointsState === "final" ? "final" : "provisional",
-      events: [],
-    })),
+    breakdown: dto.players.map((player) => {
+      const basePoints = player.finalPoints ?? player.provisionalPoints;
+      return {
+        playerId: player.fantasyPlayerId,
+        totalPoints: basePoints * player.multiplier,
+        multiplier: player.multiplier,
+        minutesPlayed: player.minutesPlayed,
+        isCaptain: player.captain || undefined,
+        isViceCaptain: player.viceCaptain || undefined,
+        isBench: player.slot === "bench" || undefined,
+        status: dto.pointsState === "final" ? "final" : "provisional",
+        events: [],
+      };
+    }),
   };
 }
 
@@ -315,7 +330,7 @@ export const fantasyService = {
     const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
     const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
     if (!gameweek) return undefined;
-    return pointsDto(sequence, await cloud.getPoints(current.team.id, gameweek.id, context()));
+    return mapFantasyPointsDto(sequence, await cloud.getPoints(current.team.id, gameweek.id, context()));
   },
   async getGameweekHistory(): Promise<GameweekResult[]> {
     if (mode() === "mock") return mockFantasyService.getGameweekHistory();
