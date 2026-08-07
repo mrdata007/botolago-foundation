@@ -24,10 +24,7 @@ import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import {
-  isV2FantasyPlayerId,
-  LocalFantasyRepository,
-} from "@/services/fantasy-owned-repository";
+import { isV2FantasyPlayerId, LocalFantasyRepository } from "@/services/fantasy-owned-repository";
 import { importLocalTeamToCloud } from "@/services/fantasy-import-service";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
