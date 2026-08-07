@@ -17,10 +17,8 @@ import { STORAGE_KEYS, removeKey } from "@/lib/storage";
 import { importLocalTeamToCloud, prepareImportPayload } from "./fantasy-import-service";
 import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { MissingIdMappingError } from "./fantasy-id-map";
-import { buildGameweekIndex } from "./fantasy-gameweek-resolver";
 import { fantasyService } from "./fantasy-mock";
 
-const SEASON = "2025-26";
 
 async function loadPlayersReal() {
   return await fantasyService.getPlayers();
@@ -55,17 +53,6 @@ async function localRepoWithRealTeam() {
   };
 }
 
-function fakeGameweekIndex(numbers: number[]) {
-  const rows = numbers.map((n) => ({
-    id: `gw-${SEASON}-${n}`,
-    number: n,
-    season: SEASON,
-    status: "upcoming",
-    deadline: "2025-01-01",
-  }));
-  return buildGameweekIndex(rows);
-}
-
 describe("importLocalTeamToCloud", () => {
   beforeEach(() => {
     // Isolate from patches written by sibling test files.
@@ -96,25 +83,27 @@ describe("importLocalTeamToCloud", () => {
       localRepo,
       cloudRepo: cloudRepo as any,
       loadPlayers: loadPlayersReal,
-      loadGameweekIndex: async () => fakeGameweekIndex([13, 14, 15]),
-      season: SEASON,
+      currentGameweekId: "gw-active-1",
+      currentGameweek: 1,
       defaultTeamName: "Mon équipe",
       cloudExpectedVersion: 0,
     });
     expect(calls.length).toBe(1);
     const [input] = calls;
-    expect(input.currentGameweekId).toBe(`gw-${SEASON}-14`);
+    expect(input.currentGameweekId).toBe("gw-active-1");
     expect(input.expectedVersion).toBe(0);
     expect(input.squad.length).toBe(15);
-    // Lifecycle passed through verbatim.
-    expect(input.lifecycle.currentGameweek).toBe(14);
+    // Prior-season lifecycle is reset to the active V2 gameweek.
+    expect(input.lifecycle.currentGameweek).toBe(1);
+    expect(input.lifecycle.results).toEqual({});
+    expect(input.lifecycle.chips).toEqual({ active: null, used: [] });
     // Purchase prices present.
     expect(Object.keys(input.purchasePrices).length).toBe(15);
     expect(snap.source).toBe("cloud");
     expect(snap.version).toBe(1);
   });
 
-  it("gameweek_unresolved: throws when index has no matching row for season+number", async () => {
+  it("gameweek_unresolved: throws when the V2 hub has no active gameweek", async () => {
     const localRepo = await localRepoWithRealTeam();
     const cloudCalls: any[] = [];
     const cloudRepo = {
@@ -129,8 +118,8 @@ describe("importLocalTeamToCloud", () => {
         localRepo,
         cloudRepo: cloudRepo as any,
         loadPlayers: loadPlayersReal,
-        loadGameweekIndex: async () => fakeGameweekIndex([1, 2]), // no 14
-        season: SEASON,
+        currentGameweekId: null,
+        currentGameweek: 1,
         defaultTeamName: "Mon équipe",
         cloudExpectedVersion: 0,
       });
@@ -160,8 +149,8 @@ describe("importLocalTeamToCloud", () => {
         localRepo,
         cloudRepo: cloudRepo as any,
         loadPlayers: loadPlayersReal,
-        loadGameweekIndex: async () => fakeGameweekIndex([14]),
-        season: SEASON,
+        currentGameweekId: "gw-active-1",
+        currentGameweek: 1,
         defaultTeamName: "Mon équipe",
         cloudExpectedVersion: 0,
       });
@@ -192,8 +181,8 @@ describe("importLocalTeamToCloud", () => {
           localRepo,
           cloudRepo: cloudRepo as any,
           loadPlayers: loadPlayersReal,
-          loadGameweekIndex: async () => fakeGameweekIndex([14]),
-          season: SEASON,
+          currentGameweekId: "gw-active-1",
+          currentGameweek: 1,
           defaultTeamName: "Mon équipe",
           cloudExpectedVersion: 0,
         });
@@ -242,8 +231,8 @@ describe("importLocalTeamToCloud", () => {
         localRepo,
         cloudRepo: cloudRepo as any,
         loadPlayers: async () => players,
-        loadGameweekIndex: async () => fakeGameweekIndex([14]),
-        season: SEASON,
+        currentGameweekId: "gw-active-1",
+        currentGameweek: 1,
         defaultTeamName: "Mon équipe",
         cloudExpectedVersion: 0,
       });
@@ -290,8 +279,8 @@ describe("importLocalTeamToCloud", () => {
         },
       } as any,
       loadPlayers: async () => players,
-      loadGameweekIndex: async () => fakeGameweekIndex([14]),
-      season: SEASON,
+      currentGameweekId: "gw-active-1",
+      currentGameweek: 1,
       defaultTeamName: "فريقي",
       cloudExpectedVersion: 0,
     });
@@ -305,8 +294,8 @@ describe("importLocalTeamToCloud", () => {
         },
       } as any,
       loadPlayers: async () => players,
-      loadGameweekIndex: async () => fakeGameweekIndex([14]),
-      season: SEASON,
+      currentGameweekId: "gw-active-1",
+      currentGameweek: 1,
       defaultTeamName: "Mon équipe",
       cloudExpectedVersion: 0,
     });
