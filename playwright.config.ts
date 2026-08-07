@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 const externalBaseUrl = process.env.E2E_BASE_URL;
+const isProtectedStaging = Boolean(process.env.E2E_STAGING_FIRST_EMAIL);
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -11,12 +12,16 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   timeout: 45_000,
   expect: { timeout: 10_000 },
-  reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "list",
+  reporter: process.env.CI
+    ? isProtectedStaging
+      ? [["line"]]
+      : [["line"], ["html", { open: "never" }]]
+    : "list",
   outputDir: "test-results/playwright",
   use: {
     baseURL: externalBaseUrl ?? "http://127.0.0.1:4173",
-    trace: process.env.E2E_STAGING_FIRST_EMAIL ? "off" : "retain-on-failure",
-    screenshot: "only-on-failure",
+    trace: isProtectedStaging ? "off" : "retain-on-failure",
+    screenshot: isProtectedStaging ? "off" : "only-on-failure",
     video: "off",
     reducedMotion: "reduce",
   },
