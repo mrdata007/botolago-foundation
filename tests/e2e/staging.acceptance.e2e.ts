@@ -12,6 +12,7 @@ const firstPassword = process.env.E2E_STAGING_FIRST_PASSWORD;
 const secondEmail = process.env.E2E_STAGING_SECOND_EMAIL;
 const secondPassword = process.env.E2E_STAGING_SECOND_PASSWORD;
 const hasStagingUsers = !!firstEmail && !!firstPassword && !!secondEmail && !!secondPassword;
+const optionalFixtureDifficultyPath = "/rest/v1/rpc/fantasy_fixture_difficulty";
 
 async function login(
   page: import("@playwright/test").Page,
@@ -67,7 +68,13 @@ test.describe("staging-backed critical journeys", () => {
   test("first-time user creates a cloud team and refreshes authoritative state", async ({
     page,
   }, testInfo) => {
-    const diagnostics = observePage(page);
+    const diagnostics = observePage(page, {
+      allowResponse: (status, url) =>
+        status === 404 && url.pathname === optionalFixtureDifficultyPath,
+      allowConsoleError: (message, sourceUrl) =>
+        /failed to load resource/i.test(message) &&
+        sourceUrl?.pathname === optionalFixtureDifficultyPath,
+    });
     await initializeLanguage(page, "fr");
     await gotoHydrated(page, "/fantasy", "fr");
     await page.getByRole("link", { name: "Créer mon équipe" }).click();
