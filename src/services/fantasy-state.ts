@@ -23,7 +23,7 @@ export const FANTASY_STATE_EVENT = "fantasy.state.changed";
 
 export const DEFAULT_STATE: FantasyPersistedState = {
   chips: DEFAULT_CHIPS,
-  currentGameweek: 1,
+  currentGameweek: 14,
   transferHitPoints: 0,
   results: {},
 };
