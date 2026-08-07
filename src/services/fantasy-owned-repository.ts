@@ -715,7 +715,7 @@ export function buildV2CloudSnapshot(
     },
     finalizedResults: {},
     source: "cloud",
-    currentGameweekId: team.currentGameweekId ?? gameweek?.id ?? null,
+    currentGameweekId: gameweek?.id ?? team.currentGameweekId ?? null,
     purchasePrices,
     activeChipCancellable: team.chips.activeCancellable,
     emptyCloudSquad: squad.length === 0,
