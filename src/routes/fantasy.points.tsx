@@ -18,6 +18,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import {
+  buildAuthoritativePointsViewModel,
   buildLegacyViewModel,
   buildPointsViewModel,
   type PointsViewModel,
@@ -132,11 +133,12 @@ function PointsPage() {
   // Compute VM for the selected gameweek.
   const vm: PointsViewModel | null | "error" = useMemo(() => {
     if (!team || !playersQ.data) return null;
-    const persisted = state.results[gw];
+    const persisted = isCloud ? undefined : state.results[gw];
     if (persisted) return persisted;
 
     const raw = gwResultQ.data;
     if (!raw) return null;
+    if (isCloud) return buildAuthoritativePointsViewModel(raw);
 
     const originalBenchIds = team.squad
       .filter((s) => s.slot >= 12)
@@ -166,7 +168,24 @@ function PointsPage() {
     } catch {
       return "error";
     }
-  }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent]);
+  }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent, isCloud]);
+
+  const historyItems = (historyQ.data ?? []).map((history) => {
+    const stored = isCloud ? undefined : state.results[history.gameweek];
+    return {
+      gameweek: history.gameweek,
+      totalPoints: stored?.totalPoints ?? history.totalPoints,
+      source: isCloud
+        ? ("authoritative" as const)
+        : stored
+          ? ("engine" as const)
+          : ("legacy_mock" as const),
+    };
+  });
+  const availableGameweeks = Array.from(
+    new Set([currentGw, ...historyItems.map((item) => item.gameweek)]),
+  ).sort((a, b) => a - b);
+
 
   if (owned.source === "guest") {
     return authStatus === "loading" ? (
@@ -232,8 +251,18 @@ function PointsPage() {
   }
   if (!vm) {
     return (
-      <div className="glass-surface glass-regular mt-6 rounded-2xl border border-[var(--glass-border)] p-4 text-sm text-muted-foreground">
-        {t("fantasy.points.empty")}
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-black text-foreground">
+            <span className="text-brand">{t("fantasy.points.title")}</span>
+          </h1>
+          <GameweekSelector value={gw} options={availableGameweeks} onChange={setSelectedGw} />
+        </div>
+        <div className="glass-surface glass-regular mt-6 rounded-2xl border border-[var(--glass-border)] p-4 text-sm text-muted-foreground">
+          {t("fantasy.points.empty")}
+        </div>
+        <SectionHeader title={t("fantasy.points.history")} />
+        <PointsHistory items={historyItems} selectedGameweek={gw} onSelect={setSelectedGw} />
       </div>
     );
   }
@@ -406,19 +435,6 @@ function PointsPage() {
   const effectiveCaptainName = vm.effectiveCaptainId
     ? tr(playerOf(vm.effectiveCaptainId).name)
     : "—";
-
-  // History: prefer persisted results when available; fall back to legacy mock rows.
-  const historyItems = (historyQ.data ?? []).map((h) => {
-    const stored = state.results[h.gameweek];
-    return {
-      gameweek: h.gameweek,
-      totalPoints: stored?.totalPoints ?? h.totalPoints,
-      source: (stored ? "engine" : "legacy_mock") as "engine" | "legacy_mock",
-    };
-  });
-  const availableGameweeks = Array.from(
-    new Set([currentGw, ...historyItems.map((item) => item.gameweek)]),
-  ).sort((a, b) => a - b);
 
   return (
     <div>
