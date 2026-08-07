@@ -743,7 +743,6 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     }));
   }
 
-
   async loadSnapshot(): Promise<FantasySnapshot> {
     try {
       const hub = await this.repository.getHub("fr", this.context());
@@ -877,7 +876,6 @@ export interface RepositoryFactoryInput {
   season?: string;
   client?: SupabaseClient<Database>;
 }
-
 
 export function createFantasyOwnedRepository(
   input: RepositoryFactoryInput,
