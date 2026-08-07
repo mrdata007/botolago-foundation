@@ -7,6 +7,8 @@ import {
   GuestFantasyRepository,
   LocalFantasyRepository,
   buildV2CloudSnapshot,
+  buildV2LineupSelection,
+  isV2FantasyPlayerId,
 } from "./fantasy-owned-repository";
 import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { FantasyCloudError } from "./fantasy-cloud-repo";
@@ -68,6 +70,26 @@ describe("buildV2CloudSnapshot", () => {
 
     expect(snapshot.currentGameweekId).toBeNull();
     expect(snapshot.lifecycle.currentGameweek).toBe(1);
+  });
+});
+
+describe("buildV2LineupSelection", () => {
+  it("rejects local mock identifiers before a V2 mutation", () => {
+    expect(isV2FantasyPlayerId("fp_mock_1")).toBe(false);
+    expect(isV2FantasyPlayerId("00000000-0000-4000-8000-000000000010")).toBe(true);
+
+    let caught: unknown;
+    try {
+      buildV2LineupSelection({
+        squad: [{ playerId: "fp_mock_1", slot: 1 }],
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FantasyRepoError);
+    expect((caught as FantasyRepoError).code).toBe("mapping_incomplete");
+    expect((caught as FantasyRepoError).missingIds?.players).toEqual(["fp_mock_1"]);
   });
 });
 
