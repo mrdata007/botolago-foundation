@@ -1,7 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { mockFootballTeamId } from "@/backend/football/mock-repository";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import { selectFantasyDataMode } from "./fantasy-v2";
+import { selectFantasyDataMode, type FantasyDataMode } from "./fantasy-v2";
 import {
   buildGlobalRankings,
   selectRankingsPage,
@@ -9,6 +9,7 @@ import {
   type RankingsQuery,
 } from "./fantasy-rankings";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { FantasyError } from "@/backend/fantasy/errors";
 import type {
   FantasyPlayerDto,
   FantasyPointsDto,
@@ -29,6 +30,17 @@ const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
 const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
+
+export function assertGlobalRankingsAvailable(
+  dataMode: FantasyDataMode,
+): asserts dataMode is "mock" {
+  if (dataMode !== "mock") {
+    throw new FantasyError(
+      "ranking_unavailable",
+      "Global Fantasy rankings are not exposed by the active backend.",
+    );
+  }
+}
 
 function mockPlayer(player: FantasyPlayer): FantasyPlayer {
   return {
@@ -308,21 +320,13 @@ export const fantasyService = {
   /**
    * Season-wide leaderboard across every fantasy team.
    *
-   * Mock mode builds a deterministic 500-manager board. Cloud mode reads the
-   * largest public league (the global board) and maps its standings; no
-   * schema change is required.
+   * Mock mode builds a deterministic board. Production fails closed until
+   * the backend exposes its authoritative global ranking projection.
    */
   async getGlobalRankings(query: RankingsQuery): Promise<RankingsPage> {
-    if (mode() === "mock") {
-      return selectRankingsPage(buildGlobalRankings(), query);
-    }
-    const publicLeagues = await this.getLeagues("public");
-    const global = [...publicLeagues].sort((a, b) => b.members - a.members)[0];
-    if (!global) {
-      return { rows: [], total: 0, podium: [], myRank: undefined };
-    }
-    const standings = await this.getLeagueStandings(global.id);
-    return selectRankingsPage(standings, query);
+    const dataMode = mode();
+    assertGlobalRankingsAvailable(dataMode);
+    return selectRankingsPage(buildGlobalRankings(), query);
   },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
