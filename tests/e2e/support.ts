@@ -19,6 +19,7 @@ export function sanitize(value: string): string {
 
 type ObservationOptions = {
   allowResponse?: (status: number, url: URL) => boolean;
+  allowConsoleError?: (message: string, sourceUrl: URL | null) => boolean;
   allowExpectedResourceConsoleError?: boolean;
 };
 
@@ -30,14 +31,16 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
 
   page.on("console", (message) => {
     if (message.type() === "error") {
+      const location = message.location();
+      const sourceUrl = location.url ? new URL(location.url) : null;
+      if (options.allowConsoleError?.(message.text(), sourceUrl)) return;
       if (
         options.allowExpectedResourceConsoleError &&
         /failed to load resource/i.test(message.text())
       ) {
         return;
       }
-      const location = message.location();
-      const source = location.url ? ` ${new URL(location.url).pathname}` : "";
+      const source = sourceUrl ? ` ${sourceUrl.pathname}` : "";
       consoleErrors.push(`${sanitize(message.text()).slice(0, 500)}${source}`);
     }
   });
