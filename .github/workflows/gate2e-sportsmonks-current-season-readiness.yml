@@ -104,7 +104,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bun test scripts/backend/sportsmonks-production-probe.test.ts
+          bun test \
+            scripts/backend/sportsmonks-production-probe.test.ts \
+            scripts/backend/gate2e-current-season-readiness.test.ts
 
       - name: Run the protected SportsMonks probe
         id: provider_probe
@@ -121,30 +123,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          evidence_path = Path(os.environ["GATE2E_EVIDENCE_DIR"]) / "sportsmonks-production-probe.json"
-          evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-          rounds = evidence["verifiedResources"]["rounds"]
-          teams = evidence["verifiedResources"]["teams"]
-          fixtures = evidence["fixtureSample"]["available"]
-          if isinstance(rounds, bool) or not isinstance(rounds, int) or rounds < 0:
-              raise SystemExit("INVALID_ROUND_COUNT")
-          if isinstance(teams, bool) or not isinstance(teams, int) or teams < 0:
-              raise SystemExit("INVALID_TEAM_COUNT")
-          if not isinstance(fixtures, bool):
-              raise SystemExit("INVALID_FIXTURE_AVAILABILITY")
-          ready = rounds > 0 and teams > 0 and fixtures
-          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-              output.write(f"ready={'true' if ready else 'false'}\n")
-          print(
-              f"Current-season readiness: ready={str(ready).lower()} "
-              f"rounds={rounds} teams={teams} fixtureSample={str(fixtures).lower()}"
-          )
-          PY
+          bun scripts/backend/gate2e-current-season-readiness.ts
 
       - name: Verify evidence contains no credential patterns
         id: evidence_scan
