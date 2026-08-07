@@ -123,6 +123,8 @@ export interface PointsEvent {
 export interface PlayerPointsBreakdown {
   playerId: string;
   totalPoints: number;
+  /** Authoritative backend multiplier when points are server-calculated. */
+  multiplier?: number;
   minutesPlayed: number;
   isCaptain?: boolean;
   isViceCaptain?: boolean;
@@ -135,6 +137,13 @@ export interface GameweekResult {
   gameweek: number;
   totalPoints: number; // includes captain multiplier
   benchPoints: number;
+  /** Authoritative server scoring components when available. */
+  startingPoints?: number;
+  captainPoints?: number;
+  transferHitPoints?: number;
+  activeChip?: "wildcard" | "free_hit" | "bench_boost" | "triple_captain";
+  finalized?: boolean;
+  finalizedAt?: string;
   captainId?: string;
   averagePoints?: number;
   highestPoints?: number;
