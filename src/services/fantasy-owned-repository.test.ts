@@ -31,7 +31,7 @@ describe("buildV2CloudSnapshot", () => {
     expect(snapshot.lifecycle.currentGameweek).toBe(1);
   });
 
-  it("uses the authoritative hub sequence for an existing cloud team", () => {
+  it("uses the authoritative hub identity during rollover for an existing cloud team", () => {
     const gameweek = {
       id: "00000000-0000-4000-8000-000000000001",
       sequence: 1,
@@ -44,7 +44,7 @@ describe("buildV2CloudSnapshot", () => {
       id: "00000000-0000-4000-8000-000000000002",
       seasonId: "00000000-0000-4000-8000-000000000003",
       name: "Atlas QA",
-      currentGameweekId: gameweek.id,
+      currentGameweekId: "00000000-0000-4000-8000-000000000009",
       version: 1,
       bank: 100,
       teamValue: 100,
