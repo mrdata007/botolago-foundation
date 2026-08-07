@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { RankChangeIndicator } from "./RankChangeIndicator";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { findStandingClub } from "./standing-club";
 
 export function LeagueTable({
   standings,
@@ -23,14 +24,6 @@ export function LeagueTable({
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const [q, setQ] = useState("");
-  const crestFor = (s: LeagueStanding): Club | undefined => {
-    if (!clubs || clubs.length === 0) return undefined;
-    if (s.clubId) return clubs.find((c) => c.id === s.clubId);
-    // Deterministic visual badge so every row carries a crest slot.
-    let hash = 0;
-    for (const ch of s.managerId) hash = (hash * 31 + ch.charCodeAt(0)) % 100000;
-    return clubs[hash % clubs.length];
-  };
   const filtered = q.trim()
     ? standings.filter(
         (s) =>
@@ -97,7 +90,7 @@ export function LeagueTable({
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       {(() => {
-                        const club = crestFor(s);
+                        const club = findStandingClub(s, clubs);
                         return club ? (
                           <ClubCrest club={club} size="sm" />
                         ) : (
