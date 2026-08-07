@@ -14,7 +14,6 @@ import { MissingIdMappingError } from "./fantasy-id-map";
 import { removeKey, STORAGE_KEYS } from "@/lib/storage";
 import type { FantasyTeamDto } from "@/backend/fantasy/contracts";
 
-
 describe("buildV2CloudSnapshot", () => {
   it("uses the authoritative hub sequence for an empty cloud team", () => {
     const gameweek = {
