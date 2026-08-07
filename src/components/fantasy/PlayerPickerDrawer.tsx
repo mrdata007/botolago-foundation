@@ -16,8 +16,14 @@ import type { Club } from "@/types/domain";
 import type { FantasyPlayer, FixtureDifficulty, Position } from "@/types/fantasy";
 import { PlayerStatusBadge } from "./PlayerStatusBadge";
 
-type SortKey = "price" | "form" | "points" | "ownership";
+type SortKey = "price";
 type AvailabilityFilter = "all" | "available" | "flagged" | "unavailable";
+
+export function isPlayerIntrinsicallyBlocked(
+  player: Pick<FantasyPlayer, "status">,
+): boolean {
+  return player.status === "ineligible" || player.status === "unavailable";
+}
 
 export function PlayerPickerDrawer({
   open,
@@ -55,7 +61,7 @@ export function PlayerPickerDrawer({
   const [q, setQ] = useState("");
   const [clubId, setClubId] = useState<string>("");
   const [pos, setPos] = useState<Position | "">(position ?? "");
-  const [sort, setSort] = useState<SortKey>("points");
+  const [sort, setSort] = useState<SortKey>("price");
   const [availability, setAvailability] = useState<AvailabilityFilter>("all");
   const [detailId, setDetailId] = useState<string | null>(null);
   const absoluteMax = Math.max(0, ...players.map((player) => player.price));
@@ -90,20 +96,16 @@ export function PlayerPickerDrawer({
     }
     list = list.filter((player) => player.price <= priceCap + 0.001);
     list.sort((a, b) => {
-      if (sort === "price") return b.price - a.price;
-      if (sort === "form") return b.form - a.form;
-      if (sort === "ownership") return b.ownership - a.ownership;
-      return b.totalPoints - a.totalPoints;
+      const priceOrder = b.price - a.price;
+      if (priceOrder !== 0) return priceOrder;
+      return tr(a.name).localeCompare(tr(b.name), lang);
     });
     return list;
   }, [availability, clubId, lang, players, pos, position, priceCap, q, sort]);
 
   const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
   const sorts: { key: SortKey; labelKey: TranslationKey }[] = [
-    { key: "points", labelKey: "fantasy.picker.sort.points" },
-    { key: "form", labelKey: "fantasy.picker.sort.form" },
     { key: "price", labelKey: "fantasy.picker.sort.price" },
-    { key: "ownership", labelKey: "fantasy.picker.sort.ownership" },
   ];
   const detail = detailId ? players.find((player) => player.id === detailId) : null;
   const detailClub = detail ? clubs.find((club) => club.id === detail.clubId) : null;
@@ -118,8 +120,12 @@ export function PlayerPickerDrawer({
     ? clubs.find((club) => club.id === detailFixture.opponentClubId)
     : null;
   const disabledReason = detail
-    ? (disabledReasonFor?.(detail) ??
-      (disabledIds.includes(detail.id) ? t("fantasy.atlas.create.picker.already_selected") : null))
+    ? (isPlayerIntrinsicallyBlocked(detail)
+        ? t("fantasy.atlas.create.picker.block.unavailable")
+        : (disabledReasonFor?.(detail) ??
+          (disabledIds.includes(detail.id)
+            ? t("fantasy.atlas.create.picker.already_selected")
+            : null)))
     : null;
   const Back = dir === "rtl" ? ArrowRight : ArrowLeft;
 
@@ -171,19 +177,6 @@ export function PlayerPickerDrawer({
 
               <dl className="mt-4 grid grid-cols-2 gap-2">
                 <Metric label={t("fantasy.picker.sort.price")} value={nf.format(detail.price)} />
-                <Metric
-                  label={t("fantasy.picker.sort.points")}
-                  value={nf.format(detail.totalPoints)}
-                />
-                <Metric label={t("fantasy.form")} value={nf.format(detail.form)} />
-                <Metric
-                  label={t("fantasy.picker.sort.ownership")}
-                  value={
-                    typeof detail.selectionCount === "number"
-                      ? nf.format(detail.selectionCount)
-                      : `${nf.format(detail.ownership)}%`
-                  }
-                />
                 {typeof detail.chanceOfPlaying === "number" && (
                   <Metric
                     label={t("fantasy.atlas.create.picker.chance")}
@@ -357,11 +350,12 @@ export function PlayerPickerDrawer({
                 <ul className="grid gap-2">
                   {filtered.map((player) => {
                     const club = clubs.find((candidate) => candidate.id === player.clubId);
-                    const reason =
-                      disabledReasonFor?.(player) ??
-                      (disabledIds.includes(player.id)
-                        ? t("fantasy.atlas.create.picker.already_selected")
-                        : null);
+                    const reason = isPlayerIntrinsicallyBlocked(player)
+                      ? t("fantasy.atlas.create.picker.block.unavailable")
+                      : (disabledReasonFor?.(player) ??
+                        (disabledIds.includes(player.id)
+                          ? t("fantasy.atlas.create.picker.already_selected")
+                          : null));
                     return (
                       <li key={player.id}>
                         <button
@@ -386,8 +380,7 @@ export function PlayerPickerDrawer({
                               )}
                             </div>
                             <div className="mt-0.5 text-[11px] text-muted-foreground">
-                              {t(`player.pos.${player.position}` as TranslationKey)} ·{" "}
-                              {t("fantasy.form")} {nf.format(player.form)}
+                              {t(`player.pos.${player.position}` as TranslationKey)}
                             </div>
                             {reason && (
                               <div
@@ -401,9 +394,6 @@ export function PlayerPickerDrawer({
                           <div className="shrink-0 text-end">
                             <div className="text-sm font-black tabular-nums">
                               {nf.format(player.price)}
-                            </div>
-                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                              {player.totalPoints} pts
                             </div>
                           </div>
                         </button>
