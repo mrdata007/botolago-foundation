@@ -24,7 +24,10 @@ import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { LocalFantasyRepository } from "@/services/fantasy-owned-repository";
+import {
+  isV2FantasyPlayerId,
+  LocalFantasyRepository,
+} from "@/services/fantasy-owned-repository";
 import { importLocalTeamToCloud } from "@/services/fantasy-import-service";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
@@ -69,7 +72,9 @@ export function FantasyImportPrompt() {
       if (cancelled) return;
       const team = snapshot.team;
       const isValid =
-        team.squad.length === 15 && validateTeam(team.squad, team.formation, players).ok === true;
+        team.squad.length === 15 &&
+        team.squad.every((player) => isV2FantasyPlayerId(player.playerId)) &&
+        validateTeam(team.squad, team.formation, players).ok === true;
       setLocal({ team, players, isValid });
     })();
     return () => {
