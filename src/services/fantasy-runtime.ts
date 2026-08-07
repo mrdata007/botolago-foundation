@@ -334,7 +334,10 @@ export const fantasyService = {
     const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
     const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
     if (!gameweek) return undefined;
-    return mapFantasyPointsDto(sequence, await cloud.getPoints(current.team.id, gameweek.id, context()));
+    return mapFantasyPointsDto(
+      sequence,
+      await cloud.getPoints(current.team.id, gameweek.id, context()),
+    );
   },
   async getGameweekHistory(): Promise<GameweekResult[]> {
     if (mode() === "mock") return mockFantasyService.getGameweekHistory();
