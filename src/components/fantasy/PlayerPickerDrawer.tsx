@@ -101,7 +101,7 @@ export function PlayerPickerDrawer({
       return tr(a.name).localeCompare(tr(b.name), lang);
     });
     return list;
-  }, [availability, clubId, lang, players, pos, position, priceCap, q, sort]);
+  }, [availability, clubId, lang, players, pos, position, priceCap, q, sort, tr]);
 
   const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
   const sorts: { key: SortKey; labelKey: TranslationKey }[] = [
