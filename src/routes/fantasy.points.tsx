@@ -293,7 +293,12 @@ function PointsPage() {
     // Apply captain multiplier live when engine has a captain.
     const isCap = vm.effectiveCaptainId === playerId;
     const rawBase = b?.isCaptain ? Math.round((b.totalPoints ?? 0) / 2) : (b?.totalPoints ?? 0);
-    const shown = isCap ? rawBase * vm.captainMultiplier : metricNum;
+    const shown =
+      b?.multiplier !== undefined
+        ? metricNum
+        : isCap
+          ? rawBase * vm.captainMultiplier
+          : metricNum;
     return (
       <PlayerShirt
         player={p}
@@ -449,16 +454,18 @@ function PointsPage() {
         <span
           className={cn(
             "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
-            vm.source === "engine"
-              ? "bg-[color:var(--brand-primary)]/10 text-[color:var(--brand-primary)]"
-              : "bg-amber-500/15 text-amber-800",
+            vm.source === "legacy_mock"
+              ? "bg-amber-500/15 text-amber-800"
+              : "bg-[color:var(--brand-primary)]/10 text-[color:var(--brand-primary)]",
           )}
         >
-          {vm.source === "engine"
-            ? t("fantasy.points.engine_source")
-            : t("fantasy.points.legacy_source")}
+          {vm.source === "authoritative"
+            ? t("fantasy.points.authoritative_source")
+            : vm.source === "engine"
+              ? t("fantasy.points.engine_source")
+              : t("fantasy.points.legacy_source")}
         </span>
-        {isCurrent && vm.source === "engine" && (
+        {isCurrent && vm.source !== "legacy_mock" && (
           <button
             type="button"
             onClick={onRecompute}
@@ -537,7 +544,7 @@ function PointsPage() {
         <Stat label={t("fantasy.points.bench")} value={String(vm.originalBenchPoints)} />
       </div>
 
-      {vm.source === "engine" && (
+      {vm.source !== "legacy_mock" && (
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <MiniStat label={t("fantasy.points.captain_bonus")} value={`+${vm.captainBonus}`} />
           <MiniStat
@@ -634,10 +641,13 @@ function PointsPage() {
             {vm.breakdown.map((b) => {
               const p = playerOf(b.playerId);
               const isEffCap = vm.effectiveCaptainId === b.playerId;
-              const displayPoints = isEffCap
-                ? (b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints) *
-                  vm.captainMultiplier
-                : b.totalPoints;
+              const displayPoints =
+                b.multiplier !== undefined
+                  ? b.totalPoints
+                  : isEffCap
+                    ? (b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints) *
+                      vm.captainMultiplier
+                    : b.totalPoints;
               const onBench = benchIdsForDisplay.includes(b.playerId);
               const cameOn = cameOnIds.has(b.playerId);
               const subbedOff = subbedOffIds.has(b.playerId);
@@ -704,41 +714,70 @@ function PointsPage() {
       )}
 
       <SectionHeader title={t("fantasy.points.history")} />
-      <div className="grid gap-2 sm:grid-cols-2">
-        {historyItems.map((h) => (
-          <button
-            key={h.gameweek}
-            onClick={() => setSelectedGw(h.gameweek)}
-            className={cn(
-              "glass-surface glass-regular flex items-center justify-between rounded-2xl border border-[var(--glass-border)] px-3 py-2 text-start",
-              gw === h.gameweek && "ring-2 ring-[color:var(--brand-accent)]",
-            )}
-          >
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {t("fantasy.points.gameweek")}
-              </div>
-              <div className="text-sm font-black text-foreground">{h.gameweek}</div>
-              <div
-                className={cn(
-                  "mt-0.5 text-[9px] font-bold uppercase",
-                  h.source === "engine" ? "text-[color:var(--brand-primary)]" : "text-amber-700",
-                )}
-              >
-                {h.source === "engine"
+      <PointsHistory items={historyItems} selectedGameweek={gw} onSelect={setSelectedGw} />
+    </div>
+  );
+}
+
+type PointsHistoryItem = {
+  gameweek: number;
+  totalPoints: number;
+  source: PointsViewModel["source"];
+};
+
+function PointsHistory({
+  items,
+  selectedGameweek,
+  onSelect,
+}: {
+  items: PointsHistoryItem[];
+  selectedGameweek: number;
+  onSelect: (gameweek: number) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {items.map((history) => (
+        <button
+          key={history.gameweek}
+          type="button"
+          onClick={() => onSelect(history.gameweek)}
+          className={cn(
+            "glass-surface glass-regular flex items-center justify-between rounded-2xl border border-[var(--glass-border)] px-3 py-2 text-start",
+            selectedGameweek === history.gameweek &&
+              "ring-2 ring-[color:var(--brand-accent)]",
+          )}
+        >
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {t("fantasy.points.gameweek")}
+            </div>
+            <div className="text-sm font-black text-foreground">{history.gameweek}</div>
+            <div
+              className={cn(
+                "mt-0.5 text-[9px] font-bold uppercase",
+                history.source === "legacy_mock"
+                  ? "text-amber-700"
+                  : "text-[color:var(--brand-primary)]",
+              )}
+            >
+              {history.source === "authoritative"
+                ? t("fantasy.points.authoritative_source")
+                : history.source === "engine"
                   ? t("fantasy.points.engine_source")
                   : t("fantasy.points.legacy_source")}
-              </div>
             </div>
-            <div className="text-end">
-              <div className="text-lg font-black tabular-nums text-foreground">{h.totalPoints}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">
-                {t("fantasy.points.abbr")}
-              </div>
+          </div>
+          <div className="text-end">
+            <div className="text-lg font-black tabular-nums text-foreground">
+              {history.totalPoints}
             </div>
-          </button>
-        ))}
-      </div>
+            <div className="text-[10px] uppercase text-muted-foreground">
+              {t("fantasy.points.abbr")}
+            </div>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }
