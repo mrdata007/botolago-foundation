@@ -111,6 +111,7 @@ test.describe("staging-backed critical journeys", () => {
     await save.click();
     const success = page.getByTestId("atlas-creation-success");
     await expect(success).toBeVisible();
+    await expect(page).toHaveURL(/\/fantasy\/create\/review$/);
     await expect(success.getByText("QA Acceptance FC")).toBeVisible();
     await success.getByRole("button", { name: "Voir mon équipe" }).click();
     await page.waitForURL(/\/fantasy\/team$/);
