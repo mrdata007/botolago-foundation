@@ -38,7 +38,11 @@ export async function prepareImportPayload(deps: ImportServiceDeps): Promise<Sav
   if (!validation.ok) {
     throw new FantasyRepoError("validation", `import: ${validation.error}`);
   }
-  if (!deps.currentGameweekId || !Number.isInteger(deps.currentGameweek) || deps.currentGameweek < 1) {
+  if (
+    !deps.currentGameweekId ||
+    !Number.isInteger(deps.currentGameweek) ||
+    deps.currentGameweek < 1
+  ) {
     throw new FantasyRepoError("gameweek_unresolved", "No active V2 gameweek is available");
   }
 
