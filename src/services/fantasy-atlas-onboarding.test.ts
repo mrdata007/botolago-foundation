@@ -373,9 +373,7 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(configSource).toContain('screenshot: isProtectedStaging ? "off"');
     expect(workflowSource).not.toContain("playwright-report");
     expect(workflowSource).not.toContain("test-results/playwright/**/*.png");
-    expect(workflowSource).toContain(
-      "test-results/playwright/**/sanitized-browser-diagnostics*",
-    );
+    expect(workflowSource).toContain("test-results/playwright/**/sanitized-browser-diagnostics*");
     expect(supportSource).toContain("PROTECTED_E2E_VALUES");
     expect(supportSource).toContain('replaceAll(protectedValue, "[REDACTED]")');
   });
