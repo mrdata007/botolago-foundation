@@ -19,7 +19,6 @@ import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { fantasyService } from "./fantasy-mock";
 
-
 async function loadPlayersReal() {
   return await fantasyService.getPlayers();
 }
