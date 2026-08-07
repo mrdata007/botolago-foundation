@@ -2,9 +2,19 @@ import { expect, type Page, type TestInfo } from "@playwright/test";
 
 const SECRET_PATTERN =
   /(sb_(?:secret|publishable)_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|Bearer\s+\S+)/gi;
+const PROTECTED_E2E_VALUES = [
+  process.env.E2E_STAGING_FIRST_EMAIL,
+  process.env.E2E_STAGING_FIRST_PASSWORD,
+  process.env.E2E_STAGING_SECOND_EMAIL,
+  process.env.E2E_STAGING_SECOND_PASSWORD,
+].filter((value): value is string => Boolean(value));
 
 export function sanitize(value: string): string {
-  return value.replace(SECRET_PATTERN, "[REDACTED]");
+  let sanitized = value.replace(SECRET_PATTERN, "[REDACTED]");
+  for (const protectedValue of PROTECTED_E2E_VALUES) {
+    sanitized = sanitized.replaceAll(protectedValue, "[REDACTED]");
+  }
+  return sanitized;
 }
 
 type ObservationOptions = {
