@@ -707,6 +707,7 @@ export function buildV2CloudSnapshot(
     },
     lifecycle: {
       ...DEFAULT_STATE,
+      currentGameweek: gameweek?.sequence ?? DEFAULT_STATE.currentGameweek,
       chips: {
         active: team.chips.active,
         used: [...team.chips.used],
@@ -741,7 +742,6 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       vice_captain: !!player.isViceCaptain,
     }));
   }
-
 
 
   async loadSnapshot(): Promise<FantasySnapshot> {
