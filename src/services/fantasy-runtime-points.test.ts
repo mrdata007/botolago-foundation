@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { FantasyPointsDto } from "@/backend/fantasy/contracts";
-import { mapFantasyPointsDto } from "./fantasy-runtime";
+import { assertGlobalRankingsAvailable, mapFantasyPointsDto } from "./fantasy-runtime";
+import { FantasyError } from "@/backend/fantasy/errors";
 
 const dto: FantasyPointsDto = {
   teamId: "00000000-0000-4000-8000-000000000001",
@@ -52,5 +53,21 @@ describe("mapFantasyPointsDto", () => {
 
   it("returns no result before the server has calculated the gameweek", () => {
     expect(mapFantasyPointsDto(1, { ...dto, result: null })).toBeUndefined();
+  });
+});
+
+describe("assertGlobalRankingsAvailable", () => {
+  it("allows deterministic mock data and rejects a mislabeled cloud league", () => {
+    expect(() => assertGlobalRankingsAvailable("mock")).not.toThrow();
+
+    let caught: unknown;
+    try {
+      assertGlobalRankingsAvailable("supabase");
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FantasyError);
+    expect((caught as FantasyError).code).toBe("ranking_unavailable");
   });
 });
