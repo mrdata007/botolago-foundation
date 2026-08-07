@@ -207,7 +207,11 @@ function LeagueDetailPage() {
           {t("fantasy.leagues.standings")}
         </div>
         {standings.length > 0 ? (
-          <LeagueTable standings={standings} meId="me" clubs={clubsQ.data ?? []} />
+          <LeagueTable
+            standings={standings}
+            meId={source === "local" ? "me" : undefined}
+            clubs={clubsQ.data ?? []}
+          />
         ) : (
           <EmptyState />
         )}
