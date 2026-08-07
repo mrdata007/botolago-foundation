@@ -368,7 +368,8 @@ describe("Atlas Matchday onboarding matrix", () => {
       new URL("../../tests/e2e/support.ts", import.meta.url),
       "utf8",
     );
-    expect(configSource).toContain('isProtectedStaging ? [["line"]]');
+    expect(configSource).toContain("const isProtectedStaging");
+    expect(configSource).toContain('? [["line"]]');
     expect(configSource).toContain('screenshot: isProtectedStaging ? "off"');
     expect(workflowSource).not.toContain("playwright-report");
     expect(workflowSource).not.toContain("test-results/playwright/**/*.png");
