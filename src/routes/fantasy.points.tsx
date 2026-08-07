@@ -23,12 +23,6 @@ import {
   type PointsViewModel,
 } from "@/services/points-service";
 import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
-import { loadGameweekIndex, resolveGameweekId } from "@/services/fantasy-gameweek-resolver";
-import {
-  selectStableCloudResult,
-  buildCloudFinalizationPlan,
-  buildCloudAdvancePlan,
-} from "@/services/fantasy-cloud-finalize";
 import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-engine";
 import { toast } from "sonner";
 import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
@@ -44,10 +38,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/auth/AuthProvider";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
-import { DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
-import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
-import { ConflictBar } from "@/components/fantasy/ConflictBar";
 import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 
 export const Route = createFileRoute("/fantasy/points")({
@@ -81,18 +71,10 @@ function PointsPage() {
   const [state, setState] = useState<FantasyPersistedState>(() =>
     isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
   );
-  const [gw, setGw] = useState(() => state.currentGameweek);
+  const [selectedGw, setSelectedGw] = useState<number | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
-  const [conflictOpen, setConflictOpen] = useState(false);
-
-  const reloadLatest = async () => {
-    setConflictOpen(false);
-    if (isCloud) await owned.reload();
-    toast.success(t("fantasy.status.saved_short"));
-  };
-  const keepWorking = () => setConflictOpen(false);
 
   useEffect(() => {
     if (isCloud) {
@@ -114,10 +96,12 @@ function PointsPage() {
     queryFn: () => fantasyService.getCurrentGameweek(),
     enabled: owned.source !== "guest",
   });
+  const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
+  const gw = selectedGw ?? currentGw;
   const gwResultQ = useQuery({
     queryKey: ownedKey("gw-result", gw),
     queryFn: () => fantasyService.getGameweekResult(gw),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && currentGwQ.isSuccess,
   });
   const historyQ = useQuery({
     queryKey: ownedKey("gw-history"),
@@ -141,15 +125,6 @@ function PointsPage() {
     queryFn: () => footballService.getClubs(lang),
     enabled: owned.source !== "guest",
   });
-  // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
-  // when advancing. Not needed in local mode.
-  const gwIndexQ = useQuery({
-    queryKey: ["gw-index", DEFAULT_SEASON],
-    queryFn: () => loadGameweekIndex(),
-    enabled: isCloud,
-  });
-
-  const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
   const isCurrent = gw === currentGw;
   const deadline = currentGwQ.data ? evaluateDeadline(currentGwQ.data.deadline) : null;
   const deadlineLocked = deadline?.isLocked ?? false;
@@ -369,79 +344,8 @@ function PointsPage() {
         return;
       }
 
-      if (isCloud && owned.snapshot?.currentGameweekId) {
-        // H6 — Cloud-authoritative finalize via pure planner.
-        try {
-          const plan = buildCloudFinalizationPlan({
-            snapshot: owned.snapshot,
-            gw,
-            players: playersQ.data,
-            breakdown: raw.breakdown,
-            averagePoints: raw.averagePoints,
-            highestPoints: raw.highestPoints,
-          });
-
-          // Short-circuit: server already finalized this GW.
-          if (plan.skipReason === "already_finalized") {
-            toast.success(t("fantasy.points.already_finalized"));
-            setConfirmFinalize(false);
-            return;
-          }
-
-          const res = await runOwnedMutation(
-            {
-              qc,
-              scope: owned.scope,
-              setMutationStatus: owned.setMutationStatus,
-              nextMutationSeq: owned.nextMutationSeq,
-              setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
-              replaceSnapshot: owned.replaceSnapshot,
-              invalidateOwned: owned.invalidateOwned,
-            },
-            {
-              action: () =>
-                owned.repo.finalizeGameweek({
-                  gameweek: gw,
-                  gameweekId: owned.snapshot!.currentGameweekId!,
-                  expectedVersion: owned.snapshot!.version,
-                  season: DEFAULT_SEASON,
-                  chipFinalize: plan.chipFinalize,
-                  result: plan.result,
-                  postTeam: {
-                    formation: plan.postTeam.formation,
-                    bank: plan.postTeam.bank,
-                    freeTransfers: plan.postTeam.freeTransfers,
-                    pendingTransfers: plan.postTeam.pendingTransfers,
-                    squad: plan.postTeam.squad,
-                    purchasePrices: plan.postPurchasePrices,
-                    currentGameweekId: owned.snapshot!.currentGameweekId!,
-                    lifecycle: plan.nextLifecycle,
-                  },
-                }),
-              args: undefined,
-              savedIdleAfterMs: 2400,
-            },
-          );
-          if (res.ok) {
-            setConflictOpen(false);
-            if (plan.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
-            else toast.success(t("fantasy.points.finalize_success"));
-          } else {
-            const c = classifyRepoError(res.error);
-            if (c.isConflict) setConflictOpen(true);
-            const key: TranslationKey = c.isConflict
-              ? "fantasy.error.version_conflict"
-              : c.isNetwork
-                ? "fantasy.error.network"
-                : c.isPermission
-                  ? "fantasy.error.permission"
-                  : "fantasy.points.lifecycle_error";
-            toast.error(t(key));
-          }
-        } catch {
-          toast.error(t("fantasy.points.lifecycle_error"));
-        }
-        setConfirmFinalize(false);
+      if (isCloud) {
+        toast.error(t("fantasy.error.permission"));
         return;
       }
 
@@ -472,85 +376,8 @@ function PointsPage() {
       if (!team) return;
       const target = currentGw + 1;
 
-      if (isCloud && owned.snapshot) {
-        // H6 — Cloud-authoritative advance via saveTeam with resolved next-GW UUID.
-        const idx = gwIndexQ.data;
-        if (!idx) {
-          toast.error(t("fantasy.error.network"));
-          return;
-        }
-        let nextGameweekId: string | null = null;
-        try {
-          nextGameweekId = resolveGameweekId(idx, { number: target, season: DEFAULT_SEASON });
-        } catch {
-          nextGameweekId = null;
-        }
-        if (!nextGameweekId) {
-          toast.error(t("fantasy.points.lifecycle_error"));
-          return;
-        }
-        const plan = buildCloudAdvancePlan({
-          snapshot: owned.snapshot,
-          nextGameweekNumber: target,
-          nextGameweekId,
-        });
-        if (!plan.ok) {
-          toast.error(
-            t(
-              plan.error === "must_finalize_first"
-                ? "fantasy.points.must_finalize_first"
-                : "fantasy.points.lifecycle_error",
-            ),
-          );
-          return;
-        }
-
-        const res = await runOwnedMutation(
-          {
-            qc,
-            scope: owned.scope,
-            setMutationStatus: owned.setMutationStatus,
-            nextMutationSeq: owned.nextMutationSeq,
-            setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
-            replaceSnapshot: owned.replaceSnapshot,
-            invalidateOwned: owned.invalidateOwned,
-          },
-          {
-            action: () =>
-              owned.repo.saveTeam({
-                teamName: team.teamName,
-                managerName: team.managerName,
-                formation: plan.postTeam.formation,
-                bank: plan.postTeam.bank,
-                freeTransfers: plan.postTeam.freeTransfers,
-                pendingTransfers: plan.postTeam.pendingTransfers,
-                squad: plan.postTeam.squad,
-                purchasePrices: plan.postPurchasePrices,
-                currentGameweekId: plan.currentGameweekId,
-                lifecycle: plan.nextLifecycle,
-                expectedVersion: plan.expectedVersion,
-              }),
-            args: undefined,
-            savedIdleAfterMs: 2400,
-          },
-        );
-        if (res.ok) {
-          setGw(target);
-          qc.invalidateQueries({ queryKey: ["current-gw"] });
-          toast.success(t("fantasy.points.advance_success"));
-        } else {
-          const c = classifyRepoError(res.error);
-          if (c.isConflict) setConflictOpen(true);
-          const key: TranslationKey = c.isConflict
-            ? "fantasy.error.version_conflict"
-            : c.isNetwork
-              ? "fantasy.error.network"
-              : c.isPermission
-                ? "fantasy.error.permission"
-                : "fantasy.points.lifecycle_error";
-          toast.error(t(key));
-        }
-        setConfirmAdvance(false);
+      if (isCloud) {
+        toast.error(t("fantasy.error.permission"));
         return;
       }
 
@@ -567,7 +394,7 @@ function PointsPage() {
         return;
       }
       setState(fantasyStateStore.read());
-      setGw(target);
+      setSelectedGw(target);
       qc.invalidateQueries({ queryKey: ownedKey("team") });
       qc.invalidateQueries({ queryKey: ownedKey("summary") });
       qc.invalidateQueries({ queryKey: ["current-gw"] });
@@ -589,6 +416,9 @@ function PointsPage() {
       source: (stored ? "engine" : "legacy_mock") as "engine" | "legacy_mock",
     };
   });
+  const availableGameweeks = Array.from(
+    new Set([currentGw, ...historyItems.map((item) => item.gameweek)]),
+  ).sort((a, b) => a - b);
 
   return (
     <div>
@@ -596,7 +426,7 @@ function PointsPage() {
         <h1 className="text-xl font-black text-foreground">
           <span className="text-brand">{t("fantasy.points.title")}</span>
         </h1>
-        <GameweekSelector value={gw} min={11} max={14} onChange={setGw} />
+        <GameweekSelector value={gw} options={availableGameweeks} onChange={setSelectedGw} />
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -652,25 +482,6 @@ function PointsPage() {
           </button>
         )}
       </div>
-
-      {/* H6 — Live status region (points route has no editable drafts; badge stays silent). */}
-      {isCloud && (
-        <div className="mt-3">
-          <UnsavedBadge visible={false} />
-        </div>
-      )}
-
-      {/* H6 — Version-conflict resolution bar. */}
-      {isCloud && (
-        <div className="mt-2">
-          <ConflictBar
-            visible={conflictOpen}
-            onReloadLatest={reloadLatest}
-            onKeepWorking={keepWorking}
-            busy={owned.mutationStatus === "saving"}
-          />
-        </div>
-      )}
 
       <AlertDialog open={confirmFinalize} onOpenChange={setConfirmFinalize}>
         <AlertDialogContent>
@@ -881,7 +692,7 @@ function PointsPage() {
         {historyItems.map((h) => (
           <button
             key={h.gameweek}
-            onClick={() => setGw(h.gameweek)}
+            onClick={() => setSelectedGw(h.gameweek)}
             className={cn(
               "glass-surface glass-regular flex items-center justify-between rounded-2xl border border-[var(--glass-border)] px-3 py-2 text-start",
               gw === h.gameweek && "ring-2 ring-[color:var(--brand-accent)]",
