@@ -12,6 +12,7 @@ import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { FantasyCloudError } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { removeKey, STORAGE_KEYS } from "@/lib/storage";
+import type { FantasyTeamDto } from "@/backend/fantasy/contracts";
 
 
 describe("buildV2CloudSnapshot", () => {
@@ -40,13 +41,18 @@ describe("buildV2CloudSnapshot", () => {
       status: "open",
       pointsState: "provisional",
     } as const;
-    const team = {
+    const team: FantasyTeamDto = {
       id: "00000000-0000-4000-8000-000000000002",
+      seasonId: "00000000-0000-4000-8000-000000000003",
       name: "Atlas QA",
       currentGameweekId: gameweek.id,
       version: 1,
       bank: 100,
+      teamValue: 100,
       freeTransfers: 1,
+      status: "active",
+      createdAt: "2026-08-07T00:00:00.000Z",
+      updatedAt: "2026-08-07T00:00:00.000Z",
       squad: [],
       lineup: [],
       chips: { active: null, activeCancellable: false, used: [] },
