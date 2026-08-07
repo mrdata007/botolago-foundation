@@ -55,14 +55,14 @@ function RankingsPage() {
   const summaryQ = useQuery({
     queryKey: key("summary"),
     queryFn: () => fantasyService.getSummary(),
-    enabled: source !== "guest",
+    enabled: source === "local",
   });
   const clubsQ = useQuery({
     queryKey: ["clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
 
-  const summary = source === "guest" ? null : (summaryQ.data ?? null);
+  const summary = source === "local" ? (summaryQ.data ?? null) : null;
   const me: LeagueStanding | undefined = summary
     ? {
         managerId: "me",
@@ -253,11 +253,8 @@ function PagerButton({
 }
 
 function crestFor(row: LeagueStanding, clubs?: Club[]): Club | undefined {
-  if (!clubs || clubs.length === 0) return undefined;
-  if (row.clubId) return clubs.find((club) => club.id === row.clubId);
-  let h = 0;
-  for (const ch of row.managerId) h = (h * 31 + ch.charCodeAt(0)) % 100000;
-  return clubs[h % clubs.length];
+  if (!clubs || !row.clubId) return undefined;
+  return clubs.find((club) => club.id === row.clubId);
 }
 
 function RankingRow({
