@@ -186,7 +186,6 @@ function PointsPage() {
     new Set([currentGw, ...historyItems.map((item) => item.gameweek)]),
   ).sort((a, b) => a - b);
 
-
   if (owned.source === "guest") {
     return authStatus === "loading" ? (
       <LoadingState />
@@ -294,11 +293,7 @@ function PointsPage() {
     const isCap = vm.effectiveCaptainId === playerId;
     const rawBase = b?.isCaptain ? Math.round((b.totalPoints ?? 0) / 2) : (b?.totalPoints ?? 0);
     const shown =
-      b?.multiplier !== undefined
-        ? metricNum
-        : isCap
-          ? rawBase * vm.captainMultiplier
-          : metricNum;
+      b?.multiplier !== undefined ? metricNum : isCap ? rawBase * vm.captainMultiplier : metricNum;
     return (
       <PlayerShirt
         player={p}
@@ -744,8 +739,7 @@ function PointsHistory({
           onClick={() => onSelect(history.gameweek)}
           className={cn(
             "glass-surface glass-regular flex items-center justify-between rounded-2xl border border-[var(--glass-border)] px-3 py-2 text-start",
-            selectedGameweek === history.gameweek &&
-              "ring-2 ring-[color:var(--brand-accent)]",
+            selectedGameweek === history.gameweek && "ring-2 ring-[color:var(--brand-accent)]",
           )}
         >
           <div className="min-w-0">
