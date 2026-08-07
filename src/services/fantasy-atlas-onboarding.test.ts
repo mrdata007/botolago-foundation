@@ -344,6 +344,41 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(source.indexOf("setCreated({")).toBeGreaterThan(source.indexOf("if (result.ok)"));
   });
 
+  it("keeps the creation draft identity stable after authoritative cloud persistence", () => {
+    const providerSource = readFileSync(
+      new URL("../components/fantasy/AtlasCreateProvider.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(providerSource).toContain('teamId: "new"');
+    expect(providerSource).toContain("baseVersion: 0");
+    expect(providerSource).not.toContain("owned.snapshot?.teamId");
+    expect(providerSource).not.toContain("owned.snapshot?.version");
+  });
+
+  it("retains only sanitized diagnostics from protected staging runs", () => {
+    const configSource = readFileSync(
+      new URL("../../playwright.config.ts", import.meta.url),
+      "utf8",
+    );
+    const workflowSource = readFileSync(
+      new URL("../../.github/workflows/phase65-functional-acceptance.yml", import.meta.url),
+      "utf8",
+    );
+    const supportSource = readFileSync(
+      new URL("../../tests/e2e/support.ts", import.meta.url),
+      "utf8",
+    );
+    expect(configSource).toContain('isProtectedStaging ? [["line"]]');
+    expect(configSource).toContain('screenshot: isProtectedStaging ? "off"');
+    expect(workflowSource).not.toContain("playwright-report");
+    expect(workflowSource).not.toContain("test-results/playwright/**/*.png");
+    expect(workflowSource).toContain(
+      "test-results/playwright/**/sanitized-browser-diagnostics*",
+    );
+    expect(supportSource).toContain("PROTECTED_E2E_VALUES");
+    expect(supportSource).toContain('replaceAll(protectedValue, "[REDACTED]")');
+  });
+
   it("uses the real BotolaGO logo asset in the shared team shirt", () => {
     const source = readFileSync(
       new URL("../components/fantasy/AtlasTeamShirt.tsx", import.meta.url),
