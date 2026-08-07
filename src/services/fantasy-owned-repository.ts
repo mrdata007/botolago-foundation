@@ -722,8 +722,7 @@ export function buildV2CloudSnapshot(
   };
 }
 
-const V2_FANTASY_PLAYER_ID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const V2_FANTASY_PLAYER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isV2FantasyPlayerId(playerId: string): boolean {
   return V2_FANTASY_PLAYER_ID.test(playerId);
