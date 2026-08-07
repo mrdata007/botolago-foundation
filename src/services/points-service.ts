@@ -18,8 +18,8 @@ import {
 
 export interface PointsViewModel {
   gameweek: number;
-  /** "engine" when derived from computeGameweekResult; "legacy_mock" when only totals exist. */
-  source: "engine" | "legacy_mock";
+  /** Whether totals come from the local engine, V2 backend, or legacy mock fallback. */
+  source: "engine" | "authoritative" | "legacy_mock";
   totalPoints: number;
   /** XI points including captain multiplier BEFORE the transfer hit is subtracted. */
   rawXiPoints: number;
@@ -142,6 +142,61 @@ export function buildPointsViewModel(input: BuildInputs): PointsViewModel {
     averagePoints: input.averagePoints,
     highestPoints: input.highestPoints,
     computedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Maps an already-calculated V2 result without running the local scoring
+ * engine. The server total, transfer hit, chip, and player multipliers remain
+ * authoritative for current and historical gameweeks.
+ */
+export function buildAuthoritativePointsViewModel(gw: GameweekResult): PointsViewModel {
+  const originalBenchIds = gw.breakdown
+    .filter((player) => player.isBench)
+    .map((player) => player.playerId);
+  const originalStartingIds = gw.breakdown
+    .filter((player) => !player.isBench)
+    .map((player) => player.playerId);
+  const effectiveCaptain =
+    gw.breakdown.find((player) => (player.multiplier ?? 0) > 1) ??
+    gw.breakdown.find((player) => player.playerId === gw.captainId);
+  const declaredCaptain = gw.breakdown.find((player) => player.isCaptain);
+  const captainMultiplier = effectiveCaptain?.multiplier ?? (effectiveCaptain ? 2 : 1);
+  const captainBasePoints =
+    effectiveCaptain && captainMultiplier > 0
+      ? Math.round(effectiveCaptain.totalPoints / captainMultiplier)
+      : 0;
+  const transferHitPoints = gw.transferHitPoints ?? 0;
+  const activeChip = gw.activeChip ?? null;
+
+  return {
+    gameweek: gw.gameweek,
+    source: "authoritative",
+    totalPoints: gw.totalPoints,
+    rawXiPoints: gw.totalPoints + transferHitPoints,
+    captainBonus: gw.captainPoints ?? captainBasePoints * (captainMultiplier - 1),
+    effectiveCaptainId: effectiveCaptain?.playerId ?? null,
+    captainMultiplier,
+    captainTookOver:
+      !!declaredCaptain &&
+      !!effectiveCaptain &&
+      declaredCaptain.playerId !== effectiveCaptain.playerId,
+    originalBenchPoints: gw.benchPoints,
+    benchBoostContribution: activeChip === "bench_boost" ? gw.benchPoints : 0,
+    tripleCaptainContribution: activeChip === "triple_captain" ? captainBasePoints : 0,
+    transferHitPoints,
+    activeChip,
+    effectiveStartingIds: originalStartingIds,
+    originalBenchIds,
+    autoSubs: [],
+    breakdown: gw.breakdown,
+    averagePoints: gw.averagePoints,
+    highestPoints: gw.highestPoints,
+    computedAt: gw.finalizedAt ?? new Date().toISOString(),
+    finalized: gw.finalized,
+    finalizedAt: gw.finalizedAt,
+    chipUsed: gw.finalized ? activeChip : undefined,
+    hitPointsApplied: gw.finalized ? transferHitPoints : undefined,
   };
 }
 
