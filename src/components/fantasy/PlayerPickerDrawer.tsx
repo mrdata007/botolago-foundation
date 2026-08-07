@@ -19,9 +19,7 @@ import { PlayerStatusBadge } from "./PlayerStatusBadge";
 type SortKey = "price";
 type AvailabilityFilter = "all" | "available" | "flagged" | "unavailable";
 
-export function isPlayerIntrinsicallyBlocked(
-  player: Pick<FantasyPlayer, "status">,
-): boolean {
+export function isPlayerIntrinsicallyBlocked(player: Pick<FantasyPlayer, "status">): boolean {
   return player.status === "ineligible" || player.status === "unavailable";
 }
 
@@ -101,7 +99,7 @@ export function PlayerPickerDrawer({
       return tr(a.name).localeCompare(tr(b.name), lang);
     });
     return list;
-  }, [availability, clubId, lang, players, pos, position, priceCap, q, sort, tr]);
+  }, [availability, clubId, lang, players, pos, position, priceCap, q, tr]);
 
   const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
   const sorts: { key: SortKey; labelKey: TranslationKey }[] = [
@@ -120,12 +118,12 @@ export function PlayerPickerDrawer({
     ? clubs.find((club) => club.id === detailFixture.opponentClubId)
     : null;
   const disabledReason = detail
-    ? (isPlayerIntrinsicallyBlocked(detail)
-        ? t("fantasy.atlas.create.picker.block.unavailable")
-        : (disabledReasonFor?.(detail) ??
-          (disabledIds.includes(detail.id)
-            ? t("fantasy.atlas.create.picker.already_selected")
-            : null)))
+    ? isPlayerIntrinsicallyBlocked(detail)
+      ? t("fantasy.atlas.create.picker.block.unavailable")
+      : (disabledReasonFor?.(detail) ??
+        (disabledIds.includes(detail.id)
+          ? t("fantasy.atlas.create.picker.already_selected")
+          : null))
     : null;
   const Back = dir === "rtl" ? ArrowRight : ArrowLeft;
 
