@@ -47,6 +47,7 @@ import {
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import type {
   FantasyChip,
+  FantasyHubDto,
   FantasyTeamDto,
   FantasyTransferPreviewDto,
   LineupSelection,
@@ -638,6 +639,88 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
   }
 }
 
+export function buildV2CloudSnapshot(
+  team: FantasyTeamDto | null,
+  gameweek: FantasyHubDto["gameweek"],
+): FantasySnapshot {
+  if (!team) {
+    return {
+      teamId: null,
+      version: 0,
+      team: {
+        managerName: "",
+        teamName: "",
+        formation: "4-4-2",
+        squad: [],
+        bank: 100,
+        freeTransfers: 1,
+        pendingTransfers: 0,
+      },
+      lifecycle: {
+        ...DEFAULT_STATE,
+        currentGameweek: gameweek?.sequence ?? DEFAULT_STATE.currentGameweek,
+      },
+      finalizedResults: {},
+      source: "cloud",
+      currentGameweekId: gameweek?.id ?? null,
+      purchasePrices: {},
+      activeChipCancellable: false,
+      emptyCloudSquad: true,
+    };
+  }
+  const squad = team.lineup.map((player) => ({
+    playerId: player.fantasyPlayerId,
+    slot: player.slot === "starter" ? player.slotOrder : player.slotOrder + 11,
+    isCaptain: player.captain || undefined,
+    isViceCaptain: player.viceCaptain || undefined,
+  }));
+  const purchasePrices = Object.fromEntries(
+    team.squad.map((player) => [player.fantasyPlayerId, player.purchasePrice]),
+  );
+  const starterCounts = team.lineup
+    .filter((player) => player.slot === "starter")
+    .reduce<Record<string, number>>((counts, player) => {
+      const position = team.squad.find(
+        (candidate) => candidate.fantasyPlayerId === player.fantasyPlayerId,
+      )?.position;
+      if (position && position !== "GK") counts[position] = (counts[position] ?? 0) + 1;
+      return counts;
+    }, {});
+  const formation =
+    (Object.entries(FORMATIONS).find(
+      ([, value]) =>
+        value.DEF === starterCounts.DEF &&
+        value.MID === starterCounts.MID &&
+        value.FWD === starterCounts.FWD,
+    )?.[0] as FormationKey | undefined) ?? "4-4-2";
+  return {
+    teamId: team.id,
+    version: team.version,
+    team: {
+      managerName: "",
+      teamName: team.name,
+      formation,
+      squad,
+      bank: team.bank,
+      freeTransfers: team.freeTransfers,
+      pendingTransfers: 0,
+    },
+    lifecycle: {
+      ...DEFAULT_STATE,
+      chips: {
+        active: team.chips.active,
+        used: [...team.chips.used],
+      },
+    },
+    finalizedResults: {},
+    source: "cloud",
+    currentGameweekId: team.currentGameweekId ?? gameweek?.id ?? null,
+    purchasePrices,
+    activeChipCancellable: team.chips.activeCancellable,
+    emptyCloudSquad: squad.length === 0,
+  };
+}
+
 /** Production V2 compatibility adapter. It never reads or writes legacy public Fantasy tables. */
 export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   readonly source: FantasyRepoSource = "cloud";
@@ -659,86 +742,12 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     }));
   }
 
-  private snapshot(team: FantasyTeamDto | null, gameweekId: string | null): FantasySnapshot {
-    if (!team) {
-      return {
-        teamId: null,
-        version: 0,
-        team: {
-          managerName: "",
-          teamName: "",
-          formation: "4-4-2",
-          squad: [],
-          bank: 100,
-          freeTransfers: 1,
-          pendingTransfers: 0,
-        },
-        lifecycle: { ...DEFAULT_STATE },
-        finalizedResults: {},
-        source: "cloud",
-        currentGameweekId: gameweekId,
-        purchasePrices: {},
-        activeChipCancellable: false,
-        emptyCloudSquad: true,
-      };
-    }
-    const squad = team.lineup.map((player) => ({
-      playerId: player.fantasyPlayerId,
-      slot: player.slot === "starter" ? player.slotOrder : player.slotOrder + 11,
-      isCaptain: player.captain || undefined,
-      isViceCaptain: player.viceCaptain || undefined,
-    }));
-    const purchasePrices = Object.fromEntries(
-      team.squad.map((player) => [player.fantasyPlayerId, player.purchasePrice]),
-    );
-    const starterCounts = team.lineup
-      .filter((player) => player.slot === "starter")
-      .reduce<Record<string, number>>((counts, player) => {
-        const position = team.squad.find(
-          (candidate) => candidate.fantasyPlayerId === player.fantasyPlayerId,
-        )?.position;
-        if (position && position !== "GK") counts[position] = (counts[position] ?? 0) + 1;
-        return counts;
-      }, {});
-    const formation =
-      (Object.entries(FORMATIONS).find(
-        ([, value]) =>
-          value.DEF === starterCounts.DEF &&
-          value.MID === starterCounts.MID &&
-          value.FWD === starterCounts.FWD,
-      )?.[0] as FormationKey | undefined) ?? "4-4-2";
-    return {
-      teamId: team.id,
-      version: team.version,
-      team: {
-        managerName: "",
-        teamName: team.name,
-        formation,
-        squad,
-        bank: team.bank,
-        freeTransfers: team.freeTransfers,
-        pendingTransfers: 0,
-      },
-      lifecycle: {
-        ...DEFAULT_STATE,
-        chips: {
-          active: team.chips.active,
-          used: [...team.chips.used],
-        },
-      },
-      finalizedResults: {},
-      source: "cloud",
-      currentGameweekId: team.currentGameweekId,
-      purchasePrices,
-      activeChipCancellable: team.chips.activeCancellable,
-      emptyCloudSquad: squad.length === 0,
-    };
-  }
+
 
   async loadSnapshot(): Promise<FantasySnapshot> {
     try {
       const hub = await this.repository.getHub("fr", this.context());
-      return this.snapshot(hub.team, hub.gameweek?.id ?? null);
+      return buildV2CloudSnapshot(hub.team, hub.gameweek);
     } catch (error) {
       throw toRepoError(error);
     }
