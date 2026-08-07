@@ -10,7 +10,7 @@ const tone = {
   suspended: "bg-neutral-800/10 text-neutral-800 border-neutral-800/30",
   ineligible: "bg-red-500/10 text-red-800 border-red-500/30",
   unavailable: "bg-neutral-500/10 text-neutral-700 border-neutral-500/30",
-} as const;
+} satisfies Record<Player["status"], string>;
 
 export function PlayerStatusBadge({
   status,
