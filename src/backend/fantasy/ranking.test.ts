@@ -41,8 +41,8 @@ describe("Fantasy ranking tie-breaks v1.0", () => {
       latestFinalizedGameweekScore: null,
     };
 
-    expect(
-      [missing, scored].sort(compareFantasyRank).map((candidate) => candidate.teamId),
-    ).toEqual([scored.teamId, missing.teamId]);
+    expect([missing, scored].sort(compareFantasyRank).map((candidate) => candidate.teamId)).toEqual(
+      [scored.teamId, missing.teamId],
+    );
   });
 });
