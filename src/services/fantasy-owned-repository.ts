@@ -658,7 +658,7 @@ export function buildV2CloudSnapshot(
       },
       lifecycle: {
         ...DEFAULT_STATE,
-        currentGameweek: gameweek?.sequence ?? DEFAULT_STATE.currentGameweek,
+        currentGameweek: gameweek?.sequence ?? 1,
       },
       finalizedResults: {},
       source: "cloud",
@@ -707,7 +707,7 @@ export function buildV2CloudSnapshot(
     },
     lifecycle: {
       ...DEFAULT_STATE,
-      currentGameweek: gameweek?.sequence ?? DEFAULT_STATE.currentGameweek,
+      currentGameweek: gameweek?.sequence ?? 1,
       chips: {
         active: team.chips.active,
         used: [...team.chips.used],
