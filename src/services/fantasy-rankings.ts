@@ -124,7 +124,7 @@ export function buildGlobalRankings(size = GLOBAL_RANKINGS_SIZE): LeagueStanding
 function sortRows(rows: LeagueStanding[], sort: RankingsSort): LeagueStanding[] {
   if (sort === "overall") return rows;
   return [...rows]
-    .sort((a, b) => b.gameweekScore - a.gameweekScore || a.totalScore - b.totalScore)
+    .sort((a, b) => b.gameweekScore - a.gameweekScore || b.totalScore - a.totalScore)
     .map((row, index) => ({ ...row, rank: index + 1, previousRank: row.rank }));
 }
 
@@ -162,7 +162,7 @@ export function selectRankingsPage(
   return {
     rows: filtered.slice(start, start + pageSize),
     total,
-    podium: sorted.slice(0, 3),
+    podium: board.slice(0, 3),
     myRank: id ? sorted.find((row) => row.managerId === id) : undefined,
   };
 }
