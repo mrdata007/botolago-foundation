@@ -39,6 +39,7 @@ jobs:
       - run: bunx playwright install --with-deps chromium
       - name: Run anonymous and Atlas browser acceptance
         env:
+          E2E_USE_BUILT_PREVIEW: "1"
           VITE_APP_MODE: demo
           VITE_AUTH_MODE: mock
           VITE_FOOTBALL_DATA_MODE: mock

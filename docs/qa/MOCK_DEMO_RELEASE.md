@@ -49,15 +49,16 @@ disable the duplicate branch build.
 Require all of the following on the exact deployed commit:
 
 1. normal live production build and the isolated demo build both pass;
-2. unit, type, lint, database, anonymous, Atlas, and demo-containment checks pass;
-3. the persistent bilingual demo notice is visible on every route;
-4. synthetic match activity says “Simulation” / “محاكاة”, and rankings identify
+2. Playwright serves the compiled demo with `vite preview`, not the development server;
+3. unit, type, lint, database, anonymous, Atlas, and demo-containment checks pass;
+4. the persistent bilingual demo notice is visible on every route and root error state;
+5. synthetic match activity says “Simulation” / “محاكاة”, and rankings identify
    fictional managers;
-5. `robots=noindex,nofollow,noarchive` is present;
-6. no browser request reaches Supabase, SportsMonks, or the inert demo host;
-7. `/admin`, OAuth consent, `/mcp`, MCP metadata, list, and invoke endpoints
-   cannot execute in demo mode;
-8. the Vercel deployment Git SHA equals the reviewed PR head.
+6. `robots=noindex,nofollow,noarchive` is present;
+7. no browser request reaches Supabase, SportsMonks, or the inert demo host;
+8. Admin routes and server functions, OAuth consent, `/mcp`, MCP metadata, list,
+   and invoke endpoints cannot execute in demo mode;
+9. the Vercel deployment Git SHA equals the reviewed PR head.
 
 Never promote this artifact, alias it to the production domain, enable schedules,
 or describe it as a live-data launch.

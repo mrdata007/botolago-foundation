@@ -98,7 +98,8 @@ export class LocalMockAuthService implements AuthService {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
     const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
-    if (!users.find((u) => u.email.toLowerCase() === MOCK_DEMO_EMAIL)) {
+    const existingDemo = users.find((u) => u.email.toLowerCase() === MOCK_DEMO_EMAIL);
+    if (!existingDemo) {
       users.push({
         id: uid("usr"),
         email: MOCK_DEMO_EMAIL,
@@ -113,8 +114,10 @@ export class LocalMockAuthService implements AuthService {
         favoriteClubId: mockFootballTeamId("war"),
         passwordDigest: digest(MOCK_DEMO_PASSWORD),
       });
-      safeSet(K_USERS, users);
+    } else if (existingDemo.favoriteClubId === "wac") {
+      existingDemo.favoriteClubId = mockFootballTeamId("war");
     }
+    safeSet(K_USERS, users);
     this.cachedSession = this.readSession();
   }
 

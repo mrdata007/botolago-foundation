@@ -25,6 +25,7 @@ import { RotateCcw, Home } from "lucide-react";
 function NotFoundComponent() {
   return (
     <I18nProvider>
+      <AuthModeBadge />
       <NotFoundBody />
     </I18nProvider>
   );
@@ -60,6 +61,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
   return (
     <I18nProvider>
+      <AuthModeBadge />
       <ErrorBody reset={reset} />
     </I18nProvider>
   );

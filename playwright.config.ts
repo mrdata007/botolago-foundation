@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 const externalBaseUrl = process.env.E2E_BASE_URL;
 const isProtectedStaging = Boolean(process.env.E2E_STAGING_FIRST_EMAIL);
+const useBuiltPreview = process.env.E2E_USE_BUILT_PREVIEW === "1";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -28,7 +29,9 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: "bun run dev -- --host 127.0.0.1 --port 4173",
+        command: useBuiltPreview
+          ? "bun run preview -- --host 127.0.0.1 --port 4173"
+          : "bun run dev -- --host 127.0.0.1 --port 4173",
         url: "http://127.0.0.1:4173",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
