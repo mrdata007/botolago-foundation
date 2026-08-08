@@ -112,9 +112,7 @@ function RankingsPage() {
       <SectionHeader
         eyebrow={t("fantasy.tab.rankings")}
         title={t("fantasy.rankings.title")}
-        subtitle={t(
-          IS_DEMO_MODE ? "fantasy.rankings.demo_subtitle" : "fantasy.rankings.subtitle",
-        )}
+        subtitle={t(IS_DEMO_MODE ? "fantasy.rankings.demo_subtitle" : "fantasy.rankings.subtitle")}
       />
 
       {rankingsQ.isError ? (

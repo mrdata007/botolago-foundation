@@ -22,10 +22,7 @@ export function selectNewsDataMode(
   demoMode = IS_DEMO_MODE,
 ): NewsDataMode {
   if (demoMode && configuredMode !== "mock")
-    throw new NewsError(
-      "data_unavailable",
-      "Demo News requires VITE_NEWS_DATA_MODE=mock.",
-    );
+    throw new NewsError("data_unavailable", "Demo News requires VITE_NEWS_DATA_MODE=mock.");
   if (production && !demoMode && configuredMode !== "supabase")
     throw new NewsError(
       "data_unavailable",

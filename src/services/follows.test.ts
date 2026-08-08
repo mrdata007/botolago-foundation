@@ -51,9 +51,7 @@ const context = {
 describe("FollowService", () => {
   it("reads canonical followed-team identifiers", async () => {
     const service = new FollowService(repository(), () => context);
-    expect(await service.getFollowedTeamIds()).toEqual([
-      "10000000-0000-4000-8000-000000000001",
-    ]);
+    expect(await service.getFollowedTeamIds()).toEqual(["10000000-0000-4000-8000-000000000001"]);
   });
 
   it("uses idempotent repository mutations rather than route-local state", async () => {
@@ -79,9 +77,9 @@ describe("FollowService", () => {
     expect((await reloaded.listTeams({ limit: 100 }, context)).items).toHaveLength(2);
 
     await reloaded.unfollowTeam(initial.items[0]!.targetId, context);
-    expect((await reloaded.listTeams({ limit: 100 }, context)).items.map((item) => item.targetId)).toEqual([
-      added,
-    ]);
+    expect(
+      (await reloaded.listTeams({ limit: 100 }, context)).items.map((item) => item.targetId),
+    ).toEqual([added]);
     expect(
       (
         await reloaded.listTeams(

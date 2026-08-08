@@ -113,9 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "BotolaGO combine l'actualité premium du football marocain (Botola Pro) et le fantasy football, en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
-      ...(IS_DEMO_MODE
-        ? [{ name: "robots", content: "noindex, nofollow, noarchive" }]
-        : []),
+      ...(IS_DEMO_MODE ? [{ name: "robots", content: "noindex, nofollow, noarchive" }] : []),
       { property: "og:title", content: "BotolaGO — Actualité & Fantasy du football marocain" },
       {
         property: "og:description",
