@@ -17,6 +17,12 @@ const cloudModes = {
   fantasyMode: "supabase",
 } as const;
 
+const inertDemoCoordinates = {
+  supabaseProjectId: "demo",
+  supabaseUrl: "https://demo.invalid",
+  supabasePublishableKey: "demo-public-placeholder",
+} as const;
+
 function input(overrides: Partial<AppModeInput>): AppModeInput {
   return { production: true, ...overrides };
 }
@@ -40,8 +46,7 @@ describe("app deployment mode", () => {
         input({
           appMode: "demo",
           ...mockModes,
-          supabaseProjectId: "demo",
-          supabaseUrl: "https://demo.invalid",
+          ...inertDemoCoordinates,
         }),
       ),
     ).toBe("demo");
@@ -50,12 +55,62 @@ describe("app deployment mode", () => {
     ).toThrow("VITE_NEWS_DATA_MODE=mock");
   });
 
+  it("requires exact canonical deployment and data-mode values", () => {
+    expect(() =>
+      resolveAppMode(input({ appMode: "DEMO", ...mockModes, ...inertDemoCoordinates })),
+    ).toThrow("VITE_APP_MODE must be live or demo");
+    expect(() =>
+      resolveAppMode(
+        input({
+          appMode: "demo",
+          ...mockModes,
+          authMode: "MOCK",
+          ...inertDemoCoordinates,
+        }),
+      ),
+    ).toThrow("VITE_AUTH_MODE=mock");
+  });
+
+  it("requires explicit inert Supabase placeholders in demo artifacts", () => {
+    expect(() =>
+      resolveAppMode(
+        input({
+          appMode: "demo",
+          ...mockModes,
+          supabaseUrl: inertDemoCoordinates.supabaseUrl,
+          supabasePublishableKey: inertDemoCoordinates.supabasePublishableKey,
+        }),
+      ),
+    ).toThrow("VITE_SUPABASE_PROJECT_ID");
+    expect(() =>
+      resolveAppMode(
+        input({
+          appMode: "demo",
+          ...mockModes,
+          supabaseProjectId: inertDemoCoordinates.supabaseProjectId,
+          supabasePublishableKey: inertDemoCoordinates.supabasePublishableKey,
+        }),
+      ),
+    ).toThrow("VITE_SUPABASE_URL");
+    expect(() =>
+      resolveAppMode(
+        input({
+          appMode: "demo",
+          ...mockModes,
+          supabaseProjectId: inertDemoCoordinates.supabaseProjectId,
+          supabaseUrl: inertDemoCoordinates.supabaseUrl,
+        }),
+      ),
+    ).toThrow("VITE_SUPABASE_PUBLISHABLE_KEY");
+  });
+
   it("rejects real Supabase coordinates from demo artifacts", () => {
     expect(() =>
       resolveAppMode(
         input({
           appMode: "demo",
           ...mockModes,
+          ...inertDemoCoordinates,
           supabaseProjectId: "production-project",
         }),
       ),
@@ -65,6 +120,7 @@ describe("app deployment mode", () => {
         input({
           appMode: "demo",
           ...mockModes,
+          ...inertDemoCoordinates,
           supabaseUrl: "https://production-project.supabase.co",
         }),
       ),

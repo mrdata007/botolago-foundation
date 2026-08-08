@@ -10,6 +10,7 @@ export interface AppModeInput {
   readonly fantasyMode?: string;
   readonly supabaseProjectId?: string;
   readonly supabaseUrl?: string;
+  readonly supabasePublishableKey?: string;
 }
 
 const browserModes = [
@@ -20,14 +21,8 @@ const browserModes = [
   ["VITE_FANTASY_DATA_MODE", "fantasyMode"],
 ] as const;
 
-function normalized(value: string | undefined): string | undefined {
-  return value?.trim().toLowerCase() || undefined;
-}
-
 function invalidModeNames(input: AppModeInput, required: "mock" | "supabase"): string[] {
-  return browserModes
-    .filter(([, key]) => normalized(input[key]) !== required)
-    .map(([name]) => name);
+  return browserModes.filter(([, key]) => input[key] !== required).map(([name]) => name);
 }
 
 function isInertDemoUrl(value: string): boolean {
@@ -45,7 +40,7 @@ function isInertDemoUrl(value: string): boolean {
 }
 
 export function resolveAppMode(input: AppModeInput): AppMode {
-  const configured = normalized(input.appMode);
+  const configured = input.appMode;
   if (!configured) {
     if (input.production) {
       throw new Error("Production builds require VITE_APP_MODE=live or VITE_APP_MODE=demo.");
@@ -65,12 +60,14 @@ export function resolveAppMode(input: AppModeInput): AppMode {
   }
 
   if (configured === "demo") {
-    const projectId = normalized(input.supabaseProjectId);
-    if (projectId && projectId !== "demo" && projectId !== "local") {
-      throw new Error("Demo mode refuses a non-demo VITE_SUPABASE_PROJECT_ID.");
+    if (input.supabaseProjectId !== "demo" && input.supabaseProjectId !== "local") {
+      throw new Error("Demo mode requires VITE_SUPABASE_PROJECT_ID=demo or local.");
     }
-    if (input.supabaseUrl && !isInertDemoUrl(input.supabaseUrl)) {
-      throw new Error("Demo mode refuses a network-capable VITE_SUPABASE_URL.");
+    if (!input.supabaseUrl || !isInertDemoUrl(input.supabaseUrl)) {
+      throw new Error("Demo mode requires an inert VITE_SUPABASE_URL.");
+    }
+    if (!input.supabasePublishableKey?.trim()) {
+      throw new Error("Demo mode requires an explicit VITE_SUPABASE_PUBLISHABLE_KEY.");
     }
   }
 
@@ -87,6 +84,7 @@ export const APP_MODE = resolveAppMode({
   fantasyMode: import.meta.env.VITE_FANTASY_DATA_MODE,
   supabaseProjectId: import.meta.env.VITE_SUPABASE_PROJECT_ID,
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+  supabasePublishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
 });
 
 export const IS_DEMO_MODE = APP_MODE === "demo";

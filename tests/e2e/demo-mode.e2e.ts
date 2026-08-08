@@ -29,7 +29,10 @@ test("hosted demo is explicit, local-only, and blocks cloud-only surfaces", asyn
     await expect(notice).not.toHaveAttribute("aria-hidden");
   }
 
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex, nofollow, noarchive",
+  );
 
   await page.goto("/matches", { waitUntil: "networkidle" });
   await expect(page.getByText("Simulation", { exact: true }).first()).toBeVisible();
@@ -53,8 +56,13 @@ test("hosted demo is explicit, local-only, and blocks cloud-only surfaces", asyn
     "/.mcp/list-tools",
     "/.mcp/invoke-tool/get_profile",
   ]) {
-    const response = await request.fetch(endpoint, { method: "POST", data: {} });
-    expect(response.status(), endpoint).toBe(404);
+    for (const method of ["GET", "POST"] as const) {
+      const response = await request.fetch(endpoint, {
+        method,
+        ...(method === "POST" ? { data: {} } : {}),
+      });
+      expect(response.status(), `${method} ${endpoint}`).toBe(404);
+    }
   }
 
   expect(unexpectedCloudRequests).toEqual([]);

@@ -19,9 +19,11 @@ bun run preview
 ```
 
 The committed `.env.demo` selects `VITE_APP_MODE=demo`, sets all five browser
-domains to `mock`, and uses inert Supabase placeholders. The central resolver
-rejects mixed data modes, unknown production profiles, real Supabase coordinates,
-or a missing production profile.
+domains to exact canonical `mock` values, and supplies required inert Supabase
+placeholders. The central resolver rejects mixed or non-canonical data modes,
+unknown production profiles, real or missing Supabase coordinates, a missing
+publishable placeholder, or a missing production profile. The demo head omits
+third-party font requests.
 
 ## Vercel preview configuration
 
@@ -40,9 +42,10 @@ Use a dedicated Preview environment scoped only to
 - `VITE_APP_URL=<the canonical branch preview URL>`
 
 Do not add provider tokens, Supabase service-role/secret keys, ingestion secrets,
-worker credentials, or production domains. If both connected Vercel projects
-remain active, configure both identically or designate one canonical demo and
-disable the duplicate branch build.
+worker credentials, or production domains. Remove any inherited server-only
+Supabase/provider variables from this Preview scope. If both connected Vercel
+projects remain active, configure both identically or designate one canonical
+demo and disable the duplicate branch build.
 
 ## Acceptance
 
