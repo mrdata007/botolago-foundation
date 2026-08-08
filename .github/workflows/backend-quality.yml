@@ -36,6 +36,10 @@ jobs:
       - run: bun run build
       - name: Build isolated mock-data demo artifact
         run: bun run build:demo
+      - name: Build runnable demo acceptance server
+        env:
+          NITRO_PRESET: node-server
+        run: bun run build:demo
       - run: bunx playwright install --with-deps chromium
       - name: Run anonymous and Atlas browser acceptance
         env:

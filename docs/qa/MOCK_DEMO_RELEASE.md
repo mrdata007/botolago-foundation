@@ -14,8 +14,8 @@ capacity/soak, migration parity, RLS, global-ranking, or invite-code blockers.
 
 ```bash
 bun install --frozen-lockfile
-bun run build:demo
-bun run preview
+NITRO_PRESET=node-server bun run build:demo
+bun run preview -- --host 127.0.0.1 --port 4173
 ```
 
 The committed `.env.demo` selects `VITE_APP_MODE=demo`, sets all five browser
@@ -52,8 +52,9 @@ demo and disable the duplicate branch build.
 
 Require all of the following on the exact deployed commit:
 
-1. normal live production build and the isolated demo build both pass;
-2. Playwright serves the compiled demo with `vite preview`, not the development server;
+1. normal live production, isolated Cloudflare demo, and runnable Node demo builds pass;
+2. Playwright serves the production-compiled Node demo with `nitro preview`, not the
+   development server;
 3. unit, type, lint, database, anonymous, Atlas, and demo-containment checks pass;
 4. the persistent bilingual demo notice is visible on every route and root error state;
 5. synthetic match activity says “Simulation” / “محاكاة”, and rankings identify
