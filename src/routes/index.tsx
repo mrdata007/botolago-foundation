@@ -134,9 +134,18 @@ function HomeContent() {
     queryFn: () =>
       status === "authenticated" ? followService.getFollowedTeams(lang) : Promise.resolve([]),
   });
+  const followedTeamIds = followedQ.data?.map((team) => team.id) ?? [];
   const followedNewsQ = useQuery({
-    queryKey: ["news", "latest", lang],
-    queryFn: () => newsService.getArticles(lang, { category: "latest" }),
+    queryKey: ["news", "followed", lang, ...followedTeamIds],
+    queryFn: async () => {
+      const pages = await Promise.all(
+        followedTeamIds.map((teamId) =>
+          newsService.getArticles(lang, { category: "latest", teamId }),
+        ),
+      );
+      return [...new Map(pages.flat().map((article) => [article.id, article])).values()];
+    },
+    enabled: followedQ.isSuccess,
   });
   const trendingQ = useQuery({
     queryKey: ["trending"],

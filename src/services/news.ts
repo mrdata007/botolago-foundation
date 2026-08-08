@@ -1,4 +1,5 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import type {
   ArticleCardDto,
   ArticleDetailDto,
@@ -18,8 +19,14 @@ export type NewsDataMode = "mock" | "supabase";
 export function selectNewsDataMode(
   configuredMode: string | undefined,
   production: boolean,
+  demoMode = IS_DEMO_MODE,
 ): NewsDataMode {
-  if (production && configuredMode !== "supabase")
+  if (demoMode && configuredMode !== "mock")
+    throw new NewsError(
+      "data_unavailable",
+      "Demo News requires VITE_NEWS_DATA_MODE=mock.",
+    );
+  if (production && !demoMode && configuredMode !== "supabase")
     throw new NewsError(
       "data_unavailable",
       "Production News requires VITE_NEWS_DATA_MODE=supabase.",

@@ -34,9 +34,12 @@ jobs:
       - run: bun run test
       - run: bun run lint
       - run: bun run build
+      - name: Build isolated mock-data demo artifact
+        run: bun run build:demo
       - run: bunx playwright install --with-deps chromium
       - name: Run anonymous and Atlas browser acceptance
         env:
+          VITE_APP_MODE: demo
           VITE_AUTH_MODE: mock
           VITE_FOOTBALL_DATA_MODE: mock
           VITE_NEWS_DATA_MODE: mock
@@ -45,7 +48,8 @@ jobs:
         run: |
           bunx playwright test \
             tests/e2e/anonymous.acceptance.e2e.ts \
-            tests/e2e/atlas-matchday.e2e.ts
+            tests/e2e/atlas-matchday.e2e.ts \
+            tests/e2e/demo-mode.e2e.ts
       - name: Upload sanitized browser evidence on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

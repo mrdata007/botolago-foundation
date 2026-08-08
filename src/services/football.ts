@@ -1,4 +1,5 @@
 import type { Club, Match, MatchStatus, TableRow } from "@/types/domain";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FootballLanguage,
@@ -19,8 +20,14 @@ export type FootballDataMode = "mock" | "supabase";
 export function selectFootballDataMode(
   configuredMode: string | undefined,
   production: boolean,
+  demoMode = IS_DEMO_MODE,
 ): FootballDataMode {
-  if (production && configuredMode !== "supabase") {
+  if (demoMode && configuredMode !== "mock")
+    throw new FootballError(
+      "data_unavailable",
+      "Demo Football requires VITE_FOOTBALL_DATA_MODE=mock.",
+    );
+  if (production && !demoMode && configuredMode !== "supabase") {
     throw new FootballError(
       "data_unavailable",
       "Production Football requires VITE_FOOTBALL_DATA_MODE=supabase.",

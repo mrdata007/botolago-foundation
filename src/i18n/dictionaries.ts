@@ -6,6 +6,9 @@ export const dictionaries = {
   fr: {
     "app.name": "BotolaGO",
     "app.tagline": "Actualité & Fantasy du football marocain",
+    "app.demo_label": "Mode démo BotolaGO",
+    "app.demo_notice":
+      "MODE DÉMO — scores, actualités, classements, comptes et notifications sont simulés. Rien n’est en direct ni officiel.",
 
     "language.choose_title": "Choisissez votre langue",
     "language.choose_subtitle": "Vous pourrez la modifier à tout moment.",
@@ -93,6 +96,7 @@ export const dictionaries = {
     "matches.season.loading": "Chargement",
     "matches.season.unavailable": "Indisponible",
     "matches.status.live": "En direct",
+    "matches.status.simulation": "Simulation",
     "matches.status.ht": "Mi-temps",
     "matches.status.ft": "Terminé",
     "matches.status.scheduled": "À venir",
@@ -369,6 +373,7 @@ export const dictionaries = {
     "fantasy.tab.rankings": "Classement",
     "fantasy.rankings.title": "Classement général",
     "fantasy.rankings.subtitle": "Le classement de tous les managers de la saison.",
+    "fantasy.rankings.demo_subtitle": "Classement de démonstration — managers fictifs.",
     "fantasy.rankings.podium": "Podium des meilleurs managers",
     "fantasy.rankings.my_rank": "Mon classement",
     "fantasy.rankings.jump_to_me": "Aller à ma position",
@@ -1012,6 +1017,9 @@ export const dictionaries = {
   ar: {
     "app.name": "BotolaGO",
     "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
+    "app.demo_label": "الوضع التجريبي لبوتولا غو",
+    "app.demo_notice":
+      "الوضع التجريبي — النتائج والأخبار والترتيبات والحسابات والإشعارات محاكاة. لا شيء مباشر أو رسمي.",
 
     "language.choose_title": "اختر لغتك",
     "language.choose_subtitle": "يمكنك تغييرها في أي وقت.",
@@ -1098,6 +1106,7 @@ export const dictionaries = {
     "matches.season.loading": "جارٍ التحميل",
     "matches.season.unavailable": "غير متاح",
     "matches.status.live": "مباشر",
+    "matches.status.simulation": "محاكاة",
     "matches.status.ht": "استراحة",
     "matches.status.ft": "انتهت",
     "matches.status.scheduled": "قادمة",
@@ -1366,6 +1375,7 @@ export const dictionaries = {
     "fantasy.tab.rankings": "الترتيب",
     "fantasy.rankings.title": "الترتيب العام",
     "fantasy.rankings.subtitle": "ترتيب جميع المدربين لهذا الموسم.",
+    "fantasy.rankings.demo_subtitle": "ترتيب تجريبي — مدربون وهميون.",
     "fantasy.rankings.podium": "منصة أفضل المدربين",
     "fantasy.rankings.my_rank": "ترتيبي",
     "fantasy.rankings.jump_to_me": "انتقل إلى ترتيبي",

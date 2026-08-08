@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 
 interface AuthorizationDetails {
   client?: { name?: string; client_id?: string; redirect_uri?: string };
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",
   }),
   beforeLoad: async ({ search, location }) => {
+    if (IS_DEMO_MODE) throw redirect({ to: "/" });
     if (!search.authorization_id) throw new Error("Missing authorization_id");
     const { data } = await supabase.auth.getSession();
     const next = location.pathname + location.searchStr;

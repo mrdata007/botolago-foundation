@@ -15,6 +15,7 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import type { LeagueStanding } from "@/types/fantasy";
 import type { Club } from "@/types/domain";
 
@@ -111,7 +112,9 @@ function RankingsPage() {
       <SectionHeader
         eyebrow={t("fantasy.tab.rankings")}
         title={t("fantasy.rankings.title")}
-        subtitle={t("fantasy.rankings.subtitle")}
+        subtitle={t(
+          IS_DEMO_MODE ? "fantasy.rankings.demo_subtitle" : "fantasy.rankings.subtitle",
+        )}
       />
 
       {rankingsQ.isError ? (

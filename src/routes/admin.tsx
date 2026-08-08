@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -12,9 +12,13 @@ import {
   type AdminRouteStateName,
 } from "@/backend/admin/route-access";
 import { useI18n } from "@/i18n/provider";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
+  beforeLoad: () => {
+    if (IS_DEMO_MODE) throw redirect({ to: "/" });
+  },
   loader: () => loadAdminRouteAccess(),
   pendingComponent: AdminLoadingShell,
   component: AdminRoute,

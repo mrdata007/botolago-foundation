@@ -1,4 +1,5 @@
 import * as db from "@/mocks/data";
+import { mockFootballTeamId } from "@/backend/football/mock-repository";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   ArticleCardDto,
@@ -16,14 +17,11 @@ const articleUuid = (index: number) =>
   `a0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
 const storyUuid = (index: number) =>
   `b0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
-const teamUuid = (index: number) =>
-  `c0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
 const taxonomyUuid = (index: number) =>
   `d0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
 
 function teamId(sourceId: string): string {
-  const index = db.clubs.findIndex((club) => club.id === sourceId);
-  return teamUuid(Math.max(index, 0));
+  return mockFootballTeamId(sourceId);
 }
 
 function card(index: number, language: NewsLanguage): ArticleCardDto {
@@ -111,8 +109,8 @@ export class MockNewsRepository implements NewsRepository {
   }
 
   async getTeamFilters(language: NewsLanguage): Promise<readonly NewsTeamFilterDto[]> {
-    return db.clubs.map((club, index) => ({
-      id: teamUuid(index),
+    return db.clubs.map((club) => ({
+      id: teamId(club.id),
       slug: `preview-${club.id}`,
       name: club.name[language],
       shortName: club.shortName[language],

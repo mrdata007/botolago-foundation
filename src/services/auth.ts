@@ -6,6 +6,7 @@
 // unit tests. Never silently fall back from Supabase to mock on runtime errors.
 
 import type { AuthService } from "./auth-types";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import {
   LocalMockAuthService,
   MOCK_DEMO_EMAIL,
@@ -22,9 +23,13 @@ export function selectAuthMode(
   configuredMode: string | undefined,
   hasSupabase: boolean,
   production: boolean,
+  demoMode = IS_DEMO_MODE,
 ): Mode {
   const explicit = configuredMode?.toLowerCase();
-  if (production && explicit !== "supabase") {
+  if (demoMode && explicit !== "mock") {
+    throw new Error("Demo Auth requires VITE_AUTH_MODE=mock.");
+  }
+  if (production && !demoMode && explicit !== "supabase") {
     throw new Error("Production Auth requires VITE_AUTH_MODE=supabase.");
   }
   if (explicit === "mock") return "mock";

@@ -19,6 +19,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import { RotateCcw, Home } from "lucide-react";
 
 function NotFoundComponent() {
@@ -103,13 +104,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "BotolaGO — Actualité & Fantasy du football marocain" },
+      {
+        title: `${IS_DEMO_MODE ? "[DÉMO] " : ""}BotolaGO — Actualité & Fantasy du football marocain`,
+      },
       {
         name: "description",
         content:
           "BotolaGO combine l'actualité premium du football marocain (Botola Pro) et le fantasy football, en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
+      ...(IS_DEMO_MODE
+        ? [{ name: "robots", content: "noindex, nofollow, noarchive" }]
+        : []),
       { property: "og:title", content: "BotolaGO — Actualité & Fantasy du football marocain" },
       {
         property: "og:description",
@@ -157,9 +163,9 @@ function RootComponent() {
       <I18nProvider>
         <AuthProvider>
           <FantasyOwnedProvider>
+            <AuthModeBadge />
             <LaunchGate />
             <AuthPromptDialog />
-            <AuthModeBadge />
             <Toaster />
           </FantasyOwnedProvider>
         </AuthProvider>

@@ -17,6 +17,7 @@ import type {
 import { defaultNotifications } from "./auth-types";
 import type { Language } from "@/types/domain";
 import { validateCanonicalUsername } from "@/backend/identity/username";
+import { mockFootballTeamId } from "@/backend/football/mock-repository";
 
 const NS = "botolago.";
 const K_SESSION = `${NS}auth.session`;
@@ -109,7 +110,7 @@ export class LocalMockAuthService implements AuthService {
         createdAt: new Date().toISOString(),
         verified: true,
         provider: "email",
-        favoriteClubId: "wac",
+        favoriteClubId: mockFootballTeamId("war"),
         passwordDigest: digest(MOCK_DEMO_PASSWORD),
       });
       safeSet(K_USERS, users);
