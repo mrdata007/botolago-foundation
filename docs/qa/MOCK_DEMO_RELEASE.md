@@ -22,8 +22,9 @@ The committed `.env.demo` selects `VITE_APP_MODE=demo`, sets all five browser
 domains to exact canonical `mock` values, and supplies required inert Supabase
 placeholders. The central resolver rejects mixed or non-canonical data modes,
 unknown production profiles, real or missing Supabase coordinates, a missing
-publishable placeholder, or a missing production profile. The demo head omits
-third-party font requests.
+publishable placeholder, a browser-bundled secret key, or a missing production
+profile. The four MCP HTTP routes are intentionally source-owned so their demo
+guards cannot be regenerated away. The demo head omits third-party font requests.
 
 ## Vercel preview configuration
 

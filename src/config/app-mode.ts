@@ -66,8 +66,17 @@ export function resolveAppMode(input: AppModeInput): AppMode {
     if (!input.supabaseUrl || !isInertDemoUrl(input.supabaseUrl)) {
       throw new Error("Demo mode requires an inert VITE_SUPABASE_URL.");
     }
-    if (!input.supabasePublishableKey?.trim()) {
+    const publishableKey = input.supabasePublishableKey;
+    if (!publishableKey?.trim()) {
       throw new Error("Demo mode requires an explicit VITE_SUPABASE_PUBLISHABLE_KEY.");
+    }
+    if (publishableKey.startsWith("sb_secret_")) {
+      throw new Error("Demo mode refuses a secret VITE_SUPABASE_PUBLISHABLE_KEY.");
+    }
+    if (input.supabaseProjectId === "demo" && publishableKey !== "demo-public-placeholder") {
+      throw new Error(
+        "Hosted demo mode requires VITE_SUPABASE_PUBLISHABLE_KEY=demo-public-placeholder.",
+      );
     }
   }
 

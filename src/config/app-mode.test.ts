@@ -104,6 +104,31 @@ describe("app deployment mode", () => {
     ).toThrow("VITE_SUPABASE_PUBLISHABLE_KEY");
   });
 
+  it("refuses browser-bundled secrets and unexpected hosted-demo keys", () => {
+    expect(() =>
+      resolveAppMode(
+        input({
+          appMode: "demo",
+          ...mockModes,
+          supabaseProjectId: "local",
+          supabaseUrl: "http://127.0.0.1:55321",
+          supabasePublishableKey: "sb_secret_must-not-be-bundled",
+        }),
+      ),
+    ).toThrow("refuses a secret VITE_SUPABASE_PUBLISHABLE_KEY");
+    expect(() =>
+      resolveAppMode(
+        input({
+          appMode: "demo",
+          ...mockModes,
+          supabaseProjectId: "demo",
+          supabaseUrl: "https://demo.invalid",
+          supabasePublishableKey: "sb_publishable_unexpected",
+        }),
+      ),
+    ).toThrow("VITE_SUPABASE_PUBLISHABLE_KEY=demo-public-placeholder");
+  });
+
   it("rejects real Supabase coordinates from demo artifacts", () => {
     expect(() =>
       resolveAppMode(
