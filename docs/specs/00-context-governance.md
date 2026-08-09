@@ -13,14 +13,14 @@
 | Claim branch              | agent/unit-00                                                              |
 | Integration target        | agent/launch-readiness-milestones                                          |
 | Baseline SHA              | 1d87fb2cb7c38e1fd3576412092bf9ca47e0fb69                                   |
-| Target environment        | None                                                                       |
+| Target environment        | Existing automatic PR previews only; no manual environment action          |
 | Required approval classes | Repository-governance                                                      |
 | Blocker                   | Durable GitHub review and approval before merge                            |
 
 Bootstrap note: the repository owner explicitly requested this methodology
 before the repository had a place to store a spec, so revision 1 and its
 implementation draft were prepared together. That one-time authorization covers
-implementation only; it does not authorize merge or any environment action.
+implementation only; it does not authorize merge or a manual environment action.
 Durable GitHub review is still required. This bootstrap exception does not apply
 to later units. agent/unit-00 and draft PR #124 are the canonical claim.
 
@@ -48,8 +48,10 @@ approved, independently verifiable units instead of broad prompts.
 - Do not implement or merge PR #123.
 - Do not close, supersede, or reconcile another PR.
 - Do not run staging or production workflows.
-- Do not mutate Supabase, Vercel, Lovable, providers, workers, schedules, or
-  production data.
+- Do not manually mutate Supabase, Vercel configuration, Lovable, providers,
+  workers, schedules, or production data.
+- Existing repository integrations may build ephemeral draft-PR previews. Do not
+  configure, certify, share, or promote them under this unit.
 - Do not replace detailed domain runbooks.
 - Do not treat .lovable/plan.md as an active second spec authority.
 
@@ -123,22 +125,28 @@ demo, and production states accurately.
 
 ## Release controls
 
-- This unit has no deployment, staging, migration, provider, or production
-  action.
+- This unit has no manual deployment, staging, migration, provider, or production
+  action. Publishing the draft PR may trigger the repository's existing automatic
+  Preview integrations.
 - Publish it on an isolated branch based on the exact PR #123 head.
 - Open a draft PR targeting agent/launch-readiness-milestones.
 - Require durable human review before merge.
 
 ## Environment execution authorization and evidence
 
-All environment actions are Not required for this documentation-only unit.
-This unit does not authorize preview deployment, certification, or sharing;
-staging execution; production migration, Supabase API platform configuration,
-application deployment, Identity configuration, Admin bootstrap/activation,
-bounded data mutation, current-season initialization, Fantasy catalog staging,
-Fantasy registration opening, data/content provider activation,
-notification-delivery activation, worker activation, schedule activation,
-post-launch verification, or rollback.
+Publishing draft PR #124 triggered the two existing automatic Vercel Preview
+integrations. The originating repository-publication request covers that
+preconfigured side effect; exact-head PR status records are authoritative
+evidence. No Preview variables or project settings were changed, and neither
+Preview was certified or shared as a demo.
+
+Preview certification, Preview sharing, and every manual environment action
+remain Not authorized. This unit does not authorize staging execution; production
+migration, Supabase API platform configuration, application deployment, Identity
+configuration, Admin bootstrap/activation, bounded data mutation, current-season
+initialization, Fantasy catalog staging, Fantasy registration opening,
+data/content provider activation, notification-delivery activation, worker
+activation, schedule activation, post-launch verification, or rollback.
 
 ## Documentation updates
 
