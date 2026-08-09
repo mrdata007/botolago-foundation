@@ -2,34 +2,33 @@
 
 ## Status
 
-| Field                     | Value                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| Lifecycle                 | Implemented                                                                     |
-| Disposition               | Active                                                                          |
-| Spec revision             | 1                                                                               |
-| Approved revision         | 1, for the bootstrap implementation only                                        |
-| Owner                     | @mrdata007 is accountable; Codex prepares agent/unit-00                         |
-| Durable central claim     | Pending publication; replace with the canonical Unit 00 draft PR URL in this PR |
-| Claim branch              | agent/unit-00                                                                   |
-| Integration target        | agent/launch-readiness-milestones                                               |
-| Baseline SHA              | 1d87fb2cb7c38e1fd3576412092bf9ca47e0fb69                                        |
-| Target environment        | None                                                                            |
-| Required approval classes | Repository-governance                                                           |
-| Blocker                   | Durable GitHub review and approval before merge                                 |
+| Field                     | Value                                                                      |
+| ------------------------- | -------------------------------------------------------------------------- |
+| Lifecycle                 | Implemented                                                                |
+| Disposition               | Active                                                                     |
+| Spec revision             | 1                                                                          |
+| Approved revision         | 1, for the bootstrap implementation only                                   |
+| Owner                     | @mrdata007 is accountable; Codex prepares agent/unit-00                    |
+| Durable central claim     | [Draft PR #124](https://github.com/mrdata007/botolago-foundation/pull/124) |
+| Claim branch              | agent/unit-00                                                              |
+| Integration target        | agent/launch-readiness-milestones                                          |
+| Baseline SHA              | 1d87fb2cb7c38e1fd3576412092bf9ca47e0fb69                                   |
+| Target environment        | None                                                                       |
+| Required approval classes | Repository-governance                                                      |
+| Blocker                   | Durable GitHub review and approval before merge                            |
 
 Bootstrap note: the repository owner explicitly requested this methodology
 before the repository had a place to store a spec, so revision 1 and its
 implementation draft were prepared together. That one-time authorization covers
 implementation only; it does not authorize merge or any environment action.
 Durable GitHub review is still required. This bootstrap exception does not apply
-to later units. The central claim is pending only until agent/unit-00 and its
-draft PR are published; the PR URL must then replace the pending value.
+to later units. agent/unit-00 and draft PR #124 are the canonical claim.
 
 ## Spec approval record
 
-| Approval class        | Required? | Approver   | Date       | Approved revision and scope              | Durable evidence                                                                           |
-| --------------------- | --------- | ---------- | ---------- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Repository-governance | Yes       | @mrdata007 | 2026-08-09 | Revision 1 bootstrap implementation only | Originating work request mirrored in the canonical draft PR; GitHub merge approval pending |
+| Approval class        | Required? | Approver   | Date       | Approved revision and scope              | Durable evidence                                                                  |
+| --------------------- | --------- | ---------- | ---------- | ---------------------------------------- | --------------------------------------------------------------------------------- |
+| Repository-governance | Yes       | @mrdata007 | 2026-08-09 | Revision 1 bootstrap implementation only | Originating work request mirrored in draft PR #124; GitHub merge approval pending |
 
 ## Goal
 
@@ -111,16 +110,16 @@ demo, and production states accurately.
 
 ## Verification plan
 
-- [ ] Lovable block is byte-identical to the PR #123 baseline.
-- [ ] Prettier passes for all non-protected documentation.
-- [ ] No trailing whitespace or copied generic framework instructions remain.
-- [ ] Referenced repository paths exist on the baseline branch.
-- [ ] Main SHA, launch SHA, PRs, workflow runs, and partial staging scope are
+- [x] Lovable block is byte-identical to the PR #123 baseline.
+- [x] Prettier passes for all non-protected documentation.
+- [x] No trailing whitespace or copied generic framework instructions remain.
+- [x] Referenced repository paths exist on the baseline branch.
+- [x] Main SHA, launch SHA, PRs, workflow runs, and partial staging scope are
       accurate.
-- [ ] Lifecycle and disposition values are consistent in every file.
-- [ ] MCP routes are documented as source-owned, not generated.
-- [ ] Unit plan does not combine unrelated domains.
-- [ ] No application or operational behavior changed.
+- [x] Lifecycle and disposition values are consistent in every file.
+- [x] MCP routes are documented as source-owned, not generated.
+- [x] Unit plan does not combine unrelated domains.
+- [x] No application or operational behavior changed.
 
 ## Release controls
 
@@ -159,7 +158,7 @@ self-referential docs-only commit to embed its own SHA.
 | Delivery state | Prior commit / PR / run                                  | Date       | Human reviewer   |
 | -------------- | -------------------------------------------------------- | ---------- | ---------------- |
 | Approved       | Originating bootstrap implementation request, revision 1 | 2026-08-09 | @mrdata007       |
-| Implemented    | Context implementation draft                             | 2026-08-09 | Not yet reviewed |
+| Implemented    | Draft PR #124                                            | 2026-08-09 | Not yet reviewed |
 | CI verified    | Pending branch checks                                    | Pending    | Pending          |
 | Merged         | Not merged                                               | —          | —                |
 
