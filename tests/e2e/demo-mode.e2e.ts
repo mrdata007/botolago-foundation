@@ -22,6 +22,10 @@ test("hosted demo is explicit, local-only, and blocks cloud-only surfaces", asyn
   });
 
   await initializeLanguage(page, "fr");
+
+  await page.goto("/auth", { waitUntil: "networkidle" });
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/auth/login");
+
   for (const route of ["/", "/matches", "/fantasy/rankings", "/auth/login"] as const) {
     await page.goto(route, { waitUntil: "networkidle" });
     const notice = page.getByTestId("demo-data-notice");

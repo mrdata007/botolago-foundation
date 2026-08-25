@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { loadAdminStaffRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
@@ -23,6 +23,14 @@ export const Route = createFileRoute("/admin/staff")({
 });
 
 function AdminStaffRoute() {
+  const isDetail = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/admin/staff/$principalId"),
+  });
+  return isDetail ? <Outlet /> : <AdminStaffPage />;
+}
+
+function AdminStaffPage() {
   const access = Route.useLoaderData();
   const { lang } = useI18n();
   const repository = useMemo(() => new SupabaseAdminSecurityOperationsRepository(), []);
