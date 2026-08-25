@@ -42,14 +42,12 @@ export const Route = createFileRoute("/profile")({
       { title: "Profil — BotolaGO" },
       {
         name: "description",
-        content:
-          "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
+        content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
       },
       { property: "og:title", content: "Profil — BotolaGO" },
       {
         property: "og:description",
-        content:
-          "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
+        content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
       },
     ],
   }),
@@ -68,8 +66,7 @@ function ProfilePage() {
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [deletionOpen, setDeletionOpen] = useState(false);
   const [deletionBusy, setDeletionBusy] = useState(false);
-  const [deletionRequest, setDeletionRequest] =
-    useState<AccountDeletionRequest | null>(null);
+  const [deletionRequest, setDeletionRequest] = useState<AccountDeletionRequest | null>(null);
 
   useEffect(() => {
     if (status !== "authenticated" || !user) {
@@ -147,9 +144,7 @@ function ProfilePage() {
       );
       setDeletionOpen(false);
       toast.success(
-        lang === "ar"
-          ? "تم تسجيل طلب حذف الحساب."
-          : "La demande de suppression a été enregistrée.",
+        lang === "ar" ? "تم تسجيل طلب حذف الحساب." : "La demande de suppression a été enregistrée.",
       );
     } catch {
       toast.error(
@@ -183,9 +178,7 @@ function ProfilePage() {
       }
       setDeletionRequest(null);
       toast.success(
-        lang === "ar"
-          ? "تم إلغاء طلب حذف الحساب."
-          : "La demande de suppression a été annulée.",
+        lang === "ar" ? "تم إلغاء طلب حذف الحساب." : "La demande de suppression a été annulée.",
       );
     } catch {
       toast.error(
@@ -201,9 +194,7 @@ function ProfilePage() {
   return (
     <AppShell>
       <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand whitespace-pre-wrap">
-          {t("profile.title")}
-        </span>
+        <span className="text-brand whitespace-pre-wrap">{t("profile.title")}</span>
       </h1>
 
       {status === "authenticated" && user ? (
@@ -290,9 +281,7 @@ function ProfilePage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {lang === "ar"
-                ? "طلب حذف الحساب"
-                : "Demander la suppression du compte"}
+              {lang === "ar" ? "طلب حذف الحساب" : "Demander la suppression du compte"}
             </DialogTitle>
             <DialogDescription>
               {lang === "ar"
@@ -382,11 +371,7 @@ function AuthenticatedProfile({
             }}
           >
             {user.avatarDataUrl ? (
-              <img
-                src={user.avatarDataUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
+              <img src={user.avatarDataUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               <UserCircle className="h-11 w-11" aria-hidden />
             )}
@@ -401,9 +386,7 @@ function AuthenticatedProfile({
             <div className="mt-0.5 truncate text-xs font-semibold text-[color:var(--brand-accent)]">
               @{user.username}
             </div>
-            <div className="mt-0.5 truncate text-xs text-muted-foreground">
-              {user.email}
-            </div>
+            <div className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</div>
           </div>
           <button
             onClick={() => navigate({ to: "/auth/profile-setup" })}
@@ -412,9 +395,7 @@ function AuthenticatedProfile({
             aria-label={t("profile.edit")}
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden />
-            <span className="hidden xs:inline sm:inline">
-              {t("profile.edit")}
-            </span>
+            <span className="hidden xs:inline sm:inline">{t("profile.edit")}</span>
           </button>
         </div>
 
@@ -454,16 +435,12 @@ function AuthenticatedProfile({
       <Group title={t("profile.notifications")}>
         <div className="divide-y divide-[var(--border-subtle,rgba(0,0,0,0.06))]">
           {notifItems.map(([k, label]) => (
-            <div
-              key={k}
-              className="flex items-center justify-between px-4 py-3"
-            >
+            <div key={k} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3 text-sm text-foreground">
                 <span
                   className="grid h-8 w-8 place-items-center rounded-xl"
                   style={{
-                    background:
-                      "color-mix(in oklab, var(--brand-accent) 12%, transparent)",
+                    background: "color-mix(in oklab, var(--brand-accent) 12%, transparent)",
                     color: "var(--brand-accent)",
                   }}
                   aria-hidden
@@ -493,8 +470,7 @@ function AuthenticatedProfile({
             <span
               className="grid h-8 w-8 place-items-center rounded-xl"
               style={{
-                background:
-                  "color-mix(in oklab, var(--brand-primary) 12%, transparent)",
+                background: "color-mix(in oklab, var(--brand-primary) 12%, transparent)",
                 color: "var(--brand-primary)",
               }}
               aria-hidden
@@ -523,10 +499,7 @@ function AuthenticatedProfile({
             </span>
             <span className="font-semibold">{t("profile.edit")}</span>
           </div>
-          <ChevronRight
-            className="h-4 w-4 text-muted-foreground rtl:rotate-180"
-            aria-hidden
-          />
+          <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" aria-hidden />
         </button>
       </Group>
 
@@ -631,9 +604,7 @@ function AccountDeletionPanel({
                 disabled={busy}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-background px-4 text-xs font-bold text-destructive disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                 {arabic ? "إلغاء الطلب" : "Annuler la demande"}
               </button>
             ) : processing ? (
@@ -667,11 +638,7 @@ function AccountDeletionPanel({
 
 function ProfileLoading() {
   return (
-    <div
-      className="mt-4 animate-pulse space-y-4"
-      aria-busy="true"
-      aria-label="Loading profile"
-    >
+    <div className="mt-4 animate-pulse space-y-4" aria-busy="true" aria-label="Loading profile">
       <div className="h-44 rounded-3xl bg-muted" />
       <div className="h-24 rounded-2xl bg-muted" />
     </div>
@@ -712,13 +679,7 @@ function StatTile({
   );
 }
 
-function Group({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
       <div className="mb-2 px-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -754,16 +715,13 @@ function GuestProfile() {
           <h2 className="text-lg font-black text-foreground">
             <Trans text={t("profile.guest_title")} />
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("profile.guest_body")}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("profile.guest_body")}</p>
           <div className="mt-4 grid gap-2">
             <button
               onClick={() => navigate({ to: "/auth/register" })}
               className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
             >
-              <UserPlus className="h-4 w-4" aria-hidden />{" "}
-              {t("auth.prompt.register")}
+              <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
             </button>
             <button
               onClick={() => navigate({ to: "/auth/login" })}
@@ -801,16 +759,13 @@ function AnonymousProfile() {
         <h2 className="mt-3 text-lg font-black text-foreground">
           <Trans text={t("profile.anon_title")} />
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("profile.anon_body")}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("profile.anon_body")}</p>
         <div className="mt-4 grid gap-2">
           <button
             onClick={() => navigate({ to: "/auth/register" })}
             className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
           >
-            <UserPlus className="h-4 w-4" aria-hidden />{" "}
-            {t("auth.prompt.register")}
+            <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
           </button>
           <button
             onClick={() => navigate({ to: "/auth/login" })}

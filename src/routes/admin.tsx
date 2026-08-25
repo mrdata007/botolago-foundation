@@ -1,10 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  Outlet,
-  redirect,
-  useRouterState,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -55,9 +49,7 @@ function AdminStatePanel({
         <ShieldCheck className="mb-5 h-8 w-8 text-emerald-400" aria-hidden />
         <p className="text-sm text-slate-400">{copy.subtitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{content.title}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-300">
-          {content.description}
-        </p>
+        <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
         {state === "unauthenticated" ? (
           <Link
             to="/auth/login"
@@ -112,9 +104,7 @@ function AdminRoute() {
           </div>
           <nav
             className="mt-5 flex flex-wrap gap-2"
-            aria-label={
-              copy.dir === "rtl" ? "أقسام الإدارة" : "Sections administratives"
-            }
+            aria-label={copy.dir === "rtl" ? "أقسام الإدارة" : "Sections administratives"}
             data-testid="admin-navigation"
           >
             {ADMIN_CONSOLE_NAV_ITEMS.filter((item) =>
@@ -137,19 +127,12 @@ function AdminRoute() {
 
         {isAdminRoot && (
           <>
-            <section
-              className="mt-6 grid gap-4 md:grid-cols-2"
-              data-testid="admin-home"
-            >
+            <section className="mt-6 grid gap-4 md:grid-cols-2" data-testid="admin-home">
               <SafeCard title={copy.labels.identity}>
                 <p>{result.identity.emailSummary ?? result.identity.userId}</p>
               </SafeCard>
               <SafeCard title={copy.labels.roles}>
-                <p>
-                  {roleNames.length > 0
-                    ? roleNames.join(", ")
-                    : copy.labels.none}
-                </p>
+                <p>{roleNames.length > 0 ? roleNames.join(", ") : copy.labels.none}</p>
               </SafeCard>
               <SafeCard title={copy.labels.permissions}>
                 <p>{result.context.permissions.length}</p>
@@ -157,16 +140,12 @@ function AdminRoute() {
               <SafeCard title={copy.labels.security}>
                 <p>AAL2 · {result.context.recentAuthWindowSeconds / 60} min</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  {copy.labels.pendingRevocation}:{" "}
-                  {result.context.pendingSessionRevocationCount}
+                  {copy.labels.pendingRevocation}: {result.context.pendingSessionRevocationCount}
                 </p>
               </SafeCard>
             </section>
 
-            <section
-              className="mt-6 grid gap-3 sm:grid-cols-2"
-              aria-label={copy.title}
-            >
+            <section className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={copy.title}>
               {copy.sections.map((section) => (
                 <div
                   key={section}

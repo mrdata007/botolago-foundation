@@ -62,26 +62,13 @@ export interface AccountDeletionRunResult {
   readonly remainingMayExist: boolean;
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function assertExecutionSettings(
-  limit: number,
-  leaseSeconds: number,
-  workerId: string,
-): void {
-  if (
-    !Number.isSafeInteger(limit) ||
-    limit < 1 ||
-    limit > MAX_DELETION_BATCH_SIZE
-  ) {
+function assertExecutionSettings(limit: number, leaseSeconds: number, workerId: string): void {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_DELETION_BATCH_SIZE) {
     throw new AccountDeletionStepError("unexpected_worker_failure");
   }
-  if (
-    !Number.isSafeInteger(leaseSeconds) ||
-    leaseSeconds < 30 ||
-    leaseSeconds > 600
-  ) {
+  if (!Number.isSafeInteger(leaseSeconds) || leaseSeconds < 30 || leaseSeconds > 600) {
     throw new AccountDeletionStepError("unexpected_worker_failure");
   }
   if (!UUID_PATTERN.test(workerId)) {
@@ -90,8 +77,7 @@ function assertExecutionSettings(
 }
 
 function failureCode(error: unknown): AccountDeletionFailureCode {
-  return error instanceof AccountDeletionStepError &&
-    error.code !== "failure_record_unavailable"
+  return error instanceof AccountDeletionStepError && error.code !== "failure_record_unavailable"
     ? error.code
     : "unexpected_worker_failure";
 }
@@ -101,14 +87,8 @@ function validateAvatarPaths(userId: string, paths: readonly string[]): void {
     throw new AccountDeletionStepError("avatar_limit_exceeded");
   }
   const escapedUserId = userId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const expected = new RegExp(
-    `^${escapedUserId}/avatar\\.(?:jpg|jpeg|png|webp)$`,
-    "i",
-  );
-  if (
-    !UUID_PATTERN.test(userId) ||
-    paths.some((path) => !expected.test(path))
-  ) {
+  const expected = new RegExp(`^${escapedUserId}/avatar\\.(?:jpg|jpeg|png|webp)$`, "i");
+  if (!UUID_PATTERN.test(userId) || paths.some((path) => !expected.test(path))) {
     throw new AccountDeletionStepError("avatar_shape_unexpected");
   }
 }
@@ -125,11 +105,7 @@ export async function executeAccountDeletionBatch(
     readonly workerId: string;
   },
 ): Promise<AccountDeletionRunResult> {
-  assertExecutionSettings(
-    options.limit,
-    options.leaseSeconds,
-    options.workerId,
-  );
+  assertExecutionSettings(options.limit, options.leaseSeconds, options.workerId);
   let claimed = 0;
   let completed = 0;
   let reconciled = 0;
@@ -167,11 +143,7 @@ export async function executeAccountDeletionBatch(
     } catch (error: unknown) {
       let failureResult: { readonly completed: boolean };
       try {
-        failureResult = await gateway.fail(
-          claim.requestId,
-          claim.claimToken,
-          failureCode(error),
-        );
+        failureResult = await gateway.fail(claim.requestId, claim.claimToken, failureCode(error));
       } catch {
         throw new AccountDeletionStepError("failure_record_unavailable");
       }
@@ -195,16 +167,8 @@ export async function executeAccountDeletionBatch(
   };
 }
 
-export function constantTimeSecretEqual(
-  candidate: string | null,
-  expected: string,
-): boolean {
-  if (
-    expected.length < 32 ||
-    expected.length > 128 ||
-    !candidate ||
-    candidate.length > 128
-  ) {
+export function constantTimeSecretEqual(candidate: string | null, expected: string): boolean {
+  if (expected.length < 32 || expected.length > 128 || !candidate || candidate.length > 128) {
     return false;
   }
   const encoder = new TextEncoder();
@@ -251,8 +215,7 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
   if (Object.keys(record).some((key) => !allowed.has(key))) {
     throw new AccountDeletionRequestError("invalid_request");
   }
-  const limit =
-    record.limit === undefined ? MAX_DELETION_BATCH_SIZE : record.limit;
+  const limit = record.limit === undefined ? MAX_DELETION_BATCH_SIZE : record.limit;
   if (
     typeof limit !== "number" ||
     !Number.isSafeInteger(limit) ||
@@ -264,10 +227,7 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
   if (record.mode === "dry-run" && record.confirmation === undefined) {
     return { mode: "dry-run", limit };
   }
-  if (
-    record.mode === "execute" &&
-    record.confirmation === "DELETE_DUE_ACCOUNTS"
-  ) {
+  if (record.mode === "execute" && record.confirmation === "DELETE_DUE_ACCOUNTS") {
     return { mode: "execute", limit };
   }
   throw new AccountDeletionRequestError("invalid_request");
@@ -311,9 +271,7 @@ export async function handleAccountDeletionWorkerRequest(
       return jsonResponse(400, { ok: false, code: error.message });
     }
     const code =
-      error instanceof AccountDeletionStepError
-        ? error.code
-        : "account_deletion_worker_failed";
+      error instanceof AccountDeletionStepError ? error.code : "account_deletion_worker_failed";
     return jsonResponse(500, { ok: false, code });
   }
 }

@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  expectNoHorizontalOverflow,
-  initializeLanguage,
-  observePage,
-} from "./support";
+import { expectNoHorizontalOverflow, initializeLanguage, observePage } from "./support";
 
 const disabledMcpRoutes = [
   { method: "GET", path: "/mcp" },
@@ -37,20 +33,14 @@ for (const language of ["fr", "ar"] as const) {
     await page.setViewportSize({ width: 390, height: 844 });
     await initializeLanguage(page, language);
 
-    await page.goto(
-      "/.lovable/oauth/consent?authorization_id=e2e-placeholder",
-      {
-        waitUntil: "networkidle",
-      },
-    );
+    await page.goto("/.lovable/oauth/consent?authorization_id=e2e-placeholder", {
+      waitUntil: "networkidle",
+    });
 
     // Demo builds intentionally disable the OAuth/MCP surface and redirect home.
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("html")).toHaveAttribute("lang", language);
-    await expect(page.locator("html")).toHaveAttribute(
-      "dir",
-      language === "ar" ? "rtl" : "ltr",
-    );
+    await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
     await expect(page.locator("body")).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await diagnostics.verify(testInfo);

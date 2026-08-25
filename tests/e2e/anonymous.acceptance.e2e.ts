@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  expectNoHorizontalOverflow,
-  initializeLanguage,
-  observePage,
-} from "./support";
+import { expectNoHorizontalOverflow, initializeLanguage, observePage } from "./support";
 
 const viewports = [
   { name: "mobile-320", width: 320, height: 700 },
@@ -62,11 +58,8 @@ const fullRouteMatrix = [
 
 for (const language of ["fr", "ar"] as const) {
   for (const viewport of viewports) {
-    test(`${language} ${viewport.name}: anonymous critical routes`, async ({
-      page,
-    }, testInfo) => {
-      const usesFullMatrix =
-        viewport.name === "mobile-390" || viewport.name === "desktop";
+    test(`${language} ${viewport.name}: anonymous critical routes`, async ({ page }, testInfo) => {
+      const usesFullMatrix = viewport.name === "mobile-390" || viewport.name === "desktop";
       test.setTimeout(usesFullMatrix ? 240_000 : 120_000);
       const diagnostics = observePage(page);
       await page.setViewportSize(viewport);

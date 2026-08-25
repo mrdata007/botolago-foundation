@@ -5,10 +5,7 @@ export interface FantasyScoringRpcResult {
 
 export interface FantasyScoringRpcClient {
   schema(name: "api"): {
-    rpc(
-      name: string,
-      args: Record<string, unknown>,
-    ): PromiseLike<FantasyScoringRpcResult>;
+    rpc(name: string, args: Record<string, unknown>): PromiseLike<FantasyScoringRpcResult>;
   };
 }
 
@@ -144,10 +141,7 @@ function record(value: unknown, code = "invalid_request"): JsonRecord {
 function exactKeys(value: JsonRecord, expected: readonly string[]): void {
   const actual = Object.keys(value).sort();
   const wanted = [...expected].sort();
-  if (
-    actual.length !== wanted.length ||
-    actual.some((key, index) => key !== wanted[index])
-  ) {
+  if (actual.length !== wanted.length || actual.some((key, index) => key !== wanted[index])) {
     throw new WorkerError("invalid_manifest", 400, "validation");
   }
 }
@@ -197,8 +191,7 @@ function parseEvent(value: unknown): CanonicalPointEvent {
     throw new WorkerError("invalid_manifest", 400, "validation");
   }
   const points = integer(source.points, -100, 100);
-  if (points === 0)
-    throw new WorkerError("invalid_manifest", 400, "validation");
+  if (points === 0) throw new WorkerError("invalid_manifest", 400, "validation");
   return {
     category: source.category,
     points,
@@ -238,49 +231,30 @@ function parsePlayer(value: unknown): CanonicalFixturePlayer {
 function parseFixture(value: unknown): CanonicalFixtureSnapshot {
   const source = record(value, "invalid_manifest");
   exactKeys(source, ["fixtureId", "footballInputVersion", "players"]);
-  if (
-    !Array.isArray(source.players) ||
-    source.players.length < 22 ||
-    source.players.length > 100
-  ) {
+  if (!Array.isArray(source.players) || source.players.length < 22 || source.players.length > 100) {
     throw new WorkerError("invalid_manifest", 400, "validation");
   }
   const players = source.players.map(parsePlayer);
   requireStrictOrder(players.map((player) => player.fantasyPlayerId));
-  const teamIds = [
-    ...new Set(players.map((player) => player.footballTeamId)),
-  ].sort();
-  if (teamIds.length !== 2)
-    throw new WorkerError("invalid_manifest", 400, "validation");
+  const teamIds = [...new Set(players.map((player) => player.footballTeamId))].sort();
+  if (teamIds.length !== 2) throw new WorkerError("invalid_manifest", 400, "validation");
   for (const teamId of teamIds) {
     if (
-      players.filter(
-        (player) => player.footballTeamId === teamId && player.started,
-      ).length !== 11
+      players.filter((player) => player.footballTeamId === teamId && player.started).length !== 11
     ) {
       throw new WorkerError("invalid_manifest", 400, "validation");
     }
   }
-  const eventCount = players.reduce(
-    (total, player) => total + player.events.length,
-    0,
-  );
-  if (eventCount > 1000)
-    throw new WorkerError("invalid_manifest", 400, "validation");
+  const eventCount = players.reduce((total, player) => total + player.events.length, 0);
+  if (eventCount > 1000) throw new WorkerError("invalid_manifest", 400, "validation");
   return {
     fixtureId: uuid(source.fixtureId),
-    footballInputVersion: integer(
-      source.footballInputVersion,
-      0,
-      Number.MAX_SAFE_INTEGER,
-    ),
+    footballInputVersion: integer(source.footballInputVersion, 0, Number.MAX_SAFE_INTEGER),
     players,
   };
 }
 
-export function validateScoringManifest(
-  value: unknown,
-): CanonicalScoringManifest {
+export function validateScoringManifest(value: unknown): CanonicalScoringManifest {
   const source = record(value, "invalid_manifest");
   exactKeys(source, [
     "schemaVersion",
@@ -317,14 +291,10 @@ export function validateScoringManifest(
   };
 }
 
-export async function scoringManifestDigest(
-  manifest: CanonicalScoringManifest,
-): Promise<string> {
+export async function scoringManifestDigest(manifest: CanonicalScoringManifest): Promise<string> {
   const bytes = new TextEncoder().encode(JSON.stringify(manifest));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function scoringExecutionConfirmation(
@@ -372,12 +342,7 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
     throw new WorkerError("invalid_request", 400, "validation");
   }
   const body = record(parsed);
-  exactKeys(body, [
-    "mode",
-    "manifest",
-    "expectedManifestDigest",
-    "confirmation",
-  ]);
+  exactKeys(body, ["mode", "manifest", "expectedManifestDigest", "confirmation"]);
   if (body.mode !== "validate" && body.mode !== "execute") {
     throw new WorkerError("invalid_request", 400, "validation");
   }
@@ -406,19 +371,13 @@ async function callRpc(
 ): Promise<unknown> {
   const result = await client.schema("api").rpc(name, args);
   if (result.error) {
-    throw new RpcError(
-      name,
-      result.error.code ?? null,
-      result.error.message ?? null,
-      stage,
-    );
+    throw new RpcError(name, result.error.code ?? null, result.error.message ?? null, stage);
   }
   return result.data;
 }
 
 function rpcObject(value: unknown, stage: string): JsonRecord {
-  if (!isRecord(value))
-    throw new WorkerError("invalid_rpc_response", 502, stage);
+  if (!isRecord(value)) throw new WorkerError("invalid_rpc_response", 502, stage);
   return value;
 }
 
@@ -430,8 +389,7 @@ function nonnegative(value: unknown, stage: string): number {
 }
 
 function rpcBoolean(value: unknown, stage: string): boolean {
-  if (typeof value !== "boolean")
-    throw new WorkerError("invalid_rpc_response", 502, stage);
+  if (typeof value !== "boolean") throw new WorkerError("invalid_rpc_response", 502, stage);
   return value;
 }
 
@@ -497,20 +455,14 @@ async function pageWithoutCursor(
   let processed = 0;
   for (let page = 1; page <= maxPages; page += 1) {
     const value = rpcObject(
-      await callRpc(
-        client,
-        name,
-        { p_gameweek_id: gameweekId, p_batch_size: batchSize },
-        stage,
-      ),
+      await callRpc(client, name, { p_gameweek_id: gameweekId, p_batch_size: batchSize }, stage),
       stage,
     );
     const count = nonnegative(value[countResult], stage);
     processed += count;
     const hasMore = rpcBoolean(value.hasMore, stage);
     if (!hasMore) return { pages: page, processed };
-    if (count === 0)
-      throw new WorkerError("worker_progress_stalled", 502, stage);
+    if (count === 0) throw new WorkerError("worker_progress_stalled", 502, stage);
   }
   throw new WorkerError("page_budget_exhausted", 503, stage);
 }
@@ -546,8 +498,7 @@ async function bestEffortCompleteJob(
       "job_ledger",
     );
   } catch {
-    if (status === "succeeded")
-      throw new WorkerError("job_ledger_failed", 502, "job_ledger");
+    if (status === "succeeded") throw new WorkerError("job_ledger_failed", 502, "job_ledger");
   }
 }
 
@@ -576,10 +527,8 @@ export async function executeFantasyScoring(
     scope.stableResult !== true ||
     typeof scopeStatus !== "string" ||
     !SCORING_GAMEWEEK_STATUSES.has(scopeStatus) ||
-    nonnegative(scope.fixtureCount, "scope_validation") !==
-      manifest.fixtures.length ||
-    nonnegative(scope.leagueCount, "scope_validation") !==
-      manifest.leagueIds.length
+    nonnegative(scope.fixtureCount, "scope_validation") !== manifest.fixtures.length ||
+    nonnegative(scope.leagueCount, "scope_validation") !== manifest.leagueIds.length
   ) {
     throw new WorkerError("invalid_rpc_response", 502, "scope_validation");
   }
@@ -596,8 +545,7 @@ export async function executeFantasyScoring(
     "job_ledger",
   );
   const runId = rpcCursor(runIdValue, "job_ledger");
-  if (runId === null)
-    throw new WorkerError("invalid_rpc_response", 502, "job_ledger");
+  if (runId === null) throw new WorkerError("invalid_rpc_response", 502, "job_ledger");
   let processed = 0;
   try {
     for (const fixture of manifest.fixtures) {
@@ -625,17 +573,12 @@ export async function executeFantasyScoring(
       );
       if (
         rpcCursor(fixtureResult.snapshotId, "fixture_replacement") === null ||
-        nonnegative(fixtureResult.players, "fixture_replacement") !==
-          fixture.players.length ||
+        nonnegative(fixtureResult.players, "fixture_replacement") !== fixture.players.length ||
         typeof fixtureResult.stableResult !== "boolean" ||
         ((scopeStatus === "finalizing" || scopeStatus === "finalized") &&
           fixtureResult.stableResult !== true)
       ) {
-        throw new WorkerError(
-          "invalid_rpc_response",
-          502,
-          "fixture_replacement",
-        );
+        throw new WorkerError("invalid_rpc_response", 502, "fixture_replacement");
       }
       processed += 1;
     }
@@ -658,11 +601,7 @@ export async function executeFantasyScoring(
         typeof replayCompletion.stableResult !== "boolean" ||
         (scopeStatus === "finalized" && replayCompletion.stableResult !== true)
       ) {
-        throw new WorkerError(
-          "invalid_rpc_response",
-          502,
-          "completion_preflight",
-        );
+        throw new WorkerError("invalid_rpc_response", 502, "completion_preflight");
       }
       await bestEffortCompleteJob(client, runId, "succeeded", processed, null);
       return {
@@ -780,10 +719,7 @@ export async function executeFantasyScoring(
       ),
       "completion",
     );
-    if (
-      completion.finalized !== true ||
-      typeof completion.stableResult !== "boolean"
-    ) {
+    if (completion.finalized !== true || typeof completion.stableResult !== "boolean") {
       throw new WorkerError("invalid_rpc_response", 502, "completion");
     }
     await bestEffortCompleteJob(client, runId, "succeeded", processed, null);
@@ -800,10 +736,7 @@ export async function executeFantasyScoring(
       jobRunId: runId,
     };
   } catch (error) {
-    const code =
-      error instanceof WorkerError
-        ? error.code
-        : "fantasy_scoring_worker_failed";
+    const code = error instanceof WorkerError ? error.code : "fantasy_scoring_worker_failed";
     await bestEffortCompleteJob(client, runId, "failed", processed, code);
     throw error;
   }
@@ -812,17 +745,10 @@ export async function executeFantasyScoring(
 function manifestCounts(manifest: CanonicalScoringManifest): JsonRecord {
   return {
     fixtures: manifest.fixtures.length,
-    players: manifest.fixtures.reduce(
-      (total, fixture) => total + fixture.players.length,
-      0,
-    ),
+    players: manifest.fixtures.reduce((total, fixture) => total + fixture.players.length, 0),
     pointEvents: manifest.fixtures.reduce(
       (total, fixture) =>
-        total +
-        fixture.players.reduce(
-          (subtotal, player) => subtotal + player.events.length,
-          0,
-        ),
+        total + fixture.players.reduce((subtotal, player) => subtotal + player.events.length, 0),
       0,
     ),
     leagueScopes: 2 + manifest.leagueIds.length * 2,
@@ -833,10 +759,8 @@ export async function handleFantasyScoringRequest(
   request: Request,
   dependencies: FantasyScoringWorkerDependencies,
 ): Promise<Response> {
-  if (request.method !== "POST")
-    return json(405, { error: "method_not_allowed" });
-  const receivedTriggerSecret =
-    request.headers.get("x-botolago-scoring-key") ?? "";
+  if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const receivedTriggerSecret = request.headers.get("x-botolago-scoring-key") ?? "";
   if (
     dependencies.expectedTriggerSecret.length < 32 ||
     !timingSafeEqual(receivedTriggerSecret, dependencies.expectedTriggerSecret)
@@ -859,25 +783,14 @@ export async function handleFantasyScoringRequest(
         recurringScheduleEnabled: false,
       });
     }
-    if (
-      parsed.confirmation === null ||
-      !timingSafeEqual(parsed.confirmation, confirmation)
-    ) {
+    if (parsed.confirmation === null || !timingSafeEqual(parsed.confirmation, confirmation)) {
       throw new WorkerError("execution_confirmation_failed", 409, "validation");
     }
     const maxPages = dependencies.maxPagesPerPhase ?? DEFAULT_MAX_PAGES;
     if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 500) {
-      throw new WorkerError(
-        "invalid_runtime_configuration",
-        500,
-        "configuration",
-      );
+      throw new WorkerError("invalid_runtime_configuration", 500, "configuration");
     }
-    const summary = await executeFantasyScoring(
-      parsed.manifest,
-      dependencies.client,
-      maxPages,
-    );
+    const summary = await executeFantasyScoring(parsed.manifest, dependencies.client, maxPages);
     return json(200, {
       completed: true,
       manifestDigest: digest,

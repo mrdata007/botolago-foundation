@@ -64,17 +64,14 @@ async function requestBody(
 }
 
 function request(body: unknown, triggerSecret = TRIGGER_SECRET): Request {
-  return new Request(
-    "https://example.test/functions/v1/fantasy-scoring-worker",
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-botolago-scoring-key": triggerSecret,
-      },
-      body: JSON.stringify(body),
+  return new Request("https://example.test/functions/v1/fantasy-scoring-worker", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-botolago-scoring-key": triggerSecret,
     },
-  );
+    body: JSON.stringify(body),
+  });
 }
 
 function successfulClient(
@@ -132,10 +129,8 @@ function successfulClient(
               error: { code: "PT409", message: "gameweek_not_finalizable" },
             };
           }
-          if (rpcName === "service_begin_fantasy_job")
-            return { data: RUN_ID, error: null };
-          if (rpcName === "service_complete_fantasy_job")
-            return { data: true, error: null };
+          if (rpcName === "service_begin_fantasy_job") return { data: RUN_ID, error: null };
+          if (rpcName === "service_complete_fantasy_job") return { data: true, error: null };
           if (rpcName === "service_replace_fantasy_fixture_points") {
             return options.failFixture
               ? {
@@ -228,13 +223,10 @@ describe("Fantasy scoring worker", () => {
 
   test("validates a complete canonical manifest without database writes", async () => {
     const calls: RpcCall[] = [];
-    const response = await handleFantasyScoringRequest(
-      request(await requestBody("validate")),
-      {
-        client: successfulClient(calls),
-        expectedTriggerSecret: TRIGGER_SECRET,
-      },
-    );
+    const response = await handleFantasyScoringRequest(request(await requestBody("validate")), {
+      client: successfulClient(calls),
+      expectedTriggerSecret: TRIGGER_SECRET,
+    });
     expect(response.status).toBe(200);
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.valid).toBe(true);
@@ -258,26 +250,16 @@ describe("Fantasy scoring worker", () => {
     expect(() => validateScoringManifest(tooSmall)).toThrow("invalid_manifest");
 
     const unsorted = manifestSource();
-    const unsortedFixture = (
-      unsorted.fixtures as Array<Record<string, unknown>>
-    )[0];
+    const unsortedFixture = (unsorted.fixtures as Array<Record<string, unknown>>)[0];
     const players = unsortedFixture.players as unknown[];
     [players[0], players[1]] = [players[1], players[0]];
-    expect(() => validateScoringManifest(unsorted)).toThrow(
-      "manifest_not_canonical",
-    );
+    expect(() => validateScoringManifest(unsorted)).toThrow("manifest_not_canonical");
 
     const disabledCategory = manifestSource();
-    const disabledFixture = (
-      disabledCategory.fixtures as Array<Record<string, unknown>>
-    )[0];
-    const disabledPlayer = (
-      disabledFixture.players as Array<Record<string, unknown>>
-    )[0];
+    const disabledFixture = (disabledCategory.fixtures as Array<Record<string, unknown>>)[0];
+    const disabledPlayer = (disabledFixture.players as Array<Record<string, unknown>>)[0];
     disabledPlayer.events = [{ category: "bonus", points: 3 }];
-    expect(() => validateScoringManifest(disabledCategory)).toThrow(
-      "invalid_manifest",
-    );
+    expect(() => validateScoringManifest(disabledCategory)).toThrow("invalid_manifest");
   });
 
   test("uses the same canonical UUID order as PostgreSQL scope arrays", () => {
@@ -309,14 +291,10 @@ describe("Fantasy scoring worker", () => {
 
     const unsortedFixtures = structuredClone(source);
     (unsortedFixtures.fixtures as unknown[]).reverse();
-    expect(() => validateScoringManifest(unsortedFixtures)).toThrow(
-      "manifest_not_canonical",
-    );
+    expect(() => validateScoringManifest(unsortedFixtures)).toThrow("manifest_not_canonical");
     const unsortedLeagues = structuredClone(source);
     (unsortedLeagues.leagueIds as unknown[]).reverse();
-    expect(() => validateScoringManifest(unsortedLeagues)).toThrow(
-      "manifest_not_canonical",
-    );
+    expect(() => validateScoringManifest(unsortedLeagues)).toThrow("manifest_not_canonical");
   });
 
   test("requires the digest-bound execution confirmation", async () => {
@@ -382,11 +360,7 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody(
-          "execute",
-          manifest,
-          scoringExecutionConfirmation(manifest, digest),
-        ),
+        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
       ),
       {
         client: successfulClient(calls, { failFixture: true }),
@@ -409,11 +383,7 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody(
-          "execute",
-          manifest,
-          scoringExecutionConfirmation(manifest, digest),
-        ),
+        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
       ),
       {
         client: successfulClient(calls, { invalidFixtureResponse: true }),
@@ -434,11 +404,7 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody(
-          "execute",
-          manifest,
-          scoringExecutionConfirmation(manifest, digest),
-        ),
+        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
       ),
       {
         client: successfulClient(calls, { failScope: true }),
@@ -446,9 +412,7 @@ describe("Fantasy scoring worker", () => {
       },
     );
     expect(response.status).toBe(409);
-    expect(calls.map((call) => call.name)).toEqual([
-      "service_validate_fantasy_scoring_scope",
-    ]);
+    expect(calls.map((call) => call.name)).toEqual(["service_validate_fantasy_scoring_scope"]);
   });
 
   test("treats an already-finalized gameweek as a stable replay", async () => {
@@ -457,11 +421,7 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody(
-          "execute",
-          manifest,
-          scoringExecutionConfirmation(manifest, digest),
-        ),
+        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
       ),
       {
         client: successfulClient(calls, { alreadyComplete: true }),
@@ -491,11 +451,7 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody(
-          "execute",
-          manifest,
-          scoringExecutionConfirmation(manifest, digest),
-        ),
+        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
       ),
       {
         client: successfulClient(calls, { stallPlayers: true }),
@@ -516,11 +472,7 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody(
-          "execute",
-          manifest,
-          scoringExecutionConfirmation(manifest, digest),
-        ),
+        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
       ),
       {
         client: successfulClient(calls, { regressPlayers: true }),

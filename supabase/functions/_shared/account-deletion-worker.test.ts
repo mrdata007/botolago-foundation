@@ -63,14 +63,7 @@ describe("account deletion batch", () => {
       leaseSeconds: 120,
       workerId: WORKER_ID,
     });
-    expect(fixture.calls).toEqual([
-      "claim",
-      "list",
-      "remove",
-      "delete-auth",
-      "finalize",
-      "claim",
-    ]);
+    expect(fixture.calls).toEqual(["claim", "list", "remove", "delete-auth", "finalize", "claim"]);
     expect(result).toMatchObject({
       completed: 1,
       failed: 0,
@@ -106,13 +99,7 @@ describe("account deletion batch", () => {
       leaseSeconds: 120,
       workerId: WORKER_ID,
     });
-    expect(fixture.calls).toEqual([
-      "claim",
-      "list",
-      "remove",
-      "delete-auth",
-      "fail",
-    ]);
+    expect(fixture.calls).toEqual(["claim", "list", "remove", "delete-auth", "fail"]);
     expect(result.failed).toBe(1);
   });
 

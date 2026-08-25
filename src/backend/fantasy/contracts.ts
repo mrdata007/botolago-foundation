@@ -5,12 +5,7 @@ import { postgresUuidSchema } from "@/backend/contracts/validation";
 export { postgresUuidSchema } from "@/backend/contracts/validation";
 
 export const FANTASY_POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
-export const FANTASY_CHIPS = [
-  "wildcard",
-  "free_hit",
-  "bench_boost",
-  "triple_captain",
-] as const;
+export const FANTASY_CHIPS = ["wildcard", "free_hit", "bench_boost", "triple_captain"] as const;
 export const FANTASY_GAMEWEEK_STATUSES = [
   "scheduled",
   "open",
@@ -57,14 +52,7 @@ export const fantasyPlayerSchema = z.object({
   fullName: z.string().min(1),
   position: z.enum(FANTASY_POSITIONS),
   price: z.coerce.number().positive(),
-  status: z.enum([
-    "available",
-    "doubtful",
-    "injured",
-    "suspended",
-    "ineligible",
-    "unavailable",
-  ]),
+  status: z.enum(["available", "doubtful", "injured", "suspended", "ineligible", "unavailable"]),
   teamName: z.string().min(1),
   teamShortName: z.string().min(1),
   photoAssetId: postgresUuidSchema.nullable(),
@@ -142,9 +130,7 @@ export type FantasyHubDto = z.infer<typeof fantasyHubSchema>;
 
 export const playerPoolPageSchema = z.object({
   items: z.array(fantasyPlayerSchema),
-  nextCursor: z
-    .object({ price: z.coerce.number(), id: postgresUuidSchema })
-    .nullable(),
+  nextCursor: z.object({ price: z.coerce.number(), id: postgresUuidSchema }).nullable(),
 });
 export type PlayerPoolPageDto = z.infer<typeof playerPoolPageSchema>;
 
@@ -208,9 +194,7 @@ export const fantasyLeagueStandingPageSchema = z.object({
     }),
   ),
 });
-export type FantasyLeagueStandingPageDto = z.infer<
-  typeof fantasyLeagueStandingPageSchema
->;
+export type FantasyLeagueStandingPageDto = z.infer<typeof fantasyLeagueStandingPageSchema>;
 
 export const fantasyGlobalRankingSchema = z.object({
   teamId: postgresUuidSchema,
@@ -220,9 +204,7 @@ export const fantasyGlobalRankingSchema = z.object({
   totalPoints: z.number().int(),
   gameweekPoints: z.number().int(),
 });
-export type FantasyGlobalRankingDto = z.infer<
-  typeof fantasyGlobalRankingSchema
->;
+export type FantasyGlobalRankingDto = z.infer<typeof fantasyGlobalRankingSchema>;
 
 export const fantasyGlobalRankingPageSchema = z.object({
   items: z.array(fantasyGlobalRankingSchema),
@@ -230,9 +212,7 @@ export const fantasyGlobalRankingPageSchema = z.object({
   podium: z.array(fantasyGlobalRankingSchema).max(3),
   myRank: fantasyGlobalRankingSchema.nullable(),
 });
-export type FantasyGlobalRankingPageDto = z.infer<
-  typeof fantasyGlobalRankingPageSchema
->;
+export type FantasyGlobalRankingPageDto = z.infer<typeof fantasyGlobalRankingPageSchema>;
 
 export const fantasyPointsSchema = z.object({
   teamId: postgresUuidSchema,
@@ -325,9 +305,7 @@ export const fantasyTransferPreviewSchema = z.object({
   deadlineAt: z.string(),
   chipType: z.enum(FANTASY_CHIPS).nullable(),
 });
-export type FantasyTransferPreviewDto = z.infer<
-  typeof fantasyTransferPreviewSchema
->;
+export type FantasyTransferPreviewDto = z.infer<typeof fantasyTransferPreviewSchema>;
 
 export const fantasyRulesSchema = z.object({
   seasonId: postgresUuidSchema,
@@ -383,9 +361,7 @@ export const fantasyFixtureDifficultySchema = z.object({
   confidence: z.enum(["low", "medium", "high"]),
   algorithmVersion: z.string(),
 });
-export type FantasyFixtureDifficultyDto = z.infer<
-  typeof fantasyFixtureDifficultySchema
->;
+export type FantasyFixtureDifficultyDto = z.infer<typeof fantasyFixtureDifficultySchema>;
 
 export interface FantasyPlayerPoolInput {
   readonly seasonId: string;
@@ -411,22 +387,13 @@ export interface TransferInput {
 }
 
 export interface FantasyRepository {
-  getHub(
-    language: "fr" | "ar",
-    context: RepositoryContext,
-  ): Promise<FantasyHubDto>;
+  getHub(language: "fr" | "ar", context: RepositoryContext): Promise<FantasyHubDto>;
   getPlayerPool(
     input: FantasyPlayerPoolInput,
     context: RepositoryContext,
   ): Promise<PlayerPoolPageDto>;
-  getTeam(
-    seasonId: string,
-    context: RepositoryContext,
-  ): Promise<FantasyTeamDto>;
-  createTeam(
-    input: CreateFantasyTeamInput,
-    context: RepositoryContext,
-  ): Promise<FantasyTeamDto>;
+  getTeam(seasonId: string, context: RepositoryContext): Promise<FantasyTeamDto>;
+  createTeam(input: CreateFantasyTeamInput, context: RepositoryContext): Promise<FantasyTeamDto>;
   saveLineup(
     teamId: string,
     gameweekId: string,
@@ -466,10 +433,7 @@ export interface FantasyRepository {
     expectedVersion: number,
     context: RepositoryContext,
   ): Promise<unknown>;
-  getRules(
-    seasonId: string,
-    context: RepositoryContext,
-  ): Promise<FantasyRulesDto>;
+  getRules(seasonId: string, context: RepositoryContext): Promise<FantasyRulesDto>;
   getFixtureDifficulty(
     seasonId: string,
     fromGameweek: number,
@@ -496,14 +460,8 @@ export interface FantasyRepository {
     visibility: "public" | "private" | null,
     context: RepositoryContext,
   ): Promise<readonly FantasyLeagueDto[]>;
-  getLeague(
-    leagueId: string,
-    context: RepositoryContext,
-  ): Promise<FantasyLeagueDto>;
-  rotateLeagueInvite(
-    leagueId: string,
-    context: RepositoryContext,
-  ): Promise<FantasyLeagueInviteDto>;
+  getLeague(leagueId: string, context: RepositoryContext): Promise<FantasyLeagueDto>;
+  rotateLeagueInvite(leagueId: string, context: RepositoryContext): Promise<FantasyLeagueInviteDto>;
   getLeagueStandings(
     leagueId: string,
     gameweekId: string | null,
@@ -532,16 +490,8 @@ export interface FantasyRepository {
     idempotencyKey: string,
     context: RepositoryContext,
   ): Promise<unknown>;
-  leaveLeague(
-    leagueId: string,
-    teamId: string,
-    context: RepositoryContext,
-  ): Promise<void>;
-  archiveLeague(
-    leagueId: string,
-    teamId: string,
-    context: RepositoryContext,
-  ): Promise<void>;
+  leaveLeague(leagueId: string, teamId: string, context: RepositoryContext): Promise<void>;
+  archiveLeague(leagueId: string, teamId: string, context: RepositoryContext): Promise<void>;
   getTopPlayers(
     gameweekId: string,
     context: RepositoryContext,
