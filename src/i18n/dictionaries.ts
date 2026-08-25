@@ -1122,8 +1122,7 @@ export const dictionaries = {
     "legal.value.governing_law": "[عنصر نائب — القانون الحاكم والاختصاص القضائي]",
     "legal.back_home": "العودة إلى الرئيسية",
     "legal.terms.title": "شروط الاستخدام",
-    "legal.terms.summary":
-      "تنظم هذه الشروط الوصول إلى BotolaGO ومحتوى كرة القدم وميزات الفانتازي.",
+    "legal.terms.summary": "تنظم هذه الشروط الوصول إلى BotolaGO ومحتوى كرة القدم وميزات الفانتازي.",
     "legal.terms.eligibility.title": "1. الأهلية والحد الأدنى للعمر",
     "legal.terms.eligibility.body":
       "لا يجوز لك استخدام BotolaGO إلا إذا استوفيت الحد الأدنى للعمر الموضح أعلاه وكان القانون المعمول به يسمح لك بقبول هذه الشروط. وقد تكون موافقة ولي الأمر مطلوبة.",

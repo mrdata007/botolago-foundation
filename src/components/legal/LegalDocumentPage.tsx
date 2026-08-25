@@ -121,7 +121,9 @@ export function LegalDocumentPage({ kind }: { kind: LegalDocumentKind }) {
       <article className="mt-7 space-y-6 rounded-[var(--radius-hero)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] p-5 shadow-card sm:p-7">
         {sections[kind].map((section) => (
           <section key={section.title}>
-            <h2 className="text-lg font-black tracking-tight text-foreground">{t(section.title)}</h2>
+            <h2 className="text-lg font-black tracking-tight text-foreground">
+              {t(section.title)}
+            </h2>
             <p className="mt-2 text-sm leading-7 text-[color:var(--text-secondary)]">
               {t(section.body)}
             </p>

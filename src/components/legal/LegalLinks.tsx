@@ -21,7 +21,10 @@ export function LegalLinks({
   return (
     <nav
       aria-label={t("legal.links.navigation")}
-      className={cn("flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs", className)}
+      className={cn(
+        "flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs",
+        className,
+      )}
     >
       <Link
         to="/terms"

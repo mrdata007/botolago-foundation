@@ -41,18 +41,14 @@ for (const language of ["fr", "ar"] as const) {
         await expect(page.getByTestId(testId)).toContainText(/\[.+\]/);
       }
       await expect(page.locator("html")).toHaveAttribute("lang", language);
-      await expect(page.locator("html")).toHaveAttribute(
-        "dir",
-        language === "ar" ? "rtl" : "ltr",
-      );
+      await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
       await expectNoHorizontalOverflow(page);
     }
 
     await page.goto("/auth/register", { waitUntil: "networkidle" });
-    await expect(page.getByRole("link", { name: expectations[language].terms }).first()).toHaveAttribute(
-      "href",
-      "/terms",
-    );
+    await expect(
+      page.getByRole("link", { name: expectations[language].terms }).first(),
+    ).toHaveAttribute("href", "/terms");
     await expect(
       page.getByRole("link", { name: expectations[language].privacy }).first(),
     ).toHaveAttribute("href", "/privacy");
