@@ -243,6 +243,7 @@ function PlayersPage() {
                 type="button"
                 disabled={!watchReady}
                 onClick={() => toggleWatch(player.id)}
+                aria-pressed={inWatch}
                 aria-label={
                   inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
                 }

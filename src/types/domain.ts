@@ -46,6 +46,8 @@ export interface Article {
   heroUrl?: string;
   /** Editorial alt text supplied alongside the hero media. */
   heroAlt?: string;
+  /** Language of the edition actually returned, including explicit translation fallback. */
+  contentLanguage?: "fr" | "ar";
   /** Sanitized server-authored HTML, present only on article detail. */
   bodyHtml?: string;
   isLead?: boolean;

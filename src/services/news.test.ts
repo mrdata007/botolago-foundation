@@ -62,5 +62,7 @@ describe("News frontend repository cutover", () => {
     expect(source).toContain("const relatedArticleId = articleQ.data?.id");
     expect(source).toContain("newsService.getRelated(relatedArticleId!, lang)");
     expect(source).not.toContain("newsService.getRelated(articleId, lang)");
+    expect(source).toContain('error.code === "article_not_found"');
+    expect(source).toContain('to="/news"');
   });
 });

@@ -417,4 +417,23 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(transferSource).toContain("activeRules.maxPerClub");
     expect(transferSource).toContain("activeRules.transferHitCost");
   });
+
+  it("marks read-only Fantasy visuals as non-interactive and exposes watch state", () => {
+    const shirtSource = readFileSync(
+      new URL("../components/fantasy/PlayerShirt.tsx", import.meta.url),
+      "utf8",
+    );
+    const chipSource = readFileSync(
+      new URL("../components/fantasy/FantasyChipCard.tsx", import.meta.url),
+      "utf8",
+    );
+    const playerListSource = readFileSync(
+      new URL("../routes/fantasy.players.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(shirtSource).toContain("disabled={!onClick}");
+    expect(chipSource).toContain("const disabled = !onClick || stateDisabled");
+    expect(playerListSource).toContain("aria-pressed={inWatch}");
+  });
 });

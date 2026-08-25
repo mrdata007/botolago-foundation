@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Share2 } from "lucide-react";
@@ -19,7 +19,7 @@ import { StatComparison } from "@/components/matches/StatComparison";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "momentum", "h2h"];
+const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "h2h"];
 
 export const Route = createFileRoute("/matches/$matchId")({
   validateSearch: (search: Record<string, unknown>): { tab: MatchTabKey } => {
@@ -34,7 +34,6 @@ function MatchDetailPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang, dir } = useI18n();
-  const router = useRouter();
   const [copied, setCopied] = useState(false);
 
   const detailQ = useQuery({
@@ -43,6 +42,8 @@ function MatchDetailPage() {
     // Live matches refresh on a calm cadence; paused while the tab is hidden.
     refetchInterval: (query) => (query.state.data?.match.status === "live" ? 30_000 : false),
     refetchIntervalInBackground: false,
+    retry: (failureCount, error) =>
+      !(error instanceof FootballError && error.code === "fixture_not_found") && failureCount < 2,
   });
   const articlesQ = useQuery({
     queryKey: ["news", "feed", lang],
@@ -147,9 +148,8 @@ function MatchDetailPage() {
     <AppShell backgroundVariant="matches">
       {/* Reading actions */}
       <div className="mt-1 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => router.history.back()}
+        <Link
+          to="/matches"
           aria-label={t("article.back")}
           className={cn(
             "inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground",
@@ -160,7 +160,7 @@ function MatchDetailPage() {
         >
           <BackArrow className="h-4 w-4" aria-hidden />
           <span>{t("article.back")}</span>
-        </button>
+        </Link>
         <button
           type="button"
           onClick={share}
@@ -196,7 +196,13 @@ function MatchDetailPage() {
 
       <div role="tabpanel" className="mt-5">
         {tab === "summary" && (
-          <EventTimeline events={live.events} home={home} away={away} isLive={isLive} />
+          <EventTimeline
+            events={live.events}
+            home={home}
+            away={away}
+            isLive={isLive}
+            isFinished={match.status === "finished"}
+          />
         )}
 
         {tab === "stats" && (
@@ -206,18 +212,6 @@ function MatchDetailPage() {
             awayName={tr(away.shortName)}
             isFinished={match.status === "finished"}
           />
-        )}
-
-        {tab === "momentum" && (
-          <div>
-            <SectionHeader
-              title={t("matches.detail.momentum_title")}
-              eyebrow={t("matches.detail.tab.momentum")}
-            />
-            <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
-              {t("matches.detail.momentum_unavailable")}
-            </div>
-          </div>
         )}
 
         {tab === "h2h" && (

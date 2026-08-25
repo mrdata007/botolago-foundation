@@ -141,6 +141,8 @@ export const dictionaries = {
     "article.updated": "Mis à jour",
     "article.not_found_title": "Article introuvable",
     "article.not_found_desc": "Cet article a peut-être été retiré ou déplacé.",
+    "article.translation_unavailable":
+      "Cette traduction n’est pas encore disponible. L’article original est affiché.",
 
     "matches.title": "Matchs",
     "matches.tab.all": "Tous",
@@ -211,6 +213,7 @@ export const dictionaries = {
     "matches.detail.tab.h2h": "Face à face",
     "matches.detail.tabs_label": "Sections du match",
     "matches.detail.no_events": "Aucun fait marquant pour le moment.",
+    "matches.detail.no_events_finished": "Aucun événement détaillé n’est disponible pour ce match.",
     "matches.detail.no_stats": "Les statistiques seront disponibles au coup d'envoi.",
     "matches.detail.no_stats_finished": "Aucune statistique n'est disponible pour ce match.",
     "matches.detail.stats_title": "Statistiques de l'équipe",
@@ -683,7 +686,7 @@ export const dictionaries = {
     "common.away": "Extérieur",
     "common.vs": "vs",
 
-    "profile.title": "Profile\n\n",
+    "profile.title": "Profil",
     "profile.coming_soon": "Votre profil personnalisé arrive bientôt.",
     "profile.language": "Langue de l'application",
     "profile.followed_clubs": "Clubs suivis",
@@ -1226,6 +1229,8 @@ export const dictionaries = {
     "article.updated": "حُدِّث",
     "article.not_found_title": "المقال غير موجود",
     "article.not_found_desc": "قد يكون هذا المقال قد أُزيل أو نُقل.",
+    "article.translation_unavailable":
+      "هذه الترجمة غير متاحة بعد. يتم عرض المقال بلغته الأصلية.",
 
     "matches.title": "المباريات",
     "matches.tab.all": "الكل",
@@ -1296,6 +1301,7 @@ export const dictionaries = {
     "matches.detail.tab.h2h": "المواجهات",
     "matches.detail.tabs_label": "أقسام المباراة",
     "matches.detail.no_events": "لا توجد أحداث بارزة حتى الآن.",
+    "matches.detail.no_events_finished": "لا تتوفر أحداث تفصيلية لهذه المباراة.",
     "matches.detail.no_stats": "ستتوفر الإحصائيات عند انطلاق المباراة.",
     "matches.detail.no_stats_finished": "لا تتوفر إحصائيات لهذه المباراة.",
     "matches.detail.stats_title": "إحصائيات الفريقين",
@@ -1756,7 +1762,7 @@ export const dictionaries = {
     "common.away": "خارج أرضه",
     "common.vs": "ضد",
 
-    "profile.title": "Profile\n\n",
+    "profile.title": "الملف الشخصي",
     "profile.coming_soon": "ملفك الشخصي قريباً.",
     "profile.language": "لغة التطبيق",
     "profile.followed_clubs": "الأندية المتابَعة",

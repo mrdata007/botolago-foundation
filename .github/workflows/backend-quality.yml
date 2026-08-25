@@ -27,7 +27,7 @@ permissions:
 jobs:
   application-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -50,7 +50,7 @@ jobs:
           NITRO_PRESET: node-server
         run: bun run build:demo
       - run: bunx playwright install --with-deps chromium
-      - name: Run anonymous and Atlas browser acceptance
+      - name: Run complete mock browser acceptance
         env:
           E2E_USE_BUILT_PREVIEW: "1"
           VITE_APP_MODE: demo
@@ -65,7 +65,9 @@ jobs:
         run: |
           bunx playwright test \
             tests/e2e/anonymous.acceptance.e2e.ts \
+            tests/e2e/legal.acceptance.e2e.ts \
             tests/e2e/atlas-matchday.e2e.ts \
+            tests/e2e/functional-controls.e2e.ts \
             tests/e2e/demo-mode.e2e.ts
       - name: Upload sanitized browser evidence on failure
         if: failure()

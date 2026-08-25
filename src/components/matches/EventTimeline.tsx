@@ -19,18 +19,20 @@ export function EventTimeline({
   home,
   away,
   isLive,
+  isFinished,
 }: {
   events: readonly MatchEvent[];
   home: Club;
   away: Club;
   isLive: boolean;
+  isFinished: boolean;
 }) {
   const { t } = useI18n();
 
   if (events.length === 0) {
     return (
       <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
-        {t("matches.detail.no_events")}
+        {t(isFinished ? "matches.detail.no_events_finished" : "matches.detail.no_events")}
       </div>
     );
   }

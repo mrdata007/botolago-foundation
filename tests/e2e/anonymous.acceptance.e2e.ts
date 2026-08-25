@@ -10,22 +10,61 @@ const viewports = [
   { name: "desktop", width: 1440, height: 900 },
 ] as const;
 
-const routes = [
+const criticalRoutes = [
   "/",
   "/news",
   "/matches",
+  "/fantasy",
   "/fantasy/rules",
   "/profile",
   "/terms",
   "/privacy",
 ] as const;
 
+const fullRouteMatrix = [
+  ...criticalRoutes,
+  "/news/preview-a1",
+  "/news/does-not-exist",
+  "/matches/does-not-exist",
+  "/fantasy/create",
+  "/fantasy/create/squad",
+  "/fantasy/create/review",
+  "/fantasy/team",
+  "/fantasy/points",
+  "/fantasy/transfers",
+  "/fantasy/leagues",
+  "/fantasy/leagues/lg1",
+  "/fantasy/fixtures",
+  "/fantasy/players",
+  "/fantasy/players/fp_war_1",
+  "/fantasy/top-players",
+  "/fantasy/rankings",
+  "/auth",
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/verify",
+  "/auth/profile-setup",
+  "/auth/update-password",
+  "/admin",
+  "/admin/approvals",
+  "/admin/audit",
+  "/admin/security",
+  "/admin/staff",
+  "/admin/staff/demo",
+] as const;
+
 for (const language of ["fr", "ar"] as const) {
   for (const viewport of viewports) {
     test(`${language} ${viewport.name}: anonymous critical routes`, async ({ page }, testInfo) => {
+      test.setTimeout(120_000);
       const diagnostics = observePage(page);
       await page.setViewportSize(viewport);
       await initializeLanguage(page, language);
+      const routes =
+        viewport.name === "mobile-390" || viewport.name === "desktop"
+          ? fullRouteMatrix
+          : criticalRoutes;
 
       for (const route of routes) {
         await page.goto(route, { waitUntil: "networkidle" });

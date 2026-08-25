@@ -82,9 +82,21 @@ describe("Football frontend repository cutover", () => {
       new URL("../components/matches/MatchScoreHeader.tsx", import.meta.url),
       "utf8",
     );
+    const timeline = readFileSync(
+      new URL("../components/matches/EventTimeline.tsx", import.meta.url),
+      "utf8",
+    );
+    const tabs = readFileSync(
+      new URL("../components/matches/MatchTabs.tsx", import.meta.url),
+      "utf8",
+    );
 
     expect(route).toContain('isFinished={match.status === "finished"}');
+    expect(route).toContain('to="/matches"');
+    expect(route).toContain('error.code === "fixture_not_found"');
     expect(stats).toContain('"matches.detail.no_stats_finished"');
+    expect(timeline).toContain('"matches.detail.no_events_finished"');
     expect(scoreHeader).toContain("venue && (");
+    expect(tabs).not.toContain('{ key: "momentum"');
   });
 });
