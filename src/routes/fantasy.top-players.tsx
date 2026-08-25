@@ -168,10 +168,7 @@ function TopPlayersPage() {
     gwQ.isLoading ||
     availableGwsQ.isLoading;
   const isError =
-    topQ.isError ||
-    playersQ.isError ||
-    clubsQ.isError ||
-    gwQ.isError ||
+    topQ.isError || playersQ.isError || clubsQ.isError || gwQ.isError ||
     availableGwsQ.isError;
 
   return (

@@ -342,8 +342,7 @@ export const fantasyService = {
     if (mode() === "mock") {
       const { leaguesStore } = await import("./leagues-store");
       return (
-        leaguesStore.get(leagueId)?.standings ??
-        mockFantasyService.getLeagueStandings(leagueId)
+        leaguesStore.get(leagueId)?.standings ?? mockFantasyService.getLeagueStandings(leagueId)
       );
     }
     const page = await cloud.getLeagueStandings(leagueId, null, context());
