@@ -90,5 +90,5 @@ Before exposing email or social Auth in an environment:
 2. Configure exact site/redirect URLs and custom SMTP.
 3. Configure each intended OAuth provider, pass its staging callback journey, then enable only its matching `VITE_AUTH_*_ENABLED` flag.
 4. Verify registration, confirmation, reset, OAuth callback, refresh, local logout, and global logout.
-6. Confirm cross-user RLS denial and private avatar access with two real test users.
-5. Confirm no service-role key is present in browser bundles, repository history, or client environment variables.
+5. Confirm cross-user RLS denial and private avatar access with two real test users.
+6. Confirm no service-role key is present in browser bundles, repository history, or client environment variables.
