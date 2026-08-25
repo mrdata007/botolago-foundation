@@ -167,12 +167,7 @@ function TopPlayersPage() {
     clubsQ.isLoading ||
     gwQ.isLoading ||
     availableGwsQ.isLoading;
-  const isError =
-    topQ.isError ||
-    playersQ.isError ||
-    clubsQ.isError ||
-    gwQ.isError ||
-    availableGwsQ.isError;
+  const isError = topQ.isError || playersQ.isError || clubsQ.isError || gwQ.isError || availableGwsQ.isError;
 
   return (
     <div className="pb-10">

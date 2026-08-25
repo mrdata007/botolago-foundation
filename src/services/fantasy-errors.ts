@@ -7,11 +7,7 @@
 
 import { FantasyCloudError } from "@/services/fantasy-cloud-repo";
 import { MissingIdMappingError } from "@/services/fantasy-id-map";
-import {
-  FANTASY_ERROR_CODES,
-  FantasyError,
-  type FantasyErrorCode,
-} from "@/backend/fantasy/errors";
+import { FANTASY_ERROR_CODES, FantasyError, type FantasyErrorCode } from "@/backend/fantasy/errors";
 
 export type FantasyRepoErrorCode =
   | "unauthenticated"
@@ -55,7 +51,13 @@ export class FantasyRepoError extends Error {
 export function toRepoError(err: unknown): FantasyRepoError {
   if (err instanceof FantasyRepoError) return err;
   if (err instanceof FantasyError) {
-    return new FantasyRepoError(mapDomainCode(err.code), err.message, err.cause ?? err, undefined, err.code);
+    return new FantasyRepoError(
+      mapDomainCode(err.code),
+      err.message,
+      err.cause ?? err,
+      undefined,
+      err.code,
+    );
   }
   if (err instanceof MissingIdMappingError) {
     return new FantasyRepoError("mapping_incomplete", err.message, err, {
