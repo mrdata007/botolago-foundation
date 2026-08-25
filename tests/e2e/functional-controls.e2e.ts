@@ -374,7 +374,9 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
   await page.getByRole("button", { name: "Vérifier", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Résumé des transferts" })).toBeVisible();
   await page.getByRole("button", { name: "Confirmer les transferts", exact: true }).click();
-  await expect(page.getByText("Transferts confirmés", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Transferts confirmés" }).first(),
+  ).toBeVisible();
   await reloadHydrated(page, "fr");
   await expect(page.getByText(replacementName, { exact: true }).first()).toBeVisible();
 
