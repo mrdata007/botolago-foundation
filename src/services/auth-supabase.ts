@@ -23,7 +23,11 @@ import type {
   UpdatePasswordInput,
 } from "./auth-types";
 import { defaultNotifications } from "./auth-types";
-import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
+import {
+  deleteAvatar,
+  signedAvatarUrl,
+  uploadAvatarFromDataUrl,
+} from "./profiles-repo";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { AsyncSessionFence } from "@/lib/async-session-fence";
@@ -60,20 +64,32 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   const msg = (err.message ?? "").toLowerCase();
   const status = err.status ?? 0;
   if (status === 429 || msg.includes("rate limit")) return "rate_limited";
-  if (status === 401 || msg.includes("session_not_found")) return "session_expired";
-  if (msg.includes("invalid login") || msg.includes("invalid credentials")) return "credentials";
-  if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed"))
+  if (status === 401 || msg.includes("session_not_found"))
+    return "session_expired";
+  if (msg.includes("invalid login") || msg.includes("invalid credentials"))
+    return "credentials";
+  if (
+    msg.includes("email not confirmed") ||
+    msg.includes("email_not_confirmed")
+  )
     return "email_unconfirmed";
-  if (msg.includes("already registered") || msg.includes("user already")) return "email_taken";
+  if (msg.includes("already registered") || msg.includes("user already"))
+    return "email_taken";
   if (msg.includes("otp") && msg.includes("expired")) return "otp_expired";
   if (msg.includes("token has expired or is invalid")) return "otp_expired";
-  if (msg.includes("token") && msg.includes("expired")) return "invalid_reset_token";
+  if (msg.includes("token") && msg.includes("expired"))
+    return "invalid_reset_token";
   if (msg.includes("invalid otp")) return "otp_invalid";
   if (msg.includes("invalid token")) return "invalid_reset_token";
-  if (msg.includes("weak password") || msg.includes("password should")) return "weak_password";
-  if (msg.includes("provider is not enabled") || msg.includes("provider disabled"))
+  if (msg.includes("weak password") || msg.includes("password should"))
+    return "weak_password";
+  if (
+    msg.includes("provider is not enabled") ||
+    msg.includes("provider disabled")
+  )
     return "provider_unavailable";
-  if (msg.includes("failed to fetch") || msg.includes("network")) return "network";
+  if (msg.includes("failed to fetch") || msg.includes("network"))
+    return "network";
   if (msg.includes("username_taken")) return "username_taken";
   if (msg.includes("reserved_username") || msg.includes("username_reserved"))
     return "reserved_username";
@@ -110,15 +126,23 @@ async function buildAuthUser(
 ): Promise<AuthUser> {
   const displayName =
     profile?.displayName.trim() ||
-    String(user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "").trim();
-  const username = profile?.username?.trim() || String(user.user_metadata?.username ?? "").trim();
+    String(
+      user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "",
+    ).trim();
+  const username =
+    profile?.username?.trim() ||
+    String(user.user_metadata?.username ?? "").trim();
   const avatarPath = profile?.avatarPath ?? undefined;
   const avatarDataUrl = avatarPath
     ? ((await signedAvatarUrl(avatarPath).catch(() => null)) ?? undefined)
     : undefined;
   const rawProvider = String(user.app_metadata?.provider ?? "email");
   const provider: AuthUser["provider"] =
-    rawProvider === "google" ? "google" : rawProvider === "apple" ? "apple" : "email";
+    rawProvider === "google"
+      ? "google"
+      : rawProvider === "apple"
+        ? "apple"
+        : "email";
 
   return {
     id: user.id,
@@ -127,12 +151,16 @@ async function buildAuthUser(
     username,
     avatarPath,
     avatarDataUrl,
-    favoriteClubId: profile?.favoriteTeamReference ?? profile?.favoriteTeamId ?? undefined,
+    favoriteClubId:
+      profile?.favoriteTeamReference ?? profile?.favoriteTeamId ?? undefined,
     language: profile?.preferredLanguage ?? "fr",
     notifications: profile?.notifications ?? defaultNotifications(),
-    profileComplete: profileAvailable ? profile?.onboardingCompletedAt != null : true,
+    profileComplete: profileAvailable
+      ? profile?.onboardingCompletedAt != null
+      : true,
     profileAvailable,
-    createdAt: profile?.createdAt ?? user.created_at ?? new Date().toISOString(),
+    createdAt:
+      profile?.createdAt ?? user.created_at ?? new Date().toISOString(),
     verified: !!user.email_confirmed_at,
     provider,
   };
@@ -156,7 +184,8 @@ export class SupabaseAuthService implements AuthService {
     void supabase.auth.getSession().then(({ data }) => {
       // A SIGNED_OUT/SIGNED_IN event can arrive before getSession resolves.
       // Never allow that older snapshot to overwrite the newer event.
-      if (this.sessionFence.isCurrent(initialSnapshot)) this.scheduleSession(data.session);
+      if (this.sessionFence.isCurrent(initialSnapshot))
+        this.scheduleSession(data.session);
     });
     supabase.auth.onAuthStateChange((_event, session) => {
       this.scheduleSession(session);
@@ -213,7 +242,10 @@ export class SupabaseAuthService implements AuthService {
   getSession(): AuthSession {
     this.init();
     if (!hasWindow()) return { user: null, status: "loading" };
-    if (this.cachedSession.status === "loading" && window.localStorage.getItem(K_GUEST) === "1")
+    if (
+      this.cachedSession.status === "loading" &&
+      window.localStorage.getItem(K_GUEST) === "1"
+    )
       return { user: null, status: "guest" };
     return this.cachedSession;
   }
@@ -225,17 +257,23 @@ export class SupabaseAuthService implements AuthService {
     return () => void this.listeners.delete(listener);
   }
 
-  async signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>> {
+  async signInWithEmail(
+    email: string,
+    password: string,
+  ): Promise<AuthResult<AuthUser>> {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
-    if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
+    if (error || !data.user)
+      return { ok: false, errorCode: mapAuthError(error) };
     const authUser = await this.resolveAuthUser(data.user);
     return { ok: true, data: authUser };
   }
 
-  async registerWithEmail(input: RegisterInput): Promise<AuthResult<{ email: string }>> {
+  async registerWithEmail(
+    input: RegisterInput,
+  ): Promise<AuthResult<{ email: string }>> {
     const { data, error } = await supabase.auth.signUp({
       email: input.email.trim(),
       password: input.password,
@@ -249,16 +287,22 @@ export class SupabaseAuthService implements AuthService {
       },
     });
     if (error) return { ok: false, errorCode: mapAuthError(error) };
-    return { ok: true, data: { email: (data.user?.email ?? input.email).trim() } };
+    return {
+      ok: true,
+      data: { email: (data.user?.email ?? input.email).trim() },
+    };
   }
 
   async requestPasswordReset(email: string): Promise<AuthResult> {
     const redirectTo = hasWindow()
       ? `${getRedirectBase()}/auth/callback?next=/auth/update-password`
       : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
     // Prevent account enumeration while still surfacing transport failures.
-    if (error && mapAuthError(error) === "network") return { ok: false, errorCode: "network" };
+    if (error && mapAuthError(error) === "network")
+      return { ok: false, errorCode: "network" };
     if (error && mapAuthError(error) === "rate_limited")
       return { ok: false, errorCode: "rate_limited" };
     return { ok: true };
@@ -291,7 +335,8 @@ export class SupabaseAuthService implements AuthService {
       token: code.trim(),
       type: "email",
     });
-    if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
+    if (error || !data.user)
+      return { ok: false, errorCode: mapAuthError(error) };
     const user = await this.resolveAuthUser(data.user);
     return { ok: true, data: user };
   }
@@ -300,7 +345,9 @@ export class SupabaseAuthService implements AuthService {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
-      options: { emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined },
+      options: {
+        emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined,
+      },
     });
     return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
@@ -332,7 +379,9 @@ export class SupabaseAuthService implements AuthService {
     return { ok: true };
   }
 
-  async completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>> {
+  async completeProfile(
+    input: CompleteProfileInput,
+  ): Promise<AuthResult<AuthUser>> {
     const current = this.cachedSession.user;
     if (this.cachedSession.status !== "authenticated" || !current)
       return { ok: false, errorCode: "unauthorized" };
@@ -344,14 +393,18 @@ export class SupabaseAuthService implements AuthService {
     let nextAvatarPath = input.removeAvatar ? null : (oldAvatarPath ?? null);
     let uploadedPath: string | null = null;
     if (!input.removeAvatar && input.avatarDataUrl?.startsWith("data:")) {
-      const uploaded = await uploadAvatarFromDataUrl(current.id, input.avatarDataUrl);
+      const uploaded = await uploadAvatarFromDataUrl(
+        current.id,
+        input.avatarDataUrl,
+      );
       if (!uploaded.ok) return { ok: false, errorCode: "generic" };
       uploadedPath = uploaded.path;
       nextAvatarPath = uploaded.path;
     }
 
     if (this.cachedSession.user?.id !== actorId) {
-      if (uploadedPath && uploadedPath !== oldAvatarPath) await deleteAvatar(uploadedPath);
+      if (uploadedPath && uploadedPath !== oldAvatarPath)
+        await deleteAvatar(uploadedPath);
       return { ok: false, errorCode: "session_expired" };
     }
 
@@ -362,14 +415,23 @@ export class SupabaseAuthService implements AuthService {
           username,
           avatarPath: nextAvatarPath,
           preferredLanguage: input.language ?? current.language,
-          favoriteTeamReference: input.favoriteClubId ?? current.favoriteClubId ?? null,
-          notifications: { ...current.notifications, ...(input.notifications ?? {}) },
+          favoriteTeamReference:
+            input.favoriteClubId ?? current.favoriteClubId ?? null,
+          notifications: {
+            ...current.notifications,
+            ...(input.notifications ?? {}),
+          },
         },
         context(actorId),
       );
-      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
+      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath)
+        await deleteAvatar(oldAvatarPath);
       const { data } = await supabase.auth.getUser();
-      if (!data.user || data.user.id !== actorId || this.cachedSession.user?.id !== actorId) {
+      if (
+        !data.user ||
+        data.user.id !== actorId ||
+        this.cachedSession.user?.id !== actorId
+      ) {
         return { ok: false, errorCode: "session_expired" };
       }
       const user = await buildAuthUser(data.user, profile);
@@ -379,7 +441,8 @@ export class SupabaseAuthService implements AuthService {
     } catch (error) {
       // A newly-created path is safe to remove. If an existing deterministic
       // path was overwritten, retain it because the profile still references it.
-      if (uploadedPath && uploadedPath !== oldAvatarPath) await deleteAvatar(uploadedPath);
+      if (uploadedPath && uploadedPath !== oldAvatarPath)
+        await deleteAvatar(uploadedPath);
       return { ok: false, errorCode: mapIdentityCode(error) };
     }
   }
@@ -399,7 +462,9 @@ export class SupabaseAuthService implements AuthService {
   > {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      const requests = await accountSecurity.listDeletionRequests(context(actorId));
+      const requests = await accountSecurity.listDeletionRequests(
+        context(actorId),
+      );
       return {
         ok: true,
         data: requests.map((request) => ({
@@ -430,7 +495,9 @@ export class SupabaseAuthService implements AuthService {
     const scope = options?.scope ?? "local";
     const actorId = this.cachedSession.user?.id ?? null;
     if (actorId) {
-      await accountSecurity.recordSessionRevocation(scope, context(actorId)).catch(() => undefined);
+      await accountSecurity
+        .recordSessionRevocation(scope, context(actorId))
+        .catch(() => undefined);
     }
     const { error } = await supabase.auth.signOut({ scope });
     if (error) throw error;
@@ -438,9 +505,11 @@ export class SupabaseAuthService implements AuthService {
     if (hasWindow()) {
       window.localStorage.removeItem(K_GUEST);
       if (options?.resetLocalData) {
-        ["botolago.fantasy.team", "botolago.fantasy.bank", "botolago.fantasy.transfers"].forEach(
-          (key) => window.localStorage.removeItem(key),
-        );
+        [
+          "botolago.fantasy.team",
+          "botolago.fantasy.bank",
+          "botolago.fantasy.transfers",
+        ].forEach((key) => window.localStorage.removeItem(key));
       }
       try {
         Object.keys(window.localStorage)

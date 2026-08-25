@@ -15,7 +15,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase as defaultClient } from "@/integrations/supabase/client";
 
-import { FORMATIONS, type FantasyTeam, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+import {
+  FORMATIONS,
+  type FantasyTeam,
+  type FormationKey,
+  type SquadPlayer,
+} from "@/types/fantasy";
 import {
   buildAuthoritativePointsViewModel,
   mapFantasyPointsDto,
@@ -127,14 +132,19 @@ export interface FantasyOwnedRepository {
   readonly source: FantasyRepoSource;
   loadSnapshot(): Promise<FantasySnapshot>;
   saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot>;
-  previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto>;
+  previewTransfers(
+    input: PreviewOwnedTransfersInput,
+  ): Promise<FantasyTransferPreviewDto>;
   confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot>;
   activateChip(input: {
     gameweekId: string;
     chip: FantasyChip;
     expectedVersion: number;
   }): Promise<FantasySnapshot>;
-  cancelChip(input: { gameweekId: string; expectedVersion: number }): Promise<FantasySnapshot>;
+  cancelChip(input: {
+    gameweekId: string;
+    expectedVersion: number;
+  }): Promise<FantasySnapshot>;
   finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot>;
   reload(): Promise<FantasySnapshot>;
 }
@@ -184,18 +194,25 @@ export class GuestFantasyRepository implements FantasyOwnedRepository {
   }
 
   private unauthorized(): never {
-    throw new FantasyRepoError("unauthenticated", "Authentication is required.");
+    throw new FantasyRepoError(
+      "unauthenticated",
+      "Authentication is required.",
+    );
   }
 
   async saveTeam(_input: SaveOwnedTeamInput): Promise<FantasySnapshot> {
     return this.unauthorized();
   }
 
-  async previewTransfers(_input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+  async previewTransfers(
+    _input: PreviewOwnedTransfersInput,
+  ): Promise<FantasyTransferPreviewDto> {
     return this.unauthorized();
   }
 
-  async confirmTransfers(_input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+  async confirmTransfers(
+    _input: ConfirmOwnedTransfersInput,
+  ): Promise<FantasySnapshot> {
     return this.unauthorized();
   }
 
@@ -214,7 +231,9 @@ export class GuestFantasyRepository implements FantasyOwnedRepository {
     return this.unauthorized();
   }
 
-  async finalizeGameweek(_input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
+  async finalizeGameweek(
+    _input: FinalizeOwnedGameweekInput,
+  ): Promise<FantasySnapshot> {
     return this.unauthorized();
   }
 
@@ -225,7 +244,9 @@ export class GuestFantasyRepository implements FantasyOwnedRepository {
 
 // ---------- Local adapter ----------
 
-function pickFinalized(state: FantasyPersistedState): Record<number, PointsViewModel> {
+function pickFinalized(
+  state: FantasyPersistedState,
+): Record<number, PointsViewModel> {
   const out: Record<number, PointsViewModel> = {};
   for (const [gw, vm] of Object.entries(state.results ?? {})) {
     if (vm?.finalized) out[Number(gw)] = vm;
@@ -274,15 +295,25 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
     return this.loadSnapshot();
   }
 
-  async previewTransfers(_input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
-    throw new FantasyRepoError("validation", "Server preview is unavailable in local mode.");
+  async previewTransfers(
+    _input: PreviewOwnedTransfersInput,
+  ): Promise<FantasyTransferPreviewDto> {
+    throw new FantasyRepoError(
+      "validation",
+      "Server preview is unavailable in local mode.",
+    );
   }
 
-  async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+  async confirmTransfers(
+    input: ConfirmOwnedTransfersInput,
+  ): Promise<FantasySnapshot> {
     const team = await fantasyService.getTeam();
     const outIds = input.transfers.map((t) => t.outSourceId);
     const inIds = input.transfers.map((t) => t.inSourceId);
-    const netCost = input.transfers.reduce((s, t) => s + (t.priceIn - t.priceOut), 0);
+    const netCost = input.transfers.reduce(
+      (s, t) => s + (t.priceIn - t.priceOut),
+      0,
+    );
     const result = applyConfirmedTransfers({
       team,
       chips: input.lifecycle.chips,
@@ -307,7 +338,8 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
         ...input.lifecycle,
         chips: result.value.chips as ChipsState,
         transferHitPoints:
-          (input.lifecycle.transferHitPoints ?? 0) + (result.value.hitPointsApplied ?? 0),
+          (input.lifecycle.transferHitPoints ?? 0) +
+          (result.value.hitPointsApplied ?? 0),
       },
       { internal: true },
     );
@@ -319,7 +351,10 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
     chip: FantasyChip;
     expectedVersion: number;
   }): Promise<FantasySnapshot> {
-    throw new FantasyRepoError("validation", "Cloud chip activation is unavailable in local mode.");
+    throw new FantasyRepoError(
+      "validation",
+      "Cloud chip activation is unavailable in local mode.",
+    );
   }
 
   async cancelChip(_input: {
@@ -332,7 +367,9 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
     );
   }
 
-  async finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
+  async finalizeGameweek(
+    input: FinalizeOwnedGameweekInput,
+  ): Promise<FantasySnapshot> {
     // Delegate to the existing local lifecycle service which already handles
     // Free Hit restore + chip finalize.
     const team = await fantasyService.getTeam();
@@ -388,13 +425,17 @@ interface CloudSquadRow {
 }
 
 function parseLifecycle(raw: unknown): FantasyPersistedState {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ...DEFAULT_STATE };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw))
+    return { ...DEFAULT_STATE };
   const r = raw as Record<string, unknown>;
   return {
     chips: (r.chips as ChipsState) ?? DEFAULT_STATE.chips,
     currentGameweek:
-      typeof r.currentGameweek === "number" ? r.currentGameweek : DEFAULT_STATE.currentGameweek,
-    transferHitPoints: typeof r.transferHitPoints === "number" ? r.transferHitPoints : 0,
+      typeof r.currentGameweek === "number"
+        ? r.currentGameweek
+        : DEFAULT_STATE.currentGameweek,
+    transferHitPoints:
+      typeof r.transferHitPoints === "number" ? r.transferHitPoints : 0,
     results: (r.results as Record<number, PointsViewModel>) ?? {},
   };
 }
@@ -413,7 +454,8 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
     this.userId = deps.userId;
     this.season = deps.season;
     this.loadMap = deps.loadMap ?? (() => loadIdMap(this.client));
-    this.loadGameweeks = deps.loadGameweeks ?? (() => loadGameweekIndex(this.client));
+    this.loadGameweeks =
+      deps.loadGameweeks ?? (() => loadGameweekIndex(this.client));
   }
 
   async loadSnapshot(): Promise<FantasySnapshot> {
@@ -451,7 +493,10 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
           emptyCloudSquad: true,
         };
       }
-      return await this.buildSnapshotFromTeamRow(teamRow as CloudTeamRow, idMap);
+      return await this.buildSnapshotFromTeamRow(
+        teamRow as CloudTeamRow,
+        idMap,
+      );
     } catch (err) {
       throw toRepoError(err);
     }
@@ -548,19 +593,26 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
     }
   }
 
-  async previewTransfers(_input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+  async previewTransfers(
+    _input: PreviewOwnedTransfersInput,
+  ): Promise<FantasyTransferPreviewDto> {
     throw new FantasyRepoError(
       "validation",
       "The archived compatibility adapter does not expose V2 transfer previews.",
     );
   }
 
-  async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+  async confirmTransfers(
+    input: ConfirmOwnedTransfersInput,
+  ): Promise<FantasySnapshot> {
     try {
       const idMap = await this.loadMap();
       const current = await this.loadSnapshot();
       if (!current.teamId) {
-        throw new FantasyRepoError("not_found", "No cloud team to apply transfers against");
+        throw new FantasyRepoError(
+          "not_found",
+          "No cloud team to apply transfers against",
+        );
       }
       const args = buildConfirmTransfersPayload(
         {
@@ -578,7 +630,10 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
         },
         idMap,
       );
-      const { error } = await this.client.rpc("confirm_fantasy_transfers", args);
+      const { error } = await this.client.rpc(
+        "confirm_fantasy_transfers",
+        args,
+      );
       if (error) throw toRepoError(error);
       return await this.loadSnapshot();
     } catch (err) {
@@ -607,7 +662,9 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
     );
   }
 
-  async finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
+  async finalizeGameweek(
+    input: FinalizeOwnedGameweekInput,
+  ): Promise<FantasySnapshot> {
     try {
       const idMap = await this.loadMap();
       const current = await this.loadSnapshot();
@@ -629,7 +686,10 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
         },
         idMap,
       );
-      const { data, error } = await this.client.rpc("finalize_fantasy_gameweek_v2", args);
+      const { data, error } = await this.client.rpc(
+        "finalize_fantasy_gameweek_v2",
+        args,
+      );
       if (error) throw toRepoError(error);
       // `already_finalized=true` still returns the stable state; simply reload.
       void data;
@@ -689,7 +749,8 @@ export function buildV2CloudSnapshot(
       const position = team.squad.find(
         (candidate) => candidate.fantasyPlayerId === player.fantasyPlayerId,
       )?.position;
-      if (position && position !== "GK") counts[position] = (counts[position] ?? 0) + 1;
+      if (position && position !== "GK")
+        counts[position] = (counts[position] ?? 0) + 1;
       return counts;
     }, {});
   const formation =
@@ -700,7 +761,9 @@ export function buildV2CloudSnapshot(
         value.FWD === starterCounts.FWD,
     )?.[0] as FormationKey | undefined) ?? "4-4-2";
   const mappedResult =
-    gameweek && points ? mapFantasyPointsDto(gameweek.sequence, points) : undefined;
+    gameweek && points
+      ? mapFantasyPointsDto(gameweek.sequence, points)
+      : undefined;
   const currentPoints = mappedResult
     ? buildAuthoritativePointsViewModel(mappedResult)
     : undefined;
@@ -728,7 +791,9 @@ export function buildV2CloudSnapshot(
       results,
     },
     finalizedResults:
-      currentPoints?.finalized && gameweek ? { [gameweek.sequence]: currentPoints } : {},
+      currentPoints?.finalized && gameweek
+        ? { [gameweek.sequence]: currentPoints }
+        : {},
     source: "cloud",
     currentGameweekId: gameweek?.id ?? team.currentGameweekId ?? null,
     purchasePrices,
@@ -737,7 +802,8 @@ export function buildV2CloudSnapshot(
   };
 }
 
-const V2_FANTASY_PLAYER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const V2_FANTASY_PLAYER_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isV2FantasyPlayerId(playerId: string): boolean {
   return V2_FANTASY_PLAYER_ID.test(playerId);
@@ -786,7 +852,11 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       const hub = await this.repository.getHub("fr", this.context());
       const points =
         hub.team && hub.gameweek
-          ? await this.repository.getPoints(hub.team.id, hub.gameweek.id, this.context())
+          ? await this.repository.getPoints(
+              hub.team.id,
+              hub.gameweek.id,
+              this.context(),
+            )
           : undefined;
       return buildV2CloudSnapshot(hub.team, hub.gameweek, points);
     } catch (error) {
@@ -799,7 +869,10 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       const hub = await this.repository.getHub("fr", this.context());
       const gameweekId = input.currentGameweekId ?? hub.gameweek?.id;
       if (!gameweekId)
-        throw new FantasyRepoError("gameweek_unresolved", "No mutable gameweek exists");
+        throw new FantasyRepoError(
+          "gameweek_unresolved",
+          "No mutable gameweek exists",
+        );
       if (!hub.team) {
         await this.repository.createTeam(
           {
@@ -827,9 +900,12 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     }
   }
 
-  async previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
+  async previewTransfers(
+    input: PreviewOwnedTransfersInput,
+  ): Promise<FantasyTransferPreviewDto> {
     const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    if (!current.teamId)
+      throw new FantasyRepoError("not_found", "No Fantasy team exists");
     return this.repository.previewTransfers(
       current.teamId,
       input.currentGameweekId,
@@ -843,9 +919,12 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     );
   }
 
-  async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
+  async confirmTransfers(
+    input: ConfirmOwnedTransfersInput,
+  ): Promise<FantasySnapshot> {
     const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    if (!current.teamId)
+      throw new FantasyRepoError("not_found", "No Fantasy team exists");
     await this.repository.confirmTransfers(
       current.teamId,
       input.currentGameweekId,
@@ -867,7 +946,8 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     expectedVersion: number;
   }): Promise<FantasySnapshot> {
     const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    if (!current.teamId)
+      throw new FantasyRepoError("not_found", "No Fantasy team exists");
     await this.repository.activateChip(
       current.teamId,
       input.gameweekId,
@@ -884,7 +964,8 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     expectedVersion: number;
   }): Promise<FantasySnapshot> {
     const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    if (!current.teamId)
+      throw new FantasyRepoError("not_found", "No Fantasy team exists");
     await this.repository.cancelChip(
       current.teamId,
       input.gameweekId,
@@ -894,7 +975,9 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     return this.loadSnapshot();
   }
 
-  async finalizeGameweek(_input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {
+  async finalizeGameweek(
+    _input: FinalizeOwnedGameweekInput,
+  ): Promise<FantasySnapshot> {
     throw new FantasyRepoError(
       "permission_denied",
       "Gameweek finalization is controlled by the trusted Fantasy worker.",

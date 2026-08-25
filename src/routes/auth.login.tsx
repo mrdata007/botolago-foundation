@@ -15,7 +15,10 @@ import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { HAS_SOCIAL_AUTH_PROVIDER, SOCIAL_AUTH_PROVIDERS } from "@/config/auth-providers";
+import {
+  HAS_SOCIAL_AUTH_PROVIDER,
+  SOCIAL_AUTH_PROVIDERS,
+} from "@/config/auth-providers";
 import { LegalConsentNotice } from "@/components/legal/LegalLinks";
 
 function sanitizeNext(raw: unknown): string | undefined {
@@ -139,12 +142,16 @@ function LoginPage() {
             aria-describedby={`${emailId}-err`}
             className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none ring-0 focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
           />
-          <AuthFieldError id={`${emailId}-err`}>{errors.email && t(errors.email)}</AuthFieldError>
+          <AuthFieldError id={`${emailId}-err`}>
+            {errors.email && t(errors.email)}
+          </AuthFieldError>
         </div>
 
         <div>
           <div className="flex items-center justify-between">
-            <AuthFieldLabel htmlFor={passwordId}>{t("auth.password")}</AuthFieldLabel>
+            <AuthFieldLabel htmlFor={passwordId}>
+              {t("auth.password")}
+            </AuthFieldLabel>
             <Link
               to="/auth/forgot-password"
               className="text-xs font-semibold text-[color:var(--brand-primary)] hover:underline"
@@ -166,7 +173,9 @@ function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
-              aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
+              aria-label={
+                showPw ? t("auth.hide_password") : t("auth.show_password")
+              }
               className="absolute inset-y-0 end-2 my-1 grid place-items-center rounded-lg px-2 text-muted-foreground hover:bg-muted"
             >
               {showPw ? (
@@ -191,10 +200,16 @@ function LoginPage() {
           </p>
         )}
 
-        {IS_MOCK_AUTH && <p className="text-[11px] text-muted-foreground">{t("auth.demo_hint")}</p>}
+        {IS_MOCK_AUTH && (
+          <p className="text-[11px] text-muted-foreground">
+            {t("auth.demo_hint")}
+          </p>
+        )}
 
         <AuthPrimaryButton type="submit" disabled={submitting}>
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+          {submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : null}
           {submitting ? t("auth.submitting") : t("auth.login.cta")}
         </AuthPrimaryButton>
 
@@ -253,4 +268,3 @@ function AppleGlyph() {
     </svg>
   );
 }
-

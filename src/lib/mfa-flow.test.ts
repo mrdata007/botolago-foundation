@@ -13,7 +13,9 @@ describe("MFA flow helpers", () => {
 
   test("does not select a different factor type", () => {
     expect(
-      selectVerifiedTotpFactor([{ id: "phone", factor_type: "phone", status: "verified" }]),
+      selectVerifiedTotpFactor([
+        { id: "phone", factor_type: "phone", status: "verified" },
+      ]),
     ).toBeNull();
   });
 
@@ -23,4 +25,3 @@ describe("MFA flow helpers", () => {
     expect(safeMfaReturnPath("https://evil.example/path")).toBe("/");
   });
 });
-

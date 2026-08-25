@@ -16,7 +16,12 @@ const SECRET = "a".repeat(48);
 function gateway(overrides: Partial<AccountDeletionGateway> = {}) {
   const calls: string[] = [];
   const claims: AccountDeletionClaim[] = [
-    { action: "delete", requestId: REQUEST_ID, userId: USER_ID, claimToken: CLAIM_TOKEN },
+    {
+      action: "delete",
+      requestId: REQUEST_ID,
+      userId: USER_ID,
+      claimToken: CLAIM_TOKEN,
+    },
     { action: "none" },
   ];
   const value: AccountDeletionGateway = {
@@ -66,7 +71,11 @@ describe("account deletion batch", () => {
       "finalize",
       "claim",
     ]);
-    expect(result).toMatchObject({ completed: 1, failed: 0, remainingMayExist: false });
+    expect(result).toMatchObject({
+      completed: 1,
+      failed: 0,
+      remainingMayExist: false,
+    });
   });
 
   it("fails closed before Auth deletion for an unexpected Storage object", async () => {
@@ -97,7 +106,13 @@ describe("account deletion batch", () => {
       leaseSeconds: 120,
       workerId: WORKER_ID,
     });
-    expect(fixture.calls).toEqual(["claim", "list", "remove", "delete-auth", "fail"]);
+    expect(fixture.calls).toEqual([
+      "claim",
+      "list",
+      "remove",
+      "delete-auth",
+      "fail",
+    ]);
     expect(result.failed).toBe(1);
   });
 
@@ -125,7 +140,12 @@ describe("account deletion batch", () => {
     fixture.claims.splice(
       0,
       fixture.claims.length,
-      { action: "finalize", requestId: REQUEST_ID, userId: USER_ID, claimToken: CLAIM_TOKEN },
+      {
+        action: "finalize",
+        requestId: REQUEST_ID,
+        userId: USER_ID,
+        claimToken: CLAIM_TOKEN,
+      },
       { action: "none" },
     );
     const result = await executeAccountDeletionBatch(fixture.value, {
@@ -142,7 +162,10 @@ describe("account deletion HTTP boundary", () => {
   it("rejects callers without the dedicated high-entropy worker secret", async () => {
     const fixture = gateway();
     const response = await handleAccountDeletionWorkerRequest(
-      new Request("https://example.test", { method: "POST", body: '{"mode":"dry-run"}' }),
+      new Request("https://example.test", {
+        method: "POST",
+        body: '{"mode":"dry-run"}',
+      }),
       { workerSecret: SECRET, gateway: fixture.value },
     );
     expect(response.status).toBe(401);

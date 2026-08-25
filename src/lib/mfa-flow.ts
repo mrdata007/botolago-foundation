@@ -23,4 +23,3 @@ export function selectVerifiedTotpFactor(
 export function safeMfaReturnPath(value: unknown): string {
   return sanitizeAuthCallbackNext(typeof value === "string" ? value : null);
 }
-

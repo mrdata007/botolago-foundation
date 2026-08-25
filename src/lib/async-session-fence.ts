@@ -25,4 +25,3 @@ export class AsyncSessionFence {
     return revision === this.revision;
   }
 }
-

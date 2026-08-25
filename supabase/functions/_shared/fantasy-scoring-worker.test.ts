@@ -64,14 +64,17 @@ async function requestBody(
 }
 
 function request(body: unknown, triggerSecret = TRIGGER_SECRET): Request {
-  return new Request("https://example.test/functions/v1/fantasy-scoring-worker", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-botolago-scoring-key": triggerSecret,
+  return new Request(
+    "https://example.test/functions/v1/fantasy-scoring-worker",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-botolago-scoring-key": triggerSecret,
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+  );
 }
 
 function successfulClient(
@@ -97,7 +100,10 @@ function successfulClient(
             if (options.failScope) {
               return {
                 data: null,
-                error: { code: "PT409", message: "fantasy_scoring_scope_mismatch" },
+                error: {
+                  code: "PT409",
+                  message: "fantasy_scoring_scope_mismatch",
+                },
               };
             }
             return {
@@ -114,7 +120,10 @@ function successfulClient(
             completionCalls += 1;
             if (options.alreadyComplete || completionCalls > 1) {
               return {
-                data: { finalized: true, stableResult: options.alreadyComplete ?? false },
+                data: {
+                  finalized: true,
+                  stableResult: options.alreadyComplete ?? false,
+                },
                 error: null,
               };
             }
@@ -123,11 +132,16 @@ function successfulClient(
               error: { code: "PT409", message: "gameweek_not_finalizable" },
             };
           }
-          if (rpcName === "service_begin_fantasy_job") return { data: RUN_ID, error: null };
-          if (rpcName === "service_complete_fantasy_job") return { data: true, error: null };
+          if (rpcName === "service_begin_fantasy_job")
+            return { data: RUN_ID, error: null };
+          if (rpcName === "service_complete_fantasy_job")
+            return { data: true, error: null };
           if (rpcName === "service_replace_fantasy_fixture_points") {
             return options.failFixture
-              ? { data: null, error: { code: "PT409", message: "input_version_conflict" } }
+              ? {
+                  data: null,
+                  error: { code: "PT409", message: "input_version_conflict" },
+                }
               : {
                   data: {
                     snapshotId: FIXTURE_SNAPSHOT_ID,
@@ -157,16 +171,29 @@ function successfulClient(
             }
             return playerCalls === 1
               ? {
-                  data: { finalized: 11, afterPlayerId: PLAYER_CURSOR, hasMore: true },
+                  data: {
+                    finalized: 11,
+                    afterPlayerId: PLAYER_CURSOR,
+                    hasMore: true,
+                  },
                   error: null,
                 }
-              : { data: { finalized: 11, afterPlayerId: null, hasMore: false }, error: null };
+              : {
+                  data: { finalized: 11, afterPlayerId: null, hasMore: false },
+                  error: null,
+                };
           }
           if (rpcName === "service_materialize_fantasy_team_results") {
-            return { data: { materialized: 1, afterTeamId: null, hasMore: false }, error: null };
+            return {
+              data: { materialized: 1, afterTeamId: null, hasMore: false },
+              error: null,
+            };
           }
           if (rpcName === "service_finalize_fantasy_team_results") {
-            return { data: { finalized: 1, afterTeamId: null, hasMore: false }, error: null };
+            return {
+              data: { finalized: 1, afterTeamId: null, hasMore: false },
+              error: null,
+            };
           }
           if (rpcName === "service_restore_free_hit") {
             return { data: { restored: 0, hasMore: false }, error: null };
@@ -189,7 +216,10 @@ describe("Fantasy scoring worker", () => {
     const calls: RpcCall[] = [];
     const response = await handleFantasyScoringRequest(
       request(await requestBody("validate"), "wrong-key"),
-      { client: successfulClient(calls), expectedTriggerSecret: TRIGGER_SECRET },
+      {
+        client: successfulClient(calls),
+        expectedTriggerSecret: TRIGGER_SECRET,
+      },
     );
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "unauthorized" });
@@ -198,10 +228,13 @@ describe("Fantasy scoring worker", () => {
 
   test("validates a complete canonical manifest without database writes", async () => {
     const calls: RpcCall[] = [];
-    const response = await handleFantasyScoringRequest(request(await requestBody("validate")), {
-      client: successfulClient(calls),
-      expectedTriggerSecret: TRIGGER_SECRET,
-    });
+    const response = await handleFantasyScoringRequest(
+      request(await requestBody("validate")),
+      {
+        client: successfulClient(calls),
+        expectedTriggerSecret: TRIGGER_SECRET,
+      },
+    );
     expect(response.status).toBe(200);
     const body = (await response.json()) as Record<string, unknown>;
     expect(body.valid).toBe(true);
@@ -209,7 +242,12 @@ describe("Fantasy scoring worker", () => {
     expect(body.executionConfirmation).toMatch(
       /^FINALIZE:11000000-0000-4000-8000-000000000001:v1:[0-9a-f]{12}$/,
     );
-    expect(body.counts).toEqual({ fixtures: 1, players: 22, pointEvents: 22, leagueScopes: 4 });
+    expect(body.counts).toEqual({
+      fixtures: 1,
+      players: 22,
+      pointEvents: 22,
+      leagueScopes: 4,
+    });
     expect(calls).toHaveLength(0);
   });
 
@@ -220,24 +258,40 @@ describe("Fantasy scoring worker", () => {
     expect(() => validateScoringManifest(tooSmall)).toThrow("invalid_manifest");
 
     const unsorted = manifestSource();
-    const unsortedFixture = (unsorted.fixtures as Array<Record<string, unknown>>)[0];
+    const unsortedFixture = (
+      unsorted.fixtures as Array<Record<string, unknown>>
+    )[0];
     const players = unsortedFixture.players as unknown[];
     [players[0], players[1]] = [players[1], players[0]];
-    expect(() => validateScoringManifest(unsorted)).toThrow("manifest_not_canonical");
+    expect(() => validateScoringManifest(unsorted)).toThrow(
+      "manifest_not_canonical",
+    );
 
     const disabledCategory = manifestSource();
-    const disabledFixture = (disabledCategory.fixtures as Array<Record<string, unknown>>)[0];
-    const disabledPlayer = (disabledFixture.players as Array<Record<string, unknown>>)[0];
+    const disabledFixture = (
+      disabledCategory.fixtures as Array<Record<string, unknown>>
+    )[0];
+    const disabledPlayer = (
+      disabledFixture.players as Array<Record<string, unknown>>
+    )[0];
     disabledPlayer.events = [{ category: "bonus", points: 3 }];
-    expect(() => validateScoringManifest(disabledCategory)).toThrow("invalid_manifest");
+    expect(() => validateScoringManifest(disabledCategory)).toThrow(
+      "invalid_manifest",
+    );
   });
 
   test("uses the same canonical UUID order as PostgreSQL scope arrays", () => {
     const source = manifestSource();
     const fixture = (source.fixtures as Array<Record<string, unknown>>)[0];
     source.fixtures = [
-      { ...structuredClone(fixture), fixtureId: "20000000-0000-4000-8000-000000000009" },
-      { ...structuredClone(fixture), fixtureId: "20000000-0000-4000-8000-00000000000a" },
+      {
+        ...structuredClone(fixture),
+        fixtureId: "20000000-0000-4000-8000-000000000009",
+      },
+      {
+        ...structuredClone(fixture),
+        fixtureId: "20000000-0000-4000-8000-00000000000a",
+      },
     ];
     source.leagueIds = [
       "50000000-0000-4000-8000-000000000009",
@@ -255,17 +309,24 @@ describe("Fantasy scoring worker", () => {
 
     const unsortedFixtures = structuredClone(source);
     (unsortedFixtures.fixtures as unknown[]).reverse();
-    expect(() => validateScoringManifest(unsortedFixtures)).toThrow("manifest_not_canonical");
+    expect(() => validateScoringManifest(unsortedFixtures)).toThrow(
+      "manifest_not_canonical",
+    );
     const unsortedLeagues = structuredClone(source);
     (unsortedLeagues.leagueIds as unknown[]).reverse();
-    expect(() => validateScoringManifest(unsortedLeagues)).toThrow("manifest_not_canonical");
+    expect(() => validateScoringManifest(unsortedLeagues)).toThrow(
+      "manifest_not_canonical",
+    );
   });
 
   test("requires the digest-bound execution confirmation", async () => {
     const calls: RpcCall[] = [];
     const response = await handleFantasyScoringRequest(
       request(await requestBody("execute", undefined, "FINALIZE:wrong")),
-      { client: successfulClient(calls), expectedTriggerSecret: TRIGGER_SECRET },
+      {
+        client: successfulClient(calls),
+        expectedTriggerSecret: TRIGGER_SECRET,
+      },
     );
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({
@@ -282,7 +343,10 @@ describe("Fantasy scoring worker", () => {
     const confirmation = scoringExecutionConfirmation(manifest, digest);
     const response = await handleFantasyScoringRequest(
       request(await requestBody("execute", manifest, confirmation)),
-      { client: successfulClient(calls), expectedTriggerSecret: TRIGGER_SECRET },
+      {
+        client: successfulClient(calls),
+        expectedTriggerSecret: TRIGGER_SECRET,
+      },
     );
     expect(response.status).toBe(200);
     const body = (await response.json()) as Record<string, unknown>;
@@ -318,7 +382,11 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
+        await requestBody(
+          "execute",
+          manifest,
+          scoringExecutionConfirmation(manifest, digest),
+        ),
       ),
       {
         client: successfulClient(calls, { failFixture: true }),
@@ -341,7 +409,11 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
+        await requestBody(
+          "execute",
+          manifest,
+          scoringExecutionConfirmation(manifest, digest),
+        ),
       ),
       {
         client: successfulClient(calls, { invalidFixtureResponse: true }),
@@ -362,7 +434,11 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
+        await requestBody(
+          "execute",
+          manifest,
+          scoringExecutionConfirmation(manifest, digest),
+        ),
       ),
       {
         client: successfulClient(calls, { failScope: true }),
@@ -381,7 +457,11 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
+        await requestBody(
+          "execute",
+          manifest,
+          scoringExecutionConfirmation(manifest, digest),
+        ),
       ),
       {
         client: successfulClient(calls, { alreadyComplete: true }),
@@ -399,7 +479,9 @@ describe("Fantasy scoring worker", () => {
     expect(calls.map((call) => call.name)).not.toContain(
       "service_materialize_fantasy_team_results",
     );
-    const body = (await response.json()) as { summary: { alreadyComplete: boolean } };
+    const body = (await response.json()) as {
+      summary: { alreadyComplete: boolean };
+    };
     expect(body.summary.alreadyComplete).toBe(true);
   });
 
@@ -409,7 +491,11 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
+        await requestBody(
+          "execute",
+          manifest,
+          scoringExecutionConfirmation(manifest, digest),
+        ),
       ),
       {
         client: successfulClient(calls, { stallPlayers: true }),
@@ -430,7 +516,11 @@ describe("Fantasy scoring worker", () => {
     const digest = await scoringManifestDigest(manifest);
     const response = await handleFantasyScoringRequest(
       request(
-        await requestBody("execute", manifest, scoringExecutionConfirmation(manifest, digest)),
+        await requestBody(
+          "execute",
+          manifest,
+          scoringExecutionConfirmation(manifest, digest),
+        ),
       ),
       {
         client: successfulClient(calls, { regressPlayers: true }),

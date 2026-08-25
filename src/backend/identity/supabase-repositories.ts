@@ -1,5 +1,9 @@
 import type { PostgrestError } from "@supabase/supabase-js";
-import type { CursorPage, CursorPageRequest, RepositoryContext } from "../contracts/repository";
+import type {
+  CursorPage,
+  CursorPageRequest,
+  RepositoryContext,
+} from "../contracts/repository";
 import { getIdentityApi } from "@/integrations/supabase/v2-client";
 import type { Database } from "../generated/database.types";
 import {
@@ -58,7 +62,10 @@ function throwIfError(error: PostgrestError | null): void {
 export class SupabaseProfileRepository implements ProfileRepository {
   async getMe(context: RepositoryContext): Promise<ProfileDto | null> {
     requireActor(context);
-    const { data, error } = await getIdentityApi().from("my_profile").select("*").maybeSingle();
+    const { data, error } = await getIdentityApi()
+      .from("my_profile")
+      .select("*")
+      .maybeSingle();
     throwIfError(error);
     return data ? mapProfile(data) : null;
   }
@@ -67,10 +74,17 @@ export class SupabaseProfileRepository implements ProfileRepository {
     candidate: string,
     _context: RepositoryContext,
   ): Promise<UsernameAvailabilityDto> {
-    const { data, error } = await getIdentityApi().rpc("username_availability", { candidate });
+    const { data, error } = await getIdentityApi().rpc(
+      "username_availability",
+      { candidate },
+    );
     throwIfError(error);
     const result = data?.[0];
-    if (!result) throw new IdentityError("internal", "Username availability returned no result.");
+    if (!result)
+      throw new IdentityError(
+        "internal",
+        "Username availability returned no result.",
+      );
     const reason = result.reason as UsernameAvailabilityDto["reason"];
     return {
       available: result.available,
@@ -97,7 +111,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
     });
     throwIfError(error);
     const profile = await this.getMe(context);
-    if (!profile) throw new IdentityError("not_found", "The profile was not found.");
+    if (!profile)
+      throw new IdentityError("not_found", "The profile was not found.");
     return profile;
   }
 
@@ -115,7 +130,8 @@ export class SupabaseProfileRepository implements ProfileRepository {
     });
     throwIfError(error);
     const profile = await this.getMe(context);
-    if (!profile) throw new IdentityError("not_found", "The profile was not found.");
+    if (!profile)
+      throw new IdentityError("not_found", "The profile was not found.");
     return profile;
   }
 }
@@ -125,7 +141,10 @@ interface FollowViewRow {
   readonly createdAt: string | null;
 }
 
-function normalizePage(page: CursorPageRequest): { limit: number; cursor: FollowDto | null } {
+function normalizePage(page: CursorPageRequest): {
+  limit: number;
+  cursor: FollowDto | null;
+} {
   const limit = Math.min(Math.max(page.limit ?? 25, 1), 100);
   if (!page.cursor) return { limit, cursor: null };
   try {
@@ -133,10 +152,14 @@ function normalizePage(page: CursorPageRequest): { limit: number; cursor: Follow
     const divider = decoded.indexOf("|");
     const createdAt = decoded.slice(0, divider);
     const targetId = decoded.slice(divider + 1);
-    if (divider < 1 || Number.isNaN(Date.parse(createdAt)) || !isUuid(targetId)) throw new Error();
+    if (divider < 1 || Number.isNaN(Date.parse(createdAt)) || !isUuid(targetId))
+      throw new Error();
     return { limit, cursor: { createdAt, targetId } };
   } catch {
-    throw new IdentityError("invalid_profile", "The pagination cursor is invalid.");
+    throw new IdentityError(
+      "invalid_profile",
+      "The pagination cursor is invalid.",
+    );
   }
 }
 
@@ -151,7 +174,8 @@ async function listFollows(
 ): Promise<CursorPage<FollowDto>> {
   requireActor(context);
   const { limit, cursor } = normalizePage(page);
-  const relation = kind === "team" ? "my_followed_teams" : "my_followed_competitions";
+  const relation =
+    kind === "team" ? "my_followed_teams" : "my_followed_competitions";
   const idColumn = kind === "team" ? "team_id" : "competition_id";
   let query = getIdentityApi()
     .from(relation)
@@ -176,26 +200,39 @@ async function listFollows(
   }));
   const hasMore = mapped.length > limit;
   const items = mapped.slice(0, limit);
-  return { items, nextCursor: hasMore ? toCursor(items[items.length - 1]!) : null };
+  return {
+    items,
+    nextCursor: hasMore ? toCursor(items[items.length - 1]!) : null,
+  };
 }
 
 export class SupabaseFollowRepository implements FollowRepository {
   async followTeam(teamId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(teamId, "team");
-    const { error } = await getIdentityApi().rpc("follow_team", { p_team_id: teamId });
+    const { error } = await getIdentityApi().rpc("follow_team", {
+      p_team_id: teamId,
+    });
     throwIfError(error);
   }
-  async unfollowTeam(teamId: string, context: RepositoryContext): Promise<void> {
+  async unfollowTeam(
+    teamId: string,
+    context: RepositoryContext,
+  ): Promise<void> {
     requireActor(context);
     requireUuid(teamId, "team");
-    const { error } = await getIdentityApi().rpc("unfollow_team", { p_team_id: teamId });
+    const { error } = await getIdentityApi().rpc("unfollow_team", {
+      p_team_id: teamId,
+    });
     throwIfError(error);
   }
   listTeams(page: CursorPageRequest, context: RepositoryContext) {
     return listFollows("team", page, context);
   }
-  async followCompetition(competitionId: string, context: RepositoryContext): Promise<void> {
+  async followCompetition(
+    competitionId: string,
+    context: RepositoryContext,
+  ): Promise<void> {
     requireActor(context);
     requireUuid(competitionId, "competition");
     const { error } = await getIdentityApi().rpc("follow_competition", {
@@ -203,7 +240,10 @@ export class SupabaseFollowRepository implements FollowRepository {
     });
     throwIfError(error);
   }
-  async unfollowCompetition(competitionId: string, context: RepositoryContext): Promise<void> {
+  async unfollowCompetition(
+    competitionId: string,
+    context: RepositoryContext,
+  ): Promise<void> {
     requireActor(context);
     requireUuid(competitionId, "competition");
     const { error } = await getIdentityApi().rpc("unfollow_competition", {
@@ -219,7 +259,9 @@ export class SupabaseFollowRepository implements FollowRepository {
 export class SupabaseAccountSecurityRepository implements AccountSecurityRepository {
   async requestDeletion(context: RepositoryContext): Promise<string> {
     requireActor(context);
-    const { data, error } = await getIdentityApi().rpc("request_account_deletion");
+    const { data, error } = await getIdentityApi().rpc(
+      "request_account_deletion",
+    );
     throwIfError(error);
     return requireValue(data, "account deletion request id");
   }
@@ -241,8 +283,14 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
       id: requireValue(row.id, "deletion request id"),
       status: requireValue(row.status, "deletion request status"),
       requestedAt: requireValue(row.requested_at, "deletion request timestamp"),
-      executeAfter: requireValue(row.execute_after, "deletion request due timestamp"),
-      updatedAt: requireValue(row.updated_at, "deletion request update timestamp"),
+      executeAfter: requireValue(
+        row.execute_after,
+        "deletion request due timestamp",
+      ),
+      updatedAt: requireValue(
+        row.updated_at,
+        "deletion request update timestamp",
+      ),
       processedAt: row.processed_at,
     }));
   }
@@ -251,16 +299,20 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
     context: RepositoryContext,
   ): Promise<void> {
     requireActor(context);
-    const { error } = await getIdentityApi().rpc("record_session_revocation", { scope });
+    const { error } = await getIdentityApi().rpc("record_session_revocation", {
+      scope,
+    });
     throwIfError(error);
   }
 }
 
 export function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 function requireUuid(value: string, label: string): void {
-  if (!isUuid(value)) throw new IdentityError("invalid_profile", `The ${label} id is invalid.`);
+  if (!isUuid(value))
+    throw new IdentityError("invalid_profile", `The ${label} id is invalid.`);
 }
-

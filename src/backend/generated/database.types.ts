@@ -164,6 +164,30 @@ export type Database = {
       }
     }
     Functions: {
+      account_deletion_worker_claim: {
+        Args: { p_lease_seconds?: number; p_worker_id: string }
+        Returns: Json
+      }
+      account_deletion_worker_fail: {
+        Args: {
+          p_claim_token: string
+          p_error_code: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      account_deletion_worker_finalize: {
+        Args: { p_claim_token: string; p_request_id: string }
+        Returns: boolean
+      }
+      account_deletion_worker_preview: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      account_deletion_worker_requeue_after_staff_review: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
       activate_fantasy_chip: {
         Args: {
           p_chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
@@ -1463,6 +1487,7 @@ export type Database = {
     Tables: {
       account_deletion_requests: {
         Row: {
+          execute_after: string
           id: string
           processed_at: string | null
           requested_at: string
@@ -1471,6 +1496,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          execute_after?: string
           id?: string
           processed_at?: string | null
           requested_at?: string
@@ -1479,6 +1505,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          execute_after?: string
           id?: string
           processed_at?: string | null
           requested_at?: string

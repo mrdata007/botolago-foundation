@@ -28,4 +28,3 @@ describe("AsyncSessionFence", () => {
     expect(fence.isCurrent(profileRead)).toBe(false);
   });
 });
-

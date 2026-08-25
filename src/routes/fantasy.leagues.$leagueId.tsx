@@ -3,13 +3,24 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
+import {
+  LoadingState,
+  EmptyState,
+  ErrorState,
+} from "@/components/common/States";
 import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { LeagueTable } from "@/components/fantasy/LeagueTable";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
-import { ArrowLeft, Copy, KeyRound, LogOut, Trash2, Trophy } from "lucide-react";
+import {
+  ArrowLeft,
+  Copy,
+  KeyRound,
+  LogOut,
+  Trash2,
+  Trophy,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -76,7 +87,8 @@ function LeagueDetailPage() {
       />
     );
   }
-  if (leagueQ.isLoading || clubsQ.isLoading || standingsQ.isLoading) return <LoadingState />;
+  if (leagueQ.isLoading || clubsQ.isLoading || standingsQ.isLoading)
+    return <LoadingState />;
   if (!league) return <EmptyState />;
   const standings = standingsQ.data ?? [];
 
@@ -151,7 +163,9 @@ function LeagueDetailPage() {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="truncate text-lg font-black text-foreground">{league.name}</div>
+            <div className="truncate text-lg font-black text-foreground">
+              {league.name}
+            </div>
             {league.role && (
               <span className="rounded-full bg-[color:var(--brand-accent)]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
                 {t(
@@ -192,7 +206,8 @@ function LeagueDetailPage() {
             onClick={() => void copy()}
             className="inline-flex items-center gap-1 rounded-lg cta-brand px-2 py-1 text-xs font-semibold"
           >
-            <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
+            <Copy className="h-3.5 w-3.5" aria-hidden />{" "}
+            {t("fantasy.leagues.share")}
           </button>
         </div>
       )}
@@ -219,7 +234,8 @@ function LeagueDetailPage() {
               onClick={() => requireAuth(() => setConfirm("leave"))}
               className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-foreground ring-1 ring-black/10"
             >
-              <LogOut className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.leave")}
+              <LogOut className="h-3.5 w-3.5" aria-hidden />{" "}
+              {t("fantasy.leagues.leave")}
             </button>
           )}
           {isCreator && (
@@ -227,7 +243,8 @@ function LeagueDetailPage() {
               onClick={() => requireAuth(() => setConfirm("delete"))}
               className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white"
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.delete")}
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />{" "}
+              {t("fantasy.leagues.delete")}
             </button>
           )}
         </div>
@@ -240,7 +257,9 @@ function LeagueDetailPage() {
         {standings.length > 0 ? (
           <LeagueTable
             standings={standings}
-            meId={source === "local" ? "me" : owned.snapshot?.teamId ?? undefined}
+            meId={
+              source === "local" ? "me" : (owned.snapshot?.teamId ?? undefined)
+            }
             clubs={clubsQ.data ?? []}
           />
         ) : (
@@ -258,7 +277,10 @@ function LeagueDetailPage() {
         </div>
       )}
 
-      <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+      <AlertDialog
+        open={confirm !== null}
+        onOpenChange={(o) => !o && setConfirm(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -278,7 +300,9 @@ function LeagueDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirm === "delete" ? handleDelete : handleLeave}>
+            <AlertDialogAction
+              onClick={confirm === "delete" ? handleDelete : handleLeave}
+            >
               {t("common.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
