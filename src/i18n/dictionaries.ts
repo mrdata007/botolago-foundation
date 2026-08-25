@@ -1229,8 +1229,7 @@ export const dictionaries = {
     "article.updated": "حُدِّث",
     "article.not_found_title": "المقال غير موجود",
     "article.not_found_desc": "قد يكون هذا المقال قد أُزيل أو نُقل.",
-    "article.translation_unavailable":
-      "هذه الترجمة غير متاحة بعد. يتم عرض المقال بلغته الأصلية.",
+    "article.translation_unavailable": "هذه الترجمة غير متاحة بعد. يتم عرض المقال بلغته الأصلية.",
 
     "matches.title": "المباريات",
     "matches.tab.all": "الكل",

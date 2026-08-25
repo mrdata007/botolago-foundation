@@ -155,9 +155,7 @@ for (const language of ["fr", "ar"] as const) {
     await expect(page.locator('a[href^="/news/"]')).not.toHaveCount(0);
 
     await gotoHydrated(page, "/news/does-not-exist", language);
-    await expect(
-      page.getByRole("heading", { level: 1, name: l.articleMissing }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: l.articleMissing })).toBeVisible();
 
     await gotoHydrated(page, "/matches", language);
     await expect(page.getByRole("heading", { level: 1, name: l.matches })).toBeVisible();
