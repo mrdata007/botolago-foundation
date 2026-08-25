@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { presentFootballClub, selectFootballDataMode } from "./football";
 
@@ -69,5 +70,24 @@ describe("Football frontend repository cutover", () => {
       "https://botolago-test.supabase.co/storage/v1/object/public/football-media/football/teams/1001/crest.png",
     );
     expect(club.crestPlaceholder).toBe(team.code);
+  });
+
+  test("keeps missing match data truthful after full time", () => {
+    const route = readFileSync(
+      new URL("../routes/matches.$matchId.tsx", import.meta.url),
+      "utf8",
+    );
+    const stats = readFileSync(
+      new URL("../components/matches/StatComparison.tsx", import.meta.url),
+      "utf8",
+    );
+    const scoreHeader = readFileSync(
+      new URL("../components/matches/MatchScoreHeader.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(route).toContain('isFinished={match.status === "finished"}');
+    expect(stats).toContain('"matches.detail.no_stats_finished"');
+    expect(scoreHeader).toContain("venue && (");
   });
 });

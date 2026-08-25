@@ -201,6 +201,7 @@ function MatchDetailPage() {
             stats={live.stats}
             homeName={tr(home.shortName)}
             awayName={tr(away.shortName)}
+            isFinished={match.status === "finished"}
           />
         )}
 

@@ -42,10 +42,11 @@ function ArticlePage() {
     queryFn: () => newsService.getArticle(articleId, lang),
     initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
   });
+  const relatedArticleId = articleQ.data?.id;
   const relatedQ = useQuery({
-    queryKey: ["news", "related", lang, articleId],
-    queryFn: () => newsService.getRelated(articleId, lang),
-    enabled: !!articleQ.data,
+    queryKey: ["news", "related", lang, relatedArticleId],
+    queryFn: () => newsService.getRelated(relatedArticleId!, lang),
+    enabled: !!relatedArticleId,
   });
   const clubsQ = useQuery({
     queryKey: ["news", "team-filters", lang],

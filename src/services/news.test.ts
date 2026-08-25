@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { MockNewsRepository } from "@/backend/news/mock-repository";
 import { presentArticle, selectNewsDataMode } from "./news";
 
@@ -54,5 +55,12 @@ describe("News frontend repository cutover", () => {
       "https://botolago-test.supabase.co/storage/v1/object/public/news-media/news/articles/derby%20hero.webp",
     );
     expect(article.heroAlt).toBe("Supporters dans les tribunes");
+  });
+
+  test("uses the resolved article UUID for related-content reads", () => {
+    const source = readFileSync(new URL("../routes/news.$articleId.tsx", import.meta.url), "utf8");
+    expect(source).toContain("const relatedArticleId = articleQ.data?.id");
+    expect(source).toContain("newsService.getRelated(relatedArticleId!, lang)");
+    expect(source).not.toContain("newsService.getRelated(articleId, lang)");
   });
 });

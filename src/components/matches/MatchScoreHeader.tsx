@@ -38,6 +38,7 @@ export function MatchScoreHeader({
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
+  const venue = tr(match.venue).trim();
 
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
@@ -143,7 +144,12 @@ export function MatchScoreHeader({
         </p>
       )}
 
-      <div className="relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3 sm:grid-cols-3">
+      <div
+        className={cn(
+          "relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3",
+          venue ? "sm:grid-cols-3" : "sm:grid-cols-2",
+        )}
+      >
         <MetaCell
           icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
           label={t("matches.detail.kickoff")}
@@ -154,11 +160,13 @@ export function MatchScoreHeader({
           label={t("matches.detail.competition")}
           value={t("matches.competition.botola")}
         />
-        <MetaCell
-          icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
-          label={t("matches.detail.venue")}
-          value={tr(match.venue)}
-        />
+        {venue && (
+          <MetaCell
+            icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
+            label={t("matches.detail.venue")}
+            value={venue}
+          />
+        )}
       </div>
     </header>
   );
