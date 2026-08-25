@@ -73,10 +73,7 @@ describe("Football frontend repository cutover", () => {
   });
 
   test("keeps missing match data truthful after full time", () => {
-    const route = readFileSync(
-      new URL("../routes/matches.$matchId.tsx", import.meta.url),
-      "utf8",
-    );
+    const route = readFileSync(new URL("../routes/matches.$matchId.tsx", import.meta.url), "utf8");
     const stats = readFileSync(
       new URL("../components/matches/StatComparison.tsx", import.meta.url),
       "utf8",

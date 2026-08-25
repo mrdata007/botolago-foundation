@@ -80,10 +80,10 @@ function LeagueDetailPage() {
     setToast(msg);
     setTimeout(() => setToast(null), 2400);
   };
-  const copy = () => {
+  const copy = async () => {
     if (!league.code) return;
     try {
-      navigator.clipboard.writeText(league.code);
+      await navigator.clipboard.writeText(league.code);
       showToast(t("fantasy.leagues.copied"));
     } catch {
       /* ignore */
@@ -169,7 +169,7 @@ function LeagueDetailPage() {
             <div className="font-mono font-black">{league.code}</div>
           </div>
           <button
-            onClick={copy}
+            onClick={() => void copy()}
             className="inline-flex items-center gap-1 rounded-lg cta-brand px-2 py-1 text-xs font-semibold"
           >
             <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}

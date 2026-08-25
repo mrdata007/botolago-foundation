@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Share2 } from "lucide-react";
 import { footballService } from "@/services/football";
+import { FootballError } from "@/backend/football/errors";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -49,6 +50,8 @@ function MatchDetailPage() {
   });
 
   const match = detailQ.data?.match;
+  const matchNotFound =
+    detailQ.error instanceof FootballError && detailQ.error.code === "fixture_not_found";
 
   const clubById = (id?: string) => detailQ.data?.clubs.find((club) => club.id === id);
   const home = clubById(match?.homeClubId);
@@ -73,7 +76,7 @@ function MatchDetailPage() {
     );
   }
 
-  if (detailQ.isError) {
+  if (detailQ.isError && !matchNotFound) {
     return (
       <AppShell backgroundVariant="matches">
         <div className="mt-8">
@@ -83,7 +86,7 @@ function MatchDetailPage() {
     );
   }
 
-  if (!match || !home || !away || !live) {
+  if (matchNotFound || !match || !home || !away || !live) {
     return (
       <AppShell backgroundVariant="matches">
         <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] p-6 text-center shadow-card">

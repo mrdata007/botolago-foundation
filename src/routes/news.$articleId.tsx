@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
 import { newsService } from "@/services/news";
+import { NewsError } from "@/backend/news/errors";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
@@ -54,6 +55,8 @@ function ArticlePage() {
   });
   const article = articleQ.data;
   const related = relatedQ.data ?? [];
+  const articleNotFound =
+    articleQ.error instanceof NewsError && articleQ.error.code === "article_not_found";
 
   if (articleQ.isLoading) {
     return (
@@ -63,7 +66,7 @@ function ArticlePage() {
     );
   }
 
-  if (articleQ.isError) {
+  if (articleQ.isError && !articleNotFound) {
     return (
       <AppShell backgroundVariant="news">
         <div className="mt-8">
@@ -73,7 +76,7 @@ function ArticlePage() {
     );
   }
 
-  if (!article) {
+  if (articleNotFound || !article) {
     return (
       <AppShell backgroundVariant="news">
         <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--surface)] p-6 text-center">
