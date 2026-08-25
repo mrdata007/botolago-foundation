@@ -305,10 +305,25 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(validateDraft(removePlayer(complete, 15), players).ok).toBe(false);
   });
 
-  it("guards direct create routes for signed-out and existing-team users", () => {
-    const source = readFileSync(new URL("../routes/fantasy.create.tsx", import.meta.url), "utf8");
-    expect(source).toContain('to="/auth/login" search={{ next: "/fantasy/create" }}');
-    expect(source).toContain('to="/fantasy/team"');
+  it("allows guest drafts while redirecting existing-team users", () => {
+    const layoutSource = readFileSync(
+      new URL("../routes/fantasy.create.tsx", import.meta.url),
+      "utf8",
+    );
+    const providerSource = readFileSync(
+      new URL("../components/fantasy/AtlasCreateProvider.tsx", import.meta.url),
+      "utf8",
+    );
+    const reviewSource = readFileSync(
+      new URL("../routes/fantasy.create.review.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(layoutSource).not.toContain('to="/auth/login"');
+    expect(layoutSource).toContain('to="/fantasy/team"');
+    expect(providerSource).toContain("return LEGACY_GUEST_KEY");
+    expect(reviewSource).toContain('to="/auth/login"');
+    expect(reviewSource).toContain('next: "/fantasy/create/review"');
   });
 
   it("renders pitch and list views from the same draft slot collection", () => {
