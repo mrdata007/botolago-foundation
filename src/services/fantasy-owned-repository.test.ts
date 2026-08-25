@@ -15,6 +15,7 @@ import { FantasyCloudError } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { removeKey, STORAGE_KEYS } from "@/lib/storage";
 import type { FantasyTeamDto } from "@/backend/fantasy/contracts";
+import { FantasyError } from "@/backend/fantasy/errors";
 
 describe("buildV2CloudSnapshot", () => {
   it("uses the authoritative hub sequence for an empty cloud team", () => {
@@ -180,6 +181,26 @@ describe("toRepoError", () => {
   it("maps FantasyCloudError version_conflict through unchanged", () => {
     const mapped = toRepoError(new FantasyCloudError("version_conflict", "stale"));
     expect(mapped.code).toBe("version_conflict");
+  });
+  it("preserves exact backend FantasyError codes alongside stable UI categories", () => {
+    const cases = [
+      ["version_conflict", "version_conflict"],
+      ["budget_exceeded", "validation"],
+      ["league_access_denied", "permission_denied"],
+      ["fantasy_team_not_found", "not_found"],
+      ["data_unavailable", "unknown"],
+    ] as const;
+
+    for (const [domainCode, code] of cases) {
+      const mapped = toRepoError(new FantasyError(domainCode, domainCode));
+      expect(mapped.code).toBe(code);
+      expect(mapped.domainCode).toBe(domainCode);
+    }
+  });
+  it("preserves symbolic domain codes returned as PostgREST-like objects", () => {
+    const mapped = toRepoError({ code: "fantasy_gameweek_locked", message: "locked" });
+    expect(mapped.code).toBe("validation");
+    expect(mapped.domainCode).toBe("fantasy_gameweek_locked");
   });
   it("passes through an existing FantasyRepoError", () => {
     const e = new FantasyRepoError("permission_denied", "rls");

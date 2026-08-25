@@ -51,35 +51,39 @@ function TransfersPage() {
   const { key: ownedKey } = useFantasyDataSource();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
+  const hasCloudTeam = !isCloud || Boolean(owned.snapshot?.teamId);
 
-  // One authoritative owned snapshot for cloud and deterministic local mode.
-  // Creation, Team, and Transfers now observe the same state immediately.
-  const team = owned.snapshot?.team ?? null;
+  // A cloud snapshot without a team id is the first-time-user state, not an empty team.
+  const team = isCloud
+    ? owned.snapshot?.teamId
+      ? owned.snapshot.team
+      : null
+    : (owned.snapshot?.team ?? null);
 
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const rulesQ = useQuery({
     queryKey: ["fantasy-create", "rules"],
     queryFn: () => fantasyService.getRules(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const fixturesQ = useQuery({
     queryKey: ["fantasy-create", "fixtures"],
     queryFn: () => fantasyService.getFixtureDifficulty(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
     retry: 1,
   });
   const activeRules = useMemo(

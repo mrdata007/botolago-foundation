@@ -164,7 +164,9 @@ async function allPlayers(): Promise<FantasyPlayer[]> {
 
 async function cloudTeam() {
   const current = await hub();
-  if (!current.team) throw new Error("fantasy_team_not_found");
+  if (!current.team) {
+    throw new FantasyError("fantasy_team_not_found", "Create a Fantasy team to continue.");
+  }
   return { hub: current, team: current.team };
 }
 
@@ -175,7 +177,9 @@ export const fantasyService = {
       return gameweek;
     }
     const current = await hub();
-    if (!current.gameweek) throw new Error("fantasy_gameweek_not_found");
+    if (!current.gameweek) {
+      throw new FantasyError("fantasy_gameweek_not_found", "No Fantasy gameweek is available.");
+    }
     return {
       number: current.gameweek.sequence,
       deadline: current.gameweek.deadlineAt,

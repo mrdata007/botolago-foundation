@@ -80,7 +80,7 @@ export function useOwnedTeam(): UnifiedTeamRead {
       const snap = owned.snapshot;
       return {
         source: "cloud",
-        team: snap?.team ?? null,
+        team: snap?.teamId ? snap.team : null,
         lifecycle: snap?.lifecycle ?? fantasyStateStore.read(),
         teamId: snap?.teamId ?? null,
         version: snap?.version ?? 0,

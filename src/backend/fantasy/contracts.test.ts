@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   fantasyFixtureDifficultySchema,
   fantasyPlayerSchema,
+  fantasyPointsSchema,
   fantasyTeamSchema,
   fantasyTransferPreviewSchema,
   postgresUuidSchema,
@@ -91,6 +92,38 @@ describe("Fantasy pre-activation contracts", () => {
     } as const;
     expect(fantasyFixtureDifficultySchema.parse(dto).difficulty).toBe(3);
     expect(fantasyFixtureDifficultySchema.safeParse({ ...dto, difficulty: 6 }).success).toBe(false);
+  });
+
+  it("accepts honest pre-match point defaults before a result is materialized", () => {
+    const dto = fantasyPointsSchema.parse({
+      teamId: postgresUuid,
+      gameweekId: "11806e70-d9f1-0480-22d5-2075f73da81e",
+      gameweekStatus: "open",
+      pointsState: "provisional",
+      result: null,
+      players: [
+        {
+          fantasyPlayerId: "0a32b1b0-2ac8-4ba1-b7e0-d16b87d87f6d",
+          slot: "starter",
+          slotOrder: 1,
+          captain: true,
+          viceCaptain: false,
+          multiplier: 2,
+          provisionalPoints: 0,
+          finalPoints: null,
+          didPlay: false,
+          minutesPlayed: 0,
+        },
+      ],
+    });
+
+    expect(dto.result).toBeNull();
+    expect(dto.players[0]).toMatchObject({
+      provisionalPoints: 0,
+      finalPoints: null,
+      didPlay: false,
+      minutesPlayed: 0,
+    });
   });
 
   it("coerces numeric transfer preview values without accepting a zero transfer", () => {

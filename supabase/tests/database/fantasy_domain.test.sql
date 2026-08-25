@@ -94,6 +94,38 @@ select extensions.is(
   jsonb_array_length(current_setting('test.fantasy_team_response')::jsonb -> 'squad'), 15,
   'atomic team creation persists the complete squad'
 );
+select set_config(
+  'test.pre_match_points',
+  api.get_my_fantasy_points(
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    'f6400000-0000-4000-8000-000000000001'
+  )::text,
+  true
+);
+select extensions.is(
+  current_setting('test.pre_match_points')::jsonb -> 'result',
+  'null'::jsonb,
+  'pre-match points honestly expose no materialized team result'
+);
+select extensions.is(
+  jsonb_array_length(current_setting('test.pre_match_points')::jsonb -> 'players'),
+  15,
+  'pre-match points include the complete owned lineup'
+);
+select extensions.ok(
+  (
+    select bool_and(
+      jsonb_typeof(player -> 'provisionalPoints') = 'number'
+      and jsonb_typeof(player -> 'finalPoints') = 'null'
+      and jsonb_typeof(player -> 'didPlay') = 'boolean'
+      and jsonb_typeof(player -> 'minutesPlayed') = 'number'
+    )
+    from jsonb_array_elements(
+      current_setting('test.pre_match_points')::jsonb -> 'players'
+    ) player
+  ),
+  'pre-match point fields use stable numeric, boolean, and nullable JSON types'
+);
 select extensions.is(
   api.create_fantasy_team(
     'f6300000-0000-4000-8000-000000000001', 'f6400000-0000-4000-8000-000000000001',
