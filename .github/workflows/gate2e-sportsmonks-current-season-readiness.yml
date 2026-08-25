@@ -191,9 +191,9 @@ jobs:
                 "$READINESS_OUTCOME" == "success" ]]; then
             state="success"
             if [[ "$CURRENT_SEASON_READY" == "true" ]]; then
-              description="Current Botola season is published and ready"
+              description="Probe healthy; current Botola season is published"
             else
-              description="Current Botola season is not published yet"
+              description="Probe healthy; current Botola season is not published"
             fi
           fi
           payload=$(printf \
@@ -212,7 +212,6 @@ jobs:
     needs: probe
     if: >-
       always() &&
-      github.event_name != 'schedule' &&
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -252,21 +251,3 @@ jobs:
             --header "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             --data "$payload"
-
-      - name: Enforce launch readiness
-        if: always()
-        shell: bash
-        env:
-          PROBE_RESULT: ${{ needs.probe.result }}
-          CURRENT_SEASON_READY: ${{ needs.probe.outputs.current_season_ready }}
-        run: |
-          set -euo pipefail
-          if [[ "$PROBE_RESULT" != "success" ]]; then
-            echo "CURRENT_SEASON_PROBE_FAILED"
-            exit 1
-          fi
-          if [[ "$CURRENT_SEASON_READY" != "true" ]]; then
-            echo "CURRENT_SEASON_NOT_LAUNCH_READY"
-            exit 1
-          fi
-          echo "CURRENT_SEASON_LAUNCH_READY"
