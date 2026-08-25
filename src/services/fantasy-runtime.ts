@@ -47,9 +47,7 @@ async function mockPlayers(): Promise<FantasyPlayer[]> {
   return (await mockFantasyService.getPlayers()).map(mockPlayer);
 }
 
-function normalizeStoredLeague(
-  league: League & { role: "creator" | "member" },
-): League {
+function normalizeStoredLeague(league: League & { role: "creator" | "member" }): League {
   const { role, ...rest } = league;
   return { ...rest, role: role === "creator" ? "owner" : "member" };
 }
@@ -115,9 +113,7 @@ function globalRankingDto(dto: FantasyGlobalRankingDto): LeagueStanding {
   };
 }
 
-export function mapFantasyGlobalRankingsDto(
-  dto: FantasyGlobalRankingPageDto,
-): RankingsPage {
+export function mapFantasyGlobalRankingsDto(dto: FantasyGlobalRankingPageDto): RankingsPage {
   return {
     rows: dto.items.map(globalRankingDto),
     total: dto.total,
@@ -345,7 +341,10 @@ export const fantasyService = {
   async getLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
     if (mode() === "mock") {
       const { leaguesStore } = await import("./leagues-store");
-      return leaguesStore.get(leagueId)?.standings ?? mockFantasyService.getLeagueStandings(leagueId);
+      return (
+        leaguesStore.get(leagueId)?.standings ??
+        mockFantasyService.getLeagueStandings(leagueId)
+      );
     }
     const page = await cloud.getLeagueStandings(leagueId, null, context());
     return page.items.map((standing) => ({

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type {
-  FantasyGlobalRankingPageDto,
-  FantasyPointsDto,
-} from "@/backend/fantasy/contracts";
+import type { FantasyGlobalRankingPageDto, FantasyPointsDto } from "@/backend/fantasy/contracts";
 import { mapFantasyGlobalRankingsDto, mapFantasyPointsDto } from "./fantasy-runtime";
 
 const dto: FantasyPointsDto = {

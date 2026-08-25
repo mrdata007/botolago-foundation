@@ -114,7 +114,6 @@ test("Atlas identity and recurring routes preserve Arabic RTL at desktop width",
   await diagnostics.verify(testInfo);
 });
 
-
 test("Atlas direct steps return an incomplete guest draft to its last valid step", async ({
   page,
 }) => {

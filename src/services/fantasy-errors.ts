@@ -119,7 +119,6 @@ function mapCloudCode(c: FantasyCloudError["code"]): FantasyRepoErrorCode {
   }
 }
 
-
 function mapDomainCode(code: FantasyErrorCode): FantasyRepoErrorCode {
   switch (code) {
     case "version_conflict":
