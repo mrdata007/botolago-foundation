@@ -41,6 +41,8 @@ const fullRouteMatrix = [
   "/fantasy/rankings",
   "/auth",
   "/auth/login",
+  "/auth/callback",
+  "/auth/mfa?next=%2Fadmin",
   "/auth/register",
   "/auth/forgot-password",
   "/auth/verify",

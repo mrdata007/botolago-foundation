@@ -369,6 +369,7 @@ export class LocalMockAuthService implements AuthService {
     const requests = safeGet<Record<string, AccountDeletionRequest>>(K_DELETION) ?? {};
     const existing = requests[session.user.id];
     const now = new Date().toISOString();
+    const executeAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const request =
       existing?.status === "requested" || existing?.status === "processing"
         ? existing
@@ -376,6 +377,7 @@ export class LocalMockAuthService implements AuthService {
             requestId: `deletion-${session.user.id}-${Date.now()}`,
             status: "requested" as const,
             requestedAt: now,
+            executeAfter,
             updatedAt: now,
             processedAt: null,
           };

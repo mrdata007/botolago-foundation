@@ -86,6 +86,7 @@ export interface AccountDeletionRequestDto {
   readonly id: string;
   readonly status: "requested" | "cancelled" | "processing" | "completed" | "rejected";
   readonly requestedAt: string;
+  readonly executeAfter: string;
   readonly updatedAt: string;
   readonly processedAt: string | null;
 }
@@ -96,3 +97,4 @@ export interface AccountSecurityRepository {
   listDeletionRequests(context: RepositoryContext): Promise<readonly AccountDeletionRequestDto[]>;
   recordSessionRevocation(scope: SessionRevocationScope, context: RepositoryContext): Promise<void>;
 }
+

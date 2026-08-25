@@ -406,6 +406,7 @@ export class SupabaseAuthService implements AuthService {
           requestId: request.id,
           status: request.status,
           requestedAt: request.requestedAt,
+          executeAfter: request.executeAfter,
           updatedAt: request.updatedAt,
           processedAt: request.processedAt,
         })),
@@ -455,4 +456,3 @@ export class SupabaseAuthService implements AuthService {
 
 // Retained as a named export for tests and consumers that discriminate errors.
 export { IdentityError };
-

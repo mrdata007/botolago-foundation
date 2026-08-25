@@ -241,6 +241,7 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
       id: requireValue(row.id, "deletion request id"),
       status: requireValue(row.status, "deletion request status"),
       requestedAt: requireValue(row.requested_at, "deletion request timestamp"),
+      executeAfter: requireValue(row.execute_after, "deletion request due timestamp"),
       updatedAt: requireValue(row.updated_at, "deletion request update timestamp"),
       processedAt: row.processed_at,
     }));
@@ -262,3 +263,4 @@ export function isUuid(value: string): boolean {
 function requireUuid(value: string, label: string): void {
   if (!isUuid(value)) throw new IdentityError("invalid_profile", `The ${label} id is invalid.`);
 }
+

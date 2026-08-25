@@ -394,7 +394,11 @@ function TransfersPage() {
     if (locked) return;
     if (recruitTarget) {
       if (applyPick(playerId, recruitTarget)) {
-        void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
+        void navigate({
+          to: "/fantasy/transfers",
+          search: { player: undefined },
+          replace: true,
+        });
       }
       return;
     }

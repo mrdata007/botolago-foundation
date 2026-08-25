@@ -54,6 +54,7 @@ export type Database = {
     Views: {
       my_account_deletion_requests: {
         Row: {
+          execute_after: string | null
           id: string | null
           processed_at: string | null
           requested_at: string | null
@@ -62,6 +63,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          execute_after?: string | null
           id?: string | null
           processed_at?: string | null
           requested_at?: string | null
@@ -70,6 +72,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          execute_after?: string | null
           id?: string | null
           processed_at?: string | null
           requested_at?: string | null
@@ -637,6 +640,7 @@ export type Database = {
         Returns: Json
       }
       fantasy_hub: { Args: { p_language?: string }; Returns: Json }
+      fantasy_league_detail: { Args: { p_league_id: string }; Returns: Json }
       fantasy_league_standings: {
         Args: {
           p_after_rank?: number
@@ -1136,6 +1140,10 @@ export type Database = {
         }
         Returns: string
       }
+      rotate_fantasy_league_invite: {
+        Args: { p_league_id: string }
+        Returns: Json
+      }
       save_article: { Args: { p_article_edition_id: string }; Returns: Json }
       save_fantasy_lineup: {
         Args: {
@@ -1224,6 +1232,15 @@ export type Database = {
         }
         Returns: string
       }
+      service_finalize_fantasy_player_points: {
+        Args: {
+          p_after_player_id?: string
+          p_batch_size?: number
+          p_calculation_version: number
+          p_gameweek_id: string
+        }
+        Returns: Json
+      }
       service_finalize_fantasy_team_results: {
         Args: {
           p_after_team_id?: string
@@ -1254,6 +1271,15 @@ export type Database = {
       }
       service_list_notification_audience: {
         Args: { p_after_user_id?: string; p_event_id: string; p_limit?: number }
+        Returns: Json
+      }
+      service_materialize_fantasy_team_results: {
+        Args: {
+          p_after_team_id?: string
+          p_batch_size?: number
+          p_calculation_version: number
+          p_gameweek_id: string
+        }
         Returns: Json
       }
       service_notification_metrics: {
@@ -1291,6 +1317,16 @@ export type Database = {
           p_stable_error_code?: string
         }
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
+      }
+      service_replace_fantasy_fixture_points: {
+        Args: {
+          p_calculation_version: number
+          p_fixture_id: string
+          p_football_input_version: number
+          p_gameweek_id: string
+          p_players: Json
+        }
+        Returns: Json
       }
       service_request_notification_dead_letter_replay: {
         Args: { p_dead_letter_id: string; p_idempotency_key: string }
@@ -1351,6 +1387,16 @@ export type Database = {
           p_timezone_basis: string
         }
         Returns: string
+      }
+      service_validate_fantasy_scoring_scope: {
+        Args: {
+          p_calculation_version: number
+          p_fixture_ids: string[]
+          p_gameweek_id: string
+          p_league_ids: string[]
+          p_season_id: string
+        }
+        Returns: Json
       }
       set_my_notification_subscription: {
         Args: {
@@ -2866,6 +2912,7 @@ export type Database = {
           gameweek_id: string
           id: string
           points: number
+          scoring_snapshot_id: string | null
           scoring_version: number
           source_key: string
           source_sequence: number
@@ -2882,6 +2929,7 @@ export type Database = {
           gameweek_id: string
           id?: string
           points: number
+          scoring_snapshot_id?: string | null
           scoring_version: number
           source_key: string
           source_sequence: number
@@ -2898,6 +2946,7 @@ export type Database = {
           gameweek_id?: string
           id?: string
           points?: number
+          scoring_snapshot_id?: string | null
           scoring_version?: number
           source_key?: string
           source_sequence?: number

@@ -117,6 +117,10 @@ describe("authService (local mock)", () => {
     expect(pending.ok).toBe(true);
     expect(pending.data).toHaveLength(1);
     expect(pending.data?.[0]?.status).toBe("requested");
+    expect(
+      new Date(pending.data?.[0]?.executeAfter ?? 0).getTime() -
+        new Date(pending.data?.[0]?.requestedAt ?? 0).getTime(),
+    ).toBe(7 * 24 * 60 * 60 * 1000);
     expect((await authService.cancelAccountDeletion()).ok).toBe(true);
     const cancelled = await authService.getAccountDeletionRequests();
     expect(cancelled.data?.[0]?.status).toBe("cancelled");

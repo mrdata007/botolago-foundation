@@ -79,7 +79,10 @@ function ProfilePage() {
       if (cancelled || !result.ok) return;
       const active =
         result.data?.find(
-          (request) => request.status === "requested" || request.status === "processing",
+          (request) =>
+            request.status === "requested" ||
+            request.status === "processing" ||
+            request.status === "rejected",
         ) ?? null;
       setDeletionRequest(active);
     });
@@ -122,7 +125,10 @@ function ProfilePage() {
       const refreshed = await authService.getAccountDeletionRequests();
       const active = refreshed.ok
         ? (refreshed.data?.find(
-            (request) => request.status === "requested" || request.status === "processing",
+            (request) =>
+              request.status === "requested" ||
+              request.status === "processing" ||
+              request.status === "rejected",
           ) ?? null)
         : null;
       const now = new Date().toISOString();
@@ -131,6 +137,7 @@ function ProfilePage() {
           requestId: result.data.requestId,
           status: "requested",
           requestedAt: now,
+          executeAfter: "",
           updatedAt: now,
           processedAt: null,
         },
@@ -162,7 +169,10 @@ function ProfilePage() {
       if (!refreshed.ok) throw new Error("refresh_failed");
       const active =
         refreshed.data?.find(
-          (request) => request.status === "requested" || request.status === "processing",
+          (request) =>
+            request.status === "requested" ||
+            request.status === "processing" ||
+            request.status === "rejected",
         ) ?? null;
       if (active) {
         setDeletionRequest(active);
@@ -207,6 +217,7 @@ function ProfilePage() {
             user={user}
             favoriteClubLabel={favoriteClub ? tr(favoriteClub.name) : undefined}
             favoriteClub={favoriteClub}
+            editDisabled={user.profileAvailable === false}
             onSignOut={() => setSignOutOpen(true)}
           />
           <AccountDeletionPanel
@@ -278,8 +289,8 @@ function ProfilePage() {
             </DialogTitle>
             <DialogDescription>
               {lang === "ar"
-                ? "سيتم تسجيل الطلب للمراجعة. الحذف النهائي ليس فورياً وستتولى جهة مخوّلة إتمامه."
-                : "La demande sera enregistrée pour traitement. La suppression définitive n’est pas immédiate et doit être finalisée par un opérateur autorisé."}
+                ? "سيكون لديك 7 أيام لإلغاء الطلب. بعد هذا الموعد ستبدأ المعالجة التلقائية. تتطلب حسابات الموظفين إتمام إجراءات مغادرة مُراجعة أولاً."
+                : "Vous aurez 7 jours pour annuler. Après cette échéance, le traitement automatique commencera. Les comptes du personnel exigent d’abord un offboarding contrôlé."}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2 grid gap-2">
@@ -313,6 +324,7 @@ function AuthenticatedProfile({
   user,
   favoriteClubLabel,
   favoriteClub,
+  editDisabled,
   onSignOut,
 }: {
   user: NonNullable<ReturnType<typeof useAuth>["user"]>;
@@ -320,6 +332,7 @@ function AuthenticatedProfile({
   favoriteClub?: ReturnType<typeof useI18n> extends unknown
     ? Parameters<typeof ClubCrest>[0]["club"] | undefined
     : never;
+  editDisabled: boolean;
   onSignOut: () => void;
 }) {
   const { t } = useI18n();
@@ -381,7 +394,8 @@ function AuthenticatedProfile({
           </div>
           <button
             onClick={() => navigate({ to: "/auth/profile-setup" })}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-xl border border-input bg-background px-2.5 text-[11px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+            disabled={editDisabled}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-xl border border-input bg-background px-2.5 text-[11px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={t("profile.edit")}
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden />
@@ -477,7 +491,8 @@ function AuthenticatedProfile({
       <Group title={t("profile.title")}>
         <button
           onClick={() => navigate({ to: "/auth/profile-setup" })}
-          className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
+          disabled={editDisabled}
+          className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         >
           <div className="flex items-center gap-3 text-sm text-foreground">
             <span
@@ -522,6 +537,30 @@ function AccountDeletionPanel({
   const arabic = language === "ar";
   const pending = request?.status === "requested";
   const processing = request?.status === "processing";
+  const rejected = request?.status === "rejected";
+  const executeDate = request ? new Date(request.executeAfter) : null;
+  const executeAt =
+    executeDate && Number.isFinite(executeDate.getTime())
+      ? new Intl.DateTimeFormat(arabic ? "ar-MA" : "fr-FR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        }).format(executeDate)
+      : null;
+  const statusLabel = processing
+    ? arabic
+      ? "قيد المعالجة"
+      : "En cours de traitement"
+    : rejected
+      ? arabic
+        ? "تتطلب مراجعة"
+        : "Revue requise"
+      : pending
+        ? arabic
+          ? "في مهلة الإلغاء"
+          : "Délai d’annulation"
+        : arabic
+          ? "غير نشط"
+          : "Inactive";
 
   return (
     <section className="mt-6 rounded-2xl border border-destructive/25 bg-destructive/5 p-4">
@@ -537,24 +576,29 @@ function AccountDeletionPanel({
             {arabic ? "حذف الحساب" : "Suppression du compte"}
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {pending || processing
+            {pending
               ? arabic
-                ? "تم تسجيل الطلب. المعالجة ليست تلقائية حالياً، ويجب أن تُكملها جهة دعم مخوّلة."
-                : "La demande est enregistrée. Son traitement n’est pas automatique actuellement et doit être finalisé par un opérateur autorisé."
-              : arabic
-                ? "يمكنك تسجيل طلب حذف. لن ندّعي أن الحساب حُذف قبل أن تُكمل جهة مخوّلة المعالجة."
-                : "Vous pouvez enregistrer une demande. Le compte ne sera pas présenté comme supprimé avant le traitement par un opérateur autorisé."}
+                ? executeAt
+                  ? `يمكنك إلغاء الطلب حتى ${executeAt}. بعد ذلك ستبدأ المعالجة التلقائية.`
+                  : "لديك 7 أيام لإلغاء الطلب، ثم تبدأ المعالجة التلقائية."
+                : executeAt
+                  ? `Vous pouvez annuler jusqu’au ${executeAt}. Le traitement automatique commencera ensuite.`
+                  : "Vous disposez de 7 jours pour annuler, puis le traitement automatique commencera."
+              : processing
+                ? arabic
+                  ? "انتهت مهلة الإلغاء وبدأت معالجة الحذف التلقائية."
+                  : "Le délai d’annulation est terminé et le traitement automatique est en cours."
+                : rejected
+                  ? arabic
+                    ? "تتطلب حسابات الموظفين إجراءات مغادرة مُراجعة قبل إعادة طلب الحذف للمعالجة."
+                    : "Les comptes du personnel exigent un offboarding contrôlé avant la reprise de la suppression."
+                  : arabic
+                    ? "يمكنك طلب الحذف. سيكون لديك 7 أيام لإلغاء الطلب قبل بدء المعالجة التلقائية."
+                    : "Vous pouvez demander la suppression. Vous aurez 7 jours pour annuler avant le traitement automatique."}
           </p>
           {request ? (
             <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
-              {arabic ? "الحالة" : "Statut"}:{" "}
-              {processing
-                ? arabic
-                  ? "قيد المعالجة"
-                  : "En cours de traitement"
-                : arabic
-                  ? "معلّق"
-                  : "En attente"}
+              {arabic ? "الحالة" : "Statut"}: {statusLabel}
             </p>
           ) : null}
           <div className="mt-3">
@@ -572,6 +616,12 @@ function AccountDeletionPanel({
                 {arabic
                   ? "لا يمكن إلغاء الطلب بعد بدء المعالجة."
                   : "La demande ne peut plus être annulée après le début du traitement."}
+              </span>
+            ) : rejected ? (
+              <span className="text-xs font-semibold text-muted-foreground">
+                {arabic
+                  ? "تواصل مع الدعم لإتمام إجراءات مغادرة الموظف المُراجعة."
+                  : "Contactez le support pour terminer l’offboarding contrôlé."}
               </span>
             ) : (
               <button

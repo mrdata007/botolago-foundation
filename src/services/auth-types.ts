@@ -102,6 +102,7 @@ export interface AccountDeletionRequest {
   readonly requestId: string;
   readonly status: "requested" | "cancelled" | "processing" | "completed" | "rejected";
   readonly requestedAt: string;
+  readonly executeAfter: string;
   readonly updatedAt: string;
   readonly processedAt: string | null;
 }
@@ -130,4 +131,3 @@ export interface AuthService {
 export function defaultNotifications(): NotificationPreferences {
   return { matchAlerts: true, breakingNews: true, fantasyDeadlines: true };
 }
-

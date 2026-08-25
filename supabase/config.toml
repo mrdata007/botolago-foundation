@@ -393,6 +393,13 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/fantasy-scoring-worker/index.ts"
 
+# Service-to-service account-deletion entrypoint. The handler validates the
+# independent x-botolago-account-deletion-key secret before using service role.
+[functions.account-deletion-worker]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/account-deletion-worker/index.ts"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

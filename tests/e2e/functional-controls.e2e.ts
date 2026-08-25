@@ -93,6 +93,14 @@ async function prepare(page: Page, language: Language) {
   await initializeLanguage(page, language);
 }
 
+async function loginDemo(page: Page, language: Language) {
+  await gotoHydrated(page, "/auth/login", language);
+  await page.getByLabel(labels[language].email).fill("demo@botolago.ma");
+  await page.locator('input[type="password"]').fill("demo1234");
+  await page.locator('form button[type="submit"]').click();
+  await page.waitForURL((url) => !url.pathname.endsWith("/auth/login"));
+}
+
 for (const language of ["fr", "ar"] as const) {
   test(`${language}: news, article, match, and recovery controls work`, async ({
     page,
@@ -223,9 +231,10 @@ for (const language of ["fr", "ar"] as const) {
 test("French Fantasy browse, watchlist, detail, and ranking controls work", async ({
   page,
 }, testInfo) => {
-  test.setTimeout(90_000);
+  test.setTimeout(240_000);
   const diagnostics = observePage(page);
   await prepare(page, "fr");
+  await loginDemo(page, "fr");
 
   await gotoHydrated(page, "/fantasy/players", "fr");
   await expect(page.getByRole("heading", { level: 1, name: "Joueurs" })).toBeVisible();
@@ -278,8 +287,63 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
   await page.getByRole("button", { name: "Modifier la composition", exact: true }).click();
   await expect(formation).toBeEnabled();
   await expect(captain).toBeEnabled();
+  const formationBefore = await formation.textContent();
+  await formation.click();
+  const formationOptions = page.getByRole("button", { name: /^\d-\d-\d$/ });
+  let savedFormation = "";
+  for (let index = 0; index < (await formationOptions.count()); index += 1) {
+    const option = formationOptions.nth(index);
+    const value = (await option.textContent())?.trim() ?? "";
+    if (value && !formationBefore?.includes(value)) {
+      savedFormation = value;
+      await option.click();
+      break;
+    }
+  }
+  expect(savedFormation).not.toBe("");
+
+  await captain.click();
+  const captainOptions = page.locator('button[aria-label^="Définir capitaine "]');
+  let savedCaptainLabel = "";
+  for (let index = 0; index < (await captainOptions.count()); index += 1) {
+    const option = captainOptions.nth(index);
+    if (!((await option.getAttribute("class")) ?? "").includes("brand-accent")) {
+      savedCaptainLabel = (await option.getAttribute("aria-label")) ?? "";
+      await option.click();
+      break;
+    }
+  }
+  expect(savedCaptainLabel).not.toBe("");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByText("Modifications enregistrées", { exact: true })).toBeVisible();
+  await reloadHydrated(page, "fr");
+  await expect(page.getByRole("button", { name: new RegExp(savedFormation) })).toBeDisabled();
+  await page.getByRole("button", { name: "Modifier la composition", exact: true }).click();
+  await page.getByRole("button", { name: "Définir capitaine", exact: true }).click();
+  await expect(page.getByRole("button", { name: savedCaptainLabel, exact: true })).toHaveClass(
+    /brand-accent/,
+  );
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Annuler", exact: true }).click();
 
+  await gotoHydrated(page, "/fantasy/top-players", "fr");
+  await page.getByRole("button", { name: "Partager", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Lien copié" })).toBeVisible();
+  const topWatch = page
+    .getByRole("button", { name: /Ajouter à la liste|Retirer/, exact: true })
+    .first();
+  const topWatchBefore = await topWatch.getAttribute("aria-pressed");
+  await topWatch.click();
+  await expect(topWatch).toHaveAttribute(
+    "aria-pressed",
+    topWatchBefore === "true" ? "false" : "true",
+  );
+  const previousTopGameweek = page.getByRole("button", { name: "Journée -1", exact: true });
+  const nextTopGameweek = page.getByRole("button", { name: "Journée +1", exact: true });
+  if (await previousTopGameweek.isEnabled()) await previousTopGameweek.click();
+  else if (await nextTopGameweek.isEnabled()) await nextTopGameweek.click();
+  await page.getByRole("button", { name: "Voir le joueur", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/fantasy\/players\//);
   await gotoHydrated(page, "/fantasy/top-players", "fr");
   await page.getByRole("button", { name: "Recruter", exact: true }).first().click();
   await expect(page).toHaveURL(/\/fantasy\/transfers\?player=/);
@@ -287,8 +351,74 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
   await gotoHydrated(page, `/fantasy/transfers?player=${"x".repeat(65)}`, "fr");
   await expect(page.getByTestId("transfer-recruit-target")).toHaveCount(0);
 
+  await gotoHydrated(page, "/fantasy/transfers", "fr");
+  await page.getByRole("button", { name: "Transferts", exact: true }).first().click();
+  const replacement = page
+    .locator('[data-testid="atlas-player-row"][data-player-selectable="true"]')
+    .first();
+  await expect(replacement).toBeVisible();
+  const replacementName =
+    (await replacement.locator("span.truncate").first().textContent())?.trim() ?? "";
+  expect(replacementName).not.toBe("");
+  await replacement.click();
+  await page.getByTestId("atlas-player-add").click();
+  await page.getByRole("button", { name: "Vérifier", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Résumé des transferts" })).toBeVisible();
+  await page.getByRole("button", { name: "Confirmer les transferts", exact: true }).click();
+  await expect(page.getByText("Transferts confirmés", { exact: true })).toBeVisible();
+  await reloadHydrated(page, "fr");
+  await expect(page.getByText(replacementName, { exact: true }).first()).toBeVisible();
+
+  await gotoHydrated(page, "/fantasy/fixtures", "fr");
+  const sixGameweeks = page.getByRole("button", { name: "6 GW", exact: true });
+  await sixGameweeks.click();
+  await expect(sixGameweeks).toHaveAttribute("aria-pressed", "true");
+  const clubFilterGroup = page.getByText("Club:", { exact: true }).locator("..");
+  const fixtureClubButtons = clubFilterGroup.getByRole("button");
+  if ((await fixtureClubButtons.count()) > 1) {
+    const clubFilter = fixtureClubButtons.nth(1);
+    await clubFilter.click();
+    await expect(clubFilter).toHaveAttribute("aria-pressed", "true");
+  }
+
+  await gotoHydrated(page, "/fantasy/points", "fr");
+  const listView = page.getByRole("button", { name: "Liste", exact: true });
+  if (await listView.isVisible()) {
+    await listView.click();
+    await expect(listView).toHaveAttribute("aria-pressed", "true");
+  }
+  const pointsHistory = page.locator("button").filter({ hasText: "Journée" });
+  if ((await pointsHistory.count()) > 0) {
+    const history = pointsHistory.last();
+    await history.click();
+    await expect(history).toHaveClass(/ring-2/);
+  }
+
   await gotoHydrated(page, "/fantasy/leagues", "fr");
   await expect(page.getByRole("button", { name: "Coupes", exact: true })).toHaveCount(0);
+  await page.getByPlaceholder("Nom de la ligue").fill("QA Mock League");
+  await page.getByRole("button", { name: "Créer une ligue", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Ligue créée" })).toBeVisible();
+  await page.getByRole("button", { name: "Partager le code", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Code copié" })).toBeVisible();
+  await page.getByRole("link", { name: /QA Mock League/ }).click();
+  await expect(page.getByText("QA Mock League", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Retour", exact: true }).click();
+
+  await page.getByPlaceholder("Entrez le code d'invitation").fill("BOT-QA123");
+  await page.getByRole("button", { name: "Rejoindre une ligue", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Ligue rejointe" })).toBeVisible();
+  await page.getByRole("link", { name: /Ligue BOT-QA123/ }).click();
+  await page.getByRole("button", { name: "Quitter la ligue", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmer", exact: true }).click();
+  await expect(page).toHaveURL(/\/fantasy\/leagues$/);
+  await expect(page.getByText("Ligue BOT-QA123", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("link", { name: /QA Mock League/ }).click();
+  await page.getByRole("button", { name: "Supprimer la ligue", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmer", exact: true }).click();
+  await expect(page).toHaveURL(/\/fantasy\/leagues$/);
+  await expect(page.getByText("QA Mock League", { exact: true })).toHaveCount(0);
 
   for (const path of [
     "/fantasy/fixtures",
@@ -313,6 +443,7 @@ test("Arabic mobile Fantasy controls preserve edit guards and recruit preselecti
   const diagnostics = observePage(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await prepare(page, "ar");
+  await loginDemo(page, "ar");
 
   await gotoHydrated(page, "/fantasy/rankings", "ar");
   const search = page.getByLabel("ابحث عن فريق");
@@ -336,6 +467,47 @@ test("Arabic mobile Fantasy controls preserve edit guards and recruit preselecti
   await expect(page.getByTestId("transfer-recruit-target")).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expectNoHorizontalOverflow(page);
+
+  await diagnostics.verify(testInfo);
+});
+
+test("French mock profile actions reach their truthful persisted outcomes", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const diagnostics = observePage(page);
+  await prepare(page, "fr");
+
+  await gotoHydrated(page, "/profile", "fr");
+  await page.getByRole("button", { name: "Créer un compte", exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/register/);
+  await gotoHydrated(page, "/profile", "fr");
+  await page.getByRole("button", { name: "Se connecter", exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/login/);
+
+  await loginDemo(page, "fr");
+  await gotoHydrated(page, "/profile", "fr");
+  await page.getByRole("button", { name: "Modifier le profil", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/auth\/profile-setup/);
+  await gotoHydrated(page, "/profile", "fr");
+
+  await page.getByRole("button", { name: "Demander la suppression", exact: true }).click();
+  const deletionDialog = page.getByRole("dialog", { name: "Demander la suppression du compte" });
+  await expect(deletionDialog).toBeVisible();
+  await deletionDialog.getByRole("button", { name: "Enregistrer la demande" }).click();
+  const cancelDeletion = page.getByRole("button", { name: "Annuler la demande", exact: true });
+  await expect(cancelDeletion).toBeVisible();
+  await cancelDeletion.click();
+  await expect(
+    page.getByRole("button", { name: "Demander la suppression", exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Se déconnecter", exact: true }).click();
+  const signOutDialog = page.getByRole("dialog", { name: "Se déconnecter ?" });
+  await signOutDialog.getByRole("button", { name: "Conserver les données" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await gotoHydrated(page, "/profile", "fr");
+  await expect(page.getByRole("button", { name: "Se connecter", exact: true })).toBeVisible();
 
   await diagnostics.verify(testInfo);
 });
