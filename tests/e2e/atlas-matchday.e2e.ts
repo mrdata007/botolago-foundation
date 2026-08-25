@@ -9,8 +9,7 @@ import {
 } from "./support";
 
 async function signInToCreate(page: import("@playwright/test").Page, language: "fr" | "ar") {
-  await gotoHydrated(page, "/fantasy/create", language);
-  await expect(page).toHaveURL(/\/auth\/login\?next=%2Ffantasy%2Fcreate/);
+  await gotoHydrated(page, "/auth/login?next=%2Ffantasy%2Fcreate", language);
   await page.getByLabel(/e-?mail|البريد/i).fill("demo@botolago.ma");
   await page.locator('input[type="password"]').fill("demo1234");
   await page.locator('form button[type="submit"]').click();
@@ -24,7 +23,7 @@ test("Atlas Matchday mobile onboarding persists, creates, then opens team manage
   const diagnostics = observePage(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await initializeLanguage(page, "fr");
-  await signInToCreate(page, "fr");
+  await gotoHydrated(page, "/fantasy/create", "fr");
 
   await page.getByLabel("Nom de l'équipe").fill("Atlas Mobile QA");
   await page.getByRole("checkbox").check();
@@ -48,6 +47,13 @@ test("Atlas Matchday mobile onboarding persists, creates, then opens team manage
   }
   await expect(page.getByText("15 / 15")).toBeVisible();
   await page.getByRole("button", { name: "Vérifier l'équipe" }).click();
+  await expect(page).toHaveURL(/\/fantasy\/create\/review$/);
+  const signIn = page.getByRole("link", { name: "Se connecter" });
+  await expect(signIn).toBeVisible();
+  await signIn.click();
+  await page.getByLabel(/e-?mail/i).fill("demo@botolago.ma");
+  await page.locator('input[type="password"]').fill("demo1234");
+  await page.locator('form button[type="submit"]').click();
   await expect(page).toHaveURL(/\/fantasy\/create\/review$/);
   await page.getByRole("button", { name: "Créer mon équipe" }).click();
 
@@ -106,4 +112,19 @@ test("Atlas identity and recurring routes preserve Arabic RTL at desktop width",
   await expect(page.getByAltText("BotolaGO").last()).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await diagnostics.verify(testInfo);
+});
+
+
+test("Atlas direct steps return an incomplete guest draft to its last valid step", async ({
+  page,
+}) => {
+  await initializeLanguage(page, "fr");
+  await gotoHydrated(page, "/fantasy/create/squad", "fr");
+  await expect(page).toHaveURL(/\/fantasy\/create\/?$/);
+  await page.getByLabel("Nom de l'équipe").fill("Atlas Guard QA");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Continuer" }).click();
+  await expect(page).toHaveURL(/\/fantasy\/create\/squad$/);
+  await page.goto("/fantasy/create/review");
+  await expect(page).toHaveURL(/\/fantasy\/create\/squad$/);
 });
