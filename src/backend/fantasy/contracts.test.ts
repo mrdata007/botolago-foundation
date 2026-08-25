@@ -102,6 +102,7 @@ describe("Fantasy pre-activation contracts", () => {
       gameweekStatus: "open",
       pointsState: "provisional",
       result: null,
+      autoSubs: [],
       players: [
         {
           fantasyPlayerId: "0a32b1b0-2ac8-4ba1-b7e0-d16b87d87f6d",
@@ -114,11 +115,13 @@ describe("Fantasy pre-activation contracts", () => {
           finalPoints: null,
           didPlay: false,
           minutesPlayed: 0,
+          events: [],
         },
       ],
     });
 
     expect(dto.result).toBeNull();
+    expect(dto.autoSubs).toEqual([]);
     expect(dto.players[0]).toMatchObject({
       provisionalPoints: 0,
       finalPoints: null,

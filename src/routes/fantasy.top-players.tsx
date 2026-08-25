@@ -434,7 +434,12 @@ function TopPlayerHeroCard({
         </button>
         <button
           type="button"
-          onClick={() => navigate({ to: "/fantasy/transfers" })}
+          onClick={() =>
+            navigate({
+              to: "/fantasy/transfers",
+              search: { player: player.id },
+            })
+          }
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2.5 text-xs font-semibold text-white backdrop-blur"
         >
           <UserPlus className="h-4 w-4" aria-hidden />

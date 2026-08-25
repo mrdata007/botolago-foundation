@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { Trans } from "@/components/common/Trans";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { footballService } from "@/services/football";
+import { authService, type AccountDeletionRequest } from "@/services/auth";
 import { Logo } from "@/components/brand/Logo";
 import {
   UserCircle,
@@ -21,6 +22,8 @@ import {
   Trophy,
   Languages,
   ChevronRight,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import {
@@ -60,16 +63,126 @@ function ProfilePage() {
     queryFn: () => footballService.getClubs(lang),
   });
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signOutBusy, setSignOutBusy] = useState(false);
+  const [deletionOpen, setDeletionOpen] = useState(false);
+  const [deletionBusy, setDeletionBusy] = useState(false);
+  const [deletionRequest, setDeletionRequest] = useState<AccountDeletionRequest | null>(null);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !user) {
+      setDeletionRequest(null);
+      return;
+    }
+
+    let cancelled = false;
+    void authService.getAccountDeletionRequests().then((result) => {
+      if (cancelled || !result.ok) return;
+      const active =
+        result.data?.find(
+          (request) => request.status === "requested" || request.status === "processing",
+        ) ?? null;
+      setDeletionRequest(active);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, user?.id]);
 
   const favoriteClub = user?.favoriteClubId
     ? clubsQ.data?.find((c) => c.id === user.favoriteClubId)
     : undefined;
 
   const onSignOut = async (resetLocalData: boolean) => {
-    await signOut({ resetLocalData });
-    setSignOutOpen(false);
-    toast.success(t("auth.success.signed_out"));
-    navigate({ to: "/" });
+    if (signOutBusy) return;
+    setSignOutBusy(true);
+    try {
+      await signOut({ resetLocalData });
+      setSignOutOpen(false);
+      toast.success(t("auth.success.signed_out"));
+      navigate({ to: "/" });
+    } catch {
+      toast.error(
+        lang === "ar"
+          ? "تعذر تسجيل الخروج. حاول مرة أخرى."
+          : "Impossible de se déconnecter. Réessayez.",
+      );
+    } finally {
+      setSignOutBusy(false);
+    }
+  };
+
+  const onRequestDeletion = async () => {
+    if (deletionBusy) return;
+    setDeletionBusy(true);
+    try {
+      const result = await authService.requestAccountDeletion();
+      if (!result.ok || !result.data) throw new Error("request_failed");
+
+      const refreshed = await authService.getAccountDeletionRequests();
+      const active = refreshed.ok
+        ? (refreshed.data?.find(
+            (request) => request.status === "requested" || request.status === "processing",
+          ) ?? null)
+        : null;
+      const now = new Date().toISOString();
+      setDeletionRequest(
+        active ?? {
+          requestId: result.data.requestId,
+          status: "requested",
+          requestedAt: now,
+          updatedAt: now,
+          processedAt: null,
+        },
+      );
+      setDeletionOpen(false);
+      toast.success(
+        lang === "ar"
+          ? "تم تسجيل طلب حذف الحساب."
+          : "La demande de suppression a été enregistrée.",
+      );
+    } catch {
+      toast.error(
+        lang === "ar"
+          ? "تعذر تسجيل طلب الحذف. حاول مرة أخرى."
+          : "Impossible d’enregistrer la demande. Réessayez.",
+      );
+    } finally {
+      setDeletionBusy(false);
+    }
+  };
+
+  const onCancelDeletion = async () => {
+    if (deletionBusy || deletionRequest?.status !== "requested") return;
+    setDeletionBusy(true);
+    try {
+      const result = await authService.cancelAccountDeletion();
+      if (!result.ok) throw new Error("cancel_failed");
+      const refreshed = await authService.getAccountDeletionRequests();
+      if (!refreshed.ok) throw new Error("refresh_failed");
+      const active =
+        refreshed.data?.find(
+          (request) => request.status === "requested" || request.status === "processing",
+        ) ?? null;
+      if (active) {
+        setDeletionRequest(active);
+        throw new Error("request_still_active");
+      }
+      setDeletionRequest(null);
+      toast.success(
+        lang === "ar"
+          ? "تم إلغاء طلب حذف الحساب."
+          : "La demande de suppression a été annulée.",
+      );
+    } catch {
+      toast.error(
+        lang === "ar"
+          ? "تعذر إلغاء الطلب. حاول مرة أخرى."
+          : "Impossible d’annuler la demande. Réessayez.",
+      );
+    } finally {
+      setDeletionBusy(false);
+    }
   };
 
   return (
@@ -79,19 +192,45 @@ function ProfilePage() {
       </h1>
 
       {status === "authenticated" && user ? (
-        <AuthenticatedProfile
-          user={user}
-          favoriteClubLabel={favoriteClub ? tr(favoriteClub.name) : undefined}
-          favoriteClub={favoriteClub}
-          onSignOut={() => setSignOutOpen(true)}
-        />
+        <>
+          {user.profileAvailable === false ? (
+            <div
+              role="status"
+              className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-foreground"
+            >
+              {lang === "ar"
+                ? "تعذر تحميل بيانات ملفك مؤقتاً. تم تعطيل التعديل لحماية بياناتك الحالية."
+                : "Vos données de profil sont temporairement indisponibles. La modification est désactivée pour protéger vos informations existantes."}
+            </div>
+          ) : null}
+          <AuthenticatedProfile
+            user={user}
+            favoriteClubLabel={favoriteClub ? tr(favoriteClub.name) : undefined}
+            favoriteClub={favoriteClub}
+            onSignOut={() => setSignOutOpen(true)}
+          />
+          <AccountDeletionPanel
+            language={lang}
+            request={deletionRequest}
+            busy={deletionBusy}
+            onRequest={() => setDeletionOpen(true)}
+            onCancel={onCancelDeletion}
+          />
+        </>
       ) : status === "guest" ? (
         <GuestProfile />
+      ) : status === "loading" ? (
+        <ProfileLoading />
       ) : (
         <AnonymousProfile />
       )}
 
-      <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+      <Dialog
+        open={signOutOpen}
+        onOpenChange={(open) => {
+          if (!signOutBusy) setSignOutOpen(open);
+        }}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{t("profile.sign_out_title")}</DialogTitle>
@@ -100,15 +239,68 @@ function ProfilePage() {
           <div className="mt-2 grid gap-2">
             <button
               onClick={() => onSignOut(false)}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold transition-opacity hover:opacity-95"
+              disabled={signOutBusy}
+              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Check className="h-4 w-4" aria-hidden /> {t("profile.sign_out_keep")}
+              {signOutBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Check className="h-4 w-4" aria-hidden />
+              )}{" "}
+              {t("profile.sign_out_keep")}
             </button>
             <button
               onClick={() => onSignOut(true)}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
+              disabled={signOutBusy}
+              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <X className="h-4 w-4" aria-hidden /> {t("profile.sign_out_reset")}
+              {signOutBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <X className="h-4 w-4" aria-hidden />
+              )}{" "}
+              {t("profile.sign_out_reset")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletionOpen}
+        onOpenChange={(open) => {
+          if (!deletionBusy) setDeletionOpen(open);
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {lang === "ar" ? "طلب حذف الحساب" : "Demander la suppression du compte"}
+            </DialogTitle>
+            <DialogDescription>
+              {lang === "ar"
+                ? "سيتم تسجيل الطلب للمراجعة. الحذف النهائي ليس فورياً وستتولى جهة مخوّلة إتمامه."
+                : "La demande sera enregistrée pour traitement. La suppression définitive n’est pas immédiate et doit être finalisée par un opérateur autorisé."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 grid gap-2">
+            <button
+              onClick={onRequestDeletion}
+              disabled={deletionBusy}
+              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-destructive px-4 text-sm font-bold text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {deletionBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-4 w-4" aria-hidden />
+              )}
+              {lang === "ar" ? "تسجيل الطلب" : "Enregistrer la demande"}
+            </button>
+            <button
+              onClick={() => setDeletionOpen(false)}
+              disabled={deletionBusy}
+              className="min-h-[46px] rounded-2xl border border-input bg-background px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {lang === "ar" ? "رجوع" : "Retour"}
             </button>
           </div>
         </DialogContent>
@@ -313,6 +505,99 @@ function AuthenticatedProfile({
 }
 
 /* ------------------------------ subcomponents ----------------------------- */
+
+function AccountDeletionPanel({
+  language,
+  request,
+  busy,
+  onRequest,
+  onCancel,
+}: {
+  language: "fr" | "ar";
+  request: AccountDeletionRequest | null;
+  busy: boolean;
+  onRequest: () => void;
+  onCancel: () => void;
+}) {
+  const arabic = language === "ar";
+  const pending = request?.status === "requested";
+  const processing = request?.status === "processing";
+
+  return (
+    <section className="mt-6 rounded-2xl border border-destructive/25 bg-destructive/5 p-4">
+      <div className="flex items-start gap-3">
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive"
+          aria-hidden
+        >
+          <Trash2 className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-black text-foreground">
+            {arabic ? "حذف الحساب" : "Suppression du compte"}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {pending || processing
+              ? arabic
+                ? "تم تسجيل الطلب. المعالجة ليست تلقائية حالياً، ويجب أن تُكملها جهة دعم مخوّلة."
+                : "La demande est enregistrée. Son traitement n’est pas automatique actuellement et doit être finalisé par un opérateur autorisé."
+              : arabic
+                ? "يمكنك تسجيل طلب حذف. لن ندّعي أن الحساب حُذف قبل أن تُكمل جهة مخوّلة المعالجة."
+                : "Vous pouvez enregistrer une demande. Le compte ne sera pas présenté comme supprimé avant le traitement par un opérateur autorisé."}
+          </p>
+          {request ? (
+            <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
+              {arabic ? "الحالة" : "Statut"}:{" "}
+              {processing
+                ? arabic
+                  ? "قيد المعالجة"
+                  : "En cours de traitement"
+                : arabic
+                  ? "معلّق"
+                  : "En attente"}
+            </p>
+          ) : null}
+          <div className="mt-3">
+            {pending ? (
+              <button
+                onClick={onCancel}
+                disabled={busy}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-background px-4 text-xs font-bold text-destructive disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                {arabic ? "إلغاء الطلب" : "Annuler la demande"}
+              </button>
+            ) : processing ? (
+              <span className="text-xs font-semibold text-muted-foreground">
+                {arabic
+                  ? "لا يمكن إلغاء الطلب بعد بدء المعالجة."
+                  : "La demande ne peut plus être annulée après le début du traitement."}
+              </span>
+            ) : (
+              <button
+                onClick={onRequest}
+                disabled={busy}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-background px-4 text-xs font-bold text-destructive disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+                {arabic ? "طلب الحذف" : "Demander la suppression"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProfileLoading() {
+  return (
+    <div className="mt-4 animate-pulse space-y-4" aria-busy="true" aria-label="Loading profile">
+      <div className="h-44 rounded-3xl bg-muted" />
+      <div className="h-24 rounded-2xl bg-muted" />
+    </div>
+  );
+}
 
 function StatTile({
   icon,

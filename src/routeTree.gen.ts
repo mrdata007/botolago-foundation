@@ -36,6 +36,7 @@ import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
+import { Route as AuthMfaRouteImport } from './routes/auth.mfa'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -189,6 +190,11 @@ const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
   path: '/profile-setup',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthMfaRoute = AuthMfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -297,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -342,6 +349,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -388,6 +396,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -436,6 +445,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -481,6 +491,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -526,6 +537,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -763,6 +775,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthProfileSetupRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/mfa': {
+      id: '/auth/mfa'
+      path: '/mfa'
+      fullPath: '/auth/mfa'
+      preLoaderRoute: typeof AuthMfaRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/login'
@@ -917,6 +936,7 @@ interface AuthRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthMfaRoute: typeof AuthMfaRoute
   AuthProfileSetupRoute: typeof AuthProfileSetupRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
@@ -927,6 +947,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthMfaRoute: AuthMfaRoute,
   AuthProfileSetupRoute: AuthProfileSetupRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
@@ -1047,3 +1068,4 @@ declare module '@tanstack/react-start' {
     config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
+

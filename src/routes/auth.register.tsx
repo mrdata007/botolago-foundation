@@ -10,7 +10,7 @@ import {
   AuthFieldLabel,
 } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
-import { authService } from "@/services/auth";
+import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import {
   validateEmail,
   validateName,
@@ -139,12 +139,13 @@ function RegisterPage() {
       });
       return;
     }
-    markWelcomeDone();
-    if (res.data?.profileComplete) {
-      navigate({ to: next });
-      return;
+    // Live OAuth completes only through /auth/callback. Mock mode has no
+    // provider redirect and may continue synchronously.
+    if (IS_MOCK_AUTH) {
+      markWelcomeDone();
+      if (res.data?.profileComplete) navigate({ to: next });
+      else navigate({ to: "/auth/profile-setup", search: { next } });
     }
-    navigate({ to: "/auth/profile-setup", search: { next } });
   };
 
   return (

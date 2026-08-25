@@ -300,8 +300,8 @@ max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]
@@ -385,6 +385,13 @@ entrypoint = "./functions/news-ingest/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/news-ingest-elbotola/index.ts"
+
+# Service-to-service Fantasy scoring entrypoint. The handler validates the
+# independent x-botolago-scoring-key secret before using the service-role key.
+[functions.fantasy-scoring-worker]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/fantasy-scoring-worker/index.ts"
 
 [edge_runtime]
 enabled = true

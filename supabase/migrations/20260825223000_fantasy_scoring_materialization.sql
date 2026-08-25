@@ -145,7 +145,9 @@ begin
   if not found then
     raise exception using errcode = 'PT404', message = 'fantasy_gameweek_not_found';
   end if;
-  if target_gameweek.status not in ('locked', 'live', 'provisional')
+  -- finalizing/finalized are admitted only so the exact current snapshot can
+  -- be replayed below. Any mutation after finalization begins remains blocked.
+  if target_gameweek.status not in ('locked', 'live', 'provisional', 'finalizing', 'finalized')
     or target_gameweek.scoring_input_version > p_calculation_version then
     raise exception using errcode = 'PT409', message = 'gameweek_not_finalizable';
   end if;
@@ -282,6 +284,23 @@ begin
     and snapshot.gameweek_id = p_gameweek_id
     and snapshot.superseded_at is null
   for update;
+
+  if target_gameweek.status in ('finalizing', 'finalized') then
+    if found
+      and target_gameweek.scoring_input_version = p_calculation_version
+      and previous_snapshot.calculation_version = p_calculation_version
+      and previous_snapshot.football_input_version = p_football_input_version
+      and previous_snapshot.source_digest = source_digest then
+      return jsonb_build_object(
+        'snapshotId', previous_snapshot.id,
+        'players', previous_snapshot.player_count,
+        'stableResult', true
+      );
+    end if;
+    raise exception using
+      errcode = 'PT409',
+      message = 'gameweek_not_finalizable';
+  end if;
 
   if found then
     if previous_snapshot.calculation_version > p_calculation_version
@@ -465,7 +484,7 @@ begin
       'finalized', 0, 'afterPlayerId', null, 'hasMore', false, 'stableResult', true
     );
   end if;
-  if target_gameweek.status not in ('provisional', 'finalizing')
+  if target_gameweek.status not in ('locked', 'live', 'provisional', 'finalizing')
     or target_gameweek.scoring_input_version <> p_calculation_version
     or not exists (
       select 1 from app.fantasy_fixture_assignments assignment
@@ -487,9 +506,15 @@ begin
           or snapshot.id is null
           or snapshot.calculation_version <> p_calculation_version
         )
-    ) then
+  ) then
     raise exception using errcode = 'PT409', message = 'gameweek_not_finalizable';
   end if;
+
+  -- This is the production lifecycle transition. It is reachable only after
+  -- every assigned scoring fixture is final and has a complete current
+  -- snapshot at the requested calculation version (the guards above).
+  update app.fantasy_gameweeks set status = 'provisional', points_state = 'provisional'
+  where id = p_gameweek_id and status in ('locked', 'live');
 
   select max(snapshot.football_input_version)
   into maximum_input_version
@@ -645,9 +670,6 @@ declare effective_ids uuid[];
 declare effective_positions text[];
 declare substitutions jsonb;
 declare position_rule record;
-declare i integer;
-declare j integer;
-declare k integer;
 declare position_count integer;
 declare replacement_valid boolean;
 declare declared_captain_id uuid;
@@ -1298,6 +1320,74 @@ begin
 end;
 $$;
 
+create or replace function api.service_validate_fantasy_scoring_scope(
+  p_gameweek_id uuid,
+  p_season_id uuid,
+  p_calculation_version bigint,
+  p_fixture_ids uuid[],
+  p_league_ids uuid[]
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare target app.fantasy_gameweeks%rowtype;
+declare assigned_fixture_ids uuid[];
+declare active_league_ids uuid[];
+begin
+  if not app_private.is_service_request() then
+    raise exception using errcode = 'PT403', message = 'forbidden';
+  end if;
+  if p_gameweek_id is null or p_season_id is null
+    or p_calculation_version is null or p_calculation_version <= 0
+    or p_fixture_ids is null or cardinality(p_fixture_ids) = 0
+    or p_league_ids is null
+    or exists (select 1 from unnest(p_fixture_ids) item where item is null)
+    or exists (select 1 from unnest(p_league_ids) item where item is null) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into target
+  from app.fantasy_gameweeks gameweek
+  where gameweek.id = p_gameweek_id;
+  if not found then
+    raise exception using errcode = 'PT404', message = 'fantasy_gameweek_not_found';
+  end if;
+  if target.fantasy_season_id <> p_season_id
+    or target.status not in ('locked', 'live', 'provisional', 'finalizing', 'finalized')
+    or target.scoring_input_version > p_calculation_version
+    or (target.status in ('finalizing', 'finalized')
+      and target.scoring_input_version <> p_calculation_version) then
+    raise exception using errcode = 'PT409', message = 'fantasy_scoring_scope_mismatch';
+  end if;
+
+  select coalesce(array_agg(assignment.fixture_id order by assignment.fixture_id), '{}'::uuid[])
+  into assigned_fixture_ids
+  from app.fantasy_fixture_assignments assignment
+  where assignment.fantasy_season_id = p_season_id
+    and assignment.gameweek_id = p_gameweek_id
+    and assignment.counts_points
+    and assignment.superseded_at is null;
+  select coalesce(array_agg(league.id order by league.id), '{}'::uuid[])
+  into active_league_ids
+  from app.fantasy_leagues league
+  where league.fantasy_season_id = p_season_id and league.active;
+
+  if p_fixture_ids is distinct from assigned_fixture_ids
+    or p_league_ids is distinct from active_league_ids then
+    raise exception using errcode = 'PT409', message = 'fantasy_scoring_scope_mismatch';
+  end if;
+  return jsonb_build_object(
+    'status', target.status,
+    'fixtureCount', cardinality(assigned_fixture_ids),
+    'leagueCount', cardinality(active_league_ids),
+    'stableResult', true
+  );
+end;
+$$;
+
 -- The legacy single-event contract cannot safely represent a complete
 -- correction. Keep it for migration compatibility, but remove the worker grant.
 revoke execute on function api.service_upsert_fantasy_player_points(
@@ -1320,6 +1410,9 @@ revoke all on function api.service_roll_fantasy_free_transfers(uuid, integer)
   from public, anon, authenticated, service_role;
 revoke all on function api.service_complete_fantasy_gameweek(uuid, bigint)
   from public, anon, authenticated, service_role;
+revoke all on function api.service_validate_fantasy_scoring_scope(
+  uuid, uuid, bigint, uuid[], uuid[]
+) from public, anon, authenticated, service_role;
 
 grant execute on function api.service_replace_fantasy_fixture_points(
   uuid, uuid, bigint, bigint, jsonb
@@ -1337,6 +1430,9 @@ grant execute on function api.service_roll_fantasy_free_transfers(uuid, integer)
   to service_role;
 grant execute on function api.service_complete_fantasy_gameweek(uuid, bigint)
   to service_role;
+grant execute on function api.service_validate_fantasy_scoring_scope(
+  uuid, uuid, bigint, uuid[], uuid[]
+) to service_role;
 
 comment on function api.service_replace_fantasy_fixture_points(
   uuid, uuid, bigint, bigint, jsonb

@@ -128,13 +128,17 @@ for (const language of ["fr", "ar"] as const) {
     await expect(page.locator("article h1")).toBeVisible();
     await expect(page.getByRole("link", { name: /retour|رجوع/i })).toHaveAttribute("href", "/news");
 
-    await page.getByRole("button", { name: l.bookmark, exact: true }).click();
-    await expect(page.getByRole("button", { name: l.bookmarked, exact: true })).toHaveAttribute(
+    await page.getByRole("button", { name: l.bookmark, exact: true }).first().click();
+    await expect(
+      page.getByRole("button", { name: l.bookmarked, exact: true }).first(),
+    ).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     await reloadHydrated(page, language);
-    await expect(page.getByRole("button", { name: l.bookmarked, exact: true })).toHaveAttribute(
+    await expect(
+      page.getByRole("button", { name: l.bookmarked, exact: true }).first(),
+    ).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -252,9 +256,10 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
   const overall = page.getByRole("tab", { name: "Général", exact: true });
   await overall.click();
   await expect(overall).toHaveAttribute("aria-selected", "true");
-  const rankingSearch = page.getByLabel("Rechercher un manager ou une équipe");
+  const rankingSearch = page.getByLabel("Rechercher une équipe");
   await rankingSearch.fill("Atlas");
   await expect(rankingSearch).toHaveValue("Atlas");
+  await expect(page.locator("main li").filter({ hasText: "Atlas" }).first()).toBeVisible();
   await rankingSearch.clear();
 
   const nextPage = page.getByRole("button", { name: "Page suivante", exact: true });
@@ -265,11 +270,29 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
     await previousPage.click();
   }
 
+  await gotoHydrated(page, "/fantasy/team", "fr");
+  const formation = page.getByRole("button", { name: /^Formation\s*:/ }).first();
+  const captain = page.getByRole("button", { name: "Définir capitaine", exact: true });
+  await expect(formation).toBeDisabled();
+  await expect(captain).toBeDisabled();
+  await page.getByRole("button", { name: "Modifier la composition", exact: true }).click();
+  await expect(formation).toBeEnabled();
+  await expect(captain).toBeEnabled();
+  await page.getByRole("button", { name: "Annuler", exact: true }).click();
+
+  await gotoHydrated(page, "/fantasy/top-players", "fr");
+  await page.getByRole("button", { name: "Recruter", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/fantasy\/transfers\?player=/);
+  await expect(page.getByTestId("transfer-recruit-target")).toBeVisible();
+  await gotoHydrated(page, `/fantasy/transfers?player=${"x".repeat(65)}`, "fr");
+  await expect(page.getByTestId("transfer-recruit-target")).toHaveCount(0);
+
+  await gotoHydrated(page, "/fantasy/leagues", "fr");
+  await expect(page.getByRole("button", { name: "Coupes", exact: true })).toHaveCount(0);
+
   for (const path of [
     "/fantasy/fixtures",
-    "/fantasy/top-players",
     "/fantasy/rules",
-    "/fantasy/team",
     "/fantasy/points",
     "/fantasy/transfers",
     "/fantasy/leagues",
@@ -278,6 +301,41 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
     await expect(page.locator("main")).toBeVisible();
     await expectNoHorizontalOverflow(page);
   }
+
+  await diagnostics.verify(testInfo);
+});
+
+
+test("Arabic mobile Fantasy controls preserve edit guards and recruit preselection", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90_000);
+  const diagnostics = observePage(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await prepare(page, "ar");
+
+  await gotoHydrated(page, "/fantasy/rankings", "ar");
+  const search = page.getByLabel("ابحث عن فريق");
+  await search.fill("Atlas");
+  await expect(search).toHaveValue("Atlas");
+  await page.getByRole("tab", { name: "الجولة", exact: true }).click();
+
+  await gotoHydrated(page, "/fantasy/team", "ar");
+  const formation = page.getByRole("button", { name: /^التشكيل\s*:/ }).first();
+  const captain = page.getByRole("button", { name: "تعيين قائداً", exact: true });
+  await expect(formation).toBeDisabled();
+  await expect(captain).toBeDisabled();
+  await page.getByRole("button", { name: "تعديل التشكيلة", exact: true }).click();
+  await expect(formation).toBeEnabled();
+  await expect(captain).toBeEnabled();
+  await page.getByRole("button", { name: "إلغاء", exact: true }).click();
+
+  await gotoHydrated(page, "/fantasy/top-players", "ar");
+  await page.getByRole("button", { name: "ضم اللاعب", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/fantasy\/transfers\?player=/);
+  await expect(page.getByTestId("transfer-recruit-target")).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expectNoHorizontalOverflow(page);
 
   await diagnostics.verify(testInfo);
 });

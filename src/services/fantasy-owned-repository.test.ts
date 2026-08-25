@@ -14,7 +14,7 @@ import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { FantasyCloudError } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { removeKey, STORAGE_KEYS } from "@/lib/storage";
-import type { FantasyTeamDto } from "@/backend/fantasy/contracts";
+import type { FantasyPointsDto, FantasyTeamDto } from "@/backend/fantasy/contracts";
 import { FantasyError } from "@/backend/fantasy/errors";
 
 describe("buildV2CloudSnapshot", () => {
@@ -60,10 +60,34 @@ describe("buildV2CloudSnapshot", () => {
       chips: { active: null, activeCancellable: false, used: [] },
     };
 
-    const snapshot = buildV2CloudSnapshot(team, gameweek);
+    const points: FantasyPointsDto = {
+      teamId: team.id,
+      gameweekId: gameweek.id,
+      gameweekStatus: "finalized",
+      pointsState: "final",
+      result: {
+        startingPoints: 55,
+        benchPoints: 4,
+        captainPoints: 8,
+        transferHit: 4,
+        chipType: null,
+        provisionalScore: 59,
+        finalScore: 59,
+        state: "final",
+        rank: 12,
+        overallRank: 34,
+        calculationVersion: 1,
+        finalizedAt: "2026-08-21T22:00:00.000Z",
+      },
+      autoSubs: [],
+      players: [],
+    };
+    const snapshot = buildV2CloudSnapshot(team, gameweek, points);
 
     expect(snapshot.currentGameweekId).toBe(gameweek.id);
     expect(snapshot.lifecycle.currentGameweek).toBe(1);
+    expect(snapshot.lifecycle.results[gameweek.sequence]?.totalPoints).toBe(59);
+    expect(snapshot.finalizedResults[gameweek.sequence]?.source).toBe("authoritative");
   });
 
   it("falls back to gameweek 1 when the provider has not published a gameweek", () => {

@@ -14,7 +14,6 @@ import type {
   FantasyGlobalRankingDto,
   FantasyGlobalRankingPageDto,
   FantasyPlayerDto,
-  FantasyPointsDto,
   FantasyTeamDto,
 } from "@/backend/fantasy/contracts";
 import type {
@@ -27,6 +26,9 @@ import type {
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
+import { mapFantasyPointsDto } from "./points-service";
+
+export { mapFantasyPointsDto } from "./points-service";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
@@ -101,6 +103,20 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
   };
 }
 
+function leagueDto(league: Awaited<ReturnType<typeof cloud.getLeagues>>[number]): League {
+  return {
+    id: league.id,
+    name: league.name,
+    type: league.visibility,
+    members: league.memberCount,
+    rank: league.rank,
+    previousRank: league.previousRank,
+    score: league.totalPoints ?? 0,
+    leaderName: league.leaderName ?? undefined,
+    role: league.role ?? undefined,
+  };
+}
+
 function globalRankingDto(dto: FantasyGlobalRankingDto): LeagueStanding {
   return {
     managerId: dto.teamId,
@@ -119,43 +135,6 @@ export function mapFantasyGlobalRankingsDto(dto: FantasyGlobalRankingPageDto): R
     total: dto.total,
     podium: dto.podium.map(globalRankingDto),
     myRank: dto.myRank ? globalRankingDto(dto.myRank) : undefined,
-  };
-}
-
-export function mapFantasyPointsDto(
-  sequence: number,
-  dto: FantasyPointsDto,
-): GameweekResult | undefined {
-  if (!dto.result) return undefined;
-  const captain =
-    dto.players.find((player) => player.multiplier > 1) ??
-    dto.players.find((player) => player.captain);
-  return {
-    gameweek: sequence,
-    totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
-    benchPoints: dto.result.benchPoints,
-    startingPoints: dto.result.startingPoints,
-    captainPoints: dto.result.captainPoints,
-    transferHitPoints: dto.result.transferHit,
-    activeChip: dto.result.chipType ?? undefined,
-    finalized: dto.result.state === "final",
-    finalizedAt: dto.result.finalizedAt ?? undefined,
-    captainId: captain?.fantasyPlayerId,
-    autoSubs: [],
-    breakdown: dto.players.map((player) => {
-      const basePoints = player.finalPoints ?? player.provisionalPoints;
-      return {
-        playerId: player.fantasyPlayerId,
-        totalPoints: basePoints * player.multiplier,
-        multiplier: player.multiplier,
-        minutesPlayed: player.minutesPlayed,
-        isCaptain: player.captain || undefined,
-        isViceCaptain: player.viceCaptain || undefined,
-        isBench: player.slot === "bench" || undefined,
-        status: dto.pointsState === "final" ? "final" : "provisional",
-        events: [],
-      };
-    }),
   };
 }
 
@@ -320,23 +299,13 @@ export const fantasyService = {
     if (type === "cup") return [];
     const current = await hub();
     const leagues = await cloud.getLeagues(current.season.id, type ?? null, context());
-    return leagues.map((league) => ({
-      id: league.id,
-      name: league.name,
-      type: league.visibility,
-      members: league.memberCount,
-      rank: league.rank,
-      previousRank: league.previousRank,
-      score: league.totalPoints ?? 0,
-      leaderName: league.leaderName ?? undefined,
-      role: league.role ?? undefined,
-    }));
+    return leagues.map(leagueDto);
   },
   async getLeague(id: string): Promise<League | undefined> {
     if (mode() === "mock") {
       return (await this.getLeagues()).find((league) => league.id === id);
     }
-    return (await this.getLeagues()).find((league) => league.id === id);
+    return leagueDto(await cloud.getLeague(id, context()));
   },
   async getLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
     if (mode() === "mock") {
@@ -520,6 +489,14 @@ export const fantasyService = {
       context(),
     )) as { leagueId: string; inviteCode?: string };
     return { id: result.leagueId, code: result.inviteCode };
+  },
+  async rotateLeagueInvite(leagueId: string): Promise<string> {
+    if (mode() === "mock") {
+      const league = (await this.getLeagues()).find((candidate) => candidate.id === leagueId);
+      if (!league?.code) throw new Error("league_invite_unavailable");
+      return league.code;
+    }
+    return (await cloud.rotateLeagueInvite(leagueId, context())).inviteCode;
   },
   async joinLeague(code: string): Promise<void> {
     if (mode() === "mock") {

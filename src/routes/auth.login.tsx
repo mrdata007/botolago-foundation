@@ -98,9 +98,13 @@ function LoginPage() {
       });
       return;
     }
-    markWelcomeDone();
-    toast.success(t("auth.success.login"));
-    goAfterLogin(res.data?.profileComplete);
+    // Supabase owns the OAuth redirect and /auth/callback owns post-auth routing.
+    // Mock mode has no provider redirect and may continue synchronously.
+    if (IS_MOCK_AUTH) {
+      markWelcomeDone();
+      toast.success(t("auth.success.login"));
+      goAfterLogin(res.data?.profileComplete);
+    }
   };
 
   return (
@@ -249,3 +253,4 @@ function AppleGlyph() {
     </svg>
   );
 }
+

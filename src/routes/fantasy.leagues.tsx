@@ -26,11 +26,10 @@ function LeaguesRoute() {
   return isLeagueDetail ? <Outlet /> : <LeaguesPage />;
 }
 
-type Tab = "private" | "public" | "cup";
+type Tab = "private" | "public";
 const tabs: { key: Tab; label: TranslationKey }[] = [
   { key: "private", label: "fantasy.leagues.tab.private" },
   { key: "public", label: "fantasy.leagues.tab.public" },
-  { key: "cup", label: "fantasy.leagues.tab.cups" },
 ];
 
 function LeaguesPage() {

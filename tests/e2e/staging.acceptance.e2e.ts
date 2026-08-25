@@ -78,8 +78,6 @@ test.describe("staging-backed critical journeys", () => {
     await initializeLanguage(page, "fr");
     await gotoHydrated(page, "/fantasy", "fr");
     await page.getByRole("link", { name: "Créer mon équipe" }).click();
-    await expect(page).toHaveURL(/\/auth\/login\?next=%2Ffantasy%2Fcreate/);
-    await login(page, firstEmail!, firstPassword!, "fr", false);
     await expect(page).toHaveURL(/\/fantasy\/create\/?$/);
     const welcome = page.getByRole("dialog", { name: "Bienvenue sur Fantasy BotolaGO" });
     if (await welcome.isVisible()) {
@@ -113,6 +111,11 @@ test.describe("staging-backed critical journeys", () => {
     await expect(review).toBeEnabled();
     await review.click();
     await page.waitForURL(/\/fantasy\/create\/review$/);
+    const signIn = page.getByRole("link", { name: "Se connecter" });
+    await expect(signIn).toBeVisible();
+    await signIn.click();
+    await login(page, firstEmail!, firstPassword!, "fr", false);
+    await expect(page).toHaveURL(/\/fantasy\/create\/review$/);
     const save = page.getByRole("button", { name: "Créer mon équipe" });
     await expect(save).toBeEnabled();
     await save.click();

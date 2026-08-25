@@ -33,6 +33,18 @@ select extensions.ok(
   'browser users cannot replace fixture scoring snapshots'
 );
 select extensions.ok(
+  has_function_privilege(
+    'service_role',
+    'api.service_validate_fantasy_scoring_scope(uuid,uuid,bigint,uuid[],uuid[])',
+    'execute'
+  ) and not has_function_privilege(
+    'authenticated',
+    'api.service_validate_fantasy_scoring_scope(uuid,uuid,bigint,uuid[],uuid[])',
+    'execute'
+  ),
+  'only the trusted service role can validate a scoring manifest scope'
+);
+select extensions.ok(
   not has_function_privilege(
     'service_role',
     'api.service_upsert_fantasy_player_points(uuid,uuid,uuid,text,integer,text,bigint,integer,app.fantasy_points_state)',
@@ -128,7 +140,7 @@ insert into app.fantasy_gameweeks (
   'a8000001-0000-4000-8000-000000000001',
   'a3000001-0000-4000-8000-000000000001',
   1, 'Gameweek 1', '2090-01-01T10:30:00Z', '2090-01-01T12:00:00Z',
-  '2090-01-08T12:00:00Z', 'provisional', 'provisional'
+  '2090-01-08T12:00:00Z', 'locked', 'provisional'
 );
 insert into app.fantasy_fixture_assignments (
   id, fantasy_season_id, fixture_id, gameweek_id, original_gameweek_id,
@@ -248,6 +260,49 @@ select set_config('test.corrected_fixture_points', (
 
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
+select extensions.is(
+  api.service_validate_fantasy_scoring_scope(
+    'a9000001-0000-4000-8000-000000000001',
+    'a8000001-0000-4000-8000-000000000001',
+    1,
+    array['a6000001-0000-4000-8000-000000000001'::uuid],
+    '{}'::uuid[]
+  ) ->> 'fixtureCount',
+  '1',
+  'the worker scope exactly matches the gameweek season and assigned fixtures'
+);
+select extensions.throws_ok(
+  $$select api.service_validate_fantasy_scoring_scope(
+      'a9000001-0000-4000-8000-000000000001',
+      'a8000001-0000-4000-8000-000000000001',
+      1, '{}'::uuid[], '{}'::uuid[]
+    )$$,
+  'PT400', 'validation_failed',
+  'an empty fixture scope fails before any scoring mutation'
+);
+select extensions.throws_ok(
+  $$select api.service_validate_fantasy_scoring_scope(
+      'a9000001-0000-4000-8000-000000000001',
+      'a8000002-0000-4000-8000-000000000001',
+      1,
+      array['a6000001-0000-4000-8000-000000000001'::uuid],
+      '{}'::uuid[]
+    )$$,
+  'PT409', 'fantasy_scoring_scope_mismatch',
+  'a manifest cannot point a gameweek at a different Fantasy season'
+);
+select extensions.throws_ok(
+  $$select api.service_validate_fantasy_scoring_scope(
+      'a9000001-0000-4000-8000-000000000001',
+      'a8000001-0000-4000-8000-000000000001',
+      1,
+      array['a6000001-0000-4000-8000-000000000001'::uuid],
+      array['ae000001-0000-4000-8000-000000000001'::uuid]
+    )$$,
+  'PT409', 'fantasy_scoring_scope_mismatch',
+  'a manifest cannot omit or invent an active league ranking scope'
+);
+
 select set_config('test.first_snapshot', api.service_replace_fantasy_fixture_points(
   'a9000001-0000-4000-8000-000000000001',
   'a6000001-0000-4000-8000-000000000001',
@@ -337,6 +392,21 @@ select extensions.is(
   current_setting('test.player_finalization')::jsonb ->> 'finalized',
   '23',
   'all active player totals are finalized in the bounded player batch'
+);
+select extensions.is(
+  (select row(status, points_state)::text from app.fantasy_gameweeks
+   where id = 'a9000001-0000-4000-8000-000000000001'),
+  '(finalizing,provisional)',
+  'complete final fixture coverage advances a locked gameweek into finalization'
+);
+select extensions.is(
+  api.service_replace_fantasy_fixture_points(
+    'a9000001-0000-4000-8000-000000000001',
+    'a6000001-0000-4000-8000-000000000001',
+    101, 1, current_setting('test.corrected_fixture_points')::jsonb
+  ) ->> 'stableResult',
+  'true',
+  'an exact snapshot replay remains idempotent after finalization starts'
 );
 select extensions.is(
   (select count(*)::integer from app.fantasy_player_gameweek_points
@@ -514,6 +584,15 @@ select extensions.is(
   ) ->> 'stableResult',
   'true',
   'a repeated completion call returns the stable finalized result'
+);
+select extensions.is(
+  api.service_replace_fantasy_fixture_points(
+    'a9000001-0000-4000-8000-000000000001',
+    'a6000001-0000-4000-8000-000000000001',
+    101, 1, current_setting('test.corrected_fixture_points')::jsonb
+  ) ->> 'stableResult',
+  'true',
+  'an exact finalized snapshot replay is stable and performs no mutation'
 );
 select extensions.throws_ok(
   $$select api.service_complete_fantasy_gameweek(

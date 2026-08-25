@@ -524,6 +524,7 @@ function MyTeamPage() {
   };
 
   const setCaptain = (playerId: string, vice = false) => {
+    if (!editing) return;
     if (!mutable.ok) {
       toast.error(t("fantasy.team.error.deadline_crossed_revert"));
       revertLocal();
@@ -553,6 +554,7 @@ function MyTeamPage() {
   };
 
   const changeFormation = (f: FormationKey) => {
+    if (!editing) return;
     if (!mutable.ok) {
       toast.error(t("fantasy.team.error.deadline_crossed_revert"));
       revertLocal();
@@ -790,7 +792,7 @@ function MyTeamPage() {
         <Popover>
           <PopoverTrigger asChild>
             <button
-              disabled={locked}
+              disabled={locked || !editing}
               className="min-h-11 rounded-xl bg-white/60 px-3 py-2 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
             >
               {t("fantasy.formation")}: {formation}
@@ -821,7 +823,7 @@ function MyTeamPage() {
 
         <button
           onClick={() => setCaptainSheet(true)}
-          disabled={locked}
+          disabled={locked || !editing}
           className="min-h-11 rounded-xl bg-white/60 px-3 py-2 text-xs font-semibold ring-1 ring-black/5 disabled:opacity-40"
         >
           {t("fantasy.set_captain")}

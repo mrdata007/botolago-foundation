@@ -9,7 +9,7 @@ import { LeagueTable } from "@/components/fantasy/LeagueTable";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
-import { ArrowLeft, Copy, LogOut, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, LogOut, Trash2, Trophy } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
   component: LeagueDetailPage,
@@ -32,9 +33,12 @@ function LeagueDetailPage() {
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const { requireAuth, status: authStatus } = useAuth();
   const { source, key } = useFantasyDataSource();
+  const owned = useFantasyOwned();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [toast, setToast] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [recoveringInvite, setRecoveringInvite] = useState(false);
   const [confirm, setConfirm] = useState<"leave" | "delete" | null>(null);
 
   const leagueQ = useQuery({
@@ -80,14 +84,30 @@ function LeagueDetailPage() {
     setToast(msg);
     setTimeout(() => setToast(null), 2400);
   };
+  const visibleInviteCode = inviteCode ?? league.code;
   const copy = async () => {
-    if (!league.code) return;
+    if (!visibleInviteCode) return;
     try {
-      await navigator.clipboard.writeText(league.code);
+      await navigator.clipboard.writeText(visibleInviteCode);
       showToast(t("fantasy.leagues.copied"));
     } catch {
-      /* ignore */
+      showToast(t("fantasy.leagues.copy_failed"));
     }
+  };
+  const recoverInvite = () => {
+    if (recoveringInvite) return;
+    requireAuth(async () => {
+      setRecoveringInvite(true);
+      try {
+        const nextCode = await fantasyService.rotateLeagueInvite(league.id);
+        setInviteCode(nextCode);
+        showToast(t("fantasy.leagues.invite_recovered"));
+      } catch {
+        showToast(t("fantasy.error.permission"));
+      } finally {
+        setRecoveringInvite(false);
+      }
+    });
   };
   const handleLeave = async () => {
     try {
@@ -160,13 +180,13 @@ function LeagueDetailPage() {
         </div>
       </div>
 
-      {league.code && (
+      {visibleInviteCode && (
         <div className="mt-2 flex items-center justify-between rounded-xl bg-white/60 px-3 py-2 text-sm ring-1 ring-black/5">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
               {t("fantasy.leagues.code")}
             </div>
-            <div className="font-mono font-black">{league.code}</div>
+            <div className="font-mono font-black">{visibleInviteCode}</div>
           </div>
           <button
             onClick={() => void copy()}
@@ -175,6 +195,17 @@ function LeagueDetailPage() {
             <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
           </button>
         </div>
+      )}
+      {!visibleInviteCode && isCreator && league.type === "private" && (
+        <button
+          type="button"
+          onClick={recoverInvite}
+          disabled={recoveringInvite}
+          className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl cta-brand px-3 py-2 text-xs font-semibold disabled:opacity-50"
+        >
+          <KeyRound className="h-4 w-4" aria-hidden />
+          {t("fantasy.leagues.recover_invite")}
+        </button>
       )}
 
       <p className="mt-3 rounded-xl bg-white/60 px-3 py-2 text-[11px] text-muted-foreground ring-1 ring-black/5">
@@ -209,7 +240,7 @@ function LeagueDetailPage() {
         {standings.length > 0 ? (
           <LeagueTable
             standings={standings}
-            meId={source === "local" ? "me" : undefined}
+            meId={source === "local" ? "me" : owned.snapshot?.teamId ?? undefined}
             clubs={clubsQ.data ?? []}
           />
         ) : (

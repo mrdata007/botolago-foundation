@@ -17,6 +17,20 @@ export const FANTASY_GAMEWEEK_STATUSES = [
   "corrected",
   "cancelled",
 ] as const;
+export const FANTASY_POINT_EVENT_CATEGORIES = [
+  "appearance",
+  "goal",
+  "assist",
+  "clean_sheet",
+  "goals_conceded",
+  "saves",
+  "penalty_save",
+  "penalty_miss",
+  "yellow_card",
+  "red_card",
+  "second_yellow_dismissal",
+  "own_goal",
+] as const;
 
 export type FantasyPosition = (typeof FANTASY_POSITIONS)[number];
 export type FantasyChip = (typeof FANTASY_CHIPS)[number];
@@ -148,6 +162,12 @@ export const fantasyLeagueSchema = z.object({
 export type FantasyLeagueDto = z.infer<typeof fantasyLeagueSchema>;
 
 export const fantasyLeaguePageSchema = z.object({ items: z.array(fantasyLeagueSchema) });
+export const fantasyLeagueInviteSchema = z.object({
+  leagueId: postgresUuidSchema,
+  inviteCode: z.string().regex(/^[A-F0-9]{32}$/),
+  inviteCodeHint: z.string().regex(/^[A-Z0-9]{4}$/),
+});
+export type FantasyLeagueInviteDto = z.infer<typeof fantasyLeagueInviteSchema>;
 
 export const fantasyLeagueStandingPageSchema = z.object({
   league: z.object({
@@ -209,6 +229,13 @@ export const fantasyPointsSchema = z.object({
       finalizedAt: z.string().nullable(),
     })
     .nullable(),
+  autoSubs: z.array(
+    z.object({
+      playerOutId: postgresUuidSchema,
+      playerInId: postgresUuidSchema,
+      reason: z.string().min(1),
+    }),
+  ),
   players: z.array(
     z.object({
       fantasyPlayerId: postgresUuidSchema,
@@ -221,6 +248,13 @@ export const fantasyPointsSchema = z.object({
       finalPoints: z.number().int().nullable(),
       didPlay: z.boolean(),
       minutesPlayed: z.number().int().nonnegative(),
+      events: z.array(
+        z.object({
+          category: z.enum(FANTASY_POINT_EVENT_CATEGORIES),
+          points: z.number().int(),
+          count: z.number().int().positive(),
+        }),
+      ),
     }),
   ),
 });
@@ -420,6 +454,11 @@ export interface FantasyRepository {
     visibility: "public" | "private" | null,
     context: RepositoryContext,
   ): Promise<readonly FantasyLeagueDto[]>;
+  getLeague(leagueId: string, context: RepositoryContext): Promise<FantasyLeagueDto>;
+  rotateLeagueInvite(
+    leagueId: string,
+    context: RepositoryContext,
+  ): Promise<FantasyLeagueInviteDto>;
   getLeagueStandings(
     leagueId: string,
     gameweekId: string | null,

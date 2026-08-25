@@ -29,9 +29,12 @@ beforeEach(() => {
     try {
       const ls = g.window.localStorage;
       ls.clear?.();
-      ["botolago.auth.session", "botolago.auth.users", "botolago.auth.pending"].forEach((k) =>
-        ls.removeItem?.(k),
-      );
+      [
+        "botolago.auth.session",
+        "botolago.auth.users",
+        "botolago.auth.pending",
+        "botolago.auth.deletion-request",
+      ].forEach((k) => ls.removeItem?.(k));
     } catch {
       /* ignore */
     }
@@ -110,7 +113,13 @@ describe("authService (local mock)", () => {
     const second = await authService.requestAccountDeletion();
     expect(first.ok).toBe(true);
     expect(second.data?.requestId).toBe(first.data?.requestId);
+    const pending = await authService.getAccountDeletionRequests();
+    expect(pending.ok).toBe(true);
+    expect(pending.data).toHaveLength(1);
+    expect(pending.data?.[0]?.status).toBe("requested");
     expect((await authService.cancelAccountDeletion()).ok).toBe(true);
+    const cancelled = await authService.getAccountDeletionRequests();
+    expect(cancelled.data?.[0]?.status).toBe("cancelled");
   });
 
   it("rejects a reserved username during onboarding", async () => {

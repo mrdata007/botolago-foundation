@@ -25,6 +25,8 @@ export interface AuthUser {
   language: Language;
   notifications: NotificationPreferences;
   profileComplete: boolean;
+  /** False only when the profile API is temporarily unavailable. */
+  profileAvailable?: boolean;
   createdAt: string;
   verified: boolean;
   provider: "email" | "google" | "apple";
@@ -96,6 +98,14 @@ export interface SignOutOptions {
   scope?: SignOutScope;
 }
 
+export interface AccountDeletionRequest {
+  readonly requestId: string;
+  readonly status: "requested" | "cancelled" | "processing" | "completed" | "rejected";
+  readonly requestedAt: string;
+  readonly updatedAt: string;
+  readonly processedAt: string | null;
+}
+
 export interface AuthService {
   getSession(): AuthSession;
   subscribeToSession(listener: (s: AuthSession) => void): () => void;
@@ -112,6 +122,7 @@ export interface AuthService {
   continueAsGuest(): Promise<AuthResult>;
   completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>>;
   requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>>;
+  getAccountDeletionRequests(): Promise<AuthResult<readonly AccountDeletionRequest[]>>;
   cancelAccountDeletion(): Promise<AuthResult>;
   signOut(options?: SignOutOptions): Promise<void>;
 }
@@ -119,3 +130,4 @@ export interface AuthService {
 export function defaultNotifications(): NotificationPreferences {
   return { matchAlerts: true, breakingNews: true, fantasyDeadlines: true };
 }
+

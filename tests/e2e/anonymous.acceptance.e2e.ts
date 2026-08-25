@@ -57,14 +57,13 @@ const fullRouteMatrix = [
 for (const language of ["fr", "ar"] as const) {
   for (const viewport of viewports) {
     test(`${language} ${viewport.name}: anonymous critical routes`, async ({ page }, testInfo) => {
-      test.setTimeout(120_000);
+      const usesFullMatrix =
+        viewport.name === "mobile-390" || viewport.name === "desktop";
+      test.setTimeout(usesFullMatrix ? 240_000 : 120_000);
       const diagnostics = observePage(page);
       await page.setViewportSize(viewport);
       await initializeLanguage(page, language);
-      const routes =
-        viewport.name === "mobile-390" || viewport.name === "desktop"
-          ? fullRouteMatrix
-          : criticalRoutes;
+      const routes = usesFullMatrix ? fullRouteMatrix : criticalRoutes;
 
       for (const route of routes) {
         await page.goto(route, { waitUntil: "networkidle" });
