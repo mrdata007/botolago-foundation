@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
 import { PageBackground, type BackgroundVariant } from "./PageBackground";
+import { LegalLinks } from "@/components/legal/LegalLinks";
 
 export function AppShell({
   children,
@@ -27,6 +28,9 @@ export function AppShell({
         )}
       >
         {children}
+        <footer className="mt-10 border-t border-[var(--border-subtle)] pt-5">
+          <LegalLinks />
+        </footer>
       </main>
       {bottomNav ?? <BottomNav />}
     </div>

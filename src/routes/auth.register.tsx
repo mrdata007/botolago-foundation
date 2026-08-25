@@ -24,6 +24,7 @@ import { HAS_SOCIAL_AUTH_PROVIDER, SOCIAL_AUTH_PROVIDERS } from "@/config/auth-p
 import { markWelcomeDone } from "@/lib/welcome";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { toast } from "sonner";
+import { LegalConsentNotice } from "@/components/legal/LegalLinks";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Créer un compte — BotolaGO" }] }),
@@ -288,7 +289,7 @@ function RegisterPage() {
             className="mt-0.5 h-4 w-4 rounded border-input"
             aria-invalid={!!errors.terms}
           />
-          <span>{t("auth.register.accept_terms")}</span>
+          <LegalConsentNotice mode="accept" />
         </label>
         {errors.terms && (
           <p role="alert" className="text-xs font-semibold text-destructive">
@@ -339,7 +340,7 @@ function RegisterPage() {
         ) : null}
 
         <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-          {t("auth.terms_notice")}
+          <LegalConsentNotice />
         </p>
       </form>
     </AuthShell>

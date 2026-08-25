@@ -10,7 +10,15 @@ const viewports = [
   { name: "desktop", width: 1440, height: 900 },
 ] as const;
 
-const routes = ["/", "/news", "/matches", "/fantasy/rules", "/profile"] as const;
+const routes = [
+  "/",
+  "/news",
+  "/matches",
+  "/fantasy/rules",
+  "/profile",
+  "/terms",
+  "/privacy",
+] as const;
 
 for (const language of ["fr", "ar"] as const) {
   for (const viewport of viewports) {

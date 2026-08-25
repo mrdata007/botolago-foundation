@@ -16,6 +16,7 @@ import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { HAS_SOCIAL_AUTH_PROVIDER, SOCIAL_AUTH_PROVIDERS } from "@/config/auth-providers";
+import { LegalConsentNotice } from "@/components/legal/LegalLinks";
 
 function sanitizeNext(raw: unknown): string | undefined {
   if (typeof raw !== "string" || !raw) return undefined;
@@ -221,7 +222,7 @@ function LoginPage() {
         ) : null}
 
         <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-          {t("auth.terms_notice")}
+          <LegalConsentNotice />
         </p>
       </form>
     </AuthShell>
