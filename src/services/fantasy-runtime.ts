@@ -449,13 +449,7 @@ export const fantasyService = {
       rank: (index + 1) as 1 | 2 | 3 | 4 | 5,
       gameweek,
       weeklyPoints: player.points,
-      goals: 0,
-      assists: 0,
-      cleanSheets: 0,
       minutes: player.minutesPlayed,
-      price: 0,
-      ownershipPercent: 0,
-      form: 0,
     }));
   },
   async getAvailableTopGameweeks(): Promise<number[]> {
