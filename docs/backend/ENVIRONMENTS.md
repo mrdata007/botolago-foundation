@@ -6,19 +6,21 @@
 | ----------- | ----------------------------------------------------------------- | ---------------------------------------------- |
 | Local       | CLI project `botolago-production-v2`                              | active for development                         |
 | Test        | fresh local CLI stack per CI job                                  | active in foundation CI                        |
-| Staging     | `BotolaGO Staging V2`, ref `srdrflfrfpwixsllveid`, `eu-west-3`    | active; Phase 1 and Phase 2 migrations applied |
-| Production  | `BotolaGO Production V2`, ref `tkewgajrljbwgwedqsxn`, `eu-west-3` | created and empty; no migrations applied       |
+| Staging     | `BotolaGO Staging V2`, ref `srdrflfrfpwixsllveid`, `eu-west-3`    | active; 35 of 47 repository migrations recorded |
+| Production  | `BotolaGO Production V2`, ref `tkewgajrljbwgwedqsxn`, `eu-west-3` | active; 47 repository migrations promoted       |
 | Legacy      | old BotolaGO project, ref `kxpaudvntwxpahyjtxbk`                  | paused archive/reference only; never deploy    |
 
 The repository stays unlinked by default. Hosted staging changes are applied
 explicitly after local replay, pgTAP/RLS, lint, and generated-type checks pass.
-Production remains empty until a separately reviewed deployment phase.
+Production data writes, worker schedules, and provider activation remain disabled until their separate reviewed gates pass.
 
 ## Variables
 
 | Variable                        | Browser-visible | Purpose                                                |
 | ------------------------------- | --------------- | ------------------------------------------------------ |
-| `VITE_AUTH_MODE`                | yes             | explicit `mock` or future `supabase` adapter selection |
+| `VITE_AUTH_MODE`                | yes             | explicit `mock` or `supabase` adapter selection        |
+| `VITE_AUTH_GOOGLE_ENABLED`      | yes             | presentation gate; exact `true` enables Google only in Supabase Auth mode |
+| `VITE_AUTH_APPLE_ENABLED`       | yes             | presentation gate; exact `true` enables Apple only in Supabase Auth mode  |
 | `VITE_APP_URL`                  | yes             | canonical application origin used for Auth redirects   |
 | `VITE_SUPABASE_PROJECT_ID`      | yes             | OAuth/MCP issuer project reference                     |
 | `VITE_SUPABASE_URL`             | yes             | Supabase API URL                                       |
@@ -42,3 +44,4 @@ only to the environment's secret manager.
 - Production configuration changes require review and an audit trail.
 - Missing production variables fail closed. Mock mode is never an automatic
   production fallback.
+- Social-provider flags are presentation gates, not credentials. Keep them false until the provider, exact callback/redirect allow-list, and staging acceptance all pass.

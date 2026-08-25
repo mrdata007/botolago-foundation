@@ -29,6 +29,13 @@ test("hosted demo is explicit, local-only, and blocks cloud-only surfaces", asyn
     await expect(notice).not.toHaveAttribute("aria-hidden");
   }
 
+  await expect(page.getByRole("button", { name: "Google" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Apple" })).toHaveCount(0);
+
+  await page.goto("/auth/register", { waitUntil: "networkidle" });
+  await expect(page.getByRole("button", { name: "Google" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Apple" })).toHaveCount(0);
+
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     "content",
     "noindex, nofollow, noarchive",

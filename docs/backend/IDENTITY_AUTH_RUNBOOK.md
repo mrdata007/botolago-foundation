@@ -26,6 +26,13 @@ reset return path. Supabase's provider callback is
 `https://<project-ref>.supabase.co/auth/v1/callback`; register that URL with
 Google/Apple. Never wildcard an untrusted domain.
 
+The UI fails closed independently of the Supabase provider setting. Keep
+`VITE_AUTH_GOOGLE_ENABLED=false` and `VITE_AUTH_APPLE_ENABLED=false` until
+the corresponding provider credentials and callback are configured and a
+staging sign-in/sign-up acceptance journey passes. A flag is browser-visible
+presentation configuration, never a provider secret. Mock Auth ignores both
+flags even if an operator sets them accidentally.
+
 ## Session policy
 
 - JWT lifetime: 1 hour; refresh-token rotation enabled with a 10-second reuse interval.
@@ -77,10 +84,11 @@ objects older than 24 hours; no public bucket or external avatar URL is stored.
 
 ## Operational checks
 
-Before enabling `VITE_AUTH_MODE=supabase` in an environment:
+Before exposing email or social Auth in an environment:
 
 1. Apply migrations only after local replay, pgTAP/RLS, lint, and type-drift checks pass.
-2. Configure exact site/redirect URLs, custom SMTP, and intended OAuth providers.
-3. Verify registration, confirmation, reset, OAuth callback, refresh, local logout, and global logout.
-4. Confirm cross-user RLS denial and private avatar access with two real test users.
+2. Configure exact site/redirect URLs and custom SMTP.
+3. Configure each intended OAuth provider, pass its staging callback journey, then enable only its matching `VITE_AUTH_*_ENABLED` flag.
+4. Verify registration, confirmation, reset, OAuth callback, refresh, local logout, and global logout.
+6. Confirm cross-user RLS denial and private avatar access with two real test users.
 5. Confirm no service-role key is present in browser bundles, repository history, or client environment variables.

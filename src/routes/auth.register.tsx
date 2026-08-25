@@ -20,10 +20,7 @@ import {
   normalizeUsername,
 } from "@/lib/validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import {
-  HAS_SOCIAL_AUTH_PROVIDER,
-  SOCIAL_AUTH_PROVIDERS,
-} from "@/config/auth-providers";
+import { HAS_SOCIAL_AUTH_PROVIDER, SOCIAL_AUTH_PROVIDERS } from "@/config/auth-providers";
 import { markWelcomeDone } from "@/lib/welcome";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { toast } from "sonner";

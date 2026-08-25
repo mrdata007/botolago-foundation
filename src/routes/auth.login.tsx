@@ -15,10 +15,7 @@ import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import {
-  HAS_SOCIAL_AUTH_PROVIDER,
-  SOCIAL_AUTH_PROVIDERS,
-} from "@/config/auth-providers";
+import { HAS_SOCIAL_AUTH_PROVIDER, SOCIAL_AUTH_PROVIDERS } from "@/config/auth-providers";
 
 function sanitizeNext(raw: unknown): string | undefined {
   if (typeof raw !== "string" || !raw) return undefined;

@@ -13,9 +13,7 @@ function explicitlyEnabled(value: string | undefined): boolean {
   return value === "true";
 }
 
-export function resolveSocialAuthProviders(
-  input: SocialAuthProviderInput,
-): SocialAuthProviders {
+export function resolveSocialAuthProviders(input: SocialAuthProviderInput): SocialAuthProviders {
   if (input.authMode !== "supabase") {
     return { google: false, apple: false };
   }
@@ -31,5 +29,4 @@ export const SOCIAL_AUTH_PROVIDERS = resolveSocialAuthProviders({
   apple: import.meta.env.VITE_AUTH_APPLE_ENABLED,
 });
 
-export const HAS_SOCIAL_AUTH_PROVIDER =
-  SOCIAL_AUTH_PROVIDERS.google || SOCIAL_AUTH_PROVIDERS.apple;
+export const HAS_SOCIAL_AUTH_PROVIDER = SOCIAL_AUTH_PROVIDERS.google || SOCIAL_AUTH_PROVIDERS.apple;
