@@ -293,7 +293,40 @@ insert into app.fantasy_rankings (
     2, null, 100, 50, 1, '2090-01-09T12:00:00Z'
   );
 
+insert into app.fantasy_rankings (
+  id, fantasy_season_id, gameweek_id, league_id, fantasy_team_id,
+  rank, previous_rank, total_points, gameweek_points,
+  calculation_version, calculated_at
+) values
+  (
+    'f9300000-0000-4000-8000-000000000001',
+    'f6300000-0000-4000-8000-000000000001', null, null,
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    1, 2, 100, 50, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9300000-0000-4000-8000-000000000002',
+    'f6300000-0000-4000-8000-000000000001', null, null,
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    2, 1, 90, 40, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9300000-0000-4000-8000-000000000003',
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001', null,
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    2, 1, 100, 50, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9300000-0000-4000-8000-000000000004',
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001', null,
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    1, 2, 90, 60, 1, '2090-01-09T12:00:00Z'
+  );
+
 set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
 select extensions.is(
   jsonb_array_length(api.fantasy_league_standings(
     'f9100000-0000-4000-8000-000000000001', null, null, null, 1
@@ -313,13 +346,94 @@ select extensions.is(
   'overall standings advances with its composite keyset cursor'
 );
 select extensions.results_eq(
-  $$select item ->> 'rank'
+  $select item ->> 'rank'
     from jsonb_array_elements(api.fantasy_league_standings(
       'f9100000-0000-4000-8000-000000000001',
       'f6400000-0000-4000-8000-000000000001', null, null, 2
-    ) -> 'items') item$$,
-  $$values ('1'::text), ('2'::text)$$,
+    ) -> 'items') item$,
+  $values ('1'::text), ('2'::text)$,
   'gameweek standings preserve deterministic rank ordering'
+);
+
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001', null, 'overall', null, 1, 1
+  ) ->> 'total',
+  '2',
+  'global rankings report the complete filtered count'
+);
+select extensions.is(
+  jsonb_array_length(api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001', null, 'overall', null, 1, 1
+  ) -> 'items'),
+  1,
+  'global rankings enforce the requested page size'
+);
+select extensions.results_eq(
+  $select item ->> 'teamName'
+    from jsonb_array_elements(api.fantasy_global_rankings(
+      'f6300000-0000-4000-8000-000000000001',
+      null, 'overall', null, 1, 25
+    ) -> 'items') item$,
+  $values ('Atlas Eleven'::text), ('Rif Eleven'::text)$,
+  'overall rankings preserve authoritative rank ordering'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', 'rif', 1, 25
+  ) ->> 'total',
+  '1',
+  'global rankings filter by public team name'
+);
+select extensions.is(
+  jsonb_array_length(api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', 'rif', 1, 25
+  ) -> 'podium'),
+  2,
+  'search does not alter the overall podium'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', null, 1, 25
+  ) -> 'myRank',
+  'null'::jsonb,
+  'anonymous rankings do not infer a manager identity'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'gameweek', null, 1, 25
+  ) -> 'items' -> 0 ->> 'teamName',
+  'Rif Eleven',
+  'gameweek rankings use the authoritative gameweek rank scope'
+);
+select extensions.throws_ok(
+  $select api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', repeat('x', 81), 1, 25
+  )$,
+  'PT400', 'validation_failed',
+  'global ranking search input remains bounded'
+);
+reset role;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', null, 1, 25
+  ) -> 'myRank' ->> 'teamName',
+  'Atlas Eleven',
+  'authenticated rankings include the caller-owned team rank'
 );
 reset role;
 

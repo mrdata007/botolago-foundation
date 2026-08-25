@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import type { FantasyPointsDto } from "@/backend/fantasy/contracts";
-import { assertGlobalRankingsAvailable, mapFantasyPointsDto } from "./fantasy-runtime";
-import { FantasyError } from "@/backend/fantasy/errors";
+import type {
+  FantasyGlobalRankingPageDto,
+  FantasyPointsDto,
+} from "@/backend/fantasy/contracts";
+import { mapFantasyGlobalRankingsDto, mapFantasyPointsDto } from "./fantasy-runtime";
 
 const dto: FantasyPointsDto = {
   teamId: "00000000-0000-4000-8000-000000000001",
@@ -56,18 +58,42 @@ describe("mapFantasyPointsDto", () => {
   });
 });
 
-describe("assertGlobalRankingsAvailable", () => {
-  it("allows deterministic mock data and rejects a mislabeled cloud league", () => {
-    expect(() => assertGlobalRankingsAvailable("mock")).not.toThrow();
+describe("mapFantasyGlobalRankingsDto", () => {
+  it("maps authoritative rows and defaults a missing previous rank safely", () => {
+    const ranking: FantasyGlobalRankingPageDto = {
+      items: [
+        {
+          teamId: "00000000-0000-4000-8000-000000000010",
+          teamName: "Atlas Eleven",
+          rank: 1,
+          previousRank: null,
+          totalPoints: 100,
+          gameweekPoints: 50,
+        },
+      ],
+      total: 1,
+      podium: [],
+      myRank: {
+        teamId: "00000000-0000-4000-8000-000000000010",
+        teamName: "Atlas Eleven",
+        rank: 1,
+        previousRank: null,
+        totalPoints: 100,
+        gameweekPoints: 50,
+      },
+    };
 
-    let caught: unknown;
-    try {
-      assertGlobalRankingsAvailable("supabase");
-    } catch (error) {
-      caught = error;
-    }
+    const result = mapFantasyGlobalRankingsDto(ranking);
 
-    expect(caught).toBeInstanceOf(FantasyError);
-    expect((caught as FantasyError).code).toBe("ranking_unavailable");
+    expect(result.rows[0]).toEqual({
+      managerId: ranking.items[0].teamId,
+      managerName: "",
+      teamName: "Atlas Eleven",
+      rank: 1,
+      previousRank: 1,
+      totalScore: 100,
+      gameweekScore: 50,
+    });
+    expect(result.myRank).toEqual(result.rows[0]);
   });
 });

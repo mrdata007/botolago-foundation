@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   fantasyFixtureDifficultySchema,
+  fantasyGlobalRankingPageSchema,
   fantasyPlayerSchema,
   fantasyPointsSchema,
   fantasyTeamSchema,
@@ -124,6 +125,31 @@ describe("Fantasy pre-activation contracts", () => {
       didPlay: false,
       minutesPlayed: 0,
     });
+  });
+
+  it("validates bounded public global ranking pages", () => {
+    const page = {
+      items: [
+        {
+          teamId: postgresUuid,
+          teamName: "Atlas Eleven",
+          rank: 1,
+          previousRank: null,
+          totalPoints: 100,
+          gameweekPoints: 50,
+        },
+      ],
+      total: 1,
+      podium: [],
+      myRank: null,
+    };
+    expect(fantasyGlobalRankingPageSchema.parse(page).items[0].rank).toBe(1);
+    expect(
+      fantasyGlobalRankingPageSchema.safeParse({
+        ...page,
+        items: [{ ...page.items[0], rank: 0 }],
+      }).success,
+    ).toBe(false);
   });
 
   it("coerces numeric transfer preview values without accepting a zero transfer", () => {

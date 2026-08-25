@@ -6,6 +6,7 @@ import {
   fantasyHubSchema,
   fantasyGameweekPageSchema,
   fantasyHistoryPageSchema,
+  fantasyGlobalRankingPageSchema,
   fantasyLeaguePageSchema,
   fantasyLeagueStandingPageSchema,
   fantasyPointsSchema,
@@ -257,6 +258,28 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return parse(fantasyLeagueStandingPageSchema, data);
+  }
+
+  async getGlobalRankings(
+    seasonId: string,
+    gameweekId: string | null,
+    sort: "overall" | "gameweek",
+    query: string,
+    page: number,
+    limit: number,
+    _context: RepositoryContext,
+  ) {
+    const normalizedQuery = query.trim();
+    const { data, error } = await getFantasyApi().rpc("fantasy_global_rankings", {
+      p_season_id: seasonId,
+      p_gameweek_id: gameweekId ?? undefined,
+      p_sort: sort,
+      p_query: normalizedQuery || undefined,
+      p_page: page,
+      p_limit: limit,
+    });
+    check(error);
+    return parse(fantasyGlobalRankingPageSchema, data);
   }
 
   async createLeague(

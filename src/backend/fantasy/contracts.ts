@@ -170,6 +170,24 @@ export const fantasyLeagueStandingPageSchema = z.object({
 });
 export type FantasyLeagueStandingPageDto = z.infer<typeof fantasyLeagueStandingPageSchema>;
 
+export const fantasyGlobalRankingSchema = z.object({
+  teamId: postgresUuidSchema,
+  teamName: z.string().min(1),
+  rank: z.coerce.number().int().positive(),
+  previousRank: z.coerce.number().int().positive().nullable(),
+  totalPoints: z.number().int(),
+  gameweekPoints: z.number().int(),
+});
+export type FantasyGlobalRankingDto = z.infer<typeof fantasyGlobalRankingSchema>;
+
+export const fantasyGlobalRankingPageSchema = z.object({
+  items: z.array(fantasyGlobalRankingSchema),
+  total: z.coerce.number().int().nonnegative(),
+  podium: z.array(fantasyGlobalRankingSchema).max(3),
+  myRank: fantasyGlobalRankingSchema.nullable(),
+});
+export type FantasyGlobalRankingPageDto = z.infer<typeof fantasyGlobalRankingPageSchema>;
+
 export const fantasyPointsSchema = z.object({
   teamId: postgresUuidSchema,
   gameweekId: postgresUuidSchema,
@@ -407,6 +425,15 @@ export interface FantasyRepository {
     gameweekId: string | null,
     context: RepositoryContext,
   ): Promise<FantasyLeagueStandingPageDto>;
+  getGlobalRankings(
+    seasonId: string,
+    gameweekId: string | null,
+    sort: "overall" | "gameweek",
+    query: string,
+    page: number,
+    limit: number,
+    context: RepositoryContext,
+  ): Promise<FantasyGlobalRankingPageDto>;
   createLeague(
     seasonId: string,
     teamId: string,

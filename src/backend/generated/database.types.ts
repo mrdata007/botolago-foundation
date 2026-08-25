@@ -617,6 +617,17 @@ export type Database = {
         }
         Returns: Json
       }
+      fantasy_global_rankings: {
+        Args: {
+          p_gameweek_id?: string
+          p_limit?: number
+          p_page?: number
+          p_query?: string
+          p_season_id: string
+          p_sort?: string
+        }
+        Returns: Json
+      }
       fantasy_gameweeks: {
         Args: {
           p_before_sequence?: number
