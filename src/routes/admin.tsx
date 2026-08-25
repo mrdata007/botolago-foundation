@@ -38,6 +38,12 @@ function AdminStatePanel({
   copy: ReturnType<typeof getAdminCopy>;
 }) {
   const content = copy.states[state];
+  const actionLabel =
+    state === "unauthenticated"
+      ? copy.labels.signIn
+      : state === "recent_auth_required" || state === "mfa_required"
+        ? copy.labels.reauthenticate
+        : null;
   return (
     <main
       dir={copy.dir}
@@ -50,14 +56,14 @@ function AdminStatePanel({
         <p className="text-sm text-slate-400">{copy.subtitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{content.title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
-        {(state === "recent_auth_required" || state === "mfa_required") && (
+        {actionLabel && (
           <Link
             to="/auth/login"
             search={{ next: "/admin" }}
             className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-            data-testid="admin-reauthenticate"
+            data-testid={state === "unauthenticated" ? "admin-sign-in" : "admin-reauthenticate"}
           >
-            {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
+            {actionLabel}
           </Link>
         )}
       </section>

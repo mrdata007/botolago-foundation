@@ -23,6 +23,14 @@ test("hosted demo is explicit, local-only, and blocks cloud-only surfaces", asyn
 
   await initializeLanguage(page, "fr");
 
+  await page.goto("/auth/verify?next=%2Ffantasy%2Fcreate", { waitUntil: "networkidle" });
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return [url.pathname, url.searchParams.get("next")];
+    })
+    .toEqual(["/auth/register", "/fantasy/create"]);
+
   await page.goto("/auth", { waitUntil: "networkidle" });
   await expect.poll(() => new URL(page.url()).pathname).toBe("/auth/login");
 
