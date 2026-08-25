@@ -68,6 +68,7 @@ jobs:
             tests/e2e/legal.acceptance.e2e.ts \
             tests/e2e/atlas-matchday.e2e.ts \
             tests/e2e/functional-controls.e2e.ts \
+            tests/e2e/technical-routes.e2e.ts \
             tests/e2e/demo-mode.e2e.ts
       - name: Upload sanitized browser evidence on failure
         if: failure()
