@@ -413,8 +413,10 @@ test("French Fantasy browse, watchlist, detail, and ranking controls work", asyn
   await page.getByRole("button", { name: "Partager le code", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Code copié" })).toBeVisible();
   await page.getByRole("link", { name: /QA Mock League/ }).click();
-  await expect(page.getByText("QA Mock League", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Retour", exact: true }).click();
+  await expect(page).toHaveURL(/\/fantasy\/leagues\/[^/?]+$/);
+  const backToLeagues = page.getByRole("link", { name: "Retour", exact: true });
+  await expect(backToLeagues).toBeVisible();
+  await backToLeagues.click();
 
   await page.getByPlaceholder("Entrez le code d'invitation").fill("BOT-QA123");
   await page.getByRole("button", { name: "Rejoindre une ligue", exact: true }).click();
