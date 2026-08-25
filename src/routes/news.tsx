@@ -99,13 +99,11 @@ function NewsPage() {
     onError: () => toast.error(t("error.description")),
   });
 
-  const isLoading =
-    allQ.isLoading || leadQ.isLoading || clubsQ.isLoading || followedQ.isLoading;
+  const isLoading = allQ.isLoading || leadQ.isLoading || clubsQ.isLoading || followedQ.isLoading;
   const isError = allQ.isError || leadQ.isError || clubsQ.isError || followedQ.isError;
   const list = useMemo(() => allQ.data ?? [], [allQ.data]);
   const lead = leadQ.data;
-  const visibleLead =
-    lead && (!clubFilter || lead.clubIds.includes(clubFilter)) ? lead : null;
+  const visibleLead = lead && (!clubFilter || lead.clubIds.includes(clubFilter)) ? lead : null;
 
   const byClub = useCallback(
     (arr: Article[]) => (clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr),

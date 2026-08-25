@@ -372,6 +372,7 @@ export const fantasyService = {
       clubId: row.clubId,
       gameweek: row.gameweek,
       opponentClubId: row.opponentClubId,
+      kickoffAt: row.kickoffAt,
       isHome: row.isHome,
       difficulty: row.difficulty as 1 | 2 | 3 | 4 | 5,
       isDouble: (counts.get(`${row.clubId}:${row.gameweek}`) ?? 0) > 1,

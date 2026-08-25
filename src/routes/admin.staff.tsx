@@ -24,8 +24,7 @@ export const Route = createFileRoute("/admin/staff")({
 
 function AdminStaffRoute() {
   const isDetail = useRouterState({
-    select: (state) =>
-      state.matches.some((match) => match.routeId === "/admin/staff/$principalId"),
+    select: (state) => state.matches.some((match) => match.routeId === "/admin/staff/$principalId"),
   });
   return isDetail ? <Outlet /> : <AdminStaffPage />;
 }
