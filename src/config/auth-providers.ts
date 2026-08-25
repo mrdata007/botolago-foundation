@@ -1,9 +1,7 @@
-import { IS_DEMO_MODE } from "./app-mode";
-
 export interface SocialAuthProviderInput {
+  readonly authMode?: string;
   readonly google?: string;
   readonly apple?: string;
-  readonly demoMode: boolean;
 }
 
 export interface SocialAuthProviders {
@@ -18,7 +16,7 @@ function explicitlyEnabled(value: string | undefined): boolean {
 export function resolveSocialAuthProviders(
   input: SocialAuthProviderInput,
 ): SocialAuthProviders {
-  if (input.demoMode) {
+  if (input.authMode !== "supabase") {
     return { google: false, apple: false };
   }
   return {
@@ -28,9 +26,9 @@ export function resolveSocialAuthProviders(
 }
 
 export const SOCIAL_AUTH_PROVIDERS = resolveSocialAuthProviders({
+  authMode: import.meta.env.VITE_AUTH_MODE,
   google: import.meta.env.VITE_AUTH_GOOGLE_ENABLED,
   apple: import.meta.env.VITE_AUTH_APPLE_ENABLED,
-  demoMode: IS_DEMO_MODE,
 });
 
 export const HAS_SOCIAL_AUTH_PROVIDER =

@@ -122,6 +122,10 @@ function RegisterPage() {
 
   const onSocial = async (provider: "google" | "apple") => {
     if (!SOCIAL_AUTH_PROVIDERS[provider]) return;
+    if (!terms) {
+      setErrors({ terms: "auth.error.terms_required" });
+      return;
+    }
     setSubmitting(true);
     const res =
       provider === "google"
@@ -129,7 +133,12 @@ function RegisterPage() {
         : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.generic" });
+      setErrors({
+        form:
+          res.errorCode === "provider_unavailable"
+            ? "auth.error.provider_unavailable"
+            : "auth.error.generic",
+      });
       return;
     }
     markWelcomeDone();
@@ -333,14 +342,7 @@ function RegisterPage() {
         ) : null}
 
         <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-          {t("auth.terms_notice")}{" "}
-          <Link
-            to="/auth/login"
-            search={{ next }}
-            className="font-semibold text-[color:var(--brand-primary)] hover:underline"
-          >
-            {t("auth.register.login_link")}
-          </Link>
+          {t("auth.terms_notice")}
         </p>
       </form>
     </AuthShell>

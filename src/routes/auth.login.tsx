@@ -92,7 +92,12 @@ function LoginPage() {
         : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.generic" });
+      setErrors({
+        form:
+          res.errorCode === "provider_unavailable"
+            ? "auth.error.provider_unavailable"
+            : "auth.error.generic",
+      });
       return;
     }
     markWelcomeDone();
