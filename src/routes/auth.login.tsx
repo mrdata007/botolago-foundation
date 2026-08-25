@@ -15,6 +15,10 @@ import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import {
+  HAS_SOCIAL_AUTH_PROVIDER,
+  SOCIAL_AUTH_PROVIDERS,
+} from "@/config/auth-providers";
 
 function sanitizeNext(raw: unknown): string | undefined {
   if (typeof raw !== "string" || !raw) return undefined;
@@ -80,6 +84,7 @@ function LoginPage() {
   };
 
   const onSocial = async (provider: "google" | "apple") => {
+    if (!SOCIAL_AUTH_PROVIDERS[provider]) return;
     setSubmitting(true);
     const res =
       provider === "google"
@@ -186,24 +191,32 @@ function LoginPage() {
           {submitting ? t("auth.submitting") : t("auth.login.cta")}
         </AuthPrimaryButton>
 
-        <AuthDivider label={t("auth.or_continue_with")} />
+        {HAS_SOCIAL_AUTH_PROVIDER ? (
+          <>
+            <AuthDivider label={t("auth.or_continue_with")} />
 
-        <div className="grid gap-2">
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("google")}
-            disabled={submitting}
-          >
-            <GoogleGlyph /> {t("auth.google")}
-          </AuthSecondaryButton>
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("apple")}
-            disabled={submitting}
-          >
-            <AppleGlyph /> {t("auth.apple")}
-          </AuthSecondaryButton>
-        </div>
+            <div className="grid gap-2">
+              {SOCIAL_AUTH_PROVIDERS.google ? (
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("google")}
+                  disabled={submitting}
+                >
+                  <GoogleGlyph /> {t("auth.google")}
+                </AuthSecondaryButton>
+              ) : null}
+              {SOCIAL_AUTH_PROVIDERS.apple ? (
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("apple")}
+                  disabled={submitting}
+                >
+                  <AppleGlyph /> {t("auth.apple")}
+                </AuthSecondaryButton>
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
           {t("auth.terms_notice")}

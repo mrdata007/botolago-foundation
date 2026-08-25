@@ -20,6 +20,10 @@ import {
   normalizeUsername,
 } from "@/lib/validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import {
+  HAS_SOCIAL_AUTH_PROVIDER,
+  SOCIAL_AUTH_PROVIDERS,
+} from "@/config/auth-providers";
 import { markWelcomeDone } from "@/lib/welcome";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { toast } from "sonner";
@@ -117,6 +121,7 @@ function RegisterPage() {
   };
 
   const onSocial = async (provider: "google" | "apple") => {
+    if (!SOCIAL_AUTH_PROVIDERS[provider]) return;
     setSubmitting(true);
     const res =
       provider === "google"
@@ -300,24 +305,32 @@ function RegisterPage() {
           {submitting ? t("auth.submitting") : t("auth.register.cta")}
         </AuthPrimaryButton>
 
-        <AuthDivider label={t("auth.or_continue_with")} />
+        {HAS_SOCIAL_AUTH_PROVIDER ? (
+          <>
+            <AuthDivider label={t("auth.or_continue_with")} />
 
-        <div className="grid gap-2">
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("google")}
-            disabled={submitting}
-          >
-            <span>Google</span>
-          </AuthSecondaryButton>
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("apple")}
-            disabled={submitting}
-          >
-            <span>Apple</span>
-          </AuthSecondaryButton>
-        </div>
+            <div className="grid gap-2">
+              {SOCIAL_AUTH_PROVIDERS.google ? (
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("google")}
+                  disabled={submitting}
+                >
+                  <span>Google</span>
+                </AuthSecondaryButton>
+              ) : null}
+              {SOCIAL_AUTH_PROVIDERS.apple ? (
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("apple")}
+                  disabled={submitting}
+                >
+                  <span>Apple</span>
+                </AuthSecondaryButton>
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
           {t("auth.terms_notice")}{" "}
