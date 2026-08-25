@@ -346,12 +346,12 @@ select extensions.is(
   'overall standings advances with its composite keyset cursor'
 );
 select extensions.results_eq(
-  $select item ->> 'rank'
+  $$select item ->> 'rank'
     from jsonb_array_elements(api.fantasy_league_standings(
       'f9100000-0000-4000-8000-000000000001',
       'f6400000-0000-4000-8000-000000000001', null, null, 2
-    ) -> 'items') item$,
-  $values ('1'::text), ('2'::text)$,
+    ) -> 'items') item$$,
+  $$values ('1'::text), ('2'::text)$$,
   'gameweek standings preserve deterministic rank ordering'
 );
 
@@ -370,12 +370,12 @@ select extensions.is(
   'global rankings enforce the requested page size'
 );
 select extensions.results_eq(
-  $select item ->> 'teamName'
+  $$select item ->> 'teamName'
     from jsonb_array_elements(api.fantasy_global_rankings(
       'f6300000-0000-4000-8000-000000000001',
       null, 'overall', null, 1, 25
-    ) -> 'items') item$,
-  $values ('Atlas Eleven'::text), ('Rif Eleven'::text)$,
+    ) -> 'items') item$$,
+  $$values ('Atlas Eleven'::text), ('Rif Eleven'::text)$$,
   'overall rankings preserve authoritative rank ordering'
 );
 select extensions.is(
@@ -412,10 +412,10 @@ select extensions.is(
   'gameweek rankings use the authoritative gameweek rank scope'
 );
 select extensions.throws_ok(
-  $select api.fantasy_global_rankings(
+  $$select api.fantasy_global_rankings(
     'f6300000-0000-4000-8000-000000000001',
     null, 'overall', repeat('x', 81), 1, 25
-  )$,
+  )$$,
   'PT400', 'validation_failed',
   'global ranking search input remains bounded'
 );
