@@ -102,7 +102,12 @@ jobs:
       - name: Verify generated database types
         id: generated_types
         continue-on-error: true
-        run: bun run backend:types:check
+        run: |
+          if ! bun run backend:types:check; then
+            echo "Generated-type verification failed once; retrying after a transient container pull may recover."
+            sleep 5
+            bun run backend:types:check
+          fi
       - name: Regenerate stale database types for recovery
         if: steps.generated_types.outcome == 'failure'
         run: bun run backend:types:generate
