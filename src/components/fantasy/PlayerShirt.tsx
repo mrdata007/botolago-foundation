@@ -21,6 +21,23 @@ interface Props {
   compact?: boolean;
 }
 
+const statusTone = {
+  available: "",
+  doubtful: "bg-amber-500",
+  injured: "bg-red-500",
+  suspended: "bg-neutral-800",
+  unavailable: "bg-slate-600",
+  ineligible: "bg-zinc-800",
+} satisfies Record<FantasyPlayer["status"], string>;
+
+const statusSymbol = {
+  doubtful: "?",
+  injured: "×",
+  suspended: "!",
+  unavailable: "!",
+  ineligible: "!",
+} satisfies Record<Exclude<FantasyPlayer["status"], "available">, string>;
+
 export function PlayerShirt({
   player,
   club,
@@ -98,14 +115,12 @@ export function PlayerShirt({
           <span
             className={cn(
               "absolute -bottom-0.5 -start-1 grid h-5 w-5 place-items-center rounded-full text-[10px] font-black text-white ring-2 ring-white shadow",
-              status === "injured" && "bg-red-500",
-              status === "doubtful" && "bg-amber-500",
-              status === "suspended" && "bg-neutral-800",
+              statusTone[status],
             )}
             aria-hidden
             title={statusLabel}
           >
-            {status === "injured" ? "×" : status === "doubtful" ? "?" : "!"}
+            {statusSymbol[status]}
           </span>
         )}
       </div>

@@ -19,6 +19,15 @@ interface Props {
 
 const ORDER: Position[] = ["GK", "DEF", "MID", "FWD"];
 
+const statusTone = {
+  available: "",
+  doubtful: "bg-amber-500/15 text-amber-800",
+  injured: "bg-red-500/15 text-red-700",
+  suspended: "bg-neutral-800/15 text-neutral-800",
+  unavailable: "bg-slate-500/15 text-slate-700",
+  ineligible: "bg-zinc-800/15 text-zinc-800",
+} satisfies Record<FantasyPlayer["status"], string>;
+
 /**
  * Grouped-by-position list of all 15 squad players. Reflects the same
  * captain/vice/status/fixture/points information as the pitch view.
@@ -112,9 +121,7 @@ export function SquadListView({
                           <span
                             className={cn(
                               "rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase",
-                              p.status === "injured" && "bg-red-500/15 text-red-700",
-                              p.status === "doubtful" && "bg-amber-500/15 text-amber-800",
-                              p.status === "suspended" && "bg-neutral-800/15 text-neutral-800",
+                              statusTone[p.status],
                             )}
                           >
                             {t(`player.status.${p.status}` as TranslationKey)}

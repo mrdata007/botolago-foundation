@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowRightLeft, Coins, LayoutGrid, Medal, Star, Timer, Trophy, Users } from "lucide-react";
+
+import { ErrorState, LoadingState } from "@/components/common/States";
+import { FantasyGuideGrid } from "@/components/fantasy/FantasyGuideGrid";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { Users, Coins, LayoutGrid, Star, ArrowRightLeft, Timer, Trophy, Medal } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { ErrorState, LoadingState } from "@/components/common/States";
 
 export const Route = createFileRoute("/fantasy/rules")({
   component: RulesPage,
@@ -17,10 +19,6 @@ function RulesPage() {
     queryFn: () => fantasyService.getRules(),
   });
 
-  if (rulesQ.isLoading) return <LoadingState />;
-  if (rulesQ.isError || !rulesQ.data) {
-    return <ErrorState onRetry={() => void rulesQ.refetch()} />;
-  }
   const rules = rulesQ.data;
 
   const sections: {
@@ -28,22 +26,46 @@ function RulesPage() {
     titleKey: TranslationKey;
     descKey: TranslationKey;
   }[] = [
-    { icon: Users, titleKey: "fantasy.rules.squad", descKey: "fantasy.rules.squad_desc" },
-    { icon: Coins, titleKey: "fantasy.rules.budget", descKey: "fantasy.rules.budget_desc" },
+    {
+      icon: Users,
+      titleKey: "fantasy.rules.squad",
+      descKey: "fantasy.rules.squad_desc",
+    },
+    {
+      icon: Coins,
+      titleKey: "fantasy.rules.budget",
+      descKey: "fantasy.rules.budget_desc",
+    },
     {
       icon: LayoutGrid,
       titleKey: "fantasy.rules.formation",
       descKey: "fantasy.rules.formation_desc",
     },
-    { icon: Star, titleKey: "fantasy.rules.captaincy", descKey: "fantasy.rules.captaincy_desc" },
+    {
+      icon: Star,
+      titleKey: "fantasy.rules.captaincy",
+      descKey: "fantasy.rules.captaincy_desc",
+    },
     {
       icon: ArrowRightLeft,
       titleKey: "fantasy.rules.transfers_r",
       descKey: "fantasy.rules.transfers_desc",
     },
-    { icon: Timer, titleKey: "fantasy.rules.deadlines", descKey: "fantasy.rules.deadlines_desc" },
-    { icon: Trophy, titleKey: "fantasy.rules.scoring", descKey: "fantasy.rules.scoring_desc" },
-    { icon: Medal, titleKey: "fantasy.rules.tiebreak", descKey: "fantasy.rules.tiebreak_desc" },
+    {
+      icon: Timer,
+      titleKey: "fantasy.rules.deadlines",
+      descKey: "fantasy.rules.deadlines_desc",
+    },
+    {
+      icon: Trophy,
+      titleKey: "fantasy.rules.scoring",
+      descKey: "fantasy.rules.scoring_desc",
+    },
+    {
+      icon: Medal,
+      titleKey: "fantasy.rules.tiebreak",
+      descKey: "fantasy.rules.tiebreak_desc",
+    },
   ];
 
   return (
@@ -53,32 +75,46 @@ function RulesPage() {
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.rules.intro")}</p>
 
-      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
-        <RuleValue label={t("fantasy.rules.budget")} value={String(rules.budget)} />
-        <RuleValue
-          label={t("fantasy.rules.transfers_r")}
-          value={`${rules.initialFreeTransfers} / -${rules.transferHitCost}`}
-        />
-        <RuleValue
-          label={t("fantasy.rules.deadlines")}
-          value={`${rules.deadline.minutesBeforeFirstFixture} min`}
-        />
-      </dl>
+      <FantasyGuideGrid />
+
+      {rulesQ.isLoading ? (
+        <div className="mt-6">
+          <LoadingState />
+        </div>
+      ) : rulesQ.isError || !rules ? (
+        <div className="mt-6">
+          <ErrorState onRetry={() => void rulesQ.refetch()} />
+        </div>
+      ) : (
+        <dl className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
+          <RuleValue label={t("fantasy.rules.budget")} value={String(rules.budget)} />
+          <RuleValue
+            label={t("fantasy.rules.transfers_r")}
+            value={`${rules.initialFreeTransfers} / -${rules.transferHitCost}`}
+          />
+          <RuleValue
+            label={t("fantasy.rules.deadlines")}
+            value={`${rules.deadline.minutesBeforeFirstFixture} min`}
+          />
+        </dl>
+      )}
 
       <div className="mt-4 grid gap-2">
-        {sections.map((s) => (
+        {sections.map((section) => (
           <section
-            key={s.titleKey}
+            key={section.titleKey}
             className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] p-4"
           >
             <div className="flex items-center gap-2">
               <div className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white">
-                <s.icon className="h-4 w-4" aria-hidden />
+                <section.icon className="h-4 w-4" aria-hidden />
               </div>
-              <h2 className="text-sm font-black text-foreground">{t(s.titleKey)}</h2>
+              <h2 className="text-sm font-black text-foreground">{t(section.titleKey)}</h2>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(s.descKey)}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {t(section.descKey)}
+            </p>
           </section>
         ))}
       </div>

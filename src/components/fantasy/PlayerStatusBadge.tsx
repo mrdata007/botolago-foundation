@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 
 const tone = {
   available: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
-  injured: "bg-red-500/10 text-red-700 border-red-500/30",
   doubtful: "bg-amber-500/10 text-amber-800 border-amber-500/30",
+  injured: "bg-red-500/10 text-red-700 border-red-500/30",
   suspended: "bg-neutral-800/10 text-neutral-800 border-neutral-800/30",
-} as const;
+  unavailable: "bg-slate-500/10 text-slate-700 border-slate-500/30",
+  ineligible: "bg-zinc-800/10 text-zinc-800 border-zinc-800/30",
+} satisfies Record<Player["status"], string>;
 
 export function PlayerStatusBadge({
   status,

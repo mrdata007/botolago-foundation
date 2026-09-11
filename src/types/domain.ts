@@ -27,7 +27,7 @@ export interface Player {
   totalPoints: number;
   form: number;
   ownership: number; // %
-  status: "available" | "injured" | "doubtful" | "suspended";
+  status: "available" | "doubtful" | "injured" | "suspended" | "unavailable" | "ineligible";
 }
 
 export type ArticleCategory = "for_you" | "latest" | "transfers" | "analysis" | "interviews";
