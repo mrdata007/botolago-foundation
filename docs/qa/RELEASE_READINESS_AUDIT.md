@@ -1,96 +1,129 @@
-# BotolaGO — Release-readiness audit (evidence-based, no production changes)
+# BotolaGO — Release-readiness audit
 
-Scope: audit only. No publish, no data changes, no gate flips, no redesign.
+Date: 2026-09-11 (UTC). Verdict: **NOT LAUNCHED / RELEASE BLOCKED**.
 
-## 1. Repository / deployment state
+This report distinguishes observed production failures, local/preview tests, and unverified functionality. A published page returning HTTP 200 is not a successful functional launch.
 
-- Branch: `edit/edt-61f70e8b-5a20-4d5e-99bf-0177a02492c1`, HEAD `8dc3a23` ("Work in progress"), clean tree.
-- Remote `origin` is the Lovable-managed private repository (URL is credential-bearing; not reproduced here).
-- Live published site: `https://botolago.com` responds HTTP 200 (also `https://botolago.lovable.app`).
-- Stack: React 19 + TanStack Start + Vite + Supabase JS. **No Flutter/Firebase/native project exists** in this repo (no `pubspec.yaml`, no `ios/`, no `android/`, no Firebase SDK). This app is a web/PWA app only.
+## 1. Application and source
 
-## 2. Commands run and outcomes
+- Canonical GitHub source: `mrdata007/botolago-foundation`.
+- Published web origin tested: `https://botolago.com`; Lovable also reports `https://botolago.lovable.app`.
+- Existing stack: React 19, TanStack Start/Router, Vite and Supabase.
+- No Flutter/Firebase implementation, `pubspec.yaml`, `ios/` or `android/` project was found in the audited application. This audit does not certify an Android or iOS release.
+- The initial audit was saved by Lovable in commit `6c2fd16ba4522a6aaf6423af625c08523abaaf98`. This revision corrects overstatements in that initial report.
 
-| Command | Result |
+## 2. Critical production blocker — inactive backend and recovery access
+
+The browser's `.env.production` points to **BotolaGO Production V2**, project `tkewgajrljbwgwedqsxn`, in `eu-west-3`. This remains the intended production target; it must not be replaced casually with the older Lovable database.
+
+Evidence collected through the connected Supabase management tools:
+
+- `get_project` returned the project with status **INACTIVE**, organization `bfhahpanhnoueripxshw`.
+- `restore_project` was attempted and returned `NotFoundException: Project not found`.
+- A read-only production database query timed out.
+- The current Supabase connection's organization listing contained only **COMET COMPONENTS**, organization `vedhqkxwfrtjprdsisrv`; its project listing did not include BotolaGO.
+
+This indicates an inactive/unreachable production backend and a recovery/access blocker. It is **not proof that the project was deleted or never existed**. The exact reason for the mismatch between project lookup and restoration/listing remains unverified.
+
+Live browser observations on `botolago.com`:
+
+- Requests to `tkewgajrljbwgwedqsxn.supabase.co` failed with `net::ERR_NAME_NOT_RESOLVED`.
+- News rendered filters but no articles in the tested session.
+- Matches and Fantasy showed loading states while data failed to load.
+- These observations establish a broken data connection, not a measured proof of permanently infinite loading.
+
+A second, guarded recovery attempt used the repository's existing `production-admin-activation` environment. Workflow run `34588850936` failed; downloadable job logs were unavailable. No successful restoration was verified. The one-off workflow trigger was removed from the repair branch after the failed attempt; no new recovery schedule was left enabled.
+
+Recovery run evidence: `https://github.com/mrdata007/botolago-foundation/actions/runs/34588850936`.
+
+## 3. Separate Lovable database — do not confuse it with production
+
+Lovable's connected database is project `gjlycjqinblrgynifbes`, which could be queried. Read-only counts reported by the audit:
+
+| Table | Rows |
+| --- | ---: |
+| app.fixtures | 0 |
+| app.players | 0 |
+| app.seasons | 0 |
+| app.standings | 0 |
+| app.teams | 10 |
+| app.profiles | 1 |
+| public.fixtures | 4 |
+| public.players | 64 |
+| public.articles | 3 |
+| public.gameweeks | 1 |
+
+These counts apply **only to the separate Lovable-connected database**, not to inactive Production V2. They do not demonstrate that production data has been lost. This alternate database contains both older `public.*` tables and newer `app.*`/`api.*` structures, with insufficient newer football data for launch. Do not repoint the public app to it, merge schemas, reset data, or seed fake production fixtures as a shortcut.
+
+After production access is restored, inspect its own migration history, season/player/fixture catalog, permissions, provider mappings and job state before deciding what needs repair or ingestion.
+
+## 4. Verification results
+
+The following commands were executed by the Lovable audit runtime before the later GitHub-only metadata patch:
+
+| Check | Recorded result | Scope / limitation |
+| --- | --- | --- |
+| `bun run typecheck` | PASS | Source type check, not runtime acceptance |
+| `bun run backend:migrations:check` | PASS; 47 migrations | Static validation, not proof production migrations are applied |
+| `bun run backend:secrets:check` | PASS | No high-confidence secrets detected in tracked files; not a penetration test |
+| `bun run build` | PASS | Application builds; data connection still broken |
+| `bun test` | **526 passed, 5 failed; 531 total** | Full suite is NOT green |
+| Guest mobile preview | Limited PASS | Tested core French routes and eight corrected Arabic/RTL routes at 390px |
+| Missing preview routes | FAIL | `/settings`, `/privacy`, `/terms`, `/notifications` returned 404 |
+| Live data browsing | FAIL | Production backend requests failed |
+| Signed-in production acceptance | NOT TESTED | No verified test session; backend unavailable |
+
+The local preview defaults to mock data where development data-mode variables are absent. Populated preview screens do not establish that live football/news/fantasy data works.
+
+Mobile observations: no horizontal overflow on the tested screens, and the corrected language test used `botolago.language=ar`, with `lang=ar` and `dir=rtl`. This is not comprehensive accessibility certification or an every-button audit.
+
+### Failing news ingestion tests
+
+All five recorded failures are in `supabase/functions/_shared/elbotola.test.ts`:
+
+1. Fetching robots/homepage and persisting Arabic link metadata.
+2. Ignoring non-allowlisted or credential-bearing image URLs.
+3. Retrying a transient homepage failure.
+4. Quarantining malformed metadata while preserving valid links.
+5. Rejecting malformed article metadata while preserving valid items.
+
+The observed failure was `invalid_provider_payload` from `parseElbotolaHomepage`. The exact root cause has **not** been established; the audit does not prove the external publisher changed its markup. The five tests remain unresolved. No assertions, origin/image allowlists, timestamp checks, syndication gates or provider safeguards were removed to obtain a false pass. Live ingestion was not verified.
+
+## 5. Repair completed on a separate branch
+
+Branch: `fix/release-readiness-2026-09-11`.
+
+- `src/lib/article-meta.ts`: public article canonical and OpenGraph URLs now use `https://botolago.com`, rather than the incorrect `https://www.botolago.app`.
+- Public sharing origin is explicitly separated from authentication redirect configuration. Supabase target and authentication/OAuth redirect settings were not changed.
+- `src/lib/article-meta.test.ts`: updated the existing production-origin expectation and added checks for matching OpenGraph URLs, URL-like identifiers, Arabic identifiers and missing article metadata.
+
+The metadata implementation committed as blob `5b6412b426e9ce09ff992b09ede7845270d21d68` was copied locally and verified byte-for-byte by its Git blob SHA. Five focused checks using Node 22.16.0 with TypeScript stripping all passed (5 passed, 0 failed). These are focused checks of the actual patched function, **not a rerun of the full Bun application suite**, and do not resolve the five ingestion failures.
+
+The application patch is staged on the branch, not promoted as a public production release. The documentation update itself does not change app functionality.
+
+Lovable completed the initial audit but rejected the subsequent repair request because the workspace had no credits. No credit purchase or plan upgrade was made. GitHub was used for the bounded metadata repair instead.
+
+## 6. Remaining launch gates
+
+| Gate | Status / acceptance requirement |
 | --- | --- |
-| `bun run typecheck` | PASS (exit 0) |
-| `bun run backend:migrations:check` | PASS — "Validated 47 migration(s)." |
-| `bun run backend:secrets:check` | PASS — no high-confidence secrets in tracked files |
-| `bun run build` | PASS — Nitro/Vite output produced |
-| `bun test` | **FAIL** — 526 pass / 5 fail / 531 total |
-| Playwright sweep, local preview, 390px, FR + AR | 15 routes OK, 4 routes 404 |
-| Playwright sweep, live `botolago.com` | All data-driven screens empty / stuck loading |
+| Production recovery | BLOCKED: restore authorized access to the correct BotolaGO organization and resume Production V2; verify healthy status and API requests |
+| Real current-season catalog | UNKNOWN in production: verify its own teams, eligible players, fixtures, deadlines and provider coverage |
+| News ingestion | FAILING TESTS: diagnose five failures; validate authorized ingestion, freshness and article details |
+| Account lifecycle | NOT VERIFIED: signup, confirmation, login/logout, password-reset delivery and profile persistence |
+| Fantasy lifecycle | NOT VERIFIED: create/save/reload squad, captain/bench, budget and club constraints, transfers, deadlines, points and leagues |
+| Access control | NOT VERIFIED on production: user isolation, privileged operations, anonymous data boundaries and storage policies |
+| Missing routes / policies | OPEN: restore intended settings/notifications routes and complete linked Terms/Privacy with verified operator details; do not publish invented legal information |
+| Full regression | NOT GREEN: require full suite, production build and authenticated browser acceptance after fixes |
+| Release / rollback | NOT PERFORMED: record approved commit, publish, check live requests/journeys, and retain a rollback target |
+| Native distribution | NOT PRESENT in audited app: Flutter/Firebase and store builds require a separate implementation/release track |
 
-Failing tests (all in one file): `supabase/functions/_shared/elbotola.test.ts`
-- "fetches only robots and the homepage and persists Arabic link metadata" — expected 200, received 503
-- "ignores non-allowlisted or credential-bearing image URLs"
-- "retries one transient homepage failure without fetching any article page"
-- "quarantines malformed homepage metadata and completes the valid links"
-- "rejects malformed article metadata while preserving valid items"
+## 7. Immediate owner-side unblock
 
-Root cause visible in output: `parseElbotolaHomepage` throws `invalid_provider_payload` at `supabase/functions/_shared/elbotola.ts:400` for the test fixtures — the homepage parser no longer matches the markup shape the tests encode.
+Use a Supabase connection/account that has access to organization `bfhahpanhnoueripxshw` and **BotolaGO Production V2** (`tkewgajrljbwgwedqsxn`), then resume that project through its authorized dashboard. Do not paste service-role keys, access tokens or passwords into chat.
 
-## 3. CRITICAL findings
+Once the backend is reachable, the remaining gates still need to pass. Restoring the database alone is not a launch certification.
 
-### C1 — The published app points at a backend that does not exist
-`.env.production:10-12` sets the browser Supabase project to `tkewgajrljbwgwedqsxn`. That hostname **does not resolve** (`net::ERR_NAME_NOT_RESOLVED`), and every data request on `https://botolago.com` fails. The project actually connected to this workspace is a different one.
+## 8. Explicit non-actions and limitations
 
-Browser evidence on the live site:
-- `/news` — filters render, **zero articles**
-- `/matches` — season selector stuck on "Chargement"
-- `/fantasy`, `/fantasy/players` — stuck on "Chargement…"
-- Failed request: `tkewgajrljbwgwedqsxn.supabase.co :: net::ERR_NAME_NOT_RESOLVED`
-
-The app is effectively non-functional in production. This alone blocks launch.
-
-### C2 — The connected backend has no current-season football catalog
-Read-only counts on the connected project:
-`app.fixtures 0`, `app.players 0`, `app.seasons 0`, `app.standings 0`, `app.teams 10`, `app.profiles 1`;
-legacy `public.fixtures 4`, `public.players 64`, `public.articles 3`, `public.gameweeks 1`.
-
-Even after C1 is fixed by repointing, there is **no usable current-season fixture or player catalog**. Fantasy cannot be launched on this data: squad selection, transfers, points and standings all require a populated season. Ingestion workflows exist (`.github/workflows/g5-*`, `g7-*`, `gate2*`) but have not produced production data here.
-
-### C3 — Two competing database schemas coexist
-The connected project carries both the legacy `public.*` fantasy/news schema and the greenfield `app.*`/`api.*` schema. Frontend repositories read across both. Before launch, one must be declared canonical; otherwise data written in one shape is invisible to screens reading the other.
-
-## 4. HIGH findings
-
-### H1 — News ingestion adapter is broken (5 failing tests)
-`supabase/functions/_shared/elbotola.ts:400`. With the adapter failing, the news feed has no automatic content source; `public.articles` holds 3 rows.
-
-### H2 — Canonical/OG URLs point to a domain that is not the live domain
-`src/lib/article-meta.ts:7` emits canonicals at `https://www.botolago.app/...`, while `.env.production:9` declares `https://botolago.lovable.app` and the live custom domain is `https://botolago.com`. Three different origins. Shared links and search indexing will point away from the real site.
-
-### H3 — Routes referenced in product history return 404
-Local preview, both languages: `/settings`, `/privacy`, `/terms`, `/notifications` all render the 404 page. Privacy and terms are typically required for app-store/PWA listing and for consent flows.
-
-### H4 — Fantasy is gated behind sign-in and unverified end-to-end
-Anonymous `/fantasy/team`, `/transfers`, `/points`, `/leagues` show "Compte requis" (account required). This is a gate, not evidence of working functionality. Signed-in Fantasy flows (create squad, transfer, points, leagues) were **not tested** — no test session was available in this environment. Do not treat HTTP 200 or a green build as Fantasy working.
-
-### H5 — The preview environment runs on mock data
-Dev has no `VITE_*_DATA_MODE` values, so `src/services/news.ts`, `notifications.ts`, `fantasy-v2.ts` and `fantasy-runtime.ts` default to mock repositories. Everything that looks populated in preview (14 gameweeks, fixtures, players, articles) is **mock**, not live. Preview quality is therefore not evidence of production quality.
-
-## 5. MEDIUM
-
-- `/profile` document title is the untranslated string "Profile" in both FR and AR.
-- Live site shows the Lovable badge; hide it before a public launch if not wanted.
-
-## 6. What passed
-
-- FR and AR both render correctly: `html lang`/`dir` switch to `ar`/`rtl`, Arabic copy is complete on home, news, matches, fantasy, rules, login, profile.
-- No horizontal overflow at 390px on any tested route.
-- No uncaught page errors on the local preview sweep.
-- Auth screens (login, register, forgot password) render in both languages.
-- Typecheck, migration validation, secret scan and production build all pass.
-
-## 7. Not tested / unknown
-
-- Signed-in journeys: registration confirmation, login, password reset email delivery, profile edit, avatar upload, notifications.
-- Fantasy end-to-end with a real account.
-- Match detail, lineups, article detail, club pages, standings (not exercised in this sweep).
-- Server-side environment variables on the deployment target (only file-level presence was checked; no values read).
-- Load/performance and Lighthouse.
-
-## 8. Launch verdict
-
-**Not launch-ready.** C1 and C2 are hard blockers: the published app talks to a nonexistent backend, and the backend it should talk to has no season data. Recommended order: fix production backend configuration (C1) → decide canonical schema (C3) → ingest and verify current-season catalog (C2) → repair news ingestion (H1) → align canonical domain (H2) → ship the missing legal/settings routes (H3) → full signed-in Fantasy verification (H4).
+No production schema or business-data changes, provider activation, real user creation, notification sends, new paid services, or public release were performed. No fake data was substituted for production. Article detail, match detail, authenticated fantasy operations, email delivery, load/performance, and a full production security assessment remain unverified. The audit is substantial but not an exhaustive every-screen/every-button certification.
