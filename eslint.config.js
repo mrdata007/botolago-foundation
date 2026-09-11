@@ -63,4 +63,11 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    // Lovable owns the legacy integration schema's generated formatting.
+    // Keep semantic lint and TypeScript checks; exempt only its formatter rule.
+    // The authoritative src/backend/generated types still have a separate drift gate.
+    files: ["src/integrations/supabase/types.ts"],
+    rules: { "prettier/prettier": "off" },
+  },
 );
