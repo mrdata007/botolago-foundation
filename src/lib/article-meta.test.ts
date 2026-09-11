@@ -61,8 +61,14 @@ describe("article metadata", () => {
     for (const missing of [null, undefined]) {
       const head = buildArticleHead(missing, "missing");
       expect(head.links[0].href).toBe("https://botolago.com/news/missing");
-      expect(head.meta.some((entry) => "property" in entry && entry.property === "og:image")).toBe(false);
-      expect(head.meta.some((entry) => "property" in entry && entry.property === "article:published_time")).toBe(false);
+      expect(head.meta.some((entry) => "property" in entry && entry.property === "og:image")).toBe(
+        false,
+      );
+      expect(
+        head.meta.some(
+          (entry) => "property" in entry && entry.property === "article:published_time",
+        ),
+      ).toBe(false);
     }
   });
 });
