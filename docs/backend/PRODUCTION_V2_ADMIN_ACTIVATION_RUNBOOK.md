@@ -1,12 +1,18 @@
 # Production V2 Admin activation runbook
 
-Status: **blocked pending read-only production verification**
-Phase: 7E-A plan only
-Repository base: `496f7d8b4bd277c979b3afe436d22da4cfc834fc`
+Status: **Phase 7E-A passed; human account prerequisites remain**
+Phase: 7E-B controlled activation runbook
+Repository base: `9b697151e3f1e904c67e8cce3a2162cffa7e2f6c`
 
 This runbook defines the reversible Phase 7E-B sequence. It does not authorize
 migrations, owner bootstrap, staff assignment, worker execution, schedules, or
 Editorial CMS mutations.
+
+The protected Phase 7E-A run
+`https://github.com/mrdata007/botolago-foundation/actions/runs/30151901483`
+proved Production V2 identity, ownership, health, daily backup availability,
+the empty greenfield migration baseline and zero active production schedules.
+It applied no migration and made no Production V2 change.
 
 ## Roles and approvals
 
@@ -26,15 +32,25 @@ not in this repository.
 
 ## Gate 0 — secure target and account inputs
 
-The protected runtime must inject, without echoing:
+The protected `production-admin-activation` environment must inject, without
+echoing:
 
-- `SUPABASE_PRODUCTION_PROJECT_REF`;
-- the approved Production V2 URL;
-- one server-only Supabase secret;
-- the Management API credential for read-only platform verification;
-- `OWNER_ADMIN_EMAIL` and the owner's short-lived AAL2 access token;
-- `SECOND_OPERATOR_EMAIL` and, for its readiness check, that operator's
-  short-lived AAL2 proof.
+- variable `SUPABASE_PRODUCTION_PROJECT_REF`;
+- variable `SUPABASE_URL` containing the approved Production V2 URL;
+- variable `SUPABASE_PRODUCTION_PROJECT_NAME`;
+- variables `BOTOLAGO_ADMIN_ENVIRONMENT`,
+  `BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF` and
+  `BOTOLAGO_TARGET_ENVIRONMENT`;
+- secret `SUPABASE_ACCESS_TOKEN` for Management API inspection;
+- secret `SUPABASE_SECRET_KEY` for reviewed server-only operations.
+
+Do not expect or introduce `SUPABASE_PRODUCTION_SERVICE_ROLE_KEY` or
+`SUPABASE_PRODUCTION_DB_URL`; those are not repository environment contracts.
+
+Human readiness is a later, runtime-only input. When the applicable step is
+authorized, inject `OWNER_ADMIN_EMAIL` and the owner's short-lived AAL2 proof,
+then separately `SECOND_OPERATOR_EMAIL` and the second operator's short-lived
+AAL2 proof. Their absence does not invalidate the infrastructure preflight.
 
 The runtime must derive the URL project ref, compare it to
 `SUPABASE_PRODUCTION_PROJECT_REF`, require the project name
@@ -69,6 +85,18 @@ Storage objects, so media backup/restore is a separate checkpoint.
 If no acceptable backup exists, PITR state is unknown, or no authorized restore
 owner is present, stop. Do not promote migrations.
 
+Phase 7E-A evidence at the inspected commit:
+
+- 7 successful daily backups retained;
+- latest `2026-07-25T01:15:31.475Z`;
+- oldest returned `2026-07-19T19:24:13.100Z`;
+- physical/WAL-G backup process enabled;
+- PITR disabled and explicitly accepted for preflight.
+
+Before promotion, name the human restore operator and accept the daily-backup
+recovery-point objective. Do not enable PITR or change billing as part of the
+migration window.
+
 ## Gate 2 — migration review
 
 1. Pin the exact reviewed main commit.
@@ -79,6 +107,10 @@ owner is present, stop. Do not promote migrations.
 5. Measure populated-table/index locks on a production-like copy.
 6. Approve the seven batches documented in
    `PRODUCTION_V2_MIGRATION_PREFLIGHT.md`.
+
+The Phase 7E-A hosted baseline is empty and understood: 0 hosted migration
+rows, 0 repository schemas/relations/routines/policies/grants, 0 Storage
+buckets, 0 Edge Functions and 0 cron jobs. All 35 migrations are pending.
 
 The reviewed order is:
 

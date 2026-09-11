@@ -1,43 +1,46 @@
 # Production V2 migration preflight
 
 Date: 2026-07-25
-Repository base: `496f7d8b4bd277c979b3afe436d22da4cfc834fc`
+Repository base: `9b697151e3f1e904c67e8cce3a2162cffa7e2f6c`
 Phase: 7E-A (read-only)
 
 ## Decision
 
-**NOT READY**
+**READY WITH HUMAN ACCOUNT PREREQUISITES**
 
-The repository migration chain is internally valid and replays cleanly from
-zero, but the hard production target guard did not pass. The protected runtime
-did not provide `SUPABASE_PRODUCTION_PROJECT_REF`, an approved production
-server credential, or a production Management API credential. Consequently no
-Production V2 database, Auth, Storage, function, migration-history, schema,
-policy, grant, schedule, backup, or PITR request was made.
+Protected run `30151901483` proved the exact Production V2 target
+(`tkewgajrljbwgwedqsxn`, `BotolaGO Production V2`, BotolaGO organization,
+`eu-west-3`) and health (`ACTIVE_HEALTHY`) before performing a read-only
+inventory. The database is a clean V2 target: it has no hosted migration table,
+no repository-owned schemas, relations, routines, policies or grants, and no
+unexpected Storage, Edge Function, Realtime-table or cron state.
 
-A connected project catalog contains exactly one candidate named
-`BotolaGO Production V2` in `eu-west-3`, with project ref
-`tkewgajrljbwgwedqsxn`, PostgreSQL `17.6.1.147`, and status
-`ACTIVE_HEALTHY`. This is discovery evidence only. It does not replace the
-required independently supplied `SUPABASE_PRODUCTION_PROJECT_REF` guard and
-does not authorize a target-specific request.
+All 35 repository migrations are pending in deterministic order. No group is
+blocked by drift or backup readiness. Phase 7E-B may promote only the seven
+reviewed groups, with a health/security stop after every group. Owner bootstrap
+remains disabled until the Admin group has passed its stop and the real owner
+has completed normal signup, email verification, MFA enrollment and fresh AAL2
+proof.
 
-The known staging ref `srdrflfrfpwixsllveid` and Legacy ref
-`kxpaudvntwxpahyjtxbk` were not targeted.
+Seven successful daily backups were returned, from
+`2026-07-19T19:24:13.100Z` through `2026-07-25T01:15:31.475Z`. PITR is
+disabled and accepted for this preflight; no billing or backup setting changed.
+The known staging ref `srdrflfrfpwixsllveid` was explicitly denied. Legacy was
+not queried.
 
 ## Repository baseline
 
-| Check                                      | Result                                 |
-| ------------------------------------------ | -------------------------------------- |
-| Migration files                            | 35, deterministic timestamp order      |
-| Static migration validation                | PASS                                   |
-| Clean local replay from zero               | PASS                                   |
-| pgTAP/RLS                                  | PASS, 432 assertions across 22 files   |
-| Database lint                              | PASS, zero schema errors               |
-| Generated types                            | PASS, synchronized                     |
-| Tracked-file secret scan                   | PASS                                   |
-| Hosted migration history                   | UNVERIFIED — hard target guard blocked |
-| Hosted schema/RPC/RLS/grants/storage drift | UNVERIFIED — hard target guard blocked |
+| Check                                      | Result                                       |
+| ------------------------------------------ | -------------------------------------------- |
+| Migration files                            | 35, deterministic timestamp order            |
+| Static migration validation                | PASS                                         |
+| Clean local replay from zero               | PASS                                         |
+| pgTAP/RLS                                  | PASS, 432 assertions across 22 files         |
+| Database lint                              | PASS, zero schema errors                     |
+| Generated types                            | PASS, synchronized                           |
+| Tracked-file secret scan                   | PASS                                         |
+| Hosted migration history                   | PASS — empty target, zero hosted rows        |
+| Hosted schema/RPC/RLS/grants/storage drift | PASS — no unexpected repository-owned object |
 
 The authoritative repository checksums are the SHA-256 values obtained with:
 
@@ -45,29 +48,32 @@ The authoritative repository checksums are the SHA-256 values obtained with:
 shasum -a 256 supabase/migrations/*.sql
 ```
 
-Phase 7E-B must save that manifest as reviewed evidence, obtain the hosted
-versions from `supabase_migrations.schema_migrations`, and stop on a missing,
-unexpected, reordered, or checksum-mismatched migration. A matching version
-number alone is insufficient.
+Phase 7E-B must save that manifest as reviewed evidence. After each migration
+group creates and advances `supabase_migrations.schema_migrations`, compare the
+hosted version, name and stored-statement checksum before continuing. A
+matching version number alone is insufficient.
 
 ## Production comparison
 
-| Comparison                       | Result                                           |
-| -------------------------------- | ------------------------------------------------ |
-| Already present migrations       | UNVERIFIED                                       |
-| Pending migrations               | UNVERIFIED                                       |
-| Missing or unexpected migrations | UNVERIFIED                                       |
-| Checksum mismatches              | UNVERIFIED                                       |
-| Schema drift                     | UNVERIFIED                                       |
-| Function/RPC drift               | UNVERIFIED                                       |
-| RLS-policy drift                 | UNVERIFIED                                       |
-| Grant drift                      | UNVERIFIED                                       |
-| Storage bucket/policy drift      | UNVERIFIED                                       |
-| Generated-type compatibility     | Repository PASS; hosted compatibility UNVERIFIED |
+| Comparison                       | Result                                                         |
+| -------------------------------- | -------------------------------------------------------------- |
+| Already present migrations       | 0                                                              |
+| Pending migrations               | 35                                                             |
+| Missing or unexpected migrations | 0 unexpected; all repository migrations intentionally pending  |
+| Checksum mismatches              | None; no hosted migration row exists                           |
+| Schema drift                     | None outside the understood empty-target baseline              |
+| Function/RPC drift               | None; zero repository-owned routines                           |
+| RLS-policy drift                 | None; zero repository-owned tables/policies before promotion   |
+| Grant drift                      | None; zero repository-owned grants                             |
+| Storage bucket/policy drift      | None; zero buckets and zero repository Storage policies        |
+| Exposed-schema drift             | None; only `public` and `graphql_public` are exposed           |
+| Realtime drift                   | Empty `supabase_realtime` publication, zero published tables   |
+| Edge Function / cron drift       | Zero functions; `pg_cron` absent; zero jobs                    |
+| Generated-type compatibility     | Repository PASS; hosted schemas intentionally not promoted yet |
 
-Until the secure diff is completed, all 35 migrations below are
-**candidate-pending**, not approved-pending. None may be promoted based on this
-document alone.
+The 35 pending migrations are eligible only for the controlled seven-group
+Phase 7E-B sequence. This document does not authorize a single all-at-once
+production push.
 
 ## Candidate migration inventory
 
@@ -117,8 +123,8 @@ remote resets and destructive down migrations are prohibited.
 
 ## Required promotion batching
 
-The chain is **not approved for one production window** while production
-history and data volume are unknown. Phase 7E-B must promote in dependency
+The clean target contains no application data, but the chain is still **not
+approved as one undifferentiated push**. Phase 7E-B must promote in dependency
 groups, stopping after each group:
 
 1. Foundation.
@@ -131,27 +137,27 @@ groups, stopping after each group:
 
 Each group requires migration-history verification, database health, advisor
 review, grants/RLS smoke tests, and an application fail-closed check before the
-next group. Index-heavy migrations must be timed against a production-like
-copy; if populated-table lock duration exceeds the approved window, replace
-them with separately reviewed online/concurrent index operations where
-transaction rules permit.
+next group. Groups 1–6 are safe to promote with their mandatory stops and
+workers/providers disabled. Group 7 requires a separate Admin stop before any
+human bootstrap. No group is blocked by drift or backup readiness.
 
 ## Production diff procedure
 
-After the missing secure environment is configured, a separately authorized
-read-only run must:
+Protected run `30151901483` completed this read-only procedure against main
+commit `9b697151e3f1e904c67e8cce3a2162cffa7e2f6c`:
 
 1. Assert the environment ref equals the independently approved Production V2
    ref and differs from Staging V2 and Legacy.
 2. Fetch project identity, organization, health, compute, database version and
    backup/PITR state.
-3. Read only hosted migration history and compare version, name and checksum to
-   the repository manifest.
+3. Read hosted migration history; prove that the CLI migration table is absent
+   and therefore all 35 repository migrations are pending.
 4. Inventory schemas, extensions, tables, routines, triggers, RLS flags,
    policies, grants, Storage buckets/policies, publications and cron jobs with
    bounded queries.
 5. Diff that inventory against a clean local replay.
 6. Classify each migration as present, pending, unexpected, or mismatched.
-7. Stop on any unexplained object or history difference.
+7. Stop on any unexplained object or history difference; none was found.
 
-No migration promotion is authorized by Phase 7E-A.
+Phase 7E-A establishes eligibility for the controlled seven-group Phase 7E-B
+window. It does not itself authorize or apply a migration.
