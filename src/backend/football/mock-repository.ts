@@ -22,6 +22,12 @@ const clubId = new Map(mock.clubs.map((club, index) => [club.id, uuid(10, index 
 const matchIndex = new Map(mock.matches.map((match, index) => [match.id, index + 1]));
 const playerId = new Map(mock.players.map((player, index) => [player.id, uuid(30, index + 1)]));
 
+export function mockFootballTeamId(sourceId: string): string {
+  const id = clubId.get(sourceId);
+  if (!id) throw new FootballError("data_unavailable", "Mock team was not found.");
+  return id;
+}
+
 const competition: CompetitionSummaryDto = {
   id: COMPETITION_ID,
   slug: "botola-pro-mock",
@@ -101,7 +107,7 @@ function team(sourceId: string, language: FootballLanguage): TeamSummaryDto {
   const source = mock.clubs.find((club) => club.id === sourceId);
   if (!source) throw new FootballError("data_unavailable", "Mock team was not found.");
   return {
-    id: clubId.get(source.id)!,
+    id: mockFootballTeamId(source.id),
     slug: source.id,
     name: localized(source.name, language),
     shortName: localized(source.shortName, language),

@@ -33,13 +33,16 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession>(() => authService.getSession());
+  // Keep the first browser render identical to SSR. The subscription reads
+  // browser-backed auth immediately after hydration and publishes the real
+  // session without forcing React to discard the server tree.
+  const [session, setSession] = useState<AuthSession>({ user: null, status: "loading" });
   const [prompt, setPrompt] = useState<AuthPromptState>({ open: false });
   const { lang } = useI18n();
   const langRef = useRef(lang);
   langRef.current = lang;
   const qc = useQueryClient();
-  const prevUidRef = useRef<string | null>(session.user?.id ?? null);
+  const prevUidRef = useRef<string | null>(null);
 
   useEffect(() => {
     const unsub = authService.subscribeToSession(setSession);

@@ -44,6 +44,8 @@ export interface FantasyPlayer extends Player {
   expectedPoints?: number;
   news?: LocalizedString;
   chanceOfPlaying?: number; // 0-100
+  /** Raw active-team selection count when the backend does not expose a percentage. */
+  selectionCount?: number;
   /** Optional pre-rendered jersey image. When present, PlayerShirt uses it with graceful fallback to CSS jersey. */
   jerseyImageUrl?: string;
   /** Optional per-player kit override; otherwise derived from the club. */

@@ -43,8 +43,11 @@ import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as FantasyCreateIndexRouteImport } from './routes/fantasy.create.index'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
+import { Route as FantasyCreateSquadRouteImport } from './routes/fantasy.create.squad'
+import { Route as FantasyCreateReviewRouteImport } from './routes/fantasy.create.review'
 import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -221,6 +224,11 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const FantasyCreateIndexRoute = FantasyCreateIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FantasyCreateRoute,
+} as any)
 const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   id: '/$playerId',
   path: '/$playerId',
@@ -230,6 +238,16 @@ const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
   id: '/$leagueId',
   path: '/$leagueId',
   getParentRoute: () => FantasyLeaguesRoute,
+} as any)
+const FantasyCreateSquadRoute = FantasyCreateSquadRouteImport.update({
+  id: '/squad',
+  path: '/squad',
+  getParentRoute: () => FantasyCreateRoute,
+} as any)
+const FantasyCreateReviewRoute = FantasyCreateReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => FantasyCreateRoute,
 } as any)
 const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
   id: '/$principalId',
@@ -269,7 +287,7 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
-  '/fantasy/create': typeof FantasyCreateRoute
+  '/fantasy/create': typeof FantasyCreateRouteWithChildren
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -286,8 +304,11 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
+  '/fantasy/create/review': typeof FantasyCreateReviewRoute
+  '/fantasy/create/squad': typeof FantasyCreateSquadRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/fantasy/create/': typeof FantasyCreateIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -309,7 +330,6 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
-  '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -326,8 +346,11 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
+  '/fantasy/create/review': typeof FantasyCreateReviewRoute
+  '/fantasy/create/squad': typeof FantasyCreateSquadRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/fantasy/create': typeof FantasyCreateIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -351,7 +374,7 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
-  '/fantasy/create': typeof FantasyCreateRoute
+  '/fantasy/create': typeof FantasyCreateRouteWithChildren
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
@@ -368,8 +391,11 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
+  '/fantasy/create/review': typeof FantasyCreateReviewRoute
+  '/fantasy/create/squad': typeof FantasyCreateSquadRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/fantasy/create/': typeof FantasyCreateIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -411,8 +437,11 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
+    | '/fantasy/create/review'
+    | '/fantasy/create/squad'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/players/$playerId'
+    | '/fantasy/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -434,7 +463,6 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
-    | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/leagues'
     | '/fantasy/players'
@@ -451,8 +479,11 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
+    | '/fantasy/create/review'
+    | '/fantasy/create/squad'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/players/$playerId'
+    | '/fantasy/create'
   id:
     | '__root__'
     | '/'
@@ -492,8 +523,11 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
+    | '/fantasy/create/review'
+    | '/fantasy/create/squad'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/players/$playerId'
+    | '/fantasy/create/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -752,6 +786,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fantasy/create/': {
+      id: '/fantasy/create/'
+      path: '/'
+      fullPath: '/fantasy/create/'
+      preLoaderRoute: typeof FantasyCreateIndexRouteImport
+      parentRoute: typeof FantasyCreateRoute
+    }
     '/fantasy/players/$playerId': {
       id: '/fantasy/players/$playerId'
       path: '/$playerId'
@@ -765,6 +806,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/leagues/$leagueId'
       preLoaderRoute: typeof FantasyLeaguesLeagueIdRouteImport
       parentRoute: typeof FantasyLeaguesRoute
+    }
+    '/fantasy/create/squad': {
+      id: '/fantasy/create/squad'
+      path: '/squad'
+      fullPath: '/fantasy/create/squad'
+      preLoaderRoute: typeof FantasyCreateSquadRouteImport
+      parentRoute: typeof FantasyCreateRoute
+    }
+    '/fantasy/create/review': {
+      id: '/fantasy/create/review'
+      path: '/review'
+      fullPath: '/fantasy/create/review'
+      preLoaderRoute: typeof FantasyCreateReviewRouteImport
+      parentRoute: typeof FantasyCreateRoute
     }
     '/admin/staff/$principalId': {
       id: '/admin/staff/$principalId'
@@ -840,6 +895,22 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface FantasyCreateRouteChildren {
+  FantasyCreateReviewRoute: typeof FantasyCreateReviewRoute
+  FantasyCreateSquadRoute: typeof FantasyCreateSquadRoute
+  FantasyCreateIndexRoute: typeof FantasyCreateIndexRoute
+}
+
+const FantasyCreateRouteChildren: FantasyCreateRouteChildren = {
+  FantasyCreateReviewRoute: FantasyCreateReviewRoute,
+  FantasyCreateSquadRoute: FantasyCreateSquadRoute,
+  FantasyCreateIndexRoute: FantasyCreateIndexRoute,
+}
+
+const FantasyCreateRouteWithChildren = FantasyCreateRoute._addFileChildren(
+  FantasyCreateRouteChildren,
+)
+
 interface FantasyLeaguesRouteChildren {
   FantasyLeaguesLeagueIdRoute: typeof FantasyLeaguesLeagueIdRoute
 }
@@ -865,7 +936,7 @@ const FantasyPlayersRouteWithChildren = FantasyPlayersRoute._addFileChildren(
 )
 
 interface FantasyRouteChildren {
-  FantasyCreateRoute: typeof FantasyCreateRoute
+  FantasyCreateRoute: typeof FantasyCreateRouteWithChildren
   FantasyFixturesRoute: typeof FantasyFixturesRoute
   FantasyLeaguesRoute: typeof FantasyLeaguesRouteWithChildren
   FantasyPlayersRoute: typeof FantasyPlayersRouteWithChildren
@@ -879,7 +950,7 @@ interface FantasyRouteChildren {
 }
 
 const FantasyRouteChildren: FantasyRouteChildren = {
-  FantasyCreateRoute: FantasyCreateRoute,
+  FantasyCreateRoute: FantasyCreateRouteWithChildren,
   FantasyFixturesRoute: FantasyFixturesRoute,
   FantasyLeaguesRoute: FantasyLeaguesRouteWithChildren,
   FantasyPlayersRoute: FantasyPlayersRouteWithChildren,
