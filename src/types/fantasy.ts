@@ -44,6 +44,8 @@ export interface FantasyPlayer extends Player {
   expectedPoints?: number;
   news?: LocalizedString;
   chanceOfPlaying?: number; // 0-100
+  /** Raw active-team selection count when the backend does not expose a percentage. */
+  selectionCount?: number;
   /** Optional pre-rendered jersey image. When present, PlayerShirt uses it with graceful fallback to CSS jersey. */
   jerseyImageUrl?: string;
   /** Optional per-player kit override; otherwise derived from the club. */
@@ -121,6 +123,8 @@ export interface PointsEvent {
 export interface PlayerPointsBreakdown {
   playerId: string;
   totalPoints: number;
+  /** Authoritative backend multiplier when points are server-calculated. */
+  multiplier?: number;
   minutesPlayed: number;
   isCaptain?: boolean;
   isViceCaptain?: boolean;
@@ -133,6 +137,13 @@ export interface GameweekResult {
   gameweek: number;
   totalPoints: number; // includes captain multiplier
   benchPoints: number;
+  /** Authoritative server scoring components when available. */
+  startingPoints?: number;
+  captainPoints?: number;
+  transferHitPoints?: number;
+  activeChip?: "wildcard" | "free_hit" | "bench_boost" | "triple_captain";
+  finalized?: boolean;
+  finalizedAt?: string;
   captainId?: string;
   averagePoints?: number;
   highestPoints?: number;

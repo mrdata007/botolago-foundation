@@ -24,10 +24,8 @@ import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { LocalFantasyRepository, DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
+import { isV2FantasyPlayerId, LocalFantasyRepository } from "@/services/fantasy-owned-repository";
 import { importLocalTeamToCloud } from "@/services/fantasy-import-service";
-import { loadGameweekIndex } from "@/services/fantasy-gameweek-resolver";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 
@@ -71,7 +69,9 @@ export function FantasyImportPrompt() {
       if (cancelled) return;
       const team = snapshot.team;
       const isValid =
-        team.squad.length === 15 && validateTeam(team.squad, team.formation, players).ok === true;
+        team.squad.length === 15 &&
+        team.squad.every((player) => isV2FantasyPlayerId(player.playerId)) &&
+        validateTeam(team.squad, team.formation, players).ok === true;
       setLocal({ team, players, isValid });
     })();
     return () => {
@@ -120,8 +120,8 @@ export function FantasyImportPrompt() {
             localRepo,
             cloudRepo: owned.repo,
             loadPlayers: () => localFantasyService.getPlayers(),
-            loadGameweekIndex: () => loadGameweekIndex(supabase),
-            season: DEFAULT_SEASON,
+            currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+            currentGameweek: owned.snapshot?.lifecycle.currentGameweek ?? 0,
             defaultTeamName,
             cloudExpectedVersion: owned.snapshot?.version ?? 0,
           }),

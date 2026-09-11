@@ -12,15 +12,21 @@
 // This module has NO React and NO Supabase imports so it is trivially
 // testable and safe to import from both the route and tests.
 
+import type { FantasyRulesDto } from "@/backend/fantasy/contracts";
+import type { Club } from "@/types/domain";
 import type { FantasyPlayer, FormationKey, Position, SquadPlayer } from "@/types/fantasy";
 import { FORMATIONS, SQUAD_RULES } from "@/types/fantasy";
-import { validateTeam } from "@/lib/team-validation";
 
 // ------ Draft shape ------
 
 export interface CreateTeamDraft {
+  schemaVersion: 1;
   /** User-entered team name; validated against `validateTeamName`. */
   teamName: string;
+  /** Profile preference supported by the existing identity contract. */
+  favoriteClubId: string | null;
+  /** Explicit onboarding acknowledgement; never sent as Fantasy team data. */
+  consentAccepted: boolean;
   formation: FormationKey;
   /** 15 entries; a slot with `playerId === null` is empty. */
   slots: CreateSlot[];
@@ -36,15 +42,77 @@ export interface CreateSlot {
   isViceCaptain?: boolean;
 }
 
+export interface CreateTeamRules {
+  totalSize: number;
+  startingSize: number;
+  budget: number;
+  maxPerClub: number;
+  initialFreeTransfers: number;
+  maxFreeTransferRollover: number;
+  transferHitCost: number;
+  captainMultiplier: number;
+  perPosition: Record<Position, number>;
+  startingMinimum: Record<Position, number>;
+  startingMaximum: Record<Position, number>;
+}
+
 // ------ Constants ------
 
 /** Fixed default formation for onboarding; user can change via engine reslot. */
 export const CREATE_DEFAULT_FORMATION: FormationKey = "4-4-2";
 
 /** Max characters for a fantasy team name. Kept conservative for mobile UX. */
-export const TEAM_NAME_MAX_LENGTH = 30;
+export const TEAM_NAME_MAX_LENGTH = 40;
 /** Min characters (trimmed) for a valid team name. */
-export const TEAM_NAME_MIN_LENGTH = 2;
+export const TEAM_NAME_MIN_LENGTH = 3;
+
+/**
+ * Deterministic preview/test rules. Production routes always adapt the active
+ * ruleset returned by `fantasy_rules`; this value is never a production data
+ * fallback.
+ */
+export const DEFAULT_CREATE_TEAM_RULES: CreateTeamRules = {
+  totalSize: SQUAD_RULES.totalSize,
+  startingSize: SQUAD_RULES.startingXI,
+  budget: SQUAD_RULES.budget,
+  maxPerClub: SQUAD_RULES.maxPerClub,
+  initialFreeTransfers: SQUAD_RULES.freeTransfersPerWeek,
+  maxFreeTransferRollover: 5,
+  transferHitCost: SQUAD_RULES.transferHitPoints,
+  captainMultiplier: 2,
+  perPosition: { ...SQUAD_RULES.perPosition },
+  startingMinimum: { GK: 1, DEF: 3, MID: 2, FWD: 1 },
+  startingMaximum: { GK: 1, DEF: 5, MID: 5, FWD: 3 },
+};
+
+/** Normalize the authoritative Fantasy rules DTO. Unsupported shapes fail closed. */
+export function adaptFantasyRules(dto: FantasyRulesDto): CreateTeamRules | null {
+  const byPosition = new Map(dto.positions.map((rule) => [rule.code, rule]));
+  const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
+  if (positions.some((position) => !byPosition.has(position))) return null;
+  if (dto.squadSize !== 15) return null;
+  const normalized: CreateTeamRules = {
+    totalSize: dto.squadSize,
+    startingSize: 11,
+    budget: dto.budget,
+    maxPerClub: dto.maxPlayersPerClub,
+    initialFreeTransfers: dto.initialFreeTransfers,
+    maxFreeTransferRollover: dto.maxFreeTransferRollover,
+    transferHitCost: dto.transferHitCost,
+    captainMultiplier: dto.captainMultiplier,
+    perPosition: { GK: 0, DEF: 0, MID: 0, FWD: 0 },
+    startingMinimum: { GK: 0, DEF: 0, MID: 0, FWD: 0 },
+    startingMaximum: { GK: 0, DEF: 0, MID: 0, FWD: 0 },
+  };
+  for (const position of positions) {
+    const rule = byPosition.get(position)!;
+    normalized.perPosition[position] = rule.squadQuota;
+    normalized.startingMinimum[position] = rule.startingMinimum;
+    normalized.startingMaximum[position] = rule.startingMaximum;
+  }
+  const quota = Object.values(normalized.perPosition).reduce((sum, count) => sum + count, 0);
+  return quota === normalized.totalSize ? normalized : null;
+}
 
 // ------ Slot layout ------
 
@@ -58,7 +126,10 @@ export const TEAM_NAME_MIN_LENGTH = 2;
  *   12       → bench GK
  *   13..15   → bench DEF / MID / FWD
  */
-export function buildEmptySlots(formation: FormationKey): CreateSlot[] {
+export function buildEmptySlots(
+  formation: FormationKey,
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+): CreateSlot[] {
   const cfg = FORMATIONS[formation];
   const slots: CreateSlot[] = [];
   let n = 1;
@@ -67,11 +138,11 @@ export function buildEmptySlots(formation: FormationKey): CreateSlot[] {
   for (let i = 0; i < cfg.MID; i++) slots.push({ slot: n++, position: "MID", playerId: null });
   for (let i = 0; i < cfg.FWD; i++) slots.push({ slot: n++, position: "FWD", playerId: null });
   // Bench (squad quotas minus XI already placed for each position).
-  const benchGK = SQUAD_RULES.perPosition.GK - 1;
-  const benchDEF = SQUAD_RULES.perPosition.DEF - cfg.DEF;
-  const benchMID = SQUAD_RULES.perPosition.MID - cfg.MID;
-  const benchFWD = SQUAD_RULES.perPosition.FWD - cfg.FWD;
-  n = 12;
+  const benchGK = rules.perPosition.GK - 1;
+  const benchDEF = rules.perPosition.DEF - cfg.DEF;
+  const benchMID = rules.perPosition.MID - cfg.MID;
+  const benchFWD = rules.perPosition.FWD - cfg.FWD;
+  n = rules.startingSize + 1;
   for (let i = 0; i < benchGK; i++) slots.push({ slot: n++, position: "GK", playerId: null });
   for (let i = 0; i < benchDEF; i++) slots.push({ slot: n++, position: "DEF", playerId: null });
   for (let i = 0; i < benchMID; i++) slots.push({ slot: n++, position: "MID", playerId: null });
@@ -81,23 +152,36 @@ export function buildEmptySlots(formation: FormationKey): CreateSlot[] {
 
 // ------ Constructors ------
 
-export function initCreateDraft(teamName = ""): CreateTeamDraft {
+export function initCreateDraft(
+  teamName = "",
+  options: { favoriteClubId?: string | null; rules?: CreateTeamRules } = {},
+): CreateTeamDraft {
+  const rules = options.rules ?? DEFAULT_CREATE_TEAM_RULES;
   return {
+    schemaVersion: 1,
     teamName,
+    favoriteClubId: options.favoriteClubId ?? null,
+    consentAccepted: false,
     formation: CREATE_DEFAULT_FORMATION,
-    slots: buildEmptySlots(CREATE_DEFAULT_FORMATION),
+    slots: buildEmptySlots(CREATE_DEFAULT_FORMATION, rules),
   };
 }
 
 // ------ Team name ------
 
-export type TeamNameError = "too_short" | "too_long" | "empty";
+export type TeamNameError = "too_short" | "too_long" | "empty" | "invalid_characters";
 
 export function validateTeamName(raw: string): { ok: true } | { ok: false; error: TeamNameError } {
   const trimmed = raw.trim();
   if (trimmed.length === 0) return { ok: false, error: "empty" };
   if (trimmed.length < TEAM_NAME_MIN_LENGTH) return { ok: false, error: "too_short" };
   if (trimmed.length > TEAM_NAME_MAX_LENGTH) return { ok: false, error: "too_long" };
+  // Mirrors api.create_fantasy_team: alphanumeric endpoints with spaces and
+  // the reviewed punctuation set in between. Unicode letters/numbers are
+  // accepted so Arabic and French names share one contract.
+  if (!/^[\p{L}\p{N}][\p{L}\p{N} _'.-]*[\p{L}\p{N}]$/u.test(trimmed)) {
+    return { ok: false, error: "invalid_characters" };
+  }
   return { ok: true };
 }
 
@@ -105,6 +189,14 @@ export function validateTeamName(raw: string): { ok: true } | { ok: false; error
 
 export function setTeamName(draft: CreateTeamDraft, name: string): CreateTeamDraft {
   return { ...draft, teamName: name.slice(0, TEAM_NAME_MAX_LENGTH) };
+}
+
+export function setFavoriteClub(draft: CreateTeamDraft, clubId: string | null): CreateTeamDraft {
+  return { ...draft, favoriteClubId: clubId };
+}
+
+export function setConsentAccepted(draft: CreateTeamDraft, accepted: boolean): CreateTeamDraft {
+  return { ...draft, consentAccepted: accepted };
 }
 
 /** Place a player in a slot. Removes the player from any other slot first. */
@@ -134,6 +226,37 @@ export function removePlayer(draft: CreateTeamDraft, slot: number): CreateTeamDr
   return withDefaultCaptaincy({ ...draft, slots: next });
 }
 
+export function swapSlots(draft: CreateTeamDraft, first: number, second: number): CreateTeamDraft {
+  if (first === second) return draft;
+  const a = draft.slots.find((slot) => slot.slot === first);
+  const b = draft.slots.find((slot) => slot.slot === second);
+  if (!a || !b) return draft;
+  const crossPositionBench = a.slot > 11 && b.slot > 11;
+  if (a.position !== b.position && !crossPositionBench) return draft;
+  const slots = draft.slots.map((slot) => {
+    if (slot.slot === first) {
+      return {
+        ...slot,
+        position: crossPositionBench ? b.position : slot.position,
+        playerId: b.playerId,
+        isCaptain: b.isCaptain,
+        isViceCaptain: b.isViceCaptain,
+      };
+    }
+    if (slot.slot === second) {
+      return {
+        ...slot,
+        position: crossPositionBench ? a.position : slot.position,
+        playerId: a.playerId,
+        isCaptain: a.isCaptain,
+        isViceCaptain: a.isViceCaptain,
+      };
+    }
+    return slot;
+  });
+  return withDefaultCaptaincy({ ...draft, slots });
+}
+
 export function setCaptain(
   draft: CreateTeamDraft,
   playerId: string,
@@ -154,6 +277,200 @@ export function setCaptain(
     };
   });
   return { ...draft, slots: next };
+}
+
+export function isFormationSupported(
+  formation: FormationKey,
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+): boolean {
+  const cfg = FORMATIONS[formation];
+  return (
+    rules.startingSize === 11 &&
+    cfg.DEF >= rules.startingMinimum.DEF &&
+    cfg.DEF <= rules.startingMaximum.DEF &&
+    cfg.MID >= rules.startingMinimum.MID &&
+    cfg.MID <= rules.startingMaximum.MID &&
+    cfg.FWD >= rules.startingMinimum.FWD &&
+    cfg.FWD <= rules.startingMaximum.FWD &&
+    rules.perPosition.GK >= 1 &&
+    rules.perPosition.DEF >= cfg.DEF &&
+    rules.perPosition.MID >= cfg.MID &&
+    rules.perPosition.FWD >= cfg.FWD
+  );
+}
+
+/** Re-slot the current selection into a valid formation without changing players. */
+export function setFormation(
+  draft: CreateTeamDraft,
+  formation: FormationKey,
+  players: FantasyPlayer[],
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+): CreateTeamDraft {
+  if (!isFormationSupported(formation, rules)) return draft;
+  const captainId = draft.slots.find((slot) => slot.isCaptain)?.playerId ?? null;
+  const viceId = draft.slots.find((slot) => slot.isViceCaptain)?.playerId ?? null;
+  const byPosition: Record<Position, string[]> = { GK: [], DEF: [], MID: [], FWD: [] };
+  for (const slot of [...draft.slots].sort((a, b) => a.slot - b.slot)) {
+    const player = players.find((candidate) => candidate.id === slot.playerId);
+    if (player) byPosition[player.position].push(player.id);
+  }
+  const slots = buildEmptySlots(formation, rules).map((slot) => {
+    const playerId = byPosition[slot.position].shift() ?? null;
+    return {
+      ...slot,
+      playerId,
+      isCaptain: !!playerId && playerId === captainId && slot.slot <= rules.startingSize,
+      isViceCaptain:
+        !!playerId &&
+        playerId === viceId &&
+        playerId !== captainId &&
+        slot.slot <= rules.startingSize,
+    };
+  });
+  return withDefaultCaptaincy({ ...draft, formation, slots });
+}
+
+/**
+ * Reconcile persisted data against the current catalog and active rules.
+ * Unknown, duplicate, ineligible, and now-mismatched records are discarded.
+ */
+export function reconcileCreateDraft(
+  value: unknown,
+  players: FantasyPlayer[],
+  clubs: Club[],
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+  defaults: { teamName?: string; favoriteClubId?: string | null } = {},
+): CreateTeamDraft {
+  const raw = value && typeof value === "object" ? (value as Partial<CreateTeamDraft>) : null;
+  const formation =
+    raw?.formation && raw.formation in FORMATIONS && isFormationSupported(raw.formation, rules)
+      ? raw.formation
+      : CREATE_DEFAULT_FORMATION;
+  const draft = initCreateDraft(
+    typeof raw?.teamName === "string" ? raw.teamName : (defaults.teamName ?? ""),
+    {
+      rules,
+      favoriteClubId:
+        typeof raw?.favoriteClubId === "string"
+          ? raw.favoriteClubId
+          : (defaults.favoriteClubId ?? null),
+    },
+  );
+  draft.formation = formation;
+  draft.slots = buildEmptySlots(formation, rules);
+  draft.consentAccepted = raw?.consentAccepted === true;
+  if (!draft.favoriteClubId || !clubs.some((club) => club.id === draft.favoriteClubId)) {
+    draft.favoriteClubId = null;
+  }
+
+  const seen = new Set<string>();
+  const selected = Array.isArray(raw?.slots)
+    ? raw.slots
+        .filter((slot): slot is CreateSlot => !!slot && typeof slot === "object")
+        .sort((a, b) => Number(a.slot) - Number(b.slot))
+    : [];
+  const captainId = selected.find((slot) => slot.isCaptain)?.playerId ?? null;
+  const viceId = selected.find((slot) => slot.isViceCaptain)?.playerId ?? null;
+  const validSelections: Array<{
+    playerId: string;
+    position: Position;
+    wasStarter: boolean;
+  }> = [];
+  for (const slot of selected) {
+    if (!slot.playerId || seen.has(slot.playerId)) continue;
+    const player = players.find((candidate) => candidate.id === slot.playerId);
+    if (!player || player.status === "ineligible" || player.status === "unavailable") continue;
+    seen.add(player.id);
+    validSelections.push({
+      playerId: player.id,
+      position: player.position,
+      wasStarter: Number(slot.slot) <= rules.startingSize,
+    });
+  }
+
+  const used = new Set<string>();
+  const starterSlots = draft.slots
+    .filter((slot) => slot.slot <= rules.startingSize)
+    .map((slot) => {
+      const match =
+        validSelections.find(
+          (selection) =>
+            !used.has(selection.playerId) &&
+            selection.position === slot.position &&
+            selection.wasStarter,
+        ) ??
+        validSelections.find(
+          (selection) => !used.has(selection.playerId) && selection.position === slot.position,
+        );
+      const playerId = match?.playerId ?? null;
+      if (playerId) used.add(playerId);
+      return {
+        ...slot,
+        playerId,
+        isCaptain: !!playerId && playerId === captainId,
+        isViceCaptain: !!playerId && playerId === viceId && playerId !== captainId,
+      };
+    });
+  const remaining = validSelections.filter((selection) => !used.has(selection.playerId));
+  const benchSlots = draft.slots
+    .filter((slot) => slot.slot > rules.startingSize)
+    .map((slot, index) => {
+      const selection = remaining[index];
+      return {
+        ...slot,
+        position: selection?.position ?? slot.position,
+        playerId: selection?.playerId ?? null,
+        isCaptain: false,
+        isViceCaptain: false,
+      };
+    });
+  draft.slots = [...starterSlots, ...benchSlots].map((slot) => {
+    const playerId = slot.playerId;
+    return {
+      ...slot,
+      isCaptain: !!playerId && playerId === captainId && slot.slot <= rules.startingSize,
+      isViceCaptain:
+        !!playerId &&
+        playerId === viceId &&
+        playerId !== captainId &&
+        slot.slot <= rules.startingSize,
+    };
+  });
+  return withDefaultCaptaincy(draft);
+}
+
+export type PlayerSelectionIssue =
+  | "duplicate"
+  | "position"
+  | "club_limit"
+  | "budget"
+  | "unavailable";
+
+export function getPlayerSelectionIssue(
+  draft: CreateTeamDraft,
+  slotNumber: number,
+  player: FantasyPlayer,
+  players: FantasyPlayer[],
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+): PlayerSelectionIssue | null {
+  const slot = draft.slots.find((candidate) => candidate.slot === slotNumber);
+  if (!slot || slot.position !== player.position) return "position";
+  if (player.status === "ineligible" || player.status === "unavailable") return "unavailable";
+  if (
+    draft.slots.some(
+      (candidate) => candidate.slot !== slotNumber && candidate.playerId === player.id,
+    )
+  ) {
+    return "duplicate";
+  }
+  const current = players.find((candidate) => candidate.id === slot.playerId);
+  const summary = computeSummary(draft, players, rules);
+  const clubCount = summary.perClub[player.clubId] ?? 0;
+  const currentClubCredit = current?.clubId === player.clubId ? 1 : 0;
+  if (clubCount - currentClubCredit >= rules.maxPerClub) return "club_limit";
+  const maxPrice = summary.bankRemaining + (current?.price ?? 0);
+  if (player.price > maxPrice + 0.001) return "budget";
+  return null;
 }
 
 /**
@@ -198,16 +515,15 @@ export function applyAutocompleteTemplate(
   draft: CreateTeamDraft,
   template: SquadPlayer[],
   players: FantasyPlayer[],
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
 ): CreateTeamDraft | null {
-  if (template.length !== SQUAD_RULES.totalSize) return null;
-  const validation = validateTeam(template, draft.formation, players);
-  if (!validation.ok) return null;
+  if (template.length !== rules.totalSize) return null;
 
   // Rebuild slot list from the template exactly (it already respects the
   // formation because the mock ships as 4-4-2 by default). If our draft used
   // a different formation, we adopt the template's captain/vice + squad and
   // reslot into the target formation via the same shape rule as buildEmptySlots.
-  const empty = buildEmptySlots(draft.formation);
+  const empty = buildEmptySlots(draft.formation, rules);
   const byPosition: Record<Position, string[]> = { GK: [], DEF: [], MID: [], FWD: [] };
   const captainId = template.find((s) => s.isCaptain)?.playerId ?? null;
   const viceId = template.find((s) => s.isViceCaptain)?.playerId ?? null;
@@ -233,7 +549,14 @@ export function applyAutocompleteTemplate(
     };
   });
 
-  return withDefaultCaptaincy({ ...draft, slots });
+  const completed = withDefaultCaptaincy({ ...draft, slots });
+  const summary = computeSummary(completed, players, rules);
+  return summary.filled === rules.totalSize &&
+    !summary.overBudget &&
+    summary.overClubLimit.length === 0 &&
+    summary.formationValid
+    ? completed
+    : null;
 }
 
 /**
@@ -243,6 +566,7 @@ export function applyAutocompleteTemplate(
 export function buildAutocompleteDraft(
   draft: CreateTeamDraft,
   players: FantasyPlayer[],
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
 ): CreateTeamDraft | null {
   const candidates = players
     .filter((player) => player.status === "available")
@@ -251,13 +575,13 @@ export function buildAutocompleteDraft(
   const selected = new Set<string>();
   let totalCost = 0;
 
-  const slots = buildEmptySlots(draft.formation).map((slot) => {
+  const slots = buildEmptySlots(draft.formation, rules).map((slot) => {
     const player = candidates.find(
       (candidate) =>
         candidate.position === slot.position &&
         !selected.has(candidate.id) &&
-        (clubCounts.get(candidate.clubId) ?? 0) < SQUAD_RULES.maxPerClub &&
-        totalCost + candidate.price <= SQUAD_RULES.budget,
+        (clubCounts.get(candidate.clubId) ?? 0) < rules.maxPerClub &&
+        totalCost + candidate.price <= rules.budget,
     );
     if (!player) return slot;
     selected.add(player.id);
@@ -266,10 +590,10 @@ export function buildAutocompleteDraft(
     return { ...slot, playerId: player.id };
   });
 
-  if (selected.size !== SQUAD_RULES.totalSize) return null;
+  if (selected.size !== rules.totalSize) return null;
   const completed = withDefaultCaptaincy({ ...draft, slots });
-  const summary = computeSummary(completed, players);
-  return summary.filled === SQUAD_RULES.totalSize &&
+  const summary = computeSummary(completed, players, rules);
+  return summary.filled === rules.totalSize &&
     !summary.overBudget &&
     summary.overClubLimit.length === 0 &&
     summary.formationValid
@@ -301,14 +625,15 @@ export interface DraftSummary {
 export function computeSummary(
   draft: CreateTeamDraft,
   players: FantasyPlayer[],
-  bankStart: number = SQUAD_RULES.budget,
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+  bankStart: number = rules.budget,
 ): DraftSummary {
   const filledSlots = draft.slots.filter((s) => s.playerId);
   const perPosition: Record<Position, { filled: number; required: number }> = {
-    GK: { filled: 0, required: SQUAD_RULES.perPosition.GK },
-    DEF: { filled: 0, required: SQUAD_RULES.perPosition.DEF },
-    MID: { filled: 0, required: SQUAD_RULES.perPosition.MID },
-    FWD: { filled: 0, required: SQUAD_RULES.perPosition.FWD },
+    GK: { filled: 0, required: rules.perPosition.GK },
+    DEF: { filled: 0, required: rules.perPosition.DEF },
+    MID: { filled: 0, required: rules.perPosition.MID },
+    FWD: { filled: 0, required: rules.perPosition.FWD },
   };
   const perClub: Record<string, number> = {};
   const seen = new Map<string, number>();
@@ -322,7 +647,7 @@ export function computeSummary(
     seen.set(s.playerId!, (seen.get(s.playerId!) ?? 0) + 1);
   }
   const overClubLimit = Object.entries(perClub)
-    .filter(([, n]) => n > SQUAD_RULES.maxPerClub)
+    .filter(([, n]) => n > rules.maxPerClub)
     .map(([clubId]) => clubId);
   const duplicateIds = [...seen.entries()].filter(([, n]) => n > 1).map(([id]) => id);
   totalCost = round1(totalCost);
@@ -338,7 +663,7 @@ export function computeSummary(
   const xiMID = xiPositions.filter((p) => p === "MID").length;
   const xiFWD = xiPositions.filter((p) => p === "FWD").length;
   const formationValid =
-    filledSlots.length === SQUAD_RULES.totalSize &&
+    filledSlots.length === rules.totalSize &&
     xiGK === 1 &&
     xiDEF === cfg.DEF &&
     xiMID === cfg.MID &&
@@ -348,7 +673,7 @@ export function computeSummary(
   const vice = filledSlots.find((s) => s.isViceCaptain);
   return {
     filled: filledSlots.length,
-    total: SQUAD_RULES.totalSize,
+    total: rules.totalSize,
     perPosition,
     perClub,
     overClubLimit,
@@ -368,6 +693,7 @@ export function computeSummary(
 
 export type DraftValidationCode =
   | "team_name"
+  | "consent"
   | "size"
   | "position_count"
   | "duplicate"
@@ -392,11 +718,13 @@ export interface DraftValidation {
 export function validateDraft(
   draft: CreateTeamDraft,
   players: FantasyPlayer[],
-  bankStart: number = SQUAD_RULES.budget,
+  rules: CreateTeamRules = DEFAULT_CREATE_TEAM_RULES,
+  bankStart: number = rules.budget,
 ): DraftValidation {
   const errors: DraftValidationCode[] = [];
   if (!validateTeamName(draft.teamName).ok) errors.push("team_name");
-  const summary = computeSummary(draft, players, bankStart);
+  if (!draft.consentAccepted) errors.push("consent");
+  const summary = computeSummary(draft, players, rules, bankStart);
   if (summary.filled !== summary.total) errors.push("size");
   else {
     // Position quotas — only meaningful once full.

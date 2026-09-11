@@ -10,7 +10,55 @@ import {
   type ChipsState,
   type DeadlineState,
 } from "@/lib/fantasy-engine";
-import type { FantasyTeam, SquadPlayer } from "@/types/fantasy";
+import type { FantasyPlayer, FantasyTeam, SquadPlayer } from "@/types/fantasy";
+
+export interface TransfersDraftSelection {
+  outIds: string[];
+  inIds: string[];
+}
+
+/**
+ * Reconcile a persisted transfer draft against the authoritative squad and
+ * refreshed player catalog. Invalid or removed pairs are discarded before a
+ * route can calculate prices or render player details.
+ */
+export function reconcileTransfersDraft(
+  value: unknown,
+  team: Pick<FantasyTeam, "squad">,
+  players: FantasyPlayer[],
+): TransfersDraftSelection {
+  if (!value || typeof value !== "object") return { outIds: [], inIds: [] };
+  const raw = value as Partial<TransfersDraftSelection>;
+  if (!Array.isArray(raw.outIds) || !Array.isArray(raw.inIds)) {
+    return { outIds: [], inIds: [] };
+  }
+
+  const byId = new Map(players.map((player) => [player.id, player]));
+  const squadIds = new Set(team.squad.map((slot) => slot.playerId));
+  const seenOut = new Set<string>();
+  const seenIn = new Set<string>();
+  const outIds: string[] = [];
+  const inIds: string[] = [];
+  const pairCount = Math.min(raw.outIds.length, raw.inIds.length);
+
+  for (let index = 0; index < pairCount; index += 1) {
+    const outId = raw.outIds[index];
+    const inId = raw.inIds[index];
+    if (typeof outId !== "string" || typeof inId !== "string") continue;
+    if (outId === inId || seenOut.has(outId) || seenIn.has(inId)) continue;
+    if (!squadIds.has(outId) || squadIds.has(inId)) continue;
+    const outPlayer = byId.get(outId);
+    const inPlayer = byId.get(inId);
+    if (!outPlayer || !inPlayer || outPlayer.position !== inPlayer.position) continue;
+    if (inPlayer.status === "ineligible" || inPlayer.status === "unavailable") continue;
+    seenOut.add(outId);
+    seenIn.add(inId);
+    outIds.push(outId);
+    inIds.push(inId);
+  }
+
+  return { outIds, inIds };
+}
 
 // ---------- Preview (review breakdown) ----------
 
@@ -21,6 +69,8 @@ export interface TransfersPreviewInput {
   inIds: string[];
   /** Net bank cost of the pending in↔out swap. */
   netCost: number;
+  /** Active ruleset point cost for each transfer beyond the free allowance. */
+  hitCost?: number;
 }
 
 export interface TransfersPreview {
@@ -44,6 +94,7 @@ export function previewTransfers(input: TransfersPreviewInput): TransfersPreview
     freeTransfers: input.team.freeTransfers,
     wildcardActive,
     freeHitActive,
+    hitCost: input.hitCost,
   });
   const bankAfter = Math.round((input.team.bank - input.netCost) * 10) / 10;
   // While Wildcard or Free Hit is active, free transfers are not consumed —
@@ -72,6 +123,7 @@ export interface ApplyTransfersInput {
   outIds: string[];
   inIds: string[];
   netCost: number;
+  hitCost?: number;
   deadlineIso?: string;
   now?: Date;
 }
@@ -114,6 +166,7 @@ export function applyConfirmedTransfers(input: ApplyTransfersInput): ApplyResult
     freeTransfers: input.team.freeTransfers,
     wildcardActive,
     freeHitActive,
+    hitCost: input.hitCost,
   });
 
   const nextBank = Math.round((input.team.bank - input.netCost) * 10) / 10;

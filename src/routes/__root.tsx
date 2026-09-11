@@ -19,11 +19,13 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import { RotateCcw, Home } from "lucide-react";
 
 function NotFoundComponent() {
   return (
     <I18nProvider>
+      <AuthModeBadge />
       <NotFoundBody />
     </I18nProvider>
   );
@@ -59,6 +61,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
   return (
     <I18nProvider>
+      <AuthModeBadge />
       <ErrorBody reset={reset} />
     </I18nProvider>
   );
@@ -98,18 +101,35 @@ function ErrorBody({ reset }: { reset: () => void }) {
   );
 }
 
+const baseHeadLinks = [
+  { rel: "stylesheet", href: appCss },
+  { rel: "icon", type: "image/png", href: "/favicon.png" },
+];
+
+const liveFontLinks = [
+  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" as const },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap",
+  },
+];
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "BotolaGO — Actualité & Fantasy du football marocain" },
+      {
+        title: `${IS_DEMO_MODE ? "[DÉMO] " : ""}BotolaGO — Actualité & Fantasy du football marocain`,
+      },
       {
         name: "description",
         content:
           "BotolaGO combine l'actualité premium du football marocain (Botola Pro) et le fantasy football, en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
+      ...(IS_DEMO_MODE ? [{ name: "robots", content: "noindex, nofollow, noarchive" }] : []),
       { property: "og:title", content: "BotolaGO — Actualité & Fantasy du football marocain" },
       {
         property: "og:description",
@@ -119,16 +139,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap",
-      },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-    ],
+    links: IS_DEMO_MODE ? baseHeadLinks : [...baseHeadLinks, ...liveFontLinks],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -157,9 +168,9 @@ function RootComponent() {
       <I18nProvider>
         <AuthProvider>
           <FantasyOwnedProvider>
+            <AuthModeBadge />
             <LaunchGate />
             <AuthPromptDialog />
-            <AuthModeBadge />
             <Toaster />
           </FantasyOwnedProvider>
         </AuthProvider>

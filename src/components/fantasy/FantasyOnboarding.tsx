@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/provider";
 import {
   Dialog,
@@ -14,14 +14,14 @@ const STORAGE = "botolago.fantasy.onboarded";
 
 export function FantasyOnboarding() {
   const { t } = useI18n();
-  const [open, setOpen] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
     try {
-      return window.localStorage.getItem(STORAGE) !== "1";
+      setOpen(window.localStorage.getItem(STORAGE) !== "1");
     } catch {
-      return false;
+      setOpen(false);
     }
-  });
+  }, []);
   const [step, setStep] = useState(0);
 
   const steps: {
@@ -82,13 +82,13 @@ export function FantasyOnboarding() {
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={finish}
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            className="min-h-11 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
           >
             {t("fantasy.onboarding.skip")}
           </button>
           <button
             onClick={() => (isLast ? finish() : setStep(step + 1))}
-            className="rounded-xl cta-brand px-4 py-2 text-sm font-semibold hover:opacity-90"
+            className="min-h-11 rounded-xl cta-brand px-4 py-2 text-sm font-semibold hover:opacity-90"
           >
             {isLast ? t("fantasy.onboarding.start") : t("fantasy.onboarding.next")}
           </button>

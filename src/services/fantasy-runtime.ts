@@ -1,6 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
+import { mockFootballTeamId } from "@/backend/football/mock-repository";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import { selectFantasyDataMode } from "./fantasy-v2";
+import { selectFantasyDataMode, type FantasyDataMode } from "./fantasy-v2";
 import {
   buildGlobalRankings,
   selectRankingsPage,
@@ -8,6 +9,7 @@ import {
   type RankingsQuery,
 } from "./fantasy-rankings";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { FantasyError } from "@/backend/fantasy/errors";
 import type {
   FantasyPlayerDto,
   FantasyPointsDto,
@@ -29,15 +31,40 @@ const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.ran
 const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
 
+export function assertGlobalRankingsAvailable(
+  dataMode: FantasyDataMode,
+): asserts dataMode is "mock" {
+  if (dataMode !== "mock") {
+    throw new FantasyError(
+      "ranking_unavailable",
+      "Global Fantasy rankings are not exposed by the active backend.",
+    );
+  }
+}
+
+function mockPlayer(player: FantasyPlayer): FantasyPlayer {
+  return {
+    ...player,
+    clubId: mockFootballTeamId(player.clubId),
+    nextOpponentClubId: player.nextOpponentClubId
+      ? mockFootballTeamId(player.nextOpponentClubId)
+      : undefined,
+  };
+}
+
+async function mockPlayers(): Promise<FantasyPlayer[]> {
+  return (await mockFantasyService.getPlayers()).map(mockPlayer);
+}
+
+function mockFixture(fixture: FixtureDifficulty): FixtureDifficulty {
+  return {
+    ...fixture,
+    clubId: mockFootballTeamId(fixture.clubId),
+    opponentClubId: mockFootballTeamId(fixture.opponentClubId),
+  };
+}
+
 function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
-  const status =
-    dto.status === "available"
-      ? "available"
-      : dto.status === "doubtful"
-        ? "doubtful"
-        : dto.status === "suspended"
-          ? "suspended"
-          : "injured";
   return {
     id: dto.id,
     name: { fr: dto.name, ar: dto.name },
@@ -47,7 +74,8 @@ function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
     totalPoints: 0,
     form: 0,
     ownership: 0,
-    status,
+    selectionCount: dto.selectedByCount,
+    status: dto.status,
   };
 }
 
@@ -77,25 +105,40 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
   };
 }
 
-function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | undefined {
+export function mapFantasyPointsDto(
+  sequence: number,
+  dto: FantasyPointsDto,
+): GameweekResult | undefined {
   if (!dto.result) return undefined;
-  const captain = dto.players.find((player) => player.captain);
+  const captain =
+    dto.players.find((player) => player.multiplier > 1) ??
+    dto.players.find((player) => player.captain);
   return {
     gameweek: sequence,
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
     benchPoints: dto.result.benchPoints,
+    startingPoints: dto.result.startingPoints,
+    captainPoints: dto.result.captainPoints,
+    transferHitPoints: dto.result.transferHit,
+    activeChip: dto.result.chipType ?? undefined,
+    finalized: dto.result.state === "final",
+    finalizedAt: dto.result.finalizedAt ?? undefined,
     captainId: captain?.fantasyPlayerId,
     autoSubs: [],
-    breakdown: dto.players.map((player) => ({
-      playerId: player.fantasyPlayerId,
-      totalPoints: player.finalPoints ?? player.provisionalPoints,
-      minutesPlayed: player.minutesPlayed,
-      isCaptain: player.captain || undefined,
-      isViceCaptain: player.viceCaptain || undefined,
-      isBench: player.slot === "bench" || undefined,
-      status: dto.pointsState === "final" ? "final" : "provisional",
-      events: [],
-    })),
+    breakdown: dto.players.map((player) => {
+      const basePoints = player.finalPoints ?? player.provisionalPoints;
+      return {
+        playerId: player.fantasyPlayerId,
+        totalPoints: basePoints * player.multiplier,
+        multiplier: player.multiplier,
+        minutesPlayed: player.minutesPlayed,
+        isCaptain: player.captain || undefined,
+        isViceCaptain: player.viceCaptain || undefined,
+        isBench: player.slot === "bench" || undefined,
+        status: dto.pointsState === "final" ? "final" : "provisional",
+        events: [],
+      };
+    }),
   };
 }
 
@@ -194,7 +237,7 @@ export const fantasyService = {
     if (mode() === "mock") {
       const [{ trendingPlayers }, players] = await Promise.all([
         import("@/mocks/data"),
-        mockFantasyService.getPlayers(),
+        mockPlayers(),
       ]);
       return trendingPlayers
         .map((id) => players.find((player) => player.id === id))
@@ -216,10 +259,13 @@ export const fantasyService = {
   },
 
   async getPlayers(): Promise<FantasyPlayer[]> {
-    return mode() === "mock" ? mockFantasyService.getPlayers() : allPlayers();
+    return mode() === "mock" ? mockPlayers() : allPlayers();
   },
   async getPlayer(id: string): Promise<FantasyPlayer | undefined> {
-    if (mode() === "mock") return mockFantasyService.getPlayer(id);
+    if (mode() === "mock") {
+      const player = await mockFantasyService.getPlayer(id);
+      return player ? mockPlayer(player) : undefined;
+    }
     return (await allPlayers()).find((player) => player.id === id);
   },
   async getTeam(): Promise<FantasyTeam> {
@@ -274,21 +320,13 @@ export const fantasyService = {
   /**
    * Season-wide leaderboard across every fantasy team.
    *
-   * Mock mode builds a deterministic 500-manager board. Cloud mode reads the
-   * largest public league (the global board) and maps its standings; no
-   * schema change is required.
+   * Mock mode builds a deterministic board. Production fails closed until
+   * the backend exposes its authoritative global ranking projection.
    */
   async getGlobalRankings(query: RankingsQuery): Promise<RankingsPage> {
-    if (mode() === "mock") {
-      return selectRankingsPage(buildGlobalRankings(), query);
-    }
-    const publicLeagues = await this.getLeagues("public");
-    const global = [...publicLeagues].sort((a, b) => b.members - a.members)[0];
-    if (!global) {
-      return { rows: [], total: 0, podium: [], myRank: undefined };
-    }
-    const standings = await this.getLeagueStandings(global.id);
-    return selectRankingsPage(standings, query);
+    const dataMode = mode();
+    assertGlobalRankingsAvailable(dataMode);
+    return selectRankingsPage(buildGlobalRankings(), query);
   },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
@@ -296,7 +334,10 @@ export const fantasyService = {
     const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
     const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
     if (!gameweek) return undefined;
-    return pointsDto(sequence, await cloud.getPoints(current.team.id, gameweek.id, context()));
+    return mapFantasyPointsDto(
+      sequence,
+      await cloud.getPoints(current.team.id, gameweek.id, context()),
+    );
   },
   async getGameweekHistory(): Promise<GameweekResult[]> {
     if (mode() === "mock") return mockFantasyService.getGameweekHistory();
@@ -311,7 +352,9 @@ export const fantasyService = {
     }));
   },
   async getFixtureDifficulty(): Promise<FixtureDifficulty[]> {
-    if (mode() === "mock") return mockFantasyService.getFixtureDifficulty();
+    if (mode() === "mock") {
+      return (await mockFantasyService.getFixtureDifficulty()).map(mockFixture);
+    }
     const current = await hub();
     if (!current.gameweek) return [];
     const rows = await cloud.getFixtureDifficulty(
@@ -351,7 +394,40 @@ export const fantasyService = {
         captainMultiplier: 2,
         tripleCaptainMultiplier: 3,
         deadline: { minutesBeforeFirstFixture: 90, gracePeriodSeconds: 0 },
-        positions: [],
+        positions: [
+          {
+            code: "GK" as const,
+            squadQuota: 2,
+            startingMinimum: 1,
+            startingMaximum: 1,
+            goalPoints: 6,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "DEF" as const,
+            squadQuota: 5,
+            startingMinimum: 3,
+            startingMaximum: 5,
+            goalPoints: 6,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "MID" as const,
+            squadQuota: 5,
+            startingMinimum: 2,
+            startingMaximum: 5,
+            goalPoints: 5,
+            cleanSheetPoints: 1,
+          },
+          {
+            code: "FWD" as const,
+            squadQuota: 3,
+            startingMinimum: 1,
+            startingMaximum: 3,
+            goalPoints: 4,
+            cleanSheetPoints: 0,
+          },
+        ],
         scoring: [],
         chips: [],
         features: null,

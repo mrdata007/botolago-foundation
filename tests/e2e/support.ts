@@ -2,13 +2,24 @@ import { expect, type Page, type TestInfo } from "@playwright/test";
 
 const SECRET_PATTERN =
   /(sb_(?:secret|publishable)_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|Bearer\s+\S+)/gi;
+const PROTECTED_E2E_VALUES = [
+  process.env.E2E_STAGING_FIRST_EMAIL,
+  process.env.E2E_STAGING_FIRST_PASSWORD,
+  process.env.E2E_STAGING_SECOND_EMAIL,
+  process.env.E2E_STAGING_SECOND_PASSWORD,
+].filter((value): value is string => Boolean(value));
 
 export function sanitize(value: string): string {
-  return value.replace(SECRET_PATTERN, "[REDACTED]");
+  let sanitized = value.replace(SECRET_PATTERN, "[REDACTED]");
+  for (const protectedValue of PROTECTED_E2E_VALUES) {
+    sanitized = sanitized.replaceAll(protectedValue, "[REDACTED]");
+  }
+  return sanitized;
 }
 
 type ObservationOptions = {
   allowResponse?: (status: number, url: URL) => boolean;
+  allowConsoleError?: (message: string, sourceUrl: URL | null) => boolean;
   allowExpectedResourceConsoleError?: boolean;
 };
 
@@ -20,14 +31,16 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
 
   page.on("console", (message) => {
     if (message.type() === "error") {
+      const location = message.location();
+      const sourceUrl = location.url ? new URL(location.url) : null;
+      if (options.allowConsoleError?.(message.text(), sourceUrl)) return;
       if (
         options.allowExpectedResourceConsoleError &&
         /failed to load resource/i.test(message.text())
       ) {
         return;
       }
-      const location = message.location();
-      const source = location.url ? ` ${new URL(location.url).pathname}` : "";
+      const source = sourceUrl ? ` ${sourceUrl.pathname}` : "";
       consoleErrors.push(`${sanitize(message.text()).slice(0, 500)}${source}`);
     }
   });
@@ -67,6 +80,7 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
 export async function initializeLanguage(page: Page, language: "fr" | "ar") {
   await page.addInitScript((lang) => {
     window.localStorage.setItem("botolago.welcomed", "1");
+    window.localStorage.setItem("botolago.fantasy.onboarded", "1");
     window.localStorage.setItem("botolago.language", lang);
     window.sessionStorage.setItem("botolago.splashShown", "1");
   }, language);

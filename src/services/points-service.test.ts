@@ -1,7 +1,11 @@
 // Run with: `bun test src/services/points-service.test.ts`
 import "./__test-shim";
 import { describe, it, expect, beforeEach } from "bun:test";
-import { buildLegacyViewModel, buildPointsViewModel } from "./points-service";
+import {
+  buildAuthoritativePointsViewModel,
+  buildLegacyViewModel,
+  buildPointsViewModel,
+} from "./points-service";
 import { fantasyStateStore } from "./fantasy-state";
 import { DEFAULT_CHIPS, type ChipsState } from "@/lib/fantasy-engine";
 import type {
@@ -239,6 +243,53 @@ describe("points-service — buildPointsViewModel", () => {
     expect(vm.totalPoints).toBe(52);
     expect(vm.rawXiPoints).toBe(60);
     expect(vm.transferHitPoints).toBe(8);
+  });
+
+  it("preserves authoritative V2 totals, multipliers, chip and transfer hit", () => {
+    const vm = buildAuthoritativePointsViewModel({
+      gameweek: 1,
+      totalPoints: 68,
+      benchPoints: 5,
+      startingPoints: 60,
+      captainPoints: 16,
+      transferHitPoints: 8,
+      activeChip: "triple_captain",
+      finalized: true,
+      finalizedAt: "2026-08-07T00:00:00.000Z",
+      captainId: "captain",
+      autoSubs: [],
+      breakdown: [
+        {
+          playerId: "captain",
+          totalPoints: 24,
+          multiplier: 3,
+          minutesPlayed: 90,
+          isCaptain: true,
+          status: "final",
+          events: [],
+        },
+        {
+          playerId: "bench",
+          totalPoints: 5,
+          multiplier: 1,
+          minutesPlayed: 90,
+          isBench: true,
+          status: "final",
+          events: [],
+        },
+      ],
+    });
+
+    expect(vm.source).toBe("authoritative");
+    expect(vm.totalPoints).toBe(68);
+    expect(vm.rawXiPoints).toBe(76);
+    expect(vm.transferHitPoints).toBe(8);
+    expect(vm.activeChip).toBe("triple_captain");
+    expect(vm.effectiveCaptainId).toBe("captain");
+    expect(vm.captainMultiplier).toBe(3);
+    expect(vm.tripleCaptainContribution).toBe(8);
+    expect(vm.breakdown[0].totalPoints).toBe(24);
+    expect(vm.finalized).toBe(true);
   });
 
   it("legacy view model preserves mock totals without engine fields", () => {

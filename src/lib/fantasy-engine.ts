@@ -310,6 +310,7 @@ export function isLegalSwap(args: {
 export function computeTransferCost(args: {
   totalTransfers: number;
   freeTransfers: number;
+  hitCost?: number;
   wildcardActive?: boolean;
   freeHitActive?: boolean;
 }): { free: number; paid: number; hitPoints: number } {
@@ -318,7 +319,7 @@ export function computeTransferCost(args: {
   }
   const free = Math.min(args.totalTransfers, Math.max(0, args.freeTransfers));
   const paid = Math.max(0, args.totalTransfers - free);
-  return { free, paid, hitPoints: paid * SQUAD_RULES.transferHitPoints };
+  return { free, paid, hitPoints: paid * (args.hitCost ?? SQUAD_RULES.transferHitPoints) };
 }
 
 // ---------- Deadline lock ----------

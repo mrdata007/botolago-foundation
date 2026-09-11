@@ -1,4 +1,5 @@
 import type { FantasyRepository } from "@/backend/fantasy/contracts";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 
 export type FantasyDataMode = "mock" | "supabase";
@@ -6,8 +7,11 @@ export type FantasyDataMode = "mock" | "supabase";
 export function selectFantasyDataMode(
   configured: string | undefined,
   production: boolean,
+  demoMode = IS_DEMO_MODE,
 ): FantasyDataMode {
-  if (production && configured !== "supabase")
+  if (demoMode && configured !== "mock")
+    throw new Error("Demo Fantasy requires VITE_FANTASY_DATA_MODE=mock.");
+  if (production && !demoMode && configured !== "supabase")
     throw new Error("Production Fantasy requires VITE_FANTASY_DATA_MODE=supabase.");
   if (configured === "mock" || configured === "supabase") return configured;
   return "mock";

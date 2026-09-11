@@ -1,32 +1,11 @@
-// Pass 3.2-H3 — Testable Fantasy import service.
-//
-// Imports the authenticated user's local Fantasy snapshot into their empty
-// cloud team. All dependencies are injected so tests never touch Supabase.
-//
-// Contract:
-//   1. Source of truth = `deps.localRepo.loadSnapshot()`.
-//   2. Validates exactly 15 players, legal formation, captain/vice rules via
-//      the existing `validateTeam` helper.
-//   3. Resolves `snapshot.lifecycle.currentGameweek` (number) to a live UUID
-//      via the injected gameweek index for `deps.season`. Never passes
-//      `null` as `currentGameweekId` when creating the cloud team.
-//   4. Calls `deps.cloudRepo.saveTeam(...)` exactly once with local team
-//      metadata, formation, bank, transfers, squad, lifecycle, purchase
-//      prices, expected version (usually 0 for empty cloud) and resolved GW
-//      UUID.
-//   5. Aggregate mapping errors surface `MissingIdMappingError` via
-//      `toRepoError` (already handled by the cloud repo path) — this service
-//      re-throws unchanged so callers can display every missing id.
-//   6. Never touches the import-decision marker or any local store — the
-//      caller sets the marker only after a successful outcome.
-//
-// The service returns the authoritative cloud snapshot on success or throws
-// a typed FantasyRepoError.
+// Imports an authenticated user's valid local Fantasy squad into the
+// currently active V2 cloud gameweek. The cloud hub identity is injected by
+// the caller; this module never resolves legacy public gameweek tables or
+// carries prior-season lifecycle results into a new season.
 
 import type { FantasyPlayer } from "@/types/fantasy";
 import { validateTeam } from "@/lib/team-validation";
 import { FantasyRepoError, toRepoError } from "@/services/fantasy-errors";
-import { resolveGameweekId, type GameweekIndex } from "@/services/fantasy-gameweek-resolver";
 import type {
   FantasyOwnedRepository,
   FantasySnapshot,
@@ -37,9 +16,9 @@ export interface ImportServiceDeps {
   localRepo: Pick<FantasyOwnedRepository, "loadSnapshot">;
   cloudRepo: Pick<FantasyOwnedRepository, "saveTeam">;
   loadPlayers: () => Promise<FantasyPlayer[]>;
-  loadGameweekIndex: () => Promise<GameweekIndex>;
-  /** Season passed to the resolver (e.g. DEFAULT_SEASON). */
-  season: string;
+  /** Authoritative mutable gameweek from the V2 Fantasy hub. */
+  currentGameweekId: string | null;
+  currentGameweek: number;
   /** Localized default team name; used when local metadata is empty. */
   defaultTeamName: string;
   /** Expected cloud version (0 for empty cloud). */
@@ -55,19 +34,17 @@ export async function prepareImportPayload(deps: ImportServiceDeps): Promise<Sav
   const team = localSnapshot.team;
   const players = await deps.loadPlayers();
 
-  // Validation — surface as typed error.
-  const v = validateTeam(team.squad, team.formation, players);
-  if (!v.ok) {
-    throw new FantasyRepoError("validation", `import: ${v.error}`);
+  const validation = validateTeam(team.squad, team.formation, players);
+  if (!validation.ok) {
+    throw new FantasyRepoError("validation", `import: ${validation.error}`);
   }
-
-  // Resolve the current GW number → live UUID. Never guess.
-  const gwNumber = localSnapshot.lifecycle.currentGameweek;
-  const index = await deps.loadGameweekIndex();
-  const currentGameweekId = resolveGameweekId(index, {
-    number: gwNumber,
-    season: deps.season,
-  });
+  if (
+    !deps.currentGameweekId ||
+    !Number.isInteger(deps.currentGameweek) ||
+    deps.currentGameweek < 1
+  ) {
+    throw new FantasyRepoError("gameweek_unresolved", "No active V2 gameweek is available");
+  }
 
   return {
     teamName: (team.teamName ?? "").trim().length > 0 ? team.teamName : deps.defaultTeamName,
@@ -79,8 +56,13 @@ export async function prepareImportPayload(deps: ImportServiceDeps): Promise<Sav
     squad: team.squad,
     purchasePrices: localSnapshot.purchasePrices,
     expectedVersion: deps.cloudExpectedVersion,
-    currentGameweekId,
-    lifecycle: localSnapshot.lifecycle,
+    currentGameweekId: deps.currentGameweekId,
+    lifecycle: {
+      chips: { active: null, used: [] },
+      currentGameweek: deps.currentGameweek,
+      transferHitPoints: 0,
+      results: {},
+    },
   };
 }
 
@@ -93,7 +75,6 @@ export async function importLocalTeamToCloud(deps: ImportServiceDeps): Promise<F
   try {
     return await deps.cloudRepo.saveTeam(input);
   } catch (err) {
-    // Ensure everything downstream sees a typed FantasyRepoError.
     throw toRepoError(err);
   }
 }

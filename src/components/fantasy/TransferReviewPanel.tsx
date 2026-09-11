@@ -30,7 +30,7 @@ export function TransferReviewPanel({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const { t, tr, lang } = useI18n();
+  const { t, tr, lang, dir } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
   const clubOf = (id: string) => clubs.find((c) => c.id === id);
   const rows = outPlayers.map((o, i) => ({ out: o, in: inPlayers[i] }));
@@ -54,7 +54,10 @@ export function TransferReviewPanel({
                 </div>
               </div>
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <ArrowRight
+              className={`h-4 w-4 shrink-0 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`}
+              aria-hidden
+            />
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
               <div className="min-w-0 text-end">
                 <div className="truncate text-xs font-bold text-emerald-700">
@@ -96,13 +99,13 @@ export function TransferReviewPanel({
       <div className="mt-3 flex gap-2">
         <button
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-input bg-white/60 px-3 py-2 text-sm font-semibold text-foreground hover:bg-white"
+          className="min-h-11 flex-1 rounded-xl border border-input bg-white/60 px-3 py-2 text-sm font-semibold text-foreground hover:bg-white"
         >
           {t("fantasy.cancel")}
         </button>
         <button
           onClick={onConfirm}
-          className="flex-1 rounded-xl cta-brand px-3 py-2 text-sm font-semibold hover:opacity-90"
+          className="min-h-11 flex-1 rounded-xl cta-brand px-3 py-2 text-sm font-semibold hover:opacity-90"
         >
           {t("fantasy.transfers.confirm")}
         </button>

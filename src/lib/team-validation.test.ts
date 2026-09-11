@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { validateTeam } from "./team-validation";
+import { hasSquadCatalogCoverage, validateTeam } from "./team-validation";
 import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
 
 // Minimal fixture: 15 players — 2 GK, 5 DEF, 5 MID, 3 FWD.
@@ -66,6 +66,16 @@ function build442(): SquadPlayer[] {
 }
 
 describe("validateTeam", () => {
+  it("detects when the refreshed catalog no longer covers the authoritative squad", () => {
+    expect(hasSquadCatalogCoverage(build442(), players)).toBe(true);
+    expect(
+      hasSquadCatalogCoverage(
+        build442(),
+        players.filter((player) => player.id !== "f2"),
+      ),
+    ).toBe(false);
+  });
+
   it("accepts a legal 4-4-2 squad", () => {
     expect(validateTeam(build442(), "4-4-2", players)).toEqual({ ok: true });
   });
@@ -76,6 +86,19 @@ describe("validateTeam", () => {
   it("rejects wrong formation counts", () => {
     // Claim 4-3-3 with 4-4-2 XI.
     expect(validateTeam(build442(), "4-3-3", players)).toEqual({
+      ok: false,
+      error: "invalid_formation",
+    });
+  });
+  it("rejects a formation disabled by the active ruleset", () => {
+    const rules = {
+      totalSize: 15,
+      startingSize: 11,
+      perPosition: { GK: 2, DEF: 5, MID: 5, FWD: 3 },
+      startingMinimum: { GK: 1, DEF: 5, MID: 3, FWD: 2 },
+      startingMaximum: { GK: 1, DEF: 5, MID: 4, FWD: 3 },
+    } as const;
+    expect(validateTeam(build442(), "4-4-2", players, rules)).toEqual({
       ok: false,
       error: "invalid_formation",
     });

@@ -12,15 +12,15 @@ export function compareFantasyRank(a: FantasyRankingFacts, b: FantasyRankingFact
     b.totalPoints - a.totalPoints ||
     a.transferHitPoints - b.transferHitPoints ||
     a.confirmedTransfers - b.confirmedTransfers ||
-    compareNullableScore(b.latestFinalizedGameweekScore, a.latestFinalizedGameweekScore) ||
+    compareNullableScoreDesc(a.latestFinalizedGameweekScore, b.latestFinalizedGameweekScore) ||
     a.teamCreatedAt.localeCompare(b.teamCreatedAt) ||
     a.teamId.localeCompare(b.teamId)
   );
 }
 
-function compareNullableScore(a: number | null, b: number | null): number {
+function compareNullableScoreDesc(a: number | null, b: number | null): number {
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;
-  return a - b;
+  return b - a;
 }

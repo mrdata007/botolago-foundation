@@ -10,8 +10,11 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlayerRow } from "@/components/common/PlayerRow";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
+import { AtlasMatchdayLanding } from "@/components/fantasy/AtlasMatchdayLanding";
+import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
+import { useAtlasMatchdayAccess } from "@/components/fantasy/use-atlas-matchday-access";
 import { useI18n } from "@/i18n/provider";
-import { Sparkles, TrendingUp, Trophy } from "lucide-react";
+import { ArrowRightLeft, ChevronRight, Shirt, Sparkles, TrendingUp, Trophy } from "lucide-react";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 
 export const Route = createFileRoute("/fantasy/")({
@@ -19,6 +22,18 @@ export const Route = createFileRoute("/fantasy/")({
 });
 
 function FantasyHub() {
+  const { isResolving, isUnavailable, showAtlasMatchday, retry } = useAtlasMatchdayAccess();
+
+  if (showAtlasMatchday) return <AtlasMatchdayLanding />;
+  if (isResolving) return <LoadingState />;
+  if (isUnavailable) {
+    return <FantasyCatalogUnavailable onRetry={() => void retry()} backTo="/" />;
+  }
+
+  return <FantasyDashboard />;
+}
+
+function FantasyDashboard() {
   const { t, lang } = useI18n();
   const { source, key } = useFantasyDataSource();
   const gw = useQuery({
@@ -65,6 +80,23 @@ function FantasyHub() {
           </p>
         </div>
       </div>
+
+      <section aria-labelledby="fantasy-quick-actions" className="mt-4">
+        <h2
+          id="fantasy-quick-actions"
+          className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground"
+        >
+          {t("fantasy.quick_actions")}
+        </h2>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <QuickAction to="/fantasy/team" icon={Shirt} label={t("fantasy.edit_lineup")} />
+          <QuickAction
+            to="/fantasy/transfers"
+            icon={ArrowRightLeft}
+            label={t("fantasy.transfers.title")}
+          />
+        </div>
+      </section>
 
       <SectionHeader title={t("fantasy.injury_alerts")} />
       {alerts.isError || trending.isError ? (
@@ -161,5 +193,28 @@ function FantasyHub() {
         )}
       </div>
     </div>
+  );
+}
+
+function QuickAction({
+  to,
+  icon: Icon,
+  label,
+}: {
+  to: "/fantasy/team" | "/fantasy/transfers";
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="surface-2-interactive flex min-h-14 items-center gap-3 rounded-2xl px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]"
+    >
+      <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white">
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1 text-sm font-black text-foreground">{label}</span>
+      <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" aria-hidden />
+    </Link>
   );
 }

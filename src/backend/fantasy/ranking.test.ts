@@ -33,4 +33,16 @@ describe("Fantasy ranking tie-breaks v1.0", () => {
       "00000000-0000-4000-8000-000000000006",
     ]);
   });
+  it("ranks a real zero score ahead of a missing score", () => {
+    const scored = { ...base, latestFinalizedGameweekScore: 0 };
+    const missing = {
+      ...base,
+      teamId: "00000000-0000-4000-8000-000000000003",
+      latestFinalizedGameweekScore: null,
+    };
+
+    expect([missing, scored].sort(compareFantasyRank).map((candidate) => candidate.teamId)).toEqual(
+      [scored.teamId, missing.teamId],
+    );
+  });
 });

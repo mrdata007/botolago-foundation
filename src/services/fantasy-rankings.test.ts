@@ -78,6 +78,40 @@ describe("fantasy global rankings", () => {
     expect(gw.rows[0].rank).toBe(1);
   });
 
+  it("breaks equal gameweek scores by higher total score", () => {
+    const all = buildGlobalRankings(3).map((row, index) => ({
+      ...row,
+      gameweekScore: index < 2 ? 50 : 40,
+      totalScore: index === 0 ? 100 : index === 1 ? 200 : 50,
+    }));
+    const result = selectRankingsPage(all, {
+      page: 1,
+      pageSize: 3,
+      sort: "gameweek",
+      query: "",
+    });
+
+    expect(result.rows.slice(0, 2).map((row) => row.totalScore)).toEqual([200, 100]);
+  });
+
+  it("keeps the podium on the overall board while viewing gameweek rank", () => {
+    const all = buildGlobalRankings(4).map((row, index) => ({
+      ...row,
+      gameweekScore: index === 3 ? 999 : index,
+    }));
+    const result = selectRankingsPage(all, {
+      page: 1,
+      pageSize: 4,
+      sort: "gameweek",
+      query: "",
+    });
+
+    expect(result.rows[0].managerId).toBe(all[3].managerId);
+    expect(result.podium.map((row) => row.managerId)).toEqual(
+      all.slice(0, 3).map((row) => row.managerId),
+    );
+  });
+
   it("maps a rank to its page", () => {
     expect(pageForRank(1, 50)).toBe(1);
     expect(pageForRank(50, 50)).toBe(1);

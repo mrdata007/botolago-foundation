@@ -1,6 +1,7 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/backend/generated/database.types";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import type { AdminPermission } from "./contracts";
 import { AdminControlPlaneService } from "./control-plane-service";
 import { requireAdminRoutePermission, resolveAdminRouteAccess } from "./route-access";
@@ -30,6 +31,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 export async function loadAdminRouteAccessForRequest() {
+  if (IS_DEMO_MODE) return { state: "backend_unavailable" as const };
   const request = getRequest();
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;

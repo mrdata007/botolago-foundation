@@ -18,17 +18,12 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import {
+  buildAuthoritativePointsViewModel,
   buildLegacyViewModel,
   buildPointsViewModel,
   type PointsViewModel,
 } from "@/services/points-service";
 import { advanceGameweek, finalizeGameweek } from "@/services/lifecycle-service";
-import { loadGameweekIndex, resolveGameweekId } from "@/services/fantasy-gameweek-resolver";
-import {
-  selectStableCloudResult,
-  buildCloudFinalizationPlan,
-  buildCloudAdvancePlan,
-} from "@/services/fantasy-cloud-finalize";
 import { chipDisplayState, evaluateDeadline, type ChipKey } from "@/lib/fantasy-engine";
 import { toast } from "sonner";
 import { RefreshCcw, ArrowDown, ArrowUp, Lock as LockIcon, ChevronRight } from "lucide-react";
@@ -44,10 +39,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/auth/AuthProvider";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
-import { DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
-import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
-import { ConflictBar } from "@/components/fantasy/ConflictBar";
 import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 
 export const Route = createFileRoute("/fantasy/points")({
@@ -81,18 +72,10 @@ function PointsPage() {
   const [state, setState] = useState<FantasyPersistedState>(() =>
     isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
   );
-  const [gw, setGw] = useState(() => state.currentGameweek);
+  const [selectedGw, setSelectedGw] = useState<number | null>(null);
   const [view, setView] = useState<SquadViewMode>("squad");
   const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [confirmAdvance, setConfirmAdvance] = useState(false);
-  const [conflictOpen, setConflictOpen] = useState(false);
-
-  const reloadLatest = async () => {
-    setConflictOpen(false);
-    if (isCloud) await owned.reload();
-    toast.success(t("fantasy.status.saved_short"));
-  };
-  const keepWorking = () => setConflictOpen(false);
 
   useEffect(() => {
     if (isCloud) {
@@ -114,10 +97,12 @@ function PointsPage() {
     queryFn: () => fantasyService.getCurrentGameweek(),
     enabled: owned.source !== "guest",
   });
+  const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
+  const gw = selectedGw ?? currentGw;
   const gwResultQ = useQuery({
     queryKey: ownedKey("gw-result", gw),
     queryFn: () => fantasyService.getGameweekResult(gw),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && currentGwQ.isSuccess,
   });
   const historyQ = useQuery({
     queryKey: ownedKey("gw-history"),
@@ -141,15 +126,6 @@ function PointsPage() {
     queryFn: () => footballService.getClubs(lang),
     enabled: owned.source !== "guest",
   });
-  // H6 — Cloud-only: preload the gameweek index to resolve the next GW UUID
-  // when advancing. Not needed in local mode.
-  const gwIndexQ = useQuery({
-    queryKey: ["gw-index", DEFAULT_SEASON],
-    queryFn: () => loadGameweekIndex(),
-    enabled: isCloud,
-  });
-
-  const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
   const isCurrent = gw === currentGw;
   const deadline = currentGwQ.data ? evaluateDeadline(currentGwQ.data.deadline) : null;
   const deadlineLocked = deadline?.isLocked ?? false;
@@ -157,11 +133,12 @@ function PointsPage() {
   // Compute VM for the selected gameweek.
   const vm: PointsViewModel | null | "error" = useMemo(() => {
     if (!team || !playersQ.data) return null;
-    const persisted = state.results[gw];
+    const persisted = isCloud ? undefined : state.results[gw];
     if (persisted) return persisted;
 
     const raw = gwResultQ.data;
     if (!raw) return null;
+    if (isCloud) return buildAuthoritativePointsViewModel(raw);
 
     const originalBenchIds = team.squad
       .filter((s) => s.slot >= 12)
@@ -191,7 +168,23 @@ function PointsPage() {
     } catch {
       return "error";
     }
-  }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent]);
+  }, [team, playersQ.data, gwResultQ.data, state, gw, isCurrent, isCloud]);
+
+  const historyItems = (historyQ.data ?? []).map((history) => {
+    const stored = isCloud ? undefined : state.results[history.gameweek];
+    return {
+      gameweek: history.gameweek,
+      totalPoints: stored?.totalPoints ?? history.totalPoints,
+      source: isCloud
+        ? ("authoritative" as const)
+        : stored
+          ? ("engine" as const)
+          : ("legacy_mock" as const),
+    };
+  });
+  const availableGameweeks = Array.from(
+    new Set([currentGw, ...historyItems.map((item) => item.gameweek)]),
+  ).sort((a, b) => a - b);
 
   if (owned.source === "guest") {
     return authStatus === "loading" ? (
@@ -257,8 +250,18 @@ function PointsPage() {
   }
   if (!vm) {
     return (
-      <div className="glass-surface glass-regular mt-6 rounded-2xl border border-[var(--glass-border)] p-4 text-sm text-muted-foreground">
-        {t("fantasy.points.empty")}
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-black text-foreground">
+            <span className="text-brand">{t("fantasy.points.title")}</span>
+          </h1>
+          <GameweekSelector value={gw} options={availableGameweeks} onChange={setSelectedGw} />
+        </div>
+        <div className="glass-surface glass-regular mt-6 rounded-2xl border border-[var(--glass-border)] p-4 text-sm text-muted-foreground">
+          {t("fantasy.points.empty")}
+        </div>
+        <SectionHeader title={t("fantasy.points.history")} />
+        <PointsHistory items={historyItems} selectedGameweek={gw} onSelect={setSelectedGw} />
       </div>
     );
   }
@@ -289,7 +292,8 @@ function PointsPage() {
     // Apply captain multiplier live when engine has a captain.
     const isCap = vm.effectiveCaptainId === playerId;
     const rawBase = b?.isCaptain ? Math.round((b.totalPoints ?? 0) / 2) : (b?.totalPoints ?? 0);
-    const shown = isCap ? rawBase * vm.captainMultiplier : metricNum;
+    const shown =
+      b?.multiplier !== undefined ? metricNum : isCap ? rawBase * vm.captainMultiplier : metricNum;
     return (
       <PlayerShirt
         player={p}
@@ -369,79 +373,8 @@ function PointsPage() {
         return;
       }
 
-      if (isCloud && owned.snapshot?.currentGameweekId) {
-        // H6 — Cloud-authoritative finalize via pure planner.
-        try {
-          const plan = buildCloudFinalizationPlan({
-            snapshot: owned.snapshot,
-            gw,
-            players: playersQ.data,
-            breakdown: raw.breakdown,
-            averagePoints: raw.averagePoints,
-            highestPoints: raw.highestPoints,
-          });
-
-          // Short-circuit: server already finalized this GW.
-          if (plan.skipReason === "already_finalized") {
-            toast.success(t("fantasy.points.already_finalized"));
-            setConfirmFinalize(false);
-            return;
-          }
-
-          const res = await runOwnedMutation(
-            {
-              qc,
-              scope: owned.scope,
-              setMutationStatus: owned.setMutationStatus,
-              nextMutationSeq: owned.nextMutationSeq,
-              setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
-              replaceSnapshot: owned.replaceSnapshot,
-              invalidateOwned: owned.invalidateOwned,
-            },
-            {
-              action: () =>
-                owned.repo.finalizeGameweek({
-                  gameweek: gw,
-                  gameweekId: owned.snapshot!.currentGameweekId!,
-                  expectedVersion: owned.snapshot!.version,
-                  season: DEFAULT_SEASON,
-                  chipFinalize: plan.chipFinalize,
-                  result: plan.result,
-                  postTeam: {
-                    formation: plan.postTeam.formation,
-                    bank: plan.postTeam.bank,
-                    freeTransfers: plan.postTeam.freeTransfers,
-                    pendingTransfers: plan.postTeam.pendingTransfers,
-                    squad: plan.postTeam.squad,
-                    purchasePrices: plan.postPurchasePrices,
-                    currentGameweekId: owned.snapshot!.currentGameweekId!,
-                    lifecycle: plan.nextLifecycle,
-                  },
-                }),
-              args: undefined,
-              savedIdleAfterMs: 2400,
-            },
-          );
-          if (res.ok) {
-            setConflictOpen(false);
-            if (plan.freeHitRestored) toast.success(t("fantasy.points.free_hit_restored"));
-            else toast.success(t("fantasy.points.finalize_success"));
-          } else {
-            const c = classifyRepoError(res.error);
-            if (c.isConflict) setConflictOpen(true);
-            const key: TranslationKey = c.isConflict
-              ? "fantasy.error.version_conflict"
-              : c.isNetwork
-                ? "fantasy.error.network"
-                : c.isPermission
-                  ? "fantasy.error.permission"
-                  : "fantasy.points.lifecycle_error";
-            toast.error(t(key));
-          }
-        } catch {
-          toast.error(t("fantasy.points.lifecycle_error"));
-        }
-        setConfirmFinalize(false);
+      if (isCloud) {
+        toast.error(t("fantasy.error.permission"));
         return;
       }
 
@@ -472,85 +405,8 @@ function PointsPage() {
       if (!team) return;
       const target = currentGw + 1;
 
-      if (isCloud && owned.snapshot) {
-        // H6 — Cloud-authoritative advance via saveTeam with resolved next-GW UUID.
-        const idx = gwIndexQ.data;
-        if (!idx) {
-          toast.error(t("fantasy.error.network"));
-          return;
-        }
-        let nextGameweekId: string | null = null;
-        try {
-          nextGameweekId = resolveGameweekId(idx, { number: target, season: DEFAULT_SEASON });
-        } catch {
-          nextGameweekId = null;
-        }
-        if (!nextGameweekId) {
-          toast.error(t("fantasy.points.lifecycle_error"));
-          return;
-        }
-        const plan = buildCloudAdvancePlan({
-          snapshot: owned.snapshot,
-          nextGameweekNumber: target,
-          nextGameweekId,
-        });
-        if (!plan.ok) {
-          toast.error(
-            t(
-              plan.error === "must_finalize_first"
-                ? "fantasy.points.must_finalize_first"
-                : "fantasy.points.lifecycle_error",
-            ),
-          );
-          return;
-        }
-
-        const res = await runOwnedMutation(
-          {
-            qc,
-            scope: owned.scope,
-            setMutationStatus: owned.setMutationStatus,
-            nextMutationSeq: owned.nextMutationSeq,
-            setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
-            replaceSnapshot: owned.replaceSnapshot,
-            invalidateOwned: owned.invalidateOwned,
-          },
-          {
-            action: () =>
-              owned.repo.saveTeam({
-                teamName: team.teamName,
-                managerName: team.managerName,
-                formation: plan.postTeam.formation,
-                bank: plan.postTeam.bank,
-                freeTransfers: plan.postTeam.freeTransfers,
-                pendingTransfers: plan.postTeam.pendingTransfers,
-                squad: plan.postTeam.squad,
-                purchasePrices: plan.postPurchasePrices,
-                currentGameweekId: plan.currentGameweekId,
-                lifecycle: plan.nextLifecycle,
-                expectedVersion: plan.expectedVersion,
-              }),
-            args: undefined,
-            savedIdleAfterMs: 2400,
-          },
-        );
-        if (res.ok) {
-          setGw(target);
-          qc.invalidateQueries({ queryKey: ["current-gw"] });
-          toast.success(t("fantasy.points.advance_success"));
-        } else {
-          const c = classifyRepoError(res.error);
-          if (c.isConflict) setConflictOpen(true);
-          const key: TranslationKey = c.isConflict
-            ? "fantasy.error.version_conflict"
-            : c.isNetwork
-              ? "fantasy.error.network"
-              : c.isPermission
-                ? "fantasy.error.permission"
-                : "fantasy.points.lifecycle_error";
-          toast.error(t(key));
-        }
-        setConfirmAdvance(false);
+      if (isCloud) {
+        toast.error(t("fantasy.error.permission"));
         return;
       }
 
@@ -567,7 +423,7 @@ function PointsPage() {
         return;
       }
       setState(fantasyStateStore.read());
-      setGw(target);
+      setSelectedGw(target);
       qc.invalidateQueries({ queryKey: ownedKey("team") });
       qc.invalidateQueries({ queryKey: ownedKey("summary") });
       qc.invalidateQueries({ queryKey: ["current-gw"] });
@@ -580,39 +436,31 @@ function PointsPage() {
     ? tr(playerOf(vm.effectiveCaptainId).name)
     : "—";
 
-  // History: prefer persisted results when available; fall back to legacy mock rows.
-  const historyItems = (historyQ.data ?? []).map((h) => {
-    const stored = state.results[h.gameweek];
-    return {
-      gameweek: h.gameweek,
-      totalPoints: stored?.totalPoints ?? h.totalPoints,
-      source: (stored ? "engine" : "legacy_mock") as "engine" | "legacy_mock",
-    };
-  });
-
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-black text-foreground">
           <span className="text-brand">{t("fantasy.points.title")}</span>
         </h1>
-        <GameweekSelector value={gw} min={11} max={14} onChange={setGw} />
+        <GameweekSelector value={gw} options={availableGameweeks} onChange={setSelectedGw} />
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
             "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
-            vm.source === "engine"
-              ? "bg-[color:var(--brand-primary)]/10 text-[color:var(--brand-primary)]"
-              : "bg-amber-500/15 text-amber-800",
+            vm.source === "legacy_mock"
+              ? "bg-amber-500/15 text-amber-800"
+              : "bg-[color:var(--brand-primary)]/10 text-[color:var(--brand-primary)]",
           )}
         >
-          {vm.source === "engine"
-            ? t("fantasy.points.engine_source")
-            : t("fantasy.points.legacy_source")}
+          {vm.source === "authoritative"
+            ? t("fantasy.points.authoritative_source")
+            : vm.source === "engine"
+              ? t("fantasy.points.engine_source")
+              : t("fantasy.points.legacy_source")}
         </span>
-        {isCurrent && vm.source === "engine" && (
+        {isCurrent && vm.source !== "legacy_mock" && (
           <button
             type="button"
             onClick={onRecompute}
@@ -653,25 +501,6 @@ function PointsPage() {
         )}
       </div>
 
-      {/* H6 — Live status region (points route has no editable drafts; badge stays silent). */}
-      {isCloud && (
-        <div className="mt-3">
-          <UnsavedBadge visible={false} />
-        </div>
-      )}
-
-      {/* H6 — Version-conflict resolution bar. */}
-      {isCloud && (
-        <div className="mt-2">
-          <ConflictBar
-            visible={conflictOpen}
-            onReloadLatest={reloadLatest}
-            onKeepWorking={keepWorking}
-            busy={owned.mutationStatus === "saving"}
-          />
-        </div>
-      )}
-
       <AlertDialog open={confirmFinalize} onOpenChange={setConfirmFinalize}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -710,7 +539,7 @@ function PointsPage() {
         <Stat label={t("fantasy.points.bench")} value={String(vm.originalBenchPoints)} />
       </div>
 
-      {vm.source === "engine" && (
+      {vm.source !== "legacy_mock" && (
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <MiniStat label={t("fantasy.points.captain_bonus")} value={`+${vm.captainBonus}`} />
           <MiniStat
@@ -807,10 +636,13 @@ function PointsPage() {
             {vm.breakdown.map((b) => {
               const p = playerOf(b.playerId);
               const isEffCap = vm.effectiveCaptainId === b.playerId;
-              const displayPoints = isEffCap
-                ? (b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints) *
-                  vm.captainMultiplier
-                : b.totalPoints;
+              const displayPoints =
+                b.multiplier !== undefined
+                  ? b.totalPoints
+                  : isEffCap
+                    ? (b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints) *
+                      vm.captainMultiplier
+                    : b.totalPoints;
               const onBench = benchIdsForDisplay.includes(b.playerId);
               const cameOn = cameOnIds.has(b.playerId);
               const subbedOff = subbedOffIds.has(b.playerId);
@@ -877,41 +709,69 @@ function PointsPage() {
       )}
 
       <SectionHeader title={t("fantasy.points.history")} />
-      <div className="grid gap-2 sm:grid-cols-2">
-        {historyItems.map((h) => (
-          <button
-            key={h.gameweek}
-            onClick={() => setGw(h.gameweek)}
-            className={cn(
-              "glass-surface glass-regular flex items-center justify-between rounded-2xl border border-[var(--glass-border)] px-3 py-2 text-start",
-              gw === h.gameweek && "ring-2 ring-[color:var(--brand-accent)]",
-            )}
-          >
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {t("fantasy.points.gameweek")}
-              </div>
-              <div className="text-sm font-black text-foreground">{h.gameweek}</div>
-              <div
-                className={cn(
-                  "mt-0.5 text-[9px] font-bold uppercase",
-                  h.source === "engine" ? "text-[color:var(--brand-primary)]" : "text-amber-700",
-                )}
-              >
-                {h.source === "engine"
+      <PointsHistory items={historyItems} selectedGameweek={gw} onSelect={setSelectedGw} />
+    </div>
+  );
+}
+
+type PointsHistoryItem = {
+  gameweek: number;
+  totalPoints: number;
+  source: PointsViewModel["source"];
+};
+
+function PointsHistory({
+  items,
+  selectedGameweek,
+  onSelect,
+}: {
+  items: PointsHistoryItem[];
+  selectedGameweek: number;
+  onSelect: (gameweek: number) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {items.map((history) => (
+        <button
+          key={history.gameweek}
+          type="button"
+          onClick={() => onSelect(history.gameweek)}
+          className={cn(
+            "glass-surface glass-regular flex items-center justify-between rounded-2xl border border-[var(--glass-border)] px-3 py-2 text-start",
+            selectedGameweek === history.gameweek && "ring-2 ring-[color:var(--brand-accent)]",
+          )}
+        >
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {t("fantasy.points.gameweek")}
+            </div>
+            <div className="text-sm font-black text-foreground">{history.gameweek}</div>
+            <div
+              className={cn(
+                "mt-0.5 text-[9px] font-bold uppercase",
+                history.source === "legacy_mock"
+                  ? "text-amber-700"
+                  : "text-[color:var(--brand-primary)]",
+              )}
+            >
+              {history.source === "authoritative"
+                ? t("fantasy.points.authoritative_source")
+                : history.source === "engine"
                   ? t("fantasy.points.engine_source")
                   : t("fantasy.points.legacy_source")}
-              </div>
             </div>
-            <div className="text-end">
-              <div className="text-lg font-black tabular-nums text-foreground">{h.totalPoints}</div>
-              <div className="text-[10px] uppercase text-muted-foreground">
-                {t("fantasy.points.abbr")}
-              </div>
+          </div>
+          <div className="text-end">
+            <div className="text-lg font-black tabular-nums text-foreground">
+              {history.totalPoints}
             </div>
-          </button>
-        ))}
-      </div>
+            <div className="text-[10px] uppercase text-muted-foreground">
+              {t("fantasy.points.abbr")}
+            </div>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }

@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Check, Lock, Pencil, RotateCcw, Users } from "lucide-react";
+import { Check, CircleHelp, Lock, Pencil, RotateCcw, Users } from "lucide-react";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
@@ -46,7 +46,11 @@ import {
   evaluateDeadline,
   type ChipKey,
 } from "@/lib/fantasy-engine";
-import { validateTeam, type TeamValidationError } from "@/lib/team-validation";
+import {
+  hasSquadCatalogCoverage,
+  validateTeam,
+  type TeamValidationError,
+} from "@/lib/team-validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
@@ -55,6 +59,8 @@ import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
 import { ConflictBar } from "@/components/fantasy/ConflictBar";
 import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
 import { importDecisionService } from "@/services/fantasy-import-decision";
+import { adaptFantasyRules, isFormationSupported } from "@/services/fantasy-create-service";
+import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
 
 export const Route = createFileRoute("/fantasy/team")({
   component: MyTeamPage,
@@ -105,6 +111,15 @@ function MyTeamPage() {
     queryFn: () => fantasyService.getCurrentGameweek(),
     enabled: owned.source !== "guest",
   });
+  const rulesQ = useQuery({
+    queryKey: ["fantasy-create", "rules"],
+    queryFn: () => fantasyService.getRules(),
+    enabled: owned.source !== "guest",
+  });
+  const activeRules = useMemo(
+    () => (rulesQ.data ? adaptFantasyRules(rulesQ.data) : null),
+    [rulesQ.data],
+  );
 
   // Local-only mock summary. In cloud mode we derive from the owned snapshot
   // + public player prices; the mock summary is never consumed.
@@ -114,15 +129,18 @@ function MyTeamPage() {
     enabled: owned.source === "local",
   });
 
-  // Local-mode team read; in cloud mode we consume owned.snapshot directly
-  // (H7 — no parallel Team queries in cloud mode).
+  // Production cloud mode consumes only the authoritative owned snapshot.
+  // The explicit mock adapter re-reads its browser-persisted patch on route
+  // entry so local E2E can verify the same refresh boundary as production.
   const localTeamQ = useQuery({
-    queryKey: ownedKey("team"),
+    queryKey: ["fantasy-team-route", "local", owned.snapshot?.team.teamName],
     queryFn: () => fantasyService.getTeam(),
     enabled: owned.source === "local",
+    staleTime: 0,
   });
-
-  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
+  const team = isCloud
+    ? (owned.snapshot?.team ?? null)
+    : (localTeamQ.data ?? owned.snapshot?.team ?? null);
 
   const { requireAuth, user, status: authStatus } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -138,6 +156,17 @@ function MyTeamPage() {
   const [conflictOpen, setConflictOpen] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const draftInitRef = useRef(false);
+  const hasWorkingChanges = localSquad !== null || localFormation !== null;
+
+  useEffect(() => {
+    if (!hasWorkingChanges) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasWorkingChanges]);
 
   // Cloud: mirror lifecycle from snapshot. Local: subscribe to state store.
   useEffect(() => {
@@ -346,24 +375,68 @@ function MyTeamPage() {
     return authStatus === "loading" ? <LoadingState /> : <FantasyAccessGate next="/fantasy/team" />;
   }
 
-  if (playersQ.isError || clubsQ.isError || gwQ.isError || owned.loadError) {
+  if (
+    playersQ.isError ||
+    clubsQ.isError ||
+    gwQ.isError ||
+    rulesQ.isError ||
+    localTeamQ.isError ||
+    owned.loadError
+  ) {
     return (
       <ErrorState
         onRetry={() => {
           void playersQ.refetch();
           void clubsQ.refetch();
           void gwQ.refetch();
+          void rulesQ.refetch();
+          void localTeamQ.refetch();
           void owned.reload();
         }}
       />
     );
   }
-  if (!playersQ.data || !clubsQ.data) return <LoadingState />;
+  if (
+    !playersQ.data ||
+    !clubsQ.data ||
+    rulesQ.isLoading ||
+    (owned.source === "local" && localTeamQ.isPending)
+  ) {
+    return <LoadingState />;
+  }
+  if (!activeRules || playersQ.data.length === 0 || clubsQ.data.length === 0) {
+    return (
+      <FantasyCatalogUnavailable
+        detailKey={
+          clubsQ.data.length === 0
+            ? "fantasy.atlas.create.unavailable.clubs"
+            : !activeRules
+              ? "fantasy.atlas.create.unavailable.rules"
+              : "fantasy.atlas.create.unavailable.catalog"
+        }
+        onRetry={() => {
+          void playersQ.refetch();
+          void clubsQ.refetch();
+          void rulesQ.refetch();
+        }}
+      />
+    );
+  }
   if (isCloud && owned.isLoading && !owned.snapshot) return <LoadingState />;
-  if (!isCloud && localTeamQ.isLoading) return <LoadingState />;
+  if (!owned.snapshot) return <LoadingState />;
 
   const players = playersQ.data;
   const clubs = clubsQ.data;
+  if (team && !hasSquadCatalogCoverage(team.squad, players)) {
+    return (
+      <FantasyCatalogUnavailable
+        onRetry={() => {
+          void playersQ.refetch();
+          void owned.reload();
+        }}
+      />
+    );
+  }
 
   // H4 — Empty-cloud builder for start_new. When the cloud team exists but has
   // zero squad rows AND the import prompt won't render (user picked start_new,
@@ -411,7 +484,9 @@ function MyTeamPage() {
     };
   })();
 
-  const hasWorkingChanges = localSquad !== null || localFormation !== null;
+  const supportedFormations = (Object.keys(FORMATIONS) as FormationKey[]).filter((candidate) =>
+    isFormationSupported(candidate, activeRules),
+  );
 
   // Revert local edit state back to the persisted team.
   const revertLocal = () => {
@@ -501,7 +576,7 @@ function MyTeamPage() {
     }
     const squadToSave = localSquad ?? team.squad;
     const formationToSave = localFormation ?? team.formation;
-    const validation = validateTeam(squadToSave, formationToSave, players);
+    const validation = validateTeam(squadToSave, formationToSave, players, activeRules);
     if (!validation.ok) {
       const errKey =
         `fantasy.team.error.${validation.error satisfies TeamValidationError}` as TranslationKey;
@@ -726,7 +801,7 @@ function MyTeamPage() {
               {t("fantasy.change_formation")}
             </div>
             <div className="grid grid-cols-2 gap-1">
-              {(Object.keys(FORMATIONS) as FormationKey[]).map((f) => (
+              {supportedFormations.map((f) => (
                 <button
                   key={f}
                   onClick={() => changeFormation(f)}
@@ -759,6 +834,29 @@ function MyTeamPage() {
           {editing ? t("fantasy.edit_lineup") : ""}
         </div>
       </div>
+
+      <details className="mt-3 rounded-2xl border border-[var(--glass-border)] bg-white/60 p-3">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]">
+          <CircleHelp className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />
+          {t("fantasy.team.help_title")}
+        </summary>
+        <ul className="mt-2 grid gap-2 text-xs leading-relaxed text-muted-foreground">
+          <li>
+            {t("fantasy.team.help_formation").replace(
+              "{formations}",
+              supportedFormations.join(" · "),
+            )}
+          </li>
+          <li>
+            {t("fantasy.team.help_captain").replace(
+              "{multiplier}",
+              nf.format(activeRules.captainMultiplier),
+            )}
+          </li>
+          <li>{t("fantasy.team.help_bench")}</li>
+          <li>{t("fantasy.team.help_deadline")}</li>
+        </ul>
+      </details>
 
       <div className="mt-2">
         <FantasyChipsRow

@@ -1,4 +1,5 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { IS_DEMO_MODE } from "@/config/app-mode";
 import type {
   NotificationDeviceRepository,
   NotificationPreferenceRepository,
@@ -22,8 +23,14 @@ export type NotificationsDataMode = "mock" | "supabase";
 export function selectNotificationsDataMode(
   configuredMode: string | undefined,
   production: boolean,
+  demoMode = IS_DEMO_MODE,
 ): NotificationsDataMode {
-  if (production && configuredMode !== "supabase")
+  if (demoMode && configuredMode !== "mock")
+    throw new NotificationError(
+      "data_unavailable",
+      "Demo notifications requires VITE_NOTIFICATIONS_DATA_MODE=mock.",
+    );
+  if (production && !demoMode && configuredMode !== "supabase")
     throw new NotificationError(
       "data_unavailable",
       "Production notifications require VITE_NOTIFICATIONS_DATA_MODE=supabase.",

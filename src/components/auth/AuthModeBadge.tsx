@@ -1,10 +1,22 @@
-// Development-only badge shown when explicit mock auth mode is active.
-// Silent in production Supabase mode.
-import { IS_MOCK_AUTH } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
+import { IS_DEMO_MODE } from "@/config/app-mode";
+import { IS_MOCK_AUTH } from "@/services/auth";
 
 export function AuthModeBadge() {
   const { t } = useI18n();
+
+  if (IS_DEMO_MODE) {
+    return (
+      <aside
+        aria-label={t("app.demo_label")}
+        data-testid="demo-data-notice"
+        className="relative z-50 w-full border-b border-amber-300/40 bg-slate-950 px-3 py-2 text-center text-[11px] font-bold leading-4 text-amber-100 shadow-lg sm:text-xs"
+      >
+        {t("app.demo_notice")}
+      </aside>
+    );
+  }
+
   if (!IS_MOCK_AUTH) return null;
   return (
     <div

@@ -17,6 +17,7 @@ import type {
 import { defaultNotifications } from "./auth-types";
 import type { Language } from "@/types/domain";
 import { validateCanonicalUsername } from "@/backend/identity/username";
+import { mockFootballTeamId } from "@/backend/football/mock-repository";
 
 const NS = "botolago.";
 const K_SESSION = `${NS}auth.session`;
@@ -97,7 +98,8 @@ export class LocalMockAuthService implements AuthService {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
     const users = safeGet<StoredUserRecord[]>(K_USERS) ?? [];
-    if (!users.find((u) => u.email.toLowerCase() === MOCK_DEMO_EMAIL)) {
+    const existingDemo = users.find((u) => u.email.toLowerCase() === MOCK_DEMO_EMAIL);
+    if (!existingDemo) {
       users.push({
         id: uid("usr"),
         email: MOCK_DEMO_EMAIL,
@@ -109,11 +111,13 @@ export class LocalMockAuthService implements AuthService {
         createdAt: new Date().toISOString(),
         verified: true,
         provider: "email",
-        favoriteClubId: "wac",
+        favoriteClubId: mockFootballTeamId("war"),
         passwordDigest: digest(MOCK_DEMO_PASSWORD),
       });
-      safeSet(K_USERS, users);
+    } else if (existingDemo.favoriteClubId === "wac") {
+      existingDemo.favoriteClubId = mockFootballTeamId("war");
     }
+    safeSet(K_USERS, users);
     this.cachedSession = this.readSession();
   }
 

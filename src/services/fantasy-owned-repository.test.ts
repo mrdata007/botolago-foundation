@@ -6,11 +6,92 @@ import {
   CloudFantasyRepository,
   GuestFantasyRepository,
   LocalFantasyRepository,
+  buildV2CloudSnapshot,
+  buildV2LineupSelection,
+  isV2FantasyPlayerId,
 } from "./fantasy-owned-repository";
 import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { FantasyCloudError } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { removeKey, STORAGE_KEYS } from "@/lib/storage";
+import type { FantasyTeamDto } from "@/backend/fantasy/contracts";
+
+describe("buildV2CloudSnapshot", () => {
+  it("uses the authoritative hub sequence for an empty cloud team", () => {
+    const gameweek = {
+      id: "00000000-0000-4000-8000-000000000001",
+      sequence: 1,
+      name: "Gameweek 1",
+      deadlineAt: "2026-08-21T18:00:00.000Z",
+      status: "open",
+      pointsState: "provisional",
+    } as const;
+
+    const snapshot = buildV2CloudSnapshot(null, gameweek);
+
+    expect(snapshot.currentGameweekId).toBe(gameweek.id);
+    expect(snapshot.lifecycle.currentGameweek).toBe(1);
+  });
+
+  it("uses the authoritative hub identity during rollover for an existing cloud team", () => {
+    const gameweek = {
+      id: "00000000-0000-4000-8000-000000000001",
+      sequence: 1,
+      name: "Gameweek 1",
+      deadlineAt: "2026-08-21T18:00:00.000Z",
+      status: "open",
+      pointsState: "provisional",
+    } as const;
+    const team: FantasyTeamDto = {
+      id: "00000000-0000-4000-8000-000000000002",
+      seasonId: "00000000-0000-4000-8000-000000000003",
+      name: "Atlas QA",
+      currentGameweekId: "00000000-0000-4000-8000-000000000009",
+      version: 1,
+      bank: 100,
+      teamValue: 100,
+      freeTransfers: 1,
+      status: "active",
+      createdAt: "2026-08-07T00:00:00.000Z",
+      updatedAt: "2026-08-07T00:00:00.000Z",
+      squad: [],
+      lineup: [],
+      chips: { active: null, activeCancellable: false, used: [] },
+    };
+
+    const snapshot = buildV2CloudSnapshot(team, gameweek);
+
+    expect(snapshot.currentGameweekId).toBe(gameweek.id);
+    expect(snapshot.lifecycle.currentGameweek).toBe(1);
+  });
+
+  it("falls back to gameweek 1 when the provider has not published a gameweek", () => {
+    const snapshot = buildV2CloudSnapshot(null, null);
+
+    expect(snapshot.currentGameweekId).toBeNull();
+    expect(snapshot.lifecycle.currentGameweek).toBe(1);
+  });
+});
+
+describe("buildV2LineupSelection", () => {
+  it("rejects local mock identifiers before a V2 mutation", () => {
+    expect(isV2FantasyPlayerId("fp_mock_1")).toBe(false);
+    expect(isV2FantasyPlayerId("00000000-0000-4000-8000-000000000010")).toBe(true);
+
+    let caught: unknown;
+    try {
+      buildV2LineupSelection({
+        squad: [{ playerId: "fp_mock_1", slot: 1 }],
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FantasyRepoError);
+    expect((caught as FantasyRepoError).code).toBe("mapping_incomplete");
+    expect((caught as FantasyRepoError).missingIds?.players).toEqual(["fp_mock_1"]);
+  });
+});
 
 // ---------- source selector ----------
 

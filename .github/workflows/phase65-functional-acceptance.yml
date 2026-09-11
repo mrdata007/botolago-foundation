@@ -2,6 +2,7 @@ name: Phase 6.5 functional acceptance
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches: [main]
     paths:
       - ".github/workflows/phase65-functional-acceptance.yml"
@@ -9,11 +10,13 @@ on:
       - "scripts/qa/**"
       - "src/**"
       - "supabase/**"
+      - "playwright.config.ts"
       - "package.json"
       - "bun.lock"
 
 concurrency:
-  group: phase65-functional-${{ github.event.pull_request.number }}
+  # The protected fixture setup mutates one shared synthetic staging gameweek.
+  group: phase65-functional-staging
   cancel-in-progress: false
 
 permissions:
@@ -21,7 +24,15 @@ permissions:
 
 jobs:
   staging-functional:
-    if: github.head_ref == 'qa/phase6-functional-acceptance'
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        github.head_ref == 'qa/phase6-functional-acceptance' ||
+        (
+          startsWith(github.head_ref, 'agent/launch-') &&
+          contains(github.event.pull_request.labels.*.name, 'staging-acceptance-approved')
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: staging-load-test
@@ -52,17 +63,48 @@ jobs:
         run: bun scripts/qa/phase65-staging-fixtures.mjs setup
       - name: Run staging-backed browser acceptance
         run: bun run test:e2e:staging
-      - name: Upload sanitized browser evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: phase65-browser-evidence
-          path: |
-            playwright-report
-            test-results/playwright/**/*.png
-            test-results/playwright/**/sanitized-browser-diagnostics*
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Bounded synthetic cleanup
         if: always()
         run: bun scripts/qa/phase65-staging-fixtures.mjs cleanup
+      - name: Upload sanitized browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase65-browser-evidence-${{ github.run_id }}
+          path: test-results/playwright/**/sanitized-browser-diagnostics*
+          if-no-files-found: ignore
+          retention-days: 7
+
+  functional-acceptance-verdict:
+    name: Launch staging acceptance verdict
+    if: always()
+    needs: staging-functional
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      IS_LAUNCH_BRANCH: ${{ startsWith(github.head_ref, 'agent/launch-') }}
+      IS_LEGACY_QA_BRANCH: ${{ github.head_ref == 'qa/phase6-functional-acceptance' }}
+      IS_SAME_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+      IS_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'staging-acceptance-approved') }}
+      STAGING_RESULT: ${{ needs.staging-functional.result }}
+    steps:
+      - name: Evaluate protected acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$IS_LAUNCH_BRANCH" == "true" ]]; then
+            if [[ "$IS_SAME_REPOSITORY" != "true" || "$IS_APPROVED" != "true" ]]; then
+              echo "LAUNCH_STAGING_APPROVAL_MISSING"
+              exit 1
+            fi
+          fi
+
+          if [[ "$IS_LAUNCH_BRANCH" == "true" || "$IS_LEGACY_QA_BRANCH" == "true" ]]; then
+            if [[ "$STAGING_RESULT" != "success" ]]; then
+              echo "LAUNCH_STAGING_ACCEPTANCE_FAILED"
+              exit 1
+            fi
+          fi
+
+          echo "FUNCTIONAL_ACCEPTANCE_VERDICT_PASS"

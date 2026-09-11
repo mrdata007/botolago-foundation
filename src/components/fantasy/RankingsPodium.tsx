@@ -4,15 +4,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Crown } from "lucide-react";
-
-/** Deterministic crest slot so every podium card carries a badge. */
-function crestFor(standing: LeagueStanding, clubs?: Club[]): Club | undefined {
-  if (!clubs || clubs.length === 0) return undefined;
-  if (standing.clubId) return clubs.find((c) => c.id === standing.clubId);
-  let h = 0;
-  for (const ch of standing.managerId) h = (h * 31 + ch.charCodeAt(0)) % 100000;
-  return clubs[h % clubs.length];
-}
+import { findStandingClub } from "./standing-club";
 
 export function RankingsPodium({
   podium,
@@ -39,7 +31,7 @@ export function RankingsPodium({
   return (
     <section aria-label={t("fantasy.rankings.podium")} className="grid grid-cols-3 gap-2">
       {order.map((s, i) => {
-        const club = crestFor(s, clubs);
+        const club = findStandingClub(s, clubs);
         const isMe = meId && s.managerId === meId;
         return (
           <div key={s.managerId} className={heights[i]}>

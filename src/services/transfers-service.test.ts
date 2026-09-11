@@ -1,8 +1,12 @@
 // Run with: `bun test src/services/transfers-service.test.ts`
 import { describe, it, expect } from "bun:test";
-import { applyConfirmedTransfers, previewTransfers } from "./transfers-service";
+import {
+  applyConfirmedTransfers,
+  previewTransfers,
+  reconcileTransfersDraft,
+} from "./transfers-service";
 import { DEFAULT_CHIPS, type ChipsState } from "@/lib/fantasy-engine";
-import type { FantasyTeam, SquadPlayer } from "@/types/fantasy";
+import type { FantasyPlayer, FantasyTeam, Position, SquadPlayer } from "@/types/fantasy";
 
 const sp = (playerId: string, slot: number): SquadPlayer => ({
   playerId,
@@ -40,6 +44,60 @@ const team: FantasyTeam = {
 const future = new Date(Date.now() + 60_000).toISOString();
 const past = new Date(Date.now() - 60_000).toISOString();
 
+const player = (
+  id: string,
+  position: Position,
+  status: FantasyPlayer["status"] = "available",
+): FantasyPlayer => ({
+  id,
+  position,
+  status,
+  clubId: "club-1",
+  name: { fr: id, ar: id },
+  price: 5,
+  totalPoints: 0,
+  form: 0,
+  ownership: 0,
+});
+
+const catalog = [
+  ...team.squad.map((slot) => {
+    const position: Position = slot.playerId.startsWith("gk")
+      ? "GK"
+      : slot.playerId.startsWith("d")
+        ? "DEF"
+        : slot.playerId.startsWith("m")
+          ? "MID"
+          : "FWD";
+    return player(slot.playerId, position);
+  }),
+  player("m-new", "MID"),
+  player("d-new", "DEF"),
+  player("f-blocked", "FWD", "unavailable"),
+];
+
+describe("reconcileTransfersDraft", () => {
+  it("keeps valid pairs and discards removed, mismatched, and unavailable selections", () => {
+    const restored = reconcileTransfersDraft(
+      {
+        outIds: ["m1", "d1", "m2", "f1"],
+        inIds: ["m-new", "missing", "d-new", "f-blocked"],
+      },
+      team,
+      catalog,
+    );
+
+    expect(restored).toEqual({ outIds: ["m1"], inIds: ["m-new"] });
+  });
+
+  it("returns an empty safe draft for malformed persisted data", () => {
+    expect(reconcileTransfersDraft({ outIds: ["m1"] }, team, catalog)).toEqual({
+      outIds: [],
+      inIds: [],
+    });
+  });
+});
+
 describe("previewTransfers", () => {
   it("computes free/paid/hit for a normal transfer within free-transfer budget", () => {
     const p = previewTransfers({
@@ -68,6 +126,19 @@ describe("previewTransfers", () => {
     });
     expect(p.paid).toBe(1);
     expect(p.hitPoints).toBe(4);
+  });
+
+  it("uses the active ruleset hit cost instead of a fixed league value", () => {
+    const p = previewTransfers({
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
+      hitCost: 7,
+    });
+    expect(p.paid).toBe(1);
+    expect(p.hitPoints).toBe(7);
   });
 
   it("zeroes cost when Wildcard is active regardless of transfer count", () => {
@@ -128,6 +199,20 @@ describe("applyConfirmedTransfers", () => {
     expect(res.value.nextFreeTransfers).toBe(0);
     expect(res.value.hitPointsApplied).toBe(0);
     expect(res.value.freeHitSnapshotTaken).toBe(false);
+  });
+
+  it("applies the active ruleset hit cost on confirmation", () => {
+    const res = applyConfirmedTransfers({
+      team,
+      chips: DEFAULT_CHIPS,
+      outIds: ["m1", "d1"],
+      inIds: ["m1b", "d1b"],
+      netCost: 0,
+      hitCost: 6,
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.hitPointsApplied).toBe(6);
   });
 
   it("rejects when the deadline has passed", () => {
