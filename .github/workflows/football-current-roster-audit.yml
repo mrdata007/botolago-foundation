@@ -1,0 +1,94 @@
+name: Audit current Football rosters read only
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit
+        required: true
+        type: string
+      confirmation:
+        description: Type AUDIT_CURRENT_ROSTERS_READ_ONLY
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botolago-current-roster-read-only-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-admin-activation
+    env:
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - name: Guard exact reviewed first owner dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$GITHUB_TRIGGERING_ACTOR" = "mrdata007"
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$CONFIRMATION" = "AUDIT_CURRENT_ROSTERS_READ_ONLY"
+          evidence_dir="$RUNNER_TEMP/current-roster-audit/evidence"
+          install -d -m 0700 "$evidence_dir"
+          echo "CURRENT_ROSTER_AUDIT_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
+
+      - name: Check out exact reviewed commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install and verify read-only audit
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun test scripts/backend/current-season-roster-audit.test.ts scripts/backend/sportsmonks-production-probe.test.ts
+          bun run backend:secrets:check
+
+      - name: Read provider roster coverage and one fixture sample
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$SPORTSMONKS_API_TOKEN"
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          bun scripts/backend/current-season-roster-audit.ts
+
+      - name: Scan count-only evidence
+        id: evidence_scan
+        if: always()
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -d "$CURRENT_ROSTER_AUDIT_EVIDENCE_DIR"
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$CURRENT_ROSTER_AUDIT_EVIDENCE_DIR"
+          if [[ -n "$SPORTSMONKS_API_TOKEN" ]] && grep -R -F -q -- "$SPORTSMONKS_API_TOKEN" "$CURRENT_ROSTER_AUDIT_EVIDENCE_DIR"; then
+            echo "CREDENTIAL_FOUND_IN_EVIDENCE"
+            exit 1
+          fi
+
+      - name: Upload read-only audit evidence
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: current-roster-audit-${{ github.run_id }}
+          path: ${{ env.CURRENT_ROSTER_AUDIT_EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 30
