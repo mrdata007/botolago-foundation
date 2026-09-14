@@ -24,7 +24,8 @@ interface RpcCall {
 function rpcClient(
   calls: RpcCall[],
   uploads: string[] = [],
-  teamIngestError?: { readonly message: string; readonly code: string },
+  ingestError?: { readonly message: string; readonly code: string },
+  errorEntityType = "team",
 ): CatalogRpcClient {
   let run = 0;
   return {
@@ -52,8 +53,8 @@ function rpcClient(
           calls.push({ name: rpcName, args });
           if (rpcName === "begin_football_ingestion") return { data: `run-${++run}`, error: null };
           if (rpcName === "ingest_football_catalog_entity") {
-            if (args.p_entity_type === "team" && teamIngestError) {
-              return { data: null, error: teamIngestError };
+            if (args.p_entity_type === errorEntityType && ingestError) {
+              return { data: null, error: ingestError };
             }
             return {
               data: { id: `id-${args.p_external_id}`, outcome: "inserted" },
@@ -210,6 +211,66 @@ describe("protected SportsMonks catalog function", () => {
     expect(calls.some((call) => call.name === "attach_football_team_crest")).toBe(true);
     expect(calls.some((call) => call.name === "record_football_ingestion_rejection")).toBe(false);
   });
+
+  test.each([
+    ["competition", "competitions"],
+    ["season", "seasons"],
+    ["round", "rounds"],
+  ])(
+    "preserves stale %s metadata and continues the catalog dependency chain",
+    async (entity, job) => {
+      const calls: RpcCall[] = [];
+      const sourceUpdatedAt = "2026-07-05T17:00:00.000Z";
+      const fetchProvider = providerFetch([]);
+      const response = await handleSportsMonksCatalogRequest(
+        new Request("https://example.test/football-ingest", {
+          method: "POST",
+          headers: {
+            "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+          },
+          body: JSON.stringify({ job: "catalog", pageSize: 50, maxPages: 1 }),
+        }),
+        {
+          environment,
+          client: rpcClient(calls, [], { message: "STALE_UPDATE", code: "P0001" }, entity),
+          fetch: async (input, init) => {
+            if (String(input).includes("/rounds/seasons/28647")) {
+              return Response.json({
+                data: [{ id: 301, season_id: 28647, name: "1", last_played_at: sourceUpdatedAt }],
+              });
+            }
+            const providerResponse = await fetchProvider(input, init);
+            if (!String(input).includes("/teams/") && providerResponse.ok) {
+              const body = await providerResponse.json();
+              body.data.last_played_at = sourceUpdatedAt;
+              return Response.json(body);
+            }
+            return providerResponse;
+          },
+          now: () => new Date("2026-09-14T19:09:00.000Z"),
+        },
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        jobs: { [job]: { validated: 1, skipped: 1, rejected: 0 } },
+      });
+      const ingests = calls.filter((call) => call.name === "ingest_football_catalog_entity");
+      expect(ingests.map((call) => call.args.p_entity_type)).toEqual([
+        "competition",
+        "season",
+        "round",
+        "team",
+      ]);
+      expect(
+        ingests.find((call) => call.args.p_entity_type === entity)?.args.p_entity,
+      ).toMatchObject({
+        freshness: { updatedAt: sourceUpdatedAt, sourceSequence: Date.parse(sourceUpdatedAt) },
+      });
+      expect(calls.filter((call) => call.name === "complete_football_ingestion")).toHaveLength(4);
+      expect(calls.some((call) => call.name === "record_football_ingestion_rejection")).toBe(false);
+    },
+  );
 
   test("records only sanitized RPC and SQLSTATE diagnostics for database failures", async () => {
     const calls: RpcCall[] = [];
