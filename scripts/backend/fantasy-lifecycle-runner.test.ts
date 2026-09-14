@@ -224,6 +224,8 @@ function harness(initialStatus = "provisional") {
     lockVersion: 4,
     sequenceNumber: 1,
     scoringInputVersion: initialStatus === "finalized" ? 1 : 0,
+    nextGameweekId: null as string | null,
+    advancedToGameweekId: null as string | null,
   };
   const gateway: FantasyWorkerGateway = {
     async rpc(name, args) {
@@ -256,10 +258,20 @@ function harness(initialStatus = "provisional") {
           return { leagueIds: [id(8)], afterLeagueId: id(8), hasMore: false };
         case "service_complete_fantasy_gameweek":
           return { finalized: true };
-        case "service_apply_fantasy_price_changes":
+        case "service_run_fantasy_price_batch":
           return { updatedMemberships: 0, afterPlayerId: id(114), hasMore: false };
         case "service_enqueue_gameweek_finalized_notifications":
           return { scanned: 1, enqueued: 1, skipped: 0, nextCursor: teamId, hasMore: false };
+        case "service_complete_fantasy_postwork":
+          return { completed: true };
+        case "service_prepare_next_fantasy_gameweek":
+          return {
+            prepared: 1,
+            hasMore: false,
+            nextGameweekId: state.nextGameweekId,
+            status: "open",
+            alreadyAdvanced: false,
+          };
         default:
           throw new Error(`unexpected_rpc_${name}`);
       }
@@ -281,10 +293,10 @@ describe("bounded manual Fantasy pipeline", () => {
     expect(names.indexOf("service_complete_fantasy_gameweek")).toBeGreaterThan(
       names.lastIndexOf("service_recalculate_fantasy_rankings"),
     );
-    expect(names.indexOf("service_apply_fantasy_price_changes")).toBeGreaterThan(
+    expect(names.indexOf("service_run_fantasy_price_batch")).toBeGreaterThan(
       names.indexOf("service_complete_fantasy_gameweek"),
     );
-    expect(names.at(-1)).toBe("service_enqueue_gameweek_finalized_notifications");
+    expect(names.at(-1)).toBe("service_complete_fantasy_postwork");
     const results = calls.find((call) => call.name === "service_persist_fantasy_scoring_results")!
       .args.p_team_results as { provisionalScore: number }[];
     expect(results[0]!.provisionalScore).toBe(20);
@@ -292,9 +304,9 @@ describe("bounded manual Fantasy pipeline", () => {
       calls.filter((call) => call.name === "service_recalculate_fantasy_rankings"),
     ).toHaveLength(4);
     expect(
-      calls.find((call) => call.name === "service_apply_fantasy_price_changes")!.args
-        .p_source_version,
-    ).toBe(2);
+      calls.find((call) => call.name === "service_run_fantasy_price_batch")!.args
+        .p_calculation_version,
+    ).toBe(1);
   });
 
   it("waits for canonical final football and performs no scoring writes", async () => {
@@ -323,13 +335,64 @@ describe("bounded manual Fantasy pipeline", () => {
     expect(result.outcome).toBe("already_finalized");
     expect(calls.map((call) => call.name)).toEqual([
       "service_fantasy_lifecycle_state",
-      "service_apply_fantasy_price_changes",
+      "service_run_fantasy_price_batch",
       "service_enqueue_gameweek_finalized_notifications",
+      "service_complete_fantasy_postwork",
     ]);
     const wrong = harness("finalized");
     await expect(
       runFantasyLifecycle(wrong.gateway, { gameweekId, calculationVersion: 2 }),
     ).rejects.toThrow("fantasy_calculation_version_mismatch");
+  });
+
+  it("prepares only the existing next gameweek after durable postwork and resumes batches", async () => {
+    const { gateway, calls, state } = harness("finalized");
+    state.nextGameweekId = id(99);
+    const original = gateway.rpc.bind(gateway);
+    let batches = 0;
+    gateway.rpc = async (name, args) => {
+      const result = await original(name, args);
+      return name === "service_prepare_next_fantasy_gameweek"
+        ? {
+            ...(result as object),
+            hasMore: ++batches === 1,
+            status: batches === 1 ? "scheduled" : "open",
+          }
+        : result;
+    };
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    expect(result).toMatchObject({ nextGameweekId: id(99), nextGameweekStatus: "open" });
+    const names = calls.map((call) => call.name);
+    expect(names.indexOf("service_prepare_next_fantasy_gameweek")).toBeGreaterThan(
+      names.indexOf("service_complete_fantasy_postwork"),
+    );
+    expect(batches).toBe(2);
+    expect(calls.at(-1)?.args.p_next_gameweek_id).toBe(id(99));
+  });
+
+  it("does not repeat historical price work after the next gameweek has opened", async () => {
+    const { gateway, calls, state } = harness("finalized");
+    state.nextGameweekId = id(99);
+    state.advancedToGameweekId = id(99);
+    expect(await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 })).toMatchObject(
+      { outcome: "already_advanced", nextGameweekId: id(99) },
+    );
+    expect(calls.map((call) => call.name)).toEqual(["service_fantasy_lifecycle_state"]);
+  });
+
+  it("does not open a next gameweek when postwork completion fails", async () => {
+    const { gateway, calls, state } = harness("finalized");
+    state.nextGameweekId = id(99);
+    const original = gateway.rpc.bind(gateway);
+    gateway.rpc = async (name, args) => {
+      if (name === "service_complete_fantasy_postwork")
+        throw new Error("fantasy_notifications_incomplete");
+      return original(name, args);
+    };
+    await expect(
+      runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 }),
+    ).rejects.toThrow("fantasy_notifications_incomplete");
+    expect(calls.some((call) => call.name === "service_prepare_next_fantasy_gameweek")).toBeFalse();
   });
 
   it("persists the full player snapshot once across team pages and detects digest changes", async () => {

@@ -25,6 +25,8 @@ const lifecycleSchema = z.object({
   lockVersion: positive,
   sequenceNumber: positive,
   scoringInputVersion: integer.min(0),
+  nextGameweekId: uuid.nullable().optional(),
+  advancedToGameweekId: uuid.nullable().optional(),
   hasMore: z.boolean().optional(),
   changed: z.boolean().optional(),
   waitingReason: z.string().nullable().optional(),
@@ -307,15 +309,14 @@ export async function runFantasyLifecycle(
   );
   if (state.gameweekId !== gameweekId) throw new Error("fantasy_worker_scope_mismatch");
   const expectedSeasonId = state.seasonId;
+  const nextGameweekId = state.nextGameweekId ?? null;
   const finishPublishedWork = async () => {
     let afterPlayerId: string | null = null;
     do {
       const page = z.object({ afterPlayerId: uuid.nullable(), hasMore: z.boolean() }).parse(
-        await call("service_apply_fantasy_price_changes", {
+        await call("service_run_fantasy_price_batch", {
           p_gameweek_id: gameweekId,
-          // Source version 1 belongs to the opening catalog. A gameweek's
-          // market movement runs once, including retries of score corrections.
-          p_source_version: state.sequenceNumber + 1,
+          p_calculation_version: calculationVersion,
           p_after_player_id: afterPlayerId,
           p_batch_size: batchSize,
         }),
@@ -342,12 +343,48 @@ export async function runFantasyLifecycle(
         throw new Error("fantasy_worker_cursor_invalid");
       afterNotificationTeamId = page.nextCursor;
     } while (calls <= maxBatches);
+    z.object({ completed: z.literal(true) }).parse(
+      await call("service_complete_fantasy_postwork", {
+        p_gameweek_id: gameweekId,
+        p_calculation_version: calculationVersion,
+      }),
+    );
+    if (!nextGameweekId) return { nextGameweekId: null, nextGameweekStatus: "not_staged" };
+    do {
+      const page = z
+        .object({
+          prepared: integer.min(0),
+          hasMore: z.boolean(),
+          nextGameweekId: uuid,
+          status,
+          alreadyAdvanced: z.boolean(),
+        })
+        .parse(
+          await call("service_prepare_next_fantasy_gameweek", {
+            p_previous_gameweek_id: gameweekId,
+            p_next_gameweek_id: nextGameweekId,
+            p_calculation_version: calculationVersion,
+            p_batch_size: batchSize,
+          }),
+        );
+      if (page.nextGameweekId !== nextGameweekId) throw new Error("fantasy_worker_scope_mismatch");
+      if (!page.hasMore) return { nextGameweekId, nextGameweekStatus: page.status };
+      if (!page.prepared) throw new Error("fantasy_worker_no_progress");
+    } while (calls <= maxBatches);
+    throw new Error("fantasy_worker_batch_limit");
   };
   if (state.status === "finalized") {
     if (state.scoringInputVersion !== calculationVersion)
       throw new Error("fantasy_calculation_version_mismatch");
-    await finishPublishedWork();
-    return { outcome: "already_finalized", gameweekId, calls };
+    if (state.advancedToGameweekId)
+      return {
+        outcome: "already_advanced",
+        gameweekId,
+        nextGameweekId: state.advancedToGameweekId,
+        calls,
+      };
+    const progression = await finishPublishedWork();
+    return { outcome: "already_finalized", gameweekId, ...progression, calls };
   }
   while (["open", "locked", "live"].includes(state.status)) {
     state = lifecycleSchema.parse(
@@ -490,8 +527,15 @@ export async function runFantasyLifecycle(
     p_gameweek_id: gameweekId,
     p_calculation_version: calculationVersion,
   });
-  await finishPublishedWork();
-  return { outcome: "finalized", gameweekId, calculationVersion, processedTeams, calls };
+  const progression = await finishPublishedWork();
+  return {
+    outcome: "finalized",
+    gameweekId,
+    calculationVersion,
+    processedTeams,
+    ...progression,
+    calls,
+  };
 }
 
 export function trustedWorkerEnvironment(env: Record<string, string | undefined>) {

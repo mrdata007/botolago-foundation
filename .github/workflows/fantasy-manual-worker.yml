@@ -21,7 +21,8 @@ on:
         type: string
 
 # Intentionally no schedule. This workflow cannot create a Fantasy season,
-# open registration, invent future fixtures or open the next gameweek.
+# open registration or invent future fixtures. It advances an existing staged
+# next gameweek only after all previous postwork is durably complete.
 concurrency:
   group: botolago-production-v2-mutation
   cancel-in-progress: false

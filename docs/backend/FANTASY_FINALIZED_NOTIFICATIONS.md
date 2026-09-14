@@ -37,3 +37,23 @@ migration.
 
 The focused pgTAP file is
 `supabase/tests/database/fantasy_finalized_notification_batches.test.sql`.
+
+The lifecycle worker also records postwork in the private
+`fantasy_gameweek_postwork` journal, keyed by gameweek and calculation version.
+It calls `service_run_fantasy_price_batch` with sequential player cursors before
+enqueueing events. The wrapper uses the existing market calculation and derives
+its source version from the gameweek sequence plus one. Zero-movement players
+still advance the durable cursor; they do not need fabricated price history.
+Restarting at a null cursor resumes from the journal's checkpoint, and retrying
+the previous request returns its cached response. The player catalog is pinned
+for the duration of the pass.
+
+After every price page and finalized-event page has completed, call
+`service_complete_fantasy_postwork(gameweek_id, calculation_version)`. It verifies
+the terminal price checkpoint and every expected target-user event before
+stamping `completed_at`. Next-gameweek progression must verify this exact-version
+timestamp. The journal proves completed price processing and durable event
+enqueueing; it does not assert that users received notifications.
+
+Postwork regressions are in
+`supabase/tests/database/fantasy_postwork_journal.test.sql`.

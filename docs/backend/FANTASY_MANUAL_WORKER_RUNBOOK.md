@@ -1,8 +1,8 @@
 # Manual Fantasy worker
 
 The worker runs one existing, activated gameweek. It does not create a season,
-open registration, change the calendar, open the next gameweek, or install a
-schedule. `FANTASY_MANUAL_WORKER_ENABLED` is absent/false by default. Leave it
+open registration, change the calendar, or install a schedule. It can prepare
+and open the existing next gameweek after all previous postwork is complete. `FANTASY_MANUAL_WORKER_ENABLED` is absent/false by default. Leave it
 disabled until production data, activation and capacity checks pass.
 
 ## Current launch prerequisites
@@ -16,7 +16,7 @@ independently confirmed. These inputs do not authorize Fantasy activation.
 Before activation, independently verify the complete current player pool,
 official fixture dates/deadlines, season duration and the reviewed 16-club,
 30-round activation profile. Apply and test the lifecycle, scoring snapshot,
-finalization and notification migrations as one release. Confirm the selected
+finalization, notification, postwork and progression migrations as one release. Confirm the selected
 compute tier can run the new pipeline at expected team counts. Existing
 capacity exercises with seeded scores do not certify full production scoring.
 
@@ -43,11 +43,23 @@ The trusted runner executes these guarded phases:
    calculate both gameweek and overall rankings globally and for each league.
 6. Complete the gameweek through the sealed-input and result-coverage guards.
 7. Apply the gameweek's price movement and enqueue deterministic in-app
-   finalized notifications. This does not send external email or push.
+   finalized notifications. This does not send external email or push. The
+   database journals price pagination and verifies all notification events
+   before recording postwork completion.
+8. Prepare the existing next gameweek in bounded team batches. Require its
+   verified full round of assigned fixtures and future database deadline.
+   Carry each restored squad's valid selection, preserving any existing next
+   lineup. Open the next gameweek only after every active team is prepared.
 
 The present runner intentionally waits for complete final Football statistics;
-it does not advertise continuous live Fantasy scoring. Progression to another
-gameweek requires its own reviewed opening operation.
+it does not advertise continuous live Fantasy scoring. If no next gameweek is
+staged, it returns `nextGameweekStatus: not_staged` without creating one.
+
+Free Hit activation now captures the original lineup before any temporary
+transfer. Progression restores that captain, vice-captain and bench order
+against the actual restored squad. A historical Free Hit without that capture,
+or a malformed selection, blocks progression for explicit repair; the worker
+never invents a selection or overwrites an existing next-gameweek lineup.
 
 ## Failure and retry
 
@@ -60,7 +72,10 @@ For a failed/partial run, dispatch a fresh run with the same gameweek and
 calculation version. Do not use GitHub's re-run button: the immutable dispatch
 guard accepts first attempts only. Committed batches resume safely: locked
 lineups, final results, Free Hit restoration and rollover journals are durable.
-An already finalized gameweek still resumes price and in-app enqueue work.
+An already finalized gameweek still resumes price and in-app enqueue work,
+then any unfinished next-lineup batches. Partial preparation leaves the next
+gameweek scheduled and read-only until all teams are ready. Once its opening
+journal exists, a retry returns `already_advanced` without replaying old prices.
 
 Do not increment the published scoring version for an ordinary provider
 correction: source sequences replace stable `fixture-stats` category keys.

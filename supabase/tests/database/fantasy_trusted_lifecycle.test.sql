@@ -95,10 +95,12 @@ where id = 'fc400000-0000-4000-8000-000000000001';
 select extensions.throws_ok($$select api.service_advance_fantasy_lifecycle(
   'fc700000-0000-4000-8000-000000000001', 1, 1)$$,
   'PT409', 'fantasy_fixture_resolution_required', 'stale assignment is never silently frozen');
-update app.fantasy_fixture_assignments
-set original_kickoff_at = statement_timestamp() - interval '90 minutes',
-  assigned_kickoff_at = statement_timestamp() - interval '90 minutes'
-where gameweek_id = 'fc700000-0000-4000-8000-000000000001';
+update app.fantasy_fixture_assignments assignment
+set original_kickoff_at = fixture.kickoff_at,
+  assigned_kickoff_at = fixture.kickoff_at
+from app.fixtures fixture
+where fixture.id = assignment.fixture_id
+  and assignment.gameweek_id = 'fc700000-0000-4000-8000-000000000001';
 select extensions.is(api.service_advance_fantasy_lifecycle(
   'fc700000-0000-4000-8000-000000000001', 1, 1)->>'hasMore',
   'true', 'lineup freeze uses bounded committed batches');
