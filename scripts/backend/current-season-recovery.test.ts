@@ -7,6 +7,7 @@ import {
   validateCurrentSquads,
   validateCanaryRun,
   validateRecoveryMode,
+  preflightCurrentSquadRpc,
 } from "./current-season-recovery";
 import type { SportsMonksProbeEvidence } from "./sportsmonks-production-probe";
 
@@ -41,6 +42,48 @@ const probe: SportsMonksProbeEvidence = {
 };
 
 describe("current season recovery boundaries", () => {
+  test("deployed squad RPC preflight proves service access with input that cannot mutate data", async () => {
+    const calls: unknown[] = [];
+    const client = {
+      schema: (schema: "api") => ({
+        rpc: async (name: string, args: Record<string, unknown>) => {
+          calls.push({ schema, name, args });
+          return { data: null, error: { code: "PT400", message: "invalid_current_squad_input" } };
+        },
+      }),
+    };
+    expect(await preflightCurrentSquadRpc(client)).toEqual({
+      available: true,
+      serviceAuthorized: true,
+      writesAttempted: false,
+    });
+    expect(calls).toEqual([
+      {
+        schema: "api",
+        name: "service_ingest_current_football_squads",
+        args: {
+          p_provider_name: null,
+          p_season_external_id: null,
+          p_team_squads: null,
+          p_observed_at: null,
+        },
+      },
+    ]);
+  });
+  test("preflight rejects unauthenticated, missing and unexpected successful RPC responses", async () => {
+    for (const error of [
+      null,
+      { code: "PT403", message: "forbidden" },
+      { code: "42501", message: "permission denied" },
+      { code: "PGRST202", message: "function not found" },
+      { code: "PT400", message: "some_other_error" },
+    ]) {
+      const client = { schema: (_name: "api") => ({ rpc: async () => ({ data: null, error }) }) };
+      await expect(preflightCurrentSquadRpc(client)).rejects.toThrow(
+        "current_squad_rpc_preflight_failed",
+      );
+    }
+  });
   test("recurring refresh requires opt-in and cannot run a new canary", () => {
     expect(
       validateRecoveryMode({

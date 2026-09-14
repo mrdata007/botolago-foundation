@@ -27,12 +27,10 @@ const WORKFLOW = ".github/workflows/football-current-season-recovery.yml";
 const VERIFIED_FILES = [
   WORKFLOW,
   "scripts/backend/current-season-recovery.ts",
-  "scripts/backend/current-season-migration.py",
-  "scripts/backend/phase7e-production-migration-promoter.py",
   "scripts/backend/sportsmonks-production-probe.ts",
   "supabase/functions/_shared/sportsmonks-catalog.ts",
   "supabase/functions/_shared/sportsmonks-fixtures.ts",
-  "supabase/migrations/20260914182621_current_season_squad_recovery.sql",
+  "supabase/migrations/20260914184657_current_season_squad_recovery.sql",
   "supabase/migrations/20260731203317_gate3b_historical_squads_standings.sql",
   "supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql",
   "package.json",
@@ -275,6 +273,33 @@ export function validateRecoveryMode(env: NodeJS.ProcessEnv): "canary" | "refres
   return fail("current_season_schedule_not_enabled");
 }
 
+interface CurrentSquadPreflightClient {
+  schema(name: "api"): {
+    rpc(
+      name: string,
+      args: Row,
+    ): PromiseLike<{
+      data: unknown;
+      error: { code?: string; message?: string } | null;
+    }>;
+  };
+}
+
+export async function preflightCurrentSquadRpc(client: CurrentSquadPreflightClient): Promise<Row> {
+  // This routine checks service authorization before validating input. Null
+  // input stops at validation, before querying or mutating any football row.
+  const { error } = await client.schema("api").rpc("service_ingest_current_football_squads", {
+    p_provider_name: null,
+    p_season_external_id: null,
+    p_team_squads: null,
+    p_observed_at: null,
+  });
+  if (error?.code !== "PT400" || error.message !== "invalid_current_squad_input") {
+    fail("current_squad_rpc_preflight_failed");
+  }
+  return { available: true, serviceAuthorized: true, writesAttempted: false };
+}
+
 async function verifyPriorCanary(env: NodeJS.ProcessEnv): Promise<Row> {
   const runId = env.FOOTBALL_CURRENT_CANARY_VERIFIED_RUN_ID ?? "";
   const token = env.GITHUB_TOKEN;
@@ -404,6 +429,13 @@ async function main(): Promise<void> {
       evidence.verifiedCanary = await verifyPriorCanary(process.env);
       await save();
     }
+    const client = createClient(config.url, config.key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    evidence.databasePreflight = await preflightCurrentSquadRpc(
+      client as unknown as CurrentSquadPreflightClient,
+    );
+    await save();
     const probe = await runSportsMonksProductionProbe(process.env);
     evidence.provider = probe;
     validateCurrentReadiness(probe, config.commit);
@@ -437,9 +469,6 @@ async function main(): Promise<void> {
       FOOTBALL_PROVIDER_MAX_RETRIES: "2",
       FOOTBALL_INGESTION_TRIGGER_SECRET: trigger,
     };
-    const client = createClient(config.url, config.key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const request = (job: string, maxPages: number) =>
       new Request("https://localhost/protected-recovery", {
         method: "POST",

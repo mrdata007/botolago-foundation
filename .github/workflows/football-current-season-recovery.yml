@@ -81,20 +81,6 @@ jobs:
           bun install --frozen-lockfile
           bun test scripts/backend/current-season-recovery.test.ts scripts/backend/sportsmonks-production-probe.test.ts supabase/functions/_shared/sportsmonks-catalog.test.ts supabase/functions/_shared/sportsmonks-fixtures.test.ts
           bun run backend:secrets:check
-          if [[ "$CURRENT_SEASON_RECOVERY_MODE" == "canary" ]]; then
-            python scripts/backend/current-season-migration.test.py
-          fi
-
-      - name: Promote only the reviewed current-squad migration
-        if: github.event_name == 'workflow_dispatch' && env.CURRENT_SEASON_RECOVERY_MODE == 'canary'
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$SUPABASE_ACCESS_TOKEN"
-          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
-          python scripts/backend/current-season-migration.py
 
       - name: Probe then recover authentic published catalog fixtures and squads
         env:

@@ -76,9 +76,10 @@ ELBOTOLA_INGESTION_TRIGGER_SECRET=<runtime-secret>
 No value may use a `VITE_` prefix. The approval flag is not a substitute for
 the inactive database publisher guard.
 
-The guarded deployment, canary and opt-in refresh procedure is documented in
-`ELBOTOLA_RECOVERY_RUNBOOK.md`. Its dedicated trigger leaves shared GNews and
-football authentication unchanged.
+The guarded canary and opt-in refresh procedure is documented in
+`ELBOTOLA_RECOVERY_RUNBOOK.md`. It runs this adapter directly in a protected Bun
+job with a process-only trigger, leaving Edge Functions and shared GNews and
+football runtime configuration unchanged.
 
 ## Approval and activation sequence
 
