@@ -291,5 +291,91 @@ select extensions.results_eq(
 );
 reset role;
 
+-- Aggregate scoring snapshots must replace prior values, including zero.
+-- These are the stable keys produced by scorePlayerFixture; the service RPC
+-- must preserve genuinely additive adjustments and other fixtures.
+insert into app.fixtures (
+  id,competition_id,season_id,round_id,home_team_id,away_team_id,kickoff_at,
+  status,provider_updated_at,source_sequence
+)
+select ('f9500000-0000-4000-8000-' || lpad(i::text,12,'0'))::uuid,
+  'f1000000-0000-4000-8000-000000000001','f2000000-0000-4000-8000-000000000001',
+  'f3000000-0000-4000-8000-000000000001','f4000003-0000-4000-8000-000000000001',
+  'f4000004-0000-4000-8000-000000000001',
+  '2090-01-01T12:00:00Z'::timestamptz + (i-1)*interval '1 day',
+  'not_started',statement_timestamp(),1
+from generate_series(1,2) i;
+
+select set_config('test.snapshot_source_key',
+  'fixture-stats:f9500000-0000-4000-8000-000000000001:f5000013-0000-4000-8000-000000000001:goal',true);
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000002','goal',4,
+  'fixture-stats:f9500000-0000-4000-8000-000000000002:f5000013-0000-4000-8000-000000000001:goal',1,1);
+select api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','adjustment',3,'adjustment:reviewed:independent',1,1);
+select set_config('test.snapshot_event_id',api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',4,current_setting('test.snapshot_source_key'),10,1)::text,true);
+select extensions.is(api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',4,current_setting('test.snapshot_source_key'),10,1)::text,
+  current_setting('test.snapshot_event_id'),'identical scoring snapshot retries preserve the event ID');
+reset role;
+select extensions.is((select provisional_points from app.fantasy_player_gameweek_points
+  where fantasy_player_id='f7000013-0000-4000-8000-000000000001'
+    and gameweek_id='f6400000-0000-4000-8000-000000000001'),11,
+  'one goal and its retry count once alongside independent contributions');
+
+set local role service_role;
+select api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',8,current_setting('test.snapshot_source_key'),11,1);
+reset role;
+select extensions.is((select provisional_points from app.fantasy_player_gameweek_points
+  where fantasy_player_id='f7000013-0000-4000-8000-000000000001'
+    and gameweek_id='f6400000-0000-4000-8000-000000000001'),15,
+  'a second goal replaces the first aggregate rather than adding another snapshot');
+
+set local role service_role;
+select api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',4,current_setting('test.snapshot_source_key'),12,1);
+reset role;
+select extensions.is((select provisional_points from app.fantasy_player_gameweek_points
+  where fantasy_player_id='f7000013-0000-4000-8000-000000000001'
+    and gameweek_id='f6400000-0000-4000-8000-000000000001'),11,
+  'a downward correction from two goals to one replaces the aggregate');
+
+set local role service_role;
+select api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',0,current_setting('test.snapshot_source_key'),13,1);
+select extensions.is(api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',0,current_setting('test.snapshot_source_key'),13,1)::text,
+  current_setting('test.snapshot_event_id'),'zero corrections and retries preserve the event ID');
+select extensions.throws_ok($$select api.service_upsert_fantasy_player_points(
+  'f7000013-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',
+  'f9500000-0000-4000-8000-000000000001','goal',8,current_setting('test.snapshot_source_key'),12,1)$$,
+  'PT409','stale_update','an older scoring observation cannot undo the zero correction');
+reset role;
+select extensions.is((select provisional_points from app.fantasy_player_gameweek_points
+  where fantasy_player_id='f7000013-0000-4000-8000-000000000001'
+    and gameweek_id='f6400000-0000-4000-8000-000000000001'),7,
+  'zero removes all aggregate goal points and preserves independent contributions');
+select extensions.is((select count(*)::integer from app.fantasy_player_point_events
+  where fantasy_player_id='f7000013-0000-4000-8000-000000000001'),3,
+  'corrections do not accumulate obsolete aggregate rows');
+select extensions.is((select points from app.fantasy_player_point_events
+  where source_key='adjustment:reviewed:independent'),3,
+  'the independently identified adjustment remains unchanged');
+select extensions.is((select points from app.fantasy_player_point_events
+  where fixture_id='f9500000-0000-4000-8000-000000000002'),4,
+  'another fixture for the same player remains unchanged');
+
 select * from extensions.finish();
 rollback;
