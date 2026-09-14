@@ -698,13 +698,14 @@ async function runJob(
             );
           } catch (error) {
             if (
-              job !== "teams" ||
               !(error instanceof CatalogRuntimeError) ||
               error.code !== "stale_update" ||
               error.rpcName !== "ingest_football_catalog_entity"
             ) {
               throw error;
             }
+            // A newer mapped row already exists. Preserve it and continue the
+            // dependency chain without inventing a newer provider timestamp.
             outcome = "skipped";
           }
           if (job === "teams") await storeTeamCrest(item, config, dependencies);
