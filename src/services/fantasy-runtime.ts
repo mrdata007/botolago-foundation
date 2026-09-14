@@ -1,6 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
+import { readFantasyAvailability, type FantasyAvailability } from "./fantasy-availability";
 import {
   buildGlobalRankings,
   selectRankingsPage,
@@ -126,6 +127,11 @@ async function cloudTeam() {
 }
 
 export const fantasyService = {
+  async getAvailability(): Promise<FantasyAvailability> {
+    if (mode() === "mock") return { status: "ready", canCreate: true };
+    return readFantasyAvailability(hub);
+  },
+
   async getCurrentGameweek(): Promise<Gameweek> {
     if (mode() === "mock") {
       const { gameweek } = await import("@/mocks/data");

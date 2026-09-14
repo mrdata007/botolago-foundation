@@ -46,7 +46,7 @@ production schedule. It fails closed unless all of these conditions hold:
 1. `ELBOTOLA_SYNDICATION_APPROVED=true` is present only in the trusted server
    runtime after approval is archived;
 2. `ELBOTOLA_ORIGIN` is exactly `https://www.elbotola.com`;
-3. the shared ingestion trigger is valid;
+3. the dedicated ElBotola ingestion trigger is valid;
 4. the `app.publishers` row for `elbotola` is separately activated by a
    reviewed production database change;
 5. a current `robots.txt`, when present, does not disallow the homepage;
@@ -70,11 +70,15 @@ ELBOTOLA_ORIGIN=https://www.elbotola.com
 ELBOTOLA_PAGE_SIZE=10
 ELBOTOLA_TIMEOUT_MS=10000
 ELBOTOLA_MAX_RETRIES=1
-NEWS_INGESTION_TRIGGER_SECRET=<runtime-secret>
+ELBOTOLA_INGESTION_TRIGGER_SECRET=<runtime-secret>
 ```
 
 No value may use a `VITE_` prefix. The approval flag is not a substitute for
 the inactive database publisher guard.
+
+The guarded deployment, canary and opt-in refresh procedure is documented in
+`ELBOTOLA_RECOVERY_RUNBOOK.md`. Its dedicated trigger leaves shared GNews and
+football authentication unchanged.
 
 ## Approval and activation sequence
 

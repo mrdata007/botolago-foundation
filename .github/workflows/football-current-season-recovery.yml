@@ -1,0 +1,109 @@
+name: Recover published current-season Football data
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit for current-season recovery
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_CURRENT_SEASON_RECOVERY
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  recovery:
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production-admin-activation
+    env:
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+    steps:
+      - name: Guard immutable first-attempt owner dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$CONFIRMATION" = "RUN_CURRENT_SEASON_RECOVERY"
+          test "$SUPABASE_PRODUCTION_PROJECT_REF" = "tkewgajrljbwgwedqsxn"
+          test "$SUPABASE_PRODUCTION_PROJECT_NAME" = "BotolaGO Production V2"
+          test "${SUPABASE_PRODUCTION_URL%/}" = "https://tkewgajrljbwgwedqsxn.supabase.co"
+          evidence_dir="$RUNNER_TEMP/current-season-recovery/evidence"
+          install -d -m 0700 "$evidence_dir"
+          echo "CURRENT_SEASON_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
+
+      - name: Check out exact reviewed commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install and verify recovery runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun test scripts/backend/current-season-recovery.test.ts scripts/backend/sportsmonks-production-probe.test.ts supabase/functions/_shared/sportsmonks-catalog.test.ts supabase/functions/_shared/sportsmonks-fixtures.test.ts
+          bun run backend:secrets:check
+
+      - name: Probe then recover authentic published catalog fixtures and squads
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_SECRET_KEY"
+          test -n "$SPORTSMONKS_API_TOKEN"
+          printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          bun scripts/backend/current-season-recovery.ts
+
+      - name: Scan sanitized evidence
+        id: evidence_scan
+        if: always()
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$CURRENT_SEASON_EVIDENCE_DIR"
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$CURRENT_SEASON_EVIDENCE_DIR"
+          for value in "$SUPABASE_SECRET_KEY" "$SPORTSMONKS_API_TOKEN"; do
+            if [[ -n "$value" ]] && grep -R -F -q -- "$value" "$CURRENT_SEASON_EVIDENCE_DIR"; then
+              echo "CREDENTIAL_FOUND_IN_EVIDENCE"
+              exit 1
+            fi
+          done
+
+      - name: Upload recovery evidence
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: current-season-recovery-${{ github.run_id }}
+          path: ${{ env.CURRENT_SEASON_EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 30

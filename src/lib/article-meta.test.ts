@@ -20,7 +20,7 @@ describe("article metadata", () => {
     const head = buildArticleHead(article, "article 1");
 
     expect(head.links).toEqual([
-      { rel: "canonical", href: "https://www.botolago.app/news/article%201" },
+      { rel: "canonical", href: "https://botolago.com/news/article%201" },
     ]);
     expect(head.meta).toContainEqual({ title: "Titre officiel — BotolaGO" });
     expect(head.meta).toContainEqual({ property: "og:type", content: "article" });
