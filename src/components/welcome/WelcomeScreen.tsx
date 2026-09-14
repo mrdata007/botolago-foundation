@@ -5,12 +5,11 @@ import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
 
 interface Props {
-  onStart: () => void;
   onSignIn: () => void;
   onGuest: () => void;
 }
 
-export function WelcomeScreen({ onStart, onSignIn, onGuest }: Props) {
+export function WelcomeScreen({ onSignIn, onGuest }: Props) {
   const { t, dir } = useI18n();
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
@@ -58,7 +57,7 @@ export function WelcomeScreen({ onStart, onSignIn, onGuest }: Props) {
         <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-4 motion-safe:duration-700">
           <button
             type="button"
-            onClick={onStart}
+            onClick={onGuest}
             className="group flex min-h-[54px] w-full items-center justify-center gap-2 rounded-[18px] bg-white px-6 text-base font-bold text-[color:var(--brand-primary)] shadow-lg shadow-black/30 transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:translate-y-0"
           >
             <span>{t("welcome.cta_primary")}</span>

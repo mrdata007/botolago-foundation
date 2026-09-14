@@ -13,7 +13,7 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { newsService } from "@/services/news";
+import { newsService, type NewsLanguageSelection } from "@/services/news";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -71,7 +71,6 @@ function HomePage() {
   if (showWelcome) {
     return (
       <WelcomeScreen
-        onStart={() => navigate({ to: "/auth/register" })}
         onSignIn={() => navigate({ to: "/auth/login" })}
         onGuest={async () => {
           await authService.continueAsGuest();
@@ -108,6 +107,7 @@ function HomeContent() {
   const availability = useFantasyAvailability();
   const fantasyReady = !availability.isError && availability.data?.status === "ready";
   const canCreate = availability.data?.status === "ready" && availability.data.canCreate;
+  const [newsLanguage, setNewsLanguage] = useState<NewsLanguageSelection>("auto");
 
   const summaryQ = useQuery({
     queryKey: key("summary"),
@@ -133,18 +133,14 @@ function HomeContent() {
     queryFn: () => fantasyService.getTrendingPlayers(),
     enabled: fantasyReady,
   });
-  const leadQ = useQuery({
-    queryKey: ["news", "home-modules", lang],
-    queryFn: () => newsService.getHome(lang).then((modules) => modules.lead),
+  const newsQ = useQuery({
+    queryKey: ["news", "edition", lang, newsLanguage],
+    queryFn: () => newsService.getEdition(lang, newsLanguage),
   });
   const followedQ = useQuery({
     queryKey: ["identity", "followed-teams", status, lang],
     queryFn: () =>
       status === "authenticated" ? followService.getFollowedTeams(lang) : Promise.resolve([]),
-  });
-  const followedNewsQ = useQuery({
-    queryKey: ["news", "latest", lang],
-    queryFn: () => newsService.getArticles(lang, { category: "latest" }),
   });
   const trendingQ = useQuery({
     queryKey: ["trending"],
@@ -305,12 +301,37 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       <Section index={3}>
         <SectionHeader eyebrow={t("nav.news")} icon={Newspaper} title={t("home.lead_story")} />
-        {leadQ.isError ? (
-          <ErrorState onRetry={() => void leadQ.refetch()} />
-        ) : leadQ.data ? (
-          <ArticleCard article={leadQ.data} variant="lead" clubs={clubsQ.data ?? []} />
-        ) : (
+        <div className="mb-3 space-y-2">
+          <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <span>{t("news.language.label")}</span>
+            <select
+              value={newsLanguage}
+              onChange={(event) => setNewsLanguage(event.target.value as NewsLanguageSelection)}
+              className="surface-3 min-h-11 rounded-xl border border-[var(--border-subtle)] px-3 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]"
+            >
+              <option value="auto">{t("news.language.auto")}</option>
+              <option value="fr">{t("news.language.fr")}</option>
+              <option value="ar">{t("news.language.ar")}</option>
+            </select>
+          </label>
+          {newsQ.data && newsQ.data.articles.length > 0 && (
+            <p role="status" className="text-xs text-[color:var(--text-secondary)]">
+              {t(
+                newsQ.data.language === "ar"
+                  ? "news.language.original_ar"
+                  : "news.language.original_fr",
+              )}
+            </p>
+          )}
+        </div>
+        {newsQ.isError ? (
+          <ErrorState onRetry={() => void newsQ.refetch()} />
+        ) : newsQ.isPending ? (
           <ArticleCardSkeleton variant="lead" />
+        ) : newsQ.data.lead ? (
+          <ArticleCard article={newsQ.data.lead} variant="lead" clubs={clubsQ.data ?? []} />
+        ) : (
+          <EmptyState>{t("news.language.empty")}</EmptyState>
         )}
       </Section>
 
@@ -326,12 +347,14 @@ function HomeContent() {
           action={<ViewAllLink to="/news" />}
         />
         <div className="grid gap-3">
-          {followedNewsQ.isError ? (
-            <ErrorState onRetry={() => void followedNewsQ.refetch()} />
-          ) : !followedNewsQ.data ? (
+          {newsQ.isError ? (
+            <ErrorState onRetry={() => void newsQ.refetch()} />
+          ) : !newsQ.data ? (
             <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+          ) : newsQ.data.articles.length === 0 ? (
+            <EmptyState compact>{t("news.language.empty")}</EmptyState>
           ) : null}
-          {followedNewsQ.data?.slice(0, 3).map((a) => (
+          {newsQ.data?.articles.slice(0, 3).map((a) => (
             <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
           ))}
         </div>
