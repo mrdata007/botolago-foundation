@@ -82,22 +82,47 @@ treated as verified match schedules or used to invent Fantasy deadlines.
 4. Pass the unchanged five-runner, 2,500-user capacity gate and soak on the
    selected production tier. The existing [capacity report](FANTASY_CAPACITY_REPORT.md)
    documents that this gate has not passed.
-5. Complete trusted worker/migration verification, then separately review
-   the catalog preview, stage the real catalog and open registration under
+5. Complete final release checks, then review the catalog preview, stage
+   the real catalog and open registration under
    the [activation runbook](FANTASY_CATALOG_ACTIVATION_RUNBOOK.md).
 6. Resolve French GNews licensing before activating that source. Enable
    recurring Arabic refresh only through an authorized operation after the
    previously rejected enablement action is resolved.
 
-## PR 134 — pending final release evidence
+## PR 134 — implementation and production evidence
 
-[PR 134](https://github.com/mrdata007/botolago-foundation/pull/134) contains the
-pending trusted Fantasy pipeline work. **At this report's checkpoint, its DDL
-has not been applied to production.** Worker code and tests are not a live
-scoring/finalization certification and do not change the blocked launch verdict.
+[PR 134](https://github.com/mrdata007/botolago-foundation/pull/134) adds strict
+current-match statistics, coherent scoring snapshots, atomic result batches,
+sealed finalization, price/event completion journals and next-gameweek
+progression. Free Hit preserves the original squad, captain and bench even
+after multiple temporary transfer batches. The manual worker remains disabled.
 
-- Final reviewed commit and merge outcome: **PENDING — root agent to record.**
-- Exact CI run/check links and outcomes: **PENDING — root agent to record.**
-- Production migration versions, apply evidence and verification: **PENDING.**
-- Any worker execution, provider coverage or activation change: **PENDING;
-  do not infer execution or approval from code being present.**
+[Verification run 34890638209](https://github.com/mrdata007/botolago-foundation/actions/runs/34890638209)
+passed application checks and **39 database suites / 789 assertions**, followed
+by database lint. Its database job reported failure only because generated
+TypeScript types needed updating. The contracts were synchronized from applied
+PostgreSQL metadata and independently checked. PR 134 requires exact generated-type
+parity and passing application/database checks before merge.
+
+The seven migrations were applied successfully to Production V2:
+
+| Version | Migration |
+| --- | --- |
+| 20260914200714 | fantasy_trusted_lifecycle |
+| 20260914200719 | fantasy_scoring_worker_contracts |
+| 20260914200726 | current_finished_fixture_performances |
+| 20260914200730 | fantasy_verified_finalization |
+| 20260914200736 | fantasy_finalized_notification_batches |
+| 20260914200740 | fantasy_next_gameweek_progression |
+| 20260914200744 | fantasy_postwork_journal |
+
+All seven applied SQL bodies match the reviewed source hashes. Earlier migration
+versions remain present. Read-only production checks confirmed five new private
+tables with forced RLS, 15 service-only RPCs and eight restricted private helpers.
+Fantasy seasons, players, gameweeks, new journals and worker runs remain empty;
+there are no pg_cron or pg_net extensions. The current season still has 16 clubs,
+8 fixtures and no imported memberships or scoring-ready performances. Historical
+seasons retain 480 fixtures and 650 / 597 memberships.
+
+The source and capacity gates above still apply. Passing deterministic tests and
+installing the worker do not certify real provider coverage or production load.
