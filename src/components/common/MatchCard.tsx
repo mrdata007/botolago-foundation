@@ -5,6 +5,7 @@ import { ClubCrest } from "./ClubCrest";
 import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { cn } from "@/lib/utils";
 import { MapPin } from "lucide-react";
+import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 
 /**
  * Design System V2 — Match card.
@@ -81,12 +82,15 @@ export function MatchCard({
   const isFinished = status === "finished" || status === "penalties";
   const isScheduled = status === "scheduled" || status === "delayed";
   const isPostponed = status === "postponed" || status === "cancelled";
+  const unconfirmedTime = isKickoffTimeUnconfirmed(match);
 
   const timeFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
   const weekdayFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -106,7 +110,7 @@ export function MatchCard({
         .replace("{as}", String(as));
     }
     if (isScheduled) {
-      return `${home_s} ${t("matches.vs")} ${away_s} — ${t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
+      return `${home_s} ${t("matches.vs")} ${away_s} — ${weekdayFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
     }
     return `${home_s} ${t("matches.vs")} ${away_s} — ${t(`matches.a11y.status_${match.status}` as never) || t("matches.status.postponed")}`;
   })();
@@ -213,6 +217,16 @@ export function MatchCard({
           >
             {timeFmt}
           </div>
+        </div>
+      );
+    }
+    if (unconfirmedTime) {
+      return (
+        <div
+          className="max-w-24 text-center text-xs font-bold text-[color:var(--text-secondary)]"
+          aria-hidden
+        >
+          {t("matches.kickoff_unconfirmed")}
         </div>
       );
     }

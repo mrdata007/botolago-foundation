@@ -31,6 +31,11 @@ export function ArticleCard({
   clubs?: readonly Club[];
 }) {
   const { tr, t, lang } = useI18n();
+  const contentLanguage = article.language ?? lang;
+  const contentAttributes = {
+    lang: contentLanguage,
+    dir: contentLanguage === "ar" ? "rtl" : "ltr",
+  };
   const articleClubs = (clubs ?? []).filter((c) => article.clubIds.includes(c.id)).slice(0, 2);
   const crestRow = (tone: "light" | "dark" = "light") =>
     articleClubs.length > 0 ? (
@@ -92,13 +97,17 @@ export function ArticleCard({
                 {tr(article.tag)}
               </span>
             )}
-            <h3 className="mt-2.5 text-[22px] font-black leading-[1.15] tracking-tight text-white drop-shadow-md sm:text-2xl">
+            <h3
+              {...contentAttributes}
+              className="mt-2.5 text-[22px] font-black leading-[1.15] tracking-tight text-white drop-shadow-md sm:text-2xl"
+            >
               {tr(article.title)}
             </h3>
             <p
+              {...contentAttributes}
               className={cn(
                 "mt-1.5 line-clamp-2 text-sm text-white/85",
-                lang === "ar" && "leading-relaxed",
+                contentLanguage === "ar" && "leading-relaxed",
               )}
             >
               {tr(article.excerpt)}
@@ -145,7 +154,10 @@ export function ArticleCard({
           className="h-14 w-14 shrink-0 rounded-xl shadow-inner"
         />
         <div className="min-w-0 flex-1">
-          <h4 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
+          <h4
+            {...contentAttributes}
+            className="line-clamp-2 text-sm font-bold leading-snug text-foreground"
+          >
             {tr(article.title)}
           </h4>
           <div className="mt-1 flex items-center gap-1.5 truncate text-[11px] text-[color:var(--text-muted)]">
@@ -196,7 +208,10 @@ export function ArticleCard({
                   {tr(article.tag)}
                 </div>
               )}
-              <h3 className="mt-0.5 line-clamp-3 text-[14px] font-black leading-snug tracking-tight text-foreground">
+              <h3
+                {...contentAttributes}
+                className="mt-0.5 line-clamp-3 text-[14px] font-black leading-snug tracking-tight text-foreground"
+              >
                 {tr(article.title)}
               </h3>
               {articleClubs.length > 0 && <div className="mt-1.5">{crestRow()}</div>}
@@ -258,7 +273,10 @@ export function ArticleCard({
             </span>
           )}
           <div className="absolute inset-x-0 bottom-0 p-3">
-            <h3 className="line-clamp-3 text-[15px] font-black leading-snug tracking-tight text-white drop-shadow">
+            <h3
+              {...contentAttributes}
+              className="line-clamp-3 text-[15px] font-black leading-snug tracking-tight text-white drop-shadow"
+            >
               {tr(article.title)}
             </h3>
             {articleClubs.length > 0 && <div className="mt-1.5">{crestRow("dark")}</div>}
@@ -308,13 +326,17 @@ export function ArticleCard({
               {tr(article.tag)}
             </div>
           )}
-          <h3 className="mt-1 line-clamp-2 text-[15px] font-black leading-snug tracking-tight text-foreground">
+          <h3
+            {...contentAttributes}
+            className="mt-1 line-clamp-2 text-[15px] font-black leading-snug tracking-tight text-foreground"
+          >
             {tr(article.title)}
           </h3>
           <p
+            {...contentAttributes}
             className={cn(
               "mt-1.5 line-clamp-2 text-[13px] text-[color:var(--text-secondary)]",
-              lang === "ar" && "leading-relaxed",
+              contentLanguage === "ar" && "leading-relaxed",
             )}
           >
             {tr(article.excerpt)}

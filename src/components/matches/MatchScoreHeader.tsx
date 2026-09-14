@@ -4,6 +4,7 @@ import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
+import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 
 /**
  * Live-first scoreboard header.
@@ -25,10 +26,13 @@ export function MatchScoreHeader({
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const kickoff = new Date(match.kickoff);
-  const timeFmt = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
-    kickoff,
-  );
+  const timeFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(kickoff);
   const dateFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -38,6 +42,8 @@ export function MatchScoreHeader({
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
+  const unconfirmedTime = isKickoffTimeUnconfirmed(match);
+  const displayedTime = unconfirmedTime ? t("matches.kickoff_unconfirmed") : timeFmt;
 
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
@@ -95,7 +101,11 @@ export function MatchScoreHeader({
       <div
         className="relative mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5"
         role="group"
-        aria-label={scoreA11y}
+        aria-label={
+          isLive || isFinished
+            ? scoreA11y
+            : `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)} — ${dateFmt} · ${displayedTime}`
+        }
       >
         <TeamColumn club={home} />
         <div className="flex flex-col items-center px-1">
@@ -110,8 +120,15 @@ export function MatchScoreHeader({
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <div className="font-mono text-3xl font-black tabular-nums text-foreground sm:text-4xl">
-                {timeFmt}
+              <div
+                className={cn(
+                  "font-black text-foreground",
+                  unconfirmedTime
+                    ? "max-w-28 text-center text-sm"
+                    : "font-mono text-3xl tabular-nums sm:text-4xl",
+                )}
+              >
+                {displayedTime}
               </div>
               <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
                 {t("matches.kickoff")}
@@ -147,7 +164,7 @@ export function MatchScoreHeader({
         <MetaCell
           icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
           label={t("matches.detail.kickoff")}
-          value={`${dateFmt} · ${timeFmt}`}
+          value={`${dateFmt} · ${displayedTime}`}
         />
         <MetaCell
           icon={<Trophy className="h-3.5 w-3.5" aria-hidden />}
