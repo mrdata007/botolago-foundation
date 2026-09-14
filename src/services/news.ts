@@ -14,6 +14,13 @@ import type { Article, ArticleCategory, Club } from "@/types/domain";
 import { resolveMediaUrl } from "@/lib/media";
 
 export type NewsDataMode = "mock" | "supabase";
+export type NewsLanguageSelection = NewsLanguage | "auto";
+
+export interface NewsEdition {
+  language: NewsLanguage;
+  articles: Article[];
+  lead: Article | null;
+}
 
 export function selectNewsDataMode(
   configuredMode: string | undefined,
@@ -99,6 +106,78 @@ function presentTeam(team: NewsTeamFilterDto): Club {
   };
 }
 
+export function newsArticlesForCategory(
+  articles: readonly Article[],
+  selectedCategory: ArticleCategory,
+): Article[] {
+  return articles
+    .filter(
+      (article) =>
+        selectedCategory === "latest" ||
+        selectedCategory === "for_you" ||
+        article.category === selectedCategory,
+    )
+    .sort(
+      (a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || a.id.localeCompare(b.id),
+    );
+}
+
+export function selectNewsLead(
+  editorialLead: ArticleCardDto | null,
+  articles: readonly ArticleCardDto[],
+  now = Date.now(),
+): ArticleCardDto | null {
+  const newest = [...articles].sort(
+    (a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || a.id.localeCompare(b.id),
+  )[0];
+  if (!editorialLead) return newest ?? null;
+  if (
+    newest &&
+    Date.parse(editorialLead.publishedAt) < now - 48 * 60 * 60 * 1000 &&
+    Date.parse(newest.publishedAt) > Date.parse(editorialLead.publishedAt)
+  ) {
+    return newest;
+  }
+  return editorialLead;
+}
+
+/** Select content independently of the interface locale, without hiding request failures. */
+export async function getNewsEdition(
+  repository: Pick<NewsRepository, "getFeed" | "getHomeModules">,
+  preferredLanguage: NewsLanguage,
+  selection: NewsLanguageSelection,
+  requestContext: RepositoryContext,
+  now = Date.now(),
+): Promise<NewsEdition> {
+  const languages: NewsLanguage[] =
+    selection === "auto"
+      ? [preferredLanguage, preferredLanguage === "fr" ? "ar" : "fr"]
+      : [selection];
+  const feeds = await Promise.all(
+    languages.map(async (language) => ({
+      language,
+      page: await repository.getFeed({ language, limit: 50 }, requestContext),
+    })),
+  );
+  const latestPublication = (items: readonly ArticleCardDto[]) =>
+    items.reduce((latest, article) => Math.max(latest, Date.parse(article.publishedAt)), -Infinity);
+  const selected = feeds.reduce((current, candidate) =>
+    latestPublication(candidate.page.items) > latestPublication(current.page.items)
+      ? candidate
+      : current,
+  );
+  const modules = await repository.getHomeModules(selected.language, 8, requestContext);
+  const lead = selectNewsLead(modules.lead, selected.page.items, now);
+  return {
+    language: selected.language,
+    articles: newsArticlesForCategory(
+      selected.page.items.map((article) => presentArticle(article)),
+      "latest",
+    ),
+    lead: lead ? presentArticle(lead) : null,
+  };
+}
+
 export async function getArticleWithLanguageFallback(
   repository: Pick<NewsRepository, "getArticle">,
   identifier: string,
@@ -122,10 +201,15 @@ export async function getArticleWithLanguageFallback(
 }
 
 export const newsService = {
+  async getEdition(language: NewsLanguage, selection: NewsLanguageSelection = "auto") {
+    return getNewsEdition(getNewsRepository(), language, selection, context());
+  },
+
   async getHome(language: NewsLanguage) {
     const modules = await getNewsRepository().getHomeModules(language, 8, context());
+    const lead = selectNewsLead(modules.lead, modules.latest);
     return {
-      lead: modules.lead ? presentArticle(modules.lead) : null,
+      lead: lead ? presentArticle(lead) : null,
       featured: modules.featured.map((article) => presentArticle(article)),
       latest: modules.latest.map((article) => presentArticle(article)),
     };

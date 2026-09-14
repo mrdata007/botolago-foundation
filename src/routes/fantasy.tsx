@@ -17,12 +17,14 @@ export const Route = createFileRoute("/fantasy")({
       { title: "Fantasy — BotolaGO" },
       {
         name: "description",
-        content: "Créez votre équipe fantasy de la Botola Pro et affrontez vos amis.",
+        content:
+          "La Fantasy BotolaGO ouvrira lorsque les effectifs et le calendrier nécessaires seront disponibles et vérifiés.",
       },
       { property: "og:title", content: "Fantasy — BotolaGO" },
       {
         property: "og:description",
-        content: "Créez votre équipe fantasy de la Botola Pro et affrontez vos amis.",
+        content:
+          "La Fantasy BotolaGO ouvrira lorsque les effectifs et le calendrier nécessaires seront disponibles et vérifiés.",
       },
     ],
   }),

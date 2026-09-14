@@ -11,7 +11,7 @@ import {
   PieChart,
   MessageSquare,
 } from "lucide-react";
-import { newsService } from "@/services/news";
+import { newsService, newsArticlesForCategory, type NewsLanguageSelection } from "@/services/news";
 import { followService } from "@/services/follows";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
@@ -67,20 +67,17 @@ function NewsPage() {
   const { status, requireAuth } = useAuth();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<ArticleCategory>("for_you");
+  const [newsLanguage, setNewsLanguage] = useState<NewsLanguageSelection>("auto");
   const [clubFilter, setClubFilter] = useState<string | null>(null);
   const { ids: savedIds } = useSavedArticles();
 
   const allQ = useQuery({
-    queryKey: ["news", "feed", lang],
-    queryFn: () => newsService.getArticles(lang),
+    queryKey: ["news", "edition", lang, newsLanguage],
+    queryFn: () => newsService.getEdition(lang, newsLanguage),
   });
   const clubsQ = useQuery({
     queryKey: ["news", "team-filters", lang],
     queryFn: () => newsService.getTeamFilters(lang),
-  });
-  const leadQ = useQuery({
-    queryKey: ["news", "home-modules", lang],
-    queryFn: () => newsService.getHome(lang).then((modules) => modules.lead),
   });
   const followedQ = useQuery({
     queryKey: ["identity", "followed-team-ids", status],
@@ -97,10 +94,10 @@ function NewsPage() {
     },
   });
 
-  const isLoading = allQ.isLoading || leadQ.isLoading;
-  const isError = allQ.isError || leadQ.isError;
-  const list = useMemo(() => allQ.data ?? [], [allQ.data]);
-  const lead = leadQ.data;
+  const isLoading = allQ.isLoading;
+  const isError = allQ.isError;
+  const list = useMemo(() => allQ.data?.articles ?? [], [allQ.data]);
+  const lead = allQ.data?.lead;
 
   const byClub = useCallback(
     (arr: Article[]) => (clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr),
@@ -132,7 +129,7 @@ function NewsPage() {
 
   const filteredForTab = useMemo(() => {
     if (tab === "for_you") return null;
-    return byClub(list.filter((a) => a.category === tab));
+    return byClub(newsArticlesForCategory(list, tab));
   }, [tab, list, byClub]);
 
   return (
@@ -140,6 +137,33 @@ function NewsPage() {
       <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
         <span className="text-brand">{t("news.title")}</span>
       </h1>
+
+      <div className="mt-3 space-y-2">
+        <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+          <span>{t("news.language.label")}</span>
+          <select
+            value={newsLanguage}
+            onChange={(event) => {
+              setNewsLanguage(event.target.value as NewsLanguageSelection);
+              setClubFilter(null);
+            }}
+            className="surface-3 min-h-11 rounded-xl border border-[var(--border-subtle)] px-3 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]"
+          >
+            <option value="auto">{t("news.language.auto")}</option>
+            <option value="fr">{t("news.language.fr")}</option>
+            <option value="ar">{t("news.language.ar")}</option>
+          </select>
+        </label>
+        {allQ.data && allQ.data.articles.length > 0 && (
+          <p role="status" className="text-xs text-[color:var(--text-secondary)]">
+            {t(
+              allQ.data.language === "ar"
+                ? "news.language.original_ar"
+                : "news.language.original_fr",
+            )}
+          </p>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1">
@@ -225,9 +249,12 @@ function NewsPage() {
           <ErrorState
             onRetry={() => {
               void allQ.refetch();
-              void leadQ.refetch();
             }}
           />
+        </div>
+      ) : list.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState>{t("news.language.empty")}</EmptyState>
         </div>
       ) : filteredForTab ? (
         <Section index={1}>
