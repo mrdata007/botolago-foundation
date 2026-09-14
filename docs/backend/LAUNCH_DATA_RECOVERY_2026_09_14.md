@@ -16,7 +16,7 @@ and release gates; a merged PR does not establish deployed database behavior.
 | News deduplication | A second manual run skipped the same 10 stories with zero rejections. | Repeated imports did not duplicate the recovered stories. |
 | Current Football season | 8 fixtures and 16 clubs for 2026/27 recovered. | This is a partial calendar, not a full-season import. |
 | Current squads | Zero rosters imported by the guarded recovery attempt. | The complete 16-club roster prerequisite remains unmet. |
-| Player profiles | 26 position fields filled from provider profile evidence. | Position repairs do not establish current-season squad membership. |
+| Player profiles | The audit identified 26 additional positions from provider profiles; the importer now supports this fallback. | No current memberships were written because the complete-roster guard failed. |
 | Fantasy | Zero Fantasy seasons; activation readiness remains false and registration remains closed. | No fabricated catalog, gameweek or deadline was substituted. |
 
 ## Merged recovery changes
@@ -60,11 +60,11 @@ The roster phase requires a complete 16-club set before writing memberships;
 that guard prevented a partial or misleading current roster import.
 
 [Read-only roster audit 34887672427](https://github.com/mrdata007/botolago-foundation/actions/runs/34887672427)
-used 51 provider GET requests. Tiznit returned 0 squad members and Temara 1;
-the checked alternative roster endpoints were empty. These results explain
+used 51 provider GET requests. Tiznit returned 0 squad members and Temara 1
+on the season, current and extended roster endpoints. These results explain
 the blocked roster import rather than proving that historical players can be
-used as current-season squad members. The 26 profile-position repairs are
-separate from the zero imported current rosters.
+used as current-season squad members. The 26 recoverable profile positions
+remain separate from the zero imported current rosters.
 
 All eight imported kickoff values were the provider's raw
 `2026-09-24T00:00:00Z`. They are **unconfirmed kickoff times** and must not be

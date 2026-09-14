@@ -118,9 +118,9 @@ insert into app.rounds(id,season_id,round_number,name,status) values('f3000000-0
 insert into app.fantasy_gameweeks(id,fantasy_season_id,football_round_id,sequence_number,name,deadline_at,starts_at,ends_at,status)
 values('f6400000-0000-4000-8000-000000000002','f6300000-0000-4000-8000-000000000001','f3000000-0000-4000-8000-000000000002',2,'Next week',
  app_private.fantasy_calculate_deadline('f6100000-0000-4000-8000-000000000100','2090-01-10T12:00:00Z'),'2090-01-10T12:00:00Z','2090-01-12T12:00:00Z','scheduled');
-insert into app.fixtures(id,competition_id,season_id,round_id,home_team_id,away_team_id,kickoff_at,status)
+insert into app.fixtures(id,competition_id,season_id,round_id,home_team_id,away_team_id,kickoff_at,status,provider_updated_at,source_sequence,source_version)
 select ('fb000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'f1000000-0000-4000-8000-000000000001','f2000000-0000-4000-8000-000000000001','f3000000-0000-4000-8000-000000000002',
- ('f4'||lpad((i*2-1)::text,6,'0')||'-0000-4000-8000-000000000001')::uuid,('f4'||lpad((i*2)::text,6,'0')||'-0000-4000-8000-000000000001')::uuid,'2090-01-10T12:00:00Z','scheduled' from generate_series(1,8)i;
+ ('f4'||lpad((i*2-1)::text,6,'0')||'-0000-4000-8000-000000000001')::uuid,('f4'||lpad((i*2)::text,6,'0')||'-0000-4000-8000-000000000001')::uuid,'2090-01-10T12:00:00Z','scheduled','2089-12-01T12:00:00Z',1,'progression-test-v1' from generate_series(1,8)i;
 insert into app.fantasy_fixture_assignments(fantasy_season_id,fixture_id,gameweek_id,original_gameweek_id,original_kickoff_at,assigned_kickoff_at,source_version)
 select 'f6300000-0000-4000-8000-000000000001',id,'f6400000-0000-4000-8000-000000000002','f6400000-0000-4000-8000-000000000002',kickoff_at,kickoff_at,1 from app.fixtures where season_id='f2000000-0000-4000-8000-000000000001';
 select extensions.ok(not has_function_privilege('authenticated','api.service_prepare_next_fantasy_gameweek(uuid,uuid,bigint,integer)','execute'),'user cannot run progression');
