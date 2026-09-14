@@ -34,6 +34,8 @@ export type ArticleCategory = "for_you" | "latest" | "transfers" | "analysis" | 
 
 export interface Article {
   id: string;
+  /** Actual edition language; omitted only by bilingual preview fixtures. */
+  language?: Language;
   title: LocalizedString;
   excerpt: LocalizedString;
   category: ArticleCategory;
