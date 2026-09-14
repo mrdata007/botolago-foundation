@@ -91,6 +91,7 @@ function ArticlePage() {
     );
   }
 
+  const contentLanguage = article.language ?? lang;
   const clubs = clubsQ.data ?? [];
   const clubNames = article.clubIds
     .map((id) => clubs.find((c) => c.id === id))
@@ -176,6 +177,8 @@ function ArticlePage() {
 
       {/* Article surface — a calmer L1 elevated reading card sitting on the news mesh */}
       <article
+        lang={contentLanguage}
+        dir={contentLanguage === "ar" ? "rtl" : "ltr"}
         className={cn(
           "relative mt-4 rounded-[var(--radius-hero)] border border-[var(--border-subtle)]",
           "bg-[color:var(--background-elevated)] shadow-card",
@@ -197,7 +200,7 @@ function ArticlePage() {
         <h1
           className={cn(
             "text-[26px] font-black leading-[1.12] tracking-tight text-foreground sm:text-[30px]",
-            lang === "ar" && "leading-[1.35]",
+            contentLanguage === "ar" && "leading-[1.35]",
           )}
         >
           {tr(article.title)}
@@ -207,14 +210,18 @@ function ArticlePage() {
         <p
           className={cn(
             "mt-3 text-[15px] leading-relaxed text-[color:var(--text-secondary)] sm:text-base",
-            lang === "ar" && "text-[16px] leading-[1.85]",
+            contentLanguage === "ar" && "text-[16px] leading-[1.85]",
           )}
         >
           {tr(article.excerpt)}
         </p>
 
         {/* Byline */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[var(--border-subtle)] py-3 text-xs text-[color:var(--text-muted)]">
+        <div
+          lang={lang}
+          dir={dir}
+          className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[var(--border-subtle)] py-3 text-xs text-[color:var(--text-muted)]"
+        >
           <span className="font-semibold text-foreground">
             {t("article.by")} {tr(article.authorName)}
           </span>
@@ -239,7 +246,7 @@ function ArticlePage() {
         <div
           className={cn(
             "mt-5 max-w-[68ch] space-y-4 text-[16px] leading-[1.75] text-foreground/90",
-            lang === "ar" && "text-[17px] leading-[2]",
+            contentLanguage === "ar" && "text-[17px] leading-[2]",
           )}
         >
           <div dangerouslySetInnerHTML={{ __html: article.bodyHtml ?? "" }} />

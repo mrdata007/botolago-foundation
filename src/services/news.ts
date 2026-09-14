@@ -70,6 +70,7 @@ export function presentArticle(
 ): Article {
   return {
     id: dto.id,
+    language: dto.language,
     title: localized(dto.title),
     excerpt: localized(dto.subtitle ?? dto.summary),
     category: category(dto.primaryCategory?.slug),
@@ -96,6 +97,28 @@ function presentTeam(team: NewsTeamFilterDto): Club {
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: team.code ?? team.shortName.slice(0, 3).toUpperCase(),
   };
+}
+
+export async function getArticleWithLanguageFallback(
+  repository: Pick<NewsRepository, "getArticle">,
+  identifier: string,
+  language: NewsLanguage,
+  requestContext: RepositoryContext,
+): Promise<ArticleDetailDto> {
+  try {
+    return await repository.getArticle(identifier, language, requestContext);
+  } catch (error) {
+    // Edition UUID links remain readable when shared with a viewer in the other locale.
+    // Slugs are language-specific; operational and authorization failures must surface.
+    if (
+      !(error instanceof NewsError) ||
+      error.code !== "article_not_found" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier)
+    ) {
+      throw error;
+    }
+    return repository.getArticle(identifier, language === "fr" ? "ar" : "fr", requestContext);
+  }
 }
 
 export const newsService = {
@@ -132,12 +155,14 @@ export const newsService = {
   },
 
   async getArticle(identifier: string, language: NewsLanguage): Promise<Article> {
-    return presentArticle(await getNewsRepository().getArticle(identifier, language, context()));
+    return presentArticle(
+      await getArticleWithLanguageFallback(getNewsRepository(), identifier, language, context()),
+    );
   },
 
-  async getRelated(articleId: string, language: NewsLanguage): Promise<Article[]> {
+  async getRelated(articleId: string, _language: NewsLanguage): Promise<Article[]> {
     return (await getNewsRepository().getRelated(articleId, 6, context())).map((article) =>
-      presentArticle({ ...article, language }),
+      presentArticle(article),
     );
   },
 
