@@ -8,6 +8,9 @@ import {
   validateCanaryRun,
   validateRecoveryMode,
   preflightCurrentSquadRpc,
+  currentRosterContractEligible,
+  normalizeCurrentTeamRoster,
+  loadCurrentSeasonSquad,
 } from "./current-season-recovery";
 import type { SportsMonksProbeEvidence } from "./sportsmonks-production-probe";
 
@@ -42,6 +45,130 @@ const probe: SportsMonksProbeEvidence = {
 };
 
 describe("current season recovery boundaries", () => {
+  test("current roster contract start and end dates are inclusive and expired or future contracts are excluded", () => {
+    expect(
+      currentRosterContractEligible({ start: "2026-09-14", end: "2026-09-14" }, probe.observedAt),
+    ).toBe(true);
+    expect(currentRosterContractEligible({ start: null, end: null }, probe.observedAt)).toBe(true);
+    expect(
+      currentRosterContractEligible({ start: "2026-09-15", end: null }, probe.observedAt),
+    ).toBe(false);
+    expect(
+      currentRosterContractEligible({ start: "2025-01-01", end: "2026-09-13" }, probe.observedAt),
+    ).toBe(false);
+    expect(() => currentRosterContractEligible({ start: "2026-02-30" }, probe.observedAt)).toThrow(
+      "invalid_provider_date",
+    );
+    expect(() =>
+      currentRosterContractEligible({ start: "2026-09-15", end: "2026-09-14" }, probe.observedAt),
+    ).toThrow("invalid_current_contract_range");
+  });
+  test("current team roster preserves provenance without constructing a provider season_id", () => {
+    const value = Object.freeze({
+      id: 1,
+      team_id: 10,
+      player_id: 99,
+      position_id: 27,
+      position: { id: 27, developer_name: "DEFENDER" },
+      player: { id: 99, name: "Verified Player" },
+      start: "2026-08-01",
+      end: null,
+    });
+    const normalized = normalizeCurrentTeamRoster(value, 10, probe.observedAt);
+    expect(normalized?.position).toBe("defender");
+    expect((normalized?.freshness as { sourceVersion: string }).sourceVersion).toStartWith(
+      "sportsmonks-current-team-roster:10:99:",
+    );
+    expect("season_id" in value).toBe(false);
+    expect(() => normalizeCurrentTeamRoster(value, 11, probe.observedAt)).toThrow(
+      "squad_scope_mismatch",
+    );
+    expect(() =>
+      normalizeCurrentTeamRoster(
+        { ...value, position: { id: 26, developer_name: "MIDFIELDER" } },
+        10,
+        probe.observedAt,
+      ),
+    ).toThrow("squad_position_mismatch");
+    expect(
+      normalizeCurrentTeamRoster({ ...value, end: "2026-09-13" }, 10, probe.observedAt),
+    ).toBeNull();
+  });
+  test("fallback is bounded to empty season results and the verified 16 current-season clubs", async () => {
+    const calls: Array<{ path: string; query: Readonly<Record<string, string>> }> = [];
+    const value = {
+      id: 1,
+      team_id: 10,
+      player_id: 99,
+      position_id: 27,
+      position: { id: 27, developer_name: "DEFENDER" },
+      player: { id: 99, name: "Verified Player" },
+      start: "2026-08-01",
+      end: null,
+    };
+    const request = async (path: string, query: Readonly<Record<string, string>>) => {
+      calls.push({ path, query });
+      return { data: path.includes("/seasons/") ? [] : [value] };
+    };
+    const verified = new Set(Array.from({ length: 16 }, (_, i) => i + 1));
+    const loaded = await loadCurrentSeasonSquad(10, verified, probe.observedAt, "secret", request);
+    expect(loaded.memberships).toHaveLength(1);
+    expect(loaded.evidence).toMatchObject({
+      source: "current-team-roster",
+      associatedSeasonExternalId: "28647",
+      association: "verified_current_season_club",
+      seasonSourceRows: 0,
+      sourceRows: 1,
+      eligiblePlayers: 1,
+    });
+    expect(calls).toEqual([
+      { path: "/v3/football/squads/seasons/28647/teams/10", query: { include: "player;position" } },
+      { path: "/v3/football/squads/teams/10", query: { include: "player;position" } },
+    ]);
+    await expect(
+      loadCurrentSeasonSquad(17, verified, probe.observedAt, "secret", request),
+    ).rejects.toThrow("current_roster_club_not_verified");
+    expect(calls).toHaveLength(2);
+  });
+  test("populated or malformed season data never silently switches to current-team roster", async () => {
+    const verified = new Set(Array.from({ length: 16 }, (_, i) => i + 1));
+    const calls: string[] = [];
+    const seasonRow = {
+      id: 1,
+      season_id: 28647,
+      team_id: 10,
+      player_id: 99,
+      position_id: null,
+      player: { id: 99, name: "Unclassified Player" },
+    };
+    const loaded = await loadCurrentSeasonSquad(
+      10,
+      verified,
+      probe.observedAt,
+      "secret",
+      async (path) => {
+        calls.push(path);
+        return { data: [seasonRow] };
+      },
+    );
+    expect(calls).toHaveLength(1);
+    expect(loaded.evidence.source).toBe("season-squad");
+    expect(loaded.memberships).toHaveLength(0);
+    await expect(
+      loadCurrentSeasonSquad(10, verified, probe.observedAt, "secret", async () => ({
+        data: null,
+      })),
+    ).rejects.toThrow("invalid_current_squad_response");
+  });
+  test("duplicate roster player rows fail before any current squad transaction", async () => {
+    const verified = new Set(Array.from({ length: 16 }, (_, i) => i + 1));
+    const member = { id: 1, team_id: 10, player_id: 99 };
+    await expect(
+      loadCurrentSeasonSquad(10, verified, probe.observedAt, "secret", async (path) => ({
+        data: path.includes("/seasons/") ? [] : [member, { ...member, id: 2 }],
+      })),
+    ).rejects.toThrow("duplicate_current_roster_player");
+  });
   test("deployed squad RPC preflight proves service access with input that cannot mutate data", async () => {
     const calls: unknown[] = [];
     const client = {
