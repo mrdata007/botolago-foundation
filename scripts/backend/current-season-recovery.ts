@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -22,6 +22,22 @@ const SEASON = 28647;
 const LEAGUE = 860;
 const BASE = "/v3/football";
 const CONFIRMATION = "RUN_CURRENT_SEASON_RECOVERY";
+const REPOSITORY = "mrdata007/botolago-foundation";
+const WORKFLOW = ".github/workflows/football-current-season-recovery.yml";
+const VERIFIED_FILES = [
+  WORKFLOW,
+  "scripts/backend/current-season-recovery.ts",
+  "scripts/backend/current-season-migration.py",
+  "scripts/backend/phase7e-production-migration-promoter.py",
+  "scripts/backend/sportsmonks-production-probe.ts",
+  "supabase/functions/_shared/sportsmonks-catalog.ts",
+  "supabase/functions/_shared/sportsmonks-fixtures.ts",
+  "supabase/migrations/20260914182621_current_season_squad_recovery.sql",
+  "supabase/migrations/20260731203317_gate3b_historical_squads_standings.sql",
+  "supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql",
+  "package.json",
+  "bun.lock",
+];
 
 export class CurrentSeasonRecoveryError extends Error {
   constructor(readonly code: string) {
@@ -226,23 +242,106 @@ export function validateCurrentSquads(
   }
 }
 
+export function validateCanaryRun(value: unknown): string {
+  const run = row(value);
+  if (
+    run.path !== WORKFLOW ||
+    run.event !== "workflow_dispatch" ||
+    run.conclusion !== "success" ||
+    run.head_branch !== "main" ||
+    run.run_attempt !== 1 ||
+    row(run.repository ?? {}).full_name !== REPOSITORY ||
+    row(run.actor ?? {}).login !== "mrdata007" ||
+    typeof run.head_sha !== "string" ||
+    !/^[0-9a-f]{40}$/.test(run.head_sha)
+  )
+    fail("verified_manual_canary_required");
+  return run.head_sha;
+}
+
+export function validateRecoveryMode(env: NodeJS.ProcessEnv): "canary" | "refresh" {
+  const mode = env.CURRENT_SEASON_RECOVERY_MODE ?? "canary";
+  if (env.GITHUB_EVENT_NAME === "workflow_dispatch") {
+    if (env.GITHUB_ACTOR !== "mrdata007" || (mode !== "canary" && mode !== "refresh"))
+      fail("immutable_owner_dispatch_required");
+    return mode;
+  }
+  if (
+    env.GITHUB_EVENT_NAME === "schedule" &&
+    mode === "refresh" &&
+    env.FOOTBALL_CURRENT_SCHEDULE_ENABLED === "true"
+  )
+    return "refresh";
+  return fail("current_season_schedule_not_enabled");
+}
+
+async function verifyPriorCanary(env: NodeJS.ProcessEnv): Promise<Row> {
+  const runId = env.FOOTBALL_CURRENT_CANARY_VERIFIED_RUN_ID ?? "";
+  const token = env.GITHUB_TOKEN;
+  if (!/^[1-9]\d*$/.test(runId) || !token) fail("verified_manual_canary_required");
+  const request = async (path: string): Promise<Row> => {
+    const url = new URL(`https://api.github.com/repos/${REPOSITORY}/${path}`);
+    if (url.origin !== "https://api.github.com") fail("github_origin_guard_failed");
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      signal: AbortSignal.timeout(30000),
+      redirect: "error",
+    });
+    if (!response.ok) fail("canary_evidence_unavailable");
+    const body = await response.text();
+    if (body.length > 2000000) fail("canary_evidence_too_large");
+    return row(JSON.parse(body));
+  };
+  const canarySha = validateCanaryRun(await request(`actions/runs/${runId}`));
+  const jobs = await request(`actions/runs/${runId}/jobs?per_page=100`);
+  if (
+    !Array.isArray(jobs.jobs) ||
+    !jobs.jobs.some((job) => {
+      const steps = row(job).steps;
+      return (
+        Array.isArray(steps) &&
+        steps.some(
+          (step) =>
+            row(step).name === "Confirm manual current-season canary completed" &&
+            row(step).conclusion === "success",
+        )
+      );
+    })
+  )
+    fail("verified_manual_canary_steps_required");
+  for (const filename of VERIFIED_FILES) {
+    const previous = await request(`contents/${filename}?ref=${canarySha}`);
+    if (
+      previous.encoding !== "base64" ||
+      typeof previous.content !== "string" ||
+      !Buffer.from(previous.content, "base64").equals(await readFile(filename))
+    )
+      fail("recovery_implementation_changed_recanary_required");
+  }
+  return { runId, commit: canarySha, implementationUnchanged: true };
+}
+
 function runtimeGuard(env: NodeJS.ProcessEnv): {
   commit: string;
   url: string;
   key: string;
   token: string;
+  mode: "canary" | "refresh";
 } {
   if (
     env.CONFIRMATION !== CONFIRMATION ||
     env.GITHUB_REPOSITORY !== "mrdata007/botolago-foundation" ||
     env.GITHUB_REF !== "refs/heads/main" ||
-    env.GITHUB_ACTOR !== "mrdata007" ||
-    env.GITHUB_EVENT_NAME !== "workflow_dispatch" ||
     env.GITHUB_RUN_ATTEMPT !== "1" ||
     !/^[0-9a-f]{40}$/.test(env.EXPECTED_COMMIT ?? "") ||
     env.EXPECTED_COMMIT !== env.GITHUB_SHA
   )
     fail("immutable_owner_dispatch_required");
+  const mode = validateRecoveryMode(env);
   const url = env.SUPABASE_PRODUCTION_URL?.replace(/\/$/, "");
   if (
     env.SUPABASE_PRODUCTION_PROJECT_REF !== PROJECT ||
@@ -256,6 +355,7 @@ function runtimeGuard(env: NodeJS.ProcessEnv): {
     url,
     key: env.SUPABASE_SECRET_KEY,
     token: env.SPORTSMONKS_API_TOKEN,
+    mode,
   };
 }
 
@@ -287,6 +387,7 @@ async function main(): Promise<void> {
     projectRef: PROJECT,
     observedAt: new Date().toISOString(),
     mode: "current_season_recovery",
+    recoveryMode: config.mode,
     fantasyActivated: false,
     verdict: "in_progress",
   };
@@ -299,6 +400,10 @@ async function main(): Promise<void> {
     });
   };
   try {
+    if (config.mode === "refresh") {
+      evidence.verifiedCanary = await verifyPriorCanary(process.env);
+      await save();
+    }
     const probe = await runSportsMonksProductionProbe(process.env);
     evidence.provider = probe;
     validateCurrentReadiness(probe, config.commit);
@@ -417,8 +522,15 @@ async function main(): Promise<void> {
         p_team_squads: squads,
         p_observed_at: observedAt,
       });
-    if (error) fail("current_squad_transaction_failed");
-    evidence.squads = data;
+    if (error) {
+      if (
+        config.mode === "refresh" &&
+        error.code === "PT409" &&
+        error.message === "fantasy_catalog_already_staged"
+      ) {
+        evidence.squads = { skipped: true, reason: "fantasy_catalog_already_staged" };
+      } else fail("current_squad_transaction_failed");
+    } else evidence.squads = data;
     evidence.verdict = "pass";
     await save();
     console.log("CURRENT_SEASON_RECOVERY_PASS");

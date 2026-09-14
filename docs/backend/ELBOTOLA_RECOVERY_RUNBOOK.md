@@ -44,6 +44,7 @@ weaken or remove any guard.
 After inspecting a successful manual **canary**, set repository Actions variables:
 
 - `ELBOTOLA_CANARY_VERIFIED_RUN_ID=<successful canary run ID>`
+- `ELBOTOLA_CANARY_VERIFIED_FUNCTION_VERSION=<functionVersion from result.json>`
 - `ELBOTOLA_SCHEDULE_ENABLED=true`
 
 The schedule runs at minute 17 every six hours. Its shared production mutation
@@ -52,6 +53,8 @@ run succeeded on main at attempt 1, and that configuration, deployment and
 ingestion steps succeeded. It then compares the workflow, recovery script and
 two function source files at the canary commit with the current files. Unrelated
 commits do not invalidate the canary; ingestion changes require a new canary.
+The live function version must also match the recorded canary version, so an
+out-of-band runtime redeployment requires another canary before recurring runs.
 Scheduled runs only invoke and verify the existing function: no deployment,
 configuration changes or publisher activation occur.
 

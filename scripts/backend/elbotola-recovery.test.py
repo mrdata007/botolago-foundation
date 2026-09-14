@@ -64,6 +64,12 @@ class RecoveryTests(unittest.TestCase):
         self.assertTrue(all(item["name"].startswith("ELBOTOLA_") for item in payload))
         self.assertEqual(next(item["value"] for item in payload if item["name"] == "ELBOTOLA_INGESTION_TRIGGER_SECRET"), trigger)
 
+    def test_schedule_rejects_out_of_band_function_redeployment(self):
+        MODULE.validate_scheduled_function({"version": 1}, "1")
+        for actual, approved in ((2, "1"), (1, ""), (1, "not-verified")):
+            with self.assertRaises(MODULE.RecoveryError):
+                MODULE.validate_scheduled_function({"version": actual}, approved)
+
     def test_ingestion_requires_bounded_zero_rejection_exact_reconciliation(self):
         self.assertEqual(MODULE.validate_response(response())["inserted"], 10)
         for values in (

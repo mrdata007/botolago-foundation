@@ -128,6 +128,11 @@ def dedicated_trigger(secret_key):
     return hmac.new(secret_key.encode(), f"botolago:{PROJECT}:elbotola-ingestion:v1".encode(), hashlib.sha256).hexdigest()
 
 
+def validate_scheduled_function(function, verified_version):
+    if not re.fullmatch(r"[1-9][0-9]*", verified_version) or str(function.get("version")) != verified_version:
+        raise RecoveryError("DEPLOYED_FUNCTION_CHANGED_RECANARY_REQUIRED")
+
+
 def configuration_payload(trigger):
     # No shared GNews or football runtime secret is read, written or deleted.
     values = {
@@ -227,7 +232,7 @@ class Recovery:
 
     def preflight(self):
         project = self.management()
-        if project.get("id") != PROJECT or project.get("name") != PROJECT_NAME or project.get("status") != "ACTIVE_HEALTHY":
+        if project.get("ref", project.get("id")) != PROJECT or project.get("name") != PROJECT_NAME or project.get("status") != "ACTIVE_HEALTHY":
             raise RecoveryError("PROJECT_NOT_HEALTHY")
         if self.env["GITHUB_EVENT_NAME"] == "schedule":
             run_id = self.env.get("ELBOTOLA_CANARY_VERIFIED_RUN_ID", "")
@@ -278,6 +283,8 @@ class Recovery:
         matches = [function for function in functions if function.get("slug") == "news-ingest-elbotola"]
         if len(matches) != 1 or matches[0].get("status") != "ACTIVE" or matches[0].get("verify_jwt") is not True:
             raise RecoveryError("ELBOTOLA_SECURE_FUNCTION_MISSING")
+        if self.env["GITHUB_EVENT_NAME"] == "schedule":
+            validate_scheduled_function(matches[0], self.env.get("ELBOTOLA_CANARY_VERIFIED_FUNCTION_VERSION", ""))
         if self.env["ELBOTOLA_RECOVERY_MODE"] == "canary":
             rows = self.sql(ACTIVATE_SQL)
             if len(rows) != 1 or rows[0].get("active") is not True:

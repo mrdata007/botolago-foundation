@@ -5,6 +5,8 @@ import {
   readAllProviderRows,
   validateCurrentReadiness,
   validateCurrentSquads,
+  validateCanaryRun,
+  validateRecoveryMode,
 } from "./current-season-recovery";
 import type { SportsMonksProbeEvidence } from "./sportsmonks-production-probe";
 
@@ -39,6 +41,67 @@ const probe: SportsMonksProbeEvidence = {
 };
 
 describe("current season recovery boundaries", () => {
+  test("recurring refresh requires opt-in and cannot run a new canary", () => {
+    expect(
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "workflow_dispatch",
+        GITHUB_ACTOR: "mrdata007",
+        CURRENT_SEASON_RECOVERY_MODE: "canary",
+      }),
+    ).toBe("canary");
+    expect(
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "schedule",
+        CURRENT_SEASON_RECOVERY_MODE: "refresh",
+        FOOTBALL_CURRENT_SCHEDULE_ENABLED: "true",
+      }),
+    ).toBe("refresh");
+    expect(() =>
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "schedule",
+        CURRENT_SEASON_RECOVERY_MODE: "refresh",
+      }),
+    ).toThrow("current_season_schedule_not_enabled");
+    expect(() =>
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "schedule",
+        CURRENT_SEASON_RECOVERY_MODE: "canary",
+        FOOTBALL_CURRENT_SCHEDULE_ENABLED: "true",
+      }),
+    ).toThrow("current_season_schedule_not_enabled");
+    expect(() =>
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "workflow_dispatch",
+        GITHUB_ACTOR: "someone-else",
+        CURRENT_SEASON_RECOVERY_MODE: "refresh",
+      }),
+    ).toThrow("immutable_owner_dispatch_required");
+  });
+  test("only a successful first-attempt owner canary is trusted as refresh evidence", () => {
+    const run = {
+      path: ".github/workflows/football-current-season-recovery.yml",
+      event: "workflow_dispatch",
+      conclusion: "success",
+      head_branch: "main",
+      run_attempt: 1,
+      head_sha: sha,
+      repository: { full_name: "mrdata007/botolago-foundation" },
+      actor: { login: "mrdata007" },
+    };
+    expect(validateCanaryRun(run)).toBe(sha);
+    for (const change of [
+      { event: "schedule" },
+      { conclusion: "failure" },
+      { run_attempt: 2 },
+      { head_branch: "unreviewed" },
+      { actor: { login: "someone-else" } },
+      { path: ".github/workflows/some-other-workflow.yml" },
+    ]) {
+      expect(() => validateCanaryRun({ ...run, ...change })).toThrow(
+        "verified_manual_canary_required",
+      );
+    }
+  });
   test("accepts truthful partial provider dates without inventing a full season", () => {
     expect(() => validateCurrentReadiness(probe, sha)).not.toThrow();
     expect(fixtureWindows(probe.season.startingAt, probe.season.endingAt)).toEqual([

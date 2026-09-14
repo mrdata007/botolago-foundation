@@ -11,6 +11,16 @@ on:
         description: Type RUN_CURRENT_SEASON_RECOVERY
         required: true
         type: string
+      mode:
+        description: Initial verified canary or refresh following a successful canary
+        required: true
+        default: canary
+        type: choice
+        options:
+          - canary
+          - refresh
+  schedule:
+    - cron: "43 7 * * *"
 
 concurrency:
   group: botolago-production-v2-mutation
@@ -18,20 +28,24 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   recovery:
     if: >-
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
-      github.actor == 'mrdata007' &&
-      github.event_name == 'workflow_dispatch'
+      ((github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007') ||
+       (github.event_name == 'schedule' && vars.FOOTBALL_CURRENT_SCHEDULE_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: production-admin-activation
     env:
-      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
-      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_commit || github.sha }}
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_CURRENT_SEASON_RECOVERY' }}
+      CURRENT_SEASON_RECOVERY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'refresh' }}
+      FOOTBALL_CURRENT_SCHEDULE_ENABLED: ${{ vars.FOOTBALL_CURRENT_SCHEDULE_ENABLED }}
+      FOOTBALL_CURRENT_CANARY_VERIFIED_RUN_ID: ${{ vars.FOOTBALL_CURRENT_CANARY_VERIFIED_RUN_ID }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
@@ -67,11 +81,26 @@ jobs:
           bun install --frozen-lockfile
           bun test scripts/backend/current-season-recovery.test.ts scripts/backend/sportsmonks-production-probe.test.ts supabase/functions/_shared/sportsmonks-catalog.test.ts supabase/functions/_shared/sportsmonks-fixtures.test.ts
           bun run backend:secrets:check
+          if [[ "$CURRENT_SEASON_RECOVERY_MODE" == "canary" ]]; then
+            python scripts/backend/current-season-migration.test.py
+          fi
+
+      - name: Promote only the reviewed current-squad migration
+        if: github.event_name == 'workflow_dispatch' && env.CURRENT_SEASON_RECOVERY_MODE == 'canary'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          python scripts/backend/current-season-migration.py
 
       - name: Probe then recover authentic published catalog fixtures and squads
         env:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -80,6 +109,10 @@ jobs:
           printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
           printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
           bun scripts/backend/current-season-recovery.ts
+
+      - name: Confirm manual current-season canary completed
+        if: github.event_name == 'workflow_dispatch' && env.CURRENT_SEASON_RECOVERY_MODE == 'canary'
+        run: echo CURRENT_SEASON_MANUAL_CANARY_COMPLETED
 
       - name: Scan sanitized evidence
         id: evidence_scan
