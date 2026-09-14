@@ -10,11 +10,13 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { FantasyGameweekStatus } from "@/types/domain";
 
 export function GameweekStatusStrip() {
   const { t, lang } = useI18n();
   const { source, key } = useFantasyDataSource();
+  const availability = useFantasyAvailability();
   const numberFormat = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     maximumFractionDigits: 1,
   });
@@ -58,7 +60,9 @@ export function GameweekStatusStrip() {
   const data = source === "guest" ? undefined : summary.data;
   const cta =
     source === "guest" || data === null
-      ? { to: "/fantasy/create" as const, labelKey: "fantasy.create.title" as const }
+      ? availability.data?.status === "ready" && availability.data.canCreate
+        ? { to: "/fantasy/create" as const, labelKey: "fantasy.create.title" as const }
+        : { to: "/fantasy" as const, labelKey: "fantasy.tab.hub" as const }
       : presentation.pointsRoute
         ? { to: "/fantasy/points" as const, labelKey: "fantasy.points.title" as const }
         : { to: "/fantasy/team" as const, labelKey: "home.view_fantasy_team" as const };

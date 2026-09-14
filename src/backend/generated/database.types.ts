@@ -1222,6 +1222,15 @@ export type Database = {
         }
         Returns: Json
       }
+      service_ingest_current_football_squads: {
+        Args: {
+          p_observed_at: string
+          p_provider_name: string
+          p_season_external_id: string
+          p_team_squads: Json
+        }
+        Returns: Json
+      }
       service_ingest_notification_event: {
         Args: {
           p_correlation_id: string

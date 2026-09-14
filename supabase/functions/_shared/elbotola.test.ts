@@ -7,7 +7,7 @@ const NOW = new Date("2026-08-03T22:00:00.000Z");
 
 function environment(): Record<string, string> {
   return {
-    NEWS_INGESTION_TRIGGER_SECRET: SECRET,
+    ELBOTOLA_INGESTION_TRIGGER_SECRET: SECRET,
     ELBOTOLA_SYNDICATION_APPROVED: "true",
     ELBOTOLA_ORIGIN: "https://www.elbotola.com",
     ELBOTOLA_PAGE_SIZE: "10",
@@ -74,6 +74,23 @@ function client(calls: Array<{ name: string; args: Record<string, unknown> }>): 
 }
 
 describe("ElBotola metadata ingestion runtime", () => {
+  it("does not accept a shared GNews trigger as ElBotola runtime configuration", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const result = await handleElbotolaRequest(request(), {
+      environment: {
+        ...environment(),
+        ELBOTOLA_INGESTION_TRIGGER_SECRET: undefined,
+        NEWS_INGESTION_TRIGGER_SECRET: SECRET,
+      },
+      client: client(calls),
+      fetch: async () => {
+        throw new Error("No network request is permitted without the dedicated trigger");
+      },
+    });
+    expect(result.status).toBe(503);
+    expect(calls).toHaveLength(0);
+  });
+
   it("fails closed before network or database work without recorded syndication approval", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     let fetched = false;

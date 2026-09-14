@@ -185,6 +185,16 @@ export const dictionaries = {
     "matches.a11y.status_postponed": "Match reporté",
 
     "fantasy.title": "Fantasy",
+    "fantasy.availability.season_closed.title": "La saison Fantasy n’est pas encore ouverte",
+    "fantasy.availability.season_closed.body":
+      "Aucune saison Fantasy n’est ouverte pour le moment. La création d’équipe, les joueurs et les ligues seront disponibles à l’ouverture des inscriptions.",
+    "fantasy.availability.awaiting_gameweek.title": "En attente de la prochaine journée Fantasy",
+    "fantasy.availability.awaiting_gameweek.body":
+      "La prochaine journée Fantasy n’est pas encore disponible. Vous pourrez créer votre équipe dès son ouverture.",
+    "fantasy.availability.registration_closed.title":
+      "Les inscriptions sont fermées pour cette journée",
+    "fantasy.availability.registration_closed.body":
+      "Vous pourrez créer votre équipe à l’ouverture d’une prochaine journée. Les résultats et les classements restent consultables dans les onglets Fantasy.",
     "fantasy.subtitle": "Votre équipe, votre {accent}stratégie{/accent}.",
     "fantasy.team": "Équipe",
     "fantasy.total_points": "Points totaux",
@@ -1027,6 +1037,15 @@ export const dictionaries = {
     "matches.a11y.status_postponed": "مباراة مؤجلة",
 
     "fantasy.title": "فانتازي",
+    "fantasy.availability.season_closed.title": "لم يُفتح موسم الفانتازي بعد",
+    "fantasy.availability.season_closed.body":
+      "لا يوجد موسم فانتازي مفتوح حاليًا. سيكون إنشاء الفريق واللاعبون والدوريات متاحين عند فتح التسجيل.",
+    "fantasy.availability.awaiting_gameweek.title": "في انتظار الجولة القادمة من الفانتازي",
+    "fantasy.availability.awaiting_gameweek.body":
+      "الجولة القادمة من الفانتازي غير متاحة بعد. ستتمكن من إنشاء فريقك عند فتحها.",
+    "fantasy.availability.registration_closed.title": "التسجيل مغلق لهذه الجولة",
+    "fantasy.availability.registration_closed.body":
+      "ستتمكن من إنشاء فريقك عند فتح جولة قادمة. يمكنك الاطلاع على النتائج والترتيب من تبويبات الفانتازي.",
     "fantasy.subtitle": "فريقك، {accent}استراتيجيتك{/accent}.",
     "fantasy.team": "الفريق",
     "fantasy.total_points": "مجموع النقاط",

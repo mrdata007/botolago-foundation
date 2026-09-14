@@ -118,7 +118,7 @@ function hasControlOrWhitespace(value: string): boolean {
 }
 
 function configuration(environment: Readonly<Record<string, string | undefined>>): Configuration {
-  const triggerSecret = required(environment, "NEWS_INGESTION_TRIGGER_SECRET");
+  const triggerSecret = required(environment, "ELBOTOLA_INGESTION_TRIGGER_SECRET");
   if (
     environment.ELBOTOLA_SYNDICATION_APPROVED?.trim() !== "true" ||
     required(environment, "ELBOTOLA_ORIGIN").replace(/\/$/u, "") !== OFFICIAL_ORIGIN ||

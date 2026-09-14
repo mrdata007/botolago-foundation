@@ -1,10 +1,12 @@
 import type { Article } from "@/types/domain";
 
+export const PUBLIC_SITE_ORIGIN = "https://botolago.com";
+
 export function buildArticleHead(article: Article | null | undefined, articleId: string) {
   const title = article?.title.fr ?? "Actualités — BotolaGO";
   const description =
     article?.excerpt.fr ?? "Toute l'actualité premium du football marocain sur BotolaGO.";
-  const canonical = `https://www.botolago.app/news/${encodeURIComponent(articleId)}`;
+  const canonical = `${PUBLIC_SITE_ORIGIN}/news/${encodeURIComponent(articleId)}`;
 
   return {
     meta: [
