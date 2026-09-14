@@ -46,15 +46,21 @@ jobs:
       ELBOTOLA_RECOVERY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'refresh' }}
       ELBOTOLA_SCHEDULE_ENABLED: ${{ vars.ELBOTOLA_SCHEDULE_ENABLED }}
       ELBOTOLA_CANARY_VERIFIED_RUN_ID: ${{ vars.ELBOTOLA_CANARY_VERIFIED_RUN_ID }}
+      ELBOTOLA_CANARY_VERIFIED_FUNCTION_VERSION: ${{ vars.ELBOTOLA_CANARY_VERIFIED_FUNCTION_VERSION }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
       GITHUB_TOKEN: ${{ github.token }}
-      ELBOTOLA_RECOVERY_DIR: ${{ runner.temp }}/botolago-elbotola-recovery
 
     steps:
+      - name: Initialize temporary runtime path
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ELBOTOLA_RECOVERY_DIR=$RUNNER_TEMP/botolago-elbotola-recovery" >> "$GITHUB_ENV"
+
       - name: Check out reviewed main commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
