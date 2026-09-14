@@ -38,7 +38,10 @@ export function calculateAutomaticSubstitutions(
       : null;
   if (benchBoost) return { substitutions: [], effectiveCaptainId };
 
-  const activeStarters = players.filter((player) => player.starter && player.didPlay);
+  // Keep unfilled starting slots in the formation. Their zero minutes do not
+  // prevent another eligible substitution, and each replacement must leave a
+  // legal XI even when some absent starters have no available replacement.
+  const effectiveStarters = players.filter((player) => player.starter);
   const missing = players.filter((player) => player.starter && !player.didPlay);
   const bench = players
     .filter((player) => !player.starter && player.didPlay)
@@ -49,12 +52,16 @@ export function calculateAutomaticSubstitutions(
     const candidateIndex = bench.findIndex((candidate) => {
       if (candidate.position === "GK" || absent.position === "GK")
         return candidate.position === absent.position;
-      return isValidFormation([...activeStarters, candidate], formation);
+      return isValidFormation(
+        effectiveStarters.map((starter) => (starter.id === absent.id ? candidate : starter)),
+        formation,
+      );
     });
     if (candidateIndex < 0) continue;
     const [candidate] = bench.splice(candidateIndex, 1);
     if (!candidate) continue;
-    activeStarters.push(candidate);
+    effectiveStarters[effectiveStarters.findIndex((starter) => starter.id === absent.id)] =
+      candidate;
     substitutions.push({
       playerOutId: absent.id,
       playerInId: candidate.id,

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { applyLineupMultiplier, scorePlayerFixture, type ScoringRules } from "./scoring";
+import {
+  applyLineupMultiplier,
+  scorePlayerFixture,
+  type PlayerFixtureStats,
+  type ScoringRules,
+} from "./scoring";
 
 const rules: ScoringRules = {
   appearanceShort: 1,
@@ -44,7 +49,11 @@ describe("Fantasy scoring", () => {
       },
       rules,
     );
-    expect(Object.fromEntries(events.map((event) => [event.category, event.points]))).toEqual({
+    expect(
+      Object.fromEntries(
+        events.filter((event) => event.points !== 0).map((event) => [event.category, event.points]),
+      ),
+    ).toEqual({
       appearance: 2,
       assist: 3,
       goals_conceded: -1,
@@ -52,6 +61,7 @@ describe("Fantasy scoring", () => {
       penalty_save: 5,
       yellow_card: -1,
     });
+    expect(events).toHaveLength(12);
     expect(new Set(events.map((event) => event.sourceKey)).size).toBe(events.length);
   });
 
@@ -135,9 +145,92 @@ describe("Fantasy scoring", () => {
       },
       rules,
     );
-    expect(events.filter((event) => event.category.includes("yellow"))).toEqual([
-      expect.objectContaining({ category: "second_yellow_dismissal", points: -3 }),
-    ]);
+    expect(
+      events.filter((event) => event.category.includes("yellow") && event.points !== 0),
+    ).toEqual([expect.objectContaining({ category: "second_yellow_dismissal", points: -3 })]);
+  });
+
+  it("replaces repeated aggregate snapshots upward, downward and to zero without affecting independent events", () => {
+    const persisted = new Map<string, number>([["adjustment:reviewed:independent", 3]]);
+    const stats: PlayerFixtureStats = {
+      minutes: 0,
+      goals: 0,
+      assists: 0,
+      cleanSheet: false,
+      goalsConceded: 0,
+      saves: 0,
+      penaltiesSaved: 0,
+      penaltiesMissed: 0,
+      yellowCards: 0,
+      redCards: 0,
+      secondYellowDismissals: 0,
+      ownGoals: 0,
+      bonus: 0,
+      playerOfMatchPoints: 0,
+    };
+    // The existing database RPC upserts by sourceKey within player/fixture/version.
+    // The pgTAP domain test separately verifies its persisted replacement behavior.
+    const persist = (fixture: string, goals: number) => {
+      for (const event of scorePlayerFixture("player", fixture, "FWD", { ...stats, goals }, rules))
+        persisted.set(event.sourceKey, event.points);
+    };
+    persist("other-fixture", 1);
+    const goalKey = "fixture-stats:fixture:player:goal";
+    for (const [goals, expectedTotal] of [
+      [1, 11],
+      [1, 11],
+      [2, 15],
+      [2, 15],
+      [1, 11],
+      [0, 7],
+      [0, 7],
+    ]) {
+      persist("fixture", goals);
+      expect(persisted.get(goalKey)).toBe(goals * 4);
+      expect([...persisted.values()].reduce((sum, points) => sum + points, 0)).toBe(expectedTotal);
+      expect(persisted.size).toBe(25);
+      expect(persisted.get("adjustment:reviewed:independent")).toBe(3);
+      expect(persisted.get("fixture-stats:other-fixture:player:goal")).toBe(4);
+    }
+  });
+
+  it("emits zero replacements when appearance and clean-sheet thresholds no longer apply", () => {
+    const stats: PlayerFixtureStats = {
+      minutes: 90,
+      goals: 0,
+      assists: 0,
+      cleanSheet: true,
+      goalsConceded: 2,
+      saves: 0,
+      penaltiesSaved: 0,
+      penaltiesMissed: 0,
+      yellowCards: 0,
+      redCards: 0,
+      secondYellowDismissals: 0,
+      ownGoals: 0,
+      bonus: 0,
+      playerOfMatchPoints: 0,
+    };
+    const initial = scorePlayerFixture("player", "fixture", "DEF", stats, rules);
+    const corrected = scorePlayerFixture(
+      "player",
+      "fixture",
+      "DEF",
+      { ...stats, minutes: 0 },
+      rules,
+    );
+    expect(corrected.map((event) => event.sourceKey)).toEqual(
+      initial.map((event) => event.sourceKey),
+    );
+    expect(
+      Object.fromEntries(corrected.map((event) => [event.category, event.points])),
+    ).toMatchObject({
+      appearance: 0,
+      clean_sheet: 0,
+      goals_conceded: 0,
+    });
+    expect(initial.find((event) => event.category === "clean_sheet")?.points).toBe(4);
+    expect(initial.find((event) => event.category === "goals_conceded")?.points).toBe(-1);
   });
 
   it("applies captain and triple-captain multipliers", () => {

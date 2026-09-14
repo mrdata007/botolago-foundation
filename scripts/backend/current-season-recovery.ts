@@ -172,6 +172,31 @@ export function normalizeCurrentMembership(
   return normalizeObservedMembership(member, teamId, observedAt, "current-squad");
 }
 
+function observedPosition(holder: Row, source: "squad" | "profile"): string | null {
+  if (holder.position_id === null || holder.position_id === undefined) {
+    if (holder.position !== null && holder.position !== undefined) fail("squad_position_mismatch");
+    return null;
+  }
+  const positionId = id(holder.position_id);
+  const positions: Record<number, { developerName: string; position: string }> = {
+    24: { developerName: "GOALKEEPER", position: "goalkeeper" },
+    25: { developerName: "DEFENDER", position: "defender" },
+    26: { developerName: "MIDFIELDER", position: "midfielder" },
+    27: { developerName: "ATTACKER", position: "forward" },
+  };
+  const expected = positions[positionId];
+  if (!expected) fail("unsupported_current_position");
+  // Profile position_id is itself a documented provider role. When its include
+  // is present, both representations must agree before it can fill a missing role.
+  if (source === "squad" || (holder.position !== null && holder.position !== undefined)) {
+    const included = row(holder.position);
+    if (id(included.id) !== positionId) fail("squad_position_mismatch");
+    if (text(included.developer_name, 80).toUpperCase() !== expected.developerName)
+      fail("squad_position_role_mismatch");
+  }
+  return expected.position;
+}
+
 function normalizeObservedMembership(
   member: Row,
   teamId: number,
@@ -182,18 +207,13 @@ function normalizeObservedMembership(
   const playerId = id(member.player_id);
   const player = row(member.player);
   if (id(player.id) !== playerId) fail("squad_player_mismatch");
-  if (member.position_id === null || member.position_id === undefined) return null;
-  const position = row(member.position);
-  if (id(position.id) !== id(member.position_id)) fail("squad_position_mismatch");
-  const positions: Record<string, string> = {
-    GOALKEEPER: "goalkeeper",
-    DEFENDER: "defender",
-    MIDFIELDER: "midfielder",
-    ATTACKER: "forward",
-    FORWARD: "forward",
-  };
-  const normalizedPosition = positions[text(position.developer_name, 80).toUpperCase()];
-  if (!normalizedPosition) fail("unsupported_current_position");
+  const squadPosition = observedPosition(member, "squad");
+  const profilePosition = observedPosition(player, "profile");
+  if (squadPosition && profilePosition && squadPosition !== profilePosition)
+    fail("squad_profile_position_conflict");
+  const normalizedPosition = squadPosition ?? profilePosition;
+  if (!normalizedPosition) return null;
+  const positionSource = squadPosition ? "squad-position" : "player-profile-position";
   const birth =
     typeof player.date_of_birth === "string" && /^\d{4}-\d{2}-\d{2}$/.test(player.date_of_birth)
       ? date(player.date_of_birth)
@@ -219,7 +239,7 @@ function normalizeObservedMembership(
     freshness: {
       updatedAt: observedAt,
       sourceSequence: Date.parse(observedAt),
-      sourceVersion: `sportsmonks-${source}:${teamId}:${playerId}:${Date.parse(observedAt)}`,
+      sourceVersion: `sportsmonks-${source}:${teamId}:${playerId}:${Date.parse(observedAt)}:${positionSource}`,
     },
   };
 }
@@ -265,7 +285,7 @@ export async function loadCurrentSeasonSquad(
   const readSquad = async (path: string): Promise<Row[]> => {
     // Both documented squad endpoints are non-paginated. Do not send guessed
     // page/per_page arguments or turn a partial response into a whole squad.
-    const payload = row(await request(path, { include: "player;position" }, token));
+    const payload = row(await request(path, { include: "player.position;position" }, token));
     if (!Array.isArray(payload.data) || payload.data.length > 100)
       fail("invalid_current_squad_response");
     if (payload.pagination && row(payload.pagination).has_more === true)
@@ -284,6 +304,7 @@ export async function loadCurrentSeasonSquad(
   const memberships: Row[] = [];
   let excludedContracts = 0;
   let omittedUnknownPositions = 0;
+  let positionsFromPlayerProfiles = 0;
   for (const member of rows) {
     if (id(member.team_id) !== teamId) fail("squad_scope_mismatch");
     if (fallback && !currentRosterContractEligible(member, observedAt)) {
@@ -293,8 +314,11 @@ export async function loadCurrentSeasonSquad(
     const normalized = fallback
       ? normalizeCurrentTeamRoster(member, teamId, observedAt)
       : normalizeCurrentMembership(member, teamId, observedAt);
-    if (normalized) memberships.push(normalized);
-    else omittedUnknownPositions += 1;
+    if (normalized) {
+      memberships.push(normalized);
+      if (member.position_id === null || member.position_id === undefined)
+        positionsFromPlayerProfiles += 1;
+    } else omittedUnknownPositions += 1;
   }
   return {
     teamExternalId: String(teamId),
@@ -310,6 +334,7 @@ export async function loadCurrentSeasonSquad(
       eligiblePlayers: memberships.length,
       excludedContracts,
       omittedUnknownPositions,
+      positionsFromPlayerProfiles,
     },
   };
 }
@@ -640,6 +665,10 @@ async function main(): Promise<void> {
       eligiblePlayers: squads.reduce((sum, s) => sum + s.memberships.length, 0),
       omittedUnknownPositions: clubSources.reduce(
         (sum, club) => sum + Number(club.omittedUnknownPositions),
+        0,
+      ),
+      positionsFromPlayerProfiles: clubSources.reduce(
+        (sum, club) => sum + Number(club.positionsFromPlayerProfiles),
         0,
       ),
       excludedContracts: clubSources.reduce((sum, club) => sum + Number(club.excludedContracts), 0),
