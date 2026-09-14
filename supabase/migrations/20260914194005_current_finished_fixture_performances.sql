@@ -197,8 +197,8 @@ begin
       end if;
     end loop;
     if (candidate ->> 'minutes')::integer > 130
-      or (candidate ->> 'cleanSheets')::integer <> case
-        when (candidate ->> 'minutes')::integer >= 60 and (candidate ->> 'goalsConceded')::integer = 0 then 1 else 0 end
+      or (candidate ->> 'cleanSheets')::integer <> (case
+        when (candidate ->> 'minutes')::integer >= 60 and (candidate ->> 'goalsConceded')::integer = 0 then 1 else 0 end)
       or ((candidate ->> 'started')::boolean and not (candidate ->> 'appeared')::boolean)
       or ((candidate ->> 'minutes')::integer > 0 and not (candidate ->> 'appeared')::boolean)
       or (candidate -> 'providerRating' is not null and candidate -> 'providerRating' <> 'null'::jsonb
