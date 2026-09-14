@@ -682,6 +682,15 @@ export type Database = {
         Args: { p_competition_id: string; p_language?: string }
         Returns: Json
       }
+      football_current_performance_fixture_batch: {
+        Args: {
+          p_after_fixture_external_id?: string
+          p_limit?: number
+          p_provider_name: string
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
       football_head_to_head: {
         Args: { p_fixture_id: string; p_language?: string; p_limit?: number }
         Returns: Json
@@ -813,6 +822,17 @@ export type Database = {
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
+      ingest_current_player_fixture_performance: {
+        Args: {
+          p_coverage: Json
+          p_fixture_external_id: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
       ingest_football_catalog_entity: {
         Args: {
           p_entity: Json
@@ -1136,12 +1156,28 @@ export type Database = {
         }
         Returns: Json
       }
+      service_advance_fantasy_lifecycle: {
+        Args: {
+          p_batch_size?: number
+          p_expected_lock_version: number
+          p_gameweek_id: string
+        }
+        Returns: Json
+      }
       service_apply_fantasy_price_changes: {
         Args: {
           p_after_player_id?: string
           p_batch_size?: number
           p_gameweek_id: string
           p_source_version: number
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_finalization: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
         }
         Returns: Json
       }
@@ -1199,6 +1235,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      service_complete_fantasy_postwork: {
+        Args: { p_calculation_version: number; p_gameweek_id: string }
+        Returns: Json
+      }
       service_create_user_notification: {
         Args: {
           p_deep_link_entity_id?: string
@@ -1214,7 +1254,37 @@ export type Database = {
         Returns: string
       }
       service_elbotola_source_status: { Args: never; Returns: Json }
+      service_enqueue_gameweek_finalized_notifications: {
+        Args: {
+          p_after_team_id?: string
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      service_fantasy_lifecycle_state: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
+      service_fantasy_scoring_league_page: {
+        Args: {
+          p_after_league_id?: string
+          p_batch_size?: number
+          p_gameweek_id: string
+        }
+        Returns: Json
+      }
       service_finalize_fantasy_team_results: {
+        Args: {
+          p_after_team_id?: string
+          p_batch_size?: number
+          p_calculation_version: number
+          p_gameweek_id: string
+        }
+        Returns: Json
+      }
+      service_get_fantasy_scoring_snapshot: {
         Args: {
           p_after_team_id?: string
           p_batch_size?: number
@@ -1267,6 +1337,25 @@ export type Database = {
         }
         Returns: Json
       }
+      service_persist_fantasy_scoring_results: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+          p_player_results: Json
+          p_team_results: Json
+        }
+        Returns: Json
+      }
+      service_prepare_next_fantasy_gameweek: {
+        Args: {
+          p_batch_size?: number
+          p_calculation_version: number
+          p_next_gameweek_id: string
+          p_previous_gameweek_id: string
+        }
+        Returns: Json
+      }
       service_recalculate_fantasy_rankings: {
         Args: {
           p_calculation_version?: number
@@ -1307,6 +1396,15 @@ export type Database = {
         Args: {
           p_catalog_activation_id: string
           p_expected_source_digest: string
+        }
+        Returns: Json
+      }
+      service_run_fantasy_price_batch: {
+        Args: {
+          p_after_player_id?: string
+          p_batch_size?: number
+          p_calculation_version: number
+          p_gameweek_id: string
         }
         Returns: Json
       }
@@ -4842,13 +4940,13 @@ export type Database = {
           minutes: number
           own_goals: number
           penalties_missed: number
-          penalties_saved: number
+          penalties_saved: number | null
           player_id: string
           position: Database["app"]["Enums"]["football_position"]
           provider_observed_at: string
           provider_rating: number | null
           red_cards: number
-          saves: number
+          saves: number | null
           second_yellow_dismissals: number
           source_provider: string
           source_version: string
@@ -4871,13 +4969,13 @@ export type Database = {
           minutes: number
           own_goals: number
           penalties_missed: number
-          penalties_saved: number
+          penalties_saved?: number | null
           player_id: string
           position: Database["app"]["Enums"]["football_position"]
           provider_observed_at: string
           provider_rating?: number | null
           red_cards: number
-          saves: number
+          saves?: number | null
           second_yellow_dismissals: number
           source_provider: string
           source_version: string
@@ -4900,13 +4998,13 @@ export type Database = {
           minutes?: number
           own_goals?: number
           penalties_missed?: number
-          penalties_saved?: number
+          penalties_saved?: number | null
           player_id?: string
           position?: Database["app"]["Enums"]["football_position"]
           provider_observed_at?: string
           provider_rating?: number | null
           red_cards?: number
-          saves?: number
+          saves?: number | null
           second_yellow_dismissals?: number
           source_provider?: string
           source_version?: string

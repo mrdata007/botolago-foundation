@@ -233,6 +233,37 @@ describe("Fantasy scoring", () => {
     expect(initial.find((event) => event.category === "goals_conceded")?.points).toBe(-1);
   });
 
+  it("awards save categories only to goalkeepers and clears them for outfield positions", () => {
+    const stats: PlayerFixtureStats = {
+      minutes: 90,
+      goals: 0,
+      assists: 0,
+      cleanSheet: false,
+      goalsConceded: 0,
+      saves: 6,
+      penaltiesSaved: 1,
+      penaltiesMissed: 0,
+      yellowCards: 0,
+      redCards: 0,
+      secondYellowDismissals: 0,
+      ownGoals: 0,
+      bonus: 0,
+      playerOfMatchPoints: 0,
+    };
+    const goalkeeper = scorePlayerFixture("player", "fixture", "GK", stats, rules);
+    const saveKeys = ["saves", "penalty_save"].map(
+      (category) => goalkeeper.find((event) => event.category === category)?.sourceKey,
+    );
+    expect(goalkeeper.find((event) => event.category === "saves")?.points).toBe(2);
+    expect(goalkeeper.find((event) => event.category === "penalty_save")?.points).toBe(5);
+    for (const position of ["DEF", "MID", "FWD"] as const) {
+      const corrected = scorePlayerFixture("player", "fixture", position, stats, rules);
+      const saveCategories = corrected.filter((event) => saveKeys.includes(event.sourceKey));
+      expect(saveCategories.map((event) => event.points)).toEqual([0, 0]);
+      expect(corrected).toHaveLength(12);
+    }
+  });
+
   it("applies captain and triple-captain multipliers", () => {
     expect(applyLineupMultiplier(8, 2)).toBe(16);
     expect(applyLineupMultiplier(8, 3)).toBe(24);

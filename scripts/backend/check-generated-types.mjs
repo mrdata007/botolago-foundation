@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
@@ -74,6 +75,36 @@ if (actual !== expected) {
   process.stderr.write(
     "Generated database types are stale. Run `bun run backend:types:generate`.\n",
   );
+  // These files contain schema type declarations from the disposable CI
+  // database, not database rows or credentials. Show bounded diagnostics so
+  // an exact formatting/signature mismatch can be reviewed directly in logs.
+  const diagnosticDirectory = mkdtempSync(resolve(tmpdir(), "botolago-types-diff-"));
+  try {
+    const expectedPath = resolve(diagnosticDirectory, "expected.types.ts");
+    writeFileSync(expectedPath, expected, "utf8");
+    const difference = spawnSync(
+      "diff",
+      [
+        "-u",
+        "--label",
+        "committed/database.types.ts",
+        "--label",
+        "generated/database.types.ts",
+        generatedPath,
+        expectedPath,
+      ],
+      { encoding: "utf8" },
+    );
+    if (difference.stdout) {
+      const lines = difference.stdout.trimEnd().split("\n");
+      process.stderr.write(`${lines.slice(0, 120).join("\n")}\n`);
+      if (lines.length > 120) {
+        process.stderr.write(`... ${lines.length - 120} additional diff lines omitted.\n`);
+      }
+    }
+  } finally {
+    rmSync(diagnosticDirectory, { recursive: true, force: true });
+  }
   process.exit(1);
 }
 

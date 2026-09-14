@@ -1,0 +1,81 @@
+name: Run one reviewed Fantasy gameweek worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit
+        required: true
+        type: string
+      confirmation:
+        description: Type RUN_FANTASY_MANUAL_WORKER
+        required: true
+        type: string
+      gameweek_id:
+        description: Existing activated Fantasy gameweek UUID
+        required: true
+        type: string
+      calculation_version:
+        description: Reviewed positive calculation version; reuse on retry
+        required: true
+        type: string
+
+# Intentionally no schedule. This workflow cannot create a Fantasy season,
+# open registration or invent future fixtures. It advances an existing staged
+# next gameweek only after all previous postwork is durably complete.
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' && github.actor == 'mrdata007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production-admin-activation
+    env:
+      FANTASY_MANUAL_WORKER_ENABLED: ${{ vars.FANTASY_MANUAL_WORKER_ENABLED }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      FANTASY_GAMEWEEK_ID: ${{ inputs.gameweek_id }}
+      FANTASY_CALCULATION_VERSION: ${{ inputs.calculation_version }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+    steps:
+      - name: Guard explicit manual activation and immutable commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$FANTASY_MANUAL_WORKER_ENABLED" = "true"
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$CONFIRMATION" = "RUN_FANTASY_MANUAL_WORKER"
+          test "$SUPABASE_PRODUCTION_PROJECT_REF" = "tkewgajrljbwgwedqsxn"
+          test "${SUPABASE_PRODUCTION_URL%/}" = "https://tkewgajrljbwgwedqsxn.supabase.co"
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Verify the exact worker runtime
+        run: |
+          bun install --frozen-lockfile
+          bun test scripts/backend/fantasy-lifecycle-runner.test.ts src/backend/fantasy/scoring.test.ts src/backend/fantasy/substitutions.test.ts
+          bun run backend:secrets:check
+      - name: Run bounded trusted worker
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_SECRET_KEY"
+          printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
+          bun scripts/backend/fantasy-lifecycle-runner.ts

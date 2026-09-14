@@ -88,8 +88,8 @@ export function scorePlayerFixture(
       ? -Math.floor(stats.goalsConceded / concededRate)
       : 0,
   );
-  add("saves", Math.floor(stats.saves / rules.savesPerPoint));
-  add("penalty_save", stats.penaltiesSaved * rules.penaltySave);
+  add("saves", position === "GK" ? Math.floor(stats.saves / rules.savesPerPoint) : 0);
+  add("penalty_save", position === "GK" ? stats.penaltiesSaved * rules.penaltySave : 0);
   add("penalty_miss", stats.penaltiesMissed * rules.penaltyMiss);
   add("yellow_card", stats.yellowCards * rules.yellowCard);
   add("red_card", stats.redCards * rules.redCard);
