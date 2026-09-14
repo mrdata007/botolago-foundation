@@ -43,6 +43,13 @@ export interface PointEvent {
   readonly sourceKey: string;
 }
 
+/**
+ * Complete category snapshot for one player/fixture under an immutable ruleset.
+ * Persist every returned category, including zero, with the existing point
+ * upsert RPC. Stable keys replace prior aggregates when provider facts change;
+ * they never identify individual Football events. Ordinary corrections retain
+ * the scoring version and advance only the source sequence.
+ */
 export function scorePlayerFixture(
   playerId: string,
   fixtureId: string,
@@ -51,44 +58,45 @@ export function scorePlayerFixture(
   rules: ScoringRules,
 ): readonly PointEvent[] {
   const events: PointEvent[] = [];
-  const add = (category: string, points: number, suffix = "1") => {
-    if (points !== 0)
-      events.push({
-        category,
-        points,
-        sourceKey: `${fixtureId}:${playerId}:${category}:${suffix}`,
-      });
+  const add = (category: string, points: number) => {
+    events.push({
+      category,
+      points,
+      sourceKey: `fixture-stats:${fixtureId}:${playerId}:${category}`,
+    });
   };
-  if (stats.minutes > 0)
-    add(
-      "appearance",
-      stats.minutes >= rules.fullAppearanceMinutes ? rules.appearanceFull : rules.appearanceShort,
-    );
-  add("goal", stats.goals * rules.goal[position], String(stats.goals));
-  add("assist", stats.assists * rules.assist, String(stats.assists));
-  if (stats.cleanSheet && stats.minutes >= rules.fullAppearanceMinutes)
-    add("clean_sheet", rules.cleanSheet[position]);
-  const concededRate = rules.goalsConcededPerPoint[position];
-  if (concededRate && stats.minutes >= rules.fullAppearanceMinutes)
-    add(
-      "goals_conceded",
-      -Math.floor(stats.goalsConceded / concededRate),
-      String(stats.goalsConceded),
-    );
-  add("saves", Math.floor(stats.saves / rules.savesPerPoint), String(stats.saves));
-  add("penalty_save", stats.penaltiesSaved * rules.penaltySave, String(stats.penaltiesSaved));
-  add("penalty_miss", stats.penaltiesMissed * rules.penaltyMiss, String(stats.penaltiesMissed));
-  add("yellow_card", stats.yellowCards * rules.yellowCard, String(stats.yellowCards));
-  add("red_card", stats.redCards * rules.redCard, String(stats.redCards));
   add(
-    "second_yellow_dismissal",
-    stats.secondYellowDismissals * rules.secondYellowDismissal,
-    String(stats.secondYellowDismissals),
+    "appearance",
+    stats.minutes <= 0
+      ? 0
+      : stats.minutes >= rules.fullAppearanceMinutes
+        ? rules.appearanceFull
+        : rules.appearanceShort,
   );
-  add("own_goal", stats.ownGoals * rules.ownGoal, String(stats.ownGoals));
-  if (rules.bonusEnabled) add("bonus", stats.bonus, String(stats.bonus));
-  if (rules.playerOfMatchEnabled)
-    add("player_of_match", stats.playerOfMatchPoints, String(stats.playerOfMatchPoints));
+  add("goal", stats.goals * rules.goal[position]);
+  add("assist", stats.assists * rules.assist);
+  add(
+    "clean_sheet",
+    stats.cleanSheet && stats.minutes >= rules.fullAppearanceMinutes
+      ? rules.cleanSheet[position]
+      : 0,
+  );
+  const concededRate = rules.goalsConcededPerPoint[position];
+  add(
+    "goals_conceded",
+    concededRate && stats.minutes >= rules.fullAppearanceMinutes
+      ? -Math.floor(stats.goalsConceded / concededRate)
+      : 0,
+  );
+  add("saves", Math.floor(stats.saves / rules.savesPerPoint));
+  add("penalty_save", stats.penaltiesSaved * rules.penaltySave);
+  add("penalty_miss", stats.penaltiesMissed * rules.penaltyMiss);
+  add("yellow_card", stats.yellowCards * rules.yellowCard);
+  add("red_card", stats.redCards * rules.redCard);
+  add("second_yellow_dismissal", stats.secondYellowDismissals * rules.secondYellowDismissal);
+  add("own_goal", stats.ownGoals * rules.ownGoal);
+  if (rules.bonusEnabled) add("bonus", stats.bonus);
+  if (rules.playerOfMatchEnabled) add("player_of_match", stats.playerOfMatchPoints);
   return events;
 }
 

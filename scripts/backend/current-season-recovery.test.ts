@@ -68,8 +68,8 @@ describe("current season recovery boundaries", () => {
       id: 1,
       team_id: 10,
       player_id: 99,
-      position_id: 27,
-      position: { id: 27, developer_name: "DEFENDER" },
+      position_id: 25,
+      position: { id: 25, developer_name: "DEFENDER" },
       player: { id: 99, name: "Verified Player" },
       start: "2026-08-01",
       end: null,
@@ -100,8 +100,8 @@ describe("current season recovery boundaries", () => {
       id: 1,
       team_id: 10,
       player_id: 99,
-      position_id: 27,
-      position: { id: 27, developer_name: "DEFENDER" },
+      position_id: 25,
+      position: { id: 25, developer_name: "DEFENDER" },
       player: { id: 99, name: "Verified Player" },
       start: "2026-08-01",
       end: null,
@@ -122,8 +122,11 @@ describe("current season recovery boundaries", () => {
       eligiblePlayers: 1,
     });
     expect(calls).toEqual([
-      { path: "/v3/football/squads/seasons/28647/teams/10", query: { include: "player;position" } },
-      { path: "/v3/football/squads/teams/10", query: { include: "player;position" } },
+      {
+        path: "/v3/football/squads/seasons/28647/teams/10",
+        query: { include: "player.position;position" },
+      },
+      { path: "/v3/football/squads/teams/10", query: { include: "player.position;position" } },
     ]);
     await expect(
       loadCurrentSeasonSquad(17, verified, probe.observedAt, "secret", request),
@@ -168,6 +171,118 @@ describe("current season recovery boundaries", () => {
         data: path.includes("/seasons/") ? [] : [member, { ...member, id: 2 }],
       })),
     ).rejects.toThrow("duplicate_current_roster_player");
+  });
+  test("recovers missing season roles from authoritative profiles without replacing populated season memberships", async () => {
+    const verified = new Set(Array.from({ length: 16 }, (_, i) => i + 1));
+    const member = {
+      id: 1,
+      season_id: 28647,
+      team_id: 10,
+      player_id: 99,
+      position_id: null,
+      position: null,
+      player: {
+        id: 99,
+        name: "Verified Player",
+        position_id: 25,
+        position: { id: 25, developer_name: "DEFENDER" },
+      },
+    };
+    const calls: string[] = [];
+    const loaded = await loadCurrentSeasonSquad(
+      10,
+      verified,
+      probe.observedAt,
+      "secret",
+      async (path, query) => {
+        calls.push(path);
+        expect(query.include).toBe("player.position;position");
+        return { data: [member] };
+      },
+    );
+    expect(calls).toEqual(["/v3/football/squads/seasons/28647/teams/10"]);
+    expect(loaded.memberships).toHaveLength(1);
+    expect(loaded.memberships[0]).toMatchObject({ externalPlayerId: "99", position: "defender" });
+    expect(loaded.evidence).toMatchObject({
+      source: "season-squad",
+      positionsFromPlayerProfiles: 1,
+      omittedUnknownPositions: 0,
+      seasonSourceRows: 1,
+    });
+    expect((loaded.memberships[0].freshness as { sourceVersion: string }).sourceVersion).toBe(
+      `sportsmonks-current-squad:10:99:${Date.parse(probe.observedAt)}:player-profile-position`,
+    );
+    expect(member.position_id).toBeNull();
+    expect(member.season_id).toBe(28647);
+    expect(
+      normalizeCurrentMembership(
+        { ...member, player: { ...member.player, position: null } },
+        10,
+        probe.observedAt,
+      )?.position,
+    ).toBe("defender");
+    expect(
+      normalizeCurrentMembership(
+        { ...member, player: { ...member.player, position_id: null, position: null } },
+        10,
+        probe.observedAt,
+      ),
+    ).toBeNull();
+  });
+  test("profile fallback rejects identity and role conflicts and cannot bypass an empty club", () => {
+    const member = {
+      id: 1,
+      season_id: 28647,
+      team_id: 10,
+      player_id: 99,
+      position_id: null,
+      position: null,
+      player: {
+        id: 99,
+        name: "Verified Player",
+        position_id: 25,
+        position: { id: 25, developer_name: "DEFENDER" },
+      },
+    };
+    expect(() =>
+      normalizeCurrentMembership(
+        { ...member, player: { ...member.player, id: 98 } },
+        10,
+        probe.observedAt,
+      ),
+    ).toThrow("squad_player_mismatch");
+    expect(() =>
+      normalizeCurrentMembership(
+        {
+          ...member,
+          player: { ...member.player, position: { id: 26, developer_name: "MIDFIELDER" } },
+        },
+        10,
+        probe.observedAt,
+      ),
+    ).toThrow("squad_position_mismatch");
+    expect(() =>
+      normalizeCurrentMembership(
+        {
+          ...member,
+          player: { ...member.player, position: { id: 25, developer_name: "ATTACKER" } },
+        },
+        10,
+        probe.observedAt,
+      ),
+    ).toThrow("squad_position_role_mismatch");
+    expect(() =>
+      normalizeCurrentMembership(
+        { ...member, position_id: 24, position: { id: 24, developer_name: "GOALKEEPER" } },
+        10,
+        probe.observedAt,
+      ),
+    ).toThrow("squad_profile_position_conflict");
+    const squads = Array.from({ length: 16 }, (_, index) => ({
+      teamExternalId: String(index + 1),
+      memberships: index === 0 ? [] : [{ externalPlayerId: String(index + 100) }],
+    }));
+    expect(() => validateCurrentSquads(squads)).toThrow("current_squad_empty_or_oversized");
   });
   test("deployed squad RPC preflight proves service access with input that cannot mutate data", async () => {
     const calls: unknown[] = [];
@@ -326,8 +441,8 @@ describe("current season recovery boundaries", () => {
       season_id: 28647,
       team_id: 10,
       player_id: 99,
-      position_id: 27,
-      position: { id: 27, developer_name: "DEFENDER" },
+      position_id: 25,
+      position: { id: 25, developer_name: "DEFENDER" },
       player: { id: 99, name: "Verified Player" },
       jersey_number: 4,
     };
@@ -336,7 +451,11 @@ describe("current season recovery boundaries", () => {
       normalizeCurrentMembership({ ...value, season_id: 26027 }, 10, probe.observedAt),
     ).toThrow("squad_scope_mismatch");
     expect(
-      normalizeCurrentMembership({ ...value, position_id: null }, 10, probe.observedAt),
+      normalizeCurrentMembership(
+        { ...value, position_id: null, position: null },
+        10,
+        probe.observedAt,
+      ),
     ).toBeNull();
   });
   test("rejects ambiguous cross-club memberships before any squad transaction", () => {
