@@ -1213,6 +1213,7 @@ export type Database = {
         }
         Returns: string
       }
+      service_elbotola_source_status: { Args: never; Returns: Json }
       service_finalize_fantasy_team_results: {
         Args: {
           p_after_team_id?: string
@@ -1307,6 +1308,10 @@ export type Database = {
           p_catalog_activation_id: string
           p_expected_source_digest: string
         }
+        Returns: Json
+      }
+      service_set_elbotola_source_active: {
+        Args: { p_active: boolean }
         Returns: Json
       }
       service_stage_fantasy_catalog: {

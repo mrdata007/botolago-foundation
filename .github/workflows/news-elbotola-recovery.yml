@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       mode:
-        description: Deploy and verify a canary, or refresh the existing integration
+        description: Verify a manual canary, or refresh the approved integration
         required: true
         default: canary
         type: choice
@@ -46,9 +46,8 @@ jobs:
       ELBOTOLA_RECOVERY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'refresh' }}
       ELBOTOLA_SCHEDULE_ENABLED: ${{ vars.ELBOTOLA_SCHEDULE_ENABLED }}
       ELBOTOLA_CANARY_VERIFIED_RUN_ID: ${{ vars.ELBOTOLA_CANARY_VERIFIED_RUN_ID }}
-      ELBOTOLA_CANARY_VERIFIED_FUNCTION_VERSION: ${{ vars.ELBOTOLA_CANARY_VERIFIED_FUNCTION_VERSION }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_PRODUCTION_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
@@ -77,45 +76,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/backend/elbotola-recovery.test.py
-          bun test supabase/functions/_shared/elbotola.test.ts
+          bun install --frozen-lockfile
+          bun test scripts/backend/elbotola-recovery.test.ts supabase/functions/_shared/elbotola.test.ts
           bun run backend:secrets:check
 
-      - name: Check target, permission scope and database prerequisites
-        id: preflight
-        run: python scripts/backend/elbotola-recovery.py preflight
-
-      - name: Configure isolated ElBotola runtime
-        if: env.ELBOTOLA_RECOVERY_MODE == 'canary'
-        id: configure
-        run: python scripts/backend/elbotola-recovery.py configure
-
-      - name: Deploy only reviewed ElBotola function
-        if: env.ELBOTOLA_RECOVERY_MODE == 'canary'
-        id: deploy
-        shell: bash
-        run: |
-          set -euo pipefail
-          bunx supabase@2.109.1 functions deploy --help > /dev/null
-          if ! bunx supabase@2.109.1 functions deploy news-ingest-elbotola \
-            --project-ref tkewgajrljbwgwedqsxn --use-api \
-            > "$ELBOTOLA_RECOVERY_DIR/deploy.private.log" 2>&1; then
-            echo "ELBOTOLA_DEPLOY_FAILED"
-            exit 1
-          fi
-
-      - name: Activate publisher and verify bounded ingestion
+      - name: Run bounded ElBotola ingestion and verify Arabic feed
         id: ingest
-        run: python scripts/backend/elbotola-recovery.py ingest
+        run: bun scripts/backend/elbotola-recovery.ts
 
-      - name: Restore inactive publisher after a failed first canary
-        if: failure() && steps.preflight.outcome == 'success' && env.ELBOTOLA_RECOVERY_MODE == 'canary'
-        run: python scripts/backend/elbotola-recovery.py rollback
+      - name: Confirm manual ElBotola canary completed
+        if: env.ELBOTOLA_RECOVERY_MODE == 'canary'
+        run: echo "ELBOTOLA_MANUAL_CANARY_PASS"
 
       - name: Scan sanitized evidence
-        if: always() && steps.preflight.outcome == 'success'
+        if: always() && steps.quality.outcome == 'success'
         id: scan
-        run: python scripts/backend/elbotola-recovery.py scan
+        run: python scripts/backend/phase7f-scan-sanitized-evidence.py "$ELBOTOLA_RECOVERY_DIR/evidence"
 
       - name: Upload sanitized recovery evidence
         if: always() && steps.scan.outcome == 'success'

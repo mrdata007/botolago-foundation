@@ -27,12 +27,10 @@ const WORKFLOW = ".github/workflows/football-current-season-recovery.yml";
 const VERIFIED_FILES = [
   WORKFLOW,
   "scripts/backend/current-season-recovery.ts",
-  "scripts/backend/current-season-migration.py",
-  "scripts/backend/phase7e-production-migration-promoter.py",
   "scripts/backend/sportsmonks-production-probe.ts",
   "supabase/functions/_shared/sportsmonks-catalog.ts",
   "supabase/functions/_shared/sportsmonks-fixtures.ts",
-  "supabase/migrations/20260914182621_current_season_squad_recovery.sql",
+  "supabase/migrations/20260914184657_current_season_squad_recovery.sql",
   "supabase/migrations/20260731203317_gate3b_historical_squads_standings.sql",
   "supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql",
   "package.json",
@@ -171,6 +169,16 @@ export function normalizeCurrentMembership(
   const member = row(value);
   if (id(member.season_id) !== SEASON || id(member.team_id) !== teamId)
     fail("squad_scope_mismatch");
+  return normalizeObservedMembership(member, teamId, observedAt, "current-squad");
+}
+
+function normalizeObservedMembership(
+  member: Row,
+  teamId: number,
+  observedAt: string,
+  source: "current-squad" | "current-team-roster",
+): Row | null {
+  if (id(member.team_id) !== teamId) fail("squad_scope_mismatch");
   const playerId = id(member.player_id);
   const player = row(member.player);
   if (id(player.id) !== playerId) fail("squad_player_mismatch");
@@ -211,7 +219,97 @@ export function normalizeCurrentMembership(
     freshness: {
       updatedAt: observedAt,
       sourceSequence: Date.parse(observedAt),
-      sourceVersion: `sportsmonks-current-squad:${playerId}:${Date.parse(observedAt)}`,
+      sourceVersion: `sportsmonks-${source}:${teamId}:${playerId}:${Date.parse(observedAt)}`,
+    },
+  };
+}
+
+export function currentRosterContractEligible(value: unknown, observedAt: string): boolean {
+  const member = row(value);
+  const observed = new Date(observedAt);
+  if (Number.isNaN(observed.getTime())) fail("invalid_observation_date");
+  const asOf = observed.toISOString().slice(0, 10);
+  const contractDate = (value: unknown): string | null => {
+    if (value === null || value === undefined) return null;
+    if (typeof value !== "string") fail("invalid_current_contract_date");
+    return date(value);
+  };
+  const start = contractDate(member.start);
+  const end = contractDate(member.end);
+  if (start !== null && end !== null && end < start) fail("invalid_current_contract_range");
+  return (start === null || start <= asOf) && (end === null || end >= asOf);
+}
+
+export function normalizeCurrentTeamRoster(
+  value: unknown,
+  teamId: number,
+  observedAt: string,
+): Row | null {
+  const member = row(value);
+  if (id(member.team_id) !== teamId) fail("squad_scope_mismatch");
+  if (!currentRosterContractEligible(member, observedAt)) return null;
+  // The team endpoint has no provider season_id. Its current roster is
+  // associated separately with a club proven to belong to the current season.
+  return normalizeObservedMembership(member, teamId, observedAt, "current-team-roster");
+}
+
+export async function loadCurrentSeasonSquad(
+  teamId: number,
+  verifiedCurrentTeamIds: ReadonlySet<number>,
+  observedAt: string,
+  token: string,
+  request: typeof requestSportsMonksJson = requestSportsMonksJson,
+): Promise<{ teamExternalId: string; memberships: Row[]; evidence: Row }> {
+  if (verifiedCurrentTeamIds.size !== 16 || !verifiedCurrentTeamIds.has(teamId))
+    fail("current_roster_club_not_verified");
+  const readSquad = async (path: string): Promise<Row[]> => {
+    // Both documented squad endpoints are non-paginated. Do not send guessed
+    // page/per_page arguments or turn a partial response into a whole squad.
+    const payload = row(await request(path, { include: "player;position" }, token));
+    if (!Array.isArray(payload.data) || payload.data.length > 100)
+      fail("invalid_current_squad_response");
+    if (payload.pagination && row(payload.pagination).has_more === true)
+      fail("unexpected_squad_pagination");
+    const records = payload.data.map(row);
+    if (
+      new Set(records.map((record) => id(record.id))).size !== records.length ||
+      new Set(records.map((record) => id(record.player_id))).size !== records.length
+    )
+      fail("duplicate_current_roster_player");
+    return records;
+  };
+  const seasonRows = await readSquad(`${BASE}/squads/seasons/${SEASON}/teams/${teamId}`);
+  const fallback = seasonRows.length === 0;
+  const rows = fallback ? await readSquad(`${BASE}/squads/teams/${teamId}`) : seasonRows;
+  const memberships: Row[] = [];
+  let excludedContracts = 0;
+  let omittedUnknownPositions = 0;
+  for (const member of rows) {
+    if (id(member.team_id) !== teamId) fail("squad_scope_mismatch");
+    if (fallback && !currentRosterContractEligible(member, observedAt)) {
+      excludedContracts += 1;
+      continue;
+    }
+    const normalized = fallback
+      ? normalizeCurrentTeamRoster(member, teamId, observedAt)
+      : normalizeCurrentMembership(member, teamId, observedAt);
+    if (normalized) memberships.push(normalized);
+    else omittedUnknownPositions += 1;
+  }
+  return {
+    teamExternalId: String(teamId),
+    memberships,
+    evidence: {
+      teamExternalId: String(teamId),
+      source: fallback ? "current-team-roster" : "season-squad",
+      associatedSeasonExternalId: String(SEASON),
+      association: "verified_current_season_club",
+      observedAt,
+      seasonSourceRows: seasonRows.length,
+      sourceRows: rows.length,
+      eligiblePlayers: memberships.length,
+      excludedContracts,
+      omittedUnknownPositions,
     },
   };
 }
@@ -273,6 +371,33 @@ export function validateRecoveryMode(env: NodeJS.ProcessEnv): "canary" | "refres
   )
     return "refresh";
   return fail("current_season_schedule_not_enabled");
+}
+
+interface CurrentSquadPreflightClient {
+  schema(name: "api"): {
+    rpc(
+      name: string,
+      args: Row,
+    ): PromiseLike<{
+      data: unknown;
+      error: { code?: string; message?: string } | null;
+    }>;
+  };
+}
+
+export async function preflightCurrentSquadRpc(client: CurrentSquadPreflightClient): Promise<Row> {
+  // This routine checks service authorization before validating input. Null
+  // input stops at validation, before querying or mutating any football row.
+  const { error } = await client.schema("api").rpc("service_ingest_current_football_squads", {
+    p_provider_name: null,
+    p_season_external_id: null,
+    p_team_squads: null,
+    p_observed_at: null,
+  });
+  if (error?.code !== "PT400" || error.message !== "invalid_current_squad_input") {
+    fail("current_squad_rpc_preflight_failed");
+  }
+  return { available: true, serviceAuthorized: true, writesAttempted: false };
 }
 
 async function verifyPriorCanary(env: NodeJS.ProcessEnv): Promise<Row> {
@@ -404,6 +529,13 @@ async function main(): Promise<void> {
       evidence.verifiedCanary = await verifyPriorCanary(process.env);
       await save();
     }
+    const client = createClient(config.url, config.key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    evidence.databasePreflight = await preflightCurrentSquadRpc(
+      client as unknown as CurrentSquadPreflightClient,
+    );
+    await save();
     const probe = await runSportsMonksProductionProbe(process.env);
     evidence.provider = probe;
     validateCurrentReadiness(probe, config.commit);
@@ -437,9 +569,6 @@ async function main(): Promise<void> {
       FOOTBALL_PROVIDER_MAX_RETRIES: "2",
       FOOTBALL_INGESTION_TRIGGER_SECRET: trigger,
     };
-    const client = createClient(config.url, config.key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const request = (job: string, maxPages: number) =>
       new Request("https://localhost/protected-recovery", {
         method: "POST",
@@ -491,26 +620,29 @@ async function main(): Promise<void> {
     }
     const observedAt = new Date().toISOString();
     const squads: Array<{ teamExternalId: string; memberships: Row[] }> = [];
-    let omittedUnknownPositions = 0;
+    const verifiedCurrentTeamIds = new Set(teams.map((team) => id(team.id)));
+    const clubSources: Row[] = [];
     for (const team of teams) {
       const teamId = id(team.id);
-      const raw = await readAllProviderRows(
-        `${BASE}/squads/seasons/${SEASON}/teams/${teamId}`,
-        { include: "player;position" },
+      const squad = await loadCurrentSeasonSquad(
+        teamId,
+        verifiedCurrentTeamIds,
+        observedAt,
         config.token,
       );
-      const memberships: Row[] = [];
-      for (const member of raw) {
-        const normalized = normalizeCurrentMembership(member, teamId, observedAt);
-        if (normalized) memberships.push(normalized);
-        else omittedUnknownPositions += 1;
-      }
-      squads.push({ teamExternalId: String(teamId), memberships });
+      squads.push({ teamExternalId: squad.teamExternalId, memberships: squad.memberships });
+      clubSources.push(squad.evidence);
+      evidence.squadSourceClubs = clubSources;
+      await save();
     }
     evidence.squadSource = {
       teams: squads.length,
       eligiblePlayers: squads.reduce((sum, s) => sum + s.memberships.length, 0),
-      omittedUnknownPositions,
+      omittedUnknownPositions: clubSources.reduce(
+        (sum, club) => sum + Number(club.omittedUnknownPositions),
+        0,
+      ),
+      excludedContracts: clubSources.reduce((sum, club) => sum + Number(club.excludedContracts), 0),
     };
     validateCurrentSquads(squads);
     await save();
