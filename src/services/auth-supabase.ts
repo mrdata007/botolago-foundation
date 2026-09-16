@@ -11,6 +11,7 @@ import type { ProfileDto } from "@/backend/identity/contracts";
 import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  AccountDeletionRequest,
   AuthErrorCode,
   AuthResult,
   AuthService,
@@ -25,6 +26,7 @@ import { defaultNotifications } from "./auth-types";
 import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { AsyncSessionFence } from "@/lib/async-session-fence";
 
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
@@ -101,7 +103,11 @@ function mapIdentityCode(error: unknown): AuthErrorCode {
 
 export { mapAuthError as __mapAuthErrorForTests };
 
-async function buildAuthUser(user: User, profile: ProfileDto | null): Promise<AuthUser> {
+async function buildAuthUser(
+  user: User,
+  profile: ProfileDto | null,
+  profileAvailable = true,
+): Promise<AuthUser> {
   const displayName =
     profile?.displayName.trim() ||
     String(user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "").trim();
@@ -124,7 +130,8 @@ async function buildAuthUser(user: User, profile: ProfileDto | null): Promise<Au
     favoriteClubId: profile?.favoriteTeamReference ?? profile?.favoriteTeamId ?? undefined,
     language: profile?.preferredLanguage ?? "fr",
     notifications: profile?.notifications ?? defaultNotifications(),
-    profileComplete: profile?.onboardingCompletedAt != null,
+    profileComplete: profileAvailable ? profile?.onboardingCompletedAt != null : true,
+    profileAvailable,
     createdAt: profile?.createdAt ?? user.created_at ?? new Date().toISOString(),
     verified: !!user.email_confirmed_at,
     provider,
@@ -135,6 +142,7 @@ export class SupabaseAuthService implements AuthService {
   private listeners = new Set<(session: AuthSession) => void>();
   private cachedSession: AuthSession = { user: null, status: "loading" };
   private initialized = false;
+  private readonly sessionFence = new AsyncSessionFence();
 
   private emit(session: AuthSession) {
     this.cachedSession = session;
@@ -144,36 +152,62 @@ export class SupabaseAuthService implements AuthService {
   private init() {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
-    void supabase.auth.getSession().then(({ data }) => this.applySession(data.session));
+    const initialSnapshot = this.sessionFence.snapshot();
+    void supabase.auth.getSession().then(({ data }) => {
+      // A SIGNED_OUT/SIGNED_IN event can arrive before getSession resolves.
+      // Never allow that older snapshot to overwrite the newer event.
+      if (this.sessionFence.isCurrent(initialSnapshot)) this.scheduleSession(data.session);
+    });
     supabase.auth.onAuthStateChange((_event, session) => {
-      void this.applySession(session);
+      this.scheduleSession(session);
     });
   }
 
-  private async loadProfile(userId: string): Promise<ProfileDto | null> {
+  private scheduleSession(session: Session | null): void {
+    const revision = this.sessionFence.begin();
+    void this.applySession(session, revision);
+  }
+
+  private async loadProfile(
+    userId: string,
+  ): Promise<{ profile: ProfileDto | null; available: boolean }> {
     // The signup trigger commits before Auth returns. A small bounded retry also
     // handles the first OAuth callback racing the Data API replica.
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const profile = await profiles.getMe(context(userId));
-        if (profile) return profile;
+        if (profile) return { profile, available: true };
       } catch (error) {
-        if (attempt === 3 || mapIdentityError(error).code !== "not_found") return null;
+        if (mapIdentityError(error).code !== "not_found") {
+          // A provider/API outage is not a genuinely missing profile. Treating
+          // it as missing would route an existing user into destructive setup.
+          return { profile: null, available: false };
+        }
       }
       await new Promise((resolve) => setTimeout(resolve, 150 + attempt * 100));
     }
-    return null;
+    return { profile: null, available: true };
   }
 
-  private async applySession(session: Session | null) {
+  private async resolveAuthUser(user: User): Promise<AuthUser> {
+    const result = await this.loadProfile(user.id);
+    return buildAuthUser(user, result.profile, result.available);
+  }
+
+  private async applySession(session: Session | null, revision: number) {
+    if (!this.sessionFence.isCurrent(revision)) return;
     if (!session?.user) {
       const guest = hasWindow() && window.localStorage.getItem(K_GUEST) === "1";
-      this.emit({ user: null, status: guest ? "guest" : "anonymous" });
+      if (this.sessionFence.isCurrent(revision)) {
+        this.emit({ user: null, status: guest ? "guest" : "anonymous" });
+      }
       return;
     }
     if (hasWindow()) window.localStorage.removeItem(K_GUEST);
-    const profile = await this.loadProfile(session.user.id);
-    this.emit({ user: await buildAuthUser(session.user, profile), status: "authenticated" });
+    const user = await this.resolveAuthUser(session.user);
+    if (this.sessionFence.isCurrent(revision)) {
+      this.emit({ user, status: "authenticated" });
+    }
   }
 
   getSession(): AuthSession {
@@ -197,8 +231,7 @@ export class SupabaseAuthService implements AuthService {
       password,
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const authUser = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user: authUser, status: "authenticated" });
+    const authUser = await this.resolveAuthUser(data.user);
     return { ok: true, data: authUser };
   }
 
@@ -216,14 +249,19 @@ export class SupabaseAuthService implements AuthService {
       },
     });
     if (error) return { ok: false, errorCode: mapAuthError(error) };
-    return { ok: true, data: { email: (data.user?.email ?? input.email).trim() } };
+    return {
+      ok: true,
+      data: { email: (data.user?.email ?? input.email).trim() },
+    };
   }
 
   async requestPasswordReset(email: string): Promise<AuthResult> {
     const redirectTo = hasWindow()
       ? `${getRedirectBase()}/auth/callback?next=/auth/update-password`
       : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
     // Prevent account enumeration while still surfacing transport failures.
     if (error && mapAuthError(error) === "network") return { ok: false, errorCode: "network" };
     if (error && mapAuthError(error) === "rate_limited")
@@ -239,8 +277,7 @@ export class SupabaseAuthService implements AuthService {
   async refreshSession(): Promise<AuthResult<AuthUser>> {
     const { data, error } = await supabase.auth.refreshSession();
     if (error || !data.user) return { ok: false, errorCode: "session_expired" };
-    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user, status: "authenticated" });
+    const user = await this.resolveAuthUser(data.user);
     return { ok: true, data: user };
   }
 
@@ -260,8 +297,7 @@ export class SupabaseAuthService implements AuthService {
       type: "email",
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user, status: "authenticated" });
+    const user = await this.resolveAuthUser(data.user);
     return { ok: true, data: user };
   }
 
@@ -269,7 +305,9 @@ export class SupabaseAuthService implements AuthService {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
-      options: { emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined },
+      options: {
+        emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined,
+      },
     });
     return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
@@ -296,6 +334,7 @@ export class SupabaseAuthService implements AuthService {
 
   async continueAsGuest(): Promise<AuthResult> {
     if (hasWindow()) window.localStorage.setItem(K_GUEST, "1");
+    this.sessionFence.invalidate();
     this.emit({ user: null, status: "guest" });
     return { ok: true };
   }
@@ -304,6 +343,7 @@ export class SupabaseAuthService implements AuthService {
     const current = this.cachedSession.user;
     if (this.cachedSession.status !== "authenticated" || !current)
       return { ok: false, errorCode: "unauthorized" };
+    const actorId = current.id;
     const username = input.username?.trim() || current.username.trim();
     if (!username) return { ok: false, errorCode: "invalid_username" };
 
@@ -317,6 +357,11 @@ export class SupabaseAuthService implements AuthService {
       nextAvatarPath = uploaded.path;
     }
 
+    if (this.cachedSession.user?.id !== actorId) {
+      if (uploadedPath && uploadedPath !== oldAvatarPath) await deleteAvatar(uploadedPath);
+      return { ok: false, errorCode: "session_expired" };
+    }
+
     try {
       const profile = await profiles.completeOnboarding(
         {
@@ -325,14 +370,20 @@ export class SupabaseAuthService implements AuthService {
           avatarPath: nextAvatarPath,
           preferredLanguage: input.language ?? current.language,
           favoriteTeamReference: input.favoriteClubId ?? current.favoriteClubId ?? null,
-          notifications: { ...current.notifications, ...(input.notifications ?? {}) },
+          notifications: {
+            ...current.notifications,
+            ...(input.notifications ?? {}),
+          },
         },
-        context(current.id),
+        context(actorId),
       );
       if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
       const { data } = await supabase.auth.getUser();
-      if (!data.user) return { ok: false, errorCode: "session_expired" };
+      if (!data.user || data.user.id !== actorId || this.cachedSession.user?.id !== actorId) {
+        return { ok: false, errorCode: "session_expired" };
+      }
       const user = await buildAuthUser(data.user, profile);
+      this.sessionFence.invalidate();
       this.emit({ user, status: "authenticated" });
       return { ok: true, data: user };
     } catch (error) {
@@ -348,6 +399,26 @@ export class SupabaseAuthService implements AuthService {
     try {
       const id = await accountSecurity.requestDeletion(context(actorId));
       return { ok: true, data: { requestId: id } };
+    } catch (error) {
+      return { ok: false, errorCode: mapIdentityCode(error) };
+    }
+  }
+
+  async getAccountDeletionRequests(): Promise<AuthResult<readonly AccountDeletionRequest[]>> {
+    const actorId = this.cachedSession.user?.id ?? null;
+    try {
+      const requests = await accountSecurity.listDeletionRequests(context(actorId));
+      return {
+        ok: true,
+        data: requests.map((request) => ({
+          requestId: request.id,
+          status: request.status,
+          requestedAt: request.requestedAt,
+          executeAfter: request.executeAfter,
+          updatedAt: request.updatedAt,
+          processedAt: request.processedAt,
+        })),
+      };
     } catch (error) {
       return { ok: false, errorCode: mapIdentityCode(error) };
     }
@@ -369,7 +440,9 @@ export class SupabaseAuthService implements AuthService {
     if (actorId) {
       await accountSecurity.recordSessionRevocation(scope, context(actorId)).catch(() => undefined);
     }
-    await supabase.auth.signOut({ scope }).catch(() => undefined);
+    const { error } = await supabase.auth.signOut({ scope });
+    if (error) throw error;
+    this.sessionFence.invalidate();
     if (hasWindow()) {
       window.localStorage.removeItem(K_GUEST);
       if (options?.resetLocalData) {

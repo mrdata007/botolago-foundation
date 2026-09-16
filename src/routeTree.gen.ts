@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -34,6 +36,7 @@ import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
+import { Route as AuthMfaRouteImport } from './routes/auth.mfa'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -52,6 +55,16 @@ import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -177,6 +190,11 @@ const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
   path: '/profile-setup',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthMfaRoute = AuthMfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -268,6 +286,8 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
@@ -283,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -312,6 +333,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/mcp': typeof McpRoute
@@ -326,6 +349,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -355,6 +379,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/fantasy': typeof FantasyRouteWithChildren
@@ -370,6 +396,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -401,6 +428,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/privacy'
+    | '/terms'
     | '/admin'
     | '/auth'
     | '/fantasy'
@@ -416,6 +445,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -445,6 +475,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/privacy'
+    | '/terms'
     | '/admin'
     | '/auth'
     | '/mcp'
@@ -459,6 +491,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -487,6 +520,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/privacy'
+    | '/terms'
     | '/admin'
     | '/auth'
     | '/fantasy'
@@ -502,6 +537,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -532,6 +568,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   FantasyRoute: typeof FantasyRouteWithChildren
@@ -548,6 +586,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -723,6 +775,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthProfileSetupRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/mfa': {
+      id: '/auth/mfa'
+      path: '/mfa'
+      fullPath: '/auth/mfa'
+      preLoaderRoute: typeof AuthMfaRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/login'
@@ -877,6 +936,7 @@ interface AuthRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthMfaRoute: typeof AuthMfaRoute
   AuthProfileSetupRoute: typeof AuthProfileSetupRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
@@ -887,6 +947,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthMfaRoute: AuthMfaRoute,
   AuthProfileSetupRoute: AuthProfileSetupRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
@@ -978,6 +1039,8 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   FantasyRoute: FantasyRouteWithChildren,
@@ -1005,3 +1068,4 @@ declare module '@tanstack/react-start' {
     config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
+

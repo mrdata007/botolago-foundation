@@ -1,7 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { mockFootballTeamId } from "@/backend/football/mock-repository";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import { selectFantasyDataMode, type FantasyDataMode } from "./fantasy-v2";
+import { selectFantasyDataMode } from "./fantasy-v2";
 import {
   buildGlobalRankings,
   selectRankingsPage,
@@ -11,8 +11,9 @@ import {
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { FantasyError } from "@/backend/fantasy/errors";
 import type {
+  FantasyGlobalRankingDto,
+  FantasyGlobalRankingPageDto,
   FantasyPlayerDto,
-  FantasyPointsDto,
   FantasyTeamDto,
 } from "@/backend/fantasy/contracts";
 import type {
@@ -25,22 +26,14 @@ import type {
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
+import { mapFantasyPointsDto } from "./points-service";
+
+export { mapFantasyPointsDto } from "./points-service";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
 const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
-
-export function assertGlobalRankingsAvailable(
-  dataMode: FantasyDataMode,
-): asserts dataMode is "mock" {
-  if (dataMode !== "mock") {
-    throw new FantasyError(
-      "ranking_unavailable",
-      "Global Fantasy rankings are not exposed by the active backend.",
-    );
-  }
-}
 
 function mockPlayer(player: FantasyPlayer): FantasyPlayer {
   return {
@@ -54,6 +47,11 @@ function mockPlayer(player: FantasyPlayer): FantasyPlayer {
 
 async function mockPlayers(): Promise<FantasyPlayer[]> {
   return (await mockFantasyService.getPlayers()).map(mockPlayer);
+}
+
+function normalizeStoredLeague(league: League & { role: "creator" | "member" }): League {
+  const { role, ...rest } = league;
+  return { ...rest, role: role === "creator" ? "owner" : "member" };
 }
 
 function mockFixture(fixture: FixtureDifficulty): FixtureDifficulty {
@@ -105,40 +103,38 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
   };
 }
 
-export function mapFantasyPointsDto(
-  sequence: number,
-  dto: FantasyPointsDto,
-): GameweekResult | undefined {
-  if (!dto.result) return undefined;
-  const captain =
-    dto.players.find((player) => player.multiplier > 1) ??
-    dto.players.find((player) => player.captain);
+function leagueDto(league: Awaited<ReturnType<typeof cloud.getLeagues>>[number]): League {
   return {
-    gameweek: sequence,
-    totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
-    benchPoints: dto.result.benchPoints,
-    startingPoints: dto.result.startingPoints,
-    captainPoints: dto.result.captainPoints,
-    transferHitPoints: dto.result.transferHit,
-    activeChip: dto.result.chipType ?? undefined,
-    finalized: dto.result.state === "final",
-    finalizedAt: dto.result.finalizedAt ?? undefined,
-    captainId: captain?.fantasyPlayerId,
-    autoSubs: [],
-    breakdown: dto.players.map((player) => {
-      const basePoints = player.finalPoints ?? player.provisionalPoints;
-      return {
-        playerId: player.fantasyPlayerId,
-        totalPoints: basePoints * player.multiplier,
-        multiplier: player.multiplier,
-        minutesPlayed: player.minutesPlayed,
-        isCaptain: player.captain || undefined,
-        isViceCaptain: player.viceCaptain || undefined,
-        isBench: player.slot === "bench" || undefined,
-        status: dto.pointsState === "final" ? "final" : "provisional",
-        events: [],
-      };
-    }),
+    id: league.id,
+    name: league.name,
+    type: league.visibility,
+    members: league.memberCount,
+    rank: league.rank,
+    previousRank: league.previousRank,
+    score: league.totalPoints ?? 0,
+    leaderName: league.leaderName ?? undefined,
+    role: league.role ?? undefined,
+  };
+}
+
+function globalRankingDto(dto: FantasyGlobalRankingDto): LeagueStanding {
+  return {
+    managerId: dto.teamId,
+    managerName: "",
+    teamName: dto.teamName,
+    rank: dto.rank,
+    previousRank: dto.previousRank ?? dto.rank,
+    gameweekScore: dto.gameweekPoints,
+    totalScore: dto.totalPoints,
+  };
+}
+
+export function mapFantasyGlobalRankingsDto(dto: FantasyGlobalRankingPageDto): RankingsPage {
+  return {
+    rows: dto.items.map(globalRankingDto),
+    total: dto.total,
+    podium: dto.podium.map(globalRankingDto),
+    myRank: dto.myRank ? globalRankingDto(dto.myRank) : undefined,
   };
 }
 
@@ -164,7 +160,9 @@ async function allPlayers(): Promise<FantasyPlayer[]> {
 
 async function cloudTeam() {
   const current = await hub();
-  if (!current.team) throw new Error("fantasy_team_not_found");
+  if (!current.team) {
+    throw new FantasyError("fantasy_team_not_found", "Create a Fantasy team to continue.");
+  }
   return { hub: current, team: current.team };
 }
 
@@ -175,7 +173,9 @@ export const fantasyService = {
       return gameweek;
     }
     const current = await hub();
-    if (!current.gameweek) throw new Error("fantasy_gameweek_not_found");
+    if (!current.gameweek) {
+      throw new FantasyError("fantasy_gameweek_not_found", "No Fantasy gameweek is available.");
+    }
     return {
       number: current.gameweek.sequence,
       deadline: current.gameweek.deadlineAt,
@@ -284,28 +284,36 @@ export const fantasyService = {
     return (await cloudTeam()).team.teamValue;
   },
   async getLeagues(type?: League["type"]): Promise<League[]> {
-    if (mode() === "mock") return mockFantasyService.getLeagues(type);
+    if (mode() === "mock") {
+      const { leaguesStore } = await import("./leagues-store");
+      const persisted = leaguesStore
+        .list()
+        .map(normalizeStoredLeague)
+        .filter((league) => !type || league.type === type);
+      const storedIds = new Set(persisted.map((league) => league.id));
+      const seeded = (await mockFantasyService.getLeagues(type)).filter(
+        (league) => !storedIds.has(league.id),
+      );
+      return [...persisted, ...seeded];
+    }
     if (type === "cup") return [];
     const current = await hub();
     const leagues = await cloud.getLeagues(current.season.id, type ?? null, context());
-    return leagues.map((league) => ({
-      id: league.id,
-      name: league.name,
-      type: league.visibility,
-      members: league.memberCount,
-      rank: league.rank,
-      previousRank: league.previousRank,
-      score: league.totalPoints ?? 0,
-      leaderName: league.leaderName ?? undefined,
-      role: league.role ?? undefined,
-    }));
+    return leagues.map(leagueDto);
   },
   async getLeague(id: string): Promise<League | undefined> {
-    if (mode() === "mock") return mockFantasyService.getLeague(id);
-    return (await this.getLeagues()).find((league) => league.id === id);
+    if (mode() === "mock") {
+      return (await this.getLeagues()).find((league) => league.id === id);
+    }
+    return leagueDto(await cloud.getLeague(id, context()));
   },
   async getLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
-    if (mode() === "mock") return mockFantasyService.getLeagueStandings(leagueId);
+    if (mode() === "mock") {
+      const { leaguesStore } = await import("./leagues-store");
+      return (
+        leaguesStore.get(leagueId)?.standings ?? mockFantasyService.getLeagueStandings(leagueId)
+      );
+    }
     const page = await cloud.getLeagueStandings(leagueId, null, context());
     return page.items.map((standing) => ({
       managerId: standing.teamId,
@@ -317,16 +325,23 @@ export const fantasyService = {
       totalScore: standing.totalPoints,
     }));
   },
-  /**
-   * Season-wide leaderboard across every fantasy team.
-   *
-   * Mock mode builds a deterministic board. Production fails closed until
-   * the backend exposes its authoritative global ranking projection.
-   */
+  /** Season-wide leaderboard across every Fantasy team. */
   async getGlobalRankings(query: RankingsQuery): Promise<RankingsPage> {
-    const dataMode = mode();
-    assertGlobalRankingsAvailable(dataMode);
-    return selectRankingsPage(buildGlobalRankings(), query);
+    if (mode() === "mock") {
+      return selectRankingsPage(buildGlobalRankings(), query);
+    }
+
+    const current = await hub();
+    const dto = await cloud.getGlobalRankings(
+      current.season.id,
+      query.sort === "gameweek" ? (current.gameweek?.id ?? null) : null,
+      query.sort,
+      query.query,
+      query.page,
+      query.pageSize,
+      context(),
+    );
+    return mapFantasyGlobalRankingsDto(dto);
   },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
@@ -372,6 +387,7 @@ export const fantasyService = {
       clubId: row.clubId,
       gameweek: row.gameweek,
       opponentClubId: row.opponentClubId,
+      kickoffAt: row.kickoffAt,
       isHome: row.isHome,
       difficulty: row.difficulty as 1 | 2 | 3 | 4 | 5,
       isDouble: (counts.get(`${row.clubId}:${row.gameweek}`) ?? 0) > 1,
@@ -448,13 +464,7 @@ export const fantasyService = {
       rank: (index + 1) as 1 | 2 | 3 | 4 | 5,
       gameweek,
       weeklyPoints: player.points,
-      goals: 0,
-      assists: 0,
-      cleanSheets: 0,
       minutes: player.minutesPlayed,
-      price: 0,
-      ownershipPercent: 0,
-      form: 0,
     }));
   },
   async getAvailableTopGameweeks(): Promise<number[]> {
@@ -479,6 +489,14 @@ export const fantasyService = {
       context(),
     )) as { leagueId: string; inviteCode?: string };
     return { id: result.leagueId, code: result.inviteCode };
+  },
+  async rotateLeagueInvite(leagueId: string): Promise<string> {
+    if (mode() === "mock") {
+      const league = (await this.getLeagues()).find((candidate) => candidate.id === leagueId);
+      if (!league?.code) throw new Error("league_invite_unavailable");
+      return league.code;
+    }
+    return (await cloud.rotateLeagueInvite(leagueId, context())).inviteCode;
   },
   async joinLeague(code: string): Promise<void> {
     if (mode() === "mock") {

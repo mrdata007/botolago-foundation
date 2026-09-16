@@ -109,6 +109,8 @@ type AdminCopy = {
     security: string;
     pendingRevocation: string;
     none: string;
+    signIn: string;
+    reauthenticate: string;
   };
   readonly sections: readonly string[];
 };
@@ -117,7 +119,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
   fr: {
     dir: "ltr",
     title: "Administration BotolaGO",
-    subtitle: "Opérations de sécurité — Phase 7C",
+    subtitle: "Espace d’administration sécurisé",
     states: {
       loading: {
         title: "Vérification de l’accès",
@@ -163,6 +165,8 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       security: "Sécurité de session",
       pendingRevocation: "Révocation en attente",
       none: "Aucun",
+      signIn: "Se connecter",
+      reauthenticate: "Se réauthentifier",
     },
     sections: [
       "Affectations du personnel",
@@ -174,7 +178,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
   ar: {
     dir: "rtl",
     title: "إدارة BotolaGO",
-    subtitle: "عمليات الأمان — المرحلة 7C",
+    subtitle: "مساحة إدارة آمنة",
     states: {
       loading: {
         title: "التحقق من الصلاحية",
@@ -220,6 +224,8 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       security: "أمان الجلسة",
       pendingRevocation: "إلغاء جلسة قيد الانتظار",
       none: "لا يوجد",
+      signIn: "تسجيل الدخول",
+      reauthenticate: "إعادة المصادقة",
     },
     sections: ["تعيينات طاقم الإدارة", "قائمة الموافقات", "سجل الأمان", "دليل الأدوار"],
   },

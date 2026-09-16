@@ -86,6 +86,7 @@ export interface AccountDeletionRequestDto {
   readonly id: string;
   readonly status: "requested" | "cancelled" | "processing" | "completed" | "rejected";
   readonly requestedAt: string;
+  readonly executeAfter: string;
   readonly updatedAt: string;
   readonly processedAt: string | null;
 }

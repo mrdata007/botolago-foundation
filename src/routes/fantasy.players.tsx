@@ -1,16 +1,28 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Star } from "lucide-react";
+
+import { ClubCrest } from "@/components/common/ClubCrest";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
+import { PlayerDecisionSummary } from "@/components/fantasy/PlayerDecisionSummary";
+import {
+  PLAYER_STATUS_SORT_ORDER,
+  selectUpcomingFixture,
+} from "@/components/fantasy/player-decision-presentation";
+import { useAuth } from "@/auth/AuthProvider";
+import { useI18n } from "@/i18n/provider";
+import type { TranslationKey } from "@/i18n/dictionaries";
+import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
-import { ClubCrest } from "@/components/common/ClubCrest";
-import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
-import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
-import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
-import { Search, Star } from "lucide-react";
-import type { TranslationKey } from "@/i18n/dictionaries";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import {
+  fantasyWatchlistStorageKey,
+  readFantasyWatchlist,
+  writeFantasyWatchlist,
+  type FantasyWatchlistStorage,
+} from "@/services/fantasy-watchlist";
 import type { Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
@@ -25,22 +37,27 @@ function PlayersRoute() {
   return isPlayerDetail ? <Outlet /> : <PlayersPage />;
 }
 
-type SortKey = "points" | "form" | "price" | "ownership";
+type SortKey = "fixture" | "price" | "name" | "availability";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
-const WATCH_KEY = "botolago.fantasy.watchlist";
 
-function readWatch(): string[] {
-  if (typeof window === "undefined") return [];
+function getBrowserStorage(): FantasyWatchlistStorage | null {
+  if (typeof window === "undefined") return null;
+
   try {
-    return JSON.parse(window.localStorage.getItem(WATCH_KEY) ?? "[]");
+    return window.localStorage;
   } catch {
-    return [];
+    return null;
   }
 }
 
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  const { user, status: authStatus } = useAuth();
+  const { source } = useFantasyDataSource();
+  const watchStorageKey = useMemo(
+    () => fantasyWatchlistStorageKey({ source, authStatus, userId: user?.id }),
+    [source, authStatus, user?.id],
+  );
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
@@ -49,68 +66,101 @@ function PlayersPage() {
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
+  const fixturesQ = useQuery({
+    queryKey: ["fixture-difficulty"],
+    queryFn: () => fantasyService.getFixtureDifficulty(),
+  });
+  const fixtureReferenceTime = fixturesQ.data === undefined ? undefined : fixturesQ.dataUpdatedAt;
 
   const [q, setQ] = useState("");
   const [pos, setPos] = useState<Position | "">("");
   const [clubId, setClubId] = useState("");
-  const [sort, setSort] = useState<SortKey>("points");
-  const [compare, setCompare] = useState<string[]>([]); // up to 2
-  const [watch, setWatch] = useState<string[]>(readWatch());
+  const [sort, setSort] = useState<SortKey>("fixture");
+  const [watchState, setWatchState] = useState<{ key: string | null; ids: string[] }>({
+    key: null,
+    ids: [],
+  });
+
+  useEffect(() => {
+    setWatchState({
+      key: watchStorageKey,
+      ids: watchStorageKey ? readFantasyWatchlist(getBrowserStorage(), watchStorageKey) : [],
+    });
+  }, [watchStorageKey]);
+
+  const watchReady = watchStorageKey !== null && watchState.key === watchStorageKey;
+  const watch = watchReady ? watchState.ids : [];
 
   const toggleWatch = (id: string) => {
-    const next = watch.includes(id) ? watch.filter((x) => x !== id) : [...watch, id];
-    setWatch(next);
-    try {
-      window.localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
-  };
-  const toggleCompare = (id: string) => {
-    setCompare((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      const next = [...prev, id];
-      return next.slice(-2);
-    });
+    if (!watchReady || !watchStorageKey) return;
+
+    const next = watch.includes(id) ? watch.filter((item) => item !== id) : [...watch, id];
+    setWatchState({ key: watchStorageKey, ids: next });
+    writeFantasyWatchlist(getBrowserStorage(), watchStorageKey, next);
   };
 
   const list = useMemo(() => {
-    let l = (playersQ.data ?? []).slice();
-    if (pos) l = l.filter((p) => p.position === pos);
-    if (clubId) l = l.filter((p) => p.clubId === clubId);
+    let result = (playersQ.data ?? []).slice();
+    if (pos) result = result.filter((player) => player.position === pos);
+    if (clubId) result = result.filter((player) => player.clubId === clubId);
     if (q.trim()) {
-      const s = q.toLowerCase();
-      l = l.filter((p) => p.name.fr.toLowerCase().includes(s) || p.name.ar.includes(q));
+      const normalized = q.toLowerCase();
+      result = result.filter(
+        (player) => player.name.fr.toLowerCase().includes(normalized) || player.name.ar.includes(q),
+      );
     }
-    l.sort((a, b) => {
-      if (sort === "price") return b.price - a.price;
-      if (sort === "form") return b.form - a.form;
-      if (sort === "ownership") return b.ownership - a.ownership;
-      return b.totalPoints - a.totalPoints;
-    });
-    return l;
-  }, [playersQ.data, pos, clubId, q, sort]);
 
-  if (playersQ.isError || clubsQ.isError) {
+    const fixtures = fixturesQ.data ?? [];
+    const nextFixtureByClub = new Map(
+      Array.from(new Set(result.map((player) => player.clubId))).map((id) => [
+        id,
+        selectUpcomingFixture(id, fixtures, fixtureReferenceTime),
+      ]),
+    );
+
+    result.sort((left, right) => {
+      if (sort === "price") return right.price - left.price;
+      if (sort === "name") return left.name[lang].localeCompare(right.name[lang], lang);
+      if (sort === "availability") {
+        return (
+          PLAYER_STATUS_SORT_ORDER[left.status] - PLAYER_STATUS_SORT_ORDER[right.status] ||
+          right.price - left.price
+        );
+      }
+
+      const leftFixture = nextFixtureByClub.get(left.clubId);
+      const rightFixture = nextFixtureByClub.get(right.clubId);
+      if (!leftFixture && !rightFixture) return right.price - left.price;
+      if (!leftFixture) return 1;
+      if (!rightFixture) return -1;
+      if (leftFixture.isBlank !== rightFixture.isBlank) return leftFixture.isBlank ? 1 : -1;
+      return (
+        leftFixture.gameweek - rightFixture.gameweek ||
+        leftFixture.difficulty - rightFixture.difficulty ||
+        right.price - left.price
+      );
+    });
+    return result;
+  }, [playersQ.data, fixturesQ.data, fixtureReferenceTime, pos, clubId, q, sort, lang]);
+
+  if (playersQ.isError || clubsQ.isError || fixturesQ.isError) {
     return (
       <ErrorState
         onRetry={() => {
           void playersQ.refetch();
           void clubsQ.refetch();
+          void fixturesQ.refetch();
         }}
       />
     );
   }
-  if (!playersQ.data || !clubsQ.data) return <LoadingState />;
-  const clubs = clubsQ.data;
-  const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
-  const playerOf = (id: string) => playersQ.data!.find((p) => p.id === id)!;
+  if (!playersQ.data || !clubsQ.data || !fixturesQ.data) return <LoadingState />;
 
-  const sorts: { k: SortKey; labelKey: TranslationKey }[] = [
-    { k: "points", labelKey: "fantasy.picker.sort.points" },
-    { k: "form", labelKey: "fantasy.picker.sort.form" },
-    { k: "price", labelKey: "fantasy.picker.sort.price" },
-    { k: "ownership", labelKey: "fantasy.picker.sort.ownership" },
+  const sorts: { key: SortKey; labelKey: TranslationKey }[] = [
+    { key: "fixture", labelKey: "fantasy.picker.sort.fixture" },
+    { key: "price", labelKey: "fantasy.picker.sort.price" },
+    { key: "availability", labelKey: "fantasy.picker.sort.availability" },
+    { key: "name", labelKey: "fantasy.picker.sort.name" },
   ];
 
   return (
@@ -118,13 +168,16 @@ function PlayersPage() {
       <h1 className="text-xl font-black text-foreground">
         <span className="text-brand">{t("fantasy.players.title")}</span>
       </h1>
+      <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        {t("fantasy.players.decision_intro")}
+      </p>
 
       <div className="mt-3 space-y-2">
-        <label className="glass-surface glass-regular flex items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 py-2">
+        <label className="glass-surface glass-regular flex min-h-11 items-center gap-2 rounded-xl border border-[var(--glass-border)] px-3 py-2">
           <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
           <input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(event) => setQ(event.target.value)}
             placeholder={t("fantasy.picker.search")}
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
@@ -134,145 +187,78 @@ function PlayersPage() {
           <Chip active={pos === ""} onClick={() => setPos("")}>
             {t("common.all")}
           </Chip>
-          {positions.map((p) => (
-            <Chip key={p} active={pos === p} onClick={() => setPos(p)}>
-              {t(`player.pos.${p}` as TranslationKey)}
+          {positions.map((position) => (
+            <Chip key={position} active={pos === position} onClick={() => setPos(position)}>
+              {t(`player.pos.${position}` as TranslationKey)}
             </Chip>
           ))}
         </div>
+
         <div className="flex flex-wrap gap-1">
           <Chip active={clubId === ""} onClick={() => setClubId("")}>
             {t("common.all")}
           </Chip>
-          {clubs.map((c) => (
-            <Chip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>
-              <ClubCrest club={c} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
-              {tr(c.shortName)}
+          {clubsQ.data.map((club) => (
+            <Chip key={club.id} active={clubId === club.id} onClick={() => setClubId(club.id)}>
+              <ClubCrest club={club} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
+              {tr(club.shortName)}
             </Chip>
           ))}
         </div>
+
         <div className="flex flex-wrap items-center gap-1">
           <span className="text-[10px] font-black uppercase tracking-wide text-muted-foreground">
             {t("fantasy.picker.sort")}:
           </span>
-          {sorts.map((s) => (
-            <Chip key={s.k} active={sort === s.k} onClick={() => setSort(s.k)}>
-              {t(s.labelKey)}
+          {sorts.map((item) => (
+            <Chip key={item.key} active={sort === item.key} onClick={() => setSort(item.key)}>
+              {t(item.labelKey)}
             </Chip>
           ))}
         </div>
       </div>
 
-      {compare.length === 2 && (
-        <div className="glass-surface glass-strong mt-3 rounded-2xl border border-[var(--glass-border)] p-3">
-          <div className="mb-2 text-sm font-black">{t("fantasy.players.compare_title")}</div>
-          <div className="grid grid-cols-2 gap-3">
-            {compare.map((id) => {
-              const p = playerOf(id);
-              return (
-                <div key={id} className="rounded-xl bg-white/70 p-2 ring-1 ring-black/5">
-                  <div className="flex items-center gap-1.5">
-                    {clubOf(p.clubId) && <ClubCrest club={clubOf(p.clubId)!} size="sm" />}
-                    <div className="truncate text-xs font-bold">{tr(p.name)}</div>
-                  </div>
-                  <dl className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
-                    <dt className="text-muted-foreground">{t("fantasy.price")}</dt>
-                    <dd className="tabular-nums text-end">{nf.format(p.price)}</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.total_points")}</dt>
-                    <dd className="tabular-nums text-end">{p.totalPoints}</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.form")}</dt>
-                    <dd className="tabular-nums text-end">{nf.format(p.form)}</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.ownership")}</dt>
-                    <dd className="tabular-nums text-end">{nf.format(p.ownership)}%</dd>
-                    <dt className="text-muted-foreground">{t("fantasy.expected_points")}</dt>
-                    <dd className="tabular-nums text-end">{p.expectedPoints}</dd>
-                  </dl>
-                </div>
-              );
-            })}
-          </div>
-          <button
-            onClick={() => setCompare([])}
-            className="mt-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-          >
-            {t("common.reset")}
-          </button>
-        </div>
-      )}
-      {compare.length === 1 && (
-        <div className="mt-3 rounded-xl bg-white/60 px-3 py-2 text-xs text-muted-foreground ring-1 ring-black/5">
-          {t("fantasy.players.pick_two")}
-        </div>
-      )}
-
-      <div className="mt-3 grid gap-1.5">
+      <div className="mt-4 grid gap-2 lg:grid-cols-2">
         {list.length === 0 && <EmptyState />}
-        {list.map((p) => {
-          const c = clubOf(p.clubId);
-          const oppc = p.nextOpponentClubId ? clubOf(p.nextOpponentClubId) : undefined;
-          const inWatch = watch.includes(p.id);
-          const inCompare = compare.includes(p.id);
+        {list.map((player) => {
+          const inWatch = watch.includes(player.id);
+          const club = clubsQ.data.find((item) => item.id === player.clubId);
           return (
-            <div
-              key={p.id}
-              className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
-            >
+            <article key={player.id} className="surface-4 flex min-w-0 items-start gap-2 p-2.5">
               <Link
                 to="/fantasy/players/$playerId"
-                params={{ playerId: p.id }}
-                className="flex min-w-0 flex-1 items-center gap-2"
+                params={{ playerId: player.id }}
+                className="min-w-0 flex-1 rounded-xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]"
               >
-                {c && <ClubCrest club={c} size="sm" />}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-bold text-foreground">{tr(p.name)}</span>
-                    {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
-                    {nf.format(p.form)} · {nf.format(p.ownership)}%
-                  </div>
-                </div>
-              </Link>
-              {oppc && p.nextFixtureDifficulty && (
-                <DifficultyBadge
-                  difficulty={p.nextFixtureDifficulty}
-                  label={`${oppc.crestPlaceholder} ${p.nextIsHome ? "(D)" : "(E)"}`}
-                  className="w-14"
+                <PlayerDecisionSummary
+                  player={player}
+                  club={club}
+                  clubs={clubsQ.data}
+                  fixtures={fixturesQ.data}
+                  fixtureReferenceTime={fixtureReferenceTime}
                 />
-              )}
-              <div className="text-end">
-                <div className="text-sm font-black tabular-nums">{nf.format(p.price)}</div>
-                <div className="text-[10px] text-muted-foreground">{p.totalPoints} pts</div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => toggleWatch(p.id)}
-                  aria-label={
-                    inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
-                  }
-                  className={cn(
-                    "grid h-7 w-7 place-items-center rounded-lg",
-                    inWatch
-                      ? "bg-[color:var(--brand-accent)]/20 text-[color:var(--brand-accent)]"
-                      : "bg-white ring-1 ring-black/10 text-muted-foreground",
-                  )}
-                >
-                  <Star className={cn("h-3.5 w-3.5", inWatch && "fill-current")} aria-hidden />
-                </button>
-                <button
-                  onClick={() => toggleCompare(p.id)}
-                  className={cn(
-                    "rounded-lg px-1.5 py-0.5 text-[10px] font-bold",
-                    inCompare
-                      ? "bg-[color:var(--brand-primary)] text-white"
-                      : "bg-white ring-1 ring-black/10",
-                  )}
-                >
-                  {t("fantasy.players.compare")}
-                </button>
-              </div>
-            </div>
+                <span className="sr-only">{t("fantasy.players.open_profile")}</span>
+              </Link>
+              <button
+                type="button"
+                disabled={!watchReady}
+                onClick={() => toggleWatch(player.id)}
+                aria-pressed={inWatch}
+                aria-label={
+                  inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
+                }
+                className={cn(
+                  "grid min-h-11 min-w-11 shrink-0 place-items-center rounded-xl transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
+                  inWatch
+                    ? "bg-[color:color-mix(in_oklab,var(--brand-accent)_18%,transparent)] text-[color:var(--brand-accent)]"
+                    : "bg-[color:var(--surface-hover)] text-[color:var(--text-muted)] hover:text-foreground",
+                  !watchReady && "cursor-not-allowed opacity-50",
+                )}
+              >
+                <Star className={cn("h-4 w-4", inWatch && "fill-current")} aria-hidden />
+              </button>
+            </article>
           );
         })}
       </div>
@@ -294,7 +280,7 @@ function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
+        "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
         active
           ? "bg-[color:var(--brand-primary)] text-white"
           : "bg-white/60 text-foreground ring-1 ring-black/5 hover:bg-white",

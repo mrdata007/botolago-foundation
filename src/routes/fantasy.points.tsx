@@ -69,6 +69,7 @@ function PointsPage() {
   const { requireAuth, status: authStatus } = useAuth();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
+  const hasCloudTeam = !isCloud || Boolean(owned.snapshot?.teamId);
   const [state, setState] = useState<FantasyPersistedState>(() =>
     isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
   );
@@ -95,19 +96,19 @@ function PointsPage() {
   const currentGwQ = useQuery({
     queryKey: ["current-gw"],
     queryFn: () => fantasyService.getCurrentGameweek(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const currentGw = currentGwQ.data?.number ?? state.currentGameweek;
   const gw = selectedGw ?? currentGw;
   const gwResultQ = useQuery({
     queryKey: ownedKey("gw-result", gw),
     queryFn: () => fantasyService.getGameweekResult(gw),
-    enabled: owned.source !== "guest" && currentGwQ.isSuccess,
+    enabled: owned.source !== "guest" && hasCloudTeam && currentGwQ.isSuccess,
   });
   const historyQ = useQuery({
     queryKey: ownedKey("gw-history"),
     queryFn: () => fantasyService.getGameweekHistory(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   // H7 — Consume owned.snapshot directly in cloud mode; no parallel Team query.
   const localTeamQ = useQuery({
@@ -115,16 +116,20 @@ function PointsPage() {
     queryFn: () => fantasyService.getTeam(),
     enabled: owned.source === "local",
   });
-  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
+  const team = isCloud
+    ? owned.snapshot?.teamId
+      ? owned.snapshot.team
+      : null
+    : (localTeamQ.data ?? null);
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const isCurrent = gw === currentGw;
   const deadline = currentGwQ.data ? evaluateDeadline(currentGwQ.data.deadline) : null;
@@ -194,6 +199,20 @@ function PointsPage() {
     );
   }
 
+  if (isCloud && owned.isLoading) {
+    return <LoadingState />;
+  }
+  if (isCloud && owned.snapshot && !owned.snapshot.teamId) {
+    return (
+      <Link
+        to="/fantasy/create"
+        className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+      >
+        {t("fantasy.create.title")}
+      </Link>
+    );
+  }
+
   if (
     currentGwQ.isError ||
     gwResultQ.isError ||
@@ -218,11 +237,10 @@ function PointsPage() {
     );
   }
   if (
-    (isCloud && owned.isLoading) ||
     localTeamQ.isLoading ||
     !playersQ.data ||
     !clubsQ.data ||
-    gwResultQ.isPending ||
+    (hasCloudTeam && gwResultQ.isPending) ||
     currentGwQ.isPending
   ) {
     return <LoadingState />;

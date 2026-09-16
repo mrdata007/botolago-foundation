@@ -3,10 +3,12 @@
 // `fantasy-engine`; this file only maps inputs/outputs and persists
 // finalized results per gameweek.
 
+import type { FantasyPointsDto } from "@/backend/fantasy/contracts";
 import type {
   FantasyPlayer,
   FantasyTeam,
   GameweekResult,
+  PointsEventKind,
   PlayerPointsBreakdown,
 } from "@/types/fantasy";
 import {
@@ -49,6 +51,70 @@ export interface PointsViewModel {
   chipUsed?: ChipKey | null;
   /** Transfer hit points applied at finalization (recorded for audit). */
   hitPointsApplied?: number;
+}
+
+function autoSubReasonKey(reason: string): string {
+  return reason === "goalkeeper_did_not_play"
+    ? "fantasy.engine.sub.gk"
+    : "fantasy.engine.sub.outfield";
+}
+
+function pointEventKind(
+  category: FantasyPointsDto["players"][number]["events"][number]["category"],
+): PointsEventKind {
+  if (category === "goals_conceded") return "conceded";
+  if (category === "yellow_card") return "yellow";
+  if (category === "red_card" || category === "second_yellow_dismissal") return "red";
+  return category;
+}
+
+/** Maps the owner-scoped V2 points DTO into the route-level domain model. */
+export function mapFantasyPointsDto(
+  sequence: number,
+  dto: FantasyPointsDto,
+): GameweekResult | undefined {
+  if (!dto.result) return undefined;
+  const captain =
+    dto.players.find((player) => player.multiplier > 1) ??
+    dto.players.find((player) => player.captain);
+  return {
+    gameweek: sequence,
+    totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
+    benchPoints: dto.result.benchPoints,
+    startingPoints: dto.result.startingPoints,
+    captainPoints: dto.result.captainPoints,
+    transferHitPoints: dto.result.transferHit,
+    activeChip: dto.result.chipType ?? undefined,
+    finalized: dto.result.state === "final",
+    finalizedAt: dto.result.finalizedAt ?? undefined,
+    captainId: captain?.fantasyPlayerId,
+    autoSubs: dto.autoSubs.map((substitution) => {
+      const reasonKey = autoSubReasonKey(substitution.reason);
+      return {
+        outId: substitution.playerOutId,
+        inId: substitution.playerInId,
+        reason: { fr: reasonKey, ar: reasonKey },
+      };
+    }),
+    breakdown: dto.players.map((player) => {
+      const basePoints = player.finalPoints ?? player.provisionalPoints;
+      return {
+        playerId: player.fantasyPlayerId,
+        totalPoints: basePoints * player.multiplier,
+        multiplier: player.multiplier,
+        minutesPlayed: player.minutesPlayed,
+        isCaptain: player.captain || undefined,
+        isViceCaptain: player.viceCaptain || undefined,
+        isBench: player.slot === "bench" || undefined,
+        status: dto.pointsState === "final" ? "final" : "provisional",
+        events: player.events.map((event) => ({
+          kind: pointEventKind(event.category),
+          points: event.points,
+          count: event.count,
+        })),
+      };
+    }),
+  };
 }
 
 export interface BuildInputs {
@@ -157,6 +223,12 @@ export function buildAuthoritativePointsViewModel(gw: GameweekResult): PointsVie
   const originalStartingIds = gw.breakdown
     .filter((player) => !player.isBench)
     .map((player) => player.playerId);
+  const substitutionsByOut = new Map(
+    gw.autoSubs.map((substitution) => [substitution.outId, substitution.inId]),
+  );
+  const effectiveStartingIds = originalStartingIds.map(
+    (playerId) => substitutionsByOut.get(playerId) ?? playerId,
+  );
   const effectiveCaptain =
     gw.breakdown.find((player) => (player.multiplier ?? 0) > 1) ??
     gw.breakdown.find((player) => player.playerId === gw.captainId);
@@ -186,9 +258,13 @@ export function buildAuthoritativePointsViewModel(gw: GameweekResult): PointsVie
     tripleCaptainContribution: activeChip === "triple_captain" ? captainBasePoints : 0,
     transferHitPoints,
     activeChip,
-    effectiveStartingIds: originalStartingIds,
+    effectiveStartingIds,
     originalBenchIds,
-    autoSubs: [],
+    autoSubs: gw.autoSubs.map((substitution) => ({
+      outId: substitution.outId,
+      inId: substitution.inId,
+      reasonKey: substitution.reason.fr,
+    })),
     breakdown: gw.breakdown,
     averagePoints: gw.averagePoints,
     highestPoints: gw.highestPoints,

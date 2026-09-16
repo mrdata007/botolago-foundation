@@ -6,7 +6,10 @@ import {
   fantasyHubSchema,
   fantasyGameweekPageSchema,
   fantasyHistoryPageSchema,
+  fantasyGlobalRankingPageSchema,
+  fantasyLeagueInviteSchema,
   fantasyLeaguePageSchema,
+  fantasyLeagueSchema,
   fantasyLeagueStandingPageSchema,
   fantasyPointsSchema,
   fantasyTeamSchema,
@@ -17,6 +20,7 @@ import {
   playerPoolPageSchema,
   type CreateFantasyTeamInput,
   type FantasyChip,
+  type FantasyLeagueStandingPageDto,
   type FantasyPlayerPoolInput,
   type FantasyRepository,
   type LineupSelection,
@@ -245,18 +249,84 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     return parse(fantasyLeaguePageSchema, data).items;
   }
 
+  async getLeague(leagueId: string, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_league_detail", {
+      p_league_id: leagueId,
+    });
+    check(error);
+    return parse(fantasyLeagueSchema, data);
+  }
+
+  async rotateLeagueInvite(leagueId: string, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("rotate_fantasy_league_invite", {
+      p_league_id: leagueId,
+    });
+    check(error);
+    return parse(fantasyLeagueInviteSchema, data);
+  }
+
   async getLeagueStandings(
     leagueId: string,
     gameweekId: string | null,
     _context: RepositoryContext,
   ) {
-    const { data, error } = await getFantasyApi().rpc("fantasy_league_standings", {
-      p_league_id: leagueId,
+    const items: FantasyLeagueStandingPageDto["items"] = [];
+    let league: FantasyLeagueStandingPageDto["league"] | undefined;
+    let afterRank: number | undefined;
+    let afterTeamId: string | undefined;
+
+    for (let pageNumber = 0; pageNumber <= 100; pageNumber += 1) {
+      const { data, error } = await getFantasyApi().rpc("fantasy_league_standings", {
+        p_league_id: leagueId,
+        p_gameweek_id: gameweekId ?? undefined,
+        p_after_rank: afterRank,
+        p_after_team_id: afterTeamId,
+        p_limit: 100,
+      });
+      check(error);
+      const page = parse(fantasyLeagueStandingPageSchema, data);
+      if (page.league.id !== leagueId || (league && page.league.id !== league.id)) {
+        throw new FantasyError("data_unavailable", "League standings changed during paging.");
+      }
+      league ??= page.league;
+      if (pageNumber === 100) {
+        if (page.items.length === 0) return { league: league ?? page.league, items };
+        break;
+      }
+      items.push(...page.items);
+      if (page.items.length < 100) return { league: league ?? page.league, items };
+
+      const last = page.items[page.items.length - 1]!;
+      afterRank = last.rank;
+      afterTeamId = last.teamId;
+    }
+
+    throw new FantasyError(
+      "data_unavailable",
+      "League standings exceeded the bounded 10,000-row read limit.",
+    );
+  }
+
+  async getGlobalRankings(
+    seasonId: string,
+    gameweekId: string | null,
+    sort: "overall" | "gameweek",
+    query: string,
+    page: number,
+    limit: number,
+    _context: RepositoryContext,
+  ) {
+    const normalizedQuery = query.trim();
+    const { data, error } = await getFantasyApi().rpc("fantasy_global_rankings", {
+      p_season_id: seasonId,
       p_gameweek_id: gameweekId ?? undefined,
-      p_limit: 100,
+      p_sort: sort,
+      p_query: normalizedQuery || undefined,
+      p_page: page,
+      p_limit: limit,
     });
     check(error);
-    return parse(fantasyLeagueStandingPageSchema, data);
+    return parse(fantasyGlobalRankingPageSchema, data);
   }
 
   async createLeague(

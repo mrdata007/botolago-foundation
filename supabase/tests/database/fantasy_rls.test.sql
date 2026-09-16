@@ -31,6 +31,16 @@ select extensions.ok(not has_table_privilege('service_role', 'app_private.fantas
 select extensions.ok(has_function_privilege(
   'anon', 'api.fantasy_gameweeks(uuid,integer,integer)', 'execute'),
   'anonymous can execute the bounded gameweek read contract');
+select extensions.ok(has_function_privilege(
+  'anon',
+  'api.fantasy_global_rankings(uuid,uuid,text,text,integer,integer)',
+  'execute'
+), 'anonymous visitors can execute the bounded global ranking contract');
+select extensions.ok(has_function_privilege(
+  'authenticated',
+  'api.fantasy_global_rankings(uuid,uuid,text,text,integer,integer)',
+  'execute'
+), 'authenticated managers can execute the bounded global ranking contract');
 select extensions.ok(not has_function_privilege(
   'anon', 'api.archive_fantasy_league(uuid,uuid)', 'execute'),
   'anonymous cannot archive Fantasy leagues');

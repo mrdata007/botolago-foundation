@@ -305,10 +305,25 @@ describe("Atlas Matchday onboarding matrix", () => {
     expect(validateDraft(removePlayer(complete, 15), players).ok).toBe(false);
   });
 
-  it("guards direct create routes for signed-out and existing-team users", () => {
-    const source = readFileSync(new URL("../routes/fantasy.create.tsx", import.meta.url), "utf8");
-    expect(source).toContain('to="/auth/login" search={{ next: "/fantasy/create" }}');
-    expect(source).toContain('to="/fantasy/team"');
+  it("allows guest drafts while redirecting existing-team users", () => {
+    const layoutSource = readFileSync(
+      new URL("../routes/fantasy.create.tsx", import.meta.url),
+      "utf8",
+    );
+    const providerSource = readFileSync(
+      new URL("../components/fantasy/AtlasCreateProvider.tsx", import.meta.url),
+      "utf8",
+    );
+    const reviewSource = readFileSync(
+      new URL("../routes/fantasy.create.review.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(layoutSource).not.toContain('to="/auth/login"');
+    expect(layoutSource).toContain('to="/fantasy/team"');
+    expect(providerSource).toContain("return LEGACY_GUEST_KEY");
+    expect(reviewSource).toContain('to="/auth/login"');
+    expect(reviewSource).toContain('next: "/fantasy/create/review"');
   });
 
   it("renders pitch and list views from the same draft slot collection", () => {
@@ -401,5 +416,24 @@ describe("Atlas Matchday onboarding matrix", () => {
     }
     expect(transferSource).toContain("activeRules.maxPerClub");
     expect(transferSource).toContain("activeRules.transferHitCost");
+  });
+
+  it("marks read-only Fantasy visuals as non-interactive and exposes watch state", () => {
+    const shirtSource = readFileSync(
+      new URL("../components/fantasy/PlayerShirt.tsx", import.meta.url),
+      "utf8",
+    );
+    const chipSource = readFileSync(
+      new URL("../components/fantasy/FantasyChipCard.tsx", import.meta.url),
+      "utf8",
+    );
+    const playerListSource = readFileSync(
+      new URL("../routes/fantasy.players.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(shirtSource).toContain("disabled={!onClick}");
+    expect(chipSource).toContain("const disabled = !onClick || stateDisabled");
+    expect(playerListSource).toContain("aria-pressed={inWatch}");
   });
 });

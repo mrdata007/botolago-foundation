@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -41,6 +41,7 @@ import {
   swapSlots,
 } from "@/services/fantasy-create-service";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { authService } from "@/services/auth";
 import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -129,6 +130,16 @@ function AtlasReviewPage() {
     const squad = draftToSquad(draft);
     const purchasePrices = draftPurchasePrices(draft, players);
     try {
+      if (draft.favoriteClubId && draft.favoriteClubId !== user.favoriteClubId) {
+        const profileResult = await authService.completeProfile({
+          favoriteClubId: draft.favoriteClubId,
+        });
+        if (!profileResult.ok) {
+          setSaveError("fantasy.atlas.create.identity.profile_error");
+          toast.error(t("fantasy.atlas.create.identity.profile_error"));
+          return;
+        }
+      }
       const result = await runOwnedMutation(
         {
           qc,
@@ -469,19 +480,30 @@ function AtlasReviewPage() {
           </div>
         }
         action={
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={!validation.ok || saving}
-            className="cta-brand inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-            ) : (
+          !user ? (
+            <Link
+              to="/auth/login"
+              search={{ next: "/fantasy/create/review" }}
+              className="cta-brand inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black"
+            >
               <ShieldCheck className="h-4 w-4" aria-hidden />
-            )}
-            {saving ? t("fantasy.status.saving") : t("fantasy.atlas.create.review.submit")}
-          </button>
+              {t("auth.prompt.login")}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={!validation.ok || saving}
+              className="cta-brand inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+              ) : (
+                <ShieldCheck className="h-4 w-4" aria-hidden />
+              )}
+              {saving ? t("fantasy.status.saving") : t("fantasy.atlas.create.review.submit")}
+            </button>
+          )
         }
       />
     </AtlasCreateShell>

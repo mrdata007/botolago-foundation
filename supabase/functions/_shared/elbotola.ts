@@ -66,7 +66,7 @@ const MAX_HOMEPAGE_BYTES = 2_000_000;
 const MAX_ROBOTS_BYTES = 128_000;
 const MAX_ARTICLE_AGE_MS = 45 * 24 * 60 * 60 * 1_000;
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1_000;
-const USER_AGENT = "BotolaGO-NewsMetadata/1.0 (+https://botolago.app)";
+const USER_AGENT = "BotolaGO-NewsMetadata/1.0 (+https://botolago.com)";
 const ARTICLE_URL =
   /^https:\/\/www\.elbotola\.com\/article\/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d+)\.html$/u;
 const ARTICLE_PATH = /^\/?article\/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d+)\.html$/u;

@@ -22,12 +22,31 @@ test("hosted demo is explicit, local-only, and blocks cloud-only surfaces", asyn
   });
 
   await initializeLanguage(page, "fr");
+
+  await page.goto("/auth/verify?next=%2Ffantasy%2Fcreate", { waitUntil: "networkidle" });
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return [url.pathname, url.searchParams.get("next")];
+    })
+    .toEqual(["/auth/register", "/fantasy/create"]);
+
+  await page.goto("/auth", { waitUntil: "networkidle" });
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/auth/login");
+
   for (const route of ["/", "/matches", "/fantasy/rankings", "/auth/login"] as const) {
     await page.goto(route, { waitUntil: "networkidle" });
     const notice = page.getByTestId("demo-data-notice");
     await expect(notice).toBeVisible();
     await expect(notice).not.toHaveAttribute("aria-hidden");
   }
+
+  await expect(page.getByRole("button", { name: "Google" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Apple" })).toHaveCount(0);
+
+  await page.goto("/auth/register", { waitUntil: "networkidle" });
+  await expect(page.getByRole("button", { name: "Google" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Apple" })).toHaveCount(0);
 
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     "content",

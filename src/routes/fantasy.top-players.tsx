@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,6 +13,14 @@ import {
   UserPlus,
 } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useAuth } from "@/auth/AuthProvider";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import {
+  fantasyWatchlistStorageKey,
+  readFantasyWatchlist,
+  writeFantasyWatchlist,
+  type FantasyWatchlistStorage,
+} from "@/services/fantasy-watchlist";
 import { footballService } from "@/services/football";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -51,9 +59,66 @@ type Enriched = {
   club?: Club;
 };
 
+function getBrowserStorage(): FantasyWatchlistStorage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 function TopPlayersPage() {
   const { t, tr, lang, dir } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  const { user, status: authStatus } = useAuth();
+  const { source } = useFantasyDataSource();
+  const watchStorageKey = useMemo(
+    () => fantasyWatchlistStorageKey({ source, authStatus, userId: user?.id }),
+    [source, authStatus, user?.id],
+  );
+  const [watchState, setWatchState] = useState<{ key: string | null; ids: string[] }>({
+    key: null,
+    ids: [],
+  });
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    setWatchState({
+      key: watchStorageKey,
+      ids: watchStorageKey ? readFantasyWatchlist(getBrowserStorage(), watchStorageKey) : [],
+    });
+  }, [watchStorageKey]);
+  const watchReady = watchStorageKey !== null && watchState.key === watchStorageKey;
+  const watch = watchReady ? watchState.ids : [];
+  const toggleWatch = (id: string) => {
+    if (!watchReady || !watchStorageKey) return;
+    const next = watch.includes(id) ? watch.filter((item) => item !== id) : [...watch, id];
+    setWatchState({ key: watchStorageKey, ids: next });
+    writeFantasyWatchlist(getBrowserStorage(), watchStorageKey, next);
+  };
+  const share = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      if (typeof navigator !== "undefined" && "share" in navigator) {
+        await (navigator as Navigator & { share: (data: ShareData) => Promise<void> }).share({
+          title: t("fantasy.top.title"),
+          url,
+        });
+        return;
+      }
+    } catch {
+      // Fall back to copying when native sharing is cancelled or unavailable.
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // The browser can deny clipboard access; the page remains usable.
+    }
+  };
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    maximumFractionDigits: 1,
+  });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
@@ -96,8 +161,14 @@ function TopPlayersPage() {
   const gwMax = availableGwsQ.data?.[availableGwsQ.data.length - 1] ?? currentGw;
   const maxPoints = enriched[0]?.top.weeklyPoints ?? 1;
 
-  const isLoading = topQ.isLoading || playersQ.isLoading || clubsQ.isLoading || gwQ.isLoading;
-  const isError = topQ.isError || playersQ.isError || clubsQ.isError;
+  const isLoading =
+    topQ.isLoading ||
+    playersQ.isLoading ||
+    clubsQ.isLoading ||
+    gwQ.isLoading ||
+    availableGwsQ.isLoading;
+  const isError =
+    topQ.isError || playersQ.isError || clubsQ.isError || gwQ.isError || availableGwsQ.isError;
 
   return (
     <div className="pb-10">
@@ -112,22 +183,23 @@ function TopPlayersPage() {
         </Link>
         <button
           type="button"
-          aria-label="share"
-          onClick={() => {
-            if (typeof navigator !== "undefined" && "share" in navigator) {
-              void (navigator as Navigator & { share: (d: ShareData) => Promise<void> })
-                .share({
-                  title: t("fantasy.top.title"),
-                  url: typeof window !== "undefined" ? window.location.href : "",
-                })
-                .catch(() => undefined);
-            }
-          }}
+          aria-label={t("article.share")}
+          onClick={() => void share()}
           className="glass-surface glass-regular grid h-9 w-9 place-items-center rounded-full border border-[var(--glass-border)] text-foreground"
         >
           <Share2 className="h-4 w-4" aria-hidden />
         </button>
       </div>
+
+      {copied && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-2 rounded-full bg-[color:var(--brand-accent)]/10 px-3 py-1 text-center text-xs font-semibold text-[color:var(--brand-accent)]"
+        >
+          {t("article.share_copied")}
+        </div>
+      )}
 
       <div className="mt-3">
         <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -151,7 +223,17 @@ function TopPlayersPage() {
       )}
       {isError && !isLoading && (
         <div className="mt-6">
-          <ErrorState onRetry={() => topQ.refetch()} />
+          <ErrorState
+            onRetry={() => {
+              void Promise.all([
+                topQ.refetch(),
+                playersQ.refetch(),
+                clubsQ.refetch(),
+                gwQ.refetch(),
+                availableGwsQ.refetch(),
+              ]);
+            }}
+          />
         </div>
       )}
       {!isLoading && !isError && enriched.length === 0 && (
@@ -163,7 +245,15 @@ function TopPlayersPage() {
       {enriched.length > 0 && (
         <>
           <div className="mt-4">
-            <TopPlayerHeroCard entry={enriched[0]} tr={tr} t={t} nf={nf} />
+            <TopPlayerHeroCard
+              entry={enriched[0]}
+              tr={tr}
+              t={t}
+              nf={nf}
+              watched={watch.includes(enriched[0].player.id)}
+              watchReady={watchReady}
+              onToggleWatch={() => toggleWatch(enriched[0].player.id)}
+            />
           </div>
 
           <SectionHeader title={`#2 — #5`} />
@@ -198,7 +288,21 @@ const rankAccent: Record<number, string> = {
   5: "from-blue-400 via-blue-500 to-slate-700",
 };
 
-function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
+type HeroCardProps = CardProps & {
+  watched: boolean;
+  watchReady: boolean;
+  onToggleWatch: () => void;
+};
+
+function TopPlayerHeroCard({
+  entry,
+  tr,
+  t,
+  nf,
+  watched,
+  watchReady,
+  onToggleWatch,
+}: HeroCardProps) {
   const navigate = useNavigate();
   const { player, club, top } = entry;
   const kit = getKitForClub(club, player.kitPattern);
@@ -270,22 +374,38 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="relative mt-4 grid grid-cols-4 gap-2">
-        <HeroStat label={t("fantasy.top.goals")} value={String(top.goals)} />
-        <HeroStat label={t("fantasy.top.assists")} value={String(top.assists)} />
-        <HeroStat label={t("fantasy.top.clean_sheets")} value={String(top.cleanSheets)} />
+      {/* Only render metrics supplied by the active backend. */}
+      <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {top.goals !== undefined && (
+          <HeroStat label={t("fantasy.top.goals")} value={String(top.goals)} />
+        )}
+        {top.assists !== undefined && (
+          <HeroStat label={t("fantasy.top.assists")} value={String(top.assists)} />
+        )}
+        {top.cleanSheets !== undefined && (
+          <HeroStat label={t("fantasy.top.clean_sheets")} value={String(top.cleanSheets)} />
+        )}
         <HeroStat label={t("fantasy.top.minutes")} value={`${top.minutes}'`} />
       </div>
 
-      <div className="relative mt-3 grid grid-cols-3 gap-2 text-white/90">
-        <MetaChip label={t("fantasy.price")} value={nf.format(top.price)} />
-        <MetaChip
-          label={t("fantasy.top.ownership")}
-          value={`${nf.format(top.ownershipPercent)}%`}
-        />
-        <MetaChip label={t("fantasy.top.form")} value={nf.format(top.form)} />
-      </div>
+      {(top.price !== undefined ||
+        top.ownershipPercent !== undefined ||
+        top.form !== undefined) && (
+        <div className="relative mt-3 grid grid-cols-1 gap-2 text-white/90 sm:grid-cols-3">
+          {top.price !== undefined && (
+            <MetaChip label={t("fantasy.price")} value={nf.format(top.price)} />
+          )}
+          {top.ownershipPercent !== undefined && (
+            <MetaChip
+              label={t("fantasy.top.ownership")}
+              value={`${nf.format(top.ownershipPercent)}%`}
+            />
+          )}
+          {top.form !== undefined && (
+            <MetaChip label={t("fantasy.top.form")} value={nf.format(top.form)} />
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="relative mt-4 flex flex-wrap gap-2">
@@ -300,14 +420,26 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
         </button>
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2.5 text-xs font-semibold text-white backdrop-blur"
+          disabled={!watchReady}
+          onClick={onToggleWatch}
+          aria-pressed={watched}
+          aria-label={watched ? t("fantasy.players.remove_watch") : t("fantasy.top.add_watchlist")}
+          className={cn(
+            "inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2.5 text-xs font-semibold text-white backdrop-blur",
+            !watchReady && "cursor-not-allowed opacity-50",
+          )}
         >
-          <Bookmark className="h-4 w-4" aria-hidden />
-          {t("fantasy.top.add_watchlist")}
+          <Bookmark className={cn("h-4 w-4", watched && "fill-current")} aria-hidden />
+          {watched ? t("fantasy.players.remove_watch") : t("fantasy.top.add_watchlist")}
         </button>
         <button
           type="button"
-          onClick={() => navigate({ to: "/fantasy/transfers" })}
+          onClick={() =>
+            navigate({
+              to: "/fantasy/transfers",
+              search: { player: player.id },
+            })
+          }
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-2.5 text-xs font-semibold text-white backdrop-blur"
         >
           <UserPlus className="h-4 w-4" aria-hidden />
@@ -393,31 +525,40 @@ function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
           </div>
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-          <span>
-            <b className="font-black tabular-nums text-foreground">{top.goals}</b>{" "}
-            {t("fantasy.top.goals")}
-          </span>
-          <span>
-            <b className="font-black tabular-nums text-foreground">{top.assists}</b>{" "}
-            {t("fantasy.top.assists")}
-          </span>
-          <span>
-            <b className="font-black tabular-nums text-foreground">{top.cleanSheets}</b> CS
-          </span>
+          {top.goals !== undefined && (
+            <span>
+              <b className="font-black tabular-nums text-foreground">{top.goals}</b>{" "}
+              {t("fantasy.top.goals")}
+            </span>
+          )}
+          {top.assists !== undefined && (
+            <span>
+              <b className="font-black tabular-nums text-foreground">{top.assists}</b>{" "}
+              {t("fantasy.top.assists")}
+            </span>
+          )}
+          {top.cleanSheets !== undefined && (
+            <span>
+              <b className="font-black tabular-nums text-foreground">{top.cleanSheets}</b> CS
+            </span>
+          )}
           <span>
             <b className="font-black tabular-nums text-foreground">{top.minutes}'</b>
           </span>
-          <span>•</span>
-          <span>
-            {t("fantasy.top.form")}{" "}
-            <b className="font-black tabular-nums text-foreground">{nf.format(top.form)}</b>
-          </span>
-          <span>
-            {t("fantasy.top.ownership")}{" "}
-            <b className="font-black tabular-nums text-foreground">
-              {nf.format(top.ownershipPercent)}%
-            </b>
-          </span>
+          {top.form !== undefined && (
+            <span>
+              {t("fantasy.top.form")}{" "}
+              <b className="font-black tabular-nums text-foreground">{nf.format(top.form)}</b>
+            </span>
+          )}
+          {top.ownershipPercent !== undefined && (
+            <span>
+              {t("fantasy.top.ownership")}{" "}
+              <b className="font-black tabular-nums text-foreground">
+                {nf.format(top.ownershipPercent)}%
+              </b>
+            </span>
+          )}
         </div>
       </div>
 

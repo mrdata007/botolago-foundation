@@ -125,7 +125,10 @@ interface FollowViewRow {
   readonly createdAt: string | null;
 }
 
-function normalizePage(page: CursorPageRequest): { limit: number; cursor: FollowDto | null } {
+function normalizePage(page: CursorPageRequest): {
+  limit: number;
+  cursor: FollowDto | null;
+} {
   const limit = Math.min(Math.max(page.limit ?? 25, 1), 100);
   if (!page.cursor) return { limit, cursor: null };
   try {
@@ -176,20 +179,27 @@ async function listFollows(
   }));
   const hasMore = mapped.length > limit;
   const items = mapped.slice(0, limit);
-  return { items, nextCursor: hasMore ? toCursor(items[items.length - 1]!) : null };
+  return {
+    items,
+    nextCursor: hasMore ? toCursor(items[items.length - 1]!) : null,
+  };
 }
 
 export class SupabaseFollowRepository implements FollowRepository {
   async followTeam(teamId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(teamId, "team");
-    const { error } = await getIdentityApi().rpc("follow_team", { p_team_id: teamId });
+    const { error } = await getIdentityApi().rpc("follow_team", {
+      p_team_id: teamId,
+    });
     throwIfError(error);
   }
   async unfollowTeam(teamId: string, context: RepositoryContext): Promise<void> {
     requireActor(context);
     requireUuid(teamId, "team");
-    const { error } = await getIdentityApi().rpc("unfollow_team", { p_team_id: teamId });
+    const { error } = await getIdentityApi().rpc("unfollow_team", {
+      p_team_id: teamId,
+    });
     throwIfError(error);
   }
   listTeams(page: CursorPageRequest, context: RepositoryContext) {
@@ -241,6 +251,7 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
       id: requireValue(row.id, "deletion request id"),
       status: requireValue(row.status, "deletion request status"),
       requestedAt: requireValue(row.requested_at, "deletion request timestamp"),
+      executeAfter: requireValue(row.execute_after, "deletion request due timestamp"),
       updatedAt: requireValue(row.updated_at, "deletion request update timestamp"),
       processedAt: row.processed_at,
     }));
@@ -250,7 +261,9 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
     context: RepositoryContext,
   ): Promise<void> {
     requireActor(context);
-    const { error } = await getIdentityApi().rpc("record_session_revocation", { scope });
+    const { error } = await getIdentityApi().rpc("record_session_revocation", {
+      scope,
+    });
     throwIfError(error);
   }
 }

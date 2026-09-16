@@ -48,6 +48,17 @@ values
   ('d4000000-0000-4000-8000-000000000001', 'c4000000-0000-4000-8000-000000000002', false);
 
 select extensions.is(
+  api.news_article_detail('ar', 'e4000000-0000-4000-8000-000000000001') ->> 'id',
+  'e4000000-0000-4000-8000-000000000002',
+  'article detail resolves the published Arabic sibling from a French edition id'
+);
+select extensions.is(
+  api.news_article_detail('fr', 'e4000000-0000-4000-8000-000000000002') ->> 'id',
+  'e4000000-0000-4000-8000-000000000001',
+  'article detail resolves the published French sibling from an Arabic edition id'
+);
+
+select extensions.is(
   (select count(*)::integer from app.article_editions
     where story_id = 'd4000000-0000-4000-8000-000000000001'),
   2,
@@ -116,6 +127,37 @@ insert into app.article_editions (
 );
 insert into app.story_taxonomies (story_id, taxonomy_id, is_primary)
 values ('d4000000-0000-4000-8000-000000000002', 'c4000000-0000-4000-8000-000000000001', true);
+
+select extensions.is(
+  api.news_article_detail('ar', 'e4000000-0000-4000-8000-000000000003') ->> 'id',
+  'e4000000-0000-4000-8000-000000000003',
+  'article detail falls back to the published source edition when no translation exists'
+);
+select extensions.is(
+  api.news_article_detail('ar', 'e4000000-0000-4000-8000-000000000003') ->> 'language',
+  'fr',
+  'translation fallback reports the language of the edition actually returned'
+);
+
+insert into app.stories (
+  id, origin, original_language, author_id, publisher_id, content_fingerprint
+) values (
+  'd4000000-0000-4000-8000-000000000003', 'provider', 'fr',
+  'a4000000-0000-4000-8000-000000000001', 'b4000000-0000-4000-8000-000000000001', repeat('c', 64)
+);
+insert into app.article_editions (
+  id, story_id, language, slug, title, summary, body_source, body_html,
+  status, visibility, published_at, reading_time_minutes, sanitizer_version
+) values (
+  'e4000000-0000-4000-8000-000000000004', 'd4000000-0000-4000-8000-000000000003',
+  'fr', 'derby-apres-match-syndication', 'Le derby après le coup de sifflet',
+  'Une reprise syndiquée des enseignements du derby de Casablanca.',
+  repeat('Reprise syndiquée après le match. ', 4),
+  '<p>Reprise syndiquée complète après le match.</p>',
+  'published', 'public', '2025-01-03T10:00:00Z', 3, 'sanitize-html@2.17.0'
+);
+insert into app.story_taxonomies (story_id, taxonomy_id, is_primary)
+values ('d4000000-0000-4000-8000-000000000003', 'c4000000-0000-4000-8000-000000000001', true);
 insert into app.editorial_placements (
   article_edition_id, placement_type, language, priority, starts_at
 ) values (
@@ -125,7 +167,7 @@ insert into app.editorial_placements (
 select extensions.is(
   jsonb_array_length(api.news_related_articles('e4000000-0000-4000-8000-000000000001', 6)),
   1,
-  'related-article ranking uses shared normalized taxonomy'
+  'related-article ranking removes syndicated duplicate titles before applying its limit'
 );
 select extensions.is(
   api.news_home_modules('fr', 8) -> 'lead' ->> 'id',

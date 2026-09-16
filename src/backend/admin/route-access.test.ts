@@ -115,12 +115,18 @@ describe("Admin route server authorization", () => {
     expect(JSON.stringify(result)).not.toContain("owner@example.test");
   });
 
-  it("renders French and Arabic copy with an RTL-safe Arabic contract", () => {
-    expect(getAdminCopy("fr").dir).toBe("ltr");
-    expect(getAdminCopy("fr").title).toContain("Administration");
-    expect(getAdminCopy("ar").dir).toBe("rtl");
-    expect(getAdminCopy("ar").title).toContain("إدارة");
-    expect(getAdminCopy("ar").states.forbidden.title).toContain("مرفوض");
+  it("renders launch-ready French and Arabic copy with an RTL-safe Arabic contract", () => {
+    const fr = getAdminCopy("fr");
+    const ar = getAdminCopy("ar");
+    expect(fr.dir).toBe("ltr");
+    expect(fr.title).toContain("Administration");
+    expect(fr.subtitle).not.toContain("Phase");
+    expect(fr.labels.signIn).toBe("Se connecter");
+    expect(ar.dir).toBe("rtl");
+    expect(ar.title).toContain("إدارة");
+    expect(ar.subtitle).not.toContain("المرحلة");
+    expect(ar.labels.signIn).toBe("تسجيل الدخول");
+    expect(ar.states.forbidden.title).toContain("مرفوض");
   });
 
   it("fails malformed identity strings closed", () => {

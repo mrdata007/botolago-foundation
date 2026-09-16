@@ -26,6 +26,7 @@ import { useSavedArticles } from "@/lib/saved-articles";
 import type { Article, ArticleCategory } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/news")({
   head: () => ({
@@ -95,12 +96,14 @@ function NewsPage() {
       await queryClient.invalidateQueries({ queryKey: ["identity", "followed-team-ids"] });
       await queryClient.invalidateQueries({ queryKey: ["identity", "followed-teams"] });
     },
+    onError: () => toast.error(t("error.description")),
   });
 
-  const isLoading = allQ.isLoading || leadQ.isLoading;
-  const isError = allQ.isError || leadQ.isError;
+  const isLoading = allQ.isLoading || leadQ.isLoading || clubsQ.isLoading || followedQ.isLoading;
+  const isError = allQ.isError || leadQ.isError || clubsQ.isError || followedQ.isError;
   const list = useMemo(() => allQ.data ?? [], [allQ.data]);
   const lead = leadQ.data;
+  const visibleLead = lead && (!clubFilter || lead.clubIds.includes(clubFilter)) ? lead : null;
 
   const byClub = useCallback(
     (arr: Article[]) => (clubFilter ? arr.filter((a) => a.clubIds.includes(clubFilter)) : arr),
@@ -226,6 +229,8 @@ function NewsPage() {
             onRetry={() => {
               void allQ.refetch();
               void leadQ.refetch();
+              void clubsQ.refetch();
+              void followedQ.refetch();
             }}
           />
         </div>
@@ -258,15 +263,21 @@ function NewsPage() {
         </Section>
       ) : (
         <>
+          {!visibleLead && forYou.length === 0 && (
+            <Section index={1}>
+              <EmptyState>{t("news.empty_category")}</EmptyState>
+            </Section>
+          )}
+
           {/* Lead */}
-          {lead && (
+          {visibleLead && (
             <Section index={1}>
               <SectionHeader
                 eyebrow={t("news.section.lead")}
                 icon={Sparkles}
                 title={t("news.section.lead")}
               />
-              <ArticleCard article={lead} variant="lead" clubs={clubsQ.data ?? []} />
+              <ArticleCard article={visibleLead} variant="lead" clubs={clubsQ.data ?? []} />
             </Section>
           )}
 

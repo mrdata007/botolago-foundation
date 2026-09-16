@@ -16,7 +16,11 @@ import type { Database } from "@/integrations/supabase/types";
 import { supabase as defaultClient } from "@/integrations/supabase/client";
 
 import { FORMATIONS, type FantasyTeam, type FormationKey, type SquadPlayer } from "@/types/fantasy";
-import type { PointsViewModel } from "@/services/points-service";
+import {
+  buildAuthoritativePointsViewModel,
+  mapFantasyPointsDto,
+  type PointsViewModel,
+} from "@/services/points-service";
 import type { FantasyPersistedState } from "@/services/fantasy-state";
 import { fantasyStateStore, DEFAULT_STATE } from "@/services/fantasy-state";
 import { fantasyService } from "@/services/fantasy-mock";
@@ -48,6 +52,7 @@ import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository
 import type {
   FantasyChip,
   FantasyHubDto,
+  FantasyPointsDto,
   FantasyTeamDto,
   FantasyTransferPreviewDto,
   LineupSelection,
@@ -642,6 +647,7 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
 export function buildV2CloudSnapshot(
   team: FantasyTeamDto | null,
   gameweek: FantasyHubDto["gameweek"],
+  points?: FantasyPointsDto,
 ): FantasySnapshot {
   if (!team) {
     return {
@@ -693,6 +699,10 @@ export function buildV2CloudSnapshot(
         value.MID === starterCounts.MID &&
         value.FWD === starterCounts.FWD,
     )?.[0] as FormationKey | undefined) ?? "4-4-2";
+  const mappedResult =
+    gameweek && points ? mapFantasyPointsDto(gameweek.sequence, points) : undefined;
+  const currentPoints = mappedResult ? buildAuthoritativePointsViewModel(mappedResult) : undefined;
+  const results = currentPoints && gameweek ? { [gameweek.sequence]: currentPoints } : {};
   return {
     teamId: team.id,
     version: team.version,
@@ -712,8 +722,10 @@ export function buildV2CloudSnapshot(
         active: team.chips.active,
         used: [...team.chips.used],
       },
+      results,
     },
-    finalizedResults: {},
+    finalizedResults:
+      currentPoints?.finalized && gameweek ? { [gameweek.sequence]: currentPoints } : {},
     source: "cloud",
     currentGameweekId: gameweek?.id ?? team.currentGameweekId ?? null,
     purchasePrices,
@@ -769,7 +781,11 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   async loadSnapshot(): Promise<FantasySnapshot> {
     try {
       const hub = await this.repository.getHub("fr", this.context());
-      return buildV2CloudSnapshot(hub.team, hub.gameweek);
+      const points =
+        hub.team && hub.gameweek
+          ? await this.repository.getPoints(hub.team.id, hub.gameweek.id, this.context())
+          : undefined;
+      return buildV2CloudSnapshot(hub.team, hub.gameweek, points);
     } catch (error) {
       throw toRepoError(error);
     }

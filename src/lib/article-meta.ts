@@ -1,10 +1,21 @@
 import type { Article } from "@/types/domain";
 
+const FALLBACK_APP_ORIGIN = "https://botolago.com";
+
+export function resolveAppOrigin(configured = import.meta.env.VITE_APP_URL): string {
+  if (!configured) return FALLBACK_APP_ORIGIN;
+  try {
+    return new URL(configured).origin;
+  } catch {
+    return FALLBACK_APP_ORIGIN;
+  }
+}
+
 export function buildArticleHead(article: Article | null | undefined, articleId: string) {
   const title = article?.title.fr ?? "Actualités — BotolaGO";
   const description =
     article?.excerpt.fr ?? "Toute l'actualité premium du football marocain sur BotolaGO.";
-  const canonical = `https://www.botolago.app/news/${encodeURIComponent(articleId)}`;
+  const canonical = `${resolveAppOrigin()}/news/${encodeURIComponent(articleId)}`;
 
   return {
     meta: [

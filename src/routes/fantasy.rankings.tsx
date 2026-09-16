@@ -52,6 +52,7 @@ function RankingsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const tableRef = useRef<HTMLDivElement>(null);
+  const skipNextPageResetRef = useRef(false);
 
   const summaryQ = useQuery({
     queryKey: key("summary"),
@@ -91,6 +92,10 @@ function RankingsPage() {
 
   // Keep the page in range whenever the filter or sort shrinks the board.
   useEffect(() => {
+    if (skipNextPageResetRef.current) {
+      skipNextPageResetRef.current = false;
+      return;
+    }
     setPage(1);
   }, [sort, search]);
 
@@ -100,6 +105,7 @@ function RankingsPage() {
 
   const jumpToMe = () => {
     if (!data?.myRank) return;
+    skipNextPageResetRef.current = search.length > 0;
     setSearch("");
     setPage(pageForRank(data.myRank.rank, PAGE_SIZE));
     requestAnimationFrame(() =>

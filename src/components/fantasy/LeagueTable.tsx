@@ -72,6 +72,7 @@ export function LeagueTable({
               return (
                 <tr
                   key={s.managerId}
+                  data-current-manager={isMe ? "true" : undefined}
                   className={cn(
                     "border-t border-border/70 transition-colors",
                     isMe && "bg-[color:var(--brand-accent)]/10",

@@ -117,6 +117,24 @@ function ProfileSetupPage() {
     return true;
   }, [step, displayName, username]);
 
+  if (status === "authenticated" && user?.profileAvailable === false) {
+    return (
+      <AuthShell
+        title={lang === "ar" ? "الملف غير متاح مؤقتاً" : "Profil temporairement indisponible"}
+        subtitle={
+          lang === "ar"
+            ? "تعذر تحميل بيانات ملفك. تم تعطيل التعديل لحماية بياناتك الحالية."
+            : "Vos données n’ont pas pu être chargées. La modification est désactivée pour protéger votre profil existant."
+        }
+        showBack={false}
+      >
+        <AuthSecondaryButton type="button" onClick={() => navigate({ to: "/profile" })}>
+          {lang === "ar" ? "العودة إلى الملف" : "Retour au profil"}
+        </AuthSecondaryButton>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell title={t("auth.setup.title")} subtitle={t("auth.setup.subtitle")} showBack={false}>
       <div className="mb-4">

@@ -5,6 +5,7 @@
 // demo re-login works within the same device only.
 
 import type {
+  AccountDeletionRequest,
   AuthService,
   AuthSession,
   AuthUser,
@@ -365,18 +366,55 @@ export class LocalMockAuthService implements AuthService {
     const session = this.readSession();
     if (session.status !== "authenticated" || !session.user)
       return { ok: false, errorCode: "unauthorized" };
-    const existing = safeGet<{ requestId: string }>(K_DELETION);
-    const request = existing ?? { requestId: `deletion-${session.user.id}` };
-    safeSet(K_DELETION, request);
-    return { ok: true, data: request };
+    const requests = safeGet<Record<string, AccountDeletionRequest>>(K_DELETION) ?? {};
+    const existing = requests[session.user.id];
+    const now = new Date().toISOString();
+    const executeAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const request =
+      existing?.status === "requested" || existing?.status === "processing"
+        ? existing
+        : {
+            requestId: `deletion-${session.user.id}-${Date.now()}`,
+            status: "requested" as const,
+            requestedAt: now,
+            executeAfter,
+            updatedAt: now,
+            processedAt: null,
+          };
+    safeSet(K_DELETION, { ...requests, [session.user.id]: request });
+    return { ok: true, data: { requestId: request.requestId } };
+  }
+
+  async getAccountDeletionRequests(): Promise<AuthResult<readonly AccountDeletionRequest[]>> {
+    this.init();
+    await simulateLatency();
+    const session = this.readSession();
+    if (session.status !== "authenticated" || !session.user) {
+      return { ok: false, errorCode: "unauthorized" };
+    }
+    const requests = safeGet<Record<string, AccountDeletionRequest>>(K_DELETION) ?? {};
+    const request = requests[session.user.id];
+    return { ok: true, data: request ? [request] : [] };
   }
 
   async cancelAccountDeletion(): Promise<AuthResult> {
     this.init();
     await simulateLatency();
-    if (this.readSession().status !== "authenticated")
+    const session = this.readSession();
+    if (session.status !== "authenticated" || !session.user)
       return { ok: false, errorCode: "unauthorized" };
-    safeRemove(K_DELETION);
+    const requests = safeGet<Record<string, AccountDeletionRequest>>(K_DELETION) ?? {};
+    const request = requests[session.user.id];
+    if (request?.status === "requested") {
+      safeSet(K_DELETION, {
+        ...requests,
+        [session.user.id]: {
+          ...request,
+          status: "cancelled",
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    }
     return { ok: true };
   }
 

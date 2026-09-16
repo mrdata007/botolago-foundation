@@ -84,6 +84,7 @@ export function presentArticle(
     heroGradient: fallbackGradient(dto.id),
     heroUrl: resolveMediaUrl(dto.hero, supabaseUrl),
     heroAlt: dto.hero?.alt ?? undefined,
+    contentLanguage: dto.language,
     isLead: dto.placement === "home_lead" || dto.placement === "news_lead",
     tag: dto.tags[0] ? localized(dto.tags[0].name) : undefined,
     bodyHtml: "bodyHtml" in dto ? dto.bodyHtml : undefined,

@@ -799,6 +799,22 @@
     },
     {
       "kind": "f",
+      "name": "fantasy_global_rankings",
+      "owner": "postgres",
+      "grants": [
+        { "grantee": "anon", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "authenticated", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "postgres", "grantable": false, "privilege": "EXECUTE" },
+        { "grantee": "service_role", "grantable": false, "privilege": "EXECUTE" }
+      ],
+      "volatility": "s",
+      "result_type": "jsonb",
+      "configuration": ["search_path=\"\""],
+      "security_definer": true,
+      "identity_arguments": "p_season_id uuid, p_gameweek_id uuid, p_sort text, p_query text, p_page integer, p_limit integer"
+    },
+    {
+      "kind": "f",
       "name": "fantasy_hub",
       "owner": "postgres",
       "grants": [
