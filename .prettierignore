@@ -6,3 +6,6 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+
+# Preserve the Lovable-managed block byte-for-byte.
+AGENTS.md
