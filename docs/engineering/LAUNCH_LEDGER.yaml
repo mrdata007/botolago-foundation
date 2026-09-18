@@ -343,7 +343,7 @@ tasks:
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
     next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data running (branch agent/BG-0018-club-codes)}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data DONE (agent/BG-0018-club-codes @e8635f0; rolled-back rehearsal 9 rows then 0, collateral 0, residue clean), verifier: running, reviewer: pending}
     facts:
       - the column is app.teams.code (not short_code); only provider ingestion writes it (SportsMonks short_code, present for Wydad only as WCA); nothing writes primary_color/secondary_color
       - the UI already reads code/primaryColor/secondaryColor (presentFootballClub); no src change needed; jerseys stay on src/lib/kits.ts by design
@@ -540,6 +540,16 @@ tasks:
     depends_on: []
     roles: {builder: Builder-DevOps DONE (agent/BG-0027-ratings-fail-closed @3865ffb; main merged in cleanly; 11 tests OK; inventory 60), verifier: folded into the BG-0027 final verification pass once the pgTAP environment decision lands, reviewer: same}
     ordering_hazard: 'load_migrations requires manifest order == version order. BG-0031 (20260918160000, batch season_bounds_guard) will merge first; BG-0027 migration is 20260918150000 and would then have to be inserted BEFORE season_bounds_guard, which breaks the production history-prefix check once season_bounds_guard is promoted. Resolution when BG-0027 is ready to merge: rename its migration to 20260918170000 (never applied anywhere) and place its batch last.'
+
+  BG-0043:
+    title: 'app.teams has 21 active rows, not 16: Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra and Yacoub El Mansour remain active=true (last written 2026-08-02), so api.football_team_catalog exposes five non-2026/27 clubs'
+    area: data
+    severity: P1
+    owner: Chief
+    state: READY
+    evidence: ['docs/engineering/tasks/BG-0018/implementation-report.yaml unexpected_observations (read-only production count during the BG-0018 rehearsal)']
+    acceptance_criteria: [determine how active is meant to be maintained (provider ingestion vs season membership); decide deactivation of the five clubs with a rolled-back rehearsal first; verify UI surfaces (team catalog, filters) after the change; no deletion of history]
+    next: Researcher
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
