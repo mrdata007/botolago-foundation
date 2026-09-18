@@ -1,0 +1,168 @@
+task_id: BG-0027
+attempt: 4
+role: Verifier
+verified_commit: 952bdef8859d55d1aac3c5d7fb8db6011f216727
+previous_verified_commit: acdb060f538a22d9a5f67f65827f99b76c129900
+workspace: /tmp/bg0027-verify (fresh clone, detached at origin/agent/BG-0027-ratings-fail-closed)
+scope: >-
+  Attempt 4 is CI-evidence-only. Its sole job is to close the one remaining
+  `untested` item from attempt 3 (V5, pgTAP execution) using the execution
+  evidence produced by PR #136 / workflow run 35346523879, and to confirm no
+  code regression occurred on the branch since the acdb060 commit that
+  attempt 3 verified. No new production rehearsal, migration change, or
+  worker change was performed or is in scope here.
+criteria:
+  - criterion: >-
+      V1. PR #136's branch tip is the CI run's head commit, and that run
+      (backend-quality.yml, run 35346523879) is a genuine, non-stale,
+      pull_request-triggered execution against this exact code.
+    result: VERIFIED
+    evidence: |
+      $ git clone https://github.com/mrdata007/botolago-foundation.git (fresh, no reuse of
+        any Chief/other-Verifier worktree)
+      $ git fetch origin agent/BG-0027-ratings-fail-closed && git checkout agent/BG-0027-ratings-fail-closed
+      $ git log -1 --format='%H %s'
+        952bdef8859d55d1aac3c5d7fb8db6011f216727 BG-0047: refresh generated database types
+        from CI run 35345865108 (stale on main since the BG-0001/BG-0003 merges)
+
+      mcp__github__pull_request_read(get, #136).head = {ref: agent/BG-0027-ratings-fail-closed,
+        sha: 952bdef8859d55d1aac3c5d7fb8db6011f216727} -- identical to the branch tip above.
+
+      mcp__github__actions_get(get_workflow_run, 35346523879):
+        name: "Backend quality", event: "pull_request", status: "completed",
+        conclusion: "success", head_branch: "agent/BG-0027-ratings-fail-closed",
+        head_sha: "952bdef8859d55d1aac3c5d7fb8db6011f216727", pull_requests: [136],
+        run_started_at: 2026-09-18T12:47:11Z (same day as PR creation, 12:37:29Z).
+      head_sha matches the branch tip exactly -- not a stale or unrelated run.
+  - criterion: >-
+      V2. database-quality job log (105604272781) shows the pgTAP file for
+      the degeneracy guard actually executed and passed (not skipped), with
+      the full-suite counts intact, plus a clean lint and a current
+      types-check.
+    result: VERIFIED
+    evidence: |
+      Pulled directly via mcp__github__get_job_logs(job_id=105604272781, return_content=true)
+      -- not read from the committed docs/engineering/tasks/BG-0027/ci-run-35346523879.txt
+      excerpt file. Relevant lines, verbatim from the fetched log:
+
+        Applying migration 20260918150000_fantasy_rating_degeneracy_guard.sql... (both the
+        initial `supabase db reset` during stack bring-up and again during the explicit
+        `bun run backend:db:reset` step -- so the guard migration was on the database before
+        `bun run backend:db:test` ran)
+
+        .../supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql ......... ok
+
+        All tests successful.
+        Files=40, Tests=821,  7 wallclock secs (...)
+        Result: PASS
+
+        $ supabase db lint --local --schema app,api,app_private --level warning --fail-on error
+        No schema errors found
+
+        $ bun scripts/backend/check-generated-types.mjs
+        Generated database types are current.
+
+      All four sub-claims confirmed character-for-character against the live job log:
+      the guard test line ends "... ok" (pg_prove's pass marker, not "not ok" or a bare
+      filename with no dots indicating a skip), Files=40/Tests=821/Result: PASS match the
+      task brief exactly, lint reports zero errors, and types:check reports "current".
+  - criterion: >-
+      V3. application-quality job (105604273182) on the same run concluded
+      success.
+    result: VERIFIED
+    evidence: |
+      mcp__github__actions_get(get_workflow_run, 35346523879).conclusion = "success" is a
+      run-level rollup across both jobs; per-job status was cross-checked by fetching
+      job_id 105604273182's log directly (mcp__github__get_job_logs, return_content=true).
+      The fetched log (57.6 KB) shows a normal Vite/Nitro SSR asset build proceeding to
+      completion with no error/failure markers in that portion inspected; combined with the
+      run-level conclusion "success" (GitHub marks a run failed if any required job fails),
+      this is accepted as confirmation the application-quality job passed. The log was not
+      read to 100% completion in this attempt (build-asset-listing lines only, no distinct
+      pass/fail footer line was located before context limits were hit) -- this is a minor
+      completeness gap, noted here rather than silently closed; it does not change the
+      verdict because the run-level conclusion is authoritative and independently confirmed
+      via the GitHub API (not the committed excerpt file).
+  - criterion: >-
+      V4. No regression: nothing in the guard migration, the pgTAP test
+      file, or the ratings worker changed between the attempt-3 verified
+      commit (acdb060) and the current PR head (952bdef).
+    result: VERIFIED
+    evidence: |
+      $ git diff --name-status acdb060f538a22d9a5f67f65827f99b76c129900..HEAD \
+          -- supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql \
+             supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql \
+             supabase/functions/_shared/sportsmonks-player-ratings.ts
+        (empty output -- zero changes to any of the three files)
+
+      $ git diff --stat acdb060f538a22d9a5f67f65827f99b76c129900..HEAD
+        73 files changed, 11606 insertions(+), 100 deletions(-)
+      $ git diff --name-status acdb060f538a22d9a5f67f65827f99b76c129900..HEAD
+        (full listing reviewed) -- entirely: unrelated task docs added by main merges
+        (BG-0011, BG-0018, BG-0026, BG-0029, BG-0031, BG-0033, BG-0034, BG-0037, BG-0039),
+        this task's own BG-0042 manifest-batch implementation report, generated database
+        types refresh (BG-0047: src/backend/generated/database.types.ts, +12/-0), CI
+        workflow file churn from main (.github/workflows/*.yml), unrelated frontend/UI
+        tweaks and e2e test additions absorbed from main, and
+        docs/engineering/LAUNCH_LEDGER.yaml. No entry touches the ratings worker, the guard
+        migration, or the pgTAP test file. The delta is exactly "merges of main plus BG-0042
+        plus BG-0047" as expected, confirming attempt 3's verified code is unchanged on this
+        branch.
+  - criterion: >-
+      V5 (closes attempt 3's `untested` item). pgTAP execution of
+      supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql,
+      previously only statically traced, has now actually run and passed in
+      an isolated CI database.
+    result: VERIFIED
+    evidence: |
+      Directly satisfied by V2 above (log line "fantasy_rating_degeneracy_guard.test.sql
+      ......... ok" inside "Files=40, Tests=821, ... Result: PASS", fetched live from
+      GitHub Actions, not from the committed excerpt file). Attempt 3 explicitly noted: "A
+      PR against main is the only route in the current workflow that produces execution
+      evidence" -- PR #136 is exactly that route, and its run 35346523879 is confirmed
+      genuine (V1), executed on the guard-migration-bearing database (V2), and unmodified
+      relative to attempt 3's verified code (V4). The item is no longer NOT_TESTABLE.
+regressions: []
+untested:
+  - >-
+    Full character-by-character read of the application-quality job log (105604273182) was
+    not completed in this attempt due to context/size limits (57.6 KB single-line log); the
+    run-level "conclusion: success" from the GitHub API was used as the authoritative
+    per-job-pass signal instead, cross-checked against a partial direct read showing no
+    error markers. This is a completeness note on this Verifier's own process, not a defect
+    in the PR or a gap in the shipped code.
+  - >-
+    End-to-end behaviour of api.service_stage_fantasy_catalog and the ratings worker against
+    live production data remains covered only by the rolled-back rehearsals recorded in
+    attempts 2 and 3; per the Chief's instruction this attempt performed no new production
+    rehearsal (CI-evidence-only scope).
+security_observations:
+  - >-
+    No code changed since attempt 3's PASS on the security-relevant surface (guard
+    migration, pgTAP privilege assertions, ratings worker). This attempt is a
+    documentation/evidence-closure pass only.
+  - >-
+    No Supabase MCP calls, no live database rehearsals, and no writes to main were made in
+    this attempt, per the Chief's explicit instruction. All verification here was performed
+    via read-only GitHub API calls (workflow run, PR, job logs) and local read-only git
+    operations against a fresh clone.
+status: PASS
+notes: >-
+  Attempt 4 closes the single remaining gap from attempt 3 (V5, pgTAP execution) using
+  independently re-pulled evidence from GitHub Actions run 35346523879 on PR #136: the
+  database-quality job log, fetched live via mcp__github__get_job_logs (not the committed
+  ci-run-35346523879.txt excerpt), shows fantasy_rating_degeneracy_guard.test.sql passing
+  ("......... ok") inside a clean 40-file/821-test suite (Result: PASS), a clean schema
+  lint, and a current generated-types check. The run's head_sha
+  (952bdef8859d55d1aac3c5d7fb8db6011f216727) was independently confirmed to be both PR
+  #136's current head (via pull_request_read) and the actual tip of a freshly cloned
+  agent/BG-0027-ratings-fail-closed (via `git log -1`) -- this is not a stale or
+  unrelated run. A name-status diff between this commit and the attempt-3 verified commit
+  (acdb060f538a22d9a5f67f65827f99b76c129900) confirms zero changes to the guard migration,
+  the pgTAP test file, or the ratings worker; the only changes are main-branch merges plus
+  this task's own BG-0042 manifest batch and BG-0047 generated-types refresh. No
+  regressions. BG-0027 is now DONE per the standing rule (implementation + independent
+  verification + this closed CI-execution gap); it is ready for a fresh-context Reviewer
+  pass, whose scope should be narrow -- confirming this report's evidence chain and the
+  PR's mergeability/next steps -- since the substantive code was already Reviewer-passed
+  and twice independently Verifier-passed in attempts 1-3.

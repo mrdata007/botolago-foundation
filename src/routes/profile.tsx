@@ -296,7 +296,7 @@ function AuthenticatedProfile({
             </span>
             <span className="font-semibold">{t("profile.edit")}</span>
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" aria-hidden />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
         </button>
       </Group>
 

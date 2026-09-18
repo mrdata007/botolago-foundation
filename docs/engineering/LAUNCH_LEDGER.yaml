@@ -73,6 +73,13 @@ tasks:
     update_2026_09_18: owner reports SUPABASE_ACCESS_TOKEN refreshed in production-admin-activation; preflight retry requires BG-0037 first (promoter inventory check fails on main because 20260918130000/140000 are not in the manifest, before any management-API call)
     preflight_retry_2026_09_18: 'run 35343091384 (batch fantasy_calendar_sync, main 943e892): promotion_failed: authenticated account does not own the selected project — the refreshed token authenticates (no HTTP 401) but belongs to an account without access to project tkewgajrljbwgwedqsxn; no write was attempted'
     human_action_2: Generate the personal access token from a Supabase account that is a member of the organization owning BotolaGO Production V2 (tkewgajrljbwgwedqsxn) and store it as SUPABASE_ACCESS_TOKEN in environment production-admin-activation; then the Chief re-runs the preflight with batch fantasy_calendar_sync
+    owner_2026_09_18b: 'do not block on identifying the issuer of the old token; token replaced from an account with access to the BotolaGO org / Production V2; use the sanitized preflight (BG-0039 merged) to decide conclusively; if it authenticates, close the identity question; if 401/403, return the sanitized response and required scope; no workaround'
+    preflight_retry_2_2026_09_18: 'run 35344868933 (main f58a402 with the BG-0039 diagnostic, batch fantasy_calendar_sync) — promotion_failed: authenticated account does not own the selected project: organizations_response_type=list organizations_top_level_keys=[] organizations_row_count=0 organizations_non_dict_row_count=0 organizations_row_keys=[] project_has_organization_id=true project_organization_id_matched_row_keys=[]'
+    interpretation: 'HTTP 200 on both calls (no 401/403). GET /v1/projects/{ref} passed identity/health. GET /v1/organizations returned an EMPTY list. The replacement token authenticates and can read the project but is not a user-level personal access token of a member of the BotolaGO organization (organization- or project-scoped token types list no organizations). Required: a personal access token generated under Account > Access Tokens by a user whose Dashboard membership includes the BotolaGO organization. The promoter proves membership via /v1/organizations and will not be changed to accept scoped tokens without a reviewed guard change.'
+    owner_2026_09_18c: 'owner reports SUPABASE_ACCESS_TOKEN replaced again with a token from a Supabase account that is a member of the BotolaGO organization; Chief re-ran the sanitized preflight'
+    preflight_retry_3_2026_09_18: 'run 35368487278 (main 280ab48, batch fantasy_calendar_sync, full-SHA dispatch guard PASS this time) — promotion_failed: authenticated account does not own the selected project: organizations_response_type=list organizations_top_level_keys=[] organizations_row_count=0 organizations_non_dict_row_count=0 organizations_row_keys=[] project_has_organization_id=true project_organization_id_matched_row_keys=[] — IDENTICAL sanitized shape to preflight_retry_2 (GET /v1/organizations still returns an empty list for this token; no write attempted; still not a 401/403)'
+    interpretation_2: 'The newest token has the same signature as the previous one: it authenticates against GET /v1/projects/{ref} but GET /v1/organizations lists zero organizations for its account, so the promoter cannot prove the account is a member of BotolaGO and correctly refuses to promote. Per BG-0002 owner instruction, this closes the identity question conclusively (not a 401/403, so no workaround is warranted): the token being used is still not a personal access token created from Account > Access Tokens by a Dashboard user whose membership includes the BotolaGO organization (bfhahpanhnoueripxshw). A project-scoped or organization-scoped token, or a token from an account only invited/pending (not an accepted member), would reproduce exactly this empty-list shape. No further preflight retry will change this outcome without a different token.'
+    state_note: 'still HALTED_FOR_INPUT after three token replacements; deadline-guard and calendar-sync promotion remain undispatched; escalating to owner rather than retrying a fourth time on the same evidence'
 
   BG-0003:
     title: Launch risk — SportsMonks placeholder kickoffs vs GW1 deadline; automated escalation guard
@@ -153,7 +160,7 @@ tasks:
     severity: P1
     user_impact: prevents a repeat of BG-0011 on the next activation or re-stage.
     owner: Chief
-    state: HALTED_FOR_INPUT
+    state: DONE
     depends_on: []
     acceptance_criteria:
       - a ratings run with records_fetched = 0 (or coverage below a minimum share) ends failed with an explicit error code and inserts zero rows
@@ -171,6 +178,16 @@ tasks:
     attempt_2: {builder: DONE (agent/BG-0027-ratings-fail-closed @4388116, work commit b1c15d9; new migration 20260918150000_fantasy_rating_degeneracy_guard.sql), verifier: PASS (docs/engineering/tasks/BG-0027/verification-report-attempt2.yaml; 3 rolled-back production rehearsals, guard raised PT409 fantasy_rating_inputs_degenerate with zero inserts), reviewer: running (fresh context)}
     owner_2026_09_18: 'Run the complete affected pgTAP suite in an isolated non-production environment; if unavailable record NOT_EXECUTED and retain the gate; never describe the SQL suite as passing; final evidence must include both the worker coverage fix and the pre-stage guard; pricing gate stays separate from the deadline-guard promotion. Also needs its own manifest entry (BG-0042).'
     halt_reason: 'Reviewer attempt-2 correction requires an EXECUTED pgTAP run before merge; backend:db:test runs only on pull_request events; owner has not authorized pull requests for agent branches. Decision needed: authorize a PR for agent/BG-0027-ratings-fail-closed (Chief merges after CI green + Reviewer PASS), or accept merge on static evidence (not recommended).'
+    owner_2026_09_18b: 'PULL REQUEST route authorised first: execute the affected pgTAP suite through backend-quality CI (isolated supabase start/reset), record the environment, capture pass/fail, run migration validation, Verifier reviews executed results independently; Supabase preview branch only if the PR route is proven incapable (then state cost and lifetime)'
+    pr_prep: BG-0042 Builder merging origin/main (BG-0039 promoter changes) into the branch before the PR is opened
+    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/136 (head 203e3e2, includes the BG-0042 manifest batch and merged main c3fb050); backend-quality CI executes backend:db:test, db:lint and migrations; session subscribed to PR events; Verifier reviews executed results independently after CI'
+    ci_run_425: 'PR #136 head 60cf11e — backend:db:test PASS: 40 files, 821 tests, All tests successful (fantasy_rating_degeneracy_guard.test.sql ok); backend:db:lint passed; backend:types:check FAILED because src/backend/generated/database.types.ts is stale for service_fantasy_deadline_watch and service_sync_fantasy_calendar (migrations already on main since the BG-0001/BG-0003 merges, which bypassed CI) — not this PR; fix = commit the CI-regenerated types (artifact generated-database-types-35345865108) into the branch'
+    types_fix: 'BG-0047: CI-regenerated types ported into the branch (commit 952bdef); backend:types:check green from run 35346523879 onward'
+    ci_run_final: 'PR #136 head 952bdef, run 35346523879 — database-quality success (821/821 pgTAP incl. fantasy_rating_degeneracy_guard.test.sql, lint clean, types current), application-quality success; excerpt docs/engineering/tasks/BG-0027/ci-run-35346523879.txt'
+    attempt_4: {verifier: PASS, independent, fresh context (docs/engineering/tasks/BG-0027/verification-report-attempt4.yaml) — re-fetched run 35346523879 directly, confirmed head SHA matched the branch tip and the executed pgTAP line, confirmed no code/migration/test drift since attempt-3 verified commit; reviewer: PASS, fresh context (docs/engineering/tasks/BG-0027/review-report-attempt3.yaml) — independently re-derived the corrected scenario-3 pricing, diffed migration function bodies for additive-only grants, re-pulled the CI log directly; reviewed final head 5e18a40 after re-confirming CI green there (run 35369458400)}
+    merged: 'Chief merge, --no-ff equivalent (merge_method=merge), main merge commit 5a7f378918683ee2e33a56cdeca1efd67831a06f, PR #136 head 5e18a400c11e6eacfce144431590c9b44ae03612 (2026-09-18)'
+    state_final: DONE
+    production_status: 'NOT LIVE. This merge lands the worker fix and the additive fantasy_rating_degeneracy_guard migration on the main branch only. The guard does not exist in Production V2 until the fantasy_rating_degeneracy_guard batch is promoted through Phase 7E-B, which is blocked by BG-0002. Do not describe the guard as protecting production.'
 
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
@@ -230,6 +247,17 @@ tasks:
       - production backfill and catalog re-stage BLOCKED until the revised evidence gate passes; Options B and C remain unauthorized
     time_box_corrected: registration must be re-opened BEFORE 2026-09-22T22:30:00Z (recalculate if confirmed kickoff/deadline data changes; never weaken a deadline guard to regain time)
     a1_preliminary_assessment: 'NO-GO as written — the runner (240/240) and api.football_historical_player_rating_inputs (all finished fixtures covered) cannot pass with 64 systematic starter_rows_mismatch fixtures (starterRows 21 in 50, 20 in 11, 18 or fewer in 3; excludedIncompleteRows 1-4 in 61 of 64; spread across all months). Conditional GO only if the A1 analysis shows the misses are normalisation/mapping defects repairable without weakening validation. Owner-gated.'
+    a1_result_2026_09_18:
+      brief: docs/engineering/tasks/BG-0011/engineering-brief-a1-starter-rows.yaml
+      mechanism: 'VERIFIED for 19489216 — provider declares 22 starters + 18 subs (40 rows); one starter row and one substitute row have no player_id; the worker drops rows without player_id before reading type_id and then requires 22 identified starters. Arithmetic (22 - starterRows <= excludedIncompleteRows) holds for all 64; anonymous rows present in 104 of 240 fixtures; failures cluster by club (Dcheïra 21/30, Safi 15/30, CRKZ/HUSA 11, KACM 10, UTS 9). Three round-7 fixtures (2025-11-02) have 12-13 anonymous rows and are genuinely incomplete.'
+      rule_locations: 'starter_rows = 22 is enforced in the worker, twice in api.ingest_historical_player_fixture_performance, and in the production CHECK constraint historical_performance_coverage_counts_check; no worker-only relaxation exists; every option needs an additive migration → BG-0002 twice (promotion + backfill)'
+      hidden_gate: 'the RPC re-asserts 22 persisted starters after quarantining unmapped players; an unmapped starter in any of the 176 passing fixtures fails at DB level; unmeasured (6-fixture sample: 1 unmapped substitute in 228 rows)'
+      catalog_coverage_now: '539 players, 497 mapped, 459 eligible; 80 guaranteed 6.0/0 fallback (Tiznit 21, Tétouan 36, Témara 23; 42 unmapped); 188 already have a performance row'
+      bias: 'INFERRED — dropping the 64 fixtures tilts CRKZ/HUSA/KACM/UTS prices down via the season-total rank (30% weight); an identity-tolerant rule loses only anonymous players'' own rows'
+      options: 'a) accept 21-22 identified starters when anonymous rows exist (226/240); b) identified + anonymous starters == 22 with cap <= 4, persist identified rows, quarantine <= 3 outliers (237/240) — recommended; c) quarantine at 27% (176/240, club-biased) — rejected by the analysis; d) NO-GO → Option B'
+      go_no_go: 'HALTED_FOR_INPUT — NO-GO as written; conditional GO only via option (b) under a revised, independently verified brief, and only if BG-0002 is closed by 2026-09-20T12:00Z; otherwise (d) applies automatically'
+      owner_decision_needed: 'BG-0011-OWNER-3 — authorise the option (b) rule change as a separately verified revised brief, or reject any rule change (Option A NO-GO)'
+      next_read_only: BG-0044 probe extension (raw/anonymous starter counters; mapping-gate measurement) — dispatched
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
@@ -307,10 +335,12 @@ tasks:
     area: ui
     severity: P2
     owner: Chief
-    state: RUNNING
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend attempt 2 DONE (@76916e2; BottomNav px-0.5 fits all five fr labels; Select receives the dir prop), verifier: running, reviewer: pending}
+    state: DONE
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend attempt 2 DONE (@76916e2; BottomNav px-0.5 fits all five fr labels; Select receives the dir prop), verifier: PASS (docs/engineering/tasks/BG-0026/verification-report.yaml; defects reproduced on main, fixes reproduced on HEAD in the browser), reviewer: PASS (docs/engineering/tasks/BG-0026/review-report.yaml), reviewer: pending}
     scope_mutation_1: {old_scope: 'BottomNav.tsx line 60 only; matches.index.tsx forbidden', new_scope: 'BottomNav.tsx label/slot padding or one typographic step so all five fr labels fit at 390px; matches.index.tsx one prop dir={dir} on the Radix Select', reason: 'max-w-full alone clips fr Actualités (visible regression); Radix Select stamps dir=ltr so the logical utilities cannot take effect', approved_by: Chief, date: 2026-09-18}
     finding: 'precise inventory 113 tokens, 110 inside shadcn primitives, only 31 must-flip in 7 live files; visible defects D1-D6 (missing .lucide-chevron-left mirror rule, 3 double-flipped rtl:rotate-180 chevrons, BottomNav nav.profile overflow, FDR start-side truncation)'
+    merged: main (merge of agent/BG-0026-rtl-fixes @76916e2)
+    remaining_risks: [T7 FDR truncation verified by mechanism only (authenticated page not rendered); first authenticated Arabic QA pass should re-take ar_fdr.png and ar_points.png; BG-0035 font override still open]
 
   BG-0015:
     title: Fonts and UI consistency
@@ -339,11 +369,11 @@ tasks:
     severity: P1
     user_impact: All 16 clubs have crests; none has colours and 15 lack a short code (UI falls back to names); no player photos (kits/initials by design); homonym clusters ×2; 1 round / 8 fixtures / placeholder kickoffs (provider).
     owner: Chief
-    state: RUNNING
+    state: DONE
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
     next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data running (branch agent/BG-0018-club-codes)}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data DONE (agent/BG-0018-club-codes @e8635f0; rolled-back rehearsal 9 rows then 0, collateral 0, residue clean), verifier: PASS (docs/engineering/tasks/BG-0018/verification-report.yaml; independent rolled-back rehearsal reproduced 9/0/0, 21 active rows confirmed), reviewer: PASS (docs/engineering/tasks/BG-0018/review-report.yaml)}
     facts:
       - the column is app.teams.code (not short_code); only provider ingestion writes it (SportsMonks short_code, present for Wydad only as WCA); nothing writes primary_color/secondary_color
       - the UI already reads code/primaryColor/secondaryColor (presentFootballClub); no src change needed; jerseys stay on src/lib/kits.ts by design
@@ -364,6 +394,9 @@ tasks:
       preserve_non_null: true
       application: ONE guarded run approved after independent Verifier + Reviewer PASS; durability caveat (BG-0036) must be recorded; no schema change, no workflow bypass
     follow_up_ui: BG-0041
+    merged: main 98c5db2
+    production_application: 'docs/engineering/tasks/BG-0018/production-application-2026-09-18.json — 9 codes committed 2026-09-18T12:37:24Z; WCA untouched; 0 colours; api.football_team_catalog shows 10 codes and 0 colours'
+    remaining_risks: [not durable until BG-0036, BG-0041 overflow check for ASFAR and RCAZ, BG-0043 five stale active clubs]
 
   BG-0019:
     title: Fantasy leagues / transfers / points / gameweeks lifecycle
@@ -431,12 +464,17 @@ tasks:
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml contradictions[0]']
     acceptance_criteria: [root cause of the overwrite identified in the season ingestion path; a durable fix (guard or provider-metadata handling) so the correction is not reverted again; production row corrected via a rolled-back rehearsal first, then an owner-approved write]
     next: Researcher (season ingestion path) → Builder-Backend
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0031/engineering-brief.yaml), builder: Builder-Backend running (branch agent/BG-0031-season-bounds-guard), verifier: pending, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0031/engineering-brief.yaml), builder: Builder-Backend DONE (agent/BG-0031-season-bounds-guard @96acad3; migration 20260918160000 + pgTAP 27 asserts + manifest batch season_bounds_guard; local throwaway PG16 harness only), verifier: PASS (docs/engineering/tasks/BG-0031/verification-report.yaml — rolled-back production rehearsal; guard preserves the current row; lock holds against shrink and extension; release accepts; production unchanged), reviewer: PASS with merge gate (docs/engineering/tasks/BG-0031/review-report.yaml)}
     root_cause: 'orchestrator run 35332956079 (Chief-dispatched manual run, 2026-09-18T10:06Z) executed current-season-recovery.ts; the seasons catalog job mapped provider ending_at 2026-09-24 to endsOn and api.ingest_football_catalog_entity overwrote ends_on unconditionally; freshness() falls back to the run clock so every run rewrites the row'
     owner_correction_evidence: 'postgres statement log 2026-09-17T21:02:47Z: update app.seasons set ends_on=2027-06-30 (MCP session)'
     deadlines: [before 2026-09-23T00:00Z for Option A (re-stage would inherit a one-day fantasy season), hard 2026-09-25 (season_ended blocks preview/stage; current_season_required blocks squad ingestion)]
     production_fix: 'one-row UPDATE (idempotent predicate ends_on = 2026-09-24) — OWNER APPROVAL REQUIRED; must land after the guard migration or with both workflows frozen, otherwise the next dispatch reverts it'
     hold_propagation: BG-0004 must stay HOLD until the guard migration is promoted (hourly schedule would overwrite ends_on every run)
+    merge_gate: 'pull request whose backend-quality database job is green (first execution of season_bounds_guard.test.sql on a Supabase stack); PR opened by Chief under the owner PR route; a red job voids the PASS and returns the task to Builder-Backend'
+    sequencing: 'PR #136 (BG-0027, migration 150000) merges first; then this branch merges main and moves the season_bounds_guard prefix 59 to 60 (version order preserved: 150000 before 160000)'
+    merge_gate_status: 'MET on PR #137 head 7cf5152 (type-refresh commit; no touch to the migration or the pgTAP file): backend-quality run 35368491642, database-quality job green — season_bounds_guard.test.sql executes ok, Files=40 Tests=816 Result PASS, db lint clean, types:check current (docs/engineering/tasks/BG-0031/ci-run-35368491642.txt). Per review-report.yaml release_blockers[0] this makes the existing Reviewer PASS live; no further Verifier/Reviewer pass needed for the code itself. Still holding the actual merge until BG-0027/PR #136 lands per sequencing above.'
+    promotion_gate: 'owner one-row correction with lock before 2026-09-25 (Option A box 2026-09-23T00:00Z); promote batch season_bounds_guard after BG-0002 clears; workflows stay undispatched until both are live'
+    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/137 (head 96acad3); session subscribed'
 
   BG-0032:
     title: api.service_rollback_fantasy_catalog does not clear app.fantasy_leagues / fantasy_league_memberships / app_private.fantasy_mutation_audit (all ON DELETE RESTRICT) — "clean rollback" claim in the runbook is false; rollback fails on any season that ever had a league
@@ -451,9 +489,17 @@ tasks:
     area: devops
     severity: P1
     owner: Chief
-    state: READY
+    state: RUNNING
     evidence: ['scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517']
     acceptance_criteria: [restore value read from the current season / required input; unit test; folded into Option A step A3]
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0033/engineering-brief.yaml), builder: Builder-DevOps running (branch agent/BG-0033-runner-restore), verifier: pending, reviewer: pending}
+    key_findings:
+      - 'restore cannot be read-then-write: the Management API secrets listing returns digests (the CLI DIGEST column is the API value field); the runner must prove supplied current-runtime values against captured fingerprints before mutating and re-prove after; six season-coupled keys are overwritten, not one'
+      - 'Bun does not run finally on SIGINT/SIGTERM (reproduced); the bash wrapper does not forward the signal; an if: always() restore post-step (bun runner --restore) plus a restore_only dispatch path are required'
+      - 'skip_deploy must be gated on function version + ezbr_sha256 identity (live football-ingest v53 ab740ad9…), default false; after A2 ships it cannot be true'
+      - 'contradiction: fantasy-season-orchestrator and football-current-season-recovery ARE in concurrency group botolago-production-v2-mutation (15 workflows) and do not write function secrets'
+    acceptance_corrected: restored to captured pre-run fingerprints and verified (not merely read from an input)
+
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
     area: devops
@@ -518,10 +564,14 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: QUEUED
+    state: DONE
     depends_on: []
     evidence: ['run 35343091384 step "Promote and verify the selected batch": promotion_failed: authenticated account does not own the selected project', 'scripts/backend/phase7e-production-migration-promoter.py:391-407']
     acceptance_criteria: [promoter logs a sanitized shape of the organizations response (type, count, key names) on this failure path; unit test; no weakening of the guard]
+    roles: {builder: Builder-DevOps DONE (agent/BG-0039-ownership-diagnostic @e9d101a; 16 unit tests OK; acceptance rule unchanged), verifier: PASS (docs/engineering/tasks/BG-0039/verification-report.yaml; leak test and mutation test independent), reviewer: PASS (docs/engineering/tasks/BG-0039/review-report.yaml)}
+    merged: main (merge of agent/BG-0039-ownership-diagnostic @e9d101a)
+    follow_up: BG-0046 (sanitize() truncates at 500 chars; move the decisive fields ahead of the key-name lists)
+    next: re-run the preflight (batch fantasy_calendar_sync) at the merged main SHA once the owner confirms the token account, or immediately to obtain the diagnostic
 
   BG-0041:
     title: 'Compact team labels with 4-5 character official codes (ASFAR, RCAZ): verify ClubCrest sm (28px tile, 10px text) and FDR cells (13px bold) do not overflow; log or fix through a scoped UI change'
@@ -535,9 +585,64 @@ tasks:
     area: devops
     severity: P1
     owner: Chief
-    state: RUNNING
+    state: DONE
     depends_on: []
-    roles: {builder: Builder-DevOps running (on agent/BG-0027-ratings-fail-closed, separate task owner), verifier: pending, reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0027-ratings-fail-closed @3865ffb; main merged in cleanly; 11 tests OK; inventory 60), verifier: folded into the BG-0027 CI/PR verification pass, reviewer: same}
+    ordering_hazard: 'load_migrations requires manifest order == version order. BG-0031 (20260918160000, batch season_bounds_guard) would need this migration renamed if it merged first. Did not happen: BG-0027 (20260918150000) merged to main FIRST (merge commit 5a7f378918683ee2e33a56cdeca1efd67831a06f) as planned in BG-0031''s own sequencing note, at its original migration number, no rename needed. BG-0031 must now merge main into its branch and move the season_bounds_guard prefix assertion from 59 to 60 before it can merge.'
+    head: 'merged to main at 5a7f378918683ee2e33a56cdeca1efd67831a06f as part of the BG-0027 PR #136 merge'
+    note: 'Closed with BG-0027; no separate PR was needed since this batch shipped inside PR #136.'
+
+  BG-0043:
+    title: 'app.teams has 21 active rows, not 16: Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra and Yacoub El Mansour remain active=true (last written 2026-08-02), so api.football_team_catalog exposes five non-2026/27 clubs'
+    area: data
+    severity: P1
+    owner: Chief
+    state: RUNNING
+    evidence: ['docs/engineering/tasks/BG-0018/implementation-report.yaml unexpected_observations (read-only production count during the BG-0018 rehearsal)']
+    acceptance_criteria: [determine how active is meant to be maintained (provider ingestion vs season membership); decide deactivation of the five clubs with a rolled-back rehearsal first; verify UI surfaces (team catalog, filters) after the change; no deletion of history]
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0043/engineering-brief.yaml), builder: Builder-Data running (branch agent/BG-0043-deactivate-non-current; rehearsal only), verifier: pending, reviewer: pending}
+    root_cause: 'app.teams.active is set true on every insert and fresh update by api.ingest_football_catalog_entity and never false; the G5 two-season backfill teams jobs (26027 on 2026-07-31, 24319 on 2026-08-02) inserted the five historical clubs as active; 2026/27 runs upsert only the 16 participants'
+    impact_if_deactivated: 'api.football_team_catalog 21 to 16 (onboarding picker, profile, fantasy filters); no FK/RLS/constraint/historical read depends on active; Fantasy already excludes them via membership season; 0 follows/favourites reference them'
+    owner_decision_needed: 'confirm that historical clubs should NOT be selectable in the public club catalogue/onboarding (recommended) — then one guarded committed run after Verifier + Reviewer PASS'
+    follow_up: 'durable reconciliation rule (option b) to be folded into BG-0036 (same RPC lines 277-302)'
+
+  BG-0044:
+    title: 'A1 probe extension (read-only): per-fixture rawStarterRows, anonymousStarterRows, anonymousSubstituteRows, anonymousRowsWithTeamId, anonymousRowsWithNameOrJersey in the invariants evidence; re-dispatch on merged main to size option (b) before any rule change'
+    area: devops
+    severity: P0
+    owner: Chief
+    state: DISPATCHED
+    depends_on: [BG-0034]
+    roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: PASS (docs/engineering/tasks/BG-0044/verification-report.yaml), reviewer: PASS (docs/engineering/tasks/BG-0044/review-report.yaml), reviewer: pending}
+    acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
+    merged: main (merge of agent/BG-0044-probe-anonymous-starters @4a9cfba)
+    dispatch: g7-sportsmonks-historical-performance-coverage.yml queued on main e9e94bd (read-only)
+
+  BG-0045:
+    title: 'Gate 2F rollback env file pins FOOTBALL_SPORTSMONKS_SEASON_ID 26027 (same class of defect as BG-0033) — gate2f-production-current-season-catalog-canary.yml rollback step'
+    area: devops
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0033]
+    evidence: ['docs/engineering/tasks/BG-0033/engineering-brief.yaml findings (workflow section)']
+
+  BG-0046:
+    title: 'Promoter diagnostic message can be truncated by sanitize() at 500 chars, cutting project_has_organization_id and matched_row_keys when many key names are present; reorder fields or cap key-name lists'
+    area: devops
+    severity: P3
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0039]
+
+  BG-0047:
+    title: 'main carries stale generated database types (src/backend/generated/database.types.ts lacks service_sync_fantasy_calendar and service_fantasy_deadline_watch) because BG-0001/BG-0003 merged without the pull-request CI; backend:types:check is red on main'
+    area: devops
+    severity: P1
+    owner: Chief
+    state: RUNNING
+    evidence: ['PR #136 run 35345865108 database-quality job: backend:types:check diff']
+    resolution: 'CI-regenerated types ported into PR #136 (BG-0042 Builder); lands on main with that merge; PR #137 regenerates again for season_bounds_guard'
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings

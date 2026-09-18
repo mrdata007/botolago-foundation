@@ -1,0 +1,181 @@
+task_id: BG-0018
+verified_commit: e8635f0 # origin/agent/BG-0018-club-codes; merge-base with origin/main 92857fa
+verifier_workspace: /home/user/bg0018-verify (detached at origin/agent/BG-0018-club-codes)
+verified_at: "2026-09-18T12:29Z"
+production_access: >
+  Project tkewgajrljbwgwedqsxn via Supabase MCP execute_sql (current_user postgres, no role switch,
+  no apply_migration, no commit). Read-only SELECTs plus exactly ONE rolled-back rehearsal
+  transaction ending in `raise exception 'REHEARSAL_BG0018_VERIFY <json>'` then `rollback;`.
+  Deviation disclosed: to carry `get diagnostics` row_count out of the transaction (the MCP tool does
+  not relay RAISE NOTICE), one line `insert into pg_temp.results values ('runN_row_count', ...)` was
+  appended after the script's `raise notice` in each copy of the DO block; the VALUES list, guards,
+  and the UPDATE were copied verbatim (comments stripped in the second copy only). No production
+  role was assumed beyond the repo convention `set_config('request.jwt.claims','{"role":"service_role"}',true)`.
+
+criteria:
+  - criterion: "V1 scope — branch diff vs merge-base is a subset of the three allowed files"
+    result: VERIFIED
+    evidence: |
+      $ git diff --name-status $(git merge-base HEAD origin/main)..HEAD
+      A  docs/engineering/tasks/BG-0018/implementation-report.yaml
+      A  docs/engineering/tasks/BG-0018/rehearsal-team-identity.json
+      A  scripts/backend/football-team-identity-seed.sql
+      Two commits: 7c8492e (script + rehearsal), e8635f0 (implementation report). Nothing under
+      src/**, supabase/**, .github/**, src/lib/kits.ts.
+
+  - criterion: "V2 / AT-5 static — exactly one UPDATE on app.teams, no INSERT/DELETE, `is distinct from` and `t.code is null` in the WHERE"
+    result: VERIFIED
+    evidence: |
+      grep -nic '^\s*update ' scripts/backend/football-team-identity-seed.sql -> 1 (line 119 `update app.teams t`).
+      grep -ni '\binsert\b\|\bdelete\b' excluding comment lines -> no matches (VALUES live in
+      `create temp table bg0018_identity on commit drop as select ... from (values ...)`, line 66-67).
+      Line 116 (preserve-count query) and line 124 (UPDATE WHERE): `t.code is distinct from v.code`.
+      Line 123: `and t.code is null`. Only DML target is app.teams (line 119); the temp table is pg_temp.
+
+  - criterion: "V2 / AT-5 static — exactly 9 VALUES rows, each with a `-- source:` citation matching a club_identity entry with classification VERIFIED for that code"
+    result: VERIFIED
+    evidence: |
+      grep -c "^\s*('.*',\s*'[A-Z0-9]*')" -> 9; rows lacking '-- source:' -> 0.
+      Codes extracted in file order: RCA ASFAR FUS MAS IRT UTS RCAZ MAT WST — all match '^[A-Z0-9]{2,8}$'
+      (ASFAR=5, RCAZ=4 chars, allowed by the owner decision 2026-09-18 "4-5 chars allowed").
+      Per-row citation vs docs/engineering/tasks/BG-0018/engineering-brief.yaml club_identity (all code_official.classification VERIFIED):
+        Raja Casablanca RCA   <- https://www.rajaclubathletic.ma/            (brief: VERIFIED)
+        FAR Rabat ASFAR       <- https://as-far.ma/fr/club/2-histoire         (brief: VERIFIED)
+        FUS Rabat FUS         <- https://fus.ma                               (brief: VERIFIED)
+        Maghreb Fès MAS       <- https://www.maghreb-fes.com/                 (brief: VERIFIED)
+        Ittihad Tanger IRT    <- https://www.irtfoot.ma/fr                    (brief: VERIFIED)
+        UTS Rabat UTS         <- https://touargaclub.ma/en/le-club/           (brief: VERIFIED)
+        CR Khemis Zemamra RCAZ<- https://rcazfc.com/                          (brief: VERIFIED)
+        Moghreb Tétouan MAT   <- https://www.matfoot.com                      (brief: VERIFIED)
+        Widad Témara WST      <- https://widad-temara.com/club/               (brief: VERIFIED)
+      Matches ledger origin/main BG-0018.owner_decisions_2026_09_18.codes exactly.
+
+  - criterion: "V2 / AT-5 static — no primary_color/secondary_color in any SET; no Wydad row; no INFERRED code strings as values; header states WCA provenance and BG-0036 durability caveat"
+    result: VERIFIED
+    evidence: |
+      The single SET (line 120) is `set code = v.code` only; grep for 'color' in SET clauses -> none
+      (colour columns appear only in header comments and the read-only review SELECT, lines 133-134).
+      grep "^\s*('Wydad" -> none. grep "'(WAC|RSB|HUSA|DHJ|KACM|CODM|USAT)'" -> none (those tokens
+      occur only in comments at lines 12-13 and 82-84 explaining they are NOT written).
+      Header line 14-16: "Wydad Casablanca: the existing value \"WCA\" is provider-supplied (SportsMonks
+      short_code), not independently verified club branding. It is kept as-is; this script never touches it."
+      Header lines 33-40: "Durability (NOT durable until BG-0036 lands): api.ingest_football_catalog_entity
+      rewrites app.teams.code ... (supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302,
+      `code = v_code` unconditionally)". Also line 17-18 colours DEFERRED, 19-20 preserve non-null.
+
+  - criterion: "V3 / AT-1 baseline — before snapshot of all active app.teams rows (Builder observed 21 active rows, not 16)"
+    result: VERIFIED
+    evidence: |
+      Read-only, 2026-09-18 12:22:25Z: all_teams 21, active_teams 21, code_null_active 20,
+      primary_null_active 21, secondary_null_active 21, max(updated_at) active 2026-09-18 10:06:38.00697+00,
+      non_null_codes "Wydad Casablanca=WCA", temp residue 0.
+      Full row dump (id, name, short_name, code, colours, active, slug, crest_asset_id, updated_at) taken;
+      the 21 active rows = the 16 current clubs (updated 2026-09-18 10:06) + Chabab Mohammédia,
+      JS Soualem, Olympic Safi, Olympique Dcheïra, Yacoub El Mansour (active=true, updated 2026-08-02).
+      Builder's 21-row observation CONFIRMED; the brief's expectation of 16/15/16 is wrong for production.
+
+  - criterion: "V3 / AT-1 first run (rolled back) — 9 rows changed, collateral 0, format violations 0, colours untouched, Wydad WCA unchanged with unchanged updated_at"
+    result: VERIFIED
+    evidence: |
+      Rehearsal JSON (from the REHEARSAL_BG0018_VERIFY exception, transaction rolled back):
+        run1_row_count 9 (get diagnostics), run1_changed_vs_pre 9, run1_collateral 0
+        (name/short_name/slug/crest_asset_id/active), run1_colour_changes 0, run1_all_teams 21,
+        run1_active_teams 21, run1_format_violations 0, run1_updated_at_bumped_vs_pre 9, run1_preserved 0,
+        run1_wydad {code WCA, short_name WCA, updated_at 2026-09-18T10:06:36.504938+00:00,
+        code_unchanged true, updated_at_unchanged true}.
+        run1_codes_after: RCAZ, ASFAR, FUS, IRT, MAS, MAT, RCA, UTS, WST (pre_code null for all nine) + WCA (pre_code WCA).
+        run1_unchanged_rows (12): Amal Tiznit, Chabab Mohammédia, CODM Meknès, Difaâ El Jadida,
+        Hassania Agadir, JS Soualem, Kawkab Marrakech, Olympic Safi, Olympique Dcheïra, RSB Berkane,
+        Wydad Casablanca, Yacoub El Mansour — i.e. no INFERRED club, no legacy row and not Wydad was written.
+      All three guards passed (no exception before the UPDATE) against the 21-row table.
+
+  - criterion: "V3 / AT-2 idempotency — second run in the same transaction touches 0 rows and does not bump updated_at"
+    result: VERIFIED
+    evidence: |
+      run2_row_count 0, run2_preserved 0, run2_changed_vs_mid 0 (code/colours/updated_at vs post-run-1
+      snapshot), run2_updated_at_bumped_vs_mid 0, run2_updated_at_bumped_vs_pre 9 (unchanged from run 1).
+
+  - criterion: "V3 / AT-3 API projection (inside the rehearsal) — api.football_team_catalog('fr',100) shows exactly the 9 codes + WCA non-null and 0 primaryColor"
+    result: VERIFIED
+    evidence: |
+      api_catalog_len 21 (not 16 — see untested/observations), api_code_not_null 10, api_primary_not_null 0,
+      api_secondary_not_null 0, api_codes = [CR Khemis Zemamra RCAZ, FAR Rabat ASFAR, FUS Rabat FUS,
+      Ittihad Tanger IRT, Maghreb Fès MAS, Moghreb Tétouan MAT, Raja Casablanca RCA, UTS Rabat UTS,
+      Widad Témara WST, Wydad Casablanca WCA] — identical to the VALUES list plus the provider WCA.
+
+  - criterion: "V3 / AT-4 residue after rollback (separate read-only query) — non-null codes only Wydad WCA, max(updated_at) equals pre-rehearsal, no temp residue"
+    result: VERIFIED
+    evidence: |
+      2026-09-18 12:29:13Z: active_teams 21, code_null 20, primary_null 21, secondary_null 21,
+      max_updated_at 2026-09-18 10:06:38.00697+00 (== pre-rehearsal), non_null_codes "Wydad Casablanca=WCA",
+      temp_residue 0 (bg0018_identity/pre/mid/results), seeded_codes_present 0.
+
+  - criterion: "V4 cross-check of docs/engineering/tasks/BG-0018/rehearsal-team-identity.json against the Verifier's numbers"
+    result: VERIFIED
+    evidence: |
+      Artefact vs independent run: baseline 21/21/20/21 & max 10:06:38.00697 (match); AT1 row_count 9,
+      changed 9, collateral 0, colour_writes 0, format_violations 0, updated_at_bumped 9, Wydad WCA @
+      10:06:36.504938 unchanged (match); AT2 0 / 0 / 9 (match); AT3 len 21, code_not_null 10,
+      primary_not_null 0, per-row codes (match); AT4 20 / 21 / max unchanged / WCA only / residue 0 (match).
+      The artefact's 16-row before-snapshot ids and updated_at values match my full dump row for row.
+      The five extraActiveRows ids and 2026-08-02 timestamps match production.
+
+  - criterion: "V5 / AT-6 — `bun test src/services/football.test.ts` passes; presentFootballClub maps code -> crestPlaceholder so no src change is needed"
+    result: VERIFIED
+    evidence: |
+      $ bun install --frozen-lockfile (539 packages) && bun test src/services/football.test.ts
+      bun test v1.3.11 — 5 pass, 0 fail, 18 expect() calls, 1 file.
+      src/services/football.ts:61-70: `const placeholder = team.code ?? team.shortName.slice(0, 3).toUpperCase();`
+      ... `crestPlaceholder: placeholder`; `primaryColor: team.primaryColor ?? "#0a2540"`.
+      src/services/football.test.ts:71 asserts `club.crestPlaceholder` equals `team.code`. No src diff on the branch.
+
+  - criterion: "V6 / AT-8 durability — ingestion overwrites code unconditionally; seed is not durable until BG-0036"
+    result: VERIFIED
+    evidence: |
+      supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302 (verbatim excerpt):
+          when 'team' then
+            v_name := p_entity ->> 'name';
+            v_short_name := p_entity ->> 'shortName';
+            v_code := nullif(pg_catalog.upper(p_entity ->> 'code'), '');
+            ...
+            else
+              update app.teams set
+                name = v_name,
+                short_name = v_short_name,
+                code = v_code,
+                country_id = v_country_id,
+                active = true
+              where id = target_id;
+            end if;
+      `code = v_code` has no COALESCE / null-guard; v_code is the provider short_code (NULL for the nine
+      clubs), so the next fresh team payload processed by api.ingest_football_catalog_entity resets the nine
+      codes to NULL. Colours are not in that SET list. The seeded codes are NOT durable until BG-0036 lands;
+      the script header, rehearsal artefact (AT8_durability_informational) and implementation report all record this.
+      Recovery was not run to prove it (informational per the brief).
+
+  - criterion: "V7 / AT-7 — UI on botolago.com after the owner-approved committed run (FDR cells, opponent chip, ClubCrest tile, overflow of ASFAR/RCAZ)"
+    result: NOT_TESTABLE
+    evidence: "Requires the committed production run, which is owner-gated and has not happened (production codes are still NULL except WCA per the residue query). No UI evidence exists on the branch."
+
+regressions: []
+
+untested:
+  - "AT-7 UI evidence (post-commit only). Owner should note the 4-5 char codes ASFAR and RCAZ against the 28 px ClubCrest sm tile and FDR cell wrapping (BG-0041)."
+  - "Durability clobber not exercised (recovery not dispatched), per the brief's AT-8 wording."
+  - "RAISE NOTICE text of the DO block not observed directly (MCP tool does not relay notices); row_count was captured via get diagnostics through an added temp-table insert and corroborated by snapshot diffs."
+
+security_observations:
+  - "Blast radius of the committed run is bounded to app.teams.code on rows whose name matches exactly one ACTIVE row among the nine listed names and whose code IS NULL; the UPDATE joins on matched_id (uuid) so no other row can be touched. Verified in the rehearsal: 12 of 21 rows byte-identical including updated_at."
+  - "The scalar subquery `(select t.id from app.teams t where t.name = v.team_name and t.active)` raises 'more than one row' if a homonym active row ever appears, and Guard 3 raises on zero matches — either aborts the whole transaction before the UPDATE. Both paths depend on exact NFC name equality with production; today all nine match."
+  - "The script runs with request.jwt.claims role=service_role via set_config inside the transaction and must be executed as the database owner / service role; RLS on app.teams is forced. The MCP session ran as postgres (role_setting none) and the UPDATE succeeded, so the rehearsal is representative of a SQL-editor run."
+  - "Production holds 5 stale active rows (Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra, Yacoub El Mansour) exposed by api.football_team_catalog. The seed does not touch them, but they are a data-quality exposure to triage separately (not a BG-0018 defect)."
+  - "Non-durability is a correctness rather than security concern: any recovery dispatch between the committed run and BG-0036 silently reverts the nine codes; nothing alerts on it."
+  - "No credentials, keys or model identifiers appear in the three changed files."
+
+status: PASS
+notes: >
+  Every testable acceptance criterion (V1-V6, brief AT-1..AT-6, AT-8) is VERIFIED by independent
+  execution; AT-7 is NOT_TESTABLE by design until the owner-approved committed run. The brief's
+  numeric expectations (16 active / 15 null / catalog length 16) do not match production (21/20/21);
+  the Builder recorded this deviation correctly and it does not affect the operation. Production was
+  left unchanged (residue query 12:29:13Z).

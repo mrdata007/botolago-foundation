@@ -1,0 +1,482 @@
+task_id: BG-0033
+role: Researcher
+attempt: 1
+generated_at: "2026-09-18"
+repository_head: 92857fa411d8b5701b4b3b10cac781623489a540 # origin/main, read-only checkout /home/user/research-main
+objective: >
+  Option A step A3 with owner conditions (2026-09-18): restrict the G7 historical performance
+  backfill to season 26027 only (BG-0011-OWNER-2), do not backfill 24319, do not delete older-season
+  history; and BEFORE any backfill dispatch repair the runtime-restoration logic of
+  scripts/backend/g7-historical-performance-backfill-runner.ts so that the ACTUAL pre-run production
+  function configuration is captured and restored on success, failure and cancellation, verified
+  after restore, never derived from the obsolete RESTORE_SEASON=26027 constant, and serialized
+  against every other production ingestion mutation.
+
+findings:
+  # ---------- 1. VERIFIED current behaviour of the runner and workflow ----------
+  - classification: VERIFIED
+    statement: >
+      Per season the runner writes a 0600 dotenv file `<runtime>/season-<id>.env` with 15 keys
+      (SPORTSMONKS_API_TOKEN, FOOTBALL_INGESTION_TRIGGER_SECRET, FOOTBALL_PROVIDER,
+      FOOTBALL_PROVIDER_BASE_URL, FOOTBALL_SPORTSMONKS_LEAGUE_ID=860, FOOTBALL_SPORTSMONKS_SEASON_ID,
+      FOOTBALL_SPORTSMONKS_TEAM_IDS, FOOTBALL_SPORTSMONKS_COUNTRY_CODE=MA,
+      FOOTBALL_SPORTSMONKS_COMPETITION_TYPE=league, FOOTBALL_SPORTSMONKS_SEASON_START/_END,
+      FOOTBALL_SPORTSMONKS_FIXTURE_FROM/_TO, FOOTBALL_PROVIDER_TIMEOUT_MS=15000,
+      FOOTBALL_PROVIDER_MAX_RETRIES=2), unquoted `NAME=value\n` lines, and runs
+      `node_modules/.bin/supabase secrets set --project-ref tkewgajrljbwgwedqsxn --env-file <file>`
+      through Bun.spawn with the full process env (so SUPABASE_ACCESS_TOKEN reaches the CLI).
+      stdout+stderr go to `<runtime>/<operation>.raw.log`, the exit code to `<operation>.exit`.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:214-243 (envFileContent), :258-277 (runCommand), :352, :405-416"
+  - classification: VERIFIED
+    statement: >
+      The finally block (a) rebuilds the SAME 15-key env file for the manifest season whose id equals
+      the hard-coded RESTORE_SEASON.id = 26027 (startingAt 2025-09-12, endingAt 2026-07-05, the
+      2025/26 teamIds from the manifest, and the one-time trigger value), (b) runs
+      `supabase secrets set … --env-file restore-production-config.env`, then (c) runs
+      `supabase secrets unset FOOTBALL_INGESTION_TRIGGER_SECRET --project-ref tkewgajrljbwgwedqsxn`.
+      It never lists or reads the pre-run configuration; nothing it restores comes from production.
+      restoration.seasonId is stamped with the constant 26027.
+    evidence: "runner.ts:15-19 (RESTORE_SEASON), :496-536 (finally), :500 comment 'validateManifest proves the pinned 26027 season exists before mutation'"
+  - classification: VERIFIED
+    statement: >
+      Production's current season is 2026/2027 (app.seasons d03223b0-8f4a-4309-93e1-2a708d7c3584,
+      is_current true, status active), mapped to SportsMonks external_id 28647 in
+      app_private.football_provider_mappings (active, last_seen 2026-09-18T10:06:43Z). 26027 is
+      2025/2026 (completed) and 24319 is 2024/2025 (completed). The finally block therefore rewrites
+      the live ingestion runtime to a completed season, and also rewrites SEASON_START/END,
+      FIXTURE_FROM/TO and TEAM_IDS to 2025/26 values — the defect is not limited to SEASON_ID.
+    evidence: "read-only SELECT on app.seasons and app_private.football_provider_mappings (provider_name sportsmonks, entity_type season); runner.ts:229-236"
+  - classification: VERIFIED
+    statement: >
+      Every live football-ingest job reads its scope from function secrets, not from the request:
+      fixtures reads LEAGUE_ID, SEASON_ID, FIXTURE_FROM, FIXTURE_TO; catalog reads LEAGUE_ID,
+      SEASON_ID, SEASON_START, SEASON_END, COUNTRY_CODE, COMPETITION_TYPE; player-ratings and
+      historical-player-performance read SEASON_ID; historical-content reads SEASON_ID and TEAM_IDS;
+      all read FOOTBALL_INGESTION_TRIGGER_SECRET, FOOTBALL_PROVIDER, FOOTBALL_PROVIDER_BASE_URL,
+      TIMEOUT_MS, MAX_RETRIES. "Live runtime not left targeting 26027" therefore means every one of
+      the 15 overwritten keys must be back to its pre-run state, not only SEASON_ID.
+    evidence: "supabase/functions/_shared/sportsmonks-fixtures.ts:167-187; sportsmonks-catalog.ts:184-201; sportsmonks-player-ratings.ts:168-186; sportsmonks-historical-content.ts:158-185; sportsmonks-historical-player-performance.ts:186-208"
+  - classification: VERIFIED
+    statement: >
+      The finally block does NOT run on SIGINT or SIGTERM in Bun. Reproduced locally with Bun 1.3.11
+      (workflow pins 1.3.14): a script awaiting inside try/finally, sent SIGINT → exit 130, sent
+      SIGTERM → exit 143, and in both cases the `finally` marker file was never written. In the
+      workflow shape (`bash -c 'bun runner.ts > raw.log 2>&1'`), SIGINT/SIGTERM delivered to the bash
+      wrapper did not reach the bun child at all (child still alive afterwards); the runner would then
+      be ended only by the runner's process-tree kill (SIGKILL), which no code can intercept.
+    evidence: "local reproduction, scratchpad/sigtest/finally.ts; .github/workflows/g7-production-historical-performance-backfill.yml:284-296 (bash wrapper with redirect)"
+  - classification: VERIFIED
+    statement: >
+      GitHub cancellation sequence (docs): SIGINT/Ctrl-C to the step's entry process; if it has not
+      exited within 7500 ms, SIGTERM; after a further 2500 ms the runner kills the process tree.
+      Steps whose `if:` evaluates true under cancellation (`always()`, `cancelled()`) still run, and
+      "after the 5 minute cancellation timeout period, the server will forcibly terminate all jobs and
+      steps marked for cancellation that are still running." A post-step therefore has a hard ~5 min
+      budget after cancellation.
+    evidence: "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-cancellation (fetched 2026-09-18)"
+  - classification: INFERRED
+    statement: >
+      A job-level `timeout-minutes: 150` expiry (workflow line 30) is a cancellation and follows the
+      same signal path; the docs page fetched does not state this explicitly.
+  - classification: VERIFIED
+    statement: >
+      The workflow has NO restore step of its own: after the mutation step come "Preserve sanitized
+      command evidence" (if: always()), "Verify evidence contains no credentials" (if: always()),
+      "Upload …" (if: always() && scan success), "Remove protected runtime files" (if: always(),
+      deletes every file under $G7_BACKFILL_RUNTIME_DIR including the evidence dir) and "Finalize".
+      Gate 2F/Gate 4/Gate 2C/2D/3B each carry an `if: always()` cleanup step that runs
+      `supabase secrets unset FOOTBALL_INGESTION_TRIGGER_SECRET` (and, for 2F, a rollback
+      `secrets set --env-file rollback-file`) from the workflow, not from the runner — the pattern the
+      G7 workflow lacks. Gate 2F's rollback file is itself hard-coded to SEASON_ID 26027 (same class
+      of defect; out of scope here, noted for the ledger).
+    evidence: "g7 workflow :298-406; gate2f-production-current-season-catalog-canary.yml:250-268, :403-442; gate4-production-news-ratings-canary.yml:408-431"
+  - classification: VERIFIED
+    statement: >
+      Guards today: job `if` (repo mrdata007/botolago-foundation, ref refs/heads/main, actor mrdata007);
+      step 1 requires all four credentials non-empty, GITHUB_RUN_ATTEMPT == 1, CONFIRMATION ==
+      RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL, EXPECTED_COMMIT == GITHUB_SHA, project
+      ref/name/URL vars; step "Verify reviewed historical-only ticket" deep-equals
+      docs/production/g7-historical-performance-backfill-trigger.json against a Python dict embedded
+      in the workflow (requestId g7-two-season-historical-performance-backfill-2026-08-02-03,
+      requestedSeasonIds [26027, 24319], …); the runner re-checks GITHUB_ACTIONS, CONFIRMATION,
+      EXPECTED_PROJECT_REF, EXPECTED_COMMIT == GITHUB_SHA; the runner test pins the ticket's
+      requestedSeasonIds to [26027, 24319] with toMatchObject. The ticket, the workflow dict, the
+      runner evidence header (requestedSeasonIds: [26_027, 24_319]) and the test must move together.
+    evidence: "workflow :25-28, :46-75, :139-192; runner.ts:335-345, :365; g7-historical-performance-backfill-runner.test.ts:9-56"
+  - classification: VERIFIED
+    statement: >
+      Season scope is enforced in the RUNNER, not in the G7 preflight wrapper: runner.validateManifest
+      rejects any manifest unless seasonCount === 2, seasons.length === 2, seasons[0].id === 26027
+      and seasons[1].id === 24319, then loops over ALL manifest.seasons. The G7 preflight
+      (g7-historical-performance-backfill-preflight.ts) only calls the shared
+      runTwoSeasonBackfillPreflight (TWO_SEASON_BACKFILL_SCOPE = [26027, 24319], 11 read-only provider
+      requests, seasonCount literal 2) and writes the manifest; that shared module is also used by
+      the G5 backfill and must not be re-scoped for G7.
+    evidence: "runner.ts:180-212, :404; g7-historical-performance-backfill-preflight.ts:18-22; sportsmonks-two-season-backfill-preflight.ts:18-31, :39-58, :256-271"
+  - classification: VERIFIED
+    statement: >
+      The runner is untestable as written for capture/restore/cancel paths: main() resolves the CLI
+      path, spawns, fetches and reads process.env directly; only the two pure validators are exported
+      and tested. A fake-CLI test needs injectable executable path / spawn / fetch / env / clock.
+    evidence: "runner.ts:335-356, :546-555; runner.test.ts imports only validateHistoricalPerformanceBatch/validateHistoricalRatingDerivation"
+
+  # ---------- 2. Capturing the pre-run configuration without printing values ----------
+  - classification: VERIFIED
+    statement: >
+      Management API: GET /v1/projects/{ref}/secrets "Returns all secrets you've previously added to
+      the specified project", scope secrets:read (fine-grained edge_functions_secrets_read); the
+      documented 200 schema is an array of {name: string, value: string, updated_at: string}.
+      POST /v1/projects/{ref}/secrets "Creates multiple secrets and adds them to the specified
+      project" (secrets:write; body items {name (must not start with SUPABASE_, ≤256 chars),
+      value (≤24576 chars)}). DELETE /v1/projects/{ref}/secrets "Deletes all secrets with the given
+      names" (body: array of names).
+    evidence: "Supabase MCP search_docs → https://supabase.com/docs/reference/api/v1-list-all-secrets, v1-bulk-create-secrets, v1-bulk-delete-secrets; body constraints from the CLI's embedded schema (name regex ^(?!SUPABASE_).*, max 256; value max 24576)"
+  - classification: VERIFIED
+    statement: >
+      The pinned CLI (package.json supabase 2.109.1; verified binary v2.109.1 is a Bun-compiled bundle)
+      implements `secrets list` as v1ListAllSecrets → sort by name → text output = a two-column table
+      whose headers are literally ["NAME","DIGEST"] and whose second column is the API item's `value`
+      field. With `--output json|yaml|toml` (or `--output-format json`) it prints the RAW API items.
+      `--output env` is rejected. `secrets set` merges, in order: `[edge_runtime.secrets]` from
+      ./supabase/config.toml if present (the repository's block is commented out, so nothing is
+      merged), then --env-file (parsed by a dotenv parser, so quoting rules apply), then NAME=VALUE
+      args; names starting with SUPABASE_ are skipped with a stderr note; then ONE v1BulkCreateSecrets
+      call. `secrets unset NAME…` calls v1BulkDeleteSecrets after a confirmation that is auto-accepted
+      when --yes is given or stdin is not a TTY (CI); with no names it unsets EVERY non-SUPABASE_
+      secret — a footgun the runner must never trigger (always pass explicit names).
+    evidence: "strings extracted from the v2.109.1 linux_amd64 release binary: bQL=['NAME','DIGEST']; YaH maps (name, value); waH list handler; kaH set handler; paH unset handler; supabase/config.toml:400-401 (# [edge_runtime.secrets] commented)"
+  - classification: INFERRED
+    statement: >
+      The `value` returned by GET /v1/projects/{ref}/secrets is a SHA-256 digest of the stored secret,
+      not the plaintext: the CLI labels that very field DIGEST, the docs example is a placeholder
+      ("lorem") and Supabase's dashboard exposes only digests for function secrets. Consequence:
+      neither the API nor the CLI can read the pre-run VALUES back, so a restore cannot be
+      "read-then-write"; it must be "fingerprint-then-prove-supplied-value-then-write-then-re-fingerprint".
+      This cannot be confirmed without a management credential (none available to this role and the
+      current token belongs to a non-member account, see BG-0002); the design below is correct
+      under either interpretation and fails closed if the fingerprint algorithm is not sha256.
+  - classification: VERIFIED
+    statement: >
+      The database read path for the current season that the runner may use with SUPABASE_SECRET_KEY
+      is api.football_season_catalog(p_language, p_limit) (granted to anon/authenticated/service_role;
+      ordered is_current desc): today it returns first {id d03223b0-…, label "2026/2027",
+      isCurrent true, status active, startsOn 2026-09-24, endsOn 2026-09-24}. It does NOT expose the
+      provider season id; the 28647 mapping lives in app_private.football_provider_mappings, which
+      no api.* function exposes (api functions matching season/provider/mapping:
+      football_player_season_ratings, football_season_catalog, ingest_*_player_season_ratings,
+      news_*, resolve_football_mapping — a writer). The provider id therefore must be a reviewed
+      workflow input, cross-checked (a) against the provider (SportsMonks season 28647 is_current,
+      league 860, name equal to the catalog label — the existing sportsmonks-production-probe /
+      Gate 2F readiness check already does this) and (b) against the live secret fingerprint.
+    evidence: "supabase/migrations/20260802090000_football_season_browser.sql:9-71; read-only SELECT api.football_season_catalog('fr',3); read-only pg_proc listing of schema api; src/backend/football/supabase-repository.ts:89"
+  - classification: VERIFIED
+    statement: >
+      Evidence hygiene constraints for the new sanitized output: phase7f-scan-sanitized-evidence.py
+      fails on sbp_/sb_secret_/sb_publishable_ prefixes, `eyJ…` JWT shapes, `authorization:` headers
+      and the words access_token/refresh_token/token_hash/hashed_token/password; the credential grep
+      in the workflow fails on any literal secret value including G7_BACKFILL_TRIGGER; the log
+      sanitizer keeps only the last 80 lines and redacts the same shapes. 64-hex digests and secret
+      NAMES pass these rules; raw `secrets list` output must nevertheless stay in the runtime dir
+      (deleted by cleanup) and never be copied to the evidence dir, because under the alternative
+      interpretation the DIGEST column could be plaintext.
+    evidence: "scripts/backend/phase7f-scan-sanitized-evidence.py:11-20; workflow :331-352; scripts/backend/gate4-sanitize-command-log.ts:20-58"
+
+  # ---------- 3. Serialization ----------
+  - classification: VERIFIED
+    statement: >
+      Concurrency group botolago-production-v2-mutation (cancel-in-progress: false everywhere)
+      contains exactly 15 workflows: g7-production-historical-performance-backfill,
+      phase7e-b-production-migration-promotion, phase7f-production-api-identity-activation,
+      g5-production-two-season-backfill, g5-production-gnews-schedule, gate2c-production-historical-
+      catalog-canary, gate2d-production-historical-fixture-canary, gate2f-production-current-season-
+      catalog-canary, gate3b-production-historical-content-canary, gate4-production-news-ratings-canary,
+      news-elbotola-recovery, football-current-season-recovery, football-current-finished-
+      performances, fantasy-season-orchestrator, fantasy-manual-worker. CONTRADICTION with the task
+      premise: fantasy-season-orchestrator.yml (line 39) and football-current-season-recovery.yml
+      (line 26) ARE in the group; a queued run of either waits for G7 to finish rather than
+      overlapping it.
+    evidence: "grep 'group: botolago-production-v2-mutation' .github/workflows (15 hits); fantasy-season-orchestrator.yml:38-40; football-current-season-recovery.yml:25-27"
+  - classification: VERIFIED
+    statement: >
+      Neither fantasy-season-orchestrator nor football-current-season-recovery writes function
+      secrets: scripts/backend/current-season-recovery.ts builds an in-process `environment` object
+      (FOOTBALL_SPORTSMONKS_SEASON_ID: String(SEASON), a fresh in-memory trigger) and calls the shared
+      handlers directly with it; no `supabase secrets` / Bun.spawn / node_modules/.bin/supabase call
+      exists in current-season-recovery.ts, fantasy-season-orchestrator.ts, fantasy-lifecycle-runner.ts
+      or current-season-performances.ts. They are unaffected by G7's secret mutations and do not
+      undo them. Their schedules are gated: orchestrator hourly at :12 only if
+      vars.FANTASY_AUTOMATION_ENABLED == 'true' (BG-0004: must stay unset); recovery daily 07:43 UTC
+      only if vars.FOOTBALL_CURRENT_SCHEDULE_ENABLED == 'true' (current value UNKNOWN).
+    evidence: "current-season-recovery.ts:592-606; grep for secrets/spawn in the four scripts → no match; fantasy-season-orchestrator.yml:29-30, :53; football-current-season-recovery.yml:22-23, :39"
+  - classification: VERIFIED
+    statement: >
+      The workflows that DO rewrite the same function secrets are all owner-dispatched, in the group,
+      and set their own full scope (gate2c/2d/3b pin SEASON_ID 26027; gate2f pins 28647; gate4 pins
+      26027 via write-gate4-function-secrets.ts; g5 runner per season). No pg_cron job or
+      net.http_post in supabase/ invokes football-ingest, so no database-side scheduler can call the
+      worker with G7's transient configuration.
+    evidence: "grep FOOTBALL_SPORTSMONKS_SEASON_ID across .github/workflows; grep cron.schedule|net.http_post|functions/v1/football-ingest in supabase/ → only a unit-test URL"
+  - classification: VERIFIED
+    statement: >
+      A ready-to-use in-group serialization gap remains: `concurrency` only serializes GitHub jobs.
+      A manual dashboard edit of function secrets, or a `supabase secrets set` from a laptop, is not
+      serialized by anything; the runbook must forbid it during the run window.
+    evidence: "workflow :15-17 (group applies to jobs only)"
+
+  # ---------- 4. skip_deploy ----------
+  - classification: VERIFIED
+    statement: >
+      Production football-ingest is version 53, updated_at 1785705835936 (2026-08-02T21:23:55Z),
+      ezbr_sha256 ab740ad9f868a4807e7d4e469e45e7298ef332c9636eba16d484da0e0fee3927, verify_jwt true.
+      GET /v1/projects/{ref}/functions returns per function id, slug, name, status, version (number),
+      created_at, updated_at (number), verify_jwt, import_map, entrypoint_path, import_map_path,
+      ezbr_sha256 (scope edge_functions:read).
+    evidence: "mcp__Supabase list_edge_functions (2026-09-18); https://supabase.com/docs/reference/api/v1-list-all-functions"
+  - classification: VERIFIED
+    statement: >
+      skip_deploy=true is NOT usable for the real Option A run as things stand: BG-0034's A0 result
+      shows 64/240 season-26027 fixtures fail starter_rows_mismatch, so step A2 (worker change to
+      supabase/functions/_shared/sportsmonks-historical-player-performance.ts) must land and be
+      DEPLOYED before A4; version 53 (commit 5577bdb) will then no longer be the reviewed artifact.
+      skip_deploy is only legitimate when the live function's version AND ezbr_sha256 equal values
+      recorded for the reviewed commit; it must never be a default.
+    evidence: "docs/engineering/LAUNCH_LEDGER.yaml BG-0011 a0_result_2026_09_18 and BG-0034 result; Option A brief required_changes A2/A3"
+
+  # ---------- 5. Dependencies ----------
+  - classification: VERIFIED
+    statement: >
+      BG-0002 is still open: the refreshed SUPABASE_ACCESS_TOKEN authenticates but "belongs to an
+      account without access to project tkewgajrljbwgwedqsxn" (run 35343091384). Every `secrets
+      list/set/unset` and functions call in this brief needs a token from an organization member.
+      Nothing in this brief can be exercised live until then; that is why the acceptance tests are
+      fake-CLI unit tests plus a dry-run mode.
+    evidence: "LAUNCH_LEDGER.yaml BG-0002 preflight_retry_2026_09_18 / human_action_2"
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    The runner treats "restore" as "re-apply a compile-time season constant" (RESTORE_SEASON=26027 and
+    the whole 15-key 2025/26 env file) instead of "return production to what it was", and it places
+    that logic in an in-process `finally` that Bun does not execute on SIGINT/SIGTERM and that cannot
+    execute on SIGKILL; the workflow adds no `if: always()` restore step. Both halves were written on
+    2026-08-02 when 26027 happened to be the live season, so the bug was invisible; since the 2026/27
+    activation (28647) a successful, failed or cancelled run each leaves the live catalog/fixtures/
+    ratings ingestion pointed at a completed season and (on cancellation) with a live one-time trigger
+    secret still set.
+  secondary:
+    classification: VERIFIED
+    description: >
+      Scope is pinned to exactly [26027, 24319] in three coupled places (runner.validateManifest and
+      season loop, runner evidence header, ticket JSON + workflow-embedded dict + runner test), so the
+      owner's 26027-only decision cannot be executed without a coordinated change.
+
+required_changes:
+  - component: scripts/backend/g7-historical-performance-backfill-runner.ts — structure
+    change: >
+      Refactor main() into an exported `runHistoricalPerformanceBackfill(deps)` with injectable
+      { env, spawn (or cliPath), fetch, now, writeFile } and a thin CLI entry supporting three modes:
+      `--capture-only`, default (capture → mutate → restore → verify), and `--restore` (idempotent
+      restore+verify from the capture file). Add a `G7_DRY_RUN=1` guard mode that performs capture
+      and plans the restore but executes no `secrets set/unset` and no HTTP POST, writing the same
+      evidence shape with `dryRun: true`.
+    reason: "capture/restore/cancel paths must be unit-testable with a fake CLI; cancellation recovery needs an entry point that runs outside the killed process"
+  - component: runner — capture (before any mutation)
+    change: >
+      Run `supabase secrets list --project-ref <ref>` (text output only; never --output json/yaml/toml,
+      never --output-format json) with stdout captured to `<runtime>/capture-secrets.raw.log` (0600).
+      Parse the NAME/DIGEST table; for each of the 15 managed names record { present: boolean,
+      fingerprint: <DIGEST column or null> } into `<runtime>/pre-run-config.json` (0600, runtime dir
+      only). Fail closed (production_config_capture_failed) on non-zero exit, unparsable table, or
+      zero rows. Emit to EVIDENCE only { name, present, fingerprintSha256: sha256(fingerprint) } —
+      never the fingerprint itself.
+    reason: "the actual pre-run configuration must be known before it is overwritten; digests are the only read-back the platform offers"
+  - component: runner — restore plan proven BEFORE mutation
+    change: >
+      Build the restore env from reviewed inputs, not constants: SPORTSMONKS_API_TOKEN (same secret),
+      FOOTBALL_PROVIDER=sportsmonks, FOOTBALL_PROVIDER_BASE_URL, LEAGUE_ID=860, COUNTRY_CODE=MA,
+      COMPETITION_TYPE=league, TIMEOUT_MS, MAX_RETRIES, and the season-coupled keys SEASON_ID,
+      SEASON_START, SEASON_END, FIXTURE_FROM, FIXTURE_TO, TEAM_IDS from required workflow inputs
+      (G7_CURRENT_SEASON_ID etc.). For every name present pre-run, require
+      sha256hex(suppliedValue) == captured fingerprint (accept also suppliedValue == fingerprint to
+      stay correct if the API ever returns plaintext); any mismatch → refuse with
+      production_config_restore_unprovable and DO NOT MUTATE. Names absent pre-run are scheduled for
+      `secrets unset` (explicit names only). FOOTBALL_INGESTION_TRIGGER_SECRET: if absent pre-run →
+      unset after the run; if present pre-run → refuse to run (its value is unrecoverable) unless an
+      optional masked input G7_CURRENT_TRIGGER_SECRET is supplied AND its fingerprint matches, in
+      which case restore it. Cross-check G7_CURRENT_SEASON_ID: (a) api.football_season_catalog first
+      row isCurrent === true and its label equals the provider season name for that id, (b) provider
+      season is_current true, league 860 (reuse sportsmonks-production-probe), (c) fingerprint match.
+      Record the three booleans in evidence. Never write RESTORE_SEASON or any season literal into
+      the restore path; delete the constant.
+    reason: "restores must target the observed configuration; the platform cannot return values, so proof-by-fingerprint is the only way to know the supplied restore value equals the live one"
+  - component: runner — restore + verify (success, failure, and via --restore after cancellation)
+    change: >
+      Restore = one `secrets set --env-file <restore.env>` for the present names, then one
+      `secrets unset <absent names…>` (only if non-empty; explicit names), then re-run `secrets list`
+      and compare each of the 15 names against the capture (present → fingerprint equal; absent →
+      absent). Write `restoration: { attempted, setExit, unsetExit, verified, perName: [{name,
+      expectedPresent, observedPresent, fingerprintMatched}], verifiedAt }` into the result file, and
+      a marker `<runtime>/restore-verified` on success. Verdict is `fail` unless verified === true,
+      even when the backfill itself passed. The `--restore` mode reads pre-run-config.json and the
+      restore inputs, is a no-op when the marker exists, and otherwise performs restore+verify and
+      writes `restore-after-cancel.json` into the evidence dir.
+    reason: "restoration must be proven, not assumed; the same code path must be callable from a workflow post-step because the in-process finally cannot survive cancellation"
+  - component: runner — season scope
+    change: >
+      Read G7_SEASON_IDS (comma-separated) from the workflow input; require a non-empty, duplicate-free
+      subset of {26027, 24319} in manifest order; keep validateManifest requiring the shared preflight's
+      two-season manifest shape (the shared module is untouched) but iterate only the requested
+      subset; set evidence.requestedSeasonIds to the actual list; keep the 240-fixture invariant per
+      requested season. For this task the ticket pins ["26027"].
+    reason: "BG-0011-OWNER-2: 26027 only; 24319 must not be backfilled; no older history is deleted (the runner deletes nothing — ingestion is upsert-only)"
+  - component: scripts/backend/g7-historical-performance-backfill-runner.test.ts
+    change: >
+      Add fake-CLI tests (a shell/JS shim recorded in a temp dir; deps.cliPath points at it): capture
+      parses the NAME/DIGEST table and never copies raw output to evidence; refuse-before-mutate on
+      fingerprint mismatch, on trigger-present-without-input, on absent SEASON_ID; success path issues
+      set(season file) → HTTP batches → set(restore file) → unset(explicit names) → list, and verifies;
+      failure path (HTTP 503) still restores and verifies; simulated kill (throw before finally is
+      reached / process.exit in a subprocess) leaves pre-run-config.json, and `--restore` then restores,
+      verifies, and is idempotent on second call; `secrets unset` is never invoked with zero names;
+      dry-run mode performs no set/unset/POST; ticket/workflow-dict/evidence header parity for
+      requestedSeasonIds ["26027"] (parse the workflow's Python dict as BG-0034's test does).
+    reason: "acceptance criteria of BG-0033 (unit test) and of the owner conditions"
+  - component: scripts/backend/g7-historical-performance-backfill-preflight.ts (+ test)
+    change: >
+      Keep calling the shared two-season preflight (read-only, proves both seasons still exist at the
+      provider); additionally read G7_SEASON_IDS, validate the same subset rule, and write
+      `requestedSeasonIds` (actual) next to the manifest so the runner and the preflight cannot
+      disagree. Do NOT modify sportsmonks-two-season-backfill-preflight.ts (shared with G5).
+    reason: "scope relaxation without touching the shared module"
+  - component: .github/workflows/g7-production-historical-performance-backfill.yml
+    change: >
+      Inputs: season_ids (string, required, no default; ticket pins "26027"), current_season_id
+      (required; expected 28647), current_season_start / current_season_end / current_fixture_from /
+      current_fixture_to / current_team_ids (required, or a single reviewed current-runtime JSON
+      input), skip_deploy (boolean, default false) plus expected_function_version and
+      expected_function_ezbr_sha256 (required when skip_deploy). Guards: extend the embedded expected
+      ticket dict to the new fields (same commit as the JSON); when skip_deploy, a step calls
+      GET https://api.supabase.com/v1/projects/$REF/functions with the access token and fails unless
+      football-ingest.version == expected_function_version AND ezbr_sha256 ==
+      expected_function_ezbr_sha256 (today 53 / ab740ad9…); otherwise the link/db push/deploy steps run
+      as before. New step "Capture pre-run function configuration" (id capture, before migrations/
+      deploy) = `bun runner.ts --capture-only`. New step "Restore production function configuration"
+      with `if: always() && steps.capture.outcome == 'success'`, placed IMMEDIATELY after the mutation
+      step and BEFORE command_logs/evidence_scan/upload/cleanup, running `bun runner.ts --restore`
+      with its own raw.log/.exit files; its outcome joins the finalize verdict (RESTORE_OUTCOME).
+      Keep cleanup last so the capture file, restore log and marker still exist for the restore step
+      and the sanitized logs are uploaded. Rename step 'Backfill 480 completed fixtures…' to a
+      scope-neutral title; keep every existing guard and the concurrency group.
+    reason: "finally cannot survive cancellation; a post-step under always() has ~5 minutes and runs inside the same concurrency slot; skip_deploy needs an artifact identity check, not a flag"
+  - component: docs/production/g7-historical-performance-backfill-trigger.json
+    change: >
+      New requestId (g7-historical-performance-backfill-2026-09-18-01), requestedSeasonIds [26027],
+      new keys: restorePolicy { source: "captured_pre_run_fingerprints", triggerSecret:
+      "unset_if_absent_else_restore_or_refuse", verifyAfterRestore: true }, currentSeasonId 28647,
+      skipDeployRequiresFunctionIdentity true. Updated byte-for-byte together with the workflow's
+      embedded dict and the runner test (BG-0034 pattern).
+    reason: "the ticket is the reviewed record the workflow deep-equals"
+  - component: docs/backend/G7_HISTORICAL_PERFORMANCE_BACKFILL_RUNBOOK.md (new) or FOOTBALL_OPERATIONS_RUNBOOK.md section
+    change: >
+      Document: the 15 managed secret names; the capture/prove/restore/verify sequence; the run-window
+      rule (no dashboard or laptop `secrets set`, orchestrator variable stays unset, no manual dispatch
+      of any group workflow, in-group schedules queue behind G7 and are safe); how to run `--restore`
+      manually from a fresh dispatch if the post-step itself was killed (inputs identical, capture file
+      gone → the manual path is: dispatch with G7_SEASON_IDS empty? NO — instead a dedicated
+      `restore_only: true` input that captures nothing and applies the reviewed current-runtime inputs,
+      then verifies by fingerprint); what evidence fields prove restoration.
+    reason: "operators need the recovery path for the double-failure case (post-step also terminated)"
+
+constraints:
+  - "Read-only role: nothing was modified, dispatched or written; production statements are SELECTs, list_edge_functions and docs fetches."
+  - "BG-0002: no valid organization-member management token exists; every secrets/functions call is untestable live until it does."
+  - "Do not touch sportsmonks-two-season-backfill-preflight.ts (shared with G5), worker code, migrations, src/**, or any other workflow."
+  - "Never pass `--output json|yaml|toml` or `--output-format json` to `supabase secrets list`; never call `secrets unset` without explicit names; never write raw list output outside the runtime dir."
+  - "Evidence rules (phase7f scanner, credential grep, 80-line sanitizer) apply to every new file in the evidence dir; sha256 hex digests and secret names are allowed, values are not."
+  - "Restore post-step must finish within GitHub's 5-minute post-cancellation window (three CLI calls, seconds each)."
+  - "GITHUB_RUN_ATTEMPT must remain 1: a cancelled run cannot be re-run, only re-dispatched; the `--restore`/restore_only path must therefore work from a fresh dispatch."
+  - "The one-time trigger secret is masked via ::add-mask and G7_BACKFILL_TRIGGER; the restore step must export it for the sanitizer exactly as the existing always() steps do."
+
+risks:
+  - severity: HIGH
+    risk: "Fingerprint algorithm assumption wrong (API `value` is not sha256(value)) → the pre-mutation proof never matches and the runner refuses to start."
+    mitigation: "Fail-closed by design; a --capture-only dispatch (no mutation) reveals the fingerprint shape after BG-0002 is fixed; the equality fallback covers the plaintext case."
+  - severity: HIGH
+    risk: "FOOTBALL_INGESTION_TRIGGER_SECRET is currently present in production (unknown since 2026-08-02) → strict policy refuses to run."
+    mitigation: "--capture-only dispatch first; owner decides between supplying G7_CURRENT_TRIGGER_SECRET or accepting an explicit 'unset and re-issue' exception recorded in the ticket."
+  - severity: HIGH
+    risk: "Double failure: the mutation step is killed and the always() restore post-step is also terminated (5-minute cap, runner outage) → production stays on 26027 with a live trigger."
+    mitigation: "restore_only dispatch path in the workflow + runbook; finalize verdict red on RESTORE_OUTCOME != success; A4 checklist item: confirm fingerprints via a capture-only dispatch after any red run."
+  - severity: MEDIUM
+    risk: "Current-runtime inputs (SEASON_START/END, FIXTURE_FROM/TO, TEAM_IDS) are unknown to the reviewer; if any is present pre-run with an unexpected value the proof fails."
+    mitigation: "That is the desired behaviour; a capture-only dispatch lists presence and digests so the inputs can be reviewed before the real dispatch."
+  - severity: MEDIUM
+    risk: "skip_deploy misuse after A2 lands leaves the old worker (version 53) serving the run."
+    mitigation: "identity check on version + ezbr_sha256 recorded in the ticket; default false."
+  - severity: MEDIUM
+    risk: "Ticket JSON, workflow dict, runner evidence header and runner test drift."
+    mitigation: "single commit; parity unit test parsing the workflow dict (BG-0034 pattern); config-integrity guard on the workflow."
+  - severity: LOW
+    risk: "Gate 2F rollback file still pins 26027 (same defect class) — not in scope here."
+    mitigation: "record as a new ledger item; do not fix inside BG-0033."
+
+contradictions:
+  - "Task premise says fantasy-season-orchestrator and football-current-season-recovery are NOT in botolago-production-v2-mutation; both ARE (lines 39 and 26). They also do not rewrite function secrets. The operational rule stands (keep FANTASY_AUTOMATION_ENABLED unset, no manual dispatch) but for calendar/digest reasons, not for secret-clobbering reasons."
+  - "Option A brief A3(iii) proposed 'fix RESTORE_SEASON to the current provider season or read it from an input'; a constant or a bare input is insufficient — five other season-coupled keys are overwritten and restoration must be proven against the captured state, not asserted."
+  - "The task's fallback ('management API returns values → can restore') is very likely unavailable: the field named `value` is what the CLI prints as DIGEST. Design assumes no read-back."
+  - "skip_deploy=true was suggested for A4 in the Option A brief; after A2 (mandatory per A0's 64/240 result) it cannot be true for the same reviewed commit."
+  - "BG-0033 ledger acceptance ('restore value read from the current season / required input') under-specifies: the acceptance must be 'restored to captured pre-run fingerprints and verified'."
+
+unknowns:
+  - "Whether GET /v1/projects/{ref}/secrets `value` is sha256(secret), another digest, or plaintext (no member token to test)."
+  - "Which of the 15 managed names are present in production today and with what digests (last known writer: the 2026-08-02 G7 finally; Gate 2F pins 28647 only if it ran later)."
+  - "Whether FOOTBALL_INGESTION_TRIGGER_SECRET is currently set."
+  - "Value of vars.FOOTBALL_CURRENT_SCHEDULE_ENABLED (daily 07:43 UTC recovery); irrelevant to secrets but affects run-window scheduling."
+  - "Behaviour of v1BulkDeleteSecrets when a named secret does not exist (200 vs 4xx) — the runner should treat non-zero unset as verified-by-list rather than by exit code."
+  - "Whether Bun 1.3.14 differs from 1.3.11 in SIGINT handling (assumed identical; both default-exit without running finally)."
+
+acceptance_tests:
+  - "Unit (fake CLI): capture parses a NAME/DIGEST table for the 15 names, records present/absent, writes fingerprints only to the runtime dir and sha256-of-fingerprint to evidence."
+  - "Unit: with a present SEASON_ID whose fingerprint != sha256(G7_CURRENT_SEASON_ID) the runner exits production_config_restore_unprovable and the fake CLI recorded zero `set`/`unset` calls and zero HTTP POSTs."
+  - "Unit: trigger secret present pre-run and no G7_CURRENT_TRIGGER_SECRET → refuse before mutation; with a matching input → restored (set includes it, unset excludes it)."
+  - "Unit: success path — call order is list, set(season), POST×n, POST derive, set(restore), unset(explicit absent names), list; verification true; evidence restoration.verified true; no season literal 26027 appears in the restore env when the captured/proved current season is 28647."
+  - "Unit: HTTP 503 mid-run → same restore+verify sequence, verdict fail with the batch code, restoration.verified true."
+  - "Unit: simulated kill after mutation (subprocess killed with SIGKILL) → pre-run-config.json exists, no marker; `--restore` performs set/unset/list, verifies, writes restore-after-cancel.json; a second `--restore` is a no-op."
+  - "Unit: `secrets unset` never invoked with zero names; `--output` never passed to `secrets list`."
+  - "Unit: G7_DRY_RUN=1 performs capture only and exits 0 with dryRun:true evidence; season_ids '24319' or '26027,26027' or '' are rejected; '26027' accepted."
+  - "Unit: parity — ticket JSON == workflow embedded dict == runner evidence header == preflight requestedSeasonIds for [26027]."
+  - "Static: bun test (runner, preflight, sanitize, worker tests listed in the quality step), bun run typecheck, backend:secrets:check, config:integrity:check pass; workflow still contains GITHUB_WORKFLOW_RERUN_FORBIDDEN, no push: trigger, upload before cleanup, restore step before command_logs."
+  - "Live (after BG-0002, owner dispatch): a --capture-only dispatch uploads sanitized evidence listing 15 names with presence booleans; a subsequent real dispatch ends with restoration.verified true; a post-run capture-only dispatch shows fingerprints equal to the pre-run ones and FOOTBALL_INGESTION_TRIGGER_SECRET absent."
+  - "Negative live: cancelling the run during batches leaves the always() restore step green and the finalize step red; the next capture-only dispatch matches pre-run fingerprints."
+
+implementation_scope:
+  builder_type: Builder-DevOps
+  allowed_paths:
+    - scripts/backend/g7-historical-performance-backfill-runner.ts
+    - scripts/backend/g7-historical-performance-backfill-runner.test.ts
+    - scripts/backend/g7-historical-performance-backfill-preflight.ts
+    - scripts/backend/g7-historical-performance-backfill-preflight.test.ts (new)
+    - .github/workflows/g7-production-historical-performance-backfill.yml
+    - docs/production/g7-historical-performance-backfill-trigger.json
+    - docs/backend/G7_HISTORICAL_PERFORMANCE_BACKFILL_RUNBOOK.md (new) or a new section in docs/backend/FOOTBALL_OPERATIONS_RUNBOOK.md
+    - docs/engineering/LAUNCH_LEDGER.yaml (BG-0033 entry only)
+  forbidden_paths:
+    - supabase/functions/** (worker code — step A2 is a separate task)
+    - supabase/migrations/**
+    - src/**
+    - scripts/backend/sportsmonks-two-season-backfill-preflight.ts (shared with G5)
+    - any other .github/workflows/*.yml (including gate2f's own 26027 rollback file — new ledger item)
+    - any dispatch of any workflow; any `supabase secrets` or management-API write; any credential
+
+status: DONE
+note_to_chief: >
+  Three things change the plan. (1) Restoration cannot be read-then-write: the platform returns only
+  digests (the CLI's DIGEST column IS the API `value`), so the runner must prove the supplied
+  current-runtime values against captured fingerprints before it mutates, and re-prove after — six
+  season-coupled keys, not one. (2) A `finally` is worthless under cancellation (reproduced: Bun exits
+  on SIGINT/SIGTERM without running it; SIGKILL follows anyway), so the workflow needs an
+  `if: always()` restore step that runs `bun runner.ts --restore` before evidence/cleanup, plus a
+  restore_only dispatch path for the double-failure case. (3) skip_deploy=true is off the table for A4
+  once A2 ships; gate it on function version + ezbr_sha256 identity, default false. Everything here is
+  still blocked live by BG-0002 (token from a non-member account); the first live action after it is
+  fixed should be a --capture-only dispatch, which also answers whether the trigger secret is present.

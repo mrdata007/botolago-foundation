@@ -34,7 +34,7 @@ export function BottomNav() {
               aria-current={active ? "page" : undefined}
               aria-label={t(item.labelKey)}
               className={cn(
-                "relative flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] font-semibold",
+                "relative flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[11px] font-semibold",
                 "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
                 active
@@ -57,7 +57,7 @@ export function BottomNav() {
                 }}
               />
               <Icon className={cn("h-5 w-5 shrink-0", active && "drop-shadow-sm")} aria-hidden />
-              <span className="truncate leading-none">{t(item.labelKey)}</span>
+              <span className="max-w-full truncate leading-none">{t(item.labelKey)}</span>
             </Link>
           );
         })}

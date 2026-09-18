@@ -1,0 +1,35 @@
+BG-0027 — PR #136 (agent/BG-0027-ratings-fail-closed) — CI run 35346523879
+Head SHA: 952bdef8859d55d1aac3c5d7fb8db6011f216727
+Fetched: 2026-09-18T13:xx:xxZ (Chief check-in)
+
+database-quality job 105604272781 — conclusion: success
+
+Migration chain applied cleanly through 20260918150000_fantasy_rating_degeneracy_guard.sql
+(last four migrations before pgTAP run):
+  20260918120000_fantasy_calendar_sync.sql
+  20260918130000_fantasy_deadline_watch.sql
+  20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql
+  20260918150000_fantasy_rating_degeneracy_guard.sql
+
+backend:db:test (supabase test db --local supabase/tests/database):
+  fantasy_rating_degeneracy_guard.test.sql ......... ok
+  (all 40 files ok)
+  All tests successful.
+  Files=40, Tests=821,  7 wallclock secs
+  Result: PASS
+
+backend:db:lint (supabase db lint --local --schema app,api,app_private --level warning --fail-on error):
+  Linting schema: app / api / app_private
+  No schema errors found
+
+backend:types:check (bun scripts/backend/check-generated-types.mjs):
+  Generated database types are current.
+
+application-quality job 105604273182 — conclusion: success
+staging-functional — skipped (expected; not applicable to this branch)
+
+Overall PR #136 check-run state at this excerpt: 3/3 non-skipped applicable jobs green
+(database-quality success, application-quality success, staging-functional skipped).
+Vercel deployment checks ("botolagoapp", "botolago-foundation") remain in "failure" state due to
+the Vercel free-plan build-rate-limit ("Deployment rate limited — retry in 24 hours"), unrelated
+to this PR's diff; standing-down comment already posted on the PR.

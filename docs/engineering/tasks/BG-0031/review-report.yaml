@@ -1,0 +1,168 @@
+task_id: BG-0031
+reviewed_commit: "96acad3 (origin/agent/BG-0031-season-bounds-guard, detached checkout in /home/user/bg0031-review; merge-base with origin/main = db76141002170166fdfa17472ee43dcc272df509; origin/main at review time = c3fb050, 59 migrations, no conflict)"
+verdict: PASS
+defects: []
+release_blockers:
+  - "MERGE GATE (blocks MERGE, not only promotion): merge only through a pull request whose backend-quality.yml run is green, specifically the database job (backend:db:start -> backend:db:reset -> backend:db:test -> backend:db:lint). That job is the first execution of supabase/tests/database/season_bounds_guard.test.sql and of the five pre-existing pgTAP files that call the replaced RPC on a Supabase stack. Under the owner's standing rule an unexecuted SQL test is not verification, so this PASS is founded on the production rolled-back rehearsal (V4) and is VOID if that CI job is red: a red season_bounds_guard.test.sql returns the task to Builder-Backend as a defect (expected values are hand-derived in the ImplementationReport and independently confirmed below), and no fast-forward or direct push to main is acceptable for this branch."
+  - "PROMOTION GATE: the owner's one-row production correction (`update app.seasons set ends_on = date '2027-06-30', bounds_locked_at = now(), bounds_locked_reason = 'BG-0031 owner correction 2027-06-30' where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584' and ends_on = date '2026-09-24'`) is still mandatory before 2026-09-25T00:00Z (Option A time box 2026-09-23T00:00Z). The rehearsal proved the guard keeps 2026-09-24 as-is (floor is not applied upward); the migration writes no data. Promote batch season_bounds_guard (RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD) and apply the correction with the workflows on HOLD; any dispatch of fantasy-season-orchestrator / football-current-season-recovery before both are live re-clobbers the row."
+  - "ORDERING: if BG-0027's 20260918150000_fantasy_rating_degeneracy_guard.sql reaches main before this branch, its batch must be inserted before season_bounds_guard in the promoter manifest and the season_bounds_guard prefix assertion moves 59 -> 60 (test_batches_cover_the_exact_ordered_migration_chain would otherwise fail on main). Not the case at c3fb050 (59 migrations, no 20260918150000)."
+status: DONE
+
+# ---------------------------------------------------------------------------
+# Reviewer evidence (fresh context; inputs: brief objective, EngineeringBrief,
+# ImplementationReport on the branch, VerificationReport on origin/main,
+# `git diff db76141..96acad3`). No edits, no commits, no production access.
+#
+# R1 scope / forbidden paths: diff touches exactly 7 paths
+#   M .github/workflows/phase7e-b-production-migration-promotion.yml (1 line)
+#   M docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md (+27)
+#   A docs/engineering/tasks/BG-0031/implementation-report.yaml
+#   M scripts/backend/phase7e-production-migration-promoter.py (+7)
+#   M scripts/backend/tests/test_phase7e_production_migration_promoter.py (+13/-3)
+#   A supabase/migrations/20260918160000_season_bounds_guard.sql (+351)
+#   A supabase/tests/database/season_bounds_guard.test.sql (+442)
+#   No existing migration, src/**, supabase/functions/**, other scripts/backend
+#   file, or workflow gate touched. The three promoter files are the
+#   Chief-approved scope addition; the workflow change is one enum option.
+#   Note: the pgTAP cases live in a NEW file rather than
+#   football_ingestion.test.sql as brief rank-5 suggested; the brief's
+#   allowed_paths did not list a new test file, the coordinator's task text
+#   ("database tests") and the Verifier's instruction did. Not a defect
+#   (supabase/tests is not a forbidden path; existing files were not weakened).
+#
+# R2 RPC copy fidelity (done myself):
+#   diff <(sed -n 78,326p 20260731180229_...) <(sed -n '57,$p' 20260918160000_...)
+#   -> exactly 29a30,37 / 158a167,204 / 232c278; nothing else. tail -7 of both
+#   files identical (revoke all from public, anon, authenticated, service_role;
+#   grant execute to service_role; same comment). Header identical: security
+#   definer, set search_path = ''. `grep -ln "function api.ingest_football_catalog_entity"`
+#   -> only 20260731180229 and the new file.
+#
+# R3 trigger: app_private.protect_locked_season_bounds() is language plpgsql,
+#   security invoker, set search_path = '', body restores NEW.starts_on/ends_on
+#   only when OLD.bounds_locked_at is not null AND NEW.bounds_locked_at is not
+#   distinct from OLD; revoke/grant-to-postgres footer matches set_updated_at
+#   and the identity-domain trigger functions; drop-if-exists + create trigger
+#   BEFORE UPDATE FOR EACH ROW. Matches brief rank 2 exactly.
+#
+# R4 guard arithmetic (read lines 223-270):
+#   - floor = greatest(existing ends_on, max fixture UTC date, max
+#     team_memberships.valid_to, max fantasy_seasons.ends_at UTC date).
+#     greatest() ignores NULL operands and existing ends_on is NOT NULL, so
+#     floor >= existing ends_on always -> ends_on monotone non-decreasing even
+#     for a season with no fixtures/memberships/fantasy season.
+#   - equality rule `v_ends_on <= v_starts_on` and floor rule `v_ends_on <
+#     v_floor_ends_on` (strict): an endsOn equal to the floor is accepted
+#     (test 3b relies on this and the expectation is correct); both evaluate on
+#     the RAW provider startsOn before the starts_on rule runs, which is the
+#     brief's rule (b) as written.
+#   - starts_on rule: preserved only when a first fixture exists and provider
+#     start > first fixture date. Column types confirmed: kickoff_at
+#     timestamptz, valid_to date, ends_at timestamptz -> the `at time zone
+#     'UTC'` casts are type-correct.
+#   - v_result_extra defaults to '{}' and is assigned only in the season
+#     UPDATE arm; `|| v_result_extra` leaves all other results byte-identical.
+#   - Both TS callers (sportsmonks-catalog.ts ingestOutcome, supabase-gateway
+#     catalogOutcome) read only `.outcome` and accept extra keys; no strict
+#     schema. The five pre-existing pgTAP callers exercise only the season
+#     INSERT branch and assert ->> 'outcome' only, so they are unaffected.
+#
+# R5 pgTAP file read for schema correctness (independent of the Verifier):
+#   every direct insert satisfies the NOT NULL set and CHECKs of app.teams
+#   (name/short_name lengths, code ^[A-Z0-9]{2,8}$), app.players, app.fixtures
+#   (teams differ, source_version length, validate_fixture_catalog: season's
+#   competition_id equals the fixture's; round_id null), app.team_memberships
+#   (shirt 8, valid_to >= valid_from), app.fantasy_competitions (unique
+#   football_competition_id), app.fantasy_seasons (ends_at > starts_at,
+#   ruleset f6100000-...-100 seeded by 20260720163222, status 'planned').
+#   Provider 'sportsmonks' and country MA seeded by 20260731180229. Fixed UUIDs
+#   collide with nothing in migrations. `is(jsonb - 'id', jsonb)` and
+#   `is(date[], date[])` are valid pgTAP anyelement comparisons. Hand-check of
+#   all 27 expectations against the arithmetic in R4 agrees with the
+#   ImplementationReport's hand_derived_expectations (incl. case 2 flags
+#   true/true and case 3b false/true).
+#
+# R6 commands run here: python3 -m unittest .../test_phase7e_production_migration_promoter.py
+#   -> Ran 11 tests OK; `bun run backend:migrations:check` -> Validated 60
+#   migration(s); `bun run typecheck` -> tsc --noEmit exit 0. Merge simulation:
+#   main (c3fb050) changed the same two promoter files in an unrelated region
+#   (ownership-guard diagnostic, BG-0039); git merge-tree reports 0 conflicts;
+#   a scratch three-way `git merge-file` of both files + the branch's migration
+#   inventory -> Ran 16 tests OK. Manifest last batch season_bounds_guard,
+#   prefix 59, total 60, confirmation RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD.
+#
+# R7 VerificationReport: V1-V4, V6, V7 VERIFIED with evidence I could
+#   cross-check (diff hunks, grants, index names, rehearsal outputs consistent
+#   with the arithmetic in R4: floor 2027-06-30 from memberships and
+#   fantasy_seasons, equality rule also true, row kept at 2026-09-24). V5
+#   honestly NOT_TESTABLE. V4d shows production unchanged after the rehearsal.
+#
+# ---------------------------------------------------------------------------
+# Explicit judgements requested by the coordinator
+#
+# J1 RPC flag discrepancy under lock (endsOnPreserved=false while the row is
+#   unchanged, rehearsal b2 / test 4b): FOLLOW-UP, not a defect against the
+#   brief. Rank 1 specifies the flag as the RPC's own monotone/provisional
+#   decision; rank 2 is a separate table-level control and the brief's
+#   acceptance test #3 asks only that the row not move under lock (it does
+#   not). The flag is also not consumed by either production caller today
+#   (both reduce to `outcome`), so no ingestion evidence is currently
+#   misreported; the brief's stated purpose "so ingestion evidence shows it"
+#   is only reachable once BG-0038 touches sportsmonks-catalog.ts. Recommended
+#   follow-up (BG-0038 or a small additive task): read bounds_locked_at in the
+#   existing SELECT, force both flags true and add 'boundsLocked': true, and
+#   surface the keys in the run evidence.
+#
+# J2 Residuals (starts_on may still move EARLIER without limit; ends_on may be
+#   EXTENDED without limit when unlocked): WITHIN the brief's rank 1 design,
+#   not a defect. Rank 1(a) is explicitly monotone (acceptance test #2
+#   REQUIRES a later, larger endsOn to be accepted); rank 1(c) guards only a
+#   start later than the first fixture; the brief's own reason for rank 2
+#   says "rank 1 alone still lets the provider extend/shift bounds in
+#   surprising ways" and assigns the lock as the mitigation, which is
+#   delivered. The risks line "include starts_on in the guard" is satisfied
+#   by rule (c). Follow-up candidate for the owner: whether an earlier
+#   provider start should also be floored (e.g. never before the first
+#   fixture minus N days) - a new requirement, not this task's.
+#
+# J3 No-fixture one-day-season edge (stored X..X, payload Y..Y with Y > X and
+#   no fixtures -> ends_on preserved at X, starts_on Y accepted ->
+#   seasons_date_range_check -> 22023 INVALID_PROVIDER_PAYLOAD): ACCEPTABLE
+#   fail-loud. The RPC call aborts, the row is untouched, the caller counts
+#   `rejected` and continues the dependency chain; nothing is silently written.
+#   It is the literal consequence of brief rules (b) and (c). It self-resolves
+#   once the provider publishes ending_at > starting_at at or above the floor
+#   (both bounds then pass). Production 2026/27 has a fixture on its start
+#   day and is not affected. Follow-up (Chief decision, as the Builder
+#   flagged): also preserve starts_on when the preserved ends_on would be <
+#   the provider start, and consider a distinct error label so an ingestion
+#   run does not report a guard decision as a payload error.
+#
+# J4 pgTAP never executed on a Supabase stack: INSUFFICIENT on its own under
+#   the owner's rule, which is why it is a release blocker rather than
+#   ignored - but it does not convert to FAIL, because (a) no criterion is
+#   refuted: the guard, the trigger, the grants and the production shape were
+#   executed for real in the rolled-back production rehearsal (cases 1, 1b-
+#   equivalent b5, 3, 4a-4e) and the Verifier reported V5 as NOT_TESTABLE, not
+#   as verified; (b) the only place the file can execute is CI, and CI is
+#   wired as the merge gate itself (backend-quality.yml runs on pull_request;
+#   branch protection requires both quality jobs; the db job runs
+#   backend:db:reset + backend:db:test over all 60 migrations and 39 test
+#   files); (c) the Builder cannot run it either, so a FAIL would loop without
+#   producing new evidence. The gate that must still run before promotion is
+#   therefore the PR's backend-quality database job, and it blocks MERGE (the
+#   merge must be the PR merge after that job is green), which transitively
+#   blocks promotion. If that job is red the verdict is void (see
+#   release_blockers[0]).
+#
+# Other observations (non-blocking):
+#   - LAUNCH_LEDGER.yaml was not edited (brief listed it; Chief-owned) - the
+#     regression record and the re-clobber rule went into
+#     FANTASY_2026_27_BRIDGE_ACTIVATION.md; the ledger should carry the
+#     correction timestamp when the owner applies it.
+#   - The migration takes ACCESS EXCLUSIVE on app.seasons for the ALTER TABLE;
+#     trivial duration in rehearsal. No backfill, idempotent re-run
+#     (add column if not exists / drop trigger if exists / create or replace).
+#   - Every run still rewrites label/competition_id/is_current and bumps
+#     updated_at (source digest keeps drifting) until BG-0038 fixes freshness();
+#     the guard makes that rewrite harmless for the bounds only.

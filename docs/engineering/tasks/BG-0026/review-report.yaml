@@ -1,0 +1,79 @@
+task_id: BG-0026
+reviewed_commit: "76916e2 (origin/agent/BG-0026-rtl-fixes; merge-base with origin/main = 535945f)"
+verdict: PASS
+defects: []
+release_blockers: []
+status: DONE
+
+reviewer_workspace: "/home/user/bg0026-review (detached at 76916e2, bun install --frozen-lockfile). Dev server vite :4195 started from this worktree for the spot-check and stopped afterwards (PID 29311 and its wrapper; port 4195 closed, no other process touched). Scripts/output: scratchpad/bg0026-review/{bidi.mjs,bidi.png,nav.mjs,nav.log,nav-fr.png,nav-ar.png,select-ar.png}."
+
+inputs_read:
+  - docs/engineering/tasks/BG-0026/engineering-brief.yaml (branch): objective, required_changes, constraints, implementation_scope, T1-T7
+  - docs/engineering/LAUNCH_LEDGER.yaml @origin/main, BG-0026 scope_mutation_1 (approved_by Chief, 2026-09-18)
+  - docs/engineering/tasks/BG-0026/implementation-report.yaml (branch)
+  - docs/engineering/tasks/BG-0026/verification-report.yaml @origin/main (status PASS)
+  - "git diff 535945f..HEAD (22 files: 14 src files, implementation report, 7 evidence PNGs) - read in full"
+
+hard_fail_checks:
+  - check: forbidden path touched
+    result: NONE
+    evidence: "git diff --name-only 535945f..HEAD filtered against src/i18n, supabase/, scripts/, src/backend, DateStrip, GameweekSelector, src/components/fpl/, splash/, welcome/, auth.verify, tests/, .github, package.json, bunfig, vite.config and the 15 dead primitives -> empty. sheet.tsx:51/53 and dialog.tsx:44 on HEAD still read left-0 rounded-r-[...] / right-0 rounded-l-[...] / left-[50%] ... translate-x-[-50%]."
+  - check: class-(b) token mapped
+    result: NONE
+    evidence: "T2 broad inventory on HEAD = 82 tokens; per-file: sidebar 20, menubar 11, context-menu 11, carousel 6, calendar 6, sheet 4, navigation-menu 4, table 3, scroll-area 2, resizable 2, pagination 2, command 2, alert 2, alert-dialog 2, drawer 1, dialog 1, accordion 1, SplashScreen 1, SquadListTable 1 - equals the brief's post-change table; only the 31 class-(a) tokens left the inventory."
+  - check: silent scope expansion
+    result: NONE
+    evidence: "The two deviations from the original allowed_paths (BottomNav.tsx:37 px-2 -> px-0.5; matches.index.tsx dir destructure + one dir={dir} prop) are exactly the ledger's scope_mutation_1. git diff on matches.index.tsx is 2 lines: `const { t, tr, lang, dir } = useI18n();` and `dir={dir}` on <Select>. Nothing else outside the brief's line-level allowances except prettier line-wrapping of the single edited element in dialog.tsx and fantasy.fixtures.tsx (see judgment 3)."
+  - check: user-facing behaviour differing materially from the brief
+    result: NONE
+    evidence: "Each required_change is implemented token-for-token (select 3, dropdown-menu 9, sonner 10, sheet 1, dialog 1, input-otp 4, auth.profile-setup 1, styles.css +1 rule after the chevron-right rule, 4 rtl:rotate-180 removals, BottomNav max-w-full, fixtures dir=\"auto\"). Behaviour changes confirmed in the browser match D1/D2/D5 fixes; fr pages pixel-equivalent per the Verifier outside the nav label row."
+  - check: missing evidence
+    result: NONE
+    evidence: "T1-T6 have Builder and Verifier evidence and were re-executed by the Reviewer (below). T7 is NOT_TESTABLE for both roles for the reason the brief itself anticipates (constraint: 'Public unauthenticated routes only for verification'); the mechanism was reproduced in isolation by the Reviewer (judgment 2). No required test was deleted or weakened; no test file changed; no migration or secret involved."
+
+reviewer_spot_checks:
+  - test: T1 class-(a) invariant
+    result: VERIFIED
+    evidence: "rg -P ... over select/dropdown-menu/sonner/input-otp/auth.profile-setup -> no output, rc=1. rg 'text-left|left-\\[50%\\]' sheet/dialog -> exactly src/components/ui/dialog.tsx:44 left-[50%]."
+  - test: T2 class-(b)/(c) unchanged
+    result: VERIFIED
+    evidence: "Broad inventory over src (*.ts,*.tsx) = 82; per-file table above. git diff --name-only 535945f origin/main -- <the 14 branch src files> -> empty (no overlap with main's advance)."
+  - test: T3 chevron contract
+    result: VERIFIED
+    evidence: "styles.css:430 html[dir=\"rtl\"] .lucide-chevron-left { transform: scaleX(-1); } (styles.css:531 .fpl-root .lucide-chevron-left { } is a pre-existing empty rule on main). rg 'rtl:rotate-180' src --glob '!src/components/ui/**' -> none. WelcomeScreen.tsx rtl: lines 65 and 80 intact. All live ChevronLeft call sites outside ui/ (primitives.tsx:38, GameweekSelector.tsx:33, fantasy.points.tsx:192, fantasy.rankings.tsx:221, DateStrip.tsx:96-97) are back/prev affordances, so the global rule has no unintended target; pagination.tsx/calendar.tsx are dead."
+  - test: T4 typecheck / test
+    result: VERIFIED
+    evidence: "bun run typecheck -> tsc --noEmit rc=0. bun run test -> 693 pass, 0 fail, 5902 expect() calls, 693 tests across 117 files (same file count as main per the Verifier; no test file in the diff)."
+  - test: T5(c) BottomNav at 390px (reproduced on :4195, ar and fr, /profile)
+    result: VERIFIED
+    evidence: |
+      Every Link: 69.6 x 45 px, padding 2px/2px, span class max-w-full truncate leading-none, overflow hidden, text-overflow ellipsis.
+      fr: Accueil 33.6..78 | Actualités 94.2..156.6 | Fantasy 170.7..219.3 | Matches 238.6..290.6 | Profil 317.7..350.7 - all inside their slot, none ellipsized.
+      ar: الرئيسية, الأخبار, فانتازي, المباريات inside, not ellipsized; الملف الشخصي span 23..88.6 within slot 21..90.6, clientW 66 < scrollW 86, ellipsized=true.
+      Pairwise span overlaps: [] in both languages. Numbers identical to the Verifier's table. Crops nav-fr.png / nav-ar.png.
+  - test: T6 runtime Select on /matches ar (reproduced on :4195)
+    result: VERIFIED
+    evidence: "listbox dir=rtl, option direction rtl, option padding-left 32px / padding-right 8px (ps-2/pe-8 resolved RTL), indicator computed left 8px / right 149.875px, x=23 with item 15..187 -> at inline-end."
+  - test: T7 mechanism (isolated reproduction, not the authenticated page)
+    result: VERIFIED (mechanism); page itself NOT_TESTABLE
+    evidence: "bidi.mjs: html dir=rtl, 150px cell, flex row with 24px crest + truncating span, with and without dir=\"auto\", Chromium 1194. Latin names without dir: '…iadhi de Tanger', '…tive de Berkane' (the D6 defect); with dir=\"auto\": 'Ittihad Riadhi d…', 'Renaissance S…' (truncation at the END, as T7 requires). Arabic names: computed direction rtl in both cases, unicode-bidi isolate added, clientW/scrollW identical, rendering pixel-identical ('الوداد الرياضي البي…' both columns). Short names (FAR, الجيش) unchanged. bidi.png."
+
+judgments:
+  - question: "(1) Is BottomNav px-2 -> px-0.5 an acceptable realisation of scope_mutation_1?"
+    answer: ACCEPTABLE
+    reasoning: "The mutation allows 'label/slot padding or one typographic step so all five fr labels fit at 390px'. px-0.5 is the padding option, one utility on one line. Touch target: the Link keeps flex-1 min-h-11 min-w-11 and measures 69.6 x 45 px in both languages (>= 44 px WCAG-size target, full slot width), and the tap area is the whole Link, not the label, so padding has no effect on it. Label spacing: the largest neighbour gap after the change is Actualités..Fantasy = 14.1 px (156.6 -> 170.7), and Arabic nearest pair المباريات..الملف الشخصي = 12.1 px (88.6 -> 100.7), so labels do not visually merge. No typographic change was needed, which keeps the fr rendering pixel-identical outside sub-pixel re-centering (Verifier fr diff <= 61 px in the label row on hub/news/profile). The Arabic profile label now ellipsizes inside its own slot instead of overlapping المباريات, which is the D5 requirement."
+  - question: "(2) Could the dir=\"auto\" span in fantasy.fixtures.tsx change anything for Arabic club names?"
+    answer: "NO (verified)"
+    reasoning: "dir=auto resolves from the first strong character; an Arabic name resolves to rtl, the same as the inherited cell direction, so text-align:start, ellipsis side and glyph order are unchanged - the isolated Chromium reproduction shows byte-identical metrics and pixel-identical rendering for Arabic names with and without the attribute. The only additional effect is unicode-bidi:isolate, which isolates the name from surrounding text; the span's only sibling is the crest, so nothing adjacent can be re-ordered. For Latin names it produces exactly the intended end-side truncation. Mixed-script names would resolve by their first strong character, which is the correct behaviour for a standalone name. Edge case: a name starting with digits or punctuation falls back to the parent (rtl); no club shortName in the FDR table is of that form as far as the brief's evidence shows, and the fallback is the pre-change behaviour, so no regression is possible."
+  - question: "(3) Are the prettier reflows in dialog.tsx and fantasy.fixtures.tsx within scope?"
+    answer: WITHIN SCOPE
+    reasoning: "In both files the diff is the one required token change (sm:text-left -> sm:text-start; adding dir=\"auto\") on the one allowed line, and the only other bytes changed are whitespace/newlines that wrap that same JSX element to print-width. No other attribute, token or line is affected (dialog +3/-1 around l.76; fixtures +3/-1 around l.176), dialog.tsx:44 is untouched. The brief's T4 requires `bun run lint` with no new warnings and the repo's lint runs prettier/prettier as an error, so the reflow is a necessary consequence of the required change, not an expansion. It is disclosed in the ImplementationReport scope_deviations."
+  - question: "(4) Is the Verifier's untested list (authenticated surfaces) an acceptable risk for a P2 merge?"
+    answer: ACCEPTABLE
+    reasoning: "The brief itself sets the verification bar at public routes ('Public unauthenticated routes only for verification; authenticated states are compared against docs/qa/fpl-screens/ar_*.png'), so the gap was anticipated by the Researcher and accepted in the approved brief. The untested items are (a) the chevron-left mirror on GameweekSelector/fantasy.points/primitives back button: it is one global CSS rule keyed on a lucide class, and the identical rule/class was verified in the browser on the public /fantasy/rankings back button (same primitives.tsx component) and the /matches date strip; the affected call sites were enumerated and are all prev/back affordances; (b) T7 FDR: the mechanism is reproduced in isolation with the same DOM structure (this report); (c) toaster stripe, input-otp corners, profile-setup gutter: verified in the built CSS (border-inline-start-width:4px under the toaster selector, border-inline-end, first:rounded-s-md, last:rounded-e-md, pe-1) - these are pure logical-property substitutions whose LTR rendering is identical by definition, so the only residual risk is RTL-only and cosmetic. For a P2 cosmetic task with zero forbidden-path, test or data impact and a public-route baseline that reproduces the defects on main and the fixes on HEAD, the residual risk is proportionate. Recommendation (non-blocking): the first authenticated Arabic QA pass after merge should re-take ar_fdr.png and ar_points.png to close T7 formally."
+
+observations_non_blocking:
+  - "styles.css already fails prettier --check on origin/main; the branch adds one line and correctly did not reformat the file."
+  - "The 'MODE DÉMO' / 'وضع تجريبي' badge overlapping the bottom-nav crops is a pre-existing demo-mode overlay (dictionary key in src/i18n/dictionaries.ts, not touched by this diff); it is unrelated to BG-0026."
+  - "Verifier disclosed that its shutdown sweep killed the primary tree's :4173 dev server (PID 520) which it had not started. Not a code defect and not a merge blocker, but the process-hygiene rule (only stop what you started) was breached in verification; noted for the Chief."
+  - "Follow-ups already queued by the Researcher remain valid: body font override (styles.css:439) defeating the Arabic font stack; optional shorter Arabic nav.profile copy; QA doc should record D2/D6."

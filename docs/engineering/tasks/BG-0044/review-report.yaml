@@ -1,0 +1,111 @@
+task_id: BG-0044
+reviewed_commit: 4a9cfbae94ef873d3d9fd17408c2e821e55a24f5
+reviewed_branch: agent/BG-0044-probe-anonymous-starters
+merge_base: f58a40288a5bd65dc5d12fa44d3dbf60f30e25ff
+workspace: /home/user/bg0044-review (detached; no edits, no dispatch, no provider token; git status clean after review)
+inputs_used:
+  - objective (task statement) and docs/engineering/tasks/BG-0011/engineering-brief-a1-starter-rows.yaml required_changes A1-probe-extension
+  - docs/engineering/tasks/BG-0044/implementation-report.yaml (branch, status DONE)
+  - origin/main:docs/engineering/tasks/BG-0044/verification-report.yaml (status PASS, independent simulation)
+  - git diff f58a402..4a9cfba (5 files, +498/-30)
+verdict: PASS
+criteria:
+  - criterion: "Scope: only probe .ts/.test.ts, ticket JSON, workflow, BG-0044 implementation report"
+    result: MET
+    evidence: >
+      `git diff --name-status f58a402..HEAD` -> exactly M workflow, A implementation-report.yaml,
+      M ticket JSON, M probe.test.ts, M probe.ts. No supabase/, src/, lockfile or package.json change.
+  - criterion: "Every invariants row reports rawStarterRows, rawSubstituteRows, anonymousStarterRows, anonymousSubstituteRows, anonymousRowsWithTeamId, anonymousRowsWithNameOrJersey, identityTolerantPass, computed from the same payload with no extra request"
+    result: MET
+    evidence: >
+      Read rawLineupCounters in full (probe.ts 549-583): single pass over payload.data.lineups (the array
+      normalizeHistoricalFixture iterates), no I/O, record rows only, type_id via optionalPositiveInteger
+      (same number-only/safe-integer semantics as the worker's positiveInteger, so raw counts cannot diverge
+      from the worker on type parsing), anonymous = player_id null/undefined (identical to the worker's
+      excludedIncompleteRows rule), returns six integers or six nulls when lineups is not an array.
+      classifyFixtureInvariants calls it once per row on the already-fetched payload (line 614) and wraps
+      all three return branches (pass / coverage diagnostic / row-level abort) with withCounters. Test suite
+      asserts requestCount = windows*2 + 240 unchanged.
+  - criterion: "identityTolerantPass == (rawStarterRows == 22 && anonymousStarterRows <= 4 && no failure other than starter_rows_mismatch) and is diagnostic only"
+    result: MET
+    evidence: >
+      Read identityTolerantPass in full (probe.ts 589-596): rawStarterRows === 22 && anonymousStarterRows !== null
+      && anonymousStarterRows <= 4 && failures.every(code === "starter_rows_mismatch"). Matches the objective;
+      an empty failures list satisfies "no failure other than" (worker pass with 22 raw starters reads true),
+      any other coverage code or abort code reads false, null counters read false. It is written into its own
+      field only; `pass` and `failures` in each branch are byte-identical to origin/main. Tests cover the
+      19489216 shape (true), 5 anonymous (false), 4 anonymous cap (true), team_count_mismatch with 22 raw
+      (false), 21 raw with no anonymous rows (false), invalid-detail abort (false), fixture_scope_mismatch (false).
+  - criterion: "Worker still called for the verdict; verdict semantics unchanged"
+    result: MET
+    evidence: >
+      Imports of normalizeHistoricalFixture / HistoricalPerformanceRuntimeError from
+      ../../supabase/functions/_shared/sportsmonks-historical-player-performance unchanged (probe.ts 4-8);
+      `const normalized = await normalizeHistoricalFixture(payload, fixtureId, seasonId)` at line 623 unchanged;
+      failures/pass computation untouched in the diff; six-code constant test still passes; `passing` and
+      `failing` in the season summary still derive from row.pass only.
+  - criterion: "Season summary gains rawStarterExactly22, identityTolerantPassing, anonymousStarterHistogram"
+    result: MET
+    evidence: >
+      probe.ts 810-834: histogram keyed by String(anonymousStarterRows) skipping null counters;
+      rawStarterExactly22 = rows with rawStarterRows === 22; identityTolerantPassing = rows with
+      identityTolerantPass. Tests assert 240/240/{0:239,1:1} for the clean run and 237/235/{0:236,1:2,19:1,21:1}
+      for the all-codes run; Verifier recomputed 239/237/{0:237,1:1,4:1,5:1} independently from rows.
+  - criterion: "Ticket requestId -02 with invariantCounters anonymous-starters-v1 mirrored in the workflow"
+    result: MET
+    evidence: >
+      Own python3 ast.literal_eval of the workflow's embedded `expected = {...}` == json.load(ticket) -> True;
+      requestId g7-historical-performance-coverage-2026-09-18-02; invariantCounters anonymous-starters-v1;
+      ticket diff vs main is exactly the requestId line and the added invariantCounters line.
+      HISTORICAL_PERFORMANCE_REQUEST_ID and HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS in the probe match, and
+      the evidence top level carries invariantCounters (test asserts it).
+  - criterion: "Report step prints the new lines and still fails on a missing 19489216 row; workflow diff limited to the ticket dict and the report step"
+    result: MET
+    evidence: >
+      Workflow diff has exactly four hunks: @@-78 (requestId), @@-107 (invariantCounters) inside the embedded
+      ticket dict; @@-184 (invariantCounters != anonymous-starters-v1 -> existing
+      INVALID_HISTORICAL_PERFORMANCE_INVARIANT_EVIDENCE exit) and @@-194 (two print() calls for
+      rawStarterExactly22/identityTolerantPassing and the numerically sorted histogram) inside
+      "Report coverage invariant classification". The halting_fixture = 19489216 loop and
+      HALTING_FIXTURE_NOT_CLASSIFIED exit are untouched; Verifier ran the extracted block and observed exit 1
+      with that code when the row is removed.
+  - criterion: "Guards / timeout / gate / secrets unchanged"
+    result: MET
+    evidence: >
+      No hunk touches lines 1-77 or 208+ of the workflow. At HEAD: job if (repository/main ref/actor),
+      GITHUB_RUN_ATTEMPT == 1, confirmation + expected_commit == GITHUB_SHA, timeout-minutes 45, environment
+      production-football-ingestion, concurrency, permissions, finalize and commit-status gates unchanged;
+      `grep -n 'secrets\.'` -> lines 139 and 225 only, both SPORTSMONKS_API_TOKEN.
+      check-config-integrity on the workflow -> no violations; backend:secrets:check -> none found.
+  - criterion: "Evidence counts only; no name/jersey/payload value can reach evidence"
+    result: MET
+    evidence: >
+      Row builder: withCounters spreads only the six numeric|null counters and one boolean onto the worker's
+      existing count fields; rawLineupCounters reads player_name/jersey_number solely through
+      nonEmptyIdentityHint (boolean) and increments a counter. Allow-list test asserts the 19-key
+      INVARIANT_ROW_KEYS set on every one of the 240 rows and on the hinted row; serialized evidence asserted
+      not to contain the token, player_id, player_name, jersey_number, details, "Ghost" or "77".
+      providerPayloadIncluded remains the literal false; the credential-in-evidence guard is unchanged.
+  - criterion: "Tests, lint, format"
+    result: MET
+    evidence: >
+      Own runs at HEAD (bun 1.3.11): `bun test <probe.test.ts> <production-probe.test.ts>` -> 32 pass / 0 fail /
+      4082 expect(); `bun run test` -> 715 pass / 0 fail across 117 files; eslint on both probe files exit 0;
+      prettier --check on the four changed source files clean. No existing assertion removed or weakened
+      (the 12-key allow-list was superseded by the stricter 19-key list applied to all rows).
+  - criterion: "Literals 22 and 4 in the probe (BG-0034 'no threshold literal' heuristic)"
+    result: ACCEPTED
+    evidence: >
+      The BG-0034 heuristic guarded against the probe redefining the worker's invariant thresholds. Here
+      DECLARED_STARTERS_PER_FIXTURE (22) and IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP (4) are referenced only in
+      identityTolerantPass and rawStarterExactly22 (probe.ts 592, 594, 830), never in pass/failures, and both
+      values are dictated by the objective and the A1 brief ("rawStarterRows == 22 and anonymousStarterRows <= 4").
+      A diagnostic that must count against 22 and 4 cannot avoid naming them; the heuristic's intent (worker
+      remains the sole source of the verdict) is preserved. The Builder disclosed this in
+      unexpected_observations. Not a defect.
+defects: []
+release_blockers: []
+observations:
+  - "Live figures (V7) remain to be produced by an owner dispatch of the workflow on merged main with expected_commit = the merge commit; this is by design (read-only role, no token) and was correctly recorded as NOT_TESTABLE, not as verified."
+  - "origin/main has advanced past the merge-base only in files outside this diff; merge is a non-overlapping 3-way merge."
+status: DONE

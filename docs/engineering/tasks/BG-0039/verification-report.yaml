@@ -1,0 +1,92 @@
+task_id: BG-0039
+verified_commit: "e9d101a (origin/agent/BG-0039-ownership-diagnostic, detached checkout in /home/user/bg0039-verify; merge-base with origin/main = db76141002170166fdfa17472ee43dcc272df509)"
+criteria:
+  - criterion: "V1 scope: only the promoter, its unittest file and docs/engineering/tasks/BG-0039/implementation-report.yaml changed"
+    result: VERIFIED
+    evidence: >
+      `git diff --name-status $(git merge-base HEAD origin/main)..HEAD` ->
+      "A docs/engineering/tasks/BG-0039/implementation-report.yaml /
+      M scripts/backend/phase7e-production-migration-promoter.py /
+      M scripts/backend/tests/test_phase7e_production_migration_promoter.py". No other paths.
+  - criterion: "V2 unit tests: 16 OK; the 11 pre-existing tests textually unchanged (test-file diff is additions only)"
+    result: VERIFIED
+    evidence: >
+      `python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v` ->
+      "Ran 16 tests in 0.009s / OK" (all 16 listed "ok").
+      `git diff --stat merge-base..HEAD -- <test file>` -> "1 file changed, 132 insertions(+)" (0 deletions);
+      grep of the diff for removed lines ('^-' excluding '---') returned nothing (exit 1).
+      Test-name set comparison (origin/main 11 names vs HEAD 16 names via comm): 5 added
+      (test_ownership_guard_accepts_a_list_containing_the_project_organization,
+      test_ownership_guard_keeps_the_dict_wrapper_behaviour,
+      test_ownership_guard_keeps_the_management_api_failure_classification,
+      test_ownership_guard_never_leaks_row_values,
+      test_ownership_guard_reports_sanitized_shape_when_list_lacks_the_organization), 0 removed.
+  - criterion: "V3 guard semantics unchanged: build_transaction, assert_history, read_history, load_migrations, ManagementClient, sanitize, run_batch, main identical to origin/main; acceptance still row.get('id') == organization_id; no slug acceptance"
+    result: VERIFIED
+    evidence: >
+      Scratch script bg0039_v3_v4.py importlib-loaded `git show origin/main:<promoter>` and the HEAD promoter and compared
+      inspect.getsource: build_transaction, assert_history, read_history, load_migrations, ManagementClient, sanitize,
+      run_batch, main, assert_target_environment all IDENTICAL; BATCHES and every EXPECTED_* table EQUAL.
+      HEAD assert_management_target lines 469-471 (read directly):
+      `if not organization_id or not any(isinstance(row, dict) and row.get("id") == organization_id for row in organization_rows):`
+      -> raises PromotionError. The only occurrences of "slug" in the new code are a docstring and a comment inside
+      describe_organizations_response and the pre-existing Edge Function slug guard (line 498); no slug-based acceptance
+      exists. organization_rows_from accepts a bare list or {"organizations": [...]} (list value) exactly as before;
+      other shapes now yield [] (hard failure) instead of the previous AttributeError escape.
+  - criterion: "V4 independent leak test: realistic-looking row values (20-char lowercase id, email, name, slug, nested access-token) never appear in the PromotionError message or sanitize(message); key names and counts do appear; bare-string response -> PromotionError (not AttributeError); non-2xx -> 'organizations_request_failed: management_api_request_failed: HTTP <status>'"
+    result: VERIFIED
+    evidence: >
+      bg0039_v3_v4.py (FakeClient serving a project that passes the identity/health guard, organizations rows
+      [{id:'abcdefghijklmnopqrst', name:'Example Corp Production Org', slug:'example-corp-prod-slug',
+      billing_email:'billing.owner@example-corp.io', meta:{access_token:'sbp_0123...4567'}}, {...other org...}]):
+      message = "authenticated account does not own the selected project: organizations_response_type=list
+      organizations_top_level_keys=[] organizations_row_count=2 organizations_non_dict_row_count=0
+      organizations_row_keys=['billing_email', 'id', 'meta', 'name', 'slug'] project_has_organization_id=true
+      project_organization_id_matched_row_keys=[]"; sanitize(message) identical; leaked values: NONE; project
+      organization_id not present; all required key names/counts present. Nested dict values (meta.access_token) are
+      never traversed for values; only the top-level key 'meta' is named.
+      Bare string response -> PromotionError with organizations_response_type=str, row_count=0 (no AttributeError);
+      None -> organizations_response_type=NoneType.
+      bg0039_v4c_v6.py drove the REAL ManagementClient with urllib.request.urlopen patched to raise HTTPError:
+      HTTP 401 and 403 with a code-less JSON body -> exactly
+      "organizations_request_failed: management_api_request_failed: HTTP 401" / "... HTTP 403" (body text
+      'sbp_leak_xyz' absent). Note: when the error body carries a "code"/"error_code" field, the pre-existing
+      ManagementClient substitutes it, e.g. "organizations_request_failed: forbidden_scope: HTTP 403"; a 200 with a
+      non-JSON body -> "organizations_request_failed: management_api_non_json_response: HTTP 200". All expected.
+  - criterion: "V5 mutation: changing acceptance from 'id' to 'slug' makes at least one test fail; worktree restored"
+    result: VERIFIED
+    evidence: >
+      sed replaced `row.get("id") == organization_id` with `row.get("slug") == organization_id` (git diff --stat: 1 file,
+      1 insertion, 1 deletion). `python3 -m unittest <test file>` -> "FAILED (failures=1, errors=3)":
+      FAIL test_ownership_guard_reports_sanitized_shape_when_list_lacks_the_organization; ERROR
+      test_ownership_guard_accepts_a_list_containing_the_project_organization,
+      test_ownership_guard_keeps_the_dict_wrapper_behaviour, and the PRE-EXISTING
+      test_release_activation_accepts_only_the_reviewed_edge_functions. `git checkout -- <promoter>`; then
+      `git status --porcelain` -> empty; HEAD still e9d101a; re-run -> "OK" (16 tests).
+  - criterion: "V6 interpretation guide in the ImplementationReport: every listed message pattern is producible by the code"
+    result: VERIFIED
+    evidence: >
+      Traced and reproduced end-to-end through the real ManagementClient (bg0039_v4c_v6.py):
+      (1) "organizations_request_failed: ... HTTP 401/403" -> produced by the try/except around client.get('/v1/organizations')
+      wrapping ManagementClient's f"{classification}: HTTP {status}" (observed for 401 and 403).
+      (2) "organizations_response_type=list organizations_row_count=0" -> produced for body b'[]'.
+      (3) "row_count>=1, matched_row_keys=[] and 'id' in row_keys" -> produced for a list containing only another org
+      (row_keys=['id','name','slug'], matched=[]).
+      (4) "matched_row_keys=['slug']" -> produced when a row's slug equals project.organization_id; guard still raises,
+      value not leaked.
+      Additionally the dict-wrapper branch yields organizations_response_type=dict with top-level key names only
+      (cursor value 'CURSORVALUE123' absent). The guide's wording is consistent with the observed output.
+  - criterion: "V7 live classification of GitHub Actions run 35343091384 via the new diagnostic"
+    result: NOT_TESTABLE
+    evidence: >
+      Requires the owner's Phase 7E-B dispatch at the merged main commit with production credentials; Verifier is
+      forbidden from dispatch, credential use and Management API calls. Not executed.
+regressions: []
+untested:
+  - "Real Supabase Management API response shape for GET /v1/organizations (only synthetic responses exercised); the diagnostic will report it on the next owner dispatch."
+  - "Run 35343091384 reclassification (V7)."
+security_observations:
+  - "Diagnostic emits only structural facts: type name, dict top-level KEY names, row/non-dict-row counts, sorted row KEY names, a boolean, and the KEY names whose value equalled project.organization_id. No response values, the project organization_id, tokens or the error body are copied into the message; verified by direct string search on both the raw and sanitize()d message with realistic-looking id/email/name/slug/token values."
+  - "Residual (low): key names are copied verbatim from the API response, so a hostile or malformed upstream could smuggle data through key names; this is inherent to the requested diagnostic and the upstream is Supabase's authenticated Management API."
+  - "Behavioural tightening (not a weakening): non-list/non-dict responses or a non-list 'organizations' wrapper value now fail closed with a PromotionError instead of escaping as AttributeError -> 'unexpected_AttributeError' in main(). The guard cannot pass on any shape it did not pass on before."
+status: PASS

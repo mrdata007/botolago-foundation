@@ -125,6 +125,11 @@ BATCHES: dict[str, tuple[str, ...]] = {
         "20260918130000_fantasy_deadline_watch.sql",
         "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql",
     ),
+    # BG-0027: pre-stage rating non-degeneracy guard; pending owner promotion
+    # approval — the pricing gate is separate from the deadline-guard promotion.
+    "fantasy_rating_degeneracy_guard": (
+        "20260918150000_fantasy_rating_degeneracy_guard.sql",
+    ),
     # BG-0031: app.seasons owner lock (bounds_locked_at) and the monotone,
     # correction-aware season UPDATE branch of api.ingest_football_catalog_entity
     # so provider ingestion can no longer shrink a season's bounds.
@@ -150,6 +155,7 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "launch_recovery_2026_09_14": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_calendar_sync": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_deadline_guard": frozenset({"football-ingest", "news-ingest"}),
+    "fantasy_rating_degeneracy_guard": frozenset({"football-ingest", "news-ingest"}),
     "season_bounds_guard": frozenset({"football-ingest", "news-ingest"}),
 }
 
@@ -395,9 +401,72 @@ def assert_target_environment() -> tuple[str, str]:
     return token, secret_key
 
 
+def organization_rows_from(organizations: Any) -> list[Any]:
+    """Return the rows of a GET /v1/organizations response.
+
+    The documented shape is a bare JSON list; a dict wrapper keyed
+    ``organizations`` remains accepted exactly as before. Any other shape
+    yields no rows, so membership cannot be proven from it.
+    """
+    if isinstance(organizations, list):
+        return organizations
+    if isinstance(organizations, dict):
+        rows = organizations.get("organizations", [])
+        return rows if isinstance(rows, list) else []
+    return []
+
+
+def describe_organizations_response(organizations: Any, project: dict[str, Any]) -> str:
+    """Sanitized shape summary for the ownership guard failure.
+
+    Only structural facts are emitted: the response type, top-level key names
+    of a dict wrapper, the row count, the sorted set of key names present across
+    dict rows, and whether the project response carried ``organization_id``.
+    Values (ids, slugs, names, emails, tokens) are never included.
+    """
+    rows = organization_rows_from(organizations)
+    if isinstance(organizations, list):
+        response_type = "list"
+        top_level_keys: list[str] = []
+    elif isinstance(organizations, dict):
+        response_type = "dict"
+        top_level_keys = sorted(str(key) for key in organizations)
+    else:
+        response_type = type(organizations).__name__
+        top_level_keys = []
+    row_keys = sorted({str(key) for row in rows if isinstance(row, dict) for key in row})
+    non_dict_rows = sum(1 for row in rows if not isinstance(row, dict))
+    organization_id = project.get("organization_id")
+    # Key names (never values) under which the project's organization_id was
+    # found in any row, e.g. ['slug'] if the identity key moved off 'id'.
+    matched_keys = sorted(
+        {
+            str(key)
+            for row in rows
+            if isinstance(row, dict)
+            for key, value in row.items()
+            if organization_id and value == organization_id
+        }
+    )
+    return (
+        f"organizations_response_type={response_type}"
+        f" organizations_top_level_keys={top_level_keys}"
+        f" organizations_row_count={len(rows)}"
+        f" organizations_non_dict_row_count={non_dict_rows}"
+        f" organizations_row_keys={row_keys}"
+        f" project_has_organization_id={str(bool(organization_id)).lower()}"
+        f" project_organization_id_matched_row_keys={matched_keys}"
+    )
+
+
 def assert_management_target(client: ManagementClient, batch: str) -> dict[str, Any]:
     project = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}")
-    organizations = client.get("/v1/organizations")
+    try:
+        organizations = client.get("/v1/organizations")
+    except PromotionError as exc:
+        # ManagementClient already reduces a non-2xx reply to
+        # "<classification>: HTTP <status>"; keep that and name the call.
+        raise PromotionError(f"organizations_request_failed: {exc}") from exc
     if not isinstance(project, dict):
         raise PromotionError("management project response is invalid")
     returned_ref = project.get("ref") or project.get("id")
@@ -409,9 +478,14 @@ def assert_management_target(client: ManagementClient, batch: str) -> dict[str, 
     ):
         raise PromotionError("management project identity or health guard failed")
     organization_id = project.get("organization_id")
-    organization_rows = organizations if isinstance(organizations, list) else organizations.get("organizations", [])
-    if not organization_id or not any(row.get("id") == organization_id for row in organization_rows):
-        raise PromotionError("authenticated account does not own the selected project")
+    organization_rows = organization_rows_from(organizations)
+    if not organization_id or not any(
+        isinstance(row, dict) and row.get("id") == organization_id for row in organization_rows
+    ):
+        raise PromotionError(
+            "authenticated account does not own the selected project: "
+            + describe_organizations_response(organizations, project)
+        )
 
     backups = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/database/backups")
     completed = [

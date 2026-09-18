@@ -1,0 +1,125 @@
+task_id: BG-0018
+reviewed_commit: e8635f0 # origin/agent/BG-0018-club-codes; merge-base with origin/main 92857fa; workspace /home/user/bg0018-review (detached)
+reviewed_at: "2026-09-18"
+inputs:
+  - objective: docs/engineering/tasks/BG-0018/engineering-brief.yaml (branch) constrained by origin/main LAUNCH_LEDGER.yaml BG-0018.owner_decisions_2026_09_18 (ledger lines 373-379)
+  - implementation_report: docs/engineering/tasks/BG-0018/implementation-report.yaml (branch)
+  - rehearsal_artefact: docs/engineering/tasks/BG-0018/rehearsal-team-identity.json (branch)
+  - verification_report: origin/main:docs/engineering/tasks/BG-0018/verification-report.yaml (status PASS)
+  - diff: git diff 92857fa..e8635f0 (3 files, +377/-0; commits 7c8492e, e8635f0)
+production_access: none (reports read only; no SQL executed by the Reviewer)
+
+verdict: PASS
+defects: []
+release_blockers: []
+status: DONE
+
+# ---------------------------------------------------------------------------
+# Reviewer spot-checks (independent of the Builder and Verifier reports)
+# ---------------------------------------------------------------------------
+spot_checks:
+  - check: "Scope — diff is a subset of the three allowed paths; forbidden paths untouched"
+    result: CONFIRMED
+    evidence: >
+      git diff --stat 92857fa..HEAD: implementation-report.yaml (+88), rehearsal-team-identity.json (+153),
+      scripts/backend/football-team-identity-seed.sql (+136). Nothing under src/**, supabase/**, .github/**,
+      scripts/backend/fantasy-*.sql, src/lib/kits.ts. No production commit is part of the branch.
+
+  - check: "Owner decisions honoured (ledger origin/main BG-0018.owner_decisions_2026_09_18)"
+    result: CONFIRMED
+    evidence: >
+      codes: VALUES rows in file order RCA, ASFAR, FUS, MAS, IRT, UTS, RCAZ, MAT, WST — identical to the ledger
+      list, written as-is (ASFAR 5 chars, RCAZ 4 chars). inferred_codes: no 'WAC','RSB','HUSA','DHJ','KACM',
+      'CODM','USAT' string appears outside comment lines (grep on non-comment lines: 0 hits). wydad: no
+      ('Wydad ...') VALUES row; header lines 14-16 state WCA is provider-supplied (SportsMonks short_code),
+      not verified branding, kept untouched. colours: the single SET (line 120) is `set code = v.code`;
+      primary_color/secondary_color occur only in header comments and in the read-only review SELECT (line 132).
+      preserve_non_null: WHERE (lines 121-124) `t.id = v.matched_id and t.code is null and t.code is distinct from v.code`.
+      application: file ends `-- commit;` (line 136); no schema object created or altered; no workflow touched.
+
+  - check: "SQL structure — exactly one UPDATE on app.teams, no INSERT/DELETE, three guards, temp table on commit drop"
+    result: CONFIRMED
+    evidence: >
+      grep -ic '^\s*update ' = 1 (line 119 `update app.teams t`). No insert/delete/truncate on non-comment lines
+      (VALUES live in `create temp table bg0018_identity on commit drop as select ... from (values ...)`, lines 68-80).
+      Guard 1 (lines 86-92): 9 listed / 9 distinct names / 9 distinct codes, else raise. Guard 2 (lines 95-100):
+      code null or !~ '^[A-Z0-9]{2,8}$' raises before the table constraint. Guard 3 (lines 104-110): zero
+      matched_id or count(distinct matched_id) <> 9 raises; the scalar subquery at line 69
+      `(select t.id from app.teams t where t.name = v.team_name and t.active)` raises on more than one active
+      homonym. `get diagnostics n_updated = row_count` + `raise notice` (lines 125-128). `begin;` + local
+      set_config(request.jwt.claims service_role) at lines 51-52 per repo convention.
+
+  - check: "Citations — each of the nine `-- source:` rows exists in the brief's club_identity with code_official.classification VERIFIED for that code"
+    result: CONFIRMED
+    evidence: >
+      brief line 213 Raja Casablanca RCA VERIFIED https://www.rajaclubathletic.ma/; 218 FAR Rabat ASFAR VERIFIED
+      https://as-far.ma/fr/club/2-histoire; 223 FUS Rabat FUS VERIFIED https://fus.ma; 233 Maghreb Fès MAS VERIFIED
+      https://www.maghreb-fes.com/; 243 Ittihad Tanger IRT VERIFIED https://www.irtfoot.ma/fr; 263 UTS Rabat UTS
+      VERIFIED https://touargaclub.ma/en/le-club/; 268 CR Khemis Zemamra RCAZ VERIFIED https://rcazfc.com/;
+      274 Moghreb Tétouan MAT VERIFIED https://www.matfoot.com; 284 Widad Témara WST VERIFIED
+      https://widad-temara.com/club/. The seven INFERRED entries (208 WAC, 228 RSB, 238 HUSA, 248 DHJ, 253 KACM,
+      258 CODM, 279 USAT) are absent from VALUES. All nine team_name literals are NFC-normalised (python check),
+      matching the brief's Unicode risk note; the rehearsal matched all nine names exactly.
+
+  - check: "Header records WCA provenance and the BG-0036 durability caveat; caveat is accurate"
+    result: CONFIRMED
+    evidence: >
+      Header lines 14-16 (WCA provider-supplied, never touched) and 33-40 ("NOT durable until BG-0036 lands",
+      citing supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302). I read those
+      migration lines: the team UPDATE branch sets `code = v_code` with no coalesce/null-guard and does not set
+      colours — the caveat is accurate. The same caveat appears in the rehearsal artefact
+      (AT8_durability_informational) and the implementation report (database_changes, unresolved).
+      BG-0036 is QUEUED on origin/main with depends_on [BG-0018].
+
+  - check: "Verifier's disclosed deviation (pg_temp.results insert appended after the DO block's raise notice to capture row_count)"
+    result: ACCEPTABLE
+    evidence: >
+      The appended line is rehearsal instrumentation only: it executes after the UPDATE, inside a transaction
+      that ends in `raise exception ... ; rollback;`, writes to pg_temp (not app.*), and leaves the VALUES list,
+      the three guards and the UPDATE verbatim. The captured row_count (9 then 0) is independently corroborated by
+      snapshot diffs (changed_vs_pre 9, changed_vs_mid 0) and by the Builder's separate rehearsal, which ran the
+      DO block verbatim and evidenced row_count through snapshot diffs alone. The committed run will execute the
+      unmodified file in the SQL editor, where the RAISE NOTICE is visible. The deviation is disclosed in
+      production_access and untested, as the schema requires. No production role was assumed beyond the repo's
+      service_role claim convention; residue query after rollback shows production unchanged.
+
+  - check: "21 active rows (five stale clubs) — in scope? does it endanger the guards?"
+    result: OUT_OF_SCOPE_AND_SAFE
+    evidence: >
+      Not in scope: the brief's allowed paths and the owner decisions cover only app.teams.code for the nine
+      names; deactivation is a separate data task already ledgered as BG-0043 (origin/main, READY, Researcher
+      next). Guards are unaffected: the five stale names (Chabab Mohammédia, JS Soualem, Olympic Safi,
+      Olympique Dcheïra, Yacoub El Mansour) are not in the VALUES list and are not homonyms of any listed name;
+      the scalar subquery raises on any second active row with a listed name and guard 3 raises on zero matches
+      or fewer than nine distinct ids, so an unexpected duplicate/missing row aborts the transaction before the
+      UPDATE. Both rehearsals show 9 rows written, 12 rows byte-identical (including updated_at) and all_teams
+      21 unchanged. The brief's 16/15/16 numeric expectations were a Researcher assumption corrected by
+      production evidence; the Builder and Verifier recorded the deviation and it changes no owner decision.
+
+  - check: "AT-6 regression — bun test src/services/football.test.ts in the review workspace"
+    result: CONFIRMED
+    evidence: >
+      bun install --frozen-lockfile (539 packages); bun test v1.3.11: 5 pass, 0 fail, 18 expect() calls.
+      src/services/football.ts:61 `team.code ?? team.shortName.slice(0,3).toUpperCase()` -> crestPlaceholder;
+      football.test.ts:71 asserts crestPlaceholder === team.code. No src change is needed or present.
+
+  - check: "Reports — required evidence present; scope_deviations empty; brief-vs-owner-decision divergence handled correctly"
+    result: CONFIRMED
+    evidence: >
+      ImplementationReport lists AT-1..AT-6 with results and AT-7 as NOT RUN (owner-gated), unresolved and
+      unexpected_observations filled, scope_deviations []. The literal brief text (16 rows with colours,
+      NOTICE '16 rows') was superseded by the owner decisions of 2026-09-18 (9 codes, colours deferred), so the
+      9-row VALUES list, `code`-only SET and 9-row guard are the approved objective, not a silent expansion or
+      contraction. VerificationReport: V1-V6 VERIFIED by independent execution, V7/AT-7 NOT_TESTABLE pre-commit,
+      regressions [], residue check 12:29:13Z shows production unchanged. Minor, non-blocking: the report's second
+      commit is recorded as "(follow-up commit on this branch)" rather than the SHA e8635f0 because the report is
+      that commit's content.
+
+notes: >
+  Fit to proceed to the owner-approved single committed run of scripts/backend/football-team-identity-seed.sql
+  (execute the file unmodified, in one transaction, review the SELECT, then COMMIT). Conditions the owner
+  already accepted and should keep in view: (1) the nine codes are NOT durable until BG-0036 lands — any fresh
+  provider team payload (current-season recovery or the fantasy orchestrator recovery step) resets them to NULL;
+  the script is idempotent and may be re-run afterwards; (2) AT-7 UI evidence (FDR cells, opponent chip,
+  ClubCrest tile) can only be gathered after the commit, and the 4-5 character codes ASFAR and RCAZ need the
+  overflow check tracked as BG-0041; (3) the five stale active clubs are BG-0043 and are not touched by this run.

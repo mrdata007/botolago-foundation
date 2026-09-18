@@ -173,7 +173,9 @@ function FdrBody() {
                   <td className="sticky start-0 z-10 w-[150px] min-w-[150px] max-w-[150px] border-t border-[color:var(--fpl-grey)] bg-white px-3 py-2">
                     <span className="flex items-center gap-2 text-[14px] font-semibold text-foreground">
                       <ClubCrest club={club} size="sm" className="h-6 w-6 rounded-md text-[8px]" />
-                      <span className="truncate">{tr(club.shortName)}</span>
+                      <span className="truncate" dir="auto">
+                        {tr(club.shortName)}
+                      </span>
                     </span>
                   </td>
                   {gameweeks.map((gw) => {

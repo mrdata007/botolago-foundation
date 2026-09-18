@@ -37,14 +37,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "group-[.toast]:bg-[color:var(--surface-hover)] group-[.toast]:text-[color:var(--text-secondary)] group-[.toast]:rounded-lg group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-xs",
           success:
-            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-success)]",
+            "group-[.toaster]:border-s-4 group-[.toaster]:border-s-[color:var(--color-success)]",
           error:
-            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-danger)]",
+            "group-[.toaster]:border-s-4 group-[.toaster]:border-s-[color:var(--color-danger)]",
           warning:
-            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--color-warning)]",
-          info: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--brand-accent)]",
+            "group-[.toaster]:border-s-4 group-[.toaster]:border-s-[color:var(--color-warning)]",
+          info: "group-[.toaster]:border-s-4 group-[.toaster]:border-s-[color:var(--brand-accent)]",
           loading:
-            "group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:var(--text-muted)]",
+            "group-[.toaster]:border-s-4 group-[.toaster]:border-s-[color:var(--text-muted)]",
         },
       }}
       {...props}
