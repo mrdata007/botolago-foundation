@@ -4,8 +4,8 @@
 project: BotolaGO
 updated: 2026-09-18T11:40:00Z
 human_actions_open:
-  - id: BG-0002
-    action: Refresh the Supabase Management API credential (SUPABASE_ACCESS_TOKEN) in the GitHub environment production-admin-activation.
+  # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
+  # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
   - id: BG-0004
     action: Set repository variable FANTASY_AUTOMATION_ENABLED=true (the session's GitHub proxy returns 403 for the variables API).
   - id: BG-0021
@@ -57,14 +57,27 @@ tasks:
     severity: P1
     user_impact: None directly; blocks the normal Phase 7E-B migration promotion path for every future migration.
     owner: Human
-    state: HALTED_FOR_INPUT
+    state: DONE
     attempt: 0
     depends_on: []
+    resolution_2026_09_18T17_38Z: >-
+      Owner upgraded the BotolaGO Supabase organization from Free to Pro (confirmed via
+      mcp__Supabase__get_organization). The next preflight (run 35375322823, batch
+      fantasy_calendar_sync, dispatched as a no-op proof since that batch is already applied)
+      passed BOTH the ownership/membership guard and the backup-readiness guard for the first
+      time, stopping only at the expected "selected migration batch is already complete" check.
+      A real promotion (run 35375519576, batch fantasy_deadline_guard) then succeeded end-to-end:
+      result PASS, appliedCount 2, historyCountAfter 59, completedBackupCount 7. All BG-0002
+      acceptance criteria are now met: the preflight completes with no HTTP 401, the ownership
+      guard passes, the backup-readiness guard passes, and a batch promotion ran through the
+      workflow (not a generated transaction). See BG-0003's promotion_2026_09_18T17_38Z for full
+      evidence and the required post-promotion verification. Future migrations can use the normal
+      Phase 7E-B path without further credential or backup remediation.
     acceptance_criteria:
       - Phase 7E-B Production V2 migration promotion completes its management-API preflight (no HTTP 401)
       - the authenticated account passes the ownership/organization-membership guard (MET 2026-09-18, preflight_retry_4)
-      - the project passes the backup-readiness guard (NOT YET MET — see new_blocker; investigation dispatched, see backup_diagnosis)
-      - a subsequent batch promotion runs through the workflow, not through a generated transaction (NOT YET REACHED — no batch has completed a full preflight)
+      - the project passes the backup-readiness guard (MET 2026-09-18T17:38Z, after owner upgraded the org to Pro — run 35375322823)
+      - a subsequent batch promotion runs through the workflow, not through a generated transaction (MET 2026-09-18T17:38Z — run 35375519576, batch fantasy_deadline_guard, result PASS)
     evidence:
       - 'run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"'
       - migration 20260918120000_fantasy_calendar_sync was exceptionally promoted through the promoter's own generated transaction; production history row name/version match and statements[1] sha256 = 634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e (repository file)
@@ -165,10 +178,26 @@ tasks:
     reviewer_verdict: PASS (fresh context, docs/engineering/tasks/BG-0003/review-report.yaml, reviewed_commit 95d79a7)
     merged: main merge commit of agent/BG-0001-0003-deadline-guard (2026-09-18)
     remaining_risks:
-      - migrations 20260918130000 and 20260918140000 are NOT promoted to Production V2; promotion requires the Phase 7E-B workflow, which is blocked by BG-0002 (invalid SUPABASE_ACCESS_TOKEN). Until promoted the guard RPC is absent (every pass degrades to waiting, green) and the production sync is still the unguarded body.
-      - GW1 enters the default escalation window at 2026-09-22T22:30Z; promotion must land before then for the guard to catch it.
+      - 'RESOLVED 2026-09-18T17:38Z: migrations 20260918130000 and 20260918140000 are now PROMOTED to Production V2 (run 35375519576). Superseded risk text kept for history: previously the guard RPC was absent and the production sync was still the unguarded body.'
+      - GW1 enters the default escalation window at 2026-09-22T22:30Z; the guard is now live and can catch it, subject to the orchestrator/recovery workflows actually being dispatched on schedule (BG-0004 hold; manual dispatch still required until FANTASY_AUTOMATION_ENABLED is set, which remains explicitly NOT done).
     promotion_approval_2026_09_18: 'OWNER EXPLICIT APPROVAL to promote ONLY batch fantasy_deadline_guard (20260918130000, 20260918140000) via Phase 7E-B against the exact reviewed merged main SHA, conditional on a preflight in which the management-API checks actually execute successfully (inventory check alone is insufficient); no bundling, no promoter bypass, no edits to applied files; afterwards verify history, function definitions, execute permissions and guard behaviour and record evidence'
     preflight_status: 'run 35343091384 FAILED at the ownership guard (BG-0002/BG-0039) — promotion not yet allowed'
+    promotion_2026_09_18T17_38Z:
+      trigger: 'Owner reported the BotolaGO Supabase organization plan upgraded from Free to Pro. Chief confirmed via mcp__Supabase__get_organization (plan: "pro", was "free" at the last check). This is exactly the owner action identified by the BG-0002 backup-readiness diagnosis, so the Chief re-ran the sanitized preflight rather than requesting another token.'
+      preflight_confirmation_run: 'run 35375322823 (batch fantasy_calendar_sync, main 00559a33, dispatched only to prove the chain — that batch was already applied): promotion_failed: "selected migration batch is already complete". This means BOTH the ownership guard AND the backup-readiness guard passed for the first time; the run only stopped at the already-applied-batch check, before any write.'
+      preconditions_reverified_before_real_dispatch:
+        - 'BG-0037 state DONE, BG-0039 state DONE (both merged to main)'
+        - 'supabase/migrations/20260918130000_fantasy_deadline_watch.sql and 20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql confirmed byte-identical (sha256) to the reviewed commit 95d79a7 (docs/engineering/tasks/BG-0003/review-report.yaml)'
+        - 'Phase 7E-B manifest correctly lists fantasy_deadline_guard with both migrations, in version order'
+        - 'dispatched at current main HEAD (00559a33e09ea06c883b0512ef94342b50c75d28), consistent with every prior preflight attempt this session and with the immutable EXPECTED_COMMIT==GITHUB_SHA dispatch guard; no changes to the deadline-guard migrations or guard logic landed on main since the BG-0003 review'
+      real_dispatch_run: 'run 35375519576 (batch fantasy_deadline_guard, confirmation RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD, main 00559a33) — conclusion success. Promoter output: {"appliedCount": 2, "batch": "fantasy_deadline_guard", "cronJobCount": 0, "historyCountAfter": 59, "result": "PASS"}.'
+      evidence_artifact: 'phase7e-b-production-fantasy_deadline_guard-35375519576 (artifact 10559842994): preflight.json shows historyCountBefore 57, target.completedBackupCount 7, target.latestCompletedBackup 2026-09-18T01:16:38.038Z, pitrEnabled false, edgeFunctionSlugs [football-ingest, news-ingest], status ACTIVE_HEALTHY. applied-migrations.json lists both files with sha256 matching the repository (24fe79e7… and bee1c607…) and durationMs 1145 / 866. postflight.json confirms historyCountAfter 59, completedInSelectedBatchAfter 2, result PASS, same target snapshot.'
+      chief_post_promotion_verification_owner_required:
+        history: 'select * from supabase_migrations.schema_migrations where version in (20260918130000, 20260918140000) — both rows present; the statements column is byte-identical to the reviewed migration files (visually diffed against the repository source, including every comment).'
+        function_definitions: 'pg_get_functiondef() for api.service_fantasy_deadline_watch and api.service_sync_fantasy_calendar in production match the reviewed migration source exactly, word for word. provolatile confirms STABLE for the read-only watch function and VOLATILE (default) for the writer; both prosecdef=true (SECURITY DEFINER), owner postgres.'
+        execute_permissions: 'has_function_privilege() confirms EXECUTE is true only for service_role and false for anon, authenticated and public, on both functions — matching the migrations'' revoke/grant statements exactly.'
+        guard_behaviour: 'Live invocation (not a rehearsal — the function is STABLE and provably makes no writes) of api.service_fantasy_deadline_watch as service_role (via set_config(''request.jwt.claims'', ...), never `set role`) succeeded and returned a well-formed schemaVersion-1 payload (seasonId 9918cf95-9ed5-4d7b-99ca-eb9bfc29a258, status registration_open, gameweeks: [] — correct, since GW1 has not opened yet so there is nothing to escalate). The SAME call as anon correctly raised PT403 forbidden, proving the access-control guard (app_private.is_service_request()) is live and enforced. api.service_sync_fantasy_calendar (the writer) was NOT invoked for real — its definition and grants were verified as above, which is sufficient given it was already covered by pgTAP and rolled-back production rehearsals during BG-0003''s own review; no additional live write-path test was performed, consistent with the standing rule against unnecessary production data mutation.'
+      production_status: 'LIVE. The fantasy_deadline_watch guard and the calendar-sync unconfirmed-kickoff guard are now running in Production V2. FANTASY_AUTOMATION_ENABLED remains unset (BG-0004 HOLD) — nothing about this promotion turns on the hourly orchestrator; the guard only has effect when api.service_sync_fantasy_calendar / the deadline watch are actually invoked, which today still requires a manual/scheduled dispatch.'
 
   BG-0004:
     title: Enable the hourly orchestrator (FANTASY_AUTOMATION_ENABLED=true)
