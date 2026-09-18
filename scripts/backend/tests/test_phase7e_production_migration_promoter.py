@@ -60,8 +60,8 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
         self.assertEqual(expected, sorted(actual))
         versions = [filename.split("_", 1)[0] for filename in actual]
         self.assertEqual(versions, sorted(versions))
-        self.assertEqual(59, len(actual))
-        self.assertEqual(59, len(set(actual)))
+        self.assertEqual(60, len(actual))
+        self.assertEqual(60, len(set(actual)))
         self.assertEqual(
             (
                 "20260803173344_fantasy_preactivation_hardening.sql",
@@ -87,16 +87,26 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             ),
             PROMOTER.BATCHES["fantasy_deadline_guard"],
         )
-        self.assertEqual("fantasy_deadline_guard", list(PROMOTER.BATCHES)[-1])
         self.assertEqual(57, len(PROMOTER.batch_history_prefix("fantasy_deadline_guard")))
         self.assertEqual(
             "RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD",
             PROMOTER.CONFIRMATIONS["fantasy_deadline_guard"],
         )
+        self.assertEqual(
+            ("20260918160000_season_bounds_guard.sql",),
+            PROMOTER.BATCHES["season_bounds_guard"],
+        )
+        self.assertEqual("season_bounds_guard", list(PROMOTER.BATCHES)[-1])
+        self.assertEqual(59, len(PROMOTER.batch_history_prefix("season_bounds_guard")))
+        self.assertEqual(
+            "RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD",
+            PROMOTER.CONFIRMATIONS["season_bounds_guard"],
+        )
         for batch in (
             "launch_recovery_2026_09_14",
             "fantasy_calendar_sync",
             "fantasy_deadline_guard",
+            "season_bounds_guard",
         ):
             self.assertEqual(
                 frozenset({"football-ingest", "news-ingest"}),

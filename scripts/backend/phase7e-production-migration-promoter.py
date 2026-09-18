@@ -125,6 +125,12 @@ BATCHES: dict[str, tuple[str, ...]] = {
         "20260918130000_fantasy_deadline_watch.sql",
         "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql",
     ),
+    # BG-0031: app.seasons owner lock (bounds_locked_at) and the monotone,
+    # correction-aware season UPDATE branch of api.ingest_football_catalog_entity
+    # so provider ingestion can no longer shrink a season's bounds.
+    "season_bounds_guard": (
+        "20260918160000_season_bounds_guard.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -144,6 +150,7 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "launch_recovery_2026_09_14": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_calendar_sync": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_deadline_guard": frozenset({"football-ingest", "news-ingest"}),
+    "season_bounds_guard": frozenset({"football-ingest", "news-ingest"}),
 }
 
 # These migrations were promoted through separately reviewed provider canaries
