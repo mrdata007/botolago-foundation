@@ -545,10 +545,10 @@ tasks:
     area: devops
     severity: P1
     owner: Chief
-    state: RUNNING
-    evidence: ['scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517']
+    state: BUILT
+    evidence: ['scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517', 'docs/engineering/tasks/BG-0033/implementation-report.yaml']
     acceptance_criteria: [restore value read from the current season / required input; unit test; folded into Option A step A3]
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0033/engineering-brief.yaml), builder: Builder-DevOps running (branch agent/BG-0033-runner-restore), verifier: pending, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0033/engineering-brief.yaml), builder: BUILT (branch agent/BG-0033-runner-restore, commit 5284bb2b4f3413a47c9f807a0af29fb9d8da4589; docs/engineering/tasks/BG-0033/implementation-report.yaml), verifier: pending, reviewer: pending}
     key_findings:
       - 'restore cannot be read-then-write: the Management API secrets listing returns digests (the CLI DIGEST column is the API value field); the runner must prove supplied current-runtime values against captured fingerprints before mutating and re-prove after; six season-coupled keys are overwritten, not one'
       - 'Bun does not run finally on SIGINT/SIGTERM (reproduced); the bash wrapper does not forward the signal; an if: always() restore post-step (bun runner --restore) plus a restore_only dispatch path are required'
