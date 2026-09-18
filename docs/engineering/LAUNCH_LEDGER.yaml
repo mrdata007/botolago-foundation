@@ -230,6 +230,17 @@ tasks:
       - production backfill and catalog re-stage BLOCKED until the revised evidence gate passes; Options B and C remain unauthorized
     time_box_corrected: registration must be re-opened BEFORE 2026-09-22T22:30:00Z (recalculate if confirmed kickoff/deadline data changes; never weaken a deadline guard to regain time)
     a1_preliminary_assessment: 'NO-GO as written — the runner (240/240) and api.football_historical_player_rating_inputs (all finished fixtures covered) cannot pass with 64 systematic starter_rows_mismatch fixtures (starterRows 21 in 50, 20 in 11, 18 or fewer in 3; excludedIncompleteRows 1-4 in 61 of 64; spread across all months). Conditional GO only if the A1 analysis shows the misses are normalisation/mapping defects repairable without weakening validation. Owner-gated.'
+    a1_result_2026_09_18:
+      brief: docs/engineering/tasks/BG-0011/engineering-brief-a1-starter-rows.yaml
+      mechanism: 'VERIFIED for 19489216 — provider declares 22 starters + 18 subs (40 rows); one starter row and one substitute row have no player_id; the worker drops rows without player_id before reading type_id and then requires 22 identified starters. Arithmetic (22 - starterRows <= excludedIncompleteRows) holds for all 64; anonymous rows present in 104 of 240 fixtures; failures cluster by club (Dcheïra 21/30, Safi 15/30, CRKZ/HUSA 11, KACM 10, UTS 9). Three round-7 fixtures (2025-11-02) have 12-13 anonymous rows and are genuinely incomplete.'
+      rule_locations: 'starter_rows = 22 is enforced in the worker, twice in api.ingest_historical_player_fixture_performance, and in the production CHECK constraint historical_performance_coverage_counts_check; no worker-only relaxation exists; every option needs an additive migration → BG-0002 twice (promotion + backfill)'
+      hidden_gate: 'the RPC re-asserts 22 persisted starters after quarantining unmapped players; an unmapped starter in any of the 176 passing fixtures fails at DB level; unmeasured (6-fixture sample: 1 unmapped substitute in 228 rows)'
+      catalog_coverage_now: '539 players, 497 mapped, 459 eligible; 80 guaranteed 6.0/0 fallback (Tiznit 21, Tétouan 36, Témara 23; 42 unmapped); 188 already have a performance row'
+      bias: 'INFERRED — dropping the 64 fixtures tilts CRKZ/HUSA/KACM/UTS prices down via the season-total rank (30% weight); an identity-tolerant rule loses only anonymous players'' own rows'
+      options: 'a) accept 21-22 identified starters when anonymous rows exist (226/240); b) identified + anonymous starters == 22 with cap <= 4, persist identified rows, quarantine <= 3 outliers (237/240) — recommended; c) quarantine at 27% (176/240, club-biased) — rejected by the analysis; d) NO-GO → Option B'
+      go_no_go: 'HALTED_FOR_INPUT — NO-GO as written; conditional GO only via option (b) under a revised, independently verified brief, and only if BG-0002 is closed by 2026-09-20T12:00Z; otherwise (d) applies automatically'
+      owner_decision_needed: 'BG-0011-OWNER-3 — authorise the option (b) rule change as a separately verified revised brief, or reject any rule change (Option A NO-GO)'
+      next_read_only: BG-0044 probe extension (raw/anonymous starter counters; mapping-gate measurement) — dispatched
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
@@ -308,7 +319,7 @@ tasks:
     severity: P2
     owner: Chief
     state: RUNNING
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend attempt 2 DONE (@76916e2; BottomNav px-0.5 fits all five fr labels; Select receives the dir prop), verifier: running, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend attempt 2 DONE (@76916e2; BottomNav px-0.5 fits all five fr labels; Select receives the dir prop), verifier: PASS (docs/engineering/tasks/BG-0026/verification-report.yaml; defects reproduced on main, fixes reproduced on HEAD in the browser), reviewer: running (fresh context), reviewer: pending}
     scope_mutation_1: {old_scope: 'BottomNav.tsx line 60 only; matches.index.tsx forbidden', new_scope: 'BottomNav.tsx label/slot padding or one typographic step so all five fr labels fit at 390px; matches.index.tsx one prop dir={dir} on the Radix Select', reason: 'max-w-full alone clips fr Actualités (visible regression); Radix Select stamps dir=ltr so the logical utilities cannot take effect', approved_by: Chief, date: 2026-09-18}
     finding: 'precise inventory 113 tokens, 110 inside shadcn primitives, only 31 must-flip in 7 live files; visible defects D1-D6 (missing .lucide-chevron-left mirror rule, 3 double-flipped rtl:rotate-180 chevrons, BottomNav nav.profile overflow, FDR start-side truncation)'
 
@@ -343,7 +354,7 @@ tasks:
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
     next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data running (branch agent/BG-0018-club-codes)}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data DONE (agent/BG-0018-club-codes @e8635f0; rolled-back rehearsal 9 rows then 0, collateral 0, residue clean), verifier: running, reviewer: pending}
     facts:
       - the column is app.teams.code (not short_code); only provider ingestion writes it (SportsMonks short_code, present for Wydad only as WCA); nothing writes primary_color/secondary_color
       - the UI already reads code/primaryColor/secondaryColor (presentFootballClub); no src change needed; jerseys stay on src/lib/kits.ts by design
@@ -431,7 +442,7 @@ tasks:
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml contradictions[0]']
     acceptance_criteria: [root cause of the overwrite identified in the season ingestion path; a durable fix (guard or provider-metadata handling) so the correction is not reverted again; production row corrected via a rolled-back rehearsal first, then an owner-approved write]
     next: Researcher (season ingestion path) → Builder-Backend
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0031/engineering-brief.yaml), builder: Builder-Backend running (branch agent/BG-0031-season-bounds-guard), verifier: pending, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0031/engineering-brief.yaml), builder: Builder-Backend DONE (agent/BG-0031-season-bounds-guard @96acad3; migration 20260918160000 + pgTAP 27 asserts + manifest batch season_bounds_guard; local throwaway PG16 harness only), verifier: running (rolled-back production rehearsal permitted), reviewer: pending}
     root_cause: 'orchestrator run 35332956079 (Chief-dispatched manual run, 2026-09-18T10:06Z) executed current-season-recovery.ts; the seasons catalog job mapped provider ending_at 2026-09-24 to endsOn and api.ingest_football_catalog_entity overwrote ends_on unconditionally; freshness() falls back to the run clock so every run rewrites the row'
     owner_correction_evidence: 'postgres statement log 2026-09-17T21:02:47Z: update app.seasons set ends_on=2027-06-30 (MCP session)'
     deadlines: [before 2026-09-23T00:00Z for Option A (re-stage would inherit a one-day fantasy season), hard 2026-09-25 (season_ended blocks preview/stage; current_season_required blocks squad ingestion)]
@@ -451,9 +462,17 @@ tasks:
     area: devops
     severity: P1
     owner: Chief
-    state: READY
+    state: RUNNING
     evidence: ['scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517']
     acceptance_criteria: [restore value read from the current season / required input; unit test; folded into Option A step A3]
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0033/engineering-brief.yaml), builder: Builder-DevOps running (branch agent/BG-0033-runner-restore), verifier: pending, reviewer: pending}
+    key_findings:
+      - 'restore cannot be read-then-write: the Management API secrets listing returns digests (the CLI DIGEST column is the API value field); the runner must prove supplied current-runtime values against captured fingerprints before mutating and re-prove after; six season-coupled keys are overwritten, not one'
+      - 'Bun does not run finally on SIGINT/SIGTERM (reproduced); the bash wrapper does not forward the signal; an if: always() restore post-step (bun runner --restore) plus a restore_only dispatch path are required'
+      - 'skip_deploy must be gated on function version + ezbr_sha256 identity (live football-ingest v53 ab740ad9…), default false; after A2 ships it cannot be true'
+      - 'contradiction: fantasy-season-orchestrator and football-current-season-recovery ARE in concurrency group botolago-production-v2-mutation (15 workflows) and do not write function secrets'
+    acceptance_corrected: restored to captured pre-run fingerprints and verified (not merely read from an input)
+
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
     area: devops
@@ -518,10 +537,14 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: QUEUED
+    state: DONE
     depends_on: []
     evidence: ['run 35343091384 step "Promote and verify the selected batch": promotion_failed: authenticated account does not own the selected project', 'scripts/backend/phase7e-production-migration-promoter.py:391-407']
     acceptance_criteria: [promoter logs a sanitized shape of the organizations response (type, count, key names) on this failure path; unit test; no weakening of the guard]
+    roles: {builder: Builder-DevOps DONE (agent/BG-0039-ownership-diagnostic @e9d101a; 16 unit tests OK; acceptance rule unchanged), verifier: PASS (docs/engineering/tasks/BG-0039/verification-report.yaml; leak test and mutation test independent), reviewer: PASS (docs/engineering/tasks/BG-0039/review-report.yaml)}
+    merged: main (merge of agent/BG-0039-ownership-diagnostic @e9d101a)
+    follow_up: BG-0046 (sanitize() truncates at 500 chars; move the decisive fields ahead of the key-name lists)
+    next: re-run the preflight (batch fantasy_calendar_sync) at the merged main SHA once the owner confirms the token account, or immediately to obtain the diagnostic
 
   BG-0041:
     title: 'Compact team labels with 4-5 character official codes (ASFAR, RCAZ): verify ClubCrest sm (28px tile, 10px text) and FDR cells (13px bold) do not overflow; log or fix through a scoped UI change'
@@ -537,7 +560,45 @@ tasks:
     owner: Chief
     state: RUNNING
     depends_on: []
-    roles: {builder: Builder-DevOps running (on agent/BG-0027-ratings-fail-closed, separate task owner), verifier: pending, reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0027-ratings-fail-closed @3865ffb; main merged in cleanly; 11 tests OK; inventory 60), verifier: folded into the BG-0027 final verification pass once the pgTAP environment decision lands, reviewer: same}
+    ordering_hazard: 'load_migrations requires manifest order == version order. BG-0031 (20260918160000, batch season_bounds_guard) will merge first; BG-0027 migration is 20260918150000 and would then have to be inserted BEFORE season_bounds_guard, which breaks the production history-prefix check once season_bounds_guard is promoted. Resolution when BG-0027 is ready to merge: rename its migration to 20260918170000 (never applied anywhere) and place its batch last.'
+
+  BG-0043:
+    title: 'app.teams has 21 active rows, not 16: Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra and Yacoub El Mansour remain active=true (last written 2026-08-02), so api.football_team_catalog exposes five non-2026/27 clubs'
+    area: data
+    severity: P1
+    owner: Chief
+    state: READY
+    evidence: ['docs/engineering/tasks/BG-0018/implementation-report.yaml unexpected_observations (read-only production count during the BG-0018 rehearsal)']
+    acceptance_criteria: [determine how active is meant to be maintained (provider ingestion vs season membership); decide deactivation of the five clubs with a rolled-back rehearsal first; verify UI surfaces (team catalog, filters) after the change; no deletion of history]
+    next: Researcher
+
+  BG-0044:
+    title: 'A1 probe extension (read-only): per-fixture rawStarterRows, anonymousStarterRows, anonymousSubstituteRows, anonymousRowsWithTeamId, anonymousRowsWithNameOrJersey in the invariants evidence; re-dispatch on merged main to size option (b) before any rule change'
+    area: devops
+    severity: P0
+    owner: Chief
+    state: RUNNING
+    depends_on: [BG-0034]
+    roles: {builder: Builder-DevOps running (branch agent/BG-0044-probe-anonymous-starters), verifier: pending, reviewer: pending}
+    acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
+
+  BG-0045:
+    title: 'Gate 2F rollback env file pins FOOTBALL_SPORTSMONKS_SEASON_ID 26027 (same class of defect as BG-0033) — gate2f-production-current-season-catalog-canary.yml rollback step'
+    area: devops
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0033]
+    evidence: ['docs/engineering/tasks/BG-0033/engineering-brief.yaml findings (workflow section)']
+
+  BG-0046:
+    title: 'Promoter diagnostic message can be truncated by sanitize() at 500 chars, cutting project_has_organization_id and matched_row_keys when many key names are present; reorder fields or cap key-name lists'
+    area: devops
+    severity: P3
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0039]
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
