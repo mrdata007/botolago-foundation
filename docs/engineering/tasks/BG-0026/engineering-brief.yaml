@@ -1,0 +1,382 @@
+task_id: BG-0026
+role: Researcher
+attempt: 1
+objective: >
+  RTL layout audit: inventory and classify every physical-direction Tailwind utility in src/,
+  screenshot the main Fantasy/news screens in Arabic (dir=rtl, 390px) and name visible defects,
+  identify short-label truncation candidates, and scope the fix (logical-utility mapping for class (a)
+  plus component-level fixes). Evidence base: worktree /home/user/research-main at origin/main 1603c1c,
+  dev server http://127.0.0.1:4173 (primary tree, same commit), Playwright/Chromium 1194,
+  docs/engineering/tasks/BG-0014*/ scout report and brief, docs/qa/fpl-screens/ar_*.png (commit 3b2083a).
+
+findings:
+  # ---------------------------------------------------------------- mechanism
+  - classification: VERIFIED
+    statement: >
+      Direction is switched at runtime by the I18nProvider: after mount it sets
+      document.documentElement.dir = lang === "ar" ? "rtl" : "ltr" (and lang / data-lang);
+      SSR always emits <html lang="fr" dir="ltr">. Context exposes `dir` for components.
+    evidence: "src/i18n/provider.tsx:54-60 and :74; src/routes/__root.tsx:141"
+  - classification: VERIFIED
+    statement: >
+      Only five global RTL CSS rules exist: font-family switch, body line-height, and scaleX(-1)
+      mirroring for .lucide-chevron-right, .lucide-arrow-right, .lucide-arrow-left. There is NO rule
+      for .lucide-chevron-left.
+    evidence: "src/styles.css:427-431"
+  - classification: VERIFIED
+    statement: >
+      Tailwind v4 (tailwindcss ^4.2.1, @tailwindcss/vite ^4.2.1) CSS-first config; logical utilities
+      are ALREADY in use in app code, so no utility needs defining in src/styles.css:
+      text-start/text-end/pe-6/end-1 (src/components/fpl/AddPlayerScreen.tsx:213,226,229,232,273,282),
+      -ms-1 pe-2 (src/components/fpl/primitives.tsx:56), end-4 (src/components/ui/dialog.tsx:59,
+      src/components/ui/sheet.tsx:82), start-1/2 (src/components/fantasy/RankingsPodium.tsx:63,
+      src/components/matches/EventTimeline.tsx:45, src/components/shell/FirstLaunchLanguage.tsx:26),
+      sticky start-0 (src/routes/fantasy.fixtures.tsx:173), ms-1 / pe-3 (src/routes/news.tsx:226,454),
+      ms-auto (src/components/fantasy/FantasySubNav.tsx:64), text-end (src/components/common/MatchCard.tsx:316,
+      src/components/fpl/SquadListTable.tsx:72). `rtl:` variants are used in 7 files.
+    evidence: "package.json:67,88; grep output cited per file:line above"
+
+  # ---------------------------------------------------------------- inventory
+  - classification: VERIFIED
+    statement: >
+      The Scout's "111" is reproduced exactly by
+      `grep -rnoE '\b(ml|mr|pl|pr|left|right)-[0-9a-z\[]|text-left|text-right' src` -> 111 matches
+      (same result restricted to *.ts/*.tsx). That regex over-counts: `\b` matches after a hyphen, so
+      `slide-in-from-left-52`, `top-left`, `-left-`, etc. are counted, and a prose comment
+      ("right-aligned", src/components/fpl/SquadListTable.tsx:24) is included.
+    evidence: "command run in /home/user/research-main; output 111 / 111"
+  - classification: VERIFIED
+    statement: >
+      Precise inventory (class tokens only, variants allowed, negative values allowed, PCRE lookbehind
+      excludes hyphen-prefixed tokens):
+      rg -P -o --no-heading -n '(?<![A-Za-z0-9_\-])-?(?:(?:ml|mr|pl|pr|left|right|border-l|border-r|rounded-l|rounded-r|rounded-tl|rounded-tr|rounded-bl|rounded-br|scroll-pl|scroll-pr|scroll-ml|scroll-mr)-[^\s"'`{}]+|text-left|text-right|float-left|float-right|clear-left|clear-right|origin-left|origin-right|origin-top-left|origin-top-right|origin-bottom-left|origin-bottom-right|border-l|border-r|rounded-l|rounded-r)(?=[\s"'`}]|$)' src -g '*.tsx' -g '*.ts'
+      -> 113 matches (narrow Scout family only: 87). Per family: left- 24, pl- 20, pr- 13, right- 11,
+      ml- 11, border-l-<n|color> 11, text-left 7, rounded-r- 4, rounded-l- 4, border-l 4, border-r 2,
+      rounded-tl- 1, mr- 1, text-right 0.
+      Per file: ui/sidebar 20, ui/menubar 11, ui/dropdown-menu 11, ui/context-menu 11, ui/sonner 10,
+      ui/carousel 6, ui/calendar 6, ui/sheet 5, ui/navigation-menu 4, ui/input-otp 4, ui/table 3,
+      ui/select 3, ui/scroll-area 2, ui/resizable 2, ui/pagination 2, ui/dialog 2, ui/command 2,
+      ui/alert 2, ui/alert-dialog 2, routes/auth.profile-setup 1, ui/drawer 1, ui/accordion 1,
+      splash/SplashScreen 1, fpl/SquadListTable 1 (comment).
+      110 of 113 are inside src/components/ui (shadcn primitives); app-level components and routes
+      are already logical.
+    evidence: "raw dump saved at scratchpad/bg0026/inventory-raw.txt; per-line context printed and reviewed"
+  - classification: VERIFIED
+    statement: >
+      Only 6 of the 45 shadcn primitives are imported by app code (imports outside src/components/ui):
+      dropdown-menu (3 files), dialog (3), sheet (2), sonner (1, src/routes/__root.tsx:163),
+      select (1, src/routes/matches.index.tsx), input-otp (1, src/routes/auth.verify.tsx:77-91).
+      accordion, alert, alert-dialog, calendar, carousel, command, context-menu, drawer, menubar,
+      navigation-menu, pagination, resizable, scroll-area, sidebar, table have 0 app imports, so their
+      78 physical utilities are dead code for the rendered app.
+    evidence: "per-primitive grep of components/ui/<name>[\"'] across src excluding src/components/ui"
+  - classification: VERIFIED
+    statement: >
+      No inline-style physical properties exist in app code (paddingLeft/marginLeft/textAlign/left:/right:
+      grep returns only DateStrip's scrollTo({left}) call), and src/styles.css contains no
+      padding-left/margin-left/left:/text-align declarations of its own.
+    evidence: "grep over src/**/*.ts(x) and src/styles.css; single hit src/components/matches/DateStrip.tsx:73"
+
+  # ---------------------------------------------------------------- classification (a)
+  - classification: VERIFIED
+    statement: >
+      Class (a) must-flip (31 tokens, all in files that render in the app):
+      src/components/ui/select.tsx:114 `pl-2 pr-8`, :119 `right-2` (SelectItem indicator; used by the
+        season Select on /matches, src/routes/matches.index.tsx:243) - in RTL the check indicator sits on
+        the text's start side and the reserved padding is on the wrong side;
+      src/components/ui/dropdown-menu.tsx:31 `pl-8`, :37 `ml-auto`, :86 `pl-8`, :101 `pl-8 pr-2`,
+        :107 `left-2`, :124 `pl-8 pr-2`, :129 `left-2`, :147 `pl-8`, :167 `ml-auto` (menu used by
+        FantasyMobileNav/FantasySubNav/FantasyImportPrompt with dir={dir}; CheckboxItem/RadioItem/inset/
+        Shortcut sub-primitives are currently unused, so those 9 tokens are latent but the file is live);
+      src/components/ui/sonner.tsx:40,42,44,45,47 `border-l-4 border-l-[color:...]` x5 (10 tokens):
+        toast accent stripe stays on the left in RTL (Toaster mounted globally);
+      src/components/ui/sheet.tsx:100 `sm:text-left` (SheetHeader used by PlayerPickerDrawer);
+      src/components/ui/dialog.tsx:76 `sm:text-left` (DialogHeader used by AuthPromptDialog,
+        FantasyOnboarding, FirstLaunchLanguage);
+      src/components/ui/input-otp.tsx:42 `border-r first:rounded-l-md first:border-l last:rounded-r-md`
+        (auth.verify OTP slots; in RTL the first slot is on the right so the rounded corners and the
+        shared borders are on the wrong slots);
+      src/routes/auth.profile-setup.tsx:224 `pr-1` (scrollbar gutter of an overflow-y-auto list; the
+        scrollbar is on the left in RTL).
+    evidence: "file:line cited inline; usage counts from the import grep"
+  - classification: VERIFIED
+    statement: >
+      Class (b) intentionally physical - must NOT be mapped:
+      src/components/ui/dialog.tsx:44 and src/components/ui/alert-dialog.tsx:37 `left-[50%]` paired with
+        `translate-x-[-50%]` (symmetric centering; start-[50%] + the same translate would mis-centre in RTL);
+      src/components/ui/sheet.tsx:51,53 `left-0 rounded-r-*` / `right-0 rounded-l-*` (the `side` prop is
+        physical by contract and callers already choose it per direction:
+        src/components/fantasy/PlayerPickerDrawer.tsx:77 side={dir === "rtl" ? "left" : "right"});
+      src/components/ui/sidebar.tsx:237-238,242,299-304 (data-[side=left|right] physical variants, dead file);
+      src/components/ui/carousel.tsx:189,190,217,218 and ui/resizable.tsx:24 after:left-1/2 (centering / dead);
+      src/components/splash/SplashScreen.tsx:86 `-left-1/3` (decorative light sweep driven by a physical
+        translateX keyframe, SplashScreen.tsx:115-116).
+    evidence: "file:line cited inline"
+  - classification: VERIFIED
+    statement: >
+      Class (c) harmless: all remaining tokens in the 15 dead primitives (accordion:25, alert:7,
+      alert-dialog:47, calendar:73,89,92,94, carousel:145,167, command:43,126, context-menu (11),
+      menubar (11), navigation-menu:52,66,80,105, pagination:56,69, scroll-area:33, sidebar (remaining),
+      table:63,78, drawer:54) and the prose comment src/components/fpl/SquadListTable.tsx:24.
+      Totals: (a) 31, (b) 4 in live files + 26 in dead files, (c) 52 in dead files + 1 comment = 113.
+    evidence: "inventory-raw.txt cross-checked with the import grep"
+
+  # ---------------------------------------------------------------- screenshots
+  - classification: VERIFIED
+    statement: >
+      Arabic (dir=rtl, lang=ar confirmed via document.documentElement) 390x844 full-page screenshots
+      taken from http://127.0.0.1:4173 for hub /fantasy, /fantasy/transfers, /fantasy/team,
+      /fantasy/fixtures, /fantasy/leagues, /fantasy/points, /fantasy/profile, /news, /, /matches,
+      /profile, plus French twins: scratchpad/bg0026/{ar,fr}-{hub,transfers,team,fdr,leagues,points,
+      profile,news,home,matches,appprofile}.png, log in bg0026/shoot-log.txt, scripts shoot.mjs /
+      probe.mjs / probe2.mjs / measure.mjs / clip.mjs. document.documentElement.scrollWidth == 390 on
+      every Arabic page (no horizontal page overflow).
+    evidence: "bg0026/shoot-log.txt lines 'ar ... dir=rtl/ar scrollWidth=390'"
+  - classification: VERIFIED
+    statement: >
+      Limitation: unauthenticated runs render the Fantasy screens in guest/error state (hub shows
+      "تعذّر تحميل هذه الصفحة"; the headless browser cannot reach the backend through the proxy:
+      net::ERR_CERT_AUTHORITY_INVALID) and /news has no articles (no article link found, so no
+      article screenshot). Authenticated Arabic evidence was taken instead from
+      docs/qa/fpl-screens/ar_{hub,transfers,team,fdr,points,leagues,profile}.png, committed at 3b2083a
+      (2026-09-18), which is also the last commit touching src/routes/fantasy.fixtures.tsx.
+    evidence: "shoot-log.txt console errors; git log -1 -- docs/qa/fpl-screens/ar_fdr.png and src/routes/fantasy.fixtures.tsx"
+
+  # ---------------------------------------------------------------- visible defects
+  - classification: VERIFIED
+    statement: >
+      DEFECT D1 (mirrored chevrons, /matches DateStrip): in Arabic both strip chevrons point LEFT.
+      Code: PrevIcon = dir==="rtl" ? ChevronRight : ChevronLeft, NextIcon the inverse
+      (src/components/matches/DateStrip.tsx:96-97); the CSS mirrors chevron-right only, so the Next
+      button (ChevronLeft, rendered on the left) is unmirrored. Probe: lucide-chevron-right transform
+      matrix(-1,0,0,1,0,0), lucide-chevron-left transform none.
+    evidence: "bg0026/clip-ar-datestrip.png; probe.mjs output for /matches; src/styles.css:429-431"
+  - classification: VERIFIED
+    statement: >
+      DEFECT D2 (back control): the Fantasy header back link renders "‹ رجوع" at the right edge with the
+      chevron pointing left, i.e. away from the previous-page edge. ChevronLeft at
+      src/components/fpl/primitives.tsx:38 has no rtl handling and no CSS rule covers chevron-left.
+      Visible on every ar Fantasy sub-screen (ar-transfers/team/fdr/leagues/points/profile screenshots
+      and docs/qa/fpl-screens/ar_*.png).
+    evidence: "bg0026/clip-ar-backbutton.png (x=358 chevron-left, transform none); primitives.tsx:38"
+  - classification: INFERRED
+    statement: >
+      DEFECT D3 (same root cause, not renderable unauthenticated): GameweekSelector prev
+      (src/components/fantasy/GameweekSelector.tsx:33, its comment at :21-22 explicitly assumes
+      ".lucide-chevron-* classes are flipped in RTL by global styles") and the points page prev button
+      (src/routes/fantasy.points.tsx:192) use an unmirrored ChevronLeft, so prev/next point the same way
+      in RTL.
+    evidence: "code + the CSS rule set; consistent with D1 which is rendered"
+  - classification: INFERRED
+    statement: >
+      DEFECT D4 (double flip): ChevronRight with `rtl:rotate-180` at
+      src/components/fantasy/GameweekStatusStrip.tsx:159, src/routes/fantasy.rankings.tsx:231 and
+      src/routes/profile.tsx:299 receives both transform:scaleX(-1) (styles.css:429) and rotate:180deg
+      (Tailwind v4 rotate utility); the composition points RIGHT again, i.e. the LTR "forward" direction,
+      wrong in RTL. ChevronLeft + rtl:rotate-180 at fantasy.rankings.tsx:221 is currently correct but
+      would double-flip once a chevron-left rule is added.
+    evidence: "styles.css:429; the three call sites; not rendered (authenticated sections)"
+  - classification: VERIFIED
+    statement: >
+      DEFECT D5 (overflowing label): BottomNav label nav.profile "الملف الشخصي" measures 86px at
+      11px/600 while each of the 5 slots is 70px wide; the span (className "truncate leading-none",
+      src/components/shell/BottomNav.tsx:60) is a flex item with no max-w-full/min-w-0, so it does not
+      shrink and overflows 8px on both sides (span 13..99 vs slot 21..91), colliding with "المباريات".
+      French "Profil" is 33px. FantasyMobileNav uses `max-w-full truncate` (FantasyMobileNav.tsx:66) and
+      would ellipsize instead.
+    evidence: "probe2.mjs output (ar labels); ar-appprofile.png / ar-matches.png bottom bar"
+  - classification: VERIFIED
+    statement: >
+      DEFECT D6 (start-side truncation): the FDR sticky team column (150px, src/routes/fantasy.fixtures.tsx:173)
+      truncates Latin club names inside the RTL block from the START ("…DM Meknès", "…is Zemamra",
+      "…faâ El Jadida", "…sania Agadir", "…b Marrakech", "…reb Tétouan") because the truncating span
+      (fantasy.fixtures.tsx:176) has no bidi isolation.
+    evidence: "docs/qa/fpl-screens/ar_fdr.png (commit 3b2083a = current code of that file)"
+  - classification: VERIFIED
+    statement: >
+      No other visible RTL defect on the captured screens: news tabs row scrolls (news.tsx:181 shrink-0),
+      chips/segmented controls mirror, sticky/fixed bars use inset-x-0, arrow icons on the hub are mirrored
+      (3x lucide-arrow-right matrix(-1,...)), leagues table columns align to the start edge, pitch and
+      bench labels render correctly (ar_team.png, ar_points.png).
+    evidence: "bg0026/ar-*.png; probe.mjs icon table; docs/qa/fpl-screens/ar_*.png"
+
+  # ---------------------------------------------------------------- truncation candidates
+  - classification: VERIFIED
+    statement: >
+      Measured Arabic text widths at 390px (Range.getBoundingClientRect, fonts loaded) against containers:
+      nav.profile 85.7px @11px/600 vs BottomNav slot 70px (content 54px) -> OVERFLOWS (D5);
+      fantasy.tab.transfers 47.2px @10px/600 vs FantasyMobileNav slot (390-24)/5 = 73px minus px-1 -> fits;
+      news.tab.transfers 90.8px @12px/600 in a horizontally scrolling shrink-0 row (news.tsx:181) -> no clip;
+      matches.status.penalties "ركلات ترجيح" 61.2px @10px/900 uppercase tracking-[0.14em] in an
+        auto-width pill (MatchCard.tsx:133) between two min-w-0 truncating team names (MatchCard.tsx:299-316)
+        -> the pill never clips; it squeezes the team names (fr "T.a.b." is ~6 chars);
+      fpl.group.MID 68.3px / fpl.group.GK 77.6px @11px/700 in an unconstrained header row
+        (SquadListTable.tsx:72) -> fits;
+      fantasy.chip.* 80-90px @13px/800 in FplChipsRow cells (~114px, label has truncate,
+        FplChipsRow.tsx:55) -> fits; fr "Triple Capitaine" is wider (96.8px), so no ar-specific regression;
+      fantasy.chip.* 70-76px @11px/700 inside FantasyChipCard min-w-[124px] with truncate
+        (FantasyChipCard.tsx:72,116) -> fits.
+    evidence: "measure.mjs output; component class lists cited"
+  - classification: VERIFIED
+    statement: >
+      Side finding affecting these measurements: `body { font-family: var(--font-sans) }`
+      (src/styles.css:439, @layer base) overrides `html[dir="rtl"] { font-family: var(--font-arabic) }`
+      (styles.css:427), so Arabic body text computes to "Manrope, Inter, ui-sans-serif, system-ui,
+      sans-serif" and is rendered by the system fallback, not Noto Sans Arabic (probe2: html font =
+      Noto Sans Arabic, body font = Manrope...). Widths above are therefore fallback-font widths.
+    evidence: "probe2.mjs output; src/styles.css:427,439"
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    Two independent causes. (1) The remaining physical-direction utilities are concentrated in copied
+    shadcn primitives (110/113); app code has already been migrated to logical utilities, but the 6
+    primitives that actually render (select, dropdown-menu, sonner, sheet, dialog, input-otp) plus one
+    route still carry 31 physical tokens that place indicators, paddings, accent borders and corner
+    radii on the LTR side. (2) The icon-mirroring contract is incomplete: components were written on the
+    assumption that "the .lucide-chevron-* classes are flipped in RTL by global styles"
+    (GameweekSelector.tsx:21-22, DateStrip.tsx:94-97), but styles.css:429-431 mirrors only
+    chevron-right / arrow-right / arrow-left, and three sites additionally apply `rtl:rotate-180` to an
+    already-mirrored ChevronRight. The bottom-nav overflow (D5) and FDR start-truncation (D6) are local
+    flex/bidi omissions, not utility-direction issues.
+
+required_changes:
+  - component: src/components/ui/select.tsx
+    change: "line 114 `pl-2 pr-8` -> `ps-2 pe-8`; line 119 `right-2` -> `end-2`."
+    reason: "SelectItem check indicator and its reserved padding must sit at inline-end (class a)."
+  - component: src/components/ui/dropdown-menu.tsx
+    change: >
+      lines 31, 86, 147 `pl-8` -> `ps-8`; lines 101, 124 `pl-8 pr-2` -> `ps-8 pe-2`; lines 107, 129
+      `left-2` -> `start-2`; lines 37, 167 `ml-auto` -> `ms-auto`. No other change.
+    reason: "Inset items, checkbox/radio indicators, sub-trigger chevron and shortcut alignment (class a)."
+  - component: src/components/ui/sonner.tsx
+    change: "lines 40, 42, 44, 45, 47: `border-l-4 border-l-[color:...]` -> `border-s-4 border-s-[color:...]` (10 tokens)."
+    reason: "Toast severity stripe must be on the inline-start edge (class a)."
+  - component: src/components/ui/sheet.tsx
+    change: "line 100 `sm:text-left` -> `sm:text-start`. Leave lines 51/53 side variants and line 82 untouched."
+    reason: "SheetHeader alignment (class a); side variants are class (b)."
+  - component: src/components/ui/dialog.tsx
+    change: "line 76 `sm:text-left` -> `sm:text-start`. Leave line 44 `left-[50%]` untouched."
+    reason: "DialogHeader alignment (class a); centring is class (b)."
+  - component: src/components/ui/input-otp.tsx
+    change: "line 42 `border-r ... first:rounded-l-md first:border-l last:rounded-r-md` -> `border-e ... first:rounded-s-md first:border-s last:rounded-e-md`."
+    reason: "Slot corners/borders follow the group's flow direction (class a). See unknown U3."
+  - component: src/routes/auth.profile-setup.tsx
+    change: "line 224 `pr-1` -> `pe-1`."
+    reason: "Scrollbar gutter sits at inline-end (class a)."
+  - component: src/styles.css
+    change: >
+      after line 429 add `html[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }`.
+      No new Tailwind utility is needed (logical utilities are built in and already used).
+    reason: "Completes the global mirroring contract that DateStrip, GameweekSelector, primitives back button and fantasy.points already rely on (D1, D2, D3)."
+  - component: src/components/fantasy/GameweekStatusStrip.tsx, src/routes/fantasy.rankings.tsx, src/routes/profile.tsx
+    change: >
+      remove `rtl:rotate-180` from ChevronRight at GameweekStatusStrip.tsx:159, fantasy.rankings.tsx:231,
+      profile.tsx:299 and from ChevronLeft at fantasy.rankings.tsx:221 (the global rules now cover both).
+      Do not touch WelcomeScreen.tsx:65,80 (translate hover, not a chevron) or calendar.tsx:29-30 (dead file).
+    reason: "Eliminates the double flip (D4) and the future double flip on :221 after the CSS rule lands."
+  - component: src/components/shell/BottomNav.tsx
+    change: "line 60 `truncate leading-none` -> `max-w-full truncate leading-none` (same pattern as FantasyMobileNav.tsx:66)."
+    reason: "D5: nav.profile (86px) must clip inside its 70px slot instead of overlapping the neighbour. Copy shortening is out of scope (see follow-up)."
+  - component: src/routes/fantasy.fixtures.tsx
+    change: "line 176 `<span className=\"truncate\">` -> `<span className=\"truncate\" dir=\"auto\">` (bidi isolation so the ellipsis clips the end of a Latin name)."
+    reason: "D6: Latin club names truncate from the start inside the RTL table cell."
+  - component: (no change) dead shadcn primitives
+    change: >
+      Leave accordion, alert, alert-dialog, calendar, carousel, command, context-menu, drawer, menubar,
+      navigation-menu, pagination, resizable, scroll-area, sidebar, table untouched; their 78 tokens are
+      class (b)/(c). The Verifier's invariant asserts their counts are unchanged.
+    reason: "Zero rendered impact; keeps the diff reviewable and preserves the shadcn upstream shape."
+
+constraints:
+  - "No copy/dictionary changes (src/i18n/** forbidden); truncation is mitigated structurally only."
+  - "No new dependency; no tailwind config file (v4 CSS-first, src/styles.css only for the one CSS rule)."
+  - "Physical `side` contracts of Sheet/Sidebar and translate-centred dialogs stay physical (class b)."
+  - "Do not touch DateStrip.tsx:96-97 or GameweekSelector.tsx: they are correct once the chevron-left rule exists."
+  - "Public unauthenticated routes only for verification; authenticated states are compared against docs/qa/fpl-screens/ar_*.png."
+
+risks:
+  - "Adding the .lucide-chevron-left rule mirrors every ChevronLeft in RTL: the audit found 13 usages outside ui/; all are back/prev affordances (primitives.tsx:38, GameweekSelector.tsx:33, fantasy.points.tsx:192, fantasy.rankings.tsx:221, DateStrip.tsx:96-97). The rankings:221 rtl:rotate-180 MUST be removed in the same change or it double-flips."
+  - "input-otp: the `input-otp` library renders slots in DOM order; in RTL the flex group places slot 0 on the right. Logical corner utilities fix the visual frame, but digit entry order in RTL is UNKNOWN (U3); if product wants a strictly LTR code box, wrap InputOTPGroup with dir=\"ltr\" instead (auth.verify.tsx, not in allowed paths - escalate)."
+  - "tailwind-merge ^3.5.0 treats ps-/pe- and pl-/pr- as separate groups; any caller passing className=\"pl-*\" to these primitives would no longer override. Grep found no such callers for the 6 live primitives."
+  - "Sonner: `group-[.toaster]:border-s-4` relies on Tailwind v4 generating border-inline-start-width under the arbitrary group variant; verify in the built CSS (acceptance test 6)."
+  - "The body font override (styles.css:439) means Arabic renders in a fallback font; widths in the truncation table may differ once that is fixed (separate task)."
+
+contradictions:
+  - "Scout count 111 vs precise 87 (same family) / 113 (broad): the Scout regex counted hyphen-internal tokens and a comment. Neither count implies 111 must-flip sites; must-flip is 31."
+  - "GameweekSelector.tsx:21-22 and DateStrip.tsx:94-97 document a global chevron-* mirroring contract that src/styles.css:429-431 only half implements."
+  - "docs/qa/FANTASY_INDEPENDENT_QA_2026_09_18.md cites ar_*.png as RTL evidence without recording D2/D6, both visible in those files."
+
+unknowns:
+  - "U1: Authenticated Arabic rendering of Transfers/Pick Team/Points/Leagues/Profile at 1603c1c could not be captured (no auth allowed; backend unreachable from headless Chromium). QA pngs at 3b2083a are the proxy."
+  - "U2: /news had no articles on the dev server, so the article screen (news.$articleId.tsx, which sets dir per contentLanguage at :181) was not captured."
+  - "U3: input-otp slot order and caret behaviour under dir=rtl (library behaviour not verified)."
+  - "U4: Whether product wants the Arabic nav.profile label shortened (copy) rather than ellipsized; out of scope here."
+  - "U5: Exact widths under Noto Sans Arabic once styles.css:439 is fixed."
+
+acceptance_tests:
+  - >
+    T1 class-(a) invariant (must return 0 lines):
+    cd <repo> && rg -P -n '(?<![A-Za-z0-9_\-])-?(?:(?:ml|mr|pl|pr|left|right|border-l|border-r|rounded-l|rounded-r)-[^\s"'\''`{}]+|text-left|text-right|border-l|border-r)(?=[\s"'\''`}]|$)' src/components/ui/select.tsx src/components/ui/dropdown-menu.tsx src/components/ui/sonner.tsx src/components/ui/input-otp.tsx src/routes/auth.profile-setup.tsx ; echo "sheet/dialog:"; rg -n 'text-left|left-\[50%\]' src/components/ui/sheet.tsx src/components/ui/dialog.tsx
+    Expected: first command prints nothing; second prints exactly sheet.tsx:51/:53 (side variants) and dialog.tsx:44 `left-[50%]` and no `text-left`.
+  - >
+    T2 class-(b)/(c) unchanged: the broad inventory command from the findings, run on the whole src/,
+    returns 113 - 31 = 82 matches, and the per-file counts for the 15 dead primitives, SplashScreen (1),
+    SquadListTable (1), sheet (4: lines 51,53) and dialog (1: line 44) equal the pre-change table.
+  - >
+    T3 chevron contract: `rg -n 'lucide-chevron-left' src/styles.css` -> 1 line;
+    `rg -n 'rtl:rotate-180' src --glob '!src/components/ui/**'` -> 0 lines;
+    `rg -n 'rtl:' src/components/welcome/WelcomeScreen.tsx` -> still 2 lines (untouched).
+  - "T4 `bun run typecheck` exit 0; `bun run test` exit 0 with the same file count as main (115 files at 1603c1c); `bun run lint` no new warnings."
+  - >
+    T5 RTL screenshot set re-taken with scratchpad/bg0026/shoot.mjs (same 390x844, ar+fr) and probe2.mjs:
+    (a) /matches ar: `lucide-chevron-left` computed transform == matrix(-1, 0, 0, 1, 0, 0); the strip's
+    right-hand button chevron points right and left-hand points left (clip like clip-ar-datestrip.png);
+    (b) /fantasy/rankings ar: back chevron (x≈358) transform == matrix(-1,...) i.e. points right;
+    (c) BottomNav ar: the span containing "الملف الشخصي" satisfies spanLeft >= slotLeft && spanRight <= slotRight
+    and text-overflow ellipsis is applied (scrollWidth > clientWidth);
+    (d) fr screenshots pixel-equivalent to the pre-change fr set for hub/news/matches/profile (no LTR regression).
+  - >
+    T6 Built CSS: `bun run build` then grep the emitted CSS for `border-inline-start-width: 4px` under the
+    sonner toaster selector and for `inset-inline-end` on the select indicator; open /matches in ar, open the
+    season Select and confirm the check indicator is at the inline-end (computed `right` auto / `left` 8px in RTL).
+  - "T7 FDR: with an authenticated session or the QA fixture, ar /fantasy/fixtures shows Latin names truncated at the END ('DM Meknès…'), never '…DM Meknès'."
+
+implementation_scope:
+  builder_type: Builder-Frontend
+  allowed_paths:
+    - src/components/ui/select.tsx
+    - src/components/ui/dropdown-menu.tsx
+    - src/components/ui/sonner.tsx
+    - src/components/ui/sheet.tsx        # line 100 only
+    - src/components/ui/dialog.tsx       # line 76 only
+    - src/components/ui/input-otp.tsx
+    - src/routes/auth.profile-setup.tsx  # line 224 only
+    - src/styles.css                     # one added rule after line 429 only
+    - src/components/fantasy/GameweekStatusStrip.tsx  # remove rtl:rotate-180 at :159
+    - src/routes/fantasy.rankings.tsx    # remove rtl:rotate-180 at :221 and :231
+    - src/routes/profile.tsx             # remove rtl:rotate-180 at :299
+    - src/components/shell/BottomNav.tsx # line 60 only
+    - src/routes/fantasy.fixtures.tsx    # line 176 only
+  forbidden_paths:
+    - supabase/**
+    - scripts/**
+    - src/i18n/**                        # no copy changes
+    - src/backend/**
+    - src/components/ui/{accordion,alert,alert-dialog,calendar,carousel,command,context-menu,drawer,menubar,navigation-menu,pagination,resizable,scroll-area,sidebar,table}.tsx
+    - src/components/ui/sheet.tsx lines 51-53 and dialog.tsx line 44 (class b)
+    - src/components/matches/DateStrip.tsx
+    - src/components/fantasy/GameweekSelector.tsx
+    - src/components/fpl/**              # primitives.tsx:38 is fixed by the CSS rule, not by editing
+    - src/components/splash/SplashScreen.tsx
+    - src/components/welcome/WelcomeScreen.tsx
+    - src/routes/auth.verify.tsx
+    - tests/**, .github/**, package.json, bunfig.toml, vite.config.*, docs/**
+
+follow_up_tasks_for_chief:
+  - "Font: src/styles.css:439 `body { font-family: var(--font-sans) }` defeats the html[dir=rtl] Arabic font switch (VERIFIED computed). One-line fix, separate task (touches typography globally; re-measure truncation after)."
+  - "Copy: consider a shorter Arabic nav.profile (currently 12 chars vs 6 fr) - dictionaries only."
+  - "Optional hygiene: mechanical ps/pe/start/end mapping of the 15 dead shadcn primitives when they are next regenerated from upstream (no user impact today)."
+  - "QA doc: docs/qa/FANTASY_INDEPENDENT_QA_2026_09_18.md should record D2 and D6, which its own ar_*.png evidence shows."
+
+status: DONE

@@ -291,7 +291,8 @@ tasks:
     severity: P2
     owner: Chief
     state: RUNNING
-    roles: {researcher: running (RTL inventory + rtl screenshots)}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend running (branch agent/BG-0026-rtl-fixes), verifier: pending, reviewer: pending}
+    finding: 'precise inventory 113 tokens, 110 inside shadcn primitives, only 31 must-flip in 7 live files; visible defects D1-D6 (missing .lucide-chevron-left mirror rule, 3 double-flipped rtl:rotate-180 chevrons, BottomNav nav.profile overflow, FDR start-side truncation)'
 
   BG-0015:
     title: Fonts and UI consistency
@@ -417,6 +418,17 @@ tasks:
     finding: 'fixture 19489216 diagnostic is already recorded in docs/production/g7-sportsmonks-coverage-audit-trigger.json (lineupRowsSeen 40, validPlayerRows 38, starterRows 21, failedInvariant starter_rows_mismatch, from run 30767752509) — answers the WHICH question; the 240-fixture count still needs the dispatch'
     observation: 'worker invariant six (invalidDetailRows) is unreachable: the catch rethrows invalid_provider_detail — relevant to Option A step A2'
     acceptance_criteria: [probe script classifies each fixture against lineups 22..100, valid rows 22..100, excludedIncompleteRows <= 20, starterRows == 22, teamCount == 2, invalidDetailRows == 0; ticket + workflow expected JSON updated together; no Supabase secrets; owner dispatch on merged main produces a per-fixture pass/fail listing naming the failing invariant of 19489216]
+
+  BG-0035:
+    title: Arabic UI does not render in Noto Sans Arabic — body { font-family: var(--font-sans) } (src/styles.css:439, @layer base) overrides html[dir="rtl"] { font-family: var(--font-arabic) } (styles.css:427)
+    area: ui
+    severity: P1
+    owner: Chief
+    state: READY
+    depends_on: [BG-0026]
+    evidence: ['docs/engineering/tasks/BG-0026/engineering-brief.yaml findings (probe2: html font Noto Sans Arabic, body font Manrope fallback)']
+    acceptance_criteria: [Arabic body text computes to the Arabic font stack; French unchanged; re-measure BG-0026 truncation table after the change]
+    related: BG-0015
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
