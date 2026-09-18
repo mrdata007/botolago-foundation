@@ -1,0 +1,131 @@
+task_id: BG-0020
+builder_type: Builder-DevOps
+branch: agent/BG-0020-ci-guards
+commits:
+  - "BG-0020: config integrity guard for executed configuration files"
+  - "BG-0020: authenticated Fantasy E2E workflow, inert until owner enablement"
+  - "BG-0020: implementation report"
+changes:
+  - file: scripts/backend/check-config-integrity.mjs
+    description: >
+      New dependency-free ESM guard (node builtins only, runnable before
+      `bun install`). Exports RULES, scanText(filePath, text) and
+      resolveTargets(root); CLI guarded by
+      `import.meta.url === pathToFileURL(process.argv[1]).href`. Closed scanned
+      set: eslint.config.js, vite.config.ts, playwright.config.ts, bunfig.toml,
+      package.json and every .github/workflows/*.yml|*.yaml (readdirSync).
+      Rules per line, all reported then failed: R1 long-line (>500 chars),
+      R2 padding-run (/\S[ \t]{40,}/), R3 hex-identifier (/_0x[0-9a-fA-F]{4,}/),
+      R4 require-shim (/createRequire/ or /\brequire\s*\(/), R5 dynamic-eval
+      (identifier `eval`, `new Function(`, `Function(`), R6 base64-blob
+      (/[A-Za-z0-9+/]{120,}={0,2}/ excluding all-hex runs). No allowlist and no
+      suppression comments. Flags: none (scan the set) and `--file <path>`.
+      Exit 0 clean (one stdout line), 1 violations (stderr `- file:line rule`,
+      offending text collapsed and truncated to 80 chars), 2 usage error,
+      unreadable file or empty target set.
+  - file: scripts/backend/check-config-integrity.test.ts
+    description: >
+      New bun:test unit test with inline fixtures. Positive cases for every
+      rule (including `f(eval, x)`, a 600-character line and the historical
+      one-line payload shape) and negative cases (376-character YAML line,
+      64-character SHA-256 digests, deeply indented YAML, `.eval` / `.Function(`
+      member expressions). Asserts resolveTargets is non-empty and contains the
+      five configuration files plus backend-quality.yml and
+      fantasy-authenticated-e2e.yml, never scripts/ or docs/; asserts scanText
+      over all resolved targets returns []; asserts that in backend-quality.yml
+      the "Config integrity guard" step index is lower than both
+      `bun install --frozen-lockfile` (both jobs) and `bun run lint`; covers the
+      CLI exit codes 0, 1, 2 (unknown flag, unreadable path, empty target root).
+  - file: .github/workflows/fantasy-authenticated-e2e.yml
+    description: >
+      New workflow with exactly two triggers — workflow_dispatch (inputs
+      `target`: staging|production, default staging; `confirmation`) and
+      schedule "0 3 * * *". No pull_request or push trigger. Job gate:
+      repository == mrdata007/botolago-foundation && ((schedule &&
+      vars.FANTASY_E2E_ENABLED == 'true') || (workflow_dispatch &&
+      inputs.confirmation == 'RUN_FANTASY_E2E')). runs-on ubuntu-latest,
+      timeout-minutes 40, environment fantasy-e2e, permissions contents: read,
+      concurrency group fantasy-authenticated-e2e with cancel-in-progress false.
+      Steps: checkout → setup-bun 1.3.14 → ::add-mask:: (password, publishable
+      key) → target-resolution guard (schedule resolves to staging or exits 1)
+      → credential-presence guard (exit 1 on any empty value) →
+      bun install --frozen-lockfile → config integrity guard →
+      bunx playwright install --with-deps chromium → bun run test:e2e:fantasy →
+      upload playwright-report, test-results/playwright/**/*.png and
+      test-results/playwright/**/sanitized-browser-diagnostics* (retention 7).
+      Credential names only; no values.
+  - file: .github/workflows/backend-quality.yml
+    description: >
+      One step inserted per job, immediately after setup-bun and before
+      `bun install --frozen-lockfile`: `- name: Config integrity guard` running
+      `bun run config:integrity:check`, in both application-quality and
+      database-quality. Every pre-existing step left untouched and in order.
+  - file: playwright.config.ts
+    description: >
+      Line 18 trace expression only: traces are now also disabled when
+      E2E_FANTASY_EMAIL is set, so a failing credentialed run cannot upload a
+      trace carrying the synthetic manager's session tokens (prettier wrapped
+      the expression across four lines).
+  - file: package.json
+    description: >
+      "scripts" block only, two entries added:
+      "test:e2e:fantasy": "playwright test tests/e2e/fantasy.journey.e2e.ts" and
+      "config:integrity:check": "bun scripts/backend/check-config-integrity.mjs".
+  - file: docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md
+    description: >
+      One sentence appended to owner action 4 referencing the new guard, its npm
+      script and its placement before `bun install` in both backend-quality
+      jobs. No other part of the incident record touched.
+database_changes: []
+configuration_changes:
+  - "package.json scripts: test:e2e:fantasy, config:integrity:check."
+  - ".github/workflows/backend-quality.yml: Config integrity guard step added before bun install in application-quality and database-quality."
+  - ".github/workflows/fantasy-authenticated-e2e.yml: new workflow_dispatch + nightly schedule workflow, inert until the owner creates the fantasy-e2e environment and sets FANTASY_E2E_ENABLED."
+  - "playwright.config.ts: trace disabled when E2E_FANTASY_EMAIL is present."
+  - "Owner-side configuration NOT performed by this task (no repository settings were changed): GitHub Environment `fantasy-e2e` with secrets E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD, repository variable FANTASY_E2E_ENABLED, and the staging Supabase vars/secrets SUPABASE_STAGING_URL / SUPABASE_STAGING_PUBLISHABLE_KEY (production arm uses SUPABASE_PRODUCTION_URL / SUPABASE_PRODUCTION_PUBLISHABLE_KEY, dispatch only)."
+tests_run:
+  - command: "env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bunx playwright test tests/e2e/fantasy.journey.e2e.ts --list"
+    result: PASS # RC-1-A1: exit 0, "Total: 6 tests in 1 file"
+  - command: "env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bun run test:e2e:fantasy"
+    result: PASS # RC-1-A1: exit 0, 6 skipped, 0 failed
+  - command: "grep -nE '^\\s*(pull_request|push):' .github/workflows/fantasy-authenticated-e2e.yml"
+    result: PASS # RC-1-A2: no match (grep exit 1); file contains workflow_dispatch, schedule, vars.FANTASY_E2E_ENABLED, secrets.E2E_FANTASY_PASSWORD
+  - command: "grep -n E2E_FANTASY_EMAIL playwright.config.ts; grep -c E2E_FANTASY_PASSWORD playwright.config.ts"
+    result: PASS # RC-1-A2: EMAIL present on the trace line, PASSWORD count 0
+  - command: "git diff --exit-code tests/e2e/fantasy.journey.e2e.ts tests/e2e/support.ts"
+    result: PASS # RC-1-A2: exit 0, E2E assets unchanged
+  - command: "bun scripts/backend/check-config-integrity.mjs"
+    result: PASS # RC-2-A1: exit 0, "no violations in 34 executed configuration file(s)"
+  - command: "bun run config:integrity:check"
+    result: PASS # RC-2-A1: exit 0
+  - command: "git show 5731246:eslint.config.js > <scratchpad>/bg0020-hist.js; bun scripts/backend/check-config-integrity.mjs --file <scratchpad>/bg0020-hist.js"
+    result: PASS # RC-2-A2: exit 1; 7 violations — line 75 R1 (32222 chars), R2, R3, R4, R5 and R4 at lines 7 and 9; at most 80 chars of payload echoed per line; blob kept outside the repository
+  - command: "bun test scripts/backend/check-config-integrity.test.ts"
+    result: PASS # RC-2-A3: exit 0, 24 pass 0 fail
+  - command: "bun run test"
+    result: PASS # RC-2-A3: exit 0, 656 pass 0 fail across 115 files
+  - command: "bun scripts/backend/check-config-integrity.mjs --file /nonexistent/path"
+    result: PASS # RC-2-A4: exit 2
+  - command: "bun scripts/backend/check-config-integrity.mjs (copied into an empty root, empty target set)"
+    result: PASS # RC-2-A4: exit 2, asserted by the CLI unit test
+  - command: "bunx prettier --write <changed files>"
+    result: PASS # exit 0
+  - command: "bunx eslint scripts/backend/check-config-integrity.test.ts"
+    result: PASS # exit 0
+  - command: "bun run typecheck"
+    result: PASS # exit 0
+  - command: "bun run lint"
+    result: PASS # exit 0, 12 pre-existing react-refresh warnings, 0 errors
+  - command: "bun run backend:secrets:check"
+    result: PASS # exit 0
+  - command: "python3 -c 'yaml.safe_load(...)' on both workflows"
+    result: PASS # both parse; triggers are exactly workflow_dispatch + schedule
+unresolved:
+  - "RC-1-A3 is owner-gated and NOT executed: a dispatch with target=staging must report 6 passed / 0 skipped (6 skipped is a FAILURE). It cannot run until the owner creates the GitHub Environment `fantasy-e2e` with E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD, sets the repository variable FANTASY_E2E_ENABLED, and confirms which Supabase project holds the synthetic manager account (staging preferred). The workflow is landed inert and fail-closed: without the gate it never runs, and with the gate but empty credentials the presence guard exits 1 instead of reporting a green skipped run."
+unexpected_observations:
+  - "Chief amendment received mid-task: the primary working tree /home/user/botolago-foundation is in use by another Builder on branch agent/BG-0001-0003-deadline-guard with uncommitted files. Before the amendment arrived I had already run `git checkout -b agent/BG-0020-ci-guards` there; I restored it immediately with `git checkout agent/BG-0001-0003-deadline-guard` (no stash, no file touched; the modified and untracked files were carried through unchanged) and deleted the accidental branch, which held no commits. All edits, installs, tests and commits for BG-0020 were then done in an isolated worktree at /home/user/bg0020; no typecheck or test run touched the primary tree."
+  - "Baseline count is 34 executed configuration files (5 configs + 29 workflows including the new one), not the 32 quoted in the brief's RC-2-A1; the repository gained workflows since the research pass. R1..R6 are all 0 across the set, so the acceptance intent holds."
+  - "docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md owner action 4 suggests a 1 000-character threshold; the brief specifies 500 and the implementation follows the brief (the appended sentence does not restate a threshold)."
+  - "The Fantasy suite creates a new league on every run and never deletes it, so enabling the nightly schedule will accumulate league rows in the target project. The brief records this as a follow-up task; no cleanup was added here."
+scope_deviations: []
+status: DONE
