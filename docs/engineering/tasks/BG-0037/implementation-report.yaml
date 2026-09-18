@@ -1,0 +1,70 @@
+task_id: BG-0037
+builder_type: Builder-DevOps
+branch: agent/BG-0037-promoter-manifest
+base: "origin/main 6a25673 (branch was created from a98479d and fast-forwarded twice during the task; both upstream deltas, 5a28aac and the BG-0029 merge 54df2db/6a25673, touched none of the files below and no migration; supabase/migrations still holds 59 files)"
+commits:
+  - "9db1514 BG-0037: add the fantasy_deadline_guard batch to the Phase 7E-B promoter manifest"
+  - "BG-0037: implementation report"
+changes:
+  - file: scripts/backend/phase7e-production-migration-promoter.py
+    description: >
+      BATCHES gains one entry appended after "fantasy_calendar_sync":
+      "fantasy_deadline_guard": ("20260918130000_fantasy_deadline_watch.sql",
+      "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql"), preceded by a
+      three-line comment naming BG-0003 (verified and reviewed 2026-09-18), the read-only
+      deadline-watch RPC and the guarded calendar-sync replacement.
+      EXPECTED_EDGE_FUNCTIONS_BY_BATCH gains "fantasy_deadline_guard":
+      frozenset({"football-ingest", "news-ingest"}), identical to fantasy_calendar_sync.
+      CONFIRMATIONS derives RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD automatically.
+      Nothing else in the file changed (build_transaction, assert_history, read_history,
+      ManagementClient, load_migrations and every pinned-history table are byte-identical).
+  - file: .github/workflows/phase7e-b-production-migration-promotion.yml
+    description: >
+      One line added: "- fantasy_deadline_guard" as the last option of the migration_batch
+      choice input. No other change (guards, environment, secrets, steps untouched).
+  - file: scripts/backend/tests/test_phase7e_production_migration_promoter.py
+    description: >
+      test_batches_cover_the_exact_ordered_migration_chain: manifest count 57 -> 59 (both
+      the length and the set-size assertions); added assertions that
+      BATCHES["fantasy_deadline_guard"] equals the two BG-0003 files in order, that it is the
+      last batch key, that its history prefix is 57 files, that its confirmation is
+      RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD, and it is included in the
+      edge-function expectation loop. The existing 56-file prefix assertion for
+      fantasy_calendar_sync and the 44-file assertion for release_activation are unchanged
+      and still hold. New test test_workflow_batch_choices_match_the_manifest_batches_in_order:
+      parses the migration_batch options list out of the workflow file and asserts it equals
+      the BATCHES keys in manifest order minus "post_gate4_baseline" (see
+      unexpected_observations), that the last option equals the last batch, and that every
+      option is a known batch. Added "import re". All ten pre-existing tests kept unchanged.
+  - file: docs/engineering/tasks/BG-0037/implementation-report.yaml
+    description: this report.
+database_changes: []
+configuration_changes:
+  - "Workflow phase7e-b-production-migration-promotion.yml: migration_batch choice list gains fantasy_deadline_guard as its last option. No secret, variable, environment or other workflow was changed. No workflow was dispatched."
+tests_run:
+  - command: python -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v
+    result: PASS # "Ran 11 tests in 0.014s / OK" (10 pre-existing + 1 new parity test); re-run after the final fast-forward to 6a25673: "Ran 11 tests in 0.012s / OK". This is the invocation form used by .github/workflows/phase7f-production-api-identity-activation.yml; pytest is not installed in this environment and the repository does not use it (see not_executed).
+  - command: "python3 sanity script (scratchpad): import origin/main's promoter and the branch promoter with importlib, call load_migrations(Path('.')) on the repository"
+    result: PASS # "origin/main promoter: repository migration inventory differs from the reviewed migration chain" (reproduces the P0 failure) / "branch promoter: len(load_migrations) = 59 | len == 59: True" / "last batch: fantasy_deadline_guard | confirmation: RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD | history prefix: 57"
+  - command: bun run backend:migrations:check
+    result: PASS # "Validated 59 migration(s)."
+  - command: bun run typecheck
+    result: PASS # "tsc --noEmit" exit 0 (after bun install --frozen-lockfile; node_modules was absent in the fresh worktree, which produced a spurious TS2688 vite/client error on the first attempt)
+  - command: node scripts/backend/check-config-integrity.mjs --file .github/workflows/phase7e-b-production-migration-promotion.yml
+    result: PASS # "Config integrity guard: no violations in 1 executed configuration file(s)." (run both before and after fast-forwarding onto the BG-0029 merge, which changed this guard script)
+  - command: bunx prettier --check .github/workflows/phase7e-b-production-migration-promotion.yml
+    result: PASS # "All matched files use Prettier code style!"
+  - command: bunx ruff check scripts/backend/tests/test_phase7e_production_migration_promoter.py scripts/backend/phase7e-production-migration-promoter.py
+    result: PASS # "All checks passed!" (supplementary; not a repository gate)
+  - command: git diff --name-status origin/main..HEAD
+    result: PASS # before the report commit: exactly M .github/workflows/phase7e-b-production-migration-promotion.yml, M scripts/backend/phase7e-production-migration-promoter.py, M scripts/backend/tests/test_phase7e_production_migration_promoter.py; after it, additionally A docs/engineering/tasks/BG-0037/implementation-report.yaml
+not_executed:
+  - "python3 -m pytest: pytest is not installed here ('No module named pytest') and no repository script or workflow invokes it; the CI form (python -m unittest <file>) was run instead."
+  - "The Phase 7E-B workflow itself was not dispatched and no Supabase Management API call was made (forbidden; no credentials sought). Whether the Production V2 history matches the 57-file prefix for fantasy_deadline_guard, and whether the credential retry the owner requested succeeds, is proven only by the owner's dispatch at the merged main commit."
+unresolved: []
+unexpected_observations:
+  - "The workflow's migration_batch choice list has never offered post_gate4_baseline (its comment in the promoter says it was promoted through separately reviewed provider canaries and is kept only so later batches can prove the chain). A strict choice-list == BATCHES-keys parity test therefore fails on origin/main as well as on this branch; the new parity test encodes that one batch as the documented non-dispatchable exception rather than adding it to the workflow, which would have been a scope deviation. If the Chief prefers a strict parity, either the workflow gains the option or the promoter gains an explicit DISPATCHABLE set."
+  - "The workflow computes the expected confirmation as RUN_PHASE7E_B_PRODUCTION_${MIGRATION_BATCH^^} in bash, and the promoter computes it via batch.upper(); both yield RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD for the new batch. No change needed; noted because the two derivations live in different files with no shared test."
+  - "tsconfig.json includes only src/**, so bun run typecheck does not cover scripts/backend; it was run as instructed to confirm the frontend build is unaffected."
+scope_deviations: []
+status: DONE
