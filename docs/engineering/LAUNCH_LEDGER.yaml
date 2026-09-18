@@ -463,6 +463,7 @@ tasks:
     merge_gate: 'pull request whose backend-quality database job is green (first execution of season_bounds_guard.test.sql on a Supabase stack); PR opened by Chief under the owner PR route; a red job voids the PASS and returns the task to Builder-Backend'
     sequencing: 'PR #136 (BG-0027, migration 150000) merges first; then this branch merges main and moves the season_bounds_guard prefix 59 to 60 (version order preserved: 150000 before 160000)'
     promotion_gate: 'owner one-row correction with lock before 2026-09-25 (Option A box 2026-09-23T00:00Z); promote batch season_bounds_guard after BG-0002 clears; workflows stay undispatched until both are live'
+    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/137 (head 96acad3); session subscribed'
 
   BG-0032:
     title: api.service_rollback_fantasy_catalog does not clear app.fantasy_leagues / fantasy_league_memberships / app_private.fantasy_mutation_audit (all ON DELETE RESTRICT) — "clean rollback" claim in the runbook is false; rollback fails on any season that ever had a league
