@@ -1,0 +1,226 @@
+---
+task_id: BG-0027
+attempt: 3
+role: Reviewer (fresh-context, final gate)
+reviewed_commit: 5856e02b09fb6afed26258dc983c043cc9166d0d
+pr: https://github.com/mrdata007/botolago-foundation/pull/136
+workspace: /tmp/bg0027-review (git worktree, detached at origin/agent/BG-0027-ratings-fail-closed)
+scope: >-
+  Independent, fresh-context review of the whole task (not a rubber-stamp of
+  prior reports): the two files attempt-2 review flagged as defective, the new
+  guard migration in full, the ratings-worker fail-closed logic, cross-checked
+  claims in verification-report-attempt3.yaml and verification-report-attempt4.yaml
+  against raw CI data pulled directly from GitHub (not the reports' own text),
+  and a check for regressions or scope creep since the last verified commit.
+verdict: PASS
+head_sha_check:
+  claimed_in_task_prompt: 952bdef8859d55d1aac3c5d7fb8db6011f216727
+  actual_pr_head_at_review_start: 5856e02b09fb6afed26258dc983c043cc9166d0d
+  finding: >-
+    PR #136 had moved one commit past the SHA named in the dispatch prompt.
+    `git show --stat 5856e02` shows the delta from 952bdef is exactly one file,
+    `docs/engineering/tasks/BG-0027/verification-report-attempt4.yaml`
+    (168 insertions, 0 deletions) — the attempt-4 Verifier's own report commit.
+    No code, migration, or test changed. Re-ran CI on this real head: workflow
+    run 35368906136 (backend-quality.yml, pull_request, head_sha
+    5856e02b09fb6afed26258dc983c043cc9166d0d) was in_progress at review start;
+    polled to completion and confirmed conclusion "success" before finalizing
+    this verdict. This report reviews and blesses 5856e02, the actual current
+    PR head, not the now-superseded 952bdef.
+criteria:
+  - criterion: >-
+      R1. The two pgTAP assertions attempt-2 review flagged (scenario-3
+      healthy-path price '12.50' and distinct-price count) are numerically
+      correct against app_private.fantasy_initial_price_v1 as actually
+      implemented.
+    result: VERIFIED
+    evidence: |
+      Independently computed (not copied from any prior report), reading
+      supabase/migrations/20260803210943_fantasy_catalog_activation.sql:127-165
+      (fantasy_initial_price_v1) and :167-231 (fantasy_catalog_candidates):
+        adjusted_rating = 6 + (rating - 6) * confidence
+        price = round((min + ((adjusted - 4)/6) * (max-min)) * 10) / 10
+      Bands: GK(4.0,6.5) DEF(4.0,7.0) MID(4.5,12.5) FWD(4.5,12.5).
+      Test fixture (fantasy_rating_degeneracy_guard.test.sql): 16 teams x 15
+      players/team, positions by player_number (<=2 GK, <=7 DEF, <=12 MID,
+      else FWD); scenario 3 differentiates degeneracy-player:1:8 (player_number
+      8 -> midfielder) to rating=10, confidence=1 in the prior completed
+      season the candidates lateral-join resolves against.
+        Neutral (rating=6, confidence=0, adjusted=6): GK price 4.8, DEF 5.0,
+          MID/FWD 7.2 (three distinct neutral values; MID and FWD share a band).
+        Differentiated MID (rating=10, confidence=1, adjusted=10): price 12.5.
+      Test assertions: price::text = '12.50' (line 406) — MATCHES.
+        count(distinct price) = 4 "three neutral bands plus the rated player"
+        (lines 410-414) — MATCHES (4.8, 5.0, 7.2, 12.5 = 4 distinct values).
+      This is the corrected form of attempt-2's defect (originally rating=8.8
+      with an inconsistent '12.50'/5-distinct expectation); the current
+      fixture (rating=10) and current assertions are mutually consistent and
+      arithmetically correct.
+  - criterion: >-
+      R2. jsonb numeric-precision risk: does maxConfidence/degenerate equality
+      hold given player_season_ratings.confidence is numeric(4,3) while the
+      test literals use unscaled numeric ("1.0", "0.0")?
+    result: VERIFIED (no defect; independently tested)
+    evidence: |
+      Spun up a local Postgres 16 (already installed in this environment,
+      unrelated to any Supabase/CI stack) and ran:
+        select jsonb_build_object('x', (1)::numeric(4,3)) = '{"x":1.0}'::jsonb;
+        -> true
+      Confirms jsonb equality is numeric, not textual: numeric(4,3) 1.000
+      compares equal to the literal 1.0 in the test's expected jsonb. Same
+      reasoning applies to 0.000 vs 0.0. This closes a plausible-looking but
+      false lead before treating it as a defect.
+  - criterion: >-
+      R3. app_private/api function bodies are additive only (no change to
+      pre-existing behaviour for non-degenerate input); grants/revokes on the
+      two touched api functions are unchanged and not over-permissioned.
+    result: VERIFIED
+    evidence: |
+      Diffed the pre-existing bodies (20260803210943_fantasy_catalog_activation.sql,
+      api.preview_fantasy_catalog_activation and api.service_stage_fantasy_catalog)
+      against the new migration's create-or-replace versions by hand, line for
+      line: the preview function is unchanged except for
+      `|| jsonb_build_object('ratingDegeneracy', app_private.fantasy_rating_inputs_degenerate(...))`
+      appended to its return; the stage function is unchanged except for one
+      new `declare rating_degeneracy jsonb;` and a 7-line guard block inserted
+      after the sourceDigest staleness check and before the first insert
+      (target_season lookup / fantasy_competitions insert). No existing insert,
+      lock, idempotency check, or integrity check was touched or reordered.
+      Grants: the new migration revokes execute on the inspector
+      (app_private.fantasy_rating_inputs_degenerate) from public, anon,
+      authenticated AND service_role (no grant at all — reachable only via the
+      two security-definer api wrappers), and revokes-then-regrants the two
+      api functions to service_role only, matching the exact pattern of the
+      base migration's own revoke/grant footer. No new grant to anon or
+      authenticated anywhere. Not over-permissioned.
+  - criterion: >-
+      R4. The degeneracy inspector's logic (distinctRatings/maxConfidence) is
+      sound against the actual player_season_ratings schema and the exact
+      candidate set the stage consumes.
+    result: VERIFIED
+    evidence: |
+      app_private.fantasy_rating_inputs_degenerate aggregates directly over
+      app_private.fantasy_catalog_candidates(season) — the same function
+      api.service_stage_fantasy_catalog uses both for pricing and for
+      inserting fantasy_players — so the guard inspects exactly the priced
+      inputs, not a parallel/divergent query. degenerate = candidates>0 and
+      distinct(source_rating)=1 and max(source_confidence)=0 correctly
+      captures "every candidate resolved to the 6.0/0 fallback (or an
+      explicit persisted 6.0/0 placeholder)" and nothing else; a single real
+      rating (any value, any confidence>0) flips distinctRatings to >=2 or
+      maxConfidence>0, clearing the guard, as scenario 3 demonstrates.
+  - criterion: >-
+      R5. Independently re-verify the CI execution claims in
+      verification-report-attempt3.yaml and verification-report-attempt4.yaml
+      against raw GitHub data, not the reports' text.
+    result: VERIFIED
+    evidence: |
+      Pulled job 105604272781 (run 35346523879, head 952bdef) log directly via
+      mcp__github__get_job_logs(return_content=true). Confirmed verbatim:
+        "Applying migration 20260918150000_fantasy_rating_degeneracy_guard.sql..."
+        (present during both the initial stack bring-up and the explicit
+        `bun run backend:db:reset`, so the guard was live before tests ran)
+        ".../fantasy_rating_degeneracy_guard.test.sql ......... ok"
+        "All tests successful."
+        "Files=40, Tests=821, ... Result: PASS"
+        "supabase db lint ... No schema errors found"
+        "Generated database types are current."
+      All match both prior reports' claims exactly and were fetched fresh in
+      this session, not read from the committed ci-run-35346523879.txt excerpt
+      or trusted from report prose.
+  - criterion: >-
+      R6. PR #136's current head and CI status are green at review time (not
+      just at the historical run cited in the task prompt).
+    result: VERIFIED
+    evidence: |
+      mcp__github__pull_request_read(get, #136).head.sha = 5856e02... at
+      review time. Diffed 952bdef..5856e02: one file, the attempt-4 report,
+      zero code/migration/test change (see head_sha_check above). CI run
+      35368906136 (backend-quality.yml) against 5856e02 was in_progress when
+      first observed; polled via the GitHub REST API (using the session's own
+      GH_TOKEN) until status=completed, conclusion=success. PR is green on
+      its actual current tip, not only on the now-superseded 952bdef.
+  - criterion: >-
+      R7. Ratings-worker fail-closed logic (the other half of BG-0027, not
+      re-litigating attempt-1/2's already-closed defects, but confirming they
+      stayed closed and no regression was introduced).
+    result: VERIFIED
+    evidence: |
+      supabase/functions/_shared/sportsmonks-player-ratings.ts:751-786: a
+      record only joins `covered` when `normalized.hasValues` is true (not
+      merely matched), `counts.fetched === 0` throws
+      PLAYER_STATISTICS_UNAVAILABLE, and `covered.size / candidates.length <
+      MIN_STATISTICS_COVERAGE` throws PLAYER_STATISTICS_COVERAGE_INSUFFICIENT
+      — both before calculatePreseasonRatings and before any
+      ingest_player_season_ratings RPC. This is exactly attempt-1 review's
+      DEF-2 correction, present and unchanged since. No regression: this file
+      is untouched between acdb060 (attempt-3 verified) and 5856e02 (current
+      head), confirmed by `git diff --name-status` showing it outside the
+      changed-file set for that range.
+  - criterion: >-
+      R8. Manifest/tooling changes (BG-0042 promoter batch, workflow dropdown
+      entry) are additive and gated, not a live production action.
+    result: VERIFIED
+    evidence: |
+      scripts/backend/phase7e-production-migration-promoter.py adds a new
+      "fantasy_rating_degeneracy_guard" batch entry (one migration file) and
+      a corresponding CONFIRMATIONS / EXPECTED_EDGE_FUNCTIONS_BY_BATCH entry,
+      following the exact pattern of the prior "fantasy_deadline_guard" batch;
+      the workflow_dispatch dropdown in
+      .github/workflows/phase7e-b-production-migration-promotion.yml gains one
+      option. This is manual, owner-triggered, confirmation-string-gated
+      tooling for a separate promotion step — it does not run automatically
+      and does not touch production by itself. Comment explicitly states
+      "pending owner promotion approval."
+regressions: []
+release_blockers: []
+residual_risks:
+  - >-
+    Narrow guard threshold (carried forward from attempt-2 review, not
+    re-flagged as new): the inspector fires only when count(distinct
+    source_rating)=1 and max(source_confidence)=0, i.e. exactly "every
+    candidate is the neutral fallback." A season where most but not all
+    candidates are 6.0/0 (e.g. one real rating among hundreds of placeholders)
+    clears the guard. The worker's own 0.5 coverage floor is the first line of
+    defence for that case; this guard is the second-line, database-level
+    backstop for the fully-degenerate case it was scoped to catch. No change
+    requested here; a stricter joint threshold would be a follow-up task, not
+    a defect in this one.
+  - >-
+    Guard ordering (carried forward): fantasy_rating_inputs_degenerate runs
+    after the idempotency-replay, already-staged, not-ready and stale-digest
+    checks in api.service_stage_fantasy_catalog, all of which are pure reads
+    with no inserts, so AC-c's "raises before any insert" holds regardless of
+    ordering. Independently re-confirmed in this review (R3).
+  - >-
+    Production promotion of 20260918150000_fantasy_rating_degeneracy_guard.sql
+    itself is a separate, owner-gated Phase 7E-B step (R8) and is out of scope
+    for this PR and this review; merging PR #136 lands the guard on `main`'s
+    migration chain but does not by itself apply it to the live production
+    database.
+notes:
+  - >-
+    This review treated every claim in verification-report-attempt3.yaml and
+    verification-report-attempt4.yaml as a hypothesis to re-check, not a fact
+    to carry forward. Independent checks performed rather than trusted: hand
+    arithmetic of the pricing formula against the actual fixture (R1); a live
+    Postgres numeric/jsonb equality experiment (R2); a line-by-line diff of
+    the pre-existing function bodies against the new migration (R3); a fresh
+    pull of the CI job log via the GitHub API, not the committed excerpt file
+    or the reports' quoted text (R5); and a live re-poll of PR #136's current
+    head and its CI run to completion, since the branch had moved past the
+    SHA named in the dispatch prompt (R6). No discrepancy was found between
+    what the prior reports claimed and what the raw artifacts show.
+  - >-
+    The one new fact this review surfaces beyond attempts 1-4: PR #136's head
+    advanced from 952bdef to 5856e02 between task dispatch and this review
+    (the attempt-4 Verifier's own report commit). That delta is docs-only and
+    CI re-ran green on it (R6), so it does not change the verdict, but the
+    Chief should merge 5856e02 (the PR's actual current tip), not 952bdef.
+  - >-
+    All defects raised in review-report-attempt1.yaml (missing AC-c migration;
+    has_values=false counted as coverage) and review-report-attempt2.yaml
+    (wrong scenario-3 price/count assertions) are confirmed closed by
+    independent re-derivation in this pass, not merely by absence of new
+    complaints.
+status: PASS
