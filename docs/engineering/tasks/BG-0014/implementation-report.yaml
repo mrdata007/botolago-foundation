@@ -1,0 +1,120 @@
+task_id: BG-0014
+builder_type: Builder-Frontend
+branch: agent/BG-0014-i18n-gate
+commits:
+  - "BG-0014: i18n gate script, typed allow-list, broken fixture and CI test"
+  - "BG-0014: implementation report"
+changes:
+  - file: scripts/qa/i18n-gate.ts
+    description: >
+      New. Pure `auditI18n(dicts, usage, allow, baselines)` plus a CLI wrapper
+      (`bun scripts/qa/i18n-gate.ts`, and `--fixture` to audit the broken
+      fixture) that prints a report and exits 1 on any failure. Errors E1 key in
+      one language only, E2 empty/whitespace value, E3 placeholder-token set
+      differs, E4 unbalanced or repeated {accent} span, E5 literal t("…") key
+      absent from the dictionary, E6 stale allow-list entry (allow-listed key is
+      not a dictionary key). Warnings W1 identical fr/ar values, W2 ar values
+      with no Arabic script, W3 keys unreferenced in src/, W4 non-literal t()
+      call sites, each ratcheted against a committed exact-equality baseline in
+      the exported `BASELINES`. Usage index is built with Bun.Glob over
+      src/**/*.{ts,tsx}, classifying each t() argument as LITERAL, TEMPLATE
+      (static prefix ending in "." or "_") or OPAQUE, and additionally
+      collecting every quoted string literal for W3 reachability. No new
+      dependency. The header documents the exact-equality ratchet and the
+      "never wire W3 to deletion" rule.
+  - file: src/i18n/i18n-allowlist.ts
+    description: >
+      New. IDENTICAL_ALLOWED (app.name, language.french, language.arabic,
+      news.language.ar, notfound.code) and NO_ARABIC_SCRIPT_ALLOWED (those five
+      plus auth.email_placeholder), each entry carrying a justification string,
+      both `as const satisfies Partial<Record<TranslationKey, string>>` so a
+      renamed or deleted dictionary key breaks `bun run typecheck`.
+      profile.title is deliberately not allow-listed and therefore stays a named
+      W1 and W2 warning.
+  - file: src/i18n/__fixtures__/broken-dictionary.ts
+    description: >
+      New. Hand-written two-language fixture (not derived from the real
+      dictionary) injecting E1 fixture.only_fr, E2 fixture.empty, E3
+      fixture.placeholder, E4 fixture.accent and one W1 fixture.identical, plus
+      the fixture's own baselines so the fixture run reports only the injected
+      defects.
+  - file: src/i18n/i18n-gate.test.ts
+    description: >
+      New. 21 bun:test cases in four describes — "current tree" (0 errors, every
+      warning count exactly equal to its committed baseline, gate passes,
+      profile.title reported by name, allow-listed keys suppressed with
+      justifications, every literal t() key resolves), "broken fixture" (exactly
+      the injected E1..E4 with their keys, exactly one W1, gate fails),
+      "negative controls" (E1..E6 each provoked in memory, W1 and W3 baseline
+      drift each failing the gate, allow-list entry removal changing visibility)
+      and "usage classification" (argument classifier and source indexer).
+      Discovered by the existing `bun run test` CI step.
+database_changes: []
+configuration_changes: []
+tests_run:
+  - command: bun scripts/qa/i18n-gate.ts
+    result: PASS # exit 0; errors: none; W1=6 W2=5 W3=237 W4=100, all at baseline
+  - command: bun scripts/qa/i18n-gate.ts --fixture
+    result: PASS # exit 1, naming E1 fixture.only_fr, E2 fixture.empty, E3 fixture.placeholder, E4 fixture.accent
+  - command: bun test src/i18n/i18n-gate.test.ts
+    result: PASS # exit 0; 21 pass, 0 fail, 590 expect() calls
+  - command: bunx prettier --write scripts/qa/i18n-gate.ts src/i18n/i18n-gate.test.ts src/i18n/i18n-allowlist.ts src/i18n/__fixtures__/broken-dictionary.ts
+    result: PASS # exit 0, then --check on the same four files exit 0
+  - command: bunx eslint scripts/qa/i18n-gate.ts src/i18n/i18n-gate.test.ts src/i18n/i18n-allowlist.ts src/i18n/__fixtures__/broken-dictionary.ts
+    result: PASS # exit 0, no errors and no warnings on the new files
+  - command: bun run lint
+    result: PASS # exit 0; 12 pre-existing react-refresh warnings, 0 errors, none in the new files
+  - command: bun run typecheck
+    result: PASS # exit 0
+  - command: bun run typecheck (with notfound.code renamed in IDENTICAL_ALLOWED)
+    result: PASS # exit 2 as required — TS2353 on src/i18n/i18n-allowlist.ts; file restored afterwards
+  - command: bun run test
+    result: PASS # exit 0; 653 pass, 0 fail, 115 files, including src/i18n/i18n-gate.test.ts
+unresolved:
+  - >
+    Acceptance control "app.name removed from the allow-list -> W1=7 > 6 -> exit
+    1" cannot hold under the committed baselines and was not implemented as
+    written. W1=6 and W2=5 are raw counts of the findings themselves (measured:
+    6 identical fr/ar pairs, 5 ar values with no Arabic script), and all five
+    W1 findings plus auth.email_placeholder are allow-listed. If the allow-list
+    subtracted from the count, W1 would be 1 and W2 would be 0, contradicting
+    both committed baselines. The gate therefore counts findings and lets the
+    allow-list annotate them (suppressed with justification vs reported by
+    name), which is also what "W1=6, five suppressed as allow-listed,
+    profile.title reported" in the brief describes. Removing app.name from
+    IDENTICAL_ALLOWED leaves W1=6 and the gate passing, but app.name becomes a
+    second named warning next to profile.title; that observed behaviour is
+    pinned by a test with the discrepancy explained in a comment. Chief should
+    confirm this reading or re-specify the control.
+unexpected_observations:
+  - >
+    src/i18n/dictionaries.ts profile.title is "Profile\n\n" in both fr and ar
+    (English copy, two trailing newlines). Already known and owned by BG-0024;
+    left untouched, and it is the single named W1/W2 warning the gate prints.
+  - >
+    The static prefix scan finds 10 template prefixes, not the 9 in the brief,
+    because "fantasy.chip.state." nests inside "fantasy.chip.". Key coverage is
+    unaffected — W3 measured 237, exactly the committed baseline.
+scope_deviations:
+  - package.json script omitted by Chief instruction
+  - >
+    W4 is defined as "t() call sites whose argument is not a literal key",
+    counting enumerable template-prefix sites (37) together with fully opaque
+    expressions (63) = 100, which reproduces the committed baseline exactly and
+    matches the Researcher's wording "100 t() call sites with non-literal
+    arguments". Counting only fully opaque sites would give 63 and miss the
+    baseline.
+  - >
+    The usage index excludes all of src/i18n/ rather than naming
+    dictionaries.ts, the allow-list and the fixtures individually. The only
+    other file there, provider.tsx, contains no key literals, so the measured
+    counts are identical; the broader rule keeps the gate's own test file from
+    making keys look reachable by quoting them in assertions.
+  - >
+    E6 is implemented as "allow-listed key is not a dictionary key" (the runtime
+    counterpart of the typecheck guard), the case the brief's negative control
+    exercises. An allow-list entry whose underlying condition no longer applies
+    is not treated as an error; NO_ARABIC_SCRIPT_ALLOWED keeps language.arabic
+    and news.language.ar as the brief specified even though both already contain
+    Arabic script.
+status: DONE
