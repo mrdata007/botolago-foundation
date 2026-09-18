@@ -537,7 +537,7 @@ tasks:
     owner: Chief
     state: RUNNING
     depends_on: []
-    roles: {builder: Builder-DevOps running (on agent/BG-0027-ratings-fail-closed, separate task owner), verifier: pending, reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0027-ratings-fail-closed @3865ffb; main merged in cleanly; 11 tests OK; inventory 60), verifier: folded into the BG-0027 final verification pass once the pgTAP environment decision lands, reviewer: same}
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
