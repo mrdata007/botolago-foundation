@@ -124,6 +124,7 @@ tasks:
       HOLD — do NOT set FANTASY_AUTOMATION_ENABLED=true yet. Reviewer DEF-1 (BG-0001): the hourly pass would lock GW1 at 2026-09-23T22:30Z, a deadline derived from the provider's 00:00 UTC placeholder. Set the variable only after BG-0001 attempt 2 reaches Reviewer PASS. Then: Settings → Secrets and variables → Actions → Variables → FANTASY_AUTOMATION_ENABLED = true.
     depends_on_review: BG-0001
     residual_risks: []
+    hold_reason_2: 'BG-0031 — the orchestrator''s recovery step overwrites app.seasons.ends_on from the provider on every run; do not enable the hourly schedule until the season-bounds guard migration is live in production'
 
   BG-0005:
     title: SportsMonks promoted-club squad guard (current_squad_empty_or_oversized)
@@ -402,10 +403,17 @@ tasks:
     area: data
     severity: P0
     owner: Chief
-    state: READY
+    state: RUNNING
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml contradictions[0]']
     acceptance_criteria: [root cause of the overwrite identified in the season ingestion path; a durable fix (guard or provider-metadata handling) so the correction is not reverted again; production row corrected via a rolled-back rehearsal first, then an owner-approved write]
     next: Researcher (season ingestion path) → Builder-Backend
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0031/engineering-brief.yaml), builder: Builder-Backend running (branch agent/BG-0031-season-bounds-guard), verifier: pending, reviewer: pending}
+    root_cause: 'orchestrator run 35332956079 (Chief-dispatched manual run, 2026-09-18T10:06Z) executed current-season-recovery.ts; the seasons catalog job mapped provider ending_at 2026-09-24 to endsOn and api.ingest_football_catalog_entity overwrote ends_on unconditionally; freshness() falls back to the run clock so every run rewrites the row'
+    owner_correction_evidence: 'postgres statement log 2026-09-17T21:02:47Z: update app.seasons set ends_on=2027-06-30 (MCP session)'
+    deadlines: [before 2026-09-23T00:00Z for Option A (re-stage would inherit a one-day fantasy season), hard 2026-09-25 (season_ended blocks preview/stage; current_season_required blocks squad ingestion)]
+    production_fix: 'one-row UPDATE (idempotent predicate ends_on = 2026-09-24) — OWNER APPROVAL REQUIRED; must land after the guard migration or with both workflows frozen, otherwise the next dispatch reverts it'
+    hold_propagation: BG-0004 must stay HOLD until the guard migration is promoted (hourly schedule would overwrite ends_on every run)
+
   BG-0032:
     title: api.service_rollback_fantasy_catalog does not clear app.fantasy_leagues / fantasy_league_memberships / app_private.fantasy_mutation_audit (all ON DELETE RESTRICT) — "clean rollback" claim in the runbook is false; rollback fails on any season that ever had a league
     area: fantasy
@@ -468,6 +476,15 @@ tasks:
     roles: {builder: Builder-DevOps running (branch agent/BG-0037-promoter-manifest), verifier: pending, reviewer: pending}
     acceptance_criteria: [new batch fantasy_deadline_guard with the two files appended after fantasy_calendar_sync; workflow choice option and confirmation added; edge-function expectation entry added; promoter unit tests updated (59 migrations) and passing; no change to transaction building or history validation]
     note: Chief process defect — the BG-0003 brief did not include the manifest update
+
+  BG-0038:
+    title: 'sportsmonks-catalog.ts freshness() falls back to observedAt for season payloads without a provider timestamp, defeating the STALE_UPDATE/skip guard (seasons rewritten on every run); mark ending_at == starting_at as provisional'
+    area: data
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0031]
+    evidence: ['docs/engineering/tasks/BG-0031/engineering-brief.yaml required_changes rank 3 and rank 4']
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings

@@ -1,0 +1,415 @@
+task_id: BG-0031
+objective: >
+  app.seasons 2026/27 (d03223b0-8f4a-4309-93e1-2a708d7c3584) ends_on regressed from the owner
+  correction 2027-06-30 back to 2026-09-24 at 2026-09-18T10:06:23Z. Establish current state, the
+  exact code path that wrote it, blast radius, durable fix options, the production correction
+  (rehearsal first), and deadlines.
+
+findings:
+  # ---------------------------------------------------------------- 1. current state
+  - classification: VERIFIED
+    statement: >
+      app.seasons row today: id d03223b0-8f4a-4309-93e1-2a708d7c3584, competition_id
+      3e579087-e5ad-4cb1-babf-6490cf2a8ebe, label "2026/2027", starts_on 2026-09-24,
+      ends_on 2026-09-24, status active, is_current true, created_at 2026-09-14T19:18:45.475863Z,
+      updated_at 2026-09-18T10:06:23.125987Z. The season is a one-day season.
+    evidence: >
+      SQL `select to_jsonb(s) from app.seasons s where s.id='d03223b0-...'` -> {"ends_on":"2026-09-24",
+      "starts_on":"2026-09-24","status":"active","is_current":true,"updated_at":"2026-09-18T10:06:23.125987+00:00", ...}
+  - classification: VERIFIED
+    statement: >
+      Provider mapping: app_private.football_provider_mappings id 8f06a78e-caaf-4d0a-aa3d-138a7d82b4dc,
+      provider sportsmonks, entity_type season, external_id 28647 -> internal_entity_id d03223b0-...,
+      active, manually_corrected=false, corrected_at/by null, last_seen_at 2026-09-18T10:06:43.098Z,
+      source_version "sportsmonks:28647:1789725982630". (The table lives in app_private, not app.)
+    evidence: >
+      SQL `select to_jsonb(m) from app_private.football_provider_mappings m where external_id='28647'`
+  - classification: VERIFIED
+    statement: >
+      No audit/history table records app.seasons changes. The only trigger on app.seasons is
+      seasons_set_updated_at (BEFORE UPDATE, app_private.set_updated_at()). admin_audit_events has no
+      row for the season id and no row mentioning ends_on on 2026-09-17/18. No protect_*/guard trigger
+      exists on the table.
+    evidence: >
+      SQL on pg_trigger for 'app.seasons'::regclass -> one row seasons_set_updated_at;
+      SQL on app_private.admin_audit_events (target_entity_id = season id OR safe_before/after ilike '%ends_on%'
+      between 2026-09-17 and 2026-09-18T12:00Z) -> 0 rows.
+  - classification: VERIFIED
+    statement: >
+      The owner correction is recorded only in Postgres statement logs: at 2026-09-17T21:02:47.470Z,
+      via "POST /mcp" (user oauth:9574bd8b-...), a multi-statement bridge script executed
+      `update app.seasons set ends_on='2027-06-30' where id='d03223b0-...' and ends_on='2026-09-24';`
+      together with the 42 player inserts and the 539 team_memberships inserts (valid_from 2026-09-24,
+      valid_to 2027-06-30). This confirms FANTASY_2026_27_BRIDGE_ACTIVATION.md step 1.
+    evidence: >
+      Supabase query_logs (postgres_logs, window 2026-09-17T20:30Z..2026-09-18T10:10Z, event_message ilike
+      '%app.seasons%') -> one entry timestamp 2026-09-17T21:02:48.112 containing that statement;
+      docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md:19,21.
+  - classification: VERIFIED
+    statement: >
+      The correction was in effect when the Fantasy catalog was staged: app.fantasy_seasons
+      9918cf95-9ed5-4d7b-99ca-eb9bfc29a258 (created 2026-09-17T21:03:52Z) has ends_at
+      2027-06-30T23:59:59.999999Z, which service_stage_fantasy_catalog derives as
+      (target_season.ends_on + 1)::timestamptz - 1 microsecond.
+    evidence: >
+      SQL on app.fantasy_seasons -> ends_at "2027-06-30T23:59:59.999999+00:00"; live def of
+      api.service_stage_fantasy_catalog (pg_get_functiondef snippet) and
+      supabase/migrations/20260803210943_fantasy_catalog_activation.sql:651.
+  - classification: VERIFIED
+    statement: >
+      Downstream data that now exceeds the season bounds: all 539 app.team_memberships for the season have
+      valid_to 2027-06-30 > ends_on 2026-09-24 (no DB constraint ties valid_to to the season; only
+      team_memberships_date_range_check valid_to >= valid_from). The season has 1 round (round 1, planned)
+      with 8 fixtures, all kickoff_at 2026-09-24T00:00Z.
+    evidence: >
+      SQL count on app.team_memberships where season_id=d03223b0 -> 539, min/max valid_to 2027-06-30,
+      539 with valid_to > 2026-09-24; pg_constraint listing for app.team_memberships; SQL on app.rounds/app.fixtures.
+
+  # ---------------------------------------------------------------- 2. root cause chain
+  - classification: VERIFIED
+    statement: >
+      The write at 10:06:23Z was performed by GitHub Actions run 35332956079
+      (".github/workflows/fantasy-season-orchestrator.yml", event workflow_dispatch by mrdata007, created
+      2026-09-18T10:05:59Z, commit 8bda6b5d), step 6 "Refresh provider fixtures and results"
+      (10:06:16Z..10:06:51Z), which runs `bun scripts/backend/current-season-recovery.ts` in canary mode.
+      Nothing else ran in the window: the only other run between 09:30Z and 10:40Z was
+      phase7e-b-production-migration-promotion (09:55Z, failure). No pg_cron exists (cron.job relation absent).
+    evidence: >
+      GitHub actions_list list_workflow_runs (filtered 09:30Z..10:40Z) -> 35332956079 fantasy-season-orchestrator.yml
+      workflow_dispatch success; list_workflow_jobs 35332956079 -> step "Refresh provider fixtures and results"
+      started 10:06:16Z completed 10:06:51Z; .github/workflows/fantasy-season-orchestrator.yml:96-111;
+      SQL `select ... from cron.job` -> relation does not exist.
+  - classification: VERIFIED
+    statement: >
+      Inside that step the `seasons` catalog job ran 2026-09-18T10:06:22.574Z..10:06:23.479Z
+      (app_private.football_ingestion_runs id ffb562d6-3fdf-4bca-a4d8-495cfbc78df6, provider sportsmonks,
+      target_scope {leagueId 860, seasonId 28647}, records_fetched 1, records_updated 1, skipped 0), which
+      brackets the row's updated_at 10:06:23.126Z. The run's own evidence artifact confirms
+      catalog.seasons.updated = 1.
+    evidence: >
+      SQL on app_private.football_ingestion_runs between 09:30Z and 10:40Z (5 rows: competitions skipped 1,
+      seasons updated 1, rounds updated 1, teams skipped 16, fixtures updated 8);
+      artifact fantasy-season-orchestrator-35332956079 -> recovery/current-season-recovery.json
+      "catalog":{"seasons":{"fetched":1,"updated":1,"skipped":0}}.
+  - classification: VERIFIED
+    statement: >
+      The provider reported ending_at = 2026-09-24 for season 28647 at that moment (equal to starting_at
+      and to the only published fixture date). The recovery script passes the probe's endingAt into the
+      shared catalog handler as FOOTBALL_SPORTSMONKS_SEASON_END, and the handler maps raw.ending_at ->
+      endsOn (fallback to config.seasonEnd only when ending_at is null).
+    evidence: >
+      artifact recovery/current-season-recovery.json provider.season {"startingAt":"2026-09-24","endingAt":"2026-09-24"},
+      fixtureWindow {from 2026-09-24, to 2026-09-24}; scripts/backend/current-season-recovery.ts:601-602,632-638;
+      supabase/functions/_shared/sportsmonks-catalog.ts:491-517 (line 502:
+      `const endsOn = raw.ending_at == null ? config.seasonEnd : isoDate(raw.ending_at);`);
+      docs/engineering/LAUNCH_LEDGER.yaml:89 ("provider season end 2026-09-24").
+  - classification: VERIFIED
+    statement: >
+      The exact upsert is the `when 'season'` branch of api.ingest_football_catalog_entity: it reads
+      p_entity->>'endsOn' and executes `update app.seasons set competition_id=..., label=..., starts_on=v_starts_on,
+      ends_on = v_ends_on, status = case ... end, is_current = v_is_current where id = target_id;`.
+      It is an unconditional overwrite: no comparison with the existing value, no max() with fixtures,
+      no respect for manual corrections. The live production body is identical to the migration.
+    evidence: >
+      supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:198-246 (update at 236-245);
+      `select pg_get_functiondef('api.ingest_football_catalog_entity(text,text,text,jsonb)'::regprocedure)` -> same text.
+  - classification: VERIFIED
+    statement: >
+      The RPC's stale/skip protection cannot protect the row, because the season payload carries no
+      provider timestamp: sportsmonks-catalog.ts freshness() falls back to observedAt (the run's own clock)
+      when last_processed_at/updated_at/last_played_at are absent, so every run presents a strictly newer
+      updatedAt and a new sourceVersion and the RPC takes the UPDATE branch every time. Proof: the mapping's
+      source_version suffix 1789725982630 decodes to 2026-09-18T10:06:22.630Z, i.e. the run's observedAt,
+      not a provider timestamp.
+    evidence: >
+      supabase/functions/_shared/sportsmonks-catalog.ts:330-342; RPC skip condition
+      (`mapped_last_seen_at = v_provider_updated_at and source_version is not distinct from ...`) in the live def;
+      SQL mapping row source_version "sportsmonks:28647:1789725982630"; python
+      datetime.utcfromtimestamp(1789725982.630) = 2026-09-18T10:06:22.630.
+  - classification: VERIFIED
+    statement: >
+      This is the third `seasons` run for 28647 and the second that updated the row: 2026-09-14T19:18:44Z
+      (insert, run a14e6069), 2026-09-17T20:51:45Z (update, run b5d0ceee, from the owner's failed
+      football-current-season-recovery dispatch 35273299582 at 20:51:21Z - before the 21:02Z correction),
+      2026-09-18T10:06:22Z (update, run ffb562d6 - after the correction, hence the regression).
+    evidence: >
+      SQL on app_private.football_ingestion_runs where job_type='seasons' and target_scope->>'seasonId'='28647';
+      GitHub run list: 35273299582 football-current-season-recovery.yml 2026-09-17T20:51:21Z failure.
+  - classification: VERIFIED
+    statement: >
+      Re-clobber exposure: any future execution of scripts/backend/current-season-recovery.ts (both workflows)
+      will reset ends_on to the provider's value again while ending_at stays truncated. fantasy-season-orchestrator.yml
+      is hourly (cron "12 * * * *") but gated on vars.FANTASY_AUTOMATION_ENABLED, which the ledger holds at
+      HOLD (BG-0004); football-current-season-recovery.yml is daily (cron "43 7 * * *") gated on
+      FOOTBALL_CURRENT_SCHEDULE_ENABLED and its scheduled runs on 09-15/16/17 were "skipped". No seasons/fixtures
+      ingestion run exists after 10:07Z today. An owner dispatch of either workflow re-triggers the overwrite.
+    evidence: >
+      .github/workflows/fantasy-season-orchestrator.yml:28-55; .github/workflows/football-current-season-recovery.yml:22-39;
+      docs/engineering/LAUNCH_LEDGER.yaml:122-123; run list (scheduled recovery runs 34971579946/35098147188/35223088127 skipped);
+      SQL football_ingestion_runs created_at > 2026-09-18T10:07Z for seasons/fixtures -> 0 rows.
+  - classification: INFERRED
+    statement: >
+      The values of the current repository variables FANTASY_AUTOMATION_ENABLED / FOOTBALL_CURRENT_SCHEDULE_ENABLED
+      are not readable from here; the absence of scheduled runs after 10:07Z and the ledger HOLD imply both are
+      unset/false, so the next overwrite is most likely the next owner dispatch (or enabling the schedule for BG-0004).
+    evidence: ""
+
+  # ---------------------------------------------------------------- 3. blast radius
+  - classification: VERIFIED
+    statement: >
+      Fantasy activation preview: app_private.fantasy_catalog_activation_preview adds blocker 'season_ended'
+      when target_season.ends_on < current_date. With ends_on 2026-09-24 this fires from 2026-09-25 (UTC date of the DB),
+      blocking api.preview_fantasy_catalog_activation / service_stage_fantasy_catalog (any Option A re-stage after kickoff day).
+      It does not fire on 2026-09-18..24.
+    evidence: >
+      live def snippet of app_private.fantasy_catalog_activation_preview; supabase/migrations/20260803210943_fantasy_catalog_activation.sql:415-417.
+  - classification: VERIFIED
+    statement: >
+      Source digest drift: app_private.fantasy_catalog_source_digest hashes season.ends_on and season.updated_at.
+      The staged activation c0de2026-0917-4a11-8f00-000000000001 recorded digest 9eede640c67a...5885b; the digest
+      computed now is 182c326bcfe75322c9f52416b5003cb7f3e247381657065124439373c22b6743. This is the "digest drift"
+      the Option A Researcher observed; restoring 2027-06-30 will NOT restore the old digest because updated_at is
+      also hashed (new digest after the fix is unavoidable).
+    evidence: >
+      live def snippet (concat_ws('|', season.id, ..., season.starts_on, season.ends_on, season.status, season.is_current, season.updated_at));
+      SQL on app_private.fantasy_catalog_activation_runs -> source_digest 9eede640...; SQL
+      `select app_private.fantasy_catalog_source_digest('d03223b0-...','f6100000-0000-4000-8000-000000000101')` -> 182c326b...
+  - classification: VERIFIED
+    statement: >
+      Current-season squad ingestion: api.service_ingest_current_football_squads raises PT409 'current_season_required'
+      when target_season.ends_on < current_date -> from 2026-09-25 the provider squad supersession path for
+      Tiznit/Temara (bridge doc limitation 3) is blocked. api.ingest_football_squad writes memberships with
+      valid_from = starts_on and valid_to = ends_on, so any squad ingested while ends_on = 2026-09-24 gets
+      valid_to 2026-09-24 (one-day memberships), inconsistent with the 539 bridged rows (valid_to 2027-06-30).
+    evidence: >
+      supabase/migrations/20260914184657_current_season_squad_recovery.sql:62-68 and :162; live def snippets of
+      api.ingest_football_squad (`valid_to = v_season_ends_on`, insert `v_season_starts_on, v_season_ends_on`).
+  - classification: VERIFIED
+    statement: >
+      A re-stage of the Fantasy catalog while ends_on = 2026-09-24 would create fantasy_seasons.ends_at =
+      2026-09-24T23:59:59.999999Z (service_stage_fantasy_catalog). The already-staged season is unaffected
+      (ends_at still 2027-06-30) until a rollback + re-stage happens (the Option A sequence).
+    evidence: >
+      live def snippet of api.service_stage_fantasy_catalog; SQL app.fantasy_seasons ends_at 2027-06-30T23:59:59.999999Z.
+  - classification: VERIFIED
+    statement: >
+      Public read contracts expose the wrong bounds: api.football_season_catalog and api.football_competition_summary
+      return endsOn = ends_on; src/routes/matches.index.tsx clamps the matches calendar to season.endsOn
+      (default day, `if (day > endsOn) return endsOn`, datepicker maxDate) -> after 2026-09-24 the matches
+      page cannot navigate beyond 24 Sep. src/services/football.ts:115,128 carries endsOn through.
+    evidence: >
+      live def snippets of api.football_season_catalog / api.football_competition_summary;
+      supabase/migrations/20260802090000_football_season_browser.sql:32,56; supabase/migrations/20260720095354_football_api_security.sql:711;
+      src/routes/matches.index.tsx:86-98,142.
+  - classification: VERIFIED
+    statement: >
+      Historical/ratings code treats "ends_on < current_date and status completed and not is_current" as a
+      completed season (api.ingest_historical_player_season_ratings, begin_historical_performance_ingestion,
+      football_historical_* readers); app_private.fantasy_catalog_candidates and api.fantasy_fixture_difficulty
+      select prior seasons with rating_season.ends_on < target.starts_on / candidate_season.ends_on < context.starts_on.
+      Because 2026/27 is is_current and status active, these paths are not broken today by the 2026/27 value;
+      they only compare prior seasons' ends_on with 2026/27 starts_on (2026-09-24, unchanged).
+    evidence: >
+      supabase/migrations/20260802010100_historical_player_performances.sql:157,215,319,570,744;
+      supabase/migrations/20260803210943_fantasy_catalog_activation.sql:217; supabase/migrations/20260803173344_fantasy_preactivation_hardening.sql:636;
+      live function list matching ends_on (16 functions).
+  - classification: VERIFIED
+    statement: >
+      Fantasy calendar sync (20260918120000_fantasy_calendar_sync.sql) and the lifecycle worker use
+      fantasy_gameweeks.starts_at/ends_at and fantasy_seasons.ends_at, not app.seasons.ends_on; the season
+      status computation in the RPC (`case when v_is_current then 'active' ...`) keeps status 'active' while
+      is_current is true, so is_current selection is not affected by the ends_on value.
+    evidence: >
+      grep ends_on in supabase/migrations -> no hit in 20260918120000/20260914200714; grep ends_at in
+      20260918120000_fantasy_calendar_sync.sql:150,235,242,284; RPC status case in live def.
+  - classification: VERIFIED
+    statement: >
+      Fixture ingestion depth is bounded by the provider's endingAt, not by app.seasons.ends_on:
+      current-season-recovery.ts fixtureWindows(probe.season.startingAt, probe.season.endingAt) produced a single
+      window 2026-09-24..2026-09-24 (target_scope from/to 2026-09-24). Correcting ends_on in the DB does not
+      widen fixture ingestion; rounds 2+ arrive only when the provider extends ending_at (or publishes fixtures
+      and the probe/window logic changes - out of scope here).
+    evidence: >
+      scripts/backend/current-season-recovery.ts:106-125,641; football_ingestion_runs fixtures target_scope {"to":"2026-09-24","from":"2026-09-24"}.
+  - classification: UNKNOWN
+    statement: >
+      Whether SportsMonks will move ending_at to a realistic season end when further rounds are published, or
+      whether it will keep tracking the last published fixture date (in which case the ingestion would keep
+      shrinking/extending ends_on run after run).
+    evidence: ""
+  - classification: UNKNOWN
+    statement: >
+      Whether the football-ingest Supabase edge function (same shared module) is deployed and invoked by any
+      external scheduler; no pg_cron exists and no ingestion run outside the GitHub workflows appears in
+      football_ingestion_runs, but external HTTP triggers cannot be excluded from the DB alone.
+    evidence: ""
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    Owner dispatch of fantasy-season-orchestrator.yml (run 35332956079, 2026-09-18T10:05:59Z) executed
+    scripts/backend/current-season-recovery.ts in canary mode, which calls handleSportsMonksCatalogRequest
+    in-process; its `seasons` job (football_ingestion_runs ffb562d6, 10:06:22.57-23.48Z) fetched SportsMonks
+    /seasons/28647, whose ending_at was "2026-09-24" (the only published fixture date), mapped it to
+    endsOn (sportsmonks-catalog.ts:502) and called api.ingest_football_catalog_entity, whose `when 'season'`
+    branch unconditionally executes `update app.seasons set ... ends_on = v_ends_on ... where id = target_id`
+    (20260731180229_gate2b_football_catalog_ingestion.sql:236-245). The manual correction of 2026-09-17T21:02:47Z
+    (`update app.seasons set ends_on='2027-06-30' ...`, MCP session) was therefore overwritten. Two design gaps
+    make this recur: (1) the RPC has no notion of an owner-corrected or provisional season bound and never
+    compares the incoming value with existing data (fixtures, memberships, fantasy_seasons); (2) the
+    freshness() fallback to observedAt defeats the STALE_UPDATE/skip guard for season payloads without a
+    provider timestamp, so every run rewrites the row.
+
+required_changes:
+  # ranked durable fixes (a)
+  - component: supabase/migrations/<new>_season_bounds_guard.sql (additive; CREATE OR REPLACE api.ingest_football_catalog_entity)
+    change: >
+      RANK 1 - make the season upsert monotone and correction-aware. In the `when 'season'` UPDATE branch:
+      (a) never shrink ends_on below greatest(existing ends_on, max(app.fixtures.kickoff_at::date) for the season,
+      max(app.team_memberships.valid_to) for the season, (app.fantasy_seasons.ends_at)::date); (b) treat a provider
+      ending_at equal to starting_at or equal to the max published fixture date as provisional and keep the existing
+      ends_on; (c) keep the existing starts_on when the provider start is later than the first published fixture.
+      Log the decision in the returned jsonb ('outcome':'updated','endsOnPreserved':true) so ingestion evidence shows it.
+      Body must be a full CREATE OR REPLACE of the function (schema-pinned search_path '' retained).
+    reason: >
+      The overwrite at 236-245 is the direct cause; a monotone rule protects any future manual correction without
+      adding new columns and survives the freshness() always-update behaviour.
+  - component: supabase/migrations/<new>_season_bounds_guard.sql (additive; columns + trigger)
+    change: >
+      RANK 2 (can be combined with rank 1) - add app.seasons.bounds_locked_at timestamptz null and
+      bounds_locked_reason text null, plus a BEFORE UPDATE trigger app_private.protect_locked_season_bounds()
+      that, when OLD.bounds_locked_at is not null and the session is not an explicit owner correction
+      (e.g. new.bounds_locked_at is distinct from old.bounds_locked_at), keeps OLD.starts_on/ends_on.
+      Set the lock on the 2026/27 row in the same data correction. Mirrors the existing manually_corrected
+      concept of football_provider_mappings (20260720095345_football_match_ingestion.sql:604-628).
+    reason: >
+      Gives the owner an explicit, auditable way to pin a season's bounds independent of provider behaviour;
+      rank 1 alone still lets the provider extend/shift bounds in surprising ways.
+  - component: supabase/functions/_shared/sportsmonks-catalog.ts (+ sportsmonks-catalog.test.ts)
+    change: >
+      RANK 3 - in the `seasons` job mark the payload provisional when raw.ending_at <= raw.starting_at or when
+      ending_at equals the last published fixture date known to the probe (freshness.provisional=true) and stop
+      falling back to observedAt for updatedAt when the provider gives no timestamp (use the mapping's existing
+      last_seen_at semantics or omit the update). Same edit is needed in src/backend/football/provider/sportsmonks-adapter.ts:223
+      for parity, though that adapter is not the production write path.
+    reason: >
+      Reduces churn at the source; without it the RPC is called with a shrinking end date on every run and the
+      skip guard never applies to seasons.
+  - component: scripts/backend/current-season-recovery.ts (validateCurrentReadiness / environment)
+    change: >
+      RANK 4 (optional hardening) - do not pass a provider endingAt equal to startingAt as FOOTBALL_SPORTSMONKS_SEASON_END;
+      fail soft with evidence "season_end_provisional" and let the catalog job skip the seasons entity, or pass the
+      DB value read from api.football_season_catalog. Keep fixtureWindows unchanged (out of scope).
+    reason: >
+      Defence in depth for the only production writer; keeps the workflow idempotent as its header promises.
+  - component: supabase/tests/database/football_ingestion.test.sql (+ new pgTAP cases)
+    change: >
+      Add cases: (1) seasons update with a smaller endsOn than existing fixtures/memberships keeps ends_on;
+      (2) endsOn == startsOn is treated as provisional; (3) a later, larger endsOn is accepted; (4) locked bounds
+      trigger keeps OLD values and allows the explicit owner path.
+    reason: acceptance evidence for rank 1/2.
+  # production data correction (b)
+  - component: production data (app.seasons d03223b0-8f4a-4309-93e1-2a708d7c3584) - owner-approved one-row UPDATE
+    change: |
+      REHEARSAL (rolled back; run first, verbatim):
+        begin;
+        update app.seasons
+           set ends_on = date '2027-06-30'
+         where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584'
+           and ends_on = date '2026-09-24'
+           and starts_on = date '2026-09-24';
+        -- verify exactly one row and the new state
+        do $$
+        declare r record;
+        begin
+          select id, starts_on, ends_on, status, is_current, updated_at into r
+            from app.seasons where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584';
+          if r.ends_on <> date '2027-06-30' or r.starts_on <> date '2026-09-24'
+             or r.status <> 'active' or not r.is_current then
+            raise exception 'rehearsal verification failed: %', to_jsonb(r);
+          end if;
+          if (select count(*) from app.team_memberships
+               where season_id = r.id and valid_to > r.ends_on) <> 0 then
+            raise exception 'memberships still exceed season end';
+          end if;
+          raise notice 'rehearsal ok: %', to_jsonb(r);
+          raise exception 'REHEARSAL_ROLLBACK';
+        end $$;
+        rollback;
+      PRODUCTION (only after owner approval and after the guard migration is live, or with the workflows kept on HOLD):
+        update app.seasons
+           set ends_on = date '2027-06-30'
+         where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584'
+           and ends_on = date '2026-09-24';
+        -- expect UPDATE 1; then:
+        select id, starts_on, ends_on, status, is_current, updated_at
+          from app.seasons where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584';
+      If rank 2 lands first, add `, bounds_locked_at = now(), bounds_locked_reason = 'BG-0031 owner correction 2027-06-30'` to the SET list.
+    reason: >
+      Restores the owner-approved bound recorded in FANTASY_2026_27_BRIDGE_ACTIVATION.md step 1 and the 2026-09-17T21:02:47Z
+      statement; predicate on the regressed value makes it idempotent and safe against a concurrent provider update.
+  - component: docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md, docs/engineering/LAUNCH_LEDGER.yaml
+    change: >
+      Record the regression (run 35332956079), the correction timestamp, and the rule that any workflow dispatch of
+      fantasy-season-orchestrator / football-current-season-recovery before the guard migration will re-clobber ends_on.
+    reason: the current doc states a fact that production contradicted within 13 hours.
+
+constraints:
+  - Database access here was read-only; the rehearsal and production UPDATE above were NOT executed.
+  - Never edit existing migrations; only an additive migration with CREATE OR REPLACE of api.ingest_football_catalog_entity (full body, SECURITY DEFINER, SET search_path = '').
+  - Do not change fixtureWindows / provider fixture ingestion depth (BG-0003/BG-0011 own the calendar).
+  - "Correcting ends_on changes season.updated_at and therefore the catalog source digest (already drifted: 9eede640... -> 182c326b...); Option A re-stage must expect a new digest."
+  - The correction must be applied before any further owner dispatch of either workflow, or it will be overwritten again until the guard is live.
+  - Deadlines: (1) before 2026-09-23T00:00Z - the Option A time box (LAUNCH_LEDGER.yaml:188, BG-0011 brief risks:99) - the re-stage would otherwise create fantasy_seasons.ends_at 2026-09-24T23:59:59.999999Z; (2) before 2026-09-25 00:00 UTC - from then season_ended blocks preview/stage and current_season_required blocks service_ingest_current_football_squads. Both apply; the earlier one (2026-09-23T00:00Z) is the binding one for Option A, and 2026-09-25 is the hard functional deadline even if Option A is abandoned.
+
+risks:
+  - Applying the data fix without the guard and then dispatching a workflow silently reverts it again (freshness fallback guarantees an UPDATE each run).
+  - The guard (rank 1) makes ends_on monotone: if the provider later publishes a legitimately shorter season, an explicit owner path is needed to shrink it (rank 2 provides it).
+  - Rank 1 compares against app.fixtures/team_memberships/fantasy_seasons inside a SECURITY DEFINER RPC hot path; keep the subqueries indexed (fixtures.season_id, team_memberships.season_id exist per FKs - verify indexes in the migration).
+  - Setting FANTASY_AUTOMATION_ENABLED=true for BG-0004 before the guard lands would run the overwrite hourly.
+  - Restoring 2027-06-30 keeps starts_on 2026-09-24; if the provider later moves starting_at earlier, the RPC also overwrites starts_on (same branch) - include starts_on in the guard.
+  - Statement logs are the only record of the manual correction; they age out (24 h query window observed) - the ledger must carry the evidence.
+
+contradictions:
+  - docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md:19 states ends_on is 2027-06-30; production holds 2026-09-24 since 2026-09-18T10:06:23Z.
+  - fantasy-season-orchestrator.yml header claims "every step is idempotent; the run is a no-op when nothing changed at the provider"; the seasons entity is rewritten on every run because freshness() uses observedAt when the provider payload has no timestamp.
+  - docs/engineering/LAUNCH_LEDGER.yaml:89 treats "provider season end 2026-09-24" as a fact about the provider, while the bridge doc treats 2027-06-30 as the season end; both are true for different systems and no document states which one app.seasons must hold.
+  - The task statement placed the mapping in app.football_provider_mappings; it is app_private.football_provider_mappings.
+
+unknowns:
+  - Provider behaviour of ending_at once rounds 2+ are published (tracks last fixture vs. real season end).
+  - Whether any external scheduler invokes the football-ingest edge function (no DB evidence of it; cannot be excluded from the DB).
+  - Current values of repository variables FANTASY_AUTOMATION_ENABLED and FOOTBALL_CURRENT_SCHEDULE_ENABLED (inferred false from run history and ledger HOLD).
+  - Whether the owner wants 2027-06-30 or a provider-derived realistic date (e.g. 2027-07-05 as used for 2025/26) as the canonical bound; 2027-06-30 is what the bridge memberships and fantasy_seasons already use.
+
+acceptance_tests:
+  - "pgTAP (football_ingestion.test.sql): after inserting a season 2026-09-24..2027-06-30 with a fixture on 2026-09-24 and memberships to 2027-06-30, calling api.ingest_football_catalog_entity('sportsmonks','season','28647', {endsOn:'2026-09-24', startsOn:'2026-09-24', ...}) leaves ends_on = 2027-06-30 and returns endsOnPreserved=true."
+  - "pgTAP: the same call with endsOn '2027-07-05' (later than existing) updates ends_on to 2027-07-05."
+  - "pgTAP: with bounds_locked_at set, a provider update leaves starts_on/ends_on unchanged; an owner UPDATE that also sets bounds_locked_at changes them."
+  - "bun test supabase/functions/_shared/sportsmonks-catalog.test.ts: season payload with ending_at == starting_at yields freshness.provisional = true and does not use observedAt as updatedAt."
+  - "Production after correction: select ends_on from app.seasons where id='d03223b0-...' -> 2027-06-30; select count(*) from app.team_memberships where season_id=... and valid_to > ends_on -> 0."
+  - "Production after correction + guard: a rehearsal (rolled back) call of the seasons ingestion with the provider payload leaves ends_on 2027-06-30; football_ingestion_runs records skipped or updated-with-preserved outcome."
+  - "api.preview_fantasy_catalog_activation for the season on/after 2026-09-25 (rehearsal with clock or a read of the blockers array) does not contain 'season_ended'."
+  - "api.football_season_catalog returns endsOn 2027-06-30 for 2026/2027 and the matches page datepicker maxDate is 2027-06-30."
+
+implementation_scope:
+  builder_type: Builder-Backend
+  allowed_paths:
+    - supabase/migrations/<new timestamp>_season_bounds_guard.sql (additive only)
+    - supabase/tests/database/football_ingestion.test.sql
+    - supabase/tests/database/football_domain.test.sql
+    - supabase/functions/_shared/sportsmonks-catalog.ts
+    - supabase/functions/_shared/sportsmonks-catalog.test.ts
+    - scripts/backend/current-season-recovery.ts
+    - scripts/backend/current-season-recovery.test.ts
+    - src/backend/football/provider/sportsmonks-adapter.ts (parity only)
+    - docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md
+    - docs/engineering/LAUNCH_LEDGER.yaml
+    - docs/engineering/tasks/BG-0031/**
+  forbidden_paths:
+    - supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql and every existing migration (no edits)
+    - src/routes/**, src/components/**, any UI
+    - .github/workflows/** (no schedule or gate changes in this task)
+    - scripts/backend/fantasy-*.ts, supabase/migrations/*fantasy_calendar_sync* (BG-0003/BG-0011 scope)
+    - direct production writes by the Builder; the one-row UPDATE is executed only by the owner after the rehearsal
+status: DONE
