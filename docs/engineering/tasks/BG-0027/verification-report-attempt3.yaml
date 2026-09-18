@@ -1,0 +1,160 @@
+task_id: BG-0027
+attempt: 3
+role: Verifier-Regression
+verified_commit: acdb060f538a22d9a5f67f65827f99b76c129900
+previous_verified_commit: 4388116d97e5f6219edfd985328042976d0e5977
+workspace: /home/user/bg0027-verify (detached at origin/agent/BG-0027-ratings-fail-closed)
+criteria:
+  - criterion: >-
+      V1. Scope of attempt 3: only the pgTAP test file and the implementation
+      report changed since 4388116; no migration, worker or unit-test change.
+    result: VERIFIED
+    evidence: |
+      $ git diff --stat 4388116..HEAD
+       .../tasks/BG-0027/implementation-report.yaml       | 94 +++++++++++++++++++++-
+       .../fantasy_rating_degeneracy_guard.test.sql       |  6 +-
+       2 files changed, 96 insertions(+), 4 deletions(-)
+      $ git diff --name-status 4388116..HEAD
+      M docs/engineering/tasks/BG-0027/implementation-report.yaml
+      M supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql
+      $ git diff --name-only 4388116..HEAD -- supabase/migrations supabase/functions '*.test.ts'
+      (empty)
+
+      Test-file hunks (git diff 4388116..HEAD -- supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql):
+      @@ -340,7 +340,7 @@
+       update app.player_season_ratings
+      -set rating = 8.8, confidence = 1, appearances = 30, starts = 28, minutes = 2500,
+      +set rating = 10, confidence = 1, appearances = 30, starts = 28, minutes = 2500,
+         goals = 14, assists = 12, provider_rating = 8.8,
+         fantasy_equivalent_points = 220, points_per_90 = 7.920
+       where id = md5('degeneracy-rating:1:8')::uuid;
+      @@ -410,8 +410,8 @@
+      -  5,
+      -  'the staged catalog carries the four neutral band prices plus the rated player'
+      +  4,
+      +  'the staged catalog carries the three neutral band prices plus the rated player'
+
+      Implementation-report diff: attempt header 2 -> 3 and an appended attempt_3
+      section (defect restatement, change list, hand computation). No other keys altered.
+  - criterion: >-
+      V2. Executed arithmetic: app_private.fantasy_initial_price_v1 yields
+      12.50 for (MID,10,1), 10.90 for (MID,8.8,1), and neutral 6/0 prices
+      GK 4.80, DEF 5.00, MID 7.20, FWD 7.20.
+    result: VERIFIED
+    evidence: |
+      Signature checked at supabase/migrations/20260803210943_fantasy_catalog_activation.sql:127-131:
+        fantasy_initial_price_v1(p_position_code text, p_rating numeric, p_confidence numeric) returns numeric, immutable.
+      Production (project tkewgajrljbwgwedqsxn), read-only, wrapped in begin; ... rollback;:
+        select p.position_code, p.rating, p.confidence,
+               app_private.fantasy_initial_price_v1(p.position_code, p.rating, p.confidence) as price
+        from (values ('MID',10,1),('MID',8.8,1),('GK',6,0),('DEF',6,0),('MID',6,0),('FWD',6,0)) p(position_code,rating,confidence);
+      Rows returned:
+        MID 10  1 -> 12.5000000000000000
+        MID 8.8 1 -> 10.9000000000000000
+        GK  6   0 ->  4.8000000000000000
+        DEF 6   0 ->  5.0000000000000000
+        MID 6   0 ->  7.2000000000000000
+        FWD 6   0 ->  7.2000000000000000
+      Matches all six expected values. Confirms the Reviewer's 10.90 for the rejected 8.8 fixture
+      and 12.50 for the attempt-3 fixture. app.fantasy_players.price is numeric(8,2)
+      (20260720141826_fantasy_catalog_rules.sql:215), so price::text renders '12.50'.
+  - criterion: >-
+      V3. Static consistency of scenario 3 with rating 10: price '12.50',
+      4 distinct prices, inspector {candidates 240, degenerate false,
+      maxConfidence 1.0, distinctRatings 2}; rating 10 satisfies the check
+      constraint; no remaining assertion depends on 8.8.
+    result: VERIFIED
+    evidence: |
+      Fixture: 16 teams x 15 players = 240 memberships in the guarded season (test lines 111-121);
+      player_number 8 maps to 'midfielder' (lines 101-106: <=2 GK, <=7 DEF, <=12 MID, else FWD),
+      so degeneracy-player:1:8 is priced in the MID band. Ratings rows are inserted under the prior
+      season d92...01 (completed, same competition, ends_on < target starts_on), which is exactly
+      what fantasy_catalog_candidates' lateral join selects (activation migration lines 209-222);
+      candidates use coalesce(rating.rating, 6.0) / coalesce(rating.confidence, 0.0) (lines 196-197)
+      and feed fantasy_initial_price_v1 (lines 228-230). The stage inserts candidate.initial_price
+      unchanged (guard migration lines 209-216).
+      - Price: 239 candidates at 6/0 -> GK 4.80, DEF 5.00, MID 7.20, FWD 7.20 (V2); one MID at
+        10/1 -> 12.50 (V2). Assertion '12.50' at test line 406 holds.
+      - Distinct prices: {4.80, 5.00, 7.20, 12.50} = 4 (MID and FWD share the 4.5-12.5 band).
+        Assertion 4 at line 413 and description "three neutral band prices plus the rated player"
+        at line 414 are consistent.
+      - Inspector (guard migration lines 36-44): candidates=240; distinctRatings=count(distinct
+        source_rating) over {6.0, 10.0} = 2; maxConfidence=max({0.0, 1.000}) with confidence
+        numeric(4,3) (player_season_ratings.sql:28); degenerate = 240>0 and 2=1 and ... = false.
+        jsonb equality is numeric, confirmed read-only in production:
+          select jsonb_build_object('maxConfidence', max(c), 'distinctRatings', count(distinct r))
+                 = '{"maxConfidence": 1.0, "distinctRatings": 2}'::jsonb
+          from (values (10.0::numeric(3,1), 1.000::numeric(4,3)), (6.0, 0.0)) v(r,c);
+          -> scenario3_shape_equal = true
+        Assertion at test lines 348-352 holds.
+      - Check constraint: 20260801010100_player_season_ratings.sql:56
+          constraint player_season_ratings_rating_check check (rating between 4 and 10)
+        rating = 10 satisfies it; column is numeric(3,1) (line 29), 10.0 fits.
+      - Remaining 8.8 references: grep '8\.8' in the test file returns only line 344
+        (provider_rating = 8.8). provider_rating is not read by fantasy_catalog_candidates or
+        the inspector and is asserted nowhere in the file. No assertion depends on 8.8.
+  - criterion: >-
+      V4. Regression: ratings worker unit tests (10), full unit suite, and
+      migration check (60) pass at HEAD.
+    result: VERIFIED
+    evidence: |
+      $ bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+        10 pass, 0 fail, 38 expect() calls, 1 file
+      $ bun run test
+        698 pass, 0 fail, 5921 expect() calls, 117 files [8.02s]
+      $ bun run backend:migrations:check
+        Validated 60 migration(s).
+  - criterion: >-
+      V5. pgTAP suite (supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql)
+      executes green.
+    result: NOT_TESTABLE
+    evidence: |
+      No local Postgres/Supabase stack is available in this workspace, so `supabase test db`
+      (bun run backend:db:test) was not executed. Static consistency of the changed assertions
+      is established in V2/V3, but static analysis is not execution: the file has never run in
+      any recorded attempt (attempt 2 was also NOT_TESTABLE for this item, and its unexecuted
+      state is what let the 8.8/12.50 defect through).
+      CI trigger analysis (.github/workflows/backend-quality.yml lines 3-12, 69-71):
+        on:
+          pull_request:
+          push:
+            branches:
+              - backend/greenfield-foundation
+              - backend/identity-domain
+              - backend/football-domain
+              - backend/news-domain
+              - backend/notifications-domain
+        ... - run: bun run backend:db:test
+      backend:db:test runs only on pull_request events and on pushes to those five legacy
+      backend/* branches. It does not run on push to main nor on push to
+      agent/BG-0027-ratings-fail-closed. A merge to main without a pull request would leave
+      this pgTAP file unexecuted.
+regressions: []
+untested:
+  - >-
+    pgTAP execution of supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql
+    (all three scenarios, including the two corrected scenario-3 assertions). Not runnable
+    here; only executes in CI on a pull_request event (or pushes to legacy backend/* branches),
+    never on push to main. Merging without a PR would ship this suite unexecuted. A PR against
+    main is the only route in the current workflow that produces execution evidence.
+  - >-
+    End-to-end behaviour of api.service_stage_fantasy_catalog against the corrected fixture
+    (the stage path itself was unchanged since 4388116; only the test expectations moved).
+security_observations:
+  - >-
+    No security-relevant change in attempt 3 (test expectations and a report only). Grants and
+    revokes from the guard migration are unchanged since the previously verified head; the
+    privilege assertions at test lines 6-47 are untouched.
+  - >-
+    Production access during verification was limited to two read-only evaluations of the
+    immutable function app_private.fantasy_initial_price_v1 and a pure jsonb expression, each
+    wrapped in begin; ... rollback;. No DDL, DML, role changes or credential exposure.
+status: PASS
+notes: >-
+  PASS on the attempt-3 delta: the single Reviewer defect (8.8 -> '12.50', 5 distinct prices)
+  is corrected and the corrected values are confirmed by executed arithmetic in production and
+  by static tracing of the fixture through the candidate/inspector/stage code paths. The
+  regression bar (unit suite 698/698, migrations 60/60, ratings worker 10/10) is green. The
+  pgTAP file remains unexecuted and, given the workflow triggers, will stay unexecuted unless the
+  branch goes through a pull request; that residual is recorded under untested rather than
+  counted against the delta.
