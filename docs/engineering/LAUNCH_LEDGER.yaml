@@ -369,7 +369,7 @@ tasks:
     severity: P2
     owner: Chief
     state: RUNNING
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0029/engineering-brief.yaml), builder: Builder-DevOps running (branch agent/BG-0029-hardening), verifier: pending, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0029/engineering-brief.yaml), builder: Builder-DevOps DONE (agent/BG-0029-hardening @143ba7d), verifier: running, reviewer: pending}
     note: scope widened to tests/e2e/fantasy.journey.e2e.ts (additions only) and a new tests/e2e/fantasy-league-cleanup.ts because the UI has no owner-side league removal; api.archive_fantasy_league is the existing contract
 
   BG-0030:
