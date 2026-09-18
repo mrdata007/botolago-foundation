@@ -6,8 +6,8 @@ import type { TranslationKey } from "./dictionaries";
  *
  * These lists never change a warning count. They annotate it: an allow-listed
  * finding is printed as `suppressed` together with the justification below, an
- * unlisted one is printed by name. That is deliberate — `profile.title` stays a
- * named W1/W2 warning until BG-0024 replaces its English placeholder copy.
+ * unlisted one is printed by name. That is deliberate: before BG-0024 repaired
+ * its copy, `profile.title` surfaced as a named W1/W2 warning, never absorbed.
  *
  * Both lists are `satisfies Partial<Record<TranslationKey, string>>`, so
  * renaming or deleting a dictionary key breaks `bun run typecheck` here instead

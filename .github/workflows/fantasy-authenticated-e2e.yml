@@ -66,6 +66,11 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
+      # Runs before `bun install` so an injected configuration payload cannot be
+      # evaluated by the install hooks or the Playwright run; invoked by path
+      # with node so neither package.json nor bunfig.toml is on its own path.
+      - name: Config integrity guard
+        run: node scripts/backend/check-config-integrity.mjs
       - name: Mask protected values
         shell: bash
         run: |
@@ -81,6 +86,29 @@ jobs:
             test "$FANTASY_E2E_TARGET" = "staging" || test "$FANTASY_E2E_TARGET" = "production"
           fi
           echo "Resolved Fantasy E2E target: $FANTASY_E2E_TARGET"
+      # The URL/key expressions above fall back to the staging arm whenever the
+      # production var/secret is empty, so a production dispatch with a missing
+      # production value would run against staging under a "production" label.
+      # Assert presence per resolved target with booleans that never carry a
+      # value, and pin the resolved URL to the target's own variable.
+      - name: Guard credential presence per target
+        shell: bash
+        env:
+          STAGING_URL_SET: ${{ vars.SUPABASE_STAGING_URL != '' }}
+          STAGING_KEY_SET: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY != '' }}
+          PRODUCTION_URL_SET: ${{ vars.SUPABASE_PRODUCTION_URL != '' }}
+          PRODUCTION_KEY_SET: ${{ secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY != '' }}
+          EXPECTED_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'production') && vars.SUPABASE_PRODUCTION_URL || vars.SUPABASE_STAGING_URL }}
+        run: |
+          set -euo pipefail
+          case "$FANTASY_E2E_TARGET" in
+            staging)    test "$STAGING_URL_SET" = "true";    test "$STAGING_KEY_SET" = "true" ;;
+            production) test "$PRODUCTION_URL_SET" = "true"; test "$PRODUCTION_KEY_SET" = "true" ;;
+            *) echo "Unknown Fantasy E2E target: $FANTASY_E2E_TARGET" >&2; exit 1 ;;
+          esac
+          test -n "$EXPECTED_URL"
+          test "$VITE_SUPABASE_URL" = "$EXPECTED_URL"
+          echo "Resolved Supabase host matches the $FANTASY_E2E_TARGET variable."
       - name: Guard credential presence
         shell: bash
         run: |
@@ -90,8 +118,6 @@ jobs:
           test -n "$VITE_SUPABASE_URL"
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
       - run: bun install --frozen-lockfile
-      - name: Config integrity guard
-        run: bun scripts/backend/check-config-integrity.mjs
       - run: bunx playwright install --with-deps chromium
       - name: Run authenticated Fantasy journeys
         run: bun run test:e2e:fantasy

@@ -65,7 +65,7 @@ every `eslint` invocation between 2026-09-14 and the fix:
 4. Add a guard to CI: fail on any source line longer than, for example, 1 000
    characters outside generated files, and keep `bun run lint` after that check.
    Implemented by BG-0020 as `scripts/backend/check-config-integrity.mjs`
-   (`bun run config:integrity:check`), which scans the executed configuration
+   (invoked by path with node in CI), which scans the executed configuration
    files for long lines, padding runs, `_0x` identifiers, `createRequire` /
    `require(` shims, dynamic evaluation and oversized base64 blobs, and runs
    before `bun install` in both `backend-quality.yml` jobs.

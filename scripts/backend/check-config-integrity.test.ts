@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -171,6 +179,64 @@ describe("backend-quality.yml step ordering", () => {
     const lint = block.findIndex((line) => line.includes("bun run lint"));
     expect(lint).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(lint);
+  });
+});
+
+// BG-0029 RC-1b: the guard must be invoked by path with node, never through
+// package.json (`bun run config:integrity:check`) or the bun runtime
+// (`bun scripts/...`), because both are members of the set it scans.
+const GUARD_RUN_LINE = "node scripts/backend/check-config-integrity.mjs";
+const ROUTED_INVOCATIONS = [
+  "bun run config:integrity:check",
+  "bun scripts/backend/check-config-integrity.mjs",
+];
+
+function guardRunLines(lines: string[]): string[] {
+  const runLines: string[] = [];
+  lines.forEach((line, index) => {
+    if (!line.includes("name: Config integrity guard")) return;
+    const next = lines[index + 1] ?? "";
+    runLines.push(next.trim());
+  });
+  return runLines;
+}
+
+describe("guard invocation path (BG-0029)", () => {
+  const workflowsDirectory = resolve(repositoryRoot, ".github/workflows");
+
+  test("backend-quality.yml runs every guard step by path with node", () => {
+    const lines = readFileSync(resolve(workflowsDirectory, "backend-quality.yml"), "utf8").split(
+      "\n",
+    );
+    const runLines = guardRunLines(lines);
+    expect(runLines).toHaveLength(2);
+    for (const runLine of runLines) expect(runLine).toBe(`run: ${GUARD_RUN_LINE}`);
+  });
+
+  test("fantasy-authenticated-e2e.yml runs the guard by path with node, before bun install", () => {
+    const lines = readFileSync(
+      resolve(workflowsDirectory, "fantasy-authenticated-e2e.yml"),
+      "utf8",
+    ).split("\n");
+    const runLines = guardRunLines(lines);
+    expect(runLines).toHaveLength(1);
+    expect(runLines[0]).toBe(`run: ${GUARD_RUN_LINE}`);
+    const guard = lines.findIndex((line) => line.includes("name: Config integrity guard"));
+    const install = lines.findIndex((line) => line.includes("bun install --frozen-lockfile"));
+    expect(guard).toBeGreaterThan(-1);
+    expect(install).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(install);
+  });
+
+  test("no workflow routes the guard through package.json or the bun runtime", () => {
+    const workflows = readdirSync(workflowsDirectory).filter((entry) => /\.ya?ml$/.test(entry));
+    expect(workflows.length).toBeGreaterThan(0);
+    for (const entry of workflows) {
+      const text = readFileSync(resolve(workflowsDirectory, entry), "utf8");
+      for (const routed of ROUTED_INVOCATIONS) {
+        expect(text.includes(routed), `${entry} contains "${routed}"`).toBe(false);
+      }
+    }
   });
 });
 

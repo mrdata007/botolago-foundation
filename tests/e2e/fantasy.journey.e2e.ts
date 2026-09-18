@@ -1,5 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  createLeagueCleanup,
+  E2E_LEAGUE_NAME_PREFIX,
+  leagueIdFromUrl,
+  type LeagueCleanup,
+} from "./fantasy-league-cleanup";
 import { gotoHydrated, initializeLanguage, reloadHydrated } from "./support";
 
 /**
@@ -168,18 +174,55 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     await expectSettled(page);
   });
 
+  // BG-0029: the UI offers the owner no removal path, so the league created by
+  // the league test is archived from the test process with the manager's own
+  // credentials, and leagues left behind by earlier failed runs are swept
+  // first. State is set only by that test, so the hook is a no-op elsewhere.
+  // A failed cleanup is a red test, never a log line.
+  let leagueCleanup: LeagueCleanup | undefined;
+  let createdLeagueId: string | null = null;
+
+  test.afterEach(async () => {
+    const cleanup = leagueCleanup;
+    const leagueId = createdLeagueId;
+    leagueCleanup = undefined;
+    createdLeagueId = null;
+    if (!cleanup) return;
+    try {
+      if (leagueId) {
+        await cleanup.archiveLeague(leagueId);
+        test.info().annotations.push({ type: "league-archived", description: leagueId });
+      }
+    } finally {
+      await cleanup.dispose();
+    }
+  });
+
   test("leagues: create, open detail, go back", async ({ page }) => {
+    leagueCleanup = await createLeagueCleanup({ email: email!, password: password! });
+    const swept = await leagueCleanup.sweepE2ELeagues();
+    test.info().annotations.push({
+      type: "league-sweep",
+      description: `archived ${swept.length} stale E2E league(s)${swept.length ? `: ${swept.join(", ")}` : ""}`,
+    });
     await initializeLanguage(page, "fr");
     await login(page);
     await gotoHydrated(page, "/fantasy/leagues", "fr");
     await expectSettled(page);
     await page.getByRole("button", { name: /Gérer les ligues/ }).click();
     const leagueName = `E2E Ligue ${Date.now().toString(36).slice(-4)}`;
+    expect(
+      leagueName.startsWith(E2E_LEAGUE_NAME_PREFIX),
+      "league name carries the sweep prefix",
+    ).toBe(true);
     await page.getByLabel(/Nom de la ligue/).fill(leagueName);
     await page.getByRole("button", { name: /^Créer une ligue$/ }).click();
     await expect(page.getByText(/Code d’invitation/)).toBeVisible({ timeout: 30_000 });
     await page.getByRole("link", { name: leagueName }).first().click();
     await expectSettled(page);
+    createdLeagueId = leagueIdFromUrl(page.url());
+    expect(createdLeagueId, "league id captured from the detail URL").not.toBeNull();
+    test.info().annotations.push({ type: "league-id", description: createdLeagueId ?? "" });
     await expect(page.getByRole("heading", { name: leagueName })).toBeVisible();
     await expect(page.getByText(/Dernière mise à jour/)).toBeVisible();
     await page.getByRole("link", { name: /Retour/ }).click();
