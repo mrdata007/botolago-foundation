@@ -680,6 +680,27 @@ tasks:
         2027-06-30, bounds_locked_at is set, bounds_locked_reason matches; confirm no fantasy
         preview/activation regression (season_ended / current_season_required checks); confirm the
         deadline before 2026-09-25 per the standing time box.
+        EXECUTED 2026-09-18T19:57:52Z under the same owner approval as A and B, immediately after
+        Action B''s verification completed. Precondition re-check (fresh, not reused from the
+        packet snapshot above): SELECT of the target row immediately before the UPDATE returned
+        ends_on 2026-09-24, starts_on 2026-09-24, is_current true, status active, bounds_locked_at
+        NULL — exactly matching the reviewed precondition. Applied the exact reviewed statement
+        verbatim, no broadened predicate or values, via mcp__Supabase__execute_sql with a `returning`
+        clause: `update app.seasons set ends_on = date ''2027-06-30'', bounds_locked_at = now(),
+        bounds_locked_reason = ''BG-0031 owner correction 2027-06-30'' where id =
+        ''d03223b0-8f4a-4309-93e1-2a708d7c3584'' and ends_on = date ''2026-09-24'' returning ...`.
+        RESULT: exactly 1 row affected (id d03223b0-8f4a-4309-93e1-2a708d7c3584). Row after: ends_on
+        2027-06-30, starts_on unchanged 2026-09-24, is_current unchanged true, status unchanged
+        active, bounds_locked_at 2026-09-18T19:57:52.46132+00, bounds_locked_reason ''BG-0031 owner
+        correction 2027-06-30''. Re-selected fresh in a separate query to confirm the write
+        persisted (not just returned): confirmed identical. Post-change verification: (1) re-select
+        matches expected values exactly (above); (2) a rolled-back rehearsal
+        (begin; update ... set ends_on = 2026-09-24 ...; select ...; rollback;) attempted to revert
+        the value and confirmed the lock now actively protects it — the row still showed
+        ends_on=2027-06-30 inside that same (rolled-back) transaction, proving the guard promoted in
+        Action B is now protecting this exact correction in real time; (3) the standing time box
+        (registration must reopen before 2026-09-22T22:30Z) is unaffected by this data correction
+        and remains a separate, still-open item, not touched by this action. ACTION C: DONE.
 
       Standing constraints that apply to all three: never bundle multiple batches in one dispatch;
       never enable FANTASY_AUTOMATION_ENABLED as a side effect of any of these (BG-0004 stays HOLD,
