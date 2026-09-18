@@ -1,0 +1,29 @@
+BG-0031 — PR #137 (agent/BG-0031-season-bounds-guard) — CI run 35368491642
+Head SHA: 7cf51522eb2697f7a2be54306b1099ee657e9899
+Fetched: 2026-09-18T16:3xZ (Chief check-in, after porting CI-regenerated types)
+
+database-quality job 105676582463 — conclusion: success
+
+Migration chain applied cleanly through 20260918160000_season_bounds_guard.sql
+(NOTICE 00000 "trigger seasons_protect_locked_bounds does not exist, skipping" is the
+expected create-if-absent guard on first application, not an error).
+
+backend:db:test (supabase test db --local supabase/tests/database):
+  season_bounds_guard.test.sql ..................... ok
+  (all 40 files ok)
+  All tests successful.
+  Files=40, Tests=816,  7 wallclock secs
+  Result: PASS
+
+backend:db:lint: No schema errors found (app, api, app_private)
+
+backend:types:check: Generated database types are current.
+  (fixed in this run: ported the CI-regenerated database.types.ts, adding
+  bounds_locked_at/bounds_locked_reason to app.seasons, which the prior run
+  35346106627 had flagged as stale — see commit 7cf5152 on this branch)
+
+application-quality job 105676582660 — conclusion: success
+staging-functional — skipped (expected; not applicable to this branch)
+
+Overall PR #137 check-run state: 3/3 non-skipped applicable jobs green.
+Vercel preview deployments ("botolago-foundation", "botolagoapp") both reached "Ready".
