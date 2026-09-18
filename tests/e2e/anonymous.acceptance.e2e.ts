@@ -28,6 +28,18 @@ for (const language of ["fr", "ar"] as const) {
         );
         await expect(page.locator("body")).toBeVisible();
         await expectNoHorizontalOverflow(page);
+
+        // BG-0035 regression: @layer base's `body { font-family: var(--font-sans) }`
+        // must not defeat the html[dir=rtl] Arabic font switch.
+        const bodyFontFamily = await page.evaluate(
+          () => getComputedStyle(document.body).fontFamily,
+        );
+        if (language === "ar") {
+          expect(bodyFontFamily).toContain("Noto Sans Arabic");
+        } else {
+          expect(bodyFontFamily).not.toContain("Noto Sans Arabic");
+          expect(bodyFontFamily).toContain("Manrope");
+        }
       }
 
       await diagnostics.verify(testInfo);

@@ -425,7 +425,11 @@
 /* ================================================================== */
 
 html[dir="rtl"] { font-family: var(--font-arabic); }
-html[dir="rtl"] body { line-height: 1.75; }
+/* `body` in @layer base sets its own font-family (line 440), and a directly
+   declared property always wins over an inherited one regardless of layer
+   order, so the html[dir=rtl] switch above never reaches body text without
+   this explicit, unlayered override. */
+html[dir="rtl"] body { font-family: var(--font-arabic); line-height: 1.75; }
 html[dir="rtl"] .lucide-chevron-right { transform: scaleX(-1); }
 html[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
 html[dir="rtl"] .lucide-arrow-right { transform: scaleX(-1); }
