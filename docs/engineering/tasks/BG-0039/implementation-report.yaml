@@ -1,0 +1,93 @@
+task_id: BG-0039
+builder_type: Builder-DevOps
+branch: agent/BG-0039-ownership-diagnostic
+base: "origin/main db76141 (worktree was created from 92857fa; origin/main advanced by one ledger-only commit db76141 during the task and the branch was rebased onto it; that upstream delta touched only docs/engineering/LAUNCH_LEDGER.yaml)"
+commits:
+  - "70d8f0d BG-0039: emit a sanitized shape diagnostic when the ownership guard fails"
+  - "BG-0039: implementation report"
+changes:
+  - file: scripts/backend/phase7e-production-migration-promoter.py
+    description: >
+      Two helpers added directly above assert_management_target and the ownership
+      section of assert_management_target rewritten; nothing else in the file changed.
+      organization_rows_from(organizations): returns the rows of a GET /v1/organizations
+      response — the list itself, or the "organizations" key of a dict wrapper (only if
+      that value is a list), else []. This is the same shape acceptance as before; the
+      only behavioural difference is that a non-list/non-dict response or a non-list
+      wrapper value now yields no rows (guard fails with PromotionError) instead of
+      escaping as an AttributeError caught by main() as "unexpected_AttributeError".
+      describe_organizations_response(organizations, project): builds the sanitized
+      diagnostic string. It emits only structural facts, never values:
+      organizations_response_type (list | dict | python type name),
+      organizations_top_level_keys (sorted key names, [] unless dict),
+      organizations_row_count, organizations_non_dict_row_count,
+      organizations_row_keys (sorted set of key names across dict rows),
+      project_has_organization_id (true|false), and
+      project_organization_id_matched_row_keys (sorted key names under which the
+      project's organization_id equalled a row value, e.g. ['slug'] if the identity key
+      moved off "id"; [] when nothing matched). Key names are the only strings copied
+      from the response.
+      assert_management_target: the call order (project, then organizations) is
+      unchanged. The organizations GET is wrapped in try/except PromotionError and
+      re-raised as "organizations_request_failed: <original message>" so a non-2xx
+      reply keeps ManagementClient's existing "<classification>: HTTP <status>" text
+      (no body content beyond the already-sanitized code) and additionally names the
+      failing call. The membership test is unchanged in meaning: it still raises unless
+      project.organization_id is truthy and some row (now also required to be a dict)
+      has row["id"] == organization_id. On failure the message is
+      "authenticated account does not own the selected project: " + the diagnostic.
+      The acceptance rule was NOT widened (no slug or alternative-key acceptance; see
+      unresolved). build_transaction, assert_history, read_history, load_migrations,
+      ManagementClient, sanitize, run_batch, main, BATCHES and every EXPECTED_* table
+      were confirmed byte/value-identical to origin/main via inspect.getsource.
+  - file: scripts/backend/tests/test_phase7e_production_migration_promoter.py
+    description: >
+      Added a fake ORGANIZATION_ID ("org_9f3c2b1a7d5e4c6b" — not a real Supabase ref) and
+      an ownership_client() factory that serves a healthy project, completed backup and the
+      two reviewed Edge Functions while returning (or raising) a caller-supplied
+      organizations response. Five new tests: (a)
+      test_ownership_guard_accepts_a_list_containing_the_project_organization — list
+      containing the id passes; (b)
+      test_ownership_guard_reports_sanitized_shape_when_list_lacks_the_organization —
+      list without it raises PromotionError whose message contains the shape fields and
+      contains neither the project org id nor the row id/slug/name values; also covers
+      project without organization_id (project_has_organization_id=false), an empty list
+      (row_count=0), and the identity key appearing under "slug" instead of "id"
+      (still fails; matched_row_keys=['slug']; no values leaked); (c)
+      test_ownership_guard_keeps_the_dict_wrapper_behaviour — {"organizations": [...]}
+      containing the id passes; a paginated-looking wrapper without it fails with
+      response_type=dict and the top-level key names but not the cursor value; a dict
+      keyed "data" yields row_count=0 and fails; (d)
+      test_ownership_guard_never_leaks_row_values — rows carrying billing_email, name,
+      id and slug values: the message and sanitize(message) contain none of them while
+      the key names are listed; (e)
+      test_ownership_guard_keeps_the_management_api_failure_classification — a raised
+      "management_api_request_failed: HTTP 403" surfaces verbatim behind the
+      "organizations_request_failed: " prefix. All 11 pre-existing tests are unchanged
+      and pass.
+  - file: docs/engineering/tasks/BG-0039/implementation-report.yaml
+    description: this report.
+database_changes: []
+configuration_changes: []
+tests_run:
+  - command: python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v
+    result: PASS # "Ran 16 tests / OK" (11 pre-existing + 5 new); baseline on origin/main before the change was "Ran 11 tests / OK"; re-run after the rebase onto db76141: "Ran 16 tests in 0.015s / OK"
+  - command: "python3 (scratchpad): importlib-load origin/main's promoter and the branch promoter, compare inspect.getsource for build_transaction, assert_history, read_history, load_migrations, ManagementClient, sanitize, assert_target_environment, run_batch, main; compare BATCHES and all EXPECTED_* tables"
+    result: PASS # every listed function byte-identical; BATCHES and EXPECTED_* tables equal
+  - command: git diff --name-status origin/main..HEAD
+    result: PASS # before the report commit: exactly M scripts/backend/phase7e-production-migration-promoter.py, M scripts/backend/tests/test_phase7e_production_migration_promoter.py (after rebasing onto db76141; before the rebase the same command additionally listed the upstream ledger change, which is not part of this branch's commits); after the report commit additionally A docs/engineering/tasks/BG-0039/implementation-report.yaml
+  - command: bunx ruff check scripts/backend/phase7e-production-migration-promoter.py scripts/backend/tests/test_phase7e_production_migration_promoter.py
+    result: PASS # "All checks passed!" (supplementary; not a repository gate)
+  - command: "Supabase MCP search_docs: GET /v1/organizations reference (two queries)"
+    result: PASS # docs describe the endpoint as "Returns a list of organizations that you currently belong to" with responses 200 (no body schema published in the reference), 401, 403, 429, 500; sibling endpoints address an organization by {slug}. No row schema, no `slug` key on the list response and no pagination wrapper are documented.
+not_executed:
+  - "No Phase 7E-B dispatch, no Management API call and no credential use (forbidden). The diagnostic is proven only by unit tests with synthetic responses; the real classification of run 35343091384 is obtained by the owner's next dispatch at the merged main commit."
+unresolved:
+  - "UNKNOWN (per brief instruction): the Supabase Management API reference does not publish the 200 body schema of GET /v1/organizations, so whether an alternative identity key (slug) or a pagination wrapper is an officially documented shape could not be confirmed from docs. Coordinator-supplied read-only evidence (via the MCP layer, not the v1 endpoint) shows one organization whose id equals its slug inside an {\"organizations\": [...]} wrapper — a shape the promoter already accepts. Because a slug match cannot prove membership by organization id, NO additive acceptance path was added; the rule remains row[\"id\"] == project.organization_id. The new project_organization_id_matched_row_keys field will show ['slug'] on the next run if the identity key has in fact moved, without accepting it."
+  - "Interpretation guide for the next run's message: organizations_request_failed: ... HTTP 401/403 => the token cannot list organizations (token type/scope); organizations_response_type=list organizations_row_count=0 => the token authenticates but sees no organizations (token is not a personal access token of an org member); organizations_row_count>=1 with matched_row_keys=[] and 'id' in row_keys => the account is a member of other organizations but not the project's; matched_row_keys=['slug'] (or another key) => the identity key moved and a reviewed rule change is needed."
+unexpected_observations:
+  - "Before this change, a GET /v1/organizations response that was neither a list nor a dict (or a dict whose 'organizations' value was not a list) would raise AttributeError inside assert_management_target and be reported by main() as 'promotion_failed: unexpected_AttributeError' rather than a stable PromotionError. The new organization_rows_from helper closes that hole as a side effect of the diagnostic (still a hard failure). Noted because it is a small behavioural change, not a repair of unrelated code."
+  - "assert_management_target is called twice per promotion (preflight and postflight); the diagnostic applies equally to both call sites without further change."
+  - "Ruff is the only Python linter available here and is not wired into any repository gate; pytest is not installed and no workflow uses it, so the CI form (python -m unittest <file>) was used."
+scope_deviations: []
+status: DONE

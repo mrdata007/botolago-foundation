@@ -392,6 +392,138 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                 "release_activation",
             )
 
+    ORGANIZATION_ID = "org_9f3c2b1a7d5e4c6b"
+
+    @classmethod
+    def ownership_client(cls, organizations: object, *, project_organization_id: object = None):
+        organization_id = (
+            cls.ORGANIZATION_ID if project_organization_id is None else project_organization_id
+        )
+
+        class Client:
+            def get(self, path: str):
+                if path == "/v1/organizations":
+                    if isinstance(organizations, Exception):
+                        raise organizations
+                    return organizations
+                if path.endswith("/functions"):
+                    return [
+                        {"slug": "football-ingest", "status": "ACTIVE", "verify_jwt": True},
+                        {"slug": "news-ingest", "status": "ACTIVE", "verify_jwt": True},
+                    ]
+                if path.endswith("/database/backups"):
+                    return {
+                        "pitr_enabled": False,
+                        "backups": [{"status": "COMPLETED", "inserted_at": "2026-09-18T01:15:34Z"}],
+                    }
+                project = {
+                    "ref": PROMOTER.EXPECTED_PROJECT_REF,
+                    "name": PROMOTER.EXPECTED_PROJECT_NAME,
+                    "region": PROMOTER.EXPECTED_REGION,
+                    "status": "ACTIVE_HEALTHY",
+                    "database": {"version": "17.6"},
+                }
+                if organization_id is not False:
+                    project["organization_id"] = organization_id
+                return project
+
+        return Client()
+
+    def test_ownership_guard_accepts_a_list_containing_the_project_organization(self) -> None:
+        client = self.ownership_client(
+            [{"id": "other_org", "name": "Other"}, {"id": self.ORGANIZATION_ID, "name": "Owner"}]
+        )
+        target = PROMOTER.assert_management_target(client, "fantasy_calendar_sync")
+        self.assertEqual(PROMOTER.EXPECTED_PROJECT_REF, target["ref"])
+
+    def test_ownership_guard_reports_sanitized_shape_when_list_lacks_the_organization(self) -> None:
+        client = self.ownership_client([{"id": "other_org", "slug": "other-slug", "name": "Other"}])
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(client, "fantasy_calendar_sync")
+        message = str(context.exception)
+        self.assertIn("authenticated account does not own the selected project", message)
+        self.assertIn("organizations_response_type=list", message)
+        self.assertIn("organizations_row_count=1", message)
+        self.assertIn("organizations_row_keys=['id', 'name', 'slug']", message)
+        self.assertIn("project_has_organization_id=true", message)
+        self.assertIn("project_organization_id_matched_row_keys=[]", message)
+        self.assertNotIn(self.ORGANIZATION_ID, message)
+        self.assertNotIn("other_org", message)
+        self.assertNotIn("other-slug", message)
+        self.assertNotIn("Other", message)
+
+        # The identity key moving off "id" (e.g. to "slug") is still a failure,
+        # but the diagnostic names the key so the next run is conclusive.
+        moved = self.ownership_client(
+            [{"id": "opaque_internal_id", "slug": self.ORGANIZATION_ID, "name": "Owner"}]
+        )
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(moved, "fantasy_calendar_sync")
+        message = str(context.exception)
+        self.assertIn("project_organization_id_matched_row_keys=['slug']", message)
+        self.assertNotIn(self.ORGANIZATION_ID, message)
+        self.assertNotIn("opaque_internal_id", message)
+
+        # Missing organization_id on the project is reported as a boolean only.
+        missing = self.ownership_client([{"id": self.ORGANIZATION_ID}], project_organization_id=False)
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(missing, "fantasy_calendar_sync")
+        self.assertIn("project_has_organization_id=false", str(context.exception))
+        self.assertNotIn(self.ORGANIZATION_ID, str(context.exception))
+
+        # An empty list is a distinct, still-failing case.
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(self.ownership_client([]), "fantasy_calendar_sync")
+        self.assertIn("organizations_row_count=0", str(context.exception))
+
+    def test_ownership_guard_keeps_the_dict_wrapper_behaviour(self) -> None:
+        wrapped = self.ownership_client({"organizations": [{"id": self.ORGANIZATION_ID}]})
+        target = PROMOTER.assert_management_target(wrapped, "fantasy_calendar_sync")
+        self.assertEqual(PROMOTER.EXPECTED_PROJECT_REF, target["ref"])
+
+        paginated = self.ownership_client(
+            {"organizations": [{"id": "other_org"}], "next_cursor": "opaque_cursor_value"}
+        )
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(paginated, "fantasy_calendar_sync")
+        message = str(context.exception)
+        self.assertIn("organizations_response_type=dict", message)
+        self.assertIn("organizations_top_level_keys=['next_cursor', 'organizations']", message)
+        self.assertIn("organizations_row_count=1", message)
+        self.assertNotIn("opaque_cursor_value", message)
+        self.assertNotIn("other_org", message)
+        self.assertNotIn(self.ORGANIZATION_ID, message)
+
+        # A dict keyed by something else proves nothing and still fails.
+        unknown = self.ownership_client({"data": [{"id": self.ORGANIZATION_ID}]})
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(unknown, "fantasy_calendar_sync")
+        self.assertIn("organizations_top_level_keys=['data']", str(context.exception))
+        self.assertIn("organizations_row_count=0", str(context.exception))
+
+    def test_ownership_guard_never_leaks_row_values(self) -> None:
+        email = "owner.person@example.com"
+        name = "Botola Secret Holdings"
+        client = self.ownership_client(
+            [{"id": "org_leak_test", "billing_email": email, "name": name, "slug": "secret-slug"}]
+        )
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(client, "fantasy_calendar_sync")
+        message = str(context.exception)
+        self.assertIn("organizations_row_keys=['billing_email', 'id', 'name', 'slug']", message)
+        for value in (email, name, "org_leak_test", "secret-slug", self.ORGANIZATION_ID):
+            self.assertNotIn(value, message)
+            self.assertNotIn(value, PROMOTER.sanitize(context.exception))
+
+    def test_ownership_guard_keeps_the_management_api_failure_classification(self) -> None:
+        failure = PROMOTER.PromotionError("management_api_request_failed: HTTP 403")
+        with self.assertRaises(PROMOTER.PromotionError) as context:
+            PROMOTER.assert_management_target(self.ownership_client(failure), "fantasy_calendar_sync")
+        self.assertEqual(
+            "organizations_request_failed: management_api_request_failed: HTTP 403",
+            str(context.exception),
+        )
+
     def test_release_activation_postflight_proves_inactive_empty_runtime(self) -> None:
         verification = {
             "serviceRoutineCount": 6,
