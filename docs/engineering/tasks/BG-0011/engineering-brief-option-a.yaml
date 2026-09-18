@@ -1,0 +1,772 @@
+task_id: BG-0011-A2
+role: Researcher
+attempt: 1
+objective: >
+  Execution plan for Option A (owner decision 2026-09-18): obtain real per-player 2025/26 ratings,
+  then roll back and re-stage the 2026/27 Fantasy catalog so opening prices are differentiated,
+  including deletion of the 3 QA/E2E fantasy_teams, completed before the activation window closes.
+generated_at: "2026-09-18"
+repository_head: 1736478
+
+findings:
+  # ---------- 1. Why the G7 backfill runs failed ----------
+  - classification: VERIFIED
+    statement: >
+      The three G7 runs are 30764205550 (commit f5793ef, 19:48Z), 30767229746 (commit b235bda, 21:08Z)
+      and 30767752509 (commit 5577bdb, 21:22Z), all 2026-08-02, all workflow_dispatch/failure. In every
+      run only the "mutation" step failed; quality, preflight, migrations, deploy, log, scan, upload and
+      cleanup all reported success.
+    evidence: "mcp__github actions_list/get_job_logs; run 30767752509 job 91549403776 final step env: MUTATION_OUTCOME: failure, DEPLOY_OUTCOME: success, MIGRATIONS_OUTCOME: success"
+  - classification: VERIFIED
+    statement: >
+      The sanitized evidence artifacts for all three runs are EXPIRED and cannot be downloaded
+      (retention 30 days; expires_at 2026-09-01). GitHub returns HTTP 410 Gone on
+      download_workflow_run_artifact for artifact 8839509446. The same is true of the probe run
+      30754019708 (artifact 8835353009). The runner redirects its stdout into a runtime file that is
+      deleted by the cleanup step, so the job log carries no failure code either.
+    evidence: "actions_list list_workflow_run_artifacts for 30764205550/30767229746/30767752509 → expired: true; actions_get download_workflow_run_artifact 8839509446 → 410 Gone; workflow step 'Backfill 480 completed fixtures…' redirects `> \"$raw_path\" 2>&1`"
+  - classification: VERIFIED
+    statement: >
+      The failure codes are nevertheless recorded in the repository, because the two repair commits
+      embedded them in the runner's evidence header: run 30764205550 →
+      "season-26027-performance-batch-01_mapping_not_found" (artifactSha256 88521ccd…e7e4fc); run
+      30767229746 → "season-26027-performance-batch-02_historical_fixture_coverage_incomplete"
+      (artifactSha256 10fa610f…cddd44). Both sha256 values match the live artifact digests reported by
+      the GitHub API, so the repository constants describe exactly those two runs.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:370-382 (repairOf/diagnosticOf); artifact digests sha256:88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc and sha256:10fa610f2e606c42f7b40bbf13a1b1c33927f168c78f2e3a08c9565a84cddd44"
+  - classification: VERIFIED
+    statement: >
+      Run 1 failure (`mapping_not_found`) originates in api.ingest_historical_player_fixture_performance,
+      which raised P0002 MAPPING_NOT_FOUND for a provider lineup player with no active canonical
+      `player` mapping, or whose `team` mapping did not resolve to one of the fixture's two clubs, or
+      who had no app.team_memberships row covering the fixture date. The worker maps any P0002 whose
+      message is not SEASON_/FIXTURE_/TEAM_MAPPING_NOT_FOUND to the generic code `mapping_not_found` —
+      i.e. the player-level branch.
+    evidence: "supabase/migrations/20260802010100_historical_player_performances.sql:394,412 (player and team/membership branches raise 'MAPPING_NOT_FOUND'); supabase/functions/_shared/sportsmonks-historical-player-performance.ts:558-567 (mappingCode fallback)"
+  - classification: VERIFIED
+    statement: >
+      That run-1 defect was repaired before run 3 by commit 2b204b5 ("Repair historical performance
+      mapping quarantine"), which added migration 20260802010200_historical_performance_mapping_quarantine.sql
+      (unmapped lineup players are excluded and counted as excludedMappingRows instead of aborting) and
+      the matching worker/runner accounting. That migration IS applied in production.
+    evidence: "git show --stat 2b204b5; supabase_migrations.schema_migrations contains version 20260802010200 name historical_performance_mapping_quarantine; pg_get_functiondef(api.ingest_historical_player_fixture_performance) contains 'excludedMappingRows'"
+  - classification: VERIFIED
+    statement: >
+      Runs 3 and 5 failed with `historical_fixture_coverage_incomplete`, which is raised **client-side
+      in the edge worker**, in normalizeHistoricalFixture, BEFORE any database call, when any of these
+      provider-payload invariants fails: lineups length outside 22..100, valid rows outside 22..100,
+      excludedIncompleteRows > 20, starterRows <> 22, distinct teamCount <> 2, invalidDetailRows <> 0.
+      It is therefore a provider-data defect, not a database or mapping defect.
+    evidence: "supabase/functions/_shared/sportsmonks-historical-player-performance.ts:506-530 (coverageFailures then throw HistoricalPerformanceRuntimeError('historical_fixture_coverage_incomplete', {...}))"
+  - classification: VERIFIED
+    statement: >
+      The offending fixture is SportsMonks external fixture id 19489216 (kickoff 2025-09-12T17:00Z,
+      season 26027). Production coverage holds exactly 6 reconciled rows, external ids 19489210 through
+      19489215. api.football_historical_performance_fixture_batch pages strictly by
+      `external_id::bigint` ascending, so the batch requested with afterFixtureExternalId=19489214
+      returned [19489215, 19489216, 19561780, 19574906, 19574907]. Both failing runs persisted exactly
+      40 rows (run 3 inserted 40, run 5 updated 40) — precisely fixture 19489215's 40 rows — and then
+      aborted on the next item, 19489216.
+    evidence: "read-only query on app_private.historical_performance_fixture_coverage joined to football_provider_mappings → 19489210..19489215 only, 19489215 has lineup_rows_seen 40 / performance_rows 40; migration 20260802010100:219-241 (order by external_id::bigint); extractor rows 9d9d76b7 (inserted 40) and f2cc7dc5 (updated 40)"
+  - classification: UNKNOWN
+    statement: >
+      WHICH of the six coverage invariants fixture 19489216 violates. Commit bb092bd added the
+      diagnostic payload (fixtureId, lineupRowsSeen, validPlayerRows, excludedIncompleteRows,
+      starterRows, teamCount, invalidDetailRows, failures[]) to the 503 response, and run 30767752509
+      captured it — but only inside the now-expired artifact. The most probable value is
+      `starter_rows_mismatch` (SportsMonks lineups for that fixture do not expose 22 type_id=11 rows),
+      because the six ingested fixtures all had exactly 22 starters and 39-40 lineup rows, which is
+      well inside the other bounds; this is engineering inference, not evidence.
+  - classification: VERIFIED
+    statement: >
+      The backfill is all-or-nothing. The runner aborts the whole season loop on the first
+      non-conforming fixture (no skip/quarantine at fixture level), and requires
+      fixturesProcessed == 240 exactly; api.football_historical_player_rating_inputs independently
+      refuses with HISTORICAL_PERFORMANCE_INCOMPLETE unless every finished fixture of the season has a
+      reconciled coverage row and performanceCount >= 240*22 = 5280. Production has 6 coverage rows and
+      228 performance rows for 2025/26, 0 for 2024/25.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:436-457 (throw on first bad batch), :458-460 (season_*_fixture_count_mismatch); migration 20260802010100:578-607; extractor coverage_state"
+
+  # ---------- 2. Can the G7 workflow run today (SUPABASE_ACCESS_TOKEN invalid, BG-0002)? ----------
+  - classification: VERIFIED
+    statement: >
+      The deployed production football-ingest is version 53, updated 2026-08-02T21:23:55Z — i.e. the
+      deploy step of run 30767752509 at commit 5577bdb. Its bundle already contains the
+      `historical_player_performances` route, the `coverageFailures` invariant set and the `diagnostic`
+      response field. No code deploy is needed to run the backfill.
+    evidence: "mcp__Supabase list_edge_functions → football-ingest version 53, updated_at 1785705835936 (= 2026-08-02T21:23:55Z); get_edge_function body contains 'historical_player_performances', 'coverageFailures', 'diagnostic'"
+  - classification: VERIFIED
+    statement: >
+      `supabase db push` is likewise a no-op for this path: every migration the G7 job needs
+      (20260802010000, 20260802010100, 20260802010200) is present in production
+      supabase_migrations.schema_migrations, as are the 20260914* fantasy migrations.
+    evidence: "read-only query on supabase_migrations.schema_migrations"
+  - classification: VERIFIED
+    statement: >
+      A "runner-only, HTTP-invocation" path is NEVERTHELESS IMPOSSIBLE without the management
+      credential. Two independent reasons: (a) the runner itself shells out to
+      `supabase secrets set --project-ref … --env-file …` once per season and to `supabase secrets set`
+      + `supabase secrets unset FOOTBALL_INGESTION_TRIGGER_SECRET` in its finally block — all
+      Management-API calls that require SUPABASE_ACCESS_TOKEN; (b) the edge worker reads BOTH the target
+      season (`FOOTBALL_SPORTSMONKS_SEASON_ID`) and the shared trigger secret
+      (`FOOTBALL_INGESTION_TRIGGER_SECRET`) from the deployed function's environment, not from the
+      request body, and the last run's finally block UNSET the trigger secret. Without setting function
+      secrets, the worker answers 503 `service_unavailable` (configuration() throws) or 401
+      `unauthorized`, and it would in any case target the wrong season.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:409-418, 497-523 (secrets set/unset), :299-305 (payload carries only job/action/afterFixtureExternalId/batchSize); supabase/functions/_shared/sportsmonks-historical-player-performance.ts:176-208 (configuration reads SPORTSMONKS_API_TOKEN, FOOTBALL_INGESTION_TRIGGER_SECRET, FOOTBALL_SPORTSMONKS_SEASON_ID), :1002-1012 (503 service_unavailable / 401 unauthorized)"
+  - classification: VERIFIED
+    statement: >
+      The G7 workflow additionally runs `supabase link`, `supabase db push --dry-run`, `supabase db push`
+      and `supabase functions deploy football-ingest` before the runner, under environment
+      `production-admin-activation`, and its step-1 guard fails the job outright if SUPABASE_ACCESS_TOKEN
+      is empty (it does not, and cannot, detect that a present token is rejected with HTTP 401).
+    evidence: ".github/workflows/g7-production-historical-performance-backfill.yml:31,37,56,226-296"
+  - classification: VERIFIED
+    statement: >
+      The runner also hardcodes RESTORE_SEASON.id = 26027 and, in its finally block, rewrites production
+      function secrets to FOOTBALL_SPORTSMONKS_SEASON_ID=26027. That constant was correct on
+      2026-08-02 but is now WRONG: the current season is 2026/27, provider season 28647. Running the
+      runner unchanged today would leave production's ingestion runtime pinned to the completed 2025/26
+      season after the job finishes.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517; read-only query on app.seasons + football_provider_mappings → 2026/2027 d03223b0-… external_id 28647, is_current true"
+  - classification: VERIFIED
+    statement: >
+      Season 2024/25 (24319) is NOT required for the pricing outcome. app_private.fantasy_catalog_candidates
+      picks, per player, the single latest active rating from a completed season of the same competition
+      whose ends_on < target.starts_on, ordered by rating_season.ends_on DESC. 2025/26 (ends 2026-07-05)
+      strictly dominates 2024/25 (ends 2025-05-12) for a 2026/27 season starting 2026-09-24. Nothing in
+      api.football_historical_player_rating_inputs or api.ingest_historical_player_season_ratings is
+      cross-season: both take a single p_season_external_id.
+    evidence: "supabase/migrations/20260803210943_fantasy_catalog_activation.sql:206-222; 20260802010100:536-700, :700-760"
+  - classification: VERIFIED
+    statement: >
+      Yet the runner and the preflight FORCE both seasons: validateManifest rejects any manifest whose
+      seasonCount is not 2 or whose seasons are not exactly [26027, 24319], and the season loop runs both
+      to 240/240. 2024/25 has 240 finished fixtures and ZERO coverage rows, so it would have to be
+      backfilled from scratch and is equally exposed to the 19489216-class provider defect. The G7
+      workflow as written therefore cannot deliver 2025/26 ratings alone.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:176-194, 385-470; scripts/backend/g7-historical-performance-backfill-preflight.ts constants; extractor finished_fixtures_per_season"
+  - classification: VERIFIED
+    statement: >
+      Two read-only diagnostic workflows DO NOT depend on BG-0002 at all and can run today: 
+      g7-sportsmonks-historical-performance-coverage.yml (probe/classify; "No Supabase secrets used") and
+      g7-sportsmonks-historical-coverage-audit.yml (two-season provider audit; supabaseAccess false,
+      databaseWrites false). Both need only SPORTSMONKS_API_TOKEN and an owner dispatch.
+    evidence: "extractor workflows[1] and workflows[2] key_env_guards; .github/workflows/g7-sportsmonks-historical-performance-coverage.yml"
+
+  # ---------- 3. Current production state relevant to the rollback / re-stage ----------
+  - classification: VERIFIED
+    statement: >
+      There is exactly one catalog activation run: c0de2026-0917-4a11-8f00-000000000001, football season
+      d03223b0-8f4a-4309-93e1-2a708d7c3584 (2026/27), fantasy season 9918cf95-9ed5-4d7b-99ca-eb9bfc29a258,
+      ruleset f6100000-0000-4000-8000-000000000101, stored source_digest
+      9eede640c67a423c1f5804f856e1732469847763c5b37df3f2bf8482c7a5885b, staged 2026-09-17T21:03:52Z,
+      rolled_back_at NULL, 539 players / 1 gameweek / 8 fixtures, expected profile 16 teams / 1 round /
+      8 fixtures / 240..800 players.
+    evidence: "read-only query on app_private.fantasy_catalog_activation_runs"
+  - classification: VERIFIED
+    statement: >
+      api.service_rollback_fantasy_catalog compares p_expected_source_digest against the STORED
+      catalog_run.source_digest, not a freshly computed one. The digest to pass is therefore
+      9eede640c67a423c1f5804f856e1732469847763c5b37df3f2bf8482c7a5885b. The digest has already drifted:
+      app_private.fantasy_catalog_source_digest(d03223b0-…, f6100000-…) currently returns
+      182c326bcfe75322c9f52416b5003cb7f3e247381657065124439373c22b6743, because app.seasons row
+      updated_at moved to 2026-09-18T10:06:23Z. The digest is sha256 over season row ‖ ruleset row ‖ the
+      full candidate list (player, team, position, rating season, rating algorithm, rating, confidence,
+      price) ‖ rounds ‖ fixtures.
+    evidence: "20260803210943:863-890 (rollback compares stored digest), :234-280 (digest recipe); read-only queries returning both digests and app.seasons.updated_at"
+  - classification: VERIFIED
+    statement: >
+      EVERY fantasy foreign key is ON DELETE RESTRICT. Nothing cascades. The 3 QA/E2E teams currently
+      hold: 53 fantasy_squad_memberships, 8 fantasy_transfer_batches with 8 fantasy_transfers, 3
+      fantasy_lineups with 45 fantasy_lineup_players, 4 fantasy_league_memberships, 16
+      app_private.fantasy_mutation_audit rows. Zero rows exist in fantasy_chip_uses,
+      fantasy_free_hit_snapshots, app_private.fantasy_free_transfer_rollovers, fantasy_rankings,
+      fantasy_team_gameweek_results, fantasy_auto_substitutions,
+      app_private.fantasy_free_hit_lineup_snapshots.
+    evidence: "read-only pg_constraint query on all FKs referencing app.fantasy_teams/_gameweeks/_seasons/_players/_lineups/_transfer_batches (every def ends ON DELETE RESTRICT); read-only per-table counts"
+  - classification: VERIFIED
+    statement: >
+      **api.service_rollback_fantasy_catalog WILL FAIL as written.** Four app.fantasy_leagues rows
+      (71063c69…, 026a8e70…, a8ea89b4…, f2fff01c…, all "E2E Ligue …", owner e2e00000-0000-4000-8000-00000000f001,
+      created 2026-09-18) reference app.fantasy_seasons ON DELETE RESTRICT, and the rollback function
+      never deletes fantasy_leagues. Its `delete from app.fantasy_seasons` therefore raises
+      foreign_key_violation and the whole RPC rolls back. The 4 fantasy_league_memberships additionally
+      block the fantasy_teams delete, and the 16 app_private.fantasy_mutation_audit rows do too.
+    evidence: "read-only query: pg_get_functiondef(api.service_rollback_fantasy_catalog) contains neither 'fantasy_leagues' nor 'fantasy_league_memberships' (deflen 3966); app.fantasy_leagues has 4 rows for fantasy_season 9918cf95-…; FK app.fantasy_leagues → app.fantasy_seasons ON DELETE RESTRICT"
+  - classification: VERIFIED
+    statement: >
+      The rollback DOES delete, in order: fantasy_fixture_assignments, fantasy_player_price_history,
+      app_private.fantasy_initial_price_evidence, fantasy_players, fantasy_gameweeks, fantasy_seasons,
+      then deactivates/deletes the orphaned fantasy_competition and stamps rolled_back_at. It refuses
+      (PT409 fantasy_catalog_in_use) while ANY fantasy_teams row exists for the season. It does not
+      delete the app_private.fantasy_registration_activation_runs row (1 exists,
+      c0de2026-…-000000000002), which only FKs to the catalog run and is therefore harmless.
+    evidence: "20260803210943:896-950; read-only FK query on app_private.fantasy_registration_activation_runs (single FK → fantasy_catalog_activation_runs)"
+  - classification: VERIFIED
+    statement: >
+      Re-staging is not blocked by leftovers: the unique index fantasy_catalog_activation_runs_active_season_key
+      only covers rows with rolled_back_at IS NULL, and service_stage_fantasy_catalog's two PT409
+      guards test for a non-rolled-back run and for an existing app.fantasy_seasons row — both cleared
+      by a successful rollback. A NEW idempotency key is required (…0001 and …0002 are consumed);
+      …0003 for the stage and …0004 for the open follow the established convention.
+    evidence: "20260803210943:104-107 (partial unique index), :605-613; existing run ids"
+  - classification: VERIFIED
+    statement: >
+      The binding deadline is EARLIER than 2026-09-23T00:00Z. preview/stage block on
+      `earliest_kickoff <= now + 24h` (earliest kickoff 2026-09-24T00:00Z ⇒ must stage before
+      2026-09-23T00:00Z), but api.service_open_fantasy_registration additionally refuses when
+      `first_gameweek.deadline_at <= now + 24h`. The re-created GW1 deadline is
+      app_private.fantasy_calculate_deadline(ruleset, 2026-09-24T00:00Z) = 2026-09-23T22:30Z (the value
+      GW1 carries today), so REGISTRATION MUST BE RE-OPENED BEFORE 2026-09-22T22:30Z.
+    evidence: "20260803210943:452-455 (activation_window_closed), :820-826 (fantasy_activation_window_closed), :654-662 (deadline from min kickoff); read-only query app.fantasy_gameweeks 3cc19aaa-… deadline_at 2026-09-23 22:30:00+00"
+  - classification: VERIFIED
+    statement: >
+      Today's catalog is fully degenerate and 497 of 539 players are rated: DEF 156 players / 1 distinct
+      price 5.00 / 146 rated; FWD 128 / 7.20 / 121; GK 60 / 4.80 / 54; MID 195 / 7.20 / 176. All 1188
+      player_season_ratings rows (627 for 2024/25, 561 for 2025/26, all algorithm
+      botolago-preseason-rating-v1, all active) are rating 6.0 with confidence 0 — one distinct value,
+      zero rows with confidence > 0.
+    evidence: "read-only queries on app_private.fantasy_catalog_candidates(d03223b0-…) and app.player_season_ratings"
+  - classification: VERIFIED
+    statement: >
+      api.ingest_historical_player_season_ratings first sets `active = false` on EVERY
+      player_season_ratings row of the target season (any algorithm version), then upserts the v2 rows,
+      then asserts that the season's active row count equals the payload length. So the 561 neutral v1
+      rows for 2025/26 are retired automatically and the candidate lateral join (which filters
+      `player_rating.active`) picks up v2 with no further intervention. Players with no 2025/26
+      appearance keep no active rating and legitimately fall back to 6.0/0.
+    evidence: "supabase/migrations/20260802010100_historical_player_performances.sql:747-750, :886-893; 20260803210943:213-216"
+  - classification: VERIFIED
+    statement: >
+      The runner's own derivation guard already enforces non-degeneracy: validateHistoricalRatingDerivation
+      rejects the response unless ratingRange.minimum >= 4, minimum < maximum, maximum <= 10, candidates
+      between 100 and 1000, counters.rejected = 0 and sourceVersion matches
+      /^sportsmonks-season-fixtures:[0-9a-f]{64}$/. A uniform rating set cannot pass it.
+    evidence: "scripts/backend/g7-historical-performance-backfill-runner.ts:124-163"
+  - classification: VERIFIED
+    statement: >
+      GW1 today: id 3cc19aaa-ea33-4909-845b-db33314b4071, sequence 1, status `open`, deadline
+      2026-09-23T22:30:00Z, starts 2026-09-24T00:00:00Z, ends 2026-09-24T06:00:00Z, football round
+      e85725dc-ec82-4d18-8d53-4cfb652aa02e; fantasy season status `registration_open`. A rollback
+      deletes this row; the re-stage inserts a NEW gameweek with a NEW uuid over the same football round.
+    evidence: "read-only query on app.fantasy_gameweeks joined to app.fantasy_seasons"
+  - classification: VERIFIED
+    statement: >
+      Exactly six repository/doc locations carry the literal 3cc19aaa-ea33-4909-845b-db33314b4071:
+      scripts/backend/fantasy-realign-gameweek-calendar.sql:32 and :81 (operational, MUST be updated);
+      docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md:23 (MUST be updated);
+      docs/engineering/tasks/BG-0003/engineering-brief.yaml:34 and :166 (historical record — annotate,
+      do not rewrite); docs/qa/fantasy-orchestration/production-run-35332956079.json:29 (immutable run
+      evidence — do not edit). docs/engineering/LAUNCH_LEDGER.yaml BG-0003 `facts` describes the GW1
+      deadline without the uuid and must be re-stated after the re-stage.
+    evidence: "repository-wide grep for 3cc19aaa excluding .git"
+  - classification: VERIFIED
+    statement: >
+      The hourly orchestrator is currently INERT: fantasy-season-orchestrator.yml requires
+      vars.FANTASY_AUTOMATION_ENABLED == 'true' and BG-0004 is explicitly on HOLD ("do NOT set … yet")
+      pending BG-0001 attempt 2. There is therefore no scheduled writer that can mutate the catalog or
+      the calendar during the operation, provided the variable stays unset and no one dispatches the
+      workflow manually.
+    evidence: "docs/engineering/LAUNCH_LEDGER.yaml BG-0004 human_action and evidence block"
+  - classification: INFERRED
+    statement: >
+      The deadline-watch / BG-0003 guard is not id-coupled: it is invoked as
+      service_fantasy_deadline_watch(null, 72, 24) and re-discovers the gameweek, so the new GW1 uuid is
+      picked up automatically. After the re-stage the identical BG-0003 condition returns (deadline
+      2026-09-23T22:30Z derived from the 2026-09-24T00:00Z placeholder, 8 unconfirmed kickoffs), so
+      BG-0003 neither blocks nor is resolved by this operation.
+    evidence: "docs/engineering/tasks/BG-0003/engineering-brief.yaml:166 (nullable first argument)"
+  - classification: VERIFIED
+    statement: >
+      The trusted RPCs are gated on app_private.is_service_request(), i.e.
+      current_setting('request.jwt.claim.role') = 'service_role' — satisfied by a PostgREST call with
+      the service key, or inside psql by `set local request.jwt.claim.role = 'service_role'`. The raw
+      table deletions cannot use that path: app_private.* tables have all grants revoked from
+      service_role and app.* tables have FORCE ROW LEVEL SECURITY, so they need an owner/BYPASSRLS
+      session (postgres).
+    evidence: "supabase/migrations/20260720121727_notification_delivery_runtime.sql:210-222; 20260803210943:113-126 (enable/force RLS and revoke all from service_role)"
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    The G7 two-season backfill is halted 6/240 fixtures into season 26027 because the edge worker
+    aborts an entire batch — and therefore the entire season — on the first SportsMonks fixture whose
+    lineup payload violates its strict coverage invariants, and that fixture is external id 19489216,
+    the very next fixture after the last successful cursor 19489214. Run 1's distinct failure
+    (`mapping_not_found`, an unmapped provider lineup player raising P0002 inside
+    api.ingest_historical_player_fixture_performance) was already repaired by commit 2b204b5 /
+    migration 20260802010200 and is not a live cause. There is no per-fixture quarantine for coverage
+    failures the way there now is for mapping failures, and both the runner
+    (fixturesProcessed == 240) and api.football_historical_player_rating_inputs
+    (covered == expected finished fixtures, performanceCount >= 5280) are all-or-nothing, so one bad
+    provider fixture blocks every v2 rating and therefore every differentiated price.
+  secondary:
+    classification: VERIFIED
+    description: >
+      Independently of the data defect, the pipeline cannot be executed at all today: the runner and
+      the workflow both drive the Supabase Management API (supabase link / db push / functions deploy /
+      secrets set / secrets unset) and the edge worker takes its target season and trigger secret from
+      function secrets that the last run deliberately unset. BG-0002 (invalid SUPABASE_ACCESS_TOKEN,
+      HTTP 401) is a hard blocker on every write path of Option A's step 1.
+  unresolved:
+    classification: UNKNOWN
+    description: >
+      Which specific invariant fixture 19489216 breaks, and how many of the remaining 234 fixtures of
+      2025/26 (and of the 240 of 2024/25) break it too. Until that is measured, the size of the fix is
+      not known and step 1 cannot be scheduled with confidence.
+
+hard_dependencies_on_human_action:
+  - id: BG-0002
+    type: HARD BLOCKER for steps A2–A4 (the ratings backfill)
+    statement: >
+      Option A step 1 cannot start until a valid Supabase Management API credential exists, because the
+      target season and the one-time trigger secret must be written into the football-ingest function's
+      secrets before any HTTP invocation, and the workflow additionally runs link/db push/functions deploy.
+    acceptable_alternatives:
+      - Refresh SUPABASE_ACCESS_TOKEN in the GitHub environment `production-admin-activation` (the
+        ledger's stated remedy).
+      - OR the owner sets the two function secrets by hand in the Supabase dashboard
+        (FOOTBALL_SPORTSMONKS_SEASON_ID=26027 and a fresh FOOTBALL_INGESTION_TRIGGER_SECRET, restoring
+        FOOTBALL_SPORTSMONKS_SEASON_ID=28647 afterwards) and a deploy-free dispatch workflow performs
+        only the HTTP invocations with SUPABASE_SECRET_KEY. This removes the token dependency but
+        substitutes a manual, error-prone secret edit on a live ingestion runtime and is NOT recommended.
+    not_blocking: >
+      Steps A0 and A1 (read-only provider classification) and steps A5–A11 (fantasy rollback/re-stage,
+      which run against the database with SUPABASE_SECRET_KEY / an owner psql session) do NOT need it.
+  - id: BG-0011-OWNER-1
+    type: HARD approval, already granted by choosing A
+    statement: >
+      Explicit owner approval to permanently delete 3 fantasy_teams, 53 squad memberships, 8 transfer
+      batches, 8 transfers, 3 lineups, 45 lineup players, 4 leagues, 4 league memberships, 16 mutation
+      audit rows, 539 fantasy players, 539 price-history rows and 539 initial-price-evidence rows.
+      Treated here as given; the Builder-Data must still re-confirm the counts immediately before deleting.
+  - id: BG-0004
+    type: MUST REMAIN UNSET
+    statement: >
+      FANTASY_AUTOMATION_ENABLED must stay unset and the orchestrator must not be dispatched from the
+      start of the rollback until after the re-stage is verified, or a calendar sync can move rounds or
+      fixtures between preview and stage and cause PT409 stale_update.
+  - id: BG-0011-OWNER-2
+    type: DECISION required before A2
+    statement: >
+      Whether to accept a scope reduction to season 26027 only (2024/25 is provably not needed for
+      pricing). Without it, 2024/25 must also reach 240/240 from zero coverage and the timeline
+      approximately doubles with no product benefit.
+
+required_changes:
+  - step: A0
+    component: "diagnosis — .github/workflows/g7-sportsmonks-historical-performance-coverage.yml (or g7-sportsmonks-historical-coverage-audit.yml)"
+    builder_type: Builder-DevOps
+    change: >
+      Re-point the read-only probe ticket at fixture 19489216 (plus a random sample of, ideally all,
+      240 season-26027 fixtures) and dispatch it. Classify each fixture against the six worker
+      invariants and report the count of non-conforming fixtures per season.
+    reason: "The only evidence that would have answered this (run artifacts) expired on 2026-09-01; without this number step A2's feasibility and duration are unknowable."
+    blocking_dependency: none — read-only, needs only SPORTSMONKS_API_TOKEN and an owner dispatch
+    duration: "~10 min including dispatch"
+    acceptance: "a machine-readable classification listing, per fixture, lineupRows/validRows/starterRows/teamCount/invalidDetailRows and pass|fail; the failing invariant of 19489216 is named"
+
+  - step: A1
+    component: "go/no-go gate"
+    builder_type: None (Chief)
+    change: >
+      If A0 shows a handful of non-conforming fixtures → proceed to A2 with a worker relaxation.
+      If it shows a large share, or that the provider lineup depth is systematically below 22 starters
+      → Option A is UNREACHABLE; escalate to the owner for B or C before 2026-09-21T12:00Z.
+    reason: "protects the time box; there is no second attempt after 2026-09-22T22:30Z"
+    duration: "same day as A0"
+
+  - step: A2
+    component: "supabase/functions/_shared/sportsmonks-historical-player-performance.ts (+ .test.ts)"
+    builder_type: Builder-Backend
+    change: >
+      Replace the hard abort in normalizeHistoricalFixture with a bounded, explicit and auditable
+      handling of a non-conforming fixture, matching the pattern migration 20260802010200 already
+      established for mapping failures: count the fixture as `excludedCoverageFixtures`, persist
+      nothing for it, continue the batch, and fail the run only when the count exceeds a small reviewed
+      ceiling. Propagate the count through the batch response, the runner's
+      validateHistoricalPerformanceBatch and the evidence file. Do NOT weaken the per-row invariants of
+      an ACCEPTED fixture.
+    reason: >
+      One provider defect currently blocks 100% of the dataset; the rating inputs need coverage of the
+      finished fixtures, and the exact-240 rule is the reason nothing at all has landed.
+    coupled_change: >
+      api.football_historical_player_rating_inputs currently demands covered_fixture_count = every
+      finished fixture (20260802010100:578-593). If any fixture is legitimately excluded, this must be
+      relaxed in a NEW additive migration to a reviewed minimum share (e.g. >= 95% of finished fixtures
+      AND performanceCount >= coveredFixtures * 22), never by editing 20260802010100.
+    reason_coupled: "otherwise derive_ratings still raises HISTORICAL_PERFORMANCE_INCOMPLETE and the backfill is pointless"
+    blocking_dependency: A0/A1
+    duration: "half a day incl. unit tests and review"
+    acceptance: "unit test: a batch containing one invariant-breaking fixture completes, persists the conforming fixtures, and reports the exclusion; a batch above the ceiling still fails with an explicit code"
+
+  - step: A3
+    component: ".github/workflows/ (new) g7-historical-performance-backfill-dispatch.yml + scripts/backend/g7-historical-performance-backfill-runner.ts"
+    builder_type: Builder-DevOps
+    change: >
+      Smallest viable change set, in this order of preference:
+      (i) add a `season_ids` workflow input (default "26027,24319") and relax validateManifest from
+          "exactly [26027,24319]" to "a non-empty subset of the reviewed pair", so 26027 can run alone;
+      (ii) add a `skip_deploy` boolean input that skips the link / db push / functions deploy steps when
+          the deployed artifact already matches the reviewed commit — production football-ingest is
+          already at the required version 53, and every required migration is already applied, so these
+          steps only consume the management credential without changing anything;
+      (iii) fix RESTORE_SEASON to the CURRENT provider season rather than the literal 26027, or read it
+          from a required workflow input, so the finally block cannot strand production on a completed
+          season.
+      The `supabase secrets set/unset` calls MUST stay — they are what makes the run target the right
+      season and what retires the one-time trigger secret. Keep every existing guard
+      (actor/ref/repo, GITHUB_RUN_ATTEMPT == 1, CONFIRMATION string, EXPECTED_COMMIT == GITHUB_SHA,
+      ticket JSON verification, concurrency group botolago-production-v2-mutation, evidence sanitisation
+      and credential scan) and extend the hardcoded expected-ticket JSON to the new inputs.
+    reason: "halves the exposure and the runtime, removes two unnecessary management-API operations, and repairs a latent production-config bug"
+    blocking_dependency: "A2 merged; dispatching still requires BG-0002"
+    duration: "half a day"
+    acceptance: "workflow dry-run on a non-production ref proves the guards still fail closed on a wrong commit / wrong confirmation / attempt 2"
+
+  - step: A4
+    component: "production data — G7 backfill + v2 rating derivation for season 26027"
+    builder_type: Builder-Data
+    change: >
+      Owner-dispatches the workflow at the reviewed commit with
+      CONFIRMATION=RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL, season_ids=26027,
+      skip_deploy=true. The runner writes the function secrets (SEASON_ID 26027 + a fresh 64-hex
+      trigger secret), then POSTs
+      https://tkewgajrljbwgwedqsxn.supabase.co/functions/v1/football-ingest
+      with headers `x-botolago-ingestion-job: historical_player_performances`,
+      `x-botolago-ingestion-key: <trigger>`, apikey/Authorization = SUPABASE_SECRET_KEY, body
+      {"job":"historical_player_performances","action":"ingest_batch","afterFixtureExternalId":<cursor|null>,"batchSize":5}
+      for up to 60 batches, then once
+      {"job":"historical_player_performances","action":"derive_ratings"} — which is the call chain that
+      reaches api.football_historical_player_rating_inputs and then
+      api.ingest_historical_player_season_ratings (worker line ~945). It finally restores the
+      production season secret and unsets the trigger secret.
+    reason: "this is the only supported path that produces botolago-preseason-rating-v2-fixture-performance rows"
+    guards: >
+      Runs under concurrency group botolago-production-v2-mutation; must not overlap Gate 4. Cursor is
+      per-run and starts at null, so it re-reads the six already-covered fixtures (idempotent: they
+      update in place). Ingestion is season-scoped and touches no fantasy table.
+    duration: >
+      48 batches x ~3.4 s observed for a 5-fixture batch (run 1e1ddda7: 21:10:13.8 → 21:10:17.2, 198
+      lineup rows) ≈ 3 min of invocations, plus provider retries; derive_ratings ~4 s; workflow overhead
+      (checkout, bun install, preflight, secrets) ~5 min. Budget 30 min wall clock, 60 min with one retry.
+    blocking_dependency: "BG-0002 — cannot start without it"
+    acceptance:
+      - "football_ingestion_runs job_type player_fixture_performances for seasonId 26027: final run succeeded, cumulative fixturesProcessed = 240 (or 240 minus the reviewed exclusion ceiling)"
+      - "app_private.historical_performance_fixture_coverage has one reconciled row per covered finished fixture of 92e5dbe8-…; app.player_fixture_performances active count >= coveredFixtures * 22"
+      - "the derive_ratings response carries action derive_ratings, historicalOnly true, algorithmVersion botolago-preseason-rating-v2-fixture-performance, ratingRange.minimum >= 4 and < maximum <= 10, candidates 100..1000, counters.rejected 0"
+
+  - step: A5
+    component: "production verification — read-only"
+    builder_type: Builder-Data
+    change: >
+      Prove the ratings are real and that they will actually reach the catalog:
+        select algorithm_version, count(*), count(distinct rating), min(rating), max(rating),
+               sum((confidence>0)::int), sum((minutes>0)::int)
+        from app.player_season_ratings
+        where football_season_id='92e5dbe8-44a9-4b83-bdc8-78f03dfa4584' and active
+        group by 1;
+        select position_code, count(*), count(distinct initial_price), min(initial_price), max(initial_price),
+               count(*) filter (where source_rating_algorithm='botolago-preseason-rating-v2-fixture-performance')
+        from app_private.fantasy_catalog_candidates('d03223b0-8f4a-4309-93e1-2a708d7c3584') group by 1;
+    reason: "the candidate preview is the only place where 'real ratings' and 'differentiated prices' become the same statement; a v2 run that still yields one distinct price per position must abort Option A"
+    acceptance:
+      - "only botolago-preseason-rating-v2-fixture-performance rows are active for 2025/26; the 561 v1 rows are inactive; count(distinct rating) > 1; some rows have minutes > 0 and confidence > 0"
+      - "fantasy_catalog_candidates shows >= 2 distinct initial_price per position and >= 400 of 539 players carrying source_rating_algorithm = …v2-fixture-performance"
+    gate: "if either check fails, STOP — do not roll back; the current catalog is still serving"
+
+  - step: A6
+    component: "price evidence export — read-only"
+    builder_type: Builder-Data
+    change: >
+      Before any deletion, export to docs/engineering/tasks/BG-0011/pre-rollback-evidence-<ts>.json:
+      all 539 rows of app_private.fantasy_initial_price_evidence joined to app.fantasy_players
+      (football_player_id, position, price, source_rating_season_id, source_rating_algorithm,
+      source_rating, source_confidence, calculated_price); the 539 fantasy_player_price_history rows;
+      the 3 fantasy_teams with bank/value/current_gameweek_id; the 53 squad memberships; the 8 transfer
+      batches and 8 transfers; the 4 leagues and 4 memberships; the activation run row; the gameweek row.
+    reason: "the rollback deletes all of it irreversibly and there is no undo RPC"
+    acceptance: "the export is committed before step A7 begins and its row counts match the live counts"
+
+  - step: A7
+    component: "production data — delete the 3 QA/E2E teams and the 4 E2E leagues"
+    builder_type: Builder-Data
+    change: >
+      One transaction, owner/BYPASSRLS session (RLS is FORCED on app.* and all grants are revoked from
+      service_role on app_private.*). Strict order, because every FK is ON DELETE RESTRICT:
+        begin;
+        -- re-assert the expected counts first; abort on any mismatch
+        delete from app.fantasy_transfers where transfer_batch_id in (select id from app.fantasy_transfer_batches where fantasy_team_id in (:t));   -- 8
+        delete from app.fantasy_transfer_batches where fantasy_team_id in (:t);                                                                     -- 8
+        delete from app.fantasy_lineup_players where lineup_id in (select id from app.fantasy_lineups where fantasy_team_id in (:t));               -- 45
+        delete from app.fantasy_lineups where fantasy_team_id in (:t);                                                                              -- 3
+        delete from app.fantasy_squad_memberships where fantasy_team_id in (:t);                                                                    -- 53
+        delete from app.fantasy_league_memberships where fantasy_team_id in (:t);                                                                   -- 4
+        delete from app_private.fantasy_mutation_audit where fantasy_team_id in (:t);                                                               -- 16
+        delete from app.fantasy_teams where fantasy_season_id='9918cf95-9ed5-4d7b-99ca-eb9bfc29a258';                                               -- 3
+        delete from app.fantasy_leagues where fantasy_season_id='9918cf95-9ed5-4d7b-99ca-eb9bfc29a258';                                             -- 4
+      (:t = select id from app.fantasy_teams where fantasy_season_id='9918cf95-…'.)
+      Verify zero remaining rows in fantasy_chip_uses, fantasy_free_hit_snapshots,
+      app_private.fantasy_free_transfer_rollovers, fantasy_rankings, fantasy_team_gameweek_results,
+      fantasy_auto_substitutions, app_private.fantasy_free_hit_lineup_snapshots before committing; if
+      any is non-zero, roll back and re-plan.
+    reason: >
+      service_rollback_fantasy_catalog refuses while any fantasy_teams row exists (PT409
+      fantasy_catalog_in_use) AND — a defect this brief establishes — would then still fail on
+      app.fantasy_leagues, which it never deletes. Deleting the leagues here is the minimum-change fix;
+      the alternative (an additive migration adding league cleanup to the RPC) is larger and riskier
+      inside the time box.
+    note_for_chief: "the three teams belong to the synthetic e2e.fantasy.* accounts of BG-0023; this step does not delete the auth users"
+    acceptance: "all nine counts are exactly as listed; the transaction commits; app.fantasy_teams and app.fantasy_leagues for 9918cf95-… are empty"
+
+  - step: A8
+    component: "api.service_rollback_fantasy_catalog"
+    builder_type: Builder-Data
+    change: >
+      Same transaction as A7 (recommended) or immediately after:
+        select api.service_rollback_fantasy_catalog(
+          'c0de2026-0917-4a11-8f00-000000000001'::uuid,
+          '9eede640c67a423c1f5804f856e1732469847763c5b37df3f2bf8482c7a5885b');
+      In psql the session must first `set local request.jwt.claim.role = 'service_role';`, or the call
+      must go through PostgREST as POST /rest/v1/rpc/service_rollback_fantasy_catalog with the service
+      key and the `api` schema. The digest argument is the STORED digest, not today's recomputed
+      182c326b….
+    reason: "the only supported way to retire the degenerate catalog"
+    acceptance: "response alreadyRolledBack false, removed.players 539, removed.gameweeks 1, removed.fixtures 8; rolled_back_at is set"
+
+  - step: A9
+    component: "api.preview_fantasy_catalog_activation"
+    builder_type: Builder-Data
+    change: >
+      select api.preview_fantasy_catalog_activation(
+        'd03223b0-8f4a-4309-93e1-2a708d7c3584'::uuid,
+        'botolago-fantasy-v1.1', 16, 1, 8, 240, 800);
+      Read `ready`, `blockers`, `counts.ratedPlayers`, `priceRange` and `sourceDigest`; the digest read
+      here is the value that must be passed to the stage in the SAME transaction.
+    reason: "the preview is the authoritative gate and the only source of the expected digest"
+    acceptance:
+      - "ready true, blockers []"
+      - "counts.players 539, counts.ratedPlayers >= 490, counts.teams 16, counts.rounds 1, counts.fixtures 8"
+      - "priceRange.minimum >= 4 and priceRange.maximum > priceRange.minimum (this is the differentiation proof)"
+      - "earliestKickoff 2026-09-24T00:00:00Z"
+
+  - step: A10
+    component: "api.service_stage_fantasy_catalog"
+    builder_type: Builder-Data
+    change: >
+      select api.service_stage_fantasy_catalog(
+        'd03223b0-8f4a-4309-93e1-2a708d7c3584'::uuid, 'botolago-fantasy-v1.1',
+        '<sourceDigest from A9>', 'c0de2026-0917-4a11-8f00-000000000003'::uuid,
+        16, 1, 8, 240, 800);
+      The idempotency key is the run id AND the primary key of the new
+      fantasy_catalog_activation_runs row; …0001 and …0002 are consumed, so use …0003.
+      The function recomputes the preview internally and raises PT409 stale_update if the digest moved
+      between A9 and A10 — hence the single transaction.
+    reason: "creates the new fantasy season, gameweeks, 539 priced players, evidence and price history"
+    acceptance:
+      - "returns a stage DTO whose sourceDigest equals the A9 digest and whose playerCount is 539"
+      - "the new app.fantasy_seasons row exists with status planned; exactly 1 fantasy_gameweeks row, status scheduled, deadline_at 2026-09-23T22:30:00Z"
+      - "app_private.fantasy_initial_price_evidence has 539 rows, all with algorithm_code botolago-initial-price-v1.0"
+
+  - step: A11
+    component: "api.service_open_fantasy_registration"
+    builder_type: Builder-Data
+    change: >
+      select api.service_open_fantasy_registration(
+        'c0de2026-0917-4a11-8f00-000000000003'::uuid, '<same digest>',
+        'c0de2026-0917-4a11-8f00-000000000004'::uuid);
+      MUST execute before 2026-09-22T22:30Z (it refuses when the first gameweek's deadline is within
+      24 hours). Recommended in a SEPARATE transaction from A10, per the runbook's "stage and open are
+      deliberately separate changes", but within minutes of it.
+    reason: "returns the public site to registration_open; until it runs api.fantasy_hub answers fantasy_season_closed"
+    acceptance:
+      - "fantasy season status registration_open; new GW1 status open; api.fantasy_hub returns registration_open"
+      - "the new GW1 uuid is recorded and handed to the doc/script updates of A12"
+
+  - step: A12
+    component: "scripts/backend/fantasy-realign-gameweek-calendar.sql; docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md; docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md; docs/engineering/LAUNCH_LEDGER.yaml"
+    builder_type: Builder-Backend
+    change: >
+      Replace 3cc19aaa-ea33-4909-845b-db33314b4071 with the new GW1 uuid at
+      fantasy-realign-gameweek-calendar.sql:32 and :81 and in FANTASY_2026_27_BRIDGE_ACTIVATION.md:23;
+      add a new row to the bridge table recording the rollback + re-stage (new activation ids …0003 /
+      …0004, new fantasy season id, new digest, the deleted QA teams and leagues, the actual price
+      range); replace the claim "539 fantasy players priced 4.8–7.2 by the reviewed price algorithm"
+      with the real distribution; correct the bridge doc's step-1 claim that ends_on was set to
+      2027-06-30 (production shows 2026-09-24, see contradictions); state in the runbook that
+      service_rollback_fantasy_catalog does not delete app.fantasy_leagues and that leagues must be
+      cleared first; update LAUNCH_LEDGER BG-0011 to DONE with evidence, BG-0003 facts to the new GW1
+      uuid, and note that BG-0023's three teams were deleted as part of BG-0011 Option A.
+      Do NOT edit docs/qa/fantasy-orchestration/production-run-35332956079.json or
+      docs/engineering/tasks/BG-0003/engineering-brief.yaml — they are dated run evidence; annotate
+      BG-0003's brief with a superseding note instead.
+    reason: "3cc19aaa is dead after A8; leaving it in an operational script means the manual realign fallback silently updates nothing"
+    acceptance: "repository-wide grep for 3cc19aaa returns only the two immutable evidence files, each carrying a superseded-by note"
+
+  - step: A13
+    component: "BG-0027 (already READY) — supabase/functions/_shared/sportsmonks-player-ratings.ts + additive pre-stage guard migration"
+    builder_type: Builder-Backend
+    change: >
+      Unchanged from the BG-0011 attempt-1 brief: a ratings run with records_fetched = 0 must fail and
+      persist nothing, and a pre-stage non-degeneracy guard must block staging when every candidate
+      carries rating 6.0 / confidence 0. Independent of Option A's timeline, but it is what prevents a
+      silent repeat on the next activation.
+    reason: "the neutral-placeholder write is the original defect; Option A repairs the data, not the hole"
+    blocking_dependency: none
+
+constraints:
+  - "HARD: api.service_open_fantasy_registration must complete before 2026-09-22T22:30Z (deadline_at 2026-09-23T22:30Z minus 24 h) — 6.5 hours earlier than the 2026-09-23T00:00Z figure in the handoff."
+  - "HARD: preview and stage must complete before 2026-09-23T00:00Z (earliest kickoff 2026-09-24T00:00Z minus 24 h)."
+  - "HARD: no write path of step A4 exists until BG-0002 is resolved."
+  - "Only the reviewed profile is stageable today: 16 teams, 1 round, 8 fixtures, 240–800 players. The runbook's 16/30/240 launch profile does not apply to the current truncated calendar."
+  - "The source digest must be read and consumed inside one transaction; any concurrent write to app.seasons, app.rounds, app.fixtures, app.team_memberships, app.players or app.player_season_ratings invalidates it (it already drifted from 9eede640… to 182c326b… since 2026-09-17)."
+  - "All fantasy FKs are ON DELETE RESTRICT — nothing may be deleted out of order."
+  - "api.ingest_historical_player_season_ratings accepts only algorithm_version botolago-preseason-rating-v2-fixture-performance and a payload of 1..1000 rows; 2025/26 had 561 v1 rows, so the bound is comfortable but not unlimited."
+  - "The season 26027 RPCs all require status completed, not is_current and ends_on < current_date — satisfied (completed, ends 2026-07-05)."
+  - "'historical_player_season_ratings' is not an ingestion_job_type; derive_ratings records itself under job_type player_ratings with target_scope.historicalOnly true — do not look for a new job type in the runs table."
+  - "GITHUB_RUN_ATTEMPT must be 1; a failed G7 run cannot be re-run, only re-dispatched, and each dispatch needs a fresh owner confirmation."
+  - "Read-only for this Researcher: no file was modified and no database write was issued; every production statement above is a SELECT."
+
+risks:
+  - severity: CRITICAL
+    risk: "service_rollback_fantasy_catalog fails on app.fantasy_leagues (4 rows, RESTRICT, not deleted by the RPC). If discovered only at execution time, the transaction aborts and the time box burns."
+    mitigation: "step A7 deletes the leagues first; verified by pg_get_functiondef, not assumed."
+  - severity: CRITICAL
+    risk: "Fixture 19489216's defect may be systemic across many of the 240 fixtures, making 240/240 unreachable at any effort."
+    mitigation: "step A0 measures it read-only before anything is committed; A1 is an explicit no-go gate."
+  - severity: CRITICAL
+    risk: "BG-0002 is not resolved in time. Every hour of delay compresses A2–A5 against a deadline that cannot move."
+    mitigation: "escalate now; A0/A1 proceed in parallel so the go/no-go is not also waiting on the credential."
+  - severity: HIGH
+    risk: "Between A8 (rollback) and A11 (open) production has no fantasy season and api.fantasy_hub returns fantasy_season_closed — the public site shows the unavailable banner."
+    mitigation: "run A7+A8+A9+A10 in ONE transaction and A11 within minutes; announce a maintenance window; never start the sequence without a green A5."
+  - severity: HIGH
+    risk: "Digest drift between A9 and A10 (PT409 stale_update), e.g. a provider fixture/round ingestion or an orchestrator dispatch."
+    mitigation: "single transaction; FANTASY_AUTOMATION_ENABLED stays unset; no ingestion workflow dispatched during the window."
+  - severity: HIGH
+    risk: "A4 runs but derive_ratings still yields a narrow band, so prices barely differentiate and the destructive rollback buys nothing."
+    mitigation: "A5 is a hard gate evaluated on fantasy_catalog_candidates BEFORE any deletion; the catalog is not touched if it fails."
+  - severity: MEDIUM
+    risk: "The runner's RESTORE_SEASON=26027 strands the production ingestion runtime on the 2025/26 season after A4, breaking current-season ingestion."
+    mitigation: "A3 item (iii); otherwise a manual secret restore to 28647 must be part of A4's checklist."
+  - severity: MEDIUM
+    risk: "Confidence is applied twice (once in the worker rating, once in fantasy_initial_price_v1's 6+(r-6)*c), so the realised spread will be narrower than the 4.0–12.5 bands suggest; the owner may find it underwhelming after a destructive rollback."
+    mitigation: "A9's priceRange is shown to the owner before A10 commits."
+  - severity: MEDIUM
+    risk: "The 42 unmapped players and any player with no 2025/26 appearance keep the 6.0/0 fallback; some clubs (Tiznit, Témara, MA Tétouan) are bridged from public lists and will be largely undifferentiated."
+    mitigation: "state it in the bridge doc; it is correct behaviour, not a defect."
+  - severity: LOW
+    risk: "A4 re-processes the six already-covered fixtures (cursor starts at null); on conflict they update in place."
+    mitigation: "verified idempotent by the ON CONFLICT (fixture_id) DO UPDATE and by run da1a4d96 having updated 188 rows with 0 inserts."
+
+contradictions:
+  - "docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md step 1 states app.seasons 2026/27 ends_on was corrected from 2026-09-24 to 2027-06-30. Production reads ends_on = 2026-09-24 with updated_at 2026-09-18T10:06:23Z — a provider ingestion reverted it today. This also explains the source-digest drift, and it means the preview blocker `season_ended` (ends_on < current_date) starts firing on 2026-09-25, i.e. the season row itself will block any activation after kickoff day."
+  - "The handoff (and LAUNCH_LEDGER BG-0011) time-box Option A to 2026-09-23T00:00Z. The stage gate is indeed 2026-09-23T00:00Z, but api.service_open_fantasy_registration closes at 2026-09-22T22:30Z. A plan built to the stated box would stage a catalog it could never open."
+  - "The handoff asks for the failed runs' sanitized JSON. It no longer exists: all three artifacts expired on 2026-09-01 and the API returns 410. The failure codes survive only because commits 2b204b5 and bb092bd copied them into the runner source with matching sha256 digests."
+  - "docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md promises 'clean rollback'. The rollback is not clean: it ignores app.fantasy_leagues, app.fantasy_league_memberships and app_private.fantasy_mutation_audit, all RESTRICT, and will therefore fail on any season that ever had a user league."
+  - "The G7 ticket and preflight pin the scope to two seasons at 240 fixtures each (480), while the pricing path provably consumes only the latest completed season. Half of the reviewed blast radius delivers no product value."
+
+unknowns:
+  - "Which of the six coverage invariants fixture 19489216 violates, and how many other fixtures violate it — settled only by step A0."
+  - "Whether the SportsMonks entitlement returns complete lineups+details for all 240 fixtures of 26027 (the six ingested ones did)."
+  - "The current value of the production function secret FOOTBALL_SPORTSMONKS_SEASON_ID (secrets are not readable); presumably 28647, but the restore constant says 26027 and the last known write to it was the 2026-08-02 restore."
+  - "Whether FOOTBALL_INGESTION_TRIGGER_SECRET is currently unset (the 2026-08-02 finally block unset it, but later Gate-4 style runs may have re-set it). Not probed: an HTTP call to the production edge function is outside this role's read-only authorisation."
+  - "Whether the 2026/27 season row will be corrected back to ends_on 2027-06-30 before 2026-09-25, and by whom."
+  - "How many of the 539 players will actually acquire a v2 rating (bounded above by 497 mapped; the real number depends on 2025/26 appearances)."
+  - "Whether the owner accepts the 26027-only scope reduction (BG-0011-OWNER-2)."
+
+acceptance_tests:
+  - "A0: a read-only provider classification names the failing invariant of fixture 19489216 and gives a per-season count of non-conforming fixtures."
+  - "A2: unit test — one invariant-breaking fixture inside a batch is excluded and counted, the conforming fixtures persist, the run continues; above the reviewed ceiling the run still fails with an explicit code."
+  - "A3: the dispatch workflow still fails closed on a wrong commit, wrong confirmation string, run attempt 2, a non-owner actor and a non-main ref; skip_deploy never skips the runner."
+  - "A4: cumulative fixturesProcessed for season 26027 equals the reviewed target; derive_ratings returns ratingRange.minimum >= 4, minimum < maximum <= 10, candidates 100..1000, counters.rejected 0, sourceVersion matching ^sportsmonks-season-fixtures:[0-9a-f]{64}$."
+  - "A5: for season 92e5dbe8-…, the only ACTIVE player_season_ratings are algorithm botolago-preseason-rating-v2-fixture-performance; count(distinct rating) > 1; at least one row has minutes > 0 and confidence > 0; the 561 v1 rows are inactive."
+  - "A5: app_private.fantasy_catalog_candidates('d03223b0-…') returns >= 2 distinct initial_price for each of GK, DEF, MID, FWD (today: exactly 1 each)."
+  - "A6: the pre-rollback export exists in the repository and its row counts equal the live counts (539 evidence, 539 price history, 3 teams, 53 memberships, 8 batches, 8 transfers, 3 lineups, 45 lineup players, 4 leagues, 4 league memberships, 16 mutation audit)."
+  - "A7: after the transaction, app.fantasy_teams and app.fantasy_leagues for fantasy season 9918cf95-… are empty and no FK error was raised."
+  - "A8: the rollback returns alreadyRolledBack false with removed.players 539, removed.gameweeks 1, removed.fixtures 8, and rolled_back_at is set on c0de2026-…0001."
+  - "A9: preview ready true, blockers [], counts.players 539, counts.ratedPlayers >= 490, priceRange.maximum > priceRange.minimum."
+  - "A10: a new fantasy season exists with 539 fantasy_players, 539 initial_price_evidence rows, 539 fantasy_player_price_history rows with reason 'initial_catalog_v1', price_version/source_version 1 and movement 0; every price is a multiple of 0.10 within 4.00..12.50; > 1 distinct price per position."
+  - "A11: fantasy season status registration_open, new GW1 status open, deadline 2026-09-23T22:30:00Z, api.fantasy_hub returns registration_open; completed before 2026-09-22T22:30Z."
+  - "A12: repository-wide grep for 3cc19aaa returns only the two immutable evidence files, each annotated as superseded."
+  - "Negative: anon and authenticated roles still cannot execute service_stage_fantasy_catalog, service_rollback_fantasy_catalog, service_open_fantasy_registration or ingest_historical_player_season_ratings."
+  - "Negative: no production row outside the named RPCs and the A7 deletion list changed during the operation."
+
+timeline_go_no_go:
+  - { by: "2026-09-18T20:00Z", gate: "BG-0002 escalated to the owner AND step A0 dispatched", on_miss: "Option A at risk; warn the owner that B becomes the default" }
+  - { by: "2026-09-19T12:00Z", gate: "A0 classification read; A1 go/no-go decided", on_miss: "NO-GO — fall back to B/C" }
+  - { by: "2026-09-20T18:00Z", gate: "A2 and A3 merged to main and reviewed", on_miss: "NO-GO" }
+  - { by: "2026-09-21T18:00Z", gate: "BG-0002 resolved AND A4 dispatched and green; A5 green", on_miss: "NO-GO — do not start A7; keep the current catalog and escalate B" }
+  - { by: "2026-09-22T12:00Z", gate: "A6 export committed; maintenance window announced", on_miss: "slip to the 22nd evening only with owner sign-off" }
+  - { by: "2026-09-22T22:30Z", gate: "HARD — A7..A11 complete, registration re-opened", on_miss: "IRRECOVERABLE for this season; if A8 has already run and A11 cannot, see rollback_plan" }
+  - { by: "2026-09-23T00:00Z", gate: "A12 docs/scripts updated; ledger BG-0011 closed", on_miss: "operational risk: the manual realign script points at a dead gameweek" }
+
+rollback_plan:
+  principle: >
+    The destructive sequence is deliberately ordered so that everything irreversible happens last and
+    only after a green, read-only proof. Nothing before step A7 changes fantasy state.
+  before_A7: "Abort freely. A0–A6 are read-only or additive (ratings ingestion is season-scoped and touches no fantasy table); the live catalog keeps serving the uniform prices."
+  during_A7_A10: >
+    Run A7, A8, A9 and A10 in a SINGLE transaction. Any failure — the league FK, PT409 stale_update,
+    PT409 fantasy_catalog_not_ready, fantasy_catalog_integrity_failed — rolls the whole thing back and
+    leaves the 2026-09-17 catalog, the 3 teams, the 4 leagues and GW1 3cc19aaa intact and still open.
+    This is the primary and strongly preferred safety mechanism.
+  if_the_transaction_was_split_and_A10_fails_after_A8_committed:
+    - "Production is left with no fantasy season (fantasy_hub → fantasy_season_closed) and the old activation marked rolled_back."
+    - "Forward recovery is the only path: re-run A9 and A10 with a FRESH digest and idempotency key …0005, then A11. There is no un-rollback RPC and the deleted players/teams/leagues cannot be restored by any supported operation."
+    - "If A10 cannot be made to pass before 2026-09-22T22:30Z, escalate immediately: the season cannot be opened for this kickoff. The A6 export is the only record of the deleted state; restoring it would require a hand-written, owner-approved data migration outside every reviewed path — treat it as a last resort, not a plan."
+  if_A11_fails_after_A10_succeeded:
+    - "The catalog is staged but private; the site still shows fantasy_season_closed."
+    - "Re-issue A11 with a new idempotency key (…0006) and the SAME digest, provided the deadline is still more than 24 h away; the stage itself is reusable and idempotent under its own key."
+    - "If the deadline gate has closed, the staged catalog cannot be opened for GW1. Options: correct the 2026/27 season calendar (see contradictions — ends_on and the placeholder kickoff) so a later gameweek becomes the first, or roll back the new stage (now legal: no teams exist) and ship B."
+  if_A4_fails:
+    - "No fantasy state has changed. The backfill is resumable: re-dispatch with a fresh confirmation (GITHUB_RUN_ATTEMPT must be 1, so a new dispatch, not a re-run). Coverage rows already written are idempotently updated."
+    - "The one durable side effect to check is the production function secrets: confirm FOOTBALL_SPORTSMONKS_SEASON_ID is back to the current season (28647) and FOOTBALL_INGESTION_TRIGGER_SECRET is unset."
+
+implementation_scope:
+  builder_type: "Builder-DevOps (A0, A3) / Builder-Backend (A2, A12, A13) / Builder-Data (A4–A11)"
+  allowed_paths:
+    - .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    - .github/workflows/g7-sportsmonks-historical-coverage-audit.yml
+    - .github/workflows/g7-production-historical-performance-backfill.yml
+    - .github/workflows/ (one new dispatch-only workflow)
+    - docs/production/g7-historical-performance-backfill-trigger.json
+    - docs/production/g7-historical-performance-probe-trigger.json
+    - scripts/backend/g7-historical-performance-backfill-runner.ts (+ .test.ts)
+    - scripts/backend/g7-historical-performance-backfill-preflight.ts
+    - scripts/backend/fantasy-realign-gameweek-calendar.sql
+    - supabase/functions/_shared/sportsmonks-historical-player-performance.ts (+ .test.ts)
+    - supabase/functions/_shared/sportsmonks-player-ratings.ts (+ .test.ts)  # A13 / BG-0027
+    - "supabase/migrations/ — NEW additive migrations only (rating-input coverage threshold; BG-0027 pre-stage guard)"
+    - supabase/tests/database/historical_player_performances.test.sql
+    - supabase/tests/database/fantasy_catalog_activation.test.sql
+    - docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md
+    - docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md
+    - docs/backend/PRESEASON_RATING_V2_FIXTURE_PERFORMANCE.md
+    - docs/engineering/LAUNCH_LEDGER.yaml
+    - docs/engineering/tasks/BG-0011/ (evidence exports)
+    - "production data: only via the named RPCs plus the step-A7 deletion list"
+  forbidden_paths:
+    - "supabase/migrations/20260802010100_historical_player_performances.sql (and every other existing migration) — additive migrations only"
+    - supabase/migrations/20260802010200_historical_performance_mapping_quarantine.sql
+    - supabase/migrations/20260803210943_fantasy_catalog_activation.sql
+    - src/backend/fantasy/pricing.ts
+    - docs/qa/fantasy-orchestration/production-run-35332956079.json
+    - docs/engineering/tasks/BG-0003/engineering-brief.yaml
+    - "any UI path"
+    - "any production write outside the named RPCs and the step-A7 list; no rows may be inserted into app.player_season_ratings or app_private.fantasy_initial_price_evidence by hand"
+    - "SUPABASE_ACCESS_TOKEN or any other credential — never printed, replaced, worked around or invented"
+
+status: BLOCKED
+blocked_on:
+  - "BG-0002 — the Supabase Management API credential; no write path of the ratings backfill exists without it, and the Chief has ruled out working around it."
+  - "BG-0011-OWNER-2 — owner decision on reducing the backfill scope to season 26027 only."
+  - "Step A0 — the fixture-19489216 classification, which decides whether Option A is technically reachable at all."
+note_to_chief: >
+  Two corrections the plan depends on. First, the real deadline is 2026-09-22T22:30Z, not
+  2026-09-23T00:00Z: service_open_fantasy_registration refuses within 24 h of the GW1 deadline
+  (22:30Z on the 23rd), not of the kickoff. Second, api.service_rollback_fantasy_catalog would fail
+  today even with zero teams, because four E2E leagues reference the fantasy season under an
+  ON DELETE RESTRICT foreign key the function never clears — step A7 must delete them, and the
+  runbook's "clean rollback" claim needs correcting.
