@@ -1,0 +1,181 @@
+task_id: BG-0014
+verified_commit: 6621677d1cef67349b6f0b93f5d727549fdd29be
+criteria:
+  - criterion: >
+      AC1 `bun scripts/qa/i18n-gate.ts` -> exit 0; 0 errors; W1=6 (five allow-listed
+      suppressed, profile.title reported by name), W2=5, W3=237, W4=100.
+    result: VERIFIED
+    evidence: >
+      cd /home/user/bg0014-verify && bun scripts/qa/i18n-gate.ts; echo EXIT=$?
+      -> EXIT=0.
+      Output: "errors: none" /
+      "W1 keys whose fr and ar values are identical: 6 (baseline 6) at baseline" with
+      "  - profile.title - fr and ar are both \"Profile\\n\\n\"" and five suppressed lines
+      (app.name, language.arabic, language.french, news.language.ar, notfound.code,
+      each with a justification) /
+      "W2 ar values containing no Arabic script: 5 (baseline 5) at baseline"
+      (profile.title reported; app.name, auth.email_placeholder, language.french,
+      notfound.code suppressed) /
+      "W3 dictionary keys not referenced anywhere in src/: 237 (baseline 237) at baseline" /
+      "W4 t() call sites whose argument is not a literal key: 100 (baseline 100) at baseline" /
+      "RESULT: pass".
+  - criterion: AC2 `bun scripts/qa/i18n-gate.ts --fixture` -> exit 1 naming E1, E2, E3, E4 with their keys.
+    result: VERIFIED
+    evidence: >
+      cd /home/user/bg0014-verify && bun scripts/qa/i18n-gate.ts --fixture; echo EXIT=$?
+      -> EXIT=1. Output:
+      "(fixture mode: auditing the deliberately broken fixture)" / "errors: 4" /
+      "  E1 fixture.only_fr - present in fr but missing from ar" /
+      "  E2 fixture.empty - ar value is empty or whitespace-only" /
+      "  E3 fixture.placeholder - placeholder tokens differ: fr {name} vs ar {user}" /
+      "  E4 fixture.accent - ar value has 1 {accent} and 0 {/accent}" /
+      "W1 ...: 1 (baseline 1) at baseline - fixture.identical" / "RESULT: fail".
+  - criterion: >
+      AC3 `bun test src/i18n/i18n-gate.test.ts` -> exit 0 with a non-zero test count;
+      full `bun run test` discovers it and passes.
+    result: VERIFIED
+    evidence: >
+      `bun test src/i18n/i18n-gate.test.ts` -> "21 pass / 0 fail / 590 expect() calls /
+      Ran 21 tests across 1 file", EXIT=0.
+      `bun run test` (= `bun test`) -> "653 pass / 0 fail / 5723 expect() calls /
+      Ran 653 tests across 115 files", EXIT=0.
+      Discovery proven independently of the file filter:
+      `bun test --test-name-pattern "current tree"` (repo-wide, no path filter) ->
+      "6 pass / 647 filtered out / 0 fail / Ran 6 tests across 115 files" - the 6 tests
+      of the gate test file's `describe("current tree")` are reached by the repo-wide run.
+      Inspection of src/i18n/i18n-gate.test.ts shows substantive assertions (exact
+      baseline equality per warning group, exact E1..E4 code+key sets on the fixture,
+      in-memory E1..E6 provocations); no skipped/`.todo` tests, no weakened assertions.
+  - criterion: >
+      AC4 Independent negative controls written by the Verifier in a scratch test file
+      outside the repo: delete an ar key -> E1; empty ar value -> E2; strip {n} -> E3;
+      remove one {/accent} -> E4; literal key used in source but absent -> E5 (via the
+      usage index parameter); fabricated allow-list key -> E6; W1 baseline drift up and
+      down each fail the gate.
+    result: VERIFIED
+    evidence: >
+      Scratch file (not added to the repo):
+      /tmp/claude-0/-home-user-botolago-foundation/38c9c6aa-d4bc-540b-8674-7cdb622e23bb/scratchpad/verifier-controls.test.ts
+      importing auditI18n/buildUsageIndex/ALLOW_LISTS/BASELINES from
+      /home/user/bg0014-verify/scripts/qa/i18n-gate and the real dictionaries; the usage
+      index is the real one built over the worktree's src/.
+      Command: cd /home/user/bg0014-verify && bun test <scratchpad>/verifier-controls.test.ts
+      -> "11 pass / 0 fail / 36 expect() calls / Ran 11 tests across 1 file", EXIT=0.
+      Controls asserted, each on a fresh clone of the real dictionaries:
+        sanity  unmutated tree: errors [], baselineViolations [], ok true,
+                counts {W1:6,W2:5,W3:237,W4:100} and BASELINES identical to those counts;
+        E1      delete ar["fantasy.bench"] -> exactly one E1 on that key, ok false;
+        E2      ar["common.cancel"]="   " -> E2 on that key, ok false;
+        E3      first key carrying {n} in both languages, {n} stripped from ar ->
+                exactly one E3 on that key, ok false;
+        E4      first ar value containing {/accent}, one {/accent} removed ->
+                exactly one E4 on that key, ok false;
+        E5      emptyUsageIndex() + literalKeys "totally.fabricated.key" ->
+                exactly one E5 on that key, ok false;
+        E6      identical allow-list + "not.a.real.key" -> exactly one E6, ok false;
+        W1 up   ar["app.tagline"] := fr["app.tagline"] -> W1 count 7, a W1
+                baselineViolation present, ok false;
+        W1 down ar["profile.title"] := an Arabic string -> W1 count 5, a W1
+                baselineViolation present, ok false.
+      Chief's replacement control also reproduced independently: app.name removed from
+      the identical allow-list -> W1 count stays 6, gate still passes (ok true), and
+      W1.reported becomes ["app.name","profile.title"] - i.e. app.name is reported by
+      name rather than raising the count. Confirms the allow-list annotates, never
+      subtracts, exactly as the Chief scope decision states.
+  - criterion: >
+      AC5 `bun run typecheck` -> 0; renaming an allow-listed key in
+      src/i18n/i18n-allowlist.ts -> typecheck non-zero; restore -> clean.
+    result: VERIFIED
+    evidence: >
+      cd /home/user/bg0014-verify && bun run typecheck -> "$ tsc --noEmit", EXIT=0.
+      Then "notfound.code" renamed to "notfound.codeXX" in IDENTICAL_ALLOWED (line 23):
+      bun run typecheck -> EXIT=2 with
+      "src/i18n/i18n-allowlist.ts(23,3): error TS2353: Object literal may only specify
+      known properties, and '\"notfound.codeXX\"' does not exist in type
+      'Partial<Record<\"app.name\" | ... 976 more ... , string>>'."
+      Then `git checkout -- src/i18n/i18n-allowlist.ts`: `git status --porcelain` empty
+      and bun run typecheck -> EXIT=0. Worktree left pristine.
+  - criterion: >
+      AC6 Scope: the branch touches only scripts/qa/i18n-gate.ts, src/i18n/i18n-gate.test.ts,
+      src/i18n/i18n-allowlist.ts, src/i18n/__fixtures__/broken-dictionary.ts,
+      docs/engineering/tasks/BG-0014/implementation-report.yaml; dictionaries.ts,
+      provider.tsx, format-time.ts, package.json unchanged.
+    result: VERIFIED
+    evidence: >
+      `git merge-base origin/main HEAD` -> 8921e7daf27bacc63b9888e42bb1083d701da387.
+      `git diff --name-status 8921e7d..HEAD` ->
+      A docs/engineering/tasks/BG-0014/implementation-report.yaml
+      A scripts/qa/i18n-gate.ts
+      A src/i18n/__fixtures__/broken-dictionary.ts
+      A src/i18n/i18n-allowlist.ts
+      A src/i18n/i18n-gate.test.ts
+      (5 files, 1007 insertions, 0 deletions; all five are additions, nothing modified).
+      `git diff 8921e7d..HEAD -- package.json bun.lock src/i18n/dictionaries.ts
+      src/i18n/provider.tsx src/lib/format-time.ts` -> empty.
+      Note: the raw `git diff --stat origin/main..HEAD` asked for in the handoff is
+      misleading because origin/main has advanced past the branch point (it shows
+      LAUNCH_LEDGER.yaml and the BG-0011/BG-0014/BG-0020 briefs as "removed" - these are
+      main-side commits the branch simply does not contain, not branch edits). The
+      merge-base diff above is the correct scope measurement and it is clean.
+      package.json scripts block confirmed to contain no "i18n:check" entry, matching
+      Chief scope decision (1); the CLI is `bun scripts/qa/i18n-gate.ts`.
+  - criterion: >
+      AC7 Quality: bunx eslint on the four new ts files -> 0; bunx prettier --check on them
+      -> 0; no new dependency in package.json/bun.lock.
+    result: VERIFIED
+    evidence: >
+      `bunx eslint scripts/qa/i18n-gate.ts src/i18n/i18n-gate.test.ts
+      src/i18n/i18n-allowlist.ts src/i18n/__fixtures__/broken-dictionary.ts` -> no output,
+      EXIT=0. Confirmed the files are actually linted and not ignored: the same run with
+      --format json returns real result objects per file with errorCount 0 / warningCount 0,
+      and `eslint --print-config scripts/qa/i18n-gate.ts` resolves a config.
+      `bunx prettier --check` on the same four files -> "All matched files use Prettier
+      code style!", EXIT=0.
+      `git diff merge-base..HEAD -- package.json bun.lock` -> empty, so no dependency was
+      added or changed. Import audit of the four files shows only relative project imports
+      plus `bun:test`; runtime APIs used are Bun.Glob / Bun.file only.
+      Regression check beyond the criterion: `bun run lint` (eslint .) -> EXIT=0,
+      "12 problems (0 errors, 12 warnings)", all 12 pre-existing
+      react-refresh/only-export-components warnings in provider files, none in the new files.
+  - criterion: >
+      AC8 Independent re-measurement: Object.keys(fr) and Object.keys(ar) (expect 985/985)
+      and the fr===ar keys (expect the 6 named).
+    result: VERIFIED
+    evidence: >
+      Standalone script <scratchpad>/count.ts importing src/i18n/dictionaries directly
+      (no gate code involved), run with `bun <scratchpad>/count.ts`:
+      "fr keys: 985 / ar keys: 985 / missing in ar: 0 / missing in fr: 0 /
+      fr===ar: app.name, language.arabic, language.french, news.language.ar,
+      notfound.code, profile.title".
+      The same two assertions are also pinned in the Verifier's own scratch test (passing).
+regressions: []
+untested:
+  - >
+    The gate is not wired into any CI workflow file as a standalone step; it reaches CI only
+    through `bun run test` discovering src/i18n/i18n-gate.test.ts (verified locally). No CI
+    run was executed on this branch, so green CI is inferred from the local full-suite run,
+    not observed.
+  - >
+    The brief's original control "app.name removed from the allow-list -> W1=7 -> exit 1" was
+    not tested as written; per Chief scope decision (2) the replacement control was tested
+    instead and passes. Whether the count-vs-suppress semantics is the product-desired one is
+    a Chief decision, not a Verifier measurement.
+  - >
+    Rendered/browser behaviour of the dictionaries (RTL, truncation, Trans multi-{accent}
+    rendering) is untouched by this task and was not exercised.
+security_observations:
+  - >
+    No new dependency, no network access, no secrets read. The script's filesystem access is
+    read-only (Bun.Glob scan + Bun.file text reads under src/) and it exits via process.exit
+    only under `import.meta.main`, so importing it from tests has no side effects.
+  - >
+    Non-blocking robustness note (not a criterion failure): buildUsageIndex defaults to the
+    relative root "src", so both the CLI and the test depend on being run from the repo root.
+    Invoked from another cwd the glob would match nothing, W3 would jump to 985 and W4 to 0,
+    and the gate would fail loudly rather than pass silently - fail-safe, but worth a note.
+  - >
+    src/i18n/__fixtures__/broken-dictionary.ts ships inside src/ and is imported by
+    scripts/qa/i18n-gate.ts at module top level. It is not referenced by any application
+    entry point, so it cannot reach the app bundle; it carries no secrets, only synthetic
+    fixture strings.
+status: PASS
