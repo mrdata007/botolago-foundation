@@ -566,9 +566,12 @@ tasks:
     area: fantasy
     severity: P1
     owner: Chief
-    state: READY
+    state: BUILT
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml findings (pg_get_functiondef contains neither fantasy_leagues nor fantasy_league_memberships)']
     acceptance_criteria: [additive migration re-creating the RPC with ordered league/membership/audit cleanup preserving PT409 fantasy_catalog_in_use semantics; database test; runbook corrected]
+    roles: {researcher: 'N/A (Builder produced docs/engineering/tasks/BG-0032/engineering-brief.yaml itself)', builder: 'DONE (branch agent/BG-0032-rollback-cleanup, docs/engineering/tasks/BG-0032/implementation-report.yaml)', verifier: pending, reviewer: pending}
+    key_findings:
+      - 'app_private.fantasy_mutation_audit has no foreign key to app.fantasy_seasons or app.fantasy_leagues (only to app.fantasy_teams and app.profiles, both ON DELETE RESTRICT, verified against the migration source and read-only against Production V2 project tkewgajrljbwgwedqsxn); combined with the RPC''s pre-existing PT409 fantasy_catalog_in_use guard (zero app.fantasy_teams rows for the season, unchanged by this fix), mutation_audit cannot block the season delete under any reachable state, so no cleanup code was added for it — only app.fantasy_rankings, app.fantasy_league_memberships and app.fantasy_leagues, in that FK-safe order, in the new additive migration 20260918170000_fantasy_catalog_rollback_cleanup.sql. Full reasoning in docs/engineering/tasks/BG-0032/engineering-brief.yaml.'
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
     area: devops

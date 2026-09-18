@@ -1,0 +1,171 @@
+task_id: BG-0032
+builder_type: Builder-Backend
+branch: agent/BG-0032-rollback-cleanup
+attempt: 1
+base: >
+  Isolated clone /tmp/bg0032-build of https://github.com/mrdata007/botolago-foundation, branch cut
+  fresh from origin/main (not the shared /home/user/botolago-foundation working tree). No Researcher
+  brief existed for BG-0032 on disk; this session produced
+  docs/engineering/tasks/BG-0032/engineering-brief.yaml itself before implementing.
+
+scope: >
+  Ledger acceptance criteria: additive migration re-creating api.service_rollback_fantasy_catalog
+  with ordered league/membership/audit cleanup preserving PT409 fantasy_catalog_in_use semantics;
+  database test; runbook corrected. Investigated and resolved (see engineering-brief.yaml findings)
+  that app_private.fantasy_mutation_audit cannot block the season delete under any reachable state,
+  so no cleanup code was added for it — only rankings, league memberships and leagues.
+
+changes:
+  - file: supabase/migrations/20260918170000_fantasy_catalog_rollback_cleanup.sql
+    description: >
+      New additive migration (sorts after 20260918160000_season_bounds_guard.sql). CREATE OR REPLACE
+      of api.service_rollback_fantasy_catalog: same signature, SECURITY DEFINER, SET search_path = '',
+      identical PT403/PT404/PT409 stale_update/already-rolled-back/advisory-lock/PT409
+      fantasy_catalog_in_use guard code, byte-identical existing deletes (fixture assignments, price
+      history, price evidence, players, gameweeks, season, competition cleanup) and return shape,
+      plus one new block inserted immediately after the fantasy_catalog_in_use guard: (1) delete
+      app.fantasy_rankings where fantasy_season_id = the season; (2) delete
+      app.fantasy_league_memberships joined to app.fantasy_leagues on league_id where the league's
+      fantasy_season_id = the season; (3) count then delete app.fantasy_leagues where
+      fantasy_season_id = the season, feeding a new declare removed_leagues integer. The returned
+      jsonb's `removed` object gains one additive key, `leagues`; players/gameweeks/fixtures keys are
+      unchanged. Nothing in the new block reads, writes or deletes app.fantasy_teams. The migration
+      file carries an extensive header comment documenting the mutation_audit investigation and why
+      no change was made for it. Revoke-all/grant-to-service_role footer for the function reissued
+      identically to the original migration.
+  - file: supabase/tests/database/fantasy_catalog_rollback_cleanup.test.sql
+    description: >
+      New pgTAP file, 18 assertions. Manual fixture: two independent Football/Fantasy seasons (A is
+      rolled back, B only holds one live app.fantasy_teams row so a league membership of A's league
+      can reference an existing team without A itself ever holding a team row, which the
+      fantasy_catalog_in_use guard would otherwise forbid). Cases: (e) authorization — a
+      request.jwt.claims role=authenticated caller gets PT403 forbidden; (d) a wrong expected source
+      digest gets PT409 stale_update and changes nothing (league still present); (b) critical
+      regression — inserting a live app.fantasy_teams row under season A itself still raises PT409
+      fantasy_catalog_in_use, and afterward the team, league, membership, ranking and season rows for
+      A are all still present, unchanged; (a) the fix — with zero teams under season A but one
+      league + one membership + one ranking, rollback succeeds (alreadyRolledBack=false,
+      removed.leagues=1) and all four (rankings, memberships, leagues, season) are gone for A, while
+      season B's team is untouched; (c) a second rollback call on the same activation id
+      short-circuits with alreadyRolledBack=true and raises nothing.
+  - file: scripts/backend/phase7e-production-migration-promoter.py
+    description: >
+      BATCHES gains a final entry "fantasy_catalog_rollback_cleanup":
+      ("20260918170000_fantasy_catalog_rollback_cleanup.sql",) after "season_bounds_guard", with a
+      BG-0032 comment in the same style as the season_bounds_guard/fantasy_rating_degeneracy_guard
+      entries. EXPECTED_EDGE_FUNCTIONS_BY_BATCH gains the same key mapped to
+      frozenset({"football-ingest", "news-ingest"}) (same reviewed set as every batch since
+      fantasy_calendar_sync — this migration does not touch edge functions, but the promoter's
+      postflight check for this key set is about proving the two Fantasy edge functions are already
+      live and inactive-of-writes, which remains true). No other line changed.
+  - file: .github/workflows/phase7e-b-production-migration-promotion.yml
+    description: >
+      One line added to inputs.migration_batch.options: `- fantasy_catalog_rollback_cleanup` after
+      `- season_bounds_guard` (manifest order, newest last). No trigger, gate, confirmation or step
+      changed.
+  - file: scripts/backend/tests/test_phase7e_production_migration_promoter.py
+    description: >
+      Inside test_batches_cover_the_exact_ordered_migration_chain only: inventory counts 61 -> 62
+      (two asserts, matching the file count on disk); new asserts for
+      BATCHES["fantasy_catalog_rollback_cleanup"] ==
+      ("20260918170000_fantasy_catalog_rollback_cleanup.sql",),
+      list(PROMOTER.BATCHES)[-1] == "fantasy_catalog_rollback_cleanup" (moved from
+      "season_bounds_guard", whose own prefix-length and confirmation asserts are otherwise kept
+      unchanged at 60/RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD),
+      batch_history_prefix("fantasy_catalog_rollback_cleanup") length 61,
+      CONFIRMATIONS["fantasy_catalog_rollback_cleanup"] ==
+      "RUN_PHASE7E_B_PRODUCTION_FANTASY_CATALOG_ROLLBACK_CLEANUP"; the new batch added to the
+      edge-function loop. Every pre-existing assertion is kept; the suite grew from 16 to 16 tests
+      (no new test method — the new assertions live inside the existing one), all still named the
+      same.
+  - file: docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md
+    description: >
+      Corrected the false "clean rollback" claim. The Rollback section now states the exact ordered
+      cleanup (rankings, then league memberships, then leagues, then the pre-existing
+      fixtures/prices/players/gameweeks/season/competition steps) and adds a parenthetical noting the
+      pre-BG-0032 defect and that it previously described the broken behaviour as clean. Explicitly
+      restates that the fantasy_catalog_in_use guard is unchanged and still fully protects any
+      manager's active team. The "Deterministic acceptance evidence" section now also names the new
+      test file and its coverage (league/membership/ranking cleanup, and the fantasy_catalog_in_use
+      guard's continued refusal).
+  - file: docs/engineering/tasks/BG-0032/engineering-brief.yaml
+    description: >
+      New (no prior brief existed). Documents the confirmed FK graph (read from the CREATE TABLE
+      statements, cross-checked read-only against Production V2 project tkewgajrljbwgwedqsxn), the
+      resolved mutation_audit question with full reasoning and evidence, the fix design and the test
+      design.
+  - file: docs/engineering/tasks/BG-0032/implementation-report.yaml
+    description: This report.
+  - file: docs/engineering/LAUNCH_LEDGER.yaml
+    description: >
+      BG-0032 entry only updated: state READY -> BUILT, with branch/commit reference and a one-line
+      summary of the fix and the mutation_audit resolution. No other task's entry touched.
+
+database_changes:
+  - "api.service_rollback_fantasy_catalog(uuid, text): CREATE OR REPLACE, same signature, SECURITY DEFINER, search_path ''. New behaviour only: deletes app.fantasy_rankings / app.fantasy_league_memberships / app.fantasy_leagues scoped to the season before the pre-existing deletes; adds `removed.leagues` (additive) to the returned jsonb. Every existing guard, error code and delete is otherwise unchanged."
+  - "No new tables, columns, indexes or triggers. No data written by the migration itself (function replace only)."
+
+configuration_changes:
+  - "CI (scope addition, following the BG-0031 precedent for keeping the promoter inventory check green): phase7e-b-production-migration-promotion.yml offers the new dispatch choice `fantasy_catalog_rollback_cleanup` (confirmation string RUN_PHASE7E_B_PRODUCTION_FANTASY_CATALOG_ROLLBACK_CLEANUP, derived by the promoter). No secret, variable, schedule or gate changed; the batch is not dispatched by this task — production promotion is explicitly out of scope."
+
+tests_run:
+  - command: "docker (session had a client but no running daemon; started `dockerd` directly under an explicit sandbox override for this session only) then `npx supabase start`"
+    result: PASS
+    output: "Local Postgres 17.6.1.167 stack started; all 62 migrations (61 pre-existing + this one) applied cleanly in order, ending with 20260918170000_fantasy_catalog_rollback_cleanup.sql; seed.sql ran without error."
+  - command: "bun run backend:migrations:check"
+    result: PASS
+    output: "Validated 62 migration(s)."
+  - command: "npx supabase test db --local supabase/tests/database/fantasy_catalog_rollback_cleanup.test.sql"
+    result: PASS
+    output: "ok — All tests successful. Files=1, Tests=18."
+  - command: "npx supabase test db --local supabase/tests/database  (full pgTAP suite, all 42 files, equivalent to bun run backend:db:test)"
+    result: PASS
+    output: "All tests successful. Files=42, Tests=866. Includes the pre-existing fantasy_catalog_activation.test.sql unchanged and passing."
+  - command: "bun run backend:types:generate"
+    result: PASS
+    output: "Generated /tmp/bg0032-build/src/backend/generated/database.types.ts; `git diff --stat` against it is empty — the RPC's argument/return types (uuid, text -> jsonb) are unaffected, so no committed change to this file."
+  - command: "bun run typecheck"
+    result: PASS
+    output: "$ tsc --noEmit  exit=0"
+  - command: "bun run test  (full JS/TS suite)"
+    result: PASS
+    output: "720 pass, 0 fail, 10008 expect() calls, 117 files."
+  - command: "python3 -m unittest scripts.backend.tests.test_phase7e_production_migration_promoter -v"
+    result: PASS
+    output: "Ran 16 tests ... OK, including test_batches_cover_the_exact_ordered_migration_chain and test_workflow_batch_choices_match_the_manifest_batches_in_order."
+  - command: "bunx prettier --check .github/workflows/phase7e-b-production-migration-promotion.yml docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md docs/engineering/tasks/BG-0032/engineering-brief.yaml docs/engineering/tasks/BG-0032/implementation-report.yaml"
+    result: PASS
+    output: "All matched files use Prettier code style!"
+  - command: "Read-only Supabase MCP SELECT against Production V2 (project tkewgajrljbwgwedqsxn): pg_constraint for app_private.fantasy_mutation_audit and information_schema.columns for the same table"
+    result: PASS (verification, not a functional test)
+    output: >
+      Foreign keys: fantasy_mutation_audit_fantasy_team_id_fkey -> app.fantasy_teams (ON DELETE
+      RESTRICT), fantasy_mutation_audit_user_id_fkey -> app.profiles (ON DELETE RESTRICT). No FK to
+      app.fantasy_seasons or app.fantasy_leagues. Columns: id, user_id, fantasy_team_id, operation,
+      accepted, stable_error_code, base_version, resulting_version, idempotency_key, safe_metadata,
+      occurred_at — no fantasy_season_id/fantasy_league_id column. Matches the migration source
+      exactly; confirms the engineering-brief.yaml mutation_audit resolution against live production
+      schema, read-only, no writes.
+
+not_executed: []
+
+mutation_audit_resolution: >
+  See docs/engineering/tasks/BG-0032/engineering-brief.yaml findings for full reasoning and evidence.
+  Summary: app_private.fantasy_mutation_audit has no foreign key to app.fantasy_seasons or
+  app.fantasy_leagues (only to app.fantasy_teams and app.profiles, both ON DELETE RESTRICT), and the
+  function's pre-existing PT409 fantasy_catalog_in_use guard already refuses to proceed unless zero
+  app.fantasy_teams rows exist for the season; since this function never deletes app.fantasy_teams,
+  no mutation_audit row can be referencing a team of that season once the guard has passed. Confirmed
+  both from the migration source (which is authoritative for the fix) and by a read-only query
+  against Production V2. No cleanup code was added for mutation_audit.
+
+scope_deviations:
+  - "Docker was not running by default in the session sandbox (client present, daemon absent, `service docker start` failed with a permission error under the normal sandbox). Started `dockerd` directly with the sandbox override for this session, purely to run the local Supabase CLI stack for testing; no other privileged operation was performed. All actual database testing ran against this local, disposable stack — never against Production V2, per the dispatch's constraint."
+  - "No other deviation from the dispatch. All required deliverables (1-8) were completed, including the database.types.ts regeneration check (no diff needed) rather than being left as a gap for the Verifier."
+
+unexpected_observations:
+  - "The ledger's BG-0032 title also names app_private.fantasy_mutation_audit as a blocker alongside fantasy_leagues/fantasy_league_memberships. Verified this is not accurate (see mutation_audit_resolution above); the ledger update for this task notes the correction rather than silently dropping it."
+  - "app.fantasy_rankings.league_id is nullable and app.fantasy_gameweeks (already deleted by the pre-existing code) has no relationship to leagues/rankings/memberships, so no ordering interaction exists between the new block and the pre-existing gameweek/player deletes; the new block was placed early (right after the guard) purely for readability, not because of any FK ordering requirement relative to the later deletes."
+  - "A league's membership rows are not constrained at the database level to reference a team of the league's own Fantasy season — this is what makes the new pgTAP test's two-season fixture realistic without needing the full 240-player staging flow."
+
+status: BUILT
