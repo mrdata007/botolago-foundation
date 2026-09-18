@@ -221,7 +221,7 @@ function ProfileSetupPage() {
             {t("auth.setup.fav_club")}
           </div>
           <p className="-mt-1 text-xs text-muted-foreground">{t("auth.setup.fav_club_hint")}</p>
-          <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
+          <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
             {clubsQ.data?.map((c) => {
               const active = favoriteClubId === c.id;
               return (
