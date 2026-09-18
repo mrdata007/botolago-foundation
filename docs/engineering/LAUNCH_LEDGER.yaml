@@ -557,9 +557,77 @@ tasks:
     merge_gate_status: 'MET on PR #137 head 7cf5152 (type-refresh commit; no touch to the migration or the pgTAP file): backend-quality run 35368491642, database-quality job green — season_bounds_guard.test.sql executes ok, Files=40 Tests=816 Result PASS, db lint clean, types:check current (docs/engineering/tasks/BG-0031/ci-run-35368491642.txt). Per review-report.yaml release_blockers[0] this makes the existing Reviewer PASS live.'
     integration: 'BG-0027/PR #136 merged to main first (5a7f378) as planned. Branch then merged main (commit bc186ff), reconciling the Phase 7E-B promoter manifest/history-prefix assertions (fantasy_rating_degeneracy_guard before season_bounds_guard; total inventory 60->61; season_bounds_guard prefix 59->60) and confirming database.types.ts. A second, independent integration-delta Verifier (docs/engineering/tasks/BG-0031/verification-report-integration.yaml, PASS, verified_commit 98e27dd) re-derived the prefix arithmetic by hand, re-ran the 16 promoter unit tests, and re-pulled PR #137 CI run 35370836792 directly: database-quality green, both fantasy_rating_degeneracy_guard.test.sql and season_bounds_guard.test.sql executing ok, Files=41 Tests=848 Result PASS, types current.'
     merged: 'Chief merge, --no-ff equivalent (merge_method=merge), main merge commit 26e7d11b15310886fff1f28db8dcda9975f9db5b, PR #137 head 98e27dd9a90cac1b1529f02c7f080f9713be30ec (2026-09-18)'
-    production_status: 'NOT LIVE. This merge lands the additive season_bounds_guard migration on main only. Production V2 still has the unguarded RPC and the un-corrected app.seasons row (ends_on 2026-09-24). Promotion is blocked by BG-0002; the one-row owner correction is a separate, still-unapplied, owner-executed write. Do not describe the guard as protecting production.'
-    promotion_gate: 'owner one-row correction with lock before 2026-09-25 (Option A box 2026-09-23T00:00Z); promote batch season_bounds_guard after BG-0002 clears; workflows stay undispatched until both are live'
+    production_status: 'NOT LIVE. This merge lands the additive season_bounds_guard migration on main only. Production V2 still has the unguarded RPC and the un-corrected app.seasons row (ends_on 2026-09-24, confirmed by a fresh read-only query 2026-09-18T18:0xZ). SUPERSEDED: "blocked by BG-0002" — BG-0002 is now DONE (2026-09-18T17:38Z). The remaining blocker is only that this batch has not yet been dispatched through Phase 7E-B; see next_production_approvals_packet_2026_09_18 below. The one-row owner correction is a separate, still-unapplied, owner-executed write, and still requires the guard to be live FIRST (a correction applied before the guard would be overwritten by the next provider ingestion run). Do not describe the guard as protecting production.'
+    promotion_gate: 'owner one-row correction with lock before 2026-09-25 (Option A box 2026-09-23T00:00Z); promote batch season_bounds_guard (now unblocked on the credential/backup side); workflows stay undispatched until both are live'
     pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/137 (head 96acad3); session subscribed'
+    next_production_approvals_packet_2026_09_18: >-
+      PREPARED, NOT EXECUTED. The BG-0003 fantasy_deadline_guard approval does not cover any of the
+      three actions below; each needs its own explicit owner approval before the Chief dispatches
+      it. Nothing in this packet has been actioned. Current state for context: main HEAD
+      d16c406be454225ed3ef3cea2e8ec2805346cbbf; repository migration inventory 61 files; Production
+      V2 history currently at 59 rows (after the fantasy_deadline_guard promotion); Phase 7E-B
+      manifest order on main is ... -> fantasy_deadline_guard -> fantasy_rating_degeneracy_guard
+      (20260918150000) -> season_bounds_guard (20260918160000), version-ordered correctly, both
+      batches confirmed present via `grep` on scripts/backend/phase7e-production-migration-promoter.py.
+      Reviewed promoter unchanged: dispatch is always `python3 scripts/backend/phase7e-production-migration-promoter.py --batch <name> --confirmation RUN_PHASE7E_B_PRODUCTION_<NAME> --repo-root <root> --evidence-dir <dir>` via the existing GitHub Actions workflow, `expected_commit` must equal the exact current main SHA at dispatch time (re-verified immediately before each dispatch, never assumed from an earlier check), one batch per dispatch, no bundling.
+
+      ACTION A — promote batch fantasy_rating_degeneracy_guard (migration 20260918150000, BG-0027/BG-0042).
+        Prerequisites: (1) explicit owner approval to promote this specific batch (not yet given —
+        the BG-0003 approval was for fantasy_deadline_guard only); (2) PR #136 already merged to
+        main (5a7f378) with independent Verifier PASS and Reviewer PASS on executed CI evidence —
+        satisfied; (3) dispatch must use the main SHA current at dispatch time, re-verified, not
+        d16c406 if main has moved by then; (4) history-prefix check requires this batch promotes
+        BEFORE season_bounds_guard (version order 150000 < 160000) — do not promote B before A.
+        Post-change verification (owner-required, same pattern as BG-0003): confirm
+        historyCountAfter via the promoter''s own postflight JSON; pg_get_functiondef of
+        app_private.fantasy_rating_inputs_degenerate and the two touched api functions
+        (api.preview_fantasy_catalog_activation, api.service_stage_fantasy_catalog) match the
+        reviewed migration source exactly; execute grants confirmed restricted as reviewed; a
+        read-only or rolled-back rehearsal proving the degeneracy guard actually fires under a
+        synthetic all-neutral-rating candidate set (do NOT run it against a live catalog activation
+        that would mutate real fantasy state).
+
+      ACTION B — promote batch season_bounds_guard (migration 20260918160000, BG-0031).
+        Prerequisites: (1) explicit owner approval to promote this specific batch (not yet given);
+        (2) PR #137 already merged to main (26e7d11) with independent Verifier PASS, Reviewer PASS,
+        and a second integration-delta Verifier PASS confirming the combined chain — satisfied; (3)
+        MUST be dispatched strictly AFTER Action A completes (manifest/history-prefix order), never
+        before or bundled with it; (4) dispatch at the main SHA current at that later time, re-verified.
+        Post-change verification (owner-required): historyCountAfter via postflight JSON;
+        pg_get_functiondef of app_private.protect_locked_season_bounds and the re-created
+        api.ingest_football_catalog_entity match the reviewed source; app.seasons gains
+        bounds_locked_at/bounds_locked_reason columns (both null immediately after promotion, since
+        the guard is additive and does not itself lock anything); a rolled-back rehearsal proving
+        the trigger and the monotone-update guard behave as reviewed (do not mutate the real
+        app.seasons row in this step — that is Action C, separate and owner-gated).
+
+      ACTION C — the one-row app.seasons correction (BG-0031, separate from and AFTER Action B).
+        This is a real, consequential production data write, not a migration promotion, and needs
+        its own explicit owner approval distinct from A and B.
+        Prerequisites: (1) Action B (season_bounds_guard) already live in production, so the
+        correction can be locked immediately and not silently reverted by the next provider
+        ingestion run — never apply this before B is live; (2) explicit owner approval of the exact
+        statement below; (3) re-confirm immediately before running that app.seasons.ends_on for this
+        row is STILL 2026-09-24 (re-read, do not assume from this packet''s snapshot) and that the
+        row id is still current (is_current = true) - re-verified 2026-09-18T18:0xZ: ends_on
+        2026-09-24, starts_on 2026-09-24, is_current true, status active.
+        Proposed statement (idempotent predicate, will no-op harmlessly if already applied):
+          update app.seasons
+          set ends_on = date ''2027-06-30'',
+              bounds_locked_at = now(),
+              bounds_locked_reason = ''BG-0031 owner correction 2027-06-30''
+          where id = ''d03223b0-8f4a-4309-93e1-2a708d7c3584''
+            and ends_on = date ''2026-09-24'';
+        Post-change verification (owner-required): re-select the row and confirm ends_on =
+        2027-06-30, bounds_locked_at is set, bounds_locked_reason matches; confirm no fantasy
+        preview/activation regression (season_ended / current_season_required checks); confirm the
+        deadline before 2026-09-25 per the standing time box.
+
+      Standing constraints that apply to all three: never bundle multiple batches in one dispatch;
+      never enable FANTASY_AUTOMATION_ENABLED as a side effect of any of these (BG-0004 stays HOLD,
+      unrelated); no promoter bypass; no edits to already-applied migration files; each action gets
+      its own evidence record in this ledger after execution, following the BG-0003
+      promotion_2026_09_18T17_38Z pattern.
 
   BG-0032:
     title: api.service_rollback_fantasy_catalog does not clear app.fantasy_leagues / fantasy_league_memberships / app_private.fantasy_mutation_audit (all ON DELETE RESTRICT) — "clean rollback" claim in the runbook is false; rollback fails on any season that ever had a league
@@ -569,9 +637,61 @@ tasks:
     state: BUILT
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml findings (pg_get_functiondef contains neither fantasy_leagues nor fantasy_league_memberships)']
     acceptance_criteria: [additive migration re-creating the RPC with ordered league/membership/audit cleanup preserving PT409 fantasy_catalog_in_use semantics; database test; runbook corrected]
-    roles: {researcher: 'N/A (Builder produced docs/engineering/tasks/BG-0032/engineering-brief.yaml itself)', builder: 'DONE (branch agent/BG-0032-rollback-cleanup, docs/engineering/tasks/BG-0032/implementation-report.yaml)', verifier: pending, reviewer: pending}
+    roles: {researcher: 'N/A (Builder produced docs/engineering/tasks/BG-0032/engineering-brief.yaml itself)', builder: 'DONE (branch agent/BG-0032-rollback-cleanup, docs/engineering/tasks/BG-0032/implementation-report.yaml)', verifier: 'PASS (docs/engineering/tasks/BG-0032/verification-report.yaml, independent, re-derived the mutation_audit conclusion from scratch)', reviewer: pending}
     key_findings:
-      - 'app_private.fantasy_mutation_audit has no foreign key to app.fantasy_seasons or app.fantasy_leagues (only to app.fantasy_teams and app.profiles, both ON DELETE RESTRICT, verified against the migration source and read-only against Production V2 project tkewgajrljbwgwedqsxn); combined with the RPC''s pre-existing PT409 fantasy_catalog_in_use guard (zero app.fantasy_teams rows for the season, unchanged by this fix), mutation_audit cannot block the season delete under any reachable state, so no cleanup code was added for it — only app.fantasy_rankings, app.fantasy_league_memberships and app.fantasy_leagues, in that FK-safe order, in the new additive migration 20260918170000_fantasy_catalog_rollback_cleanup.sql. Full reasoning in docs/engineering/tasks/BG-0032/engineering-brief.yaml.'
+      - 'app_private.fantasy_mutation_audit has no foreign key to app.fantasy_seasons or app.fantasy_leagues (only to app.fantasy_teams and app.profiles, both ON DELETE RESTRICT, verified against the migration source and read-only against Production V2 project tkewgajrljbwgwedqsxn); combined with the RPC''s pre-existing PT409 fantasy_catalog_in_use guard (zero app.fantasy_teams rows for the season, unchanged by this fix), mutation_audit cannot block the season delete under any reachable state, so no cleanup code was added for it — only app.fantasy_rankings, app.fantasy_league_memberships and app.fantasy_leagues, in that FK-safe order, in the new additive migration 20260918170000_fantasy_catalog_rollback_cleanup.sql. Full reasoning in docs/engineering/tasks/BG-0032/engineering-brief.yaml. Independently re-confirmed by the Verifier from scratch (own grep of every migration, own read-only production query) — airtight, not just repeated.'
+    dispatch_2026_09_18T18: >-
+      Checked first: no existing branch, task directory or artifact for BG-0032 — nothing to reuse,
+      not a duplicate dispatch. Chief confirmed the exact FK dependency graph read-only against
+      Production V2 before dispatch: app.fantasy_leagues -> app.fantasy_seasons/app.profiles;
+      app.fantasy_league_memberships -> app.fantasy_leagues/app.fantasy_teams/app.profiles;
+      app.fantasy_rankings -> app.fantasy_seasons/app.fantasy_teams/app.fantasy_leagues;
+      app_private.fantasy_mutation_audit -> app.fantasy_teams/app.profiles only (NOT directly to
+      fantasy_seasons or fantasy_leagues — flagged to the Builder as a discrepancy against this
+      task's title to verify and resolve with evidence, not assume). Builder-Backend dispatched on
+      branch agent/BG-0032-rollback-cleanup, isolated clone, explicitly not authorized to execute
+      anything against production (implementation + isolated-DB testing only). Independent
+      Verifier and Reviewer to follow once it reports.
+    builder_report_2026_09_18T18: >-
+      DONE, branch agent/BG-0032-rollback-cleanup @8c9b655 (3 commits, pushed, no PR yet).
+      mutation_audit resolution: confirmed from migration source
+      (20260720141847_fantasy_teams_transfers_chips.sql) AND a read-only production query that
+      app_private.fantasy_mutation_audit has FKs only to app.fantasy_teams and app.profiles, never
+      to fantasy_seasons/fantasy_leagues; since the existing PT409 fantasy_catalog_in_use guard
+      already requires zero fantasy_teams rows for the season and the RPC never deletes
+      fantasy_teams, no audit row can reference that season's teams at delete time — NO cleanup
+      code added for it, ledger title not fully accurate on this point (pending independent
+      confirmation). New additive migration 20260918170000_fantasy_catalog_rollback_cleanup.sql
+      re-creates the RPC unchanged except one new block, right after the fantasy_catalog_in_use
+      check: delete fantasy_rankings, then fantasy_league_memberships, then fantasy_leagues for the
+      season (adds removed.leagues to the JSON); fantasy_teams untouched anywhere. Validation
+      ACTUALLY EXECUTED against a local Supabase stack (Docker daemon manually started in the
+      isolated clone; no production touched): backend:migrations:check 62 validated;
+      backend:db:test 42 files / 866 assertions PASS including the new 18-assertion test and
+      unchanged fantasy_catalog_activation.test.sql; backend:types:generate no diff;
+      typecheck clean; bun run test 720/720; promoter unit tests 16/16; prettier clean (one
+      pre-existing unrelated ledger formatting issue confirmed present on origin/main already,
+      not introduced by this branch). Also updated: promoter manifest/workflow/test (new batch
+      fantasy_catalog_rollback_cleanup), runbook (false "clean rollback" claim removed), brief,
+      implementation report.
+    verifier_report_2026_09_18T18: >-
+      PASS (docs/engineering/tasks/BG-0032/verification-report.yaml @d5ae98a on the branch).
+      Independently re-derived the mutation_audit conclusion (own grep of every migration for an
+      ALTER TABLE on fantasy_mutation_audit — none; own read-only production query against
+      pg_constraint/information_schema.columns — exactly the same two FKs, no season/league FK).
+      Diffed the new migration line-by-line against the original; deletion order confirmed FK-safe
+      against production's actual constraint graph. Independently ran a local Supabase stack:
+      866/866 pgTAP assertions across 42 files including the new 18-assertion regression test,
+      whose PT409-refusal case genuinely checks row counts after refusal, not just that an
+      exception fired. Confirmed backend:migrations:check (62), typecheck, bun test (720/720),
+      promoter unit tests (16/16), and that backend:types:generate produces no diff (RPC return
+      type is generic Json, so the new removed.leagues key doesn't affect generated types).
+      Runbook confirmed corrected. No production writes anywhere in branch history.
+      Found (not a code defect): this branch's LAUNCH_LEDGER.yaml was stale vs. main and needed
+      reconciling before merge — done in this same commit. Also flagged an OUT-OF-SCOPE latent gap:
+      app_private.fantasy_job_runs also has an ON DELETE RESTRICT FK to app.fantasy_seasons and is
+      not touched by this fix (or by the original, pre-existing function) — recorded as follow-up
+      BG-0048, not a regression introduced by this task and not a blocker.
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
     area: devops
@@ -635,6 +755,20 @@ tasks:
       Codex usage-limit notice, a successful Vercel preview). No Claude Approvals check runs on this
       repo/PR. PR is now waiting only on the human review it was opened for; nothing else is
       Chief-actionable until that lands or the head changes.
+      checkpoint_2026_09_18T18: 'Re-checked, unchanged: CI still green on head 6938dbd, no new
+      comments or reviews. Implementation, independent Verifier (attempt 2, delta), independent
+      fresh-context Reviewer (attempt 2, delta) and CI are all already complete for the current
+      diff — not re-dispatching any builder or reviewer against unchanged work. Two distinct things
+      are open, and must not be conflated: (1) REQUIRED — this repo requires human review/approval
+      before a Chief merge of any PR (standing process rule; no repository branch-protection or
+      Claude Approvals check enforces it mechanically here, but the Chief does not merge without it
+      regardless). This is a genuine, unmet gate: no human has reviewed or approved PR #138 yet.
+      (2) ADVISORY, already satisfied — the fresh-context Reviewer''s recommendation for "a second
+      set of human eyes given production-secret handling" was itself the reason this PR exists at
+      all; opening it and getting CI green already acted on that recommendation, and no further
+      Chief action can substitute for an actual human reading it. Chief has NOT merged, will NOT
+      merge without (1), and is NOT claiming that human review has happened. This hold is scoped to
+      PR #138 only and does not block BG-0032 or the promotion-approval packet below.'
 
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
@@ -803,4 +937,15 @@ tasks:
     severity: P1
     owner: Human
     state: HALTED_FOR_INPUT
+    human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
+
+  BG-0048:
+    title: 'app_private.fantasy_job_runs has an ON DELETE RESTRICT foreign key to app.fantasy_seasons and is not cleaned up by api.service_rollback_fantasy_catalog (neither the original function nor the BG-0032 fix) — a season with job-run rows would fail rollback the same way leagues did before BG-0032'
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence: ['docs/engineering/tasks/BG-0032/verification-report.yaml (independent Verifier, flagged as out-of-scope for BG-0032 since it is a pre-existing gap in the original function, not a regression introduced by that fix)']
+    acceptance_criteria: [confirm whether fantasy_job_runs rows realistically exist for a rolled-back season; if so, extend api.service_rollback_fantasy_catalog with an additive migration deleting them in FK-safe order, same pattern as BG-0032; database test; if rows never realistically exist for this path, document why and close without a code change]
     human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
