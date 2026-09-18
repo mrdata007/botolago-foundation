@@ -1,8 +1,9 @@
 task_id: BG-0026
 builder_type: Builder-Frontend
 branch: agent/BG-0026-rtl-fixes
-base: origin/main 535945f
+base: "535945f (merge-base with origin/main; origin/main has since advanced 17 commits to 84b09be without touching any file of this branch)"
 commits:
+  - "d0619c3 BG-0026: record scope check and merge-base in implementation report"
   - "34c69a0 BG-0026: map class-(a) physical utilities to logical, complete chevron-left RTL mirroring, fix BottomNav overflow and FDR bidi truncation"
 
 changes:
@@ -160,3 +161,13 @@ status_note: >
   Two items need a Chief decision before this can be marked DONE: (1) T5(d) fails on the BottomNav row only, because the
   brief's own BottomNav change ellipsizes fr "Actualités"; (2) the T6 runtime check cannot pass until matches.index.tsx passes
   `dir` to <Select>, which is outside allowed_paths. Neither was resolved by guessing.
+
+scope_check:
+  command: "git diff --name-only origin/main...HEAD   (three-dot = against merge-base 535945f; the two-dot form lists main's own newer commits as well)"
+  result: PASS
+  files: >
+    src/components/ui/select.tsx, src/components/ui/dropdown-menu.tsx, src/components/ui/sonner.tsx, src/components/ui/sheet.tsx,
+    src/components/ui/dialog.tsx, src/components/ui/input-otp.tsx, src/routes/auth.profile-setup.tsx, src/styles.css,
+    src/components/fantasy/GameweekStatusStrip.tsx, src/routes/fantasy.rankings.tsx, src/routes/profile.tsx,
+    src/components/shell/BottomNav.tsx, src/routes/fantasy.fixtures.tsx, docs/engineering/tasks/BG-0026/** (report + 5 after-*.png).
+    Subset of allowed_paths + docs/engineering/tasks/BG-0026/**; no forbidden path touched; `git diff --name-only 535945f..origin/main -- <these src files>` is empty.
