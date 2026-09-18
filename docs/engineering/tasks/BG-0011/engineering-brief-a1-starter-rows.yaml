@@ -1,0 +1,488 @@
+task_id: BG-0011-A1
+role: Researcher
+attempt: 1
+objective: >
+  Option A go/no-go input (season 26027 only, owner-approved): characterise the 64 season-26027 fixtures
+  that fail the worker invariant starter_rows_mismatch, explain the mechanism from the worker's
+  normalisation rules, reconcile RAW vs ACCEPTED starter counts, enumerate the A2 options with blast
+  radius / achievable coverage / rating-fairness effect / timeline, measure what the production
+  Fantasy catalog can already be covered with, and state the exact owner decision required.
+generated_at: "2026-09-18T12:15Z"
+repository_head: fe19c7a (origin/main, read-only checkout /home/user/research-main)
+evidence_saved_under: /tmp/claude-0/-home-user-botolago-foundation/38c9c6aa-d4bc-540b-8674-7cdb622e23bb/scratchpad/bg0011-a1/
+  # artifact-10545720233.zip (sha256 bf7afcaf68d00bbaea0d5ede489d3f9a5b3df4ca2384d0bf7c99d4243310831e — matches the
+  # digest printed by the upload step of job 105590416544), sportsmonks-historical-performance-invariants.json,
+  # sportsmonks-historical-performance.json, failing-rows.tsv, failing-fixture-ids.json
+read_only_statement: "No file in the workspace was modified, no configuration changed, every production statement is a SELECT (Supabase MCP execute_sql on tkewgajrljbwgwedqsxn); GitHub MCP used only for actions_get/get_job_logs."
+
+findings:
+
+  # ---------- 1. Distribution of the 64 failing fixtures (artifact, VERIFIED) ----------
+  - classification: VERIFIED
+    statement: >
+      The artifact of run 35342193874 (id 10545720233) downloaded successfully; its
+      sportsmonks-historical-performance-invariants.json classifies all 240 season-26027 fixtures
+      (fixturesEnumerated 240/240, enumerationComplete true, requestCount 246, providerPayloadIncluded false,
+      invariantSource "supabase/functions/_shared/sportsmonks-historical-player-performance.ts#normalizeHistoricalFixture",
+      expectedCommit a98479d7). passing 176, failing 64; failuresByCode: starter_rows_mismatch 64, all five other
+      codes 0. Every failing row has failures == ["starter_rows_mismatch"], teamCount 2, invalidDetailRows 0.
+    evidence: "artifact JSON top-level and seasons[0]; job 105590416544 log line 'season=26027 enumerated=240/240 complete=true fixtures=240 passing=176 failing=64 … starter_rows_mismatch=64'"
+  - classification: VERIFIED
+    statement: >
+      starterRows histogram of the 64 failing fixtures: 21 → 50 fixtures, 20 → 11, 18 → 1, 15 → 1, 14 → 1.
+      No fixture has more than 22 starters (all 176 passing have exactly 22). Missing starter slots total 91.
+    evidence: "computed from artifact rows (script output saved in scratchpad; per-fixture table failing-rows.tsv)"
+  - classification: VERIFIED
+    statement: >
+      excludedIncompleteRows histogram, failing: 1 → 24, 2 → 24, 3 → 10, 4 → 3, 12 → 2, 13 → 1 (sum 151).
+      Passing fixtures also carry excluded rows: 0 → 136, 1 → 27, 2 → 12, 3 → 1. In total 104 of 240 fixtures
+      have at least one lineup row without player_id; 40 of them still pass because the anonymous rows are
+      not starters.
+    evidence: "artifact rows"
+  - classification: VERIFIED
+    statement: >
+      lineupRows (raw provider lineup depth) is IDENTICAL in shape between failing and passing fixtures:
+      failing 40 → 51, 39 → 10, 41 → 3; passing 40 → 161, 39 → 13, 41 → 2. lineupRows == validPlayerRows +
+      excludedIncompleteRows holds for all 240. validPlayerRows failing: 39 → 23, 38 → 21, 37 → 13, 36 → 3,
+      35 → 1, 28 → 2, 27 → 1 — always ≥ 22, so no other invariant is near its bound. The provider is NOT
+      exposing shorter lineups; it is exposing full 39–41-row lineups in which some rows lack a player id.
+    evidence: "artifact rows"
+  - classification: VERIFIED
+    statement: >
+      Joint pattern (starterRows, excludedIncompleteRows): (21,1) 24 · (21,2) 18 · (21,3) 7 · (21,4) 1 ·
+      (20,2) 6 · (20,3) 3 · (20,4) 2 · (18,12) 1 · (15,12) 1 · (14,13) 1. For ALL 64 fixtures
+      22 − starterRows ≤ excludedIncompleteRows (never violated); for 30 of 64 the two are equal
+      (every anonymous row would have to be a starter), for 34 the excluded count exceeds the starter gap
+      (some anonymous rows are substitutes). The excluded-incomplete count therefore always CAN explain
+      the missing starters arithmetically.
+    evidence: "artifact rows; counters '22-starterRows <= excludedIncomplete ? True: 64', '== ? True: 30 / False: 34'"
+  - classification: VERIFIED
+    statement: >
+      Time clustering: failures occur in every month of the season (2025-09: 5/21 fixtures, 10: 11/24,
+      11: 8/17, 2026-01: 3/8, 02: 9/26, 03: 4/14, 04: 7/26, 05: 6/32, 06: 5/56, 07: 6/16) and in rounds
+      1–30 (production round_number join). Not a single-period provider outage. The three severe fixtures
+      (starterRows 14/15/18, 12–13 anonymous rows) are all round 7 on 2025-11-02: Maghreb Fès–Olympic Safi
+      (19596475), Wydad Casablanca–Ittihad Tanger (19596474), Difaâ El Jadida–FAR Rabat (19596476).
+    evidence: "artifact kickoff field; read-only join app_private.football_provider_mappings → app.fixtures → app.rounds/app.teams"
+  - classification: VERIFIED
+    statement: >
+      Club clustering is STRONG. Failing fixtures per club (of 30 played): Olympique Dcheïra 21 (70%),
+      Olympic Safi 15 (50%), CR Khemis Zemamra 11, Hassania Agadir 11 (36.7%), Kawkab Marrakech 10 (33.3%),
+      UTS Rabat 9 (30%), Raja Casablanca 7, Yacoub El Mansour 7 (23.3%), CODM Meknès 6, FAR Rabat 6,
+      RSB Berkane 6 (20%), Wydad Casablanca 5 (16.7%), Difaâ El Jadida 4, Maghreb Fès 4 (13.3%), FUS Rabat 3,
+      Ittihad Tanger 3 (10%). Dcheïra appears in 21 of the 64 failures and Safi in 15; together they touch
+      31 of 64. This is consistent with a small number of players (per club) whose provider identity is
+      missing in lineups all season long.
+    evidence: "read-only query over app.fixtures (season 92e5dbe8-…, 240 finished) joined to the 64 external ids"
+
+  # ---------- 2. Worker normalisation: how starterRows and 'incomplete' are computed (VERIFIED) ----------
+  - classification: VERIFIED
+    statement: >
+      In normalizeHistoricalFixture the FIRST test on each lineup row is identity: a row that is not a record
+      or whose player_id is null/undefined is counted in excludedIncompleteRows and skipped with `continue`
+      BEFORE type_id is read (lines 452-456). Only rows that survive this test are typed: type_id is parsed
+      (463), must be 11 or 12 (467-469), and `started = participationType === 11` increments starterRows
+      (475-476). The starter count therefore means "identified starters", never "provider-declared starters".
+    evidence: "supabase/functions/_shared/sportsmonks-historical-player-performance.ts:452-476"
+  - classification: VERIFIED
+    statement: >
+      The six fixture-level invariants are evaluated after the loop (509-520): lineups.length 22..100,
+      rows.length 22..100, excludedIncompleteRows ≤ 20, starterRows === 22, teamIds.size === 2,
+      invalidDetailRows === 0; any failure throws historical_fixture_coverage_incomplete with the diagnostic
+      (521-532), which aborts the whole batch in the ingest loop (829-833 inside the for-loop, caught at 880-899
+      and re-thrown) — there is no per-fixture continue.
+    evidence: "same file :508-532, :822-854, :880-900"
+  - classification: VERIFIED
+    statement: >
+      'Incomplete' is exclusively "no player_id". A row with player_id but missing team_id or type_id is not
+      'incomplete' — it throws invalid_provider_lineup (460-466). Since 0 of 240 fixtures failed with that code
+      (the probe records the worker's row-level abort code — probe test "records the worker's row-level abort
+      code when a detail is invalid"), every one of the 151 excluded rows in failing fixtures and the 53 in
+      passing fixtures is a row WITHOUT player_id, i.e. a missing source player identity, not a malformed row.
+    evidence: "worker :453-466; artifact failuresByCode (no invalid_provider_lineup rows reported; all 240 rows enumerated true)"
+  - classification: VERIFIED
+    statement: >
+      The A0 probe replicates the worker rule exactly for the invariants file, but its COVERAGE-SAMPLE
+      classifier (same script, other output file) counts starters over ALL lineup rows without a player_id
+      guard: `if (participationType === 11) starterCount += 1` is evaluated for every record row, and rows
+      without player_id are counted separately in lineupsWithoutPlayerId (probe.ts:313-321). The two files
+      together therefore give RAW (provider-declared) and ACCEPTED (identified) starter counts for the
+      pinned fixtures.
+    evidence: "scripts/backend/sportsmonks-historical-performance-probe.ts:307-349; artifact sportsmonks-historical-performance.json seasons[0].fixtures"
+
+  # ---------- 2b. RAW vs ACCEPTED reconciliation (owner addendum a) ----------
+  - classification: VERIFIED
+    statement: >
+      Fixture 19489216 (round 1, Olympique Dcheïra – RSB Berkane, 2025-09-12T17:00Z). RAW (coverage sample):
+      lineupCount 40, starterCount 22, substituteCount 18, lineupsWithoutPlayerId 2, lineupsWithoutTeamId 0,
+      lineupsWithoutParticipationType 0, malformedLineupCount 0, invalidDetailCount 0. ACCEPTED (invariants):
+      lineupRows 40, validPlayerRows 38, excludedIncompleteRows 2, starterRows 21. Since 22 + 18 = 40 = all rows,
+      every row carries a type; exactly ONE of the two rows without player_id has type_id 11 and the other
+      type_id 12. The provider declares a complete 11-v-11; one starter (and one substitute) has no player
+      identity. Cause class: MISSING SOURCE PLAYER IDENTITY. It is not a normalisation defect (the worker cannot
+      persist a row with no player id — the DB maps every row through football_provider_mappings), and not a
+      mapping problem (mapping is evaluated later, in the DB, only for rows that have a player_id).
+    evidence: "artifact sportsmonks-historical-performance.json fixtures[3]; artifact invariants row fixtureId 19489216; worker :452-456"
+  - classification: VERIFIED
+    statement: >
+      Control cases confirm the reading: already-ingested 19489211 has RAW lineupsWithoutPlayerId 2 and
+      starterCount 22 while production coverage has starter_rows 22 / excluded_incomplete_rows 2 — both
+      anonymous rows were substitutes, so it passed. 2024/25 sample 19420617 shows the same benign shape
+      (2 anonymous, 22 raw starters). So anonymous rows are a season-wide provider trait; a fixture fails only
+      when an anonymous row happens to be a starter.
+    evidence: "artifact coverage sample fixtures[0] and [6]; read-only app_private.historical_performance_fixture_coverage row for 19489211"
+  - classification: INFERRED
+    statement: >
+      For the other 63 failing fixtures the same mechanism is the only one consistent with the evidence: lineup
+      depth identical to passing fixtures, 22 − starterRows ≤ excludedIncompleteRows in every case, no
+      invalid_provider_lineup, no team_count or detail failure. The three round-7 fixtures with 12–13 anonymous
+      rows (14/15/18 identified starters) are the same defect at higher intensity, i.e. roughly one whole team's
+      lineup published without player ids; they should be classed as GENUINELY INCOMPLETE PROVIDER DATA for
+      pricing purposes (more than half a side unidentified) even if the raw starter count is 22.
+    evidence: "reasoning over the VERIFIED distributions above; not directly measured because the invariants file omits RAW starter counts for non-pinned fixtures"
+  - classification: UNKNOWN
+    statement: >
+      Per fixture (63 of 64), whether the RAW starter count is exactly 22, i.e. how many anonymous rows are
+      starters vs substitutes, and whether the anonymous rows carry other identity hints (team_id, jersey_number,
+      player_name, position_id). EXACT additional read-only probe fields needed, per fixture, in the invariants
+      file: (1) rawStarterRows = count(type_id == 11 over all record rows), (2) anonymousStarterRows =
+      count(type_id == 11 and player_id null), (3) anonymousRowsWithTeamId, (4) anonymousRowsWithJerseyOrName
+      (booleans/counts only, no payload). The coverage-sample branch of the same script already computes (1) and
+      the anonymous total for pinned fixtures (probe.ts:313-321), so this is a re-dispatch of the read-only
+      workflow with the invariants row builder extended (probe.ts ~500-510), not new infrastructure.
+  - classification: VERIFIED
+    statement: >
+      Mapping problems are NOT the cause of the 64 failures (the worker check runs before any DB call), but they
+      are a SECOND, UNMEASURED gate on the 176 "passing" fixtures: api.ingest_historical_player_fixture_performance
+      quarantines an unmapped lineup player (excludedMappingRows) and then re-asserts starter_count = 22 over the
+      PERSISTED rows (20260802010200:232-249, raising PERFORMANCE_RECONCILIATION_FAILED). Of the 6 ingested
+      fixtures, one (19489214) excluded 1 mapping row, and all 6 persisted exactly 22 started rows, so that
+      unmapped player was a substitute. An unmapped STARTER in any of the 176 passing fixtures fails the fixture
+      at DB level; the A0 probe (provider-only) cannot see this.
+    evidence: "migration 20260802010200:94-106,232-249; read-only coverage rows: excluded_mapping_rows 0,0,0,0,1,0; perf_started 22 in all six"
+  - classification: INFERRED
+    statement: >
+      Sample-based bound for that hidden gate: 1 unmapped row in 228 persisted rows over 6 fixtures (0.44%),
+      with 132/228 rows being starters. If unmapped rows are distributed like all rows, ≈ 0.1 unmapped starter
+      per fixture → on the order of 10–20 of the 176 passing fixtures could still fail at the DB step. The
+      sample is far too small to be more than an order-of-magnitude warning; it must be measured (read-only)
+      before A4 by joining the provider lineup player ids of the 176 fixtures to football_provider_mappings —
+      which requires either the extended probe writing sanitized per-fixture unmapped-starter counts (needs a
+      DB read the probe workflow deliberately does not have) or a dry-run mode of the worker.
+    evidence: "read-only production counts; reasoning"
+
+  # ---------- 3. The 22-starter rule is enforced in FOUR places, not one (VERIFIED) ----------
+  - classification: VERIFIED
+    statement: >
+      Any change that admits a fixture with fewer than 22 identified starters must touch all of:
+      (1) worker normalizeHistoricalFixture :518 (starterRows !== 22 → coverage failure);
+      (2) api.ingest_historical_player_fixture_performance pre-check (p_coverage->>'starterRows') <> 22 →
+          INVALID_PROVIDER_PAYLOAD (20260802010200:100);
+      (3) the same RPC's post-persist reconciliation starter_count <> 22 → PERFORMANCE_RECONCILIATION_FAILED
+          (20260802010200:241);
+      (4) the CHECK constraint historical_performance_coverage_counts_check on
+          app_private.historical_performance_fixture_coverage, which in PRODUCTION reads
+          "… (starter_rows = 22) AND (team_count = 2) AND (performance_rows = valid_player_rows)" — a violation is
+          converted to INVALID_PROVIDER_PAYLOAD by the RPC's exception block (20260802010200:293-296).
+      The current-season path (migration 20260914200726:146 and :305) hard-codes 22 too and shares the table.
+      A worker-only relaxation (option a as phrased) is therefore impossible: it would move the failure from a
+      503 historical_fixture_coverage_incomplete to a 22023 INVALID_PROVIDER_PAYLOAD.
+    evidence: "worker :518; migrations cited; read-only pg_constraint on the two tables (constraint text quoted from production)"
+  - classification: VERIFIED
+    statement: >
+      Independently, the all-or-nothing rule lives in two more places: the runner throws
+      season_<id>_fixture_count_mismatch unless cumulative fixturesProcessed === EXPECTED_FIXTURES_PER_SEASON
+      (runner :456-458) and validates each batch with performanceRows ≥ fixturesProcessed*22 (:94);
+      api.football_historical_player_rating_inputs raises HISTORICAL_PERFORMANCE_INCOMPLETE unless
+      covered_fixture_count = count of finished fixtures (240) and performance_count ≥ 240*22 (20260802010100:575-607).
+      The fixture batch RPC pages by external_id and does not skip covered fixtures (20260802010100:220-241), so a
+      quarantined fixture is simply re-fetched on every run — harmless but it means "excluded" state has no home
+      in the schema today (a coverage row with 21 starters cannot be inserted because of the CHECK).
+    evidence: "files and lines cited"
+
+  # ---------- 4. Production state: the 6 ingested fixtures (VERIFIED) ----------
+  - classification: VERIFIED
+    statement: >
+      app_private.historical_performance_fixture_coverage has 6 rows (external 19489210–19489215, round 1,
+      2025-09-12..14), all reconciled, all starter_rows = 22, team_count 2, invalid_detail_rows 0,
+      scoring_statistics_complete false. Per fixture (lineup_rows_seen / valid_player_rows /
+      excluded_incomplete_rows / excluded_mapping_rows / performance_rows): 19489210 40/37/3/0/37;
+      19489211 39/37/2/0/37; 19489212 40/39/1/0/39; 19489213 39/38/1/0/38; 19489214 40/37/3/1/37;
+      19489215 40/40/0/0/40. app.player_fixture_performances active rows per fixture equal performance_rows
+      (37,37,39,38,37,40 = 228 total), started rows = 22 in every fixture (132 total), appeared 32/31/31/32/32/30,
+      minutes>0 equals appeared, 122 of 228 rows carry a provider_rating. NO fixture with 21 starters exists in
+      production and the CHECK constraint would reject one. Season 92e5dbe8-… has 240 finished fixtures, 6 covered.
+    evidence: "read-only queries on app_private.historical_performance_fixture_coverage, app.player_fixture_performances, app.fixtures"
+
+  # ---------- 5. Fantasy catalog coverage measurable today (owner addendum c, VERIFIED) ----------
+  - classification: VERIFIED
+    statement: >
+      Current catalog: 539 fantasy_players (fantasy season 9918cf95-…). 497 have an active SportsMonks player
+      mapping; 459 belong to a club that played 2025/26 Botola Pro AND have a 2025/26 team_membership; the 80
+      others are the three clubs absent from season 26027 — Amal Tiznit 21 (2 mapped), Moghreb Tétouan 36 (36 mapped),
+      Widad Témara 23 (0 mapped). The 42 unmapped players are exactly Tiznit 19 + Témara 23. These 80 receive the
+      6.0/0 fallback under EVERY option (no 2025/26 Botola Pro appearance can exist for them); 42 of them would
+      also be unmapped for any future provider path.
+    evidence: "read-only query joining app.fantasy_players → app.players/app.teams → football_provider_mappings, app.team_memberships, app.fixtures(season 92e5dbe8)"
+  - classification: VERIFIED
+    statement: >
+      By position (total / mapped / in a 26027 club / already with a performance row from the 6 fixtures):
+      GK 60/54/51/20 · DEF 156/146/134/57 · MID 195/176/161/68 · FWD 128/121/113/43 · ALL 539/497/459/188.
+      By club, players with a performance row from the 6 round-1 fixtures: CODM 21/37, CRKZ 19/37, DHJ 18/35,
+      FAR 21/31, FUS 17/29, HUSA 20/40, IRT 18/33, MAS 19/29, Raja 18/33, UTS 17/42, KACM 0/35, RSB 0/31,
+      WAC 0/47 (their round-1 games are 19489216 — the failing one — and later ids), Tiznit/Tétouan/Témara 0.
+      Of the 228 distinct players in the 6 fixtures, 188 are in the catalog.
+    evidence: "same read-only queries"
+  - classification: VERIFIED
+    statement: >
+      What is measurable NOW ends there. Which of the 459 candidates actually appear in the 176 passing fixtures,
+      their minutes and therefore their confidence, cannot be read from production until those fixtures are
+      backfilled (the provider payloads are not stored anywhere; the probe artifact deliberately carries no player
+      ids — providerPayloadIncluded false). The catalog's exposure to the 64 failing fixtures CAN be measured now
+      via the club table: CRKZ 11, HUSA 11, KACM 10, UTS 9, Raja 7, CODM 6, FAR 6, RSB 6, WAC 5, DHJ 4, MAS 4,
+      FUS 3, IRT 3 failing fixtures of 30; the two worst clubs (Dcheïra 21, Safi 15) and Yacoub El Mansour are
+      NOT in the 2026/27 catalog.
+    evidence: "artifact + read-only club join; app.fantasy_players club list"
+  - classification: VERIFIED
+    statement: >
+      Rating formula (shared by the historical worker via import): confidence = min(1, minutes/900);
+      performance = 0.5·providerRank + 0.3·rank(total fantasy points) + 0.2·rank(points per 90);
+      rating = clamp(4, 10, 6 + confidence·(4 + 6·performance − 6)); ranks are percent ranks within position over
+      ALL candidates returned by api.football_historical_player_rating_inputs (every mapped player with a
+      performance row in the season, not only catalog players).
+    evidence: "supabase/functions/_shared/sportsmonks-player-ratings.ts:499-528; historical worker imports from it (:6); migration 20260802010100:609-692"
+  - classification: INFERRED
+    statement: >
+      Bias assessment if the 64 fixtures were simply dropped (option c): minutes-based confidence is largely
+      robust for regular starters of catalog clubs (worst catalog club CRKZ/HUSA keep 19 of 30 fixtures → an
+      ever-present starter still exceeds 900 minutes), but (i) rotation players of CRKZ/HUSA/KACM/UTS lose
+      30–37% of their minutes and are shrunk toward 6.0 more than equivalent FUS/IRT players (10% loss); (ii) the
+      30%-weight total-points rank is a season TOTAL, so every CRKZ/HUSA/KACM/UTS player ranks systematically
+      below an equal per-90 performer at FUS/IRT/MAS/DHJ; (iii) the per-90 and provider-rating components are
+      unbiased. Net effect: a club-correlated downward tilt of roughly up to 0.3 × (rank shift) in `performance`
+      for four catalog clubs — material for a product whose whole purpose is price differentiation, and visible
+      to users as "club X is cheap". Under an identity-tolerant rule (options a/b) the only data lost are the
+      anonymous rows' own stats (≤ 91 starter-slots and ≈ 60 substitute-slots season-wide, players unknown), which
+      biases nobody who exists in the catalog.
+    evidence: "formula above + club exposure table; reasoning"
+
+  # ---------- 6. Timeline facts (VERIFIED) ----------
+  - classification: VERIFIED
+    statement: >
+      BG-0002 is STILL a hard blocker as of the latest ledger entry: the refreshed SUPABASE_ACCESS_TOKEN
+      authenticates but "belongs to an account without access to project tkewgajrljbwgwedqsxn" (preflight run
+      35343091384); human_action_2 asks for a token from a member of the owning organisation. Every A2 option
+      below needs at least one NEW migration promoted through the Phase 7E-B workflow AND the G7 backfill's
+      secrets/deploy path — both gated by BG-0002. The hard box is unchanged: api.service_open_fantasy_registration
+      must run before 2026-09-22T22:30Z; the Option-A brief's gates are A2+A3 merged by 2026-09-20T18:00Z and
+      A4 green by 2026-09-21T18:00Z.
+    evidence: "docs/engineering/LAUNCH_LEDGER.yaml BG-0002 (preflight_retry_2026_09_18, human_action_2); BG-0011 corrected_deadlines; engineering-brief-option-a.yaml timeline_go_no_go"
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    SportsMonks publishes complete 39–41-row lineups for season 26027 in which some rows carry a participation
+    type (11 starter / 12 substitute) but NO player_id. The worker drops every such row as "incomplete" before
+    reading its type and then requires exactly 22 IDENTIFIED starters; whenever one of the anonymous rows is a
+    starter the fixture fails starter_rows_mismatch. Proven directly for 19489216 (raw 22 starters + 18
+    substitutes, 2 anonymous rows, 21 identified starters); the same arithmetic holds for all 64 failures and
+    the anonymous-row trait is present in 104 of 240 fixtures (40 of which pass because their anonymous rows are
+    substitutes). The defect is concentrated by club (Dcheïra 70%, Safi 50% of their fixtures), which points to a
+    few specific players lacking a provider identity all season rather than a random feed fault; three round-7
+    fixtures (2025-11-02) are outliers with 12–13 anonymous rows and are genuinely incomplete.
+  secondary:
+    classification: VERIFIED
+    description: >
+      The 22-starter rule is duplicated in the worker, in two branches of the ingest RPC and in a production
+      CHECK constraint, and the 240/240 rule in the runner and in the rating-inputs RPC; no path exists that
+      reaches v2 ratings for 26027 without a new additive migration, and no migration can be promoted while
+      BG-0002 is open.
+  unresolved:
+    classification: UNKNOWN
+    description: >
+      Per-fixture RAW starter counts for the 63 non-pinned failures, whether anonymous rows expose any other
+      identity, and how many of the 176 passing fixtures would fail the DB-level starter re-check because of an
+      unmapped starter.
+
+options_for_A2:
+  preamble: >
+    Per the owner addendum, none of (a)/(b)/(c) is proposed as an unconditional primary plan: each changes an
+    accepted-coverage rule and therefore REQUIRES A REVISED ENGINEERING BRIEF with its own verification
+    (unit tests, DB tests, a read-only proof run) before a Builder touches it. Coverage figures assume the
+    hidden DB-level mapping gate (finding 2b) costs zero fixtures; subtract whatever the pre-A4 measurement finds.
+  items:
+  - option: a
+    name: "Accept 21..22 identified starters when excludedIncompleteRows ≥ 1 (persist the 21)"
+    achievable_coverage: "226/240 = 94.2% (50 fixtures with 21 starters join the 176); 20-starter and the three outliers stay excluded → still needs the rating-inputs threshold relaxed"
+    changes:
+      worker: "normalizeHistoricalFixture :518 → tolerance rule; coverage object unchanged; new unit tests (existing test at .test.ts:241-255 asserts 21 starters → 503 and must be rewritten)"
+      migration: "NEW additive migration: create-or-replace api.ingest_historical_player_fixture_performance (pre-check :100 and reconciliation :241) and DROP/ADD historical_performance_coverage_counts_check to admit starter_rows 21 only when excluded_incomplete_rows ≥ 22 − starter_rows; must not alter the current-season branch's own 22 checks (20260914200726) or its CHECK current_performance_coverage_complete_check; supabase/tests/database/historical_player_performances.test.sql extended"
+      runner: "no change to batch validation (performanceRows ≥ fixturesProcessed*22 still true, validPlayerRows ≥ 35); fixture_count_mismatch stays because every fixture is still processed — UNLESS the 14 excluded fixtures remain, in which case option c's runner change is needed as well"
+      rating_inputs: "NEW additive migration relaxing covered_fixture_count = expected to covered ≥ expected − ceiling (14 here) and performance_count ≥ covered*22"
+    blast_radius: "worker + 2 RPC branches + 1 CHECK + 1 rating RPC + 2 test suites; touches a table shared with the live current-season ingestion; a weaker invariant permanently (a fixture whose provider payload truly lists only 21 starters would now pass)"
+    fairness: "no catalog player is penalised; the anonymous starter's minutes are lost to nobody"
+    timeline: "0.5–1 day build+review; promotion + backfill both wait on BG-0002; feasible only if BG-0002 closes by ~2026-09-20T12:00Z"
+    verdict: "INFERRED — weaker than (b) because it accepts the symptom (21) instead of verifying the cause (22 declared, 1 anonymous)"
+  - option: b
+    name: "Count anonymous rows by type: invariant becomes identifiedStarters + anonymousStarters == 22 (persist identified rows only)"
+    achievable_coverage: "237/240 = 98.75% if anonymous rows per fixture are capped (recommended cap ≤ 4 keeps the three 12–13-row outliers quarantined); 240/240 only if the outliers are admitted, which is not recommended"
+    changes:
+      worker: "in the incomplete branch (:452-456) read type_id before `continue` and count anonymousStarterRows/anonymousSubstituteRows; invariant :518 → starterRows + anonymousStarterRows === 22 AND anonymousStarterRows ≤ CAP; add both counters to the coverage object and the diagnostic; new tests"
+      migration: "NEW additive migration: add column anonymous_starter_rows (0..CAP) to app_private.historical_performance_fixture_coverage; replace the CHECK with starter_rows + anonymous_starter_rows = 22; replace the RPC so :100 checks the sum and :241 checks persisted starter_count = 22 − anonymous_starter_rows; current-season path must pass anonymous_starter_rows = 0 (its own rules unchanged)"
+      runner: "propagate the new counter into the evidence; batch validation unchanged"
+      rating_inputs: "NEW additive migration allowing covered ≥ expected − 3 (or a reviewed small ceiling) and performance_count ≥ covered*22 — needed only for the outliers; if the owner prefers 240/240 the outliers must be admitted instead (not recommended)"
+    blast_radius: "same surfaces as (a) plus one column; but the invariant stays semantically strict (the provider must still declare 11 v 11) and the exclusion is auditable per fixture"
+    fairness: "identical to (a): nobody in the catalog loses data; the anonymous players are unknown to us anyway"
+    timeline: "≈1 day build+review (slightly more than a); same BG-0002 dependency"
+    verdict: "INFERRED — best fit to the verified mechanism; still a rule change requiring a revised brief and the extended probe as pre-verification"
+  - option: c
+    name: "Per-fixture quarantine with a reviewed ceiling (current plan)"
+    achievable_coverage: "176/240 = 73.3% minus hidden DB-level mapping failures (unknown, order 10–20); ceiling must be ≥ 64 fixtures (≥ 27%), rating inputs must accept ≥ 73%"
+    changes:
+      worker: "catch historical_fixture_coverage_incomplete per fixture inside the loop (:829-833), record the exclusion (nowhere in the schema today — needs a new table or a checkpoint JSON field), continue; response gains excludedCoverageFixtures"
+      migration: "NEW additive migration for the exclusion record (optional) AND rating-inputs relaxation to covered ≥ 73% of expected — an unusually low floor that also has to be reconciled with the runner's 240/240"
+      runner: "fixturesProcessed semantics split into processed vs covered; season_*_fixture_count_mismatch on processed; validateHistoricalRatingDerivation's expectedPerformanceRows on covered"
+    blast_radius: "worker + runner + 1–2 migrations; no CHECK change; BUT it institutionalises a 27% data hole"
+    fairness: "materially biased by club (finding 5, INFERRED): CRKZ/HUSA/KACM/UTS lose 30–37% of their fixtures, total-points rank (30% weight) tilts their whole squads down; rotation players lose confidence; users would see it"
+    timeline: "0.5–1 day; same BG-0002 dependency"
+    verdict: "INFERRED — NOT recommended as primary: it discards 64 fixtures whose data is 95% complete and lowers the threshold to fit the observed result, which the owner addendum rules out"
+  - option: d
+    name: "NO-GO for Option A → owner falls back to B (documented uniform prices) or C"
+    achievable_coverage: "n/a"
+    changes: "none in the ratings path; BG-0027 (worker must fail on empty statistics) proceeds regardless; docs updated per option B"
+    blast_radius: "zero production writes; the 3 QA teams stay"
+    fairness: "no differentiation at all for GW1 — the status quo"
+    timeline: "immediately safe; becomes the DEFAULT automatically if BG-0002 is not fixed by ~2026-09-20T12:00Z or if the revised brief for (b) cannot be verified by 2026-09-20T18:00Z"
+
+required_changes:
+  - step: A1-probe-extension (read-only, no BG-0002 needed)
+    component: "scripts/backend/sportsmonks-historical-performance-probe.ts (+ .test.ts), docs/production/g7-historical-performance-probe-trigger.json, .github/workflows/g7-sportsmonks-historical-performance-coverage.yml"
+    builder_type: Builder-DevOps
+    change: >
+      Add to every invariants row: rawStarterRows, anonymousStarterRows, anonymousSubstituteRows,
+      anonymousRowsWithTeamId, anonymousRowsWithNameOrJersey (counts only; providerPayloadIncluded stays false).
+      Re-dispatch (new requestId, expectedCommit = the new main). Acceptance: for all 64 failing fixtures
+      rawStarterRows is reported; count of fixtures with rawStarterRows == 22 and anonymousStarterRows ≤ 4 is
+      the verified ceiling for option (b).
+    reason: "turns the INFERRED mechanism for 63 fixtures into VERIFIED and sizes option (b) exactly before any rule is changed"
+    duration: "~1 h build + 10 min dispatch"
+  - step: A1-mapping-gate-measurement (read-only)
+    component: "same probe OR a dry-run action of the worker (no persistence) — decision for the revised brief"
+    builder_type: Builder-DevOps / Builder-Backend
+    change: "measure, for the 176 passing fixtures, how many have a starter whose provider player id has no active football_provider_mappings row; this is the hidden PERFORMANCE_RECONCILIATION_FAILED exposure"
+    reason: "otherwise A4 can still abort mid-season on a class of failure A0 never tested"
+  - step: A2 (only after owner decision and a revised brief)
+    component: "per the chosen option table above"
+    builder_type: Builder-Backend
+    change: "implement (b) as specified, or (a)/(c) if the owner so decides; every existing migration stays untouched (additive only)"
+  - step: A3/A4 and later
+    component: "unchanged from engineering-brief-option-a.yaml (season_ids input, skip_deploy, RESTORE_SEASON fix; then backfill, proof, export, rollback/re-stage)"
+    builder_type: Builder-DevOps / Builder-Data
+    change: "scope reduced to season 26027 only (owner-approved); the 24319 loop and the two-season manifest check must be made optional in the runner/preflight"
+
+constraints:
+  - "HARD: registration must be re-opened before 2026-09-22T22:30Z; preview/stage before 2026-09-23T00:00Z (unchanged)."
+  - "HARD: no option reaches ratings without at least one new additive migration; migrations are promoted only through the Phase 7E-B workflow, which is blocked by BG-0002 (token from a non-owning account)."
+  - "HARD: production CHECK historical_performance_coverage_counts_check enforces starter_rows = 22; it cannot be bypassed by worker code."
+  - "The coverage table is shared with the live current-season ingestion (20260914200726); any CHECK change must keep that path's semantics (anonymous_starter_rows = 0 there)."
+  - "Season scope is 26027 only; no 24319 work is planned or measured here."
+  - "Any accepted-coverage rule change (a/b/c) requires a revised engineering brief with its own verification before implementation (owner addendum b)."
+
+risks:
+  - severity: CRITICAL
+    risk: "BG-0002 remains open past 2026-09-20; then no migration and no backfill can run and Option A is dead regardless of the analysis."
+    mitigation: "declare (d) the automatic default at that time; do not start A7+ without a green A5."
+  - severity: HIGH
+    risk: "Hidden DB-level failures (unmapped starters) abort A4 partway through the 176 passing fixtures."
+    mitigation: "measure before A4 (required_changes step 2); include per-fixture continue-on-mapping-failure in the revised brief if the count is non-zero."
+  - severity: HIGH
+    risk: "Option (c) ships club-biased prices after a destructive rollback."
+    mitigation: "do not choose (c); if forced, publish the club exposure table with the prices."
+  - severity: MEDIUM
+    risk: "Option (a)/(b) permanently loosens a data-quality gate that the current-season scoring path shares."
+    mitigation: "scope the relaxation to source_version prefix sportsmonks-fixture: (historical) and keep anonymous_starter_rows = 0 mandatory for sportsmonks-current-fixture:."
+  - severity: MEDIUM
+    risk: "The three round-7 outliers are admitted under a too-generous cap and Maghreb Fès / DHJ / FAR / WAC / IRT / Safi players get a fixture with half a side missing."
+    mitigation: "cap anonymousStarterRows ≤ 4 (covers 61 of 64) and quarantine the rest; rating inputs tolerate ≤ 3 excluded."
+  - severity: LOW
+    risk: "Artifact 10545720233 expires 30 days after 2026-09-18."
+    mitigation: "copies and sha256 saved in the scratchpad path above; commit them under docs/engineering/tasks/BG-0011/ when the revised brief is written."
+
+contradictions:
+  - "The Option-A brief (and the ledger) framed option (a) as a worker relaxation; production shows the same rule in the RPC twice and in a CHECK constraint, so 'worker-only' does not exist."
+  - "The ledger's A0 note says '≥73% max achievable without relaxing the invariant'; that ignores the DB-level starter re-check on unmapped starters, so 73.3% is an upper bound, not a floor."
+  - "The G7 probe's 'usableForPreseasonDerivation: true' verdict (coverage sample) coexists with 64 failing invariant fixtures; the verdict measures detail availability, not the worker's admission rule."
+
+unknowns:
+  - "RAW starter counts and anonymous-row identity hints for the 63 non-pinned failing fixtures (extended probe needed)."
+  - "Number of the 176 passing fixtures with an unmapped starter (DB-level gate)."
+  - "Whether SportsMonks can supply the missing player ids on request (outside the time box; not pursued)."
+  - "Which of the 459 eligible catalog players actually appeared in 2025/26 and with how many minutes (needs the backfill of the passing fixtures)."
+  - "Whether the owner accepts a 237/240 (98.75%) rating base with an explicit 3-fixture quarantine, or insists on 240/240 (then only option (b) with the outliers admitted, not recommended, or NO-GO)."
+
+acceptance_tests:
+  - "Extended probe: every one of the 240 rows carries rawStarterRows/anonymousStarterRows; for 19489216 rawStarterRows 22, anonymousStarterRows 1, anonymousSubstituteRows 1."
+  - "Extended probe: count(rawStarterRows == 22 AND anonymousStarterRows ≤ 4) over the 64 failures is reported and equals the coverage ceiling written into the revised brief."
+  - "Mapping-gate measurement: count of passing fixtures with an unmapped starter is reported (0 or the list)."
+  - "If (b) is chosen: worker unit test — a fixture with 21 identified + 1 anonymous starter passes and its coverage carries anonymousStarterRows 1; 21 identified + 0 anonymous still fails; 5 anonymous starters fail; DB test — the coverage row inserts with starter_rows 21 / anonymous_starter_rows 1 and the reconciliation asserts persisted started = 21; a sportsmonks-current-fixture: row with anonymous_starter_rows 1 is rejected."
+  - "Rating inputs: with 237 covered of 240 finished the RPC returns rows; with 236 it raises HISTORICAL_PERFORMANCE_INCOMPLETE (if ceiling 3)."
+  - "Negative: no existing migration file changed; the CHECK on current_performance_coverage_complete_check is unchanged."
+
+coverage_measurement_summary:   # owner addendum (c)
+  measurable_now:
+    catalog_players: 539
+    mapped: 497
+    eligible_for_v2 (mapped AND 2025/26 Botola Pro club AND 2025/26 membership): 459
+    guaranteed_fallback_6_0: {total: 80, clubs: {Amal Tiznit: 21, Moghreb Tétouan: 36, Widad Témara: 23}, of_which_unmapped: 42}
+    already_have_a_performance_row (6 fixtures): 188
+    by_position_eligible: {GK: 51/60, DEF: 134/156, MID: 161/195, FWD: 113/128}
+    catalog_club_exposure_to_the_64_failures (fixtures of 30): {CRKZ: 11, HUSA: 11, KACM: 10, UTS: 9, Raja: 7, CODM: 6, FAR: 6, RSB: 6, WAC: 5, DHJ: 4, MAS: 4, FUS: 3, IRT: 3}
+  needs_backfill_first: "per-player appearances/minutes/confidence for the 459 eligible players; the final count of players that stay on 6.0/0 for lack of any 2025/26 appearance"
+  bias_verdict: "INFERRED — dropping the 64 fixtures (option c) produces a club-correlated downward tilt for CRKZ/HUSA/KACM/UTS; an identity-tolerant rule (option b) loses only anonymous players' own rows and does not bias catalog prices"
+
+recommendation:
+  classification: INFERRED
+  text: >
+    Do not decide GO on today's evidence alone, and do not adopt the quarantine-at-27% plan. The verified
+    mechanism (provider-declared 22 starters, one or two rows without player_id) makes option (b) the only
+    rule change that fixes the cause rather than the symptom, with 237/240 fixtures usable and no catalog bias.
+    Sequence: (1) today, re-dispatch the read-only probe extended with raw/anonymous starter counters and the
+    mapping-gate measurement; (2) if it confirms ≥ 230 fixtures with rawStarterRows == 22 and anonymousStarterRows
+    ≤ 4 AND the mapping gate is ≤ a handful, write the revised brief for (b) and proceed — but only if BG-0002 is
+    demonstrably fixed (a preflight without 'account does not own the project') by 2026-09-20T12:00Z; (3) otherwise
+    NO-GO (d) and ship option B for GW1 with BG-0027 as the follow-up. Option (a) is acceptable as a fallback if
+    the DB column of (b) is judged too much for the box; option (c) should be rejected.
+  owner_decision_needed:
+    - "BG-0011-OWNER-3: authorise the accepted-coverage rule change of option (b) — 'a fixture is complete when identified + anonymous starters = 22 and anonymous starters ≤ 4; identified rows are persisted; up to 3 fixtures per season may remain excluded and the rating base may be ≥ 237/240' — as a separately verified, revised brief; OR reject any rule change, which makes Option A a NO-GO."
+    - "BG-0002: provide a Management API token from an account in the organisation owning tkewgajrljbwgwedqsxn by 2026-09-20T12:00Z; without it every A2 variant is moot and (d) applies."
+
+implementation_scope:
+  builder_type: "Builder-DevOps (probe extension, workflow re-dispatch) now; Builder-Backend / Builder-Data only after the revised brief"
+  allowed_paths:
+    - scripts/backend/sportsmonks-historical-performance-probe.ts (+ .test.ts)
+    - docs/production/g7-historical-performance-probe-trigger.json
+    - .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    - docs/engineering/tasks/BG-0011/ (evidence copies of artifact 10545720233 and this brief)
+    - docs/engineering/LAUNCH_LEDGER.yaml (BG-0011 a1_result note)
+    - "AFTER the revised brief only: supabase/functions/_shared/sportsmonks-historical-player-performance.ts (+ .test.ts), scripts/backend/g7-historical-performance-backfill-runner.ts (+ .test.ts), supabase/migrations/ NEW additive files, supabase/tests/database/historical_player_performances.test.sql"
+  forbidden_paths:
+    - "every existing migration, in particular 20260802010100, 20260802010200, 20260914200726, 20260803210943"
+    - "any production write; any change to app_private.historical_performance_fixture_coverage rows or CHECKs by hand"
+    - "src/backend/fantasy/pricing.ts; any UI path"
+    - "any 24319 (2024/25) work"
+    - "credentials of any kind"
+
+status: HALTED_FOR_INPUT
+blocked_on:
+  - "BG-0011-OWNER-3 (rule change of option b, or NO-GO)"
+  - "BG-0002 (management credential from an owning account)"
+  - "extended read-only probe result (RAW starter counts for the 63 non-pinned failures; mapping-gate count)"
+note_to_chief: >
+  Two facts change the plan. First, the 22-starter rule is a production CHECK constraint and two RPC branches,
+  not just a worker line, so every A2 variant needs a promoted migration and therefore BG-0002 twice (promotion
+  and backfill). Second, the A0 result is not "64 bad fixtures": for the one fixture where RAW and ACCEPTED counts
+  are both recorded the provider declares 22 starters and one of them has no player_id; the arithmetic is
+  consistent for all 64 and the failures cluster by club (Dcheïra 70%, Safi 50%), so a small number of
+  identity-less players is the likely cause. Quarantining 27% of the season would bias four catalog clubs;
+  tolerating identity-less starter rows under a cap would not. Both are rule changes that need a revised brief
+  and an owner decision; neither can start before BG-0002 is really closed.

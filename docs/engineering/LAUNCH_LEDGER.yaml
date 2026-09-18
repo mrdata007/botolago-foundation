@@ -230,6 +230,17 @@ tasks:
       - production backfill and catalog re-stage BLOCKED until the revised evidence gate passes; Options B and C remain unauthorized
     time_box_corrected: registration must be re-opened BEFORE 2026-09-22T22:30:00Z (recalculate if confirmed kickoff/deadline data changes; never weaken a deadline guard to regain time)
     a1_preliminary_assessment: 'NO-GO as written — the runner (240/240) and api.football_historical_player_rating_inputs (all finished fixtures covered) cannot pass with 64 systematic starter_rows_mismatch fixtures (starterRows 21 in 50, 20 in 11, 18 or fewer in 3; excludedIncompleteRows 1-4 in 61 of 64; spread across all months). Conditional GO only if the A1 analysis shows the misses are normalisation/mapping defects repairable without weakening validation. Owner-gated.'
+    a1_result_2026_09_18:
+      brief: docs/engineering/tasks/BG-0011/engineering-brief-a1-starter-rows.yaml
+      mechanism: 'VERIFIED for 19489216 — provider declares 22 starters + 18 subs (40 rows); one starter row and one substitute row have no player_id; the worker drops rows without player_id before reading type_id and then requires 22 identified starters. Arithmetic (22 - starterRows <= excludedIncompleteRows) holds for all 64; anonymous rows present in 104 of 240 fixtures; failures cluster by club (Dcheïra 21/30, Safi 15/30, CRKZ/HUSA 11, KACM 10, UTS 9). Three round-7 fixtures (2025-11-02) have 12-13 anonymous rows and are genuinely incomplete.'
+      rule_locations: 'starter_rows = 22 is enforced in the worker, twice in api.ingest_historical_player_fixture_performance, and in the production CHECK constraint historical_performance_coverage_counts_check; no worker-only relaxation exists; every option needs an additive migration → BG-0002 twice (promotion + backfill)'
+      hidden_gate: 'the RPC re-asserts 22 persisted starters after quarantining unmapped players; an unmapped starter in any of the 176 passing fixtures fails at DB level; unmeasured (6-fixture sample: 1 unmapped substitute in 228 rows)'
+      catalog_coverage_now: '539 players, 497 mapped, 459 eligible; 80 guaranteed 6.0/0 fallback (Tiznit 21, Tétouan 36, Témara 23; 42 unmapped); 188 already have a performance row'
+      bias: 'INFERRED — dropping the 64 fixtures tilts CRKZ/HUSA/KACM/UTS prices down via the season-total rank (30% weight); an identity-tolerant rule loses only anonymous players'' own rows'
+      options: 'a) accept 21-22 identified starters when anonymous rows exist (226/240); b) identified + anonymous starters == 22 with cap <= 4, persist identified rows, quarantine <= 3 outliers (237/240) — recommended; c) quarantine at 27% (176/240, club-biased) — rejected by the analysis; d) NO-GO → Option B'
+      go_no_go: 'HALTED_FOR_INPUT — NO-GO as written; conditional GO only via option (b) under a revised, independently verified brief, and only if BG-0002 is closed by 2026-09-20T12:00Z; otherwise (d) applies automatically'
+      owner_decision_needed: 'BG-0011-OWNER-3 — authorise the option (b) rule change as a separately verified revised brief, or reject any rule change (Option A NO-GO)'
+      next_read_only: BG-0044 probe extension (raw/anonymous starter counters; mapping-gate measurement) — dispatched
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
@@ -550,6 +561,16 @@ tasks:
     evidence: ['docs/engineering/tasks/BG-0018/implementation-report.yaml unexpected_observations (read-only production count during the BG-0018 rehearsal)']
     acceptance_criteria: [determine how active is meant to be maintained (provider ingestion vs season membership); decide deactivation of the five clubs with a rolled-back rehearsal first; verify UI surfaces (team catalog, filters) after the change; no deletion of history]
     next: Researcher
+
+  BG-0044:
+    title: 'A1 probe extension (read-only): per-fixture rawStarterRows, anonymousStarterRows, anonymousSubstituteRows, anonymousRowsWithTeamId, anonymousRowsWithNameOrJersey in the invariants evidence; re-dispatch on merged main to size option (b) before any rule change'
+    area: devops
+    severity: P0
+    owner: Chief
+    state: RUNNING
+    depends_on: [BG-0034]
+    roles: {builder: Builder-DevOps running (branch agent/BG-0044-probe-anonymous-starters), verifier: pending, reviewer: pending}
+    acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
