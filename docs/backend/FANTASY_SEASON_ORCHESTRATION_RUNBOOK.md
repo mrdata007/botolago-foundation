@@ -105,3 +105,22 @@ per pass (`maxWorkerRuns`).
 - A deadline that has already passed is never moved automatically; a kickoff
   change after the deadline is reported (`deadline_locked`) and needs the
   existing operator procedure.
+
+## First production run (2026-09-18)
+
+Run [35332956079](https://github.com/mrdata007/botolago-foundation/actions/runs/35332956079),
+owner dispatch on `main` `8bda6b5`, migration `20260918120000` applied first
+(the Phase 7E-B promotion workflow failed with `HTTP 401` from the Supabase
+management API, so the promoter's exact transaction was executed directly; the
+history row's SHA-256 equals the repository file). Evidence in
+`docs/qa/fantasy-orchestration/production-run-35332956079.json`:
+
+- calendar sync succeeded twice; round 1 reported `kickoffUnconfirmed: 8`,
+  `deadlineUnconfirmed: true`, nothing created, realigned or moved;
+- provider refresh updated the 8 fixtures in place (0 inserted, 8 updated,
+  0 rejected) and stopped at the known squad guard
+  (`current_squad_empty_or_oversized`);
+- no gameweek had work, so the lifecycle worker did not run; every production
+  count (gameweeks, fixtures, assignments, points, results, rankings,
+  notifications, prices, lineups, audit rows) is identical before and after;
+- verdict `ok`, sanitized evidence scan `PASS rule=ALL count=0`.
