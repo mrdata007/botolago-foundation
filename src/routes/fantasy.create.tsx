@@ -129,6 +129,7 @@ function CreateTeamBody() {
 
   const [view, setView] = useState<"squad" | "list">("squad");
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
+  const [pickerAny, setPickerAny] = useState(false);
   const [sheetSlot, setSheetSlot] = useState<number | null>(null);
   const [step, setStep] = useState<"squad" | "name">("squad");
   const [saving, setSaving] = useState(false);
@@ -165,21 +166,33 @@ function CreateTeamBody() {
   const pickerBank = round1(summary.bankRemaining + (activeSlotPlayer?.price ?? 0));
   const takenIds = draft.slots.map((s) => s.playerId).filter(Boolean) as string[];
 
-  const onPick = (player: FantasyPlayer) => {
-    if (pickerSlot === null) return;
+  const placeInto = (targetSlot: number, player: FantasyPlayer, budget: number) => {
     const clubCount = draft.slots.filter(
-      (s) => s.slot !== pickerSlot && playerOf(s.playerId)?.clubId === player.clubId,
+      (s) => s.slot !== targetSlot && playerOf(s.playerId)?.clubId === player.clubId,
     ).length;
     if (clubCount >= 3) {
       toast.error(t("fpl.club_limit"));
-      return;
+      return false;
     }
-    if (player.price > pickerBank + 0.001) {
+    if (player.price > budget + 0.001) {
       toast.error(t("fpl.budget_exceeded"));
+      return false;
+    }
+    setDraft(placePlayer(draft, targetSlot, player.id));
+    return true;
+  };
+  const onPick = (player: FantasyPlayer) => {
+    if (pickerSlot === null) return;
+    if (placeInto(pickerSlot, player, pickerBank)) setPickerSlot(null);
+  };
+  /** "Add Player" from the bottom bar: any position, lands in the first empty slot of that position. */
+  const onPickAny = (player: FantasyPlayer) => {
+    const target = draft.slots.find((s) => !s.playerId && s.position === player.position);
+    if (!target) {
+      toast.error(t("fpl.no_empty_slot_for_position"));
       return;
     }
-    setDraft(placePlayer(draft, pickerSlot, player.id));
-    setPickerSlot(null);
+    if (placeInto(target.slot, player, round1(summary.bankRemaining))) setPickerAny(false);
   };
 
   const firstEmpty = draft.slots.find((s) => !s.playerId)?.slot ?? null;
@@ -340,10 +353,9 @@ function CreateTeamBody() {
         view={view}
         onViewChange={setView}
         onSlotTap={(s) => (s.player ? setSheetSlot(s.slot) : setPickerSlot(s.slot))}
-        onRemove={(s) => setDraft(removePlayer(draft, s.slot))}
         onAddPlayer={() => {
           if (firstEmpty === null) toast.message(t("fpl.complete_squad_first"));
-          else setPickerSlot(firstEmpty);
+          else setPickerAny(true);
         }}
         onNext={() => {
           if (summary.filled < 15) {
@@ -372,6 +384,15 @@ function CreateTeamBody() {
           disabledIds={takenIds.filter((id) => id !== activeSlot.playerId)}
           onPick={onPick}
           onClose={() => setPickerSlot(null)}
+        />
+      ) : pickerAny ? (
+        <AddPlayerScreen
+          players={players}
+          clubs={clubs}
+          bank={round1(summary.bankRemaining)}
+          disabledIds={takenIds}
+          onPick={onPickAny}
+          onClose={() => setPickerAny(false)}
         />
       ) : null}
 
@@ -405,6 +426,10 @@ function CreateTeamBody() {
         }}
         onSubstitute={() => {
           if (sheetSlot !== null) setPickerSlot(sheetSlot);
+          setSheetSlot(null);
+        }}
+        onRemove={() => {
+          if (sheetSlot !== null) setDraft(removePlayer(draft, sheetSlot));
           setSheetSlot(null);
         }}
       />

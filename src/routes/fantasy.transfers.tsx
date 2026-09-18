@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { TransferConfirmScreen } from "@/components/fpl/TransferConfirmScreen";
 import { FplHeader } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
-import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -45,9 +45,12 @@ function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
 
 /**
  * FPL-002/004/005/006/007 "Transfers" reconstructed on the shared squad
- * builder: removing a player opens "Add Player" for that slot, the incoming
- * player is shown highlighted, the stat bar tracks free transfers / wildcard
- * / cost / bank, and "Next" opens the confirmation screen.
+ * builder. Two entry points, both from the reference: "Add Player" picks the
+ * incoming player first and the pitch then asks which same-position player
+ * leaves (FPL-004, dimmed cards + "Incoming Player" strip), or tapping a card
+ * opens its actions ("Transfer out" → Add Player locked to that position).
+ * The incoming player is shown highlighted, the stat bar tracks free
+ * transfers / wildcard / cost / bank, and "Next" opens the confirmation screen.
  */
 function TransfersPage() {
   return (
@@ -72,7 +75,6 @@ function TransfersBody() {
   const players = screen.players;
   const clubs = screen.clubs;
   const gameweek = screen.gameweek;
-  const fixtures = useNextFixtures(clubs, gameweek?.number ?? null, screen.phase === "ready");
 
   const chipsState: ChipsState = isCloud
     ? (owned.snapshot?.lifecycle.chips ?? { active: null, used: [] })
@@ -81,6 +83,9 @@ function TransfersBody() {
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<(string | null)[]>([]);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [pickerAny, setPickerAny] = useState(false);
+  const [incoming, setIncoming] = useState<FantasyPlayer | null>(null);
+  const [sheetFor, setSheetFor] = useState<string | null>(null);
   const [view, setView] = useState<"squad" | "list">("squad");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -182,13 +187,7 @@ function TransfersBody() {
       const incoming = incomingId ? (playerOf(incomingId) ?? null) : null;
       const position = current?.position ?? "MID";
       if (outIndex >= 0) {
-        return {
-          slot: s.slot,
-          position,
-          player: incoming,
-          highlighted: !!incoming,
-          sub: incoming ? nf.format(incoming.price) : undefined,
-        };
+        return { slot: s.slot, position, player: incoming, highlighted: !!incoming };
       }
       return {
         slot: s.slot,
@@ -196,11 +195,10 @@ function TransfersBody() {
         player: current ?? null,
         isCaptain: s.isCaptain,
         isViceCaptain: s.isViceCaptain,
-        sub: current
-          ? (fixtures.labels.get(current.clubId) ?? nf.format(current.price))
-          : undefined,
       };
     });
+  const originalIdOf = (slot: BuilderSlot) =>
+    team.squad.find((s) => s.slot === slot.slot)?.playerId ?? null;
   const squadIdsAfter = slots.map((s) => s.player?.id).filter(Boolean) as string[];
 
   const outPlayers = completePairs.map((p) => playerOf(p.outId)!).filter(Boolean);
@@ -304,7 +302,65 @@ function TransfersBody() {
   const reset = () => {
     setOutIds([]);
     setInIds([]);
+    setIncoming(null);
     persistDraft([], []);
+  };
+  /** Add Player (incoming first): fill a pending same-position slot, otherwise ask which player leaves. */
+  const onPickIncoming = (player: FantasyPlayer) => {
+    setPickerAny(false);
+    if (squadIdsAfter.includes(player.id)) return;
+    const pendingIndex = outIds.findIndex(
+      (id, index) => !inIds[index] && playerOf(id)?.position === player.position,
+    );
+    if (pendingIndex >= 0) {
+      const outId = outIds[pendingIndex]!;
+      const others = squadIdsAfter.filter((id) => id !== outId);
+      if (others.filter((id) => playerOf(id)?.clubId === player.clubId).length >= 3) {
+        toast.error(t("fpl.club_limit"));
+        return;
+      }
+      const nextIn = inIds.slice();
+      nextIn[pendingIndex] = player.id;
+      setInIds(nextIn);
+      persistDraft(outIds, nextIn);
+      return;
+    }
+    setIncoming(player);
+  };
+  /** Replace mode: the tapped same-position card leaves for the chosen incoming player. */
+  const completeIncoming = (slot: BuilderSlot) => {
+    if (!incoming) return;
+    const originalId = originalIdOf(slot);
+    if (!originalId) return;
+    const leavingId = slot.player?.id ?? null;
+    const others = squadIdsAfter.filter((id) => id !== leavingId);
+    if (others.filter((id) => playerOf(id)?.clubId === incoming.clubId).length >= 3) {
+      toast.error(t("fpl.club_limit"));
+      return;
+    }
+    const leavingPrice = slot.player?.price ?? 0;
+    if (incoming.price > pickerBank + leavingPrice + 0.001) {
+      toast.error(t("fpl.budget_exceeded"));
+      return;
+    }
+    let nextOut = outIds.slice();
+    let nextIn = inIds.slice();
+    const index = outIds.indexOf(originalId);
+    if (index < 0) {
+      nextOut = [...nextOut, originalId];
+      nextIn = [...nextIn, incoming.id];
+    } else {
+      nextIn[index] = incoming.id;
+    }
+    if (incoming.id === originalId) {
+      const i = nextOut.indexOf(originalId);
+      nextOut = nextOut.filter((_, k) => k !== i);
+      nextIn = nextIn.filter((_, k) => k !== i);
+    }
+    setOutIds(nextOut);
+    setInIds(nextIn);
+    persistDraft(nextOut, nextIn);
+    setIncoming(null);
   };
 
   const activateTransferChip = async (key: ChipKey) => {
@@ -497,6 +553,9 @@ function TransfersBody() {
       ? t("fpl.unlimited")
       : String(team.freeTransfers);
   const pickerOut = pickerFor ? playerOf(pickerFor) : undefined;
+  const maxSquadPrice = Math.max(0, ...squadIdsAfter.map((id) => playerOf(id)?.price ?? 0));
+  const sheetSlot = sheetFor ? slots.find((s) => originalIdOf(s) === sheetFor) : undefined;
+  const sheetPlayer = sheetSlot?.player ?? (sheetFor ? (playerOf(sheetFor) ?? null) : null);
   const pickerIndex = pickerFor ? outIds.indexOf(pickerFor) : -1;
   const pickerCurrentIn = pickerIndex >= 0 ? inIds[pickerIndex] : null;
   const pickerBudget =
@@ -537,31 +596,34 @@ function TransfersBody() {
         players={players}
         view={view}
         onViewChange={setView}
+        incoming={incoming}
+        onCancelIncoming={() => setIncoming(null)}
         onSlotTap={(s) => {
-          const outIndex = slots.indexOf(s);
-          const original = team.squad.slice().sort((a, b) => a.slot - b.slot)[outIndex];
-          if (!original) return;
-          startReplace(original.playerId);
-        }}
-        onRemove={(s) => {
-          const index = slots.indexOf(s);
-          const original = team.squad.slice().sort((a, b) => a.slot - b.slot)[index];
-          if (!original) return;
-          if (outIds.includes(original.playerId)) undoOut(original.playerId);
-          else {
-            markOut(original.playerId);
-            startReplace(original.playerId);
+          const originalId = originalIdOf(s);
+          if (!originalId) return;
+          if (incoming) {
+            completeIncoming(s);
+            return;
           }
+          if (!s.player) {
+            startReplace(originalId);
+            return;
+          }
+          setSheetFor(originalId);
         }}
         onAddPlayer={() => {
+          if (locked) {
+            toast.error(t("fpl.deadline_passed"));
+            return;
+          }
           const pending = outIds.find((id, index) => !inIds[index]);
           if (pending) startReplace(pending);
-          else toast.message(t("fpl.select_position_first"));
+          else setPickerAny(true);
         }}
         onNext={() => setConfirming(true)}
         nextDisabled={!canNext}
         onReset={reset}
-        resetDisabled={outIds.length === 0}
+        resetDisabled={outIds.length === 0 && !incoming}
         listColumns={[
           { key: "form", label: t("fpl.form"), render: (p) => p.form.toFixed(1) },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
@@ -585,7 +647,46 @@ function TransfersBody() {
           onPick={onPick}
           onClose={() => setPickerFor(null)}
         />
+      ) : pickerAny ? (
+        <AddPlayerScreen
+          players={players}
+          clubs={clubs}
+          bank={Math.round((pickerBank + maxSquadPrice) * 10) / 10}
+          disabledIds={squadIdsAfter}
+          onPick={onPickIncoming}
+          onClose={() => setPickerAny(false)}
+        />
       ) : null}
+
+      <PlayerActionSheet
+        open={sheetFor !== null}
+        player={sheetPlayer}
+        club={sheetPlayer ? clubs.find((c) => c.id === sheetPlayer.clubId) : undefined}
+        isStarter={false}
+        onClose={() => setSheetFor(null)}
+        onTransferOut={
+          sheetFor && !outIds.includes(sheetFor)
+            ? () => {
+                const id = sheetFor;
+                setSheetFor(null);
+                if (locked) {
+                  toast.error(t("fpl.deadline_passed"));
+                  return;
+                }
+                markOut(id);
+                startReplace(id);
+              }
+            : undefined
+        }
+        onUndo={
+          sheetFor && outIds.includes(sheetFor)
+            ? () => {
+                undoOut(sheetFor);
+                setSheetFor(null);
+              }
+            : undefined
+        }
+      />
     </>
   );
 }

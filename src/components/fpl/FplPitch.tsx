@@ -56,7 +56,7 @@ export function FplPitch({
           {rows.map((row, index) => (
             <div key={index} className="flex items-start justify-evenly gap-1">
               {row.map((card, cardIndex) => (
-                <div key={cardIndex} className="w-[76px] shrink-0 sm:w-[84px]">
+                <div key={cardIndex} className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]">
                   {card}
                 </div>
               ))}

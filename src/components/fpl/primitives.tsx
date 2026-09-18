@@ -13,6 +13,7 @@ export function FplHeader({
   title,
   backTo,
   onBack,
+  left,
   right,
   children,
   className,
@@ -22,6 +23,8 @@ export function FplHeader({
   /** Router destination for the Back control. */
   backTo?: string;
   onBack?: () => void;
+  /** Replaces the Back control entirely (e.g. the "✕ Cancel" pill while confirming). */
+  left?: ReactNode;
   right?: ReactNode;
   /** Content rendered inside the gradient under the title row (deadline line, tabs…). */
   children?: ReactNode;
@@ -47,7 +50,9 @@ export function FplHeader({
     >
       <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center">
         <div className="justify-self-start">
-          {backTo ? (
+          {left ? (
+            left
+          ) : backTo ? (
             <Link to={backTo} className="inline-flex min-h-11 items-center -ms-1 pe-2">
               {back}
             </Link>
@@ -69,7 +74,12 @@ export function FplHeader({
             </button>
           )}
         </div>
-        <h1 className="truncate px-2 text-center text-[19px] font-extrabold tracking-tight">
+        <h1
+          className={cn(
+            "truncate px-2 text-center font-extrabold tracking-tight",
+            left && right ? "text-[16px]" : "text-[19px]",
+          )}
+        >
           {title}
         </h1>
         <div className="justify-self-end">{right}</div>
@@ -190,7 +200,7 @@ export function FplPill({
 /* Buttons: gradient primary, ink (dark), light (white).               */
 /* ------------------------------------------------------------------ */
 
-type ButtonVariant = "gradient" | "ink" | "light" | "outline";
+type ButtonVariant = "gradient" | "ink" | "light" | "outline" | "secondary";
 
 export function FplButton({
   variant = "gradient",
@@ -210,6 +220,7 @@ export function FplButton({
         variant === "light" && "bg-white text-[color:var(--fpl-ink)] shadow-sm disabled:opacity-50",
         variant === "outline" &&
           "border border-[color:var(--fpl-ink)] bg-transparent text-[color:var(--fpl-ink)] disabled:opacity-50",
+        variant === "secondary" && "bg-[oklch(0.5_0.17_262)] text-white disabled:opacity-50",
         className,
       )}
       style={variant === "gradient" ? { backgroundImage: "var(--fpl-grad)" } : undefined}

@@ -142,6 +142,7 @@ export function FplEmptySlot({
     <button
       type="button"
       onClick={onClick}
+      disabled={!onClick}
       className={cn("flex w-full flex-col items-center", className)}
       aria-label={`${t("fpl.add_player")} — ${t(`player.pos.${position}` as never)}`}
     >

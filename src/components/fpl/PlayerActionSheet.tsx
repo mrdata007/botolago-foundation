@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeftRight, Info, Shield, ShieldHalf, X } from "lucide-react";
+import { ArrowLeftRight, Info, Shield, ShieldHalf, Trash2, Undo2, X } from "lucide-react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -24,6 +24,9 @@ export function PlayerActionSheet({
   onCaptain,
   onVice,
   onSubstitute,
+  onTransferOut,
+  onRemove,
+  onUndo,
 }: {
   open: boolean;
   player: FantasyPlayer | null;
@@ -33,6 +36,12 @@ export function PlayerActionSheet({
   onCaptain?: () => void;
   onVice?: () => void;
   onSubstitute?: () => void;
+  /** Transfers: mark this player as outgoing and pick a replacement. */
+  onTransferOut?: () => void;
+  /** Squad selection: clear this slot. */
+  onRemove?: () => void;
+  /** Transfers: cancel the pending transfer that brought this player in. */
+  onUndo?: () => void;
 }) {
   const { t, tr } = useI18n();
   if (!player) return null;
@@ -78,6 +87,24 @@ export function PlayerActionSheet({
             <button type="button" className={row} onClick={onSubstitute}>
               <ArrowLeftRight className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
               {t("fpl.substitute")}
+            </button>
+          ) : null}
+          {onTransferOut ? (
+            <button type="button" className={row} onClick={onTransferOut}>
+              <ArrowLeftRight className="h-5 w-5 text-[color:var(--fpl-pink)]" aria-hidden />{" "}
+              {t("fpl.transfer_out_player")}
+            </button>
+          ) : null}
+          {onUndo ? (
+            <button type="button" className={row} onClick={onUndo}>
+              <Undo2 className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
+              {t("fpl.undo_transfer")}
+            </button>
+          ) : null}
+          {onRemove ? (
+            <button type="button" className={row} onClick={onRemove}>
+              <Trash2 className="h-5 w-5 text-[color:var(--fpl-pink)]" aria-hidden />{" "}
+              {t("fpl.remove")}
             </button>
           ) : null}
           <Link

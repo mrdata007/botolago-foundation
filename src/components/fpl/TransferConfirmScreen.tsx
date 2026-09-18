@@ -69,9 +69,13 @@ export function TransferConfirmScreen({
   };
 
   return (
-    <>
+    <div className="flex min-h-[calc(100dvh-0px)] flex-col">
       <FplHeader title={t("fpl.transfers")} onBack={onEdit} />
-      <FplBanner>{t("fpl.about_to_transfer").replace("{n}", String(pairs.length))}</FplBanner>
+      <FplBanner>
+        {pairs.length === 1
+          ? t("fpl.about_to_transfer_one")
+          : t("fpl.about_to_transfer").replace("{n}", String(pairs.length))}
+      </FplBanner>
 
       <section className="mx-3 mt-3 rounded-[6px] bg-white p-3 shadow-sm">
         <div className="grid grid-cols-2 gap-2 border-b border-[color:var(--fpl-grey)] pb-2 text-center text-[14px] font-extrabold text-foreground">
@@ -103,7 +107,7 @@ export function TransferConfirmScreen({
         </p>
       </section>
 
-      <section className="mx-3 mt-4 rounded-[6px] bg-white p-3 shadow-sm">
+      <section className="mx-3 mt-auto rounded-[6px] bg-white p-3 pt-4 shadow-sm">
         <h2 className="text-[16px] font-extrabold text-foreground">{t("fpl.points_overview")}</h2>
         <FplKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
         <FplKeyValueRow
@@ -151,13 +155,18 @@ export function TransferConfirmScreen({
       </section>
 
       <div className="sticky bottom-0 z-30 mt-4 grid grid-cols-2 gap-2 bg-[color:var(--fpl-bg)]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur">
-        <FplButton variant="ink" onClick={onEdit} disabled={busy}>
+        <FplButton variant="secondary" onClick={onEdit} disabled={busy}>
           {t("fpl.edit_transfers")}
         </FplButton>
-        <FplButton variant="gradient" onClick={onConfirm} disabled={busy}>
+        <FplButton
+          variant="ink"
+          className="text-[color:var(--fpl-green)]"
+          onClick={onConfirm}
+          disabled={busy}
+        >
           {busy ? t("fpl.saving") : t("fpl.confirm")}
         </FplButton>
       </div>
-    </>
+    </div>
   );
 }

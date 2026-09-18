@@ -415,8 +415,19 @@ function PickTeamBody() {
     <>
       <FplHeader
         title={t("fpl.pick_team")}
-        backTo={confirmPending ? undefined : "/fantasy"}
-        onBack={confirmPending ? cancelChanges : undefined}
+        backTo="/fantasy"
+        left={
+          confirmPending ? (
+            <button
+              type="button"
+              onClick={cancelChanges}
+              className="inline-flex min-h-9 items-center gap-1 rounded-[6px] bg-[color:var(--fpl-ink)] px-3 text-[14px] font-extrabold text-white"
+            >
+              <X className="h-4 w-4" aria-hidden />
+              {t("fpl.cancel")}
+            </button>
+          ) : undefined
+        }
         right={
           confirmPending ? (
             <button
@@ -442,7 +453,6 @@ function PickTeamBody() {
           ]}
         />
       </FplHeader>
-      {confirmPending ? <style>{`.fpl-cancel-label{display:none}`}</style> : null}
 
       <div className="px-3 pt-3">
         <FplChipsRow chips={chipViews} onSelect={deadlineLocked ? undefined : onChipSelect} />

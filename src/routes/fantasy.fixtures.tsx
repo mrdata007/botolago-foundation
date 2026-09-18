@@ -123,10 +123,10 @@ function FdrBody() {
         />
       ) : (
         <div className="relative overflow-x-auto pb-24">
-          <table className="min-w-full border-separate border-spacing-0">
+          <table className="w-auto border-separate border-spacing-0">
             <thead>
               <tr>
-                <th className="sticky start-0 z-10 bg-white px-3 py-2 text-start align-bottom">
+                <th className="sticky start-0 z-10 w-[150px] min-w-[150px] max-w-[150px] bg-white px-3 py-2 text-start align-bottom">
                   <span className="block text-[14px] font-bold text-foreground">
                     {t("fpl.team")}
                   </span>
@@ -145,7 +145,7 @@ function FdrBody() {
                   </button>
                 </th>
                 {gameweeks.map((gw) => (
-                  <th key={gw} className="min-w-[84px] px-1 py-2 text-center align-bottom">
+                  <th key={gw} className="w-[84px] min-w-[84px] px-1 py-2 text-center align-bottom">
                     <span className="block text-[13px] font-bold text-foreground">GW{gw}</span>
                     <span className="block text-[11px] text-[color:var(--fpl-grey-text)]">
                       {dateOf(gw)}
@@ -170,7 +170,7 @@ function FdrBody() {
             <tbody>
               {sortedClubs.map((club) => (
                 <tr key={club.id}>
-                  <td className="sticky start-0 z-10 border-t border-[color:var(--fpl-grey)] bg-white px-3 py-2">
+                  <td className="sticky start-0 z-10 w-[150px] min-w-[150px] max-w-[150px] border-t border-[color:var(--fpl-grey)] bg-white px-3 py-2">
                     <span className="flex items-center gap-2 text-[14px] font-semibold text-foreground">
                       <ClubCrest club={club} size="sm" className="h-6 w-6 rounded-md text-[8px]" />
                       <span className="truncate">{tr(club.shortName)}</span>

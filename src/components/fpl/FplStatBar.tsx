@@ -23,16 +23,16 @@ export function FplStatBar({
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
       {items.map((item, index) => (
-        <div key={index} className="flex flex-col items-center gap-1 text-center">
-          <span className="text-[11px] font-semibold text-[color:var(--fpl-grey-text)]">
+        <div key={index} className="flex flex-col items-center justify-end gap-1 text-center">
+          <span className="whitespace-nowrap text-[10.5px] font-semibold leading-tight text-[color:var(--fpl-grey-text)]">
             {item.label}
           </span>
           <span
             className={cn(
-              "inline-flex min-h-6 w-full items-center justify-center rounded-[4px] px-1 text-[12px] font-extrabold",
+              "inline-flex min-h-6 w-full items-center justify-center whitespace-nowrap rounded-[4px] px-1 text-[12px] font-extrabold",
               item.tone === "grey"
                 ? "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]"
-                : "bg-[color:var(--fpl-ink)] text-[color:var(--fpl-cyan)]",
+                : "bg-[color:var(--fpl-ink)] text-[color:var(--fpl-green)]",
             )}
           >
             {item.value}

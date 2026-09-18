@@ -55,7 +55,7 @@ export function SquadListTable({
   })).filter((group) => group.rows.length > 0);
   if (bench.length > 0) groups.push({ label: t("fpl.substitutes"), rows: bench });
 
-  const gridTemplate = `minmax(0,1fr) ${columns.map(() => "56px").join(" ")}`;
+  const gridTemplate = `minmax(0,1fr) ${columns.map(() => (columns.length > 3 ? "46px" : "56px")).join(" ")}`;
 
   return (
     <div className={cn("bg-white", className)}>
@@ -130,7 +130,8 @@ export function SquadListTable({
                     <span
                       key={column.key}
                       className={cn(
-                        "fpl-tabular text-end text-[13px] text-foreground",
+                        "fpl-tabular text-end text-foreground",
+                        columns.length > 3 ? "text-[12px]" : "text-[13px]",
                         column.className,
                       )}
                     >

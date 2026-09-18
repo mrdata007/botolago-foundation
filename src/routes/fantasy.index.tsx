@@ -51,6 +51,11 @@ function FantasyHub() {
     queryFn: () => newsService.getArticles(lang, { category: "for_you" }),
     staleTime: 5 * 60_000,
   });
+  // The reference "News & Video" cards always carry a photo: prefer articles
+  // with a real hero image and only fall back to the gradient-backed ones
+  // when the feed has no illustrated article at all.
+  const illustrated = (articles.data ?? []).filter((article) => !!article.heroUrl);
+  const hubArticles = (illustrated.length > 0 ? illustrated : (articles.data ?? [])).slice(0, 6);
   const leagues = useQuery({
     queryKey: key("leagues", "private"),
     queryFn: () => fantasyService.getLeagues("private"),
@@ -192,19 +197,21 @@ function FantasyHub() {
           </Link>
         </div>
         <div className="mt-2 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
-          {(articles.data ?? []).slice(0, 6).map((article) => (
+          {hubArticles.map((article) => (
             <Link
               key={article.id}
               to="/news/$articleId"
               params={{ articleId: article.id }}
               className="w-[190px] shrink-0 snap-start overflow-hidden rounded-[4px] bg-[color:var(--fpl-cyan)]/40"
             >
-              <MediaImage
-                src={article.heroUrl}
-                alt={article.heroAlt ?? ""}
-                fallback={article.heroGradient}
-                className="aspect-[16/10] w-full"
-              />
+              {article.heroUrl ? (
+                <MediaImage
+                  src={article.heroUrl}
+                  alt={article.heroAlt ?? ""}
+                  fallback={article.heroGradient}
+                  className="aspect-[16/10] w-full"
+                />
+              ) : null}
               <p className="line-clamp-3 px-2 py-2 text-[13px] font-bold leading-snug text-[color:var(--fpl-ink-deep)]">
                 {article.title[lang] ?? article.title.fr}
               </p>
@@ -307,7 +314,7 @@ function HubButton({
     <Link
       to={to}
       className={cn(
-        "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[4px] px-2 text-center text-[14px] font-extrabold leading-tight text-[color:var(--fpl-ink-deep)]",
+        "inline-flex min-h-[52px] items-center justify-center gap-1.5 whitespace-nowrap rounded-[4px] px-2 text-center text-[13px] font-extrabold leading-tight text-[color:var(--fpl-ink-deep)]",
         gradient ? "" : "bg-white shadow-sm",
       )}
       style={gradient ? { backgroundImage: "var(--fpl-grad)" } : undefined}
