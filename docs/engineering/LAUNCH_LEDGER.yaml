@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-18T10:20:00Z
+updated: 2026-09-18T11:40:00Z
 human_actions_open:
   - id: BG-0002
     action: Refresh the Supabase Management API credential (SUPABASE_ACCESS_TOKEN) in the GitHub environment production-admin-activation.
@@ -12,6 +12,8 @@ human_actions_open:
     action: Rotate the credentials listed in docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §1; confirm Supabase Auth Site/Redirect URLs and leaked-password protection.
   - id: BG-0022
     action: Publish merged main (2c7b1e7 or later) from Lovable so botolago.com serves the recovered Fantasy.
+  - id: BG-0011
+    action: Product decision on Fantasy opening prices (A re-stage with real ratings before 2026-09-23T00:00Z / B launch uniform-by-position / C other rule) — see docs/engineering/tasks/BG-0011/engineering-brief.yaml.
   - id: BG-0023
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
 
@@ -132,6 +134,21 @@ tasks:
       - canary completes (squads accepted) once the provider publishes the squads; or a Researcher brief shows a safe, non-fabricating alternative
     residual_risks: []
 
+  BG-0027:
+    title: Ratings ingestion must fail closed on empty provider statistics (no silent 6.0/0 placeholders)
+    area: data
+    severity: P1
+    user_impact: prevents a repeat of BG-0011 on the next activation or re-stage.
+    owner: Chief
+    state: READY
+    depends_on: []
+    acceptance_criteria:
+      - a ratings run with records_fetched = 0 (or coverage below a minimum share) ends failed with an explicit error code and inserts zero rows
+      - unit test in supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+      - a pre-stage non-degeneracy guard (additive migration) blocks or loudly warns when every candidate carries rating 6.0 / confidence 0
+    evidence: [docs/engineering/tasks/BG-0011/engineering-brief.yaml]
+    next: Builder-Backend once BG-0003/BG-0020 branches are merged (shared CI capacity)
+
   # ---- Launch inventory (Chief triage in progress; Scouts BG-0011..BG-0018 dispatched) ----
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
@@ -148,20 +165,23 @@ tasks:
       - independent Verifier repeats the smoke journey against the published production site after BG-0022
     review: null
   BG-0011:
-    title: Player pricing — only 3 distinct prices, uniform within each position (GK 4.80, DEF 5.00, MID/FWD 7.20)
+    title: Player pricing — all 539 opening prices are the neutral fallback (GK 4.80, DEF 5.00, MID/FWD 7.20)
     area: pricing
     severity: P0
-    user_impact: 323 of 539 players cost 7.20; squad building has no price differentiation between a star and a reserve, so budget and transfer mechanics are degenerate.
-    owner: Researcher
-    state: RUNNING
+    user_impact: 323 of 539 players cost 7.20; no price differentiation between a star and a reserve; budget/transfer mechanics degenerate. Movement rules cannot fix it at current scale (250 net-transfer floor).
+    owner: Human
+    state: HALTED_FOR_INPUT
     attempt: 1
     evidence:
-      - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml (histogram 60/156/323; by_position min=max; price_history reason initial_catalog_v1 ×539; evidence rows 539)
-      - docs/engineering/tasks/BG-0011-0018/scout-report.yaml (algorithm botolago-initial-price-v1.0 in 20260803173344; staging RPC in 20260803210943)
-    acceptance_criteria:
-      - root cause of the per-position uniformity identified (rating input absent vs algorithm design)
-      - a safe, non-fabricating path to differentiated prices specified, or an explicit product decision request if none exists without new data
-      - budget validation (100.0) and existing squads stay valid under any re-pricing proposal
+      - docs/engineering/tasks/BG-0011/engineering-brief.yaml (Researcher, read-only production queries)
+      - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
+    root_cause: provider ratings ingestion fetched 0 statistics yet wrote 1188 placeholder rows (rating 6.0 / confidence 0) and reported success; the fixture-performance rating path has 6 of 240 required fixtures. No differentiating rating data exists in production.
+    human_action: >
+      Product decision, time-boxed to 2026-09-23T00:00Z (activation preview closes 24 h before kickoff):
+      (A) obtain real ratings (fix the SportMonks season-statistics source or complete the 2025/26 performance backfill), then rollback + re-stage the catalog — this deletes the 3 QA/E2E teams and every current price/evidence row; agents will not do the deletion without your explicit approval;
+      (B) launch GW1 with uniform-by-position prices as the documented state (docs updated accordingly);
+      (C) another opening-price rule (new product rule).
+    follow_up_ready_without_decision: BG-0027 (ratings worker must fail on empty provider statistics)
     review: null
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
