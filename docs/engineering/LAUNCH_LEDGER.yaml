@@ -425,7 +425,7 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: DONE_PENDING_DISPATCH
+    state: DISPATCHED
     depends_on: []
     roles: {builder: Builder-DevOps DONE (agent/BG-0034-g7-invariant-probe @cd7b8b9), verifier: PASS (docs/engineering/tasks/BG-0034/verification-report.yaml; live classification NOT_TESTABLE until owner dispatch), reviewer: PASS (docs/engineering/tasks/BG-0034/review-report.yaml)}
     finding: 'fixture 19489216 diagnostic is already recorded in docs/production/g7-sportsmonks-coverage-audit-trigger.json (lineupRowsSeen 40, validPlayerRows 38, starterRows 21, failedInvariant starter_rows_mismatch, from run 30767752509) — answers the WHICH question; the 240-fixture count still needs the dispatch'
@@ -433,7 +433,7 @@ tasks:
     acceptance_criteria: [probe script classifies each fixture against lineups 22..100, valid rows 22..100, excludedIncompleteRows <= 20, starterRows == 22, teamCount == 2, invalidDetailRows == 0; ticket + workflow expected JSON updated together; no Supabase secrets; owner dispatch on merged main produces a per-fixture pass/fail listing naming the failing invariant of 19489216]
     merged: main (merge of agent/BG-0034-g7-invariant-probe @cd7b8b9)
     remaining_risks: [45-minute timeout is ~1.3 min under a literal 11 s/request budget; expected pace ~3 min; if cancelled, re-dispatch or raise to 50 min / write evidence incrementally]
-    next: Chief dispatches g7-sportsmonks-historical-performance-coverage.yml on merged main (read-only, SPORTSMONKS token only)
+    dispatch: g7-sportsmonks-historical-performance-coverage.yml queued by Chief (owner actor) on main a98479d, 2026-09-18
 
   BG-0035:
     title: 'Arabic UI does not render in Noto Sans Arabic: body font-family var(--font-sans) (src/styles.css:439, @layer base) overrides the html[dir=rtl] Arabic font switch (styles.css:427)'
