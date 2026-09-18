@@ -54,6 +54,31 @@ position-relative price is calculated. A player without approved historical
 evidence is recorded explicitly as rating 6.0 with confidence 0; no provider
 or client invents a rating. Prices are rounded to the ruleset's 0.1 step.
 
+The preseason ratings ingestion fails closed on missing provider evidence. If
+the SportMonks season-statistics fetch returns no usable record
+(`records_fetched = 0`), the run ends `failed` with error code
+`player_statistics_unavailable`; if the fetched statistics cover fewer than
+`MIN_STATISTICS_COVERAGE` (0.5, exported from
+`supabase/functions/_shared/sportsmonks-player-ratings.ts`) of the rating
+candidates, it ends `failed` with `player_statistics_coverage_insufficient`.
+A provider record flagged `has_values: false` maps to its candidate but does
+not count as coverage, so a season whose records all carry no values fails the
+same way. In both cases no rating row is written, so a thin or empty provider
+response can no longer be staged as a full set of neutral 6.0 / confidence 0
+ratings. Before staging the catalog, confirm the latest `player_ratings`
+ingestion run succeeded and carries no such error code.
+
+The database enforces a second, independent guard at stage time.
+`app_private.fantasy_rating_inputs_degenerate(season)` inspects exactly the
+rating inputs `app_private.fantasy_catalog_candidates` consumes and reports
+`{candidates, distinctRatings, maxConfidence, degenerate}`; the inputs are
+degenerate when every candidate carries one identical rating with zero
+confidence. `api.preview_fantasy_catalog_activation` returns this object as
+`ratingDegeneracy`, and `api.service_stage_fantasy_catalog` raises `PT409`
+`fantasy_rating_inputs_degenerate` before it inserts anything when
+`degenerate` is true. There is no override: ingest real ratings (or accept an
+explicit product decision recorded in a later migration) before staging.
+
 Every created player has one private immutable evidence row containing the
 algorithm, source season/algorithm when available, rating, confidence, and
 opening price. The public catalog never exposes internal ingestion metadata.

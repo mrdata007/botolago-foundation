@@ -125,6 +125,11 @@ BATCHES: dict[str, tuple[str, ...]] = {
         "20260918130000_fantasy_deadline_watch.sql",
         "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql",
     ),
+    # BG-0027: pre-stage rating non-degeneracy guard; pending owner promotion
+    # approval — the pricing gate is separate from the deadline-guard promotion.
+    "fantasy_rating_degeneracy_guard": (
+        "20260918150000_fantasy_rating_degeneracy_guard.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -144,6 +149,7 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "launch_recovery_2026_09_14": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_calendar_sync": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_deadline_guard": frozenset({"football-ingest", "news-ingest"}),
+    "fantasy_rating_degeneracy_guard": frozenset({"football-ingest", "news-ingest"}),
 }
 
 # These migrations were promoted through separately reviewed provider canaries

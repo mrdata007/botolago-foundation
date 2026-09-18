@@ -23,6 +23,7 @@ on:
           - launch_recovery_2026_09_14
           - fantasy_calendar_sync
           - fantasy_deadline_guard
+          - fantasy_rating_degeneracy_guard
       confirmation:
         description: Type the exact RUN_PHASE7E_B_PRODUCTION_<BATCH> confirmation
         required: true

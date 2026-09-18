@@ -1,0 +1,316 @@
+---
+task_id: BG-0027
+builder_type: Builder-Backend
+attempt: 3 # attempt-2 body retained below unchanged; see attempt_3 at the end
+branch: agent/BG-0027-ratings-fail-closed
+previous_attempt:
+  commit: 449273c25f36117abcd6fd894c6b5fbb49272860
+  verdict: REJECTED # docs/engineering/tasks/BG-0027/review-report-attempt1.yaml
+  defects_corrected:
+    - "Defect 1 (AC-c): pre-stage non-degeneracy guard migration was missing"
+    - "Defect 2 (AC-a): has_values=false provider records counted as coverage"
+commits:
+  - "BG-0027: fail closed on empty or thin provider player statistics" # 449273c, attempt 1
+  - "Merge origin/main into agent/BG-0027-ratings-fail-closed" # fd006ca, no conflicts
+  - "BG-0027: has_values=false is not coverage; pre-stage rating degeneracy guard" # attempt 2
+  - "Merge origin/main into agent/BG-0027-ratings-fail-closed" # pre-push refresh, only if main moved again
+changes:
+  - file: supabase/functions/_shared/sportsmonks-player-ratings.ts
+    description: >-
+      Defect 2. normalizedStatistics now returns
+      { statistics, hasValues } instead of the bare statistics; hasValues is
+      false exactly when the provider record carries has_values === false.
+      The ingestion loop still merges such a record into its candidate (the
+      candidate keeps rating 6.0 / confidence 0 like any unused squad player,
+      so has_values=true zero-minute treatment is unchanged) but adds the
+      candidate to `covered` only when hasValues is true. A season whose
+      records all carry has_values=false therefore has coverage 0 and fails
+      with player_statistics_coverage_insufficient before any
+      ingest_player_season_ratings call. Rating formula, shrink, price formula
+      and the attempt-1 guards are untouched.
+  - file: supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+    description: >-
+      One new test in the coverage-guard describe block: four candidates all
+      matched by has_values=false records -> HTTP 503
+      player_statistics_coverage_insufficient, no ingest_player_season_ratings
+      call, complete_football_ingestion with p_status failed, p_error_code
+      player_statistics_coverage_insufficient, p_records_fetched 4,
+      p_records_inserted 0, p_records_rejected 0. The nine existing tests are
+      unchanged and still pass (the runtime test with one has_values=false
+      record among three candidates now has coverage 2/3, above the floor).
+  - file: supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql
+    description: >-
+      Defect 1 / AC-c. New additive migration (see database_changes).
+  - file: supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql
+    description: >-
+      New pgTAP file (authored, not executed here - see not_executed).
+      Privilege checks for the new private function and the two api
+      functions; a no-candidate season reports candidates 0 / degenerate
+      false; a deterministic 16-club fixture (same shape as
+      fantasy_catalog_activation.test.sql under its own identifiers) is then
+      driven through three scenarios: (1) no rating rows -> inspector reports
+      {240, 1, 0.0, true}, preview still ready with empty blockers and a valid
+      digest but ratingDegeneracy.degenerate = true, stage throws PT409
+      fantasy_rating_inputs_degenerate and leaves zero fantasy_seasons,
+      fantasy_competitions, fantasy_players, evidence rows and activation
+      runs; (2) the production signature - one active 6.0 / 0 placeholder
+      rating per player (ratedPlayers = 240) -> still degenerate, stage still
+      refused, still zero rows; (3) one rating updated to 8.8 / 1 -> inspector
+      {240, 2, 1.0, false}, preview degenerate = false, stage succeeds with
+      240 players, 240 evidence rows, the rated midfielder at 12.50, five
+      distinct prices, season planned.
+  - file: docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md
+    description: >-
+      In the paragraph added in attempt 1: one sentence stating that
+      has_values=false records do not count as coverage, plus one new
+      paragraph describing the database guard (inspector function, the
+      ratingDegeneracy preview field, the PT409
+      fantasy_rating_inputs_degenerate stage error, no override).
+  - file: docs/engineering/tasks/BG-0027/implementation-report.yaml
+    description: This report (attempt 2).
+database_changes:
+  - migration: supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql
+    additive: true
+    objects:
+      - >-
+        NEW app_private.fantasy_rating_inputs_degenerate(p_football_season_id
+        uuid) returns jsonb - language sql, stable, security definer,
+        search_path ''. It aggregates app_private.fantasy_catalog_candidates
+        (p_football_season_id) - exactly the rows and the same source-rating
+        resolution the stage inserts consume - and returns {candidates,
+        distinctRatings, maxConfidence, degenerate} with degenerate =
+        count(*) > 0 and count(distinct source_rating) = 1 and
+        max(source_confidence) = 0. Revoked from public, anon, authenticated,
+        service_role (reachable only through the api functions).
+      - >-
+        REPLACED api.preview_fantasy_catalog_activation(uuid, text, integer x5)
+        - body copied verbatim from 20260803210943 lines 496-521 with one
+        additive change: the returned jsonb is concatenated with
+        {"ratingDegeneracy": <inspector result>}. Blockers, ready, counts and
+        sourceDigest come from the untouched
+        app_private.fantasy_catalog_activation_preview and are unchanged.
+      - >-
+        REPLACED api.service_stage_fantasy_catalog(uuid, text, text, uuid,
+        integer x5) - body copied verbatim from 20260803210943 lines 548-746
+        with two additive line groups: `declare rating_degeneracy jsonb;`
+        and, immediately after the existing stale_update check and before the
+        first insert, `raise exception using errcode = 'PT409', message =
+        'fantasy_rating_inputs_degenerate', detail = <inspector jsonb>` when
+        degenerate is true. Idempotent replays of an existing run return
+        before the guard (they insert nothing). No override parameter: an
+        optional tenth argument would make every existing nine-argument call
+        ambiguous with the retained signature, so a block is delivered as
+        AC-c permits. Non-degenerate input follows the identical code path.
+      - >-
+        Revoke/grant footer for both api functions copied verbatim (revoke all
+        from public, anon, authenticated, service_role; grant execute to
+        service_role).
+    verification_of_verbatim_copy: >-
+      diff of the copied function bodies against sed -n '496,521p' and
+      '548,746p' of 20260803210943_fantasy_catalog_activation.sql shows only
+      the additive lines listed above; the grant/revoke footer diff is empty.
+    error_code_choice: >-
+      PT409 with message fantasy_rating_inputs_degenerate. PT422 is not used
+      anywhere in supabase/migrations; every precondition failure of this
+      function (fantasy_catalog_not_ready, stale_update,
+      fantasy_catalog_already_staged, idempotency_conflict,
+      fantasy_catalog_integrity_failed) raises PT409, so PT409 is the
+      consistent choice.
+configuration_changes: []
+tests_run:
+  - command: bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+    result: PASS # 10 pass, 0 fail, 38 expect() calls (bun 1.3.11)
+  - command: bun test
+    result: PASS # 698 pass, 0 fail, 5921 expect() calls across 117 files
+  - command: bun run typecheck
+    result: PASS # tsc --noEmit, no output
+  - command: bun run lint
+    result: PASS # 0 errors, 12 pre-existing react-refresh warnings in src/**
+  - command: bunx eslint supabase/functions/_shared/sportsmonks-player-ratings.ts supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+    result: PASS # no findings
+  - command: bunx prettier --check supabase/functions/_shared/sportsmonks-player-ratings.ts supabase/functions/_shared/sportsmonks-player-ratings.test.ts docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md docs/engineering/tasks/BG-0027/implementation-report.yaml
+    result: PASS # prettier has no parser for .sql, so the SQL files are not prettier-checked (same as every existing migration/test)
+  - command: bun run backend:migrations:check
+    result: PASS # Validated 60 migration(s).
+  - command: bun run backend:secrets:check
+    result: PASS # No high-confidence secrets found in tracked files.
+  - command: git diff --name-status origin/main..HEAD
+    result: PASS # only docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md, docs/engineering/tasks/BG-0027/implementation-report.yaml, supabase/functions/_shared/sportsmonks-player-ratings{,.test}.ts, the new migration and the new database test
+  - command: git diff --stat origin/main..HEAD -- supabase/migrations
+    result: PASS # only supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql (new file); no existing migration modified
+not_executed:
+  - command: bun run backend:db:test (supabase test db --local supabase/tests/database)
+    reason: >-
+      Requires a local Supabase stack. This environment has no Docker daemon
+      (docker CLI present, /var/run/docker.sock absent), no supabase CLI, no
+      pgTAP, and the 60 migrations depend on Supabase's auth/storage schemas
+      and roles, so a vanilla Postgres cannot host them faithfully. The pgTAP
+      file fantasy_rating_degeneracy_guard.test.sql was therefore AUTHORED BUT
+      NOT EXECUTED. The migration SQL was validated only by the repository
+      migration checker and by the verbatim-copy diff above. CI
+      (.github/workflows/backend-quality.yml) runs backend:db:test and
+      backend:db:lint on every pull request, so opening the PR executes it.
+  - command: bun run backend:db:lint
+    reason: same as above.
+verifier_rehearsal:
+  description: >-
+    Recommended Verifier check in a rolled-back production transaction (no
+    durable effect; the final forced error guarantees rollback even if a step
+    is forgotten). Replace <SEASON_ID> with the 2026/27 football season uuid.
+    Expect step 3 to return degenerate = true today (all inputs are 6.0 / 0
+    per BG-0011) and step 4 to fail with PT409
+    fantasy_rating_inputs_degenerate; if a catalog is currently staged, step
+    4 instead fails earlier with fantasy_catalog_already_staged, which is the
+    pre-existing behaviour and still proves zero inserts.
+  command: |
+    begin;
+    select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+    -- 1. inline the full body of
+    --    supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql here
+    -- 2. row counts before
+    select (select count(*) from app.fantasy_seasons) seasons,
+           (select count(*) from app.fantasy_players) players,
+           (select count(*) from app_private.fantasy_initial_price_evidence) evidence;
+    -- 3. inspector + preview field
+    select app_private.fantasy_rating_inputs_degenerate('<SEASON_ID>');
+    select api.preview_fantasy_catalog_activation('<SEASON_ID>') -> 'ratingDegeneracy';
+    -- 4. guarded stage (expected: ERROR PT409 fantasy_rating_inputs_degenerate)
+    savepoint stage_attempt;
+    select api.service_stage_fantasy_catalog(
+      '<SEASON_ID>', 'botolago-fantasy-v1.1',
+      api.preview_fantasy_catalog_activation('<SEASON_ID>') ->> 'sourceDigest',
+      gen_random_uuid(), 16, 30, 240, 240, 800
+    );
+    rollback to savepoint stage_attempt;
+    -- 5. row counts after must equal step 2
+    select (select count(*) from app.fantasy_seasons) seasons,
+           (select count(*) from app.fantasy_players) players,
+           (select count(*) from app_private.fantasy_initial_price_evidence) evidence;
+    do $$ begin raise exception 'REHEARSAL % - rolling back', now(); end $$;
+    rollback;
+  note: >-
+    A bare `raise exception` is not valid top-level SQL, hence the DO block;
+    the transaction aborts either way and `rollback;` completes it. Nothing
+    here was executed by the Builder.
+unresolved:
+  - >-
+    Database suites not executed locally (see not_executed). The Verifier
+    should run backend:db:test on a stack with the migration applied, or the
+    rehearsal above, before merge.
+  - >-
+    BG-0030 (opened by the Chief for the has_values=false gap) is now covered
+    by this attempt's Defect 2 fix and can be closed or folded; the ledger
+    edit is outside this Builder's allowed paths.
+unexpected_observations:
+  - >-
+    origin/main advanced during this attempt (BG-0003/0014/0020/0024/0025
+    ledger merges, two new migrations 20260918130000 and 20260918140000). The
+    branch was merged with origin/main (no conflicts, no force push) so that
+    `git diff origin/main..HEAD` shows only this task's files; the new
+    migration timestamp 20260918150000 still sorts last.
+  - >-
+    The degeneracy inspector counts the 6.0 / 0 fallback of players WITHOUT
+    any rating row as an input (that is what the candidate query prices), so
+    a season with no ratings ingested at all is degenerate, not merely a
+    season of placeholder rows. A single real rating with confidence > 0
+    lifts the flag; the guard is deliberately narrow (block only the exact
+    all-neutral signature) so it cannot block a legitimately thin but real
+    rating set. The preview's ratingDegeneracy object gives operators
+    distinctRatings / maxConfidence to judge thin coverage manually.
+  - >-
+    prettier reports no parser for .sql, so neither the new migration nor the
+    new test is prettier-checked; this matches every existing SQL file.
+scope_deviations: []
+status: DONE
+attempt_3:
+  previous_attempt:
+    commit: 4388116d97e5f6219edfd985328042976d0e5977
+    verdict: REJECTED # docs/engineering/tasks/BG-0027/review-report-attempt2.yaml
+  defect:
+    - >-
+      Single narrow defect (review-report-attempt2 defects[0]): scenario 3
+      (healthy path) of
+      supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql set the
+      rated midfielder to rating = 8.8 / confidence = 1 but asserted
+      price::text = '12.50' (a figure copied from
+      fantasy_catalog_activation.test.sql:292, whose fixture uses rating = 10;
+      its 8.8 is provider_rating). It also asserted count(distinct price) = 5
+      described as "four neutral band prices plus the rated player", but MID
+      and FWD share the 4.5-12.5 band so the neutral set has only three
+      distinct prices. Both assertions fail by construction under
+      `supabase test db`, so backend-quality CI would be red and the
+      healthy-path half of the DEF-1 evidence did not exist in executable form.
+  change:
+    - file: supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql
+      description: >-
+        Reviewer option (a), chosen for parity with the sibling test's elite
+        midfielder fixture. Three lines changed, nothing else: the scenario-3
+        update now sets `rating = 10` (was 8.8; confidence stays 1, every other
+        column of the update is unchanged, and 10 satisfies
+        player_season_ratings_rating_check `rating between 4 and 10`); the
+        '12.50' expectation is kept; the distinct-price expectation changed
+        from 5 to 4 and its description from "four neutral band prices" to
+        "three neutral band prices". The inspector expectation for scenario 3
+        ({candidates 240, degenerate false, maxConfidence 1.0,
+        distinctRatings 2}) is untouched and still holds: 239 candidates at
+        6.0 / 0 plus one at 10 / 1 gives two distinct ratings and max
+        confidence 1.
+    - file: docs/engineering/tasks/BG-0027/implementation-report.yaml
+      description: attempt header bumped to 3 and this attempt_3 section appended.
+  hand_computation:
+    formula_source: supabase/migrations/20260803210943_fantasy_catalog_activation.sql:150-163
+    quoted_lines: |
+      ('GK'::text, 4.0::numeric, 6.5::numeric),
+      ('DEF'::text, 4.0::numeric, 7.0::numeric),
+      ('MID'::text, 4.5::numeric, 12.5::numeric),
+      ('FWD'::text, 4.5::numeric, 12.5::numeric)
+      ...
+      adjusted_rating := 6 + (p_rating - 6) * p_confidence;
+      return round((minimum_price + ((adjusted_rating - 4) / 6)
+        * (maximum_price - minimum_price)) * 10) / 10;
+    rated_midfielder_player_1_8: >-
+      degeneracy-player:1:8 is player_number 8, which the fixture maps to
+      'midfielder' (player_number <= 12 after the <= 7 defender band), so the
+      MID band 4.5..12.5 applies. adjusted = 6 + (10 - 6) * 1 = 10;
+      (10 - 4) / 6 = 1; 4.5 + 1 * (12.5 - 4.5) = 12.5; round(12.5 * 10) / 10 =
+      round(125) / 10 = 12.5; stored in numeric(8,2) -> '12.50'. Assertion
+      '12.50' holds.
+    rejected_prior_value_for_the_record: >-
+      With the old rating = 8.8: adjusted = 6 + (8.8 - 6) * 1 = 8.8;
+      (8.8 - 4) / 6 = 0.8; 4.5 + 0.8 * 8 = 10.9; round(109) / 10 = 10.9 ->
+      '10.90', confirming the Reviewer's figure and why '12.50' failed.
+    neutral_prices_rating_6_confidence_0: |
+      adjusted = 6 + (6 - 6) * 0 = 6 for every neutral candidate; (6 - 4) / 6 = 1/3.
+      GK:  4.0 + (1/3) * (6.5 - 4.0)  = 4.0 + 0.8333 = 4.8333; round(48.333)/10 = 4.8 -> 4.80
+      DEF: 4.0 + (1/3) * (7.0 - 4.0)  = 4.0 + 1.0    = 5.0;    round(50)/10     = 5.0 -> 5.00
+      MID: 4.5 + (1/3) * (12.5 - 4.5) = 4.5 + 2.6667 = 7.1667; round(71.667)/10 = 7.2 -> 7.20
+      FWD: 4.5 + (1/3) * (12.5 - 4.5) = 4.5 + 2.6667 = 7.1667; round(71.667)/10 = 7.2 -> 7.20
+    distinct_price_count: >-
+      Neutral set = {4.80, 5.00, 7.20} (three, MID and FWD coincide). Plus the
+      rated midfielder at 12.50 = {4.80, 5.00, 7.20, 12.50} = 4 distinct
+      prices. Assertion count(distinct price) = 4 holds. (Under option (b) the
+      set would have been {4.80, 5.00, 7.20, 10.90}, also 4.)
+  tests_run:
+    - command: bun run backend:migrations:check
+      result: PASS # Validated 60 migration(s).
+    - command: bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+      result: PASS # 10 pass, 0 fail, 38 expect() calls (bun 1.3.11), unchanged
+    - command: git diff --stat origin/agent/BG-0027-ratings-fail-closed..HEAD
+      result: PASS # exactly two files - the pgTAP test (3 lines) and this report
+  not_executed:
+    - command: bun run backend:db:test (supabase test db --local supabase/tests/database)
+      reason: >-
+        Still not executable here: no supabase CLI on PATH and no
+        /var/run/docker.sock, so no local Supabase stack and no pgTAP. The
+        corrected assertions are verified by the hand computation above
+        against the unchanged pricing function only. Executed evidence must
+        come from the backend-quality workflow on the PR (it runs
+        backend:db:test on every pull request) or a Verifier run on a local
+        stack, as the Reviewer's correction requires before merge.
+  unresolved:
+    - >-
+      Executed pgTAP pass output for fantasy_rating_degeneracy_guard.test.sql
+      is still owed by CI / the Verifier; the Builder cannot produce it in
+      this environment.
+  scope_deviations: []
+  status: DONE
