@@ -437,6 +437,36 @@ describe("SportsMonks player rating statistics coverage guard", () => {
     });
   });
 
+  it("fails the run and persists nothing when every record is flagged has_values=false", async () => {
+    const { calls, run } = harness(
+      fourForwards,
+      fourForwards.map((candidate) => ({
+        id: Number(candidate.externalPlayerId) + 1_000_000,
+        player_id: Number(candidate.externalPlayerId),
+        team_id: 2_846,
+        season_id: 26_027,
+        has_values: false,
+        position_id: 27,
+        details: [],
+      })),
+    );
+    const result = await run();
+
+    expect(result.status).toBe(503);
+    expect(await result.json()).toEqual({ error: PLAYER_STATISTICS_COVERAGE_INSUFFICIENT });
+    expect(calls.some((call) => call.name === "ingest_player_season_ratings")).toBe(false);
+    expect(calls.at(-1)).toMatchObject({
+      name: "complete_football_ingestion",
+      args: {
+        p_status: "failed",
+        p_error_code: PLAYER_STATISTICS_COVERAGE_INSUFFICIENT,
+        p_records_fetched: 4,
+        p_records_inserted: 0,
+        p_records_rejected: 0,
+      },
+    });
+  });
+
   it("persists the unchanged ratings when coverage reaches the minimum share", async () => {
     const { calls, run } = harness(fourForwards, [
       providerRow(201, 27, played),

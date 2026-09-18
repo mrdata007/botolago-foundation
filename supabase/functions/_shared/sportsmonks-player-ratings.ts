@@ -378,7 +378,18 @@ function emptyStatistics(candidate: RatingCandidate): PlayerSeasonStatistics {
   };
 }
 
-function normalizedStatistics(value: unknown, seasonId: number): PlayerSeasonStatistics {
+interface NormalizedProviderRecord {
+  readonly statistics: PlayerSeasonStatistics;
+  /**
+   * False when the provider flagged the record with `has_values: false`, i.e.
+   * it carries no statistics at all. Such a record must not count as
+   * statistics coverage: a full page of them would otherwise pass the
+   * coverage floor and persist only neutral 6.0 / confidence 0 ratings.
+   */
+  readonly hasValues: boolean;
+}
+
+function normalizedStatistics(value: unknown, seasonId: number): NormalizedProviderRecord {
   const raw = record(value);
   if (positiveInteger(raw.season_id) !== seasonId) {
     throw new RatingsRuntimeError("invalid_provider_payload");
@@ -388,7 +399,7 @@ function normalizedStatistics(value: unknown, seasonId: number): PlayerSeasonSta
     position: positionFromId(raw.position_id),
   };
   const metrics = emptyStatistics(candidate);
-  if (raw.has_values === false) return metrics;
+  if (raw.has_values === false) return { statistics: metrics, hasValues: false };
   if (!Array.isArray(raw.details)) throw new RatingsRuntimeError("invalid_provider_payload");
   const seen = new Set<number>();
   let providerRating: number | null = null;
@@ -413,7 +424,7 @@ function normalizedStatistics(value: unknown, seasonId: number): PlayerSeasonSta
     metrics.providerRatingWeighted = providerRating * weight;
     metrics.providerRatingMinutes = weight;
   }
-  return metrics;
+  return { statistics: metrics, hasValues: true };
 }
 
 function mergeStatistics(target: PlayerSeasonStatistics, source: PlayerSeasonStatistics): void {
@@ -745,13 +756,17 @@ export async function handleSportsMonksPlayerRatingsRequest(
         counts.fetched += 1;
         try {
           const normalized = normalizedStatistics(raw, config.seasonId);
-          const target = byId.get(normalized.externalPlayerId);
+          const target = byId.get(normalized.statistics.externalPlayerId);
           if (!target) {
             counts.skipped += 1;
             continue;
           }
-          mergeStatistics(target, normalized);
-          covered.add(normalized.externalPlayerId);
+          mergeStatistics(target, normalized.statistics);
+          // Only a record that actually carries statistics counts as coverage.
+          // A `has_values: false` record still maps to the candidate (who then
+          // legitimately rates 6.0 / 0 like any unused squad player) but it is
+          // empty provider evidence, not coverage.
+          if (normalized.hasValues) covered.add(normalized.statistics.externalPlayerId);
         } catch (error) {
           counts.rejected += 1;
           await recordRejection(dependencies.client, runId, raw, error);
