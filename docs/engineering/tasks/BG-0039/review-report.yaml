@@ -1,0 +1,75 @@
+task_id: BG-0039
+reviewed_commit: "e9d101a (origin/agent/BG-0039-ownership-diagnostic, detached checkout in /home/user/bg0039-review; merge-base with origin/main = db76141002170166fdfa17472ee43dcc272df509)"
+verdict: PASS
+defects: []
+release_blockers: []
+status: DONE
+
+# ---------------------------------------------------------------------------
+# Reviewer evidence (fresh context; inputs: objective, ImplementationReport,
+# VerificationReport on origin/main, git diff db76141..e9d101a). No edits made.
+#
+# R1 scope: `git diff --name-status db76141..HEAD` -> exactly
+#     A docs/engineering/tasks/BG-0039/implementation-report.yaml
+#     M scripts/backend/phase7e-production-migration-promoter.py
+#     M scripts/backend/tests/test_phase7e_production_migration_promoter.py
+#   Commits 70d8f0d, e9d101a match the ImplementationReport.
+#
+# R2 tests: `python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v`
+#   -> "Ran 16 tests / OK". Test-file diff is additions only (+132 / -0); the
+#   11 pre-existing tests are textually unchanged. The 4 deletions in the diff
+#   stat are all the three replaced lines of assert_management_target.
+#
+# R3 guard not weakened (read assert_management_target lines 449-475 and the two
+#   helpers 391-446 in full; independent probe bg0039_probe.py):
+#   - acceptance remains `isinstance(row, dict) and row.get("id") == organization_id`
+#     and `organization_id` truthy; list and {"organizations": [...]} accepted
+#     exactly as before (both PASSED GUARD in the probe).
+#   - slug-only match FAILS (matched_row_keys=['slug'], value not emitted);
+#     a row with id == slug == organization_id passes solely via "id".
+#   - str / None / int / list-of-strings / {"organizations": "not-a-list"}
+#     / {"data": [...]} now raise PromotionError (row_count=0 or
+#     non_dict_row_count=n) instead of escaping as AttributeError ->
+#     "unexpected_AttributeError". Fail-closed; no shape that failed before
+#     can pass now. Tightening, not weakening.
+#   - project without organization_id or with "" -> project_has_organization_id=false,
+#     still raises.
+#
+# R4 sanitisation (probe with 20-char id, name, slug, billing_email, nested
+#   meta.access_token "sbp_..."): none of the values appear in str(exc) or
+#   sanitize(exc); nested dicts are not traversed (only key "meta" named);
+#   project organization_id never appears. Non-2xx path yields exactly
+#   "organizations_request_failed: management_api_request_failed: HTTP 401".
+#
+# R5 residual "key names copied verbatim": judged ACCEPTABLE for this change.
+#   - SECRET_PATTERNS still run over the whole message in main(), so a key
+#     name shaped like a token is redacted (probe: 'sbp_secretkeyname_...'
+#     key rendered as '[REDACTED]'); Python list repr escapes "\n" in key
+#     names and sanitize() also strips CR/LF, so log-line injection is not
+#     possible. Upstream is Supabase's authenticated Management API. A charset
+#     cap is not warranted.
+#   - LENGTH (non-blocking follow-up, not raised by either upstream report):
+#     sanitize() truncates the printed message at 500 chars and the two most
+#     decisive fields (project_has_organization_id, matched_row_keys) are
+#     emitted LAST. Fixed overhead is ~284 chars; with ~13+ distinct key names
+#     across wrapper + rows (probe: 16-key row + 4-key wrapper -> 590 chars)
+#     both trailing fields are cut from the log line. For the documented
+#     2-3-key list shape the message is ~285-330 chars, so the objective is
+#     met for every shape named in the brief. Recommended follow-up (new
+#     task, not a BG-0039 defect): move project_has_organization_id and
+#     project_organization_id_matched_row_keys ahead of the key-name lists,
+#     and/or cap the number of key names rendered with an "+N more" marker.
+#
+# R6 interpretation guide in ImplementationReport.unresolved[1]: all four
+#   patterns reproduced by the probe against the branch code
+#   (organizations_request_failed HTTP 401; list row_count=0;
+#   row_count>=1 matched=[] with 'id' in row_keys; matched=['slug']).
+#   Wording matches the emitted field names.
+#
+# R7 not reproducible here by design: live reclassification of run
+#   35343091384 (owner dispatch only). Both upstream reports state this;
+#   no evidence claimed that was not produced.
+#
+# Minor, non-defect: test assertNotIn("Other", message) is a weak assertion
+# (substring never plausibly present); no action required.
+# ---------------------------------------------------------------------------

@@ -537,11 +537,14 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: RUNNING
+    state: DONE
     depends_on: []
     evidence: ['run 35343091384 step "Promote and verify the selected batch": promotion_failed: authenticated account does not own the selected project', 'scripts/backend/phase7e-production-migration-promoter.py:391-407']
     acceptance_criteria: [promoter logs a sanitized shape of the organizations response (type, count, key names) on this failure path; unit test; no weakening of the guard]
-    roles: {builder: Builder-DevOps DONE (agent/BG-0039-ownership-diagnostic @e9d101a; 16 unit tests OK; acceptance rule unchanged), verifier: PASS (docs/engineering/tasks/BG-0039/verification-report.yaml; leak test and mutation test independent), reviewer: running (fresh context)}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0039-ownership-diagnostic @e9d101a; 16 unit tests OK; acceptance rule unchanged), verifier: PASS (docs/engineering/tasks/BG-0039/verification-report.yaml; leak test and mutation test independent), reviewer: PASS (docs/engineering/tasks/BG-0039/review-report.yaml)}
+    merged: main (merge of agent/BG-0039-ownership-diagnostic @e9d101a)
+    follow_up: BG-0046 (sanitize() truncates at 500 chars; move the decisive fields ahead of the key-name lists)
+    next: re-run the preflight (batch fantasy_calendar_sync) at the merged main SHA once the owner confirms the token account, or immediately to obtain the diagnostic
 
   BG-0041:
     title: 'Compact team labels with 4-5 character official codes (ASFAR, RCAZ): verify ClubCrest sm (28px tile, 10px text) and FDR cells (13px bold) do not overflow; log or fix through a scoped UI change'
@@ -588,6 +591,14 @@ tasks:
     state: QUEUED
     depends_on: [BG-0033]
     evidence: ['docs/engineering/tasks/BG-0033/engineering-brief.yaml findings (workflow section)']
+
+  BG-0046:
+    title: 'Promoter diagnostic message can be truncated by sanitize() at 500 chars, cutting project_has_organization_id and matched_row_keys when many key names are present; reorder fields or cap key-name lists'
+    area: devops
+    severity: P3
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0039]
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
