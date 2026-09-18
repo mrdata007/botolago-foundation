@@ -1,0 +1,251 @@
+task_id: BG-0032
+role: Reviewer
+attempt: 1
+reviewed_commit: d5ae98a
+base_compared_against: origin/main
+reviewer_environment: isolated clone /tmp/bg0032-review (not /home/user/botolago-foundation), fresh context
+post_review_note: >
+  Between drafting and pushing this report, origin/agent/BG-0032-rollback-cleanup
+  advanced to 79815fe ("BG-0032: reconcile ledger with main; add follow-up
+  BG-0048"), which touches only docs/engineering/LAUNCH_LEDGER.yaml (149
+  insertions, 4 deletions; diffed 79815fe against d5ae98a to confirm) -- the
+  exact rebase/reconciliation the Verifier and this report both recommended,
+  apparently already actioned, including a new BG-0048 follow-up entry (not
+  inspected in detail by this review; out of scope). No file this report
+  reviewed (the migration, the pgTAP test, the promoter/workflow files, the
+  runbook) changed between d5ae98a and 79815fe. This report's findings and
+  verdict stand unchanged against the current branch head.
+
+verdict: PASS
+status: PASS
+
+mutation_audit_independent_conclusion: >
+  CONFIRMED, independently re-derived from scratch, not accepted on the
+  Builder's or Verifier's authority. Re-ran a read-only production query
+  (project tkewgajrljbwgwedqsxn) pulling every ON DELETE RESTRICT foreign key
+  whose target is app.fantasy_seasons, app.fantasy_leagues or app.fantasy_teams,
+  across the entire schema (not just the tables the prior two reports named).
+  Result: app_private.fantasy_mutation_audit has exactly one FK relevant here
+  (fantasy_team_id -> app.fantasy_teams, ON DELETE RESTRICT) and none to
+  fantasy_seasons or fantasy_leagues. app.fantasy_teams.fantasy_season_id ->
+  app.fantasy_seasons is itself ON DELETE RESTRICT. The RPC's pre-existing
+  PT409 fantasy_catalog_in_use guard (byte-identical, unmoved, checked before
+  the new cleanup block) already requires zero app.fantasy_teams rows for the
+  season before any delete runs, and the RPC never deletes app.fantasy_teams
+  itself. So the chain holds: no team of that season can exist past the guard,
+  and RESTRICT means no team of that season could have been deleted out from
+  under a still-existing mutation_audit row either, so no mutation_audit row
+  can be pointing at a team of that season at delete time. This is not merely
+  "the RPC doesn't need to defend against violated invariants" — it is that
+  the invariant (zero teams for the season) is actively established by this
+  RPC's own guard on this RPC's own execution path, which is the right frame:
+  the RPC only needs to be correct about the state it creates and checks
+  itself, not about states that would require a separate, already-impossible
+  FK violation elsewhere. Stress-tested the posed scenario (a team removed by
+  a different code path before rollback runs, leaving a mutation_audit row
+  referencing a defunct team's id): irrelevant to fantasy_seasons deletion
+  either way, because mutation_audit has no FK to fantasy_seasons at all -- a
+  dangling or still-valid mutation_audit row can never be the source of a
+  foreign-key violation against `delete from app.fantasy_seasons`, regardless
+  of what happened to the team row. The same broader FK pull also confirms no
+  other table anywhere in the schema RESTRICTs to fantasy_leagues besides
+  fantasy_league_memberships and fantasy_rankings, both of which this fix
+  cleans up. No gap found; no code change needed for mutation_audit. The
+  three independent passes (Builder, Verifier, this Review) now agree via
+  three separately-run production queries, which is meaningfully stronger
+  evidence than the ledger's original unverified title.
+
+fantasy_job_runs_independent_conclusion: >
+  Confirmed via the same production FK pull: app_private.fantasy_job_runs.
+  fantasy_season_id -> app.fantasy_seasons is ON DELETE RESTRICT (nullable
+  column). This table is untouched by both this fix and the unfixed original
+  function. Confirmed this is pre-existing, not a regression introduced by
+  this PR: app_private.fantasy_job_runs was created in
+  supabase/migrations/20260720141850_fantasy_scoring_leagues_operations.sql,
+  which predates supabase/migrations/20260803210943_fantasy_catalog_activation.sql
+  (the original rollback function) by two weeks -- the original,
+  never-fixed-until-now function already had this identical gap for its
+  entire lifetime, and this PR changes nothing about it (it neither reads,
+  writes, nor deletes app_private.fantasy_job_runs). This is therefore an
+  independent, already-existing scope gap that BG-0032 was never asked to
+  close (the ledger's BG-0032 title names leagues/memberships/rankings/
+  mutation_audit only, never job_runs), not a defect this fix introduces or
+  fails to fix. It should be tracked as a new, separate follow-up ledger
+  ticket rather than a blocker on this one.
+
+criteria:
+  - id: 1_mutation_audit_reasoning
+    result: VERIFIED
+    evidence: See mutation_audit_independent_conclusion above.
+
+  - id: 2_deletion_order_fk_safety
+    result: VERIFIED
+    evidence: >
+      Read supabase/migrations/20260918170000_fantasy_catalog_rollback_cleanup.sql
+      in full. New block (rankings, then league_memberships joined to leagues,
+      then leagues by count-then-delete) sits immediately after the unchanged
+      PT409 fantasy_catalog_in_use guard and before the pre-existing
+      fixture/price/player/gameweek/season/competition deletes, which are
+      byte-identical to the original in
+      20260803210943_fantasy_catalog_activation.sql. Independently pulled the
+      COMPLETE FK graph from production (not the subset either prior report
+      quoted) for every FK whose target is fantasy_seasons, fantasy_leagues or
+      fantasy_teams: confirmed fantasy_rankings and fantasy_league_memberships
+      are the only two tables RESTRICTing to fantasy_leagues (both handled,
+      correct relative order since both must precede the leagues delete and
+      have no FK dependency on each other); fantasy_leagues, fantasy_players,
+      fantasy_gameweeks, fantasy_fixture_assignments, fantasy_teams and
+      fantasy_job_runs are the tables RESTRICTing to fantasy_seasons (leagues
+      handled by the new block; players/gameweeks/fixture_assignments handled
+      by the pre-existing, unmodified code later in the same function; teams
+      is excluded by the unchanged guard; job_runs is the one pre-existing gap,
+      addressed above as not a regression). No table was missed relative to
+      what this fix's scope requires.
+
+  - id: 3_guards_preserved
+    result: VERIFIED
+    evidence: >
+      Line-by-line comparison of the new function body against the original:
+      PT403 forbidden (is_service_request check, first line of the body),
+      PT404 fantasy_catalog_not_found, PT409 stale_update digest check, the
+      already-rolled-back short-circuit (returns before the advisory lock is
+      even taken), the advisory lock (pg_advisory_xact_lock keyed on
+      football_season_id), and the PT409 fantasy_catalog_in_use guard (checks
+      zero app.fantasy_teams rows for the season) are all present, in the same
+      order, with identical error codes/messages, before the new cleanup
+      block. The new block is inserted strictly after the fantasy_catalog_in_use
+      guard and cannot be reached without first passing it — there is no
+      earlier return, exception handler, or branch that would let the new
+      deletes execute while the guard's condition (a live team exists) is
+      true. Grepped the new file for `fantasy_teams`: zero references outside
+      the guard clause itself, confirming the new code never touches teams.
+
+  - id: 4_pgtap_regression_test_genuineness
+    result: VERIFIED
+    evidence: >
+      Read supabase/tests/database/fantasy_catalog_rollback_cleanup.test.sql
+      in full. The PT409 fantasy_catalog_in_use regression case (b) is
+      genuinely non-vacuous: after throws_ok confirms the exception, it runs
+      FIVE separate extensions.is() count assertions against
+      app.fantasy_teams, app.fantasy_leagues, app.fantasy_league_memberships,
+      app.fantasy_rankings and app.fantasy_seasons, each asserting count=1
+      (row still present) for the guarded season. This proves the refusal
+      left every row intact, not merely that an exception was raised. Case
+      (a)'s success path is equally concrete: explicit count=0 assertions for
+      rankings/memberships/leagues plus a count=0 for the season row, a
+      removed.leagues=1 check on the returned jsonb, and a check that season
+      B's unrelated team (id cb900000...001) is untouched (count=1) --
+      confirming the cleanup is scoped to season A only, not global.
+
+  - id: 5_diff_scope_discipline
+    result: VERIFIED
+    evidence: >
+      `git diff origin/main..d5ae98a --name-status` shows exactly: one new
+      migration file (A), one new pgTAP test file (A), the promoter script
+      and its test (M), the promotion workflow manifest (M, one line added),
+      the runbook (M), three new BG-0032 task docs (A), and LAUNCH_LEDGER.yaml
+      (M). No pre-existing/applied migration file was touched (confirmed: the
+      only entry under supabase/migrations/ in the diff is mode "A" for the
+      new file). No supabase/functions/** touched. Separately diffed
+      8c9b655~1..8c9b655 (the Builder's own ledger edit in isolation, before
+      the Verifier's report-only commit) and confirmed it touches only the
+      BG-0032 task block (state, roles, key_findings) -- it is the Builder's
+      commit, cut from d16c406, that is stale relative to current origin/main
+      (which has since advanced past 634b24c with BG-0031/BG-0033 content the
+      branch never saw); the Builder did not edit or remove those sections,
+      they are simply absent because the branch predates them. This confirms
+      the Verifier's characterization: a rebase/reconciliation issue, not a
+      scope violation in what the Builder wrote.
+
+  - id: 6_security_scoping
+    result: VERIFIED
+    evidence: >
+      Traced the catalog_run lookup: `select * into catalog_run from
+      app_private.fantasy_catalog_activation_runs where id =
+      p_catalog_activation_id`, gated by PT403 (service-role only, checked
+      first) and PT409 stale_update (exact source_digest match, checked
+      second). Every new DELETE and the count-select in the new block filters
+      by `= catalog_run.fantasy_season_id` or, for league_memberships, by a
+      join to fantasy_leagues filtered on that same
+      `league.fantasy_season_id = catalog_run.fantasy_season_id` -- there is
+      no path by which a crafted p_catalog_activation_id could cause deletion
+      scoped to a different season than the one the activation row itself
+      names, since fantasy_season_id is read from the looked-up row, never
+      taken from caller input directly. No new grants, no RLS change, no
+      privilege widening; the function keeps SECURITY DEFINER / search_path
+      '' / revoke-all-then-grant-to-service_role identically to the original.
+
+defects: []
+
+release_blockers: []
+
+pr_route_assessment: >
+  This RPC is a production data-deletion path, so even though it is fully
+  covered by local pgTAP + CI-equivalent commands (all independently re-run
+  by the Verifier and spot-checked again here) rather than gated by a
+  server-side CI pipeline, a PR still adds real value beyond what direct
+  branch review captures: (1) it gives a durable, linkable review record tied
+  to a diff rather than a floating branch, (2) it forces the LAUNCH_LEDGER.yaml
+  staleness the Verifier flagged to be resolved through a visible merge/rebase
+  step instead of a silent force-push, and (3) GitHub's diff view is a better
+  surface than raw git for the Chief's final read of a ~150-line SQL function
+  body where line-by-line byte-identity with the original matters. Recommend:
+  rebase onto current origin/main, reconcile LAUNCH_LEDGER.yaml (keep BG-0031/
+  BG-0033 content from main, keep only the BG-0032 entry from this branch),
+  then open a PR for the Chief's merge decision. This review does not
+  duplicate that reconciliation work and did not touch the ledger.
+
+residual_risks:
+  - risk: >
+      app_private.fantasy_job_runs.fantasy_season_id -> app.fantasy_seasons is
+      ON DELETE RESTRICT and is not cleaned up or checked by this RPC (before
+      or after this fix). A season that accumulated a job_runs row (e.g. via
+      api.service_begin_fantasy_job for apply_price_changes, recalculate_rankings,
+      etc., none of which require an app.fantasy_teams row to exist first)
+      before ever having a team could still hit a different FK violation on
+      `delete from app.fantasy_seasons`, even with this fix applied.
+    status: pre-existing, not introduced by this PR (confirmed: fantasy_job_runs
+      predates the original, unfixed rollback function by two weeks; the
+      original function had the identical gap for its entire lifetime).
+    owner: Chief (to open as a new, separate ledger follow-up ticket; out of
+      BG-0032's stated scope, which named leagues/memberships/rankings/
+      mutation_audit only)
+    correction: >
+      Follow-up ticket: confirm whether fantasy_job_runs rows realistically
+      exist for a season before its Fantasy catalog is ever rolled back (most
+      job types fire after teams/gameweeks are active, which the
+      fantasy_catalog_in_use guard already blocks indirectly in the common
+      case, but a season staged and then abandoned before any team registers
+      could still trigger a job run via a scheduled/manual invocation), and
+      if so extend a future migration's rollback cleanup or guard to cover it
+      the same way this fix covers leagues/memberships/rankings.
+  - risk: >
+      LAUNCH_LEDGER.yaml on this branch is stale relative to current
+      origin/main (missing BG-0031's next_production_approvals_packet and
+      BG-0033's checkpoint, both added to main after this branch was cut).
+      Not a defect in the code under review; already flagged by the Verifier
+      and explicitly out of scope for this Reviewer to fix per the dispatch.
+    status: known, owned by the Chief's separate reconciliation pass.
+    owner: Chief
+    correction: Rebase and reconcile before merge (see pr_route_assessment).
+
+notes: >
+  This review re-derived every load-bearing claim from primary sources rather
+  than trusting the Builder's or Verifier's prose: ran an independent, broader
+  production FK query (every RESTRICT FK targeting fantasy_seasons,
+  fantasy_leagues or fantasy_teams schema-wide, not just the tables the prior
+  reports happened to name) via read-only Supabase MCP against project
+  tkewgajrljbwgwedqsxn; read the full new migration and full new pgTAP test
+  file directly; independently confirmed fantasy_job_runs predates the
+  original rollback function via migration filenames/dates, establishing that
+  gap as pre-existing rather than newly introduced; and independently
+  recomputed the diff scope via git rather than accepting the reports' file
+  lists. All three independent conclusions (Builder, Verifier, this Review)
+  now agree on both the mutation_audit resolution and the fantasy_job_runs
+  characterization, reached via three separately-executed production queries
+  and three separate readings of the migration source -- this is the level of
+  corroboration a production data-deletion RPC warrants. No defects found. No
+  writes were made to production at any point in this review; all Supabase
+  MCP calls were read-only SELECTs against pg_constraint/pg_class/
+  pg_namespace. This branch was not merged, no PR was opened, and
+  LAUNCH_LEDGER.yaml was not touched by this review, per the dispatch.

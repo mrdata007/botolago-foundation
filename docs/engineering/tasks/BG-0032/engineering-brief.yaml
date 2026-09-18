@@ -1,0 +1,143 @@
+task_id: BG-0032
+role: Builder-Backend (self-produced research; no prior Researcher brief existed on disk for this task)
+attempt: 1
+generated_at: "2026-09-18"
+repository_head: origin/main at clone time, isolated clone /tmp/bg0032-build (not the shared /home/user/botolago-foundation tree)
+objective: >
+  api.service_rollback_fantasy_catalog does not clean up app.fantasy_leagues,
+  app.fantasy_league_memberships or app.fantasy_rankings (all ON DELETE RESTRICT)
+  before deleting app.fantasy_seasons, so rollback fails with a foreign-key
+  violation on any season that ever had a league (even one with zero members).
+  Design and ship an additive migration that re-creates the RPC with ordered
+  league/membership/ranking cleanup, preserving the PT409
+  fantasy_catalog_in_use semantics; add a database test; correct the runbook.
+
+findings:
+  - classification: VERIFIED
+    statement: >
+      Current production/repo function body (supabase/migrations/20260803210943_fantasy_catalog_activation.sql:863-950)
+      deletes, in order: app.fantasy_fixture_assignments, app.fantasy_player_price_history,
+      app_private.fantasy_initial_price_evidence, app.fantasy_players, app.fantasy_gameweeks,
+      then app.fantasy_seasons, then conditionally app.fantasy_competitions. It never touches
+      app.fantasy_leagues, app.fantasy_league_memberships or app.fantasy_rankings.
+    evidence: "supabase/migrations/20260803210943_fantasy_catalog_activation.sql:863-950"
+  - classification: VERIFIED
+    statement: >
+      FK graph confirmed by reading the CREATE TABLE statements directly (not just introspection):
+      app.fantasy_leagues.fantasy_season_id -> app.fantasy_seasons(id) ON DELETE RESTRICT;
+      app.fantasy_leagues.owner_user_id -> app.profiles(id) ON DELETE RESTRICT;
+      app.fantasy_league_memberships.league_id -> app.fantasy_leagues(id) ON DELETE RESTRICT;
+      app.fantasy_league_memberships.fantasy_team_id -> app.fantasy_teams(id) ON DELETE RESTRICT;
+      app.fantasy_league_memberships.user_id -> app.profiles(id) ON DELETE RESTRICT;
+      app.fantasy_rankings.fantasy_season_id -> app.fantasy_seasons(id) ON DELETE RESTRICT;
+      app.fantasy_rankings.fantasy_team_id -> app.fantasy_teams(id) ON DELETE RESTRICT;
+      app.fantasy_rankings.league_id -> app.fantasy_leagues(id) ON DELETE RESTRICT (nullable).
+      Therefore `delete from app.fantasy_seasons` fails with a FK violation whenever a row in
+      fantasy_leagues or fantasy_rankings still references that season (independent of whether
+      any fantasy_teams row exists), and a league cannot be deleted while a membership or ranking
+      still references it.
+    evidence: >
+      supabase/migrations/20260720141850_fantasy_scoring_leagues_operations.sql:114-193 (fantasy_leagues,
+      fantasy_league_memberships, fantasy_rankings CREATE TABLE statements, read directly from the
+      migration source in this repository; cross-checked read-only against Production V2
+      pg_constraint, project ref tkewgajrljbwgwedqsxn, no writes performed)
+  - classification: VERIFIED
+    statement: >
+      app_private.fantasy_mutation_audit's schema (supabase/migrations/20260720141847_fantasy_teams_transfers_chips.sql:219-243)
+      has columns id, user_id, fantasy_team_id, operation, accepted, stable_error_code, base_version,
+      resulting_version, idempotency_key, safe_metadata, occurred_at. There is no fantasy_season_id
+      or fantasy_league_id column, and its only foreign keys are user_id -> app.profiles(id) ON DELETE
+      RESTRICT and fantasy_team_id -> app.fantasy_teams(id) ON DELETE RESTRICT. No later migration
+      alters this table: `grep -rln "alter table.*fantasy_mutation_audit" supabase/migrations/` matches
+      only the CREATE TABLE file itself. Read-only introspection of Production V2 (pg_constraint,
+      information_schema.columns for app_private.fantasy_mutation_audit, project ref
+      tkewgajrljbwgwedqsxn) matches this schema exactly; no writes were made.
+    evidence: >
+      supabase/migrations/20260720141847_fantasy_teams_transfers_chips.sql:219-243;
+      grep -rln "alter table.*fantasy_mutation_audit" supabase/migrations/ -> one hit (the CREATE TABLE
+      file); production Supabase MCP read-only SELECT against pg_constraint/information_schema.columns,
+      project tkewgajrljbwgwedqsxn (no writes)
+  - classification: VERIFIED
+    statement: >
+      Resolution of the mutation_audit question (the ledger's title names it as a blocker; the dispatch
+      asked this to be independently verified): mutation_audit CANNOT block
+      `delete from app.fantasy_seasons` under any reachable state, and no cleanup for it is added.
+      Reasoning, from the FK graph and the function's own existing guard: (1) mutation_audit has no
+      FK to fantasy_seasons or fantasy_leagues at all, so it can never be the direct cause of a
+      foreign-key violation on either delete; (2) its only path to "the season" is indirect, through
+      fantasy_team_id -> app.fantasy_teams, and app.fantasy_teams.fantasy_season_id -> app.fantasy_seasons
+      is itself ON DELETE RESTRICT, so a team can never be deleted while any mutation_audit row still
+      references it - meaning any team a mutation_audit row points at still exists; (3) the function's
+      existing PT409 fantasy_catalog_in_use guard (unchanged by this fix) already refuses to proceed
+      unless zero app.fantasy_teams rows exist for the season being rolled back, and this function
+      never deletes app.fantasy_teams itself; (4) therefore, at the point the season delete executes,
+      zero teams exist for that season, so zero mutation_audit rows can be referencing a team that
+      belongs to that season (such a team, if it existed, could not have been deleted out from under
+      the audit row, and if it still existed the guard would already have raised PT409). The ledger's
+      inclusion of fantasy_mutation_audit in the title is therefore not supported by the schema; it is
+      most likely a plausible-sounding restatement of "on delete restrict" tables joined to fantasy_teams
+      without checking that the guard already forecloses the scenario. No code change is made for
+      mutation_audit; this finding and its evidence are recorded here per the dispatch's explicit
+      instruction to resolve the discrepancy rather than silently follow or silently ignore the ledger.
+    evidence: >
+      Derivation above from supabase/migrations/20260720141847_fantasy_teams_transfers_chips.sql:4-26
+      (app.fantasy_teams.fantasy_season_id ON DELETE RESTRICT) and :219-243 (fantasy_mutation_audit),
+      and the existing PT409 guard at supabase/migrations/20260803210943_fantasy_catalog_activation.sql:898-901
+  - classification: VERIFIED
+    statement: >
+      A league can exist for a season with zero members (fantasy_leagues.member_count defaults to 1
+      but nothing forces a matching fantasy_league_memberships row to exist at the database level,
+      and BotolaGO's league-creation flow is not part of this migration's scope to change). This is
+      the minimal reproducing case named in the ledger ("fails on any season that ever had a league")
+      and is exactly what the new pgTAP test (a) and (b) exercise: a league with a membership and a
+      ranking, and zero app.fantasy_teams rows for the season being rolled back.
+    evidence: "supabase/migrations/20260720141850_fantasy_scoring_leagues_operations.sql:114-143 (fantasy_leagues has no NOT NULL/CHECK tying member_count to an actual membership row)"
+
+fix_design:
+  approach: >
+    New additive migration `supabase/migrations/20260918170000_fantasy_catalog_rollback_cleanup.sql`
+    that CREATE OR REPLACEs api.service_rollback_fantasy_catalog with the exact original body plus
+    one new block inserted immediately after the PT409 fantasy_catalog_in_use guard (and before the
+    existing fixture/price/player/gameweek/season deletes, which are otherwise byte-identical):
+      1. DELETE app.fantasy_rankings where fantasy_season_id = the season (rankings reference
+         fantasy_seasons, fantasy_teams and fantasy_leagues, so they must go first);
+      2. DELETE app.fantasy_league_memberships for memberships whose league belongs to the season,
+         via `using app.fantasy_leagues league where league.fantasy_season_id = ... and
+         membership.league_id = league.id` (memberships reference fantasy_leagues, fantasy_teams
+         and profiles, so they must go before the leagues themselves);
+      3. count-then-DELETE app.fantasy_leagues for the season (leagues reference fantasy_seasons and
+         profiles, so they go before the season delete; the count feeds a new `removed.leagues`
+         field, additive to the existing `removed` object).
+    Nothing in the new block touches app.fantasy_teams. Every existing guard (PT403 forbidden, PT404
+    fantasy_catalog_not_found, PT409 stale_update, the already-rolled-back short-circuit, the
+    advisory lock, and the PT409 fantasy_catalog_in_use guard) is copied verbatim and unweakened.
+    The revoke/grant footer for the function is re-issued identically (service_role only).
+  return_shape: >
+    Additive only: `removed.players`, `removed.gameweeks`, `removed.fixtures` keep their exact
+    existing keys and semantics; `removed.leagues` is a new key (count of leagues removed for the
+    season). `alreadyRolledBack`, `activationId`, `fantasySeasonId`, `rolledBackAt` are unchanged.
+  mutation_audit: "No change (see findings above: it cannot block this delete under any reachable state)."
+
+test_design:
+  file: supabase/tests/database/fantasy_catalog_rollback_cleanup.test.sql (new)
+  approach: >
+    Manual fixture (not the full 240-player staging flow used by fantasy_catalog_activation.test.sql,
+    since removed players/gameweeks/fixtures counts are irrelevant to this defect) with two
+    independent Fantasy seasons under two Football seasons/competitions: season A is the one rolled
+    back, season B only exists to hold one live app.fantasy_teams row so a league membership of
+    season A's league can reference an existing team without season A itself ever having a
+    app.fantasy_teams row (a precondition of ever reaching the season-delete code path, since the
+    fantasy_catalog_in_use guard forbids it otherwise). This is realistic because nothing in the
+    schema ties a league membership's team to that league's own Fantasy season.
+  cases:
+    - "(a) season A has one league (owner via app.profiles), one membership (referencing season B's team) and one ranking; zero app.fantasy_teams rows for season A. Rollback succeeds: alreadyRolledBack=false, removed.leagues=1, and app.fantasy_rankings/app.fantasy_league_memberships/app.fantasy_leagues/app.fantasy_seasons rows for season A are all gone; season B's team is untouched; the activation journal is stamped."
+    - "(b) critical regression: insert a live app.fantasy_teams row for season A itself, then attempt rollback -> still PT409 fantasy_catalog_in_use, and the league/membership/ranking/team/season rows for season A are all still present afterward (proves the fix does not weaken the guard)."
+    - "(c) a second rollback call with the same (now already-rolled-back) activation id and correct digest returns alreadyRolledBack=true with no error."
+    - "(d) a call with the wrong expected source digest raises PT409 stale_update and changes nothing (checked: the league row for season A is still present)."
+    - "(e) a call made as request.jwt.claims role=authenticated (not service_role) raises PT403 forbidden."
+  result: "18 pgTAP assertions, all passing locally (see implementation-report.yaml)."
+
+constraints_observed:
+  - Never edited supabase/migrations/20260803210943_fantasy_catalog_activation.sql; the fix is a new file only.
+  - No Supabase MCP write call, no production execution; the read-only production queries described above (schema/pg_constraint discovery only) match what the dispatch had already verified.
+  - No changes to supabase/functions/**.

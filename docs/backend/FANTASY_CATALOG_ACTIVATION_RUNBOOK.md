@@ -111,27 +111,41 @@ digest and fail closed as `stale_update`/`fantasy_catalog_stale`.
 
 Before any user Fantasy team exists, call
 `api.service_rollback_fantasy_catalog` with the catalog activation ID and its
-exact source digest. The transaction removes fixture assignments, price
-history, price evidence, players, gameweeks, and the Fantasy season; it
-deactivates or removes the now-unused Fantasy competition and preserves the
-private activation journals with `rolled_back_at`.
+exact source digest. The transaction removes, in FK-safe order, any Fantasy
+rankings, league memberships, and leagues scoped to the season, then fixture
+assignments, price history, price evidence, players, gameweeks, and the
+Fantasy season itself; it deactivates or removes the now-unused Fantasy
+competition and preserves the private activation journals with
+`rolled_back_at`. (BG-0032: before the additive migration
+`20260918170000_fantasy_catalog_rollback_cleanup.sql`, the league/membership/
+ranking cleanup was missing and the season delete failed with a foreign-key
+violation on any season that had ever had a league — even one with no
+members. This runbook previously and incorrectly described that as a "clean
+rollback".)
 
 Rollback is idempotent. It refuses to run once a user team references the
-season (`fantasy_catalog_in_use`). After a complete rollback, a fresh
-idempotency key may safely stage the same Football season again; the previous
-journal remains immutable.
+season (`fantasy_catalog_in_use`); this guard is unchanged by BG-0032 and
+still fully protects any manager's active team. After a complete rollback, a
+fresh idempotency key may safely stage the same Football season again; the
+previous journal remains immutable.
 
 ## Deterministic acceptance evidence
 
 `fantasy_catalog_activation.test.sql` builds a complete mock double round
-robin with 16 clubs, 240 players, 30 rounds, and 240 future fixtures. It proves:
+robin with 16 clubs, 240 players, 30 rounds, and 240 future fixtures.
+`fantasy_catalog_rollback_cleanup.test.sql` (BG-0032) separately proves the
+league/membership/ranking rollback cleanup and that the
+`fantasy_catalog_in_use` guard still refuses while a team exists. Together
+these prove:
 
 - deterministic position quotas and rating-derived prices;
-- atomic stage, separate open, identical retry, and clean rollback;
+- atomic stage, separate open, identical retry, and rollback;
 - safe restaging after rollback;
 - stale-digest and changed-idempotency rejection;
 - duplicate-player and invalid-round blockers;
-- forced RLS, absent browser grants, and trusted-service access only.
+- forced RLS, absent browser grants, and trusted-service access only;
+- ordered league/membership/ranking rollback cleanup, and that a live Fantasy
+  team for the season still blocks rollback entirely (BG-0032).
 
 This is catalog correctness evidence, not permission to activate Production
 V2. Production still requires current canonical Football data, capacity

@@ -1,0 +1,217 @@
+task_id: BG-0032
+role: Verifier
+attempt: 1
+verified_commit: 8c9b655 (agent/BG-0032-rollback-cleanup HEAD; matches implementation-report.yaml)
+base_compared_against: origin/main at 634b24c
+verifier_environment: isolated clone /tmp/bg0032-verify (not /home/user/botolago-foundation)
+
+mutation_audit_independent_conclusion: >
+  CONFIRMED, no gap found. Grepped every migration file for
+  "fantasy_mutation_audit": only the CREATE TABLE
+  (20260720141847_fantasy_teams_transfers_chips.sql:219-243, columns id,
+  user_id, fantasy_team_id, operation, accepted, stable_error_code,
+  base_version, resulting_version, idempotency_key, safe_metadata,
+  occurred_at — no fantasy_season_id/fantasy_league_id column) plus later
+  files that only INSERT into it or add an index; no ALTER TABLE anywhere
+  touches its columns or constraints. Independently queried live production
+  (project tkewgajrljbwgwedqsxn) read-only against pg_constraint and
+  information_schema.columns for app_private.fantasy_mutation_audit: exactly
+  two FKs (fantasy_team_id -> app.fantasy_teams ON DELETE RESTRICT, user_id ->
+  app.profiles ON DELETE RESTRICT), no FK to app.fantasy_seasons or
+  app.fantasy_leagues, columns matching the migration exactly. Also
+  independently confirmed app.fantasy_teams.fantasy_season_id ->
+  app.fantasy_seasons is itself ON DELETE RESTRICT (pg_constraint query against
+  production), which is the load-bearing link in the Builder's argument: a
+  team can never be deleted out from under a still-existing mutation_audit
+  row, and the RPC's pre-existing PT409 fantasy_catalog_in_use guard already
+  refuses unless zero app.fantasy_teams rows exist for the season, and the RPC
+  never deletes app.fantasy_teams. The chain is airtight: at the point
+  `delete from app.fantasy_seasons` executes, zero teams exist for that
+  season, so zero mutation_audit rows can reference a team that belonged to
+  it. No cleanup code for mutation_audit was needed. This resolves the
+  ledger's title (which named mutation_audit as a blocker) as unsupported by
+  the schema, exactly as the Builder concluded.
+  SEPARATE OBSERVATION (not part of the mutation_audit question, flagged for
+  awareness, not a defect in this fix): app_private.fantasy_job_runs also has
+  fantasy_season_id -> app.fantasy_seasons ON DELETE RESTRICT (nullable), and
+  job rows are inserted by api.service_begin_fantasy_job for
+  open_gameweek/lock_deadline/recalculate_provisional_points/
+  finalize_gameweek/restore_free_hit/roll_free_transfers/
+  recalculate_rankings/apply_price_changes — none of which require an
+  app.fantasy_teams row to exist. Neither the pre-existing RPC nor this
+  migration cleans up or checks fantasy_job_runs. In principle a season that
+  accumulated a job_runs row (e.g. an apply_price_changes run) before any team
+  was ever created could still hit a *different* FK violation on `delete from
+  app.fantasy_seasons`, even after this fix. This is outside BG-0032's stated
+  scope (the ledger title and reproduction only named
+  leagues/memberships/rankings/mutation_audit) and the Builder's fix correctly
+  and completely addresses everything named in scope; recommend a follow-up
+  ticket to confirm whether job_runs rows are realistically ever created
+  before rollback is attempted, and if so extend the guard/cleanup similarly.
+
+criteria:
+  - id: 1_diff_scope
+    result: PARTIAL_FAIL
+    evidence: >
+      `git diff origin/main..8c9b655 --stat` shows exactly the claimed files:
+      the new migration (150 lines), the new pgTAP test (299 lines), promoter
+      manifest (+11), workflow (+1 line), promoter test (+18/-6 net), runbook
+      (+34/-... net), engineering-brief.yaml (new), implementation-report.yaml
+      (new), and LAUNCH_LEDGER.yaml. No pre-existing migration file was
+      touched (confirmed: only one migrations/ entry in the diff, mode "A" —
+      added). No supabase/functions/** touched. HOWEVER the LAUNCH_LEDGER.yaml
+      diff is NOT scoped to the BG-0032 entry only: the branch was cut from
+      d16c406, and origin/main has since advanced to 634b24c, which added a
+      substantial BG-0031 "next_production_approvals_packet_2026_09_18"
+      section (a real, unexecuted production-action approval packet with
+      three concrete steps A/B/C, including a proposed app.seasons UPDATE
+      statement) and a BG-0033 "checkpoint_2026_09_18T18" note. Both of these
+      are ABSENT from the branch's LAUNCH_LEDGER.yaml at 8c9b655 (the branch
+      never saw them), so `git diff origin/main..8c9b655` shows them as
+      deleted. This is not something the Builder wrote maliciously or
+      carelessly within BG-0032's own entry — the Builder's actual BG-0032
+      entry edit (READY -> BUILT, plus roles/key_findings) is clean and
+      correctly scoped — but the branch is stale relative to current
+      origin/main on a shared, frequently-edited file. If this branch/PR is
+      merged as-is (or with a naive resolution favoring the branch's version),
+      it will silently drop the BG-0031 production-approval packet and the
+      BG-0033 checkpoint from the ledger. This needs a rebase of the branch
+      onto current origin/main (634b24c) with the ledger reconciled (keep
+      BG-0031/BG-0033 sections from main, keep only the BG-0032 entry changes
+      from the branch) before merge. This is a merge-hygiene/integration risk,
+      not a defect in the SQL fix or tests themselves.
+
+  - id: 2_migration_content
+    result: VERIFIED
+    evidence: >
+      Read supabase/migrations/20260918170000_fantasy_catalog_rollback_cleanup.sql
+      in full. New block sits immediately after the unchanged PT409
+      fantasy_catalog_in_use guard and before the pre-existing
+      fixture/price/player/gameweek/season deletes: (1) delete
+      app.fantasy_rankings by fantasy_season_id; (2) delete
+      app.fantasy_league_memberships joined to app.fantasy_leagues on
+      league_id, filtered by the leagues' fantasy_season_id; (3) count then
+      delete app.fantasy_leagues by fantasy_season_id, feeding the new
+      `removed.leagues` key. Independently re-derived the FK graph from
+      production pg_constraint (not just trusting the brief):
+      fantasy_rankings -> fantasy_seasons/fantasy_teams/fantasy_leagues
+      (RESTRICT), fantasy_league_memberships -> fantasy_leagues/fantasy_teams
+      /profiles (RESTRICT), fantasy_leagues -> fantasy_seasons/profiles
+      (RESTRICT). Order rankings-before-memberships-before-leagues is safe
+      (rankings and memberships both reference leagues, so both must go
+      before leagues; rankings vs. memberships order has no FK dependency
+      between each other and either order works). Diffed the new function
+      body against the original in 20260803210943_fantasy_catalog_activation.sql
+      line by line: PT403, PT404, PT409 stale_update, already-rolled-back
+      short-circuit, advisory lock, PT409 fantasy_catalog_in_use guard,
+      fixture/price/player/gameweek/season/competition cleanup,
+      is_service_request() check, `set search_path = ''`, `security definer`,
+      and the revoke/grant footer are byte-identical apart from the new block
+      and the additive `removed.leagues` key. Confirmed via grep that nothing
+      in the new file references app.fantasy_teams.
+
+  - id: 3_pgtap_tests
+    result: VERIFIED
+    evidence: >
+      Read supabase/tests/database/fantasy_catalog_rollback_cleanup.test.sql
+      in full (299 lines, 18 assertions, counted independently with grep).
+      Confirmed genuine coverage of all five cases: (a) season A with a
+      league+membership+ranking and zero teams rolls back cleanly —
+      alreadyRolledBack=false, removed.leagues=1, and explicit post-rollback
+      count-of-0 assertions for rankings/memberships/leagues plus season row
+      gone, season B's team left alone; (b) the critical regression — after
+      inserting a live app.fantasy_teams row under season A, the call raises
+      PT409 fantasy_catalog_in_use AND FIVE separate count assertions
+      afterward confirm the team, league, membership, ranking and season rows
+      are ALL still present (count=1, not just "no exception") — this
+      genuinely proves nothing was deleted, not just that an error was
+      raised; (c) a second call on the same activation id returns
+      alreadyRolledBack=true; (d) wrong digest raises PT409 stale_update, with
+      a count assertion that the league survived; (e) an authenticated-role
+      caller gets PT403 before anything is touched. Started a local Supabase
+      stack (Docker was already usable in this environment — `docker ps`
+      worked immediately, no dockerd override needed; had to temporarily set
+      edge_runtime.enabled=false in supabase/config.toml, since the local
+      edge-runtime container failed to start under this sandbox's rlimits —
+      reverted that config change before finishing, it is not part of the
+      committed diff), ran `bun run backend:db:reset` (62 migrations applied
+      cleanly in order, ending with the new one; seed ran without error), then
+      `npx supabase test db --local supabase/tests/database`: "All tests
+      successful. Files=42, Tests=866" — exactly matching the Builder's claim,
+      including the new file passing with its 18 assertions.
+
+  - id: 4_ci_commands
+    result: VERIFIED
+    evidence: >
+      Ran directly in the clone: `bun run backend:migrations:check` ->
+      "Validated 62 migration(s)."; `bun run typecheck` -> `tsc --noEmit`
+      exit 0; `bun run test` -> "720 pass, 0 fail, 10008 expect() calls, Ran
+      720 tests across 117 files"; `python3 -m unittest
+      scripts.backend.tests.test_phase7e_production_migration_promoter -v` ->
+      "Ran 16 tests ... OK". All match the implementation report's claims
+      exactly.
+
+  - id: 5_generated_types
+    result: VERIFIED
+    evidence: >
+      Ran `bun run backend:types:generate` against the local stack and
+      diffed the regenerated src/backend/generated/database.types.ts against
+      the committed version: no diff. The RPC's typed signature is
+      `service_rollback_fantasy_catalog: { Args: {...}; Returns: Json }` —
+      its return type is already the generic `Json` type, not a structured
+      object, so the new `removed.leagues` key (a jsonb payload shape change
+      inside that Json value) does not change any generated TypeScript type.
+      The Builder's claim is correct and independently confirmed, not merely
+      trusted.
+
+  - id: 6_runbook
+    result: VERIFIED
+    evidence: >
+      docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md "## Rollback"
+      section now states the exact ordered cleanup (rankings, then league
+      memberships, then leagues, then the pre-existing steps), explicitly
+      calls out that it previously and incorrectly described the broken
+      behaviour as a "clean rollback", names the new migration, and restates
+      that the fantasy_catalog_in_use guard is unchanged and still protects
+      any manager's active team. The "Deterministic acceptance evidence"
+      section names the new test file and its coverage. No false claim
+      remains.
+
+  - id: 7_no_production_action
+    result: VERIFIED
+    evidence: >
+      Searched the full branch history (d16c406..8c9b655, diffs and commit
+      messages) for any invocation of service_rollback_fantasy_catalog other
+      than inside the new migration file and the new test file, and for any
+      write against project tkewgajrljbwgwedqsxn: none found. All production
+      references are read-only SELECTs (documented in the brief/report) or
+      unrelated config/constant strings (EXPECTED_PROJECT_REF checks, env
+      vars). My own Supabase MCP queries in this verification were
+      read-only SELECTs against pg_constraint/information_schema only, no
+      writes.
+
+regressions: []
+
+untested:
+  - "Live rollback of a real production season that has an actual league/membership/ranking is untestable and out of scope for this PR — production promotion of this migration is a separate, later, owner-approved step not part of BG-0032's dispatch."
+  - "The fantasy_job_runs latent gap noted above was not tested (would require its own reproduction and is outside this task's scope)."
+
+security_observations:
+  - "The new function block is SECURITY DEFINER with search_path='' like the rest of the function, and re-issues the same revoke-all/grant-to-service_role footer; no privilege widening."
+  - "No new grants, no RLS changes, no change to is_service_request() authorization gate."
+  - "LAUNCH_LEDGER.yaml integration risk (see criterion 1) is a process/documentation hazard, not a security issue, but should be fixed before merge to avoid silently losing the BG-0031 production-approval packet."
+
+status: PASS
+status_rationale: >
+  The SQL fix, its ordering, the mutation_audit reasoning, the regression
+  test's row-count proof, and every CI-equivalent command were independently
+  re-derived and re-run from scratch (not merely re-reading the Builder's
+  claims) and all check out exactly as reported. The only finding that would
+  block a straight merge is criterion 1's LAUNCH_LEDGER.yaml staleness against
+  current origin/main, which is a rebase/reconciliation issue, not a defect in
+  the migration, tests, or code. Recommend: rebase the branch onto current
+  origin/main and reconcile LAUNCH_LEDGER.yaml (keep BG-0031's
+  next_production_approvals_packet and BG-0033's checkpoint from main, keep
+  only the BG-0032 entry's own changes from this branch) before opening/merging
+  a PR; the underlying fix is ready for a fresh-context Reviewer pass in
+  parallel with that rebase.

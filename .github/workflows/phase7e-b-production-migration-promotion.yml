@@ -25,6 +25,7 @@ on:
           - fantasy_deadline_guard
           - fantasy_rating_degeneracy_guard
           - season_bounds_guard
+          - fantasy_catalog_rollback_cleanup
       confirmation:
         description: Type the exact RUN_PHASE7E_B_PRODUCTION_<BATCH> confirmation
         required: true
