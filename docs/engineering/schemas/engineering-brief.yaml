@@ -1,0 +1,24 @@
+task_id: BG-0000
+objective: ""
+findings:
+  - classification: VERIFIED # VERIFIED | INFERRED | UNKNOWN
+    statement: ""
+    evidence: "" # required for VERIFIED
+root_cause:
+  classification: VERIFIED
+  description: ""
+required_changes:
+  - component: ""
+    change: ""
+    reason: ""
+constraints: []
+risks: []
+contradictions: []
+unknowns: []
+acceptance_tests:
+  - ""
+implementation_scope:
+  builder_type: Builder-Backend
+  allowed_paths: []
+  forbidden_paths: []
+status: DONE # DONE | BLOCKED | HALTED_FOR_INPUT

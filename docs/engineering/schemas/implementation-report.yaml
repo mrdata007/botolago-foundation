@@ -1,0 +1,16 @@
+task_id: BG-0000
+builder_type: Builder-Frontend # or Refiner
+branch: agent/BG-0000-slug
+commits: []
+changes:
+  - file: ""
+    description: ""
+database_changes: []
+configuration_changes: []
+tests_run:
+  - command: ""
+    result: PASS # PASS | FAIL
+unresolved: []
+unexpected_observations: [] # unrelated defects noticed and NOT repaired; Chief triages them as new tasks
+scope_deviations: [] # non-empty normally fails review
+status: DONE # DONE | FAILED | BLOCKED | HALTED_FOR_INPUT

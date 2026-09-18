@@ -1,0 +1,10 @@
+task_id: BG-0000
+verified_commit: ""
+criteria:
+  - criterion: ""
+    result: VERIFIED # VERIFIED | REFUTED | NOT_TESTABLE
+    evidence: "" # reproducible: command + output, query + rows, screenshot path, run URL
+regressions: []
+untested: []
+security_observations: []
+status: PASS # PASS | FAIL | INCOMPLETE

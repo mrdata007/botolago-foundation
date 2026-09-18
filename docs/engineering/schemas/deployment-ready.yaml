@@ -1,0 +1,10 @@
+release_id: BG-R-0000
+environment: production
+actions_prepared:
+  - ""
+impact: ""
+rollback_available: true
+rollback_summary: ""
+human_action_required:
+  action: APPROVE_DEPLOYMENT
+status: HALTED_FOR_INPUT

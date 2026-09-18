@@ -1,0 +1,236 @@
+# BotolaGO launch task ledger — maintained by CHIEF (docs/engineering/AGENT_SYSTEM.md §29).
+# States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
+# Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
+project: BotolaGO
+updated: 2026-09-18T10:20:00Z
+human_actions_open:
+  - id: BG-0002
+    action: Refresh the Supabase Management API credential (SUPABASE_ACCESS_TOKEN) in the GitHub environment production-admin-activation.
+  - id: BG-0004
+    action: Set repository variable FANTASY_AUTOMATION_ENABLED=true (the session's GitHub proxy returns 403 for the variables API).
+  - id: BG-0021
+    action: Rotate the credentials listed in docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §1; confirm Supabase Auth Site/Redirect URLs and leaked-password protection.
+  - id: BG-0022
+    action: Publish merged main (2c7b1e7 or later) from Lovable so botolago.com serves the recovered Fantasy.
+  - id: BG-0023
+    action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
+
+tasks:
+  BG-0001:
+    title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
+    area: fantasy
+    severity: P0
+    user_impact: Without it the season stops after GW1 and every gameweek close needs a manual dispatch.
+    owner: Reviewer
+    state: RUNNING # implementation and verification complete; awaiting fresh-context Reviewer verdict
+    attempt: 1
+    depends_on: []
+    roles: {researcher: session (pre-system), builder: session (pre-system), verifier: session rehearsals + production run, reviewer: fresh sub-agent}
+    acceptance_criteria:
+      - future provider rounds auto-create/update scheduled gameweeks with assignments
+      - kickoff changes realign assignments, windows and deadlines of scheduled/open gameweeks; passed deadlines never move
+      - placeholder 00:00 UTC kickoffs never establish or move a deadline
+      - locked/live/scoring gameweeks are never touched
+      - repeated execution is idempotent (no duplicate fixtures, gameweeks, points, rankings, notifications)
+      - worker runs automatically at the appropriate stages and fails safely with diagnostics
+      - service RPC inaccessible to anon/authenticated
+    evidence:
+      - docs/qa/fantasy-orchestration/rehearsal-calendar-sync.json
+      - docs/qa/fantasy-orchestration/rehearsal-lifecycle-gw1-gw3.json
+      - docs/qa/fantasy-orchestration/production-run-35332956079.json
+      - docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md
+      - unit tests scripts/backend/fantasy-season-orchestrator.test.ts (10), current-season-recovery.test.ts; 632 unit tests green
+    commits: [e7a976e, 3206afc, 8bda6b5, 2c7b1e7]
+    verification: {status: PASS, by: session (not independent — see review)}
+    review: null
+    residual_risks:
+      - provider must publish rounds and non-midnight kickoffs; sync never invents them
+      - recovery canary stops at the promoted-club squad guard (BG-0005); fixture phase commits first
+      - hourly schedule inactive until BG-0004
+
+  BG-0002:
+    title: INFRA — Refresh Production Supabase Management API credential
+    area: infra
+    severity: P1
+    user_impact: None directly; blocks the normal Phase 7E-B migration promotion path for every future migration.
+    owner: Human
+    state: HALTED_FOR_INPUT
+    attempt: 0
+    depends_on: []
+    acceptance_criteria:
+      - Phase 7E-B Production V2 migration promotion completes its management-API preflight (no HTTP 401)
+      - a subsequent batch promotion runs through the workflow, not through a generated transaction
+    evidence:
+      - run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"
+      - migration 20260918120000_fantasy_calendar_sync was exceptionally promoted through the promoter's own generated transaction; production history row name/version match and statements[1] sha256 = 634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e (repository file)
+      - the manifest now covers all 57 migrations (commit 3206afc), so the workflow's chain check passes once the credential works
+    human_action: Refresh SUPABASE_ACCESS_TOKEN in environment production-admin-activation. No credential is to be printed, replaced or invented by agents. Future migrations must NOT be promoted by generated transactions again.
+    residual_risks: []
+
+  BG-0003:
+    title: Launch risk — SportsMonks placeholder kickoffs vs GW1 deadline; automated escalation guard
+    area: provider
+    severity: P0
+    user_impact: If real kickoffs are not published before 2026-09-23T22:30Z, GW1 locks on a placeholder-derived deadline (or the wrong time) and nobody is warned.
+    owner: Scout
+    state: RUNNING
+    attempt: 1
+    depends_on: [BG-0001]
+    facts:
+      - provider season end 2026-09-24; 8 fixtures at 2026-09-24T00:00Z placeholders
+      - placeholders correctly do not establish deadlines (production run 35332956079: kickoffUnconfirmed 8, deadlineUnconfirmed true)
+      - GW1 deadline 2026-09-23T22:30Z (derived from the placeholder at activation)
+    acceptance_criteria:
+      - a guard detects an open/scheduled gameweek approaching its current deadline while any counting fixture kickoff is unconfirmed
+      - it never invents a kickoff and never creates or moves a deadline
+      - it surfaces gameweek, current deadline, affected fixtures and provider state as a clear escalation (workflow failure + evidence)
+      - it points to scripts/backend/fantasy-realign-gameweek-calendar.sql
+      - covered by unit tests; idempotent; no production data mutation
+    evidence: []
+    commits: []
+    verification: null
+    review: null
+
+  BG-0004:
+    title: Enable the hourly orchestrator (FANTASY_AUTOMATION_ENABLED=true)
+    area: fantasy
+    severity: P0
+    user_impact: Until set, no automatic gameweek progression.
+    owner: Human
+    state: HALTED_FOR_INPUT
+    attempt: 1
+    depends_on: [BG-0001]
+    evidence:
+      - owner approval given 2026-09-18
+      - GitHub variables API through the session proxy → HTTP 403 ("Access to this GitHub Actions path is not permitted through this proxy")
+      - workflow fantasy-season-orchestrator.yml state=active (workflow id 361247113); cron "12 * * * *"; job condition requires vars.FANTASY_AUTOMATION_ENABLED == 'true'
+      - manual owner-dispatch run 35332956079 passed with verdict ok on main 8bda6b5
+    human_action: Settings → Secrets and variables → Actions → Variables → New repository variable FANTASY_AUTOMATION_ENABLED = true. The next :12 schedule is then eligible; nothing else is required.
+    residual_risks: []
+
+  BG-0005:
+    title: SportsMonks promoted-club squad guard (current_squad_empty_or_oversized)
+    area: provider
+    severity: P1
+    user_impact: Recovery canary can never fully pass, so the refresh mode and FOOTBALL_CURRENT_SCHEDULE_ENABLED stay unusable; promoted-club rosters remain the bridged 2025/26 lists.
+    owner: Chief
+    state: BLOCKED
+    attempt: 0
+    depends_on: []
+    blocked_on: external — provider has not published complete squads for the promoted clubs (Tiznit/Témara)
+    evidence:
+      - run 35332956079 recovery evidence squadSource.teams 16, eligiblePlayers 286, fail code current_squad_empty_or_oversized
+    acceptance_criteria:
+      - canary completes (squads accepted) once the provider publishes the squads; or a Researcher brief shows a safe, non-fabricating alternative
+    residual_risks: []
+
+  # ---- Launch inventory (Chief triage in progress; Scouts BG-0011..BG-0018 dispatched) ----
+  BG-0010:
+    title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
+    area: fantasy
+    severity: P0
+    user_impact: Core product.
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0022]
+    evidence:
+      - docs/qa/FANTASY_INDEPENDENT_QA_2026_09_18.md (manual journey, 26/26 smoke, Playwright 18/18 on the dev server)
+      - docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §2, §6
+    acceptance_criteria:
+      - independent Verifier repeats the smoke journey against the published production site after BG-0022
+    review: null
+  BG-0011:
+    title: Player pricing (539 prices valid, not uniform, budget validation)
+    area: pricing
+    severity: P0
+    owner: Scout
+    state: RUNNING
+    evidence: [hardening §3 data checks (539 players, 0 duplicates); price distribution UNKNOWN pending Extractor]
+  BG-0012:
+    title: CMS (articles, drafts, publish, images, SEO)
+    area: cms
+    severity: P1
+    owner: Scout
+    state: RUNNING
+    evidence: [UNKNOWN — no evidence gathered in this session]
+  BG-0013:
+    title: Full-article / news ingestion (provenance, duplicates, attribution, images)
+    area: news
+    severity: P1
+    owner: Scout
+    state: RUNNING
+    evidence: [hub cards text-only in French because heroes are absent (hardening N6); rest UNKNOWN]
+  BG-0014:
+    title: Localization (fr/ar/en keys, grammar, RTL, formats)
+    area: localization
+    severity: P1
+    owner: Scout
+    state: RUNNING
+    evidence: [UNKNOWN beyond Fantasy screens (fr/ar/en keys added during reconstruction)]
+  BG-0015:
+    title: Fonts and UI consistency
+    area: ui
+    severity: P1
+    owner: Scout
+    state: RUNNING
+    evidence: [Fantasy screens compared to Figma FPL-001..027 (BOTOLAGO_FPL_SCREEN_MATRIX.md); other surfaces UNKNOWN]
+  BG-0016:
+    title: 22 Figma reference flows
+    area: ui
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    evidence: [BOTOLAGO_FPL_SCREEN_MATRIX.md — 27 references + 6 derived states reconstructed; independent Verifier pass pending]
+  BG-0017:
+    title: Authentication (register, login, logout, recovery, session, protected routes)
+    area: auth
+    severity: P0
+    owner: Scout
+    state: RUNNING
+    evidence: [hardening §5: email provider, confirmation required, recover endpoint 200; smoke journey login/logout/login PASS on dev server]
+  BG-0018:
+    title: Production data completeness (clubs, players, fixtures, rounds, kits/codes)
+    area: data
+    severity: P0
+    owner: Scout
+    state: RUNNING
+    evidence: [539 players, 16 clubs, 8 fixtures, 1 round; 15 clubs lack app.teams.code (N2); homonym clusters (N1)]
+  BG-0019:
+    title: Fantasy leagues / transfers / points / gameweeks lifecycle
+    area: fantasy
+    severity: P0
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0001, BG-0004]
+    evidence: [rehearsals GW1→GW3 rolled back; first real close happens after GW1 kickoff]
+  BG-0020:
+    title: Automated E2E testing in CI
+    area: e2e
+    severity: P1
+    owner: Scout
+    state: RUNNING
+    evidence: [tests/e2e/fantasy.journey.e2e.ts (6 journeys) runs locally; CI wiring UNKNOWN]
+  BG-0021:
+    title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
+    area: security
+    severity: P0
+    owner: Human
+    state: HALTED_FOR_INPUT
+    evidence: [docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md; main is clean since e7a976e]
+    human_action: rotate listed credentials; confirm Auth settings (dashboard only)
+  BG-0022:
+    title: Deployment / release readiness (publish merged main from Lovable)
+    area: release
+    severity: P0
+    owner: Human
+    state: HALTED_FOR_INPUT
+    depends_on: [BG-0021]
+    evidence: [botolago.com still serves main@5731246 tree; main now 2c7b1e7]
+    human_action: consequential production publish — needs explicit approval / owner click in Lovable
+  BG-0023:
+    title: Synthetic test accounts retention decision
+    area: data
+    severity: P1
+    owner: Human
+    state: HALTED_FOR_INPUT
+    human_action: product decision (recommendation: delete after first real gameweek close is verified)

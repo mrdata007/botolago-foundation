@@ -1,0 +1,40 @@
+# Global task state model (specification §4) and ledger entry shape (§29).
+states:
+  QUEUED: prerequisites incomplete
+  READY: prerequisites complete, may begin
+  RUNNING: an agent currently owns the task
+  HALTED_FOR_INPUT: needs human / external authority; never auto-retried
+  BLOCKED: technical dependency unavailable (environment, table, credential); not FAILED
+  FAILED: attempted and did not succeed; retry while attempts remain
+  REJECTED: Verifier or Reviewer refused the artifact; returns to the upstream owner
+  DONE: implementation + independent verification + Reviewer PASS
+
+attempt_ceilings:
+  Scout: 2
+  Extractor: 2
+  Researcher: 2
+  Builder: 3
+  Verifier: 2
+  Reviewer: 2
+  Refiner: 2
+  Packager: 2
+  Shipper: 1
+
+ledger_entry:
+  id: BG-0000
+  title: ""
+  area: "" # fantasy | pricing | cms | news | localization | ui | auth | data | e2e | security | release | infra | provider
+  severity: P0 # P0 blocks launch | P1 launch-degrading | P2 post-launch
+  user_impact: ""
+  owner: Chief # single active owner role
+  state: QUEUED
+  attempt: 0
+  depends_on: []
+  acceptance_criteria: []
+  evidence: [] # paths, run URLs, commits
+  commits: []
+  verification: null # path to VerificationReport or summary + status
+  review: null # PASS | FAIL | null
+  residual_risks: []
+  scope_log: [] # {old_scope, new_scope, reason, authorized_by}
+  human_action: null # only for HALTED_FOR_INPUT

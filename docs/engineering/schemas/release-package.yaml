@@ -1,0 +1,15 @@
+release_id: BG-R-0000
+tasks:
+  - BG-0000
+summary: ""
+changes: []
+migrations: []
+environment_changes: []
+tests:
+  status: PASS
+  reports: []
+deployment_order: []
+rollback_plan: []
+known_issues: []
+approval_required: true
+status: READY_FOR_SHIPPER

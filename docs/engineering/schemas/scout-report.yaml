@@ -1,0 +1,9 @@
+task_id: BG-0000
+candidates:
+  - reference: src/features/fantasy/playerPricing.ts
+    type: source_file # source_file | directory | database_table | rpc | route | workflow | config | test | doc | external
+    relevance: ""
+    confidence: HIGH # HIGH | MEDIUM | LOW
+possibly_stale: []
+missing: [] # sources that could not be reached, e.g. "production database schema unavailable"
+status: DONE # DONE | BLOCKED | HALTED_FOR_INPUT

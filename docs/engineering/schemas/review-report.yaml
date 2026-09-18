@@ -1,0 +1,10 @@
+task_id: BG-0000
+reviewed_commit: ""
+verdict: FAIL # PASS | FAIL
+defects:
+  - requirement: ""
+    evidence: ""
+    owner: Builder-Backend # responsible upstream role
+    correction: ""
+release_blockers: []
+status: REJECTED # DONE on PASS | REJECTED on FAIL

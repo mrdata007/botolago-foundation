@@ -1,0 +1,26 @@
+# Universal handoff / delegation envelope (specification §5).
+task_id: BG-0000
+parent_task_id: null
+from_role: Chief
+to_role: Researcher # Scout | Extractor | Researcher | Builder-* | Verifier | Reviewer | Refiner | Packager | Shipper
+objective: >
+  One outcome, stated so the recipient can tell when it is achieved.
+scope:
+  include: []
+  exclude: []
+inputs:
+  files: []
+  reports: []
+  source_refs: []
+allowed_paths: []
+forbidden_paths: []
+constraints:
+  - no production changes
+  - no invented data
+acceptance_criteria: []
+deliverable:
+  type: engineering_brief # scout_report | dataset | engineering_brief | implementation_report | verification_report | review_report | release_package | deployment_ready
+attempt:
+  current: 1
+  maximum: 2
+escalation: Chief
