@@ -36,8 +36,8 @@ attempt ceiling, escalation destination.
 
 ## 3. Runtime roles
 
-1. Chief 2. Scout 3. Extractor 4. Researcher 5. Builder 6. Verifier
-2. Reviewer 8. Refiner 9. Packager 10. Shipper
+Chief, Scout, Extractor, Researcher, Builder, Verifier, Reviewer, Refiner,
+Packager, Shipper.
 
 Builder subtypes: Builder-Frontend, Builder-Backend, Builder-Data,
 Builder-CMS, Builder-DevOps. They share one contract. A Builder may never
@@ -128,9 +128,10 @@ with evidence), root cause, required changes, constraints, risks,
 contradictions, unknowns, acceptance tests, implementation scope
 (allowed / forbidden paths).
 
-## 11. Builder (effort MEDIUM for localized UI/copy/styling, HIGH for
+## 11. Builder
 
-architecture, backend logic, migrations, cross-feature changes)
+Effort MEDIUM for localized UI/copy/styling, HIGH for architecture, backend
+logic, migrations and cross-feature changes.
 
 Variants own: Frontend (UI, layouts, navigation, component behaviour,
 responsive states, localization rendering); Backend (APIs, business logic,
