@@ -161,7 +161,7 @@ tasks:
     rejection:
       - DEF-1 AC-c additive pre-stage non-degeneracy migration missing and not recorded as descoped (Chief dispatch omitted AC-c from the Builder/Verifier criteria — Chief process defect; attempt 2 hands the ledger criteria verbatim)
       - DEF-2 has_values=false provider records counted as covered → a succeeded run still writes only 6.0/0 rows (reproduced by Reviewer)
-    attempt_2: {builder: DONE (agent/BG-0027-ratings-fail-closed @4388116, work commit b1c15d9; new migration 20260918150000_fantasy_rating_degeneracy_guard.sql), verifier: running (rolled-back production rehearsal permitted), reviewer: pending}
+    attempt_2: {builder: DONE (agent/BG-0027-ratings-fail-closed @4388116, work commit b1c15d9; new migration 20260918150000_fantasy_rating_degeneracy_guard.sql), verifier: PASS (docs/engineering/tasks/BG-0027/verification-report-attempt2.yaml; 3 rolled-back production rehearsals, guard raised PT409 fantasy_rating_inputs_degenerate with zero inserts), reviewer: running (fresh context)}
 
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
