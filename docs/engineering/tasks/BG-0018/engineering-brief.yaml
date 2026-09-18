@@ -157,7 +157,7 @@ findings:
       fragments (wydad, raja, far rabat, fus, berkane, maghreb, hassania, tanger, difa, kawkab,
       codm, uts, zemamra, tétouan, tiznit, témara) match all 16 current club names; only when no
       fragment matches does it read club.primaryColor / secondaryColor.
-    evidence: src/lib/kits.ts:17-26, 70-146; src/services/football.ts:64 (id: team.id)
+    evidence: 'src/lib/kits.ts:17-26, 70-146; src/services/football.ts:64 (id: team.id)'
   - classification: INFERRED
     statement: >
       Hence, once colours land: ClubCrest's gradient/placeholder (visible while the crest image is

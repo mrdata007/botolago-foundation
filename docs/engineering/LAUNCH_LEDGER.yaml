@@ -321,11 +321,23 @@ tasks:
     severity: P1
     user_impact: All 16 clubs have crests; none has colours and 15 lack a short code (UI falls back to names); no player photos (kits/initials by design); homonym clusters ×2; 1 round / 8 fixtures / placeholder kickoffs (provider).
     owner: Chief
-    state: RUNNING
+    state: HALTED_FOR_INPUT
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
     next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
-    roles: {researcher: running (official club codes/colours brief)}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: pending owner decisions}
+    facts:
+      - the column is app.teams.code (not short_code); only provider ingestion writes it (SportsMonks short_code, present for Wydad only as WCA); nothing writes primary_color/secondary_color
+      - the UI already reads code/primaryColor/secondaryColor (presentFootballClub); no src change needed; jerseys stay on src/lib/kits.ts by design
+      - '9 codes VERIFIED from official club sites (RCA, ASFAR, FUS, MAS, IRT, UTS, RCAZ, MAT, WST); 7 INFERRED (WAC, RSB, HUSA, DHJ, KACM, CODM, USAT); no official hex colour exists for any club; only AS FAR (rouge/noir/vert) and Widad Témara (rouge/blanc) state colour names officially'
+    owner_decisions:
+      - 'code length policy: official self-designations as-is (ASFAR, HUSA, KACM, CODM, RCAZ, USAT are 4-5 chars; ClubCrest placeholder designed for 2-3) vs 3-letter forms only'
+      - 'evidence threshold: VERIFIED-only codes, or INFERRED too'
+      - 'Wydad: keep provider WCA or set club WAC'
+      - 'colours: approve an editorial name-to-hex encoding for the two official colour statements, or defer colours'
+    zero_invention_default: VERIFIED-only codes as-is, other 7 codes and all colours NULL, keep WCA, open BG-0036 (dispatchable immediately on owner acceptance)
+    delivery: data-only rehearsed SQL runbook scripts/backend/football-team-identity-seed.sql (idempotent, is-distinct-from guard); rolled-back rehearsal, Verifier, Reviewer, owner-approved single committed run
+    follow_up: BG-0036
 
   BG-0019:
     title: Fantasy leagues / transfers / points / gameweeks lifecycle
@@ -420,7 +432,7 @@ tasks:
     acceptance_criteria: [probe script classifies each fixture against lineups 22..100, valid rows 22..100, excludedIncompleteRows <= 20, starterRows == 22, teamCount == 2, invalidDetailRows == 0; ticket + workflow expected JSON updated together; no Supabase secrets; owner dispatch on merged main produces a per-fixture pass/fail listing naming the failing invariant of 19489216]
 
   BG-0035:
-    title: Arabic UI does not render in Noto Sans Arabic — body { font-family: var(--font-sans) } (src/styles.css:439, @layer base) overrides html[dir="rtl"] { font-family: var(--font-arabic) } (styles.css:427)
+    title: 'Arabic UI does not render in Noto Sans Arabic: body font-family var(--font-sans) (src/styles.css:439, @layer base) overrides the html[dir=rtl] Arabic font switch (styles.css:427)'
     area: ui
     severity: P1
     owner: Chief
@@ -429,6 +441,16 @@ tasks:
     evidence: ['docs/engineering/tasks/BG-0026/engineering-brief.yaml findings (probe2: html font Noto Sans Arabic, body font Manrope fallback)']
     acceptance_criteria: [Arabic body text computes to the Arabic font stack; French unchanged; re-measure BG-0026 truncation table after the change]
     related: BG-0015
+
+  BG-0036:
+    title: 'api.ingest_football_catalog_entity rewrites app.teams.code unconditionally from the provider (NULL for 15 clubs), so any curated short code is clobbered by the next fresh team payload'
+    area: data
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0018]
+    evidence: ['supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302', 'docs/engineering/tasks/BG-0018/engineering-brief.yaml required_changes (FOLLOW-UP)']
+    acceptance_criteria: [additive migration replacing the RPC so a curated code survives ingestion (coalesce or curated-identity table); database test; colours confirmed untouched by ingestion]
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
