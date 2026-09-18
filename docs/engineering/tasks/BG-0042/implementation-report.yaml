@@ -1,0 +1,64 @@
+task_id: BG-0042
+builder_type: Builder-DevOps
+branch: agent/BG-0027-ratings-fail-closed
+base: "origin/main db76141, merged into the BG-0027 branch head acdb060 as merge commit 6fbc54f (git merge --no-edit origin/main; clean, zero conflicts, nothing resolved by hand). The merge brought in BG-0037's fantasy_deadline_guard manifest batch and the 11-test promoter suite, on top of which this task appends one batch. supabase/migrations holds 60 files after the merge (59 on main + the BG-0027 migration)."
+commits:
+  - "6fbc54f Merge remote-tracking branch 'origin/main' into agent/BG-0027-ratings-fail-closed (auto-generated merge message; no content authored)"
+  - "643fa65 BG-0042: add the fantasy_rating_degeneracy_guard batch to the Phase 7E-B promoter manifest"
+  - "BG-0042: implementation report"
+changes:
+  - file: scripts/backend/phase7e-production-migration-promoter.py
+    description: >
+      BATCHES gains exactly one entry appended after "fantasy_deadline_guard":
+      "fantasy_rating_degeneracy_guard": ("20260918150000_fantasy_rating_degeneracy_guard.sql",),
+      preceded by the two-line comment "BG-0027: pre-stage rating non-degeneracy guard; pending
+      owner promotion approval — the pricing gate is separate from the deadline-guard promotion."
+      EXPECTED_EDGE_FUNCTIONS_BY_BATCH gains "fantasy_rating_degeneracy_guard":
+      frozenset({"football-ingest", "news-ingest"}), identical to fantasy_deadline_guard.
+      CONFIRMATIONS derives RUN_PHASE7E_B_PRODUCTION_FANTASY_RATING_DEGENERACY_GUARD automatically.
+      Nothing else in the file changed.
+  - file: .github/workflows/phase7e-b-production-migration-promotion.yml
+    description: >
+      One line added: "- fantasy_rating_degeneracy_guard" as the last option of the
+      migration_batch choice input, directly after "- fantasy_deadline_guard". No other change.
+  - file: scripts/backend/tests/test_phase7e_production_migration_promoter.py
+    description: >
+      test_batches_cover_the_exact_ordered_migration_chain: manifest count 59 -> 60 (length and
+      set-size assertions); the "fantasy_deadline_guard is the last batch" assertion is replaced
+      by "fantasy_rating_degeneracy_guard is the last batch" (the deadline-guard tuple, its
+      57-file prefix and its confirmation assertions are kept); added assertions that
+      BATCHES["fantasy_rating_degeneracy_guard"] equals the single BG-0027 file, that its history
+      prefix is 59 files, that its confirmation is
+      RUN_PHASE7E_B_PRODUCTION_FANTASY_RATING_DEGENERACY_GUARD, and it is added to the
+      edge-function expectation loop. test_workflow_batch_choices_match_the_manifest_batches_in_order
+      was NOT edited: it parses the workflow options and compares them with BATCHES keys minus
+      post_gate4_baseline, so it picked up the new option automatically (verified: it fails if
+      either the workflow line or the BATCHES entry is missing, passes with both). All 11 tests
+      kept; none suppressed, removed or weakened.
+  - file: docs/engineering/tasks/BG-0042/implementation-report.yaml
+    description: this report.
+database_changes: []
+configuration_changes:
+  - "Workflow phase7e-b-production-migration-promotion.yml: migration_batch choice list gains fantasy_rating_degeneracy_guard as its last option. No secret, variable, environment or other workflow was changed. No workflow was dispatched. Owner dispatch remains a separate approval; the batch is inventory-only until then."
+tests_run:
+  - command: python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v
+    result: PASS # "Ran 11 tests in 0.011s / OK" (all 11 pre-existing tests, none added or removed)
+  - command: "python3 importlib sanity (heredoc, no file written): load the branch promoter and call load_migrations(Path('.')) on the repository"
+    result: PASS # "len(load_migrations) = 60 | == 60: True" / "last batch: fantasy_rating_degeneracy_guard | confirmation: RUN_PHASE7E_B_PRODUCTION_FANTASY_RATING_DEGENERACY_GUARD | prefix: 59" / "edge: ['football-ingest', 'news-ingest']"
+  - command: bun run backend:migrations:check
+    result: PASS # "Validated 60 migration(s)."
+  - command: node scripts/backend/check-config-integrity.mjs --file .github/workflows/phase7e-b-production-migration-promotion.yml
+    result: PASS # "Config integrity guard: no violations in 1 executed configuration file(s)."
+  - command: bunx prettier --check .github/workflows/phase7e-b-production-migration-promotion.yml
+    result: PASS # "All matched files use Prettier code style!"
+  - command: git diff --name-status origin/main..HEAD
+    result: PASS # the six BG-0027 files (docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md, docs/engineering/tasks/BG-0027/implementation-report.yaml, supabase/functions/_shared/sportsmonks-player-ratings.ts + .test.ts, the migration, the pgTAP test) plus exactly M .github/workflows/phase7e-b-production-migration-promotion.yml, M scripts/backend/phase7e-production-migration-promoter.py, M scripts/backend/tests/test_phase7e_production_migration_promoter.py, A docs/engineering/tasks/BG-0042/implementation-report.yaml
+not_executed:
+  - "The Phase 7E-B workflow was not dispatched and no Supabase Management API call was made (forbidden; no credentials sought). Whether Production V2 history matches the 59-file prefix for fantasy_rating_degeneracy_guard is proven only by the owner's dispatch after approval."
+  - "The migration, the ratings worker, the pgTAP test and the runbook (BG-0027 scope) were not touched, re-run or re-verified here; they remain the Verifier's concern under BG-0027."
+unresolved: []
+unexpected_observations:
+  - "The merge of origin/main into this branch (6fbc54f) is a genuine merge commit rather than a rebase, per the workspace instruction; the branch diff against main therefore shows only the BG-0027 and BG-0042 files, but the branch history now contains main's BG-0034/BG-0037 commits. If the Chief prefers a linear history the branch would need a rebase, which was not authorised."
+  - "As already recorded under BG-0037: post_gate4_baseline stays non-dispatchable by design, and the workflow's bash confirmation derivation (${MIGRATION_BATCH^^}) and the promoter's batch.upper() are still two independent derivations; both yield RUN_PHASE7E_B_PRODUCTION_FANTASY_RATING_DEGENERACY_GUARD for the new batch."
+scope_deviations: []
+status: DONE
