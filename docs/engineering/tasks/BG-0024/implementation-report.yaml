@@ -1,0 +1,54 @@
+task_id: BG-0024
+builder_type: Builder-Frontend
+branch: agent/BG-0024-profile-title
+commits:
+  - "BG-0024: replace profile.title placeholder copy with nav.profile values"
+  - "BG-0024: implementation report"
+changes:
+  - file: src/i18n/dictionaries.ts
+    description: >
+      profile.title changed from the identical English placeholder
+      "Profile\n\n" (with two trailing newlines) in both the fr and ar blocks
+      to the same copy already used for nav.profile: fr "Profil" (unchanged
+      from the existing nav.profile fr value), ar "الملف الشخصي" (unchanged
+      from the existing nav.profile ar value). Exactly two lines changed, one
+      per language block; no other key touched.
+  - file: scripts/qa/i18n-gate.ts
+    description: >
+      Committed BASELINES lowered to match the repaired dictionary: W1 (keys
+      whose fr and ar values are identical) 6 -> 5, since profile.title is no
+      longer an identical fr/ar pair. W2 (ar values with no Arabic script) 5 ->
+      4, since the ar value now contains Arabic script. W3 and W4 untouched.
+  - file: src/i18n/i18n-gate.test.ts
+    description: >
+      Updated the exact-equality expectations that referenced profile.title's
+      old defect so they match the repaired dictionary, without removing any
+      test: "keeps profile.title visible as a named W1 and W2 warning" is now
+      "profile.title is no longer a named W1 or W2 warning" and asserts both
+      reported lists are empty (all five W1 / four W2 findings are now fully
+      allow-listed and suppressed). The negative control that used to mutate
+      dicts.ar["profile.title"] to move W1 off baseline now mutates
+      dicts.ar["notfound.code"] instead (profile.title is no longer identical
+      to begin with, so that control needed a different allow-listed key to
+      stay meaningful) and renamed accordingly. The allow-list-removal control
+      ("removing an allow-list entry makes that key a named W1 warning") now
+      expects reported == ["app.name"] instead of ["app.name", "profile.title"],
+      and its explanatory comment's baseline numbers (W1=6/W2=5) were corrected
+      to W1=5/W2=4.
+database_changes: []
+configuration_changes: []
+tests_run:
+  - command: bun scripts/qa/i18n-gate.ts
+    result: PASS # exit 0; errors: none; W1=5 W2=4 W3=237 W4=100, all at baseline, no profile.title finding
+  - command: bun test src/i18n/i18n-gate.test.ts
+    result: PASS # exit 0; 21 pass, 0 fail, 590 expect() calls
+  - command: bun run typecheck
+    result: PASS # exit 0
+  - command: bunx prettier --check src/i18n/dictionaries.ts scripts/qa/i18n-gate.ts src/i18n/i18n-gate.test.ts
+    result: PASS # exit 0
+  - command: bunx eslint src/i18n/dictionaries.ts scripts/qa/i18n-gate.ts src/i18n/i18n-gate.test.ts
+    result: PASS # exit 0, no errors and no warnings
+unresolved: []
+unexpected_observations: []
+scope_deviations: []
+status: DONE
