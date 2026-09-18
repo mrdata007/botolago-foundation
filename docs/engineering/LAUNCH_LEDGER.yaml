@@ -555,6 +555,29 @@ tasks:
       - 'skip_deploy must be gated on function version + ezbr_sha256 identity (live football-ingest v53 ab740ad9…), default false; after A2 ships it cannot be true'
       - 'contradiction: fantasy-season-orchestrator and football-current-season-recovery ARE in concurrency group botolago-production-v2-mutation (15 workflows) and do not write function secrets'
     acceptance_corrected: restored to captured pre-run fingerprints and verified (not merely read from an input)
+    chief_tracking_2026_09_18: >-
+      main's copy of this entry is stale (Builder owns updating it on the branch, per its
+      allowed_paths, and it has not merged yet); tracking real progress here instead. Builder-DevOps
+      DONE attempt 1 (branch agent/BG-0033-runner-restore @6bdb05feb9a119f2a2d39463456171427ea666cb):
+      full implementation per docs/engineering/tasks/BG-0033/engineering-brief.yaml, self-validated
+      (28 targeted tests, 740/740 full suite, typecheck, secrets/migrations/config-integrity checks).
+      Independent Verifier PASS (docs/engineering/tasks/BG-0033/verification-report.yaml @01ded51,
+      re-executed all tests and parity checks in a fresh clone). Fresh-context Reviewer FAIL
+      (docs/engineering/tasks/BG-0033/review-report.yaml @8600ae4): the restore path's evidence
+      entries were correctly stripped to {operation, exitCode}, but the main mutation loop's
+      `commands.push(configure)` (~runner.ts:975) was not updated to match, so raw stdout of
+      `supabase secrets set --env-file season-<id>.env` (containing the live SportsMonks API token
+      and a freshly-minted trigger secret) could reach the sanitized evidence upload — a regression
+      introduced by this diff's own CommandResult.stdout widening, not a pre-existing issue. Both of
+      the Builder's self-flagged deviations (the added --restore-only mode; the non-blocking
+      season-identity cross-check) were independently judged reasonable by both Verifier and
+      Reviewer and are NOT part of the correction. Reviewer judged a PR route unnecessary for CI
+      (unit-tested, no pgTAP/live DB) but recommended one anyway given production-secret handling —
+      Chief decision pending until attempt 2 lands. Attempt 2 fix dispatched to the SAME Builder
+      agent (resumed, not a new dispatch): audit every evidence push site for a leaked stdout field,
+      add a regression test asserting no evidence.commands entry ever carries stdout, re-validate,
+      record as an attempt-2 section in the implementation report. Awaiting that commit before the
+      next Verifier/Reviewer pass on the delta only.
 
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
