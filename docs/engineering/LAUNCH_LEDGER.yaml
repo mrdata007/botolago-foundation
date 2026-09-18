@@ -254,9 +254,12 @@ tasks:
     user_impact: English word plus blank lines on the profile screen in both languages.
     owner: Chief
     acceptance_criteria: [proper fr and ar strings in src/i18n/dictionaries.ts; W1 baseline 6→5 and W2 5→4 in scripts/qa/i18n-gate.ts in the same change; gate passes]
-    state: RUNNING
-    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0024-profile-title @47c211b), verifier: PASS (docs/engineering/tasks/BG-0024/verification-report.yaml), reviewer: running (fresh context, worktree bg0024-review)}
+    state: DONE
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0024-profile-title @47c211b), verifier: PASS (docs/engineering/tasks/BG-0024/verification-report.yaml), reviewer: PASS (fresh context, docs/engineering/tasks/BG-0024/review-report.yaml)}
     evidence: [docs/engineering/tasks/BG-0024/implementation-report.yaml (branch)]
+    merged: main (merge of agent/BG-0024-profile-title @47c211b, 2026-09-18)
+    remaining_risks: [no browser screenshot of the profile screen; stale doc comment in src/i18n/i18n-allowlist.ts lines 9-10 (comment only, follow-up under BG-0029)]
+
   BG-0025:
     title: format-time.ts uses bare "ar"/"fr" locales while the UI uses "ar-MA"/"fr-FR" (two digit systems on Arabic screens)
     area: localization
