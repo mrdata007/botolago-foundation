@@ -1,0 +1,155 @@
+task_id: BG-0033
+role: Reviewer
+attempt: 2
+reviewed_commit: 14d74eb9c75d842e4b62a2f26eef59415c461804
+previous_reviewed_commit: 01ded510fd1bddc2c9b97813d21f7689ebfdd579 # attempt 1, FAILed at 8600ae4
+base_commit: e43b856faf2d41cc4a810ba4f513ff82c8dc131f
+generated_at: "2026-09-18"
+
+methodology: >
+  Fresh, independent clone at /tmp/bg0033-review2 (not the shared primary working directory used
+  by other concurrent sessions). Narrow, delta-only re-review of ONLY the attempt-2 fix for the
+  single defect this reviewing lineage FAILed at 8600ae4 (docs/engineering/tasks/BG-0033/
+  review-report.yaml, defect 1) — did not re-review the rest of BG-0033, already PASSed. Read
+  `git diff 8600ae43c9d9c024ab61b188ecca3019311e8eaa..14d74eb9c75d842e4b62a2f26eef59415c461804`
+  directly, read the full current runner.ts (not just the diff hunks) to trace every
+  `commands.push` and every `.stdout` reference by hand, read the new test file's
+  `assertNoStdoutLeak` walker line by line, read verification-report-attempt2.yaml and confirmed
+  its central before/after claim against the diff (did not re-run the revert-and-rerun myself;
+  their described mechanism and exact failing assertion location are consistent with the code and
+  plausible on their face). Additionally: (a) built an isolated TypeScript repro (project's own
+  strict tsconfig settings, no exactOptionalPropertyTypes) to test the Builder's/Verifier's claim
+  that a bare `commands.push(configure)` would now be a compile-time error, and separately ran
+  `tsc --noEmit` against a copy of the real file with that exact line reverted; (b) checked whether
+  scripts/backend/*.ts is even included in the repo's own `tsc --noEmit` project (tsconfig.json's
+  `include`); (c) read the g7 workflow file's post-run sanitizer/grep-scan/upload-artifact steps to
+  confirm the workflow-level defense-in-depth is untouched and independent of the JS-level fix;
+  (d) audited every other `.push(` call and every other `.stdout` reference in runner.ts for
+  sibling leaks myself, not trusting the Verifier's grep count; (e) confirmed diff scope against
+  the brief's `allowed_paths`.
+
+verdict: PASS
+
+summary: >
+  The fix is correct and complete for the flagged defect: `evidence.commands` is now typed as
+  `EvidenceCommand[]` ({operation, exitCode} only), the one previously-missed call site
+  (`commands.push(configure)` in the main mutation loop, runner.ts:992) now goes through
+  `toEvidenceCommand()`, and the restore path's pre-existing literal push (runner.ts:1083-1088)
+  already matched that shape and needed no change. I traced every code path that produces written
+  evidence — capture-only, dry-run, default success, default mid-run failure, --restore,
+  --restore-only — and in every one, `evidence.commands` entries and every other evidence field
+  (`evidenceSecrets`, `perName`, `unsetNames`) are built from parsed table fields or literals, never
+  from raw `CommandResult.stdout`. `.stdout` is referenced in exactly two other places in the file
+  (`parseSecretsListTable(listCommand.stdout)` in captureConfiguration and
+  `parseSecretsListTable(verifyList.stdout)` in performRestore), both consuming it in-memory to
+  extract NAME/DIGEST pairs, never writing it anywhere. This matches the Verifier's report. The new
+  test's `assertNoStdoutLeak` walker is sound: it recurses into both array elements and object
+  values unconditionally (not just at the top level), so a leak nested at any depth would be
+  caught, not just a leak at `$.commands[0]`. The six new tests cover every evidence-writing branch
+  named above, plus one for the mid-run-failure path, which was not explicitly covered by the
+  attempt-1 test suite for this exact question. Diff scope is exactly 3 files (runner.ts,
+  runner.test.ts, implementation-report.yaml), all within the brief's `allowed_paths`; the
+  --restore-only mode and the non-blocking season-identity cross-check are byte-for-byte untouched
+  by this diff, confirmed by reading the diff hunks (only the CommandResult/EvidenceCommand region
+  and the one push-site line changed) rather than just the file list. No workflow file, migration,
+  or unrelated runner behavior was touched.
+
+defects: []
+
+findings_non_blocking:
+  - id: 1
+    title: >
+      The "type-level durability" claim in both the implementation report and
+      verification-report-attempt2.yaml is overstated — do not rely on it as the real protection.
+    detail: >
+      Both reports claim that narrowing `evidence.commands` to `EvidenceCommand[]` makes "a future
+      accidental push of a bare CommandResult ... also a type error, not just a runtime leak" /
+      "any future bare CommandResult push is a compile-time error." I tested this directly and it
+      is false, for two independent reasons: (1) TypeScript's structural typing permits assigning a
+      value of a wider type (CommandResult, which has all of EvidenceCommand's fields plus stdout)
+      to a narrower target type when the value comes from a variable rather than an object literal
+      — excess-property checking only fires on literals. I reproduced this both in an isolated
+      minimal repro and by copying the real file, reverting the fix line to
+      `commands.push(configure)`, and running `tsc --noEmit` against it with the project's own
+      strict compiler options: no error is reported at that line (only unrelated environment
+      errors from missing ambient Bun/Node types, none touching the push call). (2) Independently
+      of (1), this file is not even in the scope `tsc --noEmit` checks in this repo:
+      tsconfig.json's `include` is `["src/**/*.ts", "src/**/*.tsx", "vite.config.ts",
+      "eslint.config.js"]` — `scripts/backend/**` is not listed, and there is no second tsconfig
+      for the scripts directory. So `bun run typecheck` (the command both reports cite as having
+      passed) does not typecheck this file at all, for this change or any other. Bun's own
+      `bun test`/script execution transpiles TypeScript without type-checking, so there is no
+      compile-time backstop here in practice, at any layer.
+    impact: >
+      Not a live leak — the currently-shipped code is correct on every path I traced, and this is
+      a documentation/durability-claim inaccuracy, not a functional defect. Real protection against
+      a future regression of this class currently rests on: (a) the explicit warning comments left
+      on `CommandResult`/`EvidenceCommand`/`toEvidenceCommand` in the source, (b) the new
+      `assertNoStdoutLeak` regression tests actually running in CI's `bun run test`, and (c) the
+      workflow-level defense-in-depth in g7-production-historical-performance-backfill.yml
+      (gate4-sanitize-command-log.ts + phase7f-scan-sanitized-evidence.py + the explicit
+      known-secret-value grep before upload-artifact), all of which are independent of the type
+      system and all of which I confirmed are untouched and still in place. I judge this
+      non-blocking for attempt 2's verdict because the actual runtime behavior is correct and
+      multiply defended, but the specific "compile-time error" claim should not be repeated or
+      relied upon going forward.
+    suggested_correction_if_ever_touched_again: >
+      Either (a) correct the claim in future reports to say the protection is the code comment +
+      test suite, not the type system, or (b) if durable compile-time enforcement is actually
+      wanted, add scripts/backend/**/*.ts to a tsc project that CI runs (or a dedicated
+      tsconfig for scripts/) AND use a technique that survives structural widening (e.g. a branded
+      type on EvidenceCommand, or constructing evidence.commands via a wrapper function that only
+      accepts an object literal so excess-property checking fires). Neither is required for this
+      task; noting for whoever next touches this file.
+
+adversarial_pass: >
+  Beyond the flagged defect and its fix, I looked for sibling leak sites the Builder and Verifier
+  might have missed, per the Chief's instruction: `secrets unset` output (unsetExit is only an
+  exit code, never stdout, and unsetNames holds only secret NAMES which are non-secret identifiers,
+  not values); `secrets list` output beyond the parsed table (evidenceSecrets/perName are built
+  field-by-field from parseSecretsListTable's parsed NAME/DIGEST/present booleans, never from the
+  raw string); the football-ingest HTTP response body (written verbatim to
+  `<operation>.json` in the evidence dir via `invoke()`) — this is pre-existing behavior from
+  attempt 1, unchanged by this diff, and is the function's own JSON response rather than an echo of
+  the request's secret headers, so it is out of scope for this delta review (it was already
+  reviewed and accepted in attempt 1). I found no new or sibling leak site beyond the one already
+  fixed.
+
+release_blockers: []
+
+human_review_recommendation: >
+  Same question I raised in attempt 1: given this touches production secret rotation
+  (SUPABASE secrets set/unset against a real project) and the class of defect found here was a
+  genuine, if narrow, evidence-hygiene regression, I recommend a human (not just agent Reviewer/
+  Verifier passes) look at the diff before merge — not because I found anything wrong with attempt
+  2, but because the stakes (a live API token or freshly-minted trigger secret landing in an
+  uploaded CI artifact) warrant a second set of human eyes on a two-line security-sensitive fix,
+  same as any production-secret-handling change would. This is advisory, not a release blocker in
+  the sense of a defect I found.
+
+residual_risks:
+  - "Carried forward from attempt-1 verification: no risks were flagged there beyond normal
+    production-change caution."
+  - "Carried forward from this task's verification-report-attempt2.yaml: none noted beyond the
+    scope of this specific fix."
+  - "New from this review (non-blocking, see findings_non_blocking id 1): the 'compile-time
+    protection' this fix's own documentation claims for itself does not actually exist — the real
+    durability rests on source comments, the new test suite, and the workflow-level sanitizer/grep
+    scan, all of which are in place and were independently confirmed here. A future change to
+    EvidenceCommand's shape or to the push sites should not assume TypeScript will catch a
+    regression; it should rely on `assertNoStdoutLeak`-style tests instead."
+  - "scripts/backend/**/*.ts (including this file) is outside the project's tsc --noEmit include
+    scope entirely; this is pre-existing and out of scope for this task, but means 'bun run
+    typecheck: PASS' as reported by both the Builder and Verifier does not mean this file was
+    typechecked."
+
+notes: >
+  This is a genuine, well-executed fix: minimal diff, correct shape, a meaningful regression test
+  (verified the recursive walker actually recurses, not just present), and a real independent
+  before/after proof from the Verifier that I found consistent with the code on inspection. My one
+  substantive finding is that the fix's own "type system now prevents this" framing does not hold
+  up technically, but the actual security property — no raw command stdout in written evidence —
+  does hold, on every path I traced, and is backed by test coverage plus independent
+  workflow-level defenses. PASSing on the merits of the actual code and test behavior.
+
+status: PASS
