@@ -1,0 +1,336 @@
+{
+  "task": "BG-0003 (+ BG-0001 DEF-1, DEF-2)",
+  "role": "Builder-Backend",
+  "recordedAt": "2026-09-18T11:05:00Z",
+  "database": {
+    "project": "tkewgajrljbwgwedqsxn",
+    "name": "BotolaGO Production V2",
+    "protocol": "Every scenario ran inside a single statement batch beginning with `begin;`, ending with `rollback;`, under `select set_config('request.jwt.claims','{\"role\":\"service_role\"}',true)`. Both new migration bodies were inlined with `create or replace` inside the transaction; `apply_migration` was never used. Results were returned by aborting the transaction with `raise exception 'LABEL %', log::text`, so nothing was ever committed.",
+    "migrationsUnderTest": [
+      "supabase/migrations/20260918130000_fantasy_deadline_watch.sql",
+      "supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql"
+    ],
+    "postRehearsalVerification": {
+      "statement": "read-only check run after all batches, outside any transaction",
+      "rehearsal_rounds": 0,
+      "gameweeks": 1,
+      "assignments": 8,
+      "fixtures": 488,
+      "deadline_audit": 0,
+      "gw1_deadline": "2026-09-23 22:30:00+00",
+      "gw1_status": "open",
+      "gw1_first_kickoff": "2026-09-24 00:00:00+00",
+      "watch_fn_present": 0,
+      "conclusion": "No rehearsal artefact survives; the deadline watch function does not exist in production until the migration is promoted."
+    }
+  },
+  "windowNote": "The brief's threshold scenarios are written as (null, 72, 0) and (null, 72, 240). With the specified validation (p_warn_hours >= p_escalate_hours >= 0, p_warn_hours <= 720) the second is rejected, and GW1's deadline is 131.5 h away on 2026-09-18, i.e. outside a 72 h warning window, so (null, 72, 24) legitimately returns no gameweeks. The scenarios were therefore run with the documented maximum warn window (720) and are reported alongside the literal default call; the refusal of (null, 72, 240) is recorded as well.",
+  "scenarios": {
+    "R1": {
+      "intent": "Watch RPC on live data returns GW1 with 8 unconfirmed fixtures and team names.",
+      "verdict": "PASS",
+      "raw": {
+        "defaultWindow_72_24": {
+          "schemaVersion": 1,
+          "seasonId": "9918cf95-9ed5-4d7b-99ca-eb9bfc29a258",
+          "seasonStatus": "registration_open",
+          "warnHours": 72,
+          "escalateHours": 24,
+          "serverTime": "2026-09-18T10:59:55.211326+00:00",
+          "remediation": "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+          "gameweeks": []
+        },
+        "wideWindow_720_24": {
+          "schemaVersion": 1,
+          "seasonId": "9918cf95-9ed5-4d7b-99ca-eb9bfc29a258",
+          "seasonStatus": "registration_open",
+          "warnHours": 720,
+          "escalateHours": 24,
+          "serverTime": "2026-09-18T10:59:55.211326+00:00",
+          "remediation": "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+          "gameweeks": [
+            {
+              "gameweekId": "3cc19aaa-ea33-4909-845b-db33314b4071",
+              "sequence": 1,
+              "status": "open",
+              "deadlineAt": "2026-09-23T22:30:00+00:00",
+              "startsAt": "2026-09-24T00:00:00+00:00",
+              "hoursToDeadline": 131.5,
+              "deadlinePassed": false,
+              "unconfirmedFixtures": 8,
+              "totalCountingFixtures": 8,
+              "deadlineDerivedFromPlaceholder": true,
+              "severity": "info",
+              "fixtures": [
+                {
+                  "fixtureId": "35ecf3a7-903a-4630-b6b8-6a5acb32b709",
+                  "homeTeam": "Difaâ El Jadida",
+                  "awayTeam": "CODM Meknès",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:42.108+00:00",
+                  "sourceSequence": 1789726002108
+                },
+                {
+                  "fixtureId": "432db163-ee21-4bfa-b2ea-199105ff2758",
+                  "homeTeam": "Maghreb Fès",
+                  "awayTeam": "CR Khemis Zemamra",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:42.892+00:00",
+                  "sourceSequence": 1789726002892
+                },
+                {
+                  "fixtureId": "5dddc509-791e-4772-837a-4a2cd97c401c",
+                  "homeTeam": "UTS Rabat",
+                  "awayTeam": "FUS Rabat",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:40.808+00:00",
+                  "sourceSequence": 1789726000808
+                },
+                {
+                  "fixtureId": "6266b83c-1bc1-4d02-96c5-9bdd44caad59",
+                  "homeTeam": "Kawkab Marrakech",
+                  "awayTeam": "Hassania Agadir",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:40.185+00:00",
+                  "sourceSequence": 1789726000185
+                },
+                {
+                  "fixtureId": "b48265b5-5df0-4ae3-815d-a0a01cde80f2",
+                  "homeTeam": "Amal Tiznit",
+                  "awayTeam": "Ittihad Tanger",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:41.259+00:00",
+                  "sourceSequence": 1789726001259
+                },
+                {
+                  "fixtureId": "befe1113-be9f-461d-81cf-9dcc262fab45",
+                  "homeTeam": "FAR Rabat",
+                  "awayTeam": "Raja Casablanca",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:38.8+00:00",
+                  "sourceSequence": 1789725998800
+                },
+                {
+                  "fixtureId": "e85aa943-5b31-4a90-8b15-691244450bec",
+                  "homeTeam": "Moghreb Tétouan",
+                  "awayTeam": "RSB Berkane",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:39.592+00:00",
+                  "sourceSequence": 1789725999592
+                },
+                {
+                  "fixtureId": "ec26e426-096a-4e13-a495-0f96d68f4fbc",
+                  "homeTeam": "WCA",
+                  "awayTeam": "Widad Témara",
+                  "providerKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "assignedKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "originalKickoffAt": "2026-09-24T00:00:00+00:00",
+                  "fixtureStatus": "not_started",
+                  "assignmentStatus": "assigned",
+                  "frozen": false,
+                  "providerUpdatedAt": "2026-09-18T10:06:41.68+00:00",
+                  "sourceSequence": 1789726001680
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "R2": {
+      "intent": "Two calls identical except serverTime / hoursToDeadline; row counts unchanged.",
+      "verdict": "PASS",
+      "raw": {
+        "identicalExceptClock": true,
+        "serverTimeDiffers": false,
+        "hours1": "131.50",
+        "hours2": "131.50",
+        "countsBefore": { "gameweeks": 1, "assignments": 8, "fixtures": 488, "deadlineAudit": 0 },
+        "countsAfter": { "gameweeks": 1, "assignments": 8, "fixtures": 488, "deadlineAudit": 0 },
+        "countsUnchanged": true
+      },
+      "note": "Both calls ran inside one DO block, i.e. one statement, so statement_timestamp() (and therefore serverTime and hoursToDeadline) is identical; the payloads are byte-identical, which is the stronger form of the property under test."
+    },
+    "R3": {
+      "intent": "An authenticated caller is refused.",
+      "verdict": "PASS",
+      "raw": { "refused": true, "sqlstate": "PT403", "message": "forbidden" }
+    },
+    "R4": {
+      "intent": "Threshold behaviour: a zero escalation window keeps the entry informational, a wide one escalates; the window validation refuses warn < escalate.",
+      "verdict": "PASS",
+      "raw": {
+        "window_720_0": { "escalateHours": 0, "severities": ["info"] },
+        "window_720_240": { "escalateHours": 240, "severities": ["escalate"] },
+        "window_72_240_invalid": {
+          "refused": true,
+          "sqlstate": "PT400",
+          "message": "fantasy_deadline_watch_window_invalid"
+        }
+      }
+    },
+    "R5": {
+      "intent": "Mixed round: a scheduled gameweek with 7 confirmed kickoffs and 1 placeholder must not have its deadline written from the placeholder, and must report deadline_unconfirmed.",
+      "verdict": "PASS",
+      "setup": {
+        "syntheticRound": "Rehearsal Round 90 (round_number 90), 8 fixtures on the 16 GW1 clubs; 7 kickoffs confirmed at 2026-11-11T19:00Z, 1 placeholder at 2026-11-10T00:00Z",
+        "gameweekId": "576329ee-db6e-4f80-9e3a-b22def264f0e",
+        "roundId": "998a1600-19b7-4a17-b3ca-9697d9b8a90d",
+        "deadlineAtBefore": "2026-11-10T22:30:00+00:00",
+        "minAssignedKickoff": "2026-11-10T00:00:00+00:00",
+        "minConfirmedAssignedKickoff": "2026-11-11T19:00:00+00:00",
+        "placeholderDerivedDeadlineWouldBe": "2026-11-09T22:30:00+00:00",
+        "auditRows": 0
+      },
+      "raw": {
+        "round": {
+          "round": 90,
+          "roundId": "998a1600-19b7-4a17-b3ca-9697d9b8a90d",
+          "gameweekId": "576329ee-db6e-4f80-9e3a-b22def264f0e",
+          "status": "scheduled",
+          "sequence": 90,
+          "fixtures": 8,
+          "confirmedKickoffs": 7,
+          "deadlineAt": "2026-11-10T22:30:00+00:00",
+          "notes": [
+            "deadline_unconfirmed",
+            { "kickoffUnconfirmed": 1, "deadlineUnconfirmed": true }
+          ]
+        },
+        "deadlineChanges": 0,
+        "kickoffsRealigned": 0,
+        "deadlineAtAfter": "2026-11-10T22:30:00+00:00",
+        "startsAtAfter": "2026-11-11T00:00:00+00:00",
+        "deadlineUnchanged": true,
+        "auditRowsAfter": 0
+      },
+      "recovery": {
+        "intent": "Once the eighth kickoff is published the same sync realigns normally.",
+        "raw": {
+          "round": {
+            "round": 90,
+            "roundId": "998a1600-19b7-4a17-b3ca-9697d9b8a90d",
+            "gameweekId": "576329ee-db6e-4f80-9e3a-b22def264f0e",
+            "status": "scheduled",
+            "sequence": 90,
+            "fixtures": 8,
+            "confirmedKickoffs": 8,
+            "deadlineAt": "2026-11-11T17:30:00+00:00",
+            "notes": [{ "kickoffsRealigned": 1 }, { "deadlineAt": "2026-11-11T17:30:00+00:00" }]
+          },
+          "deadlineChanges": 1,
+          "deadlineAtAfter": "2026-11-11T17:30:00+00:00",
+          "auditRowsAfter": 1
+        }
+      },
+      "conclusion": "Before the guard, min(assigned_kickoff_at) over all counting assignments was the placeholder 2026-11-10T00:00Z and the sync would have written 2026-11-09T22:30Z. With the guard the window and deadline are untouched and the note deadline_unconfirmed is emitted; the deadline is written only once every counting kickoff is confirmed."
+    },
+    "R6": {
+      "intent": "An open gameweek whose deadline has already passed refuses a moved kickoff with deadline_locked and writes no audit row.",
+      "verdict": "PASS",
+      "setup": {
+        "gameweek": "3cc19aaa-ea33-4909-845b-db33314b4071 (live GW1)",
+        "step1": "the 8 GW1 fixtures were given a confirmed kickoff of 2026-09-20T18:00Z",
+        "step2": "GW1's deadline was moved to 2026-09-18T08:00Z while that was still legal (open, deadline in the future) — this is the single audit row below",
+        "auditRowsAtStart": 0,
+        "auditRowsAfterSetup": 1
+      },
+      "raw": {
+        "round": {
+          "round": 1,
+          "roundId": "e85725dc-ec82-4d18-8d53-4cfb652aa02e",
+          "gameweekId": "3cc19aaa-ea33-4909-845b-db33314b4071",
+          "status": "open",
+          "sequence": 1,
+          "fixtures": 8,
+          "confirmedKickoffs": 8,
+          "deadlineAt": "2026-09-18T08:00:00+00:00",
+          "notes": [{ "kickoffsRealigned": 8 }, "deadline_locked"]
+        },
+        "deadlineAtAfter": "2026-09-18T08:00:00+00:00",
+        "startsAtAfter": "2026-09-24T00:00:00+00:00",
+        "unchanged": true,
+        "auditRowsBeforeSync": 1,
+        "auditRowsAfterSync": 1,
+        "noAuditRowFromSync": true,
+        "serverTime": "2026-09-18T11:04:53.621968+00:00"
+      }
+    },
+    "R7": {
+      "intent": "A realignment that would derive a deadline in the past is refused with new_deadline_in_past.",
+      "verdict": "PASS",
+      "setup": {
+        "syntheticRound": "Rehearsal Round 92 (round_number 92), 8 confirmed fixtures at 2026-11-11T19:00Z, then moved by the provider to 2026-09-18T09:00Z (about two hours before the rehearsal)",
+        "gameweekId": "ba82adf4-23d0-48e1-a2c8-f90055f67c6d",
+        "roundId": "2be62968-05f4-4b14-bca0-acf7cdbb63c8",
+        "status": "scheduled",
+        "deadlineAtBefore": "2026-11-11T17:30:00+00:00"
+      },
+      "raw": {
+        "round": {
+          "round": 92,
+          "roundId": "2be62968-05f4-4b14-bca0-acf7cdbb63c8",
+          "gameweekId": "ba82adf4-23d0-48e1-a2c8-f90055f67c6d",
+          "status": "scheduled",
+          "sequence": 92,
+          "fixtures": 8,
+          "confirmedKickoffs": 8,
+          "deadlineAt": "2026-11-11T17:30:00+00:00",
+          "notes": [{ "kickoffsRealigned": 8 }, "new_deadline_in_past"]
+        },
+        "deadlineAtAfter": "2026-11-11T17:30:00+00:00",
+        "unchanged": true,
+        "syncDeadlineChanges": 0,
+        "syncKickoffsRealigned": 16
+      }
+    },
+    "R8": {
+      "intent": "A direct service update of deadline_at on a locked gameweek raises fantasy_gameweek_locked.",
+      "verdict": "PASS",
+      "raw": {
+        "gameweekId": "3cc19aaa-ea33-4909-845b-db33314b4071",
+        "gameweekStatus": "locked",
+        "refused": true,
+        "sqlstate": "PT409",
+        "message": "fantasy_gameweek_locked",
+        "deadlineAt": "2026-09-18T08:00:00+00:00"
+      }
+    }
+  },
+  "def3": "Not attempted: no non-production database is available in this environment. The supabase CLI is present as a devDependency but the Docker daemon is not running (`docker info` fails), so `supabase start` / `supabase db reset` cannot be run and no local stack exists. No orchestrator run driving a gameweek end to end was fabricated."
+}

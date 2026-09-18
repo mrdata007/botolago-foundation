@@ -8,12 +8,14 @@ workflows, which remain available as fallbacks.
 
 ## Components
 
-| Piece                                                          | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `supabase/migrations/20260918120000_fantasy_calendar_sync.sql` | `api.service_sync_fantasy_calendar(p_fantasy_season_id uuid default null)` (service role only) plus `app_private.fantasy_kickoff_confirmed()` and a relaxed `fantasy_guard_deadline_change` (a `scheduled` gameweek may be realigned; an `open` one only before its deadline; everything else raises `fantasy_gameweek_locked`; every change stays audited in `app_private.fantasy_deadline_change_audit`).                                                                      |
-| `scripts/backend/fantasy-season-orchestrator.ts`               | One idempotent pass: calendar sync → finished-fixture performance ingestion (`runCurrentPerformanceBatch`, bounded) → the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek with work → calendar sync again. Writes sanitized `fantasy-season-orchestrator.json`; verdict `ok` / `waiting` / `failed`.                                                                                                                                                         |
-| `.github/workflows/fantasy-season-orchestrator.yml`            | Hourly (`12 * * * *`) and owner dispatch (`RUN_FANTASY_ORCHESTRATOR`). Job runs only when the repository variable `FANTASY_AUTOMATION_ENABLED` is `true`, on `main`, in the `production-admin-activation` environment, in the shared production mutation concurrency group. Steps: guard → checkout exact SHA → unit tests + secrets check → provider refresh (`current-season-recovery.ts`, canary mode, `continue-on-error`) → orchestrator → evidence scan → artifact upload. |
-| `scripts/backend/current-season-recovery.ts`                   | Unchanged provider ingestion. `validateRecoveryMode` additionally accepts `schedule` + `canary` when `FANTASY_AUTOMATION_ENABLED=true` (the same owner-reviewed canary that is dispatched by hand today).                                                                                                                                                                                                                                                                        |
+| Piece                                                                            | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/20260918120000_fantasy_calendar_sync.sql`                   | `api.service_sync_fantasy_calendar(p_fantasy_season_id uuid default null)` (service role only) plus `app_private.fantasy_kickoff_confirmed()` and a relaxed `fantasy_guard_deadline_change` (a `scheduled` gameweek may be realigned; an `open` one only before its deadline; everything else raises `fantasy_gameweek_locked`; every change stays audited in `app_private.fantasy_deadline_change_audit`).                                                                      |
+| `supabase/migrations/20260918130000_fantasy_deadline_watch.sql`                  | `api.service_fantasy_deadline_watch(p_fantasy_season_id uuid default null, p_warn_hours integer default 72, p_escalate_hours integer default 24)` (service role only, `stable`, read-only). Lists scheduled/open gameweeks whose deadline is inside the warning window while an active counting fixture still carries an unconfirmed kickoff, with the affected fixture detail. Never writes, never derives a replacement deadline.                                              |
+| `supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql` | Replaces `api.service_sync_fantasy_calendar` so the window/deadline derivation ignores unconfirmed kickoffs and is skipped entirely (note `deadline_unconfirmed`) while any active counting assignment of that gameweek is still a placeholder. Everything else is unchanged.                                                                                                                                                                                                    |
+| `scripts/backend/fantasy-season-orchestrator.ts`                                 | One idempotent pass: calendar sync → finished-fixture performance ingestion (`runCurrentPerformanceBatch`, bounded) → the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek with work → calendar sync again → deadline watch. Writes sanitized `fantasy-season-orchestrator.json`; verdict `ok` / `waiting` / `escalate` / `failed`.                                                                                                                           |
+| `.github/workflows/fantasy-season-orchestrator.yml`                              | Hourly (`12 * * * *`) and owner dispatch (`RUN_FANTASY_ORCHESTRATOR`). Job runs only when the repository variable `FANTASY_AUTOMATION_ENABLED` is `true`, on `main`, in the `production-admin-activation` environment, in the shared production mutation concurrency group. Steps: guard → checkout exact SHA → unit tests + secrets check → provider refresh (`current-season-recovery.ts`, canary mode, `continue-on-error`) → orchestrator → evidence scan → artifact upload. |
+| `scripts/backend/current-season-recovery.ts`                                     | Unchanged provider ingestion. `validateRecoveryMode` additionally accepts `schedule` + `canary` when `FANTASY_AUTOMATION_ENABLED=true` (the same owner-reviewed canary that is dispatched by hand today).                                                                                                                                                                                                                                                                        |
 
 ## What the calendar sync does, per provider round
 
@@ -35,7 +37,13 @@ workflows, which remain available as fallbacks.
 4. **Placeholder kickoffs** (`00:00:00 UTC`) are never treated as authoritative:
    they block creation and are reported as `kickoffUnconfirmed` /
    `deadlineUnconfirmed` on existing gameweeks, so a deadline derived from a
-   placeholder is always visible in the run evidence.
+   placeholder is always visible in the run evidence. Since
+   `20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql` they also stop
+   the derivation itself: while any active counting assignment of a gameweek is
+   unconfirmed the sync leaves `starts_at` / `ends_at` / `deadline_at` exactly
+   as they are and reports `deadline_unconfirmed`. A partially published round
+   (say 7 confirmed kickoffs and 1 placeholder) therefore never writes a
+   placeholder-derived deadline.
 
 A per-season advisory lock serialises concurrent calls; all writes go through
 the existing unique indexes (`fantasy_gameweeks (season, sequence)`,
@@ -61,6 +69,72 @@ coverage incomplete) leaves the pass in `waiting`; a thrown error stops the
 pass with a stable code and exit status 1. At most two gameweeks are processed
 per pass (`maxWorkerRuns`).
 
+An `open` gameweek whose round note carries `deadlineUnconfirmed: true` (or
+`deadline_unconfirmed`) is **never** taken as a `deadline_passed` target, even
+once its stored deadline has elapsed: locking it would freeze lineups on a
+deadline the provider never published, and nothing can undo that afterwards.
+The refusal is reported as `summary.skipped[] = {gameweekId, sequence, reason:
+"deadline_unconfirmed"}` and degrades the verdict to at least `waiting`.
+
+## Deadline watch
+
+`api.service_fantasy_deadline_watch` runs last, is read-only and never
+short-circuits the pass. It reports a `scheduled` / `open` gameweek when both
+hold:
+
+- at least one active, counting fixture still has an unconfirmed kickoff
+  (`app_private.fantasy_kickoff_confirmed` — a `00:00:00 UTC` placeholder), and
+- the gameweek's deadline is at most `warnHours` away (negative hours, i.e. a
+  deadline already elapsed, always qualify).
+
+Two tiers, decided by the database clock only:
+
+| Tier       | Condition                                  | Effect                                      |
+| ---------- | ------------------------------------------ | ------------------------------------------- |
+| `info`     | deadline farther away than `escalateHours` | verdict unchanged, entry in `informational` |
+| `escalate` | deadline within `escalateHours` (or past)  | verdict `escalate`, run exits 1 (red)       |
+
+Defaults are 72 h / 24 h, defined in the RPC defaults and in
+`DEADLINE_WATCH_WARN_HOURS` / `DEADLINE_WATCH_ESCALATE_HOURS`; the repository
+variables `FANTASY_DEADLINE_WATCH_WARN_HOURS` /
+`FANTASY_DEADLINE_WATCH_ESCALATE_HOURS` override them (integers 0…720, warn ≥
+escalate, otherwise the run fails closed with
+`fantasy_deadline_watch_window_invalid`).
+
+Reading the `deadlineWatch` block of `fantasy-season-orchestrator.json`:
+
+- `warnHours` / `escalateHours` — the window actually used;
+- `affected` — how many gameweeks matched;
+- `escalations[]` / `informational[]` — the gameweek entries, sorted by
+  `sequence`, each with `gameweekId`, `status`, `deadlineAt`, `startsAt`,
+  `hoursToDeadline`, `deadlinePassed`, `unconfirmedFixtures`,
+  `totalCountingFixtures`, `deadlineDerivedFromPlaceholder` and `fixtures[]`
+  (`fixtureId`, `homeTeam`, `awayTeam`, `providerKickoffAt`,
+  `assignedKickoffAt`, `originalKickoffAt`, `fixtureStatus`,
+  `assignmentStatus`, `frozen`, `providerUpdatedAt`, `sourceSequence`);
+- `remediation` — always `scripts/backend/fantasy-realign-gameweek-calendar.sql`;
+- `error` instead of the above — the RPC failed; the verdict degrades to
+  `waiting` and the pass is otherwise unaffected.
+
+Operator procedure on an `escalate` run:
+
+1. Open the uploaded evidence and read `deadlineWatch.escalations[]`: the
+   gameweek, its current deadline and the fixtures still at `00:00 UTC`.
+2. Check the provider (SportsMonks) for the real kickoff times. The guard never
+   invents a kickoff and never moves a deadline; only a published kickoff fixes
+   the condition.
+3. Once real times exist, let the next scheduled pass realign the gameweek, or
+   run `scripts/backend/fantasy-realign-gameweek-calendar.sql` for the single
+   gameweek if it is urgent.
+4. If the times cannot be published before the deadline, the gameweek must be
+   handled manually **before** the deadline elapses. Afterwards realignment is
+   impossible: the sync reports `deadline_locked` / `new_deadline_in_past`, the
+   guard trigger raises `fantasy_gameweek_locked` and the manual script refuses
+   with `current_deadline_already_passed`.
+
+The watch stays red for every hourly pass until the provider publishes; there
+is no auto-suppression by design.
+
 ## Rehearsal evidence (production database, rolled back)
 
 - `docs/qa/fantasy-orchestration/rehearsal-calendar-sync.json` — scenarios A–E:
@@ -71,6 +145,15 @@ per pass (`maxWorkerRuns`).
   scheduled gameweek moves the deadline once with audit; a cancelled fixture
   is voided and a re-added one gets `source_version` 2; an `authenticated`
   caller gets `forbidden`.
+- `docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json` — scenarios
+  R1–R8 for the deadline watch and the unconfirmed-kickoff guard: the watch on
+  live data (GW1, 8 unconfirmed fixtures, `deadlineDerivedFromPlaceholder`
+  true), idempotence, `forbidden` for an authenticated caller, the info /
+  escalate thresholds, a mixed round (7 confirmed + 1 placeholder) whose
+  deadline is **not** written from the placeholder (`deadline_unconfirmed`,
+  0 audit rows) and is written normally once the last kickoff is published, and
+  the three refusals `deadline_locked`, `new_deadline_in_past` and
+  `fantasy_gameweek_locked`.
 - `docs/qa/fantasy-orchestration/rehearsal-lifecycle-gw1-gw3.json` — GW1
   processed (539 players, 3 teams), round 2 staged by the sync, GW2 opened by
   the progression (3 teams, 3 lineups, hub shows gameweek 2), kickoff change on
@@ -81,10 +164,14 @@ per pass (`maxWorkerRuns`).
 
 ## Enabling in production
 
-1. Promote migration `20260918120000_fantasy_calendar_sync.sql` to
+1. Promote migrations `20260918120000_fantasy_calendar_sync.sql`,
+   `20260918130000_fantasy_deadline_watch.sql` and
+   `20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql` to
    Production V2 (the `Phase 7E-B Production V2 migration promotion` workflow on
-   the merged `main` SHA, or an owner-authorised apply). Until it is applied
-   the orchestrator fails closed at its first RPC (`fantasy_orchestrator_rpc_failed`).
+   the merged `main` SHA, or an owner-authorised apply). Until they are applied
+   the orchestrator fails closed at its first RPC (`fantasy_orchestrator_rpc_failed`),
+   and without `20260918130000` the deadline watch degrades the pass to `waiting`
+   with `fantasy_deadline_watch_failed`.
 2. Set the repository variable `FANTASY_AUTOMATION_ENABLED=true`. Both the
    workflow condition and the script guard require it; unsetting it stops the
    schedule immediately.
