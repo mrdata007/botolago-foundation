@@ -1,9 +1,11 @@
-import { chmod, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
 import type { TwoSeasonBackfillManifest } from "./sportsmonks-two-season-backfill-preflight";
 
 type JsonRecord = Record<string, unknown>;
+type FetchLike = typeof fetch;
 
 const EXPECTED_PROJECT_REF = "tkewgajrljbwgwedqsxn";
 const EXPECTED_FIXTURES_PER_SEASON = 240;
@@ -11,12 +13,35 @@ const MAX_BATCHES_PER_SEASON = 60;
 const BATCH_SIZE = 5;
 const CONFIRMATION = "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL";
 const ALGORITHM_VERSION = "botolago-preseason-rating-v2-fixture-performance";
+const PROVIDER_BASE_URL = "https://api.sportmonks.com/v3/football";
+const PROVIDER_TIMEOUT_MS = "15000";
+const PROVIDER_MAX_RETRIES = "2";
 
-const RESTORE_SEASON = {
-  id: 26_027,
-  startingAt: "2025-09-12",
-  endingAt: "2026-07-05",
-} as const;
+/** The two seasons the shared preflight proves still exist at the provider (BG-0011-OWNER-2 pins 26027 only for a dispatch). */
+export const ALLOWED_SEASON_IDS = [26_027, 24_319] as const;
+
+/** The 15 function secrets this runner (and the pre-2026-09-18 defect) mutates. Order matters only for the .env file. */
+export const MANAGED_SECRET_NAMES = [
+  "SPORTSMONKS_API_TOKEN",
+  "FOOTBALL_INGESTION_TRIGGER_SECRET",
+  "FOOTBALL_PROVIDER",
+  "FOOTBALL_PROVIDER_BASE_URL",
+  "FOOTBALL_SPORTSMONKS_LEAGUE_ID",
+  "FOOTBALL_SPORTSMONKS_SEASON_ID",
+  "FOOTBALL_SPORTSMONKS_TEAM_IDS",
+  "FOOTBALL_SPORTSMONKS_COUNTRY_CODE",
+  "FOOTBALL_SPORTSMONKS_COMPETITION_TYPE",
+  "FOOTBALL_SPORTSMONKS_SEASON_START",
+  "FOOTBALL_SPORTSMONKS_SEASON_END",
+  "FOOTBALL_SPORTSMONKS_FIXTURE_FROM",
+  "FOOTBALL_SPORTSMONKS_FIXTURE_TO",
+  "FOOTBALL_PROVIDER_TIMEOUT_MS",
+  "FOOTBALL_PROVIDER_MAX_RETRIES",
+] as const;
+
+export type ManagedSecretName = (typeof MANAGED_SECRET_NAMES)[number];
+
+const TRIGGER_SECRET_NAME: ManagedSecretName = "FOOTBALL_INGESTION_TRIGGER_SECRET";
 
 export class HistoricalPerformanceBackfillError extends Error {
   constructor(readonly code: string) {
@@ -163,20 +188,6 @@ export function validateHistoricalRatingDerivation(
   };
 }
 
-function required(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) throw new HistoricalPerformanceBackfillError(`missing_${name.toLowerCase()}`);
-  return value;
-}
-
-async function jsonFile(path: string): Promise<unknown> {
-  try {
-    return JSON.parse(await readFile(path, "utf8")) as unknown;
-  } catch {
-    throw new HistoricalPerformanceBackfillError("invalid_historical_backfill_manifest_json");
-  }
-}
-
 function validateManifest(value: unknown, expectedCommit: string): TwoSeasonBackfillManifest {
   const manifest = object(value, "invalid_historical_backfill_manifest");
   const seasons = Array.isArray(manifest.seasons) ? manifest.seasons : [];
@@ -211,74 +222,202 @@ function validateManifest(value: unknown, expectedCommit: string): TwoSeasonBack
   return value as TwoSeasonBackfillManifest;
 }
 
-function envFileContent(
-  season: {
-    readonly id: number;
-    readonly startingAt: string;
-    readonly endingAt: string;
-    readonly teamIds: readonly number[];
-  },
-  trigger: string,
-): string {
-  const values: Record<string, string> = {
-    SPORTSMONKS_API_TOKEN: required("SPORTSMONKS_API_TOKEN"),
-    FOOTBALL_INGESTION_TRIGGER_SECRET: trigger,
-    FOOTBALL_PROVIDER: "sportsmonks",
-    FOOTBALL_PROVIDER_BASE_URL: "https://api.sportmonks.com/v3/football",
-    FOOTBALL_SPORTSMONKS_LEAGUE_ID: "860",
-    FOOTBALL_SPORTSMONKS_SEASON_ID: String(season.id),
-    FOOTBALL_SPORTSMONKS_TEAM_IDS: season.teamIds.join(","),
-    FOOTBALL_SPORTSMONKS_COUNTRY_CODE: "MA",
-    FOOTBALL_SPORTSMONKS_COMPETITION_TYPE: "league",
-    FOOTBALL_SPORTSMONKS_SEASON_START: season.startingAt,
-    FOOTBALL_SPORTSMONKS_SEASON_END: season.endingAt,
-    FOOTBALL_SPORTSMONKS_FIXTURE_FROM: season.startingAt,
-    FOOTBALL_SPORTSMONKS_FIXTURE_TO: season.endingAt,
-    FOOTBALL_PROVIDER_TIMEOUT_MS: "15000",
-    FOOTBALL_PROVIDER_MAX_RETRIES: "2",
-  };
-  return Object.entries(values)
-    .map(([name, value]) => `${name}=${value}\n`)
-    .join("");
+// ---------------------------------------------------------------------------
+// Season scope (BG-0011-OWNER-2: 26027 only for this dispatch; 24319 must not be touched).
+// ---------------------------------------------------------------------------
+
+export function parseRequestedSeasonIds(raw: string | undefined): number[] {
+  const value = raw?.trim();
+  if (!value) throw new HistoricalPerformanceBackfillError("g7_season_ids_empty");
+  const parts = value.split(",").map((part) => part.trim());
+  if (parts.some((part) => part.length === 0)) {
+    throw new HistoricalPerformanceBackfillError("g7_season_ids_malformed");
+  }
+  const ids = parts.map((part) => {
+    if (!/^[1-9]\d*$/.test(part)) {
+      throw new HistoricalPerformanceBackfillError("g7_season_ids_malformed");
+    }
+    const id = Number(part);
+    if (!(ALLOWED_SEASON_IDS as readonly number[]).includes(id)) {
+      throw new HistoricalPerformanceBackfillError("g7_season_ids_out_of_scope");
+    }
+    return id;
+  });
+  if (new Set(ids).size !== ids.length) {
+    throw new HistoricalPerformanceBackfillError("g7_season_ids_duplicate");
+  }
+  return ids;
 }
+
+// ---------------------------------------------------------------------------
+// Fingerprints. The Management API's secrets endpoint (and the CLI's DIGEST column, which is that
+// same API field) never returns plaintext, so a restore can only be PROVEN, never read back.
+// ---------------------------------------------------------------------------
+
+export function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function fingerprintMatches(suppliedValue: string, fingerprint: string): boolean {
+  return sha256Hex(suppliedValue) === fingerprint || suppliedValue === fingerprint;
+}
+
+/** Parses the Supabase CLI's `secrets list` two-column NAME/DIGEST text table. Never call with --output. */
+export function parseSecretsListTable(text: string): Map<string, string> {
+  const table = new Map<string, string>();
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (/^[-+|\s]+$/.test(line)) continue;
+    const cells = (line.includes("|") ? line.split("|") : line.split(/\s{2,}/))
+      .map((cell) => cell.trim())
+      .filter((cell) => cell.length > 0);
+    if (cells.length < 2) continue;
+    const [name, digest] = cells;
+    if (!name || !digest) continue;
+    if (name.toUpperCase() === "NAME" || digest.toUpperCase() === "DIGEST") continue;
+    if (!/^[A-Z][A-Z0-9_]*$/.test(name)) continue;
+    table.set(name, digest);
+  }
+  return table;
+}
+
+export interface CapturedSecret {
+  readonly name: ManagedSecretName;
+  readonly present: boolean;
+  readonly fingerprint: string | null;
+}
+
+export type PreRunConfig = Readonly<Record<ManagedSecretName, CapturedSecret>>;
+
+function parsePreRunConfig(value: unknown): PreRunConfig {
+  const root = object(value, "invalid_pre_run_config");
+  const secrets = object(root.secrets, "invalid_pre_run_config_secrets");
+  const result = {} as Record<ManagedSecretName, CapturedSecret>;
+  for (const name of MANAGED_SECRET_NAMES) {
+    const entry = object(secrets[name], "invalid_pre_run_config_entry");
+    if (
+      typeof entry.present !== "boolean" ||
+      (entry.fingerprint !== null && typeof entry.fingerprint !== "string")
+    ) {
+      throw new HistoricalPerformanceBackfillError("invalid_pre_run_config_entry");
+    }
+    result[name] = {
+      name,
+      present: entry.present,
+      fingerprint: entry.fingerprint as string | null,
+    };
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Dependencies
+// ---------------------------------------------------------------------------
+
+export interface RunnerDependencies {
+  readonly env: Readonly<Record<string, string | undefined>>;
+  /** Path to the Supabase CLI executable. Fake-CLI tests point this at a recorded shim. */
+  readonly cliPath: string;
+  readonly fetch: FetchLike;
+  readonly now: () => Date;
+  /** Writes a runtime/evidence file with mode 0600. */
+  readonly writeFile: (path: string, content: string) => Promise<void>;
+}
+
+async function defaultWriteSecure(path: string, content: string): Promise<void> {
+  await writeFile(path, content, { mode: 0o600 });
+  await chmod(path, 0o600);
+}
+
+export function defaultRunnerDependencies(): RunnerDependencies {
+  return {
+    env: process.env,
+    cliPath: resolve("node_modules/.bin/supabase"),
+    fetch: globalThis.fetch.bind(globalThis),
+    now: () => new Date(),
+    writeFile: defaultWriteSecure,
+  };
+}
+
+function required(deps: RunnerDependencies, name: string): string {
+  const value = deps.env[name]?.trim();
+  if (!value) throw new HistoricalPerformanceBackfillError(`missing_${name.toLowerCase()}`);
+  return value;
+}
+
+function optional(deps: RunnerDependencies, name: string): string | undefined {
+  const value = deps.env[name]?.trim();
+  return value ? value : undefined;
+}
+
+async function jsonFile(path: string): Promise<unknown> {
+  try {
+    return JSON.parse(await readFile(path, "utf8")) as unknown;
+  } catch {
+    throw new HistoricalPerformanceBackfillError("invalid_historical_backfill_manifest_json");
+  }
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Command execution
+// ---------------------------------------------------------------------------
 
 interface CommandResult {
   readonly operation: string;
   readonly exitCode: number;
+  readonly stdout: string;
 }
 
-function processEnv(): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    ),
-  );
+/**
+ * The only shape of a command's outcome allowed to reach `evidence.commands` (and therefore the
+ * uploaded evidence JSON). `CommandResult.stdout` carries the raw `secrets list` table so
+ * captureConfiguration/performRestore can parse it, and season-configuration/restore stdout can
+ * contain live secret values (SPORTSMONKS_API_TOKEN, the freshly-minted
+ * FOOTBALL_INGESTION_TRIGGER_SECRET) verbatim on success or failure — never widen this type to
+ * carry stdout, and never push a bare CommandResult into evidence.commands.
+ */
+interface EvidenceCommand {
+  readonly operation: string;
+  readonly exitCode: number;
+}
+
+function toEvidenceCommand(result: CommandResult): EvidenceCommand {
+  return { operation: result.operation, exitCode: result.exitCode };
 }
 
 async function runCommand(
+  deps: RunnerDependencies,
   operation: string,
-  executable: string,
   args: readonly string[],
   runtimeDirectory: string,
 ): Promise<CommandResult> {
-  const child = Bun.spawn([executable, ...args], {
-    env: processEnv(),
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  // The real process environment (PATH, HOME, …) is always inherited so the CLI executable can
+  // actually run; deps.env is layered on top so tests can override specific values it reads.
+  const env = {
+    ...process.env,
+    ...Object.fromEntries(
+      Object.entries(deps.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+    ),
+  };
+  const child = Bun.spawn([deps.cliPath, ...args], { env, stdout: "pipe", stderr: "pipe" });
   const [exitCode, stdout, stderr] = await Promise.all([
     child.exited,
     new Response(child.stdout).text(),
     new Response(child.stderr).text(),
   ]);
-  await writeSecure(resolve(runtimeDirectory, `${operation}.raw.log`), `${stdout}${stderr}`);
-  await writeSecure(resolve(runtimeDirectory, `${operation}.exit`), `${exitCode}\n`);
-  return { operation, exitCode };
-}
-
-async function writeSecure(path: string, content: string): Promise<void> {
-  await writeFile(path, content, { mode: 0o600 });
-  await chmod(path, 0o600);
+  await deps.writeFile(resolve(runtimeDirectory, `${operation}.raw.log`), `${stdout}${stderr}`);
+  await deps.writeFile(resolve(runtimeDirectory, `${operation}.exit`), `${exitCode}\n`);
+  return { operation, exitCode, stdout };
 }
 
 interface Invocation {
@@ -288,6 +427,7 @@ interface Invocation {
 }
 
 async function invoke(
+  deps: RunnerDependencies,
   operation: string,
   payload: JsonRecord,
   evidenceDirectory: string,
@@ -296,13 +436,13 @@ async function invoke(
   const endpoint = `https://${EXPECTED_PROJECT_REF}.supabase.co/functions/v1/football-ingest`;
   let response: Response;
   try {
-    response = await fetch(endpoint, {
+    response = await deps.fetch(endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-botolago-ingestion-job": "historical_player_performances",
-        apikey: required("SUPABASE_SECRET_KEY"),
-        Authorization: `Bearer ${required("SUPABASE_SECRET_KEY")}`,
+        apikey: required(deps, "SUPABASE_SECRET_KEY"),
+        Authorization: `Bearer ${required(deps, "SUPABASE_SECRET_KEY")}`,
         "x-botolago-ingestion-key": trigger,
       },
       body: JSON.stringify(payload),
@@ -321,7 +461,7 @@ async function invoke(
     if (error instanceof HistoricalPerformanceBackfillError) throw error;
     throw new HistoricalPerformanceBackfillError(`${operation}_invalid_json`);
   }
-  await writeSecure(path, `${JSON.stringify(parsed, null, 2)}\n`);
+  await deps.writeFile(path, `${JSON.stringify(parsed, null, 2)}\n`);
   if (response.status !== 200) {
     const error =
       typeof parsed.error === "string" && /^[a-z][a-z0-9_]{1,79}$/.test(parsed.error)
@@ -332,28 +472,479 @@ async function invoke(
   return { status: response.status, response: parsed, responseFile };
 }
 
-async function main(): Promise<void> {
-  if (process.env.GITHUB_ACTIONS !== "true" || required("CONFIRMATION") !== CONFIRMATION) {
+// ---------------------------------------------------------------------------
+// Capture (before any mutation)
+// ---------------------------------------------------------------------------
+
+interface CaptureResult {
+  readonly preRunConfig: PreRunConfig;
+  readonly evidenceSecrets: JsonRecord[];
+}
+
+async function captureConfiguration(
+  deps: RunnerDependencies,
+  runtimeDirectory: string,
+): Promise<CaptureResult> {
+  const listCommand = await runCommand(
+    deps,
+    "capture-secrets",
+    ["secrets", "list", "--project-ref", EXPECTED_PROJECT_REF],
+    runtimeDirectory,
+  );
+  if (listCommand.exitCode !== 0) {
+    throw new HistoricalPerformanceBackfillError("production_config_capture_failed");
+  }
+  const table = parseSecretsListTable(listCommand.stdout);
+  if (table.size === 0) {
+    throw new HistoricalPerformanceBackfillError("production_config_capture_failed");
+  }
+  const preRunConfig = {} as Record<ManagedSecretName, CapturedSecret>;
+  const evidenceSecrets: JsonRecord[] = [];
+  for (const name of MANAGED_SECRET_NAMES) {
+    const fingerprint = table.get(name) ?? null;
+    const present = fingerprint !== null;
+    preRunConfig[name] = { name, present, fingerprint };
+    evidenceSecrets.push({
+      name,
+      present,
+      fingerprintSha256: fingerprint ? sha256Hex(fingerprint) : null,
+    });
+  }
+  await deps.writeFile(
+    resolve(runtimeDirectory, "pre-run-config.json"),
+    `${JSON.stringify(
+      { schemaVersion: 1, capturedAt: deps.now().toISOString(), secrets: preRunConfig },
+      null,
+      2,
+    )}\n`,
+  );
+  return { preRunConfig, evidenceSecrets };
+}
+
+// ---------------------------------------------------------------------------
+// Restore plan (proven before any mutation)
+// ---------------------------------------------------------------------------
+
+interface RestorePlan {
+  readonly setValues: Readonly<Record<string, string>>;
+  readonly unsetNames: readonly string[];
+  readonly currentSeasonId: number;
+  readonly crossCheck: {
+    readonly catalogIsCurrent: boolean;
+    readonly catalogLabelMatchesProvider: boolean;
+    readonly providerIsCurrentAndLeagueMatches: boolean;
+  };
+}
+
+async function verifyCurrentSeasonIdentity(
+  deps: RunnerDependencies,
+  currentSeasonId: number,
+): Promise<RestorePlan["crossCheck"]> {
+  let catalogLabel: string | null = null;
+  let catalogIsCurrent = false;
+  try {
+    const secretKey = required(deps, "SUPABASE_SECRET_KEY");
+    const response = await deps.fetch(
+      `https://${EXPECTED_PROJECT_REF}.supabase.co/rest/v1/rpc/football_season_catalog`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          apikey: secretKey,
+          Authorization: `Bearer ${secretKey}`,
+        },
+        body: JSON.stringify({ p_language: "fr", p_limit: 1 }),
+      },
+    );
+    const rows = (await response.json()) as unknown;
+    const first = Array.isArray(rows) ? (rows[0] as JsonRecord | undefined) : undefined;
+    if (first && typeof first.label === "string") {
+      catalogLabel = first.label;
+      catalogIsCurrent = first.isCurrent === true;
+    }
+  } catch {
+    catalogIsCurrent = false;
+  }
+
+  let providerIsCurrentAndLeagueMatches = false;
+  let catalogLabelMatchesProvider = false;
+  try {
+    const token = required(deps, "SPORTSMONKS_API_TOKEN");
+    const response = await deps.fetch(
+      `${PROVIDER_BASE_URL}/seasons/${currentSeasonId}?api_token=${encodeURIComponent(token)}`,
+    );
+    const payload = (await response.json()) as JsonRecord;
+    const season = payload.data as JsonRecord | undefined;
+    if (season) {
+      providerIsCurrentAndLeagueMatches = season.is_current === true && season.league_id === 860;
+      if (catalogLabel !== null && typeof season.name === "string") {
+        catalogLabelMatchesProvider = season.name === catalogLabel;
+      }
+    }
+  } catch {
+    providerIsCurrentAndLeagueMatches = false;
+  }
+
+  return { catalogIsCurrent, catalogLabelMatchesProvider, providerIsCurrentAndLeagueMatches };
+}
+
+async function buildRestorePlan(
+  deps: RunnerDependencies,
+  preRunConfig: PreRunConfig,
+): Promise<RestorePlan> {
+  const currentSeasonIdRaw = required(deps, "G7_CURRENT_SEASON_ID");
+  if (!/^[1-9]\d*$/.test(currentSeasonIdRaw)) {
+    throw new HistoricalPerformanceBackfillError("invalid_g7_current_season_id");
+  }
+  const currentSeasonId = Number(currentSeasonIdRaw);
+  const currentSeasonStart = required(deps, "G7_CURRENT_SEASON_START");
+  const currentSeasonEnd = required(deps, "G7_CURRENT_SEASON_END");
+  const currentFixtureFrom = required(deps, "G7_CURRENT_FIXTURE_FROM");
+  const currentFixtureTo = required(deps, "G7_CURRENT_FIXTURE_TO");
+  const currentTeamIds = required(deps, "G7_CURRENT_TEAM_IDS");
+  const sportsmonksToken = required(deps, "SPORTSMONKS_API_TOKEN");
+
+  const restoreValues: Record<
+    Exclude<ManagedSecretName, "FOOTBALL_INGESTION_TRIGGER_SECRET">,
+    string
+  > = {
+    SPORTSMONKS_API_TOKEN: sportsmonksToken,
+    FOOTBALL_PROVIDER: "sportsmonks",
+    FOOTBALL_PROVIDER_BASE_URL: PROVIDER_BASE_URL,
+    FOOTBALL_SPORTSMONKS_LEAGUE_ID: "860",
+    FOOTBALL_SPORTSMONKS_SEASON_ID: String(currentSeasonId),
+    FOOTBALL_SPORTSMONKS_TEAM_IDS: currentTeamIds,
+    FOOTBALL_SPORTSMONKS_COUNTRY_CODE: "MA",
+    FOOTBALL_SPORTSMONKS_COMPETITION_TYPE: "league",
+    FOOTBALL_SPORTSMONKS_SEASON_START: currentSeasonStart,
+    FOOTBALL_SPORTSMONKS_SEASON_END: currentSeasonEnd,
+    FOOTBALL_SPORTSMONKS_FIXTURE_FROM: currentFixtureFrom,
+    FOOTBALL_SPORTSMONKS_FIXTURE_TO: currentFixtureTo,
+    FOOTBALL_PROVIDER_TIMEOUT_MS: PROVIDER_TIMEOUT_MS,
+    FOOTBALL_PROVIDER_MAX_RETRIES: PROVIDER_MAX_RETRIES,
+  };
+
+  const setValues: Record<string, string> = {};
+  const unsetNames: string[] = [];
+  for (const name of MANAGED_SECRET_NAMES) {
+    if (name === TRIGGER_SECRET_NAME) continue;
+    const captured = preRunConfig[name];
+    const supplied = restoreValues[name];
+    if (captured.present) {
+      if (!captured.fingerprint || !fingerprintMatches(supplied, captured.fingerprint)) {
+        throw new HistoricalPerformanceBackfillError("production_config_restore_unprovable");
+      }
+      setValues[name] = supplied;
+    } else {
+      unsetNames.push(name);
+    }
+  }
+
+  const capturedTrigger = preRunConfig[TRIGGER_SECRET_NAME];
+  if (capturedTrigger.present) {
+    const suppliedTrigger = optional(deps, "G7_CURRENT_TRIGGER_SECRET");
+    if (
+      !suppliedTrigger ||
+      !capturedTrigger.fingerprint ||
+      !fingerprintMatches(suppliedTrigger, capturedTrigger.fingerprint)
+    ) {
+      throw new HistoricalPerformanceBackfillError("production_config_restore_unprovable");
+    }
+    setValues[TRIGGER_SECRET_NAME] = suppliedTrigger;
+  } else {
+    unsetNames.push(TRIGGER_SECRET_NAME);
+  }
+
+  const crossCheck = await verifyCurrentSeasonIdentity(deps, currentSeasonId);
+
+  return { setValues, unsetNames, currentSeasonId, crossCheck };
+}
+
+// ---------------------------------------------------------------------------
+// Restore execution + verification
+// ---------------------------------------------------------------------------
+
+interface RestorationOutcome {
+  readonly attempted: boolean;
+  readonly setExit: number | null;
+  readonly unsetExit: number | null;
+  readonly verified: boolean;
+  readonly perName: JsonRecord[];
+  readonly verifiedAt: string | null;
+}
+
+async function performRestore(
+  deps: RunnerDependencies,
+  runtimeDirectory: string,
+  plan: RestorePlan,
+): Promise<RestorationOutcome> {
+  const restoreLines = Object.entries(plan.setValues)
+    .map(([name, value]) => `${name}=${value}\n`)
+    .join("");
+  const restorePath = resolve(runtimeDirectory, "restore-production-config.env");
+  await deps.writeFile(restorePath, restoreLines);
+
+  const setResult = await runCommand(
+    deps,
+    "restore-production-configuration",
+    ["secrets", "set", "--project-ref", EXPECTED_PROJECT_REF, "--env-file", restorePath],
+    runtimeDirectory,
+  );
+
+  let unsetExit: number | null = null;
+  if (plan.unsetNames.length > 0) {
+    const unsetResult = await runCommand(
+      deps,
+      "disable-stale-production-configuration",
+      ["secrets", "unset", ...plan.unsetNames, "--project-ref", EXPECTED_PROJECT_REF],
+      runtimeDirectory,
+    );
+    unsetExit = unsetResult.exitCode;
+  }
+
+  const verifyList = await runCommand(
+    deps,
+    "verify-restored-configuration",
+    ["secrets", "list", "--project-ref", EXPECTED_PROJECT_REF],
+    runtimeDirectory,
+  );
+  const observedTable = parseSecretsListTable(verifyList.stdout);
+
+  const perName: JsonRecord[] = [];
+  let verified = setResult.exitCode === 0 && (plan.unsetNames.length === 0 || unsetExit === 0);
+  for (const name of MANAGED_SECRET_NAMES) {
+    const shouldBePresent = Object.hasOwn(plan.setValues, name);
+    const observedFingerprint = observedTable.get(name) ?? null;
+    const observedPresent = observedFingerprint !== null;
+    let fingerprintMatched: boolean | null = null;
+    if (shouldBePresent) {
+      fingerprintMatched =
+        observedPresent && fingerprintMatches(plan.setValues[name]!, observedFingerprint!);
+    }
+    const nameOk = shouldBePresent
+      ? observedPresent && fingerprintMatched === true
+      : !observedPresent;
+    if (!nameOk) verified = false;
+    perName.push({ name, expectedPresent: shouldBePresent, observedPresent, fingerprintMatched });
+  }
+
+  return {
+    attempted: true,
+    setExit: setResult.exitCode,
+    unsetExit,
+    verified,
+    perName,
+    verifiedAt: deps.now().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Season env file for the mutation step (unchanged shape; no more RESTORE_SEASON constant).
+// ---------------------------------------------------------------------------
+
+function seasonEnvFileContent(
+  deps: RunnerDependencies,
+  season: {
+    readonly id: number;
+    readonly startingAt: string;
+    readonly endingAt: string;
+    readonly teamIds: readonly number[];
+  },
+  trigger: string,
+): string {
+  const values: Record<string, string> = {
+    SPORTSMONKS_API_TOKEN: required(deps, "SPORTSMONKS_API_TOKEN"),
+    FOOTBALL_INGESTION_TRIGGER_SECRET: trigger,
+    FOOTBALL_PROVIDER: "sportsmonks",
+    FOOTBALL_PROVIDER_BASE_URL: PROVIDER_BASE_URL,
+    FOOTBALL_SPORTSMONKS_LEAGUE_ID: "860",
+    FOOTBALL_SPORTSMONKS_SEASON_ID: String(season.id),
+    FOOTBALL_SPORTSMONKS_TEAM_IDS: season.teamIds.join(","),
+    FOOTBALL_SPORTSMONKS_COUNTRY_CODE: "MA",
+    FOOTBALL_SPORTSMONKS_COMPETITION_TYPE: "league",
+    FOOTBALL_SPORTSMONKS_SEASON_START: season.startingAt,
+    FOOTBALL_SPORTSMONKS_SEASON_END: season.endingAt,
+    FOOTBALL_SPORTSMONKS_FIXTURE_FROM: season.startingAt,
+    FOOTBALL_SPORTSMONKS_FIXTURE_TO: season.endingAt,
+    FOOTBALL_PROVIDER_TIMEOUT_MS: PROVIDER_TIMEOUT_MS,
+    FOOTBALL_PROVIDER_MAX_RETRIES: PROVIDER_MAX_RETRIES,
+  };
+  return Object.entries(values)
+    .map(([name, value]) => `${name}=${value}\n`)
+    .join("");
+}
+
+// ---------------------------------------------------------------------------
+// Modes
+// ---------------------------------------------------------------------------
+
+export type RunnerMode = "default" | "capture-only" | "restore" | "restore-only";
+
+export function parseMode(argv: readonly string[]): RunnerMode {
+  if (argv.includes("--capture-only")) return "capture-only";
+  if (argv.includes("--restore-only")) return "restore-only";
+  if (argv.includes("--restore")) return "restore";
+  return "default";
+}
+
+function checkGuards(deps: RunnerDependencies): string {
+  if (deps.env.GITHUB_ACTIONS !== "true" || required(deps, "CONFIRMATION") !== CONFIRMATION) {
     throw new HistoricalPerformanceBackfillError("production_runner_guard_failed");
   }
-  if (required("EXPECTED_PROJECT_REF") !== EXPECTED_PROJECT_REF) {
+  if (required(deps, "EXPECTED_PROJECT_REF") !== EXPECTED_PROJECT_REF) {
     throw new HistoricalPerformanceBackfillError("production_project_guard_failed");
   }
-  const expectedCommit = required("EXPECTED_COMMIT");
-  if (!/^[0-9a-f]{40}$/.test(expectedCommit) || required("GITHUB_SHA") !== expectedCommit) {
+  const expectedCommit = required(deps, "EXPECTED_COMMIT");
+  if (!/^[0-9a-f]{40}$/.test(expectedCommit) || required(deps, "GITHUB_SHA") !== expectedCommit) {
     throw new HistoricalPerformanceBackfillError("invalid_expected_commit");
   }
-  const runtimeDirectory = resolve(required("G7_BACKFILL_RUNTIME_DIR"));
-  const evidenceDirectory = resolve(required("G7_BACKFILL_EVIDENCE_DIR"));
+  return expectedCommit;
+}
+
+/**
+ * The double-failure recovery path: a fresh dispatch whose runtime dir has no capture from an
+ * earlier, killed run (the ordinary `--restore` mode requires one). It captures the LIVE
+ * configuration now, proves the reviewed current-runtime inputs against those fresh fingerprints,
+ * writes them back, and re-verifies — i.e. "reassert the reviewed current configuration and prove
+ * it", without ever touching the two-season manifest or running any batch.
+ */
+async function runRestoreOnlyMode(
+  deps: RunnerDependencies,
+  runtimeDirectory: string,
+  evidenceDirectory: string,
+): Promise<JsonRecord> {
+  const capture = await captureConfiguration(deps, runtimeDirectory);
+  const plan = await buildRestorePlan(deps, capture.preRunConfig);
+  const restoration = await performRestore(deps, runtimeDirectory, plan);
+  const evidence: JsonRecord = {
+    schemaVersion: 1,
+    mode: "restore_only",
+    secrets: capture.evidenceSecrets,
+    currentSeasonCrossCheck: plan.crossCheck,
+    restoration,
+    verdict: restoration.verified ? "pass" : "fail",
+  };
+  await deps.writeFile(
+    resolve(evidenceDirectory, "restore-only-result.json"),
+    `${JSON.stringify(evidence, null, 2)}\n`,
+  );
+  if (!restoration.verified) {
+    throw new HistoricalPerformanceBackfillError("production_config_restore_unverified");
+  }
+  await deps.writeFile(resolve(runtimeDirectory, "restore-verified"), "verified\n");
+  console.log("G7_HISTORICAL_PERFORMANCE_RESTORE_ONLY_PASS");
+  return evidence;
+}
+
+async function runRestoreMode(
+  deps: RunnerDependencies,
+  runtimeDirectory: string,
+  evidenceDirectory: string,
+): Promise<JsonRecord> {
+  const markerPath = resolve(runtimeDirectory, "restore-verified");
+  if (await fileExists(markerPath)) {
+    console.log("G7_HISTORICAL_PERFORMANCE_RESTORE_NOOP marker=restore-verified");
+    return { schemaVersion: 1, mode: "restore", noop: true, verdict: "pass" };
+  }
+  const preRunConfig = parsePreRunConfig(
+    await jsonFile(resolve(runtimeDirectory, "pre-run-config.json")),
+  );
+  const plan = await buildRestorePlan(deps, preRunConfig);
+  const restoration = await performRestore(deps, runtimeDirectory, plan);
+  const evidence: JsonRecord = {
+    schemaVersion: 1,
+    mode: "restore_after_cancel",
+    currentSeasonCrossCheck: plan.crossCheck,
+    restoration,
+    verdict: restoration.verified ? "pass" : "fail",
+  };
+  await deps.writeFile(
+    resolve(evidenceDirectory, "restore-after-cancel.json"),
+    `${JSON.stringify(evidence, null, 2)}\n`,
+  );
+  if (!restoration.verified) {
+    throw new HistoricalPerformanceBackfillError("production_config_restore_unverified");
+  }
+  await deps.writeFile(markerPath, "verified\n");
+  console.log("G7_HISTORICAL_PERFORMANCE_RESTORE_PASS");
+  return evidence;
+}
+
+export async function runHistoricalPerformanceBackfill(
+  deps: RunnerDependencies,
+  mode: RunnerMode = "default",
+): Promise<JsonRecord> {
+  const expectedCommit = checkGuards(deps);
+  const runtimeDirectory = resolve(required(deps, "G7_BACKFILL_RUNTIME_DIR"));
+  const evidenceDirectory = resolve(required(deps, "G7_BACKFILL_EVIDENCE_DIR"));
+
+  if (mode === "restore") {
+    return runRestoreMode(deps, runtimeDirectory, evidenceDirectory);
+  }
+  if (mode === "restore-only") {
+    return runRestoreOnlyMode(deps, runtimeDirectory, evidenceDirectory);
+  }
+
+  const requestedSeasonIds = parseRequestedSeasonIds(deps.env.G7_SEASON_IDS);
+  const capture = await captureConfiguration(deps, runtimeDirectory);
+
+  if (mode === "capture-only") {
+    const evidence: JsonRecord = {
+      schemaVersion: 1,
+      mode: "production_two_season_historical_player_performance_backfill_capture_only",
+      requestedSeasonIds,
+      capturedAt: deps.now().toISOString(),
+      secrets: capture.evidenceSecrets,
+      verdict: "pass",
+    };
+    await deps.writeFile(
+      resolve(evidenceDirectory, "g7-historical-performance-backfill-capture.json"),
+      `${JSON.stringify(evidence, null, 2)}\n`,
+    );
+    console.log("G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS");
+    return evidence;
+  }
+
+  const plan = await buildRestorePlan(deps, capture.preRunConfig);
+  const dryRun = deps.env.G7_DRY_RUN === "1";
+  const resultPath = resolve(evidenceDirectory, "g7-historical-performance-backfill-result.json");
+
+  if (dryRun) {
+    const evidence: JsonRecord = {
+      schemaVersion: 1,
+      mode: "production_two_season_historical_player_performance_backfill",
+      dryRun: true,
+      historicalOnly: true,
+      currentSeasonActivated: false,
+      expectedCommit,
+      projectRef: EXPECTED_PROJECT_REF,
+      requestedSeasonIds,
+      secrets: capture.evidenceSecrets,
+      restorePlan: {
+        setNames: Object.keys(plan.setValues).sort(),
+        unsetNames: [...plan.unsetNames].sort(),
+      },
+      currentSeasonCrossCheck: plan.crossCheck,
+      verdict: "pass",
+    };
+    await deps.writeFile(resultPath, `${JSON.stringify(evidence, null, 2)}\n`);
+    console.log(`G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=${basename(resultPath)}`);
+    return evidence;
+  }
+
   const manifest = validateManifest(
     await jsonFile(resolve(evidenceDirectory, "g7-historical-performance-backfill-manifest.json")),
     expectedCommit,
   );
-  const supabase = resolve("node_modules/.bin/supabase");
+  const requestedSet = new Set(requestedSeasonIds);
+  const seasonsToRun = manifest.seasons.filter((season) => requestedSet.has(season.id));
+  if (seasonsToRun.length !== requestedSeasonIds.length) {
+    throw new HistoricalPerformanceBackfillError("historical_backfill_requested_season_missing");
+  }
+
   const trigger = crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
   console.log(`::add-mask::${trigger}`);
-  process.env.FOOTBALL_INGESTION_TRIGGER_SECRET = trigger;
-  await writeFile(required("GITHUB_ENV"), `G7_BACKFILL_TRIGGER=${trigger}\n`, { flag: "a" });
+  await writeFile(required(deps, "GITHUB_ENV"), `G7_BACKFILL_TRIGGER=${trigger}\n`, { flag: "a" });
 
   const evidence: JsonRecord = {
     schemaVersion: 1,
@@ -362,22 +953,11 @@ async function main(): Promise<void> {
     currentSeasonActivated: false,
     expectedCommit,
     projectRef: EXPECTED_PROJECT_REF,
-    requestedSeasonIds: [26_027, 24_319],
+    requestedSeasonIds,
     expectedFixturesPerSeason: EXPECTED_FIXTURES_PER_SEASON,
     batchSize: BATCH_SIZE,
     algorithmVersion: ALGORITHM_VERSION,
-    repairOf: {
-      runId: 30_764_205_550,
-      artifactId: 8_838_423_340,
-      artifactSha256: "88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc",
-      failureCode: "season-26027-performance-batch-01_mapping_not_found",
-    },
-    diagnosticOf: {
-      runId: 30_767_229_746,
-      artifactId: 8_839_345_194,
-      artifactSha256: "10fa610f2e606c42f7b40bbf13a1b1c33927f168c78f2e3a08c9565a84cddd44",
-      failureCode: "season-26027-performance-batch-02_historical_fixture_coverage_incomplete",
-    },
+    currentSeasonCrossCheck: plan.crossCheck,
     coverageDiagnostics: {
       providerPayloadIncluded: false,
       fixtureIdIncluded: true,
@@ -395,22 +975,21 @@ async function main(): Promise<void> {
     restoration: { attempted: false, succeeded: false },
     verdict: "fail",
   };
-  const commands = evidence.commands as CommandResult[];
+  const commands = evidence.commands as EvidenceCommand[];
   const seasonResults = evidence.seasons as JsonRecord[];
-  const resultPath = resolve(evidenceDirectory, "g7-historical-performance-backfill-result.json");
   let failureCode: string | undefined;
 
   try {
-    for (const season of manifest.seasons) {
+    for (const season of seasonsToRun) {
       const secretPath = resolve(runtimeDirectory, `season-${season.id}.env`);
-      await writeSecure(secretPath, envFileContent(season, trigger));
+      await deps.writeFile(secretPath, seasonEnvFileContent(deps, season, trigger));
       const configure = await runCommand(
+        deps,
         `season-${season.id}-configuration`,
-        supabase,
         ["secrets", "set", "--project-ref", EXPECTED_PROJECT_REF, "--env-file", secretPath],
         runtimeDirectory,
       );
-      commands.push(configure);
+      commands.push(toEvidenceCommand(configure));
       if (configure.exitCode !== 0) {
         throw new HistoricalPerformanceBackfillError(`season_${season.id}_configuration_failed`);
       }
@@ -423,6 +1002,7 @@ async function main(): Promise<void> {
       const requests: JsonRecord[] = [];
       for (let batchNumber = 1; batchNumber <= MAX_BATCHES_PER_SEASON; batchNumber += 1) {
         const invocation = await invoke(
+          deps,
           `season-${season.id}-performance-batch-${String(batchNumber).padStart(2, "0")}`,
           {
             job: "historical_player_performances",
@@ -458,6 +1038,7 @@ async function main(): Promise<void> {
       }
 
       const derivation = await invoke(
+        deps,
         `season-${season.id}-rating-derivation`,
         { job: "historical_player_performances", action: "derive_ratings" },
         evidenceDirectory,
@@ -497,42 +1078,33 @@ async function main(): Promise<void> {
     const restoration = evidence.restoration as JsonRecord;
     restoration.attempted = true;
     try {
-      // validateManifest proves the pinned 26027 season exists before mutation.
-      const baseline = manifest.seasons.find((season) => season.id === RESTORE_SEASON.id)!;
-      const restorePath = resolve(runtimeDirectory, "restore-production-config.env");
-      await writeSecure(restorePath, envFileContent(baseline, trigger));
-      const restore = await runCommand(
-        "restore-production-configuration",
-        supabase,
-        ["secrets", "set", "--project-ref", EXPECTED_PROJECT_REF, "--env-file", restorePath],
-        runtimeDirectory,
+      const outcome = await performRestore(deps, runtimeDirectory, plan);
+      evidence.restoration = outcome;
+      commands.push(
+        { operation: "restore-production-configuration", exitCode: outcome.setExit ?? -1 },
+        ...(outcome.unsetExit !== null
+          ? [{ operation: "disable-stale-production-configuration", exitCode: outcome.unsetExit }]
+          : []),
       );
-      commands.push(restore);
-      const unset = await runCommand(
-        "disable-one-time-trigger",
-        supabase,
-        [
-          "secrets",
-          "unset",
-          "FOOTBALL_INGESTION_TRIGGER_SECRET",
-          "--project-ref",
-          EXPECTED_PROJECT_REF,
-        ],
-        runtimeDirectory,
-      );
-      commands.push(unset);
-      restoration.succeeded = restore.exitCode === 0 && unset.exitCode === 0;
-      restoration.seasonId = RESTORE_SEASON.id;
-      if (!restoration.succeeded) {
+      if (outcome.verified) {
+        await deps.writeFile(resolve(runtimeDirectory, "restore-verified"), "verified\n");
+      } else {
         evidence.verdict = "fail";
-        evidence.failureCode = failureCode ?? "production_configuration_restore_failed";
+        evidence.failureCode = failureCode ?? "production_config_restore_unverified";
       }
     } catch {
-      restoration.succeeded = false;
+      evidence.restoration = {
+        attempted: true,
+        setExit: null,
+        unsetExit: null,
+        verified: false,
+        perName: [],
+        verifiedAt: null,
+      };
       evidence.verdict = "fail";
-      evidence.failureCode = failureCode ?? "production_configuration_restore_failed";
+      evidence.failureCode = failureCode ?? "production_config_restore_failed";
     }
-    await writeSecure(resultPath, `${JSON.stringify(evidence, null, 2)}\n`);
+    await deps.writeFile(resultPath, `${JSON.stringify(evidence, null, 2)}\n`);
   }
 
   if (evidence.verdict !== "pass") {
@@ -541,10 +1113,12 @@ async function main(): Promise<void> {
     );
   }
   console.log(`G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=${basename(resultPath)}`);
+  return evidence;
 }
 
 if (import.meta.main) {
-  main().catch((error: unknown) => {
+  const mode = parseMode(process.argv.slice(2));
+  runHistoricalPerformanceBackfill(defaultRunnerDependencies(), mode).catch((error: unknown) => {
     const code =
       error instanceof HistoricalPerformanceBackfillError
         ? error.code

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "requestId": "g7-two-season-historical-performance-backfill-2026-08-02-03",
+  "requestId": "g7-historical-performance-backfill-2026-09-18-01",
   "mode": "production_two_season_historical_player_performance_backfill",
-  "requestedSeasonIds": [26027, 24319],
+  "requestedSeasonIds": [26027],
   "expectedFixturesPerSeason": 240,
   "batchSize": 5,
   "algorithmVersion": "botolago-preseason-rating-v2-fixture-performance",
@@ -34,5 +34,12 @@
   },
   "historicalOnly": true,
   "currentSeasonActivated": false,
+  "currentSeasonId": 28647,
+  "restorePolicy": {
+    "source": "captured_pre_run_fingerprints",
+    "triggerSecret": "unset_if_absent_else_restore_or_refuse",
+    "verifyAfterRestore": true
+  },
+  "skipDeployRequiresFunctionIdentity": true,
   "confirmation": "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL"
 }

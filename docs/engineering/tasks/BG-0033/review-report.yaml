@@ -1,0 +1,238 @@
+task_id: BG-0033
+role: Reviewer
+attempt: 1
+reviewed_commit: 01ded510fd1bddc2c9b97813d21f7689ebfdd579
+base_commit: e43b856faf2d41cc4a810ba4f513ff82c8dc131f
+generated_at: "2026-09-18"
+methodology: >
+  Fresh clone at /home/user/bg0033-review, independent of the shared primary working directory and
+  of the Builder's/Verifier's clones. Read the engineering brief, implementation report and
+  verification report in full before reading any code. Read the entire runner source (1113 lines),
+  the entire preflight source, and diffed both against their pre-task versions at e43b856 line by
+  line (not just the new code) specifically to find behavior the diff CHANGED that the reports did
+  not call out. Did not re-run the mechanical checks (test counts, typecheck, byte-parity) that the
+  Verifier already ran and reported in detail; spent the budget on adversarial reasoning about the
+  restore/fingerprint design and on diffing against the pre-fix baseline for regressions.
+
+verdict: FAIL
+
+defects:
+  - id: 1
+    severity: HIGH
+    requirement: >
+      Engineering brief, "Evidence hygiene constraints" (finding 2, evidence-hygiene) and
+      constraints: "sha256 hex digests and secret names are allowed, values are not"; "raw `secrets
+      list` output must nevertheless stay in the runtime dir ... and never be copied to the evidence
+      dir, because under the alternative interpretation the DIGEST column could be plaintext."
+    statement: >
+      The Builder's refactor widened the internal `CommandResult` type (runner.ts:375-379) to add a
+      `stdout: string` field — needed so `captureConfiguration` and `performRestore`'s re-verification
+      `secrets list` call can parse the NAME/DIGEST table from the returned value instead of only from
+      the runtime-dir raw log file. This is correct for those two call sites. But one pre-existing call
+      site was not updated to match: in the main mutation loop, `commands.push(configure)`
+      (runner.ts:975) pushes the FULL `CommandResult` — including the new `stdout` field — for the
+      `secrets set --project-ref ... --env-file season-<id>.env` call straight into `evidence.commands`,
+      which is serialized into `g7-historical-performance-backfill-result.json` in the EVIDENCE
+      directory (not the runtime directory) and is exactly the file the workflow's "Preserve sanitized
+      command evidence" / "Verify evidence contains no credentials" / upload pipeline processes.
+      Before this task, `CommandResult` had no `stdout` field at all (verified: `git show
+      e43b856:.../runner.ts` — the pre-fix interface is `{ operation, exitCode }` only, and the pre-fix
+      `runCommand` returned exactly that), so this exact same `commands.push(configure)` line was
+      already present but was safe. Widening the shared type turned it into a latent leak path: if
+      `supabase secrets set --env-file <file>` ever writes anything to stdout that reflects the
+      env-file's content on success or (more likely) on a partial/validation error — the season env
+      file being set at that point contains SPORTSMONKS_API_TOKEN and the freshly-minted
+      FOOTBALL_INGESTION_TRIGGER_SECRET in plaintext — that text lands verbatim in the uploaded
+      evidence JSON. The existing sanitizer/scanner (phase7f-scan-sanitized-evidence.py, the workflow's
+      credential grep) only matches known shapes (sbp_/sb_secret_/sb_publishable_ prefixes, `eyJ…` JWT
+      shapes, `authorization:` headers, and the literal words access_token/refresh_token/token_hash/
+      hashed_token/password) — none of which match a SportsMonks API token, a randomly-generated hex
+      trigger secret, a season id, a date, or a team-id list, so this specific leak shape would not be
+      caught by the existing guardrails. The restore path elsewhere in the same file
+      (performRestore's `commands.push` at line 1066-1071) was written carefully to push only
+      `{ operation, exitCode }` literals, deliberately excluding `stdout` — showing the Builder was
+      aware of the hygiene rule for that path but missed the one older call site the type-widening
+      silently affected. No test in the (otherwise thorough) new test suite exercises or asserts
+      anything about `commands[n].stdout` for the season-configuration entry (confirmed by grep: no
+      match for "configure" as an assertion subject, and the only leak-check test in the suite,
+      "captures presence/fingerprints, never leaking raw digests into evidence" at
+      runner.test.ts:523-541, covers only the capture path's evidence, not the mutation-loop's
+      commands array), so the Builder's and the Verifier's test runs could not have caught this.
+    evidence: >
+      scripts/backend/g7-historical-performance-backfill-runner.ts:375-378 (CommandResult now carries
+      stdout), :403 (runCommand returns it), :967-978 (commands.push(configure) — the full object,
+      unfiltered), vs. :1064-1071 (performRestore's commands.push — explicitly stripped to
+      {operation, exitCode}); pre-fix baseline `git show
+      e43b856faf2d41cc4a810ba4f513ff82c8dc131f:scripts/backend/g7-historical-performance-backfill-runner.ts`
+      lines ~244-247 (old CommandResult had no stdout field) and ~409-413 (same push site, safe under
+      the old type). `grep -n "configure" scripts/backend/g7-historical-performance-backfill-runner.test.ts`
+      returns no assertions on this evidence path.
+    owner: Builder
+    correction: >
+      Strip `stdout` before pushing the season-configuration command into evidence, matching the
+      pattern already used for the restore commands: change `commands.push(configure);` to
+      `commands.push({ operation: configure.operation, exitCode: configure.exitCode });` (or narrow the
+      evidence-facing type to a `{operation, exitCode}` shape entirely, keeping the raw stdout only on
+      the return value used internally by capture/verify parsing, never on anything pushed into
+      `evidence.commands`). As a general hardening, add a unit test asserting that no entry in
+      `evidence.commands` for any code path ever contains a `stdout` key, so a future refactor of
+      `CommandResult` cannot silently reintroduce this.
+
+release_blockers:
+  - "Defect 1 must be fixed and re-verified before this branch is merged or dispatched against
+    production: it is a plausible (not proven, but unrebutted) path for a production secret value —
+    including the freshly-minted, one-time FOOTBALL_INGESTION_TRIGGER_SECRET — to reach the uploaded
+    evidence artifact, undetected by the existing sanitizer, which is exactly the failure class this
+    task exists to close for the *restore* path. The fix is a one-line, low-risk change with an
+    accompanying regression test; there is no reason to ship the branch without it."
+
+pr_recommendation: >
+  This task's acceptance is proven with TypeScript/Bun unit tests (25 targeted, 740 full-suite),
+  typecheck, and static integrity checks, all of which already ran green outside CI in both the
+  Builder's and the Verifier's independent clones — there is no pgTAP/database-migration component and
+  no live Supabase action is possible or intended before BG-0002 unblocks it (matching BG-0027's and
+  BG-0031's reason for using CI: proving a migration applies cleanly against a real Postgres instance,
+  which does not apply here). Direct branch review, as done here and by the Verifier, is sufficient for
+  this kind of change; a PR is not required purely to get CI execution. That said, once defect 1 is
+  fixed, the Chief should still open a PR before merge for the ordinary reasons (a second pair of human
+  eyes on a production-secrets-handling change of this size, and a clean merge commit into main) — not
+  because CI adds coverage the local runs lack.
+
+deviation_review:
+  - id: restore_only_mode
+    verdict: reasonable
+    notes: >
+      Independent read, not deferring to the Verifier: the brief names three CLI modes in the
+      "structure" required_change but separately, in the runbook required_change, spells out exactly
+      this fourth operation in prose ("a dedicated restore_only: true input that captures nothing and
+      applies the reviewed current-runtime inputs, then verifies by fingerprint") for the double-failure
+      case where no pre-run-config.json exists to restore from. A mode that truly "captures nothing" and
+      just writes reviewed inputs blind would contradict the brief's own fail-closed, prove-before-write
+      design (every other path in the brief requires a captured fingerprint before any `secrets set`).
+      Capturing the live state fresh, then proving the reviewed inputs against those fresh fingerprints,
+      then writing and re-verifying, is the only reading of the brief's two required_changes that is
+      internally consistent, and it is implemented with the identical prove-then-write-then-reverify
+      discipline as every other mode (buildRestorePlan + performRestore, unchanged code paths). Agree
+      with the Verifier: reasonable, in-spirit, not scope creep.
+  - id: non_blocking_season_identity_crosscheck
+    verdict: reasonable_with_a_caveat
+    notes: >
+      Read the brief's exact sentence again independently: it groups three checks and says "Record the
+      three booleans in evidence," with no explicit "refuse if false" — unlike the immediately
+      surrounding fingerprint-mismatch sentence, which is its own explicit refusal clause. So the
+      non-blocking reading is textually defensible, and the fingerprint proof (the only requirement the
+      brief states as an unconditional gate) already independently catches a wrong
+      FOOTBALL_SPORTSMONKS_SEASON_ID input in the ordinary case, since that value's fingerprint is
+      captured from the actually-live secret before the run. My caveat, not raised by the Verifier:
+      the fingerprint gate only protects the *season id* field itself against a wrong value that
+      differs from what's currently live — it does nothing to catch the case where the operator-supplied
+      G7_CURRENT_SEASON_ID is wrong in a way that happens to already be what's live (e.g. production
+      was already misconfigured by an earlier bad run, and the operator's reviewed input, sourced from
+      the same bad state, reasserts it). The catalog/provider cross-check exists precisely to catch that
+      class of error against an independent source of truth (the database's is_current row, the
+      provider's own record) and making it evidence-only means a materially wrong season identity can
+      still be "restored" and verified as long as it's internally self-consistent with whatever is
+      already live. This is a real but narrow residual gap, already implicitly acknowledged by the
+      brief's own framing that these are diagnostic cross-checks and by both Builder and Verifier
+      flagging this as the more debatable of the two deviations. It does not rise to a FAIL-worthy
+      defect on its own — the brief's text does not clearly mandate blocking here, and blocking on two
+      more live network calls has its own availability cost the brief doesn't ask for — but the Chief
+      should treat "confirm current-season identity via a fresh capture-only or restore_only dispatch
+      whenever the pre-run assumption about what's live might itself be wrong" as an operational
+      practice, not just a one-time BG-0002 unblock step.
+
+scope_check:
+  result: PASS
+  evidence: >
+    `git diff --stat e43b856..01ded51` touches exactly: g7-historical-performance-backfill-runner.ts
+    (+.test.ts), g7-historical-performance-backfill-preflight.ts (+.test.ts, new), the one workflow
+    file, the trigger json, the new runbook, LAUNCH_LEDGER.yaml, and the three
+    docs/engineering/tasks/BG-0033/*.yaml reports — every path is inside implementation_scope's
+    allowed_paths (the three report files are the expected role-report artifacts for this pipeline,
+    not application code). No file under supabase/functions/**, supabase/migrations/**, src/**,
+    sportsmonks-two-season-backfill-preflight.ts, or any other .github/workflows/*.yml appears in the
+    diff. LAUNCH_LEDGER.yaml diff confirmed to touch only the BG-0033 block.
+
+root_cause_closure:
+  result: closed_subject_to_defect_1
+  notes: >
+    Traced the code path myself rather than trusting either report. RESTORE_SEASON=26027 is fully
+    deleted (grep confirms zero live references). The finally block in the default mode still cannot
+    survive SIGINT/SIGTERM/SIGKILL (this is inherent to any in-process Bun finally and is not something
+    this task could fix in-process) — but the design correctly does not rely on it: the workflow's
+    separate `if: always()` "Restore production function configuration" step calls `--restore` mode,
+    which is idempotent (no-ops via the `restore-verified` marker if the in-process finally already
+    succeeded, otherwise reads the runtime-dir pre-run-config.json written by the same mutation step's
+    own capture-at-mutation-time call and performs restore+reverify). Traced the workflow step
+    dependency graph (steps.capture.outcome, env.G7_RESTORE_ONLY) and confirmed there is no window
+    where a cancellation before the capture step's outcome is recorded could skip restoration: the
+    restore step is unconditionally gated on `always()` plus either restore_only or capture having
+    already succeeded, and capture runs (and must complete) before any mutation is attempted, so if
+    capture never completed there is nothing yet to restore. Partial-failure and partial-success cases
+    (a `secrets set` that exits non-zero after partially applying, or exits 0 while silently dropping a
+    key) are both caught by the per-name re-verification against a fresh `secrets list` in
+    `performRestore`, which checks actual observed state against intended state independent of the
+    CLI's own exit code — this is the correct adversarial design and I could not find a case where a
+    partial mutation would be reported `verified: true` incorrectly.
+
+fingerprint_scheme_review:
+  false_negative_risk: >
+    Real and by design (fail-closed): case-sensitive hex comparison, and no digest-algorithm fallback
+    beyond a plaintext-equality escape hatch, means any change in how the platform computes DIGEST
+    (a different algorithm, a different case convention, a salt) would make every restore refuse to
+    proceed. This is the brief's own documented HIGH risk with fail-closed as the accepted mitigation;
+    not a new finding.
+  false_positive_risk: >
+    Did not find one. `fingerprintMatches` requires either sha256hex(supplied) === fingerprint or a
+    raw plaintext-equality fallback; both are exact-match, non-fuzzy comparisons. Absence vs. empty
+    string is handled correctly: `parseSecretsListTable` only inserts a NAME into the table when both
+    NAME and DIGEST cells are non-empty, so a name is only ever "present" with a real digest string, or
+    "absent" (fingerprint null) — there is no state where an empty digest is treated as a match against
+    an empty supplied value. The one comparison-hygiene nit worth naming: `fingerprintMatches` uses
+    plain `===` rather than a constant-time comparison; this is a timing-side-channel best-practice gap
+    in the abstract, but the comparison happens entirely within a single trusted CI process comparing
+    values it computed and captured itself (no attacker-controlled network input reaches this
+    comparison), so I do not treat it as a defect worth blocking on — noting it as a residual
+    observation only.
+
+residual_risks:
+  - "Documented in the brief and carried forward, not re-litigated: the botolago-production-v2-mutation
+    concurrency group only serializes GitHub Actions jobs, not a manual dashboard secret edit or a
+    laptop `supabase secrets set` during the run window; the new runbook states this rule but nothing
+    technical enforces it."
+  - "Documented in the brief and carried forward: if the Management API's DIGEST column is ever not
+    sha256(value) (unconfirmed without BG-0002's credential), every restore fails closed rather than
+    silently succeeding — safe but blocks every future dispatch until diagnosed via a --capture-only
+    run."
+  - "Documented in the implementation report and carried forward: the season-identity cross-check
+    (catalog isCurrent / label match / provider isCurrent+league) is evidence-only, not gating; see
+    deviation_review above for my own independent read of the narrow residual gap this leaves."
+  - "New, narrow, non-blocking observation of my own: `pre-run-config.json` and the `restore-verified`
+    marker are written with plain writeFile/chmod, not write-then-atomic-rename; a kill at the exact
+    instant of writing pre-run-config.json could leave a truncated/corrupt file, which would make a
+    subsequent `--restore` invocation fail closed (jsonFile's catch throws a fixed
+    invalid_historical_backfill_manifest_json-style code) rather than restore silently-wrong data — the
+    failure mode is safe (surfaces as a red restore step, prompting the documented `--restore-only`
+    recovery dispatch), just worth an atomic-write hardening at some point. Not release-blocking."
+  - "Gate 2F's own rollback file still pins season 26027 (same defect class as this task's root cause);
+    the brief explicitly puts this out of scope and asks for a new ledger item, which the ledger already
+    carries. Not this task's responsibility to fix."
+
+notes: >
+  This review independently traced the runner's control flow rather than relying on either prior
+  report's narrative, and specifically diffed the new CommandResult/runCommand plumbing against the
+  pre-fix baseline (not just reading the new code in isolation) because that is where a type change
+  made for one purpose (letting captureConfiguration/performRestore parse `secrets list` stdout)
+  silently changed the safety properties of a second, unrelated call site
+  (`commands.push(configure)` in the main mutation loop) that neither the implementation report's
+  self-review nor the verification report's line-by-line read caught — both focused on the new
+  capture/restore code paths, which are genuinely solid, and did not re-audit the one pre-existing line
+  whose behavior the type widening changed. Everything else checked (scope discipline, root-cause
+  closure, the fingerprint scheme's failure modes, both self-flagged deviations, the workflow's
+  always()/cancellation semantics) held up under independent adversarial review and matches or exceeds
+  what the Verifier reported. Recommend: Builder applies the one-line fix plus a regression test,
+  Verifier re-runs its existing test suite (should still be 25/25 plus one more), and this Reviewer
+  re-reads only the diff of that follow-up commit before sign-off — a full re-review is not needed for
+  a change this narrow.
+
+status: REJECTED

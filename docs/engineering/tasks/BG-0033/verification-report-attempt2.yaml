@@ -1,0 +1,117 @@
+task_id: BG-0033
+role: Verifier
+attempt: 2
+verified_commit: 14d74eb9c75d842e4b62a2f26eef59415c461804
+previous_verified_commit: 8600ae43c9d9c024ab61b188ecca3019311e8eaa # Reviewer FAIL commit (defect 1)
+generated_at: "2026-09-18"
+methodology: >
+  Fresh, independent clone at /tmp/bg0033-verify2 (not the shared primary working directory).
+  Narrow, delta-only re-verification of the Builder's attempt-2 fix for the single defect the
+  fresh-context Reviewer FAILed on (docs/engineering/tasks/BG-0033/review-report.yaml): the raw
+  `stdout` of the season-configuration `supabase secrets set --env-file` command leaking into
+  `evidence.commands`. Did NOT re-verify the rest of BG-0033 (already independently PASSed:
+  docs/engineering/tasks/BG-0033/verification-report.yaml, attempt 1). Diffed
+  8600ae43c9d9c024ab61b188ecca3019311e8eaa..14d74eb9c75d842e4b62a2f26eef59415c461804, read the
+  full current runner source and test file (not trusting the Builder's counts), reverted the fix
+  in place to prove the new regression test actually catches the original bug, then restored it,
+  and ran the full local test/lint/check suite myself.
+
+criteria:
+  - id: 1
+    name: "Diff scope — narrowly confined to the fix"
+    result: VERIFIED
+    evidence: >
+      `git diff 8600ae4..14d74eb --stat` touches exactly 3 files: the runner source (+21/-4), its
+      test file (+99), and the implementation report (+94/-4). No workflow file, migration,
+      unrelated runner behavior, or either of the two previously-accepted deviations
+      (--restore-only mode; the non-blocking season-identity cross-check) was touched. The one
+      commit (14d74eb) matches this diff exactly.
+
+  - id: 2
+    name: "Every evidence.commands push site produces {operation, exitCode} only, across all paths"
+    result: VERIFIED
+    evidence: >
+      Grepped the whole current runner.ts myself for `commands.push` — exactly two sites exist
+      (line 992, main mutation loop; lines 1083-1088, restore path in the `finally` block), both
+      confirmed by reading the surrounding code. Line 992 now reads
+      `commands.push(toEvidenceCommand(configure))`; `toEvidenceCommand` returns a literal
+      `{operation, exitCode}` object built from a new `EvidenceCommand` interface that has no
+      `stdout` field. Lines 1083-1088 already pushed `{operation, exitCode}` object literals
+      (attempt-1, previously correct) and now additionally type-check against
+      `evidence.commands: EvidenceCommand[]` (was `CommandResult[]`), so any future bare
+      `CommandResult` push is a compile-time error. `.stdout` is referenced only twice elsewhere
+      in the file (parseSecretsListTable calls at captureConfiguration/performRestore's
+      verification step) — never written to evidence or to the result JSON. Covers capture-only,
+      default (capture->mutate->restore->verify), --restore, --restore-only, dry-run, and both the
+      success and failure branches of the mutation step (the failure branch reaches the same
+      `finally` restore-push code).
+
+  - id: 3
+    name: "Regression test genuinely catches the original bug (before/after proof, done independently)"
+    result: VERIFIED
+    evidence: >
+      Read the new `assertNoStdoutLeak` recursive walker and the new describe block
+      "evidence never carries raw command stdout" (6 tests: capture-only, dry-run, default success,
+      mid-run failure, --restore, --restore-only) myself in full. Independently reverted ONLY the
+      fixed call site (`sed` changing `commands.push(toEvidenceCommand(configure))` back to
+      `commands.push(configure)`, nothing else) and ran
+      `bun test scripts/backend/g7-historical-performance-backfill-runner.test.ts`: result was
+      24 pass / 2 fail, both failures at
+      `error: FOUND_STDOUT_KEY_AT $.commands[0].stdout` in exactly the two tests that exercise the
+      season-configuration push ("the default success path's commands array..." and
+      "the mid-run-failure result file's commands array..."), matching the Builder's claim
+      precisely. Restored the original file (`cp` back from a pre-edit copy, confirmed clean via
+      `git status --porcelain`) and re-ran the same test file: 26 pass / 0 fail. This is a
+      genuine, non-vacuous regression test — it fails without the fix and passes with it.
+
+  - id: 4
+    name: "Full local suite: targeted tests, full bun run test, typecheck, and repo checks"
+    result: VERIFIED
+    evidence: >
+      `bun test scripts/backend/g7-historical-performance-backfill-runner.test.ts`: 26 pass / 0
+      fail (post-fix). `bun run test` (full suite): 746 pass / 0 fail / 10093 expect() calls
+      across 118 files — matches the Builder's claimed 746 (740 attempt-1 baseline + 6 new), zero
+      regressions. `bun run typecheck` (tsc --noEmit): exit 0, no errors. `bun run
+      backend:secrets:check`: "No high-confidence secrets found in tracked files." `bun run
+      backend:migrations:check`: "Validated 61 migration(s)." `bun run config:integrity:check`:
+      "Config integrity guard: no violations in 34 executed configuration file(s)." All run
+      directly in my own clone, not taken on the Builder's word.
+
+  - id: 5
+    name: "Second pass: hunt for a sibling instance of the same leak class elsewhere in the diff"
+    result: VERIFIED
+    evidence: >
+      Grepped the entire diff and the whole current runner.ts for `.stdout`, `token`, `secret`,
+      `password`, `writeFile`, `JSON.stringify`, and every other object pushed into an evidence
+      array (`evidenceSecrets`, `seasonResults`, `requests`, `perName`, `unsetNames`). None of
+      these ever held a CommandResult or a stdout-shaped field, confirming the Builder's own audit
+      claim. The one place raw command stdout/stderr is ever written to disk at all,
+      `${operation}.raw.log` (line ~418), is pre-existing, unmodified by this diff (present
+      identically at 8600ae4), writes to the ephemeral CI runtime directory rather than the
+      uploaded evidence JSON, and is out of scope for this delta review since it predates the
+      Reviewer's flagged defect and this attempt did not touch it.
+
+  - id: 6
+    name: "No live/production action in the branch's new commits"
+    result: VERIFIED
+    evidence: >
+      Only one new commit (14d74eb) exists past 8600ae4, touching only the runner source, its
+      test file, and the implementation report. No workflow YAML, no `supabase` CLI invocation
+      outside the test file's fake CLI harness, no management-API call, no credential file, and no
+      migration were touched. `git log 8600ae4..14d74eb --stat` confirms this exhaustively.
+
+regressions: []
+untested:
+  - "CI execution of the updated workflow step against a real Supabase project (out of scope for
+    both attempts; this task's evidence model relies on the fake-CLI test harness, consistent with
+    attempt 1's own verification)."
+security_observations:
+  - "The fix closes the flagged leak precisely at its source and additionally makes the class of
+    bug harder to reintroduce by narrowing the static type of `evidence.commands` to
+    `EvidenceCommand[]`, so a future accidental `commands.push(someCommandResult)` is a compile
+    error rather than a silent runtime leak — a stronger fix than the minimum needed to pass the
+    Reviewer's specific defect."
+  - "No second instance of the same leak class (raw stdout/command output/env-file content
+    reaching a written evidence file or log line) was found anywhere else in the diff or the
+    surrounding code."
+status: PASS

@@ -1,0 +1,317 @@
+task_id: BG-0033
+attempt: 2 # attempt-1 body retained below unchanged; see attempt_2 at the end
+builder_type: Builder-DevOps
+branch: agent/BG-0033-runner-restore
+base: "origin/main e43b856 (fresh checkout; a prior attempt at this branch existed only in a local
+  worktree, was never pushed anywhere reachable, and 45 commits behind main with out-of-scope
+  changes — it was discarded per the task's instruction to start fresh, not resume it)"
+previous_attempt:
+  reviewed_commit: 01ded510fd1bddc2c9b97813d21f7689ebfdd579
+  verdict: REJECTED # docs/engineering/tasks/BG-0033/review-report.yaml (Reviewer, attempt 1)
+commits:
+  - "BG-0033: fingerprint-proved capture/restore runner, always() restore workflow step,
+    26027-only season scope, identity-gated skip_deploy" # attempt 1
+  - "BG-0033: implementation report + ledger update" # attempt 1
+objective: >
+  Implement the BG-0033 engineering brief's required_changes: replace the runner's
+  RESTORE_SEASON=26027 finally-block "restore" (which the brief shows never reads real production
+  state and clobbers six season-coupled secrets with 2025/26 values) with a capture -> prove ->
+  mutate -> restore -> verify design, add a workflow-level if: always() restore step because Bun
+  does not run finally on SIGINT/SIGTERM (reproduced by the Researcher) and GitHub's own
+  cancellation ends with an unmaskable SIGKILL, restrict the season scope to BG-0011-OWNER-2's
+  26027-only decision, and gate skip_deploy on live function identity.
+changes:
+  - file: scripts/backend/g7-historical-performance-backfill-runner.ts
+    description: >
+      Full refactor. Deleted the RESTORE_SEASON constant entirely. Added: MANAGED_SECRET_NAMES (the
+      15 function secrets), sha256Hex/fingerprintMatches (a captured digest can only ever be proven
+      against a supplied value — the Management API/CLI never return plaintext, only a DIGEST
+      column that IS the API's `value` field per the brief), parseSecretsListTable (parses the
+      CLI's NAME/DIGEST text table; the code never passes --output/--output-format to `secrets
+      list`), parseRequestedSeasonIds (G7_SEASON_IDS: non-empty, duplicate-free subset of
+      {26027, 24319}), captureConfiguration (runs `secrets list` before any mutation, writes raw
+      digests only to runtime/pre-run-config.json (0600, deleted by cleanup), and to evidence only
+      { name, present, fingerprintSha256: sha256(fingerprint) } — never the fingerprint itself),
+      buildRestorePlan (builds the restore values from reviewed G7_CURRENT_* workflow inputs plus
+      constants, requires sha256hex(suppliedValue) == capturedFingerprint (or exact match) for
+      every present managed name before any mutation, throws production_config_restore_unprovable
+      on any mismatch, special-cases FOOTBALL_INGESTION_TRIGGER_SECRET per the brief: unset if
+      absent pre-run, refuse unless a matching G7_CURRENT_TRIGGER_SECRET is supplied if present
+      pre-run; also runs a best-effort, non-blocking verifyCurrentSeasonIdentity cross-check against
+      api.football_season_catalog and the SportsMonks provider, recording three booleans in
+      evidence.currentSeasonCrossCheck), performRestore (one `secrets set --env-file`, one
+      `secrets unset <explicit names>` only when non-empty, one `secrets list` to re-verify every
+      managed name's expected presence/fingerprint, producing the `restoration` block and the
+      runtime/restore-verified marker on success). runHistoricalPerformanceBackfill(deps, mode)
+      is now the exported, dependency-injected entry point ({ env, cliPath, fetch, now, writeFile })
+      with four modes: default (capture -> prove -> mutate requested season(s) only -> restore ->
+      verify; verdict forced to fail unless restoration.verified === true even when the backfill
+      itself passed), --capture-only, --restore (idempotent: reads pre-run-config.json + reviewed
+      inputs, no-ops if runtime/restore-verified already exists — the workflow's own post-step),
+      and --restore-only (the double-failure recovery path: captures the LIVE configuration fresh
+      and proves/restores/verifies against it, with no dependency on any prior runtime state, for a
+      brand-new dispatch). G7_DRY_RUN=1 captures and proves the restore plan but issues no
+      `secrets set`/`unset` and no HTTP POST. The thin `if (import.meta.main)` CLI entry parses
+      --capture-only/--restore/--restore-only via parseMode() and otherwise defaults.
+  - file: scripts/backend/g7-historical-performance-backfill-runner.test.ts
+    description: >
+      Kept the existing pure-validator tests (validateHistoricalPerformanceBatch/
+      validateHistoricalRatingDerivation) and the ticket/workflow parity test, updated for the new
+      ticket fields and asserting the restore step's position (after mutation, before command_logs/
+      evidence_scan/upload/cleanup). Added a fake-CLI harness: a Bun script written to a temp dir
+      per test (deps.cliPath), backed by a JSON "live secret state" file it updates on `set`/`unset`
+      and reads on `list`, plus a call-log file tests inspect for ordering/arguments. New tests
+      cover every acceptance_tests item: capture parses the table and never leaks raw digests to
+      evidence (only sha256(fingerprint)); fails closed on non-zero exit or zero rows; refuses
+      before any mutation on a fingerprint mismatch (asserted: exactly the capture's `secrets list`
+      call, zero others); refuses when the trigger is present pre-run with no matching input, and
+      succeeds with one; the success path's exact command order (list, set(season), POSTs, set
+      (restore), unset(explicit names), list) with zero `--output` flags anywhere and no `unset`
+      call with fewer than one name, `restoration.verified === true`, and no "26027" literal in the
+      written restore env file; a mid-run HTTP 503 still restores and verifies but the run's verdict
+      is fail with the batch failure code; a simulated-kill scenario (capture-only run stands in for
+      "killed right after capture, before restore" per the brief's own reproduction) followed by a
+      fresh `--restore` invocation that restores, verifies, writes restore-after-cancel.json, and is
+      a true no-op (zero additional CLI calls) on a second `--restore`; G7_DRY_RUN=1 performs only
+      the capture `secrets list` call and zero HTTP POSTs; and G7_SEASON_IDS validation
+      (empty/duplicate/out-of-scope all rejected before any command runs).
+  - file: scripts/backend/g7-historical-performance-backfill-preflight.ts
+    description: >
+      Imports parseRequestedSeasonIds from the runner (not re-implemented) so the preflight and the
+      runner cannot disagree about which requested seasons are in scope; the shared
+      sportsmonks-two-season-backfill-preflight.ts module (still proving both 26027 and 24319 exist
+      at the provider) is untouched and still called exactly as before. Writes a second evidence
+      file, g7-historical-performance-backfill-scope.json ({ requestedSeasonIds, verdict }),
+      alongside the unmodified two-season manifest. The failure-path evidence's requestedSeasonIds
+      now reflects the actual parsed request when parseable, falling back to the full two-season
+      scope only if G7_SEASON_IDS itself could not be parsed.
+  - file: scripts/backend/g7-historical-performance-backfill-preflight.test.ts (new)
+    description: >
+      Confirms the preflight imports (not re-implements) the runner's season-scope validator, does
+      not touch the shared module's TWO_SEASON_BACKFILL_SCOPE constant, and re-exercises
+      parseRequestedSeasonIds' accept/reject cases directly (26027 alone; 24319 alone; both in
+      either order; empty/duplicate/out-of-scope/malformed all throw).
+  - file: .github/workflows/g7-production-historical-performance-backfill.yml
+    description: >
+      New inputs: season_ids, current_season_id/_start/_end, current_fixture_from/_to,
+      current_team_ids, current_trigger_secret (optional, masked), restore_only (default false),
+      skip_deploy (default false, never defaults true), expected_function_version and
+      expected_function_ezbr_sha256 (required together with skip_deploy — the runtime guard step
+      exits 2 if skip_deploy is true and either is blank). New step "Capture pre-run function
+      configuration" (id capture, --capture-only) runs before preflight/migrations/deploy. New step
+      "Check football-ingest identity before skipping deploy" (only when skip_deploy is requested)
+      calls GET https://api.supabase.com/v1/projects/{ref}/functions and fails closed unless
+      football-ingest's live version and ezbr_sha256 equal the two new inputs; migrations/deploy
+      only proceed past this when skip_deploy is false or this step succeeded. New step "Restore
+      production function configuration" (id restore) with
+      if: always() && (env.G7_RESTORE_ONLY == 'true' || steps.capture.outcome == 'success'),
+      placed immediately after the mutation step and before command_logs/evidence_scan/upload/
+      cleanup — running --restore normally or --restore-only when restore_only is requested (the
+      double-failure recovery dispatch, which skips preflight/migrations/deploy/mutation entirely).
+      Finalize now fails outright whenever the restore step's own outcome was not success (checked
+      first, before every other outcome), and has a separate pass/fail branch for restore_only
+      dispatches. Renamed the mutation step to a scope-neutral title ("Backfill requested
+      completed-season fixtures…", no longer "480"). Kept: the concurrency group, permissions,
+      owner/ref/actor guard, GITHUB_RUN_ATTEMPT == 1, the embedded-ticket deep-equal (updated to the
+      new ticket fields, byte-identical to the JSON — verified in this task by an independent
+      Python eval and by the runner test's own parser), GITHUB_WORKFLOW_RERUN_FORBIDDEN, no push:
+      trigger, upload-before-cleanup ordering, the credential add-mask/scan steps (extended to also
+      mask/scan current_trigger_secret), and the quality step (now also runs the new preflight
+      test).
+  - file: docs/production/g7-historical-performance-backfill-trigger.json
+    description: >
+      New requestId g7-historical-performance-backfill-2026-09-18-01; requestedSeasonIds [26027]
+      (was [26027, 24319] — BG-0011-OWNER-2); new keys currentSeasonId: 28647, restorePolicy
+      { source: "captured_pre_run_fingerprints", triggerSecret:
+      "unset_if_absent_else_restore_or_refuse", verifyAfterRestore: true },
+      skipDeployRequiresFunctionIdentity: true. Everything else byte-identical to the prior ticket.
+      Kept in sync with the workflow's embedded expected dict and the runner test in the same
+      commit (BG-0034 pattern), verified three ways: the runner test's own JS parser, an
+      independent `python3 -c` eval-and-compare, and `bun test`.
+  - file: docs/backend/G7_HISTORICAL_PERFORMANCE_BACKFILL_RUNBOOK.md (new)
+    description: >
+      New dedicated runbook (FOOTBALL_OPERATIONS_RUNBOOK.md already exists and covers broader
+      football-ops scope; a new file keeps the substantial capture/restore design documentation out
+      of it). Covers: why restoration must be prove-then-write-then-reprove (digests only, never
+      plaintext); the 15 managed secrets and the trigger-secret special case; all four modes
+      (default, --capture-only, --restore, --restore-only) and G7_DRY_RUN; why an in-process
+      `finally` cannot survive cancellation (the reproduction and GitHub's cancellation signal
+      sequence, cited from the brief) and why the workflow needs its own if: always() restore step;
+      the run-window rule stating explicitly that the concurrency group does NOT serialize a manual
+      dashboard secrets edit or a laptop `supabase secrets set` (the brief's documented
+      serialization gap); the skip_deploy identity-check requirement; the restore_only recovery
+      procedure for the double-failure case; and what evidence fields prove restoration.
+  - file: docs/engineering/LAUNCH_LEDGER.yaml
+    description: >
+      BG-0033 entry only: state RUNNING -> BUILT, roles.builder updated to
+      "BUILT (branch agent/BG-0033-runner-restore, commit <sha>; implementation-report.yaml)",
+      evidence gains the implementation report path. No other ledger entry touched.
+  - file: docs/engineering/tasks/BG-0033/implementation-report.yaml
+    description: this report.
+database_changes: []
+configuration_changes:
+  - "Workflow: 10 new workflow_dispatch inputs (season_ids, six current_* runtime inputs,
+    current_trigger_secret, restore_only, skip_deploy, expected_function_version,
+    expected_function_ezbr_sha256). No secret, environment/repository variable, or any other
+    workflow was changed. No workflow was dispatched; no `supabase secrets` or management-API call
+    was made against production; no credential was touched."
+scope_deviations:
+  - "The engineering brief's restore-plan cross-check (component 'runner — restore plan proven
+    BEFORE mutation') asks for three booleans (catalog isCurrent, catalog label vs provider name,
+    provider isCurrent+league) to be recorded in evidence. Implemented as
+    verifyCurrentSeasonIdentity: two best-effort network calls (api.football_season_catalog via
+    PostgREST RPC, and the SportsMonks provider's season lookup), each wrapped so a failure/absence
+    degrades the corresponding boolean to false rather than blocking the run. This is deliberately
+    non-blocking — only the fingerprint proof gates mutation, per the brief's own emphasis that
+    fingerprint-proof is 'the only way to know the supplied restore value equals the live one'; the
+    three booleans are diagnostic. None of the required acceptance_tests exercise this cross-check
+    directly, so it is not covered by a dedicated fake-network unit test beyond the paths already
+    exercised (it is invoked, wrapped in try/catch, in every default/dry-run/restore/restore-only
+    test and never throws or breaks them). Flagged for the Reviewer/Verifier to confirm this
+    interpretation is acceptable, since the live provider/catalog behavior cannot be exercised
+    without BG-0002."
+  - "Added a fourth CLI mode, --restore-only, and a workflow restore_only input, beyond the three
+    modes (default/--capture-only/--restore) the brief's 'runner — structure' required_change names
+    explicitly. This was necessary to satisfy the brief's own runbook required_change, which
+    describes exactly this recovery procedure for the double-failure case ('a dedicated
+    restore_only: true input that captures nothing and applies the reviewed current-runtime inputs,
+    then verifies by fingerprint') — restore_only does capture the live configuration (it has
+    nothing else to prove the supplied values against), which is a narrow deviation from that
+    sentence's literal 'captures nothing', but is otherwise exactly the described operation ('applies
+    the reviewed current-runtime inputs, then verifies by fingerprint') and is required because the
+    ordinary --restore mode depends on a pre-run-config.json that a fresh dispatch does not have."
+tests_run:
+  - command: bun test scripts/backend/g7-historical-performance-backfill-runner.test.ts scripts/backend/g7-historical-performance-backfill-preflight.test.ts
+    result: PASS # "25 pass / 0 fail / 90 expect() calls / Ran 25 tests across 2 files."
+  - command: bun test scripts/backend/sportsmonks-two-season-backfill-preflight.test.ts scripts/backend/gate4-sanitize-command-log.test.ts
+    result: PASS # "6 pass / 0 fail / 49 expect() calls / Ran 6 tests across 2 files." (confirms the shared preflight module is untouched and still passes)
+  - command: bun run typecheck
+    result: PASS # "tsc --noEmit" exit 0
+  - command: bun run backend:secrets:check
+    result: PASS # "No high-confidence secrets found in tracked files."
+  - command: bun run backend:migrations:check
+    result: PASS # "Validated 61 migration(s)." (no migration touched by this task)
+  - command: bun run config:integrity:check
+    result: PASS # "Config integrity guard: no violations in 34 executed configuration file(s)."
+  - command: bun run test
+    result: PASS # "740 pass / 0 fail / 10088 expect() calls / Ran 740 tests across 118 files." (baseline before this task's changes: 740 tests already existed minus this task's ~25 new ones — no regression anywhere else)
+  - command: bunx eslint scripts/backend/g7-historical-performance-backfill-runner.ts scripts/backend/g7-historical-performance-backfill-runner.test.ts scripts/backend/g7-historical-performance-backfill-preflight.ts scripts/backend/g7-historical-performance-backfill-preflight.test.ts
+    result: PASS # exit 0 after one --fix pass for prettier/prettier formatting findings
+  - command: bunx prettier --check .github/workflows/g7-production-historical-performance-backfill.yml docs/production/g7-historical-performance-backfill-trigger.json scripts/backend/g7-historical-performance-backfill-runner.ts scripts/backend/g7-historical-performance-backfill-runner.test.ts scripts/backend/g7-historical-performance-backfill-preflight.ts scripts/backend/g7-historical-performance-backfill-preflight.test.ts
+    result: PASS # "All matched files use Prettier code style!"
+  - command: python3 -c "import yaml; yaml.safe_load(open('.github/workflows/g7-production-historical-performance-backfill.yml'))"
+    result: PASS # workflow YAML parses
+  - command: python3 -c "import json; json.load(open('docs/production/g7-historical-performance-backfill-trigger.json'))"
+    result: PASS # ticket JSON parses
+  - command: "python3 (exec the workflow's embedded expected dict) == json.load(ticket)"
+    result: PASS # "parity: True" — independent cross-check of the unit test's own JS-based parser
+not_executed:
+  - "No live action: no `supabase secrets` call, no management-API call, no workflow dispatch, and
+    no credential of any kind was used or touched, per the brief's explicit scope (blocked by
+    BG-0002; the brief itself says the first live action after BG-0002 is fixed should be a
+    --capture-only dispatch, which is the Chief's call, not this task's)."
+  - "supabase/functions/**, supabase/migrations/**, src/**, and
+    scripts/backend/sportsmonks-two-season-backfill-preflight.ts were not modified (forbidden_paths;
+    also verified by `git diff --stat origin/main` below only touching allowed_paths)."
+unresolved: []
+unexpected_observations:
+  - "The original runner's `runCommand` spawned the Supabase CLI using only the injected-env
+    filtered from process.env, silently dropping PATH — harmless in the original single-path design
+    (Bun always ran with the real process.env) but it broke the fake-CLI harness the moment a
+    dependency-injected `env` object (deliberately not spread from the real process.env, for test
+    purity) was passed in, because `#!/usr/bin/env bun` could not resolve `bun` without PATH. Fixed
+    by always inheriting the real process.env for the spawned CLI's environment and layering
+    deps.env on top of it, so injected values still override what the CLI sees, but PATH/HOME/etc.
+    are never lost. This does not affect the guard checks, which still read exclusively from
+    deps.env."
+  - "gate2f-production-current-season-catalog-canary.yml's rollback file has the same defect class
+    (hardcoded SEASON_ID 26027) per the brief's finding; the brief explicitly puts this out of scope
+    for BG-0033 and asks for a new ledger item, which the ledger already carries (see the BG-0033
+    entry's dependents around 'Gate 2F rollback env file pins…')."
+
+attempt_2:
+  reviewer_verdict_being_fixed: FAIL # docs/engineering/tasks/BG-0033/review-report.yaml, defect 1
+  scope: >
+    ONLY the one Reviewer-identified defect and its regression test, per the Chief's explicit
+    instruction. Did not revisit the two deviations (--restore-only mode; the non-blocking
+    season-identity cross-check) — both were independently reviewed and accepted by the Verifier
+    and the Reviewer in attempt 1.
+  defect_summary: >
+    Widening `CommandResult` (attempt 1) to add a `stdout` field — needed so
+    captureConfiguration/performRestore's re-verification `secrets list` calls can parse the
+    NAME/DIGEST table from the in-memory return value — silently changed the safety of one
+    pre-existing, unrelated call site: `commands.push(configure)` in the main mutation loop pushed
+    the FULL CommandResult (including the new stdout field) for the
+    `supabase secrets set --env-file season-<id>.env` command straight into `evidence.commands`,
+    which is serialized into the uploaded evidence JSON. That env file's stdout could echo back
+    SPORTSMONKS_API_TOKEN or the freshly-minted FOOTBALL_INGESTION_TRIGGER_SECRET on success or a
+    partial/validation failure, and none of the existing sanitizer's known shapes
+    (sbp_/sb_secret_/sb_publishable_ prefixes, eyJ… JWTs, authorization headers, the literal words
+    access_token/refresh_token/token_hash/hashed_token/password) would catch a SportsMonks token or
+    a random hex trigger secret. Before attempt 1, CommandResult had no stdout field at all, so this
+    was a regression introduced by attempt 1's own type widening, not a pre-existing issue — the
+    restore path's own `commands.push` (added in attempt 1) was already written correctly, stripped
+    to `{ operation, exitCode }` literals; only the one older call site was missed.
+  fix:
+    - file: scripts/backend/g7-historical-performance-backfill-runner.ts
+      description: >
+        Added a dedicated `EvidenceCommand { operation, exitCode }` type — documented with a
+        comment explaining exactly why it must never be widened to carry stdout — and a
+        `toEvidenceCommand(result: CommandResult): EvidenceCommand` helper that strips stdout.
+        `evidence.commands` is now typed and cast as `EvidenceCommand[]` (was `CommandResult[]`),
+        so a future accidental push of a bare `CommandResult` is now also a type error, not just a
+        runtime leak. Changed the one flagged call site, `commands.push(configure)` in the main
+        mutation loop, to `commands.push(toEvidenceCommand(configure))`. The restore path's
+        existing `commands.push({ operation, exitCode })` literals were left untouched (already
+        correct) but now type-check against the same narrowed `EvidenceCommand[]` array. Audited
+        every `commands.push` (there are exactly two in the file, both now safe) and every other
+        `.push(` call in the file (evidenceSecrets, unsetNames, perName, requests, seasonResults —
+        none of these ever held a CommandResult or stdout).
+    - file: scripts/backend/g7-historical-performance-backfill-runner.test.ts
+      description: >
+        Added `assertNoStdoutLeak(value)`, a recursive walker that throws if any object anywhere
+        in a value carries a `stdout` key, and a new describe block "evidence never carries raw
+        command stdout" with one test per code path that produces written evidence: capture-only
+        (returned evidence + capture.json), dry-run (returned evidence), the default success path
+        (returned evidence + result.json, plus an explicit assertion that every entry in
+        `written.commands` has exactly the keys `["exitCode","operation"]`), the mid-run-failure
+        path (result.json), `--restore` (returned evidence + restore-after-cancel.json), and
+        `--restore-only` (returned evidence + restore-only-result.json). Verified this test suite
+        actually catches the regression: manually reverted the fix (`commands.push(configure as
+        unknown as EvidenceCommand)`) and re-ran the new tests — two of the six failed with
+        `FOUND_STDOUT_KEY_AT $.commands[0].stdout`, exactly at the season-configuration entry the
+        Reviewer identified; re-applied the fix and all tests passed again.
+  verification:
+    - command: bun test scripts/backend/g7-historical-performance-backfill-runner.test.ts scripts/backend/g7-historical-performance-backfill-preflight.test.ts
+      result: PASS # "31 pass / 0 fail / 95 expect() calls / Ran 31 tests across 2 files." (25 attempt-1 + 6 new)
+    - command: "manual regression check: revert the fix, re-run the new tests, confirm failure at the exact flagged call site, then re-apply"
+      result: PASS # 2/6 new tests failed pre-fix with `FOUND_STDOUT_KEY_AT $.commands[0].stdout`; 6/6 passed post-fix
+    - command: bun run typecheck
+      result: PASS # "tsc --noEmit" exit 0
+    - command: bun run backend:secrets:check
+      result: PASS # "No high-confidence secrets found in tracked files."
+    - command: bun run backend:migrations:check
+      result: PASS # "Validated 61 migration(s)." (no migration touched)
+    - command: bun run config:integrity:check
+      result: PASS # "Config integrity guard: no violations in 34 executed configuration file(s)."
+    - command: bun run test
+      result: PASS # "746 pass / 0 fail / 10093 expect() calls / Ran 746 tests across 118 files." (740 attempt-1 baseline + 6 new; no regression)
+    - command: bunx eslint scripts/backend/g7-historical-performance-backfill-runner.ts scripts/backend/g7-historical-performance-backfill-runner.test.ts
+      result: PASS # exit 0 after one --fix pass for prettier/prettier formatting
+    - command: bunx prettier --check scripts/backend/g7-historical-performance-backfill-runner.ts scripts/backend/g7-historical-performance-backfill-runner.test.ts
+      result: PASS # "All matched files use Prettier code style!"
+  environment_note: >
+    Worked in an isolated clone at a scratch path (`git clone https://github.com/mrdata007/botolago-foundation`),
+    not the shared primary working directory, per the Chief's instruction after attempt 1's
+    near-miss (a commit briefly landed on local `main` because that directory is shared with
+    concurrent sessions). Fetched and checked out the existing `agent/BG-0033-runner-restore`
+    branch at its current remote head (`8600ae4`, which includes the Verifier's and Reviewer's
+    report commits on top of this task's own `6bdb05f`) and fast-forwarded a new commit on top —
+    no rebase, no history rewrite, no other branch touched.
+  scope_deviations: []
+  changes_summary: >
+    scripts/backend/g7-historical-performance-backfill-runner.ts and its .test.ts only. No other
+    file touched in this attempt.
+  status: BUILT
+
+status: BUILT

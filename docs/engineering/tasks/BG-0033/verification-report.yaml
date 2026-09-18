@@ -1,0 +1,228 @@
+task_id: BG-0033
+role: Verifier
+attempt: 1
+verified_commit: 6bdb05feb9a119f2a2d39463456171427ea666cb
+base_commit: e43b856faf2d41cc4a810ba4f513ff82c8dc131f
+generated_at: "2026-09-18"
+methodology: >
+  Fresh clone at /home/user/bg0033-verify (independent of the shared primary working directory).
+  Read the entire engineering brief and the entire implementation report before verifying. Read the
+  full runner source, the full runner test file, the preflight source and test, and the full
+  workflow diff. Ran all tests and static checks locally rather than trusting the Builder's reported
+  numbers. Cross-checked ticket/workflow/test parity with an independent Python script rather than
+  trusting the Builder's own cross-check.
+
+criteria:
+  - id: 1
+    name: "Diff scope — only allowed_paths touched, no forbidden_paths"
+    result: VERIFIED
+    evidence: >
+      `git diff --stat e43b856 6bdb05f` touches exactly 9 files, all within
+      implementation_scope.allowed_paths: g7-historical-performance-backfill-runner.ts (+.test.ts),
+      g7-historical-performance-backfill-preflight.ts (+.test.ts, new), the workflow yaml, the
+      trigger json, the new runbook, LAUNCH_LEDGER.yaml (BG-0033 entry only, diff confirmed touching
+      only that block), and the implementation-report.yaml itself. No file under supabase/functions/**,
+      supabase/migrations/**, src/**, sportsmonks-two-season-backfill-preflight.ts, or any other
+      workflow appears in the diff.
+
+  - id: 2
+    name: "Runner logic vs brief required_changes"
+    result: VERIFIED
+    evidence: >
+      Read runner.ts in full (1113 lines). RESTORE_SEASON constant is gone (only a comment referencing
+      its removal remains; grep confirms no live reference). captureConfiguration runs `secrets list`
+      with no --output/--output-format flag anywhere in the file (grep confirms). Raw fingerprints are
+      written only to runtime/pre-run-config.json (runtime dir, deleted by workflow cleanup); the
+      evidence array only ever carries {name, present, fingerprintSha256: sha256(fingerprint)}, and the
+      `restoration.perName` block written to evidence carries only booleans
+      (expectedPresent/observedPresent/fingerprintMatched), never a raw digest. buildRestorePlan throws
+      production_config_restore_unprovable and performs zero mutation calls when
+      sha256hex(supplied) != capturedFingerprint (and the equality fallback) for any present managed
+      name — confirmed both by reading the code and by a fake-CLI test asserting exactly one CLI call
+      (the capture list) occurred. FOOTBALL_INGESTION_TRIGGER_SECRET special case matches the brief
+      exactly: unset if absent pre-run, refuse unless G7_CURRENT_TRIGGER_SECRET is supplied and its
+      fingerprint matches if present pre-run (code lines 626-639, exercised by two tests). Restore+verify
+      runs in the `finally` block after both success and failure (HTTP 503) paths, and the overall
+      verdict is forced to `fail` whenever `restoration.verified !== true` even if the batches
+      themselves passed (lines 1053, 1072-1077). `--restore` mode is idempotent: it no-ops (zero
+      additional CLI calls) when runtime/restore-verified already exists, and the workflow's own
+      post-step calls exactly this mode because a `finally` cannot survive SIGKILL (confirmed against
+      the brief's reproduction findings, which this task did not need to re-derive).
+
+  - id: 3
+    name: "Tests: run and judge meaningfulness"
+    result: VERIFIED
+    evidence: >
+      `bun test scripts/backend/g7-historical-performance-backfill-runner.test.ts
+      scripts/backend/g7-historical-performance-backfill-preflight.test.ts` → 25 pass / 0 fail / 90
+      expect() calls, matching the Builder's claim exactly. Read the full 723-line test file: the
+      fake-CLI harness is a real subprocess (a Bun script) with its own state file and a call-log file,
+      not a mock returning canned values, so assertions on call ORDER
+      (["secrets list","secrets set","secrets set","secrets unset","secrets list"]) and on absent
+      `--output` flags and on `unset` never being called with zero names are exercising real spawned
+      argv, not tautologies. The capture test asserts the evidence JSON's raw text does NOT contain the
+      sha256 of the underlying secret value (leak check), and the pre-run-config.json runtime file DOES
+      contain the raw fingerprint (capture-completeness check) — both meaningful, non-trivial
+      assertions. The refuse-before-mutate tests assert the fake CLI recorded exactly one call
+      (the capture list) — a strong, non-tautological check that zero mutation was attempted. The
+      restore-env-content assertion (`restoreEnv).not.toContain("26027")`) directly targets the brief's
+      defect. The cancellation-recovery test genuinely simulates capture-then-kill (capture-only run,
+      then a separate `--restore` invocation reading the leftover pre-run-config.json) and asserts a
+      second `--restore` call makes zero additional CLI calls (true idempotency, not just "returns ok").
+      Season-scope rejection cases (24319 alone accepted since it's in ALLOWED_SEASON_IDS,
+      "26027,26027" duplicate rejected, "" empty rejected) are covered in both the runner test and the
+      new preflight test. Ticket/workflow-dict/evidence parity is tested by parsing the workflow's
+      embedded Python dict and diffing it against the ticket JSON via toEqual, which is a real
+      byte-comparison, not a shallow toMatchObject. Conclusion: the tests exercise the acceptance
+      criteria as claimed and are not tautological.
+
+  - id: 4
+    name: "Static checks + full test suite, independently run"
+    result: VERIFIED
+    evidence: >
+      All commands run fresh in the isolated clone after `bun install`: `bun run typecheck` → tsc
+      --noEmit exit 0. `bun run backend:secrets:check` → "No high-confidence secrets found in tracked
+      files." `bun run backend:migrations:check` → "Validated 61 migration(s)." `bun run
+      config:integrity:check` → "Config integrity guard: no violations in 34 executed configuration
+      file(s)." `bun run test` → "740 pass / 0 fail / 10088 expect() calls / Ran 740 tests across 118
+      files" — matches the Builder's claimed baseline of 740 exactly, confirming no regression anywhere
+      else in the codebase.
+
+  - id: 5
+    name: "Workflow diff: step ordering, guards, skip_deploy gating, no push trigger"
+    result: VERIFIED
+    evidence: >
+      Read the full workflow diff. `concurrency: {group: botolago-production-v2-mutation}` block is
+      byte-unchanged (not touched in the diff at all). The new "Restore production function
+      configuration" step (id restore) has `if: always() && (env.G7_RESTORE_ONLY == 'true' ||
+      steps.capture.outcome == 'success')` — a deliberate, documented extension of the brief's literal
+      `if: always() && steps.capture.outcome == 'success'` to also cover the new restore_only dispatch
+      path (where the capture step itself is skipped by design); it sits immediately after the mutation
+      step and before command_logs/evidence_scan/upload/cleanup (confirmed by line order and by a test
+      asserting `indexOf("Restore production function configuration") <
+      indexOf("Preserve sanitized command evidence")`). skip_deploy still defaults to false and the
+      workflow exits 2 at the guard step if skip_deploy=true without both expected_function_version and
+      expected_function_ezbr_sha256; deploy/migrations steps are gated on the new
+      "Check football-ingest identity before skipping deploy" step succeeding when skip_deploy is
+      requested. `grep -n "^on:\|push:\|GITHUB_WORKFLOW_RERUN_FORBIDDEN"` confirms no `push:` trigger
+      was added and the GITHUB_WORKFLOW_RERUN_FORBIDDEN guard is still present, unchanged.
+
+  - id: 6
+    name: "Ticket/workflow/test byte-parity for requestedSeasonIds [26027]"
+    result: VERIFIED
+    evidence: >
+      Independently verified with a standalone Python script (not reusing the Builder's or the test's
+      parser) that parses the workflow's embedded `expected = {...}` Python-literal block and compares
+      it against `docs/production/g7-historical-performance-backfill-trigger.json` via `json.loads`
+      equality. Result: `match: True`. Ticket carries requestedSeasonIds: [26027], currentSeasonId:
+      28647, restorePolicy.source: "captured_pre_run_fingerprints", skipDeployRequiresFunctionIdentity:
+      true — all present verbatim in the workflow's embedded dict.
+
+  - id: 7a
+    name: "Deviation judgment — 4th CLI mode / restore_only input"
+    result: VERIFIED-as-reasonable
+    evidence: >
+      The brief's "runner — structure" bullet names three modes (--capture-only, default, --restore),
+      but a separate required_change (the runbook component) explicitly asks for "a dedicated
+      restore_only: true input that captures nothing and applies the reviewed current-runtime inputs,
+      then verifies by fingerprint" for the double-failure recovery case. The Builder's --restore-only
+      mode does capture the live configuration (a narrow, acknowledged deviation from the literal word
+      "nothing"), but this is necessary and correct: the brief's own "restore plan proven BEFORE
+      mutation" section requires proof-by-fingerprint before any write in every other path, and a mode
+      that "applies inputs" with no capture at all would write blind, violating that same brief's core
+      fail-closed design. Implementing it as capture-then-prove-then-write-then-verify is the only
+      internally consistent reading of the brief's own two requirements taken together. This is a
+      reasonable, in-spirit extension, not unauthorized scope creep — it is required to satisfy an
+      already-approved required_change, not a builder-invented feature.
+
+  - id: 7b
+    name: "Deviation judgment — season-identity cross-check made non-blocking"
+    result: VERIFIED-as-reasonable
+    evidence: >
+      The brief's exact text: "Cross-check G7_CURRENT_SEASON_ID: (a) ... (b) ... (c) fingerprint match.
+      Record the three booleans in evidence." This groups the three checks together but only
+      instructs recording them in evidence; it does not say "refuse the run" for (a)/(b) failing, unlike
+      every other refusal condition in the brief which is stated explicitly and separately (e.g.
+      "any mismatch -> refuse with production_config_restore_unprovable and DO NOT MUTATE" is its own
+      sentence for the fingerprint check). Read closely, the brief's fingerprint proof (c) is already
+      the sole gating mechanism baked into buildRestorePlan's per-name loop (unconditional, applies to
+      every managed name including FOOTBALL_SPORTSMONKS_SEASON_ID); a wrong G7_CURRENT_SEASON_ID input
+      would already be caught there in the ordinary case, because the season id secret's fingerprint is
+      captured from what's actually live in production before the run, so a materially wrong supplied
+      season id would fail that proof independently of the catalog/provider cross-check. The catalog
+      and provider cross-checks depend on live network calls (PostgREST RPC and the SportsMonks API)
+      that the brief itself flags as unexercisable without BG-0002's credential, and blocking mutation
+      on unreachable diagnostic network calls (each independently wrapped in try/catch, degrading to
+      false on any failure) would turn every future dispatch into a hard dependency on two additional
+      live services beyond Supabase's secrets endpoint, which the brief does not ask for. Treating them
+      as non-blocking, evidence-only diagnostics is consistent with the brief's overall emphasis that
+      "proof-by-fingerprint is the only way to know the supplied restore value equals the live one." No
+      defect found here; flagged as worth the Reviewer's own read since it is the more debatable of the
+      two deviations.
+
+  - id: 8
+    name: "No live/production action taken in the branch's history"
+    result: VERIFIED
+    evidence: >
+      `git log e43b856..6bdb05f -p` over the workflow and runner/preflight files, searched for
+      `gh workflow run`, `gh api`, `supabase secrets set/unset/list --project-ref
+      tkewgajrljbwgwedqsxn` outside test fixtures, and any management-API write: none found. The only
+      commands referencing the real project ref are inside the runner/preflight source (which only runs
+      under `import.meta.main` in CI) and inside the workflow's own step definitions (not executed by
+      building the branch). Confirmed no workflow_dispatch was fired, no credential file was added or
+      referenced by value, and `bun run backend:secrets:check` (a static secret-shape scanner) found no
+      high-confidence secrets in any tracked file including the new ones.
+
+regressions: "None found. Full `bun run test` reproduces 740 pass / 0 fail exactly, matching the pre-task baseline plus this task's own new tests, with no other suite affected."
+
+untested:
+  - "Live capture/restore against real Supabase secrets, and the live acceptance_tests items (a real
+    --capture-only dispatch, a real end-to-end dispatch with restoration.verified true, a real
+    cancellation-during-batches negative test) remain untestable without BG-0002's organization-member
+    management token, exactly as the brief states. This is explicitly out of scope for this task and is
+    not a gap in this verification."
+  - "The season-identity cross-check's actual behavior against the real api.football_season_catalog
+    RPC and the live SportsMonks provider cannot be exercised without the same live credential; it is
+    exercised only against fake fetch responses in the unit tests (which return well-formed matching
+    payloads and never a malformed/error response for the identity-check paths specifically, though the
+    try/catch wrapping is visible in the source and the dry-run/restore/restore-only tests do prove it
+    never throws or blocks those paths)."
+
+security_observations:
+  - "No raw fingerprint (digest) value is written to any evidence-directory file anywhere in the
+    runner: capture writes only sha256(fingerprint) to evidence and the raw fingerprint only to the
+    runtime directory (which the existing workflow cleanup step removes). The restoration.perName block
+    written to the evidence result file carries only booleon fields, never a digest string."
+  - "Raw `secrets list` / `secrets set` / `secrets unset` CLI output (which could contain a raw digest,
+    or plaintext under the brief's unconfirmed-plaintext contingency) is written only via runCommand to
+    the runtime directory (capture-secrets.raw.log, restore-production-configuration.raw.log,
+    verify-restored-configuration.raw.log, disable-stale-production-configuration.raw.log), never to
+    the evidence directory, in every call site checked (captureConfiguration and performRestore both
+    pass runtimeDirectory, not evidenceDirectory)."
+  - "The one-time trigger secret (G7_BACKFILL_TRIGGER) and the new current_trigger_secret input are
+    both added to the workflow's existing ::add-mask:: and evidence-scan credential-grep loops (visible
+    in the diff), consistent with the brief's constraint that new masked inputs must be exported for the
+    sanitizer exactly as existing always() steps do."
+  - "verifyCurrentSeasonIdentity sends SPORTSMONKS_API_TOKEN as a URL query parameter to the SportsMonks
+    API (an existing pattern elsewhere in the codebase, not introduced by this task); the response body
+    is never written to any log or evidence file — only three derived booleans are retained — so this
+    does not create a new leak path, but it is worth noting for anyone auditing HTTP access logs
+    upstream of this runner."
+  - "No other secret-shaped value (SUPABASE_ACCESS_TOKEN, SUPABASE_SECRET_KEY, SUPABASE_DB_PASSWORD,
+    SPORTSMONKS_API_TOKEN, G7_CURRENT_TRIGGER_SECRET) appears in any newly-added evidence-directory
+    write path; `bun run backend:secrets:check` corroborates this statically."
+
+status: PASS
+summary: >
+  The Builder's implementation matches the brief's required_changes and acceptance_criteria on every
+  point checked independently: the RESTORE_SEASON defect is fully removed and replaced with a
+  capture-prove-write-verify design that fails closed on any fingerprint mismatch, never leaks raw
+  digests to evidence, forces the run verdict to fail unless restoration is verified, and provides an
+  idempotent --restore mode for the workflow's if: always() post-step because a finally block cannot
+  survive SIGKILL. All local tests (25 targeted + 740 full suite), typecheck, secrets/migrations/config
+  integrity checks pass, matching the Builder's claimed numbers exactly under independent re-execution.
+  Ticket/workflow/test parity was independently re-verified with a standalone script. No forbidden path
+  was touched and no live production action occurred anywhere in the branch's history. Both self-flagged
+  deviations (the added --restore-only mode, and the non-blocking season-identity cross-check) are
+  judged reasonable and consistent with the brief's own stated design principles, not unauthorized scope
+  creep or a weakened requirement. No defect found.

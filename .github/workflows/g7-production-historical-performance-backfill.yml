@@ -11,6 +11,56 @@ on:
         description: Type RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL
         required: true
         type: string
+      season_ids:
+        description: Comma-separated seasons to backfill (non-empty, duplicate-free subset of 26027, 24319)
+        required: true
+        type: string
+      current_season_id:
+        description: The live current-season provider id function secrets must be restored to (expected 28647)
+        required: true
+        type: string
+      current_season_start:
+        description: Live FOOTBALL_SPORTSMONKS_SEASON_START to restore
+        required: true
+        type: string
+      current_season_end:
+        description: Live FOOTBALL_SPORTSMONKS_SEASON_END to restore
+        required: true
+        type: string
+      current_fixture_from:
+        description: Live FOOTBALL_SPORTSMONKS_FIXTURE_FROM to restore
+        required: true
+        type: string
+      current_fixture_to:
+        description: Live FOOTBALL_SPORTSMONKS_FIXTURE_TO to restore
+        required: true
+        type: string
+      current_team_ids:
+        description: Comma-separated live FOOTBALL_SPORTSMONKS_TEAM_IDS to restore
+        required: true
+        type: string
+      current_trigger_secret:
+        description: Only if FOOTBALL_INGESTION_TRIGGER_SECRET is currently set in production (a capture-only dispatch tells you); leave blank otherwise
+        required: false
+        type: string
+      restore_only:
+        description: Recovery path only — skip preflight/migrations/deploy/mutation and just re-assert + verify the reviewed current-runtime configuration
+        required: false
+        type: boolean
+        default: false
+      skip_deploy:
+        description: Skip redeploying football-ingest (only when the live function's identity already matches expected_function_version/expected_function_ezbr_sha256)
+        required: false
+        type: boolean
+        default: false
+      expected_function_version:
+        description: Required when skip_deploy is true — the live football-ingest version this reviewed commit expects
+        required: false
+        type: string
+      expected_function_ezbr_sha256:
+        description: Required when skip_deploy is true — the live football-ingest ezbr_sha256 this reviewed commit expects
+        required: false
+        type: string
 
 concurrency:
   group: botolago-production-v2-mutation
@@ -34,6 +84,18 @@ jobs:
       CONFIRMATION: ${{ inputs.confirmation }}
       EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
       EXPECTED_PROJECT_NAME: BotolaGO Production V2
+      G7_SEASON_IDS: ${{ inputs.season_ids }}
+      G7_CURRENT_SEASON_ID: ${{ inputs.current_season_id }}
+      G7_CURRENT_SEASON_START: ${{ inputs.current_season_start }}
+      G7_CURRENT_SEASON_END: ${{ inputs.current_season_end }}
+      G7_CURRENT_FIXTURE_FROM: ${{ inputs.current_fixture_from }}
+      G7_CURRENT_FIXTURE_TO: ${{ inputs.current_fixture_to }}
+      G7_CURRENT_TEAM_IDS: ${{ inputs.current_team_ids }}
+      G7_CURRENT_TRIGGER_SECRET: ${{ inputs.current_trigger_secret }}
+      G7_RESTORE_ONLY: ${{ inputs.restore_only }}
+      G7_SKIP_DEPLOY: ${{ inputs.skip_deploy }}
+      G7_EXPECTED_FUNCTION_VERSION: ${{ inputs.expected_function_version }}
+      G7_EXPECTED_FUNCTION_EZBR_SHA256: ${{ inputs.expected_function_ezbr_sha256 }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -50,7 +112,8 @@ jobs:
           set -euo pipefail
           for value in \
             "$SUPABASE_ACCESS_TOKEN" "$SUPABASE_SECRET_KEY" \
-            "$SUPABASE_DB_PASSWORD" "$SPORTSMONKS_API_TOKEN"; do
+            "$SUPABASE_DB_PASSWORD" "$SPORTSMONKS_API_TOKEN" \
+            "${G7_CURRENT_TRIGGER_SECRET:-}"; do
             if [[ -n "$value" ]]; then printf '::add-mask::%s\n' "$value"; fi
           done
           if [[ -z "$SUPABASE_ACCESS_TOKEN" || -z "$SUPABASE_SECRET_KEY" ||
@@ -73,6 +136,11 @@ jobs:
             echo "Production project guard failed."
             exit 2
           fi
+          if [[ "$G7_SKIP_DEPLOY" == "true" &&
+                ( -z "${G7_EXPECTED_FUNCTION_VERSION:-}" || -z "${G7_EXPECTED_FUNCTION_EZBR_SHA256:-}" ) ]]; then
+            echo "skip_deploy requires expected_function_version and expected_function_ezbr_sha256."
+            exit 2
+          fi
           runtime_dir="$RUNNER_TEMP/botolago-g7-historical-performance-backfill"
           evidence_dir="$runtime_dir/evidence"
           install -d -m 0700 "$runtime_dir" "$evidence_dir"
@@ -80,51 +148,6 @@ jobs:
             echo "G7_BACKFILL_RUNTIME_DIR=$runtime_dir"
             echo "G7_BACKFILL_EVIDENCE_DIR=$evidence_dir"
           } >> "$GITHUB_ENV"
-          G7_CONTEXT_PATH="$evidence_dir/g7-historical-performance-backfill-context.json" python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          output = Path(os.environ["G7_CONTEXT_PATH"])
-          output.write_text(json.dumps({
-              "schemaVersion": 1,
-              "mode": "production_two_season_historical_player_performance_backfill",
-              "historicalOnly": True,
-              "currentSeasonActivated": False,
-              "expectedCommit": os.environ["EXPECTED_COMMIT"],
-              "projectRef": os.environ["EXPECTED_PROJECT_REF"],
-              "requestedSeasonIds": [26027, 24319],
-              "expectedFixturesPerSeason": 240,
-              "repairOf": {
-                  "runId": 30764205550,
-                  "headSha": "f5793ef88a3ae7aeb397f64a995eff71220e79c0",
-                  "artifactId": 8838423340,
-                  "artifactSha256": "88521ccd76e96f3d740c6bd8b380564871ad274bb6c93cbc30fbe3135ec7e4fc",
-                  "failureCode": "season-26027-performance-batch-01_mapping_not_found",
-              },
-              "diagnosticOf": {
-                  "runId": 30767229746,
-                  "headSha": "b235bda5e51207ebc4f9c14552a51783ed1f8fa4",
-                  "artifactId": 8839345194,
-                  "artifactSha256": "10fa610f2e606c42f7b40bbf13a1b1c33927f168c78f2e3a08c9565a84cddd44",
-                  "failureCode": "season-26027-performance-batch-02_historical_fixture_coverage_incomplete",
-              },
-              "coverageDiagnostics": {
-                  "providerPayloadIncluded": False,
-                  "fixtureIdIncluded": True,
-                  "boundedCountsIncluded": True,
-                  "failedInvariantsIncluded": True,
-              },
-              "mappingQuarantine": {
-                  "unmappedPlayerRows": "exclude",
-                  "requiredMappedStartersPerFixture": 22,
-                  "requiredMappedTeamsPerFixture": 2,
-                  "maxTotalExcludedRowsPerFixture": 20,
-              },
-              "runId": os.environ["GITHUB_RUN_ID"],
-          }, indent=2) + "\n", encoding="utf-8")
-          output.chmod(0o600)
-          PY
           echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
           echo "Historical-only production target guard: PASS"
 
@@ -147,9 +170,9 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "g7-two-season-historical-performance-backfill-2026-08-02-03",
+              "requestId": "g7-historical-performance-backfill-2026-09-18-01",
               "mode": "production_two_season_historical_player_performance_backfill",
-              "requestedSeasonIds": [26027, 24319],
+              "requestedSeasonIds": [26027],
               "expectedFixturesPerSeason": 240,
               "batchSize": 5,
               "algorithmVersion": "botolago-preseason-rating-v2-fixture-performance",
@@ -181,6 +204,13 @@ jobs:
               },
               "historicalOnly": True,
               "currentSeasonActivated": False,
+              "currentSeasonId": 28647,
+              "restorePolicy": {
+                  "source": "captured_pre_run_fingerprints",
+                  "triggerSecret": "unset_if_absent_else_restore_or_refuse",
+                  "verifyAfterRestore": True,
+              },
+              "skipDeployRequiresFunctionIdentity": True,
               "confirmation": "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL",
           }
           actual = json.loads(Path(
@@ -204,6 +234,7 @@ jobs:
           bun install --frozen-lockfile
           bun test \
             scripts/backend/g7-historical-performance-backfill-runner.test.ts \
+            scripts/backend/g7-historical-performance-backfill-preflight.test.ts \
             scripts/backend/sportsmonks-two-season-backfill-preflight.test.ts \
             scripts/backend/gate4-sanitize-command-log.test.ts \
             supabase/functions/_shared/sportsmonks-historical-player-performance.test.ts \
@@ -215,17 +246,60 @@ jobs:
             src/backend/generated/database.types.ts
           test -x ./node_modules/.bin/supabase
 
+      - name: Capture pre-run function configuration
+        id: capture
+        if: env.G7_RESTORE_ONLY != 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun scripts/backend/g7-historical-performance-backfill-runner.ts --capture-only
+
       - name: Re-prove the exact two-season provider scope without writes
         id: preflight
+        if: env.G7_RESTORE_ONLY != 'true' && steps.capture.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
           bun scripts/backend/g7-historical-performance-backfill-preflight.ts
 
+      - name: Check football-ingest identity before skipping deploy
+        id: function_identity
+        if: env.G7_RESTORE_ONLY != 'true' && env.G7_SKIP_DEPLOY == 'true' && steps.preflight.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          ref = os.environ["EXPECTED_PROJECT_REF"]
+          request = urllib.request.Request(
+              f"https://api.supabase.com/v1/projects/{ref}/functions",
+              headers={"Authorization": f"Bearer {os.environ['SUPABASE_ACCESS_TOKEN']}"},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              functions = json.loads(response.read().decode("utf-8"))
+          function = next((f for f in functions if f.get("slug") == "football-ingest"), None)
+          if function is None:
+              raise SystemExit("FOOTBALL_INGEST_FUNCTION_NOT_FOUND")
+          if (
+              str(function.get("version")) != os.environ["G7_EXPECTED_FUNCTION_VERSION"]
+              or function.get("ezbr_sha256") != os.environ["G7_EXPECTED_FUNCTION_EZBR_SHA256"]
+          ):
+              raise SystemExit("FOOTBALL_INGEST_FUNCTION_IDENTITY_MISMATCH")
+          PY
+          echo "football-ingest identity: PASS"
+
       - name: Apply reviewed forward-only migrations
         id: migrations
-        if: steps.preflight.outcome == 'success'
+        if: >-
+          env.G7_RESTORE_ONLY != 'true' &&
+          steps.preflight.outcome == 'success' &&
+          (env.G7_SKIP_DEPLOY != 'true' || steps.function_identity.outcome == 'success')
         continue-on-error: true
         shell: bash
         run: |
@@ -256,7 +330,11 @@ jobs:
 
       - name: Deploy reviewed football ingestion runtime
         id: deploy
-        if: steps.preflight.outcome == 'success' && steps.migrations.outcome == 'success'
+        if: >-
+          env.G7_RESTORE_ONLY != 'true' &&
+          env.G7_SKIP_DEPLOY != 'true' &&
+          steps.preflight.outcome == 'success' &&
+          steps.migrations.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -273,12 +351,13 @@ jobs:
           chmod 0600 "$raw_path" "$exit_path"
           exit "$exit_code"
 
-      - name: Backfill 480 completed fixtures and derive v2 ratings
+      - name: Backfill requested completed-season fixtures and derive v2 ratings
         id: mutation
         if: >-
+          env.G7_RESTORE_ONLY != 'true' &&
           steps.preflight.outcome == 'success' &&
           steps.migrations.outcome == 'success' &&
-          steps.deploy.outcome == 'success'
+          (env.G7_SKIP_DEPLOY == 'true' || steps.deploy.outcome == 'success')
         continue-on-error: true
         shell: bash
         run: |
@@ -289,6 +368,30 @@ jobs:
           set +e
           bun scripts/backend/g7-historical-performance-backfill-runner.ts \
             > "$raw_path" 2>&1
+          exit_code=$?
+          set -e
+          printf '%s\n' "$exit_code" > "$exit_path"
+          chmod 0600 "$raw_path" "$exit_path"
+          exit "$exit_code"
+
+      - name: Restore production function configuration
+        id: restore
+        if: always() && (env.G7_RESTORE_ONLY == 'true' || steps.capture.outcome == 'success')
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          operation="restore-production-function-configuration"
+          raw_path="$G7_BACKFILL_RUNTIME_DIR/${operation}.raw.log"
+          exit_path="$G7_BACKFILL_RUNTIME_DIR/${operation}.exit"
+          set +e
+          if [[ "$G7_RESTORE_ONLY" == "true" ]]; then
+            bun scripts/backend/g7-historical-performance-backfill-runner.ts --restore-only \
+              > "$raw_path" 2>&1
+          else
+            bun scripts/backend/g7-historical-performance-backfill-runner.ts --restore \
+              > "$raw_path" 2>&1
+          fi
           exit_code=$?
           set -e
           printf '%s\n' "$exit_code" > "$exit_path"
@@ -342,6 +445,7 @@ jobs:
             "$SUPABASE_SECRET_KEY" \
             "$SUPABASE_DB_PASSWORD" \
             "$SPORTSMONKS_API_TOKEN" \
+            "${G7_CURRENT_TRIGGER_SECRET:-}" \
             "${FOOTBALL_INGESTION_TRIGGER_SECRET:-}"; do
             if [[ -n "$secret_value" ]] && \
               grep -R -F -q -- "$secret_value" "$G7_BACKFILL_EVIDENCE_DIR"; then
@@ -380,26 +484,51 @@ jobs:
         shell: bash
         env:
           QUALITY_OUTCOME: ${{ steps.quality.outcome }}
+          CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
           PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
+          FUNCTION_IDENTITY_OUTCOME: ${{ steps.function_identity.outcome }}
           MIGRATIONS_OUTCOME: ${{ steps.migrations.outcome }}
           DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
           MUTATION_OUTCOME: ${{ steps.mutation.outcome }}
+          RESTORE_OUTCOME: ${{ steps.restore.outcome }}
           LOG_OUTCOME: ${{ steps.command_logs.outcome }}
           SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
           UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
         run: |
           set -euo pipefail
+          if [[ "$RESTORE_OUTCOME" != "success" ]]; then
+            echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_BACKFILL_FAILED reason=restore_not_verified"
+            exit 1
+          fi
+          if [[ "$G7_RESTORE_ONLY" == "true" ]]; then
+            if [[ "$QUALITY_OUTCOME" != "success" || "$LOG_OUTCOME" != "success" ||
+                  "$SCAN_OUTCOME" != "success" || "$UPLOAD_OUTCOME" != "success" ||
+                  "$CLEANUP_OUTCOME" != "success" ]]; then
+              echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_BACKFILL_FAILED reason=restore_only_step_failed"
+              exit 1
+            fi
+            echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_RESTORE_ONLY_PASS"
+            exit 0
+          fi
           if [[ "$QUALITY_OUTCOME" != "success" ||
+                "$CAPTURE_OUTCOME" != "success" ||
                 "$PREFLIGHT_OUTCOME" != "success" ||
                 "$MIGRATIONS_OUTCOME" != "success" ||
-                "$DEPLOY_OUTCOME" != "success" ||
                 "$MUTATION_OUTCOME" != "success" ||
                 "$LOG_OUTCOME" != "success" ||
                 "$SCAN_OUTCOME" != "success" ||
                 "$UPLOAD_OUTCOME" != "success" ||
                 "$CLEANUP_OUTCOME" != "success" ]]; then
             echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_BACKFILL_FAILED"
+            exit 1
+          fi
+          if [[ "$G7_SKIP_DEPLOY" != "true" && "$DEPLOY_OUTCOME" != "success" ]]; then
+            echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_BACKFILL_FAILED reason=deploy_not_successful"
+            exit 1
+          fi
+          if [[ "$G7_SKIP_DEPLOY" == "true" && "$FUNCTION_IDENTITY_OUTCOME" != "success" ]]; then
+            echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_BACKFILL_FAILED reason=function_identity_not_verified"
             exit 1
           fi
           echo "G7_PRODUCTION_HISTORICAL_PERFORMANCE_BACKFILL_PASS"
