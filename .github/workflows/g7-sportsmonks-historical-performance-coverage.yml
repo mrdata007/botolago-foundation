@@ -28,7 +28,9 @@ jobs:
       github.ref == 'refs/heads/main' &&
       github.actor == 'mrdata007'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 7 sampled + ~6 season-listing + 240 per-fixture provider requests at the
+    # sister audit's reviewed allowance (90 min / 492 requests ~= 11 s each).
+    timeout-minutes: 45
     environment: production-football-ingestion
     env:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
@@ -76,7 +78,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "g7-historical-performance-coverage-2026-08-02-03",
+              "requestId": "g7-historical-performance-coverage-2026-09-18-01",
               "repairsRuns": [
                   {
                       "runId": 30752931530,
@@ -99,10 +101,12 @@ jobs:
                   {"seasonId": 26027, "fixtureId": 19489211},
                   {"seasonId": 26027, "fixtureId": 19662879},
                   {"seasonId": 26027, "fixtureId": 19734478},
+                  {"seasonId": 26027, "fixtureId": 19489216},
                   {"seasonId": 24319, "fixtureId": 19263646},
                   {"seasonId": 24319, "fixtureId": 19334647},
                   {"seasonId": 24319, "fixtureId": 19420617},
               ],
+              "invariantSeasons": [26027],
               "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY",
           }
           path = Path("docs/production/g7-historical-performance-probe-trigger.json")
@@ -165,6 +169,42 @@ jobs:
           print(f"Historical performance usable={str(usable).lower()}")
           PY
 
+      - name: Report coverage invariant classification
+        id: invariants
+        if: always() && steps.performance_probe.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["G7_PERFORMANCE_EVIDENCE_DIR"]) / "sportsmonks-historical-performance-invariants.json"
+          evidence = json.loads(path.read_text(encoding="utf-8"))
+          if evidence.get("providerPayloadIncluded") is not False:
+              raise SystemExit("INVALID_HISTORICAL_PERFORMANCE_INVARIANT_EVIDENCE")
+          halting_fixture = 19489216
+          halting_row = None
+          for season in evidence["seasons"]:
+              print(
+                  f"season={season['seasonId']} enumerated={season['fixturesEnumerated']}/"
+                  f"{season['expectedFixtures']} complete={str(season['enumerationComplete']).lower()} "
+                  f"fixtures={season['fixtures']} passing={season['passing']} failing={season['failing']}"
+              )
+              for code, count in sorted(season["failuresByCode"].items()):
+                  print(f"  {code}={count}")
+              for row in season["rows"]:
+                  if row["fixtureId"] == halting_fixture:
+                      halting_row = row
+          if halting_row is None:
+              raise SystemExit("HALTING_FIXTURE_NOT_CLASSIFIED")
+          print(f"fixture={halting_fixture} " + json.dumps(halting_row, sort_keys=True))
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"failing={evidence['failing']}\n")
+              output.write(f"halting_failures={','.join(halting_row['failures']) or 'none'}\n")
+          PY
+
       - name: Verify evidence contains no credential patterns
         id: evidence_scan
         if: always() && steps.runtime.outcome == 'success' && steps.checkout.outcome == 'success'
@@ -212,13 +252,15 @@ jobs:
           QUALITY_OUTCOME: ${{ steps.quality.outcome }}
           PROBE_OUTCOME: ${{ steps.performance_probe.outcome }}
           COVERAGE_OUTCOME: ${{ steps.coverage.outcome }}
+          INVARIANTS_OUTCOME: ${{ steps.invariants.outcome }}
           SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
           UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
         run: |
           set -euo pipefail
           if [[ "$QUALITY_OUTCOME" != "success" || "$PROBE_OUTCOME" != "success" ||
-                "$COVERAGE_OUTCOME" != "success" || "$SCAN_OUTCOME" != "success" ||
+                "$COVERAGE_OUTCOME" != "success" || "$INVARIANTS_OUTCOME" != "success" ||
+                "$SCAN_OUTCOME" != "success" ||
                 "$UPLOAD_OUTCOME" != "success" || "$CLEANUP_OUTCOME" != "success" ]]; then
             echo "G7_HISTORICAL_PERFORMANCE_PROBE_FAILED"
             exit 1
@@ -233,23 +275,29 @@ jobs:
           QUALITY_OUTCOME: ${{ steps.quality.outcome }}
           PROBE_OUTCOME: ${{ steps.performance_probe.outcome }}
           COVERAGE_OUTCOME: ${{ steps.coverage.outcome }}
+          INVARIANTS_OUTCOME: ${{ steps.invariants.outcome }}
           SCAN_OUTCOME: ${{ steps.evidence_scan.outcome }}
           UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
           PERFORMANCE_USABLE: ${{ steps.coverage.outputs.usable }}
+          INVARIANT_FAILING: ${{ steps.invariants.outputs.failing }}
         run: |
           set -euo pipefail
           printf '::add-mask::%s\n' "$GITHUB_TOKEN"
           state="failure"
           description="Historical SportsMonks performance probe failed"
           if [[ "$QUALITY_OUTCOME" == "success" && "$PROBE_OUTCOME" == "success" &&
-                "$COVERAGE_OUTCOME" == "success" && "$SCAN_OUTCOME" == "success" &&
+                "$COVERAGE_OUTCOME" == "success" && "$INVARIANTS_OUTCOME" == "success" &&
+                "$SCAN_OUTCOME" == "success" &&
                 "$UPLOAD_OUTCOME" == "success" && "$CLEANUP_OUTCOME" == "success" ]]; then
             state="success"
             if [[ "$PERFORMANCE_USABLE" == "true" ]]; then
               description="Historical player performance coverage is usable"
             else
               description="Historical player performance coverage is unavailable"
+            fi
+            if [[ "$INVARIANT_FAILING" =~ ^[0-9]+$ ]]; then
+              description="$description; invariant-failing fixtures: $INVARIANT_FAILING"
             fi
           fi
           payload=$(printf \
