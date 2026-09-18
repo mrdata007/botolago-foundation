@@ -581,7 +581,7 @@ function TransfersBody() {
           bank={pickerBudget}
           position={pickerOut.position}
           lockPosition
-          disabledIds={squadIdsAfter.filter((id) => id !== pickerCurrentIn)}
+          disabledIds={[...squadIdsAfter.filter((id) => id !== pickerCurrentIn), pickerFor]}
           onPick={onPick}
           onClose={() => setPickerFor(null)}
         />

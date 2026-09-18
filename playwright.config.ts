@@ -19,6 +19,10 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "off",
     reducedMotion: "reduce",
+    ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === "1",
+    launchOptions: process.env.E2E_CHROMIUM_PATH
+      ? { executablePath: process.env.E2E_CHROMIUM_PATH, args: ["--ignore-certificate-errors"] }
+      : undefined,
   },
   webServer: externalBaseUrl
     ? undefined

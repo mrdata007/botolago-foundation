@@ -64,9 +64,13 @@ function PointsBody() {
   });
   const resultQ = useQuery({
     queryKey: key("gw-result", gw),
-    queryFn: () => fantasyService.getGameweekResult(gw!),
+    // React Query treats `undefined` as a failed fetch, so a gameweek without
+    // a computed result (the normal case before the first deadline) resolves
+    // to `null` and the squad still renders with "—" plates.
+    queryFn: async () => (await fantasyService.getGameweekResult(gw!)) ?? null,
     enabled: screen.phase === "ready" && gw !== null && !!team,
     retry: 1,
+    retryDelay: 1_500,
   });
 
   const lifecycle = isCloud
@@ -263,7 +267,18 @@ function PointsBody() {
           ]}
         />
       )}
-      {!resultQ.isPending && !vm ? (
+      {resultQ.isError ? (
+        <div className="flex flex-col items-center gap-2 px-4 py-3 text-center text-[13px] text-[color:var(--fpl-grey-text)]">
+          <span>{t("fpl.error.body")}</span>
+          <button
+            type="button"
+            onClick={() => void resultQ.refetch()}
+            className="rounded-[4px] bg-[color:var(--fpl-ink)] px-3 py-1.5 text-[13px] font-bold text-white"
+          >
+            {t("state.retry")}
+          </button>
+        </div>
+      ) : !resultQ.isPending && !vm ? (
         <p className="px-4 py-3 text-center text-[13px] text-[color:var(--fpl-grey-text)]">
           {t("fpl.points_not_available")}
         </p>

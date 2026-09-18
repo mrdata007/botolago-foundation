@@ -199,10 +199,13 @@ export const fantasyPointsSchema = z.object({
       captain: z.boolean(),
       viceCaptain: z.boolean(),
       multiplier: z.coerce.number().nonnegative(),
-      provisionalPoints: z.number().int(),
+      // Before the first calculation of a gameweek the backend returns the
+      // lineup with null scoring fields; the points screen still has to
+      // render the squad, so these stay nullable rather than failing parse.
+      provisionalPoints: z.number().int().nullable(),
       finalPoints: z.number().int().nullable(),
-      didPlay: z.boolean(),
-      minutesPlayed: z.number().int().nonnegative(),
+      didPlay: z.boolean().nullable(),
+      minutesPlayed: z.number().int().nonnegative().nullable(),
     }),
   ),
 });

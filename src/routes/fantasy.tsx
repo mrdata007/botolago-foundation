@@ -1,8 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { FantasyOnboarding } from "@/components/fantasy/FantasyOnboarding";
-import { FantasyImportPrompt } from "@/components/fantasy/FantasyImportPrompt";
-
 export const Route = createFileRoute("/fantasy")({
   head: () => ({
     meta: [
@@ -24,19 +21,14 @@ export const Route = createFileRoute("/fantasy")({
 });
 
 /**
- * The Fantasy layout never gates its children.
+ * The Fantasy layout never gates its children and adds no overlay of its own.
  *
  * Every screen resolves its own availability / authentication / team state
- * through `useFantasyScreenState`, so a slow or failed backend request can
- * only ever degrade the one screen that depends on it, with a finite
- * loading state and an explicit retry.
+ * through `useFantasyScreen`, so a slow or failed backend request can only
+ * ever degrade the one screen that depends on it, with a finite loading state
+ * and an explicit retry. The reference screens carry no welcome or import
+ * dialogs, so none are mounted here.
  */
 function FantasyLayout() {
-  return (
-    <>
-      <Outlet />
-      <FantasyImportPrompt />
-      <FantasyOnboarding />
-    </>
-  );
+  return <Outlet />;
 }

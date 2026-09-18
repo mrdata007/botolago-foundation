@@ -89,8 +89,8 @@ function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | un
     autoSubs: [],
     breakdown: dto.players.map((player) => ({
       playerId: player.fantasyPlayerId,
-      totalPoints: player.finalPoints ?? player.provisionalPoints,
-      minutesPlayed: player.minutesPlayed,
+      totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
+      minutesPlayed: player.minutesPlayed ?? 0,
       isCaptain: player.captain || undefined,
       isViceCaptain: player.viceCaptain || undefined,
       isBench: player.slot === "bench" || undefined,

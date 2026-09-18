@@ -105,9 +105,9 @@ function FantasyHub() {
       >
         <div className="flex items-center gap-2 pt-6">
           <img src="/favicon.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg" />
-          <span className="text-[34px] font-black tracking-tight text-[color:var(--fpl-ink-deep)]">
+          <h1 className="text-[34px] font-black tracking-tight text-[color:var(--fpl-ink-deep)]">
             {t("fantasy.title")}
-          </span>
+          </h1>
         </div>
         <div className="mt-4">{teamCard}</div>
 
