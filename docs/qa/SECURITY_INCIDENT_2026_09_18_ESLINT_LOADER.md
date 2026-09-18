@@ -11,10 +11,15 @@ Prettier failure reported by `bun run lint`.
 - Lines 7–9 added `import { createRequire } from 'module'` and a module-level
   `require`, which the payload needs to load `node:http`, `node:https`,
   `node:zlib`, `node:url` and `child_process`.
-- Introduced by commit `9def3e1` ("fix: recover current football and news data
-  with truthful fantasy availability", 2026-09-14, merged through PR #135). The
-  commit touched 24 files; the `eslint.config.js` hunk was 6 lines and was easy
-  to miss because the payload sits far to the right of the visible line.
+- Provenance (corrected 2026-09-18 after checking every historical version of
+  the file): the payload is **not** in the branch commit `9def3e1` (its
+  `eslint.config.js` hunk adds only the 3-line `createRequire` shim and the
+  Lovable override; longest diff line 95 characters). It first appears in the
+  **merge commit** `5731246` ("Merge pull request #135", 2026-09-14 22:00 +0100,
+  author `mrdata007`), whose tree differs from both parents in this file. That
+  is an "evil merge": the line was injected on the machine or tool that
+  produced the merge, not in the reviewed PR diff. `git log -S` misses it
+  because merge commits are not diffed by default.
 - Static analysis only (the code was never executed deliberately): the payload
   reads `process.env.ETH_RPC_URL` plus a list of public Ethereum RPC endpoints
   and an indexer URL, binary-searches the nonce history of a hard-coded sender
@@ -50,9 +55,11 @@ every `eslint` invocation between 2026-09-14 and the fix:
    `GNEWS_API_KEY`, `NEWS_INGESTION_TRIGGER_SECRET`, cloud provider keys and
    SSH keys on developer machines. Rotate Supabase service keys from the
    dashboard and update the GitHub Actions secrets afterwards.
-2. Identify how commit `9def3e1` was produced (local machine, Lovable, an agent)
-   and scan that environment; the padding technique targets code review, so
-   treat the producing toolchain as compromised until proven otherwise.
+2. Identify how the merge commit `5731246` was produced on 2026-09-14 at
+   22:00 (+01:00): the workstation, git client, IDE extension or agent that
+   merged PR #135 locally and pushed `main`. Scan that environment; the
+   padding technique targets code review, so treat the producing toolchain as
+   compromised until proven otherwise. The PR diff itself was clean.
 3. Review the GitHub audit log for the repository and the account since
    2026-09-14 (new deploy keys, workflow changes, tokens, app installations).
 4. Add a guard to CI: fail on any source line longer than, for example, 1 000
