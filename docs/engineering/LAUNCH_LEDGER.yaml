@@ -256,10 +256,13 @@ tasks:
     area: localization
     severity: P1
     owner: Chief
-    state: RUNNING
+    state: DONE
     acceptance_criteria: [src/lib/format-time.ts uses the same locale tags as the components (ar-MA / fr-FR); unit test; no other behaviour change]
-    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0025-format-time-locale @ef214e7), verifier: PASS (docs/engineering/tasks/BG-0025/verification-report.yaml), reviewer: running (fresh context, worktree bg0025-review)}
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0025-format-time-locale @ef214e7), verifier: PASS (docs/engineering/tasks/BG-0025/verification-report.yaml), reviewer: PASS (fresh context, docs/engineering/tasks/BG-0025/review-report.yaml)}
     note: product confirmation of Western digits is implied by the 20+ existing ar-MA usages; flag in the report.
+    merged: main (merge of agent/BG-0025-format-time-locale @ef214e7, 2026-09-18)
+    remaining_risks: [ar-MA also switches the Arabic article timestamp to 24h Moroccan month form (inherent to aligning with existing components; product awareness only)]
+
   BG-0026:
     title: RTL layout audit (111 physical-direction utilities; short-label truncation candidates)
     area: ui
