@@ -59,8 +59,8 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
         self.assertEqual(expected, sorted(actual))
         versions = [filename.split("_", 1)[0] for filename in actual]
         self.assertEqual(versions, sorted(versions))
-        self.assertEqual(47, len(actual))
-        self.assertEqual(47, len(set(actual)))
+        self.assertEqual(57, len(actual))
+        self.assertEqual(57, len(set(actual)))
         self.assertEqual(
             (
                 "20260803173344_fantasy_preactivation_hardening.sql",
@@ -69,6 +69,21 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             ),
             PROMOTER.BATCHES["release_activation"],
         )
+        self.assertEqual(9, len(PROMOTER.BATCHES["launch_recovery_2026_09_14"]))
+        self.assertEqual(
+            ("20260918120000_fantasy_calendar_sync.sql",),
+            PROMOTER.BATCHES["fantasy_calendar_sync"],
+        )
+        self.assertEqual(56, len(PROMOTER.batch_history_prefix("fantasy_calendar_sync")))
+        self.assertEqual(
+            "RUN_PHASE7E_B_PRODUCTION_FANTASY_CALENDAR_SYNC",
+            PROMOTER.CONFIRMATIONS["fantasy_calendar_sync"],
+        )
+        for batch in ("launch_recovery_2026_09_14", "fantasy_calendar_sync"):
+            self.assertEqual(
+                frozenset({"football-ingest", "news-ingest"}),
+                PROMOTER.EXPECTED_EDGE_FUNCTIONS_BY_BATCH[batch],
+            )
 
     def test_transaction_preserves_exact_sql_and_history_metadata(self) -> None:
         sql = "create schema app;\nselect '✓';\n"

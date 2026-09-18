@@ -100,6 +100,24 @@ BATCHES: dict[str, tuple[str, ...]] = {
         "20260803210943_fantasy_catalog_activation.sql",
         "20260803212218_elbotola_metadata_ingestion.sql",
     ),
+    # Applied to Production V2 on 2026-09-14 through the reviewed launch data
+    # recovery (docs/backend/LAUNCH_DATA_RECOVERY_2026_09_14.md) as canonical
+    # one-statement history rows whose SQL equals the repository files. Kept in
+    # the manifest so later batches prove the whole chain before writing.
+    "launch_recovery_2026_09_14": (
+        "20260914184657_current_season_squad_recovery.sql",
+        "20260914185233_elbotola_service_source_controls.sql",
+        "20260914200714_fantasy_trusted_lifecycle.sql",
+        "20260914200719_fantasy_scoring_worker_contracts.sql",
+        "20260914200726_current_finished_fixture_performances.sql",
+        "20260914200730_fantasy_verified_finalization.sql",
+        "20260914200736_fantasy_finalized_notification_batches.sql",
+        "20260914200740_fantasy_next_gameweek_progression.sql",
+        "20260914200744_fantasy_postwork_journal.sql",
+    ),
+    "fantasy_calendar_sync": (
+        "20260918120000_fantasy_calendar_sync.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -116,6 +134,8 @@ SECRET_PATTERNS = (
 
 EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "release_activation": frozenset({"football-ingest", "news-ingest"}),
+    "launch_recovery_2026_09_14": frozenset({"football-ingest", "news-ingest"}),
+    "fantasy_calendar_sync": frozenset({"football-ingest", "news-ingest"}),
 }
 
 # These migrations were promoted through separately reviewed provider canaries
