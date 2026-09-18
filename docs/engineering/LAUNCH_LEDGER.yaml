@@ -214,12 +214,48 @@ tasks:
       Legal/product decision — confirm the launch news scope: (a) ElBotola metadata + remote heroes only (current state, already running), or (b) GNews commercial licence approved (set GNEWS_COMMERCIAL_LICENSE_APPROVED and GNEWS_SCHEDULE_ENABLED after a licensed manual run), or (c) full-article bodies from a licensed source (new provider work). Agents must not ingest bodies without a documented licence.
     next_when_unblocked: Verifier checks production article rendering (attribution, canonical link, hero fallback) for the chosen scope.
   BG-0014:
-    title: Localization (fr/ar/en keys, grammar, RTL, formats)
+    title: Localization gate (fr/ar dictionaries) — CI-enforced
     area: localization
     severity: P1
-    owner: Scout
-    state: RUNNING
-    evidence: [UNKNOWN beyond Fantasy screens (fr/ar/en keys added during reconstruction)]
+    user_impact: Missing/empty/placeholder-mismatched keys now fail CI; identical-value and non-Arabic warnings are ratcheted; profile.title ("Profile\n\n" in both languages) surfaced as a named defect (BG-0024).
+    owner: Chief
+    state: DONE
+    attempt: 1
+    roles: {scout: sub-agent, researcher: sub-agent, builder: Builder-Frontend sub-agent (worktree), verifier: sub-agent, reviewer: fresh sub-agent}
+    branch: agent/BG-0014-i18n-gate
+    commits: [6621677, "merge into main by Chief"]
+    evidence:
+      - docs/engineering/tasks/BG-0014/engineering-brief.yaml
+      - docs/engineering/tasks/BG-0014/implementation-report.yaml
+      - docs/engineering/tasks/BG-0014/verification-report.yaml (PASS; fr 985 / ar 985; W1=6 W2=5 W3=237 W4=100)
+      - docs/engineering/tasks/BG-0014/review-report.yaml (PASS)
+    verification: {status: PASS}
+    review: {verdict: PASS}
+    residual_risks:
+      - the gate assumes repo-root cwd (fails loudly otherwise)
+      - RTL physical-direction utilities (111) and short-label truncation risks remain findings (BG-0026)
+  BG-0024:
+    title: profile.title dictionary defect ("Profile\n\n" in fr and ar, rendered with whitespace-pre-wrap)
+    area: localization
+    severity: P1
+    user_impact: English word plus blank lines on the profile screen in both languages.
+    owner: Chief
+    state: READY
+    acceptance_criteria: [proper fr and ar strings in src/i18n/dictionaries.ts; W1 baseline 6→5 and W2 5→4 in scripts/qa/i18n-gate.ts in the same change; gate passes]
+  BG-0025:
+    title: format-time.ts uses bare "ar"/"fr" locales while the UI uses "ar-MA"/"fr-FR" (two digit systems on Arabic screens)
+    area: localization
+    severity: P1
+    owner: Chief
+    state: READY
+    acceptance_criteria: [src/lib/format-time.ts uses the same locale tags as the components (ar-MA / fr-FR); unit test; no other behaviour change]
+    note: product confirmation of Western digits is implied by the 20+ existing ar-MA usages; flag in the report.
+  BG-0026:
+    title: RTL layout audit (111 physical-direction utilities; short-label truncation candidates)
+    area: ui
+    severity: P2
+    owner: Chief
+    state: QUEUED
   BG-0015:
     title: Fonts and UI consistency
     area: ui

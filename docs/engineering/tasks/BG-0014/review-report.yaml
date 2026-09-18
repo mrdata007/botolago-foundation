@@ -1,0 +1,74 @@
+task_id: BG-0014
+reviewed_commit: 6621677d1cef67349b6f0b93f5d727549fdd29be
+verdict: PASS
+defects: []
+release_blockers: []
+status: DONE
+
+# Independent re-verification performed by the Reviewer (worktree /home/user/bg0014-review,
+# detached at 6621677, `bun install --frozen-lockfile`, left with `git status --porcelain` empty):
+#
+# AC1  `bun scripts/qa/i18n-gate.ts` -> EXIT=0, "errors: none", "RESULT: pass";
+#      W1=6 (profile.title reported by name; app.name, language.arabic, language.french,
+#      news.language.ar, notfound.code each suppressed with a justification), W2=5,
+#      W3=237, W4=100 â every group printed "at baseline".
+# AC2  `bun scripts/qa/i18n-gate.ts --fixture` -> EXIT=1, "errors: 4":
+#      E1 fixture.only_fr, E2 fixture.empty, E3 fixture.placeholder, E4 fixture.accent,
+#      "RESULT: fail". Fixture is hand-written, not derived from dictionaries.ts.
+# AC3  `bun test src/i18n/i18n-gate.test.ts` -> 21 pass / 0 fail / 590 expect(), EXIT=0.
+#      `bun run test` -> 653 pass / 0 fail across 115 files, EXIT=0.
+#      Discovery proven without a path filter: `bun test --test-name-pattern "current tree"`
+#      -> 6 pass / 647 filtered out across 115 files.
+# AC4  Negative controls re-run by the Reviewer in an out-of-tree scratch script against the
+#      real dictionaries and the real usage index (no Builder/Verifier code reused for the
+#      measurement of the dictionaries themselves):
+#        delete ar["nav.home"]            -> exactly E1 nav.home, ok=false
+#        ar["nav.home"]="  "              -> exactly E2 nav.home, ok=false
+#        strip {n} from fpl.about_to_transfer -> exactly E3 on that key, ok=false
+#        remove {/accent} from home.live_upcoming -> exactly E4 on that key, ok=false
+#        literal key "zz.fake" in usage   -> exactly E5 zz.fake, ok=false
+#        fabricated allow-list key        -> exactly E6 zz.fake, ok=false
+#        W1 ratchet up (ar.app.tagline := fr) -> W1=7, baselineViolation, ok=false
+#        W1 ratchet down (profile.title fixed) -> W1=5, baselineViolation, ok=false
+#      Chief replacement control reproduced: app.name removed from IDENTICAL_ALLOWED ->
+#      W1 stays 6, gate still passes, reported becomes ["app.name","profile.title"].
+#      The allow-list annotates, never subtracts â consistent with the committed baselines.
+# AC5  `bun run typecheck` -> EXIT=0. Type guarantee confirmed out-of-tree: TranslationKey is
+#      `keyof (typeof dictionaries)["fr"]` (dictionaries.ts:2153), and a probe object
+#      `{"notfound.codeXX": â¦} as const satisfies Partial<Record<TranslationKey, string>>`
+#      fails with TS2353 â a renamed/removed allow-listed key breaks typecheck.
+# AC6  Scope (three-dot origin/main...branch, merge-base 8921e7d): 5 files, all additions,
+#      1007 insertions, 0 deletions. No forbidden path touched â the diff restricted to
+#      package.json, bun.lock, src/i18n/dictionaries.ts, src/i18n/provider.tsx,
+#      src/lib/format-time.ts, .github/**, src/components/**, src/routes/**, bunfig.toml is
+#      empty. No test deleted or weakened (zero deletions anywhere). package.json carries no
+#      "i18n:check" entry, matching the authoritative Chief scope decision.
+# AC7  `bunx prettier --check` on the four new files -> "All matched files use Prettier code
+#      style!". `bun run lint` -> EXIT=0, 12 pre-existing react-refresh warnings, none in the
+#      new files. `git diff merge-base..HEAD -- package.json bun.lock` empty: no new dependency.
+# AC8  Reviewer's own measurement, importing dictionaries.ts directly with no gate code:
+#      fr 985 / ar 985 keys, 0 missing either way, 0 empty values, fr===ar exactly
+#      {app.name, language.arabic, language.french, news.language.ar, notfound.code,
+#      profile.title}, ar-without-Arabic-script exactly {app.name, auth.email_placeholder,
+#      language.french, notfound.code, profile.title}. No fabricated data: every committed
+#      baseline reproduces from first principles. W4=100 decomposes as 37 template-prefix
+#      sites (10 prefixes) + 63 opaque sites, matching Chief scope decision (3).
+#
+# CI enforcement (objective's "CI-enforced" clause) checked directly rather than assumed:
+# .github/workflows/backend-quality.yml triggers on `pull_request` with no path filter,
+# is documented as branch-protection-required, and runs `bun run test` (= `bun test`,
+# package.json:13) repo-wide, which reaches src/i18n/i18n-gate.test.ts as shown above.
+# The gate therefore fails CI on drift without any workflow edit.
+#
+# Non-blocking observations for the Chief (no correction required, not defects):
+#  - buildUsageIndex defaults to the relative root "src", so the CLI and the test assume the
+#    repo root as cwd. From another cwd the glob matches nothing and W3/W4 jump off baseline,
+#    so the gate fails loudly rather than passing silently â fail-safe.
+#  - W3 reachability counts any quoted string literal in src/, which is deliberately permissive;
+#    the script header already carries the "never wire W3 to deletion" rule.
+#  - src/i18n/__fixtures__/broken-dictionary.ts ships under src/ and is imported at module top
+#    level by scripts/qa/i18n-gate.ts, but no application entry point references either, so it
+#    cannot reach the app bundle. It contains only synthetic strings.
+#  - profile.title remains the single named W1/W2 warning, correctly left for BG-0024; the W1/W2
+#    baselines must be lowered in that same commit or the gate will fail on the improvement
+#    (intended friction, documented in the script header).
