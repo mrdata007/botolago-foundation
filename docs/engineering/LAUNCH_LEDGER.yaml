@@ -12,8 +12,6 @@ human_actions_open:
     action: Rotate the credentials listed in docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §1; confirm Supabase Auth Site/Redirect URLs and leaked-password protection.
   - id: BG-0022
     action: Publish merged main (2c7b1e7 or later) from Lovable so botolago.com serves the recovered Fantasy.
-  - id: BG-0011
-    action: Product decision on Fantasy opening prices (A re-stage with real ratings before 2026-09-23T00:00Z / B launch uniform-by-position / C other rule) — see docs/engineering/tasks/BG-0011/engineering-brief.yaml.
   - id: BG-0023
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
 
@@ -169,9 +167,14 @@ tasks:
     area: pricing
     severity: P0
     user_impact: 323 of 539 players cost 7.20; no price differentiation between a star and a reserve; budget/transfer mechanics degenerate. Movement rules cannot fix it at current scale (250 net-transfer floor).
-    owner: Human
-    state: HALTED_FOR_INPUT
+    owner: Extractor
+    state: RUNNING # owner chose Option A on 2026-09-18 (~12:00Z): real ratings → rollback + re-stage before 2026-09-23T00:00Z; the 3 QA/E2E teams will be deleted as part of the re-stage (owner-approved by choosing A)
     attempt: 1
+    decision: {option: A, by: owner, at: 2026-09-18, time_box: 2026-09-23T00:00Z}
+    plan:
+      - A1 Extractor: failed backfill run diagnostics, coverage state, workflow inputs (RUNNING)
+      - A2 Researcher: execution brief (backfill completion via G7 workflow, ratings ingestion, rollback/re-stage sequence, acceptance checks, schedule vs time box)
+      - A3 Builder-Data / Shipper: dispatch backfill batches until 240/240 coverage; ingest v2 ratings; rehearse rollback+re-stage rolled back; execute with evidence; Verifier + Reviewer
     evidence:
       - docs/engineering/tasks/BG-0011/engineering-brief.yaml (Researcher, read-only production queries)
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
