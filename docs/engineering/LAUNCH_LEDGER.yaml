@@ -938,11 +938,37 @@ tasks:
     area: ui
     severity: P1
     owner: Chief
-    state: READY
+    state: DONE
     depends_on: [BG-0026]
     evidence: ['docs/engineering/tasks/BG-0026/engineering-brief.yaml findings (probe2: html font Noto Sans Arabic, body font Manrope fallback)']
     acceptance_criteria: [Arabic body text computes to the Arabic font stack; French unchanged; re-measure BG-0026 truncation table after the change]
     related: BG-0015
+    root_cause_confirmed: >-
+      body's font-family (styles.css:440, @layer base) is a directly declared property on <body>
+      itself; a directly declared property always wins over an inherited value regardless of
+      layer order, so html[dir="rtl"] { font-family: var(--font-arabic) } (unlayered, styles.css:427)
+      never reached body text via inheritance.
+    fix_2026_09_18T20: >-
+      branch agent/BG-0035-arabic-font-fix @27765b3: added an explicit, unlayered
+      html[dir="rtl"] body { font-family: var(--font-arabic); ... } override alongside the
+      existing line-height rule (styles.css:428), which wins over the layered body rule the same
+      way the existing html-level rule already does for <html>. French/LTR untouched. Extended
+      tests/e2e/anonymous.acceptance.e2e.ts (5 routes x 6 viewports x {fr, ar}, already existing)
+      with a computed body font-family assertion. Proved genuine (not vacuous): reverting the CSS
+      hunk reproduces the exact failure (body resolves to "Manrope, Inter, ui-sans-serif,
+      system-ui, sans-serif"); restoring passes. Full suite 12/12 green, zero console/network
+      errors. typecheck and lint clean (12 pre-existing unrelated warnings only).
+    independent_verifier_2026_09_18T20: >-
+      PASS (fresh-context agent, isolated worktree, re-derived the root-cause analysis from
+      scratch, independently reproduced the revert-fails/restore-passes proof, reran the full
+      suite, grepped src/ for any other font-family override that might interact — none found,
+      confirmed diff scope limited to styles.css + the one test file). No defects found.
+    merged: main (ordinary merge commit of agent/BG-0035-arabic-font-fix @27765b3, 2026-09-18T20)
+    residual_open: >-
+      Acceptance criterion "re-measure BG-0026 truncation table after the change" remains open:
+      requires the authenticated FDR/points views, not reachable without production credentials in
+      this environment — same limitation BG-0026's own review recorded (T7). Recommended: first
+      authenticated Arabic QA pass re-takes ar_fdr.png/ar_points.png under the now-correct font.
 
   BG-0036:
     title: 'api.ingest_football_catalog_entity rewrites app.teams.code unconditionally from the provider (NULL for 15 clubs), so any curated short code is clobbered by the next fresh team payload'
