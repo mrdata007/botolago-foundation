@@ -10,9 +10,10 @@
  * files; it is deliberately NOT widened to scripts/** or docs/**, which
  * legitimately contain the very patterns this guard rejects.
  *
- * Usage:
- *   bun scripts/backend/check-config-integrity.mjs              # scan the set
- *   bun scripts/backend/check-config-integrity.mjs --file <p>   # scan one file
+ * Usage (invoked by path with node, so neither package.json nor bunfig.toml,
+ * both members of the scanned set, sits on the guard's own execution path):
+ *   node scripts/backend/check-config-integrity.mjs             # scan the set
+ *   node scripts/backend/check-config-integrity.mjs --file <p>  # scan one file
  *
  * Exit codes: 0 clean, 1 violations found, 2 usage error / unreadable file /
  * empty target set.
@@ -161,7 +162,7 @@ export function formatViolation(violation, root) {
 
 function usage(message) {
   process.stderr.write(
-    `${message}\nUsage: bun scripts/backend/check-config-integrity.mjs [--file <path>]\n`,
+    `${message}\nUsage: node scripts/backend/check-config-integrity.mjs [--file <path>]\n`,
   );
   process.exit(2);
 }
