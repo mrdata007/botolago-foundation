@@ -466,6 +466,7 @@ tasks:
     hold_propagation: BG-0004 must stay HOLD until the guard migration is promoted (hourly schedule would overwrite ends_on every run)
     merge_gate: 'pull request whose backend-quality database job is green (first execution of season_bounds_guard.test.sql on a Supabase stack); PR opened by Chief under the owner PR route; a red job voids the PASS and returns the task to Builder-Backend'
     sequencing: 'PR #136 (BG-0027, migration 150000) merges first; then this branch merges main and moves the season_bounds_guard prefix 59 to 60 (version order preserved: 150000 before 160000)'
+    merge_gate_status: 'MET on PR #137 head 7cf5152 (type-refresh commit; no touch to the migration or the pgTAP file): backend-quality run 35368491642, database-quality job green — season_bounds_guard.test.sql executes ok, Files=40 Tests=816 Result PASS, db lint clean, types:check current (docs/engineering/tasks/BG-0031/ci-run-35368491642.txt). Per review-report.yaml release_blockers[0] this makes the existing Reviewer PASS live; no further Verifier/Reviewer pass needed for the code itself. Still holding the actual merge until BG-0027/PR #136 lands per sequencing above.'
     promotion_gate: 'owner one-row correction with lock before 2026-09-25 (Option A box 2026-09-23T00:00Z); promote batch season_bounds_guard after BG-0002 clears; workflows stay undispatched until both are live'
     pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/137 (head 96acad3); session subscribed'
 
