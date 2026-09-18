@@ -146,17 +146,23 @@ tasks:
     severity: P1
     user_impact: prevents a repeat of BG-0011 on the next activation or re-stage.
     owner: Chief
-    state: RUNNING
+    state: REJECTED
     depends_on: []
     acceptance_criteria:
       - a ratings run with records_fetched = 0 (or coverage below a minimum share) ends failed with an explicit error code and inserts zero rows
       - unit test in supabase/functions/_shared/sportsmonks-player-ratings.test.ts
       - a pre-stage non-degeneracy guard (additive migration) blocks or loudly warns when every candidate carries rating 6.0 / confidence 0
     evidence: [docs/engineering/tasks/BG-0011/engineering-brief.yaml, docs/engineering/tasks/BG-0027/verification-report.yaml]
-    roles: {builder: Builder-Backend (DONE, branch agent/BG-0027-ratings-fail-closed @449273c), verifier: PASS, reviewer: running (fresh context, worktree bg0027-review)}
+    roles: {builder: Builder-Backend (DONE, branch agent/BG-0027-ratings-fail-closed @449273c), verifier: PASS, reviewer: FAIL attempt 1 (docs/engineering/tasks/BG-0027/review-report-attempt1.yaml)}
     follow_up: BG-0030 — coverage computation counts has_values=false statistics records as covered (residual fail-open; Verifier security observation)
 
   # ---- Launch inventory (Chief triage in progress; Scouts BG-0011..BG-0018 dispatched) ----
+    attempt: 1
+    rejection:
+      - DEF-1 AC-c additive pre-stage non-degeneracy migration missing and not recorded as descoped (Chief dispatch omitted AC-c from the Builder/Verifier criteria — Chief process defect; attempt 2 hands the ledger criteria verbatim)
+      - DEF-2 has_values=false provider records counted as covered → a succeeded run still writes only 6.0/0 rows (reproduced by Reviewer)
+    next: Builder-Backend attempt 2 on agent/BG-0027-ratings-fail-closed (folds BG-0030)
+
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
     area: fantasy
@@ -348,7 +354,7 @@ tasks:
     area: data
     severity: P2
     owner: Chief
-    state: QUEUED
+    state: FOLDED_INTO_BG-0027
     depends_on: [BG-0027]
     evidence: [docs/engineering/tasks/BG-0027/verification-report.yaml security_observations]
     acceptance_criteria: [coverage counts only statistics records that carry values; unit test for the has_values=false case; no formula change]
