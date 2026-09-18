@@ -57,7 +57,7 @@ export function BottomNav() {
                 }}
               />
               <Icon className={cn("h-5 w-5 shrink-0", active && "drop-shadow-sm")} aria-hidden />
-              <span className="truncate leading-none">{t(item.labelKey)}</span>
+              <span className="max-w-full truncate leading-none">{t(item.labelKey)}</span>
             </Link>
           );
         })}

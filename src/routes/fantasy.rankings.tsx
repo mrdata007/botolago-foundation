@@ -218,7 +218,7 @@ function RankingsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
-                <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                <ChevronLeft className="h-4 w-4" aria-hidden />
               </PagerButton>
               <span className="text-xs font-black tabular-nums text-foreground">
                 {t("fantasy.rankings.page")} {nf.format(page)} / {nf.format(pageCount)}
@@ -228,7 +228,7 @@ function RankingsPage() {
                 disabled={page >= pageCount}
                 onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
               >
-                <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                <ChevronRight className="h-4 w-4" aria-hidden />
               </PagerButton>
             </div>
           </div>

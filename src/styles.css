@@ -427,6 +427,7 @@
 html[dir="rtl"] { font-family: var(--font-arabic); }
 html[dir="rtl"] body { line-height: 1.75; }
 html[dir="rtl"] .lucide-chevron-right { transform: scaleX(-1); }
+html[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
 html[dir="rtl"] .lucide-arrow-right { transform: scaleX(-1); }
 html[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
 
