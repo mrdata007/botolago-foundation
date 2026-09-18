@@ -78,7 +78,7 @@ jobs:
 
           expected = {
               "schemaVersion": 1,
-              "requestId": "g7-historical-performance-coverage-2026-09-18-01",
+              "requestId": "g7-historical-performance-coverage-2026-09-18-02",
               "repairsRuns": [
                   {
                       "runId": 30752931530,
@@ -107,6 +107,7 @@ jobs:
                   {"seasonId": 24319, "fixtureId": 19420617},
               ],
               "invariantSeasons": [26027],
+              "invariantCounters": "anonymous-starters-v1",
               "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY",
           }
           path = Path("docs/production/g7-historical-performance-probe-trigger.json")
@@ -184,6 +185,8 @@ jobs:
           evidence = json.loads(path.read_text(encoding="utf-8"))
           if evidence.get("providerPayloadIncluded") is not False:
               raise SystemExit("INVALID_HISTORICAL_PERFORMANCE_INVARIANT_EVIDENCE")
+          if evidence.get("invariantCounters") != "anonymous-starters-v1":
+              raise SystemExit("INVALID_HISTORICAL_PERFORMANCE_INVARIANT_EVIDENCE")
           halting_fixture = 19489216
           halting_row = None
           for season in evidence["seasons"]:
@@ -194,6 +197,15 @@ jobs:
               )
               for code, count in sorted(season["failuresByCode"].items()):
                   print(f"  {code}={count}")
+              print(
+                  f"  rawStarterExactly22={season['rawStarterExactly22']} "
+                  f"identityTolerantPassing={season['identityTolerantPassing']}"
+              )
+              histogram = season["anonymousStarterHistogram"]
+              print(
+                  "  anonymousStarterHistogram="
+                  + " ".join(f"{key}:{histogram[key]}" for key in sorted(histogram, key=int))
+              )
               for row in season["rows"]:
                   if row["fixtureId"] == halting_fixture:
                       halting_row = row

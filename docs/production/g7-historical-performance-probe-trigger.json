@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "requestId": "g7-historical-performance-coverage-2026-09-18-01",
+  "requestId": "g7-historical-performance-coverage-2026-09-18-02",
   "repairsRuns": [
     {
       "runId": 30752931530,
@@ -29,5 +29,6 @@
     { "seasonId": 24319, "fixtureId": 19420617 }
   ],
   "invariantSeasons": [26027],
+  "invariantCounters": "anonymous-starters-v1",
   "confirmation": "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY"
 }

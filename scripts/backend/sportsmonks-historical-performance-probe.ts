@@ -38,8 +38,25 @@ export const HISTORICAL_PERFORMANCE_FIXTURES = [
 ] as const;
 
 export const HISTORICAL_PERFORMANCE_REQUEST_ID =
-  "g7-historical-performance-coverage-2026-09-18-01" as const;
+  "g7-historical-performance-coverage-2026-09-18-02" as const;
 export const HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS = [30752931530, 30753527952] as const;
+
+/**
+ * Version tag of the read-only per-fixture counters added to every invariants
+ * row (BG-0044 / BG-0011 step A1-probe-extension). The counters are a second
+ * pure pass over the same provider `lineups` the worker classifies; they never
+ * change the worker's verdict and the evidence still carries no payload.
+ */
+export const HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS = "anonymous-starters-v1" as const;
+
+/** Provider participation types on lineup rows: 11 starter, 12 substitute. */
+const PROVIDER_STARTER_TYPE_ID = 11;
+const PROVIDER_SUBSTITUTE_TYPE_ID = 12;
+/** Provider-declared starters of a complete 11-v-11 lineup. */
+const DECLARED_STARTERS_PER_FIXTURE = 22;
+/** Recommended cap on anonymous starters for the identity-tolerant reading (BG-0011 option b). */
+const IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP = 4;
+const STARTER_ROWS_FAILURE_CODE = "starter_rows_mismatch";
 
 /**
  * Seasons whose every fixture is classified against the edge worker's coverage
@@ -146,11 +163,33 @@ export interface HistoricalPerformanceFailureEvidence {
 }
 
 /**
+ * Provider-declared (raw) lineup counters of one fixture, computed by a pure
+ * pass over the same `lineups` array the worker classifies. Unlike the
+ * worker's counts they read type_id before the identity test, so they tell
+ * provider-declared starters apart from identified ones. An "anonymous" row is
+ * a record row whose player_id is null or undefined (exactly the rows the
+ * worker excludes as incomplete). Counts only: no id, name or jersey value is
+ * ever copied into the evidence. All null when the payload carries no lineup
+ * array at all.
+ */
+export interface RawLineupCounters {
+  readonly rawStarterRows: number | null;
+  readonly rawSubstituteRows: number | null;
+  readonly anonymousStarterRows: number | null;
+  readonly anonymousSubstituteRows: number | null;
+  readonly anonymousRowsWithTeamId: number | null;
+  readonly anonymousRowsWithNameOrJersey: number | null;
+}
+
+/**
  * One fixture classified against the worker's coverage invariants. Counts are
  * null when the worker aborted on a row-level defect before it could evaluate
  * the invariants; `failures` then carries that abort code instead.
+ * `identityTolerantPass` is a diagnostic reading only (BG-0011 option b sizing):
+ * the provider declares 22 starters, at most 4 of them are anonymous and no
+ * failure other than starter_rows_mismatch was raised. It never alters `pass`.
  */
-export interface FixtureInvariantRow {
+export interface FixtureInvariantRow extends RawLineupCounters {
   readonly fixtureId: number;
   readonly seasonId: number;
   readonly kickoff: string | null;
@@ -163,6 +202,7 @@ export interface FixtureInvariantRow {
   readonly invalidDetailRows: number | null;
   readonly failures: string[];
   readonly pass: boolean;
+  readonly identityTolerantPass: boolean;
 }
 
 export interface SeasonInvariantSummary {
@@ -176,6 +216,10 @@ export interface SeasonInvariantSummary {
   readonly passing: number;
   readonly failing: number;
   readonly failuresByCode: Record<string, number>;
+  readonly rawStarterExactly22: number;
+  readonly identityTolerantPassing: number;
+  /** anonymousStarterRows value -> number of fixtures; rows with null counters are not keyed. */
+  readonly anonymousStarterHistogram: Record<string, number>;
   readonly rows: FixtureInvariantRow[];
 }
 
@@ -189,6 +233,7 @@ export interface HistoricalPerformanceInvariantEvidence {
   readonly leagueId: 860;
   readonly providerPayloadIncluded: false;
   readonly invariantSource: "supabase/functions/_shared/sportsmonks-historical-player-performance.ts#normalizeHistoricalFixture";
+  readonly invariantCounters: typeof HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS;
   readonly coverageFailureCodes: typeof HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES;
   readonly requestCount: number;
   readonly fixtures: number;
@@ -482,11 +527,82 @@ function failureCode(value: string): string {
   return ERROR_CODE_PATTERN.test(value) ? value : "unexpected_invariant_failure_code";
 }
 
+function nonEmptyIdentityHint(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+const NULL_RAW_LINEUP_COUNTERS: RawLineupCounters = {
+  rawStarterRows: null,
+  rawSubstituteRows: null,
+  anonymousStarterRows: null,
+  anonymousSubstituteRows: null,
+  anonymousRowsWithTeamId: null,
+  anonymousRowsWithNameOrJersey: null,
+};
+
+/**
+ * Pure second pass over the provider payload's `lineups` (the same array
+ * normalizeHistoricalFixture iterates; no extra request). Reads type_id on
+ * every record row, including the rows the worker drops for lacking a
+ * player_id, and returns counts only.
+ */
+export function rawLineupCounters(payload: unknown): RawLineupCounters {
+  if (!isRecord(payload) || !isRecord(payload.data) || !Array.isArray(payload.data.lineups)) {
+    return NULL_RAW_LINEUP_COUNTERS;
+  }
+  let rawStarterRows = 0;
+  let rawSubstituteRows = 0;
+  let anonymousStarterRows = 0;
+  let anonymousSubstituteRows = 0;
+  let anonymousRowsWithTeamId = 0;
+  let anonymousRowsWithNameOrJersey = 0;
+  for (const value of payload.data.lineups) {
+    if (!isRecord(value)) continue;
+    const participationType = optionalPositiveInteger(value.type_id);
+    const starter = participationType === PROVIDER_STARTER_TYPE_ID;
+    const substitute = participationType === PROVIDER_SUBSTITUTE_TYPE_ID;
+    if (starter) rawStarterRows += 1;
+    if (substitute) rawSubstituteRows += 1;
+    if (value.player_id !== null && value.player_id !== undefined) continue;
+    if (starter) anonymousStarterRows += 1;
+    if (substitute) anonymousSubstituteRows += 1;
+    if (optionalPositiveInteger(value.team_id) !== null) anonymousRowsWithTeamId += 1;
+    if (nonEmptyIdentityHint(value.player_name) || nonEmptyIdentityHint(value.jersey_number)) {
+      anonymousRowsWithNameOrJersey += 1;
+    }
+  }
+  return {
+    rawStarterRows,
+    rawSubstituteRows,
+    anonymousStarterRows,
+    anonymousSubstituteRows,
+    anonymousRowsWithTeamId,
+    anonymousRowsWithNameOrJersey,
+  };
+}
+
+/**
+ * Identity-tolerant reading of a classified row: the provider declares
+ * exactly 22 starters, at most 4 of them lack a player_id, and the worker
+ * raised no failure other than starter_rows_mismatch. Diagnostic only.
+ */
+export function identityTolerantPass(counters: RawLineupCounters, failures: string[]): boolean {
+  return (
+    counters.rawStarterRows === DECLARED_STARTERS_PER_FIXTURE &&
+    counters.anonymousStarterRows !== null &&
+    counters.anonymousStarterRows <= IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP &&
+    failures.every((code) => code === STARTER_ROWS_FAILURE_CODE)
+  );
+}
+
 /**
  * Classify one provider fixture payload with the edge worker's own
  * normalizeHistoricalFixture. Coverage failures come back as the worker's
  * diagnostic (identical counts and failure codes to the 503 it would have
  * returned); row-level aborts come back as that abort code with null counts.
+ * Every row also carries the raw/anonymous counters of rawLineupCounters and
+ * the identity-tolerant reading derived from them.
  */
 export async function classifyFixtureInvariants(
   payload: unknown,
@@ -495,9 +611,17 @@ export async function classifyFixtureInvariants(
   kickoff: string | null,
   enumerated: boolean,
 ): Promise<FixtureInvariantRow> {
+  const counters = rawLineupCounters(payload);
+  const withCounters = (
+    row: Omit<FixtureInvariantRow, keyof RawLineupCounters | "identityTolerantPass">,
+  ): FixtureInvariantRow => ({
+    ...row,
+    ...counters,
+    identityTolerantPass: identityTolerantPass(counters, row.failures),
+  });
   try {
     const normalized = await normalizeHistoricalFixture(payload, fixtureId, seasonId);
-    return {
+    return withCounters({
       fixtureId,
       seasonId,
       kickoff,
@@ -510,7 +634,7 @@ export async function classifyFixtureInvariants(
       invalidDetailRows: normalized.coverage.invalidDetailRows,
       failures: [],
       pass: true,
-    };
+    });
   } catch (error) {
     if (!(error instanceof HistoricalPerformanceRuntimeError)) {
       throw new HistoricalPerformanceProbeError("unexpected_invariant_normalization_failure");
@@ -523,7 +647,7 @@ export async function classifyFixtureInvariants(
       if (failures.length < 1) {
         throw new HistoricalPerformanceProbeError("invalid_invariant_diagnostic");
       }
-      return {
+      return withCounters({
         fixtureId,
         seasonId,
         kickoff,
@@ -545,9 +669,9 @@ export async function classifyFixtureInvariants(
         ),
         failures,
         pass: false,
-      };
+      });
     }
-    return {
+    return withCounters({
       fixtureId,
       seasonId,
       kickoff,
@@ -560,7 +684,7 @@ export async function classifyFixtureInvariants(
       invalidDetailRows: null,
       failures: [failureCode(error.code)],
       pass: false,
-    };
+    });
   }
 }
 
@@ -685,6 +809,12 @@ export async function runHistoricalPerformanceInvariantProbe(
     }
 
     const passing = rows.filter((row) => row.pass).length;
+    const anonymousStarterHistogram: Record<string, number> = {};
+    for (const row of rows) {
+      if (row.anonymousStarterRows === null) continue;
+      const key = String(row.anonymousStarterRows);
+      anonymousStarterHistogram[key] = (anonymousStarterHistogram[key] ?? 0) + 1;
+    }
     seasons.push({
       seasonId,
       expectedFixtures: HISTORICAL_PERFORMANCE_EXPECTED_FIXTURES_PER_SEASON,
@@ -696,6 +826,11 @@ export async function runHistoricalPerformanceInvariantProbe(
       passing,
       failing: rows.length - passing,
       failuresByCode,
+      rawStarterExactly22: rows.filter(
+        (row) => row.rawStarterRows === DECLARED_STARTERS_PER_FIXTURE,
+      ).length,
+      identityTolerantPassing: rows.filter((row) => row.identityTolerantPass).length,
+      anonymousStarterHistogram,
       rows,
     });
   }
@@ -713,6 +848,7 @@ export async function runHistoricalPerformanceInvariantProbe(
     providerPayloadIncluded: false,
     invariantSource:
       "supabase/functions/_shared/sportsmonks-historical-player-performance.ts#normalizeHistoricalFixture",
+    invariantCounters: HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS,
     coverageFailureCodes: HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES,
     requestCount,
     fixtures,
@@ -746,8 +882,12 @@ async function main(): Promise<void> {
     "sportsmonks-historical-performance-invariants.json",
     invariants,
   );
+  const identityTolerantPassing = invariants.seasons.reduce(
+    (total, season) => total + season.identityTolerantPassing,
+    0,
+  );
   console.log(
-    `SPORTSMONKS_HISTORICAL_PERFORMANCE_PROBE_PASS invariantFixtures=${invariants.fixtures} failing=${invariants.failing}`,
+    `SPORTSMONKS_HISTORICAL_PERFORMANCE_PROBE_PASS invariantFixtures=${invariants.fixtures} failing=${invariants.failing} identityTolerantPassing=${identityTolerantPassing}`,
   );
 }
 
