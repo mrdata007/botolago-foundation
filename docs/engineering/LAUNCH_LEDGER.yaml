@@ -382,9 +382,11 @@ tasks:
     area: e2e
     severity: P2
     owner: Chief
-    state: RUNNING
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0029/engineering-brief.yaml), builder: Builder-DevOps DONE (agent/BG-0029-hardening @143ba7d), verifier: PASS (docs/engineering/tasks/BG-0029/verification-report.yaml; AT-9..11 need the fantasy-e2e environment), reviewer: running (fresh context)}
+    state: DONE
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0029/engineering-brief.yaml), builder: Builder-DevOps DONE (agent/BG-0029-hardening @143ba7d), verifier: PASS (docs/engineering/tasks/BG-0029/verification-report.yaml; AT-9..11 need the fantasy-e2e environment), reviewer: PASS (docs/engineering/tasks/BG-0029/review-report.yaml)}
     note: scope widened to tests/e2e/fantasy.journey.e2e.ts (additions only) and a new tests/e2e/fantasy-league-cleanup.ts because the UI has no owner-side league removal; api.archive_fantasy_league is the existing contract
+    merged: main (merge of agent/BG-0029-hardening @143ba7d, 2026-09-18)
+    remaining_risks: [AT-9..AT-11 live proofs need the fantasy-e2e environment (BG-0028); node-on-PATH inferred, loud if wrong; scripts/qa/i18n-gate.ts:31-32 stale comment left (forbidden path)]
 
   BG-0030:
     title: Ratings coverage guard treats provider statistics records with has_values=false as covered (residual fail-open after BG-0027)

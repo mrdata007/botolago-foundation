@@ -1,0 +1,97 @@
+task_id: BG-0029
+reviewed_commit: 143ba7dba0af93e283ef0fef0af4fdc3682f663e # origin/agent/BG-0029-hardening; merge-base with origin/main f2dcd4a (brief commit)
+verdict: PASS
+defects: []
+release_blockers: []
+status: DONE
+
+# ------------------------------------------------------------------ reviewer inputs
+inputs:
+  objective_and_criteria: docs/engineering/tasks/BG-0029/engineering-brief.yaml @ 143ba7d (RC-1, RC-1b, RC-1c optional, RC-2, RC-3, RC-4, constraints, implementation_scope, AT-1..AT-8 runnable, AT-9..AT-11 environment-gated)
+  implementation_report: docs/engineering/tasks/BG-0029/implementation-report.yaml @ 143ba7d
+  verification_report: origin/main:docs/engineering/tasks/BG-0029/verification-report.yaml (status PASS, verified_commit 143ba7d)
+  diff: git diff f2dcd4a..143ba7d (9 files, +479/-12; code commit 4eb6348 + report-only commit 143ba7d)
+  reviewer_environment: >
+    Detached checkout /home/user/bg0029-review at 143ba7d, bun 1.3.11, node v22.22.2, `bun install --frozen-lockfile`.
+    No credentials present or sought (E2E_FANTASY_EMAIL/PASSWORD, VITE_SUPABASE_URL/KEY unset). No file edited;
+    `git status --porcelain` empty at the end.
+
+# ------------------------------------------------------------------ independent spot-checks (all reproduced)
+spot_checks:
+  - "bun test scripts/backend/check-config-integrity.test.ts -> 27 pass / 0 fail / 194 expect() (24 on main + 3 RC-1b)."
+  - "bun run test -> 696 pass / 0 fail across 117 files. bun run typecheck (tsc --noEmit) -> exit 0."
+  - "AT-1: grep over .github/workflows -> exactly 3 hits, all `run: node scripts/backend/check-config-integrity.mjs` (backend-quality.yml:33,:67; fantasy-authenticated-e2e.yml:73); routed-form grep -> exit 1."
+  - "AT-2 ordering read from the files: backend-quality guard :32/:66 before install :34/:68; fantasy guard :72 before install :120 (on main it was :93, after install :92)."
+  - "AT-3: clean tree -> '34 executed configuration file(s)' exit 0; --file /nonexistent -> exit 2; 5731246:eslint.config.js -> 7 violations exit 1."
+  - "AT-4: `--list` -> 'Total: 6 tests in 1 file' exit 0; credential-less run -> 6 skipped / 0 failed exit 0 (webServer bypassed with E2E_BASE_URL pointing at a closed port; no cleanup code executed)."
+  - "AT-5: forbidden-token grep over tests/e2e -> exit 1; `git diff f2dcd4a -- tests/e2e/fantasy.journey.e2e.ts | grep -c '^-[^-]'` -> 0 removed lines of any kind; 6 `test(` blocks; sweep filter is `role === \"owner\" && name.startsWith(\"E2E Ligue \")` (fantasy-league-cleanup.ts:58-67)."
+  - "AT-6: four `!= ''` booleans at :97-100, EXPECTED_URL :101 uses the identical predicate to the job-level :62, `set -euo pipefail` :103, URL pin :110; no push/pull_request trigger; schedule arm :84 unchanged; brief's bash snippet -> no 'reached', exit 1."
+  - "AT-7: lines 9-10 rewritten in past tense; `git diff --stat f2dcd4a -- src/` = i18n-allowlist.ts 2+/2- only, both comment lines."
+  - "AT-8: nine changed files all inside allowed_paths (+ docs/engineering/tasks/BG-0029/**); backend:secrets:check clean; eslint tests/e2e + test file exit 0; secret-shape grep over the diff excluding the implementation report -> 0 (see notes for the 2 literal hits)."
+  - "Workflow diffs read in full: backend-quality.yml diff is exactly 2 changed lines (the two run: lines). fantasy-authenticated-e2e.yml diff is three hunks: guard step inserted after setup-bun (RC-1), RC-3 step inserted after 'Guard target resolution', old guard step removed after install. Triggers, job if:, environment fantasy-e2e, mask step, schedule-forces-staging test, existing 'Guard credential presence' and the narrowed artifact upload set are untouched."
+  - "RPC contracts used by the helper checked against supabase/migrations/20260720173500_fantasy_route_read_contracts.sql: fantasy_leagues(p_season_id, p_visibility, p_limit<=100) returns {items:[{id,name,role,...}]} scoped to public leagues or the caller's active memberships; archive_fantasy_league(p_league_id, p_team_id) returns boolean true, raises PT403 otherwise; fantasy_hub returns season.id / team.id (20260720141854:233,:239). Helper shapes match."
+  - "Forbidden paths: package.json, bun.lock, bunfig.toml, playwright.config.ts, eslint/vite/tsconfig, tests/e2e/support.ts, supabase/**, scripts/qa/**, other workflows, guard rule logic — none in the diff."
+
+# ------------------------------------------------------------------ judgement on the points raised
+judgements:
+  helper_review: >
+    tests/e2e/fantasy-league-cleanup.ts: requireEnv throws by NAME before any client is built (credential absence -> red,
+    not a leaked league); client is non-persisting (persistSession/autoRefreshToken/detectSessionInUrl false);
+    signInWithPassword as preferred by RC-2; `.schema("api")`; archiveLeague throws on error and on `data !== true`;
+    sweep is owner-only AND prefix-gated; no console/stdout/stderr anywhere; thrown messages carry env names, RPC names,
+    league ids and upstream error text only, never email/password/key/token. Nothing executes at import.
+    Suite: afterEach is state-gated (`if (!cleanup) return`), archives inside try with dispose in finally, a throw
+    fails the test; sweep runs before creation and an error throws; annotations carry counts and league ids only;
+    every pre-existing line byte-identical; serial mode + workers 1 in CI keep the module state single-writer.
+    Meets RC-2 and the constraints.
+  security_observation_error_messages_in_report: >
+    ACCEPTED, not a defect. The helper interpolates `signIn.error.message` / RPC `error.message` into thrown errors,
+    which Playwright renders into the uploaded playwright-report. Supabase Auth and PostgREST error messages do not
+    echo the submitted password, publishable key or access token (they carry codes/text such as
+    'Invalid login credentials' or 'league_access_denied'); the project URL is not interpolated either. The brief
+    forbids printing emails, tokens and keys and explicitly allows league ids; this is honoured. Trace is already
+    'off' when E2E_FANTASY_EMAIL is set (playwright.config.ts). Residual is low and recorded below.
+  r3_residual_values_misconfigured: >
+    OUT OF SCOPE for this brief. R3's objective and RC-3 are scoped to a MISSING production var/secret silently
+    falling back to staging under a 'production' label; the new step makes that a red run and additionally pins
+    VITE_SUPABASE_URL to the target's own variable. A production var/secret that is SET but populated with the
+    staging project's values is an environment-value misconfiguration the brief does not ask to detect and that
+    cannot be detected without knowing the projects' identities (forbidden: any Supabase project setting or data).
+    Recorded as a residual risk for the environment owner (BG-0028), not a defect.
+  at8_literal_grep_two_hits: >
+    ACCEPTED, criterion intent holds. The 2 hits are both in docs/engineering/tasks/BG-0029/implementation-report.yaml
+    (lines 220 and 249 of the diff) where the Builder quotes the AT-5 and AT-8 command lines verbatim; the matched
+    text is the grep pattern token `sb_secret_` itself, followed by a quote, not a credential value. The brief's own
+    AT-5 text contains the same token, so any faithful implementation report trips AT-8's literal grep: the
+    criterion is self-referential when applied to the process artifact it also allows. Over every non-process file
+    the count is 0, and at the code commit 4eb6348 it is 0. The Verifier recorded the raw count rather than hiding
+    it; no secret value is present anywhere in the change. Not softened: a hit in a code or workflow file would
+    have been a FAIL.
+  rc3_extra_default_arm: >
+    The `*)` case arm (exit 1) is an addition to the brief's sketch. It only tightens (a token outside
+    staging/production is already rejected by the preceding step); it cannot turn a red condition green. Acceptable.
+  rc1_guard_before_mask_step: >
+    The guard now runs before 'Mask protected values'. RC-1 explicitly allows this placement. The guard prints only
+    file paths and up to 80 chars of violating lines from tracked configuration files, never environment values, so
+    ordering relative to the mask step does not expose a secret.
+
+# ------------------------------------------------------------------ residual risks (carried, not blocking)
+residual_risks:
+  - "R1 live (AT-11): `node` on PATH on ubuntu-latest is inferred, not proven; if absent both backend-quality jobs go red on the first PR run (loud). Remedy per brief: pinned actions/setup-node before the guard, still before bun install."
+  - "R2 live (AT-9): archive/sweep behaviour against Supabase, and whether Auth permits the second password sign-in from the Playwright process, are unexercised until the fantasy-e2e environment exists (BG-0028). Failure mode is a red league test, not silent accumulation; the bearer-token fallback in RC-2 remains available."
+  - "R3 live (AT-10): GitHub's rendering of `secrets.X != ''` for an unset secret is inferred; anything other than the literal 'true' fails closed."
+  - "R3 value misconfiguration: production var+secret both set but holding staging values passes the guard; outside this brief's scope (see judgements)."
+  - "Supabase error message text reaches the uploaded playwright-report (7-day retention, repo collaborators). No credential material is carried in those messages; low."
+  - "Sweep is bounded to one page of 100 private leagues per run; a backlog larger than that drains over successive runs."
+  - "Unchanged, observation only: scripts/qa/i18n-gate.ts:31-32 carries the same stale BG-0024 prose (forbidden path here); the unit harness in check-config-integrity.test.ts still spawns the guard with `bun <script>` for its own CLI tests (test subprocess, not a CI invocation; RC-1b (c) is scoped to .github/workflows)."
+  - "Process hygiene: any future gate that runs AT-8's secret-shape grep over docs/engineering/tasks/** will trip on process artifacts that quote the pattern text."
+
+notes: >
+  All runnable acceptance tests AT-1..AT-8 and required changes RC-1, RC-1b, RC-1c, RC-2, RC-3, RC-4 were reproduced
+  independently at 143ba7d with results identical to the VerificationReport; RC-1b liveness was proven by the Verifier
+  through three mutations, each caught by at least one new assertion. No forbidden path touched, no test removed or
+  weakened (0 removed lines in the suite; 24 -> 27 unit tests), no secret value present, behaviour matches the brief
+  (the two realisation choices — state-gated afterEach instead of try/finally, and the fail-closed `*)` arm — are
+  within the options the brief offers or strictly tightening). AT-9..AT-11 remain NOT_TESTABLE until the fantasy-e2e
+  environment exists and must be observed on the first real Actions runs before R1/R2/R3 are called live-proven;
+  they are not gradable here and do not block the merge. Verdict: PASS.
