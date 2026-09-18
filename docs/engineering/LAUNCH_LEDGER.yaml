@@ -671,6 +671,29 @@ tasks:
       not introduced by this branch). Also updated: promoter manifest/workflow/test (new batch
       fantasy_catalog_rollback_cleanup), runbook (false "clean rollback" claim removed), brief,
       implementation report.
+    verifier_report_2026_09_18T18: >-
+      PASS (docs/engineering/tasks/BG-0032/verification-report.yaml @d5ae98a). Independently
+      re-derived the mutation_audit conclusion from scratch (own grep of every migration, own
+      read-only production query) — airtight, no gap. Independently ran a local Supabase stack:
+      866/866 pgTAP across 42 files including the new 18-assertion regression test, whose
+      PT409-refusal case genuinely checks row counts, not just that an exception fired. Confirmed
+      migrations:check (62), typecheck, bun test (720/720), promoter tests (16/16),
+      types:generate no diff. Flagged (not a defect): this branch's ledger was stale vs main
+      (Chief reconciled it in a follow-up commit) and an out-of-scope latent gap in
+      app_private.fantasy_job_runs (also RESTRICTs to fantasy_seasons, untouched by this or the
+      original function) — filed as BG-0048 on main directly, not gated behind this branch.
+    reviewer_report_2026_09_18T18: >-
+      PASS (docs/engineering/tasks/BG-0032/review-report.yaml @1a9433a, fresh context). A THIRD
+      independent read-only production FK query reached the same mutation_audit conclusion as the
+      Builder and the Verifier — three separately-run queries now agree. Confirmed
+      fantasy_job_runs's RESTRICT FK predates the original rollback function by two weeks (its own
+      migration is older), so it is a pre-existing gap, not a regression this PR introduces.
+      Traced every DELETE's season-id scoping to catalog_run.fantasy_season_id — no cross-season
+      leakage possible. All existing guards (PT403/PT404/PT409 stale_update/already-rolled-back
+      short-circuit/advisory lock/PT409 in_use) confirmed preserved byte-for-byte and unreachable
+      around. No defects found. Recommended a PR for human review given this touches a production
+      data-deletion RPC.
+    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/139 (head 1a9433a); session subscribed. Not required for CI (local pgTAP execution already proved green, independently, three times) — opened per the Reviewer''s recommendation for human eyes on a production data-deletion RPC. Awaiting that review; Chief will not merge without it.'
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
     area: devops
