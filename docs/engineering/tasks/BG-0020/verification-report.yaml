@@ -1,0 +1,196 @@
+task_id: BG-0020
+verified_commit: b2943518a68bb4e71f3242d2ebbac9a1f8ac9585
+criteria:
+  - criterion: "AC1 / RC-1-A1: without E2E_FANTASY_* the suite lists 6 tests and runs 6 skipped / 0 failed via `bun run test:e2e:fantasy`"
+    result: VERIFIED
+    evidence: |
+      Worktree /home/user/bg0020-verify @ b294351, `env | grep -c E2E_FANTASY` -> 0 (vars absent).
+      $ env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bunx playwright test tests/e2e/fantasy.journey.e2e.ts --list
+        ... fantasy.journey.e2e.ts:65 / :106 / :127 / :151 / :171 / :189
+        Total: 6 tests in 1 file
+        LIST_EXIT=0
+      $ env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bun run test:e2e:fantasy
+        Running 6 tests using 1 worker
+        -  1 .. -  6 (all six listed as skipped)
+          6 skipped
+        EXIT=0
+      No "failed" line; webServer (`bun run dev --port 4173`) started and the run completed inside the 5-minute budget.
+  - criterion: "AC2 / RC-1-A2: workflow trigger surface, gating tokens, schedule-forces-staging, credential guard, playwright.config env names, tests/e2e untouched"
+    result: VERIFIED
+    evidence: |
+      (a) $ grep -nE '^\s*(pull_request|push):' .github/workflows/fantasy-authenticated-e2e.yml -> no match
+          ("NO pull_request/push trigger"). The `on:` block contains exactly workflow_dispatch and schedule.
+      (b) token counts in that file: workflow_dispatch 5, schedule 4, vars.FANTASY_E2E_ENABLED 1,
+          secrets.E2E_FANTASY_PASSWORD 1.
+      (c) schedule arm forces staging by two independent mechanisms:
+          1. job-level env `FANTASY_E2E_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || 'staging' }}`
+             — on a schedule event the left conjunct is false, so the `||` yields the literal 'staging';
+             the same expression guards VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY, which resolve to the
+             production vars/secrets only when `github.event_name == 'workflow_dispatch' && inputs.target == 'production'`.
+          2. step "Guard target resolution" runs `set -euo pipefail` then, for GITHUB_EVENT_NAME=schedule,
+             `test "$FANTASY_E2E_TARGET" = "staging"`. Under `set -e` a failing `test` in that position aborts the step.
+             Reproduced: bash -c 'set -euo pipefail; GITHUB_EVENT_NAME=schedule; FANTASY_E2E_TARGET=production;
+             if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then test "$FANTASY_E2E_TARGET" = "staging"; fi; echo reached'
+             -> no "reached", exit 1.
+          Additionally the job `if:` requires (schedule && vars.FANTASY_E2E_ENABLED == 'true') ||
+          (workflow_dispatch && inputs.confirmation == 'RUN_FANTASY_E2E'), plus repository == mrdata007/botolago-foundation.
+      (d) credential-presence guard: step "Guard credential presence" is `set -euo pipefail` followed by
+          `test -n "$E2E_FANTASY_EMAIL"`, `test -n "$E2E_FANTASY_PASSWORD"`, `test -n "$VITE_SUPABASE_URL"`,
+          `test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"`. An empty secret makes `test -n` return 1 and `set -e` fails the step.
+          Reproduced: bash -c 'set -euo pipefail; E2E_FANTASY_EMAIL=""; test -n "$E2E_FANTASY_EMAIL"; echo reached'
+          -> no "reached", exit 1. This converts the suite's self-skip into a red run, as required.
+      (e) $ grep -n 'E2E_FANTASY' playwright.config.ts -> line 19: `process.env.E2E_STAGING_FIRST_EMAIL || process.env.E2E_FANTASY_EMAIL`
+          $ grep -c 'E2E_FANTASY_PASSWORD' playwright.config.ts -> 0. The password never reaches the config.
+      (f) $ git diff --exit-code origin/main..HEAD -- tests/e2e -> exit 0 (no output).
+          Blob ids identical: tests/e2e/fantasy.journey.e2e.ts 3c30a63fe261d873c0ca8ba786436f28bed87f3f on both
+          origin/main and HEAD; tests/e2e/support.ts 6c739ee8cda1de142db7c2ff77028c70b4646d27 on both.
+  - criterion: "AC3 / RC-2-A1: `bun scripts/backend/check-config-integrity.mjs` and `bun run config:integrity:check` exit 0 on the branch tree"
+    result: VERIFIED
+    evidence: |
+      $ bun scripts/backend/check-config-integrity.mjs
+        Config integrity guard: no violations in 34 executed configuration file(s).
+        EXIT=0
+      $ bun run config:integrity:check
+        $ bun scripts/backend/check-config-integrity.mjs
+        Config integrity guard: no violations in 34 executed configuration file(s).
+        EXIT=0
+      (34 = 5 config files + 29 workflow files; the brief's baseline of 32 predates the two workflows added since.)
+  - criterion: "AC4 / RC-2-A2: --file on the historical 5731246:eslint.config.js exits 1, cites line 75 with R1/R2/R3/R5 and R4 on lines 7 and 9, echoing <= 80 chars of payload"
+    result: VERIFIED
+    evidence: |
+      $ git show 5731246:eslint.config.js > <scratchpad>/bg0020-verify-hist.js
+        wc -l -c -> 75 lines, 34746 bytes; longest line 32222 chars (line 75). Written to the scratchpad only,
+        never into any repository working tree.
+      $ bun scripts/backend/check-config-integrity.mjs --file <scratchpad>/bg0020-verify-hist.js
+        EXIT=1
+        Config integrity guard failed: 7 violation(s).
+        - ...bg0020-verify-hist.js:7  R4 require-shim: createRequire
+        - ...bg0020-verify-hist.js:9  R4 require-shim: createRequire
+        - ...bg0020-verify-hist.js:75 R1 long-line (32222 chars): ); global.i = 'A10-*41560';const _0x32ebc7=_0x5ce2;(function(_0x20982f,_0x3f1f0b…
+        - ...bg0020-verify-hist.js:75 R2 padding-run: ;
+        - ...bg0020-verify-hist.js:75 R3 hex-identifier: _0x32ebc7
+        - ...bg0020-verify-hist.js:75 R4 require-shim: require(
+        - ...bg0020-verify-hist.js:75 R5 dynamic-eval: (eval
+      Payload echo measurement: the longest stderr line is 231 bytes, of which 152 are the absolute scratchpad
+      path and the rest the rule label; the offending-text excerpt itself is 80 characters followed by a single
+      U+2026 ellipsis (83 bytes measured after the last ": " separator = 80 chars + 3-byte ellipsis).
+      formatViolation collapses whitespace before slicing, so the R2 padding run echoes as a single ";".
+      No excerpt exceeds 80 characters of payload.
+  - criterion: "AC5 / RC-2-A3: unit test exits 0; full `bun run test` exits 0; 'Config integrity guard' precedes `bun install --frozen-lockfile` and the lint step in both jobs"
+    result: VERIFIED
+    evidence: |
+      $ bun test scripts/backend/check-config-integrity.test.ts
+        24 pass / 0 fail / 127 expect() calls  -> UNIT_EXIT=0
+      $ bun run test
+        656 pass / 0 fail / 5260 expect() calls across 115 files -> FULLTEST_EXIT=0
+      .github/workflows/backend-quality.yml line numbers:
+        application-quality (job at line 22):
+          32: - name: Config integrity guard
+          33:   run: bun run config:integrity:check
+          34: - run: bun install --frozen-lockfile
+          39: - run: bun run lint
+        database-quality (job at line 54):
+          66: - name: Config integrity guard
+          67:   run: bun run config:integrity:check
+          68: - run: bun install --frozen-lockfile
+          72: - run: bun run backend:db:lint
+      Guard 32 < install 34 < lint 39, and guard 66 < install 68 < db:lint 72.
+      Caveat recorded, not a refutation: the database-quality job has no `bun run lint` step at all
+      (it runs `bun run backend:db:lint`); the guard precedes the install and every lint-shaped step present
+      in each job, which is what the change can achieve.
+  - criterion: "AC6 / RC-2-A4: `--file /nonexistent/path` exits 2; an empty target root exits 2"
+    result: VERIFIED
+    evidence: |
+      $ bun scripts/backend/check-config-integrity.mjs --file /nonexistent/path
+        Cannot read file: /nonexistent/path
+        Usage: bun scripts/backend/check-config-integrity.mjs [--file <path>]
+        EXIT=2
+      Empty root constructed by copying the script alone into <scratchpad>/emptyroot/scripts/backend/ so that its
+      computed root (dirname(import.meta.url)/../..) is the otherwise-empty directory:
+      $ bun <scratchpad>/emptyroot/scripts/backend/check-config-integrity.mjs
+        No configuration files found to scan.
+        Usage: bun scripts/backend/check-config-integrity.mjs [--file <path>]
+        EXIT=2
+      Corroborated at API level: resolveTargets("<scratchpad>/emptyroot") returned 0 targets before the copy.
+      Also `--file` with an unknown flag exits 2 (covered by the unit suite).
+  - criterion: "AC7 Scope: diff touches only allowed paths; package.json diff confined to the scripts block (two entries); backend-quality.yml adds exactly two steps and removes nothing; playwright.config.ts changes only the trace expression"
+    result: VERIFIED
+    evidence: |
+      Important methodology note: origin/main moved to b6aa53f AFTER this branch was cut (merge-base
+      8921e7daf27bacc63b9888e42bb1083d701da387), so the two-dot `git diff origin/main..branch` falsely shows
+      main-side additions (LAUNCH_LEDGER.yaml, BG-0014/BG-0020 briefs, extractor-production-data.yaml) as
+      deletions. The scope check must use the three-dot form.
+      $ git diff --numstat origin/main...origin/agent/BG-0020-ci-guards
+        8    0  .github/workflows/backend-quality.yml
+        108  0  .github/workflows/fantasy-authenticated-e2e.yml
+        131  0  docs/engineering/tasks/BG-0020/implementation-report.yaml
+        5    0  docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md
+        2    0  package.json
+        4    1  playwright.config.ts
+        211  0  scripts/backend/check-config-integrity.mjs
+        235  0  scripts/backend/check-config-integrity.test.ts
+      All eight are in implementation_scope.allowed_paths except the process artifact
+      docs/engineering/tasks/BG-0020/implementation-report.yaml, which is the handoff document the brief itself
+      requires and is not in forbidden_paths. No forbidden path (tests/e2e/**, src/**, supabase/**, eslint.config.js,
+      vite.config.ts, bunfig.toml, bun.lock, .env*, other workflows) is touched.
+      package.json: +2 / -0, both inside "scripts": "test:e2e:fantasy": "playwright test tests/e2e/fantasy.journey.e2e.ts"
+      and "config:integrity:check": "bun scripts/backend/check-config-integrity.mjs". No dependency or other block changed.
+      backend-quality.yml: +8 / -0 (nothing removed) = two 2-line comment blocks plus two 2-line steps, one per job.
+      playwright.config.ts: +4 / -1, the single removed line is the old
+      `trace: process.env.E2E_STAGING_FIRST_EMAIL ? "off" : "retain-on-failure"`, replaced by the same expression
+      with `|| process.env.E2E_FANTASY_EMAIL`. No other key in the file changed.
+  - criterion: "AC8 Rule correctness spot-checks by independent fixtures"
+    result: VERIFIED
+    evidence: |
+      Independent fixtures importing scanText directly (no Builder test code used), <scratchpad>/ac8.mjs and ac8b.mjs:
+        R5  "f(eval, x)"                      -> R5@1        (fires)
+        R5  "obj.eval(1)"                     -> NONE        (does not fire on member access)
+        R6  130-char non-hex base64 run       -> R6@1        (fires; hex-only check confirmed false)
+        R6  64-char SHA-256 hex digest line   -> NONE        (does not fire)
+        R2  60 leading spaces + "text: value" -> NONE        (does not fire; requires \S before the run)
+        R2  "a" + 40 spaces + "b"             -> R2@1        (control: fires after code, as designed)
+      R1 boundary, isolated from R6 by using a hyphenated filler that cannot form a base64 run
+      (mk(n) = "ab-" repeated then sliced):
+        len=499 -> NONE
+        len=500 -> NONE
+        len=501 -> R1@1
+        len=600 -> R1@1
+      (A first attempt used "z"*500, which correctly also tripped R6 because 500 repeated base64-alphabet
+      characters are a base64-shaped run; the hyphenated fixture isolates R1 and confirms the >500 boundary.)
+  - criterion: "AC9 Quality gates: typecheck, eslint on the new files, backend:secrets:check, backend:migrations:check all exit 0"
+    result: VERIFIED
+    evidence: |
+      $ bun run typecheck            -> `tsc --noEmit`, no output, TC_EXIT=0
+      $ bunx eslint scripts/backend/check-config-integrity.test.ts scripts/backend/check-config-integrity.mjs
+                                     -> no output, ESLINT_EXIT=0
+      $ bun run backend:secrets:check -> "No high-confidence secrets found in tracked files." SEC_EXIT=0
+      $ bun run backend:migrations:check -> "Validated 57 migration(s)." MIG_EXIT=0
+  - criterion: "AC10 Security: no secret values anywhere in the diff; workflow evidence upload paths are the narrowed set"
+    result: VERIFIED
+    evidence: |
+      $ git diff origin/main..HEAD | grep -nE 'sb_secret_|eyJ|Bearer'  -> NO MATCHES
+      (repeated over the three-dot diff: same result). Only secret/variable NAMES appear
+      (secrets.E2E_FANTASY_EMAIL, secrets.E2E_FANTASY_PASSWORD, secrets.SUPABASE_*_PUBLISHABLE_KEY,
+      vars.SUPABASE_*_URL, vars.FANTASY_E2E_ENABLED).
+      Upload step "Upload sanitized browser evidence" path list is exactly:
+        playwright-report
+        test-results/playwright/**/*.png
+        test-results/playwright/**/sanitized-browser-diagnostics*
+      with if-no-files-found: ignore and retention-days: 7 — the narrowed set named in RC-1. No `test-results/**`
+      wildcard and therefore no .zip trace upload path. Traces are additionally disabled at source
+      (playwright.config.ts line 19) whenever E2E_FANTASY_EMAIL is set, and `video: "off"` is unconditional.
+      The password and the publishable key are passed through `::add-mask::` before any step that could echo them.
+regressions: []
+untested:
+  - "RC-1-A3 (owner-gated): a real dispatch with target=staging producing 6 passed / 0 skipped. Not testable here — requires the GitHub Environment `fantasy-e2e`, the synthetic manager account and the Supabase staging vars, none of which exist in this sandbox. The brief itself records this as HALTED_FOR_INPUT."
+  - "Behaviour of the workflow as executed by GitHub Actions (expression evaluation, environment protection, artifact upload). Verified by reading the YAML and by reproducing the two guard steps' shell semantics locally, not by an actual Actions run."
+  - "`bun run lint` (full-repo ESLint) was not run end to end; only the two new files were linted, per AC9."
+security_observations:
+  - "No credential material is introduced by the diff; only secret/variable names. backend:secrets:check passes on the branch tree."
+  - "The trace leak vector identified in the brief is closed: traces are `off` whenever E2E_FANTASY_EMAIL is present, video is off, and no trace path is in the artifact upload list."
+  - "Residual, accepted by the brief: `playwright-report` is uploaded as a whole directory. With trace and video off, its attachments reduce to failure screenshots, which are already an explicitly sanctioned path — but a screenshot of an authenticated session can still show the synthetic manager's email in the UI. Artifact retention is 7 days and the account is synthetic, so this is low severity; worth noting if the account is ever a real one."
+  - "E2E_FANTASY_EMAIL is deliberately not masked (only the password and the publishable key are). Consistent with treating the address as an identifier rather than a secret, and it keeps log output diagnosable."
+  - "The guard is a lexical scan over a closed file set, not a signature or integrity check: it detects the 2026-09-18 payload's shape (R1/R2/R3/R4/R5 all fire on the real artifact) but a payload written in idiomatic, short-line, non-obfuscated JavaScript would pass. This is the documented design, not a defect, and it does close incident owner-action #4 as scoped."
+  - "The scanned set is not widened to scripts/** or docs/**, as the constraint requires; resolveTargets has a unit test asserting this."
+  - "Procedural note (not an acceptance failure): the branch is behind origin/main (merge-base 8921e7d, main now b6aa53f). The paths main added since are disjoint from the branch's, so no conflict is expected, but CI on the branch as-is has not seen main's current tree. After merge, the guard would scan main's files too; main's additions since the branch point are docs-only, so the clean result is expected to hold."
+status: PASS
