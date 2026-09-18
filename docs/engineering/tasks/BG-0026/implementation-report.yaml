@@ -3,7 +3,8 @@ builder_type: Builder-Frontend
 branch: agent/BG-0026-rtl-fixes
 base: "535945f (merge-base with origin/main; origin/main has since advanced 17 commits to 84b09be without touching any file of this branch)"
 commits:
-  - "(this commit) BG-0026: fix commit SHAs in implementation report"
+  - "(this commit) BG-0026 attempt 2: BottomNav slot padding px-0.5, Select dir={dir} (Chief-approved scope mutation)"
+  - "29eb8bd BG-0026: fix commit SHAs in implementation report"
   - "c2e744f BG-0026: record scope check and merge-base in implementation report"
   - "ab0cf61 BG-0026: map class-(a) physical utilities to logical, complete chevron-left RTL mirroring, fix BottomNav overflow and FDR bidi truncation"
 
@@ -31,7 +32,9 @@ changes:
   - file: src/routes/profile.tsx
     description: "l.299 removed `rtl:rotate-180` from ChevronRight."
   - file: src/components/shell/BottomNav.tsx
-    description: "l.60 `truncate leading-none` -> `max-w-full truncate leading-none`."
+    description: "l.60 `truncate leading-none` -> `max-w-full truncate leading-none` (attempt 1); l.37 Link `px-2` -> `px-0.5` (attempt 2, Chief-approved) so every fr label fits its 70px slot."
+  - file: src/routes/matches.index.tsx
+    description: "attempt 2 (Chief-approved, exactly one change): l.103 destructure `dir` from the existing useI18n(); l.224 `<Select dir={dir} ...>`."
   - file: src/routes/fantasy.fixtures.tsx
     description: "l.176 truncating span gets `dir=\"auto\"`. Prettier then wrapped the element over l.176-178 (print-width)."
   - file: docs/engineering/tasks/BG-0026/evidence/after-*.png
@@ -137,9 +140,10 @@ tests_run:
       `dir` (or wraps in a DirectionProvider); src/routes/matches.index.tsx:223 renders <Select> without `dir`. The logical utilities are correct and take effect
       as soon as the caller passes dir={dir} (as FantasySubNav/FantasyMobileNav already do for DropdownMenu). matches.index.tsx is NOT in allowed_paths -> not changed. No regression versus before (indicator was at the right before, too).
 
-unresolved:
-  - "T5(d) bottom-nav band: fr 'Actualités' is ellipsized to 'Actual…' by the required `max-w-full` (see tests_run). Needs a decision: accept, drop the BottomNav line, or amend the brief (e.g. narrower slot padding or shorter fr/ar copy - both outside this brief's allowed lines/paths)."
-  - "T6 runtime part: the /matches season Select renders its popover LTR in Arabic because matches.index.tsx does not pass `dir` to <Select>; fix is a one-prop change outside allowed_paths."
+unresolved: []
+resolved_in_attempt_2:
+  - "T5(d) fr 'Actualités' ellipsis: BottomNav Link padding px-2 -> px-0.5 (content box 54px -> 65.6px); all five fr labels fit, ar 'الملف الشخصي' still ellipsizes inside its slot (table below)."
+  - "T6 runtime: matches.index.tsx now passes dir={dir} to <Select>; popover and trigger compute direction rtl in Arabic, indicator at inline-end."
 
 not_executed:
   - "T7 (FDR with authenticated session / QA fixture): not executable here - no credentials and no backend/database access permitted; the unauthenticated /fantasy/fixtures renders the guest state (no club rows). dir=\"auto\" is applied exactly as specified; verification against docs/qa/fpl-screens/ar_fdr.png remains for the Verifier."
@@ -153,15 +157,16 @@ unexpected_observations:
   - "Test-file count on origin/main is 117, not the 115 the brief cites (two test files landed after 1603c1c)."
 
 scope_deviations:
+  - "ATTEMPT 2, Chief-approved scope mutation (logged in the ledger): (a) src/components/shell/BottomNav.tsx l.37 Link horizontal padding px-2 -> px-0.5 (one Tailwind step family change, allowed by the Chief's option 'reduce the label/slot horizontal padding'); (b) src/routes/matches.index.tsx added to allowed_paths for exactly one change: `dir={dir}` on <Select> (l.103 destructure + l.224 prop). Nothing else touched."
   - "Prettier reformatting wrapped the single edited JSX element in dialog.tsx (l.76 -> l.76-79) and fantasy.fixtures.tsx (l.176 -> l.176-178). No token other than the required one changed in either file; required to keep `bun run lint` (prettier/prettier rule) at 0 errors."
   - "Five evidence PNGs added under docs/engineering/tasks/BG-0026/evidence/ (after-*.png), as instructed by the dispatch."
 
-status: HALTED_FOR_INPUT
+status: DONE
 status_note: >
-  All required changes are implemented exactly as specified and pushed; T1-T4 and T6 (built CSS) pass, T5(a)(b)(c) pass.
-  Two items need a Chief decision before this can be marked DONE: (1) T5(d) fails on the BottomNav row only, because the
-  brief's own BottomNav change ellipsizes fr "Actualités"; (2) the T6 runtime check cannot pass until matches.index.tsx passes
-  `dir` to <Select>, which is outside allowed_paths. Neither was resolved by guessing.
+  Attempt 1 halted on two items (fr "Actualités" ellipsis from the required max-w-full; Radix Select forced LTR because
+  matches.index.tsx passed no dir). The Chief approved a scope mutation for both; attempt 2 applied them and re-ran T1-T6:
+  all green (T5(d) fr pixel-equivalent outside sub-pixel reflow of the nav row, T6 runtime indicator at inline-end, popover rtl).
+  T7 remains not executable here (authenticated FDR).
 
 scope_check:
   command: "git diff --name-only origin/main...HEAD   (three-dot = against merge-base 535945f; the two-dot form lists main's own newer commits as well)"
@@ -172,3 +177,65 @@ scope_check:
     src/components/fantasy/GameweekStatusStrip.tsx, src/routes/fantasy.rankings.tsx, src/routes/profile.tsx,
     src/components/shell/BottomNav.tsx, src/routes/fantasy.fixtures.tsx, docs/engineering/tasks/BG-0026/** (report + 5 after-*.png).
     Subset of allowed_paths + docs/engineering/tasks/BG-0026/**; no forbidden path touched; `git diff --name-only 535945f..origin/main -- <these src files>` is empty.
+
+attempt_2:
+  trigger: "Chief decision on HALTED_FOR_INPUT: scope mutation approved (BottomNav padding; matches.index.tsx dir={dir})."
+  changes:
+    - "src/components/shell/BottomNav.tsx:37 `px-2` -> `px-0.5` on the Link (slot 69.6px, content box 54px -> 65.6px). No font-size/letter-spacing change needed."
+    - "src/routes/matches.index.tsx:103 `const { t, tr, lang, dir } = useI18n();`; :224 `<Select dir={dir} ...>`."
+  tests_run:
+    - command: "T1 (same greps)"
+      result: PASS
+      output: "class-(a) grep: no output, rc=1; sheet/dialog grep: only dialog.tsx:44 left-[50%]."
+    - command: "T2 broad inventory"
+      result: PASS
+      output: "total=82; per-file counts identical to attempt 1 (diff empty). px-0.5 / dir are outside the inventory regex family."
+    - command: "T3"
+      result: PASS
+      output: "styles.css:430 chevron-left transform rule (plus pre-existing empty .fpl-root rule at 531); rtl:rotate-180 outside ui/: rc=1 (none); WelcomeScreen rtl: count 2."
+    - command: "T4 bun run typecheck / bun run test / bun run lint / prettier --check BottomNav.tsx matches.index.tsx"
+      result: PASS
+      output: "tsc rc=0; 693 pass 0 fail across 117 files; lint 12 problems (0 errors, 12 warnings) = origin/main baseline; prettier: All matched files use Prettier code style (no reflow needed this time)."
+    - command: "T5(a)(b) after/navprobe.mjs on :4180"
+      result: PASS
+      output: "/matches ar: chevron-right matrix(-1,0,0,1,0,0) x=337, chevron-left matrix(-1,0,0,1,0,0) x=33; /fantasy/rankings ar: back chevron-left x=358 matrix(-1,...), pager chevrons both matrix(-1,...), rotate none."
+    - command: "T5(c)+(d) BottomNav label table, /profile at 390px (after/labels.mjs; slot = 69.6px, Link padding 2px/2px, content box 65.6px)"
+      result: PASS
+      output: |
+        lang | label          | textW | spanClientW | spanScrollW | span L..R     | slot L..R     | inside | ellipsized
+        fr   | Accueil        | 44.4  | 44 | 44 | 33.6..78      | 21..90.6      | true | false
+        fr   | Actualités     | 62.4  | 62 | 62 | 94.2..156.6   | 90.6..160.2   | true | false
+        fr   | Fantasy        | 48.5  | 49 | 49 | 170.7..219.3  | 160.2..229.8  | true | false
+        fr   | Matches        | 52.0  | 52 | 52 | 238.6..290.6  | 229.8..299.4  | true | false
+        fr   | Profil         | 33.0  | 33 | 33 | 317.7..350.7  | 299.4..369    | true | false
+        ar   | الرئيسية       | 45.7  | 46 | 46 | 311.3..357.1  | 299.4..369    | true | false
+        ar   | الأخبار        | 34.8  | 35 | 35 | 247.2..282    | 229.8..299.4  | true | false
+        ar   | فانتازي        | 40.5  | 41 | 41 | 174.8..215.3  | 160.2..229.8  | true | false
+        ar   | المباريات      | 49.5  | 50 | 50 | 100.7..150.2  | 90.6..160.2   | true | false
+        ar   | الملف الشخصي   | 85.7  | 66 | 86 | 23..88.6      | 21..90.6      | true | TRUE (clipped inside slot, no overlap with المباريات)
+        All five fr labels fit without ellipsis; only the Arabic profile label ellipsizes, within its slot.
+        Evidence: evidence/after2-bottomnav-fr.png (visually identical to after-bottomnav-fr-baseline.png), evidence/after2-bottomnav-ar.png.
+    - command: "T5(d) pixel comparison vs same-data stash baseline (after/compare3.mjs, attempt 2 shoot)"
+      result: PASS
+      output: |
+        fr-home 0 | fr-fdr 0 | fr-news 0 outside nav band | fr-appprofile 0 outside nav band | fr-article 0 outside nav band
+        fr-hub 543 (rows 497-518, time-based text) | fr-matches 382 (rows 1580-1599, idem) | fr fantasy sub-pages 590 (rows 127-148 = deadline clock tick)
+        bottom-nav band fr: 58-149 px per page (was 1228-1323 in attempt 1) = sub-pixel re-centering of the unchanged glyphs after the padding change; crops show no visible difference.
+        ar-matches 7708 px (rows 242-1702): expected - the season Select trigger/popover now renders RTL, plus the nav row; ar-appprofile: nav band only (the intended fix).
+    - command: "T6 built CSS (bun run build, .output/public/assets/styles-*.css)"
+      result: PASS
+      output: |
+        .group-\[.toaster\]:border-s-4:is(:where(.group).toaster *){border-inline-start-style:var(--tw-border-style);border-inline-start-width:4px}
+        .group-\[.toaster\]:border-s-[color:var(--color-danger)] ... {border-inline-start-color:var(--color-danger)} (+ success/warning/brand-accent/text-muted)
+        .end-2{inset-inline-end:calc(var(--spacing) * 2)}  .ps-2{padding-inline-start:...}  .pe-8{padding-inline-end:...}  .px-0\.5{padding-inline:calc(var(--spacing) * .5)}
+        html[dir=rtl] .lucide-chevron-right,html[dir=rtl] .lucide-chevron-left,... {transform:scaleX(-1)}
+    - command: "T6 runtime: /matches ar, open season Select (after/navprobe.mjs, after/seldir.mjs)"
+      result: PASS
+      output: |
+        seldir: {"htmlDir":"rtl","optDirection":"rtl","dirAncestors":["DIV[dir=rtl]#listbox","DIV[dir=rtl]"],"triggerDirection":"rtl"}
+        option: padding-inline-start 8px == padding-right 8px, padding-inline-end 32px == padding-left 32px (RTL resolution)
+        indicator: computed left 8px, right 149.875px (auto-resolved), x=23 with item 15..187 -> at inline-end (left edge in RTL). Attempt 1 had left 149.875px / right 8px.
+    - command: "T7 authenticated FDR"
+      result: NOT_EXECUTED
+      output: "Unchanged: no credentials/backend access; left for the Verifier."
+  dev_server: "bun run dev -- --host 127.0.0.1 --port 4180 from /home/user/bg0026; stopped after the runs (port 4180 closed)."
