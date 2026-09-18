@@ -1,0 +1,70 @@
+---
+task_id: BG-0027
+builder_type: Builder-Backend
+branch: agent/BG-0027-ratings-fail-closed
+commits:
+  - "BG-0027: fail closed on empty or thin provider player statistics"
+changes:
+  - file: supabase/functions/_shared/sportsmonks-player-ratings.ts
+    description: >-
+      Added exported and documented MIN_STATISTICS_COVERAGE (0.5),
+      PLAYER_STATISTICS_UNAVAILABLE and PLAYER_STATISTICS_COVERAGE_INSUFFICIENT.
+      The worker now tracks which candidates a provider season-statistics record
+      was successfully matched to, and after paging - before any
+      ingest_player_season_ratings call - throws
+      player_statistics_unavailable when records_fetched = 0 and
+      player_statistics_coverage_insufficient when
+      covered/candidates < MIN_STATISTICS_COVERAGE. The existing catch path
+      therefore completes the run as failed with zero rows persisted.
+      complete_football_ingestion now receives the actual RatingsRuntimeError
+      code as p_error_code (default unchanged: player_ratings_failed), so the
+      ingestion run record carries the fail-closed code.
+  - file: supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+    description: >-
+      New describe block "SportsMonks player rating statistics coverage guard"
+      with four tests: exact error-code/constant values; zero provider records
+      -> 503 player_statistics_unavailable, no ingest_player_season_ratings
+      call, run completed failed with that p_error_code; coverage 1/4 below the
+      floor -> 503 player_statistics_coverage_insufficient, no rows persisted;
+      coverage 2/4 at the floor -> 200, four rows persisted with unchanged
+      rating/confidence values and run succeeded. Existing algorithm and runtime
+      tests are unmodified.
+  - file: docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md
+    description: >-
+      One paragraph in "Initial-price algorithm" documenting the fail-closed
+      rule, both error codes, the 0.5 coverage floor, and the pre-stage check
+      that the latest player_ratings run succeeded without those codes.
+database_changes: []
+configuration_changes: []
+tests_run:
+  - command: bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+    result: PASS # 9 pass, 0 fail
+  - command: bun test
+    result: PASS # 636 pass, 0 fail across 114 files
+  - command: bun run typecheck
+    result: PASS
+  - command: bun run lint
+    result: PASS # 0 errors, 12 pre-existing react-refresh warnings in src/**
+unresolved:
+  - >-
+    Database-level suites (bun run backend:db:test / backend:db:lint) were not
+    run: they require a local Supabase stack (Docker), which is unavailable in
+    this environment. No migration was touched, so no database behaviour changed.
+unexpected_observations:
+  - >-
+    Coverage is defined as the share of rating candidates matched by at least
+    one accepted provider statistics record. A provider that returns a record
+    for every candidate with has_values = false would still pass the guard and
+    produce a full set of neutral 6.0 / confidence 0 ratings. Tightening the
+    definition to "candidates with non-zero minutes" was not in the brief and
+    would change behaviour for legitimately unused squad players, so it was not
+    implemented.
+  - >-
+    p_error_code for failed runs was previously always the generic
+    player_ratings_failed, which hid provider_unavailable,
+    provider_rate_limited and mapping_not_found in the run record. The fix
+    required threading the real code through for the two new codes; it now
+    applies to every failure code of this worker. The DB constraint accepts any
+    ^[a-z][a-z0-9_]{1,63}$ value, so all existing codes remain valid.
+scope_deviations: []
+status: DONE

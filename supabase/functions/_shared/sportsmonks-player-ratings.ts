@@ -101,6 +101,26 @@ const MAX_RESPONSE_BYTES = 2_000_000;
 const MAX_PAGES = 20;
 const PAGE_SIZE = 50;
 
+/**
+ * Minimum share of the rating candidate set that the provider season
+ * statistics must cover before any rating may be persisted.
+ *
+ * A candidate counts as covered when at least one accepted provider season
+ * statistics record was matched to it. Below this share the run fails closed:
+ * the rating formula shrinks an unmatched candidate to the neutral 6.0 with
+ * confidence 0, so a thin or empty provider response would otherwise be
+ * written to the database as if it were real history (see BG-0011: five runs
+ * reported "succeeded" with records_fetched = 0 and wrote 1188 neutral rows).
+ */
+export const MIN_STATISTICS_COVERAGE = 0.5;
+
+/** No provider season statistics record was returned at all (records_fetched = 0). */
+export const PLAYER_STATISTICS_UNAVAILABLE = "player_statistics_unavailable" as const;
+
+/** Statistics were returned but cover less than MIN_STATISTICS_COVERAGE of the candidates. */
+export const PLAYER_STATISTICS_COVERAGE_INSUFFICIENT =
+  "player_statistics_coverage_insufficient" as const;
+
 const TYPE = {
   goals: 52,
   saves: 57,
@@ -644,6 +664,7 @@ async function complete(
   status: "succeeded" | "partial" | "failed",
   counts: Counters,
   seasonId: number,
+  errorCode = "player_ratings_failed",
 ): Promise<void> {
   await rpc(client, "complete_football_ingestion", {
     p_run_id: runId,
@@ -656,7 +677,7 @@ async function complete(
     p_records_skipped: counts.skipped,
     p_records_rejected: counts.rejected,
     p_retry_count: counts.retries,
-    p_error_code: status === "failed" ? "player_ratings_failed" : null,
+    p_error_code: status === "failed" ? errorCode : null,
     p_error_summary:
       status === "failed" ? "Player ratings failed; inspect correlated server logs." : null,
   });
@@ -716,6 +737,7 @@ export async function handleSportsMonksPlayerRatingsRequest(
     const byId = new Map(
       candidates.map((candidate) => [candidate.externalPlayerId, emptyStatistics(candidate)]),
     );
+    const covered = new Set<string>();
     for (let page = 1; page <= MAX_PAGES; page += 1) {
       const payload = await providerRequest(page, config, dependencies, counts);
       if (!Array.isArray(payload.data)) throw new RatingsRuntimeError("invalid_provider_payload");
@@ -729,6 +751,7 @@ export async function handleSportsMonksPlayerRatingsRequest(
             continue;
           }
           mergeStatistics(target, normalized);
+          covered.add(normalized.externalPlayerId);
         } catch (error) {
           counts.rejected += 1;
           await recordRejection(dependencies.client, runId, raw, error);
@@ -737,6 +760,16 @@ export async function handleSportsMonksPlayerRatingsRequest(
       if (!hasMore(payload, payload.data.length)) break;
       if (page === MAX_PAGES) throw new RatingsRuntimeError("provider_page_limit_exceeded");
     }
+    // Fail closed before any write: without real provider statistics every
+    // rating collapses to the neutral 6.0 / confidence 0 fallback, which is
+    // indistinguishable from history once persisted.
+    if (counts.fetched === 0) {
+      throw new RatingsRuntimeError(PLAYER_STATISTICS_UNAVAILABLE);
+    }
+    if (covered.size / candidates.length < MIN_STATISTICS_COVERAGE) {
+      throw new RatingsRuntimeError(PLAYER_STATISTICS_COVERAGE_INSUFFICIENT);
+    }
+
     const ratings = calculatePreseasonRatings(candidates, byId);
     counts.validated = ratings.length;
     const observedAt = (dependencies.now?.() ?? new Date()).toISOString();
@@ -775,14 +808,14 @@ export async function handleSportsMonksPlayerRatingsRequest(
       counters: counts,
     });
   } catch (error) {
+    const code = error instanceof RatingsRuntimeError ? error.code : "player_ratings_failed";
     if (runId) {
       try {
-        await complete(dependencies.client, runId, "failed", counts, config.seasonId);
+        await complete(dependencies.client, runId, "failed", counts, config.seasonId, code);
       } catch {
         // Preserve the original failure without returning database details.
       }
     }
-    const code = error instanceof RatingsRuntimeError ? error.code : "player_ratings_failed";
     return json(code === "provider_rate_limited" ? 429 : 503, { error: code });
   }
 }

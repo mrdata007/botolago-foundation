@@ -3,6 +3,9 @@ import { describe, expect, it } from "bun:test";
 import {
   calculatePreseasonRatings,
   handleSportsMonksPlayerRatingsRequest,
+  MIN_STATISTICS_COVERAGE,
+  PLAYER_STATISTICS_COVERAGE_INSUFFICIENT,
+  PLAYER_STATISTICS_UNAVAILABLE,
   type PlayerSeasonStatistics,
   type RatingCandidate,
   type RatingsRpcClient,
@@ -339,5 +342,122 @@ describe("SportsMonks player rating runtime", () => {
     expect(result.status).toBe(401);
     expect(fetched).toBe(false);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("SportsMonks player rating statistics coverage guard", () => {
+  function harness(candidates: readonly RatingCandidate[], providerData: readonly unknown[]) {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const client: RatingsRpcClient = {
+      schema: () => ({
+        rpc: async (name, args) => {
+          calls.push({ name, args });
+          if (name === "begin_football_ingestion") {
+            return { data: "22222222-2222-4222-8222-222222222222", error: null };
+          }
+          if (name === "football_player_rating_candidates") {
+            return { data: candidates, error: null };
+          }
+          if (name === "ingest_player_season_ratings") {
+            const rows = args.p_rows as unknown[];
+            return { data: { inserted: rows.length, updated: 0, skipped: 0 }, error: null };
+          }
+          return { data: null, error: null };
+        },
+      }),
+    };
+    return {
+      calls,
+      run: () =>
+        handleSportsMonksPlayerRatingsRequest(request(), {
+          environment: environment(),
+          client,
+          now: () => NOW,
+          fetch: async () => response({ data: providerData, pagination: { has_more: false } }),
+        }),
+    };
+  }
+
+  const fourForwards: RatingCandidate[] = [
+    { externalPlayerId: "201", position: "FWD" },
+    { externalPlayerId: "202", position: "FWD" },
+    { externalPlayerId: "203", position: "FWD" },
+    { externalPlayerId: "204", position: "FWD" },
+  ];
+
+  const played = {
+    minutes: 1_800,
+    appearances: 20,
+    starts: 20,
+    goals: 10,
+    assists: 5,
+    rating: 7,
+  } as const;
+
+  it("documents a coverage floor of half the candidate set", () => {
+    expect(MIN_STATISTICS_COVERAGE).toBe(0.5);
+    expect(PLAYER_STATISTICS_UNAVAILABLE).toBe("player_statistics_unavailable");
+    expect(PLAYER_STATISTICS_COVERAGE_INSUFFICIENT).toBe("player_statistics_coverage_insufficient");
+  });
+
+  it("fails the run and persists nothing when the provider returns zero statistics", async () => {
+    const { calls, run } = harness(fourForwards, []);
+    const result = await run();
+
+    expect(result.status).toBe(503);
+    expect(await result.json()).toEqual({ error: PLAYER_STATISTICS_UNAVAILABLE });
+    expect(calls.some((call) => call.name === "ingest_player_season_ratings")).toBe(false);
+    expect(calls.at(-1)).toMatchObject({
+      name: "complete_football_ingestion",
+      args: {
+        p_status: "failed",
+        p_error_code: PLAYER_STATISTICS_UNAVAILABLE,
+        p_records_fetched: 0,
+        p_records_inserted: 0,
+        p_records_validated: 0,
+      },
+    });
+  });
+
+  it("fails the run and persists nothing when coverage is below the minimum share", async () => {
+    const { calls, run } = harness(fourForwards, [providerRow(201, 27, played)]);
+    const result = await run();
+
+    expect(result.status).toBe(503);
+    expect(await result.json()).toEqual({ error: PLAYER_STATISTICS_COVERAGE_INSUFFICIENT });
+    expect(calls.some((call) => call.name === "ingest_player_season_ratings")).toBe(false);
+    expect(calls.at(-1)).toMatchObject({
+      name: "complete_football_ingestion",
+      args: {
+        p_status: "failed",
+        p_error_code: PLAYER_STATISTICS_COVERAGE_INSUFFICIENT,
+        p_records_fetched: 1,
+        p_records_inserted: 0,
+      },
+    });
+  });
+
+  it("persists the unchanged ratings when coverage reaches the minimum share", async () => {
+    const { calls, run } = harness(fourForwards, [
+      providerRow(201, 27, played),
+      providerRow(202, 27, { ...played, goals: 0, assists: 0, rating: 5 }),
+    ]);
+    const result = await run();
+
+    expect(result.status).toBe(200);
+    const body = (await result.json()) as { counters: Record<string, number> };
+    expect(body.counters).toMatchObject({ fetched: 2, validated: 4, inserted: 4, rejected: 0 });
+
+    const persisted = calls.find((call) => call.name === "ingest_player_season_ratings");
+    expect(persisted?.args.p_rows).toMatchObject([
+      { externalPlayerId: "201", rating: 10, confidence: 1 },
+      { externalPlayerId: "202", rating: 6, confidence: 1 },
+      { externalPlayerId: "203", rating: 6, confidence: 0 },
+      { externalPlayerId: "204", rating: 6, confidence: 0 },
+    ]);
+    expect(calls.at(-1)).toMatchObject({
+      name: "complete_football_ingestion",
+      args: { p_status: "succeeded", p_error_code: null },
+    });
   });
 });

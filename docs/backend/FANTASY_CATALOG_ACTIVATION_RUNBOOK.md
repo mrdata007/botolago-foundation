@@ -54,6 +54,18 @@ position-relative price is calculated. A player without approved historical
 evidence is recorded explicitly as rating 6.0 with confidence 0; no provider
 or client invents a rating. Prices are rounded to the ruleset's 0.1 step.
 
+The preseason ratings ingestion fails closed on missing provider evidence. If
+the SportMonks season-statistics fetch returns no usable record
+(`records_fetched = 0`), the run ends `failed` with error code
+`player_statistics_unavailable`; if the fetched statistics cover fewer than
+`MIN_STATISTICS_COVERAGE` (0.5, exported from
+`supabase/functions/_shared/sportsmonks-player-ratings.ts`) of the rating
+candidates, it ends `failed` with `player_statistics_coverage_insufficient`.
+In both cases no rating row is written, so a thin or empty provider response
+can no longer be staged as a full set of neutral 6.0 / confidence 0 ratings.
+Before staging the catalog, confirm the latest `player_ratings` ingestion run
+succeeded and carries no such error code.
+
 Every created player has one private immutable evidence row containing the
 algorithm, source season/algorithm when available, rating, confidence, and
 opening price. The public catalog never exposes internal ingestion metadata.
