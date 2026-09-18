@@ -586,6 +586,35 @@ tasks:
         read-only or rolled-back rehearsal proving the degeneracy guard actually fires under a
         synthetic all-neutral-rating candidate set (do NOT run it against a live catalog activation
         that would mutate real fantasy state).
+        EXECUTED 2026-09-18T19:50Z under owner approval (verbatim: promote A, then B after A
+        verified, then C after B verified, sequential not bundled, with pre/post checks and stop-on-
+        failure). Preconditions re-verified immediately before dispatch: main HEAD refreshed to
+        c03257589d2420b092ad00a66adb7367840de79d (not the stale d16c406 above); migration file
+        sha256 680c6b44c5dab188aaea60955ff706dc4bd86232ab6572e177d5fcaddf94f9c1 confirmed unchanged
+        since PR #136 merge (git diff 5a7f378..HEAD empty); production migration history confirmed
+        NOT already containing 20260918150000 (latest applied was 20260918140000); project/org/
+        backup-readiness reconfirmed (Pro plan, ACTIVE_HEALTHY, 7 completed backups). Dispatch: run
+        35388120379, confirmation RUN_PHASE7E_B_PRODUCTION_FANTASY_RATING_DEGENERACY_GUARD.
+        RESULT: SUCCESS. preflight.json historyCountBefore 59 -> postflight.json historyCountAfter
+        60, completedInSelectedBatchAfter 1, result PASS; applied-migrations.json sha256 matches the
+        repository file exactly; backup/edge-function/project snapshot unchanged (7 completed
+        backups, ACTIVE_HEALTHY). Post-change verification (all read-only, no writes): pg_get_
+        functiondef of app_private.fantasy_rating_inputs_degenerate, api.preview_fantasy_catalog_
+        activation and api.service_stage_fantasy_catalog all match the reviewed migration text
+        exactly (cross-checked against the actual file, not memory); execute grants confirmed as
+        reviewed (the internal helper fantasy_rating_inputs_degenerate has EXECUTE revoked from
+        anon/authenticated/public/service_role — called only via SECURITY DEFINER from the two API
+        functions, which correctly have EXECUTE granted to service_role only, revoked from
+        anon/authenticated/public). Guard behaviour verified two ways: (1) the predicate''s own
+        boolean logic checked against synthetic all-neutral / mixed / empty cases inside a rolled-
+        back transaction; (2) the ACTUAL DEPLOYED function invoked read-only (STABLE, provably no
+        writes) against the real current football season (d03223b0) returned {candidates: 539,
+        distinctRatings: 1, maxConfidence: 0, degenerate: true} — correctly identifying today''s
+        known all-neutral catalog as degenerate. api.service_stage_fantasy_catalog itself (the
+        write-capable function) was deliberately NOT invoked, to avoid any real mutation attempt;
+        the helper-level proof plus the byte-identical function definitions and grants are
+        sufficient. No production write occurred beyond the one authorized migration application.
+        ACTION A: DONE.
 
       ACTION B — promote batch season_bounds_guard (migration 20260918160000, BG-0031).
         Prerequisites: (1) explicit owner approval to promote this specific batch (not yet given);
