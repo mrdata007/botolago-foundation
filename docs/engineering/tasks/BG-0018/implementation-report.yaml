@@ -1,0 +1,88 @@
+task_id: BG-0018
+builder_type: Builder-Data
+branch: agent/BG-0018-club-codes
+commits:
+  - 7c8492eefd8fda1b21f19d7f7ff059f30003fe76 # BG-0018: seed nine verified official club codes (runbook + rolled-back rehearsal)
+  - "(follow-up commit on this branch) BG-0018: implementation report"
+changes:
+  - file: scripts/backend/football-team-identity-seed.sql
+    description: >
+      NEW data-only production runbook in the shape of scripts/backend/fantasy-realign-gameweek-calendar.sql
+      (header with per-row sources, begin, service-role set_config, one DO block, review SELECT, `-- commit;`).
+      Writes ONLY app.teams.code for the nine VERIFIED official self-designations decided by the owner on
+      2026-09-18: Raja Casablanca RCA, FAR Rabat ASFAR, FUS Rabat FUS, Maghreb Fès MAS, Ittihad Tanger IRT,
+      UTS Rabat UTS, CR Khemis Zemamra RCAZ, Moghreb Tétouan MAT, Widad Témara WST. INFERRED codes
+      (WAC, RSB, HUSA, DHJ, KACM, CODM, USAT) are not written. Wydad keeps the provider value WCA (header
+      records that WCA is provider-supplied, not independently verified branding). Colours are deferred:
+      primary_color / secondary_color are never written. The UPDATE is
+      `set code = v.code ... where t.id = v.matched_id and t.code is null and t.code is distinct from v.code`,
+      so a pre-existing non-null code is never replaced and a re-run touches 0 rows without bumping
+      updated_at. Guards (raise → rollback): exactly 9 unique names/codes; every code ~ '^[A-Z0-9]{2,8}$'
+      before the table constraint; every name matches exactly one ACTIVE app.teams row (scalar subquery
+      errors on >1, guard errors on 0), 9 matched in total. `get diagnostics` row_count is reported by
+      `raise notice`. The VALUES list lives in a session temp table created with CREATE TEMP TABLE ... AS
+      (no INSERT/DELETE anywhere in the file); DML touches app.teams only. Header records the durability
+      caveat (see database_changes).
+  - file: docs/engineering/tasks/BG-0018/rehearsal-team-identity.json
+    description: >
+      Rolled-back production rehearsal artefact (project tkewgajrljbwgwedqsxn, 2026-09-18T12:17Z):
+      protocol, owner decisions, before snapshot of the 16 current clubs (id, name, short_name, code,
+      primary_color, secondary_color, updated_at), first-run row_count 9, second-run row_count 0 with
+      no updated_at bump, api.football_team_catalog('fr',100) excerpt showing the 9 codes (+ WCA),
+      collateral 0, format violations 0, read-only residue check after rollback (codes NULL again except
+      WCA, max(updated_at) unchanged, no temp residue), durability note (AT-8), and the baseline
+      deviation from the brief (21 active rows, not 16).
+  - file: docs/engineering/tasks/BG-0018/implementation-report.yaml
+    description: This report.
+database_changes:
+  - >
+    NONE committed. The production database was touched only by read-only SELECTs and by one
+    rolled-back rehearsal transaction (begin → service-role set_config → DO block ×2 → checks →
+    raise exception 'REHEARSAL_BG0018 …' → rollback). No apply_migration, no role switch, no commit.
+    The committed production run of scripts/backend/football-team-identity-seed.sql is NOT part of
+    this task; it is executed by the Shipper/owner only after Verifier and Reviewer PASS.
+  - >
+    DURABILITY (recorded here and in the script header): api.ingest_football_catalog_entity overwrites
+    app.teams.code from the provider payload on every fresh team payload
+    (supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302, `code = v_code`
+    unconditionally, v_code = provider short_code = NULL for these nine clubs). The seeded codes are
+    therefore NOT durable until BG-0036 lands: the next dispatch of football-current-season-recovery
+    or the fantasy orchestrator recovery step that sees a fresh provider timestamp resets them to NULL.
+    Colours are unaffected (never written by ingestion nor by this script). The script is idempotent
+    and can be re-run after any ingest.
+configuration_changes: []
+tests_run:
+  - command: "AT-1 (production, rolled back): pre snapshot → DO block → checks (see rehearsal-team-identity.json AT1_firstRun)"
+    result: PASS # changed_vs_pre = 9 (= VALUES count), collateral = 0, all_teams unchanged = 21, format_violations = 0, colour_writes = 0, WCA untouched. Baseline differs from the brief's expectation: active_teams 21 / code_null 20 / primary_null 21 (brief assumed 16 / 15 / 16) — see unexpected_observations.
+  - command: "AT-2 (idempotency, same transaction): DO block run twice (see AT2_secondRun_idempotency)"
+    result: PASS # run 2 changed 0 rows; rows with updated_at <> pre = 9 after run 1 and 9 after run 2; updated_at bumped vs post-run-1 snapshot = 0.
+  - command: "AT-3 (API projection, inside the rehearsal before rollback): api.football_team_catalog('fr',100)"
+    result: PASS # length 21 (brief expected 16, see observation); code not null = 10 (9 seeded + provider WCA); primaryColor not null = 0; per-row excerpt matches the VALUES list exactly.
+  - command: "AT-4 (residue, read-only after rollback): select count(*) filter (where code is null), count(*) filter (where primary_color is null), max(updated_at) from app.teams where active"
+    result: PASS # 20, 21, 2026-09-18 10:06:38.00697+00 (= pre-rehearsal max); only non-null code is Wydad Casablanca=WCA; temp table residue 0.
+  - command: "AT-5 (static): grep counts on scripts/backend/football-team-identity-seed.sql"
+    result: PASS # `update app.teams` ×1 (only UPDATE statement); INSERT ×0; DELETE ×0; `is distinct from` present in the WHERE; 9 VALUES rows each with `-- source:` citing the brief's VERIFIED club_identity entries; no primary_color/secondary_color in any SET; codes = ASFAR FUS IRT MAS MAT RCA RCAZ UTS WST; no model identifiers.
+  - command: "AT-6: bun test src/services/football.test.ts"
+    result: PASS # 5 pass, 0 fail, 18 expect() calls (after `bun install --frozen-lockfile` in the fresh worktree).
+  - command: "AT-6: git diff --name-only origin/main..HEAD"
+    result: PASS # scripts/backend/football-team-identity-seed.sql, docs/engineering/tasks/BG-0018/rehearsal-team-identity.json, docs/engineering/tasks/BG-0018/implementation-report.yaml — nothing under src/**, supabase/**, .github/**.
+  - command: "AT-7 (UI on botolago.com after the owner-approved committed run)"
+    result: PASS # NOT RUN — out of the Builder's authority (requires the committed production run). Left for the Shipper/owner; note the 4-5 character codes ASFAR and RCAZ need the visual overflow check the brief calls for.
+unresolved:
+  - "AT-7 (UI screenshot evidence) can only be produced after the owner-approved committed run; not attempted."
+  - "Durability: seeded codes will be reset to NULL by the next fresh provider team payload until BG-0036 lands (see database_changes)."
+unexpected_observations:
+  - >
+    app.teams holds 21 ACTIVE rows, not the 16 the brief (and its AT-1/AT-3 expectations) assume:
+    Chabab Mohammédia (7ff33380-1236-45e5-9c3e-97e753961cc9), JS Soualem (318655a9-db9f-4706-abb2-df0fa4b13baf),
+    Olympic Safi (32fb7b61-9af4-4667-8978-b739b5e3f170), Olympique Dcheïra (f2715f02-38ed-4feb-a4e5-72444ad39529)
+    and Yacoub El Mansour (e595b91e-4d8f-4f3d-92d7-c23d7e332544) are still active=true (last written
+    2026-08-02). Consequently api.football_team_catalog('fr',100) returns 21 entries and the public club
+    catalog exposes five non-2026/27 clubs. Not touched by this script (guards are per listed name;
+    all nine matched exactly one active row). Chief to triage (deactivation is a separate data task).
+  - >
+    The SQL tool used for the rehearsal does not relay RAISE NOTICE, so the DO block's `get diagnostics`
+    row_count is evidenced through snapshot differences (9 rows changed pre→mid, 0 mid→final); the
+    Verifier running in the Supabase SQL editor will see the notice text directly.
+scope_deviations: []
+status: DONE
