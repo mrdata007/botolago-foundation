@@ -1,0 +1,23 @@
+{
+  "task": "BG-0018",
+  "operation": "scripts/backend/football-team-identity-seed.sql (unmodified DO block; an extra guard `n_updated <> 9 → raise` was added inline for the committed run)",
+  "database": "BotolaGO Production V2 (tkewgajrljbwgwedqsxn)",
+  "executedAt": "2026-09-18T12:37:24.004702Z",
+  "executedBy": "Chief (Supabase connector, database owner session; request.jwt.claims role service_role set via set_config)",
+  "approval": "owner decision 2026-09-18 — one guarded application after independent Verifier PASS and Reviewer PASS",
+  "gates": {
+    "verifier": "docs/engineering/tasks/BG-0018/verification-report.yaml (PASS)",
+    "reviewer": "docs/engineering/tasks/BG-0018/review-report.yaml (PASS)",
+    "merged": "main 98c5db2"
+  },
+  "result": {
+    "rowsUpdated": 9,
+    "codesWritten": {"CR Khemis Zemamra": "RCAZ", "FAR Rabat": "ASFAR", "FUS Rabat": "FUS", "Ittihad Tanger": "IRT", "Maghreb Fès": "MAS", "Moghreb Tétouan": "MAT", "Raja Casablanca": "RCA", "UTS Rabat": "UTS", "Widad Témara": "WST"},
+    "wydadUntouched": {"code": "WCA", "updated_at": "2026-09-18 10:06:36.504938+00"},
+    "coloursWritten": 0,
+    "activeTeams": 21,
+    "apiFootballTeamCatalog": {"length": 21, "codesNonNull": 10, "primaryColorNonNull": 0}
+  },
+  "durability": "NOT durable until BG-0036: api.ingest_football_catalog_entity resets code from the provider payload on the next fresh team payload; re-run the idempotent script after any such ingest",
+  "followUps": ["BG-0036 (durable code)", "BG-0041 (4-5 character codes in compact labels)", "BG-0043 (five stale active clubs)"]
+}
