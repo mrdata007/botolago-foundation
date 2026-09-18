@@ -4,12 +4,14 @@ import { BOTOLA_PRO_LEAGUE_ID, type ProbeDependencies } from "./sportsmonks-prod
 import {
   HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES,
   HISTORICAL_PERFORMANCE_FIXTURES,
+  HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS,
   HISTORICAL_PERFORMANCE_INVARIANT_SEASONS,
   HISTORICAL_PERFORMANCE_PRIOR_RUN_IDS,
   HISTORICAL_PERFORMANCE_REQUEST_ID,
   classifyFixtureInvariants,
   historicalPerformanceFailureEvidence,
   providerKickoff,
+  rawLineupCounters,
   runHistoricalPerformanceInvariantProbe,
   runHistoricalPerformanceProbe,
 } from "./sportsmonks-historical-performance-probe";
@@ -72,7 +74,12 @@ function fixtureResponse(fixtureId: number, withDetails = true): Response {
 interface LineupShape {
   readonly valid: number;
   readonly starters: number;
+  /** Rows without player_id that the provider declares as starters (type_id 11). */
   readonly incomplete?: number;
+  /** Rows without player_id that the provider declares as substitutes (type_id 12). */
+  readonly anonymousSubstitutes?: number;
+  /** Identity hints copied onto every row without player_id. */
+  readonly anonymousHint?: { readonly player_name?: string; readonly jersey_number?: number };
   readonly teams?: number;
   readonly badDetail?: boolean;
 }
@@ -94,10 +101,47 @@ function lineupPayload(fixtureId: number, seasonId: number, shape: LineupShape) 
     });
   }
   for (let index = 0; index < (shape.incomplete ?? 0); index += 1) {
-    lineups.push({ player_id: null, team_id: 500, type_id: 11, details: [] });
+    lineups.push({
+      player_id: null,
+      team_id: 500,
+      type_id: 11,
+      details: [],
+      ...shape.anonymousHint,
+    });
+  }
+  for (let index = 0; index < (shape.anonymousSubstitutes ?? 0); index += 1) {
+    lineups.push({
+      player_id: null,
+      team_id: 501,
+      type_id: 12,
+      details: [],
+      ...shape.anonymousHint,
+    });
   }
   return { data: { id: fixtureId, league_id: BOTOLA_PRO_LEAGUE_ID, season_id: seasonId, lineups } };
 }
+
+const INVARIANT_ROW_KEYS = [
+  "anonymousRowsWithNameOrJersey",
+  "anonymousRowsWithTeamId",
+  "anonymousStarterRows",
+  "anonymousSubstituteRows",
+  "enumerated",
+  "excludedIncompleteRows",
+  "failures",
+  "fixtureId",
+  "identityTolerantPass",
+  "invalidDetailRows",
+  "kickoff",
+  "lineupRows",
+  "pass",
+  "rawStarterRows",
+  "rawSubstituteRows",
+  "seasonId",
+  "starterRows",
+  "teamCount",
+  "validPlayerRows",
+].sort();
 
 /** The Python dict literal embedded in the workflow's ticket-verification step, as JSON. */
 async function workflowExpectedTicket(): Promise<unknown> {
@@ -208,11 +252,13 @@ describe("SportsMonks historical performance coverage probe", () => {
       leagueId: 860,
       fixtures: HISTORICAL_PERFORMANCE_FIXTURES.map((fixture) => ({ ...fixture })),
       invariantSeasons: [...HISTORICAL_PERFORMANCE_INVARIANT_SEASONS],
+      invariantCounters: HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS,
       confirmation: "RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY",
     });
     expect(HISTORICAL_PERFORMANCE_REQUEST_ID).toBe(
-      "g7-historical-performance-coverage-2026-09-18-01",
+      "g7-historical-performance-coverage-2026-09-18-02",
     );
+    expect(HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS).toBe("anonymous-starters-v1");
     expect(HISTORICAL_PERFORMANCE_FIXTURES).toContainEqual({
       seasonId: SEASON_ID,
       fixtureId: HALTING_FIXTURE_ID,
@@ -223,6 +269,9 @@ describe("SportsMonks historical performance coverage probe", () => {
     expect(workflow).toContain("GITHUB_WORKFLOW_RERUN_FORBIDDEN");
     expect(workflow).toContain("sportsmonks-historical-performance-invariants.json");
     expect(workflow).toContain("HALTING_FIXTURE_NOT_CLASSIFIED");
+    expect(workflow).toContain("rawStarterExactly22");
+    expect(workflow).toContain("identityTolerantPassing");
+    expect(workflow).toContain("anonymousStarterHistogram");
   });
 
   it("lists exactly the coverage failure codes the edge worker emits", async () => {
@@ -404,6 +453,135 @@ describe("SportsMonks historical performance coverage invariants", () => {
       invalidDetailRows: 0,
       failures: [],
       pass: true,
+      rawStarterRows: 22,
+      rawSubstituteRows: 18,
+      anonymousStarterRows: 0,
+      anonymousSubstituteRows: 0,
+      anonymousRowsWithTeamId: 0,
+      anonymousRowsWithNameOrJersey: 0,
+      identityTolerantPass: true,
+    });
+  });
+
+  it("tells provider-declared starters apart from identified ones (19489216 shape)", async () => {
+    // 22 declared starters + 18 declared substitutes; one starter and one substitute lack player_id.
+    const row = await classify({ valid: 38, starters: 21, incomplete: 1, anonymousSubstitutes: 1 });
+    expect(row).toEqual({
+      fixtureId: 1,
+      seasonId: SEASON_ID,
+      kickoff: null,
+      enumerated: true,
+      lineupRows: 40,
+      validPlayerRows: 38,
+      excludedIncompleteRows: 2,
+      starterRows: 21,
+      teamCount: 2,
+      invalidDetailRows: 0,
+      failures: ["starter_rows_mismatch"],
+      pass: false,
+      rawStarterRows: 22,
+      rawSubstituteRows: 18,
+      anonymousStarterRows: 1,
+      anonymousSubstituteRows: 1,
+      anonymousRowsWithTeamId: 2,
+      anonymousRowsWithNameOrJersey: 0,
+      identityTolerantPass: true,
+    });
+  });
+
+  it("does not read a fixture with five anonymous starters as identity-tolerant", async () => {
+    const row = await classify({ valid: 35, starters: 17, incomplete: 5 });
+    expect(row).toMatchObject({
+      starterRows: 17,
+      failures: ["starter_rows_mismatch"],
+      pass: false,
+      rawStarterRows: 22,
+      anonymousStarterRows: 5,
+      anonymousSubstituteRows: 0,
+      identityTolerantPass: false,
+    });
+    // Exactly four anonymous starters is the cap and still reads as tolerant.
+    await expect(classify({ valid: 36, starters: 18, incomplete: 4 })).resolves.toMatchObject({
+      rawStarterRows: 22,
+      anonymousStarterRows: 4,
+      identityTolerantPass: true,
+    });
+  });
+
+  it("keeps the identity-tolerant reading false when any other invariant fails", async () => {
+    await expect(classify({ valid: 40, starters: 22, teams: 3 })).resolves.toMatchObject({
+      rawStarterRows: 22,
+      anonymousStarterRows: 0,
+      failures: ["team_count_mismatch"],
+      identityTolerantPass: false,
+    });
+    // 21 declared starters: the provider itself is short, not merely anonymous.
+    await expect(classify({ valid: 40, starters: 21 })).resolves.toMatchObject({
+      rawStarterRows: 21,
+      rawSubstituteRows: 19,
+      anonymousStarterRows: 0,
+      identityTolerantPass: false,
+    });
+  });
+
+  it("counts anonymous identity hints without copying names or jerseys into the evidence", async () => {
+    const row = await classify({
+      valid: 38,
+      starters: 21,
+      incomplete: 1,
+      anonymousSubstitutes: 1,
+      anonymousHint: { player_name: "Ghost Starter", jersey_number: 77 },
+    });
+    expect(row).toMatchObject({
+      anonymousStarterRows: 1,
+      anonymousSubstituteRows: 1,
+      anonymousRowsWithTeamId: 2,
+      anonymousRowsWithNameOrJersey: 2,
+      identityTolerantPass: true,
+    });
+    const serialized = JSON.stringify(row);
+    expect(serialized).not.toContain("Ghost");
+    expect(serialized).not.toContain("77");
+    expect(serialized).not.toContain("player_name");
+    expect(serialized).not.toContain("jersey_number");
+    expect(Object.keys(row).sort()).toEqual(INVARIANT_ROW_KEYS);
+
+    // Blank hints are not identity hints.
+    expect(
+      rawLineupCounters(
+        lineupPayload(1, SEASON_ID, {
+          valid: 38,
+          starters: 21,
+          incomplete: 1,
+          anonymousSubstitutes: 1,
+          anonymousHint: { player_name: "  " },
+        }),
+      ).anonymousRowsWithNameOrJersey,
+    ).toBe(0);
+  });
+
+  it("returns null raw counters when the payload carries no lineup array", () => {
+    expect(rawLineupCounters({ data: { id: 1, lineups: { legacy: true } } })).toEqual({
+      rawStarterRows: null,
+      rawSubstituteRows: null,
+      anonymousStarterRows: null,
+      anonymousSubstituteRows: null,
+      anonymousRowsWithTeamId: null,
+      anonymousRowsWithNameOrJersey: null,
+    });
+    expect(rawLineupCounters(null).rawStarterRows).toBeNull();
+    // Non-record rows and rows without a team id are counted like the worker sees them.
+    expect(
+      rawLineupCounters({
+        data: { lineups: [null, { player_id: null, type_id: 11 }, { player_id: 7, type_id: 12 }] },
+      }),
+    ).toEqual({
+      rawStarterRows: 1,
+      rawSubstituteRows: 1,
+      anonymousStarterRows: 1,
+      anonymousSubstituteRows: 0,
+      anonymousRowsWithTeamId: 0,
+      anonymousRowsWithNameOrJersey: 0,
     });
   });
 
@@ -480,6 +658,14 @@ describe("SportsMonks historical performance coverage invariants", () => {
       invalidDetailRows: null,
       failures: ["invalid_provider_detail"],
       pass: false,
+      // The raw pass does not depend on the worker's abort; the abort code keeps the tolerant reading false.
+      rawStarterRows: 22,
+      rawSubstituteRows: 18,
+      anonymousStarterRows: 0,
+      anonymousSubstituteRows: 0,
+      anonymousRowsWithTeamId: 0,
+      anonymousRowsWithNameOrJersey: 0,
+      identityTolerantPass: false,
     });
   });
 
@@ -491,7 +677,12 @@ describe("SportsMonks historical performance coverage invariants", () => {
       null,
       true,
     );
-    expect(row).toMatchObject({ failures: ["fixture_scope_mismatch"], pass: false });
+    expect(row).toMatchObject({
+      failures: ["fixture_scope_mismatch"],
+      pass: false,
+      rawStarterRows: 22,
+      identityTolerantPass: false,
+    });
   });
 
   it("normalizes provider kickoff strings and rejects anything else", () => {
@@ -520,6 +711,7 @@ describe("SportsMonks historical performance coverage invariants", () => {
       observedAt: NOW.toISOString(),
       leagueId: 860,
       providerPayloadIncluded: false,
+      invariantCounters: "anonymous-starters-v1",
       coverageFailureCodes: [...HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES],
       requestCount: SEASON_WINDOWS.length * 2 + 240,
       fixtures: 240,
@@ -547,6 +739,9 @@ describe("SportsMonks historical performance coverage invariants", () => {
         team_count_mismatch: 0,
         invalid_detail_rows_present: 0,
       },
+      rawStarterExactly22: 240,
+      identityTolerantPassing: 240,
+      anonymousStarterHistogram: { "0": 239, "1": 1 },
     });
     expect(season.rows).toHaveLength(240);
     expect(season.rows.map((row) => row.fixtureId)).toEqual(SEASON_FIXTURE_IDS);
@@ -563,28 +758,24 @@ describe("SportsMonks historical performance coverage invariants", () => {
       invalidDetailRows: 0,
       failures: ["starter_rows_mismatch"],
       pass: false,
+      rawStarterRows: 22,
+      rawSubstituteRows: 18,
+      anonymousStarterRows: 1,
+      anonymousSubstituteRows: 0,
+      anonymousRowsWithTeamId: 1,
+      anonymousRowsWithNameOrJersey: 0,
+      identityTolerantPass: true,
     });
 
     const serialized = JSON.stringify(evidence);
     expect(serialized).not.toContain(TOKEN);
     expect(serialized).not.toContain("player_id");
+    expect(serialized).not.toContain("player_name");
+    expect(serialized).not.toContain("jersey_number");
     expect(serialized).not.toContain("details");
-    expect(Object.keys(season.rows[0]).sort()).toEqual(
-      [
-        "enumerated",
-        "excludedIncompleteRows",
-        "failures",
-        "fixtureId",
-        "invalidDetailRows",
-        "kickoff",
-        "lineupRows",
-        "pass",
-        "seasonId",
-        "starterRows",
-        "teamCount",
-        "validPlayerRows",
-      ].sort(),
-    );
+    for (const row of season.rows) {
+      expect(Object.keys(row).sort()).toEqual(INVARIANT_ROW_KEYS);
+    }
   });
 
   it("still classifies fixture 19489216 when the season enumeration is partial", async () => {
@@ -646,6 +837,11 @@ describe("SportsMonks historical performance coverage invariants", () => {
         invalid_detail_rows_present: 0,
         invalid_provider_detail: 1,
       },
+      // 19489210/11/12 declare 23/40/43 starters; the halting fixture (1 anonymous starter)
+      // and the 234 clean fixtures read as tolerant; every other failing row fails another code.
+      rawStarterExactly22: 237,
+      identityTolerantPassing: 235,
+      anonymousStarterHistogram: { "0": 236, "1": 2, "19": 1, "21": 1 },
     });
   });
 

@@ -1,0 +1,119 @@
+task_id: BG-0044
+builder_type: Builder-DevOps
+branch: agent/BG-0044-probe-anonymous-starters
+base: "origin/main f58a402 (branch cut at 2ab80e7 and fast-forwarded once before the first commit; the seven upstream commits were BG-0026/BG-0033/BG-0039 docs, the ledger and the Phase 7E-B promoter + its Python test, none of the files below)"
+commits:
+  - "BG-0044: probe reports provider-declared vs identified starters (raw/anonymous counters, identity-tolerant reading)"
+  - "BG-0044: implementation report"
+changes:
+  - file: scripts/backend/sportsmonks-historical-performance-probe.ts
+    description: >
+      Read-only extension of the BG-0034 invariants pass; the worker call and every invariant
+      are untouched. New exported pure function rawLineupCounters(payload): a second pass over
+      the SAME payload.data.lineups array normalizeHistoricalFixture iterates (no extra
+      request) that reads type_id on every record row BEFORE the identity test and returns
+      counts only: rawStarterRows (type_id 11 over all record rows), rawSubstituteRows
+      (type_id 12), anonymousStarterRows (type_id 11 and player_id null/undefined),
+      anonymousSubstituteRows (type_id 12 and player_id null/undefined),
+      anonymousRowsWithTeamId (anonymous rows of any type whose team_id is a positive
+      integer), anonymousRowsWithNameOrJersey (anonymous rows carrying a non-blank
+      player_name string or a finite jersey_number; blank strings do not count). Non-record
+      rows are skipped (they cannot carry a type); all six counters are null when the payload
+      has no lineups array. New exported identityTolerantPass(counters, failures) =
+      rawStarterRows === 22 && anonymousStarterRows <= 4 && every failure code is
+      starter_rows_mismatch (so an empty failures list, i.e. a worker pass, also reads true;
+      any other coverage code or a row-level abort code reads false; null counters read false).
+      classifyFixtureInvariants merges the counters and identityTolerantPass into every row it
+      returns (pass, coverage-failure and row-level-abort branches alike); `pass` and
+      `failures` are still exactly the worker's verdict. Season summary gains
+      rawStarterExactly22 (rows with rawStarterRows === 22), identityTolerantPassing and
+      anonymousStarterHistogram (string key = anonymousStarterRows value -> fixtures; rows
+      with null counters are not keyed). Evidence top level gains invariantCounters:
+      "anonymous-starters-v1" (new constant HISTORICAL_PERFORMANCE_INVARIANT_COUNTERS);
+      providerPayloadIncluded stays false; the credential-in-evidence guard is unchanged.
+      HISTORICAL_PERFORMANCE_REQUEST_ID -> g7-historical-performance-coverage-2026-09-18-02.
+      main()'s PASS log line additionally prints identityTolerantPassing. Request count,
+      pacing, includes and filters are unchanged.
+  - file: scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    description: >
+      lineupPayload gains anonymousSubstitutes (rows without player_id declared type 12) and
+      anonymousHint (player_name/jersey_number copied onto anonymous rows). New tests: the
+      19489216 shape (22 raw starters, one anonymous starter + one anonymous substitute ->
+      starterRows 21, rawStarterRows 22, rawSubstituteRows 18, anonymousStarterRows 1,
+      anonymousSubstituteRows 1, anonymousRowsWithTeamId 2, failures
+      [starter_rows_mismatch], identityTolerantPass true); five anonymous starters ->
+      identityTolerantPass false while four (the cap) -> true; team_count_mismatch with 22 raw
+      starters -> false, and 21 declared starters with no anonymous row -> false; anonymous
+      rows with player_name "Ghost Starter" / jersey 77 -> anonymousRowsWithNameOrJersey 2 and
+      neither the value, "77", "player_name" nor "jersey_number" appears in the serialized row,
+      blank name not counted; null counters for a non-array lineups payload and counting of
+      non-record / team-less rows. Existing exact-equality rows (worker pass, invalid-detail
+      abort, 19489216 in the 240-fixture run) extended with the seven new keys; the
+      fixture_scope_mismatch row asserts counters are still computed; the evidence key
+      allow-list is now the shared INVARIANT_ROW_KEYS constant (19 keys) asserted on every one
+      of the 240 rows; the serialized evidence must not contain player_name or jersey_number;
+      the 240-fixture run asserts rawStarterExactly22 240 / identityTolerantPassing 240 /
+      histogram {0: 239, 1: 1}; the all-codes aggregation asserts 237 / 235 /
+      {0: 236, 1: 2, 19: 1, 21: 1}. Ticket parity test: requestId -02, invariantCounters
+      equals the probe constant, evidence carries invariantCounters, and the workflow text
+      contains rawStarterExactly22, identityTolerantPassing and anonymousStarterHistogram.
+      No existing assertion was removed or weakened.
+  - file: docs/production/g7-historical-performance-probe-trigger.json
+    description: >
+      requestId g7-historical-performance-coverage-2026-09-18-01 -> -02; new key
+      "invariantCounters": "anonymous-starters-v1" after invariantSeasons. repairsRuns,
+      fixtures, invariantSeasons and confirmation byte-identical.
+  - file: .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    description: >
+      Embedded expected dict updated identically to the ticket (requestId -02,
+      invariantCounters). Step "Report coverage invariant classification" additionally rejects
+      evidence whose invariantCounters != "anonymous-starters-v1" with the existing
+      INVALID_HISTORICAL_PERFORMANCE_INVARIANT_EVIDENCE exit, prints per season
+      "rawStarterExactly22=N identityTolerantPassing=N" and
+      "anonymousStarterHistogram=0:n 1:n ..." (keys sorted numerically), and still prints the
+      full 19489216 row (which now carries the new keys) and fails with
+      HALTING_FIXTURE_NOT_CLASSIFIED when it is missing. Unchanged: job guard (repository /
+      main ref / actor), GITHUB_RUN_ATTEMPT == 1, confirmation string, expected_commit ==
+      GITHUB_SHA, environment production-football-ingestion, timeout-minutes 45 (request
+      count unchanged), only SPORTSMONKS_API_TOKEN (lines 139 and 225), add-mask, quality
+      step, evidence scan, upload (30 days), cleanup, finalize verdict and commit-status gate
+      and their outputs (failing, halting_failures), concurrency, permissions.
+  - file: docs/engineering/tasks/BG-0044/implementation-report.yaml
+    description: this report.
+database_changes: []
+configuration_changes:
+  - "Reviewed probe ticket requestId g7-historical-performance-coverage-2026-09-18-01 -> -02 with invariantCounters anonymous-starters-v1, mirrored in the workflow's embedded dict (the workflow refuses to run against a stale ticket). No secret, environment, variable, timeout or other workflow changed. No workflow was dispatched."
+  - "bun install --frozen-lockfile was run in the workspace only because node_modules was empty (the full suite could not resolve zod/react/etc.); bun.lock is unchanged and no lockfile or package.json edit is in the diff."
+tests_run:
+  - command: bun test scripts/backend/sportsmonks-historical-performance-probe.test.ts scripts/backend/sportsmonks-production-probe.test.ts
+    result: PASS # "32 pass / 0 fail / 4082 expect() calls / Ran 32 tests across 2 files" (baseline on origin/main: 27 pass)
+  - command: bun run test
+    result: PASS # "715 pass / 0 fail / 9989 expect() calls / Ran 715 tests across 117 files. [8.08s]" (after bun install --frozen-lockfile; before it 48 files failed only with "Cannot find package" for zod/react/@supabase/supabase-js/etc.)
+  - command: bun run backend:secrets:check
+    result: PASS # "No high-confidence secrets found in tracked files."
+  - command: bunx eslint scripts/backend/sportsmonks-historical-performance-probe.ts scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    result: PASS # exit 0
+  - command: bunx prettier --check .github/workflows/g7-sportsmonks-historical-performance-coverage.yml docs/production/g7-historical-performance-probe-trigger.json scripts/backend/sportsmonks-historical-performance-probe.ts scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    result: PASS # "All matched files use Prettier code style!" (after one prettier --write on the test file)
+  - command: node scripts/backend/check-config-integrity.mjs --file .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    result: PASS # "Config integrity guard: no violations in 1 executed configuration file(s)."
+  - command: bun run config:integrity:check
+    result: PASS # "Config integrity guard: no violations in 34 executed configuration file(s)."
+  - command: "python3: ast.literal_eval(workflow embedded `expected = {...}`) == json.load(ticket)"
+    result: PASS # "workflow-embedded == ticket: True"; requestId -02; invariantCounters anonymous-starters-v1. All three embedded python blocks of the workflow compile.
+  - command: "scratchpad smoke: runHistoricalPerformanceInvariantProbe with a mock fetch (240 fixtures, 34 with 5 anonymous starters, 19489216 with 1 anonymous named starter) -> evidence file -> the workflow's 'Report coverage invariant classification' python block -> scripts/backend/phase7f-scan-sanitized-evidence.py"
+    result: PASS # step exit 0, printed "rawStarterExactly22=240 identityTolerantPassing=206", "anonymousStarterHistogram=0:205 1:1 5:34" and the 19489216 row with the new keys; outputs failing=35 / halting_failures=starter_rows_mismatch; scanner "PASS rule=ALL count=0"; the anonymous player_name value and the key player_name occur 0 times in the evidence. Scratchpad only; nothing committed.
+  - command: git diff --name-status origin/main
+    result: PASS # exactly M workflow, M ticket JSON, M probe .ts, M probe .test.ts (before the report commit)
+  - command: "grep -nE 'secrets\\.|SUPABASE|supabase' on the workflow"
+    result: PASS # only lines 139 and 225, both SPORTSMONKS_API_TOKEN
+not_executed:
+  - "The live provider run (bun scripts/backend/sportsmonks-historical-performance-probe.ts against api.sportmonks.com): no SPORTSMONKS_API_TOKEN is available to this role and none was sought. The per-fixture raw/anonymous counts for the 63 non-pinned failing fixtures (BG-0011 unknown #1) are produced only by an owner dispatch of the workflow at the merged commit with expected_commit = that commit."
+  - "The workflow was not dispatched (forbidden)."
+unresolved: []
+unexpected_observations:
+  - "BG-0034's review verified 'no 22/100/20 literal in the probe' as evidence that thresholds are not redefined. This task necessarily introduces the literal 22 (DECLARED_STARTERS_PER_FIXTURE) and 4 (IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP) as diagnostic constants for rawStarterExactly22 / identityTolerantPass, exactly as the BG-0011 brief specifies. They feed only the new counters; the worker's verdict (`pass`, `failures`) is still read from normalizeHistoricalFixture. Reviewers re-running that grep should expect these two hits."
+  - "The BG-0011 brief's evidence for 19489216 records excludedIncompleteRows 2 with anonymousRowsWithTeamId unknown; the smoke run shows the workflow prints the row with sort_keys, so the counters will appear alphabetically before the worker counts in the log line."
+  - "The workspace was delivered without node_modules; the workflow's quality step also runs bun test without bun install and the two targeted test files passed before the install (they import repository files and bun:test only), consistent with BG-0034 R3."
+scope_deviations: []
+status: DONE
