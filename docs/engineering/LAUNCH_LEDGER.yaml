@@ -601,12 +601,12 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: DISPATCH_PENDING
+    state: DISPATCHED
     depends_on: [BG-0034]
     roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: PASS (docs/engineering/tasks/BG-0044/verification-report.yaml), reviewer: PASS (docs/engineering/tasks/BG-0044/review-report.yaml), reviewer: pending}
     acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
     merged: main (merge of agent/BG-0044-probe-anonymous-starters @4a9cfba)
-    next: Chief dispatches the probe on merged main (read-only, SPORTSMONKS token only)
+    dispatch: g7-sportsmonks-historical-performance-coverage.yml queued on main e9e94bd (read-only)
 
   BG-0045:
     title: 'Gate 2F rollback env file pins FOOTBALL_SPORTSMONKS_SEASON_ID 26027 (same class of defect as BG-0033) — gate2f-production-current-season-catalog-canary.yml rollback step'
