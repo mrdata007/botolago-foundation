@@ -100,7 +100,7 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
 }
 
 function MatchesPage() {
-  const { t, tr, lang } = useI18n();
+  const { t, tr, lang, dir } = useI18n();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -221,6 +221,7 @@ function MatchesPage() {
             <span>{t("matches.season.label")}</span>
           </div>
           <Select
+            dir={dir}
             value={selectedSeason?.id ?? ""}
             onValueChange={handleSeasonChange}
             disabled={seasons.length === 0}
