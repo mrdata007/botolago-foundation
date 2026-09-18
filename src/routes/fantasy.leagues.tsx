@@ -1,257 +1,252 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Copy, Plus, Settings } from "lucide-react";
 import { useState } from "react";
-import { fantasyService } from "@/services/fantasy-runtime";
-import { ErrorState, LoadingState } from "@/components/common/States";
-import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
-import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
-import { SectionHeader } from "@/components/common/SectionHeader";
+import { toast } from "sonner";
+
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { FplButton, FplHeader, FplPill, FplSegmented } from "@/components/fpl/primitives";
+import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
-import { Copy, Trophy } from "lucide-react";
-import { useAuth } from "@/auth/AuthProvider";
-import type { TranslationKey } from "@/i18n/dictionaries";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/leagues")({
   component: LeaguesRoute,
 });
 
 function LeaguesRoute() {
-  const isLeagueDetail = useRouterState({
+  const isChild = useRouterState({
     select: (state) =>
-      state.matches.some((match) => match.routeId === "/fantasy/leagues/$leagueId"),
+      state.matches.some(
+        (match) =>
+          match.routeId === "/fantasy/leagues/$leagueId" ||
+          match.routeId === "/fantasy/leagues/join",
+      ),
   });
-  return isLeagueDetail ? <Outlet /> : <LeaguesPage />;
+  return isChild ? <Outlet /> : <LeaguesPage />;
 }
 
-type Tab = "private" | "public" | "cup";
-const tabs: { key: Tab; label: TranslationKey }[] = [
-  { key: "private", label: "fantasy.leagues.tab.private" },
-  { key: "public", label: "fantasy.leagues.tab.public" },
-  { key: "cup", label: "fantasy.leagues.tab.cups" },
-];
-
+/**
+ * FPL-015 "Leagues & Cups" as its own screen ("Configure Leagues" target):
+ * Leagues / Cups control, Join + Configure actions, the ink section pills
+ * with rank / league rows, plus the create-a-league form that "Configure
+ * Leagues" leads to in the reference flow.
+ */
 function LeaguesPage() {
-  const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>("private");
-  const [joinCode, setJoinCode] = useState("");
-  const [createName, setCreateName] = useState("");
-  const [createdCodes, setCreatedCodes] = useState<{ id: string; name: string; code: string }[]>(
-    [],
+  return (
+    <FantasyFrame>
+      <LeaguesBody />
+    </FantasyFrame>
   );
-  const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(null);
+}
 
-  const { requireAuth, status: authStatus } = useAuth();
-  const { source, key } = useFantasyDataSource();
-  const remoteQ = useQuery({
-    queryKey: key("leagues", tab),
-    queryFn: () => fantasyService.getLeagues(tab),
-    enabled: source !== "guest",
+function LeaguesBody() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const screen = useFantasyScreen();
+  const { key } = useFantasyDataSource();
+  const [tab, setTab] = useState<"leagues" | "cups">("leagues");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [created, setCreated] = useState<{ name: string; code?: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const privateQ = useQuery({
+    queryKey: key("leagues", "private"),
+    queryFn: () => fantasyService.getLeagues("private"),
+    enabled: screen.phase === "ready",
+  });
+  const publicQ = useQuery({
+    queryKey: key("leagues", "public"),
+    queryFn: () => fantasyService.getLeagues("public"),
+    enabled: screen.phase === "ready",
   });
 
-  if (source === "guest") {
-    return authStatus === "loading" ? (
-      <LoadingState />
-    ) : (
-      <FantasyAccessGate next="/fantasy/leagues" />
-    );
-  }
-
-  const leagues = remoteQ.data ?? [];
-
-  const showToast = (msg: string, kind: "ok" | "err" = "ok") => {
-    setToast({ msg, kind });
-    setTimeout(() => setToast(null), 2400);
-  };
-
-  const handleCreate = () => {
-    if (!createName.trim()) return;
-    requireAuth(async () => {
-      try {
-        const l = await fantasyService.createLeague(createName);
-        if (l.code) {
-          setCreatedCodes((current) => [
-            { id: l.id, name: createName.trim(), code: l.code! },
-            ...current.filter((item) => item.id !== l.id),
-          ]);
-        }
-        setCreateName("");
-        await qc.invalidateQueries({ queryKey: key("leagues") });
-        showToast(`${t("fantasy.leagues.created")}${l.code ? ` · ${l.code}` : ""}`);
-      } catch {
-        showToast(t("fantasy.error.permission"), "err");
-      }
-    });
-  };
-  const handleJoin = () => {
-    if (!joinCode.trim()) return;
-    requireAuth(async () => {
-      try {
-        await fantasyService.joinLeague(joinCode);
-        setJoinCode("");
-        await qc.invalidateQueries({ queryKey: key("leagues") });
-        showToast(t("fantasy.leagues.joined"));
-      } catch {
-        showToast(t("fantasy.leagues.error.invalid_code"), "err");
-      }
-    });
-  };
-  const copy = (code: string) => {
+  const createLeague = async () => {
+    if (createName.trim().length < 3 || busy) return;
+    setBusy(true);
     try {
-      navigator.clipboard.writeText(code);
-      showToast(t("fantasy.leagues.copied"));
+      const league = await fantasyService.createLeague(createName.trim());
+      setCreated({ name: createName.trim(), code: league.code });
+      setCreateName("");
+      await qc.invalidateQueries({ queryKey: key("leagues", "private") });
+      toast.success(t("fantasy.leagues.created"));
     } catch {
-      /* ignore */
+      toast.error(t("state.error"));
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div>
-      <h1 className="text-xl font-black text-foreground">
-        <span className="text-brand">{t("fantasy.leagues.title")}</span>
-      </h1>
+    <>
+      <FplHeader title={t("fpl.leagues_cups")} backTo="/fantasy" />
+      <FantasyScreenGate state={screen} next="/fantasy/leagues">
+        <section className="mx-3 mt-3 rounded-[6px] bg-white p-4 shadow-sm">
+          <FplSegmented
+            tone="onLight"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: "leagues", label: t("fpl.leagues") },
+              { value: "cups", label: t("fpl.cups") },
+            ]}
+          />
+          {tab === "leagues" ? (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Link
+                  to="/fantasy/leagues/join"
+                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-[4px] bg-white px-2 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
+                >
+                  <Plus className="h-4 w-4" aria-hidden /> {t("fpl.join_leagues")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen((v) => !v)}
+                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-[4px] bg-white px-2 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
+                >
+                  <Settings className="h-4 w-4" aria-hidden /> {t("fpl.configure_leagues")}
+                </button>
+              </div>
 
-      <div className="mt-3 glass-surface glass-strong flex items-center gap-1 rounded-2xl border border-[var(--glass-border)] p-1">
-        {tabs.map((it) => (
-          <button
-            key={it.key}
-            onClick={() => setTab(it.key)}
-            className={cn(
-              "flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
-              tab === it.key
-                ? "bg-[color:var(--brand-primary)] text-white shadow"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-pressed={tab === it.key}
-          >
-            {t(it.label)}
-          </button>
-        ))}
-      </div>
+              {createOpen ? (
+                <form
+                  className="mt-3 rounded-[4px] bg-[color:var(--fpl-bg)] p-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void createLeague();
+                  }}
+                >
+                  <label className="block text-[13px] font-bold text-foreground">
+                    {t("fpl.league_name")}
+                    <input
+                      value={createName}
+                      onChange={(e) => setCreateName(e.target.value)}
+                      maxLength={40}
+                      className="mt-1 h-11 w-full rounded-[4px] border-b-2 border-[color:var(--fpl-ink)] bg-white px-3 text-[15px] outline-none"
+                    />
+                  </label>
+                  <FplButton
+                    type="submit"
+                    className="mt-3"
+                    disabled={createName.trim().length < 3 || busy}
+                  >
+                    {busy ? t("fpl.saving") : t("fpl.create_league")}
+                  </FplButton>
+                  {created ? (
+                    <div className="mt-3 flex items-center justify-between rounded-[4px] bg-white px-3 py-2 text-[13px]">
+                      <span>
+                        <strong>{created.name}</strong> · {t("fpl.invite_code")}:{" "}
+                        <span className="font-mono font-bold">{created.code ?? "—"}</span>
+                      </span>
+                      {created.code ? (
+                        <button
+                          type="button"
+                          aria-label={t("fpl.copy")}
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(created.code!);
+                            toast.success(t("fpl.copied"));
+                          }}
+                          className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--fpl-grey)]"
+                        >
+                          <Copy className="h-4 w-4" aria-hidden />
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </form>
+              ) : null}
 
-      <div className="mt-4 grid gap-2">
-        {remoteQ.isError ? (
-          <ErrorState onRetry={() => void remoteQ.refetch()} />
-        ) : remoteQ.isLoading ? (
-          <LoadingState />
-        ) : null}
-        {leagues.length === 0 && !remoteQ.isLoading && !remoteQ.isError && (
-          <div className="rounded-xl bg-white/60 px-3 py-6 text-center text-xs text-muted-foreground ring-1 ring-black/5">
-            {t("fantasy.leagues.empty")}
-          </div>
-        )}
-        {leagues.map((l) => (
-          <Link
-            key={l.id}
-            to="/fantasy/leagues/$leagueId"
-            params={{ leagueId: l.id }}
-            className="glass-surface glass-regular flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] px-3 py-3"
-          >
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white">
-              <Trophy className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
-                {l.role === "owner" && (
-                  <span className="rounded-full bg-[color:var(--brand-accent)]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
-                    {t("fantasy.leagues.role.creator")}
-                  </span>
+              <div className="mt-4">
+                <FplPill>{t("fpl.general_leagues")}</FplPill>
+                <Table
+                  rows={[
+                    { key: "overall", name: t("fpl.overall"), to: "/fantasy/rankings", rank: null },
+                    ...(publicQ.data ?? []).map((l) => ({
+                      key: l.id,
+                      name: l.name,
+                      to: `/fantasy/leagues/${l.id}`,
+                      rank: l.rank,
+                    })),
+                  ]}
+                />
+              </div>
+              <div className="mt-4">
+                <FplPill>{t("fpl.private_leagues")}</FplPill>
+                {privateQ.isPending ? (
+                  <div className="my-3 h-10 animate-pulse rounded bg-[color:var(--fpl-grey)] motion-reduce:animate-none" />
+                ) : (privateQ.data ?? []).length === 0 ? (
+                  <p className="px-1 py-3 text-[13px] text-[color:var(--fpl-grey-text)]">
+                    {t("fpl.no_leagues")}
+                  </p>
+                ) : (
+                  <Table
+                    rows={(privateQ.data ?? []).map((l) => ({
+                      key: l.id,
+                      name: l.name,
+                      to: `/fantasy/leagues/${l.id}`,
+                      rank: l.rank,
+                    }))}
+                  />
                 )}
               </div>
-              <div className="text-[11px] text-muted-foreground">
-                {nf.format(l.members)} {t("fantasy.leagues.members")} ·{" "}
-                {t("fantasy.leagues.leader")}: {l.leaderName ?? "—"}
-              </div>
+            </>
+          ) : (
+            <div className="mt-4">
+              <FplPill>{t("fpl.cups")}</FplPill>
+              <p className="mt-3 text-[15px] text-foreground">{t("fpl.cup_not_qualified")}</p>
+              <h3 className="mt-3 text-[20px] font-extrabold text-[color:var(--fpl-ink-deep)]">
+                {t("fpl.cup_how_title")}
+              </h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-foreground">
+                {t("fpl.cup_how_body")}
+              </p>
+              <p className="mt-2 text-[14px] text-foreground">{t("fpl.cup_tiebreak")}</p>
+              <ul className="mt-1 text-[14px] text-foreground">
+                <li>{t("fpl.cup_tb1")}</li>
+                <li>{t("fpl.cup_tb2")}</li>
+                <li>{t("fpl.cup_tb3")}</li>
+              </ul>
             </div>
-            <div className="text-end">
-              <div className="text-sm font-black tabular-nums">
-                {l.rank === null ? "—" : `#${nf.format(l.rank)}`}
-              </div>
-              {l.rank !== null && (
-                <RankChangeIndicator rank={l.rank} previousRank={l.previousRank ?? l.rank} />
-              )}
-            </div>
-          </Link>
+          )}
+        </section>
+      </FantasyScreenGate>
+    </>
+  );
+}
+
+function Table({
+  rows,
+}: {
+  rows: Array<{ key: string; name: string; to: string; rank: number | null }>;
+}) {
+  const { t } = useI18n();
+  return (
+    <table className="mt-2 w-full text-[15px]">
+      <thead>
+        <tr className="text-[12px] font-semibold text-[color:var(--fpl-grey-text)]">
+          <th className="w-24 py-1 text-start font-semibold">{t("fpl.rank")}</th>
+          <th className="py-1 text-start font-semibold">{t("fpl.league")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.key} className="border-t border-[color:var(--fpl-grey)]">
+            <td className="py-3 text-[color:var(--fpl-grey-text)]">
+              <span className="me-3">—</span>
+              <span className="fpl-tabular">{row.rank ?? "-"}</span>
+            </td>
+            <td className="py-3">
+              <Link to={row.to} className="font-bold text-foreground">
+                {row.name}
+              </Link>
+            </td>
+          </tr>
         ))}
-      </div>
-
-      <SectionHeader title={t("fantasy.leagues.join")} />
-      <div className="glass-surface glass-regular flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--glass-border)] p-3">
-        <input
-          value={joinCode}
-          onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-          placeholder={t("fantasy.leagues.enter_code")}
-          className="min-w-0 flex-1 rounded-lg bg-white/70 px-3 py-2 text-sm outline-none ring-1 ring-black/5 placeholder:text-muted-foreground"
-        />
-        <button
-          onClick={handleJoin}
-          className="rounded-lg cta-brand px-3 py-2 text-xs font-semibold disabled:opacity-40"
-          disabled={!joinCode.trim()}
-        >
-          {t("fantasy.leagues.join")}
-        </button>
-      </div>
-
-      <SectionHeader title={t("fantasy.leagues.create")} />
-      <div className="glass-surface glass-regular flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--glass-border)] p-3">
-        <input
-          value={createName}
-          onChange={(e) => setCreateName(e.target.value)}
-          placeholder={t("fantasy.leagues.name")}
-          className="min-w-0 flex-1 rounded-lg bg-white/70 px-3 py-2 text-sm outline-none ring-1 ring-black/5 placeholder:text-muted-foreground"
-        />
-        <button
-          onClick={handleCreate}
-          className="rounded-lg cta-brand px-3 py-2 text-xs font-semibold disabled:opacity-40"
-          disabled={!createName.trim()}
-        >
-          {t("fantasy.leagues.create")}
-        </button>
-      </div>
-
-      {createdCodes.length > 0 && tab === "private" && (
-        <div className="mt-3 space-y-2">
-          {createdCodes.map(
-            (l) =>
-              l.code && (
-                <div
-                  key={l.id}
-                  className="flex items-center justify-between rounded-xl border border-[color:var(--brand-accent)]/40 bg-[color:var(--brand-accent)]/10 px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-[11px] text-muted-foreground">{l.name}</div>
-                    <div className="font-mono font-black text-foreground">{l.code}</div>
-                  </div>
-                  <button
-                    onClick={() => copy(l.code!)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-xs font-semibold ring-1 ring-black/10"
-                  >
-                    <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
-                  </button>
-                </div>
-              ),
-          )}
-        </div>
-      )}
-
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={cn(
-            "fixed inset-x-4 bottom-24 z-40 mx-auto max-w-sm rounded-xl px-3 py-2 text-center text-xs font-semibold shadow-lg",
-            toast.kind === "ok"
-              ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-900"
-              : "border border-red-500/40 bg-red-500/10 text-red-900",
-          )}
-        >
-          {toast.msg}
-        </div>
-      )}
-    </div>
+      </tbody>
+    </table>
   );
 }

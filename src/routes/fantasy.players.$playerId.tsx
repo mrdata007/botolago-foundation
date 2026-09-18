@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -13,7 +14,7 @@ import { ArrowLeft } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
-  component: PlayerDetailPage,
+  component: PlayerDetailFramed,
 });
 
 type Tab = "overview" | "history" | "fixtures" | "stats" | "news";
@@ -24,6 +25,15 @@ const tabs: { key: Tab; label: TranslationKey }[] = [
   { key: "stats", label: "fantasy.players.tab.stats" },
   { key: "news", label: "fantasy.players.tab.news" },
 ];
+
+function PlayerDetailFramed() {
+  const { t } = useI18n();
+  return (
+    <LegacyFantasyPage title={t("fpl.player_info")} backTo="/fantasy/players">
+      <PlayerDetailPage />
+    </LegacyFantasyPage>
+  );
+}
 
 function PlayerDetailPage() {
   const { playerId } = Route.useParams();

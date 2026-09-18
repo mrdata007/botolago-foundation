@@ -1,254 +1,190 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { fantasyService } from "@/services/fantasy-runtime";
-import { footballService } from "@/services/football";
-import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
-import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
-import { LeagueTable } from "@/components/fantasy/LeagueTable";
-import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
-import { useI18n } from "@/i18n/provider";
-import { useAuth } from "@/auth/AuthProvider";
-import { ArrowLeft, Copy, LogOut, Trash2, Trophy } from "lucide-react";
+import { toast } from "sonner";
+
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  FplButton,
+  FplHeader,
+  FplPill,
+  FplRankMovement,
+  FplSegmented,
+} from "@/components/fpl/primitives";
+import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { useI18n } from "@/i18n/provider";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
   component: LeagueDetailPage,
 });
 
+/**
+ * FPL-016/017 league detail: Back header with the league name, League / Cup
+ * control, "Last Updated" line and the Pos / Team / GW / Total standings.
+ */
 function LeagueDetailPage() {
+  return (
+    <FantasyFrame>
+      <LeagueDetailBody />
+    </FantasyFrame>
+  );
+}
+
+function LeagueDetailBody() {
   const { leagueId } = Route.useParams();
   const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const { requireAuth, status: authStatus } = useAuth();
-  const { source, key } = useFantasyDataSource();
-  const navigate = useNavigate();
   const qc = useQueryClient();
-  const [toast, setToast] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<"leave" | "delete" | null>(null);
+  const screen = useFantasyScreen();
+  const { key } = useFantasyDataSource();
+  const [tab, setTab] = useState<"league" | "cup">("league");
+  const [busy, setBusy] = useState(false);
 
   const leagueQ = useQuery({
     queryKey: key("league", leagueId),
     queryFn: () => fantasyService.getLeague(leagueId),
-    enabled: source !== "guest",
-  });
-  const clubsQ = useQuery({
-    queryKey: ["football", "clubs", lang],
-    queryFn: () => footballService.getClubs(lang),
+    enabled: screen.phase === "ready",
   });
   const standingsQ = useQuery({
     queryKey: key("standings", leagueId),
     queryFn: () => fantasyService.getLeagueStandings(leagueId),
-    enabled: source !== "guest",
+    enabled: screen.phase === "ready",
   });
+  const gw = screen.gameweek?.number ?? null;
 
-  if (source === "guest") {
-    return authStatus === "loading" ? (
-      <LoadingState />
-    ) : (
-      <FantasyAccessGate next="/fantasy/leagues" />
-    );
-  }
-
-  const league = leagueQ.data;
-  if (leagueQ.isError || clubsQ.isError || standingsQ.isError) {
-    return (
-      <ErrorState
-        onRetry={() => {
-          void leagueQ.refetch();
-          void clubsQ.refetch();
-          void standingsQ.refetch();
-        }}
-      />
-    );
-  }
-  if (leagueQ.isLoading || clubsQ.isLoading || standingsQ.isLoading) return <LoadingState />;
-  if (!league) return <EmptyState />;
-  const standings = standingsQ.data ?? [];
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2400);
-  };
-  const copy = () => {
-    if (!league.code) return;
+  const leave = async () => {
+    if (!leagueQ.data || busy) return;
+    setBusy(true);
     try {
-      navigator.clipboard.writeText(league.code);
-      showToast(t("fantasy.leagues.copied"));
+      await fantasyService.leaveLeague(leagueQ.data.id);
+      await qc.invalidateQueries({ queryKey: key("leagues", "private") });
+      toast.success(t("fantasy.leagues.left"));
+      window.history.back();
     } catch {
-      /* ignore */
-    }
-  };
-  const handleLeave = async () => {
-    try {
-      await fantasyService.leaveLeague(league.id);
-      await qc.invalidateQueries({ queryKey: key("leagues") });
-      navigate({ to: "/fantasy/leagues" });
-    } catch {
-      showToast(t("fantasy.error.permission"));
+      toast.error(t("state.error"));
     } finally {
-      setConfirm(null);
-    }
-  };
-  const handleDelete = async () => {
-    try {
-      await fantasyService.archiveLeague(league.id);
-      await qc.invalidateQueries({ queryKey: key("leagues") });
-      navigate({ to: "/fantasy/leagues" });
-    } catch {
-      showToast(t("fantasy.error.permission"));
-    } finally {
-      setConfirm(null);
+      setBusy(false);
     }
   };
 
-  const isCreator = league.role === "owner";
-  const isMember = league.role === "member" || league.role === "admin";
+  const updated = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Africa/Casablanca",
+  }).format(new Date());
 
   return (
-    <div>
-      <Link
-        to="/fantasy/leagues"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        {t("common.back")}
-      </Link>
-
-      <div className="mt-2 glass-surface glass-strong flex items-center gap-3 rounded-3xl border border-[var(--glass-border)] p-4">
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--bg-brand-gradient)] text-white">
-          <Trophy className="h-6 w-6" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <div className="truncate text-lg font-black text-foreground">{league.name}</div>
-            {league.role && (
-              <span className="rounded-full bg-[color:var(--brand-accent)]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">
-                {t(
-                  league.role === "owner"
-                    ? "fantasy.leagues.role.creator"
-                    : "fantasy.leagues.role.member",
-                )}
-              </span>
+    <>
+      <FplHeader title={leagueQ.data?.name ?? t("fpl.league")} backTo="/fantasy/leagues">
+        <FplSegmented
+          className="mt-3"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "league", label: t("fpl.league") },
+            { value: "cup", label: t("fpl.cups") },
+          ]}
+        />
+      </FplHeader>
+      <FantasyScreenGate state={screen} next={`/fantasy/leagues/${leagueId}`}>
+        {tab === "league" ? (
+          <div className="bg-white">
+            <p className="border-b border-[color:var(--fpl-grey)] px-4 py-3 text-center text-[14px] text-foreground">
+              {t("fpl.last_updated")}: <strong className="font-extrabold">{updated}</strong>
+            </p>
+            {standingsQ.isPending ? (
+              <div
+                role="status"
+                className="m-4 h-40 animate-pulse rounded bg-[color:var(--fpl-grey)] motion-reduce:animate-none"
+              />
+            ) : standingsQ.isError ? (
+              <div className="p-4">
+                <FplButton variant="ink" onClick={() => void standingsQ.refetch()}>
+                  {t("state.retry")}
+                </FplButton>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="text-[12px] text-[color:var(--fpl-grey-text)]">
+                    <th className="w-16 py-2 ps-4 text-start font-semibold">{t("fpl.pos")}</th>
+                    <th className="py-2 text-start font-semibold">{t("fpl.team")}</th>
+                    <th className="w-16 py-2 text-end font-semibold">
+                      {gw ? `GW${gw}` : t("fpl.gameweek")}
+                    </th>
+                    <th className="w-20 py-2 pe-4 text-end font-semibold">{t("fpl.total")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(standingsQ.data ?? []).map((row) => (
+                    <tr key={row.managerId} className="border-t border-[color:var(--fpl-grey)]">
+                      <td className="py-3 ps-4">
+                        <span className="inline-flex items-center gap-2">
+                          <FplRankMovement rank={row.rank} previousRank={row.previousRank} />
+                          <span className="fpl-tabular text-[15px] font-bold">{row.rank}</span>
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <div className="text-[16px] font-extrabold text-foreground">
+                          {row.teamName}
+                        </div>
+                        <div className="text-[13px] text-[color:var(--fpl-grey-text)]">
+                          {row.managerName || " "}
+                        </div>
+                      </td>
+                      <td className="fpl-tabular py-3 text-end text-[15px]">{row.gameweekScore}</td>
+                      <td className="fpl-tabular py-3 pe-4 text-end text-[15px] font-extrabold">
+                        {row.totalScore}
+                      </td>
+                    </tr>
+                  ))}
+                  {(standingsQ.data ?? []).length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-[13px] text-[color:var(--fpl-grey-text)]"
+                      >
+                        {t("fpl.no_data_yet")}
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
             )}
+            {leagueQ.data?.type === "private" ? (
+              <div className="p-4">
+                <FplButton variant="outline" onClick={() => void leave()} disabled={busy}>
+                  {t("fpl.leave_league")}
+                </FplButton>
+              </div>
+            ) : null}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {nf.format(league.members)} {t("fantasy.leagues.members")} ·{" "}
-            {t("fantasy.leagues.leader")}: {league.leaderName ?? "—"}
-          </div>
-        </div>
-        <div className="text-end">
-          <div className="text-lg font-black tabular-nums text-brand-accent">
-            {league.rank === null ? "—" : `#${nf.format(league.rank)}`}
-          </div>
-          {league.rank !== null && (
-            <RankChangeIndicator
-              rank={league.rank}
-              previousRank={league.previousRank ?? league.rank}
-            />
-          )}
-        </div>
-      </div>
-
-      {league.code && (
-        <div className="mt-2 flex items-center justify-between rounded-xl bg-white/60 px-3 py-2 text-sm ring-1 ring-black/5">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              {t("fantasy.leagues.code")}
-            </div>
-            <div className="font-mono font-black">{league.code}</div>
-          </div>
-          <button
-            onClick={copy}
-            className="inline-flex items-center gap-1 rounded-lg cta-brand px-2 py-1 text-xs font-semibold"
-          >
-            <Copy className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.share")}
-          </button>
-        </div>
-      )}
-
-      <p className="mt-3 rounded-xl bg-white/60 px-3 py-2 text-[11px] text-muted-foreground ring-1 ring-black/5">
-        {t("fantasy.leagues.rules_summary")}
-      </p>
-
-      {(isMember || isCreator) && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {isMember && (
-            <button
-              onClick={() => requireAuth(() => setConfirm("leave"))}
-              className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-foreground ring-1 ring-black/10"
-            >
-              <LogOut className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.leave")}
-            </button>
-          )}
-          {isCreator && (
-            <button
-              onClick={() => requireAuth(() => setConfirm("delete"))}
-              className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white"
-            >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden /> {t("fantasy.leagues.delete")}
-            </button>
-          )}
-        </div>
-      )}
-
-      <div className="mt-4">
-        <div className="mb-2 text-sm font-black text-foreground">
-          {t("fantasy.leagues.standings")}
-        </div>
-        {standings.length > 0 ? (
-          <LeagueTable standings={standings} meId="me" clubs={clubsQ.data ?? []} />
         ) : (
-          <EmptyState />
+          <section className="mx-3 mt-3 rounded-[6px] bg-white p-4 shadow-sm">
+            <div className="text-center">
+              <FplPill>{t("fpl.cup_not_started").replace("{n}", String((gw ?? 1) + 1))}</FplPill>
+            </div>
+            <p className="mt-3 text-[15px] text-foreground">{t("fpl.cup_not_qualified")}</p>
+            <h3 className="mt-3 text-[20px] font-extrabold text-[color:var(--fpl-ink-deep)]">
+              {t("fpl.cup_how_title")}
+            </h3>
+            <p className="mt-2 text-[14px] leading-relaxed text-foreground">
+              {t("fpl.cup_how_body")}
+            </p>
+            <p className="mt-2 text-[14px] text-foreground">{t("fpl.cup_tiebreak")}</p>
+            <ul className="mt-1 text-[14px] text-foreground">
+              <li>{t("fpl.cup_tb1")}</li>
+              <li>{t("fpl.cup_tb2")}</li>
+              <li>{t("fpl.cup_tb3")}</li>
+            </ul>
+          </section>
         )}
-      </div>
-
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-sm rounded-xl bg-foreground/90 px-3 py-2 text-center text-xs font-semibold text-background shadow-lg"
-        >
-          {toast}
-        </div>
-      )}
-
-      <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t(
-                confirm === "delete"
-                  ? "fantasy.leagues.delete_confirm_title"
-                  : "fantasy.leagues.leave_confirm_title",
-              )}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                confirm === "delete"
-                  ? "fantasy.leagues.delete_confirm_desc"
-                  : "fantasy.leagues.leave_confirm_desc",
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirm === "delete" ? handleDelete : handleLeave}>
-              {t("common.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      </FantasyScreenGate>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -22,7 +23,18 @@ function PlayersRoute() {
     select: (state) =>
       state.matches.some((match) => match.routeId === "/fantasy/players/$playerId"),
   });
-  return isPlayerDetail ? <Outlet /> : <PlayersPage />;
+  return isPlayerDetail ? (
+    <Outlet />
+  ) : (
+    <LegacyFantasyPage title={<PlayersTitle />}>
+      <PlayersPage />
+    </LegacyFantasyPage>
+  );
+}
+
+function PlayersTitle() {
+  const { t } = useI18n();
+  return <>{t("fpl.player_stats")}</>;
 }
 
 type SortKey = "points" | "form" | "price" | "ownership";

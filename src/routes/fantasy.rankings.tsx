@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, Trophy } from "lucide-react";
@@ -38,8 +39,17 @@ export const Route = createFileRoute("/fantasy/rankings")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: RankingsPage,
+  component: RankingsFramed,
 });
+
+function RankingsFramed() {
+  const { t } = useI18n();
+  return (
+    <LegacyFantasyPage title={t("fpl.rankings")}>
+      <RankingsPage />
+    </LegacyFantasyPage>
+  );
+}
 
 function RankingsPage() {
   const { t, lang } = useI18n();

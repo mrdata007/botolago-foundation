@@ -25,9 +25,11 @@ import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-play
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
 import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
 import { Route as FantasyRankingsRouteImport } from './routes/fantasy.rankings'
+import { Route as FantasyProfileRouteImport } from './routes/fantasy.profile'
 import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
 import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
 import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
+import { Route as FantasyHelpRouteImport } from './routes/fantasy.help'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
@@ -44,6 +46,7 @@ import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
+import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
 import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -129,6 +132,11 @@ const FantasyRankingsRoute = FantasyRankingsRouteImport.update({
   path: '/rankings',
   getParentRoute: () => FantasyRoute,
 } as any)
+const FantasyProfileRoute = FantasyProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => FantasyRoute,
+} as any)
 const FantasyPointsRoute = FantasyPointsRouteImport.update({
   id: '/points',
   path: '/points',
@@ -142,6 +150,11 @@ const FantasyPlayersRoute = FantasyPlayersRouteImport.update({
 const FantasyLeaguesRoute = FantasyLeaguesRouteImport.update({
   id: '/leagues',
   path: '/leagues',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyHelpRoute = FantasyHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => FantasyRoute,
 } as any)
 const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
@@ -226,6 +239,11 @@ const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   path: '/$playerId',
   getParentRoute: () => FantasyPlayersRoute,
 } as any)
+const FantasyLeaguesJoinRoute = FantasyLeaguesJoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => FantasyLeaguesRoute,
+} as any)
 const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
   id: '/$leagueId',
   path: '/$leagueId',
@@ -271,9 +289,11 @@ export interface FileRoutesByFullPath {
   '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
+  '/fantasy/help': typeof FantasyHelpRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
   '/fantasy/points': typeof FantasyPointsRoute
+  '/fantasy/profile': typeof FantasyProfileRoute
   '/fantasy/rankings': typeof FantasyRankingsRoute
   '/fantasy/rules': typeof FantasyRulesRoute
   '/fantasy/team': typeof FantasyTeamRoute
@@ -287,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
+  '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
 }
 export interface FileRoutesByTo {
@@ -311,9 +332,11 @@ export interface FileRoutesByTo {
   '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
+  '/fantasy/help': typeof FantasyHelpRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
   '/fantasy/points': typeof FantasyPointsRoute
+  '/fantasy/profile': typeof FantasyProfileRoute
   '/fantasy/rankings': typeof FantasyRankingsRoute
   '/fantasy/rules': typeof FantasyRulesRoute
   '/fantasy/team': typeof FantasyTeamRoute
@@ -327,6 +350,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
+  '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
 }
 export interface FileRoutesById {
@@ -353,9 +377,11 @@ export interface FileRoutesById {
   '/auth/verify': typeof AuthVerifyRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
+  '/fantasy/help': typeof FantasyHelpRoute
   '/fantasy/leagues': typeof FantasyLeaguesRouteWithChildren
   '/fantasy/players': typeof FantasyPlayersRouteWithChildren
   '/fantasy/points': typeof FantasyPointsRoute
+  '/fantasy/profile': typeof FantasyProfileRoute
   '/fantasy/rankings': typeof FantasyRankingsRoute
   '/fantasy/rules': typeof FantasyRulesRoute
   '/fantasy/team': typeof FantasyTeamRoute
@@ -369,6 +395,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
+  '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
 }
 export interface FileRouteTypes {
@@ -396,9 +423,11 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/fantasy/create'
     | '/fantasy/fixtures'
+    | '/fantasy/help'
     | '/fantasy/leagues'
     | '/fantasy/players'
     | '/fantasy/points'
+    | '/fantasy/profile'
     | '/fantasy/rankings'
     | '/fantasy/rules'
     | '/fantasy/team'
@@ -412,6 +441,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
+    | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -436,9 +466,11 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/fantasy/create'
     | '/fantasy/fixtures'
+    | '/fantasy/help'
     | '/fantasy/leagues'
     | '/fantasy/players'
     | '/fantasy/points'
+    | '/fantasy/profile'
     | '/fantasy/rankings'
     | '/fantasy/rules'
     | '/fantasy/team'
@@ -452,6 +484,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
+    | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
   id:
     | '__root__'
@@ -477,9 +510,11 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/fantasy/create'
     | '/fantasy/fixtures'
+    | '/fantasy/help'
     | '/fantasy/leagues'
     | '/fantasy/players'
     | '/fantasy/points'
+    | '/fantasy/profile'
     | '/fantasy/rankings'
     | '/fantasy/rules'
     | '/fantasy/team'
@@ -493,6 +528,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
+    | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
   fileRoutesById: FileRoutesById
 }
@@ -626,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyRankingsRouteImport
       parentRoute: typeof FantasyRoute
     }
+    '/fantasy/profile': {
+      id: '/fantasy/profile'
+      path: '/profile'
+      fullPath: '/fantasy/profile'
+      preLoaderRoute: typeof FantasyProfileRouteImport
+      parentRoute: typeof FantasyRoute
+    }
     '/fantasy/points': {
       id: '/fantasy/points'
       path: '/points'
@@ -645,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/leagues'
       fullPath: '/fantasy/leagues'
       preLoaderRoute: typeof FantasyLeaguesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/help': {
+      id: '/fantasy/help'
+      path: '/help'
+      fullPath: '/fantasy/help'
+      preLoaderRoute: typeof FantasyHelpRouteImport
       parentRoute: typeof FantasyRoute
     }
     '/fantasy/fixtures': {
@@ -759,6 +809,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyPlayersPlayerIdRouteImport
       parentRoute: typeof FantasyPlayersRoute
     }
+    '/fantasy/leagues/join': {
+      id: '/fantasy/leagues/join'
+      path: '/join'
+      fullPath: '/fantasy/leagues/join'
+      preLoaderRoute: typeof FantasyLeaguesJoinRouteImport
+      parentRoute: typeof FantasyLeaguesRoute
+    }
     '/fantasy/leagues/$leagueId': {
       id: '/fantasy/leagues/$leagueId'
       path: '/$leagueId'
@@ -842,10 +899,12 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface FantasyLeaguesRouteChildren {
   FantasyLeaguesLeagueIdRoute: typeof FantasyLeaguesLeagueIdRoute
+  FantasyLeaguesJoinRoute: typeof FantasyLeaguesJoinRoute
 }
 
 const FantasyLeaguesRouteChildren: FantasyLeaguesRouteChildren = {
   FantasyLeaguesLeagueIdRoute: FantasyLeaguesLeagueIdRoute,
+  FantasyLeaguesJoinRoute: FantasyLeaguesJoinRoute,
 }
 
 const FantasyLeaguesRouteWithChildren = FantasyLeaguesRoute._addFileChildren(
@@ -867,9 +926,11 @@ const FantasyPlayersRouteWithChildren = FantasyPlayersRoute._addFileChildren(
 interface FantasyRouteChildren {
   FantasyCreateRoute: typeof FantasyCreateRoute
   FantasyFixturesRoute: typeof FantasyFixturesRoute
+  FantasyHelpRoute: typeof FantasyHelpRoute
   FantasyLeaguesRoute: typeof FantasyLeaguesRouteWithChildren
   FantasyPlayersRoute: typeof FantasyPlayersRouteWithChildren
   FantasyPointsRoute: typeof FantasyPointsRoute
+  FantasyProfileRoute: typeof FantasyProfileRoute
   FantasyRankingsRoute: typeof FantasyRankingsRoute
   FantasyRulesRoute: typeof FantasyRulesRoute
   FantasyTeamRoute: typeof FantasyTeamRoute
@@ -881,9 +942,11 @@ interface FantasyRouteChildren {
 const FantasyRouteChildren: FantasyRouteChildren = {
   FantasyCreateRoute: FantasyCreateRoute,
   FantasyFixturesRoute: FantasyFixturesRoute,
+  FantasyHelpRoute: FantasyHelpRoute,
   FantasyLeaguesRoute: FantasyLeaguesRouteWithChildren,
   FantasyPlayersRoute: FantasyPlayersRouteWithChildren,
   FantasyPointsRoute: FantasyPointsRoute,
+  FantasyProfileRoute: FantasyProfileRoute,
   FantasyRankingsRoute: FantasyRankingsRoute,
   FantasyRulesRoute: FantasyRulesRoute,
   FantasyTeamRoute: FantasyTeamRoute,

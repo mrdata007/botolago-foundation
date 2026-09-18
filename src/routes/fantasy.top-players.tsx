@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/fantasy/top-players")({
       },
     ],
   }),
-  component: TopPlayersPage,
+  component: TopPlayersFramed,
 });
 
 type Enriched = {
@@ -50,6 +51,15 @@ type Enriched = {
   player: FantasyPlayer;
   club?: Club;
 };
+
+function TopPlayersFramed() {
+  const { t } = useI18n();
+  return (
+    <LegacyFantasyPage title={t("fpl.top_players")}>
+      <TopPlayersPage />
+    </LegacyFantasyPage>
+  );
+}
 
 function TopPlayersPage() {
   const { t, tr, lang, dir } = useI18n();

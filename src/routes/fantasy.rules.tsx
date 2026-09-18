@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
 import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -7,8 +8,17 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { ErrorState, LoadingState } from "@/components/common/States";
 
 export const Route = createFileRoute("/fantasy/rules")({
-  component: RulesPage,
+  component: RulesFramed,
 });
+
+function RulesFramed() {
+  const { t } = useI18n();
+  return (
+    <LegacyFantasyPage title={t("fpl.rules")}>
+      <RulesPage />
+    </LegacyFantasyPage>
+  );
+}
 
 function RulesPage() {
   const { t } = useI18n();

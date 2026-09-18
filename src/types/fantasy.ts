@@ -148,6 +148,8 @@ export interface FixtureDifficulty {
   difficulty: 1 | 2 | 3 | 4 | 5;
   isDouble?: boolean;
   isBlank?: boolean;
+  /** Kickoff of the underlying fixture when the source exposes it. */
+  kickoffAt?: string;
 }
 
 // Weekly top-performer entry — powers the "Top 5 players of the week" screen.

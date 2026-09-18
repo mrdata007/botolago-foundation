@@ -497,3 +497,35 @@ html[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
   .mesh-drift { animation: none !important; }
   .shimmer { animation: none !important; background-image: none !important; }
 }
+
+/* ================================================================== */
+/* Fantasy — FPL reference reconstruction tokens (BotolaGO identity)   */
+/* The FPL purple family maps to BotolaGO deep blue; the FPL green→cyan */
+/* CTA gradient maps to BotolaGO's cyan accent family.                  */
+/* ================================================================== */
+:root {
+  --fpl-bg: oklch(0.975 0.004 250);
+  --fpl-ink: var(--brand-primary);
+  --fpl-ink-deep: oklch(0.24 0.09 258);
+  --fpl-cyan: oklch(0.88 0.11 205);
+  --fpl-green: oklch(0.88 0.19 152);
+  --fpl-pink: oklch(0.63 0.24 355);
+  --fpl-amber: oklch(0.82 0.17 80);
+  --fpl-grey: oklch(0.93 0.006 250);
+  --fpl-grey-text: oklch(0.55 0.02 258);
+  --fpl-grad: linear-gradient(90deg, var(--fpl-green) 0%, var(--fpl-cyan) 100%);
+  --fpl-header: linear-gradient(180deg, oklch(0.84 0.11 205) 0%, oklch(0.68 0.16 238) 48%, oklch(0.60 0.18 262) 100%);
+  --fpl-hero: radial-gradient(120% 80% at 85% 10%, oklch(0.90 0.16 150) 0%, transparent 42%),
+    radial-gradient(90% 70% at 15% 90%, oklch(0.62 0.18 262) 0%, transparent 55%),
+    linear-gradient(115deg, oklch(0.86 0.11 205) 0%, oklch(0.70 0.16 240) 45%, oklch(0.46 0.16 270) 100%);
+  --fpl-pitch-a: oklch(0.71 0.17 146);
+  --fpl-pitch-b: oklch(0.67 0.17 146);
+  --fpl-pitch-bench: oklch(0.80 0.12 146);
+  --fpl-fdr-1: oklch(0.86 0.19 152);
+  --fpl-fdr-2: oklch(0.86 0.19 152);
+  --fpl-fdr-3: oklch(0.90 0.006 250);
+  --fpl-fdr-4: oklch(0.63 0.24 355);
+  --fpl-fdr-5: oklch(0.42 0.16 345);
+}
+.fpl-root .lucide-chevron-left { }
+.fpl-tabular { font-variant-numeric: tabular-nums; }

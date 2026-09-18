@@ -338,6 +338,7 @@ export const fantasyService = {
       isHome: row.isHome,
       difficulty: row.difficulty as 1 | 2 | 3 | 4 | 5,
       isDouble: (counts.get(`${row.clubId}:${row.gameweek}`) ?? 0) > 1,
+      kickoffAt: row.kickoffAt,
     }));
   },
   async getRules() {

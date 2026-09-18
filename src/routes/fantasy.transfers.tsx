@@ -1,406 +1,322 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { footballService } from "@/services/football";
-import { fantasyService } from "@/services/fantasy-runtime";
-import { ErrorState, LoadingState } from "@/components/common/States";
-import { SectionHeader } from "@/components/common/SectionHeader";
-import { ClubCrest } from "@/components/common/ClubCrest";
-import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
-import { PlayerPickerDrawer } from "@/components/fantasy/PlayerPickerDrawer";
-import { TransferReviewPanel } from "@/components/fantasy/TransferReviewPanel";
-import { UnsavedBadge } from "@/components/fantasy/UnsavedBadge";
-import { ConflictBar } from "@/components/fantasy/ConflictBar";
-import { FantasyAccessGate } from "@/components/fantasy/FantasyAccessGate";
-import { computeBudgetImpact, maxAffordableReplacement } from "@/lib/budget";
-import type { FantasyPlayer } from "@/types/fantasy";
-import { useI18n } from "@/i18n/provider";
-import { ArrowRightLeft, Check, Lock } from "lucide-react";
-import type { TranslationKey } from "@/i18n/dictionaries";
 import { toast } from "sonner";
-import { useAuth } from "@/auth/AuthProvider";
-import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
-import { useFantasyDataSource } from "@/services/fantasy-data-source";
+
+import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
+import { TransferConfirmScreen } from "@/components/fpl/TransferConfirmScreen";
+import { FplHeader } from "@/components/fpl/primitives";
+import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { useNextFixtures } from "@/components/fpl/useNextFixtures";
+import type { TranslationKey } from "@/i18n/dictionaries";
+import { useI18n } from "@/i18n/provider";
 import {
-  applyConfirmedTransfers,
-  previewTransfers,
-  transfersDeadline,
-} from "@/services/transfers-service";
-import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+  activateChip,
+  canActivateChip,
+  chipDisplayState,
+  evaluateDeadline,
+  type ChipKey,
+  type ChipsState,
+} from "@/lib/fantasy-engine";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyStateStore } from "@/services/fantasy-state";
+import { applyConfirmedTransfers, previewTransfers } from "@/services/transfers-service";
+import type { FantasyPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   component: TransfersPage,
 });
 
-// H5 — Persisted working state for the Transfers route.
 interface TransfersDraftPayload {
   outIds: string[];
   inIds: string[];
 }
-
 function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
   if (!v || typeof v !== "object") return false;
   const p = v as Partial<TransfersDraftPayload>;
   return Array.isArray(p.outIds) && Array.isArray(p.inIds);
 }
 
+/**
+ * FPL-002/004/005/006/007 "Transfers" reconstructed on the shared squad
+ * builder: removing a player opens "Add Player" for that slot, the incoming
+ * player is shown highlighted, the stat bar tracks free transfers / wildcard
+ * / cost / bank, and "Next" opens the confirmation screen.
+ */
 function TransfersPage() {
-  const { t, tr, lang } = useI18n();
-  const qc = useQueryClient();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  return (
+    <FantasyFrame>
+      <TransfersBody />
+    </FantasyFrame>
+  );
+}
 
-  const { key: ownedKey } = useFantasyDataSource();
+function TransfersBody() {
+  const { t, lang } = useI18n();
+  const qc = useQueryClient();
+  const screen = useFantasyScreen();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
-
-  // H7 — Consume owned.snapshot directly in cloud mode; no parallel query.
-  const localTeamQ = useQuery({
-    queryKey: ownedKey("team"),
-    queryFn: () => fantasyService.getTeam(),
-    enabled: owned.source === "local",
-  });
-  const team = isCloud ? (owned.snapshot?.team ?? null) : (localTeamQ.data ?? null);
-
-  const playersQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-    enabled: owned.source !== "guest",
-  });
-  const clubsQ = useQuery({
-    queryKey: ["football", "clubs", lang],
-    queryFn: () => footballService.getClubs(lang),
-    enabled: owned.source !== "guest",
-  });
-  const gwQ = useQuery({
-    queryKey: ["gameweek"],
-    queryFn: () => fantasyService.getCurrentGameweek(),
-    enabled: owned.source !== "guest",
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
   });
 
-  const [fantasyState, setFantasyState] = useState<FantasyPersistedState>(() =>
-    isCloud ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read()) : fantasyStateStore.read(),
-  );
-  useEffect(() => {
-    if (isCloud) {
-      if (owned.snapshot?.lifecycle) setFantasyState(owned.snapshot.lifecycle);
-      return;
-    }
-    const onEvt = () => setFantasyState(fantasyStateStore.read());
-    window.addEventListener("botolago:storage", onEvt);
-    window.addEventListener("storage", onEvt);
-    return () => {
-      window.removeEventListener("botolago:storage", onEvt);
-      window.removeEventListener("storage", onEvt);
-    };
-  }, [isCloud, owned.snapshot?.lifecycle]);
+  const team = screen.team;
+  const players = screen.players;
+  const clubs = screen.clubs;
+  const gameweek = screen.gameweek;
+  const fixtures = useNextFixtures(clubs, gameweek?.number ?? null, screen.phase === "ready");
+
+  const chipsState: ChipsState = isCloud
+    ? (owned.snapshot?.lifecycle.chips ?? { active: null, used: [] })
+    : fantasyStateStore.read().chips;
 
   const [outIds, setOutIds] = useState<string[]>([]);
-  const [inIds, setInIds] = useState<string[]>([]);
+  const [inIds, setInIds] = useState<(string | null)[]>([]);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [view, setView] = useState<"squad" | "list">("squad");
   const [confirming, setConfirming] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [conflictOpen, setConflictOpen] = useState(false);
-  const [draftRestored, setDraftRestored] = useState(false);
-  const draftInitRef = useRef(false);
-  const { requireAuth, status: authStatus } = useAuth();
+  const [busy, setBusy] = useState(false);
 
-  // H5 — Draft key (cloud-only).
-  const teamId = isCloud ? (owned.snapshot?.teamId ?? "new") : null;
-  const baseVersion = isCloud ? (owned.snapshot?.version ?? 0) : 0;
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
     if (!isCloud || !owned.userId) return null;
     return {
       uid: owned.userId,
-      teamId: teamId ?? "new",
-      baseVersion,
+      teamId: owned.snapshot?.teamId ?? "new",
+      baseVersion: owned.snapshot?.version ?? 0,
       kind: "transfers",
     };
-  }, [isCloud, owned.userId, teamId, baseVersion]);
-
-  // Reset draft-init flag when identity changes.
+  }, [isCloud, owned.userId, owned.snapshot?.teamId, owned.snapshot?.version]);
+  const draftInit = useRef(false);
   useEffect(() => {
-    draftInitRef.current = false;
-    setDraftRestored(false);
+    draftInit.current = false;
   }, [draftKey?.uid, draftKey?.teamId, draftKey?.baseVersion]);
-
-  // Hydrate draft on mount.
   useEffect(() => {
-    if (!isCloud || !draftKey || !team) return;
-    if (draftInitRef.current) return;
+    if (!draftKey || !team || draftInit.current) return;
     const entry = fantasyDraftsStore.read<TransfersDraftPayload>(draftKey);
     if (entry && isTransfersDraftPayload(entry.payload)) {
-      // Only restore ids that still map to current squad or exist in players.
       setOutIds(entry.payload.outIds);
       setInIds(entry.payload.inIds);
-      setDraftRestored(true);
     }
-    draftInitRef.current = true;
-  }, [isCloud, draftKey, team]);
-
-  const persistDraft = (nextOut: string[], nextIn: string[]) => {
-    if (!isCloud || !draftKey) return;
-    if (nextOut.length === 0 && nextIn.length === 0) {
-      fantasyDraftsStore.remove(draftKey);
-      return;
-    }
-    fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, {
-      outIds: nextOut,
-      inIds: nextIn,
-    });
-    setDraftRestored(false);
+    draftInit.current = true;
+  }, [draftKey, team]);
+  const persistDraft = (nextOut: string[], nextIn: (string | null)[]) => {
+    if (!draftKey) return;
+    if (nextOut.length === 0) fantasyDraftsStore.remove(draftKey);
+    else
+      fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, {
+        outIds: nextOut,
+        inIds: nextIn.filter(Boolean) as string[],
+      });
   };
 
-  const previewPlayers = playersQ.data ?? [];
-  const transferPairs = outIds.map((outSourceId, index) => {
-    const outPlayer = previewPlayers.find((player) => player.id === outSourceId);
-    const inSourceId = inIds[index] ?? "";
-    const inPlayer = previewPlayers.find((player) => player.id === inSourceId);
-    return {
-      outSourceId,
-      inSourceId,
-      priceOut: outPlayer?.price ?? 0,
-      priceIn: inPlayer?.price ?? 0,
-      cost: (inPlayer?.price ?? 0) - (outPlayer?.price ?? 0),
-      hit: 0,
-      chip: fantasyState.chips.active,
-    };
-  });
-  const serverPreviewQ = useQuery({
+  const completePairs = outIds
+    .map((outId, index) => ({ outId, inId: inIds[index] ?? null }))
+    .filter((pair): pair is { outId: string; inId: string } => !!pair.inId);
+
+  const serverPreview = useQuery({
     queryKey: [
       "fantasy-transfer-preview",
       owned.snapshot?.teamId,
       owned.snapshot?.version,
-      owned.snapshot?.currentGameweekId,
-      transferPairs.map((pair) => `${pair.outSourceId}:${pair.inSourceId}`).join("|"),
-      fantasyState.chips.active,
+      completePairs.map((p) => `${p.outId}:${p.inId}`).join("|"),
+      chipsState.active,
     ],
     queryFn: () =>
       owned.repo.previewTransfers({
         expectedVersion: owned.snapshot!.version,
         currentGameweekId: owned.snapshot!.currentGameweekId!,
-        transfers: transferPairs,
-        chip: fantasyState.chips.active,
+        transfers: completePairs.map((pair) => {
+          const outP = players.find((p) => p.id === pair.outId)!;
+          const inP = players.find((p) => p.id === pair.inId)!;
+          return {
+            outSourceId: pair.outId,
+            inSourceId: pair.inId,
+            priceOut: outP.price,
+            priceIn: inP.price,
+            cost: inP.price - outP.price,
+            hit: 0,
+            chip: chipsState.active,
+          };
+        }),
+        chip: chipsState.active,
       }),
     enabled:
       isCloud &&
       !!owned.snapshot?.teamId &&
       !!owned.snapshot.currentGameweekId &&
-      outIds.length > 0 &&
-      outIds.length === inIds.length &&
-      inIds.every(Boolean),
+      completePairs.length > 0 &&
+      completePairs.length === outIds.length,
     retry: false,
   });
 
-  if (owned.source === "guest") {
-    return authStatus === "loading" ? (
-      <LoadingState />
-    ) : (
-      <FantasyAccessGate next="/fantasy/transfers" />
-    );
-  }
-
-  if (playersQ.isError || clubsQ.isError || gwQ.isError || localTeamQ.isError || owned.loadError) {
+  if (screen.phase !== "ready" || !team || !gameweek) {
     return (
-      <ErrorState
-        onRetry={() => {
-          void playersQ.refetch();
-          void clubsQ.refetch();
-          void gwQ.refetch();
-          void localTeamQ.refetch();
-          void owned.reload();
-        }}
-      />
+      <>
+        <FplHeader title={t("fpl.transfers")} backTo="/fantasy" />
+        <FantasyScreenGate state={screen} next="/fantasy/transfers">
+          <div />
+        </FantasyScreenGate>
+      </>
     );
   }
-  if (
-    (isCloud && owned.isLoading) ||
-    localTeamQ.isLoading ||
-    playersQ.isLoading ||
-    clubsQ.isLoading ||
-    gwQ.isLoading
-  ) {
-    return <LoadingState />;
-  }
-  if (!team) {
-    return (
-      <Link
-        to="/fantasy/create"
-        className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
-      >
-        {t("fantasy.create.title")}
-      </Link>
-    );
-  }
-  if (!playersQ.data || !clubsQ.data) return <LoadingState />;
-  const players = playersQ.data;
-  const clubs = clubsQ.data;
-  const playerOf = (id: string) => players.find((p) => p.id === id)!;
-  const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
 
-  const deadline = transfersDeadline(gwQ.data?.deadline);
-  const currentGw = gwQ.data?.number ?? fantasyState.currentGameweek;
-  const finalized = !!fantasyState.results[currentGw]?.finalized;
-  const locked = !!deadline?.isLocked || finalized;
+  const playerOf = (id: string) => players.find((p) => p.id === id);
+  const locked = evaluateDeadline(gameweek.deadline).isLocked;
 
-  const currentSquad = team.squad.map((s) => playerOf(s.playerId));
-  const currentSquadIdsAfter = currentSquad.map((p) => p.id);
-  outIds.forEach((oid, i) => {
-    const idx = currentSquadIdsAfter.indexOf(oid);
-    if (idx >= 0 && inIds[i]) currentSquadIdsAfter[idx] = inIds[i];
-  });
+  // Squad after pending transfers.
+  const slots: BuilderSlot[] = team.squad
+    .slice()
+    .sort((a, b) => a.slot - b.slot)
+    .map((s) => {
+      const current = playerOf(s.playerId);
+      const outIndex = outIds.indexOf(s.playerId);
+      const incomingId = outIndex >= 0 ? (inIds[outIndex] ?? null) : null;
+      const incoming = incomingId ? (playerOf(incomingId) ?? null) : null;
+      const position = current?.position ?? "MID";
+      if (outIndex >= 0) {
+        return {
+          slot: s.slot,
+          position,
+          player: incoming,
+          highlighted: !!incoming,
+          sub: incoming ? nf.format(incoming.price) : undefined,
+        };
+      }
+      return {
+        slot: s.slot,
+        position,
+        player: current ?? null,
+        isCaptain: s.isCaptain,
+        isViceCaptain: s.isViceCaptain,
+        sub: current
+          ? (fixtures.labels.get(current.clubId) ?? nf.format(current.price))
+          : undefined,
+      };
+    });
+  const squadIdsAfter = slots.map((s) => s.player?.id).filter(Boolean) as string[];
 
-  const outPlayers = outIds.map(playerOf);
-  const inPlayers = inIds.map(playerOf).filter(Boolean) as FantasyPlayer[];
+  const outPlayers = completePairs.map((p) => playerOf(p.outId)!).filter(Boolean);
+  const inPlayers = completePairs.map((p) => playerOf(p.inId)!).filter(Boolean);
+  const netCost =
+    inPlayers.reduce((sum, p) => sum + p.price, 0) -
+    outPlayers.reduce((sum, p) => sum + p.price, 0);
+  // Bank for the picker: current bank plus the value freed by every player marked out (including those not yet replaced).
+  const freedValue = outIds.reduce((sum, id) => sum + (playerOf(id)?.price ?? 0), 0);
+  const committedIn = inIds.reduce((sum, id) => sum + (id ? (playerOf(id)?.price ?? 0) : 0), 0);
+  const pickerBank = Math.round((team.bank + freedValue - committedIn) * 10) / 10;
 
-  const impact = computeBudgetImpact({ outPlayers, inPlayers, bank: team.bank });
   const localPreview = previewTransfers({
     team,
-    chips: fantasyState.chips,
-    outIds,
-    inIds,
-    netCost:
-      outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
+    chips: chipsState,
+    outIds: completePairs.map((p) => p.outId),
+    inIds: completePairs.map((p) => p.inId),
+    netCost,
   });
   const preview =
-    isCloud && serverPreviewQ.data
+    isCloud && serverPreview.data
       ? {
-          ...localPreview,
-          totalTransfers: serverPreviewQ.data.transferCount,
-          bankAfter: serverPreviewQ.data.bankAfter,
+          totalTransfers: serverPreview.data.transferCount,
+          free: serverPreview.data.freeTransfersUsed,
+          paid: serverPreview.data.transferCount - serverPreview.data.freeTransfersUsed,
+          hitPoints: serverPreview.data.pointHit,
+          bankAfter: serverPreview.data.bankAfter,
           freeTransfersAfter:
-            serverPreviewQ.data.freeTransfersBefore - serverPreviewQ.data.freeTransfersUsed,
-          free: serverPreviewQ.data.freeTransfersUsed,
-          paid: serverPreviewQ.data.transferCount - serverPreviewQ.data.freeTransfersUsed,
-          hitPoints: serverPreviewQ.data.pointHit,
-          chipActive: serverPreviewQ.data.chipType,
+            serverPreview.data.freeTransfersBefore - serverPreview.data.freeTransfersUsed,
           overBudget: false,
         }
       : localPreview;
 
-  const canReview =
-    preview.totalTransfers > 0 &&
-    outIds.length === inIds.length &&
-    !impact.overBudget &&
+  const pendingOutWithoutIn = outIds.length !== completePairs.length;
+  const canNext =
+    completePairs.length > 0 &&
+    !pendingOutWithoutIn &&
     !locked &&
-    (!isCloud || (!!serverPreviewQ.data && !serverPreviewQ.isError));
-  const hasWorkingChanges = outIds.length > 0 || inIds.length > 0;
+    !preview.overBudget &&
+    (!isCloud || (!!serverPreview.data && !serverPreview.isError));
 
+  // ---- Interactions ----
   const startReplace = (playerId: string) => {
-    if (locked) return;
+    if (locked) {
+      toast.error(t("fpl.deadline_passed"));
+      return;
+    }
     setPickerFor(playerId);
   };
-  const removeFromOut = (playerId: string) => {
-    const idx = outIds.indexOf(playerId);
-    if (idx < 0) return;
-    const nextOut = outIds.filter((x) => x !== playerId);
-    const nextIn = inIds.filter((_, i) => i !== idx);
+  const markOut = (playerId: string) => {
+    if (outIds.includes(playerId)) return;
+    const nextOut = [...outIds, playerId];
+    const nextIn = [...inIds, null];
     setOutIds(nextOut);
     setInIds(nextIn);
     persistDraft(nextOut, nextIn);
   };
-  const onPick = (p: FantasyPlayer) => {
+  const undoOut = (playerId: string) => {
+    const index = outIds.indexOf(playerId);
+    if (index < 0) return;
+    const nextOut = outIds.filter((_, i) => i !== index);
+    const nextIn = inIds.filter((_, i) => i !== index);
+    setOutIds(nextOut);
+    setInIds(nextIn);
+    persistDraft(nextOut, nextIn);
+  };
+  const onPick = (player: FantasyPlayer) => {
     if (!pickerFor) return;
     const outP = playerOf(pickerFor);
-    if (p.position !== outP.position) {
+    if (!outP || player.position !== outP.position) {
       toast.error(t("fantasy.team.hint.position_incompatible"));
       return;
     }
-    const nextIds = currentSquadIdsAfter.map((id) => (id === pickerFor ? p.id : id));
-    const clubCount = nextIds.filter((id) => playerOf(id).clubId === p.clubId).length;
-    if (clubCount > 3) {
-      toast.error(t("fantasy.validation.club_limit"));
+    const nextIds = squadIdsAfter.filter(
+      (id) => id !== pickerFor && id !== (inIds[outIds.indexOf(pickerFor)] ?? ""),
+    );
+    if (nextIds.filter((id) => playerOf(id)?.clubId === player.clubId).length >= 3) {
+      toast.error(t("fpl.club_limit"));
       return;
     }
     let nextOut = outIds;
-    let nextIn = inIds;
-    if (!outIds.includes(pickerFor)) {
+    let nextIn = inIds.slice();
+    const index = outIds.indexOf(pickerFor);
+    if (index < 0) {
       nextOut = [...outIds, pickerFor];
-      nextIn = [...inIds, p.id];
+      nextIn = [...inIds, player.id];
     } else {
-      const idx = outIds.indexOf(pickerFor);
-      nextIn = inIds.slice();
-      nextIn[idx] = p.id;
+      nextIn[index] = player.id;
+    }
+    // Same player back in → cancel the transfer.
+    if (player.id === pickerFor) {
+      const i = nextOut.indexOf(pickerFor);
+      nextOut = nextOut.filter((_, k) => k !== i);
+      nextIn = nextIn.filter((_, k) => k !== i);
     }
     setOutIds(nextOut);
     setInIds(nextIn);
     persistDraft(nextOut, nextIn);
     setPickerFor(null);
   };
-
-  const resetAll = () => {
+  const reset = () => {
     setOutIds([]);
     setInIds([]);
     persistDraft([], []);
   };
-  const openReview = () => {
-    if (locked) {
-      toast.error(t("fantasy.transfers.error.deadline"));
+
+  const activateTransferChip = async (key: ChipKey) => {
+    const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
+    if (!check.ok) {
+      toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey));
       return;
     }
-    setConfirming(true);
-  };
-
-  const reloadLatest = async () => {
-    setConflictOpen(false);
-    if (draftKey) fantasyDraftsStore.remove(draftKey);
-    setOutIds([]);
-    setInIds([]);
-    setDraftRestored(false);
-    await owned.reload();
-    toast.success(t("fantasy.status.saved_short"));
-  };
-  const keepWorking = () => setConflictOpen(false);
-
-  const confirm = async () => {
-    const res = applyConfirmedTransfers({
-      team,
-      chips: fantasyState.chips,
-      outIds,
-      inIds,
-      netCost:
-        outPlayers.reduce((s, p) => s - p.price, 0) + inPlayers.reduce((s, p) => s + p.price, 0),
-      deadlineIso: gwQ.data?.deadline,
-    });
-    if (!res.ok) {
-      const key: TranslationKey =
-        res.error === "deadline_passed"
-          ? "fantasy.transfers.error.deadline"
-          : res.error === "over_budget"
-            ? "fantasy.transfers.error.over_budget"
-            : "fantasy.transfers.error.no_changes";
-      toast.error(t(key));
-      return;
-    }
-    const v = res.value;
-
-    if (isCloud && owned.userId && owned.snapshot?.currentGameweekId) {
-      const purchasePrices: Record<string, number> = {
-        ...owned.snapshot.purchasePrices,
-      };
-      const transfers = outIds.map((oid, i) => {
-        const inId = inIds[i];
-        const oP = outPlayers.find((p) => p.id === oid)!;
-        const iP = inPlayers.find((p) => p.id === inId)!;
-        purchasePrices[inId] = iP.price;
-        delete purchasePrices[oid];
-        return {
-          outSourceId: oid,
-          inSourceId: inId,
-          priceOut: oP.price,
-          priceIn: iP.price,
-          cost: iP.price - oP.price,
-          hit: 0,
-          chip: v.chips.active ?? null,
-        };
-      });
-      const nextLifecycle = {
-        ...fantasyState,
-        chips: v.chips,
-        transferHitPoints: fantasyState.transferHitPoints + v.hitPointsApplied,
-      };
-      const cloudRes = await runOwnedMutation(
+    if (isCloud) {
+      if (!owned.snapshot?.currentGameweekId) return;
+      setBusy(true);
+      const res = await runOwnedMutation(
         {
           qc,
           scope: owned.scope,
@@ -412,290 +328,264 @@ function TransfersPage() {
         },
         {
           action: () =>
-            owned.repo.confirmTransfers({
+            owned.repo.activateChip({
+              gameweekId: owned.snapshot!.currentGameweekId!,
+              chip: key,
               expectedVersion: owned.snapshot!.version,
-              formation: team.formation,
-              bank: v.nextBank,
-              freeTransfers: v.nextFreeTransfers,
-              pendingTransfers: v.pendingTransfers,
-              squad: v.nextSquad,
-              purchasePrices,
-              currentGameweekId: owned.snapshot!.currentGameweekId!,
-              lifecycle: nextLifecycle,
-              transfers,
             }),
           args: undefined,
-          matchingDraftKey: draftKey ?? undefined,
-          savedIdleAfterMs: 2400,
         },
       );
-      if (cloudRes.ok) {
-        setSuccess(true);
-        setConfirming(false);
-        setConflictOpen(false);
-        toast.success(t("fantasy.transfers.success"));
-        if (v.freeHitSnapshotTaken) toast.message(t("fantasy.transfers.free_hit_snapshot_taken"));
-        setTimeout(() => setSuccess(false), 2400);
-        setOutIds([]);
-        setInIds([]);
-        setDraftRestored(false);
-        return;
-      }
-      // Preserve draft on failure.
-      if (draftKey) {
-        fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, { outIds, inIds });
-      }
-      const c = classifyRepoError(cloudRes.error);
-      if (c.isConflict) setConflictOpen(true);
-      const key: TranslationKey = c.isConflict
-        ? "fantasy.error.version_conflict"
-        : c.isNetwork
-          ? "fantasy.error.network"
-          : c.isPermission
-            ? "fantasy.error.permission"
-            : "fantasy.error.transfer_failed";
-      toast.error(t(key));
+      setBusy(false);
+      if (res.ok) toast.success(t("fantasy.chip.activated"));
+      else toast.error(t("fantasy.chip.state.unavailable"));
       return;
     }
-
-    // Local path — legacy mock service.
-    fantasyService.saveTeam({
-      squad: v.nextSquad,
-      bank: v.nextBank,
-      freeTransfers: v.nextFreeTransfers,
-      pendingTransfers: v.pendingTransfers,
-    });
     fantasyStateStore.write({
-      chips: v.chips,
-      transferHitPoints: fantasyState.transferHitPoints + v.hitPointsApplied,
+      chips: activateChip(chipsState, key, { gameweek: gameweek.number, team }),
     });
-    setFantasyState(fantasyStateStore.read());
-    qc.invalidateQueries({ queryKey: ownedKey("team") });
-    qc.invalidateQueries({ queryKey: ownedKey("summary") });
-    setSuccess(true);
-    setConfirming(false);
-    toast.success(t("fantasy.transfers.success"));
-    if (v.freeHitSnapshotTaken) toast.message(t("fantasy.transfers.free_hit_snapshot_taken"));
-    setTimeout(() => setSuccess(false), 2400);
-    setOutIds([]);
-    setInIds([]);
+    toast.success(t("fantasy.chip.activated"));
   };
 
-  const pickerOut = pickerFor ? playerOf(pickerFor) : null;
-  const pickerMaxPrice = pickerOut
-    ? maxAffordableReplacement(pickerOut.price, team.bank)
-    : undefined;
+  const confirm = async () => {
+    const applied = applyConfirmedTransfers({
+      team,
+      chips: chipsState,
+      outIds: completePairs.map((p) => p.outId),
+      inIds: completePairs.map((p) => p.inId),
+      netCost,
+      deadlineIso: gameweek.deadline,
+    });
+    if (!applied.ok) {
+      toast.error(
+        t(
+          applied.error === "deadline_passed"
+            ? "fantasy.transfers.error.deadline"
+            : applied.error === "over_budget"
+              ? "fantasy.transfers.error.over_budget"
+              : "fantasy.transfers.error.no_changes",
+        ),
+      );
+      return;
+    }
+    const v = applied.value;
+    setBusy(true);
+    try {
+      if (isCloud && owned.snapshot?.currentGameweekId) {
+        const purchasePrices: Record<string, number> = { ...owned.snapshot.purchasePrices };
+        const transfers = completePairs.map((pair) => {
+          const outP = playerOf(pair.outId)!;
+          const inP = playerOf(pair.inId)!;
+          purchasePrices[pair.inId] = inP.price;
+          delete purchasePrices[pair.outId];
+          return {
+            outSourceId: pair.outId,
+            inSourceId: pair.inId,
+            priceOut: outP.price,
+            priceIn: inP.price,
+            cost: inP.price - outP.price,
+            hit: 0,
+            chip: v.chips.active ?? null,
+          };
+        });
+        const lifecycle = owned.snapshot.lifecycle;
+        const res = await runOwnedMutation(
+          {
+            qc,
+            scope: owned.scope,
+            setMutationStatus: owned.setMutationStatus,
+            nextMutationSeq: owned.nextMutationSeq,
+            setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+            replaceSnapshot: owned.replaceSnapshot,
+            invalidateOwned: owned.invalidateOwned,
+          },
+          {
+            action: () =>
+              owned.repo.confirmTransfers({
+                expectedVersion: owned.snapshot!.version,
+                formation: team.formation,
+                bank: v.nextBank,
+                freeTransfers: v.nextFreeTransfers,
+                pendingTransfers: v.pendingTransfers,
+                squad: v.nextSquad,
+                purchasePrices,
+                currentGameweekId: owned.snapshot!.currentGameweekId!,
+                lifecycle: {
+                  ...lifecycle,
+                  chips: v.chips,
+                  transferHitPoints: lifecycle.transferHitPoints + v.hitPointsApplied,
+                },
+                transfers,
+              }),
+            args: undefined,
+            matchingDraftKey: draftKey ?? undefined,
+            savedIdleAfterMs: 2400,
+          },
+        );
+        if (res.ok) {
+          toast.success(t("fpl.transfers_confirmed"));
+          setOutIds([]);
+          setInIds([]);
+          setConfirming(false);
+          return;
+        }
+        if (draftKey)
+          fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, {
+            outIds,
+            inIds: inIds.filter(Boolean) as string[],
+          });
+        const c = classifyRepoError(res.error);
+        toast.error(
+          t(
+            c.isConflict
+              ? "fantasy.error.version_conflict"
+              : c.isNetwork
+                ? "fantasy.error.network"
+                : c.isPermission
+                  ? "fantasy.error.permission"
+                  : "fantasy.error.transfer_failed",
+          ),
+        );
+        if (c.isConflict) await owned.reload();
+        return;
+      }
+      fantasyService.saveTeam({
+        squad: v.nextSquad,
+        bank: v.nextBank,
+        freeTransfers: v.nextFreeTransfers,
+        pendingTransfers: v.pendingTransfers,
+      });
+      fantasyStateStore.write({
+        chips: v.chips,
+        transferHitPoints: fantasyStateStore.read().transferHitPoints + v.hitPointsApplied,
+      });
+      await qc.invalidateQueries({ queryKey: ["owned-fantasy"] });
+      toast.success(t("fpl.transfers_confirmed"));
+      setOutIds([]);
+      setInIds([]);
+      setConfirming(false);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const chipLabel: string | null =
-    preview.chipActive === "wildcard"
-      ? t("fantasy.chip.wildcard")
-      : preview.chipActive === "free_hit"
-        ? t("fantasy.chip.free_hit")
-        : null;
-
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-black text-foreground">
-          <span className="text-brand">{t("fantasy.transfers.title")}</span>
-        </h1>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <Stat
-            label={t("fantasy.bank")}
-            value={nf.format(preview.bankAfter)}
-            accent={preview.overBudget}
-          />
-          <Stat label={t("fantasy.transfers.free")} value={String(preview.freeTransfersAfter)} />
-          <Stat label={t("fantasy.transfers.hit")} value={`-${preview.hitPoints}`} />
-          {chipLabel && <Stat label={t("fantasy.transfers.chip_active")} value={chipLabel} />}
-        </div>
-      </div>
-
-      {locked && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-900"
-        >
-          <Lock className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="min-w-0">
-            {t(finalized ? "fantasy.transfers.gw_closed" : "fantasy.transfers.deadline_locked")}
-          </span>
-        </div>
-      )}
-
-      {success && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-800"
-        >
-          <Check className="h-4 w-4 shrink-0" aria-hidden /> {t("fantasy.transfers.success")}
-        </div>
-      )}
-
-      {isCloud && serverPreviewQ.isError && (
-        <div
-          role="alert"
-          className="mt-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm font-semibold text-red-800"
-        >
-          {t("fantasy.error.transfer_failed")}
-        </div>
-      )}
-
-      {/* H5 — Unsaved-changes badge (cloud mode only). */}
-      {isCloud && (
-        <div className="mt-3">
-          <UnsavedBadge
-            visible={hasWorkingChanges}
-            variant={draftRestored ? "draft_restored" : "unsaved"}
-          />
-        </div>
-      )}
-
-      {/* H5 — Version-conflict resolution bar. */}
-      {isCloud && (
-        <div className="mt-2">
-          <ConflictBar
-            visible={conflictOpen}
-            onReloadLatest={reloadLatest}
-            onKeepWorking={keepWorking}
-            busy={owned.mutationStatus === "saving"}
-          />
-        </div>
-      )}
-
-      <SectionHeader title={t("fantasy.team")} />
-      <div className="grid gap-1.5">
-        {(["GK", "DEF", "MID", "FWD"] as const).map((pos) => (
-          <div key={pos}>
-            <div className="mb-1 px-1 text-[10px] font-black uppercase tracking-wide text-muted-foreground">
-              {t(`player.pos.${pos}` as TranslationKey)}
-            </div>
-            <ul className="grid gap-1.5">
-              {currentSquad
-                .filter((p) => p.position === pos)
-                .map((p) => {
-                  const inOut = outIds.includes(p.id);
-                  const replacementIdx = outIds.indexOf(p.id);
-                  const replacement =
-                    replacementIdx >= 0 ? inPlayers.find((_, i) => i === replacementIdx) : null;
-                  return (
-                    <li
-                      key={p.id}
-                      className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
-                    >
-                      {clubOf(p.clubId) && <ClubCrest club={clubOf(p.clubId)!} size="sm" />}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={
-                              inOut
-                                ? "line-through text-muted-foreground text-sm font-bold"
-                                : "text-sm font-bold text-foreground"
-                            }
-                          >
-                            {tr(p.name)}
-                          </span>
-                          {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
-                        </div>
-                        {replacement && (
-                          <div className="mt-0.5 truncate text-[11px] font-semibold text-emerald-700">
-                            → {tr(replacement.name)} ({nf.format(replacement.price)})
-                          </div>
-                        )}
-                        {!replacement && (
-                          <div className="text-[11px] text-muted-foreground">
-                            {t("fantasy.price")} {nf.format(p.price)} · {t("fantasy.form")}{" "}
-                            {nf.format(p.form)}
-                          </div>
-                        )}
-                      </div>
-                      {inOut ? (
-                        <button
-                          onClick={() => removeFromOut(p.id)}
-                          className="min-h-11 rounded-lg bg-white px-3 py-2 text-[11px] font-semibold ring-1 ring-black/10"
-                        >
-                          {t("fantasy.transfers.reset")}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => startReplace(p.id)}
-                          disabled={locked}
-                          className="inline-flex min-h-11 items-center gap-1 rounded-lg cta-brand px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
-                        >
-                          <ArrowRightLeft className="h-3 w-3" aria-hidden />{" "}
-                          {t("fantasy.transfers.title")}
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-            </ul>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <button
-          onClick={resetAll}
-          className="min-h-11 rounded-xl border border-input bg-white/60 px-3 py-2 text-xs font-semibold hover:bg-white disabled:opacity-40"
-          disabled={preview.totalTransfers === 0}
-        >
-          {t("fantasy.transfers.reset")}
-        </button>
-        <button
-          onClick={() => requireAuth(() => openReview())}
-          disabled={!canReview}
-          className="min-h-11 rounded-xl cta-brand px-4 py-2 text-sm font-bold disabled:opacity-40"
-        >
-          {t("fantasy.review")}
-        </button>
-      </div>
-
-      {confirming && (
-        <div className="mt-4">
-          <TransferReviewPanel
-            outPlayers={outPlayers}
-            inPlayers={inPlayers}
-            clubs={clubs}
-            freeTransfers={preview.free}
-            paidTransfers={preview.paid}
-            bankAfter={preview.bankAfter}
-            hitPoints={preview.hitPoints}
-            chipLabel={chipLabel}
-            totalTransfers={preview.totalTransfers}
-            onCancel={() => setConfirming(false)}
-            onConfirm={confirm}
-          />
-        </div>
-      )}
-
-      <PlayerPickerDrawer
-        open={!!pickerFor}
-        onClose={() => setPickerFor(null)}
-        onPick={onPick}
-        players={players.filter((p) => !currentSquadIdsAfter.includes(p.id) || p.id === pickerFor)}
+  if (confirming) {
+    return (
+      <TransferConfirmScreen
+        pairs={completePairs.map((p) => ({ out: playerOf(p.outId)!, in: playerOf(p.inId)! }))}
         clubs={clubs}
-        position={pickerOut?.position}
-        maxPrice={pickerMaxPrice}
-        title={t("fantasy.transfers.select_in")}
+        gameweek={gameweek.number}
+        freeUsed={preview.free}
+        paidUsed={preview.paid}
+        hitPoints={preview.hitPoints}
+        bankAfter={preview.bankAfter}
+        chips={(["wildcard", "free_hit"] as ChipKey[]).map((key) => ({
+          key,
+          state: chipDisplayState(chipsState, key),
+        }))}
+        onChip={(key) => void activateTransferChip(key)}
+        onEdit={() => setConfirming(false)}
+        onConfirm={() => void confirm()}
+        busy={busy}
       />
-    </div>
-  );
-}
+    );
+  }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  const wildcardState = chipDisplayState(chipsState, "wildcard");
+  const freeTransfersLabel =
+    chipsState.active === "wildcard" || chipsState.active === "free_hit"
+      ? t("fpl.unlimited")
+      : String(team.freeTransfers);
+  const pickerOut = pickerFor ? playerOf(pickerFor) : undefined;
+  const pickerIndex = pickerFor ? outIds.indexOf(pickerFor) : -1;
+  const pickerCurrentIn = pickerIndex >= 0 ? inIds[pickerIndex] : null;
+  const pickerBudget =
+    Math.round(
+      (pickerBank +
+        (pickerIndex < 0 ? (pickerOut?.price ?? 0) : 0) +
+        (pickerCurrentIn ? (playerOf(pickerCurrentIn)?.price ?? 0) : 0)) *
+        10,
+    ) / 10;
+
   return (
-    <div
-      className={`rounded-xl px-2 py-1 ring-1 ring-black/5 ${accent ? "bg-red-500/10" : "bg-white/60"}`}
-    >
-      <div
-        className={`text-xs font-black tabular-nums ${accent ? "text-red-700" : "text-foreground"}`}
-      >
-        {value}
-      </div>
-      <div className="text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div>
-    </div>
+    <>
+      <SquadBuilderScreen
+        title={t("fpl.transfers")}
+        backTo="/fantasy"
+        gameweek={gameweek.number}
+        deadlineIso={gameweek.deadline}
+        stats={[
+          { label: t("fpl.free_transfers"), value: freeTransfersLabel },
+          {
+            label: t("fpl.wildcard"),
+            value:
+              wildcardState === "active"
+                ? t("fpl.state.active")
+                : wildcardState === "available"
+                  ? t("fpl.state.play")
+                  : t("fpl.state.unavailable"),
+            tone: wildcardState === "available" || wildcardState === "active" ? "ink" : "grey",
+          },
+          { label: t("fpl.cost"), value: String(preview.hitPoints) },
+          {
+            label: t("fpl.bank"),
+            value: nf.format(completePairs.length > 0 ? preview.bankAfter : pickerBank),
+          },
+        ]}
+        slots={slots}
+        clubs={clubs}
+        players={players}
+        view={view}
+        onViewChange={setView}
+        onSlotTap={(s) => {
+          const outIndex = slots.indexOf(s);
+          const original = team.squad.slice().sort((a, b) => a.slot - b.slot)[outIndex];
+          if (!original) return;
+          startReplace(original.playerId);
+        }}
+        onRemove={(s) => {
+          const index = slots.indexOf(s);
+          const original = team.squad.slice().sort((a, b) => a.slot - b.slot)[index];
+          if (!original) return;
+          if (outIds.includes(original.playerId)) undoOut(original.playerId);
+          else {
+            markOut(original.playerId);
+            startReplace(original.playerId);
+          }
+        }}
+        onAddPlayer={() => {
+          const pending = outIds.find((id, index) => !inIds[index]);
+          if (pending) startReplace(pending);
+          else toast.message(t("fpl.select_position_first"));
+        }}
+        onNext={() => setConfirming(true)}
+        nextDisabled={!canNext}
+        onReset={reset}
+        resetDisabled={outIds.length === 0}
+        listColumns={[
+          { key: "form", label: t("fpl.form"), render: (p) => p.form.toFixed(1) },
+          { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
+          { key: "sell", label: t("fpl.selling_price"), render: (p) => nf.format(p.price) },
+          {
+            key: "buy",
+            label: t("fpl.purchase_price"),
+            render: (p) => nf.format(owned.snapshot?.purchasePrices[p.id] ?? p.price),
+          },
+        ]}
+      />
+
+      {pickerFor && pickerOut ? (
+        <AddPlayerScreen
+          players={players}
+          clubs={clubs}
+          bank={pickerBudget}
+          position={pickerOut.position}
+          lockPosition
+          disabledIds={squadIdsAfter.filter((id) => id !== pickerCurrentIn)}
+          onPick={onPick}
+          onClose={() => setPickerFor(null)}
+        />
+      ) : null}
+    </>
   );
 }
