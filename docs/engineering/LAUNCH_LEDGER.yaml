@@ -71,6 +71,8 @@ tasks:
     human_action: Refresh SUPABASE_ACCESS_TOKEN in environment production-admin-activation. No credential is to be printed, replaced or invented by agents. Future migrations must NOT be promoted by generated transactions again.
     residual_risks: []
     update_2026_09_18: owner reports SUPABASE_ACCESS_TOKEN refreshed in production-admin-activation; preflight retry requires BG-0037 first (promoter inventory check fails on main because 20260918130000/140000 are not in the manifest, before any management-API call)
+    preflight_retry_2026_09_18: 'run 35343091384 (batch fantasy_calendar_sync, main 943e892): promotion_failed: authenticated account does not own the selected project — the refreshed token authenticates (no HTTP 401) but belongs to an account without access to project tkewgajrljbwgwedqsxn; no write was attempted'
+    human_action_2: Generate the personal access token from a Supabase account that is a member of the organization owning BotolaGO Production V2 (tkewgajrljbwgwedqsxn) and store it as SUPABASE_ACCESS_TOKEN in environment production-admin-activation; then the Chief re-runs the preflight with batch fantasy_calendar_sync
 
   BG-0003:
     title: Launch risk — SportsMonks placeholder kickoffs vs GW1 deadline; automated escalation guard
@@ -215,6 +217,7 @@ tasks:
       - confirm the corrected time box; A0 go/no-go by 2026-09-19T12:00Z, A4 green by 2026-09-21T18:00Z, A7–A11 by 2026-09-22T22:30Z
     plan: A0 probe (BG-0034, in progress) → A1 go/no-go → A2 worker quarantine + additive coverage-threshold migration → A3 dispatch workflow (season_ids, skip_deploy, RESTORE_SEASON fix) → A4 backfill (needs BG-0002) → A5 read-only proof → A6 export → A7–A10 single transaction → A11 open → A12 docs
     new_defects_found: [BG-0031, BG-0032, BG-0033]
+    a0_result_2026_09_18: '64 of 240 season-26027 fixtures (27%) fail the worker invariant starter_rows_mismatch and nothing else; the defect is systemic, not a single fixture. A1 go/no-go needs a Researcher analysis of the failing set (starterRows distribution, whether 21-starter fixtures are usable) and an owner decision on the coverage threshold (≥73% max achievable without relaxing the invariant).'
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
@@ -436,7 +439,7 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: DISPATCHED
+    state: DONE
     depends_on: []
     roles: {builder: Builder-DevOps DONE (agent/BG-0034-g7-invariant-probe @cd7b8b9), verifier: PASS (docs/engineering/tasks/BG-0034/verification-report.yaml; live classification NOT_TESTABLE until owner dispatch), reviewer: PASS (docs/engineering/tasks/BG-0034/review-report.yaml)}
     finding: 'fixture 19489216 diagnostic is already recorded in docs/production/g7-sportsmonks-coverage-audit-trigger.json (lineupRowsSeen 40, validPlayerRows 38, starterRows 21, failedInvariant starter_rows_mismatch, from run 30767752509) — answers the WHICH question; the 240-fixture count still needs the dispatch'
@@ -445,6 +448,7 @@ tasks:
     merged: main (merge of agent/BG-0034-g7-invariant-probe @cd7b8b9)
     remaining_risks: [45-minute timeout is ~1.3 min under a literal 11 s/request budget; expected pace ~3 min; if cancelled, re-dispatch or raise to 50 min / write evidence incrementally]
     dispatch: g7-sportsmonks-historical-performance-coverage.yml queued by Chief (owner actor) on main a98479d, 2026-09-18
+    result: 'run 35342193874 success (2 min 49 s): season 26027 enumerated 240/240, passing 176, failing 64, failuresByCode starter_rows_mismatch=64 (all other codes 0); fixture 19489216 = lineupRows 40, validPlayerRows 38, excludedIncompleteRows 2, starterRows 21, pass=false; artifact g7-historical-performance-35342193874 (id 10545720233)'
 
   BG-0035:
     title: 'Arabic UI does not render in Noto Sans Arabic: body font-family var(--font-sans) (src/styles.css:439, @layer base) overrides the html[dir=rtl] Arabic font switch (styles.css:427)'
