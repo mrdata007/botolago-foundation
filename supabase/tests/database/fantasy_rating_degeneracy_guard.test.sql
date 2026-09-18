@@ -340,7 +340,7 @@ select extensions.is(
 -- Scenario 3: healthy inputs - one real rating differentiates the set. The
 -- stage must behave exactly as before the guard.
 update app.player_season_ratings
-set rating = 8.8, confidence = 1, appearances = 30, starts = 28, minutes = 2500,
+set rating = 10, confidence = 1, appearances = 30, starts = 28, minutes = 2500,
   goals = 14, assists = 12, provider_rating = 8.8,
   fantasy_equivalent_points = 220, points_per_90 = 7.920
 where id = md5('degeneracy-rating:1:8')::uuid;
@@ -410,8 +410,8 @@ select extensions.is(
   (select count(distinct price)::integer from app.fantasy_players
    where fantasy_season_id = (current_setting('test.healthy_stage')::jsonb
      ->> 'fantasySeasonId')::uuid),
-  5,
-  'the staged catalog carries the four neutral band prices plus the rated player'
+  4,
+  'the staged catalog carries the three neutral band prices plus the rated player'
 );
 select extensions.is(
   (select status::text from app.fantasy_seasons

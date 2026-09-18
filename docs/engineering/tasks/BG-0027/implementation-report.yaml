@@ -1,7 +1,7 @@
 ---
 task_id: BG-0027
 builder_type: Builder-Backend
-attempt: 2
+attempt: 3 # attempt-2 body retained below unchanged; see attempt_3 at the end
 branch: agent/BG-0027-ratings-fail-closed
 previous_attempt:
   commit: 449273c25f36117abcd6fd894c6b5fbb49272860
@@ -222,3 +222,95 @@ unexpected_observations:
     new test is prettier-checked; this matches every existing SQL file.
 scope_deviations: []
 status: DONE
+attempt_3:
+  previous_attempt:
+    commit: 4388116d97e5f6219edfd985328042976d0e5977
+    verdict: REJECTED # docs/engineering/tasks/BG-0027/review-report-attempt2.yaml
+  defect:
+    - >-
+      Single narrow defect (review-report-attempt2 defects[0]): scenario 3
+      (healthy path) of
+      supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql set the
+      rated midfielder to rating = 8.8 / confidence = 1 but asserted
+      price::text = '12.50' (a figure copied from
+      fantasy_catalog_activation.test.sql:292, whose fixture uses rating = 10;
+      its 8.8 is provider_rating). It also asserted count(distinct price) = 5
+      described as "four neutral band prices plus the rated player", but MID
+      and FWD share the 4.5-12.5 band so the neutral set has only three
+      distinct prices. Both assertions fail by construction under
+      `supabase test db`, so backend-quality CI would be red and the
+      healthy-path half of the DEF-1 evidence did not exist in executable form.
+  change:
+    - file: supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql
+      description: >-
+        Reviewer option (a), chosen for parity with the sibling test's elite
+        midfielder fixture. Three lines changed, nothing else: the scenario-3
+        update now sets `rating = 10` (was 8.8; confidence stays 1, every other
+        column of the update is unchanged, and 10 satisfies
+        player_season_ratings_rating_check `rating between 4 and 10`); the
+        '12.50' expectation is kept; the distinct-price expectation changed
+        from 5 to 4 and its description from "four neutral band prices" to
+        "three neutral band prices". The inspector expectation for scenario 3
+        ({candidates 240, degenerate false, maxConfidence 1.0,
+        distinctRatings 2}) is untouched and still holds: 239 candidates at
+        6.0 / 0 plus one at 10 / 1 gives two distinct ratings and max
+        confidence 1.
+    - file: docs/engineering/tasks/BG-0027/implementation-report.yaml
+      description: attempt header bumped to 3 and this attempt_3 section appended.
+  hand_computation:
+    formula_source: supabase/migrations/20260803210943_fantasy_catalog_activation.sql:150-163
+    quoted_lines: |
+      ('GK'::text, 4.0::numeric, 6.5::numeric),
+      ('DEF'::text, 4.0::numeric, 7.0::numeric),
+      ('MID'::text, 4.5::numeric, 12.5::numeric),
+      ('FWD'::text, 4.5::numeric, 12.5::numeric)
+      ...
+      adjusted_rating := 6 + (p_rating - 6) * p_confidence;
+      return round((minimum_price + ((adjusted_rating - 4) / 6)
+        * (maximum_price - minimum_price)) * 10) / 10;
+    rated_midfielder_player_1_8: >-
+      degeneracy-player:1:8 is player_number 8, which the fixture maps to
+      'midfielder' (player_number <= 12 after the <= 7 defender band), so the
+      MID band 4.5..12.5 applies. adjusted = 6 + (10 - 6) * 1 = 10;
+      (10 - 4) / 6 = 1; 4.5 + 1 * (12.5 - 4.5) = 12.5; round(12.5 * 10) / 10 =
+      round(125) / 10 = 12.5; stored in numeric(8,2) -> '12.50'. Assertion
+      '12.50' holds.
+    rejected_prior_value_for_the_record: >-
+      With the old rating = 8.8: adjusted = 6 + (8.8 - 6) * 1 = 8.8;
+      (8.8 - 4) / 6 = 0.8; 4.5 + 0.8 * 8 = 10.9; round(109) / 10 = 10.9 ->
+      '10.90', confirming the Reviewer's figure and why '12.50' failed.
+    neutral_prices_rating_6_confidence_0: |
+      adjusted = 6 + (6 - 6) * 0 = 6 for every neutral candidate; (6 - 4) / 6 = 1/3.
+      GK:  4.0 + (1/3) * (6.5 - 4.0)  = 4.0 + 0.8333 = 4.8333; round(48.333)/10 = 4.8 -> 4.80
+      DEF: 4.0 + (1/3) * (7.0 - 4.0)  = 4.0 + 1.0    = 5.0;    round(50)/10     = 5.0 -> 5.00
+      MID: 4.5 + (1/3) * (12.5 - 4.5) = 4.5 + 2.6667 = 7.1667; round(71.667)/10 = 7.2 -> 7.20
+      FWD: 4.5 + (1/3) * (12.5 - 4.5) = 4.5 + 2.6667 = 7.1667; round(71.667)/10 = 7.2 -> 7.20
+    distinct_price_count: >-
+      Neutral set = {4.80, 5.00, 7.20} (three, MID and FWD coincide). Plus the
+      rated midfielder at 12.50 = {4.80, 5.00, 7.20, 12.50} = 4 distinct
+      prices. Assertion count(distinct price) = 4 holds. (Under option (b) the
+      set would have been {4.80, 5.00, 7.20, 10.90}, also 4.)
+  tests_run:
+    - command: bun run backend:migrations:check
+      result: PASS # Validated 60 migration(s).
+    - command: bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts
+      result: PASS # 10 pass, 0 fail, 38 expect() calls (bun 1.3.11), unchanged
+    - command: git diff --stat origin/agent/BG-0027-ratings-fail-closed..HEAD
+      result: PASS # exactly two files - the pgTAP test (3 lines) and this report
+  not_executed:
+    - command: bun run backend:db:test (supabase test db --local supabase/tests/database)
+      reason: >-
+        Still not executable here: no supabase CLI on PATH and no
+        /var/run/docker.sock, so no local Supabase stack and no pgTAP. The
+        corrected assertions are verified by the hand computation above
+        against the unchanged pricing function only. Executed evidence must
+        come from the backend-quality workflow on the PR (it runs
+        backend:db:test on every pull request) or a Verifier run on a local
+        stack, as the Reviewer's correction requires before merge.
+  unresolved:
+    - >-
+      Executed pgTAP pass output for fantasy_rating_degeneracy_guard.test.sql
+      is still owed by CI / the Verifier; the Builder cannot produce it in
+      this environment.
+  scope_deviations: []
+  status: DONE
