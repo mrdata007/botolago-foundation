@@ -386,7 +386,7 @@ tasks:
     severity: P0
     owner: Chief
     state: READY
-    evidence: [docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml contradictions[0]]
+    evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml contradictions[0]']
     acceptance_criteria: [root cause of the overwrite identified in the season ingestion path; a durable fix (guard or provider-metadata handling) so the correction is not reverted again; production row corrected via a rolled-back rehearsal first, then an owner-approved write]
     next: Researcher (season ingestion path) → Builder-Backend
   BG-0032:
@@ -395,7 +395,7 @@ tasks:
     severity: P1
     owner: Chief
     state: READY
-    evidence: [docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml findings (pg_get_functiondef contains neither fantasy_leagues nor fantasy_league_memberships)]
+    evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml findings (pg_get_functiondef contains neither fantasy_leagues nor fantasy_league_memberships)']
     acceptance_criteria: [additive migration re-creating the RPC with ordered league/membership/audit cleanup preserving PT409 fantasy_catalog_in_use semantics; database test; runbook corrected]
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
@@ -403,7 +403,7 @@ tasks:
     severity: P1
     owner: Chief
     state: READY
-    evidence: [scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517]
+    evidence: ['scripts/backend/g7-historical-performance-backfill-runner.ts:15-19, 497-517']
     acceptance_criteria: [restore value read from the current season / required input; unit test; folded into Option A step A3]
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
