@@ -1,0 +1,134 @@
+task_id: BG-0031
+attempt: integration-delta
+role: Verifier
+verified_commit: bc186ff41bc451c813cb35cf55c535810b1fffa8
+previous_verified_commit: 96acad3717c799b863f138cf3edac8de89545bc8
+scope: >
+  Independent check of the merge of main (which carries BG-0027, PR #136) into
+  agent/BG-0031-season-bounds-guard (PR #137), merge commit bc186ff. This is an
+  integration-delta verification only: BG-0031's own guard logic (Reviewer PASS
+  in review-report.yaml, prior Verifier PASS in verification-report.yaml) and
+  BG-0027's own logic are not re-litigated here.
+
+criteria:
+  - criterion: "I1: supabase/migrations/ contains both 20260918150000_fantasy_rating_degeneracy_guard.sql (BG-0027) and 20260918160000_season_bounds_guard.sql (BG-0031), sorted, nothing else added/removed/reordered by the merge"
+    result: VERIFIED
+    evidence: >
+      `ls supabase/migrations | sort` -> 61 files, both target files present and
+      version-ordered (150000 before 160000). `git ls-tree -r --name-only
+      origin/main -- supabase/migrations/` -> 60 files. `diff` of the two sorted
+      listings shows exactly one line added on the branch:
+      20260918160000_season_bounds_guard.sql, and nothing removed or reordered.
+
+  - criterion: "I2: phase7e-production-migration-promoter.py BATCHES and EXPECTED_EDGE_FUNCTIONS_BY_BATCH list fantasy_rating_degeneracy_guard before season_bounds_guard; batch_history_prefix counts recomputed independently"
+    result: VERIFIED
+    evidence: >
+      Dict key order (`re.findall` over the BATCHES source block) ->
+      [..., 'fantasy_deadline_guard', 'fantasy_rating_degeneracy_guard',
+      'season_bounds_guard']. EXPECTED_EDGE_FUNCTIONS_BY_BATCH lists
+      fantasy_rating_degeneracy_guard (line 158) before season_bounds_guard
+      (line 159). Recomputed batch_history_prefix by hand-summing file counts
+      of every batch listed before each target in BATCHES: foundation(1)+
+      identity(2)+football(4)+news_storage(5)+notifications(5)+
+      fantasy_phase65(13)+admin(5)+post_gate4_baseline(9)+release_activation(3)+
+      launch_recovery_2026_09_14(9)+fantasy_calendar_sync(1)+
+      fantasy_deadline_guard(2) = 59 -> batch_history_prefix("fantasy_rating_degeneracy_guard")
+      = 59. Adding fantasy_rating_degeneracy_guard's own 1 file -> 60 ->
+      batch_history_prefix("season_bounds_guard") = 60. Total manifest
+      inventory = 61. Matches the test file's own assertions but was derived
+      independently by reading BATCHES, not by trusting the test.
+
+  - criterion: "I3: workflow_dispatch migration_batch choices list both batch names in manifest order"
+    result: VERIFIED
+    evidence: >
+      .github/workflows/phase7e-b-production-migration-promotion.yml lines
+      24-27: ... - fantasy_calendar_sync / - fantasy_deadline_guard /
+      - fantasy_rating_degeneracy_guard / - season_bounds_guard, same order
+      as BATCHES.
+
+  - criterion: "I4: test_phase7e_production_migration_promoter.py assertions updated for the combined 61-file chain; 16 tests pass"
+    result: VERIFIED
+    evidence: >
+      Test file asserts 61 total migrations (line 63), 59 for
+      batch_history_prefix("fantasy_rating_degeneracy_guard") (line 100), 60
+      for batch_history_prefix("season_bounds_guard") (line 111), and
+      list(PROMOTER.BATCHES)[-1] == "season_bounds_guard" (line 110). Ran
+      `python3 -m unittest scripts.backend.tests.test_phase7e_production_migration_promoter -v`
+      from repo root: 16 tests, all ok, "Ran 16 tests in 0.012s / OK".
+
+  - criterion: "I5: database.types.ts contains both BG-0027's and BG-0031's additions; sanity-checked against origin/main and confirmed authoritative via CI"
+    result: VERIFIED
+    evidence: >
+      `grep` confirms bounds_locked_at/bounds_locked_reason present on
+      app.seasons Row/Insert/Update (BG-0031), and service_fantasy_deadline_watch
+      / service_sync_fantasy_calendar RPC types present (BG-0027-era additions
+      already on main). `git diff origin/main -- src/backend/generated/database.types.ts`
+      shows the ONLY delta on this branch versus main is the addition of
+      bounds_locked_at/bounds_locked_reason to app.seasons Row/Insert/Update -
+      i.e. everything BG-0027 added is already identical between branch and
+      main (nothing missing), and the branch adds exactly BG-0031's fields on
+      top. Authoritative confirmation: PR #137 CI run 35370301507,
+      database-quality job, `bun run backend:types:check` step ->
+      "Generated database types are current." (log line
+      2026-09-18T16:48:14.8868074Z).
+
+  - criterion: "I6: PR #137 CI green on the integrated candidate (both guard pgTAP files execute ok, total test count higher than either branch alone, types:check current)"
+    result: VERIFIED
+    evidence: >
+      Polled mcp__github__pull_request_read get_check_runs on PR #137 until
+      completion. Run 35370301507: database-quality job id 105682425726,
+      conclusion success; application-quality job id 105682425422, conclusion
+      success; staging-functional skipped (expected, non-main branch). Read
+      the database-quality job log directly: `supabase test db` output shows
+      both
+      `.../fantasy_rating_degeneracy_guard.test.sql ......... ok` and
+      `.../season_bounds_guard.test.sql ..................... ok` executing,
+      "All tests successful.", "Files=41, Tests=848, ... Result: PASS" - higher
+      than BG-0031 alone (Files=40, Tests=816, per ci-run-35368491642.txt).
+      `supabase db lint` -> "No schema errors found". `backend:types:check`
+      -> "Generated database types are current." (not stale).
+
+  - criterion: "I7: local `bun run test` and `bun run backend:migrations:check` green on this clone, 61 migrations validated"
+    result: VERIFIED
+    evidence: >
+      `bun run backend:migrations:check` -> "Validated 61 migration(s)."
+      `bun run test` -> "720 pass / 0 fail / 10008 expect() calls / Ran 720
+      tests across 117 files."
+
+  - criterion: "I8: LAUNCH_LEDGER.yaml BG-0031 entry's merge_gate_status and sequencing notes still accurately describe the integration state found"
+    result: VERIFIED
+    evidence: >
+      docs/engineering/LAUNCH_LEDGER.yaml BG-0031 entry: `sequencing: 'PR #136
+      (BG-0027, migration 150000) merges first; then this branch merges main
+      and moves the season_bounds_guard prefix 59 to 60 (version order
+      preserved: 150000 before 160000)'` and `merge_gate_status: 'MET on PR
+      #137 head 7cf5152 ...'`. Both match what this verification independently
+      found: PR #136/BG-0027 is on main (git log shows commit 5a7f378 "Merge
+      BG-0027" on this branch's ancestry via the main merge), and the branch
+      head has since moved past 7cf5152 to the merge commit bc186ff, with the
+      prefix values now 59/60 as predicted. No correction needed to the ledger
+      text; it remains accurate as a description of pre-merge-commit state and
+      the sequencing plan that was then executed.
+
+regressions: []
+
+untested:
+  - "staging-functional job on PR #137 (status: skipped) - expected for a non-main branch, not part of this integration's merge-gate scope."
+  - "Production promotion of either batch - out of scope for this Verifier pass (CI-integration-evidence-only per Chief's constraints); no Supabase MCP calls or rehearsals were made."
+  - "EXPLAIN plans / live production behavior of the combined chain - this pass is limited to the local CI (Supabase-in-Docker) stack and the pushed branch's CI run."
+
+security_observations:
+  - "No new security-relevant surface from the merge itself: the merge is a mechanical reconciliation of two independently reviewed additive migrations plus manifest/workflow/test bookkeeping. database.types.ts diff against origin/main is limited to the two already-reviewed BG-0031 columns; no unexpected type changes leaked in from the 3-way merge."
+  - "CI's backend:types:check (authoritative, since types cannot be regenerated in this environment) confirms the merged types file is current, closing the only provisional trust gap called out in the task brief."
+
+status: PASS
+
+notes: >
+  This report covers ONLY the integration delta (main merged into
+  agent/BG-0031-season-bounds-guard at bc186ff). BG-0031's own guard logic and
+  BG-0027's own logic were independently Reviewer- and Verifier-approved
+  earlier and are not re-examined here. All eight integration checks above
+  are VERIFIED and PR #137's CI (run 35370301507) is green on the integrated
+  candidate. Nothing found here changes or weakens either task's original
+  Reviewer PASS conditions. The task remains gated on the Chief's own merge
+  decision; this Verifier does not merge the PR.
