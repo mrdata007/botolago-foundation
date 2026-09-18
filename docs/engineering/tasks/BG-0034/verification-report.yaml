@@ -1,0 +1,184 @@
+task_id: BG-0034
+verified_commit: cd7b8b9bf6390672e80cd5bd0ac0a0e520414053
+verified_branch: agent/BG-0034-g7-invariant-probe
+merge_base: f2dcd4aef2f5d00cb88b232ba33889ed0c834573 (origin/main)
+workspace: /home/user/bg0034-verify (detached at origin/agent/BG-0034-g7-invariant-probe; no commits, no pushes, no source edits)
+criteria:
+  - criterion: "V1 - diff against merge-base is a subset of the allowed paths"
+    result: VERIFIED
+    evidence: >
+      `git diff --name-status $(git merge-base HEAD origin/main)..HEAD` ->
+      M .github/workflows/g7-sportsmonks-historical-performance-coverage.yml;
+      A docs/engineering/tasks/BG-0034/implementation-report.yaml;
+      M docs/production/g7-historical-performance-probe-trigger.json;
+      M scripts/backend/sportsmonks-historical-performance-probe.test.ts;
+      M scripts/backend/sportsmonks-historical-performance-probe.ts.
+      All five are in the allowed list; no other workflow, migration, src/**, backfill runner,
+      secret or environment file is touched. No optional shared module was added.
+
+  - criterion: "V2 - invariant fidelity: probe imports and calls the worker's normalizeHistoricalFixture; no redefined thresholds; six-code constant equals the worker's coverageFailures.push literals"
+    result: VERIFIED
+    evidence: >
+      scripts/backend/sportsmonks-historical-performance-probe.ts lines 4-8 import
+      HISTORICAL_PERFORMANCE_DETAIL_TYPE_IDS, HistoricalPerformanceRuntimeError and
+      normalizeHistoricalFixture from ../../supabase/functions/_shared/sportsmonks-historical-player-performance;
+      line 499 `const normalized = await normalizeHistoricalFixture(payload, fixtureId, seasonId);`
+      and lines 514-563 read error.diagnostic (lineupRowsSeen, validPlayerRows,
+      excludedIncompleteRows, starterRows, teamCount, invalidDetailRows, failures[]) for
+      historical_fixture_coverage_incomplete, else record the worker's abort code.
+      `grep -nE '(^|[^0-9.])(22|100|20)([^0-9]|$)' scripts/backend/sportsmonks-historical-performance-probe.ts`
+      -> no matches (no threshold literal replicated; only PER_PAGE=50, MAX_PAGES_PER_WINDOW=10,
+      expected fixtures 240 and the unrelated fantasy detail-type id set exist).
+      `grep -oE 'coverageFailures\.push\("[a-z_]+"\)' supabase/functions/_shared/sportsmonks-historical-player-performance.ts`
+      -> lineup_rows_out_of_range, valid_player_rows_out_of_range, incomplete_rows_limit_exceeded,
+      starter_rows_mismatch, team_count_mismatch, invalid_detail_rows_present, in that order,
+      identical to HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES (probe lines 60-67).
+      Unit test "lists exactly the coverage failure codes the edge worker emits" passes (see V6).
+      The per-fixture request uses the worker's include (lineups.details) and
+      lineupDetailTypes:<HISTORICAL_PERFORMANCE_DETAIL_TYPE_IDS> (probe lines 672-675),
+      asserted by the unit fetcher to be 52,57,79,83,84,85,88,112,113,118,119,194,324.
+
+  - criterion: "V3 - ticket parity: JSON ticket == workflow-embedded Python dict; requestId new; fixtures include {26027,19489216}; invariantSeasons == [26027]"
+    result: VERIFIED
+    evidence: >
+      Independent python3 snippet (re.search for `expected = {...}` up to `path = Path(`,
+      ast.literal_eval, compared to json.load of docs/production/g7-historical-performance-probe-trigger.json):
+      "embedded == ticket: True"; "requestId: g7-historical-performance-coverage-2026-09-18-01";
+      "has 26027/19489216: True"; "invariantSeasons: [26027] True";
+      "old requestId: g7-historical-performance-coverage-2026-08-02-03 new differs: True";
+      `git grep -q <newRequestId> origin/main` -> not present on main (new).
+      Diff of the ticket vs origin/main is exactly: requestId change, one added fixture line,
+      one added invariantSeasons key (git diff shown in session).
+
+  - criterion: "V4 - workflow guards unchanged vs origin/main; timeout 10->45 justified; new step fails when the 19489216 row is missing"
+    result: VERIFIED
+    evidence: >
+      `git diff origin/main..HEAD -- .github/workflows/g7-sportsmonks-historical-performance-coverage.yml`
+      contains only: timeout-minutes 10->45 with a 2-line derivation comment; the embedded
+      ticket delta (identical to the JSON); the new step "Report coverage invariant
+      classification" (id invariants, `if: always() && steps.performance_probe.outcome == 'success'`);
+      INVARIANTS_OUTCOME added to the finalize gate and the status gate; INVARIANT_FAILING appended
+      to the status description. Unchanged and present at HEAD (line numbers in the file at HEAD):
+      job `if` github.repository == 'mrdata007/botolago-foundation' && github.ref == 'refs/heads/main'
+      && github.actor == 'mrdata007' (26-29); GITHUB_RUN_ATTEMPT != 1 -> exit 2 (45-48);
+      CONFIRMATION == RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY and EXPECTED_COMMIT == GITHUB_SHA (49-53);
+      environment: production-football-ingestion (34); `grep -n 'secrets\.'` -> only lines 138 and 213,
+      both SPORTSMONKS_API_TOKEN; add-mask at 141, 216, 286; phase7f scan + grep -F token scan
+      (217-222); upload-artifact pinned ea165f8d..., retention-days 30 (228-233); cleanup chmod 0600 +
+      delete (241-246); concurrency group botolago-g7-historical-performance-coverage,
+      cancel-in-progress false (15-17); permissions contents: read, statuses: write (19-21);
+      persist-credentials: false (68).
+      Timeout justification: sister workflow g7-sportsmonks-historical-coverage-audit.yml has
+      timeout-minutes: 90 for 480 fixtures (+12 listing pages = 492 requests ~ 10.98 s/request).
+      Simulated run counted 253 provider calls (7 sampled + 246 invariant) -> 253 x 10.98 s ~ 46.3 min;
+      the comment says "~11 s each", so 45 min sits ~1.3 min under a literal application of the
+      allowance (see security_observations/notes). Builder's report states the observed provider
+      pace makes ~3 min the expectation.
+      Missing-row behaviour: the step's Python was extracted verbatim from the workflow and run
+      against the simulated evidence with the 19489216 row deleted: exit 1, stderr
+      "HALTING_FIXTURE_NOT_CLASSIFIED", GITHUB_OUTPUT left empty. Against the intact evidence: exit 0,
+      prints per-season line, sorted failuresByCode, the full 19489216 row, and writes
+      failing=1 / halting_failures=starter_rows_mismatch to GITHUB_OUTPUT.
+      `node scripts/backend/check-config-integrity.mjs --file <workflow>` -> "no violations in 1 executed configuration file(s)."
+
+  - criterion: "V5 - simulated run without a token: per-fixture rows have the documented keys; 19489216 row pass=false, failures==['starter_rows_mismatch']; season failing==1 and failuresByCode.starter_rows_mismatch==1; no names / raw payload / token in evidence; phase7f scan PASS"
+    result: VERIFIED
+    evidence: >
+      Technique: the module's requestSportsMonksJson takes ProbeDependencies with an injectable
+      `fetch` (the same seam the unit tests use), so no repo change was needed. Scratchpad-only
+      script /tmp/claude-0/-home-user-botolago-foundation/38c9c6aa-d4bc-540b-8674-7cdb622e23bb/scratchpad/bg0034-sim.ts
+      stubs fetch with a 240-fixture season-26027 listing (3 fixtures/between windows, per_page 50,
+      has_more paging), 40-row lineups with player_name and fixture name strings deliberately
+      present in the provider payload, 19489216 with 21 starters and every other fixture with 22,
+      token "VERIFIER-FAKE-TOKEN-...". Run with `bun bg0034-sim.ts <dir> full`:
+      providerCalls=253, invariant requestCount=246, fixtures=240, passing=239, failing=1,
+      fixturesEnumerated=240, enumerationComplete=true,
+      failuresByCode={lineup_rows_out_of_range:0, valid_player_rows_out_of_range:0,
+      incomplete_rows_limit_exceeded:0, starter_rows_mismatch:1, team_count_mismatch:0,
+      invalid_detail_rows_present:0}; 19489216 row = {fixtureId:19489216, seasonId:26027,
+      kickoff:"2025-09-12T17:00:00.000Z", enumerated:true, lineupRows:40, validPlayerRows:40,
+      excludedIncompleteRows:0, starterRows:21, teamCount:2, invalidDetailRows:0,
+      failures:["starter_rows_mismatch"], pass:false}; rowKeys (all 240 rows identical) =
+      [enumerated, excludedIncompleteRows, failures, fixtureId, invalidDetailRows, kickoff,
+      lineupRows, pass, seasonId, starterRows, teamCount, validPlayerRows];
+      containsToken=false, containsPlayerName=false, containsFixtureName=false,
+      containsPlayerIdKey=false, containsDetailsKey=false, containsDataKey=false,
+      providerPayloadIncluded=false.
+      Partial enumeration (`... partial`, listing omits 19489216 and 19489300): fixtures=239,
+      failing=1, fixturesEnumerated=238, enumerationComplete=false, 19489216 row enumerated=false,
+      kickoff=null, failures=["starter_rows_mismatch"], pass=false; 19489300 absent.
+      `python scripts/backend/phase7f-scan-sanitized-evidence.py <dir>` on both evidence dirs
+      (each holding sportsmonks-historical-performance.json and
+      sportsmonks-historical-performance-invariants.json) -> "PASS rule=ALL count=0", exit 0.
+
+  - criterion: "V6 - test / lint / integrity gates"
+    result: VERIFIED
+    evidence: >
+      `bun test scripts/backend/sportsmonks-historical-performance-probe.test.ts scripts/backend/sportsmonks-production-probe.test.ts`
+      -> "27 pass, 0 fail, 3822 expect() calls, Ran 27 tests across 2 files" (bun 1.3.11).
+      `bun run test` -> "707 pass, 0 fail, 9662 expect() calls, Ran 707 tests across 117 files".
+      `bun run backend:secrets:check` -> "No high-confidence secrets found in tracked files."
+      `bunx eslint <probe.ts> <probe.test.ts>` -> exit 0, no output.
+      `bunx prettier --check <workflow> <ticket.json> <probe.ts> <probe.test.ts> <implementation-report.yaml>`
+      -> "All matched files use Prettier code style!".
+      `node scripts/backend/check-config-integrity.mjs --file .github/workflows/g7-sportsmonks-historical-performance-coverage.yml`
+      -> "Config integrity guard: no violations in 1 executed configuration file(s)."
+
+  - criterion: "V7 - behavioural gap: invariant six (invalidDetailRows) is unreachable in the worker"
+    result: VERIFIED
+    evidence: >
+      Confirmed by reading supabase/functions/_shared/sportsmonks-historical-player-performance.ts.
+      Lines 497-501:
+        } catch (error) {
+          invalidDetailRows += 1;
+          if (error instanceof HistoricalPerformanceRuntimeError) throw error;
+          throw new HistoricalPerformanceRuntimeError("invalid_provider_detail");
+        }
+      Every path through the catch rethrows, so control never reaches line 520
+      `if (invalidDetailRows !== 0) coverageFailures.push("invalid_detail_rows_present");`
+      with a non-zero counter; when the coverage block runs, invalidDetailRows is always 0.
+      Observation, not a defect of this task: the probe still records invalidDetailRows (0) on
+      every classified row and reports fixtures aborted on a bad detail under the worker's
+      abort code (invalid_provider_detail / duplicate_provider_detail) with null counts and
+      pass=false (unit test "records the worker's row-level abort code when a detail is invalid"
+      and the simulated aggregation test both pass). The acceptance criterion remains satisfiable:
+      each fixture is classified against all six invariants exactly as the worker evaluates them.
+      Relevant to BG-0011 step A2 (the worker's invariant six is dead code as written).
+
+  - criterion: "V8 - live provider classification of 19489216 and the 240 season-26027 fixtures (owner dispatch on merged main produces a per-fixture pass/fail listing naming the failing invariant of 19489216)"
+    result: NOT_TESTABLE
+    evidence: >
+      No SPORTSMONKS_API_TOKEN is available to this role and none was sought; the workflow is
+      dispatch-only, owner-only (github.actor == 'mrdata007'), main-only, and forbidden to
+      dispatch from here. What the owner dispatch at the merged commit must show:
+      (1) job log of step "Report coverage invariant classification" with
+      `season=26027 enumerated=N/240 complete=<true|false> fixtures=F passing=P failing=X`,
+      the six-code histogram, and `fixture=19489216 {...,"failures":[<code(s)>],"pass":false}`;
+      (2) artifact g7-historical-performance-<run_id> containing
+      sportsmonks-historical-performance-invariants.json with 240 (or N pinned+enumerated) rows;
+      (3) commit status botolago/g7-historical-performance with description ending
+      "invariant-failing fixtures: X"; (4) enumerationComplete should be true; if false, the
+      season count is a lower bound and the listing windows need review. The repository already
+      embeds a prior diagnostic for 19489216 (starterRows 21 -> starter_rows_mismatch, run
+      30767752509) in docs/production/g7-sportsmonks-coverage-audit-trigger.json; the dispatch
+      is expected to reproduce that code.
+
+regressions: []
+
+untested:
+  - "Live SportsMonks classification (V8): requires owner dispatch of g7-sportsmonks-historical-performance-coverage.yml on merged main with the production-football-ingestion environment. The ledger acceptance item 'owner dispatch ... produces a per-fixture pass/fail listing naming the failing invariant of 19489216' is therefore not confirmed by this report; close it only against the run log/artifact."
+  - "Actual provider pacing / the 45-minute timeout under real latency and Retry-After behaviour (simulated fetch is instantaneous)."
+  - "Whether the workflow's quality step (`bun test` without `bun install`) resolves the cross-directory .ts import on the runner: unchanged from origin/main and the tests import only repository files and bun:test, but not exercised here (this session ran with node_modules installed)."
+
+security_observations:
+  - "Only SPORTSMONKS_API_TOKEN is read from secrets (workflow lines 138, 213); masked at 141 and 216; GITHUB_TOKEN masked at 286. No Supabase secret, URL or key appears in the diff (grep for supabase/SUPABASE in the workflow: only none; probe imports the shared worker module but never its runtime configuration)."
+  - "Evidence sanitization holds under adversarial stub payloads: player_name, fixture name, player_id, details and data keys present in the provider payload never reach either evidence file; credential_in_evidence guard (probe 724-726) covers the invariant evidence too; phase7f scan PASS on both simulated evidence directories."
+  - "Enumeration fails closed on out-of-scope league/season or duplicate ids (season_fixture_scope_mismatch) and on pagination overrun (10-page cap); pinned ticket fixtures guarantee 19489216 is classified even under partial enumeration, with enumerated:false recorded rather than hidden."
+  - "Note (not a defect): 253 requests x 10.98 s (the cited sister allowance) = ~46.3 min, marginally above the 45-minute job timeout; the comment says '~11 s each' and the Builder documents ~3 min as the expected pace. If the provider throttles to the allowance pace, the job would be cancelled at 45 min with evidence unwritten (probe writes both files only after both passes complete), and cleanup would remove the runtime dir. Owner may wish to know this before dispatch; it does not affect any acceptance criterion."
+
+status: PASS
+notes: >
+  PASS applies to the reviewable deliverable at cd7b8b9 (scope, invariant fidelity via import,
+  ticket/workflow parity, guard integrity, simulated end-to-end classification and sanitization,
+  full test/lint/integrity gates). Ledger closure of Option A step A0 still depends on the
+  owner dispatch listed under untested; this report does not and cannot supply that evidence.

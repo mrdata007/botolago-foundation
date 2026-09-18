@@ -426,7 +426,7 @@ tasks:
     owner: Chief
     state: RUNNING
     depends_on: []
-    roles: {builder: Builder-DevOps DONE (agent/BG-0034-g7-invariant-probe @cd7b8b9), verifier: running, reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0034-g7-invariant-probe @cd7b8b9), verifier: PASS (docs/engineering/tasks/BG-0034/verification-report.yaml; live classification NOT_TESTABLE until owner dispatch), reviewer: running (fresh context)}
     finding: 'fixture 19489216 diagnostic is already recorded in docs/production/g7-sportsmonks-coverage-audit-trigger.json (lineupRowsSeen 40, validPlayerRows 38, starterRows 21, failedInvariant starter_rows_mismatch, from run 30767752509) — answers the WHICH question; the 240-fixture count still needs the dispatch'
     observation: 'worker invariant six (invalidDetailRows) is unreachable: the catch rethrows invalid_provider_detail — relevant to Option A step A2'
     acceptance_criteria: [probe script classifies each fixture against lineups 22..100, valid rows 22..100, excludedIncompleteRows <= 20, starterRows == 22, teamCount == 2, invalidDetailRows == 0; ticket + workflow expected JSON updated together; no Supabase secrets; owner dispatch on merged main produces a per-fixture pass/fail listing naming the failing invariant of 19489216]
