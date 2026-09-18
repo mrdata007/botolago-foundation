@@ -1,0 +1,117 @@
+task_id: BG-0037
+verified_commit: "ae43a2d"
+verifier_notes: >
+  Worktree /home/user/bg0037-verify detached at origin/agent/BG-0037-promoter-manifest
+  (ae43a2d, expected head matched). merge-base with origin/main = 6a25673.
+  No source edits, commits, dispatches or credentials. The only worktree mutation
+  (V5) was reverted with git checkout and confirmed clean.
+criteria:
+  - criterion: "V1 - branch diff touches only the four allowed files"
+    result: VERIFIED
+    evidence: |
+      $ git diff --name-status $(git merge-base HEAD origin/main)..HEAD
+      M  .github/workflows/phase7e-b-production-migration-promotion.yml
+      A  docs/engineering/tasks/BG-0037/implementation-report.yaml
+      M  scripts/backend/phase7e-production-migration-promoter.py
+      M  scripts/backend/tests/test_phase7e_production_migration_promoter.py
+      All four are in the allowed set; nothing else changed.
+  - criterion: "V2 - promoter diff is only the BATCHES entry (+comment) and EXPECTED_EDGE_FUNCTIONS_BY_BATCH entry; transaction building and history validation unchanged"
+    result: VERIFIED
+    evidence: |
+      $ git diff 6a25673..HEAD -- scripts/backend/phase7e-production-migration-promoter.py   (8 insertions, 0 deletions)
+      @@ -118,6 +118,13 @@ BATCHES
+      +    # BG-0003 (verified and reviewed 2026-09-18): the read-only fantasy
+      +    # deadline-watch RPC and the guarded replacement of the calendar sync that
+      +    # never derives a gameweek window or deadline from a placeholder kickoff.
+      +    "fantasy_deadline_guard": (
+      +        "20260918130000_fantasy_deadline_watch.sql",
+      +        "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql",
+      +    ),
+      @@ -136,6 +143,7 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH
+      +    "fantasy_deadline_guard": frozenset({"football-ingest", "news-ingest"}),
+      No CONFIRMATIONS edit is needed: CONFIRMATIONS is a dict comprehension over BATCHES
+      (f"RUN_PHASE7E_B_PRODUCTION_{batch.upper()}"), so the new entry is derived.
+      Independent source comparison (inspect.getsource, origin/main promoter vs branch):
+      build_transaction identical: True; assert_history identical: True;
+      read_history identical: True; load_migrations identical: True;
+      batch_history_prefix identical: True; ManagementClient identical: True.
+  - criterion: "V3 - workflow diff is exactly one added option line; guards unchanged"
+    result: VERIFIED
+    evidence: |
+      $ git diff 6a25673..HEAD -- .github/workflows/phase7e-b-production-migration-promotion.yml
+      @@ -22,6 +22,7 @@ on:
+                 - fantasy_calendar_sync
+      +          - fantasy_deadline_guard
+             confirmation:
+      $ git diff ... | grep -c '^[+-][^+-]'  -> 1   (single changed line; --stat: 1 insertion)
+      Concurrency group botolago-production-v2-mutation, confirmation guard at line 106
+      (expected_confirmation="RUN_PHASE7E_B_PRODUCTION_${MIGRATION_BATCH^^}") untouched.
+  - criterion: "V4a - promoter unit tests pass (11 OK, 59 migrations)"
+    result: VERIFIED
+    evidence: |
+      $ python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v
+      ... test_batches_cover_the_exact_ordered_migration_chain ... ok
+      ... test_workflow_batch_choices_match_the_manifest_batches_in_order ... ok
+      Ran 11 tests in 0.011s
+      OK
+      Test asserts len(actual)==59 and len(set(actual))==59 (diff changed 57->59).
+  - criterion: "V4b - independent sanity: branch promoter loads 59 migrations, last batch fantasy_deadline_guard, confirmation string, history prefix 57"
+    result: VERIFIED
+    evidence: |
+      importlib load of scripts/backend/phase7e-production-migration-promoter.py at HEAD:
+      branch load_migrations count: 59
+      last batch: fantasy_deadline_guard
+      CONFIRMATIONS: RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD
+      batch_history_prefix len: 57
+      batch files: ('20260918130000_fantasy_deadline_watch.sql', '20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql')
+      edge fns: ['football-ingest', 'news-ingest']
+      last two migrations: ['20260918130000_fantasy_deadline_watch.sql', '20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql']
+      Both SQL files exist in supabase/migrations (6162 and 14602 bytes); ls *.sql | wc -l -> 59.
+  - criterion: "V4c - failure reproduced on origin/main's promoter against the same repository"
+    result: VERIFIED
+    evidence: |
+      $ git show origin/main:scripts/backend/phase7e-production-migration-promoter.py > <scratchpad>/old.py
+      importlib load of old.py, old.load_migrations(Path('.')) ->
+      OLD PromotionError: repository migration inventory differs from the reviewed migration chain
+      Same call on the branch promoter succeeds (59). The P0 defect is real on main and fixed on the branch.
+  - criterion: "V5 - mutation check: removing the workflow option makes the new parity test fail; restored cleanly"
+    result: VERIFIED
+    evidence: |
+      $ sed -i '/^          - fantasy_deadline_guard$/d' .github/workflows/phase7e-b-production-migration-promotion.yml
+      git diff --stat -> 1 file changed, 1 deletion(-)
+      $ python3 -m unittest ...test_workflow_batch_choices_match_the_manifest_batches_in_order
+      -  'fantasy_deadline_guard']
+      FAILED (failures=1)   rc=1
+      $ git checkout -- .github/workflows/phase7e-b-production-migration-promotion.yml
+      git status --porcelain -> [] (empty); HEAD still ae43a2d; test re-run -> OK.
+  - criterion: "V6 - bash ${MIGRATION_BATCH^^} confirmation equals python CONFIRMATIONS value"
+    result: VERIFIED
+    evidence: |
+      $ bash -c 'MIGRATION_BATCH=fantasy_deadline_guard; echo "RUN_PHASE7E_B_PRODUCTION_${MIGRATION_BATCH^^}"'
+      RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD
+      python: PROMOTER.CONFIRMATIONS["fantasy_deadline_guard"] == "RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD"
+      Workflow line 106 uses exactly this expansion. Strings are identical.
+  - criterion: "V7 - repository checks: backend:migrations:check, config integrity on the workflow, prettier --check"
+    result: VERIFIED
+    evidence: |
+      $ bun run backend:migrations:check   -> Validated 59 migration(s).   rc=0
+      $ node scripts/backend/check-config-integrity.mjs --file .github/workflows/phase7e-b-production-migration-promotion.yml
+        -> Config integrity guard: no violations in 1 executed configuration file(s).   rc=0
+      $ bunx prettier --check .github/workflows/phase7e-b-production-migration-promotion.yml
+        -> All matched files use Prettier code style!   rc=0
+  - criterion: "V8 - parity-test exception for post_gate4_baseline is justified (never dispatchable on main)"
+    result: VERIFIED
+    evidence: |
+      $ git show origin/main:.github/workflows/phase7e-b-production-migration-promotion.yml | grep -c post_gate4_baseline -> 0
+      origin/main options list: foundation, identity, football, news_storage, notifications,
+      fantasy_phase65, admin, release_activation, launch_recovery_2026_09_14, fantasy_calendar_sync.
+      Every historical revision of the workflow (9db1514, 3206afc, 0fc7715, 3591227) also contains
+      0 occurrences of post_gate4_baseline. The exception encodes pre-existing behaviour, not a new
+      exclusion. Recorded as an observation below.
+regressions: []
+untested:
+  - "Live Production V2 dispatch of the fantasy_deadline_guard batch (requires credentials and a mutating workflow run; out of scope for the verifier and forbidden by role contract). Only the manifest, guards and unit behaviour were verified."
+security_observations:
+  - "Observation (V8): test_workflow_batch_choices_match_the_manifest_batches_in_order hard-codes post_gate4_baseline as the single non-dispatchable batch. This matches main and all prior workflow history (never listed as a choice). Acceptable; note that any future non-dispatchable batch would need the same explicit exception, which is the desired fail-closed behaviour."
+  - "No secrets, credentials or environment targets were touched; the confirmation guard and concurrency group in the workflow are byte-identical to main apart from the one option line."
+status: PASS

@@ -473,7 +473,7 @@ tasks:
     owner: Chief
     state: RUNNING
     depends_on: []
-    roles: {builder: Builder-DevOps DONE (agent/BG-0037-promoter-manifest @ae43a2d; 11 unit tests OK; main promoter reproduces the inventory failure, branch promoter loads 59), verifier: running, reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0037-promoter-manifest @ae43a2d; 11 unit tests OK; main promoter reproduces the inventory failure, branch promoter loads 59), verifier: PASS (docs/engineering/tasks/BG-0037/verification-report.yaml), reviewer: running (fresh context)}
     acceptance_criteria: [new batch fantasy_deadline_guard with the two files appended after fantasy_calendar_sync; workflow choice option and confirmation added; edge-function expectation entry added; promoter unit tests updated (59 migrations) and passing; no change to transaction building or history validation]
     note: Chief process defect — the BG-0003 brief did not include the manifest update
 
