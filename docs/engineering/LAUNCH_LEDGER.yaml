@@ -472,11 +472,13 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: RUNNING
+    state: DONE
     depends_on: []
-    roles: {builder: Builder-DevOps DONE (agent/BG-0037-promoter-manifest @ae43a2d; 11 unit tests OK; main promoter reproduces the inventory failure, branch promoter loads 59), verifier: PASS (docs/engineering/tasks/BG-0037/verification-report.yaml), reviewer: running (fresh context)}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0037-promoter-manifest @ae43a2d; 11 unit tests OK; main promoter reproduces the inventory failure, branch promoter loads 59), verifier: PASS (docs/engineering/tasks/BG-0037/verification-report.yaml), reviewer: PASS (docs/engineering/tasks/BG-0037/review-report.yaml)}
     acceptance_criteria: [new batch fantasy_deadline_guard with the two files appended after fantasy_calendar_sync; workflow choice option and confirmation added; edge-function expectation entry added; promoter unit tests updated (59 migrations) and passing; no change to transaction building or history validation]
     note: Chief process defect — the BG-0003 brief did not include the manifest update
+    merged: main (merge of agent/BG-0037-promoter-manifest @ae43a2d, 2026-09-18)
+    next: Chief dispatches Phase 7E-B with batch fantasy_calendar_sync (already complete → pure credential preflight, no writes); promotion of fantasy_deadline_guard awaits owner go
 
   BG-0038:
     title: 'sportsmonks-catalog.ts freshness() falls back to observedAt for season payloads without a provider timestamp, defeating the STALE_UPDATE/skip guard (seasons rewritten on every run); mark ending_at == starting_at as provisional'
