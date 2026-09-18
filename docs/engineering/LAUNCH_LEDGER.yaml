@@ -339,7 +339,37 @@ tasks:
       options: 'a) accept 21-22 identified starters when anonymous rows exist (226/240); b) identified + anonymous starters == 22 with cap <= 4, persist identified rows, quarantine <= 3 outliers (237/240) — recommended; c) quarantine at 27% (176/240, club-biased) — rejected by the analysis; d) NO-GO → Option B'
       go_no_go: 'HALTED_FOR_INPUT — NO-GO as written; conditional GO only via option (b) under a revised, independently verified brief, and only if BG-0002 is closed by 2026-09-20T12:00Z; otherwise (d) applies automatically'
       owner_decision_needed: 'BG-0011-OWNER-3 — authorise the option (b) rule change as a separately verified revised brief, or reject any rule change (Option A NO-GO)'
-      next_read_only: BG-0044 probe extension (raw/anonymous starter counters; mapping-gate measurement) — dispatched
+      next_read_only: BG-0044 probe extension (raw/anonymous starter counters; mapping-gate measurement) — DONE, see result_2026_09_18T20 below
+    bg0044_sizing_result_2026_09_18T20: >-
+      BG-0044's measured result (see BG-0044 entry, run 35346378420) resolves the open sizing
+      question for option (b): rawStarterRows==22 holds for all 240/240 season-26027 fixtures
+      (the provider always sends 22 starters; some are anonymous/unmapped and dropped before the
+      worker's count). Accepting identified+anonymous starters==22 with anonymousStarterRows<=4
+      yields 238/240 (99.2%) usable fixtures, persisting only identified rows and quarantining
+      anonymous ones per fixture — better than a1_result_2026_09_18's estimate of 237/240.
+      Exactly 2 fixtures (19596474: 7 anonymous of 22 starters; 19596475: 8 anonymous of 22)
+      fail even this relaxed threshold and would be quarantined entirely as genuinely incomplete,
+      not repaired. This is the concrete number for the owner decision below.
+    owner_recommendation_BG-0011-OWNER-3_2026_09_18T20: >-
+      RECOMMENDATION (not authorized, not executed — awaiting owner decision): authorize option
+      (b) as measured — accept a fixture for pricing input when its provider lineup has exactly
+      22 raw starter rows (universal, 240/240) and at most 4 of those 22 lack a player_id
+      (anonymousStarterRows<=4); persist only the identified starter/substitute rows for that
+      fixture; quarantine the 2 fixtures that exceed the cap (19596474, 19596475) entirely rather
+      than partially using them. This achieves 238/240 (99.2%) fixture coverage for season 26027
+      without weakening the underlying 22-starter invariant itself (still enforced; the change is
+      in what counts as "identified" before that count is taken) and without fabricating any
+      rating. The alternative (option c, quarantine at the raw 27% failure rate) is worse on
+      every axis already analysed in a1_result_2026_09_18 (176/240, club-biased toward
+      Dcheïra/Safi/CRKZ/HUSA/KACM/UTS). This recommendation requires: (1) the owner's explicit
+      authorization of the option (b) rule change stated above; (2) BG-0002-class production
+      credential access for the additive migration + backfill dispatch (already resolved per
+      BG-0002 DONE); (3) a separately verified revised engineering brief implementing exactly
+      this rule (not a wider one) before any backfill or catalog re-stage is dispatched. No
+      backfill, re-stage, rating fabrication, or coverage-threshold weakening is authorized by
+      this recommendation alone — it is evidence-backed sizing only, per the standing
+      owner_decisions_2026_09_18 constraint that any coverage-rule change needs a revised brief
+      and independent verification before execution.
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
@@ -998,12 +1028,27 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: DISPATCHED
+    state: DONE
     depends_on: [BG-0034]
     roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: PASS (docs/engineering/tasks/BG-0044/verification-report.yaml), reviewer: PASS (docs/engineering/tasks/BG-0044/review-report.yaml), reviewer: pending}
     acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
     merged: main (merge of agent/BG-0044-probe-anonymous-starters @4a9cfba)
     dispatch: g7-sportsmonks-historical-performance-coverage.yml queued on main e9e94bd (read-only)
+    result_2026_09_18T20: >-
+      Run 35346378420 (head e9e94bd), artifact g7-historical-performance-35346378420
+      (id 10546832790, sha256 745797ac32985e7b07c3f5988d780c8f096b8be687cc4792771efe0aba7ac492),
+      downloaded and inspected directly (read-only, no production write). Season 26027, all
+      240/240 fixtures enumerated. rawStarterExactly22: 240/240 — the provider sends exactly 22
+      starter rows for every fixture without exception; the mechanism identified in
+      a1_result_2026_09_18 (anonymous rows without player_id dropped before the worker's
+      starterRows count) is now proven universal, not just consistent with the 64-fixture sample.
+      anonymousStarterHistogram: {0: 176, 1: 50, 2: 11, 4: 1, 7: 1, 8: 1} (sums to 240).
+      identityTolerantPassing (rawStarterRows==22 AND anonymousStarterRows<=4): 238/240 (99.2%).
+      Exactly 2 outlier fixtures fail even this relaxed threshold: 19596474 (7 anonymous of 22
+      starters, 15 identified) and 19596475 (8 anonymous of 22 starters, 14 identified) — both
+      genuinely incomplete provider data, not a mapping defect. This is more precise than
+      a1_result_2026_09_18's estimate of "237/240, cap<=4, quarantine <=3 outliers" — the measured
+      number is 238/240 with exactly 2 outliers, not 3.
 
   BG-0045:
     title: 'Gate 2F rollback env file pins FOOTBALL_SPORTSMONKS_SEASON_ID 26027 (same class of defect as BG-0033) — gate2f-production-current-season-catalog-canary.yml rollback step'
