@@ -378,6 +378,23 @@ interface CommandResult {
   readonly stdout: string;
 }
 
+/**
+ * The only shape of a command's outcome allowed to reach `evidence.commands` (and therefore the
+ * uploaded evidence JSON). `CommandResult.stdout` carries the raw `secrets list` table so
+ * captureConfiguration/performRestore can parse it, and season-configuration/restore stdout can
+ * contain live secret values (SPORTSMONKS_API_TOKEN, the freshly-minted
+ * FOOTBALL_INGESTION_TRIGGER_SECRET) verbatim on success or failure — never widen this type to
+ * carry stdout, and never push a bare CommandResult into evidence.commands.
+ */
+interface EvidenceCommand {
+  readonly operation: string;
+  readonly exitCode: number;
+}
+
+function toEvidenceCommand(result: CommandResult): EvidenceCommand {
+  return { operation: result.operation, exitCode: result.exitCode };
+}
+
 async function runCommand(
   deps: RunnerDependencies,
   operation: string,
@@ -958,7 +975,7 @@ export async function runHistoricalPerformanceBackfill(
     restoration: { attempted: false, succeeded: false },
     verdict: "fail",
   };
-  const commands = evidence.commands as CommandResult[];
+  const commands = evidence.commands as EvidenceCommand[];
   const seasonResults = evidence.seasons as JsonRecord[];
   let failureCode: string | undefined;
 
@@ -972,7 +989,7 @@ export async function runHistoricalPerformanceBackfill(
         ["secrets", "set", "--project-ref", EXPECTED_PROJECT_REF, "--env-file", secretPath],
         runtimeDirectory,
       );
-      commands.push(configure);
+      commands.push(toEvidenceCommand(configure));
       if (configure.exitCode !== 0) {
         throw new HistoricalPerformanceBackfillError(`season_${season.id}_configuration_failed`);
       }

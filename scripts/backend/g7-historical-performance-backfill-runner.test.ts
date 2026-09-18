@@ -28,6 +28,30 @@ import {
 const EXPECTED_PROJECT_REF = "tkewgajrljbwgwedqsxn";
 const EXPECTED_COMMIT = "a".repeat(40);
 
+/**
+ * Regression guard for the season-configuration `commands.push` leak (Reviewer attempt 1,
+ * defect 1): recursively walks a piece of evidence and fails if any object anywhere carries a
+ * `stdout` key. `CommandResult.stdout` exists so captureConfiguration/performRestore can parse the
+ * `secrets list` table, but that raw stdout — which can contain live secret values such as
+ * SPORTSMONKS_API_TOKEN or a freshly-minted FOOTBALL_INGESTION_TRIGGER_SECRET — must never reach
+ * anything written into the evidence directory. This must fail on the pre-fix code (which pushed
+ * the full CommandResult, stdout included, for the season-configuration command) and pass after.
+ */
+function assertNoStdoutLeak(value: unknown, path = "$"): void {
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => assertNoStdoutLeak(entry, `${path}[${index}]`));
+    return;
+  }
+  if (value !== null && typeof value === "object") {
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (key === "stdout") {
+        throw new Error(`FOUND_STDOUT_KEY_AT ${path}.stdout`);
+      }
+      assertNoStdoutLeak(entry, `${path}.${key}`);
+    }
+  }
+}
+
 const temporaryDirectories: string[] = [];
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -703,6 +727,81 @@ describe("runHistoricalPerformanceBackfill — dry run", () => {
     expect(evidence.verdict).toBe("pass");
     expect(postCount()).toBe(0);
     expect(h.cli.calls()).toEqual([["secrets", "list", "--project-ref", EXPECTED_PROJECT_REF]]);
+  });
+});
+
+describe("evidence never carries raw command stdout", () => {
+  it("capture-only evidence has no stdout key anywhere", async () => {
+    const h = createHarness();
+    seedState(h.cli, { SPORTSMONKS_API_TOKEN: "provider-token-value" });
+    const evidence = await runHistoricalPerformanceBackfill(h.deps(), "capture-only");
+    assertNoStdoutLeak(evidence);
+    const written = JSON.parse(
+      readFileSync(join(h.evidenceDir, "g7-historical-performance-backfill-capture.json"), "utf8"),
+    );
+    assertNoStdoutLeak(written);
+  });
+
+  it("dry-run evidence has no stdout key anywhere", async () => {
+    const h = createHarness();
+    seedState(h.cli, currentRestoreValues());
+    const { fetch } = createFakeFetch();
+    const evidence = await runHistoricalPerformanceBackfill(
+      h.deps({ G7_DRY_RUN: "1" }, fetch),
+      "default",
+    );
+    assertNoStdoutLeak(evidence);
+  });
+
+  it("the default success path's commands array — including season-configuration — has no stdout key", async () => {
+    const h = createHarness();
+    seedState(h.cli, currentRestoreValues());
+    const { fetch } = createFakeFetch();
+    const evidence = await runHistoricalPerformanceBackfill(h.deps({}, fetch), "default");
+    expect((evidence.commands as unknown[]).length).toBeGreaterThan(0);
+    assertNoStdoutLeak(evidence);
+
+    const written = JSON.parse(
+      readFileSync(join(h.evidenceDir, "g7-historical-performance-backfill-result.json"), "utf8"),
+    );
+    assertNoStdoutLeak(written);
+    for (const command of written.commands as Record<string, unknown>[]) {
+      expect(Object.keys(command).sort()).toEqual(["exitCode", "operation"]);
+    }
+  });
+
+  it("the mid-run-failure result file's commands array has no stdout key", async () => {
+    const h = createHarness();
+    seedState(h.cli, currentRestoreValues());
+    const { fetch } = createFakeFetch({ failFirstBatch: true });
+    await expect(runHistoricalPerformanceBackfill(h.deps({}, fetch), "default")).rejects.toThrow();
+    const written = JSON.parse(
+      readFileSync(join(h.evidenceDir, "g7-historical-performance-backfill-result.json"), "utf8"),
+    );
+    assertNoStdoutLeak(written);
+  });
+
+  it("--restore evidence (returned and restore-after-cancel.json) has no stdout key", async () => {
+    const h = createHarness();
+    seedState(h.cli, currentRestoreValues());
+    await runHistoricalPerformanceBackfill(h.deps(), "capture-only");
+    const restoreEvidence = await runHistoricalPerformanceBackfill(h.deps(), "restore");
+    assertNoStdoutLeak(restoreEvidence);
+    const written = JSON.parse(
+      readFileSync(join(h.evidenceDir, "restore-after-cancel.json"), "utf8"),
+    );
+    assertNoStdoutLeak(written);
+  });
+
+  it("--restore-only evidence (returned and restore-only-result.json) has no stdout key", async () => {
+    const h = createHarness();
+    seedState(h.cli, currentRestoreValues());
+    const evidence = await runHistoricalPerformanceBackfill(h.deps(), "restore-only");
+    assertNoStdoutLeak(evidence);
+    const written = JSON.parse(
+      readFileSync(join(h.evidenceDir, "restore-only-result.json"), "utf8"),
+    );
+    assertNoStdoutLeak(written);
   });
 });
 
