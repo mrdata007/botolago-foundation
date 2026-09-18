@@ -62,7 +62,9 @@ tasks:
     depends_on: []
     acceptance_criteria:
       - Phase 7E-B Production V2 migration promotion completes its management-API preflight (no HTTP 401)
-      - a subsequent batch promotion runs through the workflow, not through a generated transaction
+      - the authenticated account passes the ownership/organization-membership guard (MET 2026-09-18, preflight_retry_4)
+      - the project passes the backup-readiness guard (NOT YET MET — see new_blocker; investigation dispatched, see backup_diagnosis)
+      - a subsequent batch promotion runs through the workflow, not through a generated transaction (NOT YET REACHED — no batch has completed a full preflight)
     evidence:
       - 'run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"'
       - migration 20260918120000_fantasy_calendar_sync was exceptionally promoted through the promoter's own generated transaction; production history row name/version match and statements[1] sha256 = 634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e (repository file)
@@ -465,7 +467,7 @@ tasks:
     area: data
     severity: P0
     owner: Chief
-    state: RUNNING
+    state: DONE
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml contradictions[0]']
     acceptance_criteria: [root cause of the overwrite identified in the season ingestion path; a durable fix (guard or provider-metadata handling) so the correction is not reverted again; production row corrected via a rolled-back rehearsal first, then an owner-approved write]
     next: Researcher (season ingestion path) → Builder-Backend
@@ -477,7 +479,10 @@ tasks:
     hold_propagation: BG-0004 must stay HOLD until the guard migration is promoted (hourly schedule would overwrite ends_on every run)
     merge_gate: 'pull request whose backend-quality database job is green (first execution of season_bounds_guard.test.sql on a Supabase stack); PR opened by Chief under the owner PR route; a red job voids the PASS and returns the task to Builder-Backend'
     sequencing: 'PR #136 (BG-0027, migration 150000) merges first; then this branch merges main and moves the season_bounds_guard prefix 59 to 60 (version order preserved: 150000 before 160000)'
-    merge_gate_status: 'MET on PR #137 head 7cf5152 (type-refresh commit; no touch to the migration or the pgTAP file): backend-quality run 35368491642, database-quality job green — season_bounds_guard.test.sql executes ok, Files=40 Tests=816 Result PASS, db lint clean, types:check current (docs/engineering/tasks/BG-0031/ci-run-35368491642.txt). Per review-report.yaml release_blockers[0] this makes the existing Reviewer PASS live; no further Verifier/Reviewer pass needed for the code itself. Still holding the actual merge until BG-0027/PR #136 lands per sequencing above.'
+    merge_gate_status: 'MET on PR #137 head 7cf5152 (type-refresh commit; no touch to the migration or the pgTAP file): backend-quality run 35368491642, database-quality job green — season_bounds_guard.test.sql executes ok, Files=40 Tests=816 Result PASS, db lint clean, types:check current (docs/engineering/tasks/BG-0031/ci-run-35368491642.txt). Per review-report.yaml release_blockers[0] this makes the existing Reviewer PASS live.'
+    integration: 'BG-0027/PR #136 merged to main first (5a7f378) as planned. Branch then merged main (commit bc186ff), reconciling the Phase 7E-B promoter manifest/history-prefix assertions (fantasy_rating_degeneracy_guard before season_bounds_guard; total inventory 60->61; season_bounds_guard prefix 59->60) and confirming database.types.ts. A second, independent integration-delta Verifier (docs/engineering/tasks/BG-0031/verification-report-integration.yaml, PASS, verified_commit 98e27dd) re-derived the prefix arithmetic by hand, re-ran the 16 promoter unit tests, and re-pulled PR #137 CI run 35370836792 directly: database-quality green, both fantasy_rating_degeneracy_guard.test.sql and season_bounds_guard.test.sql executing ok, Files=41 Tests=848 Result PASS, types current.'
+    merged: 'Chief merge, --no-ff equivalent (merge_method=merge), main merge commit 26e7d11b15310886fff1f28db8dcda9975f9db5b, PR #137 head 98e27dd9a90cac1b1529f02c7f080f9713be30ec (2026-09-18)'
+    production_status: 'NOT LIVE. This merge lands the additive season_bounds_guard migration on main only. Production V2 still has the unguarded RPC and the un-corrected app.seasons row (ends_on 2026-09-24). Promotion is blocked by BG-0002; the one-row owner correction is a separate, still-unapplied, owner-executed write. Do not describe the guard as protecting production.'
     promotion_gate: 'owner one-row correction with lock before 2026-09-25 (Option A box 2026-09-23T00:00Z); promote batch season_bounds_guard after BG-0002 clears; workflows stay undispatched until both are live'
     pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/137 (head 96acad3); session subscribed'
 
