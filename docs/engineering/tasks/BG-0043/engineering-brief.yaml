@@ -1,0 +1,350 @@
+task_id: BG-0043
+objective: >
+  Production app.teams holds 21 active rows instead of the 16 Botola Pro 2026/27 clubs. Five clubs
+  that are not in the 2026/27 season (Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra,
+  Yacoub El Mansour) remain active=true, so api.football_team_catalog (anon/authenticated) exposes
+  them. Establish how `active` is maintained, which surfaces consume it, what changes if the five
+  become inactive, and the smallest safe correction (data-only rehearsed runbook and/or a durable
+  ingestion rule).
+researched_at: 2026-09-18
+sources:
+  - repository: /home/user/research-main @ origin/main 643d396 (read-only detached checkout)
+  - branch: origin/agent/BG-0018-club-codes @ e8635f0 (runbook pattern + implementation report)
+  - database: Supabase project tkewgajrljbwgwedqsxn (BotolaGO Production V2), read-only SELECTs only
+
+findings:
+  # ------------------------------------------------------------------ 1. VERIFIED STATE
+  - classification: VERIFIED
+    statement: >
+      app.teams has exactly 21 rows and all 21 are active=true; api.football_team_catalog('fr',100)
+      returns 21 entries (names listed in evidence). There is no inactive team in production.
+    evidence: >
+      SQL: select jsonb_array_length(api.football_team_catalog('fr',100)), count(*) filter (where active),
+      count(*) from app.teams -> 21 / 21 / 21. Names returned: Amal Tiznit, Chabab Mohammédia, CODM Meknès,
+      CR Khemis Zemamra, Difaâ El Jadida, FAR Rabat, FUS Rabat, Hassania Agadir, Ittihad Tanger, JS Soualem,
+      Kawkab Marrakech, Maghreb Fès, Moghreb Tétouan, Olympic Safi, Olympique Dcheïra, Raja Casablanca,
+      RSB Berkane, UTS Rabat, Widad Témara, Wydad Casablanca, Yacoub El Mansour.
+  - classification: VERIFIED
+    statement: >
+      The five non-2026/27 rows (id | name | active | created_at | updated_at):
+      7ff33380-1236-45e5-9c3e-97e753961cc9 | Chabab Mohammédia | true | 2026-08-02 13:43:15.58 | 2026-08-02 13:43:15.899678;
+      318655a9-db9f-4706-abb2-df0fa4b13baf | JS Soualem        | true | 2026-08-02 13:43:13.97 | 2026-08-02 13:43:14.462197;
+      32fb7b61-9af4-4667-8978-b739b5e3f170 | Olympic Safi      | true | 2026-07-31 18:28:20.56 | 2026-08-02 13:43:15.473884;
+      f2715f02-38ed-4feb-a4e5-72444ad39529 | Olympique Dcheïra | true | 2026-07-31 18:28:20.05 | 2026-08-02 08:59:02.620815;
+      e595b91e-4d8f-4f3d-92d7-c23d7e332544 | Yacoub El Mansour | true | 2026-07-31 18:28:19.85 | 2026-08-02 08:59:01.222435.
+      The other 16 rows were all last written 2026-09-18 10:06:25-38 (current-season catalog run).
+    evidence: "SQL over app.teams (full 21-row projection, ordered by name); matches docs/engineering/tasks/BG-0018/implementation-report.yaml unexpected_observations on origin/agent/BG-0018-club-codes."
+  - classification: VERIFIED
+    statement: >
+      Season identity: app.seasons has three Botola Pro seasons: 533b456d… label 2024/2025 (completed),
+      92e5dbe8… label 2025/2026 (completed), d03223b0-8f4a-4309-93e1-2a708d7c3584 label 2026/2027
+      (is_current=true, status active). Provider season mappings: 24319 -> 2024/2025, 26027 -> 2025/2026,
+      28647 -> 2026/2027. (Note: 2026/2027 currently has starts_on = ends_on = 2026-09-24; that is BG-0031,
+      not this task.)
+    evidence: "SQL: app.seasons joined to app.competitions; app_private.football_provider_mappings where entity_type in ('season','competition')."
+  - classification: VERIFIED
+    statement: >
+      2026/27 participation per team. The 16 current clubs each have active team_memberships in the
+      current season (21-47 rows each) and exactly one 2026/27 fixture. The five have ZERO 2026/27
+      memberships and ZERO 2026/27 fixtures; their history is:
+      Chabab Mohammédia: memberships 2024/2025 only, fixtures 30 (2024/2025);
+      JS Soualem: memberships 2024/2025 only, fixtures 30 (2024/2025);
+      Olympic Safi: memberships 2024/2025+2025/2026, fixtures 60;
+      Olympique Dcheïra: memberships 2025/2026 only, fixtures 30;
+      Yacoub El Mansour: memberships 2025/2026 only, fixtures 30.
+      Season-level: 2024/2025 = 16 standings teams / 16 fixture teams / 240 fixtures; 2025/2026 = 16 / 16 / 240;
+      2026/2027 = 0 standings rows / 16 fixture teams / 16 membership teams / 8 fixtures.
+      A participant set defined as "active membership in is_current season OR home/away team of an
+      is_current fixture" yields exactly the 16 current clubs; the complement among active teams is exactly
+      the five ids above (would_deactivate = 5).
+    evidence: "SQL: per-team subqueries on app.team_memberships / app.fixtures joined to app.seasons; season aggregate query; participant-complement query returned the five ids verbatim."
+  - classification: VERIFIED
+    statement: >
+      Provider mapping table (app_private.football_provider_mappings, entity_type='team',
+      provider sportsmonks): all 21 teams have an active mapping. The 16 current clubs have
+      last_seen_at 2026-09-18 10:06:39-43 (written by the seasonId 28647 teams job). The five have stale
+      last_seen_at: Chabab Mohammédia 238419 (2026-08-02 13:45:00), JS Soualem 227264 (2026-08-02 13:45:00),
+      Olympic Safi 16849 (2026-08-02 13:44:59), Olympique Dcheïra 16937 (2026-08-02 13:43:02),
+      Yacoub El Mansour 274759 (2026-08-02 13:43:01). The mapping table has no season scope column
+      (columns: provider_name, entity_type, external_id, internal_entity_id, source_version, last_seen_at,
+      active, manually_corrected, ...); season scope is only recoverable from the ingestion run that
+      touched the mapping. Count filter last_seen_at >= 2026-09-14 -> 16 seen, 5 not seen (the five names).
+    evidence: "SQL: football_provider_mappings join app.teams; information_schema.columns for the mapping table."
+  - classification: VERIFIED
+    statement: >
+      api.football_team_catalog filters `where candidate.active` and is the only public football read
+      that filters on teams.active. Definition (production == migration):
+      supabase/migrations/20260724143000_phase65_football_team_catalog.sql:27-33 —
+      `from app.teams candidate where candidate.active order by candidate.name, candidate.id limit p_limit`.
+      Grants: anon, authenticated, service_role (lines 39-42; scripts/backend/phase7f-api-surface-manifest.json:1132-1140).
+      Its comment (line 44-45): "Bounded provider-independent active-team catalog for public UI filters and identity onboarding."
+    evidence: "pg_get_functiondef('api.football_team_catalog(text,integer)') in production; migration file cited."
+  - classification: VERIFIED
+    statement: >
+      api.football_competition_summary does not read app.teams at all: it joins app.competitions to the
+      is_current season and app_private.football_competition_json (competition fields only). It is
+      unaffected by teams.active either way.
+    evidence: "pg_get_functiondef for api.football_competition_summary(uuid,text) and app_private.football_competition_json(uuid,text); source supabase/migrations/20260720095354_football_api_security.sql:691."
+  - classification: VERIFIED
+    statement: >
+      Frontend consumers of api.football_team_catalog: src/backend/football/supabase-repository.ts:97-108
+      (getTeams -> rpc football_team_catalog) -> src/services/football.ts:165-169 (footballService.getClubs,
+      presents via presentFootballClub at :61-77, which DROPS the `active` field; the Club type in
+      src/types/domain.ts:8-19 has no active flag) -> react-query key ["football","clubs",lang] in:
+      src/routes/index.tsx:150-152 (home; club lookup for match/article cards),
+      src/routes/auth.profile-setup.tsx:72-74 and :225 (onboarding favourite-club picker renders clubsQ.data directly — the five are selectable here),
+      src/routes/profile.tsx:59-60, src/routes/fantasy.players.tsx:61-62 (club filter),
+      src/routes/fantasy.players.$playerId.tsx:47-48, src/routes/fantasy.top-players.tsx:88-89,
+      src/routes/fantasy.rankings.tsx:71-72 (key ["clubs",lang]),
+      src/components/fpl/useFantasyScreen.ts:69-73 (staleTime 5 min),
+      src/services/follows.ts:29 (followed clubs resolution).
+      FDR: src/routes/fantasy.fixtures.tsx:75-76 filters `clubs.filter((c) => byClub.has(c.id))` against
+      api.fantasy_fixture_difficulty rows, so the five never appear there (no 2026/27 fixtures).
+      No frontend code filters on team.active; the only filter is the SQL `where candidate.active`.
+    evidence: "grep of src/ for getTeams/getClubs/queryKey; cited files and lines read."
+  - classification: VERIFIED
+    statement: >
+      api.news_team_filters also filters `team.active` but additionally requires a public story linked to
+      the team; it currently returns 0 entries and none of the five has story_teams rows, so it is
+      unaffected in practice.
+    evidence: "pg_get_functiondef('api.news_team_filters(text)'); SQL: jsonb_array_length(api.news_team_filters('fr')) = 0; story_teams count for the five = 0."
+  - classification: VERIFIED
+    statement: >
+      app_private.fantasy_catalog_candidates filters by MEMBERSHIP SEASON first and by team.active second:
+      supabase/migrations/20260803210943_fantasy_catalog_activation.sql:199-202 —
+      `join app.team_memberships membership on membership.season_id = target.id and membership.active
+       join app.players player on player.id = membership.player_id and player.active
+       join app.teams team on team.id = membership.team_id and team.active`.
+      Because the five have zero 2026/27 memberships they are already excluded; the 2026/2027 fantasy
+      season (9918cf95-9ed5-4d7b-99ca-eb9bfc29a258, status registration_open) has 16 distinct
+      football_team_id and 539 active fantasy_players. Deactivating the five changes nothing in Fantasy.
+      api.fantasy_player_pool joins app.teams only for display and filters fantasy_player.active, not team.active.
+    evidence: "Production pg_get_functiondef matches the migration lines; SQL on app.fantasy_seasons/app.fantasy_players; pg_proc scan of fantasy_player_pool."
+  # ------------------------------------------------------------------ 2. HOW active IS MAINTAINED
+  - classification: VERIFIED
+    statement: >
+      api.ingest_football_catalog_entity 'team' branch never sets active=false. Insert path writes
+      active=true (supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:284-293:
+      `insert into app.teams (id, slug, name, short_name, code, country_id, active) values (..., true)`);
+      update path forces `active = true` (lines 295-301: `update app.teams set name = v_name,
+      short_name = v_short_name, code = v_code, country_id = v_country_id, active = true where id = target_id`).
+      The RPC receives no season context: p_entity_type in ('competition','season','round','team') (line 108),
+      and the team payload keys read are name, shortName, code, countryCode (lines 278-283). A payload that
+      arrives with an unchanged provider timestamp and source_version returns 'skipped' BEFORE the update
+      (lines 151-161), so `active` is only (re)written when the provider timestamp is fresh.
+    evidence: "Migration file lines cited; production pg_proc body identical (regexp context shows `active = true`)."
+  - classification: VERIFIED
+    statement: >
+      The provider mapper does not carry an active flag. supabase/functions/_shared/sportsmonks-catalog.ts
+      builds team items from `/teams/seasons/${config.seasonId}` (line 543) with fields externalId, name,
+      shortName, code, countryCode, crestSourceUrl, freshness (lines 549-561); no `active`, no season id in
+      the item. config.seasonId comes from FOOTBALL_SPORTSMONKS_SEASON_ID (line 195), so "active" is
+      effectively "was ever a participant of ANY season for which the teams job was dispatched".
+      The ingestion run target_scope {leagueId, seasonId} (line 670) is the only place season scope is recorded.
+    evidence: "File lines cited."
+  - classification: VERIFIED
+    statement: >
+      Write path that made the five active. Teams-job history (app_private.football_ingestion_runs, job_type='teams'):
+      8f75c9ed 2026-07-31 18:28:19 scope seasonId 26027 (2025/26) inserted 16 -> created Olympic Safi,
+      Olympique Dcheïra, Yacoub El Mansour (created_at 2026-07-31 18:28:19-20) together with 13 clubs that
+      also play 2026/27;
+      c590ee5b 2026-08-02 13:43:10 scope seasonId 24319 (2024/25) inserted 3 / skipped 13 -> created
+      Chabab Mohammédia, JS Soualem and Moghreb Tétouan (created_at 2026-08-02 13:43:13-19);
+      587e8f3c 2026-09-14 19:18:46 scope seasonId 28647 (2026/27) inserted 2 (Amal Tiznit, Widad Témara),
+      updated 6, skipped 8; 99c07cc6 2026-09-17 and fb7b4ca3 2026-09-18 10:06:24 scope 28647 skipped 16.
+      The 24319 run was dispatched by the two-season backfill:
+      scripts/backend/g5-two-season-backfill-runner.ts:76-79 `catalogJobsForSeason(24319) -> ["seasons","rounds","teams"]`.
+      No run ever targeted deactivation; no migration sets app.teams.active = false (grep over supabase/migrations: only
+      team_memberships.active is ever set false, 20260914184657_current_season_squad_recovery.sql:142).
+    evidence: "SQL on football_ingestion_runs; runner file lines; grep result."
+  - classification: VERIFIED
+    statement: >
+      The 2026-08-02 updated_at timestamps on the five are crest attachments, not activity changes:
+      api.attach_football_team_crest executes `update app.teams set crest_asset_id = ..., updated_at =
+      statement_timestamp() where id = target_team_id`, and for each of the five the team.updated_at equals
+      its crest media_assets.updated_at to the microsecond (e.g. Olympic Safi 2026-08-02 13:43:15.473884 both;
+      Olympique Dcheïra 08:59:02.620815 both; Yacoub El Mansour 08:59:01.222435 both). Those instants fall
+      inside teams runs 7c99bff2 (08:58:58-09:09, seasonId 26027, 16 skipped) and c590ee5b (13:43:10-20,
+      seasonId 24319). storeTeamCrest runs for every team item regardless of the ingest outcome
+      (sportsmonks-catalog.ts:711 `if (job === "teams") await storeTeamCrest(item, ...)` after the outcome).
+    evidence: "pg_proc body of api.attach_football_team_crest; SQL joining app.teams to app.media_assets; run windows from football_ingestion_runs; catalog runner line cited."
+  # ------------------------------------------------------------------ 3. IMPACT OF DEACTIVATION
+  - classification: VERIFIED
+    statement: >
+      No historical read path filters on teams.active. A pg_proc scan of every api./app_private. function
+      referencing a team `.active` predicate returns only: api.football_team_catalog, api.news_team_filters,
+      app_private.fantasy_catalog_candidates, api.attach_football_team_crest, api.service_ingest_current_football_squads
+      (plus functions that filter membership.active / mapping.active / fantasy_player.active, which are not
+      teams.active). api.football_standings, football_team_fixtures, football_team_summary, football_team_squad,
+      football_competition_fixtures, football_match_detail, football_head_to_head, football_matches_by_date,
+      football_home_matches, football_upcoming_matches, football_season_catalog and api.fantasy_fixture_difficulty
+      contain no teams.active predicate (football_season_catalog filters competition.active; football_team_squad
+      filters membership.active). Live probes today: football_team_fixtures(Olympic Safi, limit 5) -> 5 rows;
+      football_team_summary(Olympic Safi) -> 'Olympic Safi'; football_standings(2024/2025) -> array;
+      football_team_squad(Olympic Safi, 2025/2026) -> array; football_competition_fixtures(Botola, 2025/2026) -> object.
+      Because none of these reads has an active predicate, they return the same rows after active=false.
+    evidence: "pg_proc prosrc regex scans (two queries) and the live RPC calls listed."
+  - classification: VERIFIED
+    statement: >
+      No FK, CHECK, RLS or trigger depends on app.teams.active. All 17 inbound FKs reference app.teams(id)
+      (fixtures home/away/winner, team_memberships, standings, lineups, match_events, fixture_team_statistics,
+      player_fixture_performances, fantasy_players, story_teams, followed_teams, notification_subscriptions,
+      user_preferences.favorite_team_id, player_availability); app.teams CHECKs cover name/short_name/code/
+      slug/city/colours only; RLS is enabled with ZERO policies and only the postgres owner holds table grants,
+      so every read goes through SECURITY DEFINER api functions; the only trigger is teams_set_updated_at.
+      Dependent rows for the five: followed_teams 0, user_preferences.favorite_team_id 0, fantasy_players 0,
+      notification_subscriptions 0, story_teams 0; historical standings 1-2 rows each, fixtures 30/30/60/30/30,
+      player_fixture_performances Olympic Safi 20 and Yacoub El Mansour 19 (untouched by an UPDATE of active).
+    evidence: "pg_constraint scan; pg_policies (empty); role_table_grants; pg_trigger; per-team dependent counts."
+  - classification: VERIFIED
+    statement: >
+      Production reads that change when the five become inactive: (1) api.football_team_catalog 21 -> 16
+      entries, therefore the onboarding club picker, profile, fantasy player filters/rankings/top-players and
+      home club lookup lists lose the five; (2) app_private.football_team_json still emits 'active': false for
+      the five when reached by id (team summary / squad / fixtures pages keep working; teamSummarySchema in
+      src/backend/football/contracts.ts:31-44 accepts active:boolean); (3) api.attach_football_team_crest and
+      api.service_ingest_current_football_squads will raise MAPPING_NOT_FOUND / reject for the five, which only
+      matters if a historical teams or squads job (seasonId 24319/26027) is re-dispatched; (4) nothing in
+      Fantasy, news filters (0 today) or follows (0 rows) changes.
+    evidence: "Function definitions and counts cited above; supabase/tests/database/football_rls.test.sql:90-93 and :146-149 assert the catalog length on the pgTAP seed (2), not on production data, so the database test suite is unaffected."
+  - classification: VERIFIED
+    statement: >
+      Re-activation exposure after the data fix: a future teams job scoped to 24319 or 26027 with a FRESH
+      provider timestamp/source_version for one of the five would run the update branch and set active=true
+      again (20260731180229:295-301). Current-season runs (28647) cannot re-activate them because the provider
+      returns only the 16 participants (scripts/backend/current-season-recovery.ts:578-581 asserts teams.length === 16).
+      A same-timestamp re-run is 'skipped' and does not touch active, but storeTeamCrest still calls
+      attach_football_team_crest, which would now reject the inactive team (partial run, catalog_item_rejected).
+    evidence: "Migration lines; sportsmonks-catalog.ts:686-711; current-season-recovery.ts lines cited."
+  - classification: VERIFIED
+    statement: >
+      Client caching: the club list is held only in react-query memory (keys ["football","clubs",lang] and
+      ["clubs",lang]; staleTime 5 min in useFantasyScreen.ts:72, default elsewhere). No localStorage/IndexedDB
+      persistence of clubs was found in src/. A data-only change therefore propagates on the next refetch
+      without a frontend deploy.
+    evidence: "grep for staleTime/localStorage/queryKey in src/routes and src/components; no persistence hits for clubs."
+  - classification: INFERRED
+    statement: >
+      Intended semantics of app.teams.active are "current-competition club catalogue" (public filters and
+      identity onboarding), not "exists in provider". This follows from the catalog function comment
+      (20260724143000:44-45), from fantasy_catalog_candidates gating on it, and from the 2026-09-14/18
+      current-season runs being the only ones that touched the 16; no document states an explicit
+      per-season rule for `active`.
+    evidence: "Inference from the cited comments and usage; no ADR found in docs/backend/FOOTBALL_DOMAIN_PLAN.md defining team.active lifecycle."
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    app.teams.active is a provider-upsert flag with no season semantics: api.ingest_football_catalog_entity
+    sets active=true on insert and on every fresh update of a team and has no code path that sets it false
+    (20260731180229_gate2b_football_catalog_ingestion.sql:284-301), while the SportsMonks mapper feeds it
+    from `/teams/seasons/{seasonId}` without any season or active field (sportsmonks-catalog.ts:543-561).
+    The G5 two-season historical backfill dispatched the `teams` catalog job for seasons 26027 (2025/26, run
+    8f75c9ed on 2026-07-31) and 24319 (2024/25, run c590ee5b on 2026-08-02 13:43, per
+    g5-two-season-backfill-runner.ts:76-79), inserting the relegated/historical clubs as active=true. The
+    2026/27 catalog runs (28647, 2026-09-14/17/18) only upsert the 16 participants and never reconcile the
+    complement, so the five stale rows stayed active. The 2026-08-02 updated_at values are crest attachments
+    from the same runs (attach_football_team_crest bumps updated_at), not a later activation.
+
+required_changes:
+  - component: scripts/backend/football-team-deactivate-non-current.sql (NEW, data-only runbook; option (a), RECOMMENDED FOR LAUNCH)
+    change: >
+      Rehearsed single-transaction runbook in the exact shape of scripts/backend/football-team-identity-seed.sql
+      (origin/agent/BG-0018-club-codes): `begin; select set_config('request.jwt.claims','{"role":"service_role"}',true);`
+      then one DO block that (1) materialises a temp table of the five (id uuid, name) hard-coded as VALUES with the
+      ids and names from this brief; (2) Guard 1: exactly 5 rows, 5 distinct ids, each id matches an app.teams row
+      whose name equals the listed name exactly (raise otherwise); (3) Guard 2 (participation): for every listed id,
+      zero rows in app.team_memberships where season_id = (select id from app.seasons where is_current) and active,
+      AND zero rows in app.fixtures for that season as home or away team; raise if any listed id participates;
+      (4) Guard 3 (completeness): the set of active teams NOT participating in the is_current season (memberships
+      OR fixtures) must equal the listed set exactly — raise if the complement contains an unlisted id or misses a
+      listed one, so the script fails closed if production drifts; (5) the single write:
+      `update app.teams t set active = false from pg_temp.bg0043_targets v where t.id = v.id and t.active is distinct from false`
+      with get diagnostics row_count; (6) Guard 4 (post-condition): count(*) from app.teams where active = 16 and
+      jsonb_array_length(api.football_team_catalog('fr',100)) = 16, raise otherwise. Touches ONLY app.teams.active
+      (the teams_set_updated_at trigger will bump updated_at on the 5 changed rows; a re-run changes 0 rows and
+      bumps nothing). Never writes name, short_name, slug, code, colours, crest, memberships, fixtures, standings
+      or provider mappings; no DELETE anywhere. Ends with a review SELECT of all 21 rows (id, name, active,
+      updated_at) and a commented `-- commit;` exactly like the BG-0018 runbook.
+    reason: >
+      Smallest safe change that restores the 16-club public catalogue for launch, is idempotent, fails closed on
+      drift, and is verifiable in a rolled-back rehearsal. Uses the same production-operation protocol the Verifier
+      and owner already accepted for BG-0018 (SQL editor / service context, rehearsal JSON + implementation report).
+  - component: docs/engineering/tasks/BG-0043/rehearsal-team-deactivation.json and docs/engineering/tasks/BG-0043/implementation-report.yaml (NEW)
+    change: >
+      Rehearsal evidence in the BG-0018 format (task, role, script, protocol "begin -> set_config -> pre snapshot ->
+      DO block run 1 -> mid snapshot -> DO block run 2 -> checks -> raise exception 'REHEARSAL_BG0043 <json>' -> rollback",
+      pre/mid/final snapshots, catalog lengths, historical read probes) plus the implementation report.
+    reason: "The committed production run requires owner approval after Verifier PASS; the rehearsal artefact is the proof."
+  - component: supabase/migrations/<new>_football_team_activity_reconciliation.sql (option (b), SEPARATE Builder-Backend task; NOT part of BG-0043 launch scope)
+    change: >
+      Durable rule so `active` follows current-season participation. Preferred design (additive, no rewrite of
+      historical behaviour): a service-role RPC api.service_reconcile_football_team_activity(p_provider_name text,
+      p_season_external_id text) that, given the season mapping, sets app.teams.active = true for teams that have an
+      active membership or a fixture in that season and false for the remainder, only when the mapped season is
+      is_current; invoked by the catalog runner after a successful `teams` job whose config.seasonId maps to the
+      is_current season (sportsmonks-catalog.ts runJob) and by scripts/backend/current-season-recovery.ts.
+      Alternative: change the 'team' branch of api.ingest_football_catalog_entity to accept an optional
+      seasonExternalId and only force active=true when that season is_current — this touches the same lines
+      (277-302) BG-0036 must rewrite for the `code = v_code` clobber, so (b) should be folded into BG-0036 or
+      sequenced right after it to avoid two competing rewrites of the RPC. Either variant needs a pgTAP test
+      (historical teams job must not re-activate; current-season job must deactivate the complement).
+    reason: >
+      Without (b), any historical backfill re-run with a fresh provider timestamp re-activates the five, and every
+      future relegation will recreate BG-0043. Ranked second because it needs a migration, a runner change and the
+      Phase 7E manifest ordering already constrained by BG-0027/BG-0031/BG-0042.
+
+ranking:
+  - "(a) data runbook first: unblocks the launch catalogue with zero code/migration risk; owner-approved single committed run."
+  - "(b) ingestion rule second, as its own Builder-Backend task, ideally merged with BG-0036 (same RPC lines 277-302)."
+
+constraints:
+  - "Read-only role: this brief changes no state; the rolled-back rehearsal is the Builder's first action, the committed run is owner-approved and executed by the Shipper/owner (BG-0018 precedent, LAUNCH_LEDGER BG-0018 delivery note)."
+  - "No deletion of history: the five keep their fixtures (30/30/60/30/30), standings, memberships, performances, crest assets and provider mappings; only app.teams.active changes."
+  - "The runbook must hard-code the five ids AND recompute the participation complement, failing closed if the two disagree."
+  - "Do not touch app_private.football_provider_mappings.active for the five: ingestion uses mapping.active to resolve external ids for historical fixtures/performances, and the mapping has no season scope."
+  - "supabase/migrations/** and supabase/functions/** are out of scope for option (a); option (b) must respect scripts/backend/validate-migrations.mjs and the Phase 7E-B manifest order (BG-0042 hazard)."
+
+risks:
+  - "Onboarding/profile pickers: users who already chose one of the five as favourite would keep a hidden club; today favourites = 0 and followed_teams = 0, so no live user is affected (VERIFIED)."
+  - "Historical backfill re-run: re-dispatching the G5 teams job for 24319/26027 would (i) with a fresh provider timestamp set active=true again, (ii) with an unchanged timestamp still fail crest attachment (attach_football_team_crest requires team.active) and end the run 'partial'. Mitigation: do not re-run historical catalog jobs before (b) lands; the runbook is idempotent and can be re-applied."
+  - "Cached clients: react-query holds the club list up to 5 min (useFantasyScreen) and per-session elsewhere; Lovable-published bundle unaffected because the change is data-only. A user mid-session may see a club vanish from a filter on refetch (cosmetic)."
+  - "Search/history pages: there is no club route in src/routes; match detail, standings and fixtures pages read by team id without an active predicate, so history renders unchanged. app_private.football_team_json will emit active:false, which the presenter ignores."
+  - "Season 2026/27 bounds are wrong today (ends_on = starts_on = 2026-09-24, BG-0031). The runbook's participation guard uses is_current, not dates, so it is not affected; do not switch the guard to date ranges."
+  - "If the owner intends the catalogue to include historical clubs for browsing (product decision), deactivation would be wrong; the catalog function's own comment and the Fantasy gating support the current-club semantics (INFERRED)."
+
+contradictions:
+  - "BG-0018 engineering brief assumed 16 active teams; production had 21 (recorded in the BG-0018 implementation report). This brief supersedes that assumption for the 2026-09-18 baseline."
+  - "LAUNCH_LEDGER BG-0043 says the five were 'last written 2026-08-02'; that timestamp is the crest attachment inside historical catalog runs, while the activation itself happened at insert (2026-07-31 for three, 2026-08-02 13:43 for two). Same conclusion, different mechanism."
+
+unknowns:
+  - "Whether the product owner wants historical clubs selectable as a favourite in onboarding (no product doc found). The recommendation assumes current-season clubs only."
+  - "Whether the G5 two-season backfill runner will ever be re-dispatched against production (would interact with the deactivation as described in risks)."
+  - "Whether the Verifier's pgTAP environment (BG-0027 decision pending) should carry a regression test for option (b); option (a) has no database-test change."
+
+acceptance_tests:
+  - "AT-1 Rehearsal (rolled back, service context): begin; pre-snapshot of app.teams (id, name, active, updated_at); run the DO block; assert exactly 5 rows changed (pre.active=true -> mid.active=false) and that their ids are exactly {7ff33380-1236-45e5-9c3e-97e753961cc9, 318655a9-db9f-4706-abb2-df0fa4b13baf, 32fb7b61-9af4-4667-8978-b739b5e3f170, f2715f02-38ed-4feb-a4e5-72444ad39529, e595b91e-4d8f-4f3d-92d7-c23d7e332544}; assert all other 16 rows have identical (active, updated_at); assert count(*) from app.teams where active = 16 and jsonb_array_length(api.football_team_catalog('fr',100)) = 16 and the returned names are the 16 current clubs; rollback."
+  - "AT-2 Idempotency (same transaction): run the DO block a second time; assert 0 rows changed and no updated_at differs from the mid snapshot; assert the guards do not raise on the already-deactivated state (Guard 3 must compare against the participation complement of ACTIVE teams, which is now empty, so the script must treat 'listed set already inactive' as a valid no-op)."
+  - "AT-3 Historical reads unaffected (inside the rehearsal, before rollback): api.football_team_fixtures('32fb7b61-9af4-4667-8978-b739b5e3f170', null, null, 5, 'fr') still returns 5 rows; api.football_team_summary(same id,'fr') returns name 'Olympic Safi' with active=false; api.football_standings('533b456d-bf70-4ef8-a2f0-66ae24294f32', null, null, 'fr') still lists 16 teams including Chabab Mohammédia and JS Soualem; api.football_team_squad('32fb7b61-…','92e5dbe8-44a9-4b83-bdc8-78f03dfa4584','fr') still returns the 2025/26 squad; api.football_competition_fixtures(Botola, 2025/2026) unchanged; counts of app.fixtures, app.standings, app.team_memberships, app.player_fixture_performances for the five identical to pre."
+  - "AT-4 Fantasy unaffected: select count(distinct football_team_id), count(*) from app.fantasy_players where fantasy_season_id='9918cf95-9ed5-4d7b-99ca-eb9bfc29a258' and active -> 16 / 539 before and after; app_private.fantasy_catalog_candidates('d03223b0-8f4a-4309-93e1-2a708d7c3584') row count identical before and after."
+  - "AT-5 Residue after rollback (read-only): count(*) from app.teams where active = 21; max(updated_at) unchanged (2026-09-18 10:06:38.00697+00); no pg_temp residue."
+  - "AT-6 Static: the script contains exactly one `update app.teams` statement setting only `active = false`, no INSERT/DELETE, `is distinct from` in the WHERE, hard-coded 5 ids with names, the participation-complement guard, and a `-- commit;` placeholder; git diff --name-only origin/main..HEAD lists only scripts/backend/football-team-deactivate-non-current.sql and docs/engineering/tasks/BG-0043/*."
+  - "AT-7 After the owner-approved committed run: api.football_team_catalog('fr',100) returns 16 on production; botolago.com onboarding club picker and fantasy player club filter show 16 clubs after a hard refresh; supabase/tests/database/football_rls.test.sql unchanged and still green on the pgTAP seed (expects 2)."
+
+implementation_scope:
+  builder_type: Builder-Data
+  allowed_paths:
+    - scripts/backend/football-team-deactivate-non-current.sql (new; data-only runbook, BG-0018 pattern)
+    - docs/engineering/tasks/BG-0043/rehearsal-team-deactivation.json (new)
+    - docs/engineering/tasks/BG-0043/implementation-report.yaml (new)
+  forbidden_paths:
+    - src/** (no UI change; presenter already ignores `active`)
+    - supabase/migrations/** (option (b) is a separate Builder-Backend task; fold with BG-0036)
+    - supabase/functions/** and scripts/backend/*.ts (no provider/runner change)
+    - supabase/tests/** (pgTAP expectations are seed-based and unaffected)
+    - .github/workflows/**
+    - app_private.football_provider_mappings, app.team_memberships, app.fixtures, app.standings (no data change outside app.teams.active)
+    - any production COMMIT: the Builder may run only rolled-back rehearsals; the committed run requires explicit owner approval after Verifier PASS (BG-0018 protocol)
+follow_up_tasks:
+  - "Builder-Backend: durable `active` reconciliation (option (b)); recommend merging into BG-0036 since both rewrite api.ingest_football_catalog_entity lines 277-302, or sequencing immediately after it."
+status: DONE

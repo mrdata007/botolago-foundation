@@ -582,10 +582,14 @@ tasks:
     area: data
     severity: P1
     owner: Chief
-    state: READY
+    state: RUNNING
     evidence: ['docs/engineering/tasks/BG-0018/implementation-report.yaml unexpected_observations (read-only production count during the BG-0018 rehearsal)']
     acceptance_criteria: [determine how active is meant to be maintained (provider ingestion vs season membership); decide deactivation of the five clubs with a rolled-back rehearsal first; verify UI surfaces (team catalog, filters) after the change; no deletion of history]
-    next: Researcher
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0043/engineering-brief.yaml), builder: Builder-Data running (branch agent/BG-0043-deactivate-non-current; rehearsal only), verifier: pending, reviewer: pending}
+    root_cause: 'app.teams.active is set true on every insert and fresh update by api.ingest_football_catalog_entity and never false; the G5 two-season backfill teams jobs (26027 on 2026-07-31, 24319 on 2026-08-02) inserted the five historical clubs as active; 2026/27 runs upsert only the 16 participants'
+    impact_if_deactivated: 'api.football_team_catalog 21 to 16 (onboarding picker, profile, fantasy filters); no FK/RLS/constraint/historical read depends on active; Fantasy already excludes them via membership season; 0 follows/favourites reference them'
+    owner_decision_needed: 'confirm that historical clubs should NOT be selectable in the public club catalogue/onboarding (recommended) — then one guarded committed run after Verifier + Reviewer PASS'
+    follow_up: 'durable reconciliation rule (option b) to be folded into BG-0036 (same RPC lines 277-302)'
 
   BG-0044:
     title: 'A1 probe extension (read-only): per-fixture rawStarterRows, anonymousStarterRows, anonymousSubstituteRows, anonymousRowsWithTeamId, anonymousRowsWithNameOrJersey in the invariants evidence; re-dispatch on merged main to size option (b) before any rule change'
@@ -594,7 +598,7 @@ tasks:
     owner: Chief
     state: RUNNING
     depends_on: [BG-0034]
-    roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: running, reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: PASS (docs/engineering/tasks/BG-0044/verification-report.yaml), reviewer: running (fresh context), reviewer: pending}
     acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
 
   BG-0045:
