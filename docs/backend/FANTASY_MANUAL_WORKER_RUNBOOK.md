@@ -20,6 +20,16 @@ finalization, notification, postwork and progression migrations as one release. 
 compute tier can run the new pipeline at expected team counts. Existing
 capacity exercises with seeded scores do not certify full production scoring.
 
+## Scheduled alternative
+
+`fantasy-season-orchestrator.yml` (see
+`FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md`) runs the same worker code
+(`runFantasyLifecycle`) hourly for every gameweek that has work, after the
+provider refresh and performance ingestion, once `FANTASY_AUTOMATION_ENABLED`
+is `true` and migration `20260918120000_fantasy_calendar_sync.sql` is applied.
+The manual worker stays the fallback for a single reviewed run; both share the
+production mutation concurrency group and the same idempotent RPCs.
+
 ## Operations
 
 After activation and explicit enablement, run **Run one reviewed Fantasy

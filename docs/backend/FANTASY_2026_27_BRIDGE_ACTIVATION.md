@@ -31,13 +31,16 @@ fantasy players, 1 gameweek, 8 fixtures, `api.fantasy_hub` → `registration_ope
    kickoff `2026-09-24T00:00Z`, which is a placeholder time). The Fantasy
    season therefore has a single gameweek; the FDR screen shows one column and
    the points gameweek selector cannot move. When further rounds land in
-   `app.rounds` / `app.fixtures`, run
-   `api.service_prepare_next_fantasy_gameweek` (service context) to append
-   gameweeks; no schema change is needed.
-2. **Deadline.** Derived from the placeholder kickoff (90 minutes before). Once
-   the real kickoff is known, update `app.fantasy_gameweeks.deadline_at` /
-   `starts_at` / `ends_at` for GW1 through the service context before
-   2026-09-23.
+   `app.rounds` / `app.fixtures` with confirmed kickoffs,
+   `api.service_sync_fantasy_calendar` (migration
+   `20260918120000_fantasy_calendar_sync.sql`, called by the scheduled
+   orchestrator) stages them as `scheduled` gameweeks and the lifecycle worker
+   opens each one after the previous postwork.
+2. **Deadline.** Derived from the placeholder kickoff (90 minutes before). The
+   calendar sync realigns GW1's assignments, window and deadline as soon as the
+   provider publishes a non-midnight kickoff, provided the current deadline has
+   not passed; `scripts/backend/fantasy-realign-gameweek-calendar.sql` remains
+   the manual fallback.
 3. **Promoted-club rosters** come from public 2025/26 lists, not the provider.
    When the provider publishes Tiznit / Témara squads, the normal
    `service_ingest_current_football_squads` run supersedes these memberships

@@ -205,6 +205,16 @@ public/private leagues. Production workers and schedules remain disabled.
 
 ## Gameweek operations
 
+Gameweeks after activation are staged by `api.service_sync_fantasy_calendar`
+(service role): it creates a `scheduled` gameweek for every complete provider
+round with confirmed kickoffs, keeps assignments of `scheduled`/`open`
+gameweeks aligned with fixture kickoffs (new, voided, moved fixtures), and
+re-derives `starts_at`/`ends_at`/`deadline_at` from the ruleset rule. It never
+touches a locked gameweek, never moves a passed deadline, and treats
+`00:00 UTC` kickoffs as unconfirmed placeholders. The scheduled orchestrator
+(`FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md`) calls it before and after each
+worker pass.
+
 The intended manual/staging order is:
 
 1. open the next scheduled gameweek;

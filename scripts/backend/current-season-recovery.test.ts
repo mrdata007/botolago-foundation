@@ -354,6 +354,27 @@ describe("current season recovery boundaries", () => {
         FOOTBALL_CURRENT_SCHEDULE_ENABLED: "true",
       }),
     ).toThrow("current_season_schedule_not_enabled");
+    expect(
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "schedule",
+        CURRENT_SEASON_RECOVERY_MODE: "canary",
+        FANTASY_AUTOMATION_ENABLED: "true",
+      }),
+    ).toBe("canary");
+    expect(() =>
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "schedule",
+        CURRENT_SEASON_RECOVERY_MODE: "canary",
+        FANTASY_AUTOMATION_ENABLED: "false",
+      }),
+    ).toThrow("current_season_schedule_not_enabled");
+    expect(() =>
+      validateRecoveryMode({
+        GITHUB_EVENT_NAME: "schedule",
+        CURRENT_SEASON_RECOVERY_MODE: "refresh",
+        FANTASY_AUTOMATION_ENABLED: "true",
+      }),
+    ).toThrow("current_season_schedule_not_enabled");
     expect(() =>
       validateRecoveryMode({
         GITHUB_EVENT_NAME: "workflow_dispatch",

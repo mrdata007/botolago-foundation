@@ -1,0 +1,136 @@
+name: Fantasy season orchestrator
+
+# Scheduled production operation for the 2026/27 Fantasy season. It composes
+# the existing guarded operations without changing them:
+#   1. provider fixture / result refresh (scripts/backend/current-season-recovery.ts,
+#      canary mode — its final squad guard may still fail while the provider
+#      lacks the promoted clubs; the fixture phase commits before that guard);
+#   2. scripts/backend/fantasy-season-orchestrator.ts: calendar sync
+#      (api.service_sync_fantasy_calendar), finished-fixture performance
+#      ingestion, the trusted lifecycle worker for gameweeks that have work,
+#      and a final calendar pass.
+# Every step is idempotent; the run is a no-op when nothing changed at the
+# provider. Enabled only by the repository variable
+# FANTASY_AUTOMATION_ENABLED=true; the owner can also dispatch it manually.
+
+on:
+  schedule:
+    - cron: "12 * * * *"
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type RUN_FANTASY_ORCHESTRATOR
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  orchestrate:
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      vars.FANTASY_AUTOMATION_ENABLED == 'true' &&
+      (github.event_name == 'schedule' ||
+       (github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007' &&
+        inputs.confirmation == 'RUN_FANTASY_ORCHESTRATOR'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production-admin-activation
+    env:
+      FANTASY_AUTOMATION_ENABLED: ${{ vars.FANTASY_AUTOMATION_ENABLED }}
+      EXPECTED_COMMIT: ${{ github.sha }}
+      SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+    steps:
+      - name: Guard production target and first attempt
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$SUPABASE_PRODUCTION_PROJECT_REF" = "tkewgajrljbwgwedqsxn"
+          test "$SUPABASE_PRODUCTION_PROJECT_NAME" = "BotolaGO Production V2"
+          evidence_dir="$RUNNER_TEMP/fantasy-orchestrator-$GITHUB_RUN_ID"
+          install -d -m 0700 "$evidence_dir"
+          echo "FANTASY_ORCHESTRATOR_EVIDENCE_DIR=$evidence_dir" >> "$GITHUB_ENV"
+          echo "CURRENT_SEASON_EVIDENCE_DIR=$evidence_dir/recovery" >> "$GITHUB_ENV"
+
+      - name: Check out the exact main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify the exact runtime
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts
+          bun run backend:secrets:check
+
+      - name: Refresh provider fixtures and results
+        id: recovery
+        continue-on-error: true
+        env:
+          CONFIRMATION: RUN_CURRENT_SEASON_RECOVERY
+          CURRENT_SEASON_RECOVERY_MODE: canary
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_SECRET_KEY"
+          test -n "$SPORTSMONKS_API_TOKEN"
+          printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          bun scripts/backend/current-season-recovery.ts
+
+      - name: Orchestrate the Fantasy season
+        env:
+          RECOVERY_STEP_OUTCOME: ${{ steps.recovery.outcome }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          echo "provider refresh step outcome: $RECOVERY_STEP_OUTCOME"
+          bun scripts/backend/fantasy-season-orchestrator.ts
+
+      - name: Scan sanitized evidence
+        id: evidence_scan
+        if: always()
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$FANTASY_ORCHESTRATOR_EVIDENCE_DIR"
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$FANTASY_ORCHESTRATOR_EVIDENCE_DIR"
+          for value in "$SUPABASE_SECRET_KEY" "$SPORTSMONKS_API_TOKEN"; do
+            if [[ -n "$value" ]] && grep -R -F -q -- "$value" "$FANTASY_ORCHESTRATOR_EVIDENCE_DIR"; then
+              echo "CREDENTIAL_FOUND_IN_EVIDENCE"
+              exit 1
+            fi
+          done
+
+      - name: Upload sanitized evidence
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: fantasy-season-orchestrator-${{ github.run_id }}
+          path: ${{ env.FANTASY_ORCHESTRATOR_EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 14

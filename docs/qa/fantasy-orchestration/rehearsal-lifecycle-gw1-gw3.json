@@ -1,0 +1,155 @@
+{
+  "rehearsal": "GW1 processing -> GW2 creation/opening -> kickoff change -> deadline realignment -> GW2 processing -> GW3 creation/opening, repeated steps for idempotency",
+  "database": "BotolaGO Production V2 (tkewgajrljbwgwedqsxn), single transaction, rolled back",
+  "executedAt": "2026-09-18",
+  "totalDatabaseMs": 11032,
+  "steps": [
+    { "S0_deadline": "2026-09-24T18:30:00+00:00", "S0_gw1_realigned": "8" },
+    {
+      "S1_gw1": {
+        "status": "finalized",
+        "version": 1,
+        "completed": "finalized",
+        "advancedTo": null,
+        "finalResults": 3,
+        "lockedLineups": 3,
+        "after_deadline": "locked",
+        "nextGameweekId": null,
+        "teamsPersisted": "3",
+        "playersPersisted": "539",
+        "after_final_whistle": "provisional"
+      }
+    },
+    {
+      "S2_gw1_next": null,
+      "S2_gw1_notes": ["gameweek_locked"],
+      "S2_sync_after_gw1": {
+        "seasonStatus": "active",
+        "blockedRounds": 0,
+        "expectedClubs": 16,
+        "schemaVersion": 1,
+        "deadlineChanges": 0,
+        "assignmentsAdded": 0,
+        "gameweeksCreated": 0,
+        "kickoffsRealigned": 0,
+        "assignmentsSuperseded": 0
+      }
+    },
+    { "S3_created": "1", "S3_gw2_status": "scheduled", "S3_gw1_advancedTo": null },
+    {
+      "S3_gw2": {
+        "starts": "2026-10-01T19:00:00+00:00",
+        "status": "open",
+        "deadline": "2026-10-01T17:30:00+00:00"
+      },
+      "S3_gw2Lineups": 3,
+      "S3_teamsOnGw2": 3,
+      "S3_hubGameweek": "2",
+      "S3_progression": {
+        "postwork": "true",
+        "progression": { "status": "open", "prepared": 3, "alreadyAdvanced": false },
+        "priceBatches": 1,
+        "notificationBatches": 1
+      }
+    },
+    {
+      "S4_audit": [{ "to": "2026-10-01T15:30:00+00:00", "from": "2026-10-01T17:30:00+00:00" }],
+      "S4_aligned": 8,
+      "S4_realigned": "1",
+      "S4_gw2_starts": "2026-10-01T17:00:00+00:00",
+      "S4_hubDeadline": "2026-10-01T15:30:00+00:00",
+      "S4_gw2_deadline": "2026-10-01T15:30:00+00:00",
+      "S4_deadlineChanges": "1"
+    },
+    {
+      "S5_counts": {
+        "lineups": 6,
+        "rankings": 14,
+        "gameweeks": 2,
+        "assignments": 16,
+        "pointEvents": 6468,
+        "teamResults": 3,
+        "playerPoints": 539,
+        "priceHistory": 539,
+        "progressions": 1,
+        "deadlineAudit": 3,
+        "notifications": 0,
+        "notificationEvents": 5,
+        "freeTransferRollovers": 3
+      },
+      "S5_sync_equal": true,
+      "S5_counts_equal": true,
+      "S5_sync_changes": 0,
+      "S5_repeat_published_work": {
+        "postwork": "true",
+        "priceBatches": 1,
+        "progressionRepeat": {
+          "status": "open",
+          "hasMore": false,
+          "prepared": 0,
+          "alreadyAdvanced": true
+        },
+        "notificationBatches": 1
+      }
+    },
+    {
+      "S6_ft": [2, 2, 2],
+      "S6_gw2": {
+        "status": "finalized",
+        "version": 1,
+        "completed": "finalized",
+        "advancedTo": null,
+        "finalResults": 3,
+        "lockedLineups": 3,
+        "after_deadline": "locked",
+        "nextGameweekId": null,
+        "teamsPersisted": "3",
+        "playersPersisted": "539",
+        "after_final_whistle": "provisional"
+      },
+      "S6_overall": [
+        { "rank": 1, "total": 48 },
+        { "rank": 2, "total": 48 },
+        { "rank": 3, "total": 28 }
+      ]
+    },
+    { "S7_gw2_next": null, "S7_gw2_status": "finalized" },
+    {
+      "S8_gw3": { "seq": 3, "status": "open", "deadline": "2026-10-08T17:30:00+00:00" },
+      "S8_created": "1",
+      "S8_teamsOnGw3": 3,
+      "S8_hubGameweek": "3",
+      "S8_progression": {
+        "postwork": "true",
+        "progression": { "status": "open", "prepared": 3, "alreadyAdvanced": false },
+        "priceBatches": 1,
+        "notificationBatches": 1
+      }
+    },
+    {
+      "S9_gameweeks": [
+        { "seq": 1, "status": "finalized" },
+        { "seq": 2, "status": "finalized" },
+        { "seq": 3, "status": "open" }
+      ],
+      "S9_counts_equal": true,
+      "S9_currentGameweekTeams": { "3": 3 }
+    }
+  ],
+  "residueCheckAfterRollback": {
+    "gw1": "open 2026-09-23 22:30:00+00",
+    "rounds": 1,
+    "fixtures": 8,
+    "fixtureState": "2026-09-24 00:00:00+00 / not_started",
+    "gameweeks": 1,
+    "pointEvents": 0,
+    "teamResults": 0,
+    "rankings": 0,
+    "performances": 0,
+    "notificationEvents": 2,
+    "progressions": 0,
+    "deadlineAuditRows": 0,
+    "seasonStatus": "registration_open",
+    "functionPresent": 0
+  }
+}

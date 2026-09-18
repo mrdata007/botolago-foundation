@@ -1,0 +1,79 @@
+{
+  "rehearsal": "api.service_sync_fantasy_calendar (migration 20260918120000_fantasy_calendar_sync.sql)",
+  "database": "BotolaGO Production V2 (tkewgajrljbwgwedqsxn), single transaction, rolled back",
+  "executedAt": "2026-09-18",
+  "scenarios": [
+    {
+      "A_first": {
+        "seasonStatus": "registration_open",
+        "blockedRounds": 1,
+        "expectedClubs": 16,
+        "schemaVersion": 1,
+        "deadlineChanges": 0,
+        "assignmentsAdded": 0,
+        "gameweeksCreated": 0,
+        "kickoffsRealigned": 0,
+        "assignmentsSuperseded": 0
+      },
+      "A_deadline": "2026-09-23T22:30:00+00:00",
+      "A_idempotent": true,
+      "A_round1_notes": [{ "kickoffUnconfirmed": 8, "deadlineUnconfirmed": true }]
+    },
+    {
+      "B_audit": 1,
+      "B_counts": {
+        "seasonStatus": "registration_open",
+        "blockedRounds": 0,
+        "expectedClubs": 16,
+        "schemaVersion": 1,
+        "deadlineChanges": 1,
+        "assignmentsAdded": 0,
+        "gameweeksCreated": 0,
+        "kickoffsRealigned": 8,
+        "assignmentsSuperseded": 0
+      },
+      "B_aligned": 8,
+      "B_deadline": "2026-09-24T18:30:00+00:00",
+      "B_round1_notes": [{ "kickoffsRealigned": 8 }, { "deadlineAt": "2026-09-24T18:30:00+00:00" }]
+    },
+    { "B_second_run_changes": 0 },
+    { "C_blocked": "1", "C_created": "0", "C_placeholder_notes": ["kickoff_unconfirmed"] },
+    {
+      "C_gw2": {
+        "seq": 2,
+        "ends": "2026-10-02T01:00:00+00:00",
+        "starts": "2026-10-01T17:00:00+00:00",
+        "status": "scheduled",
+        "deadline": "2026-10-01T15:30:00+00:00"
+      },
+      "C_round2_notes": [
+        { "created": true, "deadlineAt": "2026-10-01T15:30:00+00:00", "assignments": 8 }
+      ],
+      "C_gw2_assignments": 8,
+      "C_created_after_times": "1"
+    },
+    { "C_second_run_changes": 0 },
+    {
+      "D_audit_gw2": 1,
+      "D_realigned": "1",
+      "D_gw2_deadline": "2026-10-01T14:30:00+00:00",
+      "D_deadline_changes": "1"
+    },
+    {
+      "D2_notes": [{ "assignmentsSuperseded": 1 }, { "deadlineAt": "2026-10-01T17:30:00+00:00" }],
+      "D2_superseded": "1",
+      "D2_active_assignments": 7
+    },
+    { "D3_readded": "1", "D3_source_versions": [1, 2], "D3_active_assignments": 8 },
+    { "E_authenticated": "forbidden" }
+  ],
+  "residueCheckAfterRollback": {
+    "gw1": "open 2026-09-23 22:30:00+00",
+    "rounds": 1,
+    "fixtures": 8,
+    "gameweeks": 1,
+    "assignments": 8,
+    "deadlineAuditRows": 0,
+    "functionPresent": 0
+  }
+}

@@ -395,6 +395,16 @@ export function validateRecoveryMode(env: NodeJS.ProcessEnv): "canary" | "refres
     env.FOOTBALL_CURRENT_SCHEDULE_ENABLED === "true"
   )
     return "refresh";
+  // The Fantasy season orchestrator (fantasy-season-orchestrator.yml) runs the
+  // same owner-reviewed canary on its schedule: the fixture/result phase commits
+  // and the final squad guard still applies. It is enabled only by the explicit
+  // repository variable FANTASY_AUTOMATION_ENABLED=true.
+  if (
+    env.GITHUB_EVENT_NAME === "schedule" &&
+    mode === "canary" &&
+    env.FANTASY_AUTOMATION_ENABLED === "true"
+  )
+    return "canary";
   return fail("current_season_schedule_not_enabled");
 }
 
