@@ -8,10 +8,22 @@ name: Fantasy season orchestrator
 #   2. scripts/backend/fantasy-season-orchestrator.ts: calendar sync
 #      (api.service_sync_fantasy_calendar), finished-fixture performance
 #      ingestion, the trusted lifecycle worker for gameweeks that have work,
-#      and a final calendar pass.
+#      a final calendar pass, and the read-only deadline watch
+#      (api.service_fantasy_deadline_watch).
 # Every step is idempotent; the run is a no-op when nothing changed at the
 # provider. Enabled only by the repository variable
 # FANTASY_AUTOMATION_ENABLED=true; the owner can also dispatch it manually.
+#
+# Verdicts: ok / waiting / escalate / failed. `escalate` and `failed` both exit
+# non-zero and turn this run red — the red run is the only escalation channel
+# that exists. `escalate` means a scheduled or open gameweek is inside the
+# escalation window while one of its counting fixtures still carries an
+# unconfirmed placeholder kickoff (00:00 UTC), so its deadline is not
+# authoritative; the operator procedure is in
+# docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md and the remediation
+# script is scripts/backend/fantasy-realign-gameweek-calendar.sql. The watch
+# window defaults to 72 h / 24 h and can be overridden with the repository
+# variables FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS.
 
 on:
   schedule:
@@ -101,6 +113,8 @@ jobs:
       - name: Orchestrate the Fantasy season
         env:
           RECOVERY_STEP_OUTCOME: ${{ steps.recovery.outcome }}
+          FANTASY_DEADLINE_WATCH_WARN_HOURS: ${{ vars.FANTASY_DEADLINE_WATCH_WARN_HOURS }}
+          FANTASY_DEADLINE_WATCH_ESCALATE_HOURS: ${{ vars.FANTASY_DEADLINE_WATCH_ESCALATE_HOURS }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
         shell: bash

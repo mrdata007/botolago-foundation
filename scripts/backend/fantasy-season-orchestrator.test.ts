@@ -1,11 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
   calendarSyncSchema,
+  deadlineWatchSchema,
+  mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
   selectWorkerTargets,
+  shouldFailRun,
+  summarizeDeadlineWatch,
   summarizeProviderRefresh,
   type CalendarSync,
+  type DeadlineWatch,
   type OrchestratorGateway,
 } from "./fantasy-season-orchestrator";
 
@@ -41,12 +46,58 @@ function calendar(
   });
 }
 
+const watchFixture = (n: number, kickoff = "2026-09-24T00:00:00+00:00") => ({
+  fixtureId: id(200 + n),
+  homeTeam: `H${n}`,
+  awayTeam: `A${n}`,
+  providerKickoffAt: kickoff,
+  assignedKickoffAt: kickoff,
+  originalKickoffAt: kickoff,
+  fixtureStatus: "scheduled",
+  assignmentStatus: "assigned",
+  frozen: false,
+  providerUpdatedAt: "2026-09-18T10:00:00+00:00",
+  sourceSequence: 1,
+});
+
+/** Reference payload shaped exactly like api.service_fantasy_deadline_watch. */
+function watchPayload(
+  gameweeks: Array<{ sequence: number; severity: "info" | "escalate"; hoursToDeadline?: number }>,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    schemaVersion: 1,
+    seasonId: id(1),
+    seasonStatus: "active",
+    warnHours: 72,
+    escalateHours: 24,
+    serverTime: now.toISOString(),
+    remediation: "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+    gameweeks: gameweeks.map((gw) => ({
+      gameweekId: id(100 + gw.sequence),
+      sequence: gw.sequence,
+      status: "open",
+      deadlineAt: "2026-09-23T22:30:00+00:00",
+      startsAt: "2026-09-24T00:00:00+00:00",
+      hoursToDeadline: gw.hoursToDeadline ?? (gw.severity === "escalate" ? 4.5 : 60.25),
+      deadlinePassed: false,
+      unconfirmedFixtures: 1,
+      totalCountingFixtures: 8,
+      deadlineDerivedFromPlaceholder: true,
+      severity: gw.severity,
+      fixtures: [watchFixture(gw.sequence)],
+    })),
+    ...overrides,
+  };
+}
+
 /** A gateway whose lifecycle RPCs answer like a finalized, already advanced gameweek. */
 function gateway(
   cal: CalendarSync,
   options: {
     lifecycle?: (name: string, args: Record<string, unknown>) => unknown;
     batches?: Array<{ fixturesProcessed: number; hasMore: boolean; nextCursor: string | null }>;
+    watch?: unknown;
   } = {},
 ) {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
@@ -56,6 +107,11 @@ function gateway(
     async rpc(name, args) {
       calls.push({ name, args });
       if (name === "service_sync_fantasy_calendar") return cal;
+      if (name === "service_fantasy_deadline_watch") {
+        const watch = options.watch ?? watchPayload([]);
+        if (watch instanceof Error) throw watch;
+        return watch;
+      }
       if (options.lifecycle) return options.lifecycle(name, args);
       if (name === "service_fantasy_lifecycle_state")
         return {
@@ -97,9 +153,12 @@ describe("fantasy season orchestrator", () => {
       { sequence: 3, status: "scheduled" },
       { sequence: 4, status: "open", deadlineAt: "2026-10-08T18:30:00Z" },
     ]);
-    expect(selectWorkerTargets(cal, now)).toEqual([
-      { gameweekId: id(102), sequence: 2, reason: "deadline_passed", calculationVersion: 1 },
-    ]);
+    expect(selectWorkerTargets(cal, now)).toEqual({
+      targets: [
+        { gameweekId: id(102), sequence: 2, reason: "deadline_passed", calculationVersion: 1 },
+      ],
+      skipped: [],
+    });
   });
 
   test("a finalized gameweek with a staged, unopened successor is re-run for progression with its own version", () => {
@@ -113,15 +172,18 @@ describe("fantasy season orchestrator", () => {
       },
       { sequence: 2, status: "scheduled" },
     ]);
-    expect(selectWorkerTargets(cal, now)).toEqual([
-      { gameweekId: id(101), sequence: 1, reason: "progression_pending", calculationVersion: 3 },
-    ]);
+    expect(selectWorkerTargets(cal, now)).toEqual({
+      targets: [
+        { gameweekId: id(101), sequence: 1, reason: "progression_pending", calculationVersion: 3 },
+      ],
+      skipped: [],
+    });
   });
 
   test("in-progress gameweeks (locked/live/provisional/finalizing) are always picked up", () => {
     for (const status of ["locked", "live", "provisional", "finalizing"] as const) {
       const cal = calendar([{ sequence: 1, status, scoringInputVersion: 1 }]);
-      expect(selectWorkerTargets(cal, now)[0]?.reason).toBe("in_progress");
+      expect(selectWorkerTargets(cal, now).targets[0]?.reason).toBe("in_progress");
     }
   });
 
@@ -325,5 +387,229 @@ describe("fantasy season orchestrator", () => {
     expect(() => orchestratorEnvironment({ ...base, SUPABASE_SECRET_KEY: "" })).toThrow(
       "fantasy_orchestrator_credential_missing",
     );
+  });
+});
+
+describe("fantasy deadline watch", () => {
+  const roundNote = (gameweekId: string, notes: unknown[]) => ({
+    round: 1,
+    gameweekId,
+    status: "open" as const,
+    fixtures: 8,
+    confirmedKickoffs: 0,
+    notes,
+  });
+
+  test("the payload schema accepts the reference shape and rejects anything else", () => {
+    const reference = watchPayload([{ sequence: 1, severity: "escalate" }]);
+    expect(deadlineWatchSchema.parse(reference).gameweeks[0]?.fixtures).toHaveLength(1);
+    expect(() => deadlineWatchSchema.parse({ ...reference, schemaVersion: 2 })).toThrow();
+    expect(() =>
+      deadlineWatchSchema.parse(
+        watchPayload([{ sequence: 1, severity: "critical" as unknown as "info" }]),
+      ),
+    ).toThrow();
+    const badId = watchPayload([{ sequence: 1, severity: "info" }]);
+    badId.gameweeks[0]!.gameweekId = "not-a-uuid";
+    expect(() => deadlineWatchSchema.parse(badId)).toThrow();
+  });
+
+  test("summarizeDeadlineWatch partitions by severity, sorts by sequence and is clock-free", () => {
+    const watch = deadlineWatchSchema.parse(
+      watchPayload([
+        { sequence: 3, severity: "escalate" },
+        { sequence: 2, severity: "info" },
+      ]),
+    ) as DeadlineWatch;
+    const summary = summarizeDeadlineWatch(watch);
+    expect(summary.affected).toBe(2);
+    expect(summary.escalations.map((gw) => gw.sequence)).toEqual([3]);
+    expect(summary.informational.map((gw) => gw.sequence)).toEqual([2]);
+    expect(summary.remediation).toBe("scripts/backend/fantasy-realign-gameweek-calendar.sql");
+    expect(summarizeDeadlineWatch(watch)).toEqual(summary);
+  });
+
+  test("mergeVerdict ranks ok < waiting < escalate < failed", () => {
+    expect(mergeVerdict("ok", "escalate")).toBe("escalate");
+    expect(mergeVerdict("waiting", "escalate")).toBe("escalate");
+    expect(mergeVerdict("escalate", "waiting")).toBe("escalate");
+    expect(mergeVerdict("failed", "escalate")).toBe("failed");
+    expect(mergeVerdict("escalate", "failed")).toBe("failed");
+    expect(mergeVerdict("ok", "ok")).toBe("ok");
+  });
+
+  test("shouldFailRun turns the workflow step red only for failed and escalate", () => {
+    expect(shouldFailRun("failed")).toBe(true);
+    expect(shouldFailRun("escalate")).toBe(true);
+    expect(shouldFailRun("waiting")).toBe(false);
+    expect(shouldFailRun("ok")).toBe(false);
+  });
+
+  test("an escalating watch turns the pass red without changing what the pass did", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const { gateway: g, calls } = gateway(cal, {
+      watch: watchPayload([{ sequence: 1, severity: "escalate" }]),
+    });
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(summary.verdict).toBe("escalate");
+    expect(summary.workers).toEqual([]);
+    expect(summary.performances).toEqual({ batches: 1, fixturesProcessed: 0 });
+    expect(calls.filter((c) => c.name === "service_sync_fantasy_calendar")).toHaveLength(2);
+    expect(summary.deadlineWatch).toMatchObject({
+      warnHours: 72,
+      escalateHours: 24,
+      affected: 1,
+      remediation: "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+    });
+  });
+
+  test("an informational-only watch leaves the verdict ok and still reports the gameweek", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const { gateway: g } = gateway(cal, {
+      watch: watchPayload([{ sequence: 1, severity: "info" }]),
+    });
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(summary.verdict).toBe("ok");
+    const watch = summary.deadlineWatch as { affected: number; informational: unknown[] };
+    expect(watch.affected).toBe(1);
+    expect(watch.informational).toHaveLength(1);
+  });
+
+  test("a worker failure outranks an escalation and the watch is still reported", async () => {
+    const cal = calendar([{ sequence: 1, status: "provisional", scoringInputVersion: 1 }]);
+    const { gateway: g } = gateway(cal, {
+      watch: watchPayload([{ sequence: 1, severity: "escalate" }]),
+      lifecycle: () => {
+        throw new Error("fantasy_scoring_coverage_incomplete");
+      },
+    });
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(summary.verdict).toBe("failed");
+    expect(summary.deadlineWatch).toMatchObject({ affected: 1 });
+  });
+
+  test("a watch failure or an unexpected payload degrades to waiting instead of throwing", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const failing = await orchestrateFantasySeason(
+      gateway(cal, { watch: new Error("connection reset") }).gateway,
+      { now },
+    );
+    expect(failing.verdict).toBe("waiting");
+    expect(failing.deadlineWatch).toEqual({ error: "fantasy_deadline_watch_failed" });
+
+    const unexpected = await orchestrateFantasySeason(
+      gateway(cal, { watch: { schemaVersion: 2 } }).gateway,
+      { now },
+    );
+    expect(unexpected.verdict).toBe("waiting");
+    expect(unexpected.deadlineWatch).toEqual({ error: "fantasy_deadline_watch_failed" });
+  });
+
+  test("two passes over the same state serialise identically and carry no secret-shaped field", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const watch = watchPayload([{ sequence: 1, severity: "escalate" }]);
+    const first = await orchestrateFantasySeason(gateway(cal, { watch }).gateway, { now });
+    const second = await orchestrateFantasySeason(gateway(cal, { watch }).gateway, { now });
+    expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+    expect(JSON.stringify(first)).not.toMatch(
+      /(?:access_token|refresh_token|token_hash|hashed_token|password)/i,
+    );
+  });
+
+  test("the window is passed to the RPC, with the documented defaults", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const defaults = gateway(cal);
+    await orchestrateFantasySeason(defaults.gateway, { now });
+    expect(defaults.calls.find((c) => c.name === "service_fantasy_deadline_watch")?.args).toEqual({
+      p_fantasy_season_id: null,
+      p_warn_hours: 72,
+      p_escalate_hours: 24,
+    });
+
+    const overridden = gateway(cal);
+    await orchestrateFantasySeason(overridden.gateway, {
+      now,
+      deadlineWatch: { warnHours: 120, escalateHours: 6 },
+    });
+    expect(overridden.calls.find((c) => c.name === "service_fantasy_deadline_watch")?.args).toEqual(
+      {
+        p_fantasy_season_id: null,
+        p_warn_hours: 120,
+        p_escalate_hours: 6,
+      },
+    );
+  });
+
+  test("the environment guard validates the watch window", () => {
+    const base = {
+      FANTASY_AUTOMATION_ENABLED: "true",
+      GITHUB_REPOSITORY: "mrdata007/botolago-foundation",
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_EVENT_NAME: "schedule",
+      GITHUB_RUN_ATTEMPT: "1",
+      EXPECTED_COMMIT: "a".repeat(40),
+      GITHUB_SHA: "a".repeat(40),
+      SUPABASE_PRODUCTION_PROJECT_REF: "tkewgajrljbwgwedqsxn",
+      SUPABASE_PRODUCTION_PROJECT_NAME: "BotolaGO Production V2",
+      SUPABASE_PRODUCTION_URL: "https://tkewgajrljbwgwedqsxn.supabase.co/",
+      SUPABASE_SECRET_KEY: "secret",
+      SPORTSMONKS_API_TOKEN: "token",
+      FANTASY_ORCHESTRATOR_EVIDENCE_DIR: "/tmp/evidence",
+    };
+    expect(orchestratorEnvironment(base).deadlineWatch).toEqual({
+      warnHours: 72,
+      escalateHours: 24,
+    });
+    expect(
+      orchestratorEnvironment({
+        ...base,
+        FANTASY_DEADLINE_WATCH_WARN_HOURS: "120",
+        FANTASY_DEADLINE_WATCH_ESCALATE_HOURS: "6",
+      }).deadlineWatch,
+    ).toEqual({ warnHours: 120, escalateHours: 6 });
+    for (const override of [
+      { FANTASY_DEADLINE_WATCH_WARN_HOURS: "abc" },
+      { FANTASY_DEADLINE_WATCH_WARN_HOURS: "721" },
+      { FANTASY_DEADLINE_WATCH_WARN_HOURS: "12", FANTASY_DEADLINE_WATCH_ESCALATE_HOURS: "24" },
+    ]) {
+      expect(() => orchestratorEnvironment({ ...base, ...override })).toThrow(
+        "fantasy_deadline_watch_window_invalid",
+      );
+    }
+  });
+
+  test("an open gameweek with an unconfirmed deadline is never locked by the pass", () => {
+    const cal = calendar(
+      [
+        { sequence: 1, status: "open", deadlineAt: "2026-09-23T22:30:00Z" },
+        { sequence: 2, status: "open", deadlineAt: "2026-09-24T18:30:00Z" },
+      ],
+      {
+        rounds: [
+          roundNote(id(101), [{ kickoffUnconfirmed: 8, deadlineUnconfirmed: true }]),
+          roundNote(id(102), [{ kickoffUnconfirmed: 0, deadlineUnconfirmed: false }]),
+        ],
+      },
+    );
+    expect(selectWorkerTargets(cal, now)).toEqual({
+      targets: [
+        { gameweekId: id(102), sequence: 2, reason: "deadline_passed", calculationVersion: 1 },
+      ],
+      skipped: [{ gameweekId: id(101), sequence: 1, reason: "deadline_unconfirmed" }],
+    });
+  });
+
+  test("the string note from the calendar sync refuses the target too, and degrades the verdict", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-23T22:30:00Z" }], {
+      rounds: [roundNote(id(101), ["deadline_unconfirmed"])],
+    });
+    const { gateway: g, calls } = gateway(cal);
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(summary.verdict).toBe("waiting");
+    expect(summary.workers).toEqual([]);
+    expect(summary.skipped).toEqual([
+      { gameweekId: id(101), sequence: 1, reason: "deadline_unconfirmed" },
+    ]);
+    expect(calls.some((c) => c.name === "service_fantasy_lifecycle_state")).toBe(false);
   });
 });

@@ -22,6 +22,11 @@ import { runFantasyLifecycle, type FantasyWorkerGateway } from "./fantasy-lifecy
  *      locked / live / provisional / finalizing, or a finalized gameweek whose
  *      staged successor has not been opened yet.
  *   4. a second calendar pass so the summary reflects the progression.
+ *   5. `api.service_fantasy_deadline_watch` — a read-only guard that reports
+ *      scheduled/open gameweeks whose deadline is approaching while a counting
+ *      fixture still carries an unconfirmed placeholder kickoff. Inside the
+ *      escalation window the verdict becomes `escalate` and the run exits 1,
+ *      which is the only escalation channel this workflow has.
  *
  * Every step is idempotent on its own (database idempotency keys, sealed
  * scoring snapshots, progression journal, unique assignment indexes), so
@@ -77,6 +82,82 @@ export const calendarSyncSchema = z.object({
 });
 export type CalendarSync = z.infer<typeof calendarSyncSchema>;
 
+/**
+ * Read-only deadline watch (`api.service_fantasy_deadline_watch`): scheduled /
+ * open gameweeks whose deadline is inside the warning window while an active
+ * counting fixture still carries an unconfirmed (00:00 UTC placeholder)
+ * kickoff. The guard never invents a kickoff and never moves a deadline; the
+ * severity is decided by the database clock, not here.
+ */
+export const deadlineWatchSchema = z.object({
+  schemaVersion: z.literal(1),
+  seasonId: uuid,
+  seasonStatus: z.string(),
+  warnHours: z.number().int(),
+  escalateHours: z.number().int(),
+  serverTime: z.string(),
+  remediation: z.string(),
+  gameweeks: z.array(
+    z.object({
+      gameweekId: uuid,
+      sequence: z.number().int(),
+      status,
+      deadlineAt: z.string(),
+      startsAt: z.string().nullable(),
+      hoursToDeadline: z.number(),
+      deadlinePassed: z.boolean(),
+      unconfirmedFixtures: z.number().int().min(0),
+      totalCountingFixtures: z.number().int().min(0),
+      deadlineDerivedFromPlaceholder: z.boolean(),
+      severity: z.enum(["info", "escalate"]),
+      fixtures: z.array(
+        z.object({
+          fixtureId: uuid,
+          homeTeam: z.string().nullable(),
+          awayTeam: z.string().nullable(),
+          providerKickoffAt: z.string(),
+          assignedKickoffAt: z.string().nullable(),
+          originalKickoffAt: z.string().nullable(),
+          fixtureStatus: z.string(),
+          assignmentStatus: z.string(),
+          frozen: z.boolean(),
+          providerUpdatedAt: z.string().nullable(),
+          sourceSequence: z.number().int().nullable(),
+        }),
+      ),
+    }),
+  ),
+});
+export type DeadlineWatch = z.infer<typeof deadlineWatchSchema>;
+
+/** Informational from here; red inside the escalation window. One definition, mirrored by the RPC defaults. */
+export const DEADLINE_WATCH_WARN_HOURS = 72;
+export const DEADLINE_WATCH_ESCALATE_HOURS = 24;
+
+export type Verdict = "ok" | "waiting" | "escalate" | "failed";
+const VERDICT_RANK: Record<Verdict, number> = { ok: 0, waiting: 1, escalate: 2, failed: 3 };
+
+/** The worst of two verdicts; `failed` always wins. */
+export function mergeVerdict(current: Verdict, next: Verdict): Verdict {
+  return VERDICT_RANK[next] > VERDICT_RANK[current] ? next : current;
+}
+
+/** Only a red run reaches an operator: the workflow step has no other channel. */
+export function shouldFailRun(verdict: Verdict) {
+  return verdict === "failed" || verdict === "escalate";
+}
+
+/** Clock-free partition of the watch payload; ordering is explicit so reruns serialise identically. */
+export function summarizeDeadlineWatch(watch: DeadlineWatch) {
+  const gameweeks = [...watch.gameweeks].sort((a, b) => a.sequence - b.sequence);
+  return {
+    affected: gameweeks.length,
+    escalations: gameweeks.filter((gw) => gw.severity === "escalate"),
+    informational: gameweeks.filter((gw) => gw.severity === "info"),
+    remediation: watch.remediation,
+  };
+}
+
 export interface OrchestratorGateway extends FantasyWorkerGateway {
   /** One bounded finished-fixture performance batch; `null` cursor starts from the beginning. */
   ingestPerformances(afterFixtureExternalId: string | null): Promise<{
@@ -92,6 +173,8 @@ export interface OrchestratorOptions {
   maxPerformanceBatches?: number;
   /** Outcome of the provider fixture/result refresh that ran before this pass. */
   providerRefresh?: ProviderRefresh;
+  /** Deadline watch window; defaults mirror the RPC defaults. */
+  deadlineWatch?: { warnHours?: number; escalateHours?: number };
 }
 
 export type WorkerRun = {
@@ -103,7 +186,41 @@ export type WorkerRun = {
   code?: string;
 };
 
-/** Gameweeks that need the worker, in sequence order. */
+export type SkippedTarget = {
+  gameweekId: string;
+  sequence: number;
+  reason: "deadline_unconfirmed";
+};
+
+/**
+ * Gameweek ids whose round note reports an unconfirmed deadline: at least one
+ * active, counting fixture of that round still carries a placeholder kickoff,
+ * so the stored deadline is not authoritative. The calendar sync is the single
+ * source of that predicate; nothing is recomputed here.
+ */
+function gameweeksWithUnconfirmedDeadline(calendar: CalendarSync) {
+  const ids = new Set<string>();
+  for (const round of calendar.rounds) {
+    if (!round.gameweekId) continue;
+    const unconfirmed = round.notes.some(
+      (note) =>
+        note === "deadline_unconfirmed" ||
+        (typeof note === "object" &&
+          note !== null &&
+          (note as Record<string, unknown>).deadlineUnconfirmed === true),
+    );
+    if (unconfirmed) ids.add(round.gameweekId);
+  }
+  return ids;
+}
+
+/**
+ * Gameweeks that need the worker, in sequence order, plus the gameweeks that
+ * were deliberately left alone. An `open` gameweek whose deadline is derived
+ * from a placeholder kickoff is never locked by this pass: locking it would
+ * freeze lineups on a deadline the provider never published, and no path can
+ * undo that afterwards.
+ */
 export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
   const targets: Array<{
     gameweekId: string;
@@ -111,6 +228,8 @@ export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
     reason: WorkerRun["reason"];
     calculationVersion: number;
   }> = [];
+  const skipped: SkippedTarget[] = [];
+  const unconfirmed = gameweeksWithUnconfirmedDeadline(calendar);
   for (const gw of [...calendar.gameweeks].sort((a, b) => a.sequence - b.sequence)) {
     const calculationVersion = gw.scoringInputVersion > 0 ? gw.scoringInputVersion : 1;
     if (["locked", "live", "provisional", "finalizing"].includes(gw.status)) {
@@ -121,6 +240,14 @@ export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
         calculationVersion,
       });
     } else if (gw.status === "open" && Date.parse(gw.deadlineAt) <= now.getTime()) {
+      if (unconfirmed.has(gw.id)) {
+        skipped.push({
+          gameweekId: gw.id,
+          sequence: gw.sequence,
+          reason: "deadline_unconfirmed",
+        });
+        continue;
+      }
       targets.push({
         gameweekId: gw.id,
         sequence: gw.sequence,
@@ -136,7 +263,7 @@ export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
       });
     }
   }
-  return targets;
+  return { targets, skipped };
 }
 
 export async function orchestrateFantasySeason(
@@ -146,8 +273,10 @@ export async function orchestrateFantasySeason(
   const now = options.now ?? new Date();
   const maxWorkerRuns = options.maxWorkerRuns ?? 2;
   const maxPerformanceBatches = options.maxPerformanceBatches ?? 10;
+  const warnHours = options.deadlineWatch?.warnHours ?? DEADLINE_WATCH_WARN_HOURS;
+  const escalateHours = options.deadlineWatch?.escalateHours ?? DEADLINE_WATCH_ESCALATE_HOURS;
   const workers: WorkerRun[] = [];
-  let verdict: "ok" | "waiting" | "failed" = "ok";
+  let verdict: Verdict = "ok";
 
   const before = calendarSyncSchema.parse(
     await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
@@ -173,7 +302,11 @@ export async function orchestrateFantasySeason(
     // report `football_not_final` / coverage errors rather than guess.
   }
 
-  const targets = selectWorkerTargets(before, now).slice(0, maxWorkerRuns);
+  const selection = selectWorkerTargets(before, now);
+  const skipped = selection.skipped;
+  // A refusal is not a success: the round is waiting for a real kickoff.
+  if (skipped.length > 0) verdict = mergeVerdict(verdict, "waiting");
+  const targets = selection.targets.slice(0, maxWorkerRuns);
   for (const target of targets) {
     try {
       const result = (await runFantasyLifecycle(gateway, {
@@ -185,14 +318,14 @@ export async function orchestrateFantasySeason(
         outcome: result.outcome ?? "unknown",
         ...(result.reason ? { code: result.reason } : {}),
       });
-      if (result.outcome === "waiting" && verdict === "ok") verdict = "waiting";
+      if (result.outcome === "waiting") verdict = mergeVerdict(verdict, "waiting");
     } catch (error) {
       workers.push({
         ...target,
         outcome: "failed",
         code: safeCode(error, "fantasy_worker_failed"),
       });
-      verdict = "failed";
+      verdict = mergeVerdict(verdict, "failed");
       break;
     }
   }
@@ -200,12 +333,30 @@ export async function orchestrateFantasySeason(
   const after = calendarSyncSchema.parse(
     await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
   );
-  if (performanceError && verdict === "ok") verdict = "waiting";
+  if (performanceError) verdict = mergeVerdict(verdict, "waiting");
   const providerRefresh = options.providerRefresh;
   // Without a fixture refresh the pass can only work from data already in the
   // database; it is still safe, but never "ok" until the provider is read again.
-  if (providerRefresh && !providerRefresh.fixturesRefreshed && verdict === "ok")
-    verdict = "waiting";
+  if (providerRefresh && !providerRefresh.fixturesRefreshed)
+    verdict = mergeVerdict(verdict, "waiting");
+
+  // The guard runs last and never short-circuits the pass.
+  let deadlineWatch: Record<string, unknown>;
+  try {
+    const watch = deadlineWatchSchema.parse(
+      await gateway.rpc("service_fantasy_deadline_watch", {
+        p_fantasy_season_id: null,
+        p_warn_hours: warnHours,
+        p_escalate_hours: escalateHours,
+      }),
+    );
+    const summary = summarizeDeadlineWatch(watch);
+    deadlineWatch = { warnHours: watch.warnHours, escalateHours: watch.escalateHours, ...summary };
+    if (summary.escalations.length > 0) verdict = mergeVerdict(verdict, "escalate");
+  } catch (error) {
+    deadlineWatch = { error: safeCode(error, "fantasy_deadline_watch_failed") };
+    verdict = mergeVerdict(verdict, "waiting");
+  }
 
   return {
     schemaVersion: 1,
@@ -235,6 +386,8 @@ export async function orchestrateFantasySeason(
       ...(performanceError ? { error: performanceError } : {}),
     },
     workers,
+    skipped,
+    deadlineWatch,
   };
 }
 
@@ -276,6 +429,14 @@ function safeCode(error: unknown, fallback: string) {
     : fallback;
 }
 
+function deadlineWatchHours(raw: string | undefined, fallback: number) {
+  if (raw === undefined || raw === "") return fallback;
+  if (!/^\d{1,3}$/.test(raw)) throw new Error("fantasy_deadline_watch_window_invalid");
+  const value = Number(raw);
+  if (value > 720) throw new Error("fantasy_deadline_watch_window_invalid");
+  return value;
+}
+
 export function orchestratorEnvironment(env: Record<string, string | undefined>) {
   // A scheduled pass runs only while the repository variable is on; an owner
   // dispatch is authorized by the typed confirmation instead, so one reviewed
@@ -304,7 +465,17 @@ export function orchestratorEnvironment(env: Record<string, string | undefined>)
     throw new Error("fantasy_orchestrator_credential_missing");
   if (!env.FANTASY_ORCHESTRATOR_EVIDENCE_DIR)
     throw new Error("fantasy_orchestrator_evidence_directory_missing");
+  const warnHours = deadlineWatchHours(
+    env.FANTASY_DEADLINE_WATCH_WARN_HOURS,
+    DEADLINE_WATCH_WARN_HOURS,
+  );
+  const escalateHours = deadlineWatchHours(
+    env.FANTASY_DEADLINE_WATCH_ESCALATE_HOURS,
+    DEADLINE_WATCH_ESCALATE_HOURS,
+  );
+  if (warnHours < escalateHours) throw new Error("fantasy_deadline_watch_window_invalid");
   return {
+    deadlineWatch: { warnHours, escalateHours },
     url: env.SUPABASE_PRODUCTION_URL.replace(/\/$/, ""),
     key: env.SUPABASE_SECRET_KEY,
     token: env.SPORTSMONKS_API_TOKEN,
@@ -363,7 +534,10 @@ if (import.meta.main) {
     );
     const summary = {
       expectedCommit: commit,
-      ...(await orchestrateFantasySeason(gateway, { providerRefresh })),
+      ...(await orchestrateFantasySeason(gateway, {
+        providerRefresh,
+        deadlineWatch: config.deadlineWatch,
+      })),
     };
     const serialized = `${JSON.stringify(summary, null, 2)}\n`;
     if (serialized.includes(config.key) || serialized.includes(config.token))
@@ -372,7 +546,7 @@ if (import.meta.main) {
       mode: 0o600,
     });
     process.stdout.write(`FANTASY_ORCHESTRATOR_${summary.verdict.toUpperCase()}\n`);
-    if (summary.verdict === "failed") process.exitCode = 1;
+    if (shouldFailRun(summary.verdict)) process.exitCode = 1;
   } catch (error) {
     const code = safeCode(error, "fantasy_orchestrator_failed");
     if (evidenceDir) {

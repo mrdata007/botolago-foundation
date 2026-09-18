@@ -1,0 +1,130 @@
+task_id: BG-0003
+builder_type: Builder-Backend
+branch: agent/BG-0001-0003-deadline-guard
+commits:
+  - "BG-0003: add the fantasy deadline watch and refuse placeholder-derived deadlines"
+changes:
+  - file: supabase/migrations/20260918130000_fantasy_deadline_watch.sql
+    description: >
+      New, additive, read-only migration. Adds
+      api.service_fantasy_deadline_watch(p_fantasy_season_id uuid default null,
+      p_warn_hours integer default 72, p_escalate_hours integer default 24)
+      returns jsonb, plpgsql, stable, security definer, search_path ''.
+      is_service_request() guard (PT403 forbidden); window validation
+      (PT400 fantasy_deadline_watch_window_invalid); season resolution like the
+      sync (PT404 fantasy_season_not_found). Emits a scheduled/open gameweek
+      only when an active counting assignment has an unconfirmed kickoff
+      (app_private.fantasy_kickoff_confirmed) and hoursToDeadline <= warnHours,
+      with severity info/escalate, deadlineDerivedFromPlaceholder (comparison
+      only) and the affected fixtures ordered by providerKickoffAt, fixtureId.
+      No insert/update/delete/merge, no advisory lock, no deadline derivation.
+      Footer revokes from public/anon/authenticated, grants to service_role,
+      comments the function.
+  - file: supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql
+    description: >
+      DEF-1(a). New file that re-creates api.service_sync_fantasy_calendar with
+      the same body except: the new_start/new_end derivation now ignores
+      assignments whose assigned kickoff is unconfirmed, and the whole
+      window/deadline update is skipped with the note "deadline_unconfirmed"
+      while any active counts_points assignment of that gameweek still carries
+      an unconfirmed kickoff. Header comment explains the change; same
+      revoke/grant footer. The existing 20260918120000 file is untouched.
+  - file: scripts/backend/fantasy-season-orchestrator.ts
+    description: >
+      Adds deadlineWatchSchema / DeadlineWatch, DEADLINE_WATCH_WARN_HOURS (72)
+      and DEADLINE_WATCH_ESCALATE_HOURS (24), Verdict "ok"|"waiting"|"escalate"|"failed"
+      with mergeVerdict and shouldFailRun, clock-free summarizeDeadlineWatch,
+      OrchestratorOptions.deadlineWatch, the guard call after the second
+      calendar sync (try/catch → {error: fantasy_deadline_watch_failed} and
+      waiting), summary.deadlineWatch, exit code 1 for failed and escalate, and
+      FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS validation in
+      orchestratorEnvironment. DEF-1(b): selectWorkerTargets now returns
+      {targets, skipped} and refuses a deadline_passed target for an open
+      gameweek whose round note carries deadlineUnconfirmed: true (or the
+      string "deadline_unconfirmed"), correlating rounds[].gameweekId with
+      gameweeks[].id; the refusal appears as summary.skipped[] =
+      {gameweekId, sequence, reason: "deadline_unconfirmed"} and degrades
+      ok → waiting through mergeVerdict. All verdict transitions now go through
+      mergeVerdict. No existing step was restructured.
+  - file: scripts/backend/fantasy-season-orchestrator.test.ts
+    description: >
+      Existing selectWorkerTargets assertions updated for the {targets, skipped}
+      return (same selections asserted; nothing weakened or removed). New
+      "fantasy deadline watch" suite: schema accept/reject (schemaVersion 2,
+      unknown severity, non-uuid gameweekId), summarizeDeadlineWatch partition
+      + sequence ordering + clock-freedom, mergeVerdict precedence,
+      shouldFailRun, escalating watch → escalate with workers/performances
+      unchanged and both syncs made, informational-only watch → ok, worker
+      failure outranking an escalation, watch error and unexpected payload →
+      waiting + fantasy_deadline_watch_failed, byte-identical serialisation
+      across two passes and no phase7f secret substring, default and overridden
+      RPC args, environment window validation, and the two DEF-1(b) refusal
+      tests.
+  - file: .github/workflows/fantasy-season-orchestrator.yml
+    description: >
+      Header comment documents the deadline watch, the four verdicts and that
+      escalate/failed exit non-zero (the red run is the only escalation
+      channel); the orchestrate step passes the optional repository variables
+      FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS. No continue-on-error,
+      concurrency, job if or step order change.
+  - file: docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md
+    description: >
+      New "Deadline watch" section (what is detected, the two tiers and
+      defaults, how to read the deadlineWatch block, the operator procedure,
+      that the guard never invents a kickoff nor moves a deadline and that
+      realignment is impossible after the deadline); verdict list updated to
+      ok / waiting / escalate / failed; the two new migrations added to the
+      components table and to the promotion step; the placeholder paragraph
+      records the new sync refusal; the worker-selection section records the
+      deadline_unconfirmed refusal; the new rehearsal evidence is linked.
+  - file: docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json
+    description: DEF-2 evidence — raw output of rolled-back production scenarios R1–R8.
+  - file: docs/engineering/tasks/BG-0003/implementation-report.yaml
+    description: This report.
+database_changes:
+  - "NEW migration supabase/migrations/20260918130000_fantasy_deadline_watch.sql — api.service_fantasy_deadline_watch(uuid, integer, integer), stable, security definer, service_role only. Not promoted; production still has no such function (verified read-only after the rehearsals)."
+  - "NEW migration supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql — create or replace of api.service_sync_fantasy_calendar. Additive file; the 20260918120000 migration file is unchanged. Not promoted."
+  - "No migration was applied to any database. Every production interaction was a single begin;…rollback; statement batch that aborted with raise exception; apply_migration was never used."
+configuration_changes:
+  - "Optional repository variables FANTASY_DEADLINE_WATCH_WARN_HOURS and FANTASY_DEADLINE_WATCH_ESCALATE_HOURS (integers 0..720, warn >= escalate). Unset → 72 / 24. Passed to the orchestrate step only; no other workflow setting changed."
+tests_run:
+  - command: bunx prettier --write (5 changed ts/yml/md/json files)
+    result: PASS
+  - command: bunx eslint scripts/backend/fantasy-season-orchestrator.ts scripts/backend/fantasy-season-orchestrator.test.ts
+    result: PASS
+  - command: bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts
+    result: PASS # 62 pass, 0 fail, 254 expect() calls (was 26 before this task)
+  - command: bun run typecheck
+    result: PASS
+  - command: bun run backend:migrations:check
+    result: PASS # Validated 59 migration(s)
+  - command: "production rehearsal R1 (rolled back): api.service_fantasy_deadline_watch on live data"
+    result: PASS # GW1 3cc19aaa-…, sequence 1, open, deadlineAt 2026-09-23T22:30Z, unconfirmedFixtures 8, 8 fixtures at 00:00 UTC with team names, deadlineDerivedFromPlaceholder true
+  - command: "production rehearsal R2 (rolled back): two calls, count snapshots"
+    result: PASS # payloads byte-identical; gameweeks/assignments/fixtures/deadline-audit counts unchanged
+  - command: "production rehearsal R3 (rolled back): authenticated claims"
+    result: PASS # PT403 forbidden
+  - command: "production rehearsal R4 (rolled back): thresholds"
+    result: PASS # (720,0) → info, (720,240) → escalate, (72,240) → PT400 fantasy_deadline_watch_window_invalid
+  - command: "production rehearsal R5 (rolled back): mixed round, 7 confirmed + 1 placeholder"
+    result: PASS # deadline stayed 2026-11-10T22:30Z (placeholder would have derived 2026-11-09T22:30Z), note deadline_unconfirmed, deadlineChanges 0, 0 audit rows; after the 8th kickoff was published the deadline moved to 2026-11-11T17:30Z with 1 audit row
+  - command: "production rehearsal R6 (rolled back): open gameweek past its deadline, kickoff moved"
+    result: PASS # note deadline_locked, deadline unchanged, no audit row from the sync
+  - command: "production rehearsal R7 (rolled back): realignment deriving a past deadline"
+    result: PASS # note new_deadline_in_past, deadline unchanged
+  - command: "production rehearsal R8 (rolled back): direct deadline_at update on a locked gameweek"
+    result: PASS # PT409 fantasy_gameweek_locked
+  - command: "post-rehearsal read-only verification of production"
+    result: PASS # 0 rehearsal rounds, 1 gameweek, 8 assignments, 488 fixtures, 0 deadline-audit rows, GW1 deadline 2026-09-23T22:30Z / status open / first kickoff 2026-09-24T00:00Z, api.service_fantasy_deadline_watch absent
+unresolved:
+  - "DEF-3 not attempted: no non-production database available. The supabase CLI exists as a devDependency but the Docker daemon is not running in this environment (`docker info` fails), so no local stack could be started and no orchestrator pass driving a gameweek end to end exists. Nothing was fabricated."
+  - "The deadline watch RPC is not promoted to Production V2. Until it is, the orchestrator's guard call fails and the pass degrades to `waiting` with `fantasy_deadline_watch_failed` (covered by a unit test); the calendar sync keeps its current, unguarded body until 20260918140000 is promoted too."
+  - "Provider publication timing for the real GW1 kickoffs is still unknown; the guard reports, it does not repair."
+unexpected_observations:
+  - "The brief's threshold acceptance test `(null,72,240) → escalate` contradicts its own validation rule `p_warn_hours >= p_escalate_hours`: with warn 72 the call is refused with PT400. I implemented the validation as written and ran the threshold scenarios with warn 720 (the documented maximum), recording the refusal of (72,240) as well."
+  - "With the default 72 h warning window the live GW1 is NOT reported today: its deadline is 131.5 h away. The brief's R1 expectation (`(null,72,24)` returns GW1) therefore cannot hold on 2026-09-18; it starts holding on 2026-09-20T22:30Z. Both the default call (empty) and a 720 h call (GW1) are in the evidence. Chief may want to reconsider the default warn window or the acceptance wording."
+  - "In the R2 rehearsal both watch calls ran inside one DO block, so statement_timestamp() — and therefore serverTime and hoursToDeadline — is identical rather than merely close; the payloads are byte-identical. This is stronger than the stated property, not weaker."
+  - "app.fantasy_gameweeks carries a unique index fantasy_gameweeks_one_current_idx (one current gameweek per season), so a second `open` gameweek cannot be staged. R6 therefore had to be rehearsed on the live GW1 (inside the rolled-back transaction) rather than on a synthetic open gameweek. Not a defect, but it constrains future rehearsals."
+  - "Unrelated and NOT repaired: calendarSyncSchema still strips rounds[].roundId / sequence / deadlineAt that the sync SQL emits (contradiction already noted by the Researcher). The DEF-1(b) correlation only needs gameweekId and notes, both of which survive."
+scope_deviations: []
+status: DONE
