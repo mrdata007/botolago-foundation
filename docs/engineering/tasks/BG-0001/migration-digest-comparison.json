@@ -1,0 +1,108 @@
+{
+  "readAt": "2026-09-18T00:00:00Z",
+  "projectRef": "tkewgajrljbwgwedqsxn",
+  "totalHistoryRows": 57,
+  "rows": [
+    {
+      "version": "20260914184657",
+      "repositoryFile": "supabase/migrations/20260914184657_current_season_squad_recovery.sql",
+      "repositorySha256": "24a211d1f025e551382a23aac72b03540e1ccb245a091423de08a436eee0eca9",
+      "repositoryBytes": 9635,
+      "historyName": "current_season_squad_recovery",
+      "statementCount": 1,
+      "statementSha256": "24a211d1f025e551382a23aac72b03540e1ccb245a091423de08a436eee0eca9",
+      "match": true
+    },
+    {
+      "version": "20260914185233",
+      "repositoryFile": "supabase/migrations/20260914185233_elbotola_service_source_controls.sql",
+      "repositorySha256": "463fcd969df13de365576fd2c5963b0d034fd070b4b299b85c6506f0d73497f5",
+      "repositoryBytes": 2925,
+      "historyName": "elbotola_service_source_controls",
+      "statementCount": 1,
+      "statementSha256": "463fcd969df13de365576fd2c5963b0d034fd070b4b299b85c6506f0d73497f5",
+      "match": true
+    },
+    {
+      "version": "20260914200714",
+      "repositoryFile": "supabase/migrations/20260914200714_fantasy_trusted_lifecycle.sql",
+      "repositorySha256": "e0ace3dc431917722ed578d8fdc08cb4a2c3936229efaa41dc5901aa0fe54a32",
+      "repositoryBytes": 9895,
+      "historyName": "fantasy_trusted_lifecycle",
+      "statementCount": 1,
+      "statementSha256": "e0ace3dc431917722ed578d8fdc08cb4a2c3936229efaa41dc5901aa0fe54a32",
+      "match": true
+    },
+    {
+      "version": "20260914200719",
+      "repositoryFile": "supabase/migrations/20260914200719_fantasy_scoring_worker_contracts.sql",
+      "repositorySha256": "71924a37336c88461aa94f197da4f6fa370e703eaef291186428a093021dd7a5",
+      "repositoryBytes": 37353,
+      "historyName": "fantasy_scoring_worker_contracts",
+      "statementCount": 1,
+      "statementSha256": "71924a37336c88461aa94f197da4f6fa370e703eaef291186428a093021dd7a5",
+      "match": true
+    },
+    {
+      "version": "20260914200726",
+      "repositoryFile": "supabase/migrations/20260914200726_current_finished_fixture_performances.sql",
+      "repositorySha256": "85374dddf9dc2f3febba73bcf66fb471cdb1cc744dff4b2498c92dd7bfaabd9d",
+      "repositoryBytes": 20516,
+      "historyName": "current_finished_fixture_performances",
+      "statementCount": 1,
+      "statementSha256": "85374dddf9dc2f3febba73bcf66fb471cdb1cc744dff4b2498c92dd7bfaabd9d",
+      "match": true
+    },
+    {
+      "version": "20260914200730",
+      "repositoryFile": "supabase/migrations/20260914200730_fantasy_verified_finalization.sql",
+      "repositorySha256": "0d33b7d83b29622ccdde5f0774c223c1ecb20d95d84f9591c26ba73429e8b35e",
+      "repositoryBytes": 19640,
+      "historyName": "fantasy_verified_finalization",
+      "statementCount": 1,
+      "statementSha256": "0d33b7d83b29622ccdde5f0774c223c1ecb20d95d84f9591c26ba73429e8b35e",
+      "match": true
+    },
+    {
+      "version": "20260914200736",
+      "repositoryFile": "supabase/migrations/20260914200736_fantasy_finalized_notification_batches.sql",
+      "repositorySha256": "04c6b1cc180b61da2d3309d260918deec062eae9d2bb9d90199addb347d585ca",
+      "repositoryBytes": 7257,
+      "historyName": "fantasy_finalized_notification_batches",
+      "statementCount": 1,
+      "statementSha256": "04c6b1cc180b61da2d3309d260918deec062eae9d2bb9d90199addb347d585ca",
+      "match": true
+    },
+    {
+      "version": "20260914200740",
+      "repositoryFile": "supabase/migrations/20260914200740_fantasy_next_gameweek_progression.sql",
+      "repositorySha256": "cb85f669355ee32d2a606982484b20a445ac3be8fc784114558ac16a63cfe30b",
+      "repositoryBytes": 17826,
+      "historyName": "fantasy_next_gameweek_progression",
+      "statementCount": 1,
+      "statementSha256": "cb85f669355ee32d2a606982484b20a445ac3be8fc784114558ac16a63cfe30b",
+      "match": true
+    },
+    {
+      "version": "20260914200744",
+      "repositoryFile": "supabase/migrations/20260914200744_fantasy_postwork_journal.sql",
+      "repositorySha256": "c8af464b3951c58fb46e208aafea793310b21925b3a807b52ed802ee202188e3",
+      "repositoryBytes": 10413,
+      "historyName": "fantasy_postwork_journal",
+      "statementCount": 1,
+      "statementSha256": "c8af464b3951c58fb46e208aafea793310b21925b3a807b52ed802ee202188e3",
+      "match": true
+    },
+    {
+      "version": "20260918120000",
+      "repositoryFile": "supabase/migrations/20260918120000_fantasy_calendar_sync.sql",
+      "repositorySha256": "634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e",
+      "repositoryBytes": 14998,
+      "historyName": "fantasy_calendar_sync",
+      "statementCount": 1,
+      "statementSha256": "634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e",
+      "match": true
+    }
+  ],
+  "allMatch": true
+}

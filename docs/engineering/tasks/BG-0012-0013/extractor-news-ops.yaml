@@ -1,0 +1,59 @@
+task_id: BG-0013
+role: Extractor
+attempt: 1
+workflows:
+  - file: .github/workflows/g5-production-gnews-schedule.yml
+    triggers:
+      [
+        schedule "23 */2 * * *",
+        workflow_dispatch (expected_commit,
+        confirmation RUN_G5_SCHEDULED_GNEWS),
+      ]
+    gating_variables:
+      [vars.GNEWS_COMMERCIAL_LICENSE_APPROVED, vars.GNEWS_SCHEDULE_ENABLED, actor, repository, ref]
+    last_runs: 5 scheduled runs 2026-09-17/18 all conclusion skipped (head 5731246)
+  - file: .github/workflows/news-elbotola-recovery.yml
+    triggers:
+      [
+        workflow_dispatch (expected_commit,
+        confirmation RUN_ELBOTOLA_RECOVERY,
+        mode canary|refresh),
+        schedule "17 */6 * * *",
+      ]
+    gating_variables: [vars.ELBOTOLA_SCHEDULE_ENABLED, actor, repository, ref]
+    last_runs: 5 scheduled runs 2026-09-17/18 all conclusion success (head 5731246)
+  - file: .github/workflows/gate4-production-news-ratings-canary.yml
+    triggers: [workflow_dispatch only]
+    last_runs: last success 2026-08-02 (run 30740805839); four earlier failures
+edge_functions_in_repo: [_shared, football-ingest, news-ingest, news-ingest-elbotola]
+production_edge_functions: [football-ingest, news-ingest] # from the Chief's earlier read-only listing; news-ingest-elbotola is not deployed
+docs_statements:
+  PHASE_4_NEWS_REPORT.md:
+    - "It does not start notifications, Fantasy expansion, Admin CMS UI, production cron, or production deployment."
+    - "No production news provider, source contract, or media redistribution license is approved."
+    - "Canonical provider persistence is intentionally disabled until that decision is reviewed."
+  NEWS_OPERATIONS_RUNBOOK.md:
+    - "This runbook covers BotolaGO Production V2 Phase 4. It does not authorize production deployment, production cron activation, or an Admin CMS UI."
+    - "Do not copy third-party images into Storage until redistribution rights are documented. Keep remote media as validated HTTPS references when copying is not licensed. ElBotola hero images use this remote-reference path under the separately documented permission and strict host/path allowlist."
+  G5_GNEWS_SCHEDULE_RUNBOOK.md:
+    - "The scheduled ingestion workflow is installed but dormant."
+    - "The production news source remains a launch NO-GO until commercial content rights are approved and a licensed manual run produces passing evidence."
+  ELBOTOLA_RECOVERY_RUNBOOK.md:
+    - "The owner-confirmed 2026-08-03 permission in ELBOTOLA_INTEGRATION.md covers Arabic headline/link metadata and allowlisted remote hero images. This workflow uses the existing adapter … It does not enable GNews, collect article bodies or copy image binaries."
+env_variable_names:
+  [
+    VITE_NEWS_DATA_MODE,
+    NEWS_PROVIDER,
+    NEWS_PROVIDER_BASE_URL,
+    NEWS_PROVIDER_API_KEY,
+    NEWS_INGESTION_CONCURRENCY,
+    NEWS_PROVIDER_TIMEOUT_MS,
+    NEWS_PROVIDER_MAX_RETRIES,
+    NEWS_PROVIDER_RETRY_BASE_MS,
+    ELBOTOLA_SYNDICATION_APPROVED,
+    ELBOTOLA_ORIGIN,
+    ELBOTOLA_PAGE_SIZE,
+    ELBOTOLA_TIMEOUT_MS,
+    ELBOTOLA_MAX_RETRIES,
+  ]
+status: DONE

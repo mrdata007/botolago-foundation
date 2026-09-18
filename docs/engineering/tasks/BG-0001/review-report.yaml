@@ -1,0 +1,52 @@
+task_id: BG-0001
+role: Reviewer (fresh context)
+attempt: 1
+reviewed_commit: 2c7b1e740a37f26b6e457bfe5cfd4bedcf610d79
+verdict: FAIL
+local_gates: { bun_test: PASS (26), typecheck: PASS, eslint: PASS, migrations_check: PASS (57) }
+scope_checks: { ui_change: none (git diff c9455cf..2c7b1e7 -- src/ empty), engine_rewrite: none }
+criteria:
+  - { id: AC1, assessment: VERIFIED-by-evidence }
+  - {
+      id: AC2,
+      assessment: NOT-EVIDENCED,
+      note: "'a passed deadline is never moved' — deadline_locked / new_deadline_in_past branches never exercised",
+    }
+  - { id: AC3, assessment: VERIFIED-by-evidence }
+  - { id: AC4, assessment: VERIFIED-by-evidence }
+  - { id: AC5, assessment: VERIFIED-by-evidence }
+  - {
+      id: AC6,
+      assessment: REFUTED,
+      note: "GW1 is open with a placeholder-derived deadline (2026-09-23T22:30Z); selectWorkerTargets ignores deadlineUnconfirmed and would lock it; realignment min(assigned_kickoff_at) lacks the fantasy_kickoff_confirmed predicate (mixed rounds)",
+    }
+  - {
+      id: AC7,
+      assessment: NOT-EVIDENCED,
+      note: "no evidence that orchestrateFantasySeason itself drove a gameweek (production run workers: [])",
+    }
+  - { id: AC8, assessment: VERIFIED-by-evidence }
+  - { id: AC9, assessment: VERIFIED-by-evidence }
+defects:
+  - id: DEF-1
+    requirement: AC6 (and AC2/AC3 by extension)
+    owner: Builder-Backend
+    correction: >
+      (a) migration: exclude unconfirmed kickoffs from new_start/new_end and skip the deadline update (note deadline_unconfirmed) while any active counts_points assignment is unconfirmed;
+      (b) selectWorkerTargets: carry deadlineUnconfirmed/kickoffUnconfirmed to gameweek entries and refuse a deadline_passed target for an unconfirmed deadline, reporting waiting reason deadline_unconfirmed; unit test + mixed-round rehearsal (7 confirmed + 1 placeholder).
+  - id: DEF-2
+    requirement: AC2 passed deadline never moved
+    owner: Builder-Backend
+    correction: rolled-back rehearsal scenarios for deadline_locked, new_deadline_in_past and fantasy_gameweek_locked on a locked gameweek.
+  - id: DEF-3
+    requirement: AC7 worker runs automatically at the appropriate stages
+    owner: Builder-Backend
+    correction: evidence in which orchestrateFantasySeason itself drives at least one gameweek (rolled-back session or non-production database seeded to shape), with the emitted fantasy-season-orchestrator.json showing a non-empty workers array.
+  - id: DEF-4
+    requirement: evidence integrity of the migration promotion (3206afc manifest + direct transaction)
+    owner: Chief
+    correction: attach machine-readable digest comparison (repository SHA-256 vs schema_migrations rows) for 20260918120000 and the nine launch_recovery_2026_09_14 migrations, or a completed promotion workflow run.
+release_blockers:
+  - "DEF-1: with FANTASY_AUTOMATION_ENABLED=true the hourly pass would lock GW1 at 2026-09-23T22:30Z on a placeholder-derived deadline. Do not set the variable until the refusal is in place."
+  - "DEF-3: the composed orchestrator has never advanced a gameweek."
+status: REJECTED

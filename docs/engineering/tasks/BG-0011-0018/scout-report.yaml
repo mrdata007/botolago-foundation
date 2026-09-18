@@ -1,0 +1,122 @@
+task_id: BG-0011+BG-0018
+role: Scout
+attempt: 1
+candidates:
+  # pricing
+  - {
+      reference: supabase/migrations/20260803173344_fantasy_preactivation_hardening.sql,
+      type: source_file,
+      relevance: "app_private.fantasy_initial_price_evidence (source_rating 4-10, calculated_price 4-12.5) and app_private.fantasy_initial_price_v1 ('botolago-initial-price-v1.0'); seeds fantasy_player_price_history.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260803210943_fantasy_catalog_activation.sql,
+      type: source_file,
+      relevance: "api.service_stage_fantasy_catalog computes initial_price per player, validates 4..12.5, inserts fantasy_players.price, evidence and history.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260720141826_fantasy_catalog_rules.sql,
+      type: source_file,
+      relevance: "app.fantasy_players (price numeric(8,2), price_version, selected_by_count …) and app.fantasy_player_price_history.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260720163222_fantasy_ruleset_v1.sql,
+      type: source_file,
+      relevance: "app.fantasy_price_rules (movement thresholds, increments, caps).",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260914200744_fantasy_postwork_journal.sql,
+      type: rpc,
+      relevance: "api.service_run_fantasy_price_batch → api.service_apply_fantasy_price_changes (definition not located by Scout).",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260720141854_fantasy_api_security.sql,
+      type: rpc,
+      relevance: "api.fantasy_player_pool joins fantasy_players + players + teams; squad JSON carries price/purchasePrice/salePrice.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/backend/fantasy/contracts.ts,
+      type: source_file,
+      relevance: "fantasyPlayerSchema.price positive number; playerPoolPageSchema cursor {price,id}.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/backend/fantasy/supabase-repository.ts,
+      type: source_file,
+      relevance: "rpc fantasy_hub / fantasy_player_pool / get_my_fantasy_team / preview|confirm_fantasy_transfers / fantasy_top_players.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/components/fpl/FplPlayerCard.tsx,
+      type: source_file,
+      relevance: "Renders price plate.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/components/fpl/AddPlayerScreen.tsx,
+      type: source_file,
+      relevance: "Add-player list with price and kit.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/components/fpl/TransferConfirmScreen.tsx,
+      type: source_file,
+      relevance: "Transfer prices.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md,
+      type: doc,
+      relevance: "539 players priced 4.8–7.2 at activation.",
+      confidence: HIGH,
+    }
+  # data
+  - {
+      reference: supabase/migrations/20260720095330_football_catalog.sql,
+      type: source_file,
+      relevance: "app.teams (code nullable ^[A-Z0-9]{2,8}$, crest_asset_id, primary/secondary_color), app.players, app.rounds.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260720095345_football_match_ingestion.sql,
+      type: source_file,
+      relevance: "app.fixtures.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/lib/kits.ts,
+      type: source_file,
+      relevance: "Client-only kit palette: hardcoded OVERRIDES for war, rca, asfar, fus, rsb, mat, hus, moas; other clubs fall back; app.teams colours not used.",
+      confidence: MEDIUM,
+    }
+  - {
+      reference: src/components/fantasy/PlayerShirt.tsx,
+      type: source_file,
+      relevance: "getKitForClub → JerseyVisual.",
+      confidence: LOW,
+    }
+  - {
+      reference: scripts/backend/current-season-roster-audit.ts,
+      type: source_file,
+      relevance: "Provider roster audit.",
+      confidence: MEDIUM,
+    }
+  - {
+      reference: docs/backend/FANTASY_PREACTIVATION_AUDIT.md,
+      type: doc,
+      relevance: "Activation audit trail.",
+      confidence: MEDIUM,
+    }
+possibly_stale:
+  - docs/backend/FANTASY_DOMAIN_PLAN.md, FANTASY_RULES_V1.md (may predate hardening migrations)
+missing:
+  - Definition of api.service_apply_fantasy_price_changes not located (likely in 20260914200714/200719/200730 migrations).
+  - No app.kits table; kit visuals are client-side only.
+  - No dedicated club data completeness validator (code/crest) script.
+  - Live price distribution not inspected (Extractor task).
+status: DONE

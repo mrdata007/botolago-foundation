@@ -21,9 +21,9 @@ tasks:
     area: fantasy
     severity: P0
     user_impact: Without it the season stops after GW1 and every gameweek close needs a manual dispatch.
-    owner: Reviewer
-    state: RUNNING # implementation and verification complete; awaiting fresh-context Reviewer verdict
-    attempt: 1
+    owner: Builder-Backend
+    state: REJECTED # Reviewer FAIL 2026-09-18 (docs/engineering/tasks/BG-0001/review-report.yaml); defects routed back to Builder-Backend (DEF-1..3) and Chief (DEF-4)
+    attempt: 2
     depends_on: []
     roles: {researcher: session (pre-system), builder: session (pre-system), verifier: session rehearsals + production run, reviewer: fresh sub-agent}
     acceptance_criteria:
@@ -42,7 +42,7 @@ tasks:
       - unit tests scripts/backend/fantasy-season-orchestrator.test.ts (10), current-season-recovery.test.ts; 632 unit tests green
     commits: [e7a976e, 3206afc, 8bda6b5, 2c7b1e7]
     verification: {status: PASS, by: session (not independent — see review)}
-    review: null
+    review: {verdict: FAIL, report: docs/engineering/tasks/BG-0001/review-report.yaml, blockers: [DEF-1 placeholder-derived deadline would be acted on, DEF-3 composed orchestrator never drove a gameweek]}
     residual_risks:
       - provider must publish rounds and non-midnight kickoffs; sync never invents them
       - recovery canary stops at the promoted-club squad guard (BG-0005); fixture phase commits first
@@ -64,6 +64,7 @@ tasks:
       - run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"
       - migration 20260918120000_fantasy_calendar_sync was exceptionally promoted through the promoter's own generated transaction; production history row name/version match and statements[1] sha256 = 634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e (repository file)
       - the manifest now covers all 57 migrations (commit 3206afc), so the workflow's chain check passes once the credential works
+      - docs/engineering/tasks/BG-0001/migration-digest-comparison.json — machine-readable proof (Extractor, read-only) that the 9 launch_recovery rows and 20260918120000 each match the repository file SHA-256 (allMatch true, 57 history rows); closes Reviewer DEF-4
     human_action: Refresh SUPABASE_ACCESS_TOKEN in environment production-admin-activation. No credential is to be printed, replaced or invented by agents. Future migrations must NOT be promoted by generated transactions again.
     residual_risks: []
 
@@ -72,10 +73,15 @@ tasks:
     area: provider
     severity: P0
     user_impact: If real kickoffs are not published before 2026-09-23T22:30Z, GW1 locks on a placeholder-derived deadline (or the wrong time) and nobody is warned.
-    owner: Scout
-    state: RUNNING
+    owner: Builder-Backend
+    state: RUNNING # Scout DONE, Researcher DONE (docs/engineering/tasks/BG-0003/); Builder attempt 1 on branch agent/BG-0001-0003-deadline-guard
     attempt: 1
     depends_on: [BG-0001]
+    scope_log:
+      - old_scope: BG-0003 deadline-watch guard only
+        new_scope: BG-0003 guard + BG-0001 review defects DEF-1 (a,b) and DEF-2 implemented by the same Builder-Backend on one branch
+        reason: same root cause (placeholder-derived deadlines) and same files (orchestrator script, migrations); disjoint parallel Builders would collide
+        authorized_by: Chief 2026-09-18
     facts:
       - provider season end 2026-09-24; 8 fixtures at 2026-09-24T00:00Z placeholders
       - placeholders correctly do not establish deadlines (production run 35332956079: kickoffUnconfirmed 8, deadlineUnconfirmed true)
@@ -105,7 +111,9 @@ tasks:
       - GitHub variables API through the session proxy → HTTP 403 ("Access to this GitHub Actions path is not permitted through this proxy")
       - workflow fantasy-season-orchestrator.yml state=active (workflow id 361247113); cron "12 * * * *"; job condition requires vars.FANTASY_AUTOMATION_ENABLED == 'true'
       - manual owner-dispatch run 35332956079 passed with verdict ok on main 8bda6b5
-    human_action: Settings → Secrets and variables → Actions → Variables → New repository variable FANTASY_AUTOMATION_ENABLED = true. The next :12 schedule is then eligible; nothing else is required.
+    human_action: >
+      HOLD — do NOT set FANTASY_AUTOMATION_ENABLED=true yet. Reviewer DEF-1 (BG-0001): the hourly pass would lock GW1 at 2026-09-23T22:30Z, a deadline derived from the provider's 00:00 UTC placeholder. Set the variable only after BG-0001 attempt 2 reaches Reviewer PASS. Then: Settings → Secrets and variables → Actions → Variables → FANTASY_AUTOMATION_ENABLED = true.
+    depends_on_review: BG-0001
     residual_risks: []
 
   BG-0005:
@@ -150,16 +158,27 @@ tasks:
     title: CMS (articles, drafts, publish, images, SEO)
     area: cms
     severity: P1
-    owner: Scout
-    state: RUNNING
-    evidence: [UNKNOWN — no evidence gathered in this session]
+    user_impact: No editorial screen exists; articles enter only through ingestion RPCs.
+    owner: Human
+    state: HALTED_FOR_INPUT
+    evidence:
+      - docs/engineering/tasks/BG-0012-0013/scout-report.yaml — no admin.news*/cms routes; editorial schema (stories, article_editions, revisions, taxonomies, SEO/canonical columns) exists in 20260720110053_news_editorial_catalog.sql
+      - docs/backend/PHASE_4_NEWS_REPORT.md and NEWS_OPERATIONS_RUNBOOK.md state an Admin CMS UI was explicitly out of scope
+    human_action: >
+      Product decision — is an in-app CMS (create/edit/draft/publish/unpublish, images, slug, category, tags, author, SEO, preview, scheduling) a launch requirement? If yes it is a new feature (Researcher brief → Builder-CMS, multi-day); if no, BG-0012 closes as out of launch scope and the quality gate is satisfied by ingestion + rendering checks only.
   BG-0013:
     title: Full-article / news ingestion (provenance, duplicates, attribution, images)
     area: news
     severity: P1
-    owner: Scout
-    state: RUNNING
-    evidence: [hub cards text-only in French because heroes are absent (hardening N6); rest UNKNOWN]
+    user_impact: GNews (French) is dormant and a documented launch NO-GO pending commercial rights; ElBotola Arabic headline/link/hero metadata refreshes every 6 h and succeeds; no full article bodies are ingested anywhere.
+    owner: Human
+    state: HALTED_FOR_INPUT
+    evidence:
+      - docs/engineering/tasks/BG-0012-0013/extractor-news-ops.yaml (GNews schedule skipped ×5; ElBotola schedule success ×5; runbook NO-GO statements)
+      - dedupe (URL canonicalisation + content fingerprint), sanitizer and RLS tests exist (news_domain, news_rls, elbotola_news)
+    human_action: >
+      Legal/product decision — confirm the launch news scope: (a) ElBotola metadata + remote heroes only (current state, already running), or (b) GNews commercial licence approved (set GNEWS_COMMERCIAL_LICENSE_APPROVED and GNEWS_SCHEDULE_ENABLED after a licensed manual run), or (c) full-article bodies from a licensed source (new provider work). Agents must not ingest bodies without a documented licence.
+    next_when_unblocked: Verifier checks production article rendering (attribution, canonical link, hero fallback) for the chosen scope.
   BG-0014:
     title: Localization (fr/ar/en keys, grammar, RTL, formats)
     area: localization

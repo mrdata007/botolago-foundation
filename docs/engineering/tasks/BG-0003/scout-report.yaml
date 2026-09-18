@@ -1,0 +1,71 @@
+task_id: BG-0003
+role: Scout
+attempt: 1
+candidates:
+  - reference: supabase/migrations/20260918120000_fantasy_calendar_sync.sql
+    type: source_file
+    relevance: Defines app_private.fantasy_kickoff_confirmed (placeholder predicate, 00:00:00 UTC) and api.service_sync_fantasy_calendar, whose per-round notes already report kickoffUnconfirmed / deadlineUnconfirmed / deadline_already_passed / gameweek_locked.
+    confidence: HIGH
+  - reference: app_private.fantasy_calculate_deadline(p_ruleset_id, p_first_fixture_at) — supabase/migrations/20260720163222_fantasy_ruleset_v1.sql:396
+    type: rpc
+    relevance: Deadline derivation rule (first kickoff minus app.fantasy_deadline_rules.minutes_before_first_fixture).
+    confidence: HIGH
+  - reference: app.fantasy_gameweeks (deadline_at, starts_at, ends_at, status, sequence_number) — supabase/migrations/20260720141826_fantasy_catalog_rules.sql:169
+    type: database_table
+    relevance: Gameweek state and current deadline.
+    confidence: HIGH
+  - reference: app.fantasy_fixture_assignments (assigned_kickoff_at, original_kickoff_at, gameweek_id, counts_points, assignment_status, frozen_at, superseded_at) — supabase/migrations/20260720163222_fantasy_ruleset_v1.sql:151
+    type: database_table
+    relevance: Counting fixtures per gameweek whose kickoff must be checked.
+    confidence: HIGH
+  - reference: app.fixtures.kickoff_at
+    type: database_table
+    relevance: Provider kickoff source of truth; placeholders originate here.
+    confidence: HIGH
+  - reference: scripts/backend/fantasy-season-orchestrator.ts
+    type: source_file
+    relevance: Scheduled orchestrator; exposes calendarSyncSchema (rounds[].notes, confirmedKickoffs, gameweeks[].deadlineAt/status), verdict ok/waiting/failed, sanitized evidence writing. Natural host for the guard.
+    confidence: HIGH
+  - reference: scripts/backend/fantasy-season-orchestrator.test.ts
+    type: test
+    relevance: Unit test patterns to follow.
+    confidence: HIGH
+  - reference: .github/workflows/fantasy-season-orchestrator.yml
+    type: workflow
+    relevance: Hourly workflow; escalation channel today is workflow failure + sanitized artifact.
+    confidence: HIGH
+  - reference: scripts/backend/fantasy-realign-gameweek-calendar.sql
+    type: source_file
+    relevance: Existing manual realignment procedure the guard must point to.
+    confidence: HIGH
+  - reference: docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md
+    type: doc
+    relevance: Documents placeholder behaviour and the residual manual dependency.
+    confidence: HIGH
+  - reference: docs/qa/fantasy-orchestration/production-run-35332956079.json
+    type: doc
+    relevance: Real example of the condition (kickoffUnconfirmed 8, deadlineUnconfirmed true, GW1 deadline 2026-09-23T22:30Z).
+    confidence: HIGH
+  - reference: app_private.fantasy_deadline_change_audit
+    type: database_table
+    relevance: Audit of deadline changes.
+    confidence: MEDIUM
+  - reference: app.fantasy_deadline_rules.minutes_before_first_fixture
+    type: database_table
+    relevance: Rule parameter; a guard window should not contradict it.
+    confidence: MEDIUM
+  - reference: scripts/backend/phase7f-scan-sanitized-evidence.py
+    type: source_file
+    relevance: Evidence sanitation convention the guard output must satisfy.
+    confidence: MEDIUM
+  - reference: scripts/backend/fantasy-lifecycle-runner.ts
+    type: source_file
+    relevance: Pattern for waiting/failed reason codes.
+    confidence: MEDIUM
+possibly_stale:
+  - docs/backend/FANTASY_CAPACITY_REPORT.md and scripts/backend/fantasy-capacity-*.py (capacity testing, unrelated)
+  - docs/backend/archive/legacy-supabase/** (archived schema)
+missing:
+  - No Slack/email/pager integration exists in the repository; escalation channels available are workflow failure and the sanitized evidence artifact.
+  - Live production rows not inspected by Scout.
+status: DONE

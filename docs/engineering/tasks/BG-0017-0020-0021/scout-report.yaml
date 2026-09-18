@@ -1,0 +1,177 @@
+task_id: BG-0017+BG-0020+BG-0021
+role: Scout
+attempt: 1
+candidates:
+  # auth
+  - { reference: src/routes/auth.login.tsx, type: route, relevance: "Login.", confidence: HIGH }
+  - {
+      reference: src/routes/auth.register.tsx,
+      type: route,
+      relevance: "Registration.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/auth.forgot-password.tsx,
+      type: route,
+      relevance: "Recovery request.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/auth.update-password.tsx,
+      type: route,
+      relevance: "Password reset.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/auth.callback.tsx,
+      type: route,
+      relevance: "Email-link / provider callback.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/auth.verify.tsx,
+      type: route,
+      relevance: "Verification.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/auth.profile-setup.tsx,
+      type: route,
+      relevance: "Username/profile setup.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/auth/AuthProvider.tsx,
+      type: source_file,
+      relevance: "Session state, useAuth, requireAuth prompt pattern (no _authed route tree; guards inside routes).",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/services/auth-supabase.ts,
+      type: source_file,
+      relevance: "Supabase auth implementation (393 lines).",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/services/auth.ts,
+      type: source_file,
+      relevance: "Selects mock vs supabase by VITE_AUTH_MODE.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/services/auth.test.ts,
+      type: test,
+      relevance: "Auth unit tests.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/services/production-authority.test.ts,
+      type: test,
+      relevance: "Production cannot use mock auth/data.",
+      confidence: MEDIUM,
+    }
+  - {
+      reference: src/integrations/supabase/client.ts,
+      type: source_file,
+      relevance: "Browser client, session persistence.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/integrations/supabase/auth-middleware.ts,
+      type: source_file,
+      relevance: "Server-side session validation.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/backend/identity/username.ts,
+      type: source_file,
+      relevance: "Username rules.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/IDENTITY_AUTH_RUNBOOK.md,
+      type: doc,
+      relevance: "Identity/auth runbook.",
+      confidence: HIGH,
+    }
+  # e2e
+  - {
+      reference: playwright.config.ts,
+      type: config,
+      relevance: "testDir tests/e2e, webServer bun dev, staging options.",
+      confidence: HIGH,
+    }
+  - {
+      reference: tests/e2e/anonymous.acceptance.e2e.ts,
+      type: test,
+      relevance: "Runs in CI (backend-quality.yml) on every PR/push.",
+      confidence: HIGH,
+    }
+  - {
+      reference: tests/e2e/fantasy.journey.e2e.ts,
+      type: test,
+      relevance: "Authenticated Fantasy journeys; NOT run in CI.",
+      confidence: HIGH,
+    }
+  - {
+      reference: tests/e2e/staging.acceptance.e2e.ts,
+      type: test,
+      relevance: "Staging suite via phase65-functional-acceptance.yml (branch-gated).",
+      confidence: HIGH,
+    }
+  - {
+      reference: scripts/qa/phase65-staging-fixtures.mjs,
+      type: source_file,
+      relevance: "Synthetic staging users setup/cleanup.",
+      confidence: HIGH,
+    }
+  - {
+      reference: .github/workflows/backend-quality.yml,
+      type: workflow,
+      relevance: "pull_request + push to backend/* branches: migrations check, secrets check, typecheck, test, lint, build, anonymous e2e; database-quality job with local Supabase.",
+      confidence: HIGH,
+    }
+  - {
+      reference: .github/workflows/phase65-functional-acceptance.yml,
+      type: workflow,
+      relevance: "PR to main, path-filtered, head_ref == qa/phase6-functional-acceptance only.",
+      confidence: HIGH,
+    }
+  # ci/security
+  - {
+      reference: scripts/backend/check-committed-secrets.mjs,
+      type: source_file,
+      relevance: "Committed-secret scan (private keys, GitHub tokens, Supabase JWTs, assigned server secrets).",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md,
+      type: doc,
+      relevance: "Incident report; detection gap: no guard against long/obfuscated lines in executed config.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/MIGRATIONS.md,
+      type: doc,
+      relevance: "RLS conventions.",
+      confidence: HIGH,
+    }
+  - {
+      reference: .env.example,
+      type: config,
+      relevance: "Variable names (no values).",
+      confidence: HIGH,
+    }
+  - {
+      reference: .github/workflows/phase7f-production-api-identity-activation.yml,
+      type: workflow,
+      relevance: "dispatch-only production identity activation.",
+      confidence: HIGH,
+    }
+possibly_stale:
+  - src/integrations/supabase/v2-client.ts (coexists with client.ts)
+  - dated phase reports under docs/backend
+missing:
+  - No beforeLoad-based protected route tree; guards are per-route via useAuth/requireAuth.
+  - No standalone RLS conventions doc beyond MIGRATIONS.md.
+status: DONE

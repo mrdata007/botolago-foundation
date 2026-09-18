@@ -1,0 +1,189 @@
+task_id: BG-0003
+role: Researcher
+attempt: 1
+objective: >
+  Specify an automated, idempotent operational guard inside the scheduled Fantasy season
+  orchestrator that detects an open or scheduled gameweek whose current deadline is
+  approaching while one or more of its counting fixtures still carries an unconfirmed
+  placeholder kickoff (00:00:00 UTC), surfaces gameweek id/sequence, current deadline,
+  affected fixtures (ids, teams, provider kickoff, assigned kickoff) and provider state in
+  the sanitized evidence artifact, escalates by turning the workflow run red, points
+  operators at scripts/backend/fantasy-realign-gameweek-calendar.sql, and never invents a
+  kickoff, creates or moves a deadline, or mutates production data.
+
+findings:
+  - classification: VERIFIED
+    statement: A placeholder kickoff is defined exactly by app_private.fantasy_kickoff_confirmed(timestamptz) (UTC time-of-day 00:00:00). The guard must reuse this predicate.
+    evidence: supabase/migrations/20260918120000_fantasy_calendar_sync.sql
+  - classification: VERIFIED
+    statement: api.service_sync_fantasy_calendar already counts unconfirmed counting fixtures per gameweek (a.superseded_at is null and a.counts_points and not fantasy_kickoff_confirmed(f.kickoff_at)) and appends {"kickoffUnconfirmed": n, "deadlineUnconfirmed": status in (scheduled, open)}.
+    evidence: same migration, block "select count(*) into unconfirmed"
+  - classification: VERIFIED
+    statement: calendarSyncSchema.rounds in the orchestrator strips roundId/sequence/deadlineAt (non-passthrough zod object); production evidence shows the stripped shape.
+    evidence: scripts/backend/fantasy-season-orchestrator.ts:45-77; docs/qa/fantasy-orchestration/production-run-35332956079.json
+  - classification: VERIFIED
+    statement: The sync output has no fixture-level detail (ids, teams, kickoffs). The escalation payload cannot be produced from it.
+    evidence: final jsonb_build_object of the sync function
+  - classification: VERIFIED
+    statement: The orchestrator verdict union is "ok" | "waiting" | "failed"; only "failed" sets exitCode 1, so "waiting" leaves the step green.
+    evidence: scripts/backend/fantasy-season-orchestrator.ts (verdict declaration; import.meta.main exit rule)
+  - classification: VERIFIED
+    statement: The escalation channel is the "Orchestrate the Fantasy season" step exit status (set -euo pipefail, no continue-on-error) plus the artifact; scan and upload run with if: always(). No Slack/pager exists.
+    evidence: .github/workflows/fantasy-season-orchestrator.yml
+  - classification: VERIFIED
+    statement: The condition is live: GW1 3cc19aaa-ea33-4909-845b-db33314b4071, open, deadline 2026-09-23T22:30:00Z, confirmedKickoffs 0, kickoffUnconfirmed 8, verdict ok, exit 0.
+    evidence: docs/qa/fantasy-orchestration/production-run-35332956079.json
+  - classification: VERIFIED
+    statement: Deadline = first kickoff − minutes_before_first_fixture (90); 2026-09-24T00:00Z − 90 min = 2026-09-23T22:30Z, so the live deadline is placeholder-derived.
+    evidence: supabase/migrations/20260720163222_fantasy_ruleset_v1.sql:349-352, 396-408
+  - classification: VERIFIED
+    statement: Once the deadline elapses no automated path can repair it (deadline_locked, new_deadline_in_past, fantasy_gameweek_locked) and the manual script refuses too (current_deadline_already_passed). The guard's value is in firing before that moment.
+    evidence: calendar sync migration; scripts/backend/fantasy-realign-gameweek-calendar.sql
+  - classification: VERIFIED
+    statement: Schedule is hourly at minute 12.
+    evidence: workflow cron
+  - classification: VERIFIED
+    statement: Evidence is written with mode 0600 after a secret check and scanned by phase7f-scan-sanitized-evidence.py whose SESSION_SECRET_FIELD rule fails on access_token/refresh_token/token_hash/hashed_token/password (case-insensitive) anywhere in the artifact.
+    evidence: fantasy-season-orchestrator.ts; scripts/backend/phase7f-scan-sanitized-evidence.py
+  - classification: VERIFIED
+    statement: Fixture-level columns exist: app.fixtures(id, round_id, home_team_id, away_team_id, kickoff_at, status, provider_updated_at, source_sequence), app.teams(id, name, short_name, slug), app.fantasy_fixture_assignments(fixture_id, gameweek_id, assigned_kickoff_at, original_kickoff_at, counts_points, assignment_status, frozen_at, superseded_at, source_version).
+    evidence: football_match_ingestion.sql:73-101; football_catalog.sql:213-228; calendar sync migration
+  - classification: VERIFIED
+    statement: Service-only exposure pattern — security definer, search_path '', is_service_request() first, revoke from public/anon/authenticated, grant to service_role.
+    evidence: calendar sync migration; app_private.is_service_request in 20260720121727_notification_delivery_runtime.sql:210
+  - classification: INFERRED
+    statement: Escalating on every pass that sees a placeholder would keep the workflow red all pre-season; two tiers (informational far out, red within the window) are required and the informational tier must not change the verdict.
+    evidence: reasoning over production-run evidence and hourly cron
+  - classification: INFERRED
+    statement: Defaults warn 72 h / escalate 24 h; ops parameters, overridable.
+    evidence: derived from the 90-minute rule and hourly cron
+  - classification: INFERRED
+    statement: A separate STABLE read-only RPC is smaller and safer than widening the writing sync RPC.
+    evidence: handoff scope.exclude
+  - classification: UNKNOWN
+    statement: Whether SportsMonks publishes the real GW1 kickoff before 2026-09-23T22:30Z.
+  - classification: UNKNOWN
+    statement: Whether a double gameweek could make totalCountingFixtures diverge from facts.fixtures; the RPC reports both counts.
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    The sync correctly refuses placeholders as authoritative, but GW1 was staged and opened with a
+    placeholder-derived deadline (2026-09-24T00:00Z − 90 min). The sync reports the condition only as
+    a per-round note; the orchestrator never compares it against the deadline and has no verdict that
+    both survives a successful pass and exits non-zero, so the 2026-09-18 production run finished ok.
+    Once the deadline elapses every automated and manual repair path is illegal. The defect is a
+    missing time-aware escalation, not missing detection.
+
+required_changes:
+  - component: supabase/migrations/<new timestamp>_fantasy_deadline_watch.sql (new file, additive, read-only)
+    change: >
+      api.service_fantasy_deadline_watch(p_fantasy_season_id uuid default null, p_warn_hours integer default 72,
+      p_escalate_hours integer default 24) returns jsonb, plpgsql, STABLE, security definer, set search_path = ''.
+      No insert/update/delete/merge, no advisory lock, never computes a replacement deadline.
+      Body: is_service_request() guard (PT403 forbidden); validate p_warn_hours >= p_escalate_hours >= 0 and
+      p_warn_hours <= 720 else PT400 fantasy_deadline_watch_window_invalid; resolve season like the sync
+      (PT404 fantasy_season_not_found); for gameweeks with status in ('scheduled','open') count affected
+      counting fixtures with the sync predicate (a.superseded_at is null and a.counts_points and not
+      app_private.fantasy_kickoff_confirmed(f.kickoff_at)); emit a gameweek entry only when count > 0 and
+      hoursToDeadline <= p_warn_hours. Per gameweek keys: gameweekId, sequence, status, deadlineAt, startsAt,
+      hoursToDeadline (numeric 2dp, negative when elapsed), deadlinePassed, unconfirmedFixtures,
+      totalCountingFixtures, deadlineDerivedFromPlaceholder (deadline_at = fantasy_calculate_deadline(ruleset,
+      min kickoff) and that min kickoff is unconfirmed; read-only comparison), severity ('info'|'escalate'),
+      fixtures[] ordered by providerKickoffAt, fixtureId with fixtureId, homeTeam, awayTeam (short_name),
+      providerKickoffAt, assignedKickoffAt, originalKickoffAt, fixtureStatus, assignmentStatus, frozen,
+      providerUpdatedAt, sourceSequence. severity = 'escalate' when deadline_at − statement_timestamp() <=
+      make_interval(hours => p_escalate_hours) (true after the deadline too). Top level: schemaVersion 1,
+      seasonId, seasonStatus, warnHours, escalateHours, serverTime, remediation
+      'scripts/backend/fantasy-realign-gameweek-calendar.sql', gameweeks ordered by sequence ('[]' when none).
+      Footer: revoke from public, anon, authenticated; grant to service_role; comment on function.
+    reason: The sync output has no fixture detail; a STABLE function is the smallest change that leaves the sync's write behaviour untouched.
+  - component: scripts/backend/fantasy-season-orchestrator.ts
+    change: >
+      1 export deadlineWatchSchema (zod, non-passthrough, schemaVersion literal 1, severity enum) and type DeadlineWatch.
+      2 OrchestratorOptions.deadlineWatch?: {warnHours?, escalateHours?}; exported constants DEADLINE_WATCH_WARN_HOURS = 72, DEADLINE_WATCH_ESCALATE_HOURS = 24.
+      3 export summarizeDeadlineWatch(watch) → {affected, escalations, informational, remediation}; sorted by sequence; no clock access.
+      4 after the second calendar sync call rpc service_fantasy_deadline_watch {p_fantasy_season_id: null, p_warn_hours, p_escalate_hours} in try/catch; on failure deadlineWatch: {error: safeCode(error, 'fantasy_deadline_watch_failed')} and verdict → waiting if ok.
+      5 verdict union "ok" | "waiting" | "escalate" | "failed"; exported mergeVerdict(current, next) with rank ok<waiting<escalate<failed; escalate when escalations.length > 0.
+      6 summary.deadlineWatch = {warnHours, escalateHours, affected, escalations, informational, remediation} (or {error}); field names must avoid the phase7f secret substrings.
+      7 import.meta.main: exitCode 1 when verdict is failed OR escalate; keep FANTASY_ORCHESTRATOR_<VERDICT> line; export shouldFailRun(verdict).
+      8 orchestratorEnvironment: optional FANTASY_DEADLINE_WATCH_WARN_HOURS / FANTASY_DEADLINE_WATCH_ESCALATE_HOURS, integers 0..720 with warn >= escalate, else throw fantasy_deadline_watch_window_invalid.
+      Steps are additive; performance ingestion, worker selection and calendar sync paths are not restructured.
+    reason: "waiting" leaves the step green; only a new verdict plus the exit rule makes the condition visible through the only channel that exists.
+  - component: scripts/backend/fantasy-season-orchestrator.test.ts
+    change: unit tests per acceptance_tests; extend gateway() helper to answer service_fantasy_deadline_watch; assert unexpected watch payload degrades to waiting with fantasy_deadline_watch_failed.
+    reason: workflow runs this file before touching production.
+  - component: .github/workflows/fantasy-season-orchestrator.yml
+    change: header comment documenting the escalate verdict/exit 1; optionally pass FANTASY_DEADLINE_WATCH_WARN_HOURS / FANTASY_DEADLINE_WATCH_ESCALATE_HOURS from repository variables in the orchestrate step env. Do NOT add continue-on-error; do not alter concurrency or job if.
+    reason: the red run is the escalation channel.
+  - component: docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md
+    change: add a "Deadline watch" section (what is detected, tiers and defaults, how to read the deadlineWatch block, operator procedure with the realignment script, that the guard never invents a kickoff nor moves a deadline, that realignment is impossible after the deadline); update the verdict list to ok / waiting / escalate / failed.
+    reason: only operator-facing document in scope.
+
+constraints:
+  - Guard is READ-ONLY; RPC declared stable.
+  - Never call/replicate fantasy_calculate_deadline to produce a new deadline (comparison only).
+  - Do not modify fantasy_calculate_deadline, fantasy_kickoff_confirmed, fantasy_guard_deadline_change or the existing sync migration file.
+  - Placeholder predicate is app_private.fantasy_kickoff_confirmed(f.kickoff_at); no second definition in TypeScript.
+  - Affected-fixture scope: superseded_at is null and counts_points; gameweek status in (scheduled, open).
+  - Rerun on unchanged state → byte-identical deadlineWatch block except clock-derived fields; explicit ordering.
+  - escalate must not short-circuit the pass; the guard runs last.
+  - New field names must not contain access_token / refresh_token / token_hash / hashed_token / password.
+  - RPC exposed to service_role only, guarded by is_service_request().
+  - Defaults warn 72 h / escalate 24 h defined in one place (RPC defaults + exported constants).
+
+risks:
+  - INFERRED permanent-red fatigue if the provider never publishes; bounded by the 24 h window; no auto-suppression.
+  - INFERRED verdict union widening; consumers are only the script, its test, the workflow and two docs.
+  - INFERRED new security-definer surface; mitigated by stable, empty search_path, is_service_request, bounded integer params.
+  - INFERRED clock skew; severity computed only in the RPC.
+  - VERIFIED a badly named field fails the scan and suppresses the artifact upload.
+
+contradictions:
+  - VERIFIED runbook says placeholder deadlines are "always visible" while the run verdict was ok; visibility is not escalation.
+  - VERIFIED sync SQL emits roundId/sequence/deadlineAt but calendarSyncSchema strips them.
+
+unknowns:
+  - provider publication timing
+  - exact ops preference for the window values (defaults given, overridable)
+  - number of scheduled/open gameweeks in production besides GW1
+  - double-gameweek fixture count divergence
+
+acceptance_tests:
+  - "unit: deadlineWatchSchema.parse accepts the reference payload and throws on schemaVersion 2, unknown severity, non-uuid gameweekId."
+  - "unit: summarizeDeadlineWatch partitions escalate/info by sequence; affected === 2; remediation path constant."
+  - "unit: summarizeDeadlineWatch is clock-free (two calls deep-equal)."
+  - "unit: mergeVerdict precedence — ok/escalate→escalate; waiting/escalate→escalate; escalate/waiting→escalate; failed/escalate→failed; escalate/failed→failed."
+  - "unit: escalating watch yields verdict escalate with workers/performances unchanged and both sync calls made."
+  - "unit: informational-only watch leaves verdict ok and still emits informational entries."
+  - "unit: worker failure plus escalating watch → failed; deadlineWatch still present."
+  - "unit: watch RPC error → deadlineWatch.error fantasy_deadline_watch_failed, verdict waiting, no throw."
+  - "unit: idempotent serialisation of summary.deadlineWatch across two runs with the same now."
+  - "unit: JSON.stringify(summary) does not match /(?:access_token|refresh_token|token_hash|hashed_token|password)/i."
+  - "unit: default rpc args p_warn_hours 72 / p_escalate_hours 24; overrides passed through."
+  - "unit: orchestratorEnvironment throws fantasy_deadline_watch_window_invalid for 'abc', warn<escalate, warn>720; accepts 72/24 and a valid pair."
+  - "unit: shouldFailRun true for failed and escalate, false for ok and waiting."
+  - "production check (read-only / rolled back): service_fantasy_deadline_watch(null,72,24) returns GW1 3cc19aaa-…, sequence 1, open, deadlineAt 2026-09-23T22:30:00+00:00, unconfirmedFixtures 8, 8 fixtures with 00:00:00 UTC providerKickoffAt and non-null team names."
+  - "production check: two calls identical except serverTime/hoursToDeadline; count snapshots of gameweeks/assignments/fixtures/deadline audit unchanged."
+  - "production check (authorization): authenticated caller → forbidden."
+  - "production check (threshold): (null,72,0) → severity info; (null,72,240) → escalate; no data change."
+  - "regression: bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts passes."
+
+implementation_scope:
+  builder_type: Builder-Backend
+  allowed_paths:
+    - supabase/migrations/<new-timestamp>_fantasy_deadline_watch.sql
+    - scripts/backend/fantasy-season-orchestrator.ts
+    - scripts/backend/fantasy-season-orchestrator.test.ts
+    - .github/workflows/fantasy-season-orchestrator.yml (header comment + optional window env only)
+    - docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md
+  forbidden_paths:
+    - every existing file under supabase/migrations/
+    - scripts/backend/fantasy-realign-gameweek-calendar.sql
+    - scripts/backend/fantasy-lifecycle-runner.ts
+    - scripts/backend/current-season-recovery.ts
+    - scripts/backend/current-season-performances.ts
+    - scripts/backend/phase7f-scan-sanitized-evidence.py
+    - src/**, tests/**, docs/qa/**
+    - every other workflow
+status: DONE

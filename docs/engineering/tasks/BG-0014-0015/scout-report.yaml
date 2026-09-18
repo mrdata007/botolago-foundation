@@ -1,0 +1,97 @@
+task_id: BG-0014+BG-0015
+role: Scout
+attempt: 1
+summary_facts:
+  - "Supported languages: fr and ar only (src/types/domain.ts Language = 'fr' | 'ar'). No 'en'."
+  - "Single dictionary file src/i18n/dictionaries.ts: fr block 985 top-level keys, ar block 985 (line-based count); both blocks `satisfies Record<Language, Record<string,string>>` and TranslationKey = keyof fr, so TS enforces parity structurally."
+  - "src/i18n/provider.tsx: SSR renders fr/ltr first then hydrates stored language (localStorage 'botolago.language'); sets html lang/dir; dir = ar ? rtl : ltr; t(key) falls back to the raw key string if missing; tr(localized) falls back to fr."
+  - "Date formatting: src/lib/format-time.ts (Intl.RelativeTimeFormat / Intl.DateTimeFormat with locale ar|fr)."
+  - "Fonts: remote Google Fonts only (Manrope 400–900, Noto Sans Arabic 400–800) linked from src/routes/__root.tsx head(); no public/fonts, no @font-face; html[dir='rtl'] switches to --font-arabic (src/styles.css:427)."
+  - "Tailwind v4 CSS-first config in src/styles.css (@theme inline: radius scale, semantic colours, --font-sans, --font-arabic). No tailwind.config file. shadcn/ui primitives in src/components/ui (45 files)."
+  - "FPL primitives (src/components/fpl/primitives.tsx) use literal Tailwind sizes (text-[15px] etc.) and --fpl-* CSS vars rather than a shared type scale."
+  - "No automated check exists for missing/untranslated keys (package.json scripts, scripts/, tests/ searched)."
+candidates:
+  - {
+      reference: src/i18n/dictionaries.ts,
+      type: source_file,
+      relevance: "All UI strings for fr and ar.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/i18n/provider.tsx,
+      type: source_file,
+      relevance: "I18nProvider / useI18n, RTL handling, fallbacks.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/types/domain.ts,
+      type: source_file,
+      relevance: "Language and LocalizedString types.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/lib/format-time.ts,
+      type: source_file,
+      relevance: "Locale-aware date formatting.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/components/shell/FirstLaunchLanguage.tsx,
+      type: source_file,
+      relevance: "First-run language picker.",
+      confidence: MEDIUM,
+    }
+  - {
+      reference: src/routes/__root.tsx,
+      type: source_file,
+      relevance: "Font <link> tags (Google Fonts).",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/styles.css,
+      type: source_file,
+      relevance: "Design tokens and Tailwind theme; RTL font switch.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/components/fpl/primitives.tsx,
+      type: source_file,
+      relevance: "FPL typography usage.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/components/ui,
+      type: directory,
+      relevance: "shadcn primitives.",
+      confidence: HIGH,
+    }
+  - {
+      reference: BOTOLAGO_FPL_SCREEN_MATRIX.md,
+      type: doc,
+      relevance: "Figma reference matrix (27 + 6 states).",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/qa/FANTASY_INDEPENDENT_QA_2026_09_18.md,
+      type: doc,
+      relevance: "Figma comparison verdicts.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/qa/fpl-screens,
+      type: directory,
+      relevance: "Evidence screenshots fr/ar/desktop.",
+      confidence: HIGH,
+    }
+  - {
+      reference: package.json,
+      type: config,
+      relevance: "No i18n or font audit scripts.",
+      confidence: HIGH,
+    }
+possibly_stale:
+  - "985/985 is a line-based count; at least one value spans two lines (fantasy.create.error.position_count)."
+missing:
+  - No executable missing/untranslated-key check.
+  - No self-hosted fonts.
+status: DONE

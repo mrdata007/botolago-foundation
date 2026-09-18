@@ -1,0 +1,193 @@
+task_id: BG-0012+BG-0013
+role: Scout
+attempt: 1
+summary_facts:
+  - "/admin/* in this web app consists only of admin.tsx, admin.staff.tsx, admin.staff.$principalId.tsx, admin.security.tsx, admin.approvals.tsx, admin.audit.tsx; none references news or articles."
+  - "No routes exist under admin.news*, admin.articles*, admin.cms*. Public news routes are src/routes/news.tsx (list) and src/routes/news.$articleId.tsx (detail); both read-only via newsService."
+  - "docs/backend/NEWS_DOMAIN_PLAN.md: editorial mutations happen through narrowly scoped RPCs (api schema) with DB-enforced role checks; 'No live news source is selected in Phase 4'."
+  - "Article content enters exclusively through ingestion pipelines (GNews, ElBotola, fixture adapter) and RPCs api.news_begin_provider_ingestion, api.news_ingest_provider_article, api.news_attach_elbotola_hero."
+candidates:
+  # CMS (data model exists, no UI)
+  - {
+      reference: supabase/migrations/20260720110053_news_editorial_catalog.sql,
+      type: database_table,
+      relevance: "app.authors, app.publishers, app.stories, app.article_editions, app.article_revisions, app.editorial_placements, taxonomies, saved_articles; triggers validate_article_taxonomy / validate_editorial_placement / capture_article_revision; RLS.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/lib/article-meta.ts,
+      type: source_file,
+      relevance: "buildArticleHead — SEO title/description/canonical/OG for article rendering.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/news.tsx,
+      type: route,
+      relevance: "Public list; categories, saved state.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/routes/news.$articleId.tsx,
+      type: route,
+      relevance: "Public article render; loader newsService.getArticle; MediaImage hero with failure handling.",
+      confidence: HIGH,
+    }
+  # ingestion
+  - {
+      reference: src/backend/news/ingestion/runner.ts,
+      type: source_file,
+      relevance: "Ingestion runner with counters fetched/validated/inserted/updated/skipped/rejected.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/backend/news/ingestion/dedupe.ts,
+      type: source_file,
+      relevance: "canonicalizeNewsUrl + newsContentFingerprint (sha256 over language/title/summary/body).",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/backend/news/ingestion/supabase-gateway.server.ts,
+      type: source_file,
+      relevance: "Gateway to Supabase RPCs; provenance/attribution fields.",
+      confidence: HIGH,
+    }
+  - {
+      reference: src/backend/news/sanitizer.ts,
+      type: source_file,
+      relevance: "Server-side HTML sanitization before storage/return.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/functions/news-ingest/index.ts,
+      type: source_file,
+      relevance: "Edge function entry for GNews ingestion.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/functions/news-ingest-elbotola/index.ts,
+      type: source_file,
+      relevance: "Edge function entry for ElBotola ingestion (note: production Edge Function inventory lists only football-ingest and news-ingest).",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/functions/_shared/gnews.ts,
+      type: source_file,
+      relevance: "GNews adapter.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/functions/_shared/elbotola.ts,
+      type: source_file,
+      relevance: "ElBotola adapter incl. hero attachment.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260801010000_gnews_article_ingestion.sql,
+      type: rpc,
+      relevance: "api.news_begin_provider_ingestion, api.news_ingest_provider_article.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260803212218_elbotola_metadata_ingestion.sql,
+      type: rpc,
+      relevance: "api.news_attach_elbotola_hero; redefines ingest RPC.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/migrations/20260914185233_elbotola_service_source_controls.sql,
+      type: database_table,
+      relevance: "Fixed-source service controls (content ownership / source gating).",
+      confidence: MEDIUM,
+    }
+  - {
+      reference: scripts/backend/elbotola-recovery.ts,
+      type: source_file,
+      relevance: "ElBotola recovery/backfill script.",
+      confidence: HIGH,
+    }
+  - {
+      reference: scripts/backend/g5-gnews-schedule-evidence.ts,
+      type: source_file,
+      relevance: "Evidence script for the scheduled GNews workflow.",
+      confidence: HIGH,
+    }
+  - {
+      reference: .github/workflows/g5-production-gnews-schedule.yml,
+      type: workflow,
+      relevance: "cron 23 */2 * * *; gated by vars.GNEWS_SCHEDULE_ENABLED.",
+      confidence: HIGH,
+    }
+  - {
+      reference: .github/workflows/news-elbotola-recovery.yml,
+      type: workflow,
+      relevance: "cron 17 */6 * * *; gated by vars.ELBOTOLA_SCHEDULE_ENABLED.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/tests/database/news_domain.test.sql,
+      type: test,
+      relevance: "DB tests for the news domain.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/tests/database/news_rls.test.sql,
+      type: test,
+      relevance: "RLS tests for news tables.",
+      confidence: HIGH,
+    }
+  - {
+      reference: supabase/tests/database/elbotola_news.test.sql,
+      type: test,
+      relevance: "ElBotola ingestion DB tests.",
+      confidence: HIGH,
+    }
+  # docs
+  - {
+      reference: docs/backend/NEWS_DOMAIN_PLAN.md,
+      type: doc,
+      relevance: "Design doc: story+edition model, RPC boundary, sanitization, dedup.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/NEWS_OPERATIONS_RUNBOOK.md,
+      type: doc,
+      relevance: "Operations runbook.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/GNEWS_INTEGRATION.md,
+      type: doc,
+      relevance: "GNews integration.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/ELBOTOLA_INTEGRATION.md,
+      type: doc,
+      relevance: "ElBotola integration.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/G5_GNEWS_SCHEDULE_RUNBOOK.md,
+      type: doc,
+      relevance: "Scheduled GNews runbook.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/ELBOTOLA_RECOVERY_RUNBOOK.md,
+      type: doc,
+      relevance: "ElBotola recovery runbook.",
+      confidence: HIGH,
+    }
+  - {
+      reference: docs/backend/PHASE_4_NEWS_REPORT.md,
+      type: doc,
+      relevance: "Phase 4 news report (readiness/limitations).",
+      confidence: HIGH,
+    }
+possibly_stale:
+  - src/backend/news/provider/fixture-adapter.ts (fixture-only path; usage in production unconfirmed)
+  - src/backend/news/mock-repository.ts
+missing:
+  - "No admin/CMS UI for article authoring exists in this repository; whether editorial happens in an external tool is not determinable from files."
+  - "Live production schedule variables (GNEWS_SCHEDULE_ENABLED, ELBOTOLA_SCHEDULE_ENABLED) and recent run results not inspected."
+status: DONE
