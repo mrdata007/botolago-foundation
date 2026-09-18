@@ -86,6 +86,52 @@ tasks:
     preflight_retry_4_2026_09_18: 'run 35370316217 (main d904206, batch fantasy_calendar_sync) — DIFFERENT failure from all three prior retries: promotion_failed: "backup readiness insufficient". The ownership/membership guard PASSED this time (GET /v1/projects/{ref} and GET /v1/organizations both succeeded and organization_id matched, so the promoter proceeded past the point every earlier attempt failed at) and reached the next check, GET /v1/projects/{ref}/database/backups, which returned no row with status == COMPLETED for Production V2.'
     identity_question_closed: 'The token identity/membership question raised by preflight_retry / preflight_retry_2 / preflight_retry_3 is CLOSED: this newest token is a valid personal access token from an account with BotolaGO organization membership. No further token replacement is needed for this reason.'
     new_blocker: 'Production V2 (tkewgajrljbwgwedqsxn) has no COMPLETED database backup visible to the Management API. This is an independent, intentional promoter safety gate (scripts/backend/phase7e-production-migration-promoter.py: raises PromotionError("backup readiness insufficient") when GET /v1/projects/{ref}/database/backups has zero completed rows) — not a credential problem, and not something to bypass or weaken. Required human action: confirm/enable scheduled backups (and ideally PITR) for Production V2 in the Supabase dashboard project settings, and let at least one backup reach COMPLETED status, before the next preflight retry. Not attempting a workaround per standing instruction.'
+    backup_diagnosis_2026_09_18:
+      target: 'BotolaGO Production V2, project ref tkewgajrljbwgwedqsxn, org bfhahpanhnoueripxshw (BotolaGO)'
+      method: >-
+        Read-only. Confirmed the target project and organization via the connected Supabase MCP
+        session (mcp__Supabase__list_organizations, list_projects, get_organization, get_project) —
+        a member-level connection distinct from the GitHub Actions SUPABASE_ACCESS_TOKEN secret used
+        by the promoter workflow, which is not accessible from this session/environment and was not
+        read, printed or exported. Cross-checked against Supabase's own current documentation
+        (mcp__Supabase__search_docs). Did NOT call GET /v1/projects/{ref}/database/backups directly:
+        no tool in this session exposes that Management API endpoint, so the raw response body,
+        exact backup row count, per-row statuses/timestamps, and pitr_enabled/walg_enabled/
+        physical_backup_data fields were not independently re-fetched here. The classification below
+        rests on (a) the promoter's own live result from preflight_retry_4 (run 35370316217): its
+        code raises PromotionError only when `[row for row in backups.get("backups", []) if
+        row.get("status") == "COMPLETED"]` is empty, so that run proves zero COMPLETED rows existed
+        in the real response at that time; (b) the confirmed organization plan; (c) current Supabase
+        documentation on backup provisioning by plan.
+      confirmed_facts:
+        - 'Organization "BotolaGO" (bfhahpanhnoueripxshw) plan = "free" (mcp__Supabase__get_organization), matching the given fact — rechecked, not assumed.'
+        - 'Project tkewgajrljbwgwedqsxn confirmed as "BotolaGO Production V2", status ACTIVE_HEALTHY, org bfhahpanhnoueripxshw (mcp__Supabase__get_project) — correct target.'
+        - 'Supabase docs (https://supabase.com/docs/guides/platform/backups, fetched live): "We automatically back up all Pro, Team, and Enterprise Plan projects on a daily basis... We recommend that free tier plan projects regularly export their data using the Supabase CLI db dump command" — i.e. the Free plan receives NO automatic daily backups and PITR is a Pro+ add-on only ("Pro, Team and Enterprise Plan projects can enable PITR as an add-on").'
+        - 'The promoter''s predicate (require >=1 backups row with status==COMPLETED) is a reasonable, correctly-implemented reading of the documented API (GET /v1/projects/{ref}/database/backups, per https://supabase.com/docs/reference/api/v1-list-all-backups) — no defect found in the parser itself.'
+      classification: >-
+        A — no completed backup exists, and not transiently: the organization''s Free plan does not
+        provision automatic backups of any kind for this project (no daily backups, no PITR), so the
+        Management API''s backups list is expected to be structurally empty regardless of when it is
+        queried, not merely "not yet completed" (B), not a parser gap against real recovery evidence
+        (C), and not a failed/invalid API call (D). Confidence is HIGH because two independent
+        sources agree (the promoter's own live zero-COMPLETED result, and Supabase's documented
+        plan-tier backup policy) rather than resting on an absent field alone.
+      not_confused_with: >-
+        An enabled setting (e.g. a project-level toggle) is not itself a completed backup, and a
+        local `pg_dump`/`db dump` export is explicitly NOT tracked by this Management API endpoint
+        and does not satisfy the promoter's gate — Supabase's own guidance recommends CLI exports for
+        free-tier projects precisely because the platform will not do it for them.
+      owner_action_smallest: >-
+        Upgrade the BotolaGO organization from the Free plan to Pro (or Team/Enterprise) so Supabase
+        begins taking automatic daily backups of Production V2, then wait for at least one backup to
+        reach COMPLETED status (daily cadence; allow up to ~24h, or trigger sooner if the dashboard
+        offers an on-demand option) before the Chief re-runs the preflight. No agent action can
+        substitute for this: there is no free-tier path to a COMPLETED backup row through the API.
+        This is a billing/plan decision reserved for the owner; not actioned here.
+      guard_correctness_note: >-
+        The promoter's check is not judged wrong and no correction is proposed: requiring a real
+        COMPLETED backup before a production migration promotion is the intended safety behaviour,
+        and weakening or bypassing it is explicitly out of scope.
     state_note_2: 'HALTED_FOR_INPUT for a different reason now: backup readiness, not credential identity. No further token replacement will change this outcome.'
 
   BG-0003:
