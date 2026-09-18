@@ -917,3 +917,13 @@ tasks:
     owner: Human
     state: HALTED_FOR_INPUT
     human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
+
+  BG-0048:
+    title: 'app_private.fantasy_job_runs has an ON DELETE RESTRICT foreign key to app.fantasy_seasons and is not cleaned up by api.service_rollback_fantasy_catalog (neither the original function nor the BG-0032 fix) — a season with job-run rows would fail rollback the same way leagues did before BG-0032'
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence: ['docs/engineering/tasks/BG-0032/verification-report.yaml (independent Verifier, flagged as out-of-scope for BG-0032 since it is a pre-existing gap in the original function, not a regression introduced by that fix)']
+    acceptance_criteria: [confirm whether fantasy_job_runs rows realistically exist for a rolled-back season; if so, extend api.service_rollback_fantasy_catalog with an additive migration deleting them in FK-safe order, same pattern as BG-0032; database test; if rows never realistically exist for this path, document why and close without a code change]
