@@ -249,7 +249,7 @@ tasks:
     owner: Chief
     acceptance_criteria: [proper fr and ar strings in src/i18n/dictionaries.ts; W1 baseline 6→5 and W2 5→4 in scripts/qa/i18n-gate.ts in the same change; gate passes]
     state: RUNNING
-    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0024-profile-title @47c211b), verifier: running (worktree bg0024-verify), reviewer: pending}
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0024-profile-title @47c211b), verifier: PASS (docs/engineering/tasks/BG-0024/verification-report.yaml), reviewer: running (fresh context, worktree bg0024-review)}
     evidence: [docs/engineering/tasks/BG-0024/implementation-report.yaml (branch)]
   BG-0025:
     title: format-time.ts uses bare "ar"/"fr" locales while the UI uses "ar-MA"/"fr-FR" (two digit systems on Arabic screens)

@@ -1,0 +1,144 @@
+task_id: BG-0024
+verified_commit: 47c211b8b8dcb3b1989b3b8d692accae205ea6fb
+merge_base: c5fdd1fbca90123eacb2271ab395c24d2c54d1be
+branch: agent/BG-0024-profile-title
+worktree: /home/user/bg0024-verify
+verifier_notes: >
+  All commands run in the detached worktree after `bun install --frozen-lockfile`
+  (539 packages). No source file edited, nothing committed. Builder report read for
+  context only; every claim below was reproduced independently.
+
+criteria:
+  - id: AC1
+    description: Diff against merge-base lists only the four allowed paths.
+    verdict: VERIFIED
+    evidence: |
+      $ git diff --name-status c5fdd1f..47c211b
+      A  docs/engineering/tasks/BG-0024/implementation-report.yaml
+      M  scripts/qa/i18n-gate.ts
+      M  src/i18n/dictionaries.ts
+      M  src/i18n/i18n-gate.test.ts
+      Two commits on the branch: b140eff (fix), 47c211b (report). No other path touched.
+
+  - id: AC2
+    description: Exactly the two profile.title lines changed; fr "Profil", ar "الملف الشخصي", matching nav.profile per block.
+    verdict: VERIFIED
+    evidence: |
+      $ git diff c5fdd1f..47c211b -- src/i18n/dictionaries.ts   (two hunks, one line each)
+      @@ -460,7 +460,7 @@   (fr block, starts line 6)
+      -    "profile.title": "Profile\n\n",
+      +    "profile.title": "Profil",
+      @@ -1543,7 +1543,7 @@  (ar block, starts line 1096)
+      -    "profile.title": "Profile\n\n",
+      +    "profile.title": "الملف الشخصي",
+      nav.profile cross-check:
+        dictionaries.ts:22   "nav.profile": "Profil"          (fr)  == profile.title:463
+        dictionaries.ts:1112 "nav.profile": "الملف الشخصي"    (ar)  == profile.title:1546
+      grep -rn 'Profile\\n' src scripts -> none (old placeholder gone from code; only
+      historical mentions remain in docs/engineering/LAUNCH_LEDGER.yaml and BG-0014/BG-0024 task docs).
+
+  - id: AC3
+    description: bun scripts/qa/i18n-gate.ts exits 0, W1=5, W2=4, no profile.title finding.
+    verdict: VERIFIED
+    evidence: |
+      $ bun scripts/qa/i18n-gate.ts ; echo EXIT=$?
+      errors: none
+      W1 keys whose fr and ar values are identical: 5 (baseline 5) at baseline
+        app.name, language.arabic, language.french, news.language.ar, notfound.code (all suppressed)
+      W2 ar values containing no Arabic script: 4 (baseline 4) at baseline
+        app.name, auth.email_placeholder, language.french, notfound.code (all suppressed)
+      W3 237 (baseline 237) at baseline ; W4 100 (baseline 100) at baseline
+      RESULT: pass
+      EXIT=0
+      profile.title appears nowhere in the gate output.
+      Gate diff: BASELINES W1 6->5, W2 5->4 only (W3/W4 unchanged).
+
+  - id: AC4
+    description: i18n-gate.test.ts passes; test count not lower; changed expectations still assert gate behaviour.
+    verdict: VERIFIED
+    evidence: |
+      $ bun test src/i18n/i18n-gate.test.ts -> 21 pass, 0 fail, 590 expect() calls, EXIT=0
+      test( / it( block count: merge-base 21, HEAD 21 (no test deleted).
+      Sensitivity check: the merge-base test file (copied to scratchpad, imports rewritten
+      to absolute worktree paths) run against HEAD sources -> 18 pass, 3 fail, the three
+      failing tests being exactly the three whose expectations were adjusted below. So the
+      adjustments were necessary and the assertions are live, not tautological.
+
+      Diff hunks (src/i18n/i18n-gate.test.ts, merge-base..HEAD):
+
+      @@ -76,9 +76,9 @@ describe("current tree", () => {
+      -  test("keeps profile.title visible as a named W1 and W2 warning", () => {
+      -    expect(warning(result, "W1").reported.map((f) => f.key)).toEqual(["profile.title"]);
+      -    expect(warning(result, "W2").reported.map((f) => f.key)).toEqual(["profile.title"]);
+      +  test("profile.title is no longer a named W1 or W2 warning", () => {
+      +    expect(warning(result, "W1").reported.map((f) => f.key)).toEqual([]);
+      +    expect(warning(result, "W2").reported.map((f) => f.key)).toEqual([]);
+         });
+      Assessment: still an exact toEqual on the reported (non-suppressed) list for W1 and W2;
+      equivalent strength, now pins that no un-allow-listed identical/non-Arabic key exists.
+
+      @@ -196,9 +196,9 @@ describe("negative controls", () => {
+      -  test("making profile.title differ moves W1 off its baseline and fails the gate", () => {
+      +  test("making an allow-listed key differ moves W1 off its baseline and fails the gate", () => {
+           const dicts = clone();
+      -    dicts.ar["profile.title"] = "الملف الشخصي";
+      +    dicts.ar["notfound.code"] = "not-identical-anymore";
+           const result = auditI18n(dicts, emptyUsageIndex(), ALLOW_LISTS, BASELINES);
+           expect(warning(result, "W1").count).toBe(BASELINES.W1 - 1);
+           expect(result.baselineViolations.some((f) => f.code === "W1")).toBe(true);
+      Assessment: unchanged assertions (count drops to baseline-1, W1 baseline violation raised).
+      notfound.code is confirmed a genuine identical fr/ar pair by the gate output above, so
+      the identical-value detection path is still exercised. profile.title could no longer
+      serve here because it is no longer identical.
+
+      @@ -214,8 +214,8 @@ (comment only)
+      -  // the committed baselines (W1=6 with five entries allow-listed, W2=5 with all
+      -  // five entries allow-listed) are raw counts, so the allow-list annotates a
+      +  // the committed baselines (W1=5 with five entries allow-listed, W2=4 with four
+      +  // of those five entries counted) are raw counts, so the allow-list annotates a
+
+      @@ -229,7 +229,7 @@ (removing an allow-list entry makes that key a named W1 warning)
+           expect(w1.count).toBe(BASELINES.W1);
+      -    expect(w1.reported.map((f) => f.key).sort()).toEqual(["app.name", "profile.title"]);
+      +    expect(w1.reported.map((f) => f.key).sort()).toEqual(["app.name"]);
+      Assessment: still asserts count stays at baseline and that the de-listed key becomes
+      the (only) named W1 warning; allow-list handling still covered, exact equality kept.
+
+  - id: AC5
+    description: typecheck, prettier, eslint on changed files, and full test suite pass.
+    verdict: VERIFIED
+    evidence: |
+      $ bun run typecheck                      -> tsc --noEmit, EXIT=0
+      $ npx prettier --check src/i18n/dictionaries.ts scripts/qa/i18n-gate.ts src/i18n/i18n-gate.test.ts
+                                               -> "All matched files use Prettier code style!", EXIT=0
+      $ npx eslint <same three files>          -> no output, EXIT=0
+      $ bun run test                           -> 677 pass, 0 fail, 5850 expect() calls,
+                                                  116 files, 7.87s, EXIT=0
+
+  - id: AC6
+    description: profile.title still consumed; nothing else references the old placeholder.
+    verdict: VERIFIED
+    evidence: |
+      $ grep -rn 'profile\.title' src (excluding dictionaries.ts)
+      src/routes/profile.tsx:78   <span className="text-brand whitespace-pre-wrap">{t("profile.title")}</span>
+      src/routes/profile.tsx:285  <Group title={t("profile.title")}>
+      src/i18n/i18n-allowlist.ts:9-10  (doc comment, historical reference, see observations)
+      src/i18n/i18n-gate.test.ts:79    (test title)
+      Both render sites still consume the key. With whitespace-pre-wrap at :78 the previous
+      value rendered two trailing blank lines; the new values contain no newline characters,
+      so that visual defect is removed by construction.
+      $ grep -rn 'Profile\\n' src scripts -> none.
+
+regressions: []
+
+untested:
+  - "No browser/visual render of src/routes/profile.tsx was performed; AC6 was verified by static consumption check plus the absence of newline characters in the new values (which is what whitespace-pre-wrap would have exposed)."
+
+security_observations:
+  - "None. Change is string data plus baseline integers; no runtime logic, dependencies, or configuration touched."
+
+non_blocking_observations:
+  - "src/i18n/i18n-allowlist.ts:9-10 comment still reads 'profile.title stays a named W1/W2 warning until BG-0024 replaces its English placeholder copy'. It is now historical rather than wrong, and the file is outside BG-0024's allowed scope, so leaving it was correct; a follow-up could reword it."
+  - "The rewritten comment in i18n-gate.test.ts (~line 217) says W2=4 counts 'four of those five entries'; per the gate output the W2 set is app.name, auth.email_placeholder, language.french, notfound.code, i.e. three of the W1 five plus auth.email_placeholder. Comment-only imprecision (the original comment was also imprecise); no assertion depends on it."
+
+status: PASS
