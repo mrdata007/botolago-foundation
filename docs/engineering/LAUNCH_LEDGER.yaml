@@ -63,7 +63,7 @@ tasks:
       - Phase 7E-B Production V2 migration promotion completes its management-API preflight (no HTTP 401)
       - a subsequent batch promotion runs through the workflow, not through a generated transaction
     evidence:
-      - run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"
+      - 'run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"'
       - migration 20260918120000_fantasy_calendar_sync was exceptionally promoted through the promoter's own generated transaction; production history row name/version match and statements[1] sha256 = 634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e (repository file)
       - the manifest now covers all 57 migrations (commit 3206afc), so the workflow's chain check passes once the credential works
       - docs/engineering/tasks/BG-0001/migration-digest-comparison.json — machine-readable proof (Extractor, read-only) that the 9 launch_recovery rows and 20260918120000 each match the repository file SHA-256 (allMatch true, 57 history rows); closes Reviewer DEF-4
@@ -140,14 +140,15 @@ tasks:
     severity: P1
     user_impact: prevents a repeat of BG-0011 on the next activation or re-stage.
     owner: Chief
-    state: READY
+    state: RUNNING
     depends_on: []
     acceptance_criteria:
       - a ratings run with records_fetched = 0 (or coverage below a minimum share) ends failed with an explicit error code and inserts zero rows
       - unit test in supabase/functions/_shared/sportsmonks-player-ratings.test.ts
       - a pre-stage non-degeneracy guard (additive migration) blocks or loudly warns when every candidate carries rating 6.0 / confidence 0
-    evidence: [docs/engineering/tasks/BG-0011/engineering-brief.yaml]
-    next: Builder-Backend once BG-0003/BG-0020 branches are merged (shared CI capacity)
+    evidence: [docs/engineering/tasks/BG-0011/engineering-brief.yaml, docs/engineering/tasks/BG-0027/verification-report.yaml]
+    roles: {builder: Builder-Backend (DONE, branch agent/BG-0027-ratings-fail-closed @449273c), verifier: PASS, reviewer: running (fresh context, worktree bg0027-review)}
+    follow_up: BG-0030 — coverage computation counts has_values=false statistics records as covered (residual fail-open; Verifier security observation)
 
   # ---- Launch inventory (Chief triage in progress; Scouts BG-0011..BG-0018 dispatched) ----
   BG-0010:
@@ -240,15 +241,18 @@ tasks:
     severity: P1
     user_impact: English word plus blank lines on the profile screen in both languages.
     owner: Chief
-    state: READY
     acceptance_criteria: [proper fr and ar strings in src/i18n/dictionaries.ts; W1 baseline 6→5 and W2 5→4 in scripts/qa/i18n-gate.ts in the same change; gate passes]
+    state: RUNNING
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0024-profile-title @47c211b), verifier: running (worktree bg0024-verify), reviewer: pending}
+    evidence: [docs/engineering/tasks/BG-0024/implementation-report.yaml (branch)]
   BG-0025:
     title: format-time.ts uses bare "ar"/"fr" locales while the UI uses "ar-MA"/"fr-FR" (two digit systems on Arabic screens)
     area: localization
     severity: P1
     owner: Chief
-    state: READY
+    state: RUNNING
     acceptance_criteria: [src/lib/format-time.ts uses the same locale tags as the components (ar-MA / fr-FR); unit test; no other behaviour change]
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0025-format-time-locale @ef214e7), verifier: PASS (docs/engineering/tasks/BG-0025/verification-report.yaml), reviewer: running (fresh context, worktree bg0025-review)}
     note: product confirmation of Western digits is implied by the 20+ existing ar-MA usages; flag in the report.
   BG-0026:
     title: RTL layout audit (111 physical-direction utilities; short-label truncation candidates)
@@ -330,6 +334,15 @@ tasks:
     severity: P2
     owner: Chief
     state: QUEUED
+  BG-0030:
+    title: Ratings coverage guard treats provider statistics records with has_values=false as covered (residual fail-open after BG-0027)
+    area: data
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0027]
+    evidence: [docs/engineering/tasks/BG-0027/verification-report.yaml security_observations]
+    acceptance_criteria: [coverage counts only statistics records that carry values; unit test for the has_values=false case; no formula change]
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
     area: security
