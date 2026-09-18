@@ -634,7 +634,7 @@ tasks:
     area: fantasy
     severity: P1
     owner: Chief
-    state: RUNNING
+    state: BUILT
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml findings (pg_get_functiondef contains neither fantasy_leagues nor fantasy_league_memberships)']
     acceptance_criteria: [additive migration re-creating the RPC with ordered league/membership/audit cleanup preserving PT409 fantasy_catalog_in_use semantics; database test; runbook corrected]
     dispatch_2026_09_18T18: >-
@@ -649,6 +649,28 @@ tasks:
       branch agent/BG-0032-rollback-cleanup, isolated clone, explicitly not authorized to execute
       anything against production (implementation + isolated-DB testing only). Independent
       Verifier and Reviewer to follow once it reports.
+    builder_report_2026_09_18T18: >-
+      DONE, branch agent/BG-0032-rollback-cleanup @8c9b655 (3 commits, pushed, no PR yet).
+      mutation_audit resolution: confirmed from migration source
+      (20260720141847_fantasy_teams_transfers_chips.sql) AND a read-only production query that
+      app_private.fantasy_mutation_audit has FKs only to app.fantasy_teams and app.profiles, never
+      to fantasy_seasons/fantasy_leagues; since the existing PT409 fantasy_catalog_in_use guard
+      already requires zero fantasy_teams rows for the season and the RPC never deletes
+      fantasy_teams, no audit row can reference that season's teams at delete time — NO cleanup
+      code added for it, ledger title not fully accurate on this point (pending independent
+      confirmation). New additive migration 20260918170000_fantasy_catalog_rollback_cleanup.sql
+      re-creates the RPC unchanged except one new block, right after the fantasy_catalog_in_use
+      check: delete fantasy_rankings, then fantasy_league_memberships, then fantasy_leagues for the
+      season (adds removed.leagues to the JSON); fantasy_teams untouched anywhere. Validation
+      ACTUALLY EXECUTED against a local Supabase stack (Docker daemon manually started in the
+      isolated clone; no production touched): backend:migrations:check 62 validated;
+      backend:db:test 42 files / 866 assertions PASS including the new 18-assertion test and
+      unchanged fantasy_catalog_activation.test.sql; backend:types:generate no diff;
+      typecheck clean; bun run test 720/720; promoter unit tests 16/16; prettier clean (one
+      pre-existing unrelated ledger formatting issue confirmed present on origin/main already,
+      not introduced by this branch). Also updated: promoter manifest/workflow/test (new batch
+      fantasy_catalog_rollback_cleanup), runbook (false "clean rollback" claim removed), brief,
+      implementation report.
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
     area: devops
