@@ -49,6 +49,7 @@ tasks:
       - provider must publish rounds and non-midnight kickoffs; sync never invents them
       - recovery canary stops at the promoted-club squad guard (BG-0005); fixture phase commits first
       - hourly schedule inactive until BG-0004
+    attempt_2_reviewer: OPEN_PENDING_DEF3 — DEF-1a/1b/DEF-2 discharged by BG-0003 (merged); DEF-3 (composed orchestrator has never advanced a gameweek) needs a non-production database or a sanctioned rolled-back end-to-end session; DEF-4 closed by migration-digest-comparison.json
 
   BG-0002:
     title: INFRA — Refresh Production Supabase Management API credential
@@ -76,7 +77,7 @@ tasks:
     severity: P0
     user_impact: If real kickoffs are not published before 2026-09-23T22:30Z, GW1 locks on a placeholder-derived deadline (or the wrong time) and nobody is warned.
     owner: Builder-Backend
-    state: RUNNING # Scout DONE, Researcher DONE (docs/engineering/tasks/BG-0003/); Builder attempt 1 on branch agent/BG-0001-0003-deadline-guard
+    state: DONE # Scout DONE, Researcher DONE (docs/engineering/tasks/BG-0003/); Builder attempt 1 on branch agent/BG-0001-0003-deadline-guard
     attempt: 1
     depends_on: [BG-0001]
     scope_log:
@@ -98,6 +99,11 @@ tasks:
     commits: []
     verification: null
     review: null
+    reviewer_verdict: PASS (fresh context, docs/engineering/tasks/BG-0003/review-report.yaml, reviewed_commit 95d79a7)
+    merged: main merge commit of agent/BG-0001-0003-deadline-guard (2026-09-18)
+    remaining_risks:
+      - migrations 20260918130000 and 20260918140000 are NOT promoted to Production V2; promotion requires the Phase 7E-B workflow, which is blocked by BG-0002 (invalid SUPABASE_ACCESS_TOKEN). Until promoted the guard RPC is absent (every pass degrades to waiting, green) and the production sync is still the unguarded body.
+      - GW1 enters the default escalation window at 2026-09-22T22:30Z; promotion must land before then for the guard to catch it.
 
   BG-0004:
     title: Enable the hourly orchestrator (FANTASY_AUTOMATION_ENABLED=true)
@@ -290,7 +296,7 @@ tasks:
     state: QUEUED
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
-    next: Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005
+    next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
   BG-0019:
     title: Fantasy leagues / transfers / points / gameweeks lifecycle
     area: fantasy
@@ -366,4 +372,4 @@ tasks:
     severity: P1
     owner: Human
     state: HALTED_FOR_INPUT
-    human_action: product decision (recommendation: delete after first real gameweek close is verified)
+    human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
