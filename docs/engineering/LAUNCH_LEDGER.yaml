@@ -693,7 +693,31 @@ tasks:
       short-circuit/advisory lock/PT409 in_use) confirmed preserved byte-for-byte and unreachable
       around. No defects found. Recommended a PR for human review given this touches a production
       data-deletion RPC.
-    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/139 (head 1a9433a); session subscribed. Not required for CI (local pgTAP execution already proved green, independently, three times) — opened per the Reviewer''s recommendation for human eyes on a production data-deletion RPC. Awaiting that review; Chief will not merge without it.'
+    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/139 (head 0f9c0a1); session subscribed. Not required for CI (local pgTAP execution already proved green, independently, three times, plus a fourth time on the merged candidate — see merge_conflict_2026_09_18T19_46Z). Hold source, stated precisely: this is a DISCRETIONARY Chief hold, not an enforced GitHub branch-protection/Claude-Approvals rule (none exists on this repo) and not an explicit owner instruction — the Chief is choosing to wait for a human because this PR''s own fresh-context Reviewer recommended a second set of eyes given the production data-deletion nature of the RPC, and judges that recommendation worth honoring even though CI and the internal Verifier/Reviewer pipeline are both already green. Smallest specific owner action: have a human read PR #139''s diff and its Verifier/Reviewer reports and approve or comment; nothing else unblocks it. Chief has NOT merged and is NOT claiming human review has happened.'
+    merge_conflict_2026_09_18T19_46Z: >-
+      A fresh GitHub read reported PR #139 at head 1a9433a with mergeable=false,
+      mergeable_state=dirty (both CI jobs had passed on that head, but green CI does not resolve a
+      merge conflict). Re-fetched first; conflict confirmed still present. Reconciled in an isolated
+      /tmp clone (never the shared primary worktree): merged origin/main (7046e1e, one commit ahead
+      of this PR's stale base 54a532b) into agent/BG-0032-rollback-cleanup. Diffed conflicting files
+      first rather than assuming: git status showed exactly one conflicting file,
+      docs/engineering/LAUNCH_LEDGER.yaml — no code, migration, or test file conflicted. The
+      conflict was both sides having independently added near-duplicate Chief tracking notes
+      (verifier_report_2026_09_18T18 / reviewer_report_2026_09_18T18 / pull_request lines) for the
+      same events; resolved by keeping main''s fuller, later version (task count 43 on both sides
+      after resolution, confirming nothing was dropped) rather than blindly choosing ours/theirs for
+      the whole file. Committed as an ordinary merge commit (0f9c0a1) — no rebase, no amend, no
+      force-push, per this repo''s AGENTS.md rule against rewriting history that syncs to Lovable.
+      Ran the mandatory checks on the actual integrated candidate rather than reusing prior
+      per-branch evidence: bun install; backend:migrations:check (62 validated); promoter unit
+      tests (16/16); bun run test (720/720); a full local Supabase stack reset applying all 62
+      migrations in order (BG-0027 + BG-0031 + BG-0032 combined) and backend:db:test — 866/866
+      pgTAP assertions across 42 files, including fantasy_catalog_rollback_cleanup.test.sql,
+      fantasy_rating_degeneracy_guard.test.sql and season_bounds_guard.test.sql all executing
+      together for the first time; backend:db:lint clean; backend:types:check current. Pushed to
+      the existing branch (fast-forward from GitHub''s perspective, no history rewritten). PR #139
+      now shows mergeable_state=unstable (CI re-running on the new head, not a conflict) rather than
+      dirty. BG-0048 preserved unchanged (already lives on main directly, untouched by this merge).
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
     area: devops
@@ -761,14 +785,23 @@ tasks:
       comments or reviews. Implementation, independent Verifier (attempt 2, delta), independent
       fresh-context Reviewer (attempt 2, delta) and CI are all already complete for the current
       diff — not re-dispatching any builder or reviewer against unchanged work. Two distinct things
-      are open, and must not be conflated: (1) REQUIRED — this repo requires human review/approval
-      before a Chief merge of any PR (standing process rule; no repository branch-protection or
-      Claude Approvals check enforces it mechanically here, but the Chief does not merge without it
-      regardless). This is a genuine, unmet gate: no human has reviewed or approved PR #138 yet.
+      are open, and must not be conflated, with their SOURCE stated precisely (corrected wording
+      2026-09-18T20): (1) DISCRETIONARY CHIEF HOLD, not an enforced GitHub rule and not an explicit
+      owner instruction. No branch-protection rule or Claude Approvals check exists on this repo
+      requiring human review before merge (verified: PR #136 and #137 this session were merged by
+      the Chief directly after internal Verifier+Reviewer PASS and green CI, with no human GitHub
+      review, under the owner''s standing multi-agent-pipeline authorization). For PR #138
+      specifically, the Chief is choosing to wait for a human because the PR''s own fresh-context
+      Reviewer flagged production-secret-handling code as warranting a second set of eyes, and the
+      Chief judges that flag serious enough to hold on regardless of the internal pipeline already
+      being green. This is a genuine, currently-unmet condition of the Chief''s own choosing: no
+      human has reviewed or approved PR #138 yet, and the Chief will not merge until one does.
       (2) ADVISORY, already satisfied — the fresh-context Reviewer''s recommendation for "a second
       set of human eyes given production-secret handling" was itself the reason this PR exists at
       all; opening it and getting CI green already acted on that recommendation, and no further
-      Chief action can substitute for an actual human reading it. Chief has NOT merged, will NOT
+      Chief action can substitute for an actual human reading it. Smallest specific owner action:
+      have a human read PR #138''s diff and reviews and approve or comment; nothing else unblocks
+      it. Chief has NOT merged, will NOT
       merge without (1), and is NOT claiming that human review has happened. This hold is scoped to
       PR #138 only and does not block BG-0032 or the promotion-approval packet below.'
 
@@ -950,3 +983,22 @@ tasks:
     depends_on: []
     evidence: ['docs/engineering/tasks/BG-0032/verification-report.yaml (independent Verifier, flagged as out-of-scope for BG-0032 since it is a pre-existing gap in the original function, not a regression introduced by that fix)']
     acceptance_criteria: [confirm whether fantasy_job_runs rows realistically exist for a rolled-back season; if so, extend api.service_rollback_fantasy_catalog with an additive migration deleting them in FK-safe order, same pattern as BG-0032; database test; if rows never realistically exist for this path, document why and close without a code change]
+    schema_note: 'app_private.fantasy_job_runs has ON DELETE RESTRICT foreign keys to BOTH app.fantasy_seasons AND app.fantasy_gameweeks (not just seasons) — any fix needs to account for both paths, not only the season-level FK.'
+    snapshot_evidence_2026_09_18T19: >-
+      Read-only Production V2 query for fantasy season 9918cf95-9ed5-4d7b-99ca-eb9bfc29a258
+      (2026/2027, status registration_open): app_private.fantasy_job_runs rows referencing this
+      season directly = 0; rows referencing any of its gameweeks = 0; existing app.fantasy_teams
+      for this season = 3. This is a point-in-time snapshot, not a permanent guarantee — it does
+      NOT mean the gap is closed or permanently safe, and does NOT by itself mean rollback of this
+      season is currently blocked only by BG-0048 (the pre-existing PT409 fantasy_catalog_in_use
+      guard already blocks it independently, since 3 teams currently exist for this season). Do
+      not treat this snapshot as evidence the defect is harmless just because it is old, and do not
+      treat the defect's mere existence as an active blocker on its own — neither claim is
+      supported by this evidence alone. Before any later APPROVED rollback or re-stage of this or
+      any other season: re-check both the season-level and gameweek-level fantasy_job_runs
+      reference paths fresh (do not reuse this snapshot); account for concurrent worker execution
+      that could insert a job_runs row between the check and the rollback; preserve the existing
+      PT409 fantasy_catalog_in_use team-guard unchanged; and verify precisely which existing
+      fantasy_teams rows are covered by whatever specific deletion approval is in force at that
+      time. No job-history deletion, account deletion, or production rollback is authorized by
+      this snapshot or by BG-0048's existence.
