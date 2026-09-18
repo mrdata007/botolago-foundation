@@ -1,0 +1,68 @@
+task_id: BG-0020
+role: Researcher
+attempt: 1
+objective: >
+  (a) Run the authenticated Fantasy E2E journey suite in CI on main without weakening it.
+  (b) A CI guard closing the detection gap of the 2026-09-18 eslint loader incident: executed config files must fail the build on very long lines, obfuscated identifiers, createRequire shims, dynamic evaluation or oversized base64 blobs.
+key_findings:
+  - VERIFIED tests/e2e/fantasy.journey.e2e.ts reads E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD from process.env and self-skips when absent (lines 21-23, 66); no test change needed.
+  - VERIFIED playwright.config.ts needs no change to read those secrets (baseURL from E2E_BASE_URL, webServer bun dev otherwise); but line 18 `trace: process.env.E2E_STAGING_FIRST_EMAIL ? "off" : "retain-on-failure"` would retain traces containing the account's tokens on a credentialed run; support.ts sanitization does not reach traces.
+  - VERIFIED precedent: .github/workflows/phase65-functional-acceptance.yml (environment-held secrets, ::add-mask::, VITE_* injection, narrowed artifact paths); gating idiom (schedule && vars.X == 'true') || dispatch in fantasy-season-orchestrator.yml:41.
+  - VERIFIED the suite is write-heavy (saves squad, captain, confirms a transfer, creates a new league every run, never deletes it).
+  - VERIFIED backend-quality.yml runs on every pull_request → wrong host for a credentialed suite.
+  - VERIFIED historical payload 5731246:eslint.config.js: 75 lines, line 75 is 32222 chars; `_0x[0-9a-fA-F]{4,}` ×1614; createRequire ×2; bare `eval` identifier ×1 (passed as an argument — /eval\s*\(/ does NOT match); require( ×5; base64 runs ≥120 = 0; ≥40-space padding after non-whitespace on line 75.
+  - VERIFIED current tree clean under all proposed rules across eslint.config.js, vite.config.ts, playwright.config.ts, bunfig.toml, package.json and all 27 workflows; longest line 376 (gate3a-sportsmonks-historical-content-coverage.yml:229); 7 workflow lines carry 64-char SHA-256 digests (a base64 rule at 64 would break CI; 120 + all-hex exclusion needed).
+  - VERIFIED step order in backend-quality.yml: checkout → setup-bun → bun install (honours bunfig.toml/package.json hooks) → … → test (bunfig) → lint (eslint.config.js) → build (vite.config.ts); the guard must run before bun install, using node builtins only.
+  - VERIFIED check-committed-secrets.mjs is the precedent style but has no exports; the new script must export its pure scan and guard its CLI entry.
+  - VERIFIED self-match hazard: scripts/** and docs/** legitimately contain `_0x`, createRequire, eval; the scanned set must stay the closed executed-config list.
+  - INFERRED staging is the right default target for the scheduled run; production only by dispatch.
+  - UNKNOWN whether the synthetic manager account exists in staging; whether GitHub secrets/variables exist.
+root_cause:
+  classification: VERIFIED
+  description: (a) no workflow supplies the two env vars, and the only CI Playwright job is per-PR and hermetic; (b) every CI check runs after a step that evaluates the compromised config, and no check inspects the lexical shape of executed config files.
+required_changes:
+  - id: RC-1
+    component: .github/workflows/fantasy-authenticated-e2e.yml (new), playwright.config.ts (line 18 only), package.json (one script)
+    change: >
+      New workflow with exactly two triggers: workflow_dispatch (inputs target: staging|production default staging; confirmation "RUN_FANTASY_E2E") and schedule "0 3 * * *". Job if: repository == mrdata007/botolago-foundation && ((schedule && vars.FANTASY_E2E_ENABLED == 'true') || (workflow_dispatch && inputs.confirmation == 'RUN_FANTASY_E2E')). Guard step: schedule arm resolves target to staging unconditionally and exits 1 otherwise. runs-on ubuntu-latest, timeout-minutes 40, environment fantasy-e2e, permissions contents: read, concurrency group fantasy-authenticated-e2e (cancel-in-progress false). Env: E2E_FANTASY_EMAIL/E2E_FANTASY_PASSWORD from secrets; VITE_AUTH_MODE=supabase, VITE_FANTASY_DATA_MODE=supabase, VITE_FOOTBALL_DATA_MODE=supabase, VITE_NEWS_DATA_MODE=supabase, VITE_NOTIFICATIONS_DATA_MODE=supabase; VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY from vars.SUPABASE_STAGING_URL + secrets.SUPABASE_STAGING_PUBLISHABLE_KEY for staging, production vars only on dispatch. Steps: checkout → setup-bun 1.3.14 → mask (password, publishable key) → credential-presence guard (exit 1 when empty) → bun install --frozen-lockfile → bun scripts/backend/check-config-integrity.mjs → bunx playwright install --with-deps chromium → bun run test:e2e:fantasy → upload playwright-report, test-results/playwright/**/*.png, test-results/playwright/**/sanitized-browser-diagnostics* (retention 7). playwright.config.ts line 18: `trace: process.env.E2E_STAGING_FIRST_EMAIL || process.env.E2E_FANTASY_EMAIL ? "off" : "retain-on-failure"`. package.json: "test:e2e:fantasy": "playwright test tests/e2e/fantasy.journey.e2e.ts". tests/e2e/** unchanged.
+    reason: real authenticated signal on main without PR-triggered credentials or production mutations; the trace line is the one leak vector.
+  - id: RC-2
+    component: scripts/backend/check-config-integrity.mjs (new), scripts/backend/check-config-integrity.test.ts (new), package.json (one script), .github/workflows/backend-quality.yml
+    change: >
+      Dependency-free ESM guard. Scanned set (closed): eslint.config.js, vite.config.ts, playwright.config.ts, bunfig.toml, package.json, every .github/workflows/*.yml|*.yaml (readdirSync; empty list → exit 2). Rules per line, report all then fail:
+      R1 long-line: length > 500. R2 padding-run: /\S[ \t]{40,}/. R3 hex-identifier: /_0x[0-9a-fA-F]{4,}/. R4 require-shim: /createRequire/ or /\brequire\s*\(/. R5 dynamic-eval: identifier eval /(^|[^.\w$])eval\b/ (NOT /eval\s*\(/), or /\bnew\s+Function\s*\(/ or /(^|[^.\w$])Function\s*\(/. R6 base64-blob: /[A-Za-z0-9+/]{120,}={0,2}/ whose text is not entirely hex. No allowlist, no suppression comments.
+      Structure: export const RULES; export function scanText(filePath, text); export function resolveTargets(root); CLI guarded by import.meta.url === pathToFileURL(process.argv[1]).href; flags: none = scan set, --file <path> = one file. Exit 0 clean (one stdout line), 1 violations (stderr `- file:line rule`, offending text truncated to 80 chars), 2 usage/empty set.
+      Unit test with inline fixtures: each rule positive (incl. `f(eval, x)` and a 600-char line) and negative (376-char YAML line, 64-char SHA-256, deeply indented YAML); resolveTargets non-empty incl. the five configs and backend-quality.yml; scanText over all resolved targets returns []; ordering assertion that in backend-quality.yml the "Config integrity guard" step index is lower than both `bun install --frozen-lockfile` and `bun run lint`.
+      package.json: "config:integrity:check": "bun scripts/backend/check-config-integrity.mjs". backend-quality.yml: insert step `- name: Config integrity guard  run: bun run config:integrity:check` immediately after setup-bun and BEFORE bun install, in both application-quality and database-quality jobs; leave every existing step in place.
+    reason: closes incident owner-action #4 with a check that fires on the real payload (R1,R2,R3,R4,R5) and not on the current tree.
+constraints:
+  - No credential value in the repository; names only.
+  - tests/e2e/** assertions unchanged.
+  - Fantasy suite never triggered by pull_request or push.
+  - Scanned set never widened to scripts/** or docs/**.
+risks:
+  - HIGH production runs mutate data; schedule staging-only, production dispatch-only; league rows accumulate (cleanup out of scope → follow-up task).
+  - HIGH without the trace change a failing credentialed run uploads tokens in traces.
+  - MEDIUM missing secrets → silent skip; mitigated by the presence guard step.
+  - MEDIUM R1 margin 124 chars; failure is loud, remedy is reformatting.
+acceptance_tests:
+  - "RC-1-A1: env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bunx playwright test tests/e2e/fantasy.journey.e2e.ts --list → exit 0, 6 tests; env -u … bun run test:e2e:fantasy → exit 0, 6 skipped 0 failed."
+  - "RC-1-A2: workflow file exists; grep -E '^\\s*(pull_request|push):' returns no match; contains workflow_dispatch, schedule, vars.FANTASY_E2E_ENABLED, secrets.E2E_FANTASY_PASSWORD; playwright.config.ts contains E2E_FANTASY_EMAIL and NOT E2E_FANTASY_PASSWORD; git diff --exit-code tests/e2e/fantasy.journey.e2e.ts tests/e2e/support.ts → 0."
+  - "RC-1-A3 (owner-gated): dispatch target=staging → 6 passed 0 skipped (6 skipped is a FAILURE)."
+  - "RC-2-A1: bun scripts/backend/check-config-integrity.mjs → exit 0; bun run config:integrity:check → exit 0 (baseline: R1..R6 all 0 across 32 files, max line 376)."
+  - "RC-2-A2: git show 5731246:eslint.config.js > /tmp/bg0020-hist.js; bun scripts/backend/check-config-integrity.mjs --file /tmp/bg0020-hist.js → exit 1; stderr cites line 75 with R1 (32222), R2, R3, R5 and R4 for lines 7 and 9; no more than 80 chars of payload echoed."
+  - "RC-2-A3: bun test scripts/backend/check-config-integrity.test.ts → 0; bun run test → 0; ordering guard < bun install < bun run lint."
+  - "RC-2-A4: --file /nonexistent/path → exit 2; empty target root → exit 2."
+implementation_scope:
+  builder_type: Builder-DevOps
+  allowed_paths:
+    - scripts/backend/check-config-integrity.mjs
+    - scripts/backend/check-config-integrity.test.ts
+    - .github/workflows/fantasy-authenticated-e2e.yml
+    - .github/workflows/backend-quality.yml (insert one step per job only)
+    - playwright.config.ts (line 18 trace expression only)
+    - package.json ("scripts" block only: two entries)
+    - docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md (append guard reference to owner action 4 only)
+  forbidden_paths: [tests/e2e/**, src/**, supabase/**, scripts/qa/**, scripts/backend/check-committed-secrets.mjs, eslint.config.js, vite.config.ts, bunfig.toml, bun.lock, .env*, every other workflow, every other doc]
+status: HALTED_FOR_INPUT (RC-1 acceptance A3 only) — RC-2 and RC-1 code are unblocked
+human_action: create GitHub Environment fantasy-e2e with secrets E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD; repository variable FANTASY_E2E_ENABLED; confirm which Supabase project holds the synthetic manager account (staging preferred).

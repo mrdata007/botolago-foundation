@@ -148,12 +148,21 @@ tasks:
       - independent Verifier repeats the smoke journey against the published production site after BG-0022
     review: null
   BG-0011:
-    title: Player pricing (539 prices valid, not uniform, budget validation)
+    title: Player pricing — only 3 distinct prices, uniform within each position (GK 4.80, DEF 5.00, MID/FWD 7.20)
     area: pricing
     severity: P0
-    owner: Scout
+    user_impact: 323 of 539 players cost 7.20; squad building has no price differentiation between a star and a reserve, so budget and transfer mechanics are degenerate.
+    owner: Researcher
     state: RUNNING
-    evidence: [hardening §3 data checks (539 players, 0 duplicates); price distribution UNKNOWN pending Extractor]
+    attempt: 1
+    evidence:
+      - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml (histogram 60/156/323; by_position min=max; price_history reason initial_catalog_v1 ×539; evidence rows 539)
+      - docs/engineering/tasks/BG-0011-0018/scout-report.yaml (algorithm botolago-initial-price-v1.0 in 20260803173344; staging RPC in 20260803210943)
+    acceptance_criteria:
+      - root cause of the per-position uniformity identified (rating input absent vs algorithm design)
+      - a safe, non-fabricating path to differentiated prices specified, or an explicit product decision request if none exists without new data
+      - budget validation (100.0) and existing squads stay valid under any re-pricing proposal
+    review: null
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
     area: cms
@@ -210,10 +219,13 @@ tasks:
   BG-0018:
     title: Production data completeness (clubs, players, fixtures, rounds, kits/codes)
     area: data
-    severity: P0
-    owner: Scout
-    state: RUNNING
-    evidence: [539 players, 16 clubs, 8 fixtures, 1 round; 15 clubs lack app.teams.code (N2); homonym clusters (N1)]
+    severity: P1
+    user_impact: All 16 clubs have crests; none has colours and 15 lack a short code (UI falls back to names); no player photos (kits/initials by design); homonym clusters ×2; 1 round / 8 fixtures / placeholder kickoffs (provider).
+    owner: Chief
+    state: QUEUED
+    evidence:
+      - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
+    next: Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005
   BG-0019:
     title: Fantasy leagues / transfers / points / gameweeks lifecycle
     area: fantasy

@@ -1,0 +1,59 @@
+task_id: BG-0014
+role: Researcher
+attempt: 1
+objective: Automated CI localization gate for the fr/ar dictionaries and current-state report.
+key_findings (all VERIFIED by read-only bun/grep scripts unless noted):
+  - fr 985 keys, ar 985 keys, 0 missing either way (Object.keys count), 0 empty values.
+  - 6 keys with fr === ar: app.name, language.french, language.arabic, news.language.ar, notfound.code (legitimate) and profile.title = "Profile\n\n" (DEFECT: English + two trailing newlines in both dictionaries, rendered with whitespace-pre-wrap in src/routes/profile.tsx:78 and :285).
+  - 5 ar values without Arabic script (the four neutral ones + auth.email_placeholder "you@example.com").
+  - Placeholder parity perfect (0 mismatches over 15 keys with {…} tokens); {accent} markup balanced (14 keys × 2); Trans.tsx resolves only the first {accent} span (latent).
+  - No central interpolation; 7 ad-hoc .replace("{n}", …) sites.
+  - 541 distinct literal t("…") keys across 407 files all resolve; 9 statically enumerable template prefixes resolve 40 more keys; 237 dictionary keys unreferenced anywhere in src/; 100 t() call sites with non-literal arguments (unverifiable).
+  - TypeScript `satisfies Record<Language, Record<string,string>>` does not enforce key-set parity; casts `as TranslationKey`/`as never` defeat the compile check; runtime fallback `?? key` renders the raw key silently.
+  - No i18n check exists; bun test auto-discovers *.test.ts repo-wide and `bun run test` is already a required CI step, so no workflow edit is needed; bun test exits 0 on an empty path filter (silent-skip hazard → also ship a script with explicit exit code).
+  - Date/number: src/lib/format-time.ts uses bare "ar"/"fr" (Arabic-Indic digits, سبتمبر) while 20+ components use "ar-MA"/"fr-FR" (Western digits, شتنبر) → two digit systems side by side on Arabic screens (finding, out of scope).
+  - RTL: 5 CSS rules; 111 physical-direction Tailwind utilities (left-/right-/pl-/pr-/ml-/mr-/text-left) unflipped (finding, out of scope).
+  - Truncation candidates (fr→ar char growth): news.tab.transfers 7→14, nav.profile 6→12, matches.status.penalties 6→11, chips 8→12, fpl.group.MID 7→11 … (finding; needs rendered-width check in Playwright, out of scope).
+root_cause:
+  classification: VERIFIED
+  description: The dictionaries are currently consistent but nothing enforces it; three mechanisms (satisfies, casts, silent fallback) each fail to catch drift, and profile.title already slipped through.
+required_changes:
+  - component: scripts/qa/i18n-gate.ts (new)
+    change: >
+      Pure `auditI18n(dicts, usage, allow)` + CLI wrapper exiting 1 on errors. Errors: E1 key in one language only; E2 empty/whitespace value; E3 placeholder-token set differs; E4 unbalanced or multiple {accent} spans; E5 literal t("…") key absent from dictionary; E6 stale allow-list entry. Warnings with committed BASELINE counts (above baseline → error): W1 fr===ar not allow-listed (baseline 6), W2 ar value without Arabic script not allow-listed (5), W3 unreferenced keys (237), W4 opaque t() call sites (100). Usage index: Bun.Glob over src/ excluding dictionaries/allowlist/fixtures; LITERAL / TEMPLATE (prefix ending in "." or "_") / OPAQUE classification; W3 reachability also counts bare quoted literals anywhere in src/ (config objects, direct dictionary access).
+    reason: machine-checked gate with a ratchet so warnings cannot grow unnoticed.
+  - component: src/i18n/i18n-allowlist.ts (new)
+    change: IDENTICAL_ALLOWED as const satisfies Partial<Record<TranslationKey,string>> with justification strings for app.name, language.french, language.arabic, news.language.ar, notfound.code; NO_ARABIC_SCRIPT_ALLOWED adding auth.email_placeholder. profile.title deliberately NOT allow-listed.
+    reason: typed allow-list breaks typecheck when a key is renamed; keeps profile.title visible as a named warning.
+  - component: src/i18n/i18n-gate.test.ts (new)
+    change: describe "current tree" (0 errors; each warning count equals its baseline exactly) and describe "broken fixture" (reports exactly the injected E1..E4 + one W1).
+    reason: runs in CI via the existing bun run test step.
+  - component: src/i18n/__fixtures__/broken-dictionary.ts (new)
+    change: hand-written two-language fixture injecting E1, E2, E3, E4 and one W1; not derived from the real dictionary.
+    reason: exercises the exit-1 path.
+  - component: package.json (scripts block only)
+    change: add "i18n:check": "bun scripts/qa/i18n-gate.ts". Do not edit CI.
+    reason: explicit exit code for local/acceptance use.
+constraints:
+  - No new dependency; bun:test and Bun.Glob only.
+  - Failure set fixed (missing keys, empty strings, placeholder/markup integrity, unresolvable literal keys, stale allow-list); dynamic usages reported, never failed on their own.
+  - No translation rewritten, no UI change (profile.title fix is a separate task BG-0024; format-time locale is BG-0025).
+risks:
+  - W3 baseline is static analysis; never wire it to deletion.
+  - Exact-equality baselines are intended friction; document in the script header.
+acceptance_tests:
+  - "bun scripts/qa/i18n-gate.ts on the current tree → exit 0; 0 errors; W1=6 (five suppressed as allow-listed, profile.title reported); W2=5; W3=237; W4=100."
+  - "against the broken fixture entry point → exit 1 naming E1, E2, E3, E4 with keys."
+  - "bun test src/i18n/i18n-gate.test.ts → exit 0 with non-zero test count."
+  - "in-memory negative controls: delete an ar key → E1; empty ar value → E2; strip {n} → E3; remove {/accent} → E4; fabricated allow-list key → E6; app.name removed from allow-list → W1=7 > 6 → exit 1; profile.title made different → W1=5 ≠ 6 → exit 1."
+  - "bun run typecheck → 0; renaming an allow-listed key breaks typecheck."
+  - "bun run lint and prettier check pass on new files; the full bun run test discovers src/i18n/i18n-gate.test.ts."
+implementation_scope:
+  builder_type: Builder-Frontend
+  allowed_paths: [scripts/qa/i18n-gate.ts, src/i18n/i18n-gate.test.ts, src/i18n/i18n-allowlist.ts, src/i18n/__fixtures__/broken-dictionary.ts, package.json (scripts block only — add i18n:check)]
+  forbidden_paths: [src/i18n/dictionaries.ts, src/i18n/provider.tsx, src/lib/format-time.ts, src/types/domain.ts, src/components/**, src/routes/**, src/styles.css, .github/workflows/**, tests/e2e/**, src/backend/**, supabase/**, bunfig.toml]
+status: DONE
+follow_up_tasks_for_chief:
+  - BG-0024 profile.title copy defect (Builder-Frontend; dictionaries.ts only; fr/ar proper strings; then W1 baseline 6→5 in the gate).
+  - BG-0025 format-time.ts locale tags ar→ar-MA / fr→fr-FR for consistency with the rest of the UI (Builder-Frontend; product confirmation of Western digits recommended).
+  - BG-0026 RTL physical-direction utilities audit (P2).

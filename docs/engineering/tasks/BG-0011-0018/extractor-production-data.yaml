@@ -1,0 +1,70 @@
+task_id: BG-0011+BG-0018
+role: Extractor
+attempt: 1
+read_at: "2026-09-18T10:48:32Z"
+prices:
+  active_players: 539
+  distinct_prices: 3
+  min_price: 4.80
+  max_price: 7.20
+  avg_price: 6.30
+  histogram: { "4.80": 60, "5.00": 156, "7.20": 323 }
+  by_position:
+    GK: { count: 60, min: 4.80, max: 4.80, avg: 4.80 }
+    DEF: { count: 156, min: 5.00, max: 5.00, avg: 5.00 }
+    MID: { count: 195, min: 7.20, max: 7.20, avg: 7.20 }
+    FWD: { count: 128, min: 7.20, max: 7.20, avg: 7.20 }
+  per_club: every club has min 4.80 / max 7.20
+  uniform_price_flag: false # but uniform within each position
+  price_history_rows: 539
+  price_history_reasons: { initial_catalog_v1: 539 }
+  initial_price_evidence_rows: 539
+clubs:
+  teams_in_catalog: 16
+  teams_missing_code: 15 (all except Wydad Casablanca "WCA")
+  teams_missing_crest: []
+  teams_missing_colours: all 16 (primary_color and secondary_color null)
+  kits_overrides_in_repo:
+    override_keys: [war, rca, asfar, fus, rsb, mat, hus, moas]
+    slug_substring_matches: [FUS Rabat → fus, RSB Berkane → rsb]
+    note: OVERRIDES is keyed by the client Club id, not app.teams.slug/code; kits.ts falls back to a name-fragment matcher
+players:
+  total_active_players: 539
+  players_missing_photo: 539
+  players_missing_position: 0
+  duplicate_names:
+    - { full_name: Abdallah Boukhanfer, team: Hassania Agadir, count: 2 }
+    - { full_name: Abdoulaye Coulibaly, team: Wydad Casablanca, count: 3 }
+  per_club_counts:
+    {
+      Amal Tiznit: 21,
+      CODM Meknès: 37,
+      CR Khemis Zemamra: 37,
+      Difaâ El Jadida: 35,
+      FAR Rabat: 31,
+      FUS Rabat: 29,
+      Hassania Agadir: 40,
+      Ittihad Tanger: 33,
+      Kawkab Marrakech: 35,
+      Maghreb Fès: 29,
+      Moghreb Tétouan: 36,
+      Raja Casablanca: 33,
+      RSB Berkane: 31,
+      UTS Rabat: 42,
+      Widad Témara: 23,
+      Wydad Casablanca: 47,
+    }
+  positions_distribution: { GK: 60, DEF: 156, MID: 195, FWD: 128 }
+fixtures_rounds:
+  rounds: { count: 1, round_numbers: [1] }
+  fixtures: { count: 8, distinct_kickoff_at: 1, statuses: [not_started] }
+  gameweeks:
+    [
+      {
+        sequence_number: 1,
+        status: open,
+        deadline_at: "2026-09-23T22:30:00+00:00",
+        starts_at: "2026-09-24T00:00:00+00:00",
+      },
+    ]
+status: DONE
