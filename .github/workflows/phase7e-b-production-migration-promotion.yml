@@ -24,6 +24,7 @@ on:
           - fantasy_calendar_sync
           - fantasy_deadline_guard
           - fantasy_rating_degeneracy_guard
+          - season_bounds_guard
       confirmation:
         description: Type the exact RUN_PHASE7E_B_PRODUCTION_<BATCH> confirmation
         required: true

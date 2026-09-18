@@ -1,0 +1,293 @@
+task_id: BG-0031
+builder_type: Builder-Backend
+branch: agent/BG-0031-season-bounds-guard
+attempt: 1
+base: >
+  Branch was cut from origin/main 6dd5e98 (brief commit). While building, origin/main advanced by eleven
+  unrelated commits (BG-0027/0034/0037/0002/0011 ledger updates, reports, phase7e promoter batch for
+  fantasy_deadline_guard, owner-decision ledger db76141; none touch the files below; migration count on
+  origin/main still 59; BG-0027's 20260918150000_fantasy_rating_degeneracy_guard.sql is NOT on main).
+  The branch was rebased onto origin/main db76141 (clean, no conflicts) so that
+  `git diff --name-status origin/main..HEAD` is exactly the allowed set. Merge-base at push time: db76141.
+commits:
+  - 65f63de # BG-0031: season bounds guard (monotone season ingestion, owner lock, pgTAP cases)
+  - 44dff2e # BG-0031: Phase 7E-B manifest batch season_bounds_guard (Chief-approved scope addition)
+  # + one follow-up commit carrying this report only (docs/engineering/tasks/BG-0031/implementation-report.yaml)
+
+scope: >
+  Brief required_changes rank 1 + rank 2 + the pgTAP cases + the bridge-doc note. Ranks 3 and 4
+  (supabase/functions/_shared/sportsmonks-catalog.ts freshness, scripts/backend/current-season-recovery.ts)
+  belong to BG-0038 and were not touched; nothing under supabase/functions/**, scripts/backend/** or src/**
+  changed. LAUNCH_LEDGER.yaml was not edited (Chief-owned ledger; the brief lists it, the task
+  instruction did not include it in the allowed diff set).
+
+scope_additions:
+  - approved_by: Chief (owner condition, 2026-09-18, relayed by the coordinator mid-task)
+    change: >
+      Every newly merged migration must carry its own reviewed Phase 7E-B manifest entry so the promoter
+      inventory check (test_batches_cover_the_exact_ordered_migration_chain: files on disk == manifest)
+      does not fail again. Added to the allowed paths for this task: scripts/backend/phase7e-production-
+      migration-promoter.py, scripts/backend/tests/test_phase7e_production_migration_promoter.py,
+      .github/workflows/phase7e-b-production-migration-promotion.yml. Ordering rule applied: BG-0027's
+      20260918150000_fantasy_rating_degeneracy_guard.sql is not on origin/main at push time (checked:
+      `git ls-tree origin/main supabase/migrations/ | grep -c 20260918150000` -> 0), so no batch was
+      added for it and "season_bounds_guard" directly follows "fantasy_deadline_guard". If BG-0027 lands
+      on main first, its batch must be inserted before "season_bounds_guard" and the test prefix count
+      for season_bounds_guard becomes 60 (currently 59).
+
+changes:
+  - file: supabase/migrations/20260918160000_season_bounds_guard.sql
+    description: >
+      New additive migration (sorts after 20260918140000). Part A (rank 2): `alter table app.seasons add
+      column if not exists bounds_locked_at timestamptz, add column if not exists bounds_locked_reason text`
+      with column comments; trigger function app_private.protect_locked_season_bounds() (language plpgsql,
+      security invoker, set search_path = ''): when OLD.bounds_locked_at is not null and NEW.bounds_locked_at
+      is not distinct from OLD.bounds_locked_at it sets NEW.starts_on := OLD.starts_on and NEW.ends_on :=
+      OLD.ends_on, then returns NEW; revoke-all/grant-to-postgres footer as the other app_private trigger
+      functions; `drop trigger if exists` + `create trigger seasons_protect_locked_bounds before update on
+      app.seasons for each row`. Part B (rank 1): full `create or replace function
+      api.ingest_football_catalog_entity(text,text,text,jsonb)` whose text is lines 78-326 of
+      20260731180229_gate2b_football_catalog_ingestion.sql copied verbatim (security definer, set
+      search_path = '', the revoke/grant lines and the comment on function included byte-for-byte; verified
+      with `diff <(sed -n 78,326p <source>) <(sed -n 57,\$p <new>)`, which shows only the three hunks
+      below), plus exactly: (1) seven new declarations after `v_outcome` (v_existing_starts_on,
+      v_existing_ends_on, v_first_kickoff_on, v_floor_ends_on, v_ends_on_preserved, v_starts_on_preserved,
+      v_result_extra jsonb := '{}'); (2) in the `when 'season'` UPDATE branch, before the existing
+      `update app.seasons set ...`: read existing starts_on/ends_on; min/max of
+      (fixture.kickoff_at at time zone 'UTC')::date for app.fixtures where season_id = target_id;
+      v_floor_ends_on := greatest(existing ends_on, max fixture date, max(team_memberships.valid_to) where
+      season_id = target_id, max((fantasy_seasons.ends_at at time zone 'UTC')::date) where
+      football_season_id = target_id); v_ends_on_preserved := v_ends_on <= v_starts_on or v_ends_on <
+      v_floor_ends_on, and if so v_ends_on := existing ends_on; v_starts_on_preserved := first kickoff is
+      not null and v_starts_on > first kickoff, and if so v_starts_on := existing starts_on; v_result_extra
+      := jsonb_build_object('endsOnPreserved', ..., 'startsOnPreserved', ...). The existing UPDATE statement
+      and its status CASE are untouched (they now consume the effective v_starts_on/v_ends_on); (3) the
+      final `return jsonb_build_object('id', target_id, 'outcome', v_outcome)` becomes `... || v_result_extra`,
+      so competition/round/team/season-insert results are byte-identical to before and only a season
+      UPDATE carries the two new keys. No data is written by the migration (the 2026/27 correction and its
+      lock are the owner's production write).
+  - file: supabase/tests/database/season_bounds_guard.test.sql
+    description: >
+      New pgTAP file in the existing style (begin / extensions.no_plan() / extensions.is|ok / finish /
+      rollback; a pg_temp.mapped_id(entity_type, external_id) helper as fantasy_scoring_worker.test.sql
+      does). 27 assertions: 3 schema checks (columns nullable timestamptz/text, trigger present), catalog
+      setup through the RPC (competition 860, season 28647 inserted 2026-09-24..2026-12-31), direct inserts
+      of two teams, one fixture (kickoff 2026-09-24T00:00Z), one player + membership (valid_to 2027-06-30),
+      one fantasy_competitions row and one fantasy_seasons row (ruleset f6100000-...-100 seeded by
+      20260720163222; ends_at 2027-05-31T23:59:59.999999Z, status planned), then cases 1, 1b, 3, 3b, 3c, 2,
+      4a-4e (expected values derived by hand in `hand_derived_expectations` below). The existing
+      football_ingestion.test.sql and football_catalog_ingestion.test.sql are untouched (their season
+      payloads only exercise the insert branch, whose result shape is unchanged).
+  - file: docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md
+    description: >
+      New section "## Regression 2026-09-18" after the "Verified state" paragraph: run 35332956079 reverted
+      ends_on to 2026-09-24 at 2026-09-18T10:06:23Z; correction pending owner approval (one-row UPDATE
+      with bounds_locked_at/bounds_locked_reason, recipe in the brief); what the guard migration does;
+      any workflow dispatch before the guard is live re-clobbers the value. Prettier-clean.
+  - file: scripts/backend/phase7e-production-migration-promoter.py
+    description: >
+      Scope addition. BATCHES gains a final entry "season_bounds_guard": ("20260918160000_season_bounds_guard.sql",)
+      after "fantasy_deadline_guard" with a three-line BG-0031 comment (same style as the BG-0003 entry);
+      EXPECTED_EDGE_FUNCTIONS_BY_BATCH gains "season_bounds_guard": frozenset({"football-ingest", "news-ingest"})
+      (same reviewed set as fantasy_deadline_guard). CONFIRMATIONS is derived, so
+      RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD exists without further edits. No other line touched.
+  - file: .github/workflows/phase7e-b-production-migration-promotion.yml
+    description: >
+      Scope addition. One line: `- season_bounds_guard` appended to inputs.migration_batch.options after
+      `- fantasy_deadline_guard` (manifest order, newest last, as
+      test_workflow_batch_choices_match_the_manifest_batches_in_order requires). No trigger, gate,
+      confirmation or step changed.
+  - file: scripts/backend/tests/test_phase7e_production_migration_promoter.py
+    description: >
+      Scope addition, inside test_batches_cover_the_exact_ordered_migration_chain only: inventory counts
+      59 -> 60 (two asserts); the `list(PROMOTER.BATCHES)[-1]` assertion now expects "season_bounds_guard";
+      new asserts for BATCHES["season_bounds_guard"] == ("20260918160000_season_bounds_guard.sql",),
+      batch_history_prefix("season_bounds_guard") length 59, CONFIRMATIONS["season_bounds_guard"] ==
+      "RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD"; "season_bounds_guard" added to the edge-function
+      loop. Every pre-existing assertion (fantasy_deadline_guard tuple, prefix 57, confirmation,
+      release_activation, launch_recovery count 9, fantasy_calendar_sync prefix 56) is kept; still 11 tests.
+  - file: docs/engineering/tasks/BG-0031/implementation-report.yaml
+    description: This report (follow-up commit).
+
+database_changes:
+  - "app.seasons: +bounds_locked_at timestamptz null, +bounds_locked_reason text null (additive, no default, no backfill)."
+  - "app_private.protect_locked_season_bounds(): new trigger function; trigger seasons_protect_locked_bounds BEFORE UPDATE FOR EACH ROW on app.seasons (fires alphabetically before seasons_set_updated_at; order is irrelevant, both only touch NEW)."
+  - 'api.ingest_football_catalog_entity(text,text,text,jsonb): CREATE OR REPLACE, same signature, SECURITY DEFINER, search_path '''', same grants (service_role only). Behaviour change only in the season UPDATE branch (monotone ends_on / start rule / two extra result keys). Confirmed it is the only prior definition: `grep -ln "function api.ingest_football_catalog_entity" supabase/migrations/*.sql` -> 20260731180229 only.'
+  - "Index coverage of the three floor subqueries (verified in the migrations): app.fixtures.season_id -> fixtures_season_round_kickoff_idx (season_id, round_id, kickoff_at, id) [20260720095345:139-140]; app.team_memberships.season_id -> team_memberships_season_idx (season_id, team_id, player_id) [20260720104000:20-21]; app.fantasy_seasons.football_season_id -> unique constraint fantasy_seasons_football_key (football_season_id) [20260720141826:159]. All three are leading-column matches; EXPLAIN on the stub cluster (enable_seqscan off) used exactly these three indexes. The extra cost per season UPDATE is one PK lookup plus three index range scans; competition/round/team paths are unchanged."
+  - "Owner-lock semantics: while bounds_locked_at is set, only an UPDATE whose new bounds_locked_at IS DISTINCT FROM the old one (a new timestamp, or NULL to unlock) can move starts_on/ends_on. Within a single transaction `now()` is constant, so a correction issued in the same transaction that set the lock must use clock_timestamp() or an explicit timestamp; in separate transactions `now()` is fine."
+
+configuration_changes:
+  - "CI (scope addition): phase7e-b-production-migration-promotion.yml offers the new dispatch choice `season_bounds_guard` (confirmation string RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD, derived by the promoter). No secret, variable, schedule or gate changed; the batch is not dispatched by this task."
+
+tests_run:
+  - command: "bun install --frozen-lockfile"
+    result: PASS
+    output: "539 packages installed"
+  - command: "bun run backend:migrations:check"
+    result: PASS
+    output: "Validated 60 migration(s)."
+  - command: "bun run typecheck"
+    result: PASS
+    output: "$ tsc --noEmit  exit=0"
+  - command: "bunx prettier --check docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md .github/workflows/phase7e-b-production-migration-promotion.yml docs/engineering/tasks/BG-0031/implementation-report.yaml"
+    result: PASS
+    output: "All matched files use Prettier code style!"
+  - command: "python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v  (scope addition)"
+    result: PASS
+    output: |
+      baseline before the manifest edit (my migration on disk, manifest at 59): FAILED (failures=1)
+        test_batches_cover_the_exact_ordered_migration_chain: Lists differ [... '20260918160000_season_bounds_guard.sql'] != [...]
+      after the edit: Ran 11 tests ... OK  (all 11 named tests `ok`, including
+        test_batches_cover_the_exact_ordered_migration_chain, test_confirmation_is_unique_per_batch,
+        test_workflow_batch_choices_match_the_manifest_batches_in_order)
+  - command: "git diff --name-status origin/main..HEAD  (after rebase onto db76141)"
+    result: PASS
+    output: |
+      M	.github/workflows/phase7e-b-production-migration-promotion.yml
+      M	docs/backend/FANTASY_2026_27_BRIDGE_ACTIVATION.md
+      M	scripts/backend/phase7e-production-migration-promoter.py
+      M	scripts/backend/tests/test_phase7e_production_migration_promoter.py
+      A	supabase/migrations/20260918160000_season_bounds_guard.sql
+      A	supabase/tests/database/season_bounds_guard.test.sql
+      (+ docs/engineering/tasks/BG-0031/implementation-report.yaml in the follow-up commit)
+      = the original allowed set plus the three Chief-approved scope-addition files; nothing else.
+  - command: "diff <(sed -n '78,326p' supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql) <(sed -n '57,$p' supabase/migrations/20260918160000_season_bounds_guard.sql)"
+    result: PASS
+    output: "Exactly three hunks: 29a30,37 (declarations), 158a167,204 (season UPDATE branch guard block), 232c278 (return ... || v_result_extra). Everything else, including the revoke/grant/comment footer, is byte-identical."
+  - command: "git grep -n -i -E 'fable|claude' -- <the three repo artifacts>"
+    result: PASS
+    output: "none (no model identifiers in repo artifacts; commit trailers only)"
+  - command: "OUT-OF-TREE stub harness (not the Supabase pgTAP stack): local PostgreSQL 16.13 cluster in the scratchpad + stub schemas/roles/tables (app.seasons is the real DDL incl. seasons_date_range_check and seasons_set_updated_at; the other tables carry the columns the guard reads; pgTAP `extensions.is/ok/no_plan/finish` shims; api.resolve_football_mapping stubbed as an upsert), then `psql -f 20260918160000_season_bounds_guard.sql` and `psql -f season_bounds_guard.test.sql`"
+    result: PASS
+    output: |
+      migration OK (parses and applies; only NOTICE is the expected `drop trigger if exists` skip)
+      27 ok, 0 not ok  (every assertion in season_bounds_guard.test.sql, same order as the file)
+      Caveat: proves plpgsql syntax, the guard arithmetic and the trigger; it does not prove the real
+      RLS/grant surface, api.resolve_football_mapping, or the other tables' triggers. Not a substitute for
+      `supabase test db`.
+  - command: "OUT-OF-TREE stub harness: production-shaped replay (brief acceptance test #1): season 2026-09-24..2027-06-30, fixture 2026-09-24T00:00Z, membership valid_to 2027-06-30, fantasy_seasons ends_at 2027-06-30T23:59:59.999999Z; payload startsOn/endsOn 2026-09-24, freshness.updatedAt 2026-09-18T10:06:22.630Z, sourceVersion sportsmonks:28647:1789725982630"
+    result: PASS
+    output: |
+      {"outcome": "updated", "endsOnPreserved": true, "startsOnPreserved": false}
+      row after replay -> 2026-09-24..2027-06-30 status=active is_current=true
+  - command: "OUT-OF-TREE stub harness: EXPLAIN (costs off) of the three floor subqueries with enable_seqscan = off"
+    result: PASS
+    output: "Bitmap Index Scan on fixtures_season_round_kickoff_idx; Bitmap Index Scan on team_memberships_season_idx; Index Scan using fantasy_seasons_football_key"
+
+not_executed:
+  - "`bun run backend:db:test` / `supabase test db --local supabase/tests/database` (pgTAP on the Supabase stack): no local Supabase stack and no docker daemon in this environment. The new file was only run on the stub harness above; the Verifier must run the real suite (CI or local stack). Expected values are derived by hand below."
+  - "Production rehearsal and the owner's one-row correction: forbidden for the Builder (no production access, no writes). Recipe for the Verifier below; brief `required_changes` carries the owner UPDATE."
+  - "Brief acceptance test on sportsmonks-catalog.test.ts (freshness.provisional): BG-0038 scope."
+
+hand_derived_expectations:
+  setup: >
+    Season 28647 inserted 2026-09-24..2026-12-31 (insert branch, unchanged). Attached data: fixture
+    2026-09-24, membership valid_to 2027-06-30, fantasy ends_at 2027-05-31. Floor =
+    greatest(2026-12-31, 2026-09-24, 2027-06-30, 2027-05-31) = 2027-06-30; first kickoff = 2026-09-24.
+  case_1_regression_replay: >
+    Payload 2026-09-24..2026-09-24. endsOn <= startsOn (true) -> preserved -> ends_on stays 2026-12-31.
+    startsOn 09-24 > first kickoff 09-24 is false -> accepted (same value). Result minus id =
+    {"outcome":"updated","endsOnPreserved":true,"startsOnPreserved":false}; row 2026-09-24..2026-12-31.
+  case_1b_floor_from_memberships: >
+    Payload endsOn 2027-03-31: not <= startsOn; 2027-03-31 < floor 2027-06-30 -> preserved -> ends_on
+    stays 2026-12-31 (rule: keep the existing value, not the floor). endsOnPreserved 'true'.
+  case_3_larger_accepted: >
+    Payload endsOn 2027-07-05 > floor 2027-06-30 -> accepted; flags false/false; ends_on = 2027-07-05.
+    Floor for the following cases becomes greatest(2027-07-05, ...) = 2027-07-05.
+  case_3b_start_after_first_fixture: >
+    Payload startsOn 2026-10-01, endsOn 2027-07-05: ends not preserved (07-05 = floor, not <); start
+    10-01 > first kickoff 09-24 -> preserved -> starts_on stays 2026-09-24. Flags endsOnPreserved false,
+    startsOnPreserved true.
+  case_3c_start_before_first_fixture: >
+    Payload startsOn 2026-09-20 <= 09-24 -> accepted; starts_on = 2026-09-20; startsOnPreserved 'false'.
+  case_2_equality_isolated_from_floor: >
+    Season 28648 inserted 2027-09-01..2027-09-01 (one-day season, allowed by ends_on >= starts_on);
+    fixture 2027-09-01T18:00Z. Payload 2027-09-05..2027-09-05: floor = greatest(2027-09-01, 2027-09-01)
+    = 2027-09-01 and 09-05 > floor, so only endsOn <= startsOn fires -> ends_on stays 2027-09-01; start
+    09-05 > first kickoff 09-01 -> starts_on stays 2027-09-01. Result flags true/true; row unchanged
+    [2027-09-01, 2027-09-01].
+  case_4_lock: >
+    4a: UPDATE sets bounds_locked_at '2026-09-18T12:00Z' + starts 09-24 + ends 2027-06-30: OLD lock is
+    null -> trigger no-op -> [2026-09-24, 2027-06-30]. 4b: payload startsOn 2026-09-01 / endsOn
+    2028-01-01 (RPC accepts both: 2028-01-01 > floor 2027-06-30, 09-01 <= first kickoff 09-24); the
+    UPDATE fires the trigger with NEW.lock = OLD.lock -> starts/ends restored; outcome 'updated'; row
+    still [2026-09-24, 2027-06-30]; bounds_locked_at unchanged. 4c: plain UPDATE ends_on 2027-07-31 ->
+    trigger restores -> 2027-06-30. 4d: UPDATE ends_on 2027-07-31 + bounds_locked_at '2026-09-18T13:00Z'
+    (distinct) -> passes -> 2027-07-31. 4e: UPDATE ends_on 2027-08-31 + bounds_locked_at null (distinct)
+    -> passes -> 2027-08-31.
+
+verifier_production_rehearsal_recipe: |
+  NOT RUN by the Builder. Read-write session on production is the Verifier's/owner's; everything below
+  is inside one transaction that ends in ROLLBACK. Run with the workflows on HOLD; the inline migration
+  takes an ACCESS EXCLUSIVE lock on app.seasons and replaces the RPC for the duration of the transaction,
+  so keep it short. The rehearsal is valid both before and after the owner correction: it asserts
+  "ends_on unchanged" against the value captured at the start, and endsOnPreserved = true (the payload
+  value 2026-09-24 is <= startsOn and below the membership floor 2027-06-30 either way).
+
+    begin;
+    -- 0. capture the current row
+    create temporary table bg0031_before on commit drop as
+      select id, starts_on, ends_on, status, is_current, updated_at
+        from app.seasons where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584';
+    -- 1. inline the guard migration (paste the full content of
+    --    supabase/migrations/20260918160000_season_bounds_guard.sql here, or \i it with psql)
+    -- 2. call the RPC exactly as the ingestion does, as service_role, inside a savepoint
+    savepoint bg0031_rpc;
+    select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+    set local role service_role;
+    select api.ingest_football_catalog_entity(
+      'sportsmonks', 'season', '28647',
+      jsonb_build_object(
+        'externalId', '28647', 'competitionExternalId', '860', 'label', '2026/2027',
+        'startsOn', '2026-09-24', 'endsOn', '2026-09-24', 'current', true,
+        'freshness', jsonb_build_object(
+          -- must be >= the mapping's last_seen_at (2026-09-18T10:06:43Z) or the RPC raises STALE_UPDATE
+          'updatedAt', to_char(clock_timestamp() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+          'sourceSequence', 0,
+          'sourceVersion', 'sportsmonks:28647:bg0031-rehearsal',
+          'provisional', false)))
+      as rpc_result;
+    -- expected: {"id":"d03223b0-8f4a-4309-93e1-2a708d7c3584","outcome":"updated","endsOnPreserved":true,"startsOnPreserved":false}
+    reset role;
+    -- 3. assert and abort
+    do $$
+    declare b record; a record;
+    begin
+      select * into b from bg0031_before;
+      select id, starts_on, ends_on, status, is_current, updated_at
+        into a from app.seasons where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584';
+      if a.ends_on <> b.ends_on or a.starts_on <> b.starts_on then
+        raise exception 'rehearsal FAILED: bounds moved % -> %', to_jsonb(b), to_jsonb(a);
+      end if;
+      if a.status <> 'active' or not a.is_current then
+        raise exception 'rehearsal FAILED: status/is_current changed: %', to_jsonb(a);
+      end if;
+      raise notice 'rehearsal ok: bounds unchanged %..%', a.starts_on, a.ends_on;
+      raise exception 'REHEARSAL_ROLLBACK';
+    end $$;
+    rollback;
+
+  Read-only checks that need no transaction (any time after the migration is promoted):
+    select pg_get_functiondef('api.ingest_football_catalog_entity(text,text,text,jsonb)'::regprocedure)
+      like '%endsOnPreserved%';                                   -- true
+    select tgname from pg_trigger where tgrelid = 'app.seasons'::regclass and not tgisinternal;
+      -- seasons_protect_locked_bounds, seasons_set_updated_at
+  Optional lock rehearsal (same pattern, rolled back): `update app.seasons set bounds_locked_at = now(),
+  bounds_locked_reason = 'rehearsal' where id = 'd03223b0-...'`, then the RPC call with endsOn
+  '2028-01-01' / startsOn '2026-09-01', then assert starts_on/ends_on equal the captured values.
+
+unresolved: []
+
+scope_deviations: []
+
+unexpected_observations:
+  - "Behavioural edge of rule (b) worth a Chief decision (not changed, by spec): for a one-day season with NO fixtures, a provider payload that moves the single day forward (e.g. stored 2027-09-01..2027-09-01, payload 2027-09-05..2027-09-05) now keeps ends_on 2027-09-01 but accepts starts_on 2027-09-05, which violates seasons_date_range_check and surfaces as 22023 INVALID_PROVIDER_PAYLOAD (reproduced on the stub harness). Before the guard the move was accepted. Production 2026/27 has a fixture on its start day, so it is not affected; a future provider-created season with no fixtures could be. Option if wanted: also preserve starts_on when the preserved ends_on would be < the provider start."
+  - "The RPC's endsOnPreserved/startsOnPreserved report the RPC's own decision, not the trigger's: with bounds_locked_at set, a provider update the monotone rule would accept returns endsOnPreserved=false while the row is in fact unchanged (test case 4b documents this). Making the RPC lock-aware (read bounds_locked_at in the same SELECT and force both flags true) is a two-line addition that the task's 'ONLY these additive changes' excluded; recorded for the Reviewer."
+  - "Realisation detail: the fixture date is computed as (kickoff_at at time zone 'UTC')::date rather than kickoff_at::date so the floor does not depend on the session TimeZone; the fantasy_seasons expression already used the UTC form in the task statement. Production runs in UTC, so the values coincide."
+  - "The migration uses `add column if not exists` and `drop trigger if exists` so a re-run of the file is idempotent; CREATE OR REPLACE FUNCTION is idempotent by nature."
+  - "origin/main moved from 6dd5e98 to 92857fa and then db76141 during the build (unrelated commits); the branch was rebased onto db76141 (see `base`). If the Chief prefers the original base, `git rebase --onto 6dd5e98 db76141` restores it without content change (the manifest edit would then conflict with BG-0037's fantasy_deadline_guard batch, which only exists on the newer main, so the rebase is also functionally required for the scope addition)."
+  - "Promoter inventory coupling (why the scope addition was necessary): test_batches_cover_the_exact_ordered_migration_chain compares supabase/migrations/*.sql on disk with BATCHES, so any migration merged without a manifest entry turns that test red on main. BG-0027's pending 20260918150000 migration will hit the same check and needs its own batch inserted BEFORE season_bounds_guard (with the season_bounds_guard prefix count moving 59 -> 60) when it lands."
+  - "Environment: to run the throwaway PostgreSQL cluster as the unprivileged `postgres` OS user, the execute bit for 'others' was added on the ancestor directories of the session scratchpad (traverse only, no read); the cluster was stopped and its data stays in the scratchpad. Nothing outside the scratchpad and the repo was written."
+  - "Not repaired (forbidden path / BG-0038): supabase/functions/_shared/sportsmonks-catalog.ts still falls back to observedAt for season freshness, so every run still takes the UPDATE branch; with this guard that update is now harmless for bounds but still rewrites label/competition_id/is_current and bumps updated_at (and therefore the fantasy catalog source digest) on every run."
+
+status: DONE

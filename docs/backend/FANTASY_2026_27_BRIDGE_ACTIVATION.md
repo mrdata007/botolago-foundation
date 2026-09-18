@@ -25,6 +25,33 @@ provider still lacks squads for the two promoted clubs and the guard refused
 Verified state on 2026-09-18: 16 clubs with memberships, 539 memberships, 539
 fantasy players, 1 gameweek, 8 fixtures, `api.fantasy_hub` → `registration_open`.
 
+## Regression 2026-09-18
+
+Step 1 did not hold. GitHub Actions run `35332956079`
+(`fantasy-season-orchestrator.yml`, manual dispatch, 2026-09-18T10:05:59Z) ran
+`scripts/backend/current-season-recovery.ts`; its `seasons` catalog job mapped
+the provider `ending_at` (`2026-09-24`, the only published fixture date) to
+`endsOn`, and `api.ingest_football_catalog_entity` overwrote `app.seasons.ends_on`
+back to `2026-09-24` at 2026-09-18T10:06:23Z (task BG-0031). The 539 memberships
+and the staged fantasy season still end on `2027-06-30`; from 2026-09-25 the
+activation preview would raise `season_ended` and
+`service_ingest_current_football_squads` would refuse the season.
+
+- **Correction:** pending owner approval. Rehearsal (rolled back) first, then the
+  one-row `update app.seasons set ends_on = date '2027-06-30', bounds_locked_at = now(), bounds_locked_reason = 'BG-0031 owner correction 2027-06-30' where id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584' and ends_on = date '2026-09-24'`
+  (recipe in `docs/engineering/tasks/BG-0031/engineering-brief.yaml`).
+- **Guard:** migration `20260918160000_season_bounds_guard.sql` makes the season
+  ingestion monotone (a provider `endsOn` at or below `startsOn`, or below the
+  last fixture / membership / fantasy-season end, keeps the stored `ends_on`; a
+  provider start after the first fixture keeps `starts_on`; the RPC reports
+  `endsOnPreserved` / `startsOnPreserved`) and adds
+  `app.seasons.bounds_locked_at` / `bounds_locked_reason`: while set, only an
+  `UPDATE` that changes `bounds_locked_at` (a new timestamp, or `null` to unlock)
+  can move `starts_on` / `ends_on`.
+- **Until the guard is live in production**, every dispatch of
+  `fantasy-season-orchestrator.yml` or `football-current-season-recovery.yml`
+  re-applies the provider value and reverts the correction again.
+
 ## Known limitations (to be replaced, not hidden)
 
 1. **Calendar depth.** The provider has published only round 1 (8 fixtures,

@@ -5400,6 +5400,8 @@ export type Database = {
       }
       seasons: {
         Row: {
+          bounds_locked_at: string | null
+          bounds_locked_reason: string | null
           competition_id: string
           created_at: string
           ends_on: string
@@ -5411,6 +5413,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bounds_locked_at?: string | null
+          bounds_locked_reason?: string | null
           competition_id: string
           created_at?: string
           ends_on: string
@@ -5422,6 +5426,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bounds_locked_at?: string | null
+          bounds_locked_reason?: string | null
           competition_id?: string
           created_at?: string
           ends_on?: string
