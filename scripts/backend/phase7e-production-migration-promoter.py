@@ -118,6 +118,13 @@ BATCHES: dict[str, tuple[str, ...]] = {
     "fantasy_calendar_sync": (
         "20260918120000_fantasy_calendar_sync.sql",
     ),
+    # BG-0003 (verified and reviewed 2026-09-18): the read-only fantasy
+    # deadline-watch RPC and the guarded replacement of the calendar sync that
+    # never derives a gameweek window or deadline from a placeholder kickoff.
+    "fantasy_deadline_guard": (
+        "20260918130000_fantasy_deadline_watch.sql",
+        "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -136,6 +143,7 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "release_activation": frozenset({"football-ingest", "news-ingest"}),
     "launch_recovery_2026_09_14": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_calendar_sync": frozenset({"football-ingest", "news-ingest"}),
+    "fantasy_deadline_guard": frozenset({"football-ingest", "news-ingest"}),
 }
 
 # These migrations were promoted through separately reviewed provider canaries

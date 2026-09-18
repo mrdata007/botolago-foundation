@@ -1,0 +1,272 @@
+---
+task_id: BG-0027
+attempt: 2
+verified_commit: 4388116d97e5f6219edfd985328042976d0e5977 # branch head; work commit b1c15d9, merge-base with origin/main 2723fcd (origin/main 0eaf73f differs only by docs/engineering/LAUNCH_LEDGER.yaml)
+worktree: /home/user/bg0027-verify (detached at origin/agent/BG-0027-ratings-fail-closed; `git status --porcelain` empty after all checks; no source edits)
+criteria:
+  - criterion: >-
+      AC-a: a ratings run with records_fetched = 0 (or coverage below a
+      minimum share) ends failed with an explicit error code and inserts zero
+      rows.
+    result: VERIFIED
+    evidence: >-
+      Code (git diff 2723fcd..HEAD -- supabase/functions/_shared/sportsmonks-player-ratings.ts):
+      after the page loop, `if (counts.fetched === 0) throw new
+      RatingsRuntimeError(PLAYER_STATISTICS_UNAVAILABLE)` and `if
+      (covered.size / candidates.length < MIN_STATISTICS_COVERAGE) throw new
+      RatingsRuntimeError(PLAYER_STATISTICS_COVERAGE_INSUFFICIENT)` both run
+      before calculatePreseasonRatings and before any
+      ingest_player_season_ratings RPC; the catch derives `code` from the
+      RatingsRuntimeError and passes it to complete(), which forwards it as
+      p_error_code with p_status "failed" (counts.inserted never incremented).
+      Behaviour: `bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts`
+      -> 10 pass / 0 fail / 38 expect() (bun 1.3.11): the zero-statistics test
+      asserts 503 {error: player_statistics_unavailable}, no ingest call,
+      complete_football_ingestion {p_status: failed, p_error_code:
+      player_statistics_unavailable, p_records_fetched: 0, p_records_inserted:
+      0}; the below-floor test (1 of 4 covered) asserts 503
+      player_statistics_coverage_insufficient, no ingest call, p_records_inserted 0.
+      Independent scratchpad-only test (not added to repo)
+      <scratchpad>/bg0027-verifier-def2.test.ts -> 4 pass / 0 fail / 13 expect():
+      4 of 10 real records + 6 has_values=false -> 503 and no ingest call;
+      exactly 5 of 10 covered -> 200 (floor is inclusive at 0.5).
+  - criterion: >-
+      AC-b: unit test in supabase/functions/_shared/sportsmonks-player-ratings.test.ts.
+    result: VERIFIED
+    evidence: >-
+      `git diff 449273c..HEAD -- supabase/functions/_shared/sportsmonks-player-ratings.test.ts`
+      is +30/-0: exactly one new `it("fails the run and persists nothing when
+      every record is flagged has_values=false")` inside the existing
+      "statistics coverage guard" describe block; no existing line removed or
+      modified, so the 9 prior tests are textually unchanged. `git diff
+      2723fcd..HEAD` on the test file is additions only (3 import lines + the
+      new describe block). Run: 10 pass / 0 fail / 38 expect() calls. The new
+      test asserts 503 {error: player_statistics_coverage_insufficient}, no
+      ingest_player_season_ratings call, and complete_football_ingestion
+      {p_status: failed, p_error_code: player_statistics_coverage_insufficient,
+      p_records_fetched: 4, p_records_inserted: 0, p_records_rejected: 0},
+      which is the exact correction demanded by review defect 2.
+  - criterion: >-
+      AC-c: a pre-stage non-degeneracy guard (additive migration) blocks or
+      loudly warns when every candidate carries rating 6.0 / confidence 0.
+    result: VERIFIED
+    evidence: >-
+      Migration supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql
+      (new file, 300 lines) adds app_private.fantasy_rating_inputs_degenerate(uuid)
+      over app_private.fantasy_catalog_candidates and re-creates the two api
+      functions with only additive lines (see V4 below). Production rehearsal
+      #1 (single transaction, migration inlined, ended by `raise exception
+      'REHEARSAL_BG0027 ...'` + rollback; captured message):
+      inspector('d03223b0-8f4a-4309-93e1-2a708d7c3584') = {"candidates": 539,
+      "degenerate": true, "maxConfidence": 0.000, "distinctRatings": 1};
+      api.preview_fantasy_catalog_activation(season,'botolago-fantasy-v1.1',16,1,8,240,800)
+      -> ready true, blockers [], sourceDigest matches ^[0-9a-f]{64}$, counts
+      {players 539, ratedPlayers 497, fallbackPlayers 42}, and the new field
+      ratingDegeneracy = {"candidates": 539, "degenerate": true,
+      "maxConfidence": 0.000, "distinctRatings": 1} (loud warning delivered).
+      Stage inside a plpgsql sub-block (savepoint) with gen_random_uuid()
+      idempotency key raised PT409 "fantasy_catalog_already_staged" FIRST
+      (production holds fantasy_seasons=1, one open activation run
+      c0de2026-0917-4a11-8f00-000000000001 for this season); row counts before
+      == after ({runs 1, players 539, seasons 1, evidence 539}).
+      Ordering assessment: the already-staged precondition and the
+      idempotent-replay return legitimately precede the guard (neither path
+      inserts anything), so AC-c is unaffected; to prove the guard itself on
+      the real inputs, rehearsal #2 tried the option-A path
+      api.service_rollback_fantasy_catalog(run id, run digest) inside a
+      subtransaction -> PT409 "fantasy_catalog_in_use" (3 app.fantasy_teams
+      exist), so a production re-stage is not reachable today by the
+      sanctioned path. Rehearsal #3 (still rolled back, nested subtransaction
+      unwound by a forced error): the two preconditions were cleared with two
+      row UPDATEs only (run.rolled_back_at set; the existing fantasy season
+      re-pointed to season 92e5dbe8-44a9-4b83-bdc8-78f03dfa4584; no deletes),
+      preview recomputed (ready true, blockers []), then
+      api.service_stage_fantasy_catalog(season,'botolago-fantasy-v1.1',<preview
+      digest>, gen_random_uuid(),16,1,8,240,800) raised sqlstate PT409, message
+      "fantasy_rating_inputs_degenerate", detail {"candidates": 539,
+      "degenerate": true, "maxConfidence": 0.000, "distinctRatings": 1}; counts
+      inside the subtransaction after the attempt: seasons_for_season 0,
+      players_for_season 0, evidence_for_season 0, open_runs_for_season 0,
+      total_players 539, total_evidence 539 (zero inserts). Outer counts after
+      unwind identical to before. Post-rollback proof (separate query,
+      11:48:36 UTC): pg_proc count for
+      app_private.fantasy_rating_inputs_degenerate = 0;
+      position('fantasy_rating_inputs_degenerate' in
+      pg_get_functiondef(api.service_stage_fantasy_catalog)) = 0;
+      position('ratingDegeneracy' in pg_get_functiondef(api.preview_fantasy_catalog_activation)) = 0;
+      fantasy_seasons_for_2026_27 = 1, run c0de2026-... still open,
+      fantasy_players 539, evidence 539, fantasy_teams 3 - production unchanged.
+  - criterion: >-
+      DEF-1 (attempt-1 review): AC-c migration missing.
+    result: VERIFIED
+    evidence: >-
+      `git diff --stat origin/main..HEAD -- supabase/migrations` -> only
+      20260918150000_fantasy_rating_degeneracy_guard.sql (+300); it sorts last
+      in `ls supabase/migrations`. `bun run backend:migrations:check` ->
+      "Validated 60 migration(s)". ImplementationReport records it under
+      database_changes with additive: true. New pgTAP file
+      supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql added
+      (see NOT_TESTABLE entry). Closed.
+  - criterion: >-
+      DEF-2 (attempt-1 review): has_values=false records counted as covered,
+      so a succeeded run wrote only 6.0 / 0 rows.
+    result: VERIFIED
+    evidence: >-
+      Source: normalizedStatistics now returns {statistics, hasValues} with
+      hasValues=false exactly when raw.has_values === false (line 402) and the
+      loop does `if (normalized.hasValues) covered.add(...)` (line 768).
+      Independent reproduction of the reviewer's original scenario in
+      <scratchpad>/bg0027-verifier-def2.test.ts (10 candidates, 10
+      has_values=false records with details []): HTTP 503 {error:
+      player_statistics_coverage_insufficient}, zero
+      ingest_player_season_ratings calls, last RPC complete_football_ingestion
+      with {p_status: failed, p_error_code:
+      player_statistics_coverage_insufficient, p_records_fetched: 10,
+      p_records_inserted: 0, p_records_rejected: 0}. Existing behaviour
+      preserved: 10 has_values=true records with 0 minutes / 0 appearances ->
+      HTTP 200, counters {fetched 10, inserted 10}, 10 rows all rating 6 /
+      confidence 0, completion succeeded with p_error_code null. Rating
+      formula untouched: `git diff 2723fcd..HEAD` on the source contains no
+      +/- line matching confidence=/unshrunk/Math.min(10/minutes / 900/4 + 6;
+      lines 557-559 at HEAD are the unchanged formula. Closed.
+  - criterion: >-
+      V1: diff scope limited to allowed paths.
+    result: VERIFIED
+    evidence: >-
+      `git diff --name-status $(git merge-base HEAD origin/main)..HEAD` ->
+      M docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md,
+      A docs/engineering/tasks/BG-0027/implementation-report.yaml,
+      M supabase/functions/_shared/sportsmonks-player-ratings.test.ts,
+      M supabase/functions/_shared/sportsmonks-player-ratings.ts,
+      A supabase/migrations/20260918150000_fantasy_rating_degeneracy_guard.sql,
+      A supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql.
+      No src/**, no existing migration, no test deletions (test diffs are
+      additions only). Runbook diff adds two paragraphs (+25 lines) only.
+  - criterion: >-
+      V3: test/typecheck/lint gates.
+    result: VERIFIED
+    evidence: >-
+      `bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts`
+      -> 10 pass, 0 fail, 38 expect(); `bun run test` -> 698 pass, 0 fail,
+      5921 expect() across 117 files; `bun run typecheck` (tsc --noEmit) ->
+      no output, exit 0; `bun run backend:migrations:check` -> Validated 60
+      migration(s); `bunx eslint <both TS files>` -> no findings; `bunx
+      prettier --check <both TS files, runbook, implementation-report>` ->
+      "All matched files use Prettier code style!".
+  - criterion: >-
+      V4: migration is additive - copied bodies differ from
+      20260803210943_fantasy_catalog_activation.sql only by the guard lines;
+      grants/revokes identical; helper revoked from all roles.
+    result: VERIFIED
+    evidence: >-
+      grep of supabase/migrations shows api.preview_fantasy_catalog_activation
+      and api.service_stage_fantasy_catalog defined only in 20260803210943
+      (lines 496, 548) and the new file (47, 76); no other migration redefines
+      or drops them. `diff <(sed -n 496,521p old) <(sed -n 47,74p new)` -> only
+      `23a24,25` adding `) || jsonb_build_object('ratingDegeneracy',
+      app_private.fantasy_rating_inputs_degenerate(p_football_season_id)`.
+      `diff <(sed -n 548,746p old) <(sed -n 76,283p new)` -> only `26a27
+      declare rating_degeneracy jsonb;` and `80a82,89` (the guard block after
+      the stale_update check, before the first insert). Footer: the four
+      revoke/grant statements for the two functions are byte-identical to
+      lines 973-978 / 984-989 of the original (the only diff lines are the
+      original's interleaved open_registration/rollback statements, which are
+      out of scope). New helper: `revoke all ... from public, anon,
+      authenticated, service_role` with no grant; production rehearsal
+      confirmed has_function_privilege = false for public, anon, authenticated
+      and service_role on the helper, true for service_role on both api
+      functions, false for authenticated on stage and anon on preview.
+  - criterion: >-
+      V5(d): authenticated claims cannot execute the helper / api entry.
+    result: VERIFIED
+    evidence: >-
+      In rehearsal #1 with request.jwt.claims = {"role":"authenticated",
+      "sub":...}, api.preview_fantasy_catalog_activation raised sqlstate PT403
+      message "forbidden" (is_service_request gate, so ratingDegeneracy is
+      never computed for non-service callers); execute privilege on
+      app_private.fantasy_rating_inputs_degenerate(uuid) is false for
+      authenticated, anon, public and service_role (has_function_privilege).
+      `set role` was not used, per rules.
+  - criterion: >-
+      V6: pgTAP database test supabase/tests/database/fantasy_rating_degeneracy_guard.test.sql.
+    result: NOT_TESTABLE
+    evidence: >-
+      No local Supabase stack / pgTAP in this environment (no Docker socket,
+      no supabase CLI); backend:db:test and backend:db:lint not executed by
+      Builder or Verifier. Static checks: every column named in its `insert
+      into app.player_season_ratings` exists in
+      20260801010100_player_season_ratings.sql (28/28 ok); the fixture insert
+      sequence (countries, competitions, seasons, teams, players,
+      team_memberships, rounds, fixtures) mirrors
+      fantasy_catalog_activation.test.sql; it uses only
+      extensions.no_plan/ok/is/throws_ok/finish (throws_ok already used by 35
+      existing test files); 'fantasySeasonId' and 'ratedPlayers' keys exist in
+      fantasy_catalog_stage_dto / fantasy_catalog_activation_preview
+      (20260803210943:535, :479); it references only pre-existing objects plus
+      the new helper and the two re-created api functions. Scenarios cover:
+      privileges (6 asserts), empty season not degenerate, degenerate-blocked
+      with no rating rows (preview ready + blockers [] + ratingDegeneracy true,
+      stage throws PT409 fantasy_rating_inputs_degenerate, zero
+      seasons/competitions/players/evidence/runs), degenerate-blocked with
+      persisted 6.0/0 placeholder rows, and healthy-unchanged (one 8.8/1
+      rating -> degenerate false, stage succeeds with 240 players / 240
+      evidence rows / 12.50 price / 5 distinct prices / planned). CI
+      (.github/workflows/backend-quality.yml lines 71-72) runs both suites on
+      the PR; that run is the required evidence before merge.
+regressions: []
+untested:
+  - >-
+    pgTAP suite execution (backend:db:test) and `supabase db lint`
+    (backend:db:lint) for the new migration and test file - environment has
+    no local Postgres/Supabase stack. Must be green in CI before merge.
+  - >-
+    Migration applied for real (apply_migration / supabase db push) - only the
+    rolled-back production rehearsal was executed; production remains on the
+    pre-migration definitions (proven post-rollback).
+security_observations:
+  - >-
+    No remaining fail-open path found for the two attempt-1 defects:
+    records_fetched = 0, coverage < 0.5, and all-has_values=false responses
+    each end failed with an explicit code and zero inserts; the stage guard
+    raises before the first insert on the exact all-neutral signature.
+  - >-
+    Guard ordering (by design, recorded for the Chief): in
+    api.service_stage_fantasy_catalog the idempotent-replay return,
+    fantasy_catalog_already_staged, fantasy_catalog_not_ready and stale_update
+    all precede fantasy_rating_inputs_degenerate. None of those paths insert
+    rows, so this does not weaken AC-c, but an operator will only see the
+    degeneracy error after the earlier preconditions clear. In production the
+    option-A re-stage is currently blocked one step earlier by
+    api.service_rollback_fantasy_catalog -> PT409 fantasy_catalog_in_use (3
+    fantasy_teams exist); the existing BG-0011 catalog of 539 all-neutral
+    prices therefore stays live until that is resolved - outside this task.
+  - >-
+    Residual (not a defect against the criteria as written): the database
+    guard is deliberately narrow (count(distinct rating) = 1 AND
+    max(confidence) = 0). A candidate set of 538 placeholders plus one real
+    rating with confidence > 0 passes it, and the worker's 0.5 coverage floor
+    accepts a run in which half the squad is persisted as 6.0 / 0. The preview
+    now exposes distinctRatings / maxConfidence so an operator can judge thin
+    coverage manually; consider a follow-up threshold (e.g. share of
+    confidence = 0 inputs) if the product wants a stricter gate.
+  - >-
+    app_private.fantasy_catalog_activation_preview still reports persisted
+    6.0 / 0 placeholder rows as ratedPlayers (production: 497 rated / 42
+    fallback while every input is degenerate) - pre-existing and unchanged;
+    the new ratingDegeneracy field is the corrective signal.
+  - >-
+    Pre-existing and unchanged: RatingsRuntimeError codes raised before
+    begin_football_ingestion (invalid_runtime_configuration,
+    request_too_large, invalid_request) leave no run row; p_error_code now
+    carries the specific RatingsRuntimeError code instead of the generic
+    player_ratings_failed for every failure (attempt-1 behaviour change,
+    already noted by the Reviewer).
+  - >-
+    Production rehearsal hygiene: three transactions executed against
+    tkewgajrljbwgwedqsxn, each terminated by a forced P0001 exception followed
+    by rollback; no apply_migration, no commit, no set role, no credentials
+    printed. Rehearsal #3 performed two row UPDATEs inside a nested
+    subtransaction that was unwound by a forced error before the outer
+    rollback; post-rollback query confirms the run is still open, the fantasy
+    season still maps to d03223b0-..., and all counts are unchanged.
+status: PASS

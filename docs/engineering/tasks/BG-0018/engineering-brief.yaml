@@ -1,0 +1,494 @@
+task_id: BG-0018
+role: Researcher
+attempt: 1
+researched_at: "2026-09-18"
+workspace: /home/user/research-main @ origin/main 1603c1c (read-only)
+objective: >
+  Specify the smallest additive data operation that gives the 16 Botola Pro 2026/27 clubs in
+  production a short code (app.teams.code) and primary/secondary colours (app.teams.primary_color,
+  app.teams.secondary_color), using only official club/federation identities (no invention), and
+  state exactly how the existing UI renders once those columns are populated. Scope is limited to
+  codes and colours; player photos, homonyms, rounds and kickoffs are out of scope (tracked
+  elsewhere).
+
+# ---------------------------------------------------------------------------
+# 1. FINDINGS
+# ---------------------------------------------------------------------------
+findings:
+  # ---- schema -------------------------------------------------------------
+  - classification: VERIFIED
+    statement: >
+      The short code lives in app.teams.code (text, nullable). There is no short_code column.
+      Constraint teams_code_check: code is null or code ~ '^[A-Z0-9]{2,8}$' (upper-case
+      alphanumerics, 2 to 8 characters). Colours live in app.teams.primary_color and
+      app.teams.secondary_color (text, nullable) with constraints teams_primary_color_check /
+      teams_secondary_color_check: null or ~ '^#[0-9A-Fa-f]{6}$' (six-digit hex with '#').
+      short_name is a separate NOT NULL text (1..40) column.
+    evidence: supabase/migrations/20260720095330_football_catalog.sql:213-246
+  - classification: VERIFIED
+    statement: >
+      app.teams has RLS enabled AND forced (alter table app.teams enable/force row level security)
+      and a before-update trigger teams_set_updated_at.
+    evidence: supabase/migrations/20260720095330_football_catalog.sql:379-380, 404
+  - classification: VERIFIED
+    statement: >
+      A database test asserts the colour format constraint ('red' is rejected with SQLSTATE 23514).
+    evidence: supabase/tests/database/football_domain.test.sql:125-131
+  # ---- how the columns are written today -----------------------------------
+  - classification: VERIFIED
+    statement: >
+      The only writer of app.teams.code is provider ingestion:
+      api.ingest_football_catalog_entity (service_role only). For entity 'team' it sets
+      v_code := nullif(upper(p_entity->>'code'),'') and on UPDATE rewrites
+      name, short_name, code, country_id, active unconditionally (code = v_code). It never
+      writes primary_color or secondary_color.
+    evidence: supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302
+  - classification: VERIFIED
+    statement: >
+      The update branch is skipped only when the provider freshness timestamp equals the mapping's
+      last_seen_at AND source_version is unchanged; a newer provider timestamp always re-runs the
+      UPDATE (an older one raises STALE_UPDATE).
+    evidence: supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:148-161
+  - classification: VERIFIED
+    statement: >
+      The provider payload's code comes from SportsMonks short_code normalised by teamCode()
+      (upper-case, strip non [A-Z0-9], accept only ^[A-Z0-9]{2,8}$ else null). shortName is
+      short_code when present, otherwise name.slice(0,40). Freshness updatedAt is
+      last_processed_at ?? updated_at ?? last_played_at ?? observedAt.
+    evidence: supabase/functions/_shared/sportsmonks-catalog.ts:330-342, 366-370, 551-559
+  - classification: VERIFIED
+    statement: >
+      Consequence visible in production evidence: Wydad's short_name is the provider code "WCA"
+      while the other 15 clubs' short_name equals their full name (e.g. "Difaâ El Jadida",
+      "UTS Rabat"). This is why the UI "falls back to full names".
+    evidence: >
+      docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json:66-160 (fixtures[].homeTeam /
+      awayTeam are app.teams.short_name per docs/engineering/tasks/BG-0003/engineering-brief.yaml:93);
+      docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml:24-26
+  - classification: VERIFIED
+    statement: >
+      Crests were NOT seeded by a migration. They were fetched from the provider by the football
+      ingestion edge function and linked through api.attach_football_team_crest (service_role
+      only; updates crest_asset_id only) under a reviewed production canary that requires
+      16 fetched / 16 validated / 0 rejected.
+    evidence: >
+      supabase/migrations/20260801010200_sportsmonks_team_crests.sql:17-147;
+      supabase/functions/_shared/sportsmonks-catalog.ts:401-445;
+      scripts/backend/gate4-canary-evidence.ts:148-152
+  - classification: VERIFIED
+    statement: >
+      No admin RPC touches app.teams (grep of the five *admin* migrations for "team": no match),
+      and no migration anywhere writes primary_color / secondary_color (only the CREATE TABLE and
+      the read projections reference them). There is therefore no service RPC or admin operation
+      that can set codes or colours today; the only path is direct SQL in the trusted database
+      context.
+    evidence: >
+      grep 'primary_color|secondary_color' supabase/migrations → 20260720095330 (DDL),
+      20260720095354:45-46 and 20260720110107:489-490 (read-only JSON projections);
+      grep -i team supabase/migrations/*admin* → no matches
+  - classification: VERIFIED
+    statement: >
+      Repository precedent for a data-only production operation is a guarded SQL runbook under
+      scripts/backend/ (begin; set_config('request.jwt.claims','{"role":"service_role"}',true);
+      DO block with raise-exception guards; review SELECT; '-- commit;'), rehearsed inside a
+      rolled-back transaction on the production project and documented with a JSON rehearsal
+      artefact in the task folder. Migrations are reserved for schema/functions and must be added
+      to the hard-coded promoter batch manifest to reach production.
+    evidence: >
+      scripts/backend/fantasy-realign-gameweek-calendar.sql:1-83;
+      docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json:5-25;
+      docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md:77-80;
+      scripts/backend/phase7e-production-migration-promoter.py:60-130 (BATCHES manifest);
+      scripts/backend/validate-migrations.mjs
+  - classification: VERIFIED
+    statement: >
+      Team re-ingestion in production is operator-triggered only (workflow_dispatch), through
+      football-current-season-recovery.yml → scripts/backend/current-season-recovery.ts, which
+      calls handleSportsMonksCatalogRequest (job "catalog") and therefore
+      api.ingest_football_catalog_entity for the 16 teams.
+    evidence: >
+      .github/workflows/football-current-season-recovery.yml:3-9;
+      scripts/backend/current-season-recovery.ts:578-636
+  # ---- API projection ------------------------------------------------------
+  - classification: VERIFIED
+    statement: >
+      app_private.football_team_json emits 'code', 'shortName', 'primaryColor', 'secondaryColor'
+      straight from app.teams; api.football_team_catalog (anon/authenticated) returns that JSON
+      for all active teams. The news team JSON emits primaryColor/secondaryColor too. No code
+      change is needed for the API to expose populated values.
+    evidence: >
+      supabase/migrations/20260720095354_football_api_security.sql:19-53;
+      supabase/migrations/20260724143000_phase65_football_team_catalog.sql:4-46;
+      supabase/migrations/20260720110107_news_api_security.sql:489-490
+  # ---- UI fallback ---------------------------------------------------------
+  - classification: VERIFIED
+    statement: >
+      Client fallback is in presentFootballClub:
+      crestPlaceholder = team.code ?? team.shortName.slice(0,3).toUpperCase();
+      primaryColor = team.primaryColor ?? "#0a2540"; secondaryColor = team.secondaryColor ?? undefined.
+      The news presenter does the same. A unit test pins crestPlaceholder === team.code.
+    evidence: >
+      src/services/football.ts:61-76; src/services/news.ts:103-105;
+      src/services/football.test.ts:59-72
+  - classification: VERIFIED
+    statement: >
+      crestPlaceholder is what the FDR and fixture surfaces render as the team label:
+      fantasy.fixtures.tsx codeOf() → cell text "{code} (D|E)"; useNextFixtures.ts codeOf();
+      PlayerShirt.tsx opponent chip; SquadListView.tsx; fantasy.players.tsx. The FDR row label
+      (sticky first column) renders tr(club.shortName), not the code. ClubCrest renders the
+      placeholder text over a gradient built from club.primaryColor, with the crest image
+      overlaid (bg-white/95, object-contain).
+    evidence: >
+      src/routes/fantasy.fixtures.tsx:91,176,197; src/components/fpl/useNextFixtures.ts:25;
+      src/components/fantasy/PlayerShirt.tsx:45; src/components/fantasy/SquadListView.tsx:125;
+      src/routes/fantasy.players.tsx:252; src/components/common/ClubCrest.tsx:16-37
+  - classification: INFERRED
+    statement: >
+      Today's production labels for the 15 code-less clubs are therefore the first three
+      characters of the full name upper-cased: AMA, COD, "CR " (trailing space), DIF, FAR, FUS,
+      HAS, ITT, KAW, MAG, MOG, RAJ, RSB, UTS, WID — and WCA for Wydad. (Names from the extractor;
+      short_name = name per the ingestion rule above.)
+    evidence: reasoning over src/services/football.ts:62 and extractor per_club_counts keys
+  - classification: VERIFIED
+    statement: >
+      Jersey colours do NOT come from app.teams in production. getKitForClub uses
+      OVERRIDES[club.id] (keys war/rca/asfar/… while production club.id is the app.teams uuid,
+      so never matches) and otherwise BOTOLA_KITS, a hard-coded name-fragment palette whose
+      fragments (wydad, raja, far rabat, fus, berkane, maghreb, hassania, tanger, difa, kawkab,
+      codm, uts, zemamra, tétouan, tiznit, témara) match all 16 current club names; only when no
+      fragment matches does it read club.primaryColor / secondaryColor.
+    evidence: 'src/lib/kits.ts:17-26, 70-146; src/services/football.ts:64 (id: team.id)'
+  - classification: INFERRED
+    statement: >
+      Hence, once colours land: ClubCrest's gradient/placeholder (visible while the crest image is
+      loading or failed) and the news club colour use the real primary colour; jerseys, FDR cells
+      and everything driven by kits.ts are unchanged. Populating the code changes every
+      crestPlaceholder-driven label immediately. No UI change is required for either, and none
+      is in scope. Adding a code cannot re-route the fragment matcher (no official code equals a
+      foreign fragment; e.g. "WAC" still matches "wydad" first).
+    evidence: reasoning over src/lib/kits.ts:131-146 and the code table below
+  - classification: VERIFIED
+    statement: >
+      The client Club type documents crestPlaceholder as a "2-3 letter abbreviation"; the smallest
+      crest variant renders it at text-[10px] inside a 28 px box and the FDR cell at 13 px bold.
+      Codes longer than 3–4 characters were not designed for.
+    evidence: src/types/domain.ts:16; src/components/common/ClubCrest.tsx:15; src/routes/fantasy.fixtures.tsx:193
+  # ---- official identities: roster -----------------------------------------
+  - classification: VERIFIED
+    statement: >
+      The 16 active production clubs (app.teams.name) are: Amal Tiznit, CODM Meknès,
+      CR Khemis Zemamra, Difaâ El Jadida, FAR Rabat, FUS Rabat, Hassania Agadir, Ittihad Tanger,
+      Kawkab Marrakech, Maghreb Fès, Moghreb Tétouan, Raja Casablanca, RSB Berkane, UTS Rabat,
+      Widad Témara, Wydad Casablanca.
+    evidence: docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml:38-56
+  - classification: INFERRED
+    statement: >
+      That roster matches the 16 participants of Championnat du Maroc 2026-2027 (secondary
+      pointer only): Maghreb AS, RS Berkane, Raja CA, AS FAR, Wydad AC, DH Jadida, IR Tanger,
+      Fath US, CO Meknès, KAC Marrakech, RCA Zemamra, HUS Agadir, US Touarga, MA Tétouan (P),
+      WS Témara (P), US Amal Tiznit (P).
+    evidence: https://fr.wikipedia.org/wiki/Championnat_du_Maroc_de_football_2026-2027 (Wikipedia, not official)
+  - classification: UNKNOWN
+    statement: >
+      Whether the FRMF or LNFP publish a canonical abbreviation list. Both official sites are
+      behind Cloudflare bot protection from this environment (HTTP 403 direct and via reader
+      proxy), so no federation-level code could be cited.
+    evidence: https://frmf.ma/fr/botola-pro/d1/classement (403); https://www.lnfp.ma/ (403)
+
+# ---------------------------------------------------------------------------
+# 1b. PER-CLUB IDENTITY TABLE (codes and colours)
+# ---------------------------------------------------------------------------
+# code_official = the abbreviation the club uses for itself on its own official site/profile.
+# code_3letter  = an official 3-letter form ONLY if the club itself uses one; never a truncation.
+# colours       = colour NAMES from an official source; hex values are never given by any official
+#                 source found (see hex_policy). Wikipedia rows are INFERRED pointers only.
+club_identity:
+  - team: Wydad Casablanca
+    production_code_today: WCA (provider value; VERIFIED extractor:24)
+    code_official: { value: WAC, classification: INFERRED, evidence: "official site unreachable: https://wydadac.ma (404), http://www.wac.ma/site/fr (no route); pointer https://fr.wikipedia.org/wiki/Wydad_Athletic_Club_(football) infobox 'WAC'; https://wacofficiel.ma/wac/ is a self-declared independent fan site (not citable)" }
+    code_3letter: WAC (INFERRED)
+    colours_official: { classification: UNKNOWN, evidence: "no reachable official page states colours" }
+    colours_pointer: { value: "Rouge et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Wydad_Athletic_Club_(football) infobox" }
+  - team: Raja Casablanca
+    code_official: { value: RCA, classification: VERIFIED, evidence: "club biolink https://www.rajaclubathletic.ma/ lists the official handles @rcaofficiel (Instagram/X/Threads/TikTok) and FacebookRajaClubAthleticOfficiel; site rajacasablanca.com unreachable (DNS)" }
+    code_3letter: RCA
+    colours_official: { classification: UNKNOWN, evidence: "biolink carries no colour statement; rajacasablanca.com unreachable" }
+    colours_pointer: { value: "Vert et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Raja_Club_Athletic infobox" }
+  - team: FAR Rabat
+    code_official: { value: ASFAR, classification: VERIFIED, evidence: "https://as-far.ma/fr/club/2-histoire (official site) uses 'A.S.F.A.R' / 'ASFAR'" }
+    code_3letter: { value: FAR, classification: INFERRED, evidence: "no official 3-letter self-designation found; 'FAR' is the acronym inside the name and the production name 'FAR Rabat'" }
+    colours_official: { value: "Rouge, Noir, Vert", classification: VERIFIED, evidence: "https://as-far.ma/fr/club/2-histoire: 'Couleur du maillot : Rouge, Noir, Vert'" }
+    colours_note: "Which of the three is primary is UNKNOWN from the official page; https://en.wikipedia.org/wiki/AS_FAR (INFERRED) describes a black home shirt. Dominant CSS colour of as-far.ma is #ad0909 (INFERRED, site theme, not a declared kit colour)."
+  - team: FUS Rabat
+    code_official: { value: FUS, classification: VERIFIED, evidence: "https://fus.ma footer 'الموقع الرسمي لنادي اتحاد الفتح الرياضي' (official site, maintenance mode); logo asset 'Logo_FUS_Rabat.png'; official X handle @FUS_OFFICIEL (search result https://x.com/fus_officiel)" }
+    code_3letter: FUS
+    colours_official: { classification: UNKNOWN, evidence: "fus.ma is in maintenance mode, no colour statement" }
+    colours_pointer: { value: "Blanc, rouge et noir", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Fath_Union_Sport infobox" }
+  - team: RSB Berkane
+    code_official: { value: RSB, classification: INFERRED, evidence: "https://rsberkane.01.ma/ title 'RSB - Site Officiel du RENAISSANCE SPORTIVE BERKAN' (self-declared; Wikipedia lists rsbfoot.ma as official, which is unreachable — official domain ambiguous)" }
+    code_3letter: RSB
+    colours_official: { classification: UNKNOWN }
+    colours_pointer: { value: "Orange, noir et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Renaissance_sportive_de_Berkane infobox" }
+  - team: Maghreb Fès
+    code_official: { value: MAS, classification: VERIFIED, evidence: "https://www.maghreb-fes.com/ title 'MAS Fès – Maghreb Association Sportive de Fès' (listed as official site by https://fr.wikipedia.org/wiki/Maghreb_Association_sportive; the page itself does not assert official status)" }
+    code_3letter: MAS
+    colours_official: { classification: UNKNOWN, evidence: "no colour statement on the site; <meta theme-color> is #000000 (site chrome, INFERRED)" }
+    colours_pointer: { value: "Jaune et noir", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Maghreb_Association_sportive infobox" }
+  - team: Hassania Agadir
+    code_official: { value: HUSA, classification: INFERRED, evidence: "official site https://husaofficial.com/ unreachable (DNS, also via proxy); official handles @husaofficiel / @husa_football appear only in search results; pointer https://en.wikipedia.org/wiki/Hassania_Agadir 'HUSA'" }
+    code_3letter: { classification: UNKNOWN, note: "club uses a 4-letter form; no official 3-letter form found" }
+    colours_official: { classification: UNKNOWN }
+    colours_pointer: { value: "red and white", classification: INFERRED, evidence: "https://en.wikipedia.org/wiki/Hassania_Agadir" }
+  - team: Ittihad Tanger
+    code_official: { value: IRT, classification: VERIFIED, evidence: "https://www.irtfoot.ma/fr 'Site officiel de l'ittihad Riadi de Tanger', IRT used throughout (IRT Store, IRT TV); also https://www.irtofficiel.ma/" }
+    code_3letter: IRT
+    colours_official: { classification: UNKNOWN, evidence: "no colour statement in text; CSS variable --irt-blue and dominant #092ddb on irtfoot.ma (INFERRED, site theme)" }
+    colours_pointer: { value: "Bleu et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Ittihad_Riadhi_de_Tanger infobox" }
+  - team: Difaâ El Jadida
+    code_official: { value: DHJ, classification: INFERRED, evidence: "https://www.dhjfoot.com in maintenance; copyright '© نادي الدفاع الحسني الجديدي لكرة القدم 2025' but no abbreviation on page; official Instagram @dhj.officiel (search result only); pointer https://fr.wikipedia.org/wiki/Difaâ_Hassani_d'El_Jadida 'DHJ'" }
+    code_3letter: DHJ (INFERRED)
+    colours_official: { classification: UNKNOWN }
+    colours_pointer: { value: "Vert et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Difaâ_Hassani_d'El_Jadida infobox (note: src/lib/kits.ts hard-codes green/red for 'difa')" }
+  - team: Kawkab Marrakech
+    code_official: { value: KACM, classification: INFERRED, evidence: "https://kacmfoot.com 'مرحباً بكم في الصفحة الرسمية', footer 'KAWKAB ATHLETIC CLUB MARRAKECH'; the literal 'KACM' appears in the domain and the official Facebook page name (https://www.facebook.com/KACMOfficiiel/, search result), not in page text" }
+    code_3letter: { classification: UNKNOWN, note: "4-letter self-designation only" }
+    colours_official: { classification: UNKNOWN }
+    colours_pointer: { value: "Rouge et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Kawkab_Athlétique_Club_de_Marrakech infobox" }
+  - team: CODM Meknès
+    code_official: { value: CODM, classification: INFERRED, evidence: "https://codm.ma/ explicitly disclaims official status (fan site); official Facebook 'codm.officiel' appears only as a search result (https://www.facebook.com/codm.officiel/); pointer https://fr.wikipedia.org/wiki/Club_omnisports_de_Meknès 'CODM'" }
+    code_3letter: { classification: UNKNOWN, note: "4-letter self-designation only" }
+    colours_official: { classification: UNKNOWN }
+    colours_pointer: { value: "Rouge et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Club_omnisports_de_Meknès infobox (contradicts src/lib/kits.ts which hard-codes green for 'codm')" }
+  - team: UTS Rabat
+    code_official: { value: UTS, classification: VERIFIED, evidence: "https://touargaclub.ma/en/le-club/ 'Union Touarga Sport (UTS)'; site presents official channels @touargaofficiel" }
+    code_3letter: UTS
+    colours_official: { classification: UNKNOWN, evidence: "https://touargaclub.ma/le-club/ has an 'Identité visuelle' section but no colour names in text" }
+    colours_pointer: { value: "Jaune et noir", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Union_Touarga_Sportif infobox" }
+  - team: CR Khemis Zemamra
+    code_official: { value: RCAZ, classification: VERIFIED, evidence: "https://rcazfc.com/ (official site of Renaissance Club Athletic Zemamra) uses 'RCAZ' throughout" }
+    code_3letter: { classification: UNKNOWN, note: "4-letter self-designation only" }
+    colours_official: { classification: UNKNOWN, evidence: "page says 'nos couleurs' without naming them; dominant CSS #1c469c (blue) / #d9ac11 (gold) is site theme (INFERRED)" }
+    colours_pointer: { value: "Bleu et blanc", classification: INFERRED, evidence: "https://fr.wikipedia.org/wiki/Renaissance_Club_Athletic_Zemamra infobox" }
+    name_note: "Production name 'CR Khemis Zemamra' (provider) differs from the club's own 'Renaissance Club Athletic Zemamra'; renaming is out of scope."
+  - team: Moghreb Tétouan
+    code_official: { value: MAT, classification: VERIFIED, evidence: "https://www.matfoot.com 'الموقع الرسمي لنادي المغرب أتلتيك تطوان – Site Officiel', MAT used throughout (MAT TV, MATFOOT)" }
+    code_3letter: MAT
+    colours_official: { classification: UNKNOWN, evidence: "no colour statement in text; dominant CSS #ef2e23 (INFERRED, site theme)" }
+    colours_pointer: { value: "red and white stripes, blue shorts", classification: INFERRED, evidence: "https://en.wikipedia.org/wiki/MA_Tétouan" }
+  - team: Amal Tiznit
+    code_official: { value: USAT, classification: INFERRED, evidence: "official Facebook/Instagram handles 'USATOfficiel' / 'usatofficiel' appear only in search results (https://www.facebook.com/USATOfficiel/, https://www.instagram.com/usatofficiel/); no fetchable official site; pointer https://en.wikipedia.org/wiki/US_Amal_Tiznit 'USAT'" }
+    code_3letter: { classification: UNKNOWN, note: "4-letter self-designation only" }
+    colours_official: { classification: UNKNOWN }
+    colours_pointer: { classification: UNKNOWN, evidence: "https://en.wikipedia.org/wiki/US_Amal_Tiznit infobox carries no colours" }
+  - team: Widad Témara
+    code_official: { value: WST, classification: VERIFIED, evidence: "https://widad-temara.com/club/ (official site): '…jusque dans le surnom WST, utilisé par beaucoup pour désigner le club'" }
+    code_3letter: WST
+    colours_official: { value: "rouge et blanc", classification: VERIFIED, evidence: "https://widad-temara.com/club/: 'L'identité visuelle repose sur deux couleurs simples et fortes : le rouge et le blanc.'" }
+    colours_note: "Primary = rouge, secondary = blanc is the natural reading of the sentence (INFERRED ordering). Dominant CSS of the site is #1500a2 (blue) — site theme, not a kit colour."
+
+hex_policy:
+  classification: VERIFIED (absence)
+  statement: >
+    No official source found publishes a hex value for any club's colours; the two official
+    colour statements (AS FAR, Widad Témara) give colour NAMES only. The database requires
+    '#RRGGBB'. Any mapping from a name to a specific hex (e.g. "rouge" → a particular red) is an
+    editorial encoding, not a fact, and must be an owner-approved decision recorded as INFERRED.
+    Site CSS/theme-color values were collected as pointers but are website chrome, not declared
+    kit colours, and must not be written as if official.
+
+# ---------------------------------------------------------------------------
+# 2. ROOT CAUSE
+# ---------------------------------------------------------------------------
+root_cause:
+  classification: VERIFIED
+  description: >
+    app.teams is populated exclusively by SportsMonks catalog ingestion, which maps the provider's
+    short_code to code and never touches colours. The provider supplies a short_code for one of
+    the 16 clubs ("WCA" for Wydad), so 15 clubs carry code NULL and short_name = full name, and all
+    16 carry NULL colours. No RPC, admin operation, seed or runbook exists to curate these three
+    columns, and the ingestion UPDATE would overwrite any curated code with the provider's NULL on
+    the next fresh team payload. The UI already reads code/primaryColor/secondaryColor and falls
+    back (first three letters of short_name; "#0a2540") only because the columns are empty.
+
+# ---------------------------------------------------------------------------
+# 3. REQUIRED CHANGES
+# ---------------------------------------------------------------------------
+required_changes:
+  - component: scripts/backend/football-team-identity-seed.sql (NEW; data-only SQL runbook, Builder-Data)
+    change: >
+      Idempotent, guarded, single-transaction script in the exact shape of
+      scripts/backend/fantasy-realign-gameweek-calendar.sql: header comment (purpose, sources,
+      rehearsal reference), `begin;`, `select set_config('request.jwt.claims','{"role":"service_role"}',true);`,
+      one DO block, a review SELECT, `-- commit;`. The DO block holds a VALUES list of exactly
+      16 rows (team_name, code, primary_color, secondary_color) using app.teams.name as the key
+      (the 16 names in findings), each value carrying an inline `-- source:` comment with the
+      citation from club_identity. Guards that raise (and therefore roll back): every listed name
+      must match exactly one active app.teams row and the total must be 16 (compare with
+      normalised names if the accent forms differ: use `lower(unaccent(...))` only if the extension
+      exists, else exact match and stop); every code must match '^[A-Z0-9]{2,8}$' and every
+      non-null colour '^#[0-9A-Fa-f]{6}$' before the UPDATE (so the constraint is never the first
+      line of defence); the UPDATE must be
+      `set code = v.code, primary_color = v.primary_color, secondary_color = v.secondary_color
+       where t.id = matched_id and (t.code, t.primary_color, t.secondary_color)
+       is distinct from (v.code, v.primary_color, v.secondary_color)` so a second run touches 0 rows
+      and does not bump updated_at. `get diagnostics` the row count and `raise notice` it. The
+      script must never write name, short_name, slug, active, country_id, venue_id, crest_asset_id.
+      Values: codes and colours ONLY as decided by the owner (see unknowns → decisions);
+      UNKNOWN cells stay NULL. Preserve WCA vs WAC decision explicitly.
+    reason: >
+      Only direct SQL can set these columns (no RPC exists); the repository's convention for a
+      production data operation is a rehearsed SQL runbook, not a migration (migrations carry
+      schema/functions, must pass validate-migrations.mjs and be added to the promoter manifest,
+      and would execute against every environment including the empty test database).
+  - component: docs/engineering/tasks/BG-0018/rehearsal-team-identity.json (NEW)
+    change: >
+      Rolled-back rehearsal artefact in the format of
+      docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json: project, protocol
+      (begin … rollback, service claims), before/after snapshots of the 16 rows, first-run
+      row_count, second-run row_count, football_team_catalog output excerpt, post-rehearsal
+      read-only residue check proving code/colours are still NULL (except WCA) after rollback.
+    reason: Verifier and owner need reproducible evidence before any commit is authorised.
+  - component: docs/engineering/tasks/BG-0018/implementation-report.yaml (NEW)
+    change: Standard ImplementationReport; scope_deviations must be empty.
+    reason: Gate input for Verifier/Reviewer.
+  - component: UI (src/**) — NO CHANGE
+    change: >
+      None. Confirm only: presentFootballClub already maps code → crestPlaceholder and colours →
+      primaryColor/secondaryColor; ClubCrest, FDR cells, opponent chips update on the next fetch.
+      Jerseys stay on src/lib/kits.ts fragment palette by design of that file.
+    reason: The fallback already reads the columns (findings).
+  - component: FOLLOW-UP (not in this scope; Chief to ledger) — durability of curated code
+    change: >
+      A Builder-Backend task: new migration replacing api.ingest_football_catalog_entity so the
+      team UPDATE preserves a curated code (e.g. `code = coalesce(v_code, code)`) or a curated
+      short_name, or a separate curated-identity table read by football_team_json. Until then any
+      operator run of football-current-season-recovery.yml that sees a fresh provider timestamp
+      resets code to NULL for the 15 clubs (colours are safe: ingestion never writes them).
+    reason: gate2b ingestion UPDATE is unconditional on code (finding); provider freshness changes after every matchday (last_played_at).
+
+constraints:
+  - Never invent a code or colour; UNKNOWN cells remain NULL in production. Wikipedia and site-CSS values are pointers, not sources.
+  - Codes must satisfy '^[A-Z0-9]{2,8}$'; colours '^#[0-9A-Fa-f]{6}$' (validate in the DO block before the UPDATE).
+  - Key rows by app.teams.name (VERIFIED list) or by uuids captured in the read-only rehearsal step; never by slug guesses (slugs are generated by app_private.football_catalog_slug and were not extracted).
+  - The UPDATE must be conditional (`is distinct from`) so re-runs are no-ops and updated_at is untouched.
+  - The script may touch only code, primary_color, secondary_color. No inserts, no deletes, no other tables.
+  - Production execution requires explicit owner approval and must be preceded by a rolled-back rehearsal on the same database; the Builder never commits.
+  - Wydad: production currently holds the provider's "WCA"; changing it to the club's "WAC" is a deliberate decision to be recorded (and will be reverted by the next fresh re-ingest until the follow-up lands).
+  - Do not touch src/lib/kits.ts even though its palette contradicts pointers for CODM/DHJ (recorded, out of scope).
+
+# ---------------------------------------------------------------------------
+# 4. RISKS
+# ---------------------------------------------------------------------------
+risks:
+  - "VERIFIED — Clobber: api.ingest_football_catalog_entity rewrites code = provider code (NULL for 15 clubs) on every fresh team payload; the next operator-triggered current-season recovery run can silently undo the curated codes. Mitigation: the script is idempotent and re-runnable after any ingest; durable fix is the follow-up above. Colours are not at risk."
+  - "INFERRED — Length/legibility: official self-designations are 4–5 characters for ASFAR, HUSA, KACM, CODM, RCAZ, USAT; the placeholder was designed for 2–3 letters (ClubCrest sm at 10 px, FDR cell 13 px bold). Either accept longer codes (visual check required) or use 3-letter forms only where the club itself uses one; truncating is invention."
+  - "VERIFIED — RLS is forced on app.teams. If the executing role lacks BYPASSRLS/an UPDATE policy the DO block updates 0 rows silently; the rehearsal's first-run row_count = 16 assertion catches this (0 ⇒ stop, do not switch roles ad hoc)."
+  - "INFERRED — Unicode: names contain â/è/é (Difaâ, Meknès, Fès, Tétouan, Témara); an NFD/NFC mismatch between the script file and stored rows would fail the 'exactly one match' guard (safe failure, but blocks the run). Capture uuids in the read-only rehearsal step if it occurs."
+  - "INFERRED — Encoding decisions: any hex chosen for 'rouge', 'blanc', 'noir', 'vert' is editorial; if the owner declines to approve an encoding, colours stay NULL and only ClubCrest keeps its '#0a2540' fallback — codes still deliver the visible win."
+  - "VERIFIED — Wydad 'WCA' (provider) vs 'WAC' (club); leaving WCA is inconsistent with the club's identity, changing it is exposed to the clobber risk."
+  - "VERIFIED — Homonym clusters (Abdallah Boukhanfer ×2 at Hassania Agadir; Abdoulaye Coulibaly ×3 at Wydad Casablanca) are player-level rows with distinct provider identities; they do not involve team codes or colours and are unaffected by this operation (extractor:35-37; docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md:143,245)."
+
+# ---------------------------------------------------------------------------
+# 5. CONTRADICTIONS
+# ---------------------------------------------------------------------------
+contradictions:
+  - "Task wording 'short_code' vs schema: the column is app.teams.code; 'shortName'/short_name is a different, NOT NULL column that currently holds the full name for 15 clubs (VERIFIED)."
+  - "Task wording 'official 3-letter code' vs official identities: six clubs designate themselves with 4–5 letters (ASFAR, HUSA, KACM, CODM, RCAZ, USAT); no official 3-letter form exists for them (VERIFIED absence on reachable official pages)."
+  - "Production 'WCA' (provider) vs the club's own 'WAC' (INFERRED via Wikipedia; official site unreachable)."
+  - "src/lib/kits.ts hard-codes green for 'codm' and green/red for 'difa' while the (non-official) Wikipedia pointers say red/white and green/white; the Scout note 'app.teams colours not used' is confirmed for jerseys (VERIFIED) — populating the DB will not fix jersey colours."
+  - "Extractor lists 'kits_overrides_in_repo' keyed war/rca/asfar…: these OVERRIDES cannot match production uuids (VERIFIED), so they are dead in production; only BOTOLA_KITS applies."
+  - "Production club name 'CR Khemis Zemamra' vs the club's official 'Renaissance Club Athletic Zemamra' (RCAZ); 'FAR Rabat' vs 'AS FAR' — provider naming, out of scope."
+
+# ---------------------------------------------------------------------------
+# 6. UNKNOWNS / MISSING EVIDENCE (owner decisions marked ►)
+# ---------------------------------------------------------------------------
+unknowns:
+  - "► Code length policy: (a) write the official self-designation as-is (ASFAR, HUSA, KACM, CODM, RCAZ, USAT included, 4–5 chars) or (b) write only clubs with an official ≤3-letter form (RCA, FUS, MAS, IRT, UTS, MAT, WST, RSB*, DHJ*, WAC*; * = INFERRED) and leave the rest NULL (fallback stays 'HAS', 'KAW', 'COD', 'CR ', 'AMA', 'FAR')."
+  - "► Evidence threshold: write INFERRED codes (WAC, RSB, HUSA, DHJ, KACM, CODM, USAT — official site unreachable or abbreviation only on social handles) or restrict to VERIFIED (RCA, ASFAR, FUS, MAS, IRT, UTS, RCAZ, MAT, WST)."
+  - "► Wydad: keep provider 'WCA' or set club 'WAC'."
+  - "► Colour encoding: approve a fixed name→hex table (editorial, INFERRED) for the two VERIFIED colour statements (AS FAR: rouge/noir/vert with primary unknown; Widad Témara: rouge/blanc) — or defer all colours until official hex values exist. Wikipedia colour pointers must not be written."
+  - "Whether the SQL-editor/owner role bypasses forced RLS on app.teams (resolved by the rehearsal row_count)."
+  - "app.teams uuids and slugs of the 16 rows (not extracted; captured in the rehearsal's read-only step)."
+  - "FRMF/LNFP canonical abbreviations (sites unreachable: Cloudflare challenge)."
+  - "Official sites unreachable from this environment: wac.ma / wydadac.ma, rajacasablanca.com, husaofficial.com, kacmfoot.ma, rsbfoot.ma; dhjfoot.com and fus.ma in maintenance. A retry from another network may upgrade INFERRED codes to VERIFIED."
+  - "Whether any client zod contract caps code length below 8 (src/backend/football/contracts.ts declares colours as nullableText; code not checked here)."
+
+# ---------------------------------------------------------------------------
+# 7. ACCEPTANCE TESTS
+# ---------------------------------------------------------------------------
+acceptance_tests:
+  - |
+    AT-1 (production, rolled back — Verifier runs as the trusted database context, e.g. Supabase SQL editor on project tkewgajrljbwgwedqsxn):
+    begin;
+    select set_config('request.jwt.claims','{"role":"service_role"}',true);
+    create temp table pre as
+      select id, name, short_name, slug, code, primary_color, secondary_color, crest_asset_id, active, updated_at
+      from app.teams;
+    select count(*) filter (where active) as active_teams, count(*) as all_teams,
+           count(*) filter (where code is null) as code_null,
+           count(*) filter (where primary_color is null) as primary_null from pre;
+    -- expect: active_teams 16, code_null 15, primary_null 16 (baseline per extractor)
+    \i scripts/backend/football-team-identity-seed.sql   -- DO block only (strip its own begin/commit lines when embedding)
+    -- expect NOTICE: 'team identity applied: 16 rows' (or N = number of decided rows; must equal the VALUES count)
+    select count(*) as changed from app.teams t join pre p using (id)
+      where (t.code, t.primary_color, t.secondary_color) is distinct from (p.code, p.primary_color, p.secondary_color);
+    -- expect: changed = N (16 under policy (a))
+    select count(*) as collateral from app.teams t join pre p using (id)
+      where t.name <> p.name or t.short_name <> p.short_name or t.slug <> p.slug
+         or t.crest_asset_id is distinct from p.crest_asset_id or t.active <> p.active;
+    -- expect: collateral = 0
+    select count(*) from app.teams;  -- expect unchanged (= all_teams)
+    select count(*) from app.teams where code is not null and code !~ '^[A-Z0-9]{2,8}$'
+       or primary_color is not null and primary_color !~ '^#[0-9A-Fa-f]{6}$'
+       or secondary_color is not null and secondary_color !~ '^#[0-9A-Fa-f]{6}$';  -- expect 0
+    rollback;
+  - |
+    AT-2 (idempotency, same session pattern, rolled back): run the DO block twice inside one transaction;
+    the second run must report row_count = 0 and `select count(*) from app.teams t join pre p using (id) where t.updated_at <> p.updated_at`
+    after run 2 must equal the count after run 1 (no updated_at bump on the no-op run). rollback.
+  - |
+    AT-3 (API projection, inside the AT-1 transaction before rollback):
+    select jsonb_array_length(api.football_team_catalog('fr',100)) = 16;
+    select count(*) from jsonb_array_elements(api.football_team_catalog('fr',100)) e where e->>'code' is not null;  -- expect N
+    select count(*) from jsonb_array_elements(api.football_team_catalog('fr',100)) e where e->>'primaryColor' is not null;  -- expect number of decided colour rows
+    select e->>'name', e->>'code', e->>'primaryColor', e->>'secondaryColor' from jsonb_array_elements(api.football_team_catalog('fr',100)) e order by 1;  -- matches the VALUES list exactly
+  - |
+    AT-4 (residue, read-only, after rollback): select count(*) filter (where code is null), count(*) filter (where primary_color is null),
+    max(updated_at) from app.teams where active;  -- expect 15, 16 and the pre-rehearsal max(updated_at): nothing survived.
+  - "AT-5 (static): the script contains exactly one UPDATE on app.teams, no INSERT/DELETE, no other table in DML, `is distinct from` in the WHERE, a VALUES list with a `-- source:` citation on every row, and only citations present in this brief's club_identity table with classification VERIFIED (or INFERRED where the owner approved it). Every value marked UNKNOWN here is NULL in the script."
+  - "AT-6 (regression, no source change expected): `bun test src/services/football.test.ts` passes unchanged; `git diff --stat` shows no path under src/**, supabase/**, .github/**."
+  - "AT-7 (UI, after the owner-approved commit only): on botolago.com /fantasy/fixtures the FDR cells show the decided codes (e.g. 'IRT (D)') instead of 'ITT'; the opponent chip on player cards shows the code; with the crest image blocked (dev tools) the ClubCrest tile shows the code over a gradient of the decided primary colour for clubs with colours, '#0a2540' otherwise; jerseys are visually unchanged (kits.ts palette). Long codes (if policy (a)) must not overflow the 28 px ClubCrest sm tile or wrap in the FDR cell — screenshot evidence."
+  - "AT-8 (durability, informational): document in the rehearsal artefact the ingestion clobber path (gate2b:295-301) and that colours are unaffected; the Verifier does not run recovery to prove it."
+
+# ---------------------------------------------------------------------------
+# 8. IMPLEMENTATION SCOPE
+# ---------------------------------------------------------------------------
+implementation_scope:
+  builder_type: Builder-Data
+  allowed_paths:
+    - scripts/backend/football-team-identity-seed.sql (new; data-only runbook)
+    - docs/engineering/tasks/BG-0018/rehearsal-team-identity.json (new)
+    - docs/engineering/tasks/BG-0018/implementation-report.yaml (new)
+  forbidden_paths:
+    - src/** (no UI or presenter change; the fallback already reads the columns)
+    - supabase/migrations/** (no new or modified migration; the follow-up durability fix is a separate Builder-Backend task)
+    - supabase/functions/** and src/backend/football/provider/** (no provider ingestion change)
+    - scripts/backend/current-season-recovery.ts, scripts/backend/fantasy-*.sql, .github/workflows/**
+    - src/lib/kits.ts (palette contradictions recorded, not repaired)
+    - any production COMMIT: the Builder may run only rolled-back rehearsals; the committed run requires explicit owner approval and is executed by the Shipper/owner after Verifier PASS
+  execution_protocol: >
+    Builder authors the script with only owner-decided values → rolled-back rehearsal on production
+    (AT-1..AT-4) recorded in the JSON artefact → Verifier repeats AT-1..AT-6 independently → Reviewer →
+    owner approval → single committed run of the same file → AT-7 UI check → ledger evidence.
+
+status: HALTED_FOR_INPUT
+halt_reason: >
+  The brief is complete and the operation is fully specified, but the script's VALUES cannot be
+  written without four owner decisions that are product/editorial, not technical: (1) code length
+  policy (official 4–5-letter self-designations vs ≤3 letters only), (2) whether INFERRED codes
+  (official site unreachable) may be written or only VERIFIED ones, (3) Wydad WCA (provider) vs WAC
+  (club), (4) whether any name→hex encoding is approved for the two VERIFIED colour statements
+  (AS FAR rouge/noir/vert; Widad Témara rouge/blanc) or colours are deferred. A default that needs
+  no invention and can be dispatched immediately if the owner accepts it: policy VERIFIED-only codes
+  as-is (RCA, ASFAR, FUS, MAS, IRT, UTS, RCAZ, MAT, WST), leave the other 7 codes and all colours
+  NULL, keep WCA, and open the durability follow-up.

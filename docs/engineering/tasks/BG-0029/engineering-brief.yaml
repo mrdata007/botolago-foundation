@@ -1,0 +1,413 @@
+task_id: BG-0029
+role: Researcher
+attempt: 1
+researched_commit: 1603c1c (origin/main, read-only worktree /home/user/research-main)
+objective: >
+  Hardening follow-ups from the BG-0020 review, all P2, area e2e:
+  R1 invoke scripts/backend/check-config-integrity.mjs by path with node (not through
+  package.json/bunfig.toml) in every workflow that runs it;
+  R2 stop the authenticated Fantasy E2E suite from accumulating one league per run in the
+  target Supabase project;
+  R3 make the fantasy-authenticated-e2e workflow assert credential presence per RESOLVED
+  target so a missing production var/secret can no longer silently fall back to staging while
+  the run is labelled "production";
+  plus one comment-only item: src/i18n/i18n-allowlist.ts lines 9-10 still describe
+  profile.title as a pending BG-0024 defect although BG-0024 is merged.
+
+findings:
+  # ---------------------------------------------------------------- R1: guard invocation path
+  - classification: VERIFIED
+    statement: >
+      backend-quality.yml invokes the guard as `bun run config:integrity:check` in both jobs,
+      one step after setup-bun and one step before `bun install --frozen-lockfile`.
+    evidence: ".github/workflows/backend-quality.yml:32-34 (application-quality) and :66-68 (database-quality)"
+  - classification: VERIFIED
+    statement: >
+      `config:integrity:check` is a package.json script that expands to
+      `bun scripts/backend/check-config-integrity.mjs`; package.json is therefore evaluated to
+      locate the guard.
+    evidence: "package.json:23"
+  - classification: VERIFIED
+    statement: >
+      package.json and bunfig.toml are themselves members of the guard's scanned set, i.e. they
+      are inspected only once the guard is already running. A payload planted in the script
+      entry (package.json) or in a bunfig.toml `preload` executes before the scan.
+    evidence: "scripts/backend/check-config-integrity.mjs:29-35 (CONFIG_FILES includes \"bunfig.toml\", \"package.json\"); review-report.yaml:141-148"
+  - classification: VERIFIED
+    statement: >
+      bunfig.toml today contains only an [install] block (saveTextLockfile, minimumReleaseAge,
+      minimumReleaseAgeExcludes); no preload. The residual is a hardening gap, not a live defect.
+    evidence: "bunfig.toml:1-7"
+  - classification: INFERRED
+    statement: >
+      Any invocation through the bun runtime (`bun run <script>` AND `bun <file>`) honours
+      bunfig.toml (e.g. a `preload` entry); only a non-bun runtime removes bunfig.toml from the
+      path. Hence "by path with bun" is not sufficient; node is required.
+    evidence: "bun runtime behaviour, not demonstrable from the repository"
+  - classification: VERIFIED
+    statement: >
+      fantasy-authenticated-e2e.yml also runs the guard, as `bun scripts/backend/check-config-integrity.mjs`,
+      and only AFTER `bun install --frozen-lockfile` (install hooks already executed). R1 says
+      "every workflow that runs it", so this workflow needs the same change plus a move before
+      the install step.
+    evidence: ".github/workflows/fantasy-authenticated-e2e.yml:92-94; review-report.yaml:134-140"
+  - classification: VERIFIED
+    statement: >
+      No other workflow invokes the guard (grep for config:integrity:check / check-config-integrity
+      across .github/workflows matches only backend-quality.yml:33,:67 and
+      fantasy-authenticated-e2e.yml:94).
+    evidence: "grep over /home/user/research-main/.github/workflows"
+  - classification: VERIFIED
+    statement: >
+      The guard is dependency-free ESM using only node:fs, node:path, node:url, and its CLI
+      entry is guarded by `import.meta.url === pathToFileURL(process.argv[1]).href`.
+      Run under node v22.22.2 from the repository root of the worktree:
+      `node scripts/backend/check-config-integrity.mjs` -> "Config integrity guard: no violations
+      in 34 executed configuration file(s)." exit 0; `--file /nonexistent` -> exit 2.
+    evidence: "scripts/backend/check-config-integrity.mjs:20-22, :209-211; researcher run in /home/user/research-main"
+  - classification: INFERRED
+    statement: >
+      A `node` binary is on PATH on GitHub-hosted ubuntu-latest runners without a setup step.
+      No workflow in this repository currently calls `node` directly or uses actions/setup-node
+      (grep: no matches), so there is no in-repo precedent; the assumption rests on the
+      documented runner image contents.
+    evidence: "grep '^\\s+run: node |setup-node' over .github/workflows -> no matches"
+  - classification: VERIFIED
+    statement: >
+      The unit suite's ordering assertions match on the literal `name: Config integrity guard`
+      and `bun install --frozen-lockfile` lines, not on the `run:` text, so changing the run line
+      does not break them; nothing in the test asserts `bun run config:integrity:check`.
+    evidence: "scripts/backend/check-config-integrity.test.ts:142-174"
+  - classification: VERIFIED
+    statement: >
+      Cosmetic `bun scripts/...` wording remains in the script header (lines 14-15) and its usage
+      string (line 164), and the incident doc names `bun run config:integrity:check`
+      (docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md:67-71).
+    evidence: "scripts/backend/check-config-integrity.mjs:14-15,:164; docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md:67-71"
+
+  # ---------------------------------------------------------------- R2: league accumulation
+  - classification: VERIFIED
+    statement: >
+      Test "leagues: create, open detail, go back" creates a private league named
+      `E2E Ligue <4 base36 chars>` on every run through the UI and never removes it. The suite
+      lives at tests/e2e/fantasy.journey.e2e.ts (testDir ./tests/e2e, testMatch **/*.e2e.ts).
+    evidence: "tests/e2e/fantasy.journey.e2e.ts:171-187; playwright.config.ts:6-7; package.json:16"
+  - classification: VERIFIED
+    statement: >
+      After creation the test clicks the league link and lands on /fantasy/leagues/<leagueId>;
+      the league id is therefore available to the test from page.url() without any UI change.
+    evidence: "tests/e2e/fantasy.journey.e2e.ts:181-183; src/routes/fantasy.leagues.tsx:186-193 (rows link to `/fantasy/leagues/${l.id}`)"
+  - classification: VERIFIED
+    statement: >
+      The UI cannot remove the league: the only control is "Quitter la ligue" on private
+      leagues, and `api.leave_fantasy_league` updates memberships only where `role <> 'owner'`,
+      raising PT403 league_access_denied otherwise. The creator is the owner
+      (create_fantasy_league inserts the membership with role 'owner').
+    evidence: "src/routes/fantasy.leagues.$leagueId.tsx:57-70,:159-165; supabase/migrations/20260720141854_fantasy_api_security.sql:953-969 and :904-905"
+  - classification: VERIFIED
+    statement: >
+      An owner-side soft-delete RPC exists and is callable by the E2E account:
+      `api.archive_fantasy_league(p_league_id uuid, p_team_id uuid) returns boolean` sets
+      `active = false` when the caller owns the league and holds the active 'owner' membership
+      with p_team_id; it writes one row to app_private.fantasy_mutation_audit; EXECUTE is
+      granted to authenticated and service_role.
+    evidence: "supabase/migrations/20260720173500_fantasy_route_read_contracts.sql:129-159,:164,:172-173; src/backend/generated/database.types.ts:439-442"
+  - classification: VERIFIED
+    statement: >
+      Archived leagues disappear from every read path that matters: `api.fantasy_leagues`
+      filters `league.active`, `api.fantasy_league_standings` requires `active`, and the scoring
+      worker's league pager selects only `active` leagues. Rows remain (soft delete) but stop
+      accumulating in listings and in worker workload.
+    evidence: "20260720173500_fantasy_route_read_contracts.sql:79; 20260720141854_fantasy_api_security.sql:990; 20260914200719_fantasy_scoring_worker_contracts.sql:412-413"
+  - classification: VERIFIED
+    statement: >
+      No hard-delete path exists: no delete/remove league function is defined under
+      supabase/migrations (the only `delete_league` is in the legacy archive under
+      docs/backend/archive/legacy-supabase); memberships and rankings reference
+      fantasy_leagues with `on delete restrict`. Inventing an RPC is out of scope
+      (supabase/migrations/** forbidden).
+    evidence: "grep leave_league|delete_league over repo; 20260720141850_fantasy_scoring_leagues_operations.sql:147,:169"
+  - classification: VERIFIED
+    statement: >
+      The client already wraps the archive RPC (`SupabaseFantasyRepository.archiveLeague` and
+      `fantasyService.archiveLeague`) but no route or component calls it, so it is unreachable
+      from the browser without a src change.
+    evidence: "src/backend/fantasy/supabase-repository.ts:304-310; src/services/fantasy-runtime.ts:432-440; grep archiveLeague over src -> only those two sites plus contracts.ts:428"
+  - classification: VERIFIED
+    statement: >
+      Deterministic league reuse through the UI is impossible without a src change: the UI calls
+      create_fantasy_league with `crypto.randomUUID()` as idempotency key on every submit, and
+      the RPC has no name uniqueness, so each run creates a new row.
+    evidence: "src/services/fantasy-runtime.ts:397-413; 20260720141854_fantasy_api_security.sql:886-914"
+  - classification: VERIFIED
+    statement: >
+      Everything needed to archive from the Playwright process is already available:
+      @supabase/supabase-js ^2.110.7 is a dependency; the workflow exports VITE_SUPABASE_URL and
+      VITE_SUPABASE_PUBLISHABLE_KEY at job level so the test process inherits them; all Fantasy
+      RPCs live in schema `api` (client must call `.schema("api")`); the team id is in the
+      `fantasy_hub` response (`team.id`, or `get_my_fantasy_team(p_season_id)`), and the
+      `fantasy_leagues` RPC returns `role` per league, which permits an owner-only sweep filter.
+    evidence: "package.json:66; fantasy-authenticated-e2e.yml:53-63; src/integrations/supabase/v2-client.ts:37-39; 20260720141854_fantasy_api_security.sql:232-239 and :175-185 (fantasy_team_dto 'id'); 20260720173500_fantasy_route_read_contracts.sql:58-90 ('role')"
+  - classification: UNKNOWN
+    statement: >
+      Whether the target Supabase projects' Auth settings allow a second password sign-in from the
+      Playwright process (captcha, rate limits) for the synthetic manager. Fallback that avoids a
+      second sign-in: read the browser session's access token from localStorage in the page
+      context and pass it as `Authorization: Bearer` to a non-persisting supabase-js client
+      (pattern already used in src/lib/mcp/tools/get-fantasy-team.ts:15-21). The localStorage key
+      format (`sb-<project-ref>-auth-token`) is supabase-js convention, not verified in-repo.
+    evidence: "no Auth configuration in the repository; src/lib/mcp/tools/get-fantasy-team.ts:15-21"
+  - classification: VERIFIED
+    statement: >
+      Number of already-accumulated E2E leagues in staging/production is not knowable here (no
+      database access); the review notes the workflow has never been runnable because the
+      `fantasy-e2e` environment does not yet exist (BG-0028), so the count may be zero.
+    evidence: "review-report.yaml:173; LAUNCH_LEDGER.yaml:342-348"
+  - classification: VERIFIED
+    statement: >
+      ESLint applies to tests/**/*.ts (files: **/*.{ts,tsx}, tests not in ignores); `tsc --noEmit`
+      does NOT cover tests/ (tsconfig include is src/**, vite.config.ts, eslint.config.js).
+      Playwright transpiles the suite itself.
+    evidence: "eslint.config.js:10-28; tsconfig.json include/exclude"
+
+  # ---------------------------------------------------------------- R3: presence per resolved target
+  - classification: VERIFIED
+    statement: >
+      VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are computed as
+      `(dispatch && target=='production') && <production var/secret> || <staging var/secret>`.
+      FANTASY_E2E_TARGET is computed independently as `dispatch && inputs.target || 'staging'`.
+    evidence: ".github/workflows/fantasy-authenticated-e2e.yml:54,:62-63"
+  - classification: INFERRED
+    statement: >
+      Under GitHub expression semantics an unset var/secret evaluates to '' which is falsy, so on a
+      production dispatch with SUPABASE_PRODUCTION_URL or SUPABASE_PRODUCTION_PUBLISHABLE_KEY
+      unset the `||` arm yields the staging value; the run is labelled production but exercises
+      staging. Fails safe but silently mislabelled (review observation 3).
+    evidence: "review-report.yaml:149-154; expression semantics not demonstrable in-repo"
+  - classification: VERIFIED
+    statement: >
+      The existing "Guard credential presence" step only checks that the four resolved values are
+      non-empty (`test -n`), which is satisfied by the staging fallback, so it cannot detect the
+      mislabel. "Guard target resolution" only validates the target token.
+    evidence: ".github/workflows/fantasy-authenticated-e2e.yml:74-91"
+  - classification: INFERRED
+    statement: >
+      Presence of a secret can be asserted without exposing it by evaluating
+      `${{ secrets.NAME != '' }}` into a step env boolean; vars can additionally be compared by
+      value (`test "$VITE_SUPABASE_URL" = "$EXPECTED_URL"`) because vars are not secret. No
+      workflow in the repository uses the `!= ''` idiom today (grep: no matches), so this has no
+      in-repo precedent and must be exercised in the real environment.
+    evidence: "grep \"!= ''\" over .github/workflows -> no matches"
+
+  # ---------------------------------------------------------------- comment-only item
+  - classification: VERIFIED
+    statement: >
+      src/i18n/i18n-allowlist.ts:9-10 says profile.title "stays a named W1/W2 warning until
+      BG-0024 replaces its English placeholder copy". BG-0024 is merged into main (merge 4168bb2,
+      ledger state DONE); dictionaries now hold "profile.title": "Profil" / "الملف الشخصي" and the
+      gate test asserts "profile.title is no longer a named W1 or W2 warning".
+    evidence: "src/i18n/i18n-allowlist.ts:9-10; git log (4168bb2, 1603c1c); LAUNCH_LEDGER.yaml:250-261; src/i18n/dictionaries.ts:463,:1546; src/i18n/i18n-gate.test.ts:79-82"
+  - classification: VERIFIED
+    statement: >
+      Editing that comment cannot move any gate count: W1/W2 are computed over dictionary values,
+      and W3 (key references) is satisfied by real `t("profile.title")` call sites in
+      src/routes/profile.tsx:78 and :285. The allowlist objects themselves must not change
+      (they are `satisfies Partial<Record<TranslationKey,string>>` and the gate test asserts the
+      suppressed set equals the allowlist keys).
+    evidence: "src/routes/profile.tsx:78,:285; src/i18n/i18n-gate.test.ts:84-90; src/i18n/i18n-allowlist.ts:17-34"
+  - classification: VERIFIED
+    statement: >
+      A sibling comment in scripts/qa/i18n-gate.ts:31-32 ("That is what keeps `profile.title`
+      (English copy with trailing newlines, repaired separately by BG-0024) visible in the report")
+      is equally stale, but it is outside the item named for BG-0029; recorded as an observation
+      only.
+    evidence: "scripts/qa/i18n-gate.ts:28-32"
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    R1: BG-0020's brief prescribed the npm-script form; the guard therefore starts through two of
+    the very files it scans (package.json resolves the script, the bun runtime reads bunfig.toml),
+    and in fantasy-authenticated-e2e.yml it additionally runs after `bun install` hooks.
+    R2: the journey test exercises league creation through the UI, the UI offers no owner-side
+    removal, the owner cannot "leave" (role <> 'owner' guard), and BG-0020 explicitly deferred
+    cleanup; the archive RPC exists but is not wired to any UI.
+    R3: the URL/key env expressions use `cond && prod || staging`, whose fallback arm is taken
+    whenever the production value is empty, while the target label is computed separately;
+    the presence guard checks non-emptiness only.
+    Comment: BG-0024 repaired the dictionary and the gate test but did not touch the prose in
+    i18n-allowlist.ts (ledger BG-0024 remaining_risks already names it for BG-0029).
+
+required_changes:
+  - id: RC-1
+    component: .github/workflows/backend-quality.yml (two run lines), .github/workflows/fantasy-authenticated-e2e.yml (guard step moved + run line)
+    change: >
+      backend-quality.yml: in BOTH jobs replace `run: bun run config:integrity:check` with
+      `run: node scripts/backend/check-config-integrity.mjs`; keep the step name
+      "Config integrity guard", its position (after setup-bun, before `bun install --frozen-lockfile`)
+      and the comment block; change nothing else. Do not add actions/setup-node unless the first
+      real run proves node absent (see unknowns).
+      fantasy-authenticated-e2e.yml: move the "Config integrity guard" step to immediately after
+      setup-bun (before "Mask protected values" is acceptable; it MUST precede
+      `bun install --frozen-lockfile`) and change its run line to
+      `node scripts/backend/check-config-integrity.mjs`. Every other step stays in its order.
+    reason: >
+      The guard must not be reachable through package.json or the bun runtime (bunfig.toml), and
+      must run before any install hook, in every workflow that runs it.
+  - id: RC-1b
+    component: scripts/backend/check-config-integrity.test.ts (additions only)
+    change: >
+      Add assertions: (a) in backend-quality.yml every "Config integrity guard" step's `run:` line
+      is exactly `node scripts/backend/check-config-integrity.mjs`; (b) the same for
+      fantasy-authenticated-e2e.yml, and there the guard index is lower than
+      `bun install --frozen-lockfile`; (c) no file under .github/workflows contains
+      `bun run config:integrity:check` or `bun scripts/backend/check-config-integrity.mjs`.
+      Keep all 24 existing tests.
+    reason: Lock the hardening so a future edit cannot quietly reintroduce the routed invocation.
+  - id: RC-1c (optional, cosmetic)
+    component: scripts/backend/check-config-integrity.mjs lines 14-15 and 164; docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md:67-71
+    change: >
+      Update the usage wording from `bun scripts/...` to `node scripts/...` and the incident doc's
+      parenthetical from "(`bun run config:integrity:check`)" to "(invoked by path with node in CI)".
+      No rule, exit code or output-format change; if touched, RULES/scanText/resolveTargets/
+      formatViolation must be byte-identical in behaviour (the 24 tests and the RC-2-A2 fixture
+      from BG-0020 must still pass).
+    reason: Keep the documented invocation consistent with CI; strictly non-functional.
+  - id: RC-2
+    component: tests/e2e/fantasy.journey.e2e.ts (league test only) and a new helper tests/e2e/fantasy-league-cleanup.ts
+    change: >
+      Smallest safe option that uses only existing RPCs: archive from the test process.
+      Helper (new file): build a supabase-js client from process.env.VITE_SUPABASE_URL /
+      VITE_SUPABASE_PUBLISHABLE_KEY with `{ auth: { persistSession: false, autoRefreshToken: false } }`,
+      authenticate as the synthetic manager (preferred: `auth.signInWithPassword` with
+      E2E_FANTASY_EMAIL/PASSWORD; fallback if Auth settings block it: bearer token taken from the
+      page's localStorage session and passed via `global.headers.Authorization`, as in
+      src/lib/mcp/tools/get-fantasy-team.ts), select `.schema("api")`, resolve the team id via
+      `rpc("fantasy_hub", { p_language: "fr" })` -> data.team.id, then expose:
+        archiveLeague(leagueId): rpc("archive_fantasy_league", { p_league_id, p_team_id }) -> must return true / no error;
+        sweepE2ELeagues(): rpc("fantasy_leagues", { p_season_id: hub.season.id, p_visibility: "private", p_limit: 100 })
+          and archive every item with role === "owner" and name matching /^E2E Ligue /.
+      Suite: in the "leagues: create, open detail, go back" test, capture the league id from
+      page.url() after the detail navigation (pattern /\/fantasy\/leagues\/([0-9a-f-]{36})/), keep
+      every existing assertion untouched, and in a `finally` (or test.afterEach scoped to this
+      test) call archiveLeague(id) and assert it succeeded (a failed cleanup is a red test, not a
+      log line). Run sweepE2ELeagues() once before creating the league (test start or a
+      beforeAll under the same `hasUser` skip) so leagues left by earlier failed runs are
+      archived too; assert it did not error. Never print emails, tokens or keys; league ids are
+      fine to annotate via test.info().annotations. No mock/data-mode branches: the suite already
+      only runs when credentials are injected, and VITE_SUPABASE_URL/KEY presence is a hard
+      precondition of the cleanup (throw with a clear message if absent so CI goes red rather than
+      leaking leagues).
+    reason: >
+      `archive_fantasy_league` is the only removal contract the API exposes to the owner; it hides
+      the league from listings, standings and the scoring worker, so production is left free of
+      accumulated E2E leagues without a schema change, a new RPC, or a service-role secret in CI.
+      Deterministic reuse is impossible without changing src, and a service-side cleanup workflow
+      (phase6-staging-cleanup.yml pattern) needs management-API credentials and is not the
+      smallest option.
+  - id: RC-3
+    component: .github/workflows/fantasy-authenticated-e2e.yml ("Guard target resolution" step, or a new step directly after it)
+    change: >
+      Add step-level env computed by expressions that never carry secret values:
+        STAGING_URL_SET: ${{ vars.SUPABASE_STAGING_URL != '' }}
+        STAGING_KEY_SET: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY != '' }}
+        PRODUCTION_URL_SET: ${{ vars.SUPABASE_PRODUCTION_URL != '' }}
+        PRODUCTION_KEY_SET: ${{ secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY != '' }}
+        EXPECTED_URL: ${{ FANTASY_E2E_TARGET == 'production' && vars.SUPABASE_PRODUCTION_URL || vars.SUPABASE_STAGING_URL }}
+          (write it with the same `github.event_name == 'workflow_dispatch' && inputs.target == 'production'` predicate used on line 62, not with the env name)
+      and under `set -euo pipefail`:
+        case "$FANTASY_E2E_TARGET" in
+          staging)    test "$STAGING_URL_SET" = "true";    test "$STAGING_KEY_SET" = "true" ;;
+          production) test "$PRODUCTION_URL_SET" = "true"; test "$PRODUCTION_KEY_SET" = "true" ;;
+        esac
+        test -n "$EXPECTED_URL"
+        test "$VITE_SUPABASE_URL" = "$EXPECTED_URL"
+      Keep the existing schedule-forces-staging test and the existing "Guard credential presence"
+      step unchanged. Do not echo any key; echoing the resolved URL host is acceptable (vars are
+      not secret and the existing step already echoes the target).
+    reason: >
+      A production dispatch with a missing production var/secret currently runs against staging
+      under a "production" label; this makes it a red run at the guard step.
+  - id: RC-4
+    component: src/i18n/i18n-allowlist.ts lines 9-10 (comment text only)
+    change: >
+      Replace "That is deliberate — `profile.title` stays a named W1/W2 warning until BG-0024
+      replaces its English placeholder copy." with wording in the past tense that keeps the
+      design rationale, e.g. "That is deliberate: before BG-0024 repaired its copy,
+      `profile.title` surfaced as a named W1/W2 warning instead of being absorbed." No change to
+      IDENTICAL_ALLOWED / NO_ARABIC_SCRIPT_ALLOWED, no import change, no other line.
+    reason: The comment describes a defect that no longer exists; comment-only follow-up recorded by the BG-0024 ledger entry.
+
+constraints:
+  - The six existing `test(` blocks and every existing assertion in tests/e2e/fantasy.journey.e2e.ts remain (league creation is still exercised through the UI); only additions.
+  - No credential VALUES anywhere; only secret/variable names. No new secrets or variables are introduced by RC-1..RC-4 (RC-3 reads names that already exist in the workflow).
+  - No new RPC, migration, policy or schema change; cleanup uses api.archive_fantasy_league and api.fantasy_leagues / api.fantasy_hub as they exist.
+  - The guard's scanned set, rules, exit codes and 80-char echo are unchanged.
+  - fantasy-authenticated-e2e.yml keeps exactly the triggers workflow_dispatch and schedule, the job `if:`, the environment `fantasy-e2e`, the mask step, the schedule-forces-staging test and the narrowed artifact upload set.
+  - src/** is untouched except the comment at src/i18n/i18n-allowlist.ts:9-10.
+  - Sweep filter is owner-only and name-prefixed (`E2E Ligue `); it must never archive a league the synthetic account merely joined.
+
+risks:
+  - "MEDIUM (R1): if `node` is not on PATH on the runner, both backend-quality jobs fail at the guard step on every PR. Detectable on the first PR run; remedy is a pinned actions/setup-node step placed before the guard (still before bun install). Not expected on ubuntu-latest."
+  - "MEDIUM (R2): the archive call runs with the synthetic manager's credentials from the Playwright process; if Auth blocks the second sign-in, the league test fails red after its assertions passed. Mitigation: bearer-token fallback documented in RC-2; a red run is preferable to silent accumulation."
+  - "LOW (R2): each cleanup writes one app_private.fantasy_mutation_audit row (operation 'archive_league') and archived league rows remain (soft delete). Both are bounded to one row per run; app_private.fantasy_idempotency_keys rows expire after 30 days by design. Hard deletion is not available through the API and out of scope."
+  - "LOW (R2): the sweep could archive an owner's league whose name legitimately starts with 'E2E Ligue ' on a production account; the account is synthetic and dedicated, so exposure is nil in practice."
+  - "LOW (R3): `secrets.X != ''` semantics cannot be exercised without the fantasy-e2e environment; if the expression behaves differently than assumed the guard fails closed (red), never open."
+  - "LOW (all): a CI-visible failure of the new workflow assertions is the intended loud behaviour; none of the changes can make a previously red condition green."
+
+contradictions:
+  - "BG-0020's implementation_scope listed tests/e2e/** as forbidden; BG-0029 R2 cannot be satisfied without touching the suite (the UI offers no removal path). The BG-0020 review and the ledger both name league cleanup as a follow-up to this task, so tests/e2e/fantasy.journey.e2e.ts is allowed here, additions only."
+  - "The BG-0020 brief specified the npm-script form that R1 now removes; this is the hardening the review itself recommended, not a deviation."
+  - "scripts/qa/i18n-gate.ts:31-32 carries the same stale profile.title prose as the allowlist; the task names only the allowlist lines, so the gate comment is left as an observation for Chief."
+
+unknowns:
+  - "Whether node is on PATH on the GitHub-hosted runner (INFERRED yes; verified only by the first Actions run)."
+  - "Whether the staging/production Supabase Auth configuration permits password sign-in from the Playwright process for the synthetic manager (captcha/rate limits); fallback path defined in RC-2."
+  - "Whether the synthetic manager's session in the browser is stored under the supabase-js default localStorage key (`sb-<ref>-auth-token`); only relevant to the fallback."
+  - "How many E2E leagues already exist in staging/production (no database access; likely zero because the workflow has never had its environment, BG-0028 still HALTED_FOR_INPUT)."
+  - "GitHub expression behaviour of `secrets.NAME != ''` for an unset secret (INFERRED false); acceptance needs a real dispatch."
+  - "Whether Chief wants the sibling stale comment in scripts/qa/i18n-gate.ts:31-32 fixed in the same change (out of the named scope)."
+
+acceptance_tests:
+  # --- runnable without credentials (Verifier, repo root of the branch checkout) ---
+  - "AT-1 (R1 invocation): `grep -rn 'config:integrity:check\\|check-config-integrity.mjs' .github/workflows` -> exactly three hits, all `run: node scripts/backend/check-config-integrity.mjs` (backend-quality.yml x2, fantasy-authenticated-e2e.yml x1); `grep -rn 'bun run config:integrity:check\\|bun scripts/backend/check-config-integrity' .github/workflows` -> no match (exit 1)."
+  - "AT-2 (R1 ordering): parse each workflow's step list; in backend-quality.yml both jobs: index('Config integrity guard') < index('bun install --frozen-lockfile'); in fantasy-authenticated-e2e.yml the guard now precedes `bun install --frozen-lockfile`. `bun test scripts/backend/check-config-integrity.test.ts` -> 0 fail, >= 24 pass, including the new run-line assertions (RC-1b)."
+  - "AT-3 (R1 guard behaviour unchanged): `node scripts/backend/check-config-integrity.mjs` -> stdout 'Config integrity guard: no violations in 34 executed configuration file(s).' exit 0; `node scripts/backend/check-config-integrity.mjs --file /nonexistent/path` -> exit 2; `git show 5731246:eslint.config.js > <scratchpad>/hist.js && node scripts/backend/check-config-integrity.mjs --file <scratchpad>/hist.js` -> exit 1 with 7 violations (R4 :7 and :9; R1/R2/R3/R4/R5 :75), as in BG-0020."
+  - "AT-4 (R2 suite shape): `env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bunx playwright test tests/e2e/fantasy.journey.e2e.ts --list` -> 'Total: 6 tests in 1 file', exit 0; `env -u E2E_FANTASY_EMAIL -u E2E_FANTASY_PASSWORD bun run test:e2e:fantasy` -> 6 skipped / 0 failed, exit 0 (cleanup code must not execute or throw when the suite is skipped)."
+  - "AT-5 (R2 static): `grep -n 'archive_fantasy_league' tests/e2e/*.ts` -> at least one hit; `grep -n 'leave_fantasy_league\\|delete_league\\|service_role\\|sb_secret_' tests/e2e/*.ts` -> no match; `git diff origin/main -- tests/e2e/fantasy.journey.e2e.ts` shows no removed `expect(` line and still 6 `test(` blocks; the sweep filter contains both an owner check and the `E2E Ligue ` prefix."
+  - "AT-6 (R3 static): fantasy-authenticated-e2e.yml contains `vars.SUPABASE_PRODUCTION_URL != ''`, `secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY != ''`, `vars.SUPABASE_STAGING_URL != ''`, `secrets.SUPABASE_STAGING_PUBLISHABLE_KEY != ''` and a `test \"$VITE_SUPABASE_URL\" = \"$EXPECTED_URL\"` (or equivalent) under `set -euo pipefail`; `grep -nE '^\\s*(pull_request|push)\\s*:'` -> no match; the schedule arm still contains `test \"$FANTASY_E2E_TARGET\" = \"staging\"`. Shell semantics reproducible locally: `bash -c 'set -euo pipefail; PRODUCTION_URL_SET=false; FANTASY_E2E_TARGET=production; case \"$FANTASY_E2E_TARGET\" in production) test \"$PRODUCTION_URL_SET\" = \"true\";; esac; echo reached'` -> no 'reached', exit 1."
+  - "AT-7 (comment): `sed -n '9,10p' src/i18n/i18n-allowlist.ts` no longer contains 'stays a named W1/W2 warning until BG-0024'; `git diff origin/main -- src/` touches only src/i18n/i18n-allowlist.ts and only comment lines (no change inside the two exported objects); `bun run typecheck` -> 0; `bun test src/i18n/i18n-gate.test.ts` -> 0 fail; `bun run test` -> 0 fail."
+  - "AT-8 (scope and hygiene): `git diff --name-only origin/main...HEAD` is a subset of implementation_scope.allowed_paths plus docs/engineering/tasks/BG-0029/**; `bun run backend:secrets:check` -> 'No high-confidence secrets found'; `bunx eslint tests/e2e scripts/backend/check-config-integrity.test.ts` -> 0; `git diff origin/main...HEAD | grep -cE 'sb_secret_|sb_publishable_[A-Za-z0-9]|eyJ[A-Za-z0-9]'` -> 0."
+  # --- requires the fantasy-e2e GitHub Environment (owner-gated, BG-0028) ---
+  - "AT-9 (R2 live): dispatch target=staging -> 6 passed / 0 skipped; then a second dispatch; the private-league list for the synthetic manager shows no `E2E Ligue *` entry after either run (checked via the app or via `api.fantasy_leagues` with the account), and the run log shows the archive succeeded."
+  - "AT-10 (R3 live): with SUPABASE_PRODUCTION_URL deliberately unset (or in a fork environment), dispatch target=production -> run fails at the target/presence guard step before any test runs; with all four values set, target=staging and target=production both pass the guard and the resolved URL equals the target's var."
+  - "AT-11 (R1 live): first backend-quality run on the PR shows the guard step executing `node scripts/backend/check-config-integrity.mjs` with exit 0 (confirms node on PATH)."
+
+implementation_scope:
+  builder_type: Builder-DevOps
+  allowed_paths:
+    - .github/workflows/backend-quality.yml (the two `run:` lines of the "Config integrity guard" steps only)
+    - .github/workflows/fantasy-authenticated-e2e.yml (guard step move + run line; RC-3 presence assertions; nothing else)
+    - scripts/backend/check-config-integrity.test.ts (additions only)
+    - scripts/backend/check-config-integrity.mjs (optional, comment/usage wording only; no behavioural change)
+    - tests/e2e/fantasy.journey.e2e.ts (league test: id capture + cleanup wiring; no existing assertion removed)
+    - tests/e2e/fantasy-league-cleanup.ts (new helper)
+    - src/i18n/i18n-allowlist.ts (comment lines 9-10 only)
+    - docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md (optional: the invocation parenthetical at lines 67-71 only)
+    - docs/engineering/tasks/BG-0029/** (process artifacts)
+  forbidden_paths:
+    - src/** (everything except the single comment edit in src/i18n/i18n-allowlist.ts lines 9-10; in particular no route, service, repository or dictionary change, no UI archive button)
+    - supabase/** (migrations, tests, config, seeds)
+    - scripts/qa/** (including scripts/qa/i18n-gate.ts, even its stale comment, unless Chief widens scope)
+    - package.json, bun.lock, bunfig.toml, playwright.config.ts, eslint.config.js, vite.config.ts, tsconfig.json
+    - every other workflow under .github/workflows
+    - tests/e2e/anonymous.acceptance.e2e.ts, tests/e2e/staging.acceptance.e2e.ts, tests/e2e/support.ts
+    - .env*, any GitHub Environment / repository secret or variable (no creation, rename or value), any Supabase project setting or data
+    - scripts/backend/check-config-integrity.mjs rule logic (RULES, scanText, resolveTargets, formatViolation, exit codes)
+
+status: DONE
+notes: >
+  Interpretation of R3 follows review-report.yaml:149-154 literally: the assertion belongs to the
+  workflow's target-resolution guard (per resolved target: staging or production), not to the
+  Playwright suite. R2 is fully implementable with existing RPCs; the only external dependency for
+  live proof (AT-9..AT-11) is the fantasy-e2e environment tracked by BG-0028.

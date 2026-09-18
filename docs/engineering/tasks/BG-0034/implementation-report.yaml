@@ -1,0 +1,121 @@
+task_id: BG-0034
+builder_type: Builder-DevOps
+branch: agent/BG-0034-g7-invariant-probe
+base: "origin/main f2dcd4a (fast-forwarded twice during the task; both upstream deltas were docs-only and touched none of the files below)"
+commits:
+  - "e511de2 BG-0034: classify season-26027 fixtures against the worker's six coverage invariants"
+  - "BG-0034: implementation report"
+changes:
+  - file: scripts/backend/sportsmonks-historical-performance-probe.ts
+    description: >
+      Kept the existing sampled-fixture pass (now 7 fixed requests: the 26027 sample grew by
+      fixture 19489216; seasonCoverage derives the expected sample count per season from the
+      constant instead of the literal 3; requestCount is the constant's length). Added a second,
+      independent pass runHistoricalPerformanceInvariantProbe: for every season in
+      HISTORICAL_PERFORMANCE_INVARIANT_SEASONS ([26027]) it enumerates all league-860 fixtures
+      through the same fixtures/between windows (buildFixtureWindows + TWO_SEASON_BACKFILL_SCOPE
+      from the preflight), the same filters/page size (fixtureLeagues:860, per_page 50,
+      timezone UTC, has_more pagination, 10-page cap) the two-season coverage audit and the
+      fixture ingestion runtime use, then fetches each fixture with the edge worker's exact
+      request shape (include lineups.details, filters lineupDetailTypes:<the worker's
+      HISTORICAL_PERFORMANCE_DETAIL_TYPE_IDS>) and classifies it with
+      classifyFixtureInvariants. Reviewed ticket fixtures of the season are pinned into the
+      target set, so 19489216 is classified even when enumeration is partial
+      (enumerated:false, enumerationComplete:false are recorded instead of aborting).
+      Evidence sportsmonks-historical-performance-invariants.json holds, per fixture:
+      fixtureId, seasonId, kickoff (provider starting_at normalised to ISO or null),
+      enumerated, lineupRows, validPlayerRows, excludedIncompleteRows, starterRows, teamCount,
+      invalidDetailRows, failures[], pass; per season: expectedFixtures 240, fixturesEnumerated,
+      enumerationComplete, pinnedFixtureIds, requests, fixtures, passing, failing,
+      failuresByCode (seeded with the six worker codes at 0); plus totals, requestCount,
+      providerPayloadIncluded:false and a credential-in-evidence guard. No names, no raw payload.
+      Pacing is unchanged from the existing scripts: strictly sequential requests through
+      requestSportsMonksJson (15 s timeout, 3 attempts, Retry-After honoured up to 30 s); no
+      new delay was introduced because none of the existing probes or the audit use one.
+      main() writes both evidence files and exits 0 whenever the probe itself succeeded; a
+      failing fixture is the answer the dispatch is asked for, not a probe failure.
+  - file: scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    description: >
+      Rewritten around the new surface: ticket parity (loads the JSON ticket, extracts and
+      parses the Python dict literal embedded in the workflow's verification step, deep-equals
+      both, and equals the probe's exported constants), a source-level parity test that the
+      six-code constant equals exactly the coverageFailures.push("...") literals in the worker
+      module, the sampled pass at 7 requests / 4+3 samples, pure classification cases (pass;
+      lineup_rows_out_of_range alone; valid_player_rows_out_of_range (necessarily together with
+      starter_rows_mismatch); incomplete_rows_limit_exceeded alone; starter_rows_mismatch
+      alone; team_count_mismatch alone; an invalid detail, which the worker aborts as
+      invalid_provider_detail before reaching invariant six; fixture_scope_mismatch as a
+      failing row), kickoff normalisation, full 240-fixture enumeration with the worker's
+      includes asserting the 19489216 row and failuresByCode, partial enumeration still
+      classifying 19489216, aggregation of every code across a season, evidence key allow-list
+      and token/player_id/details absence, and fail-closed on an out-of-scope listing.
+  - file: docs/production/g7-historical-performance-probe-trigger.json
+    description: >
+      requestId g7-historical-performance-coverage-2026-08-02-03 -> g7-historical-performance-coverage-2026-09-18-01;
+      fixtures gains {"seasonId": 26027, "fixtureId": 19489216} (grouped with the other 26027
+      entries); new key "invariantSeasons": [26027]. Everything else byte-identical.
+  - file: .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    description: >
+      Embedded expected ticket updated identically to the JSON (verified equal by the new unit
+      test and by an independent Python eval). timeout-minutes 10 -> 45 with the derivation in
+      a comment. New step "Report coverage invariant classification" (id invariants, runs only
+      when the probe step succeeded) prints per-season enumerated/complete/fixtures/passing/
+      failing, the sorted failuresByCode histogram and the full 19489216 row, fails with
+      HALTING_FIXTURE_NOT_CLASSIFIED if that row is missing, and exports failing /
+      halting_failures outputs. INVARIANTS_OUTCOME joins the finalize verdict and the commit
+      status gate; the status description appends "invariant-failing fixtures: N". Unchanged:
+      owner actor / main ref / repository guard, GITHUB_RUN_ATTEMPT == 1, confirmation string,
+      expected_commit == GITHUB_SHA, environment production-football-ingestion, only
+      SPORTSMONKS_API_TOKEN, add-mask, bun test + secrets check quality step, evidence scan,
+      artifact upload (30 days), protected-file cleanup, concurrency group, permissions.
+  - file: docs/engineering/tasks/BG-0034/implementation-report.yaml
+    description: this report.
+database_changes: []
+configuration_changes:
+  - "Workflow g7-sportsmonks-historical-performance-coverage.yml job timeout 10 -> 45 minutes. Derivation: 7 sampled + 6 listing pages (3 windows x 2 pages at per_page 50) + 240 per-fixture requests = ~253 provider requests; the repository's reviewed allowance for the sister 480-fixture audit is 90 min / 492 requests ~= 11 s per request, and 253 x 11 s ~= 46 min. Observed provider pace (brief: 5 fixtures incl. DB RPCs in 3.4 s) would need ~3 min, so 45 min is the existing-pacing ceiling, not the expectation."
+  - "No secret, environment, variable or other workflow was changed. No workflow was dispatched."
+invariant_source_decision: >
+  IMPORT, not replicate. supabase/functions/_shared/sportsmonks-historical-player-performance.ts
+  uses no Deno-only global (only fetch, crypto.subtle, TextEncoder, setTimeout) and imports
+  only ./sportsmonks-player-ratings.ts; scripts/backend/sportsmonks-two-season-coverage-audit.ts
+  already imports normalizeHistoricalFixture from it under Bun, and bun test resolves the .ts
+  extension import without node_modules (the workflow's quality step runs bun test without
+  bun install, verified locally). The probe therefore calls the worker's own
+  normalizeHistoricalFixture and reads the diagnostic it attaches to
+  historical_fixture_coverage_incomplete (lineupRowsSeen, validPlayerRows,
+  excludedIncompleteRows, starterRows, teamCount, invalidDetailRows, failures[]); thresholds
+  and codes cannot drift because none are redefined. The only local constant is the list of
+  six code names used to seed the histogram with zeros, and a unit test asserts it equals the
+  coverageFailures.push literals in the worker source.
+tests_run:
+  - command: bun test scripts/backend/sportsmonks-historical-performance-probe.test.ts scripts/backend/sportsmonks-production-probe.test.ts
+    result: PASS # "27 pass / 0 fail / 3822 expect() calls / Ran 27 tests across 2 files. [244.00ms]" (baseline before changes: 13 pass)
+  - command: bun run backend:secrets:check
+    result: PASS # "No high-confidence secrets found in tracked files."
+  - command: bun run typecheck
+    result: PASS # "tsc --noEmit" exit 0 (note: tsconfig include is src/** only; scripts/backend is exercised by bun test, eslint and prettier instead)
+  - command: bun run test
+    result: PASS # "707 pass / 0 fail / 9662 expect() calls / Ran 707 tests across 117 files. [8.06s]"
+  - command: bunx eslint scripts/backend/sportsmonks-historical-performance-probe.ts scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    result: PASS # exit 0 after fixing one prettier/prettier finding it raised on a first pass
+  - command: bunx prettier --check .github/workflows/g7-sportsmonks-historical-performance-coverage.yml docs/production/g7-historical-performance-probe-trigger.json scripts/backend/sportsmonks-historical-performance-probe.ts scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    result: PASS # "All matched files use Prettier code style!"
+  - command: node scripts/backend/check-config-integrity.mjs --file .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    result: PASS # "Config integrity guard: no violations in 1 executed configuration file(s)."
+  - command: bun run config:integrity:check
+    result: PASS # "Config integrity guard: no violations in 34 executed configuration file(s)."
+  - command: "python3 (eval the workflow's embedded dict) == json.load(ticket)"
+    result: PASS # "workflow-embedded == ticket: True" (independent cross-check of the unit test's parser)
+  - command: git diff --name-status origin/main..HEAD
+    result: PASS # exactly M workflow, M ticket JSON, M probe .ts, M probe .test.ts (before the report commit)
+not_executed:
+  - "The live provider call (bun scripts/backend/sportsmonks-historical-performance-probe.ts against api.sportmonks.com): no SPORTSMONKS_API_TOKEN is available to this role and none was sought. The classification of 19489216 and the season-26027 count therefore remain to be produced by an owner dispatch of the workflow at the merged commit."
+  - "The workflow itself was not dispatched (forbidden); its shell/python steps were reviewed by reading and by the config-integrity scan only."
+unresolved: []
+unexpected_observations:
+  - "Invariant six is unreachable in the worker: in normalizeHistoricalFixture the catch that increments invalidDetailRows always rethrows (duplicate_provider_detail / invalid_provider_detail / invalid_provider_payload), so invalid_detail_rows_present can never be emitted and invalidDetailRows is always 0 when the coverage block runs. The probe reports such fixtures under the worker's abort code with null counts (tested). Not repaired; relevant to BG-0011 step A2."
+  - "Fixture 19489216's diagnostic appears to be already recorded in the repository: docs/production/g7-sportsmonks-coverage-audit-trigger.json and scripts/backend/sportsmonks-two-season-coverage-audit.ts embed diagnosticOf { fixtureId 19489216, lineupRowsSeen 40, validPlayerRows 38, excludedIncompleteRows 2, starterRows 21, teamCount 2, failedInvariant starter_rows_mismatch } attributed to run 30767752509 / artifact 8839509446 (sha256 97b3db1a...). The BG-0011 brief classifies this as UNKNOWN; if the Chief accepts that embedded record, A0's first question may already be answered, while the count of non-conforming fixtures across the 240 still needs the dispatch."
+  - "The sister workflow g7-sportsmonks-historical-coverage-audit.yml already performs a two-season, 480-fixture version of this classification (without per-fixture kickoff/pass rows, and failing the run on any failure). It requires the production-admin-activation environment; this task deliberately stayed on the football-ingestion probe as instructed."
+  - "tsconfig.json includes only src/**, so `bun run typecheck` does not type-check scripts/backend or supabase/functions; the repository relies on bun test / eslint for those paths."
+scope_deviations: []
+status: DONE

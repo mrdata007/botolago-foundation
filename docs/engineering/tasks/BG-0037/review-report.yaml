@@ -1,0 +1,119 @@
+task_id: BG-0037
+reviewed_commit: "ae43a2d"
+verdict: PASS
+defects: []
+release_blockers: []
+status: DONE
+reviewer_notes: >
+  Fresh-context review in /home/user/bg0037-review, detached at
+  origin/agent/BG-0037-promoter-manifest (ae43a2d, expected head matched;
+  merge-base with origin/main = 6a25673; worktree clean before and after
+  review). Inputs: objective, ImplementationReport (branch),
+  VerificationReport (origin/main, PASS), full diff 6a25673..HEAD. No edits,
+  no dispatch, no credentials.
+acceptance_criteria:
+  - criterion: "New batch fantasy_deadline_guard with the two BG-0003 files, appended after fantasy_calendar_sync"
+    result: PASS
+    evidence: >
+      Promoter diff: 8 insertions, 0 deletions. BATCHES gains
+      "fantasy_deadline_guard": ("20260918130000_fantasy_deadline_watch.sql",
+      "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql") directly
+      after "fantasy_calendar_sync"; importlib confirms list(BATCHES)[-1] ==
+      "fantasy_deadline_guard" and both files exist as the last two entries of
+      supabase/migrations (59 files on disk).
+  - criterion: "Workflow choice option and confirmation available"
+    result: PASS
+    evidence: >
+      Workflow diff is exactly one added line "- fantasy_deadline_guard" as the
+      last migration_batch option. Confirmation is derived on both sides:
+      workflow line 106 expected_confirmation="RUN_PHASE7E_B_PRODUCTION_${MIGRATION_BATCH^^}";
+      promoter CONFIRMATIONS is a comprehension over BATCHES and yields
+      RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD. argparse --batch uses
+      choices=tuple(BATCHES), so the new key is accepted by the CLI with no
+      further edit. Project-ref guard, staging/legacy refusal, concurrency
+      group and checkout step are untouched.
+  - criterion: "Edge-function expectation entry"
+    result: PASS
+    evidence: >
+      EXPECTED_EDGE_FUNCTIONS_BY_BATCH["fantasy_deadline_guard"] ==
+      frozenset({"football-ingest", "news-ingest"}), identical to the
+      preceding three batches; covered by the extended loop in the unit test.
+  - criterion: "Promoter unit tests updated (59) and passing"
+    result: PASS
+    evidence: >
+      python3 -m unittest scripts/backend/tests/test_phase7e_production_migration_promoter.py -v
+      -> Ran 11 tests, OK (10 pre-existing unchanged + 1 new). Manifest count
+      assertions moved 57 -> 59 for both length and set size; new assertions
+      pin the batch tuple, last-key position, 57-file history prefix and the
+      confirmation string. The pre-existing 56-file (fantasy_calendar_sync)
+      and 44-file (release_activation) prefix assertions were not weakened.
+  - criterion: "NO change to transaction building or history validation"
+    result: PASS
+    evidence: >
+      inspect.getsource comparison of origin/main promoter vs branch:
+      build_transaction, assert_history, read_history, load_migrations,
+      batch_history_prefix, ManagementClient and main all identical: True.
+      EXPECTED_MULTI_STATEMENT_HISTORY and EXPECTED_PINNED_SINGLE_STATEMENT_HISTORY
+      are not in the diff.
+  - criterion: "Allowed scope only: promoter .py, workflow, promoter test file, implementation report"
+    result: PASS
+    evidence: >
+      git diff --stat 6a25673..HEAD lists exactly those four paths
+      (4 files changed, 128 insertions, 3 deletions; the 3 deletions are the
+      two 57-literal lines and the two-item loop tuple replaced in the test).
+      No migration, secret, environment or other workflow was touched.
+  - criterion: "P0 root cause reproduced and fixed"
+    result: PASS
+    evidence: >
+      importlib load of origin/main's promoter: load_migrations(Path('.'))
+      raises PromotionError "repository migration inventory differs from the
+      reviewed migration chain". Branch promoter: load_migrations returns 59.
+      The failure was pre-preflight (no ManagementClient constructed), exactly
+      as the objective states.
+judgment_calls:
+  - topic: "Parity-test exception for post_gate4_baseline"
+    finding: ACCEPTED
+    reasoning: >
+      test_workflow_batch_choices_match_the_manifest_batches_in_order compares
+      the workflow options to BATCHES keys minus post_gate4_baseline. The
+      VerificationReport (V8) shows 0 occurrences of post_gate4_baseline in
+      the workflow on origin/main and in every prior workflow revision; the
+      promoter comment documents it as promoted via separately reviewed
+      provider canaries and retained only so later batches can prove the
+      chain. The exception therefore encodes existing behaviour rather than
+      creating a new exclusion, and adding the option to the workflow would
+      have been a scope expansion. The test still fails closed: any future
+      batch added to BATCHES without a workflow option breaks it (mutation
+      check V5 confirms the inverse direction too). This is not a requirement
+      expansion and not a weakening of any existing test.
+  - topic: "Ordering consequence: 57-file history prefix"
+    finding: ACCEPTED
+    reasoning: >
+      batch_history_prefix("fantasy_deadline_guard") returns 57 files ending
+      in 20260918120000_fantasy_calendar_sync.sql. assert_history (unchanged)
+      requires remote_versions[:57] == those 57 versions, then requires the
+      remainder to be an exact prefix (possibly empty) of the two new
+      versions, and rejects anything beyond them. Promotion of
+      fantasy_deadline_guard will thus assert that Production V2 already
+      holds 20260918120000 with its canonical single-statement SHA-256 row,
+      and will accept either zero or one of the new versions already applied
+      (safe partial-resume). This is the intended fail-closed chain
+      semantics: the batch is unreachable until fantasy_calendar_sync has
+      been promoted, which the objective records as done on 2026-09-18. If
+      production were missing that row the run stops at the read-only
+      preflight with "remote migration history does not match the required
+      prior batches" before any mutation. No weakening was needed or made.
+  - topic: "Two BG-0003 files in one batch rather than two batches"
+    finding: ACCEPTED
+    reasoning: >
+      The objective specifies a single batch containing both files; the
+      promoter already supports multi-file batches and assert_history handles
+      a partially applied batch as an exact prefix. Consistent with the brief.
+residual_risk:
+  - >
+    The live Production V2 dispatch was not executed by Builder, Verifier or
+    Reviewer (forbidden). Whether production's history equals the 57-file
+    prefix and whether the owner's retried credential is valid will only be
+    proven by the owner's dispatch of fantasy_deadline_guard from merged main.
+    This is inherent to the task, was disclosed in both upstream reports, and
+    is not a defect in the change.
