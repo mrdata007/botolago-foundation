@@ -518,10 +518,11 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: QUEUED
+    state: RUNNING
     depends_on: []
     evidence: ['run 35343091384 step "Promote and verify the selected batch": promotion_failed: authenticated account does not own the selected project', 'scripts/backend/phase7e-production-migration-promoter.py:391-407']
     acceptance_criteria: [promoter logs a sanitized shape of the organizations response (type, count, key names) on this failure path; unit test; no weakening of the guard]
+    roles: {builder: Builder-DevOps DONE (agent/BG-0039-ownership-diagnostic @e9d101a; 16 unit tests OK; acceptance rule unchanged), verifier: running, reviewer: pending}
 
   BG-0041:
     title: 'Compact team labels with 4-5 character official codes (ASFAR, RCAZ): verify ClubCrest sm (28px tile, 10px text) and FDR cells (13px bold) do not overflow; log or fix through a scoped UI change'
