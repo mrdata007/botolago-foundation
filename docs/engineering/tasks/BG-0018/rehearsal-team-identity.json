@@ -1,0 +1,153 @@
+{
+  "task": "BG-0018",
+  "role": "Builder-Data",
+  "recordedAt": "2026-09-18T12:17:30Z",
+  "script": "scripts/backend/football-team-identity-seed.sql",
+  "database": {
+    "project": "tkewgajrljbwgwedqsxn",
+    "name": "BotolaGO Production V2",
+    "protocol": "One statement batch: `begin;` → `select set_config('request.jwt.claims','{\"role\":\"service_role\"}',true)` → temp snapshot `pre` of app.teams → the script's DO block verbatim (run 1) → temp snapshot `mid` → the same DO block verbatim (run 2) → checks → `raise exception 'REHEARSAL_BG0018 <json>'` → `rollback;`. The raise aborts the transaction, so nothing was committed; results are the JSON carried by the exception message. apply_migration was never used and no role was switched.",
+    "noticeCapture": "The SQL tool does not relay RAISE NOTICE output, so the DO block's `get diagnostics` row_count is evidenced by the snapshot differences (rows whose (code, primary_color, secondary_color) changed between pre → mid for run 1 and mid → final for run 2), which is exactly the set the UPDATE touched."
+  },
+  "ownerDecisions_2026_09_18": {
+    "codes": "Only the nine VERIFIED official self-designations, written as the club writes them (4-5 characters allowed).",
+    "inferredCodesNotWritten": ["WAC", "RSB", "HUSA", "DHJ", "KACM", "CODM", "USAT"],
+    "wydad": "Keep the provider value WCA (SportsMonks short_code); not independently verified club branding; the script never touches it.",
+    "colours": "Deferred entirely; the script does not write primary_color or secondary_color.",
+    "preserveNonNull": "UPDATE only sets code where the current code IS NULL; never replaces a non-null code."
+  },
+  "valuesApplied": [
+    { "name": "Raja Casablanca",   "code": "RCA",   "source": "https://www.rajaclubathletic.ma/" },
+    { "name": "FAR Rabat",         "code": "ASFAR", "source": "https://as-far.ma/fr/club/2-histoire" },
+    { "name": "FUS Rabat",         "code": "FUS",   "source": "https://fus.ma" },
+    { "name": "Maghreb Fès",       "code": "MAS",   "source": "https://www.maghreb-fes.com/" },
+    { "name": "Ittihad Tanger",    "code": "IRT",   "source": "https://www.irtfoot.ma/fr" },
+    { "name": "UTS Rabat",         "code": "UTS",   "source": "https://touargaclub.ma/en/le-club/" },
+    { "name": "CR Khemis Zemamra", "code": "RCAZ",  "source": "https://rcazfc.com/" },
+    { "name": "Moghreb Tétouan",   "code": "MAT",   "source": "https://www.matfoot.com" },
+    { "name": "Widad Témara",      "code": "WST",   "source": "https://widad-temara.com/club/" }
+  ],
+  "baselineDeviationFromBrief": {
+    "statement": "The brief (and AT-1 / AT-3 expectations) assume 16 active app.teams rows with code_null = 15. Production actually holds 21 active rows: the 16 current Botola Pro clubs plus five rows last written on 2026-08-02 (Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra, Yacoub El Mansour) that were never deactivated. Baseline is therefore active_teams 21, code_null 20, primary_null 21, and api.football_team_catalog('fr',100) returns 21 entries. The operation is unaffected: every one of the nine listed names matches exactly one active row, and the five extra rows are neither listed nor touched. Recorded as an unexpected observation for the Chief; not repaired here (out of scope).",
+    "extraActiveRows": [
+      { "id": "7ff33380-1236-45e5-9c3e-97e753961cc9", "name": "Chabab Mohammédia", "updated_at": "2026-08-02T13:43:15.899678+00:00" },
+      { "id": "318655a9-db9f-4706-abb2-df0fa4b13baf", "name": "JS Soualem", "updated_at": "2026-08-02T13:43:14.462197+00:00" },
+      { "id": "32fb7b61-9af4-4667-8978-b739b5e3f170", "name": "Olympic Safi", "updated_at": "2026-08-02T13:43:15.473884+00:00" },
+      { "id": "f2715f02-38ed-4feb-a4e5-72444ad39529", "name": "Olympique Dcheïra", "updated_at": "2026-08-02T08:59:02.620815+00:00" },
+      { "id": "e595b91e-4d8f-4f3d-92d7-c23d7e332544", "name": "Yacoub El Mansour", "updated_at": "2026-08-02T08:59:01.222435+00:00" }
+    ]
+  },
+  "serverTime": "2026-09-18T12:17:16.629003+00:00",
+  "baseline": {
+    "all_teams": 21,
+    "active_teams": 21,
+    "code_null_active": 20,
+    "primary_null_active": 21,
+    "max_updated_at_active": "2026-09-18T10:06:38.00697+00:00"
+  },
+  "beforeSnapshot_16_currentClubs": [
+    { "id": "1ebd788b-9f71-4a78-bfa8-68359d7f3a3f", "name": "Amal Tiznit",        "short_name": "Amal Tiznit",        "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:29.253869+00:00" },
+    { "id": "8059c0cf-8b7b-4317-be7e-fd646d377cd0", "name": "CODM Meknès",        "short_name": "CODM Meknès",        "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:38.00697+00:00" },
+    { "id": "dc6fb819-6f3e-4584-ad73-7d567e80d32c", "name": "CR Khemis Zemamra",  "short_name": "CR Khemis Zemamra",  "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:27.76999+00:00" },
+    { "id": "d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc", "name": "Difaâ El Jadida",    "short_name": "Difaâ El Jadida",    "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:29.899362+00:00" },
+    { "id": "fd6ff8ea-898c-403b-aec3-7d8a41cbc158", "name": "FAR Rabat",          "short_name": "FAR Rabat",          "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:25.970564+00:00" },
+    { "id": "c499006b-2af3-4013-862c-854ab74b59cf", "name": "FUS Rabat",          "short_name": "FUS Rabat",          "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:33.265655+00:00" },
+    { "id": "9f8c170d-24ed-41a3-99ca-a06167fd9c8b", "name": "Hassania Agadir",    "short_name": "Hassania Agadir",    "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:32.645123+00:00" },
+    { "id": "353e19d7-0a4b-41e6-a491-fc85f6c952d8", "name": "Ittihad Tanger",     "short_name": "Ittihad Tanger",     "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:25.179716+00:00" },
+    { "id": "d60d9d72-cb7a-4c94-944f-67081ef0a009", "name": "Kawkab Marrakech",   "short_name": "Kawkab Marrakech",   "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:28.441988+00:00" },
+    { "id": "0257feb3-4c16-431d-a58b-5faf060576ad", "name": "Maghreb Fès",        "short_name": "Maghreb Fès",        "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:32.139301+00:00" },
+    { "id": "e3beb52d-fbfb-4180-a39d-7e3d8f965b62", "name": "Moghreb Tétouan",    "short_name": "Moghreb Tétouan",    "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:37.264651+00:00" },
+    { "id": "3b0f1fc9-5b29-4a77-bdf8-a54fce0b1a0e", "name": "Raja Casablanca",    "short_name": "Raja Casablanca",    "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:30.592613+00:00" },
+    { "id": "7b2e23bc-450f-4eb2-9926-4add1a5386e7", "name": "RSB Berkane",        "short_name": "RSB Berkane",        "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:35.85321+00:00" },
+    { "id": "b78eaee8-93af-4630-8335-b208151cbf37", "name": "UTS Rabat",          "short_name": "UTS Rabat",          "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:26.842195+00:00" },
+    { "id": "7d508334-d7a9-4a74-b057-7030c21a0eda", "name": "Widad Témara",       "short_name": "Widad Témara",       "code": null,  "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:31.197722+00:00" },
+    { "id": "80a3fb82-02ae-46bc-aae9-5160ba8f3648", "name": "Wydad Casablanca",   "short_name": "WCA",                "code": "WCA", "primary_color": null, "secondary_color": null, "updated_at": "2026-09-18T10:06:36.504938+00:00" }
+  ],
+  "AT1_firstRun": {
+    "verdict": "PASS",
+    "row_count": 9,
+    "changed_vs_pre": 9,
+    "updated_at_bumped": 9,
+    "colour_writes": 0,
+    "collateral": 0,
+    "all_teams_after": 21,
+    "format_violations": 0,
+    "wydad_after": { "code": "WCA", "short_name": "WCA", "updated_at": "2026-09-18T10:06:36.504938+00:00" },
+    "afterRows_16_currentClubs": [
+      { "id": "1ebd788b-9f71-4a78-bfa8-68359d7f3a3f", "name": "Amal Tiznit",       "code": null,    "updated_at": "2026-09-18T10:06:29.253869+00:00" },
+      { "id": "8059c0cf-8b7b-4317-be7e-fd646d377cd0", "name": "CODM Meknès",       "code": null,    "updated_at": "2026-09-18T10:06:38.00697+00:00" },
+      { "id": "dc6fb819-6f3e-4584-ad73-7d567e80d32c", "name": "CR Khemis Zemamra", "code": "RCAZ",  "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc", "name": "Difaâ El Jadida",   "code": null,    "updated_at": "2026-09-18T10:06:29.899362+00:00" },
+      { "id": "fd6ff8ea-898c-403b-aec3-7d8a41cbc158", "name": "FAR Rabat",         "code": "ASFAR", "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "c499006b-2af3-4013-862c-854ab74b59cf", "name": "FUS Rabat",         "code": "FUS",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "9f8c170d-24ed-41a3-99ca-a06167fd9c8b", "name": "Hassania Agadir",   "code": null,    "updated_at": "2026-09-18T10:06:32.645123+00:00" },
+      { "id": "353e19d7-0a4b-41e6-a491-fc85f6c952d8", "name": "Ittihad Tanger",    "code": "IRT",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "d60d9d72-cb7a-4c94-944f-67081ef0a009", "name": "Kawkab Marrakech",  "code": null,    "updated_at": "2026-09-18T10:06:28.441988+00:00" },
+      { "id": "0257feb3-4c16-431d-a58b-5faf060576ad", "name": "Maghreb Fès",       "code": "MAS",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "e3beb52d-fbfb-4180-a39d-7e3d8f965b62", "name": "Moghreb Tétouan",   "code": "MAT",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "3b0f1fc9-5b29-4a77-bdf8-a54fce0b1a0e", "name": "Raja Casablanca",   "code": "RCA",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "7b2e23bc-450f-4eb2-9926-4add1a5386e7", "name": "RSB Berkane",       "code": null,    "updated_at": "2026-09-18T10:06:35.85321+00:00" },
+      { "id": "b78eaee8-93af-4630-8335-b208151cbf37", "name": "UTS Rabat",         "code": "UTS",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "7d508334-d7a9-4a74-b057-7030c21a0eda", "name": "Widad Témara",      "code": "WST",   "updated_at": "2026-09-18T12:17:16.629003+00:00" },
+      { "id": "80a3fb82-02ae-46bc-aae9-5160ba8f3648", "name": "Wydad Casablanca",  "code": "WCA",   "updated_at": "2026-09-18T10:06:36.504938+00:00" }
+    ],
+    "note": "The five extra active rows (see baselineDeviationFromBrief) kept code NULL and their 2026-08-02 updated_at."
+  },
+  "AT2_secondRun_idempotency": {
+    "verdict": "PASS",
+    "row_count": 0,
+    "changed_vs_mid": 0,
+    "updated_at_bumped_vs_mid": 0,
+    "updated_at_bumped_vs_pre": 9,
+    "conclusion": "Second run in the same transaction touched 0 rows; the count of rows whose updated_at differs from `pre` is 9 after run 1 and still 9 after run 2 (no bump on the no-op run)."
+  },
+  "AT3_apiProjection": {
+    "verdict": "PASS",
+    "catalog_len": 21,
+    "catalog_code_not_null": 10,
+    "catalog_code_not_null_note": "9 seeded + the pre-existing provider WCA",
+    "catalog_primary_not_null": 0,
+    "excerpt_api_football_team_catalog_fr_100": [
+      { "name": "Amal Tiznit",        "shortName": "Amal Tiznit",        "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "Chabab Mohammédia",  "shortName": "Chabab Mohammédia",  "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "CODM Meknès",        "shortName": "CODM Meknès",        "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "CR Khemis Zemamra",  "shortName": "CR Khemis Zemamra",  "code": "RCAZ",  "primaryColor": null, "secondaryColor": null },
+      { "name": "Difaâ El Jadida",    "shortName": "Difaâ El Jadida",    "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "FAR Rabat",          "shortName": "FAR Rabat",          "code": "ASFAR", "primaryColor": null, "secondaryColor": null },
+      { "name": "FUS Rabat",          "shortName": "FUS Rabat",          "code": "FUS",   "primaryColor": null, "secondaryColor": null },
+      { "name": "Hassania Agadir",    "shortName": "Hassania Agadir",    "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "Ittihad Tanger",     "shortName": "Ittihad Tanger",     "code": "IRT",   "primaryColor": null, "secondaryColor": null },
+      { "name": "JS Soualem",         "shortName": "JS Soualem",         "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "Kawkab Marrakech",   "shortName": "Kawkab Marrakech",   "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "Maghreb Fès",        "shortName": "Maghreb Fès",        "code": "MAS",   "primaryColor": null, "secondaryColor": null },
+      { "name": "Moghreb Tétouan",    "shortName": "Moghreb Tétouan",    "code": "MAT",   "primaryColor": null, "secondaryColor": null },
+      { "name": "Olympic Safi",       "shortName": "Olympic Safi",       "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "Olympique Dcheïra",  "shortName": "Olympique Dcheïra",  "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "Raja Casablanca",    "shortName": "Raja Casablanca",    "code": "RCA",   "primaryColor": null, "secondaryColor": null },
+      { "name": "RSB Berkane",        "shortName": "RSB Berkane",        "code": null,    "primaryColor": null, "secondaryColor": null },
+      { "name": "UTS Rabat",          "shortName": "UTS Rabat",          "code": "UTS",   "primaryColor": null, "secondaryColor": null },
+      { "name": "Widad Témara",       "shortName": "Widad Témara",       "code": "WST",   "primaryColor": null, "secondaryColor": null },
+      { "name": "Wydad Casablanca",   "shortName": "WCA",                "code": "WCA",   "primaryColor": null, "secondaryColor": null },
+      { "name": "Yacoub El Mansour",  "shortName": "Yacoub El Mansour",  "code": null,    "primaryColor": null, "secondaryColor": null }
+    ]
+  },
+  "AT4_residueAfterRollback": {
+    "verdict": "PASS",
+    "statement": "read-only SELECT run after the batch, outside any transaction",
+    "checked_at": "2026-09-18T12:17:30.315872+00:00",
+    "active_teams": 21,
+    "code_null": 20,
+    "primary_null": 21,
+    "secondary_null": 21,
+    "max_updated_at": "2026-09-18T10:06:38.00697+00:00",
+    "non_null_codes": "Wydad Casablanca=WCA",
+    "temp_table_residue": 0,
+    "conclusion": "Codes are NULL again for all rows except the provider WCA, colours untouched, max(updated_at) equals the pre-rehearsal value; nothing survived the rollback."
+  },
+  "AT8_durability_informational": {
+    "clobberPath": "api.ingest_football_catalog_entity, entity 'team', UPDATE branch sets code = v_code unconditionally (supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302). v_code is the provider short_code, NULL for the nine clubs seeded here.",
+    "trigger": "Any fresh team payload (provider freshness timestamp newer than the mapping's last_seen_at) from the football-current-season-recovery workflow dispatch or the fantasy orchestrator recovery step re-runs that UPDATE and resets the nine codes to NULL.",
+    "coloursUnaffected": "Ingestion never writes primary_color / secondary_color (and this script writes none).",
+    "durableFix": "BG-0036 (separate Builder-Backend task). Until it lands the seeded codes are NOT durable; the script is idempotent and can simply be re-run after any ingest."
+  }
+}
