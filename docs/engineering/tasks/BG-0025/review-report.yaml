@@ -1,0 +1,28 @@
+task_id: BG-0025
+reviewed_commit: "ef214e79ac316909947f185c57f07da44455c585"
+verdict: PASS
+defects: []
+release_blockers: []
+residual_risks:
+  - >
+    Switching "ar" -> "ar-MA" changes more than the digit system: ICU's ar-MA
+    default also flips the hour cycle from 12h ("٠٢:٣٠ م") to 24h ("14:30")
+    and uses Moroccan month names ("شتنبر" instead of "سبتمبر"). This is the
+    inherent, intended consequence of adopting the same locale tag the 20+
+    UI components already use (the objective's "same locale tags"), not an
+    extra change, but product should be aware the Arabic article timestamp
+    now reads in 24h Moroccan form. The Builder flagged the Western-digit
+    assumption in unexpected_observations as the ledger required.
+  - >
+    Tests assert digit script and fr-FR parity but not the ar month form or
+    hour cycle; a future ICU data update in Bun/Node could shift ar-MA
+    output without failing the suite. Acceptable for a locale-tag alignment
+    task; no correction required.
+notes:
+  - "VerificationReport.verified_commit ef214e79... equals branch head ef214e7 (confirmed via git rev-parse HEAD)."
+  - "Scope: git diff c5fdd1f..HEAD touches exactly src/lib/format-time.ts (3 lines, locale tag only), new src/lib/format-time.test.ts, new docs/engineering/tasks/BG-0025/implementation-report.yaml. No forbidden scope modified; no test deleted or weakened."
+  - "Independently ran `bun test src/lib/format-time.test.ts` in /home/user/bg0025-review: 3 pass, 0 fail, 5 expect() calls. `bun run typecheck` (tsc --noEmit) exit 0."
+  - "Call sites: src/components/common/ArticleCard.tsx:58 (formatRelativeTime(article.publishedAt, lang)) and src/routes/news.$articleId.tsx:229-230 (formatFullDate / formatRelativeTime with lang). Both pass `lang` from useI18n(), typed Language = \"fr\" | \"ar\" (src/types/domain.ts:4). Function signatures unchanged; the ternary `lang === \"ar\" ? \"ar-MA\" : \"fr-FR\"` handles both members, so no caller passes a locale value that is now unhandled."
+  - "Independent behaviour check (bun -e): formatFullDate ar -> \"18 شتنبر 2026 في 14:30\" (Western digits), fr -> \"18 septembre 2026 à 14:30\"; formatRelativeTime ar 5 min -> \"قبل 5 دقائق\"; 30-day fallback ar -> \"19 غشت\"; 400-day fr -> \"14 août 2025\". Bare \"ar\" for comparison yields \"١٨ سبتمبر ٢٠٢٦ في ٠٢:٣٠ م\", confirming the two-digit-system defect the objective describes is resolved."
+  - "All five VerificationReport criteria (AC1-AC5) reproduced; none refuted. ImplementationReport lists tests, lint, prettier, full suite (680 pass) and flags the Western-digit assumption as the ledger required. No silent requirement expansion."
+status: DONE

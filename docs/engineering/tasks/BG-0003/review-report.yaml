@@ -1,0 +1,289 @@
+task_id: BG-0003
+role: Reviewer (fresh context)
+attempt: 1
+reviewed_commit: 95d79a70cdeab3e8371cb045972059fa0ee5b392 # origin/agent/BG-0001-0003-deadline-guard
+verdict: PASS
+
+local_gates:
+  worktree: /home/user/bg0003-review (git worktree of 95d79a7, bun install --frozen-lockfile)
+  bun_test: PASS # 62 pass / 0 fail / 254 expect() across the four named files
+  typecheck: PASS # tsc --noEmit, exit 0
+  eslint: PASS # orchestrator + test, exit 0
+  migrations_check: PASS # Validated 59 migration(s)
+  secrets_check: PASS # backend:secrets:check — no high-confidence secrets in tracked files
+
+scope_checks:
+  diff_files: 8 # workflow, runbook, 2 BG-0003 docs, orchestrator.ts, orchestrator.test.ts, 2 new migrations
+  forbidden_paths_touched: none # no src/**, tests/**, docs/qa/**, no existing migration, no realign SQL, no lifecycle-runner/current-season-*/phase7f scanner, no other workflow
+  existing_migrations_modified: none # git diff --stat origin/main...HEAD -- supabase/migrations = 2 new files, 425 insertions, 0 deletions
+  workflow_change: header comment + two `vars.*` env lines only; no continue-on-error, no concurrency/`on:`/cron/job-`if`/step-order change
+  weakened_or_deleted_tests: none # the only edits to pre-existing assertions adapt selectWorkerTargets' new {targets, skipped} shape and additionally assert `skipped: []` (strictly stronger)
+  secrets_committed: none
+  fabricated_data: none # DEF-3 explicitly reported as not attempted in both the implementation report and rehearsal-deadline-guard.json
+
+criteria:
+  - id: OBJ-detect
+    statement: detects an open/scheduled gameweek approaching its deadline while a counting fixture carries an unconfirmed 00:00 UTC placeholder kickoff
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      supabase/migrations/20260918130000_fantasy_deadline_watch.sql — loop over
+      status in ('scheduled','open'), count filter on
+      `not app_private.fantasy_kickoff_confirmed(f.kickoff_at)` over
+      `a.superseded_at is null and a.counts_points`, `continue when unconfirmed = 0`,
+      `continue when hours > p_warn_hours`. Placeholder predicate reused, not
+      redefined (no second definition in TypeScript). Live rehearsal R1 /
+      verification (i): GW1 3cc19aaa-ea33-4909-845b-db33314b4071, sequence 1, open,
+      deadlineAt 2026-09-23T22:30:00+00:00, unconfirmedFixtures 8,
+      totalCountingFixtures 8, deadlineDerivedFromPlaceholder true.
+  - id: OBJ-escalate
+    statement: escalates via a red workflow run
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      Verdict union widened to "ok"|"waiting"|"escalate"|"failed" with mergeVerdict
+      (rank ok<waiting<escalate<failed) and shouldFailRun; import.meta.main now
+      `if (shouldFailRun(summary.verdict)) process.exitCode = 1` with the
+      FANTASY_ORCHESTRATOR_<VERDICT> line kept. Workflow step has set -euo pipefail
+      and no continue-on-error (unchanged). Unit tests "mergeVerdict ranks…",
+      "shouldFailRun turns the workflow step red only for failed and escalate",
+      "an escalating watch turns the pass red without changing what the pass did".
+    note: >
+      The import.meta.main wiring itself is not executed by any test (only
+      shouldFailRun is). Acknowledged by the Verifier under `untested`; the
+      one-line change is directly readable in the diff. Not a defect against any
+      listed criterion.
+  - id: OBJ-evidence
+    statement: sanitized evidence names gameweek, deadline, affected fixtures and provider state; remediation pointer
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      RPC emits gameweekId, sequence, status, deadlineAt, startsAt, hoursToDeadline
+      (2dp, negative when elapsed), deadlinePassed, unconfirmedFixtures,
+      totalCountingFixtures, deadlineDerivedFromPlaceholder, severity, and
+      fixtures[] (fixtureId, homeTeam, awayTeam, providerKickoffAt,
+      assignedKickoffAt, originalKickoffAt, fixtureStatus, assignmentStatus,
+      frozen, providerUpdatedAt, sourceSequence) ordered by f.kickoff_at, f.id.
+      Top level carries schemaVersion 1, seasonId, seasonStatus, warnHours,
+      escalateHours, serverTime and remediation
+      'scripts/backend/fantasy-realign-gameweek-calendar.sql'.
+      summary.deadlineWatch = {warnHours, escalateHours, affected, escalations,
+      informational, remediation}. No field name matches
+      /(access_token|refresh_token|token_hash|hashed_token|password)/i — asserted
+      by unit test over the whole serialized summary, so the phase7f scan cannot
+      suppress the upload.
+  - id: OBJ-never-invent
+    statement: never invents a kickoff, never creates or moves a deadline; idempotent; no production mutation
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      The RPC is declared `stable`, contains no insert/update/delete/merge and no
+      advisory lock; its only use of app_private.fantasy_calculate_deadline is
+      inside the boolean `deadlineDerivedFromPlaceholder` comparison
+      (`gw.deadline_at is not distinct from …`), never assigned to a column.
+      fantasy_calculate_deadline is itself STABLE
+      (20260720163222_fantasy_ruleset_v1.sql:396), so the STABLE declaration holds.
+      Entries ordered by sequence_number, fixtures by (kickoff, id), gameweeks
+      '[]' when none → reruns serialise identically except clock-derived fields
+      (unit test "two passes over the same state serialise identically";
+      rehearsal R2 / verification). Post-rollback production snapshot: gameweeks 1,
+      active assignments 8, in-season fixtures 8, all fixtures 488, deadline audit
+      rows 0, GW1 deadline 2026-09-23 22:30:00+00 / status open / first kickoff
+      2026-09-24 00:00:00+00, watch_fn_present 0. Independently reproduced by the
+      Verifier.
+  - id: OBJ-security
+    statement: service-only exposure
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      security definer, `set search_path = ''`, `app_private.is_service_request()`
+      as the first statement (PT403 forbidden), bounded integers
+      (0 <= escalate <= warn <= 720, PT400
+      fantasy_deadline_watch_window_invalid), season resolution PT404. Footer
+      revokes from public, anon, authenticated and grants only to service_role;
+      comment on function present. Live rehearsal R3 / verification (iii):
+      authenticated claims → sqlstate PT403 "forbidden".
+  - id: DEF-1a
+    statement: the calendar sync must never derive a window/deadline from a placeholder (mixed rounds)
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql.
+      My own `diff -u` against 20260918120000 shows five hunks only: header
+      comment; the two helper definitions (fantasy_kickoff_confirmed,
+      fantasy_guard_deadline_change) absent — i.e. NOT redefined, honouring the
+      "do not modify" constraint; one new declaration `unconfirmed_active integer`;
+      the behavioural hunk (a count of active counting assignments whose
+      f.kickoff_at is unconfirmed → note "deadline_unconfirmed" and no write at
+      all; otherwise the pre-existing block verbatim except that the
+      min/max(assigned_kickoff_at) select gains
+      `and app_private.fantasy_kickoff_confirmed(a.assigned_kickoff_at)`); and the
+      extended function comment. deadline_locked / new_deadline_in_past / update /
+      counters / payload are textually unchanged (re-indented only).
+      Behaviour proved on live data, rolled back: Builder R5 (round 90) and the
+      Verifier's independent round 91 — 7 confirmed + 1 placeholder →
+      notes ["deadline_unconfirmed", {"kickoffUnconfirmed":1,"deadlineUnconfirmed":true}],
+      deadlineChanges 0, deadline and starts_at unchanged, 0 audit rows; after the
+      eighth kickoff is published → kickoffsRealigned 1, deadlineChanges 1,
+      exactly 1 audit row.
+  - id: DEF-1b
+    statement: the orchestrator must refuse a deadline_passed worker target when the round note says deadlineUnconfirmed
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      scripts/backend/fantasy-season-orchestrator.ts — gameweeksWithUnconfirmedDeadline()
+      correlates rounds[].gameweekId with either the string note
+      "deadline_unconfirmed" or the object note {deadlineUnconfirmed: true};
+      selectWorkerTargets now returns {targets, skipped} and, in the
+      `open && deadlineAt <= now` branch only, pushes
+      {gameweekId, sequence, reason: "deadline_unconfirmed"} and `continue`s.
+      orchestrateFantasySeason merges ok → waiting when skipped is non-empty and
+      surfaces summary.skipped[]. Unit tests "an open gameweek with an unconfirmed
+      deadline is never locked by the pass" (only the confirmed GW2 targeted) and
+      "the string note from the calendar sync refuses the target too, and degrades
+      the verdict" (verdict waiting, workers [], no
+      service_fantasy_lifecycle_state call).
+      I checked the source of the note independently: 20260918120000 lines 251-257
+      append {kickoffUnconfirmed, deadlineUnconfirmed} for every existing gameweek
+      (the count runs after, and outside, the gameweek_locked / realign branches),
+      and line 265 emits gameweekId in the same round entry. The refusal therefore
+      works against the CURRENT, unpromoted production sync body as well as the new
+      one — no path exists by which an open, unconfirmed gameweek reaches the
+      deadline_passed branch unrefused.
+  - id: DEF-2
+    statement: rolled-back rehearsals proving deadline_locked, new_deadline_in_past and fantasy_gameweek_locked
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json R6/R7/R8, each
+      reproduced independently by the Verifier as (vi)/(vii)/(viii):
+      deadline_locked — notes [{"kickoffsRealigned":8},"deadline_locked"],
+      deadlineChanges 0, deadline unchanged, no audit row written by the sync;
+      new_deadline_in_past — notes [{"kickoffsRealigned":8},"new_deadline_in_past"],
+      deadline unchanged, 0 audit rows;
+      fantasy_gameweek_locked — direct deadline_at update on a locked gameweek →
+      sqlstate PT409 "fantasy_gameweek_locked".
+      Protocol: begin; → service_role claims → migration bodies inlined with
+      create or replace → DO block → raise exception (log) → rollback;
+      apply_migration never used; post-rollback snapshot proves production
+      unchanged and that api.service_fantasy_deadline_watch does not exist there
+      (pg_proc count 0, and `position('unconfirmed_active' in prosrc)` = 0 for the
+      production sync).
+  - id: DEF-3
+    statement: the composed orchestrator has never driven a gameweek
+    assessment: NOT-EVIDENCED (out of scope for BG-0003)
+    evidence: >
+      Builder and Verifier both report it not attempted: Docker client present but
+      the daemon socket is absent (/var/run/docker.sock), so `supabase start` /
+      `supabase db reset` cannot run; the only reachable database is production,
+      where the required shape would need committed writes. Nothing fabricated.
+      BG-0003's approved objective (engineering-brief.yaml) does not include DEF-3
+      and its implementation_scope contains no path that could produce it, so it
+      is not graded against this task. It remains open against BG-0001.
+  - id: AC-tests
+    statement: the brief's acceptance_tests are implemented and pass
+    assessment: VERIFIED-by-evidence
+    evidence: >
+      I re-ran the regression command in a clean worktree: 62 pass / 0 fail / 254
+      expect() calls. The "fantasy deadline watch" describe block covers every
+      listed unit criterion (schema accept/reject on schemaVersion 2, unknown
+      severity, non-uuid gameweekId; summarize partition + sequence order +
+      clock-freedom; mergeVerdict precedence; escalate without short-circuit;
+      info-only stays ok; worker failure outranks escalation; RPC error and
+      unexpected payload → waiting + fantasy_deadline_watch_failed; identical
+      serialisation and no secret-shaped field; default 72/24 args and overrides;
+      environment window validation; shouldFailRun) plus the two DEF-1(b) tests.
+      Production checks (i)-(iv) were executed rolled back by both Builder and
+      Verifier.
+    note: >
+      One acceptance test is internally contradictory in the brief itself:
+      "(null,72,240) → escalate" cannot hold under the brief's own required
+      validation p_warn_hours >= p_escalate_hours. The Builder implemented the
+      validation as specified, recorded the refusal (PT400
+      fantasy_deadline_watch_window_invalid) and ran the threshold scenarios at the
+      documented maximum warn window (720,0 → info; 720,240 → escalate). That is
+      the correct resolution of the contradiction; the defect is in the brief
+      (owner: Researcher), not in the implementation, and is recorded below as a
+      non-blocking observation rather than a defect against this change.
+
+defects: []
+
+observations:
+  - id: OBS-1
+    subject: 72 h / 24 h default warn window vs "approaching its deadline"
+    finding: ops parameter, not a defect
+    reasoning: >
+      GW1 enters the informational window at 2026-09-20T22:30Z and the escalation
+      window at 2026-09-22T22:30Z, i.e. red from ~24 h before the point of no
+      return; with the hourly cron (minute 12) that is ~24 escalating runs before
+      the deadline elapses and the remediation script becomes illegal
+      (current_deadline_already_passed). The brief classifies 72/24 as INFERRED ops
+      parameters, overridable, and the objective says "approaching", not a specific
+      horizon — so this is a tuning choice, not a requirement miss. The defaults are
+      defined in exactly one conceptual place as required (RPC defaults mirrored by
+      the exported constants DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS).
+      The workflow override does cover it: the orchestrate step passes
+      `vars.FANTASY_DEADLINE_WATCH_WARN_HOURS` / `_ESCALATE_HOURS`, an unset
+      variable expands to "" which deadlineWatchHours() maps to the default, and
+      invalid or inverted values throw fantasy_deadline_watch_window_invalid
+      (unit-tested for "abc", "721" and warn < escalate). Caveat, not a defect:
+      the override path has never been exercised in a real workflow run, and
+      setting it requires a repository-variable change by the Chief. If ops wants
+      more lead time on GW1, set FANTASY_DEADLINE_WATCH_ESCALATE_HOURS (e.g. 120)
+      before 2026-09-22T22:30Z.
+  - id: OBS-2
+    subject: brief self-contradiction in the threshold acceptance test
+    owner: Researcher
+    finding: >
+      acceptance_tests "(null,72,240) → escalate" contradicts required_changes
+      "validate p_warn_hours >= p_escalate_hours". Correct the wording in a future
+      brief; no code change required.
+  - id: OBS-3
+    subject: predicate asymmetry in 20260918140000
+    finding: >
+      The new skip counts unconfirmed assignments by f.kickoff_at while the
+      new_start/new_end select filters on a.assigned_kickoff_at. These diverge only
+      for assignments that were not realigned (frozen ones, which take the
+      gameweek_locked path). The failure mode is fail-safe — new_start becomes null
+      and nothing is written. No action required.
+  - id: OBS-4
+    subject: escalate and failed are indistinguishable from the job status
+    finding: >
+      Both exit 1 from the same step; an operator must read the
+      FANTASY_ORCHESTRATOR_ESCALATE stdout line or the evidence artifact. This is
+      exactly what the brief specified (the red run is the only channel that
+      exists) and is documented in the workflow header and the runbook. There is no
+      auto-suppression, so a provider that never publishes produces an indefinitely
+      red hourly workflow — a known, bounded risk already recorded in the brief.
+  - id: OBS-5
+    subject: pre-existing contradiction not repaired (correctly out of scope)
+    finding: >
+      calendarSyncSchema still strips rounds[].roundId / sequence / deadlineAt that
+      the sync SQL emits. The DEF-1(b) correlation needs only gameweekId and notes,
+      both of which survive the schema. Leaving it alone is right for this task.
+  - id: OBS-6
+    subject: Verifier process disclosure
+    finding: >
+      The VerificationReport discloses an accidental
+      `git checkout origin/main -- .` into the main working tree, reverted with
+      `git reset --hard HEAD` and the 12 added files quarantined in the scratchpad;
+      `git status --porcelain` is clean at 1736478a. I confirm the repository at
+      /home/user/botolago-foundation is clean and no branch, commit or remote was
+      affected; this does not touch the reviewed commit 95d79a7. Informational for
+      the Chief (the main tree's HEAD is behind origin/main).
+
+release_blockers:
+  - "Neither migration is promoted to Production V2. Until 20260918130000 is promoted, the guard RPC does not exist and every pass degrades to `waiting` with fantasy_deadline_watch_failed — a GREEN run. The escalation channel is therefore inert until promotion; promote before relying on it, and before 2026-09-20T22:30Z if GW1 is to be caught by the default window."
+  - "Until 20260918140000 is promoted, the production sync body is still the unguarded 20260918120000 version (confirmed: position('unconfirmed_active' in prosrc) = 0), so a partially published round can still write a placeholder-derived deadline. DEF-1(a) is fixed in the repository, not yet in the database."
+  - "DEF-1(b) is TypeScript-side and effective against the current production sync notes, so the BG-0001 blocker (locking GW1 at 2026-09-23T22:30Z on a placeholder-derived deadline) is removed once this branch is deployed — not before. Do not set FANTASY_AUTOMATION_ENABLED=true until this branch is merged and deployed."
+  - "BG-0001 DEF-3 remains unproven: the composed orchestrator has never advanced a gameweek (workers array always empty). Does not block BG-0003."
+  - "BG-0001 DEF-4 (Chief-owned migration-promotion evidence integrity) was not in BG-0003's scope and is not addressed by this change."
+
+bg0001_disposition: OPEN_PENDING_DEF3
+bg0001_disposition_reasoning: >
+  BG-0001's defects DEF-1(a), DEF-1(b) and DEF-2 are now evidenced and are
+  discharged by this branch. DEF-3 ("evidence in which orchestrateFantasySeason
+  itself drives at least one gameweek, with a non-empty workers array") is
+  neither satisfied nor withdrawn: the Builder and the independent Verifier both
+  report it not attempted for an environmental reason (no Docker daemon, hence no
+  local Supabase stack; production writes are forbidden to both roles), and
+  nothing was fabricated in its place. Per the Reviewer contract, required
+  evidence that is missing cannot be accepted as met, so BG-0001 cannot be marked
+  DONE. DEF-4 (Chief-owned) is likewise still open. BG-0003 is graded on its own
+  approved objective plus DEF-1/DEF-2 and passes; BG-0001 stays OPEN pending DEF-3
+  (and DEF-4), which needs either a non-production database with a working
+  container runtime or a sanctioned rolled-back end-to-end orchestrator session.
+
+status: DONE

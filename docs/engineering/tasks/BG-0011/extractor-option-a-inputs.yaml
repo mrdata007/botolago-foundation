@@ -1,0 +1,367 @@
+# Extractor dataset for BG-0011 Option A (read-only, 2026-09-18T11:11Z)
+now: "2026-09-18T11:11:12.279129+00:00"
+
+failed_backfill_runs:
+  job_type: player_fixture_performances
+  rows:
+    - id: c700c6df-1c68-4a92-ac42-a50b3ec9960f
+      status: failed
+      started_at: "2026-08-02T19:50:10.921252+00:00"
+      finished_at: "2026-08-02T19:50:15.121984+00:00"
+      records_fetched: 119
+      records_validated: 113
+      records_inserted: 74
+      records_updated: 0
+      records_skipped: 5
+      records_rejected: 0
+      retry_count: 0
+      error_code: mapping_not_found
+      error_summary: "Historical performance operation failed; inspect logs."
+      checkpoint: {seasonId: 26027}
+      target_scope: {seasonId: 26027, batchSize: 5, afterFixtureExternalId: null}
+    - id: 1e1ddda7-07c9-4ca9-986a-b37756e3788e
+      status: succeeded
+      started_at: "2026-08-02T21:10:13.82305+00:00"
+      finished_at: "2026-08-02T21:10:17.237781+00:00"
+      records_fetched: 198
+      records_validated: 188
+      records_inserted: 114
+      records_updated: 74
+      records_skipped: 10
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+      checkpoint: {hasMore: true, seasonId: 26027, nextCursor: "19489214"}
+      target_scope: {seasonId: 26027, batchSize: 5, afterFixtureExternalId: null}
+    - id: 9d9d76b7-0bc4-4a6e-80ff-53749ab780c7
+      status: failed
+      started_at: "2026-08-02T21:10:17.710634+00:00"
+      finished_at: "2026-08-02T21:10:19.474477+00:00"
+      records_fetched: 40
+      records_validated: 40
+      records_inserted: 40
+      records_updated: 0
+      records_skipped: 0
+      records_rejected: 0
+      retry_count: 0
+      error_code: historical_fixture_coverage_incomplete
+      error_summary: "Historical performance operation failed; inspect logs."
+      checkpoint: {seasonId: 26027}
+      target_scope: {seasonId: 26027, batchSize: 5, afterFixtureExternalId: "19489214"}
+    - id: da1a4d96-31c1-4c5e-9a61-d3b1cc93d4d3
+      status: succeeded
+      started_at: "2026-08-02T21:23:58.817529+00:00"
+      finished_at: "2026-08-02T21:24:02.735944+00:00"
+      records_fetched: 198
+      records_validated: 188
+      records_inserted: 0
+      records_updated: 188
+      records_skipped: 10
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+      checkpoint: {hasMore: true, seasonId: 26027, nextCursor: "19489214"}
+      target_scope: {seasonId: 26027, batchSize: 5, afterFixtureExternalId: null}
+    - id: f2cc7dc5-1219-4e00-a729-b9c509ce2c47
+      status: failed
+      started_at: "2026-08-02T21:24:03.309106+00:00"
+      finished_at: "2026-08-02T21:24:05.144358+00:00"
+      records_fetched: 40
+      records_validated: 40
+      records_inserted: 0
+      records_updated: 40
+      records_skipped: 0
+      records_rejected: 0
+      retry_count: 0
+      error_code: historical_fixture_coverage_incomplete
+      error_summary: "Historical performance operation failed; inspect logs."
+      checkpoint: {seasonId: 26027}
+      target_scope: {seasonId: 26027, batchSize: 5, afterFixtureExternalId: "19489214"}
+  note: "No player_fixture_performances ingestion_runs rows exist for seasonId 24319 (2024/25 external id); all 5 rows are seasonId 26027 (2025/26 external id)."
+
+coverage_state:
+  historical_performance_fixture_coverage_by_season_reconciled:
+    - football_season_id: 92e5dbe8-44a9-4b83-bdc8-78f03dfa4584   # 2025/2026 (label), external seasonId 26027
+      reconciled: true
+      count: 6
+    - football_season_id: 533b456d-bf70-4ef8-a2f0-66ae24294f32   # 2024/2025 (external seasonId 24319)
+      reconciled: UNKNOWN   # query returned zero rows for this season_id
+      count: 0
+  player_fixture_performances_count_by_season:
+    - football_season_id: 92e5dbe8-44a9-4b83-bdc8-78f03dfa4584
+      count: 228
+    - football_season_id: 533b456d-bf70-4ef8-a2f0-66ae24294f32
+      count: 0
+  finished_fixtures_per_season:
+    - season_id: 92e5dbe8-44a9-4b83-bdc8-78f03dfa4584
+      finished_count: 240
+    - season_id: 533b456d-bf70-4ef8-a2f0-66ae24294f32
+      finished_count: 240
+  season_92e5dbe8:
+    id: 92e5dbe8-44a9-4b83-bdc8-78f03dfa4584
+    label: "2025/2026"
+    competition_id: 3e579087-e5ad-4cb1-babf-6490cf2a8ebe
+    starts_on: "2025-09-12"
+    ends_on: "2026-07-05"
+    status: completed
+    is_current: false
+    external_id_seasonId: 26027   # from ingestion_runs target_scope
+  season_2024_25_lookup:
+    id: 533b456d-bf70-4ef8-a2f0-66ae24294f32
+    label: "2024/2025"
+    competition_id: 3e579087-e5ad-4cb1-babf-6490cf2a8ebe
+    starts_on: "2024-08-30"
+    ends_on: "2025-05-12"
+    status: completed
+    is_current: false
+    external_id_seasonId: 24319   # from ingestion_runs target_scope
+
+ratings_state:
+  player_season_ratings_count_by_season_algorithm_active:
+    - football_season_id: 533b456d-bf70-4ef8-a2f0-66ae24294f32
+      algorithm_version: botolago-preseason-rating-v1
+      active: true
+      count: 627
+    - football_season_id: 92e5dbe8-44a9-4b83-bdc8-78f03dfa4584
+      algorithm_version: botolago-preseason-rating-v1
+      active: true
+      count: 561
+  note: "No player_season_ratings rows exist with algorithm_version botolago-preseason-rating-v2-fixture-performance (the version the G7 backfill ticket targets); only v1 rows exist for both seasons."
+  ingestion_job_type_enum_values: [competitions, seasons, rounds, teams, players, squads, fixtures, standings, lineups, live_fixtures, match_events, match_statistics, player_availability, finalize_fixtures, player_ratings, player_fixture_performances]
+  note_job_type: "'historical_player_season_ratings' is NOT a valid app_private.ingestion_job_type enum value (rejected by Postgres); only 'player_ratings' exists."
+  football_ingestion_runs_job_type_player_ratings:
+    - id: c88fdd36-cd25-489f-8605-3a7c64019db7
+      provider_name: sportsmonks
+      status: succeeded
+      target_scope: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      checkpoint: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      started_at: "2026-08-01T13:18:46.517946+00:00"
+      completed_at: "2026-08-01T13:18:50.23032+00:00"
+      records_fetched: 0
+      records_validated: 561
+      records_inserted: 561
+      records_updated: 0
+      records_skipped: 0
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+    - id: bf53c8d1-de8b-4614-86e5-7cb1359cd7ba
+      provider_name: sportsmonks
+      status: succeeded
+      target_scope: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      checkpoint: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      started_at: "2026-08-02T06:41:02.128946+00:00"
+      completed_at: "2026-08-02T06:41:06.394843+00:00"
+      records_fetched: 0
+      records_validated: 561
+      records_inserted: 0
+      records_updated: 0
+      records_skipped: 561
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+    - id: fd97b2a1-e027-4cfc-930f-c817019db6a1
+      provider_name: sportsmonks
+      status: succeeded
+      target_scope: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      checkpoint: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      started_at: "2026-08-02T08:58:54.304106+00:00"
+      completed_at: "2026-08-02T08:58:58.018844+00:00"
+      records_fetched: 0
+      records_validated: 561
+      records_inserted: 0
+      records_updated: 0
+      records_skipped: 561
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+    - id: 5f7048f8-e3d2-465f-85b8-8f9e5c8e9150
+      provider_name: sportsmonks
+      status: succeeded
+      target_scope: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      checkpoint: {seasonId: 26027, algorithmVersion: botolago-preseason-rating-v1}
+      started_at: "2026-08-02T13:41:33.792857+00:00"
+      completed_at: "2026-08-02T13:41:36.447129+00:00"
+      records_fetched: 0
+      records_validated: 561
+      records_inserted: 0
+      records_updated: 0
+      records_skipped: 561
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+    - id: feec10a2-97e7-4cb7-96b4-1c62381aad43
+      provider_name: sportsmonks
+      status: succeeded
+      target_scope: {seasonId: 24319, algorithmVersion: botolago-preseason-rating-v1}
+      checkpoint: {seasonId: 24319, algorithmVersion: botolago-preseason-rating-v1}
+      started_at: "2026-08-02T13:43:34.083337+00:00"
+      completed_at: "2026-08-02T13:43:37.309334+00:00"
+      records_fetched: 0
+      records_validated: 627
+      records_inserted: 627
+      records_updated: 0
+      records_skipped: 0
+      records_rejected: 0
+      retry_count: 0
+      error_code: null
+      error_summary: ""
+
+workflows:
+  - file: .github/workflows/g7-production-historical-performance-backfill.yml
+    name: "G7 Production historical player performance backfill"
+    triggers:
+      workflow_dispatch:
+        inputs:
+          expected_commit: {description: "Exact reviewed main commit approved for the historical-only backfill", required: true, type: string}
+          confirmation: {description: "Type RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL", required: true, type: string}
+    job_if: "github.repository == 'mrdata007/botolago-foundation' && github.ref == 'refs/heads/main' && github.actor == 'mrdata007'"
+    key_env_guards:
+      - "EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn, EXPECTED_PROJECT_NAME: BotolaGO Production V2"
+      - "GITHUB_RUN_ATTEMPT must == 1 (no reruns)"
+      - "CONFIRMATION must == RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL and EXPECTED_COMMIT == GITHUB_SHA"
+      - "Verifies docs/production/g7-historical-performance-backfill-trigger.json matches a hardcoded expected ticket JSON (requestedSeasonIds [26027,24319], expectedFixturesPerSeason 240, batchSize 5, algorithmVersion botolago-preseason-rating-v2-fixture-performance)"
+      - "concurrency group: botolago-production-v2-mutation, cancel-in-progress: false"
+    script_run: "bun scripts/backend/g7-historical-performance-backfill-runner.ts (preceded by bun scripts/backend/g7-historical-performance-backfill-preflight.ts, and supabase db push/functions deploy football-ingest)"
+    batch_limit_constants_visible_in_script: "g7-historical-performance-backfill-preflight.ts: EXPECTED_PROJECT_REF=tkewgajrljbwgwedqsxn, EXPECTED_FIXTURES_PER_SEASON=240, MAX_BATCHES_PER_SEASON=60, BATCH_SIZE=5, ALGORITHM_VERSION=botolago-preseason-rating-v2-fixture-performance, RESTORE_SEASON.id=26027"
+    last_5_runs:
+      - {id: 30767752509, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T21:22:51Z"}
+      - {id: 30767229746, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T21:08:58Z"}
+      - {id: 30764205550, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T19:48:51Z"}
+    note: "Only 3 runs total exist (run_number 1-3), all workflow_dispatch/failure."
+
+  - file: .github/workflows/g7-sportsmonks-historical-performance-coverage.yml
+    name: "G7 SportsMonks historical performance coverage"
+    triggers:
+      workflow_dispatch:
+        inputs:
+          expected_commit: {description: "Exact reviewed main commit approved for the read-only provider probe", required: true, type: string}
+          confirmation: {description: "Type RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY", required: true, type: string}
+    job_if: "github.repository == 'mrdata007/botolago-foundation' && github.ref == 'refs/heads/main' && github.actor == 'mrdata007'"
+    key_env_guards:
+      - "GITHUB_RUN_ATTEMPT must == 1"
+      - "CONFIRMATION must == RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY and EXPECTED_COMMIT == GITHUB_SHA"
+      - "Verifies docs/production/g7-historical-performance-probe-trigger.json against a hardcoded ticket (leagueId 860, 6 sample fixtures across seasonId 26027 and 24319)"
+      - "concurrency group: botolago-g7-historical-performance-coverage"
+      - "No Supabase secrets used; read-only SportsMonks probe only"
+    script_run: "bun scripts/backend/sportsmonks-historical-performance-probe.ts"
+    batch_limit_constants_visible_in_script: UNKNOWN
+    last_5_runs:
+      - {id: 30754019708, event: workflow_dispatch, conclusion: success, created_at: "2026-08-02T15:17:41Z"}
+      - {id: 30753527952, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T15:04:34Z"}
+      - {id: 30752931530, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T14:48:42Z"}
+    note: "Only 3 runs total exist."
+
+  - file: .github/workflows/g7-sportsmonks-historical-coverage-audit.yml
+    name: "G7 SportsMonks historical fixture coverage audit"
+    triggers:
+      workflow_dispatch:
+        inputs:
+          expected_commit: {description: "Exact reviewed main commit approved for the provider-only audit", required: true, type: string}
+          confirmation: {description: "Type RUN_G7_SPORTSMONKS_COVERAGE_AUDIT", required: true, type: string}
+    job_if: "github.repository == 'mrdata007/botolago-foundation' && github.ref == 'refs/heads/main' && github.actor == 'mrdata007'"
+    key_env_guards:
+      - "SPORTSMONKS_API_TOKEN must be non-empty"
+      - "GITHUB_RUN_ATTEMPT must == 1"
+      - "CONFIRMATION must == RUN_G7_SPORTSMONKS_COVERAGE_AUDIT and EXPECTED_COMMIT == GITHUB_SHA"
+      - "Verifies docs/production/g7-sportsmonks-coverage-audit-trigger.json against a hardcoded ticket (requestedSeasonIds [26027,24319], expectedFixturesPerSeason 240, supabaseAccess:false, databaseWrites:false)"
+      - "concurrency group: botolago-sportsmonks-read-only-coverage-audit"
+    script_run: "bun scripts/backend/sportsmonks-two-season-coverage-audit.ts"
+    batch_limit_constants_visible_in_script: UNKNOWN
+    last_5_runs:
+      - {id: 30768628562, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T21:46:23Z"}
+    note: "Only 1 run total exists."
+
+  - file: .github/workflows/gate4-production-news-ratings-canary.yml
+    name: "Gate 4 Production News and preseason ratings canary"
+    triggers:
+      workflow_dispatch:
+        inputs:
+          expected_commit: {description: "Exact reviewed main commit approved for Gate 4", required: true, type: string}
+          confirmation: {description: "Type RUN_GATE4_NEWS_RATINGS_CANARY", required: true, type: string}
+    job_if: "github.repository == 'mrdata007/botolago-foundation' && github.ref == 'refs/heads/main' && github.actor == 'mrdata007'"
+    key_env_guards:
+      - "EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn, EXPECTED_PROJECT_NAME: BotolaGO Production V2"
+      - "All of SUPABASE_ACCESS_TOKEN/SUPABASE_SECRET_KEY/SUPABASE_DB_PASSWORD/SPORTSMONKS_API_TOKEN/GNEWS_API_KEY/NEWS_INGESTION_TRIGGER_SECRET must be non-empty"
+      - "GITHUB_RUN_ATTEMPT must == 1, CONFIRMATION must == RUN_GATE4_NEWS_RATINGS_CANARY, EXPECTED_COMMIT == GITHUB_SHA"
+      - "concurrency group: botolago-production-v2-mutation (same group as G7 backfill workflow)"
+      - "Pinned FOOTBALL_SPORTSMONKS_SEASON_ID=26027, FOOTBALL_SPORTSMONKS_LEAGUE_ID=860"
+    script_run: "supabase functions deploy football-ingest / news-ingest, then curl football-ingest with job=preseason_ratings (RPC ingest_player_season_ratings), job=teams, and news-ingest with job=gnews"
+    batch_limit_constants_visible_in_script: "GNEWS_PAGE_SIZE=10, GNEWS_TIMEOUT_MS=10000, GNEWS_MAX_RETRIES=2, FOOTBALL_PROVIDER_TIMEOUT_MS=15000, FOOTBALL_PROVIDER_MAX_RETRIES=2"
+    last_5_runs:
+      - {id: 30740805839, event: workflow_dispatch, conclusion: success, created_at: "2026-08-02T08:57:57Z"}
+      - {id: 30739462796, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T08:16:41Z"}
+      - {id: 30736334741, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-02T06:40:13Z"}
+      - {id: 30701438770, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-01T13:17:49Z"}
+      - {id: 30696665157, event: workflow_dispatch, conclusion: failure, created_at: "2026-08-01T10:55:32Z"}
+
+  fantasy_and_ratings_reference_grep:
+    note: "No .github/workflows file directly references service_stage_fantasy_catalog, service_rollback_fantasy_catalog, preview_fantasy_catalog_activation, service_open_fantasy_registration, or ingest_historical_player_season_ratings. gate4-production-news-ratings-canary.yml checks only for the string 'ingest_player_season_ratings' in generated types (line 135)."
+    matches_found:
+      - file: scripts/backend/phase7e-production-migration-promoter.py
+        context: "Lines 612-627: hardcoded list of protected/reviewed RPC names (includes service_stage_fantasy_catalog, service_rollback_fantasy_catalog) used as a migration-guard allowlist, not a workflow and does not call the RPCs itself."
+        triggers: "invoked from .github/workflows/phase7e-b-production-migration-promotion.yml (not one of the requested files; not inspected further per scope)."
+      - file: src/backend/generated/database.types.ts
+        context: "Type declarations for ingest_historical_player_season_ratings (line 886), ingest_player_season_ratings (896), preview_fantasy_catalog_activation (1090), service_open_fantasy_registration (1332), service_rollback_fantasy_catalog (1395), service_stage_fantasy_catalog (1415) â generated types only, not a workflow/script caller."
+      - file: supabase/migrations/20260803210943_fantasy_catalog_activation.sql
+        context: "Defines api.preview_fantasy_catalog_activation, api.service_stage_fantasy_catalog, api.service_open_fantasy_registration, api.service_rollback_fantasy_catalog (SQL function definitions, not a workflow)."
+      - file: supabase/migrations/20260802010100_historical_player_performances.sql
+        context: "Defines api.ingest_historical_player_season_ratings."
+      - file: supabase/migrations/20260801010100_player_season_ratings.sql
+        context: "Defines api.ingest_player_season_ratings, granted to service_role only."
+      - file: supabase/functions/_shared/sportsmonks-historical-player-performance.ts
+        context: "Line 945: calls rpc(client, 'ingest_historical_player_season_ratings', ...) â this is the actual caller, invoked from the football-ingest edge function, not from a dedicated workflow file."
+      - file: supabase/functions/_shared/sportsmonks-player-ratings.ts
+        context: "Line 746: calls rpc(client, 'ingest_player_season_ratings', ...) â invoked via football-ingest edge function job=preseason_ratings, which gate4-production-news-ratings-canary.yml triggers over HTTP."
+    no_dedicated_fantasy_catalog_activation_workflow_found: true
+
+scripts:
+  g7-historical-performance-backfill-runner.ts:
+    exported_functions:
+      - "export class HistoricalPerformanceBackfillError extends Error"
+    env_vars_read: [SPORTSMONKS_API_TOKEN, SUPABASE_SECRET_KEY, CONFIRMATION, GITHUB_ACTIONS, EXPECTED_PROJECT_REF, EXPECTED_COMMIT, GITHUB_SHA, GITHUB_ENV]
+    batch_size_lines: |
+      11:const BATCH_SIZE = 5;
+      93:    fixturesProcessed > BATCH_SIZE ||
+      367:    batchSize: BATCH_SIZE,
+      431:            batchSize: BATCH_SIZE,
+    cursor_resume_mechanism_lines: |
+      107:      : numericCursor(response.nextCursor, "invalid_historical_next_cursor");
+      113:    throw new HistoricalPerformanceBackfillError("historical_performance_cursor_mismatch");
+      418:      let cursor: string | null = null;
+      430:            afterFixtureExternalId: cursor,
+      436:        const batch = validateHistoricalPerformanceBatch(invocation.response, season.id, cursor);
+      450:        cursor = batch.nextCursor;
+    behavior_note: "Cursor is per-run in-memory (starts at null each invocation) and driven by afterFixtureExternalId echoed back via checkpoint.nextCursor in football_ingestion_runs; resume across separate GitHub Actions runs relies on reading the last succeeded run's checkpoint.nextCursor and is not automatic within the script."
+
+  g7-historical-performance-backfill-preflight.ts:
+    exported_functions: []
+    constants: "EXPECTED_PROJECT_REF=tkewgajrljbwgwedqsxn, EXPECTED_FIXTURES_PER_SEASON=240, MAX_BATCHES_PER_SEASON=60, BATCH_SIZE=5, CONFIRMATION=RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL, ALGORITHM_VERSION=botolago-preseason-rating-v2-fixture-performance, RESTORE_SEASON={id:26027,startingAt:2025-09-12,endingAt:2026-07-05}"
+    env_vars_read: [G7_BACKFILL_EVIDENCE_DIR, EXPECTED_COMMIT]
+
+  sportsmonks-historical-performance-probe.ts:
+    exported_functions: UNKNOWN
+    env_vars_read: UNKNOWN
+    per_run_fixture_batch_size: UNKNOWN
+    cursor_resume_mechanism: UNKNOWN
+
+  fantasy_activation_script:
+    note: "No dedicated fantasy activation TypeScript script found under scripts/backend matching stage/rollback/open/preview naming; those RPCs are called only from SQL test files (supabase/tests/database/fantasy_catalog_activation.test.sql) and are not wrapped in a scripts/backend/*.ts caller within this repo scope."
+
+docs:
+  FANTASY_CATALOG_ACTIVATION_RUNBOOK.md:
+    - "atomic stage, separate open, identical retry, and clean rollback;"
+    - "`fantasy_catalog_activation.test.sql` builds a complete mock double round robin with 16 clubs, 240 players, 30 rounds, and 240 future fixtures."
+  FANTASY_PREACTIVATION_AUDIT.md:
+    activation_order_sentences:
+      - "1. Select and approve the authoritative current Football season/provider data, including teams, squads, players, fixtures, and stable UUID mappings."
+      - "6. Promote the reviewed catalog to Production V2 through the controlled migration/data-promotion process; smoke read-only public/player/rules paths."
+      - "7. Open team creation under observation, then activate deadline, scoring, finalization, ranking, price, and notification workers one group at a time, with an explicit stop and rollback check after each group."
+  historical_backfill_docs:
+    note: "No docs/backend files matching *HISTORICAL* or *G7* exist in this repository (Glob returned no results for both patterns); fixtures-processed/duration/resume statements for the G7 backfill are UNKNOWN from docs/backend and are only evidenced in the workflow/script files above."

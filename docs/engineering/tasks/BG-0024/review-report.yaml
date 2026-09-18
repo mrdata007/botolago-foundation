@@ -1,0 +1,65 @@
+task_id: BG-0024
+reviewed_commit: 47c211b8b8dcb3b1989b3b8d692accae205ea6fb
+branch: agent/BG-0024-profile-title
+merge_base: c5fdd1fbca90123eacb2271ab395c24d2c54d1be
+worktree: /home/user/bg0024-review
+verdict: PASS
+defects: []
+residual_risks:
+  - "No browser render of src/routes/profile.tsx was performed by Verifier or Reviewer. The visual defect (two trailing blank lines under whitespace-pre-wrap) is removed by construction because neither new value contains a newline character; this is a static inference, not a screenshot."
+  - "src/i18n/i18n-allowlist.ts:9-10 doc comment still says profile.title 'stays a named W1/W2 warning until BG-0024 replaces its English placeholder copy'. Now historical rather than wrong; file is outside the BG-0024 allowed-file list so leaving it untouched was correct. Comment-only, non-blocking; candidate for a follow-up."
+  - "Rewritten comment in src/i18n/i18n-gate.test.ts (~line 217) says W2=4 counts 'four of those five entries'; the actual W2 set is app.name, auth.email_placeholder, language.french, notfound.code (three of the W1 five plus auth.email_placeholder). Comment-only imprecision inherited from the original wording; no assertion depends on it."
+notes: >
+  Reviewed independently in the detached worktree at HEAD 47c211b (equals
+  VerificationReport.verified_commit). Nothing edited or committed.
+
+  Scope: `git diff --name-status c5fdd1f..HEAD` lists exactly the four allowed
+  paths (implementation-report.yaml added; i18n-gate.ts, dictionaries.ts,
+  i18n-gate.test.ts modified). Two commits on the branch.
+
+  Dictionary change: exactly two lines changed. fr "profile.title": "Profile\n\n"
+  -> "Profil" (dictionaries.ts:463); ar "profile.title": "Profile\n\n" ->
+  "الملف الشخصي" (dictionaries.ts:1546). Both match the existing nav.profile
+  values per block (fr :22, ar :1112). Translation judgement: "Profil" is the
+  standard French label for a user-profile screen; "الملف الشخصي" is the
+  standard Arabic rendering of "Profile" in app UI and is consistent with the
+  adjacent profile.coming_soon copy ("ملفك الشخصي"). Both correct.
+
+  Gate: `bun scripts/qa/i18n-gate.ts` exit 0. W1=5 (baseline 5), W2=4 (baseline
+  4), W3=237, W4=100, all at baseline, errors none, RESULT pass. profile.title
+  appears nowhere in the output. Baseline diff is W1 6->5 and W2 5->4 only, in
+  the same change as the dictionary fix, as the acceptance criteria require.
+
+  Tests: `bun test src/i18n/i18n-gate.test.ts` -> 21 pass, 0 fail, 590 expect()
+  calls. test() count 21 at merge-base and 21 at HEAD; no test deleted.
+
+  Sensitivity check reproduced independently: merge-base test file (imports
+  rewritten to absolute worktree paths, run from the worktree cwd so the
+  beforeAll's relative `src` scan resolves) against HEAD sources -> 18 pass,
+  3 fail, the failures being exactly the three tests whose expectations were
+  adjusted. The adjustments were therefore necessary, not cosmetic.
+
+  Strength of the three adjusted expectations, judged equivalent or stronger:
+    1. "profile.title is no longer a named W1 or W2 warning": still an exact
+       toEqual on the non-suppressed `reported` list for both W1 and W2, now
+       pinning that the list is empty, i.e. every identical / non-Arabic finding
+       in the tree is allow-listed. This is a stronger invariant than the prior
+       one (which tolerated exactly one un-listed key).
+    2. Negative control mutating dicts.ar["notfound.code"] instead of
+       profile.title: assertions unchanged (count == BASELINES.W1 - 1, W1
+       baseline violation raised, gate fails). notfound.code is confirmed a
+       genuine identical fr/ar pair by the gate output, so the identical-value
+       detection path and the below-baseline failure path remain exercised.
+       profile.title could not serve here any more because it is no longer
+       identical.
+    3. Allow-list removal control: still asserts count stays at baseline and
+       that the de-listed key becomes the only named W1 warning (["app.name"]),
+       exact equality retained. Allow-list visibility semantics still covered.
+
+  Consumption: profile.title is still rendered at src/routes/profile.tsx:78 and
+  :285. `grep -rn 'Profile\\n' src scripts` returns nothing.
+
+  ImplementationReport claims (typecheck, prettier, eslint, gate, test) are
+  consistent with the VerificationReport's independent reproduction and with
+  the gate/test runs performed in this review. No requirement missed, no
+  evidence missing.

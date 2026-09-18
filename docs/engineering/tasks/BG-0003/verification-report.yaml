@@ -1,0 +1,240 @@
+task_id: BG-0003
+verified_commit: 95d79a7 # origin/agent/BG-0001-0003-deadline-guard, verified in isolated worktree /home/user/bg0003-verify
+criteria:
+  - criterion: >
+      AC1 Unit — the four named test files pass; the new test file covers every listed
+      criterion; no existing assertion weakened.
+    result: VERIFIED
+    evidence: >
+      `cd /home/user/bg0003-verify && bun test scripts/backend/fantasy-season-orchestrator.test.ts
+      scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts
+      scripts/backend/current-season-recovery.test.ts` -> "62 pass / 0 fail / 254 expect() calls / Ran 62 tests
+      across 4 files". Whole backend suite `bun test scripts/` -> "154 pass / 0 fail / Ran 154 tests across 25 files".
+      Read of scripts/backend/fantasy-season-orchestrator.test.ts (describe "fantasy deadline watch", lines 392-615)
+      maps 1:1 to the required coverage:
+        * schema fail-closed -> "the payload schema accepts the reference shape and rejects anything else"
+          (schemaVersion 2 throws, severity "critical" throws, gameweekId "not-a-uuid" throws);
+        * summarizeDeadlineWatch partition + sort + clock-free -> "summarizeDeadlineWatch partitions by severity,
+          sorts by sequence and is clock-free" (affected 2, escalations [3], informational [2], remediation constant,
+          second call deep-equal);
+        * mergeVerdict precedence -> "mergeVerdict ranks ok < waiting < escalate < failed" (5 orderings + ok/ok);
+        * escalate does not short-circuit -> "an escalating watch turns the pass red without changing what the pass
+          did" (verdict escalate, workers [], performances {batches:1,fixturesProcessed:0}, exactly 2
+          service_sync_fantasy_calendar calls);
+        * info-only stays ok -> "an informational-only watch leaves the verdict ok and still reports the gameweek";
+        * failed dominates -> "a worker failure outranks an escalation and the watch is still reported";
+        * RPC error -> waiting + fantasy_deadline_watch_failed -> "a watch failure or an unexpected payload degrades
+          to waiting instead of throwing" (thrown Error case and schemaVersion-2 payload case);
+        * idempotent serialisation + no secret-substring field names -> "two passes over the same state serialise
+          identically and carry no secret-shaped field"
+          (JSON.stringify equality and /(access_token|refresh_token|token_hash|hashed_token|password)/i non-match);
+        * default rpc args 72/24 and overrides -> "the window is passed to the RPC, with the documented defaults";
+        * env window validation -> "the environment guard validates the watch window"
+          ("abc", "721", warn 12 < escalate 24 all throw fantasy_deadline_watch_window_invalid; 72/24 and 120/6 accepted);
+        * shouldFailRun -> "shouldFailRun turns the workflow step red only for failed and escalate";
+        * DEF-1(b) -> "an open gameweek with an unconfirmed deadline is never locked by the pass"
+          (skipped [{gameweekId, sequence 1, reason deadline_unconfirmed}], only the confirmed GW2 targeted) and
+          "the string note from the calendar sync refuses the target too, and degrades the verdict"
+          (verdict waiting, workers [], summary.skipped populated, no service_fantasy_lifecycle_state call).
+      No weakening: `git diff origin/main...HEAD -- scripts/backend/fantasy-season-orchestrator.test.ts` changes only
+      three pre-existing assertions, and only to follow selectWorkerTargets' new return shape
+      ([] -> {targets, skipped}); each of those now additionally asserts `skipped: []`, i.e. strictly stronger.
+      Nothing else in the existing describe block is touched.
+    notes: >
+      Minor coverage gap (not a defect against the listed criteria): in the "escalate does not short-circuit" test the
+      calendar fixture has no eligible worker target, so "workers unchanged" is asserted against an empty array; the
+      non-short-circuit property is carried by the 2-sync-call + performances assertions and by the separate
+      worker-failure test. The import.meta.main exit-code wiring itself is not executed by any test; only
+      shouldFailRun() is unit-tested.
+  - criterion: >
+      AC2 Own rolled-back production rehearsal (i)-(viii), with a post-rollback snapshot proving production unchanged.
+    result: VERIFIED
+    evidence: >
+      Project tkewgajrljbwgwedqsxn, three statement batches, each `begin;` ->
+      `select set_config('request.jwt.claims','{"role":"service_role"}',true);` -> both new migration bodies inlined
+      with `create or replace` -> DO block -> `raise exception 'VERIFYLOG %', log::text` -> `rollback;`.
+      apply_migration was never used; nothing was committed.
+      (i) service_fantasy_deadline_watch(null,720,24) -> 1 gameweek:
+          {"gameweekId":"3cc19aaa-ea33-4909-845b-db33314b4071","sequence":1,"status":"open",
+           "deadlineAt":"2026-09-23T22:30:00+00:00","startsAt":"2026-09-24T00:00:00+00:00",
+           "hoursToDeadline":131.31,"deadlinePassed":false,"unconfirmedFixtures":8,"totalCountingFixtures":8,
+           "deadlineDerivedFromPlaceholder":true,"severity":"info"};
+          fixture count 8, null team names 0, distinct providerKickoffAt ["2026-09-24T00:00:00+00:00"],
+          first fixture {"homeTeam":"Difaâ El Jadida","awayTeam":"CODM Meknès","fixtureStatus":"not_started",
+          "assignmentStatus":"assigned","frozen":false,"sourceSequence":1789726002108}. Top level:
+          schemaVersion 1, seasonId 9918cf95-9ed5-4d7b-99ca-eb9bfc29a258, seasonStatus registration_open,
+          remediation "scripts/backend/fantasy-realign-gameweek-calendar.sql".
+      (ii) service_fantasy_deadline_watch(null,72,24) -> "gameweeks": [] (gw_count 0). Correct: hoursToDeadline
+          131.31 h > p_warn_hours 72, so GW1 is outside the default warning window. It will enter it on
+          2026-09-20T22:30Z and escalate from 2026-09-22T22:30Z.
+      (iii) after set_config('request.jwt.claims','{"role":"authenticated",...}') the same call raised
+          sqlstate PT403, message "forbidden".
+      (iv) (null,720,0) -> severity "info" (hoursToDeadline 131.31); (null,720,240) -> severity "escalate";
+          (null,72,240) -> refused, sqlstate PT400, message "fantasy_deadline_watch_window_invalid".
+      (v) Mixed round, synthetic "Verifier Round 91" (round_number 91, 8 fixtures mirroring the round-1 pairings):
+          all 8 confirmed at 2026-11-11T19:00Z -> sync staged gameweek b8a41e80-… with deadline 2026-11-11T17:30:00+00,
+          notes [{"created":true,"assignments":8}], audit rows 0.
+          One fixture moved to the placeholder 2026-11-10T00:00:00+00 -> sync returned for that round
+          notes ["deadline_unconfirmed", {"kickoffUnconfirmed":1,"deadlineUnconfirmed":true}],
+          confirmedKickoffs 7, deadlineChanges 0, deadline_at still 2026-11-11T17:30:00+00,
+          starts_at still 2026-11-11T19:00:00+00, audit rows still 0.
+          That fixture then confirmed at 2026-11-10T19:00:00+00 -> sync returned
+          notes [{"kickoffsRealigned":1},{"deadlineAt":"2026-11-10T17:30:00+00:00"}], deadlineChanges 1,
+          deadline_at 2026-11-10T17:30:00+00, audit rows 1. Exactly the required behaviour.
+      (vi) deadline_locked on the live, open GW1: the 8 round-1 fixtures given a confirmed kickoff 2026-09-20T18:00Z,
+          then a service update set GW1.deadline_at to statement_timestamp() - 1 h
+          (2026-09-18T10:14:23.193085+00) — legal because the guard only checks the OLD deadline, which was still in
+          the future; that setup update produced the single audit row (0 -> 1). The following sync returned for
+          round 1 notes [{"kickoffsRealigned":8},"deadline_locked"], deadlineChanges 0, deadline_at unchanged at
+          2026-09-18T10:14:23.193085+00, audit rows 1 -> 1 (no audit row written by the sync).
+      (vii) new_deadline_in_past: synthetic "Verifier Round 92" staged with 8 confirmed kickoffs at
+          2026-11-11T19:00Z (deadline 2026-11-11T17:30:00+00), then all 8 moved to statement_timestamp() - 2 h;
+          sync returned notes [{"kickoffsRealigned":8},"new_deadline_in_past"], deadlineChanges 0, deadline_at
+          unchanged at 2026-11-11T17:30:00+00, audit rows 0.
+      (viii) GW1 set to status 'locked' inside the transaction, then a service update of deadline_at ->
+          sqlstate PT409, message "fantasy_gameweek_locked".
+      Post-rollback snapshot (plain SELECT, outside any transaction, 2026-09-18T11:14:37Z):
+        gameweeks 1, active_assignments 8, season_fixtures (season d03223b0-8f4a-4309-93e1-2a708d7c3584) 8,
+        all_fixtures 488, season_rounds 1, deadline_audit 0, gw1_deadline "2026-09-23 22:30:00+00",
+        gw1_status open, gw1_first_kickoff "2026-09-24 00:00:00+00", watch_fn_present 0, verifier_rounds 0.
+        Additionally `select position('unconfirmed_active' in prosrc) from pg_proc` for
+        api.service_sync_fantasy_calendar -> 0, i.e. the production sync body is still the unguarded
+        20260918120000 version. Production is byte-for-byte unchanged and the new function does not exist there.
+  - criterion: >
+      AC3 Static — the new sync migration differs from 20260918120000 only in the new_start/new_end predicate and the
+      deadline_unconfirmed skip; both new migrations carry the revoke/grant footer; migrations check passes; no
+      existing migration modified.
+    result: VERIFIED
+    evidence: >
+      `diff -u supabase/migrations/20260918120000_fantasy_calendar_sync.sql
+      supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql` produces exactly five hunks:
+        1. header comment rewritten (documentation only);
+        2. the old file's two helper definitions (app_private.fantasy_kickoff_confirmed and
+           app_private.fantasy_guard_deadline_change, plus their revoke) are absent from the new file — the new file
+           re-creates only api.service_sync_fantasy_calendar, so neither helper is redefined or altered (matches the
+           brief's "do not modify" constraint);
+        3. one added declaration `unconfirmed_active integer;`;
+        4. the behavioural hunk (lines 197-230 of the new file): a new
+           `select count(*) into unconfirmed_active ... and not app_private.fantasy_kickoff_confirmed(f.kickoff_at)`
+           over active counting assignments; `if unconfirmed_active > 0 then notes := notes ||
+           '"deadline_unconfirmed"'` (skip, no write); else the pre-existing block verbatim except that the
+           min/max(assigned_kickoff_at) select gains
+           `and app_private.fantasy_kickoff_confirmed(a.assigned_kickoff_at)`. The deadline_locked /
+           new_deadline_in_past / update / deadline_changes / deadlineAt-note branches are textually identical,
+           only re-indented one level;
+        5. the comment-on-function text extended.
+      No other statement differs: staging, voiding, adding, per-assignment realignment, lock handling, the
+      kickoffUnconfirmed/deadlineUnconfirmed note, counters and the returned payload are unchanged.
+      Footers present: 20260918140000 ends with `revoke all on function api.service_sync_fantasy_calendar(uuid) from
+      public, anon, authenticated; grant execute ... to service_role; comment on function ...`;
+      20260918130000 ends with `revoke all on function api.service_fantasy_deadline_watch(uuid, integer, integer)
+      from public, anon, authenticated; grant execute ... to service_role; comment on function ...`.
+      `bun run backend:migrations:check` -> "Validated 59 migration(s)." (exit 0).
+      `git diff --stat origin/main...HEAD -- supabase/migrations` -> only
+      20260918130000_fantasy_deadline_watch.sql (+144) and
+      20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql (+281); 2 files changed, 425 insertions(+),
+      0 deletions(-) — no existing migration touched.
+  - criterion: >
+      AC4 Scope — three-dot diff touches only allowed paths; no src/**, tests/**, docs/qa/**; workflow diff is header
+      comment + two env lines only.
+    result: VERIFIED
+    evidence: >
+      `git diff --stat origin/main...HEAD` lists exactly 8 files:
+      .github/workflows/fantasy-season-orchestrator.yml (+16/-4),
+      docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md,
+      docs/engineering/tasks/BG-0003/implementation-report.yaml,
+      docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json,
+      scripts/backend/fantasy-season-orchestrator.test.ts,
+      scripts/backend/fantasy-season-orchestrator.ts,
+      supabase/migrations/20260918130000_fantasy_deadline_watch.sql,
+      supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql.
+      No src/**, tests/**, docs/qa/**, no other workflow, no other migration, no
+      fantasy-realign-gameweek-calendar.sql / fantasy-lifecycle-runner.ts / current-season-*.ts /
+      phase7f-scan-sanitized-evidence.py.
+      `git diff origin/main...HEAD -- .github/workflows/fantasy-season-orchestrator.yml` is two hunks: the header
+      comment (step-5 sentence + a "Verdicts: ok / waiting / escalate / failed …" paragraph) and, in the
+      "Orchestrate the Fantasy season" step env, the two lines
+      `FANTASY_DEADLINE_WATCH_WARN_HOURS: ${{ vars.FANTASY_DEADLINE_WATCH_WARN_HOURS }}` and
+      `FANTASY_DEADLINE_WATCH_ESCALATE_HOURS: ${{ vars.FANTASY_DEADLINE_WATCH_ESCALATE_HOURS }}`.
+      No continue-on-error, no change to concurrency, `on:`, cron, job `if:` or any other step.
+  - criterion: AC5 Quality — typecheck, eslint, prettier, secrets check.
+    result: VERIFIED
+    evidence: >
+      `bun run typecheck` (tsc --noEmit) -> no output, exit 0.
+      `bunx eslint scripts/backend/fantasy-season-orchestrator.ts scripts/backend/fantasy-season-orchestrator.test.ts`
+      -> no output, exit 0.
+      `bunx prettier --check` over the changed files parseable by prettier (workflow yml, runbook md, the two ts
+      files, implementation-report.yaml, rehearsal-deadline-guard.json) -> "All matched files use Prettier code
+      style!". The two .sql files report "No parser could be inferred" — prettier has no SQL parser in this repo, so
+      this is identical for every pre-existing migration and is not a branch regression
+      (repo-wide `bun run format:check` warns on 18 files, all of them pre-existing src/** files untouched by this
+      branch).
+      `bun run backend:secrets:check` -> "No high-confidence secrets found in tracked files."
+  - criterion: >
+      AC6 Evidence integrity — the Builder's docs/engineering/tasks/BG-0003/rehearsal-deadline-guard.json is
+      internally consistent with my own rehearsal (R1..R8).
+    result: VERIFIED
+    evidence: >
+      R1: same gameweek 3cc19aaa-ea33-4909-845b-db33314b4071, sequence 1, open, deadlineAt 2026-09-23T22:30:00+00:00,
+        startsAt 2026-09-24T00:00:00+00:00, unconfirmedFixtures 8, totalCountingFixtures 8,
+        deadlineDerivedFromPlaceholder true, severity info, 8 fixtures all with providerKickoffAt
+        2026-09-24T00:00:00+00:00 and non-null team names; their hoursToDeadline 131.5 vs my 131.31 is the expected
+        clock difference between 10:59:55Z and 11:11:33Z (131.5 - 131.31 = 0.19 h = 11.4 min, matching the 11.6 min
+        gap). Their defaultWindow_72_24 "gameweeks": [] matches mine exactly.
+      R3: PT403 / "forbidden" — identical.
+      R4: window_720_0 -> info, window_720_240 -> escalate, window_72_240 -> PT400
+        fantasy_deadline_watch_window_invalid — identical to mine.
+      R5: their mixed round (round 90) and my independent round 91 agree on every asserted property:
+        notes ["deadline_unconfirmed", {"kickoffUnconfirmed":1,"deadlineUnconfirmed":true}], confirmedKickoffs 7,
+        deadlineChanges 0, deadline unchanged, 0 audit rows; and after the eighth kickoff is confirmed,
+        kickoffsRealigned 1, a deadlineAt note, deadlineChanges 1, exactly 1 audit row.
+      R6: deadline_locked, notes [{"kickoffsRealigned":8},"deadline_locked"], deadline unchanged, audit 1 before
+        sync and 1 after (the single row coming from the setup update, not from the sync) — identical in structure
+        and values to my (vi).
+      R7: new_deadline_in_past, deadline unchanged, syncDeadlineChanges 0 — identical to my (vii).
+      R8: PT409 / "fantasy_gameweek_locked" on a locked gameweek — identical to my (viii).
+      postRehearsalVerification: gameweeks 1, assignments 8, deadline_audit 0, gw1_deadline 2026-09-23 22:30:00+00,
+        gw1_status open, gw1_first_kickoff 2026-09-24 00:00:00+00, watch_fn_present 0 — all reproduced by my own
+        post-rollback snapshot.
+      No discrepancy found. Two presentational notes, neither a contradiction:
+      (a) their "fixtures": 488 is the global app.fixtures count, not the 8 fixtures of season
+          d03223b0-8f4a-4309-93e1-2a708d7c3584 named in the handoff; I checked both and both match
+          (488 global / 8 in-season);
+      (b) their R5 setup reports minAssignedKickoff 2026-11-10T00:00:00+00 with deadlineAtBefore
+          2026-11-10T22:30:00+00, i.e. an assignment already carrying a placeholder assigned_kickoff_at. The ordinary
+          sync cannot produce that state (creation is blocked by kickoff_unconfirmed), so their round 90 was staged
+          by direct insert. Their counterfactual ("the old sync would have written 2026-11-09T22:30Z") is therefore
+          true only for that shape. In the provider-realistic shape I rehearsed, the assignment keeps the confirmed
+          kickoff and the protection comes entirely from the second hunk (the deadline_unconfirmed skip) rather than
+          from the new_start predicate. Both hunks are exercised; the claim in the evidence file is not false, only
+          narrower than it reads.
+      R2 is the one scenario I did not reproduce in its own separate statement: I observed the same serverTime across
+      several calls issued inside one DO block (as the Builder did), which corroborates but does not independently
+      prove byte-identity across two separate statements.
+  - criterion: AC7 DEF-3 status — a non-production database for an end-to-end orchestrator run.
+    result: NOT_TESTABLE
+    evidence: >
+      `docker info` -> client Docker Engine 29.3.1 present, but
+      `docker info --format '{{.ServerVersion}}'` and `docker ps` both fail with
+      "failed to connect to the docker API at unix:///var/run/docker.sock: dial unix /var/run/docker.sock:
+      connect: no such file or directory". The supabase CLI is present (node_modules/.bin/supabase) but
+      `supabase start` / `supabase db reset` require the daemon, so no local Postgres stack can be started.
+      The only reachable database is production, where seeding a gameweek to the shape DEF-3 needs and letting
+      orchestrateFantasySeason drive it would require committed writes, which this role is forbidden to make.
+      DEF-3 therefore remains open and unproven; nothing was fabricated. This matches the Builder's own
+      `def3` note in rehearsal-deadline-guard.json.
+regressions: []
+untested:
+  - "DEF-3: no evidence that orchestrateFantasySeason itself drives a gameweek end to end (workers array non-empty). Blocked by the absent Docker daemon; see AC7."
+  - "The import.meta.main branch (evidence file write, mode 0600, FANTASY_ORCHESTRATOR_<VERDICT> line, process.exitCode = 1 via shouldFailRun) is not executed by any test or by any rehearsal; only shouldFailRun() is unit-tested."
+  - "The repository variables FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS are read from `vars.*`; whether they are set in GitHub was not checked. Unset expands to an empty string, which deadlineWatchHours() treats as the default (72/24) — correct by construction but not observed in a real workflow run."
+  - "Rerun byte-identity of the deadlineWatch block across two separate database statements (Builder R2) was corroborated, not independently reproduced."
+  - "GW1 has not yet entered the 72 h warning window (131.31 h to deadline at 2026-09-18T11:11Z), so the guard's real production escalation was observed only by widening the window to 720 h / 240 h, never by the clock."
+security_observations:
+  - "api.service_fantasy_deadline_watch is a new SECURITY DEFINER surface, but it is declared STABLE, sets search_path = '', calls app_private.is_service_request() as its first statement and bounds both integer parameters (0 <= escalate <= warn <= 720). I confirmed the refusal against live authenticated claims: PT403 'forbidden'. The footer revokes from public, anon, authenticated and grants only to service_role."
+  - "Read-only confirmed empirically, not just by the STABLE declaration: across the whole rehearsal the row counts (gameweeks 1, active assignments 8, in-season fixtures 8, deadline audit 0) and GW1's deadline are identical before and after, and api.service_fantasy_deadline_watch does not exist in production (pg_proc count 0)."
+  - "No new field name matches /(access_token|refresh_token|token_hash|hashed_token|password)/i, so the phase7f evidence scan will not suppress the artifact upload; asserted by unit test over the whole serialized summary and confirmed by reading the RPC's jsonb keys."
+  - "Minor asymmetry in 20260918140000: the guard counts unconfirmed assignments by f.kickoff_at while the new_start/new_end select filters on a.assigned_kickoff_at. These can diverge only when an assignment's kickoff was not realigned (frozen assignments, which take the gameweek_locked path instead). The failure mode is fail-safe: new_start becomes null and nothing is written. No action required, but it is the one place where the two predicates are not the same column."
+  - "The escalation channel is still only a red workflow run. `escalate` exits 1 from the same step as `failed`, so an operator cannot distinguish them from the job status alone — only from the FANTASY_ORCHESTRATOR_ESCALATE stdout line and the evidence artifact. This is per the brief, but it means a permanently unpublished kickoff produces an indefinitely red hourly workflow with no suppression."
+  - "VERIFIER PROCESS DISCLOSURE: while measuring the prettier baseline I mistakenly ran `git -C /home/user/botolago-foundation checkout -q origin/main -- .`, which wrote origin/main (0a78660) content into the main working tree whose HEAD is 1736478. I verified the staged delta was exactly `git diff --name-status 1736478 0a78660` (17 paths, nothing else), then restored the tree with `git reset --hard HEAD` and moved the 12 newly added files out to the scratchpad at .../scratchpad/main-tree-quarantine/ rather than deleting them. `git status --porcelain` in /home/user/botolago-foundation is now empty at HEAD 1736478a11e9d1e117cdcc5fe1b4948bca151925, i.e. the state it was in before. No branch, commit or remote was touched, and no file was deleted. The Chief should be aware that the main tree's HEAD is 5 commits behind origin/main."
+status: PASS

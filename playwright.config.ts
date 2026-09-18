@@ -15,7 +15,10 @@ export default defineConfig({
   outputDir: "test-results/playwright",
   use: {
     baseURL: externalBaseUrl ?? "http://127.0.0.1:4173",
-    trace: process.env.E2E_STAGING_FIRST_EMAIL ? "off" : "retain-on-failure",
+    trace:
+      process.env.E2E_STAGING_FIRST_EMAIL || process.env.E2E_FANTASY_EMAIL
+        ? "off"
+        : "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",
     reducedMotion: "reduce",

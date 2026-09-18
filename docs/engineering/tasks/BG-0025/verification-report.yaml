@@ -1,0 +1,59 @@
+task_id: BG-0025
+verified_commit: "ef214e79ac316909947f185c57f07da44455c585"
+criteria:
+  - criterion: "AC1 diff --name-status against merge-base lists only the three expected files"
+    result: VERIFIED
+    evidence: |
+      $ git diff --name-status $(git merge-base origin/main HEAD)..HEAD
+      A  docs/engineering/tasks/BG-0025/implementation-report.yaml
+      A  src/lib/format-time.test.ts
+      M  src/lib/format-time.ts
+      (merge-base: c5fdd1fbca90123eacb2271ab395c24d2c54d1be)
+  - criterion: "AC2 every changed line in format-time.ts diff is only a locale-tag change; no remaining bare locale used for Intl formatting"
+    result: VERIFIED
+    evidence: |
+      git diff of format-time.ts shows exactly 3 changed lines, each replacing
+      `lang === "ar" ? "ar" : "fr"` with `lang === "ar" ? "ar-MA" : "fr-FR"`
+      inside Intl.RelativeTimeFormat / Intl.DateTimeFormat constructors; no
+      other tokens changed.
+      $ grep -n '"ar"\|"fr"' src/lib/format-time.ts
+      12:  const rtf = new Intl.RelativeTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", { numeric: "auto" });
+      17:  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      27:  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      All 3 matches are `lang === "ar"` comparisons (permitted); no bare "ar"/"fr" locale tag is passed to Intl.
+  - criterion: "AC3 bun -e module check: ar full date has no Arabic-Indic digits and Moroccan month form; fr full date equals Intl.DateTimeFormat('fr-FR', ...); ar relative time has Western digits"
+    result: VERIFIED
+    evidence: |
+      $ bun -e '... formatFullDate(date,"ar") ... formatFullDate(date,"fr") ... formatRelativeTime(...,"ar") ...'
+      ar full: 18 شتنبر 2026 في 10:30
+      has Arabic-Indic digits: false
+      contains شتنبر: true
+      fr full: 18 septembre 2026 à 10:30
+      expected fr-FR: 18 septembre 2026 à 10:30
+      fr matches: true
+      ar relative: قبل 5 ثوانِ
+      relative has western digits only: true
+  - criterion: "AC4 bun test format-time.test.ts passes with >=3 tests; full bun run test passes; typecheck 0; eslint+prettier --check on the two files 0"
+    result: VERIFIED
+    evidence: |
+      $ bun test src/lib/format-time.test.ts
+      3 pass, 0 fail, 5 expect() calls
+      $ bun run test
+      680 pass, 0 fail, 5855 expect() calls, Ran 680 tests across 117 files
+      $ bun run typecheck
+      (tsc --noEmit, no output, exit 0)
+      $ npx eslint src/lib/format-time.ts src/lib/format-time.test.ts
+      (no output, exit 0)
+      $ npx prettier --check src/lib/format-time.ts src/lib/format-time.test.ts
+      All matched files use Prettier code style! (exit 0)
+  - criterion: "AC5 Consistency: three existing UI files already use ar-MA, confirming the alignment claim"
+    result: VERIFIED
+    evidence: |
+      $ grep -rn '"ar-MA"' src/components | head -3
+      src/components/fpl/AddPlayerScreen.tsx:46:  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      src/components/fpl/primitives.tsx:102:  const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      src/components/fpl/SquadBuilderScreen.tsx:90:  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+regressions: []
+untested: []
+security_observations: []
+status: PASS

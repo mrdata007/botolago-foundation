@@ -1,0 +1,233 @@
+---
+task_id: BG-0027
+verified_commit: 449273c
+criteria:
+  - criterion: >-
+      AC1 `bun test supabase/functions/_shared/sportsmonks-player-ratings.test.ts`
+      passes; the new tests cover zero records -> failed run + code
+      player_statistics_unavailable + no persist RPC; coverage below 0.5 ->
+      failed + player_statistics_coverage_insufficient + no persist; coverage
+      at/above 0.5 -> success with unchanged rows; the run-completion RPC
+      receives the real error code.
+    result: VERIFIED
+    evidence: >-
+      cd /home/user/bg0027-verify && bun test
+      supabase/functions/_shared/sportsmonks-player-ratings.test.ts ->
+      "bun test v1.3.11 (af24e281) / 9 pass / 0 fail / 34 expect() calls /
+      Ran 9 tests across 1 file. [36.00ms]".
+      Reading the added describe block "SportsMonks player rating statistics
+      coverage guard" (test file lines 348-463) confirms all four points:
+      (a) zero provider records -> expect(result.status).toBe(503),
+      body {error: PLAYER_STATISTICS_UNAVAILABLE},
+      expect(calls.some(c => c.name === "ingest_player_season_ratings")).toBe(false),
+      and calls.at(-1) matches {name: "complete_football_ingestion",
+      args: {p_status: "failed", p_error_code: PLAYER_STATISTICS_UNAVAILABLE,
+      p_records_fetched: 0, p_records_inserted: 0, p_records_validated: 0}};
+      (b) 1 of 4 candidates covered (0.25 < 0.5) -> 503,
+      {error: PLAYER_STATISTICS_COVERAGE_INSUFFICIENT}, no
+      ingest_player_season_ratings call, completion
+      {p_status: "failed", p_error_code: PLAYER_STATISTICS_COVERAGE_INSUFFICIENT,
+      p_records_fetched: 1, p_records_inserted: 0};
+      (c) 2 of 4 covered (exactly 0.5) -> 200, counters
+      {fetched: 2, validated: 4, inserted: 4, rejected: 0}, p_rows =
+      [{201, rating 10, confidence 1}, {202, rating 6, confidence 1},
+      {203, rating 6, confidence 0}, {204, rating 6, confidence 0}],
+      completion {p_status: "succeeded", p_error_code: null}.
+      "rows identical to the previous behaviour" independently confirmed by a
+      parity test I wrote against the merge-base version of the module
+      (see AC2 evidence, bg0027-parity.test.ts): newCalc(candidates, map)
+      toEqual oldCalc(candidates, map) over a 120-player randomized cohort
+      across all four positions -> 1 pass / 0 fail.
+      The first test also pins the constant values
+      (MIN_STATISTICS_COVERAGE === 0.5, and both literal code strings).
+  - criterion: >-
+      AC2 Independent verifier-written test (outside the repo, importing from
+      the worktree) reproducing the zero-records case and a 0.49 coverage case,
+      asserting no ingest_player_season_ratings call and the failed completion
+      code; plus a 1.0 coverage case asserting the rating math equals the
+      pre-change formula.
+    result: VERIFIED
+    evidence: >-
+      File written to
+      /tmp/claude-0/-home-user-botolago-foundation/38c9c6aa-d4bc-540b-8674-7cdb622e23bb/scratchpad/bg0027-independent.test.ts
+      (imports handleSportsMonksPlayerRatingsRequest from
+      /home/user/bg0027-verify/supabase/functions/_shared/sportsmonks-player-ratings;
+      nothing added to the repo). Run:
+      cd /home/user/bg0027-verify && bun test <scratchpad>/bg0027-independent.test.ts
+      -> "4 pass / 0 fail / 22 expect() calls / Ran 4 tests across 1 file. [23.00ms]".
+      Cases: (1) 10 candidates, provider data [] -> 503
+      {error: "player_statistics_unavailable"}, zero
+      ingest_player_season_ratings calls, exactly one complete_football_ingestion
+      with p_status "failed", p_error_code "player_statistics_unavailable",
+      p_records_inserted 0. (2) 100 candidates, 49 covered (0.49) -> 503
+      {error: "player_statistics_coverage_insufficient"}, zero
+      ingest_player_season_ratings calls, completion p_status "failed",
+      p_error_code "player_statistics_coverage_insufficient",
+      p_records_fetched 49, p_records_inserted 0. (3) boundary 50/100 = 0.50
+      -> 200 with at least one persist call (rows are batched, so 2 calls).
+      (4) coverage 1.0 with one GK (450 minutes) and one FWD (1800 minutes),
+      each alone in its position group: percentRanks returns 0.5 for a
+      single-element group, so performance = 0.5*0.5 + 0.3*0.5 + 0.2*0.5 = 0.5
+      and unshrunk = 4 + 6*0.5 = 7. The persisted rows equal the closed form
+      rating = min(10, max(4, 6 + min(1, minutes/900) * (unshrunk - 6))):
+      GK confidence 0.5 / rating 6.5, FWD confidence 1 / rating 7.
+      Additionally
+      <scratchpad>/bg0027-parity.test.ts compares the exported
+      calculatePreseasonRatings of HEAD against the merge-base copy
+      (git show <merge-base>:...sportsmonks-player-ratings.ts >
+      <scratchpad>/old-ratings.ts) over 120 randomized players; outputs are
+      deeply equal -> "1 pass / 0 fail".
+  - criterion: >-
+      AC3 Diff scope limited to the ratings module, its test, the runbook and
+      the implementation report; no migration, no src/**; rating
+      formula/band/shrink lines unchanged.
+    result: VERIFIED
+    evidence: >-
+      cd /home/user/bg0027-verify && git merge-base origin/main HEAD ->
+      1736478a11e9d1e117cdcc5fe1b4948bca151925.
+      git diff --name-status 1736478..HEAD ->
+      "M docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md /
+      A docs/engineering/tasks/BG-0027/implementation-report.yaml /
+      M supabase/functions/_shared/sportsmonks-player-ratings.test.ts /
+      M supabase/functions/_shared/sportsmonks-player-ratings.ts".
+      Exactly the four allowed paths; no supabase/migrations/** entry, no
+      src/** entry. git diff --stat: 4 files changed, 238 insertions(+),
+      3 deletions(-).
+      The three deletions in the source are all outside the rating math:
+      (1) `p_error_code: status === "failed" ? "player_ratings_failed" : null`
+      -> `... ? errorCode : null` inside complete();
+      (2)+(3) the `const code = error instanceof RatingsRuntimeError ? ...`
+      line moved from after the complete() call to before it, so the code can
+      be passed into complete(). The remaining source hunks add the exported
+      constants (lines 104-122), `const covered = new Set<string>()` plus
+      `covered.add(normalized.externalPlayerId)`, the `errorCode` parameter,
+      and the two guard throws before the persist. `git diff` contains no hunk
+      touching calculatePreseasonRatings, percentRanks, fantasyEquivalentPoints
+      or rounded. The live formula lines at HEAD are unchanged:
+      line 546 `const confidence = Math.min(1, row.stats.minutes / 900);`,
+      line 547 `const unshrunk = 4 + 6 * performance;`,
+      line 548 `const rating = Math.min(10, Math.max(4, 6 + confidence * (unshrunk - 6)));`
+      -- none of these appear as +/- in the diff, and the AC2 parity test
+      proves byte-identical output against the merge-base implementation.
+  - criterion: AC4 No existing test weakened - the .test.ts diff is additions only.
+    result: VERIFIED
+    evidence: >-
+      cd /home/user/bg0027-verify && git diff --numstat 1736478..HEAD --
+      supabase/functions/_shared/sportsmonks-player-ratings.test.ts ->
+      "120 0 supabase/functions/_shared/sportsmonks-player-ratings.test.ts"
+      (120 added, 0 deleted). Counting removal lines:
+      git diff ... | grep -c '^-[^-]' -> 0. The only change inside the existing
+      region is the import list, which gains three names and loses none (the
+      import hunk is +3/-0). All 5 pre-existing tests still run and pass inside
+      the 9-test run of AC1.
+  - criterion: >-
+      AC5 Quality gates: full `bun test`, `bun run typecheck`, eslint on the two
+      files, prettier --check on the changed files, `bun run backend:secrets:check`.
+    result: VERIFIED
+    evidence: >-
+      All run from /home/user/bg0027-verify after
+      `bun install --frozen-lockfile` ("539 packages installed").
+      (1) `bun test` -> "636 pass / 0 fail / 5148 expect() calls /
+      Ran 636 tests across 114 files. [7.64s]".
+      (2) `bun run typecheck` (tsc --noEmit) -> no output, exit 0.
+      (3) `bunx eslint supabase/functions/_shared/sportsmonks-player-ratings.ts
+      supabase/functions/_shared/sportsmonks-player-ratings.test.ts` -> no
+      output, exit 0. ESLint does cover supabase/functions: eslint.config.js
+      applies to files ["**/*.{ts,tsx}"] and its `ignores` list contains only
+      dist, .output, .vinxi and four src/** globs. Confirmed the files were
+      actually linted rather than skipped: `bunx eslint --format json ...`
+      returns two result objects, one per file, each with errorCount 0 and
+      warningCount 0.
+      (4) `bunx prettier --check` on all four changed files ->
+      "Checking formatting... / All matched files use Prettier code style!",
+      exit 0.
+      (5) `bun run backend:secrets:check` ->
+      "No high-confidence secrets found in tracked files.", exit 0.
+  - criterion: >-
+      AC6 Every failure path reports its specific code to
+      complete_football_ingestion and all codes match ^[a-z][a-z0-9_]{1,63}$.
+    result: VERIFIED
+    evidence: >-
+      Source inspection at HEAD: there are exactly two complete() call sites
+      (grep -n "await complete(" -> lines 791 and 814). Line 791 is the success
+      path (status "succeeded", p_error_code null). Line 814 is the single
+      catch-all failure path:
+      `const code = error instanceof RatingsRuntimeError ? error.code : "player_ratings_failed";`
+      then `await complete(dependencies.client, runId, "failed", counts,
+      config.seasonId, code);` - so every throw inside the run body (every
+      RatingsRuntimeError) now reaches complete_football_ingestion with its own
+      code, and a non-RatingsRuntimeError keeps the previous generic
+      "player_ratings_failed". complete() forwards it verbatim:
+      `p_error_code: status === "failed" ? errorCode : null`.
+      Full list of codes reachable by this worker (extracted from the source
+      with a regex over every RatingsRuntimeError construction, incl. the
+      ternary at line 144 and the default parameter, then matched against
+      ^[a-z][a-z0-9_]{1,63}$ - all 17 match):
+      database_unavailable, duplicate_rating_candidate,
+      invalid_database_response, invalid_provider_payload, invalid_request,
+      invalid_runtime_configuration, mapping_not_found, player_ratings_failed,
+      player_statistics_coverage_insufficient, player_statistics_unavailable,
+      position_mismatch, provider_origin_guard_failed,
+      provider_page_limit_exceeded, provider_rate_limited,
+      provider_response_too_large, provider_unavailable, request_too_large.
+      The regex is the real database constraint:
+      supabase/migrations/20260720095345_football_match_ingestion.sql lines 715
+      and 743 -> "error_code is null or error_code ~ '^[a-z][a-z0-9_]{1,63}$'".
+      Note (not a failure of this criterion): three codes -
+      invalid_runtime_configuration, request_too_large and invalid_request -
+      are raised before begin_football_ingestion creates a run, so no run row
+      exists to carry them; that is unchanged pre-existing behaviour. Also, the
+      inner `try { await complete(...) } catch {}` still swallows a failure of
+      the completion RPC itself, which is pre-existing and deliberate.
+regressions: []
+untested:
+  - >-
+    Database-level suites (`bun run backend:db:test`, `bun run backend:db:lint`,
+    `supabase db reset`) were not run: they require a local Supabase/Docker
+    stack, which is unavailable here. No migration is touched by this diff, so
+    no database object changed; the ^[a-z][a-z0-9_]{1,63}$ constraint was
+    verified by reading the migration rather than by executing it.
+  - >-
+    No end-to-end run against the real SportMonks provider or a deployed edge
+    function. All behaviour was exercised through the exported handler with an
+    injected fetch and RPC client.
+  - >-
+    `bun run lint` over the whole repository was not re-run by me; only eslint
+    on the two changed files (0 errors, 0 warnings). The Builder reports 12
+    pre-existing react-refresh warnings in src/**, unrelated to this diff.
+security_observations:
+  - >-
+    RESIDUAL FAIL-OPEN, disclosed by the Builder and independently reproduced.
+    Coverage counts a candidate as covered as soon as one accepted provider
+    record was matched to it, regardless of whether that record carries any
+    metrics. normalizedStatistics returns empty metrics for
+    `has_values === false` (source line 391) but the candidate is still added
+    to `covered`. Reproduced in
+    <scratchpad>/bg0027-hasvalues.test.ts: 10 candidates, provider returns a
+    has_values=false record with empty details for each -> HTTP 200, one
+    ingest_player_season_ratings call, 10 rows persisted, first row
+    {rating: 6, confidence: 0}, run completed "succeeded". That is exactly the
+    BG-0011 production signature (neutral 6.0 / confidence 0 rows written as if
+    they were history), so a provider that degrades to empty-but-present
+    records still bypasses the guard. The BG-0011 brief wording ("empty
+    provider statistics response (records_fetched = 0 or coverage below a
+    minimum share)") is satisfied by the delivered definition, and no AC for
+    BG-0027 covers this, so it does not refute any criterion - but it should be
+    raised as follow-up work (e.g. define coverage over candidates with
+    non-zero minutes, or add a non-degeneracy check on the rating distribution
+    before persisting).
+  - >-
+    Division-by-zero / NaN hole in `covered.size / candidates.length` is not
+    reachable: an empty candidate set is rejected earlier. Verified in
+    <scratchpad>/bg0027-edge.test.ts - candidates [] with provider rows ->
+    HTTP 503 {"error":"invalid_database_response"} and a single
+    complete_football_ingestion with p_status "failed",
+    p_error_code "invalid_database_response", p_records_inserted 0.
+  - >-
+    Widening p_error_code from the single generic "player_ratings_failed" to
+    the real code exposes provider-side failure reasons
+    (provider_unavailable, provider_rate_limited, mapping_not_found, ...) in
+    the ingestion run record. These are internal operator-facing rows, not the
+    HTTP response body, which already returned the same codes before this
+    change; no new information is disclosed to callers.
+status: PASS

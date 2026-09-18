@@ -12,8 +12,8 @@ human_actions_open:
     action: Rotate the credentials listed in docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §1; confirm Supabase Auth Site/Redirect URLs and leaked-password protection.
   - id: BG-0022
     action: Publish merged main (2c7b1e7 or later) from Lovable so botolago.com serves the recovered Fantasy.
-  - id: BG-0011
-    action: Product decision on Fantasy opening prices (A re-stage with real ratings before 2026-09-23T00:00Z / B launch uniform-by-position / C other rule) — see docs/engineering/tasks/BG-0011/engineering-brief.yaml.
+  - id: BG-0028
+    action: Create GitHub Environment fantasy-e2e (E2E_FANTASY_EMAIL/PASSWORD, staging URL/key) and variable FANTASY_E2E_ENABLED; confirm the synthetic manager's project.
   - id: BG-0023
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
 
@@ -49,6 +49,7 @@ tasks:
       - provider must publish rounds and non-midnight kickoffs; sync never invents them
       - recovery canary stops at the promoted-club squad guard (BG-0005); fixture phase commits first
       - hourly schedule inactive until BG-0004
+    attempt_2_reviewer: OPEN_PENDING_DEF3 — DEF-1a/1b/DEF-2 discharged by BG-0003 (merged); DEF-3 (composed orchestrator has never advanced a gameweek) needs a non-production database or a sanctioned rolled-back end-to-end session; DEF-4 closed by migration-digest-comparison.json
 
   BG-0002:
     title: INFRA — Refresh Production Supabase Management API credential
@@ -63,7 +64,7 @@ tasks:
       - Phase 7E-B Production V2 migration promotion completes its management-API preflight (no HTTP 401)
       - a subsequent batch promotion runs through the workflow, not through a generated transaction
     evidence:
-      - run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"
+      - 'run https://github.com/mrdata007/botolago-foundation/actions/runs/35332075933 → "promotion_failed: management_api_request_failed: HTTP 401"'
       - migration 20260918120000_fantasy_calendar_sync was exceptionally promoted through the promoter's own generated transaction; production history row name/version match and statements[1] sha256 = 634d49f5ed068fa745121a2756933b65c3711347ef38d320b0ac947936388b1e (repository file)
       - the manifest now covers all 57 migrations (commit 3206afc), so the workflow's chain check passes once the credential works
       - docs/engineering/tasks/BG-0001/migration-digest-comparison.json — machine-readable proof (Extractor, read-only) that the 9 launch_recovery rows and 20260918120000 each match the repository file SHA-256 (allMatch true, 57 history rows); closes Reviewer DEF-4
@@ -76,7 +77,7 @@ tasks:
     severity: P0
     user_impact: If real kickoffs are not published before 2026-09-23T22:30Z, GW1 locks on a placeholder-derived deadline (or the wrong time) and nobody is warned.
     owner: Builder-Backend
-    state: RUNNING # Scout DONE, Researcher DONE (docs/engineering/tasks/BG-0003/); Builder attempt 1 on branch agent/BG-0001-0003-deadline-guard
+    state: DONE # Scout DONE, Researcher DONE (docs/engineering/tasks/BG-0003/); Builder attempt 1 on branch agent/BG-0001-0003-deadline-guard
     attempt: 1
     depends_on: [BG-0001]
     scope_log:
@@ -98,6 +99,11 @@ tasks:
     commits: []
     verification: null
     review: null
+    reviewer_verdict: PASS (fresh context, docs/engineering/tasks/BG-0003/review-report.yaml, reviewed_commit 95d79a7)
+    merged: main merge commit of agent/BG-0001-0003-deadline-guard (2026-09-18)
+    remaining_risks:
+      - migrations 20260918130000 and 20260918140000 are NOT promoted to Production V2; promotion requires the Phase 7E-B workflow, which is blocked by BG-0002 (invalid SUPABASE_ACCESS_TOKEN). Until promoted the guard RPC is absent (every pass degrades to waiting, green) and the production sync is still the unguarded body.
+      - GW1 enters the default escalation window at 2026-09-22T22:30Z; promotion must land before then for the guard to catch it.
 
   BG-0004:
     title: Enable the hourly orchestrator (FANTASY_AUTOMATION_ENABLED=true)
@@ -140,16 +146,23 @@ tasks:
     severity: P1
     user_impact: prevents a repeat of BG-0011 on the next activation or re-stage.
     owner: Chief
-    state: READY
+    state: REJECTED
     depends_on: []
     acceptance_criteria:
       - a ratings run with records_fetched = 0 (or coverage below a minimum share) ends failed with an explicit error code and inserts zero rows
       - unit test in supabase/functions/_shared/sportsmonks-player-ratings.test.ts
       - a pre-stage non-degeneracy guard (additive migration) blocks or loudly warns when every candidate carries rating 6.0 / confidence 0
-    evidence: [docs/engineering/tasks/BG-0011/engineering-brief.yaml]
-    next: Builder-Backend once BG-0003/BG-0020 branches are merged (shared CI capacity)
+    evidence: [docs/engineering/tasks/BG-0011/engineering-brief.yaml, docs/engineering/tasks/BG-0027/verification-report.yaml]
+    roles: {builder: Builder-Backend (DONE, branch agent/BG-0027-ratings-fail-closed @449273c), verifier: PASS, reviewer: FAIL attempt 1 (docs/engineering/tasks/BG-0027/review-report-attempt1.yaml)}
+    follow_up: BG-0030 — coverage computation counts has_values=false statistics records as covered (residual fail-open; Verifier security observation)
 
   # ---- Launch inventory (Chief triage in progress; Scouts BG-0011..BG-0018 dispatched) ----
+    attempt: 1
+    rejection:
+      - DEF-1 AC-c additive pre-stage non-degeneracy migration missing and not recorded as descoped (Chief dispatch omitted AC-c from the Builder/Verifier criteria — Chief process defect; attempt 2 hands the ledger criteria verbatim)
+      - DEF-2 has_values=false provider records counted as covered → a succeeded run still writes only 6.0/0 rows (reproduced by Reviewer)
+    next: Builder-Backend attempt 2 on agent/BG-0027-ratings-fail-closed (folds BG-0030)
+
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
     area: fantasy
@@ -169,9 +182,14 @@ tasks:
     area: pricing
     severity: P0
     user_impact: 323 of 539 players cost 7.20; no price differentiation between a star and a reserve; budget/transfer mechanics degenerate. Movement rules cannot fix it at current scale (250 net-transfer floor).
-    owner: Human
-    state: HALTED_FOR_INPUT
+    owner: Extractor
+    state: RUNNING # owner chose Option A on 2026-09-18 (~12:00Z): real ratings → rollback + re-stage before 2026-09-23T00:00Z; the 3 QA/E2E teams will be deleted as part of the re-stage (owner-approved by choosing A)
     attempt: 1
+    decision: {option: A, by: owner, at: 2026-09-18, time_box: 2026-09-23T00:00Z}
+    plan:
+      - A1 Extractor: failed backfill run diagnostics, coverage state, workflow inputs (RUNNING)
+      - A2 Researcher: execution brief (backfill completion via G7 workflow, ratings ingestion, rollback/re-stage sequence, acceptance checks, schedule vs time box)
+      - A3 Builder-Data / Shipper: dispatch backfill batches until 240/240 coverage; ingest v2 ratings; rehearse rollback+re-stage rolled back; execute with evidence; Verifier + Reviewer
     evidence:
       - docs/engineering/tasks/BG-0011/engineering-brief.yaml (Researcher, read-only production queries)
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
@@ -209,12 +227,57 @@ tasks:
       Legal/product decision — confirm the launch news scope: (a) ElBotola metadata + remote heroes only (current state, already running), or (b) GNews commercial licence approved (set GNEWS_COMMERCIAL_LICENSE_APPROVED and GNEWS_SCHEDULE_ENABLED after a licensed manual run), or (c) full-article bodies from a licensed source (new provider work). Agents must not ingest bodies without a documented licence.
     next_when_unblocked: Verifier checks production article rendering (attribution, canonical link, hero fallback) for the chosen scope.
   BG-0014:
-    title: Localization (fr/ar/en keys, grammar, RTL, formats)
+    title: Localization gate (fr/ar dictionaries) — CI-enforced
     area: localization
     severity: P1
-    owner: Scout
-    state: RUNNING
-    evidence: [UNKNOWN beyond Fantasy screens (fr/ar/en keys added during reconstruction)]
+    user_impact: Missing/empty/placeholder-mismatched keys now fail CI; identical-value and non-Arabic warnings are ratcheted; profile.title ("Profile\n\n" in both languages) surfaced as a named defect (BG-0024).
+    owner: Chief
+    state: DONE
+    attempt: 1
+    roles: {scout: sub-agent, researcher: sub-agent, builder: Builder-Frontend sub-agent (worktree), verifier: sub-agent, reviewer: fresh sub-agent}
+    branch: agent/BG-0014-i18n-gate
+    commits: [6621677, "merge into main by Chief"]
+    evidence:
+      - docs/engineering/tasks/BG-0014/engineering-brief.yaml
+      - docs/engineering/tasks/BG-0014/implementation-report.yaml
+      - docs/engineering/tasks/BG-0014/verification-report.yaml (PASS; fr 985 / ar 985; W1=6 W2=5 W3=237 W4=100)
+      - docs/engineering/tasks/BG-0014/review-report.yaml (PASS)
+    verification: {status: PASS}
+    review: {verdict: PASS}
+    residual_risks:
+      - the gate assumes repo-root cwd (fails loudly otherwise)
+      - RTL physical-direction utilities (111) and short-label truncation risks remain findings (BG-0026)
+  BG-0024:
+    title: profile.title dictionary defect ("Profile\n\n" in fr and ar, rendered with whitespace-pre-wrap)
+    area: localization
+    severity: P1
+    user_impact: English word plus blank lines on the profile screen in both languages.
+    owner: Chief
+    acceptance_criteria: [proper fr and ar strings in src/i18n/dictionaries.ts; W1 baseline 6→5 and W2 5→4 in scripts/qa/i18n-gate.ts in the same change; gate passes]
+    state: DONE
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0024-profile-title @47c211b), verifier: PASS (docs/engineering/tasks/BG-0024/verification-report.yaml), reviewer: PASS (fresh context, docs/engineering/tasks/BG-0024/review-report.yaml)}
+    evidence: [docs/engineering/tasks/BG-0024/implementation-report.yaml (branch)]
+    merged: main (merge of agent/BG-0024-profile-title @47c211b, 2026-09-18)
+    remaining_risks: [no browser screenshot of the profile screen; stale doc comment in src/i18n/i18n-allowlist.ts lines 9-10 (comment only, follow-up under BG-0029)]
+
+  BG-0025:
+    title: format-time.ts uses bare "ar"/"fr" locales while the UI uses "ar-MA"/"fr-FR" (two digit systems on Arabic screens)
+    area: localization
+    severity: P1
+    owner: Chief
+    state: DONE
+    acceptance_criteria: [src/lib/format-time.ts uses the same locale tags as the components (ar-MA / fr-FR); unit test; no other behaviour change]
+    roles: {builder: Builder-Frontend (DONE, branch agent/BG-0025-format-time-locale @ef214e7), verifier: PASS (docs/engineering/tasks/BG-0025/verification-report.yaml), reviewer: PASS (fresh context, docs/engineering/tasks/BG-0025/review-report.yaml)}
+    note: product confirmation of Western digits is implied by the 20+ existing ar-MA usages; flag in the report.
+    merged: main (merge of agent/BG-0025-format-time-locale @ef214e7, 2026-09-18)
+    remaining_risks: [ar-MA also switches the Arabic article timestamp to 24h Moroccan month form (inherent to aligning with existing components; product awareness only)]
+
+  BG-0026:
+    title: RTL layout audit (111 physical-direction utilities; short-label truncation candidates)
+    area: ui
+    severity: P2
+    owner: Chief
+    state: QUEUED
   BG-0015:
     title: Fonts and UI consistency
     area: ui
@@ -245,7 +308,7 @@ tasks:
     state: QUEUED
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
-    next: Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005
+    next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
   BG-0019:
     title: Fantasy leagues / transfers / points / gameweeks lifecycle
     area: fantasy
@@ -255,12 +318,49 @@ tasks:
     depends_on: [BG-0001, BG-0004]
     evidence: [rehearsals GW1→GW3 rolled back; first real close happens after GW1 kickoff]
   BG-0020:
-    title: Automated E2E testing in CI
+    title: Automated E2E testing in CI + config-integrity guard (incident owner-action 4)
     area: e2e
     severity: P1
-    owner: Scout
-    state: RUNNING
-    evidence: [tests/e2e/fantasy.journey.e2e.ts (6 journeys) runs locally; CI wiring UNKNOWN]
+    user_impact: CI now fails on obfuscated/long-line payloads in executed configs before bun install; the authenticated Fantasy journey suite has a dispatch/nightly workflow (inert until the owner creates the fantasy-e2e environment).
+    owner: Chief
+    state: DONE
+    attempt: 1
+    roles: {scout: sub-agent, researcher: sub-agent, builder: Builder-DevOps sub-agent (worktree), verifier: sub-agent, reviewer: fresh sub-agent}
+    commits: [9270546, 49be214, b294351, "merge into main by Chief"]
+    branch: agent/BG-0020-ci-guards
+    evidence:
+      - docs/engineering/tasks/BG-0020/engineering-brief.yaml
+      - docs/engineering/tasks/BG-0020/implementation-report.yaml
+      - docs/engineering/tasks/BG-0020/verification-report.yaml (PASS; historical payload 5731246 → exit 1 with R1/R2/R3/R4/R5; current tree 34 files clean; suite 6 skipped/0 failed without credentials)
+      - docs/engineering/tasks/BG-0020/review-report.yaml (PASS)
+    verification: {status: PASS}
+    review: {verdict: PASS}
+    residual_risks:
+      - RC-1-A3 (6 passed / 0 skipped on a staging dispatch) requires the owner-side environment (BG-0028)
+      - guard is invoked via `bun run config:integrity:check` (routes through package.json/bunfig.toml, both scanned one step later) — hardening follow-up BG-0029
+      - the suite creates a league per run and never deletes it — cleanup follow-up BG-0029
+  BG-0028:
+    title: Create the fantasy-e2e GitHub Environment and variables for the authenticated E2E workflow
+    area: e2e
+    severity: P1
+    owner: Human
+    state: HALTED_FOR_INPUT
+    human_action: create GitHub Environment `fantasy-e2e` with secrets E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD (the synthetic manager), set vars.SUPABASE_STAGING_URL + secrets.SUPABASE_STAGING_PUBLISHABLE_KEY, set repository variable FANTASY_E2E_ENABLED=true when the nightly staging run should start, and confirm which Supabase project holds the synthetic manager (staging preferred; production only by dispatch). Then dispatch once with target=staging and require 6 passed / 0 skipped.
+  BG-0029:
+    title: Hardening follow-ups from the BG-0020 review (invoke the guard by path with node; league cleanup for the E2E suite; presence assertion per resolved target)
+    area: e2e
+    severity: P2
+    owner: Chief
+    state: QUEUED
+  BG-0030:
+    title: Ratings coverage guard treats provider statistics records with has_values=false as covered (residual fail-open after BG-0027)
+    area: data
+    severity: P2
+    owner: Chief
+    state: FOLDED_INTO_BG-0027
+    depends_on: [BG-0027]
+    evidence: [docs/engineering/tasks/BG-0027/verification-report.yaml security_observations]
+    acceptance_criteria: [coverage counts only statistics records that carry values; unit test for the has_values=false case; no formula change]
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
     area: security
@@ -284,4 +384,4 @@ tasks:
     severity: P1
     owner: Human
     state: HALTED_FOR_INPUT
-    human_action: product decision (recommendation: delete after first real gameweek close is verified)
+    human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
