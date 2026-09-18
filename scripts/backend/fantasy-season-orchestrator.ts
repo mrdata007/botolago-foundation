@@ -277,12 +277,21 @@ function safeCode(error: unknown, fallback: string) {
 }
 
 export function orchestratorEnvironment(env: Record<string, string | undefined>) {
-  if (env.FANTASY_AUTOMATION_ENABLED !== "true") throw new Error("fantasy_automation_disabled");
+  // A scheduled pass runs only while the repository variable is on; an owner
+  // dispatch is authorized by the typed confirmation instead, so one reviewed
+  // pass can run before the schedule is enabled.
+  if (env.GITHUB_EVENT_NAME === "schedule" && env.FANTASY_AUTOMATION_ENABLED !== "true")
+    throw new Error("fantasy_automation_disabled");
+  if (
+    env.GITHUB_EVENT_NAME === "workflow_dispatch" &&
+    (env.GITHUB_ACTOR !== "mrdata007" ||
+      env.FANTASY_ORCHESTRATOR_CONFIRMATION !== "RUN_FANTASY_ORCHESTRATOR")
+  )
+    throw new Error("fantasy_orchestrator_environment_mismatch");
   if (
     env.GITHUB_REPOSITORY !== "mrdata007/botolago-foundation" ||
     env.GITHUB_REF !== "refs/heads/main" ||
     !["schedule", "workflow_dispatch"].includes(env.GITHUB_EVENT_NAME ?? "") ||
-    (env.GITHUB_EVENT_NAME === "workflow_dispatch" && env.GITHUB_ACTOR !== "mrdata007") ||
     env.GITHUB_RUN_ATTEMPT !== "1" ||
     !/^[0-9a-f]{40}$/.test(env.EXPECTED_COMMIT ?? "") ||
     env.EXPECTED_COMMIT !== env.GITHUB_SHA ||

@@ -32,11 +32,13 @@ permissions:
 
 jobs:
   orchestrate:
+    # The hourly schedule needs the repository variable; an owner dispatch with
+    # the typed confirmation is its own authorization (one reviewed pass, used
+    # before the schedule is enabled).
     if: >-
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
-      vars.FANTASY_AUTOMATION_ENABLED == 'true' &&
-      (github.event_name == 'schedule' ||
+      ((github.event_name == 'schedule' && vars.FANTASY_AUTOMATION_ENABLED == 'true') ||
        (github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007' &&
         inputs.confirmation == 'RUN_FANTASY_ORCHESTRATOR'))
     runs-on: ubuntu-latest
@@ -44,6 +46,7 @@ jobs:
     environment: production-admin-activation
     env:
       FANTASY_AUTOMATION_ENABLED: ${{ vars.FANTASY_AUTOMATION_ENABLED }}
+      FANTASY_ORCHESTRATOR_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || '' }}
       EXPECTED_COMMIT: ${{ github.sha }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}

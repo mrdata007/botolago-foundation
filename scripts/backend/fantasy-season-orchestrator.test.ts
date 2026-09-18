@@ -299,8 +299,26 @@ describe("fantasy season orchestrator", () => {
         ...base,
         GITHUB_EVENT_NAME: "workflow_dispatch",
         GITHUB_ACTOR: "someone",
+        FANTASY_ORCHESTRATOR_CONFIRMATION: "RUN_FANTASY_ORCHESTRATOR",
       }),
     ).toThrow("fantasy_orchestrator_environment_mismatch");
+    expect(() =>
+      orchestratorEnvironment({
+        ...base,
+        GITHUB_EVENT_NAME: "workflow_dispatch",
+        GITHUB_ACTOR: "mrdata007",
+      }),
+    ).toThrow("fantasy_orchestrator_environment_mismatch");
+    // An owner dispatch with the typed confirmation runs before the schedule is enabled.
+    expect(
+      orchestratorEnvironment({
+        ...base,
+        FANTASY_AUTOMATION_ENABLED: undefined,
+        GITHUB_EVENT_NAME: "workflow_dispatch",
+        GITHUB_ACTOR: "mrdata007",
+        FANTASY_ORCHESTRATOR_CONFIRMATION: "RUN_FANTASY_ORCHESTRATOR",
+      }).commit,
+    ).toBe("a".repeat(40));
     expect(() => orchestratorEnvironment({ ...base, GITHUB_REF: "refs/heads/feature" })).toThrow();
     expect(() => orchestratorEnvironment({ ...base, EXPECTED_COMMIT: "b".repeat(40) })).toThrow();
     expect(() => orchestratorEnvironment({ ...base, GITHUB_RUN_ATTEMPT: "2" })).toThrow();
