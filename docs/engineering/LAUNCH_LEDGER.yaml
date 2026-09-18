@@ -319,7 +319,7 @@ tasks:
     severity: P2
     owner: Chief
     state: RUNNING
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend attempt 2 DONE (@76916e2; BottomNav px-0.5 fits all five fr labels; Select receives the dir prop), verifier: running, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0026/engineering-brief.yaml; evidence/), builder: Builder-Frontend attempt 2 DONE (@76916e2; BottomNav px-0.5 fits all five fr labels; Select receives the dir prop), verifier: PASS (docs/engineering/tasks/BG-0026/verification-report.yaml; defects reproduced on main, fixes reproduced on HEAD in the browser), reviewer: running (fresh context), reviewer: pending}
     scope_mutation_1: {old_scope: 'BottomNav.tsx line 60 only; matches.index.tsx forbidden', new_scope: 'BottomNav.tsx label/slot padding or one typographic step so all five fr labels fit at 390px; matches.index.tsx one prop dir={dir} on the Radix Select', reason: 'max-w-full alone clips fr Actualités (visible regression); Radix Select stamps dir=ltr so the logical utilities cannot take effect', approved_by: Chief, date: 2026-09-18}
     finding: 'precise inventory 113 tokens, 110 inside shadcn primitives, only 31 must-flip in 7 live files; visible defects D1-D6 (missing .lucide-chevron-left mirror rule, 3 double-flipped rtl:rotate-180 chevrons, BottomNav nav.profile overflow, FDR start-side truncation)'
 

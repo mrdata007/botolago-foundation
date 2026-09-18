@@ -1,0 +1,101 @@
+task_id: BG-0026
+verified_commit: "76916e2 (origin/agent/BG-0026-rtl-fixes; merge-base with origin/main db76141 = 535945f)"
+verifier_workspace: "/home/user/bg0026-verify (detached at 76916e2, bun install --frozen-lockfile); baseline worktree /home/user/bg0026-verify-base (detached origin/main db76141, removed after the run). Dev servers HEAD :4190 / main :4191, Playwright + /opt/pw-browsers/chromium-1194, stopped after the run. Scripts and screenshots: /tmp/claude-0/-home-user-botolago-foundation/38c9c6aa-d4bc-540b-8674-7cdb622e23bb/scratchpad/bg0026-verify/ (vprobe.mjs, vcompare.mjs, vcrop.mjs, head/, base/, *.log)."
+criteria:
+  - criterion: "V1 scope: changed files ⊆ brief allowed_paths + src/routes/matches.index.tsx (scope_mutation_1) + docs/engineering/tasks/BG-0026/**; matches.index.tsx diff is exactly the dir destructure + one prop; sheet.tsx 51/53 and dialog.tsx 44 untouched; 15 dead primitives untouched; no forbidden path."
+    result: VERIFIED
+    evidence: |
+      `git diff --name-only 535945f...HEAD` -> 22 paths: the 13 allowed src files, src/routes/matches.index.tsx, docs/engineering/tasks/BG-0026/implementation-report.yaml and 7 docs/engineering/tasks/BG-0026/evidence/*.png. Grep of that list against the forbidden_paths set (supabase/, scripts/, src/i18n/, src/backend/, DateStrip, GameweekSelector, src/components/fpl/, splash/, welcome/, auth.verify, tests/, .github/, package.json, bunfig, vite.config) -> empty.
+      `git diff 535945f...HEAD -- src/routes/matches.index.tsx` -> numstat 2/1: `-  const { t, tr, lang } = useI18n();` / `+  const { t, tr, lang, dir } = useI18n();` and `+            dir={dir}` on <Select>. Nothing else.
+      `git diff -U0 535945f...HEAD -- sheet.tsx dialog.tsx` hunks: sheet @@ -100 +100 only; dialog @@ -76 +76,4 only. `sed -n '51p;53p' sheet.tsx` and `sed -n 44p dialog.tsx` on HEAD are byte-identical to `git show origin/main:...` (left-0 rounded-r-[...], right-0 rounded-l-[...], left-[50%] ... translate-x-[-50%]).
+      `git diff --stat 535945f...HEAD -- src/components/ui/{accordion,alert,alert-dialog,calendar,carousel,command,context-menu,drawer,menubar,navigation-menu,pagination,resizable,scroll-area,sidebar,table}.tsx` -> empty.
+      `git diff --name-only 535945f origin/main -- <the 14 branch src files>` -> empty (main did not touch them; main's only src change since merge-base is src/i18n/i18n-allowlist.ts, 2 lines).
+  - criterion: "T1 class-(a) invariant (brief acceptance test 1)."
+    result: VERIFIED
+    evidence: |
+      cd /home/user/bg0026-verify && rg -P -n '(?<![A-Za-z0-9_\-])-?(?:(?:ml|mr|pl|pr|left|right|border-l|border-r|rounded-l|rounded-r)-[^\s"'\''`{}]+|text-left|text-right|border-l|border-r)(?=[\s"'\''`}]|$)' src/components/ui/select.tsx src/components/ui/dropdown-menu.tsx src/components/ui/sonner.tsx src/components/ui/input-otp.tsx src/routes/auth.profile-setup.tsx -> no output, rc=1.
+      rg -n 'text-left|left-\[50%\]' src/components/ui/sheet.tsx src/components/ui/dialog.tsx -> exactly one line: src/components/ui/dialog.tsx:44 "fixed left-[50%] top-[50%] ...". No text-left anywhere. (sheet.tsx:51/53 are not matched by this second regex by construction; they are covered by T2 and V1.)
+  - criterion: "T2 class-(b)/(c) unchanged: broad inventory over src returns 82; per-file counts for the 15 dead primitives, SplashScreen, SquadListTable, sheet (4) and dialog (1) equal the pre-change table."
+    result: VERIFIED
+    evidence: |
+      Broad regex from the brief findings run with `rg -P -o --no-heading -n ... src -g '*.tsx' -g '*.ts'` on three trees: HEAD = 82, origin/main (git archive db76141) = 113, merge-base (git archive 535945f) = 113; main and merge-base inventories are line-identical (`diff` empty). comm main vs HEAD: 31 tokens removed, 0 added.
+      Per-file HEAD: sidebar 20, menubar 11, context-menu 11, carousel 6, calendar 6, sheet 4, navigation-menu 4, table 3, scroll-area 2, resizable 2, pagination 2, command 2, alert 2, alert-dialog 2, drawer 1, dialog 1, accordion 1, splash/SplashScreen 1, fpl/SquadListTable 1 (= 82).
+      `diff perfile-main.txt perfile-head.txt` shows only: dropdown-menu 11->0, sonner 10->0, sheet 5->4, input-otp 4->0, select 3->0, dialog 2->1, auth.profile-setup 1->0. All other files identical.
+      Remaining sheet/dialog tokens on HEAD: sheet.tsx:51 left-0 + rounded-r-[var(--radius-sheet)], sheet.tsx:53 right-0 + rounded-l-[var(--radius-sheet)], dialog.tsx:44 left-[50%]. Files: scratchpad/bg0026-verify/inv-{head,main,mb}.txt, perfile-{head,main}.txt.
+  - criterion: "T3 chevron contract: one chevron-left transform rule in styles.css; no rtl:rotate-180 outside ui/; WelcomeScreen still 2 rtl: lines."
+    result: VERIFIED
+    evidence: |
+      rg -n 'lucide-chevron-left' src/styles.css -> 430:html[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); } and 531:.fpl-root .lucide-chevron-left { } . The second is an empty rule that already exists on origin/main (rg on the main worktree -> 530:.fpl-root .lucide-chevron-left { }); the branch adds exactly one line to styles.css (git diff: +1). Exactly one transform rule exists; it sits directly after the chevron-right rule (lines 429-432 read chevron-right, chevron-left, arrow-right, arrow-left).
+      rg -n 'rtl:rotate-180' src --glob '!src/components/ui/**' -> no output, rc=1.
+      rg -n 'rtl:' src/components/welcome/WelcomeScreen.tsx -> lines 65 and 80 (rtl:group-hover:-translate-x-0.5), and `git diff --stat 535945f...HEAD -- WelcomeScreen.tsx` is empty.
+  - criterion: "T4 typecheck, test (same file count as main), lint (no new warnings), prettier --check on changed files."
+    result: VERIFIED
+    evidence: |
+      HEAD: `bun run typecheck` rc=0 ($ tsc --noEmit). `bun run test` rc=0: 693 pass, 0 fail, Ran 693 tests across 117 files. origin/main worktree: `bun run test` rc=0: 710 pass, 0 fail, Ran 710 tests across 117 files (same file count; the 17 extra tests come from main's commits after the merge-base, which touch tests/e2e and other test files not on this branch - the branch changes no test file).
+      `bun run lint` HEAD: rc=0, "12 problems (0 errors, 12 warnings)"; origin/main: rc=0, "12 problems (0 errors, 12 warnings)"; the sorted warning-location sets are identical (`diff` empty; all react-refresh/only-export-components in AuthProvider, MatchTabs, PageBackground, badge, button, form, navigation-menu, sidebar, toggle, i18n/provider, fantasy-owned-provider). No new warning.
+      `bunx prettier --check <14 changed src files>` -> only "[warn] src/styles.css", rc=1. On origin/main `bunx prettier --check src/styles.css` also fails ([warn] src/styles.css, rc=1): pre-existing, not a regression. The other 13 changed files pass.
+  - criterion: "T5(a) /matches ar 390x844: lucide-chevron-left computed transform matrix(-1,0,0,1,0,0); the strip's two buttons point in opposite directions."
+    result: VERIFIED
+    evidence: |
+      vprobe.mjs on HEAD :4190 (documentElement dir=rtl lang=ar, scrollWidth 390): tablist top 218; chevrons: {k:lucide-chevron-right, transform:"matrix(-1, 0, 0, 1, 0, 0)", x:337, btn:"اليوم السابق", pointsTo:LEFT}, {k:lucide-chevron-left, transform:"matrix(-1, 0, 0, 1, 0, 0)", x:33, btn:"اليوم التالي", pointsTo:RIGHT}. Right-hand (previous) points left, left-hand (next) points right = opposite directions, each toward its outer edge.
+      Baseline on origin/main :4191 reproduces the defect: chevron-left transform "none", pointsTo LEFT (both buttons LEFT).
+      Screenshots: bg0026-verify/head/clip-ar-datestrip.png (opposite chevrons) vs bg0026-verify/base/clip-ar-datestrip.png (both left).
+  - criterion: "T5(b) /fantasy/rankings ar: back chevron mirrored, no double flip."
+    result: VERIFIED
+    evidence: |
+      HEAD: back chevron {k:lucide-chevron-left, class:"lucide lucide-chevron-left h-5 w-5", transform:"matrix(-1, 0, 0, 1, 0, 0)", rotate:"none", x:358, y:24, near:"رجوع", pointsTo:RIGHT}. Pager: chevron-left x=168 matrix(-1,...) rotate none -> RIGHT; chevron-right x=30 matrix(-1,...) rotate none -> LEFT (prev/next opposite, no rotate applied).
+      origin/main baseline: back chevron transform none (points LEFT, away from the previous-page edge); pager chevron-left rotate 180deg transform none; chevron-right rotate 180deg + matrix(-1) = double flip, both pager chevrons LEFT.
+      Screenshot: bg0026-verify/head/clip-ar-backbutton.png (chevron to the right of "رجوع", pointing right).
+  - criterion: "T5(c) BottomNav at 390px: all five fr labels fit without ellipsis; ar profile label clipped inside its slot with ellipsis, no overlap with neighbours; other ar labels fit (scope_mutation_1)."
+    result: VERIFIED
+    evidence: |
+      HEAD /profile, slot 69.6px, Link padding 2px/2px (px-0.5), span class "max-w-full truncate leading-none", computed text-overflow ellipsis / overflow hidden:
+        fr Accueil textW 44.4 client 44 scroll 44 span 33.6..78 slot 21..90.6 inside ellipsized=false
+        fr Actualités 62.4 / 62 / 62 span 94.2..156.6 slot 90.6..160.2 inside false
+        fr Fantasy 48.5 / 49 / 49 span 170.7..219.3 slot 160.2..229.8 inside false
+        fr Matches 52.0 / 52 / 52 span 238.6..290.6 slot 229.8..299.4 inside false
+        fr Profil 33.0 / 33 / 33 span 317.7..350.7 slot 299.4..369 inside false
+        ar الرئيسية 45.7 / 46 / 46 inside false; الأخبار 34.8 / 35 / 35 inside false; فانتازي 40.5 / 41 / 41 inside false; المباريات 49.5 / 50 / 50 span 100.7..150.2 inside false
+        ar الملف الشخصي textW 85.7 clientW 66 scrollW 86 span 23..88.6 slot 21..90.6 inside=true ellipsized=true (scrollWidth > clientWidth, text-overflow ellipsis)
+      Pairwise span-box overlap check: [] for fr and for ar (nearest neighbour المباريات starts at 100.7 > 88.6).
+      origin/main baseline: padding 8px/8px, ar الملف الشخصي span 13..98.7 vs slot 21..90.6 inside=false ellipsized=false (defect D5 reproduced); fr labels identical widths.
+      Screenshots: head/clip-ar-bottomnav.png ("الملف ال..." within the highlighted slot) vs base/clip-ar-bottomnav.png (label spilling past the slot); head/clip-fr-bottomnav.png vs base/clip-fr-bottomnav.png visually identical.
+  - criterion: "T5(d) fr screenshots of hub, news, matches, profile compared to origin/main renders: differences confined to the bottom-nav band and time-based text."
+    result: VERIFIED
+    evidence: |
+      Full-page 390x844 @2x shots from HEAD :4190 and origin/main :4191 (same data, same session), canvas diff tolerance 8/255 (vcompare.mjs, compare.log). Same image sizes on every pair.
+        fr-hub 61 px (0.002%), single cluster device rows 1624-1641 = css y 812-821
+        fr-news 58 px, single cluster rows 1624-1641 (css 812-821)
+        fr-matches 328 px: rows 1579-1605 (css 790-803) 266 px + rows 1624-1641 62 px
+        fr-profile 61 px, rows 1624-1641 only
+      css y 769-844 is the fixed BottomNav (navTop 769 in every capture); 812-821 is its label row: crop (crop-fr-hub-navlabels.png) shows identical glyphs, i.e. sub-pixel re-centering after px-2 -> px-0.5. The fr-matches 790-803 cluster is the match-card kick-off time visible beside the nav pill: "15:21" (main run) vs "15:20" (HEAD run) - clock tick between runs (crop-fr-matches-790-830.png). Nothing else differs on any fr page.
+      For information, ar pairs: ar-profile and ar-news differ only in the nav label row (the intended profile-label fix); ar-hub adds css 242-252 = deadline clock "03:21" vs "03:20" (crop-ar-hub-235-260.png); ar-matches adds css 121-138 (season Select trigger now RTL), 234-246 (date-strip next chevron now mirrored) and 838-851 (kick-off "15:21" vs "15:20", crop-ar-matches-830-860.png) - all expected.
+  - criterion: "T6 built CSS: border-inline-start-width under the toaster selector, inset-inline-end on the select indicator; runtime: /matches ar season Select popover dir=rtl with the indicator at inline-end."
+    result: VERIFIED
+    evidence: |
+      `bun run build` rc=0 -> .output/public/assets/styles-DdR92amF.css. grep:
+        .group-\[\.toaster\]\:border-s-4:is(:where(.group).toaster *){border-inline-start-style:var(--tw-border-style);border-inline-start-width:4px}
+        .group-\[\.toaster\]\:border-s-\[color\:var\(--color-danger\)\]:is(:where(.group).toaster *){border-inline-start-color:var(--color-danger)} (+ success, warning, brand-accent, text-muted = 5 colour rules)
+        toaster selectors containing border-left-width: 0
+        .end-2{inset-inline-end:calc(var(--spacing) * 2)} .start-2{inset-inline-start:...} .ps-2{padding-inline-start:...} .pe-8{padding-inline-end:...} .ms-auto{margin-inline-start:auto} .px-0\.5{padding-inline:calc(var(--spacing) * .5)} .sm\:text-start{text-align:start}
+        html[dir=rtl] .lucide-chevron-right,html[dir=rtl] .lucide-chevron-left,html[dir=rtl] .lucide-arrow-right,html[dir=rtl] .lucide-arrow-left{transform:scaleX(-1)}
+      Runtime HEAD :4190 /matches ar, click button[role=combobox]: trigger dir attr "rtl", computed direction rtl; listbox dir="rtl" computed direction rtl; option direction rtl, dir ancestors [DIV[dir=rtl]#listbox, DIV[dir=rtl]]; each option paddingLeft 32px / paddingRight 8px (ps-2/pe-8 resolved RTL); indicator span computed left 8px, right 149.875px, x=23 with item 15..187 (8px from the item's left edge = inline-end in RTL); selected item shows the check svg. Screenshot head/clip-ar-select-open.png (check mark at the left end of the highlighted 2026/2027 row).
+      origin/main baseline: trigger/listbox dir="ltr", indicator left 149.875px / right 8px, x=167 (physical right) - defect reproduced.
+  - criterion: "T7 FDR ar /fantasy/fixtures: Latin club names truncated at the END ('DM Meknès…'), never '…DM Meknès'."
+    result: NOT_TESTABLE
+    evidence: |
+      Requires an authenticated session (the unauthenticated /fantasy/fixtures renders the guest state with no club rows); no credentials are permitted for this verification. Static check only: `rg -n 'dir="auto"' src/routes/fantasy.fixtures.tsx` -> 176: `<span className="truncate" dir="auto">` wrapping `{tr(club.shortName)}` (lines 176-178, prettier-wrapped); the diff for that file is exactly this element (+3/-1). Behaviour not confirmed in the browser.
+regressions: []
+untested:
+  - "T7 runtime (authenticated FDR table): dir=\"auto\" present in source, browser behaviour not observed."
+  - "Authenticated surfaces that also receive the new chevron-left mirror (GameweekSelector prev, fantasy.points prev, primitives back button on Transfers/Team/Points/Leagues/Profile) were not rendered; the same rule and the same class were verified on the public /fantasy/rankings back button and the /matches date strip."
+  - "Toaster stripe at runtime (no toast is triggerable from a public route without a backend action); verified in the built CSS only."
+  - "input-otp slot corners/borders and auth.profile-setup scroll gutter at runtime (auth flows); verified statically (logical classes present, built CSS emits border-inline-end / first:rounded-s-md / last:rounded-e-md / pe-1)."
+security_observations: []
+notes:
+  - "src/styles.css:531 `.fpl-root .lucide-chevron-left { }` is a pre-existing empty rule on origin/main (line 530 there); it makes `rg -c lucide-chevron-left src/styles.css` return 2, but only one transform rule exists and the branch adds exactly one line."
+  - "Test totals differ between HEAD (693) and origin/main (710) because main advanced 27 commits after the merge-base; the test-file count (117) is identical and the branch touches no test file."
+  - "src/styles.css fails prettier --check on origin/main as well (pre-existing); the branch's one-line addition is not the cause."
+  - "Base worktree /home/user/bg0026-verify-base removed; dev servers on 4190/4191 stopped; no source file was edited in /home/user/bg0026-verify (git status clean apart from ignored build output)."
+  - "Side effect to disclose: the shutdown sweep (kill of every `vite dev` process) also terminated PID 520, a `vite dev --host 127.0.0.1` server started from /home/user/botolago-foundation (the primary tree, presumably the Researcher's :4173) that this verification did not start. Port 4173 is now closed; it was not restarted (outside this task's workspace)."
+status: PASS
