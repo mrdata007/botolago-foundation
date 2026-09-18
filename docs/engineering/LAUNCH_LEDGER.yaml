@@ -12,6 +12,8 @@ human_actions_open:
     action: Rotate the credentials listed in docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §1; confirm Supabase Auth Site/Redirect URLs and leaked-password protection.
   - id: BG-0022
     action: Publish merged main (2c7b1e7 or later) from Lovable so botolago.com serves the recovered Fantasy.
+  - id: BG-0028
+    action: Create GitHub Environment fantasy-e2e (E2E_FANTASY_EMAIL/PASSWORD, staging URL/key) and variable FANTASY_E2E_ENABLED; confirm the synthetic manager's project.
   - id: BG-0023
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
 
@@ -258,12 +260,40 @@ tasks:
     depends_on: [BG-0001, BG-0004]
     evidence: [rehearsals GW1→GW3 rolled back; first real close happens after GW1 kickoff]
   BG-0020:
-    title: Automated E2E testing in CI
+    title: Automated E2E testing in CI + config-integrity guard (incident owner-action 4)
     area: e2e
     severity: P1
-    owner: Scout
-    state: RUNNING
-    evidence: [tests/e2e/fantasy.journey.e2e.ts (6 journeys) runs locally; CI wiring UNKNOWN]
+    user_impact: CI now fails on obfuscated/long-line payloads in executed configs before bun install; the authenticated Fantasy journey suite has a dispatch/nightly workflow (inert until the owner creates the fantasy-e2e environment).
+    owner: Chief
+    state: DONE
+    attempt: 1
+    roles: {scout: sub-agent, researcher: sub-agent, builder: Builder-DevOps sub-agent (worktree), verifier: sub-agent, reviewer: fresh sub-agent}
+    commits: [9270546, 49be214, b294351, "merge into main by Chief"]
+    branch: agent/BG-0020-ci-guards
+    evidence:
+      - docs/engineering/tasks/BG-0020/engineering-brief.yaml
+      - docs/engineering/tasks/BG-0020/implementation-report.yaml
+      - docs/engineering/tasks/BG-0020/verification-report.yaml (PASS; historical payload 5731246 → exit 1 with R1/R2/R3/R4/R5; current tree 34 files clean; suite 6 skipped/0 failed without credentials)
+      - docs/engineering/tasks/BG-0020/review-report.yaml (PASS)
+    verification: {status: PASS}
+    review: {verdict: PASS}
+    residual_risks:
+      - RC-1-A3 (6 passed / 0 skipped on a staging dispatch) requires the owner-side environment (BG-0028)
+      - guard is invoked via `bun run config:integrity:check` (routes through package.json/bunfig.toml, both scanned one step later) — hardening follow-up BG-0029
+      - the suite creates a league per run and never deletes it — cleanup follow-up BG-0029
+  BG-0028:
+    title: Create the fantasy-e2e GitHub Environment and variables for the authenticated E2E workflow
+    area: e2e
+    severity: P1
+    owner: Human
+    state: HALTED_FOR_INPUT
+    human_action: create GitHub Environment `fantasy-e2e` with secrets E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD (the synthetic manager), set vars.SUPABASE_STAGING_URL + secrets.SUPABASE_STAGING_PUBLISHABLE_KEY, set repository variable FANTASY_E2E_ENABLED=true when the nightly staging run should start, and confirm which Supabase project holds the synthetic manager (staging preferred; production only by dispatch). Then dispatch once with target=staging and require 6 passed / 0 skipped.
+  BG-0029:
+    title: Hardening follow-ups from the BG-0020 review (invoke the guard by path with node; league cleanup for the E2E suite; presence assertion per resolved target)
+    area: e2e
+    severity: P2
+    owner: Chief
+    state: QUEUED
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
     area: security

@@ -1,0 +1,175 @@
+task_id: BG-0020
+reviewed_commit: b2943518a68bb4e71f3242d2ebbac9a1f8ac9585
+verdict: PASS
+criteria:
+  - criterion: "Objective (a) / RC-1: authenticated Fantasy E2E suite runnable in CI on main, never from pull_request/push, never against production by schedule, no credential values in the repo"
+    result: CONFIRMED
+    evidence: |
+      .github/workflows/fantasy-authenticated-e2e.yml (new, 108 lines, +108/-0).
+      Trigger surface independently confirmed: `grep -nE '^\s*(pull_request|push)\s*:'` -> no match
+      (exit 1); yaml.safe_load reports triggers == ['workflow_dispatch', 'schedule'] exactly.
+      Production is unreachable by schedule through three independent mechanisms:
+        1. job `if:` = repository == 'mrdata007/botolago-foundation' &&
+           ((schedule && vars.FANTASY_E2E_ENABLED == 'true') ||
+            (workflow_dispatch && inputs.confirmation == 'RUN_FANTASY_E2E'));
+        2. job env FANTASY_E2E_TARGET = `github.event_name == 'workflow_dispatch' && inputs.target || 'staging'`
+           â on a schedule event the left conjunct is false so the literal 'staging' is yielded, and the
+           same guard wraps VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY (production vars/secrets are
+           selected only when event==workflow_dispatch && inputs.target=='production');
+        3. step "Guard target resolution" runs `set -euo pipefail` then, for GITHUB_EVENT_NAME=schedule,
+           `test "$FANTASY_E2E_TARGET" = "staging"` â a non-staging value aborts the step.
+      "Green no-op" is closed: step "Guard credential presence" asserts `test -n` on E2E_FANTASY_EMAIL,
+      E2E_FANTASY_PASSWORD, VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY under `set -e`, so an
+      absent secret produces a red run instead of the suite's silent self-skip.
+      No credential values in the diff: `git diff origin/main...b294351 | grep -cE 'sb_secret_|eyJ[A-Za-z0-9]|BEGIN .*PRIVATE KEY'` -> 0.
+      Only names appear (secrets.E2E_FANTASY_*, secrets.SUPABASE_*_PUBLISHABLE_KEY, vars.SUPABASE_*_URL,
+      vars.FANTASY_E2E_ENABLED). Password and publishable key pass through `::add-mask::` before any step
+      that can echo them.
+  - criterion: "Objective (a): the suite is not weakened; tests/e2e assertions untouched"
+    result: CONFIRMED
+    evidence: |
+      `git diff --stat origin/main...b294351 -- tests/` -> empty. Blob identity is byte-identical on both
+      sides: tests/e2e/fantasy.journey.e2e.ts 3c30a63fe261d873c0ca8ba786436f28bed87f3f and
+      tests/e2e/support.ts 6c739ee8cda1de142db7c2ff77028c70b4646d27 on origin/main and on the branch.
+      No test file anywhere in the 8-file diff. The suite still holds 6 `test(` blocks and one
+      describe-level `test.skip(!hasUser, ...)` guard â unchanged from main.
+      The trace leak vector named in the brief is closed rather than the suite loosened:
+      playwright.config.ts is +4/-1, the single removed line being the old trace expression, replaced by
+      `process.env.E2E_STAGING_FIRST_EMAIL || process.env.E2E_FANTASY_EMAIL ? "off" : "retain-on-failure"`.
+      `grep -c E2E_FANTASY_PASSWORD playwright.config.ts` -> 0; the password never reaches the config.
+      Artifact upload is the narrowed set only (playwright-report, test-results/playwright/**/*.png,
+      test-results/playwright/**/sanitized-browser-diagnostics*), retention 7, no trace/zip path,
+      `video: "off"` unconditional.
+  - criterion: "Objective (b) / RC-2: config-integrity guard fails the build on long lines, obfuscated identifiers, createRequire shims, dynamic evaluation and oversized base64 blobs in executed configuration files"
+    result: CONFIRMED
+    evidence: |
+      scripts/backend/check-config-integrity.mjs (new, 211 lines), dependency-free ESM, node builtins only,
+      CLI guarded by `import.meta.url === pathToFileURL(process.argv[1]).href`, exports RULES/scanText/
+      resolveTargets. Reviewer-run, independent of Builder and Verifier fixtures, in a fresh read-only
+      worktree at b294351 using `node` (no bun install):
+        R1 boundary with a non-base64 filler: len 499 NONE, len 500 NONE, len 501 R1  (>500 as specified)
+        R5 `f(eval, x)` -> R5;  `obj.eval(1)` -> NONE;  `evaluate(x)` -> NONE;  `new Function('x')` -> R5
+        R3/R4 `const require = createRequire(import.meta.url)` -> R4 (and R3 not spuriously fired)
+        R6 130-char non-hex base64 run -> R6;  a 64-char SHA-256 digest line -> NONE (CI-safe)
+        R2 60 leading spaces + `key: v` -> NONE;  "a" + 40 spaces + "b" -> R2
+      Fires on the real incident artifact:
+        `git show 5731246:eslint.config.js > <scratchpad>/hist.js`
+        `node check-config-integrity.mjs --file <scratchpad>/hist.js` -> EXIT 1, 7 violations:
+          :7 R4 createRequire, :9 R4 createRequire,
+          :75 R1 long-line (32222 chars), :75 R2 padding-run, :75 R3 hex-identifier _0x32ebc7,
+          :75 R4 require(, :75 R5 dynamic-eval (eval
+        Payload echo is collapsed and sliced to 80 chars + a single ellipsis; nothing of the blob is
+        written into any repository tree.
+      Exit codes reproduced: clean 0, violations 1, `--file /nonexistent` -> 2 ("Cannot read file" + usage).
+      Scanned set is the closed executed-config list (5 configs + .github/workflows/*.yml|*.yaml); a unit
+      test asserts no resolved target contains /scripts/ or /docs/ â the constraint against widening holds.
+  - criterion: "Objective (b): guard positioned before `bun install` in the build, without removing or weakening existing steps"
+    result: CONFIRMED
+    evidence: |
+      .github/workflows/backend-quality.yml is +8/-0 â nothing removed. Step lists parsed from YAML:
+        application-quality: checkout -> setup-bun -> Config integrity guard -> bun install --frozen-lockfile
+          -> backend:migrations:check -> backend:secrets:check -> typecheck -> test -> lint -> build
+          -> playwright install -> anonymous acceptance -> upload evidence
+        database-quality:    checkout -> setup-bun -> Config integrity guard -> bun install --frozen-lockfile
+          -> db:start -> db:reset -> db:test -> db:lint -> type-drift steps -> stop supabase
+      The guard precedes `bun install` and every later evaluating step (test/lint/build) in both jobs, and
+      every pre-existing step survives in its original order.
+  - criterion: "RC-2-A1/A3: guard clean on the branch tree and on the tree it will merge into; unit suite green"
+    result: CONFIRMED
+    evidence: |
+      Reviewer runs at b294351: `node scripts/backend/check-config-integrity.mjs` ->
+      "no violations in 34 executed configuration file(s)", EXIT 0.
+      Post-merge simulation (origin/main at 1736478, which is NEWER than the b6aa53f the Verifier saw):
+      `git archive origin/main` extracted to a scratch root, plus the branch's script and new workflow ->
+      "no violations in 34 executed configuration file(s)", EXIT 0. The guard will not red main on merge.
+      `bun test scripts/backend/check-config-integrity.test.ts` -> 24 pass / 0 fail / 127 expect() calls,
+      EXIT 0. The suite is substantive, not a rubber stamp: positive and negative fixtures per rule,
+      resolveTargets closure assertions, a scanText-clean-tree assertion, CLI exit codes 0/1/2, and a
+      step-ordering assertion that "Config integrity guard" precedes `bun install --frozen-lockfile` in
+      both jobs and `bun run lint` in application-quality.
+  - criterion: "Scope: only allowed paths modified; no forbidden path touched; no silent requirement expansion"
+    result: CONFIRMED
+    evidence: |
+      Three-dot diff (merge-base 8921e7d; the two-dot form is misleading because main advanced after the
+      branch was cut) `git diff --numstat origin/main...b294351` names exactly 8 files:
+        8/0    .github/workflows/backend-quality.yml
+        108/0  .github/workflows/fantasy-authenticated-e2e.yml
+        131/0  docs/engineering/tasks/BG-0020/implementation-report.yaml
+        5/0    docs/qa/SECURITY_INCIDENT_2026_09_18_ESLINT_LOADER.md
+        2/0    package.json
+        4/1    playwright.config.ts
+        211/0  scripts/backend/check-config-integrity.mjs
+        235/0  scripts/backend/check-config-integrity.test.ts
+      `git diff --name-only origin/main...b294351 -- tests/ src/ supabase/ eslint.config.js vite.config.ts
+      bunfig.toml bun.lock` -> empty. No other workflow, no .env*, no scripts/qa/**, no
+      check-committed-secrets.mjs. package.json is +2/-0, both inside "scripts"
+      ("test:e2e:fantasy", "config:integrity:check") â no dependency or other block changed.
+      The incident doc receives one appended sentence under owner action 4 and nothing else.
+      docs/engineering/tasks/BG-0020/implementation-report.yaml is the process handoff artifact the
+      contract itself requires; it is not in forbidden_paths.
+  - criterion: "RC-1-A1: without the credentials the suite lists 6 tests and runs 6 skipped / 0 failed"
+    result: CONFIRMED (static + inherited execution evidence)
+    evidence: |
+      Reviewer-side static confirmation at b294351: the suite contains exactly 6 `test(` blocks and gates
+      them with a single describe-level `test.skip(!hasUser, ...)` where
+      hasUser = !!process.env.E2E_FANTASY_EMAIL && !!process.env.E2E_FANTASY_PASSWORD; the environment of
+      this review carries neither variable. package.json maps test:e2e:fantasy to
+      `playwright test tests/e2e/fantasy.journey.e2e.ts`.
+      Execution evidence inherited from the verification report at the same commit:
+      `--list` -> "Total: 6 tests in 1 file", exit 0; `bun run test:e2e:fantasy` -> 6 skipped, 0 failed,
+      exit 0. Not re-executed here (browser download + dev server) and not load-bearing for the verdict,
+      since the skip mechanism is unchanged from origin/main by blob identity.
+  - criterion: "RC-1-A3: a real dispatch with target=staging reports 6 passed / 0 skipped"
+    result: NOT_EXECUTED (sanctioned by the brief)
+    evidence: |
+      The engineering brief itself records status HALTED_FOR_INPUT for RC-1-A3 only and names the required
+      human_action (GitHub Environment `fantasy-e2e` with E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD,
+      repository variable FANTASY_E2E_ENABLED, confirmation of the Supabase project holding the synthetic
+      manager account). The implementer had no means to execute it and did not claim to; the
+      implementation report lists it under `unresolved` and the verification report under `untested`.
+      This is a declared external dependency, not missing evidence for an in-scope criterion, so it does
+      not trigger the missing-evidence fail condition. It is carried below as a release blocker.
+defects: []
+observations_non_blocking:
+  - requirement: "Objective (b) phrasing 'positioned before bun install'"
+    note: >
+      In .github/workflows/fantasy-authenticated-e2e.yml the "Config integrity guard" step runs AFTER
+      `bun install --frozen-lockfile`, not before it. This is exactly the step order the brief's RC-1
+      prescribes for that workflow, and the objective's before-install requirement is satisfied where it
+      is load-bearing (backend-quality.yml, both jobs). Flagged only because the ordering there is
+      defence-in-depth that the new workflow does not get.
+  - requirement: "Guard invocation path"
+    note: >
+      backend-quality.yml invokes the guard as `bun run config:integrity:check`, which resolves the script
+      through package.json and starts bun (which reads bunfig.toml) â both files being members of the very
+      set the guard scans. A payload planted in the package.json script entry, or a `preload` entry in
+      bunfig.toml, would therefore execute one step before it is scanned. Invoking the script by path with
+      node would remove that residual. The brief specifies the npm-script form, so this is a hardening
+      follow-up, not a deviation.
+  - requirement: "Production dispatch var fallback"
+    note: >
+      VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY use `(dispatch && target=='production') && prodVar
+      || stagingVar`. If a production var is unset, the expression silently falls back to the staging
+      value while FANTASY_E2E_TARGET still reads "production". This fails safe (production is never hit)
+      but is silently mislabelled; a presence assertion per resolved target would make it loud.
+  - requirement: "Guard blast radius on the workflow directory"
+    note: >
+      resolveTargets globs .github/workflows/*.yml|*.yaml, so any future workflow line exceeding 500
+      characters reds every CI job. The brief records this as an accepted MEDIUM risk (current maximum is
+      376 chars); no allowlist and no suppression comment exists by design.
+  - requirement: "Detection model"
+    note: >
+      The guard is a lexical shape scan, not an integrity or signature check. It fires on all five shape
+      rules of the real 2026-09-18 artifact, but an injected payload written in idiomatic, short-line,
+      unobfuscated JavaScript would pass. This is the documented design of incident owner-action #4 as
+      scoped, not a defect.
+  - requirement: "Test fixture precision"
+    note: >
+      The R1 negative fixture in check-config-integrity.test.ts builds its 376-char line from repeated "a",
+      which is inside the hex alphabet and so is excluded from R6 by HEX_ONLY rather than by length. The
+      test passes and asserts the right thing, but it does not isolate R1 from R6 the way the reviewer's
+      hyphenated filler does. Cosmetic.
+release_blockers:
+  - "Owner action, outside the implementer's reach and required before the nightly arm produces signal: create the GitHub Environment `fantasy-e2e` with secrets E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD, set repository variable FANTASY_E2E_ENABLED, provide vars.SUPABASE_STAGING_URL and secrets.SUPABASE_STAGING_PUBLISHABLE_KEY, and confirm which Supabase project holds the synthetic manager account. Until then the workflow is inert (the job `if:` never matches) and fail-closed (the presence guard reds the run rather than reporting a green skipped no-op). RC-1-A3 â a dispatch with target=staging reporting 6 passed / 0 skipped, where 6 skipped is a FAILURE â must be executed once the environment exists."
+  - "Follow-up task, recorded by the brief and not addressed here: the Fantasy suite creates a league on every run and never deletes it, so enabling the nightly schedule accumulates league rows in the target project. Cleanup is out of scope for BG-0020."
+status: DONE
