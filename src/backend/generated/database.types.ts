@@ -1263,6 +1263,14 @@ export type Database = {
         }
         Returns: Json
       }
+      service_fantasy_deadline_watch: {
+        Args: {
+          p_escalate_hours?: number
+          p_fantasy_season_id?: string
+          p_warn_hours?: number
+        }
+        Returns: Json
+      }
       service_fantasy_lifecycle_state: {
         Args: { p_gameweek_id: string }
         Returns: Json
@@ -1424,6 +1432,10 @@ export type Database = {
           p_minimum_player_count: number
           p_ruleset_code: string
         }
+        Returns: Json
+      }
+      service_sync_fantasy_calendar: {
+        Args: { p_fantasy_season_id?: string }
         Returns: Json
       }
       service_upsert_fantasy_player_points: {
@@ -5388,6 +5400,8 @@ export type Database = {
       }
       seasons: {
         Row: {
+          bounds_locked_at: string | null
+          bounds_locked_reason: string | null
           competition_id: string
           created_at: string
           ends_on: string
@@ -5399,6 +5413,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bounds_locked_at?: string | null
+          bounds_locked_reason?: string | null
           competition_id: string
           created_at?: string
           ends_on: string
@@ -5410,6 +5426,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bounds_locked_at?: string | null
+          bounds_locked_reason?: string | null
           competition_id?: string
           created_at?: string
           ends_on?: string
