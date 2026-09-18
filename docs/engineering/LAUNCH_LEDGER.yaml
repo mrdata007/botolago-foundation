@@ -178,6 +178,7 @@ tasks:
     owner_2026_09_18b: 'PULL REQUEST route authorised first: execute the affected pgTAP suite through backend-quality CI (isolated supabase start/reset), record the environment, capture pass/fail, run migration validation, Verifier reviews executed results independently; Supabase preview branch only if the PR route is proven incapable (then state cost and lifetime)'
     pr_prep: BG-0042 Builder merging origin/main (BG-0039 promoter changes) into the branch before the PR is opened
     pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/136 (head 203e3e2, includes the BG-0042 manifest batch and merged main c3fb050); backend-quality CI executes backend:db:test, db:lint and migrations; session subscribed to PR events; Verifier reviews executed results independently after CI'
+    ci_run_425: 'PR #136 head 60cf11e — backend:db:test PASS: 40 files, 821 tests, All tests successful (fantasy_rating_degeneracy_guard.test.sql ok); backend:db:lint passed; backend:types:check FAILED because src/backend/generated/database.types.ts is stale for service_fantasy_deadline_watch and service_sync_fantasy_calendar (migrations already on main since the BG-0001/BG-0003 merges, which bypassed CI) — not this PR; fix = commit the CI-regenerated types (artifact generated-database-types-35345865108) into the branch'
 
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
@@ -600,10 +601,12 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: RUNNING
+    state: DISPATCH_PENDING
     depends_on: [BG-0034]
-    roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: PASS (docs/engineering/tasks/BG-0044/verification-report.yaml), reviewer: running (fresh context), reviewer: pending}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0044-probe-anonymous-starters @4a9cfba; 32 probe tests; smoke shows histogram and identity-tolerant counts), verifier: PASS (docs/engineering/tasks/BG-0044/verification-report.yaml), reviewer: PASS (docs/engineering/tasks/BG-0044/review-report.yaml), reviewer: pending}
     acceptance_criteria: [all 240 rows carry the five new counters (counts only, no payload); 19489216 shows rawStarterRows 22 / anonymousStarterRows 1 / anonymousSubstituteRows 1; ticket + workflow expected JSON updated together; the summary step reports count of failing fixtures with rawStarterRows == 22 and anonymousStarterRows <= 4]
+    merged: main (merge of agent/BG-0044-probe-anonymous-starters @4a9cfba)
+    next: Chief dispatches the probe on merged main (read-only, SPORTSMONKS token only)
 
   BG-0045:
     title: 'Gate 2F rollback env file pins FOOTBALL_SPORTSMONKS_SEASON_ID 26027 (same class of defect as BG-0033) — gate2f-production-current-season-catalog-canary.yml rollback step'
@@ -621,6 +624,15 @@ tasks:
     owner: Chief
     state: QUEUED
     depends_on: [BG-0039]
+
+  BG-0047:
+    title: 'main carries stale generated database types (src/backend/generated/database.types.ts lacks service_sync_fantasy_calendar and service_fantasy_deadline_watch) because BG-0001/BG-0003 merged without the pull-request CI; backend:types:check is red on main'
+    area: devops
+    severity: P1
+    owner: Chief
+    state: RUNNING
+    evidence: ['PR #136 run 35345865108 database-quality job: backend:types:check diff']
+    resolution: 'CI-regenerated types ported into PR #136 (BG-0042 Builder); lands on main with that merge; PR #137 regenerates again for season_bounds_guard'
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
