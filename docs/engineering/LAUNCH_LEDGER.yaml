@@ -493,6 +493,16 @@ tasks:
     depends_on: [BG-0031]
     evidence: ['docs/engineering/tasks/BG-0031/engineering-brief.yaml required_changes rank 3 and rank 4']
 
+  BG-0039:
+    title: 'Phase 7E-B ownership guard: GET /v1/projects/{ref} passed the identity/health check with the refreshed token, but /v1/organizations did not list the project organization_id — either the token type cannot list organizations (project/org-scoped token) or the Management API response shape changed; the guard needs a sanitized diagnostic (row count, key names, no ids) before the credential is judged'
+    area: devops
+    severity: P0
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence: ['run 35343091384 step "Promote and verify the selected batch": promotion_failed: authenticated account does not own the selected project', 'scripts/backend/phase7e-production-migration-promoter.py:391-407']
+    acceptance_criteria: [promoter logs a sanitized shape of the organizations response (type, count, key names) on this failure path; unit test; no weakening of the guard]
+
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
     area: security
