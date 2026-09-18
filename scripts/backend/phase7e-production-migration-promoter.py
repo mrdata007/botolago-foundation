@@ -136,6 +136,16 @@ BATCHES: dict[str, tuple[str, ...]] = {
     "season_bounds_guard": (
         "20260918160000_season_bounds_guard.sql",
     ),
+    # BG-0032: api.service_rollback_fantasy_catalog now removes
+    # app.fantasy_rankings, app.fantasy_league_memberships and
+    # app.fantasy_leagues (all ON DELETE RESTRICT) for the season before the
+    # existing player/gameweek/season cleanup, so rollback no longer raises a
+    # foreign-key violation on a season that ever had a league. The PT409
+    # fantasy_catalog_in_use guard against live app.fantasy_teams rows is
+    # unchanged.
+    "fantasy_catalog_rollback_cleanup": (
+        "20260918170000_fantasy_catalog_rollback_cleanup.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -157,6 +167,7 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "fantasy_deadline_guard": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_rating_degeneracy_guard": frozenset({"football-ingest", "news-ingest"}),
     "season_bounds_guard": frozenset({"football-ingest", "news-ingest"}),
+    "fantasy_catalog_rollback_cleanup": frozenset({"football-ingest", "news-ingest"}),
 }
 
 # These migrations were promoted through separately reviewed provider canaries

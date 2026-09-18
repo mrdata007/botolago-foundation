@@ -60,8 +60,8 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
         self.assertEqual(expected, sorted(actual))
         versions = [filename.split("_", 1)[0] for filename in actual]
         self.assertEqual(versions, sorted(versions))
-        self.assertEqual(61, len(actual))
-        self.assertEqual(61, len(set(actual)))
+        self.assertEqual(62, len(actual))
+        self.assertEqual(62, len(set(actual)))
         self.assertEqual(
             (
                 "20260803173344_fantasy_preactivation_hardening.sql",
@@ -107,11 +107,22 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             ("20260918160000_season_bounds_guard.sql",),
             PROMOTER.BATCHES["season_bounds_guard"],
         )
-        self.assertEqual("season_bounds_guard", list(PROMOTER.BATCHES)[-1])
         self.assertEqual(60, len(PROMOTER.batch_history_prefix("season_bounds_guard")))
         self.assertEqual(
             "RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD",
             PROMOTER.CONFIRMATIONS["season_bounds_guard"],
+        )
+        self.assertEqual(
+            ("20260918170000_fantasy_catalog_rollback_cleanup.sql",),
+            PROMOTER.BATCHES["fantasy_catalog_rollback_cleanup"],
+        )
+        self.assertEqual("fantasy_catalog_rollback_cleanup", list(PROMOTER.BATCHES)[-1])
+        self.assertEqual(
+            61, len(PROMOTER.batch_history_prefix("fantasy_catalog_rollback_cleanup"))
+        )
+        self.assertEqual(
+            "RUN_PHASE7E_B_PRODUCTION_FANTASY_CATALOG_ROLLBACK_CLEANUP",
+            PROMOTER.CONFIRMATIONS["fantasy_catalog_rollback_cleanup"],
         )
         for batch in (
             "launch_recovery_2026_09_14",
@@ -119,6 +130,7 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             "fantasy_deadline_guard",
             "fantasy_rating_degeneracy_guard",
             "season_bounds_guard",
+            "fantasy_catalog_rollback_cleanup",
         ):
             self.assertEqual(
                 frozenset({"football-ingest", "news-ingest"}),
