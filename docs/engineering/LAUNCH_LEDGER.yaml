@@ -578,6 +578,26 @@ tasks:
       add a regression test asserting no evidence.commands entry ever carries stdout, re-validate,
       record as an attempt-2 section in the implementation report. Awaiting that commit before the
       next Verifier/Reviewer pass on the delta only.
+      ATTEMPT 2 (@14d74eb9c75d842e4b62a2f26eef59415c461804): fixed with a new EvidenceCommand type
+      and toEvidenceCommand() helper; the flagged push site now strips to {operation, exitCode}; a
+      new regression test proved (by the Builder, then independently reproduced by the Verifier —
+      revert fix -> 2 tests fail with FOUND_STDOUT_KEY_AT $.commands[0].stdout at the exact site;
+      restore fix -> all pass) to genuinely catch the original bug, not a vacuous assertion. Delta-only
+      independent Verifier PASS (docs/engineering/tasks/BG-0033/verification-report-attempt2.yaml
+      @4975ca2) and delta-only fresh-context Reviewer PASS
+      (docs/engineering/tasks/BG-0033/review-report-attempt2.yaml @6938dbd), each re-deriving the
+      proof and grepping for sibling leak sites (none found) rather than trusting prior reports.
+      Non-blocking residual noted by the final review: the claim that the type change makes a FUTURE
+      bare CommandResult push a compile error is false (TypeScript structural typing does not enforce
+      it, and scripts/backend/** is outside the repo's tsc --noEmit include scope) — today's code is
+      correct and tested, but the "durability" property is not real; worth a small follow-up to add
+      scripts/backend/** to typecheck scope or add an eslint rule, not blocking this task.
+      PR OPENED: https://github.com/mrdata007/botolago-foundation/pull/138 (both reviews said a PR
+      is not required for CI here — unit-tested, no pgTAP/live DB, already green in three independent
+      clones — but both recommended one anyway given production-secret handling; Chief opened it for
+      that second set of human eyes, consistent with the BG-0027/BG-0031 PR-route pattern this
+      session). Session subscribed to PR #138 activity. Awaiting CI + any human review before Chief
+      merge; still no live/production action taken anywhere on this task.
 
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
