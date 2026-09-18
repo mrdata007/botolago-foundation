@@ -70,6 +70,7 @@ tasks:
       - docs/engineering/tasks/BG-0001/migration-digest-comparison.json — machine-readable proof (Extractor, read-only) that the 9 launch_recovery rows and 20260918120000 each match the repository file SHA-256 (allMatch true, 57 history rows); closes Reviewer DEF-4
     human_action: Refresh SUPABASE_ACCESS_TOKEN in environment production-admin-activation. No credential is to be printed, replaced or invented by agents. Future migrations must NOT be promoted by generated transactions again.
     residual_risks: []
+    update_2026_09_18: owner reports SUPABASE_ACCESS_TOKEN refreshed in production-admin-activation; preflight retry requires BG-0037 first (promoter inventory check fails on main because 20260918130000/140000 are not in the manifest, before any management-API call)
 
   BG-0003:
     title: Launch risk — SportsMonks placeholder kickoffs vs GW1 deadline; automated escalation guard
@@ -424,12 +425,15 @@ tasks:
     area: devops
     severity: P0
     owner: Chief
-    state: RUNNING
+    state: DONE_PENDING_DISPATCH
     depends_on: []
-    roles: {builder: Builder-DevOps DONE (agent/BG-0034-g7-invariant-probe @cd7b8b9), verifier: PASS (docs/engineering/tasks/BG-0034/verification-report.yaml; live classification NOT_TESTABLE until owner dispatch), reviewer: running (fresh context)}
+    roles: {builder: Builder-DevOps DONE (agent/BG-0034-g7-invariant-probe @cd7b8b9), verifier: PASS (docs/engineering/tasks/BG-0034/verification-report.yaml; live classification NOT_TESTABLE until owner dispatch), reviewer: PASS (docs/engineering/tasks/BG-0034/review-report.yaml)}
     finding: 'fixture 19489216 diagnostic is already recorded in docs/production/g7-sportsmonks-coverage-audit-trigger.json (lineupRowsSeen 40, validPlayerRows 38, starterRows 21, failedInvariant starter_rows_mismatch, from run 30767752509) — answers the WHICH question; the 240-fixture count still needs the dispatch'
     observation: 'worker invariant six (invalidDetailRows) is unreachable: the catch rethrows invalid_provider_detail — relevant to Option A step A2'
     acceptance_criteria: [probe script classifies each fixture against lineups 22..100, valid rows 22..100, excludedIncompleteRows <= 20, starterRows == 22, teamCount == 2, invalidDetailRows == 0; ticket + workflow expected JSON updated together; no Supabase secrets; owner dispatch on merged main produces a per-fixture pass/fail listing naming the failing invariant of 19489216]
+    merged: main (merge of agent/BG-0034-g7-invariant-probe @cd7b8b9)
+    remaining_risks: [45-minute timeout is ~1.3 min under a literal 11 s/request budget; expected pace ~3 min; if cancelled, re-dispatch or raise to 50 min / write evidence incrementally]
+    next: Chief dispatches g7-sportsmonks-historical-performance-coverage.yml on merged main (read-only, SPORTSMONKS token only)
 
   BG-0035:
     title: 'Arabic UI does not render in Noto Sans Arabic: body font-family var(--font-sans) (src/styles.css:439, @layer base) overrides the html[dir=rtl] Arabic font switch (styles.css:427)'
@@ -451,6 +455,17 @@ tasks:
     depends_on: [BG-0018]
     evidence: ['supabase/migrations/20260731180229_gate2b_football_catalog_ingestion.sql:277-302', 'docs/engineering/tasks/BG-0018/engineering-brief.yaml required_changes (FOLLOW-UP)']
     acceptance_criteria: [additive migration replacing the RPC so a curated code survives ingestion (coalesce or curated-identity table); database test; colours confirmed untouched by ingestion]
+
+  BG-0037:
+    title: 'Phase 7E-B promoter manifest lacks the BG-0003 migrations (20260918130000_fantasy_deadline_watch, 20260918140000_fantasy_calendar_sync_unconfirmed_guard): load_migrations raises "repository migration inventory differs" on main, blocking every promotion and the credential preflight'
+    area: devops
+    severity: P0
+    owner: Chief
+    state: RUNNING
+    depends_on: []
+    roles: {builder: Builder-DevOps running (branch agent/BG-0037-promoter-manifest), verifier: pending, reviewer: pending}
+    acceptance_criteria: [new batch fantasy_deadline_guard with the two files appended after fantasy_calendar_sync; workflow choice option and confirmation added; edge-function expectation entry added; promoter unit tests updated (59 migrations) and passing; no change to transaction building or history validation]
+    note: Chief process defect — the BG-0003 brief did not include the manifest update
 
   BG-0021:
     title: Security — credential rotation after the eslint loader incident; Supabase Auth URL/leaked-password settings
