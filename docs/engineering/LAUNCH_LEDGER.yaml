@@ -277,7 +277,9 @@ tasks:
     area: ui
     severity: P2
     owner: Chief
-    state: QUEUED
+    state: RUNNING
+    roles: {researcher: running (RTL inventory + rtl screenshots)}
+
   BG-0015:
     title: Fonts and UI consistency
     area: ui
@@ -305,10 +307,12 @@ tasks:
     severity: P1
     user_impact: All 16 clubs have crests; none has colours and 15 lack a short code (UI falls back to names); no player photos (kits/initials by design); homonym clusters ×2; 1 round / 8 fixtures / placeholder kickoffs (provider).
     owner: Chief
-    state: QUEUED
+    state: RUNNING
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
     next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
+    roles: {researcher: running (official club codes/colours brief)}
+
   BG-0019:
     title: Fantasy leagues / transfers / points / gameweeks lifecycle
     area: fantasy
@@ -351,7 +355,9 @@ tasks:
     area: e2e
     severity: P2
     owner: Chief
-    state: QUEUED
+    state: RUNNING
+    roles: {researcher: running (brief → scratchpad bg0029-engineering-brief.yaml)}
+
   BG-0030:
     title: Ratings coverage guard treats provider statistics records with has_values=false as covered (residual fail-open after BG-0027)
     area: data
