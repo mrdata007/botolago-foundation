@@ -1,0 +1,50 @@
+task_id: BG-0025
+builder_type: Builder-Frontend
+branch: agent/BG-0025-format-time-locale
+commits:
+  - "BG-0025: align format-time.ts locale tags to ar-MA/fr-FR"
+changes:
+  - file: src/lib/format-time.ts
+    description: >
+      Replaced the three bare `lang === "ar" ? "ar" : "fr"` locale-tag
+      expressions (Intl.RelativeTimeFormat in formatRelativeTime, the
+      Intl.DateTimeFormat fallback branch inside formatRelativeTime for
+      timestamps 7+ days old, and the Intl.DateTimeFormat in formatFullDate)
+      with `lang === "ar" ? "ar-MA" : "fr-FR"`. No other logic changed.
+  - file: src/lib/format-time.test.ts
+    description: >
+      New bun:test file. Asserts formatFullDate("ar") produces a non-empty
+      string containing only Western (latn) digits via /^[^٠-٩]*$/; asserts
+      formatFullDate("fr") equals the output of a directly-constructed
+      Intl.DateTimeFormat("fr-FR", ...) with the same options, so it tracks
+      the real fr-FR formatting instead of a hardcoded string; asserts
+      formatRelativeTime("ar") for a 5-minutes-ago timestamp is non-empty and
+      contains only Western digits.
+database_changes: []
+configuration_changes: []
+tests_run:
+  - command: "bun test src/lib/format-time.test.ts"
+    result: PASS # 3 pass, 0 fail, 5 expect() calls
+  - command: "bun run typecheck"
+    result: PASS # tsc --noEmit, no output
+  - command: "bunx eslint src/lib/format-time.ts src/lib/format-time.test.ts"
+    result: PASS # no output, exit 0
+  - command: "bunx prettier --check src/lib/format-time.ts src/lib/format-time.test.ts"
+    result: PASS # "All matched files use Prettier code style!"
+  - command: "bun run test"
+    result: PASS # 680 pass, 0 fail across 117 files
+unresolved: []
+unexpected_observations:
+  - >
+    This change assumes Western (latn) digits are the intended
+    Moroccan-Arabic presentation, consistent with every existing ar-MA
+    usage already in the codebase (bare "ar"/"fr" tags default ICU to
+    native-script Arabic-Indic digits and Islamic month names, e.g.
+    "سبتمبر", which is the exact mismatch the task reports; "ar-MA" defaults
+    to the "latn" numbering system and Gregorian month names, e.g. "شتنبر").
+    Three of the 20+ existing ar-MA/fr-FR usages this task aligns
+    format-time.ts to: src/components/matches/DateStrip.tsx:62,
+    src/components/common/MatchCard.tsx:78, and
+    src/components/fpl/primitives.tsx:102.
+scope_deviations: []
+status: DONE
