@@ -156,7 +156,7 @@ export function GameweekStatusStrip() {
           className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl cta-brand px-4 py-2 text-sm font-black sm:w-auto"
         >
           {t(cta.labelKey)}
-          <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+          <ChevronRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
     </section>

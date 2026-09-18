@@ -1,0 +1,241 @@
+task_id: BG-0026
+builder_type: Builder-Frontend
+branch: agent/BG-0026-rtl-fixes
+base: "535945f (merge-base with origin/main; origin/main has since advanced 17 commits to 84b09be without touching any file of this branch)"
+commits:
+  - "(this commit) BG-0026 attempt 2: BottomNav slot padding px-0.5, Select dir={dir} (Chief-approved scope mutation)"
+  - "29eb8bd BG-0026: fix commit SHAs in implementation report"
+  - "c2e744f BG-0026: record scope check and merge-base in implementation report"
+  - "ab0cf61 BG-0026: map class-(a) physical utilities to logical, complete chevron-left RTL mirroring, fix BottomNav overflow and FDR bidi truncation"
+
+changes:
+  - file: src/components/ui/select.tsx
+    description: "l.114 `pl-2 pr-8` -> `ps-2 pe-8`; l.119 `right-2` -> `end-2` (SelectItem indicator + reserved padding)."
+  - file: src/components/ui/dropdown-menu.tsx
+    description: "l.31/86/147 `pl-8` -> `ps-8`; l.37/167 `ml-auto` -> `ms-auto`; l.101/124 `pl-8 pr-2` -> `ps-8 pe-2`; l.107/129 `left-2` -> `start-2`. 9 tokens, nothing else."
+  - file: src/components/ui/sonner.tsx
+    description: "l.40/42/44/45/47 `group-[.toaster]:border-l-4 group-[.toaster]:border-l-[color:...]` -> `border-s-4 border-s-[color:...]` (10 tokens)."
+  - file: src/components/ui/sheet.tsx
+    description: "l.100 `sm:text-left` -> `sm:text-start` (SheetHeader). Lines 51/53 side variants and l.82 untouched."
+  - file: src/components/ui/dialog.tsx
+    description: "l.76 `sm:text-left` -> `sm:text-start` (DialogHeader). Prettier then wrapped that single JSX element over l.76-79 (print-width); l.44 `left-[50%]` untouched."
+  - file: src/components/ui/input-otp.tsx
+    description: "l.42 `border-r ... first:rounded-l-md first:border-l last:rounded-r-md` -> `border-e ... first:rounded-s-md first:border-s last:rounded-e-md`."
+  - file: src/routes/auth.profile-setup.tsx
+    description: "l.224 `pr-1` -> `pe-1` (scroll gutter of the clubs list)."
+  - file: src/styles.css
+    description: "One rule added at l.430, directly after the chevron-right rule: `html[dir=\"rtl\"] .lucide-chevron-left { transform: scaleX(-1); }`. No other change."
+  - file: src/components/fantasy/GameweekStatusStrip.tsx
+    description: "l.159 removed `rtl:rotate-180` from ChevronRight."
+  - file: src/routes/fantasy.rankings.tsx
+    description: "l.221 (ChevronLeft) and l.231 (ChevronRight) removed `rtl:rotate-180`."
+  - file: src/routes/profile.tsx
+    description: "l.299 removed `rtl:rotate-180` from ChevronRight."
+  - file: src/components/shell/BottomNav.tsx
+    description: "l.60 `truncate leading-none` -> `max-w-full truncate leading-none` (attempt 1); l.37 Link `px-2` -> `px-0.5` (attempt 2, Chief-approved) so every fr label fits its 70px slot."
+  - file: src/routes/matches.index.tsx
+    description: "attempt 2 (Chief-approved, exactly one change): l.103 destructure `dir` from the existing useI18n(); l.224 `<Select dir={dir} ...>`."
+  - file: src/routes/fantasy.fixtures.tsx
+    description: "l.176 truncating span gets `dir=\"auto\"`. Prettier then wrapped the element over l.176-178 (print-width)."
+  - file: docs/engineering/tasks/BG-0026/evidence/after-*.png
+    description: "after-clip-ar-datestrip.png, after-clip-ar-backbutton.png (decisive clips), after-bottomnav-fr.png, after-bottomnav-fr-baseline.png, after-bottomnav-ar.png (bottom-nav crops for the T5(d) finding)."
+  - file: docs/engineering/tasks/BG-0026/implementation-report.yaml
+    description: "This report."
+
+database_changes: []
+configuration_changes: []
+
+tests_run:
+  - command: >-
+      T1: rg -P -n '(?<![A-Za-z0-9_\-])-?(?:(?:ml|mr|pl|pr|left|right|border-l|border-r|rounded-l|rounded-r)-[^\s"'`{}]+|text-left|text-right|border-l|border-r)(?=[\s"'`}]|$)'
+      src/components/ui/select.tsx src/components/ui/dropdown-menu.tsx src/components/ui/sonner.tsx src/components/ui/input-otp.tsx src/routes/auth.profile-setup.tsx;
+      rg -n 'text-left|left-\[50%\]' src/components/ui/sheet.tsx src/components/ui/dialog.tsx
+    result: PASS
+    output: |
+      (first command) no output, rc=1
+      sheet/dialog:
+      src/components/ui/dialog.tsx:44:        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4",
+      note: sheet.tsx:51/53 carry `left-0 rounded-r-*` / `right-0 rounded-l-*`, which this second regex does not match by construction (it only looks for text-left / left-[50%]); they are listed in T2 below as unchanged.
+  - command: "T2: broad inventory regex from the brief over src (*.ts,*.tsx), before and after, per-file counts diffed"
+    result: PASS
+    output: |
+      before: 113 tokens        after: 82 tokens        removed: 31, added: 0
+      per-file diff (before -> after), only the six class-(a) files moved:
+        dropdown-menu 11 -> 0, sonner 10 -> 0, sheet 5 -> 4, input-otp 4 -> 0, select 3 -> 0, dialog 2 -> 1, auth.profile-setup 1 -> 0
+      unchanged: sidebar 20, menubar 11, context-menu 11, carousel 6, calendar 6, navigation-menu 4, table 3, scroll-area 2,
+        resizable 2, pagination 2, command 2, alert 2, alert-dialog 2, drawer 1, accordion 1, splash/SplashScreen 1, fpl/SquadListTable 1
+      remaining in sheet/dialog: sheet.tsx:51 left-0, rounded-r-[var(--radius-sheet)]; sheet.tsx:53 right-0, rounded-l-[var(--radius-sheet)]; dialog.tsx:44 left-[50%]
+  - command: "T3: rg -n 'lucide-chevron-left' src/styles.css; rg -n 'rtl:rotate-180' src --glob '!src/components/ui/**'; rg -n 'rtl:' src/components/welcome/WelcomeScreen.tsx"
+    result: PASS
+    output: |
+      430:html[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
+      531:.fpl-root .lucide-chevron-left { }          <- pre-existing empty rule (origin/main l.530), not added by this change; exactly ONE transform rule exists
+      rtl:rotate-180 outside ui/: no output, rc=1
+      WelcomeScreen: 65 and 80 (2 lines, untouched)
+  - command: "T4: bun run typecheck"
+    result: PASS
+    output: "$ tsc --noEmit -> rc=0"
+  - command: "T4: bun run test"
+    result: PASS
+    output: |
+      693 pass, 0 fail, 5902 expect() calls, Ran 693 tests across 117 files.
+      (brief cites 115 files at 1603c1c; origin/main 535945f has 117 - two test files were added between those commits; identical count on this branch)
+  - command: "T4: bun run lint (compared with origin/main via git stash)"
+    result: PASS
+    output: |
+      origin/main: 12 problems (0 errors, 12 warnings)   branch: 12 problems (0 errors, 12 warnings) - same 12 react-refresh/only-export-components warnings, no new warning.
+      (an intermediate run showed 2 prettier/prettier errors on dialog.tsx:76 and fantasy.fixtures.tsx:176 caused by the edits exceeding print-width; fixed by `prettier --write` on those two files only)
+  - command: "T4: bunx prettier --check <13 changed source files>"
+    result: PASS
+    output: |
+      12/13 clean. [warn] src/styles.css - PRE-EXISTING: origin/main's src/styles.css already fails prettier --check (verified on the origin/main copy). Not reformatted (out of scope: only one rule was allowed).
+  - command: "T5 setup: bun run dev -- --host 127.0.0.1 --port 4180 from /home/user/bg0026; scratchpad shoot/probe/probe2/clip re-pointed to 4180 (copies under scratchpad/bg0026/after/); server stopped afterwards"
+    result: PASS
+    output: "VITE v8.0.16 ready; http 200 on /matches; all 11 ar + 11 fr routes plus one article shot at 390x844, dir=rtl/ar on every ar page, documentElement.scrollWidth=390 everywhere (after/shoot-log.txt)."
+  - command: "T5(a): /matches ar - lucide-chevron-left computed transform (after/navprobe.mjs, after/probe.mjs)"
+    result: PASS
+    output: |
+      {"k":"lucide-chevron-right","transform":"matrix(-1, 0, 0, 1, 0, 0)","x":337}  {"k":"lucide-chevron-left","transform":"matrix(-1, 0, 0, 1, 0, 0)","x":33}
+      clip evidence/after-clip-ar-datestrip.png: right-hand button points right, left-hand button points left (was both-left in evidence/clip-ar-datestrip.png).
+      probe.mjs icon table: chevron-left = matrix(-1,0,0,1,0,0) on /matches, /fantasy/transfers, /team, /fixtures, /leagues, /points, /profile, /rankings (x2), /players.
+  - command: "T5(b): /fantasy/rankings ar - back chevron"
+    result: PASS
+    output: |
+      {"k":"lucide-chevron-left","transform":"matrix(-1, 0, 0, 1, 0, 0)","rotate":"none","x":358,"y":24,"near":"رجوع"}
+      pager: chevron-left x=168 and chevron-right x=30 both matrix(-1,...), rotate none (no double flip). Clip: evidence/after-clip-ar-backbutton.png (chevron now points right, toward the previous-page edge).
+  - command: "T5(c): BottomNav ar - span 'الملف الشخصي' inside its slot and ellipsized"
+    result: PASS
+    output: |
+      {"text":"الملف الشخصي","cls":"max-w-full truncate leading-none","spanL":29,"spanR":83,"slotL":21,"slotR":91,"clientW":54,"scrollW":86,"textOverflow":"ellipsis","inside":true,"ellipsized":true}
+      (before: span 13..99 vs slot 21..91, overlapping 'المباريات'). Crop: evidence/after-bottomnav-ar.png.
+  - command: "T5(d): fr screenshots pixel-equivalent to the pre-change set (hub/news/matches/profile)"
+    result: FAIL
+    output: |
+      Method: the Researcher's fr set was shot against a server with no backend data (page heights differ, e.g. fr-news 3266 vs 7076 px), so a like-for-like baseline
+      was captured in THIS worktree with the changes stashed (git stash / shoot / git stash pop, same dev server, same data), then compared pixel-wise
+      (after/compare3.mjs, canvas diff, tolerance 8/255). Results, diff pixels at 2x:
+        fr-home 0 | fr-fdr 0 | fr-news 0 outside the bottom-nav band | fr-appprofile 0 outside the band | fr-article 0 outside the band
+        fr-hub 539 (rows 497-518, one text line, time-based content) | fr-matches 461 (rows 1579-1599, idem)
+        fr-profile/transfers/team/leagues/points 580-647 (rows 127-148) = deadline clock "02:59" -> "03:00" between shots (crops checked), not a code change
+        bottom-nav band (rows 1600-1660): 1228-1323 px on every fr page that shows the app BottomNav
+      Cause of the bottom-nav difference: with `max-w-full` the fr label "Actualités" (text 62px, slot content box 54px = 70px slot minus px-2) is now
+      ellipsized to "Actual…" (probe2: clientW 54, scrollW 62). Before the change it overflowed its slot by 4px on each side without visible clipping.
+      Evidence: evidence/after-bottomnav-fr-baseline.png vs evidence/after-bottomnav-fr.png. This is an LTR regression introduced by the brief's own
+      required change for BottomNav.tsx:60 (the brief measured fr "Profil" 33px but not "Actualités"). Everything else in fr is pixel-equivalent.
+  - command: "T6: bun run build; grep .output/public/assets/styles-*.css"
+    result: PASS
+    output: |
+      .group-\[\.toaster\]\:border-s-4:is(:where(.group).toaster *){border-inline-start-style:var(--tw-border-style);border-inline-start-width:4px}
+      .group-\[\.toaster\]\:border-s-\[color\:var\(--color-danger\)\]:is(:where(.group).toaster *){border-inline-start-color:var(--color-danger)}   (+ success/warning/brand-accent/text-muted)
+      .end-2{inset-inline-end:calc(var(--spacing) * 2)}   .start-2{inset-inline-start:...}   .ps-2/.ps-8{padding-inline-start:...}   .pe-1/.pe-2/.pe-8{padding-inline-end:...}
+      .ms-auto{margin-inline-start:auto}   .border-e{border-inline-end-...}   .first\:rounded-s-md:first-child{border-start-start-radius..;border-end-start-radius..}
+      .first\:border-s:first-child{border-inline-start-width:1px}   .last\:rounded-e-md:last-child{border-start-end-radius..;border-end-end-radius..}   .sm\:text-start{text-align:start}
+      html[dir=rtl] .lucide-chevron-right,html[dir=rtl] .lucide-chevron-left,html[dir=rtl] .lucide-arrow-right,html[dir=rtl] .lucide-arrow-left{transform:scaleX(-1)}  (minifier merged the four rules)
+  - command: "T6 runtime part: open the season Select on /matches ar, read the item indicator (after/navprobe.mjs, after/seldir.mjs)"
+    result: FAIL
+    output: |
+      option: padding-inline-start 8px == padding-left 8px, padding-inline-end 32px == padding-right 32px; indicator computed left 149.875px / right 8px (x=167, item 17..189)
+      -> the indicator is still at the physical RIGHT. Reason (verified): getComputedStyle(option).direction == "ltr"; ancestors DIV[dir=ltr]#listbox, DIV[dir=ltr];
+      the SelectTrigger itself computes direction "ltr". Radix Select defaults `dir` to "ltr" and stamps dir="ltr" on its trigger/content unless the caller passes
+      `dir` (or wraps in a DirectionProvider); src/routes/matches.index.tsx:223 renders <Select> without `dir`. The logical utilities are correct and take effect
+      as soon as the caller passes dir={dir} (as FantasySubNav/FantasyMobileNav already do for DropdownMenu). matches.index.tsx is NOT in allowed_paths -> not changed. No regression versus before (indicator was at the right before, too).
+
+unresolved: []
+resolved_in_attempt_2:
+  - "T5(d) fr 'Actualités' ellipsis: BottomNav Link padding px-2 -> px-0.5 (content box 54px -> 65.6px); all five fr labels fit, ar 'الملف الشخصي' still ellipsizes inside its slot (table below)."
+  - "T6 runtime: matches.index.tsx now passes dir={dir} to <Select>; popover and trigger compute direction rtl in Arabic, indicator at inline-end."
+
+not_executed:
+  - "T7 (FDR with authenticated session / QA fixture): not executable here - no credentials and no backend/database access permitted; the unauthenticated /fantasy/fixtures renders the guest state (no club rows). dir=\"auto\" is applied exactly as specified; verification against docs/qa/fpl-screens/ar_fdr.png remains for the Verifier."
+  - "T5(d) against the Researcher's original fr set: not comparable (different data state on that server); replaced by the same-data stash baseline described above."
+
+unexpected_observations:
+  - "src/styles.css already fails `prettier --check` on origin/main (pre-existing); not reformatted."
+  - "src/styles.css:531 (main l.530) contains an empty rule `.fpl-root .lucide-chevron-left { }` so `rg -c 'lucide-chevron-left' src/styles.css` returns 2, not the 1 the brief expects; only one transform rule exists."
+  - "Radix Select in src/routes/matches.index.tsx is rendered without `dir`, so its trigger and popover are forced LTR under html[dir=rtl] (see T6 runtime). Same pattern should be checked for any future Radix primitive usage."
+  - "fr BottomNav label 'Actualités' (62px) never fit its 54px content box; before this change it overflowed invisibly, after it ellipsizes (see T5(d))."
+  - "Test-file count on origin/main is 117, not the 115 the brief cites (two test files landed after 1603c1c)."
+
+scope_deviations:
+  - "ATTEMPT 2, Chief-approved scope mutation (logged in the ledger): (a) src/components/shell/BottomNav.tsx l.37 Link horizontal padding px-2 -> px-0.5 (one Tailwind step family change, allowed by the Chief's option 'reduce the label/slot horizontal padding'); (b) src/routes/matches.index.tsx added to allowed_paths for exactly one change: `dir={dir}` on <Select> (l.103 destructure + l.224 prop). Nothing else touched."
+  - "Prettier reformatting wrapped the single edited JSX element in dialog.tsx (l.76 -> l.76-79) and fantasy.fixtures.tsx (l.176 -> l.176-178). No token other than the required one changed in either file; required to keep `bun run lint` (prettier/prettier rule) at 0 errors."
+  - "Five evidence PNGs added under docs/engineering/tasks/BG-0026/evidence/ (after-*.png), as instructed by the dispatch."
+
+status: DONE
+status_note: >
+  Attempt 1 halted on two items (fr "Actualités" ellipsis from the required max-w-full; Radix Select forced LTR because
+  matches.index.tsx passed no dir). The Chief approved a scope mutation for both; attempt 2 applied them and re-ran T1-T6:
+  all green (T5(d) fr pixel-equivalent outside sub-pixel reflow of the nav row, T6 runtime indicator at inline-end, popover rtl).
+  T7 remains not executable here (authenticated FDR).
+
+scope_check:
+  command: "git diff --name-only origin/main...HEAD   (three-dot = against merge-base 535945f; the two-dot form lists main's own newer commits as well)"
+  result: PASS
+  files: >
+    src/components/ui/select.tsx, src/components/ui/dropdown-menu.tsx, src/components/ui/sonner.tsx, src/components/ui/sheet.tsx,
+    src/components/ui/dialog.tsx, src/components/ui/input-otp.tsx, src/routes/auth.profile-setup.tsx, src/styles.css,
+    src/components/fantasy/GameweekStatusStrip.tsx, src/routes/fantasy.rankings.tsx, src/routes/profile.tsx,
+    src/components/shell/BottomNav.tsx, src/routes/fantasy.fixtures.tsx, docs/engineering/tasks/BG-0026/** (report + 5 after-*.png).
+    Subset of allowed_paths + docs/engineering/tasks/BG-0026/**; no forbidden path touched; `git diff --name-only 535945f..origin/main -- <these src files>` is empty.
+
+attempt_2:
+  trigger: "Chief decision on HALTED_FOR_INPUT: scope mutation approved (BottomNav padding; matches.index.tsx dir={dir})."
+  changes:
+    - "src/components/shell/BottomNav.tsx:37 `px-2` -> `px-0.5` on the Link (slot 69.6px, content box 54px -> 65.6px). No font-size/letter-spacing change needed."
+    - "src/routes/matches.index.tsx:103 `const { t, tr, lang, dir } = useI18n();`; :224 `<Select dir={dir} ...>`."
+  tests_run:
+    - command: "T1 (same greps)"
+      result: PASS
+      output: "class-(a) grep: no output, rc=1; sheet/dialog grep: only dialog.tsx:44 left-[50%]."
+    - command: "T2 broad inventory"
+      result: PASS
+      output: "total=82; per-file counts identical to attempt 1 (diff empty). px-0.5 / dir are outside the inventory regex family."
+    - command: "T3"
+      result: PASS
+      output: "styles.css:430 chevron-left transform rule (plus pre-existing empty .fpl-root rule at 531); rtl:rotate-180 outside ui/: rc=1 (none); WelcomeScreen rtl: count 2."
+    - command: "T4 bun run typecheck / bun run test / bun run lint / prettier --check BottomNav.tsx matches.index.tsx"
+      result: PASS
+      output: "tsc rc=0; 693 pass 0 fail across 117 files; lint 12 problems (0 errors, 12 warnings) = origin/main baseline; prettier: All matched files use Prettier code style (no reflow needed this time)."
+    - command: "T5(a)(b) after/navprobe.mjs on :4180"
+      result: PASS
+      output: "/matches ar: chevron-right matrix(-1,0,0,1,0,0) x=337, chevron-left matrix(-1,0,0,1,0,0) x=33; /fantasy/rankings ar: back chevron-left x=358 matrix(-1,...), pager chevrons both matrix(-1,...), rotate none."
+    - command: "T5(c)+(d) BottomNav label table, /profile at 390px (after/labels.mjs; slot = 69.6px, Link padding 2px/2px, content box 65.6px)"
+      result: PASS
+      output: |
+        lang | label          | textW | spanClientW | spanScrollW | span L..R     | slot L..R     | inside | ellipsized
+        fr   | Accueil        | 44.4  | 44 | 44 | 33.6..78      | 21..90.6      | true | false
+        fr   | Actualités     | 62.4  | 62 | 62 | 94.2..156.6   | 90.6..160.2   | true | false
+        fr   | Fantasy        | 48.5  | 49 | 49 | 170.7..219.3  | 160.2..229.8  | true | false
+        fr   | Matches        | 52.0  | 52 | 52 | 238.6..290.6  | 229.8..299.4  | true | false
+        fr   | Profil         | 33.0  | 33 | 33 | 317.7..350.7  | 299.4..369    | true | false
+        ar   | الرئيسية       | 45.7  | 46 | 46 | 311.3..357.1  | 299.4..369    | true | false
+        ar   | الأخبار        | 34.8  | 35 | 35 | 247.2..282    | 229.8..299.4  | true | false
+        ar   | فانتازي        | 40.5  | 41 | 41 | 174.8..215.3  | 160.2..229.8  | true | false
+        ar   | المباريات      | 49.5  | 50 | 50 | 100.7..150.2  | 90.6..160.2   | true | false
+        ar   | الملف الشخصي   | 85.7  | 66 | 86 | 23..88.6      | 21..90.6      | true | TRUE (clipped inside slot, no overlap with المباريات)
+        All five fr labels fit without ellipsis; only the Arabic profile label ellipsizes, within its slot.
+        Evidence: evidence/after2-bottomnav-fr.png (visually identical to after-bottomnav-fr-baseline.png), evidence/after2-bottomnav-ar.png.
+    - command: "T5(d) pixel comparison vs same-data stash baseline (after/compare3.mjs, attempt 2 shoot)"
+      result: PASS
+      output: |
+        fr-home 0 | fr-fdr 0 | fr-news 0 outside nav band | fr-appprofile 0 outside nav band | fr-article 0 outside nav band
+        fr-hub 543 (rows 497-518, time-based text) | fr-matches 382 (rows 1580-1599, idem) | fr fantasy sub-pages 590 (rows 127-148 = deadline clock tick)
+        bottom-nav band fr: 58-149 px per page (was 1228-1323 in attempt 1) = sub-pixel re-centering of the unchanged glyphs after the padding change; crops show no visible difference.
+        ar-matches 7708 px (rows 242-1702): expected - the season Select trigger/popover now renders RTL, plus the nav row; ar-appprofile: nav band only (the intended fix).
+    - command: "T6 built CSS (bun run build, .output/public/assets/styles-*.css)"
+      result: PASS
+      output: |
+        .group-\[.toaster\]:border-s-4:is(:where(.group).toaster *){border-inline-start-style:var(--tw-border-style);border-inline-start-width:4px}
+        .group-\[.toaster\]:border-s-[color:var(--color-danger)] ... {border-inline-start-color:var(--color-danger)} (+ success/warning/brand-accent/text-muted)
+        .end-2{inset-inline-end:calc(var(--spacing) * 2)}  .ps-2{padding-inline-start:...}  .pe-8{padding-inline-end:...}  .px-0\.5{padding-inline:calc(var(--spacing) * .5)}
+        html[dir=rtl] .lucide-chevron-right,html[dir=rtl] .lucide-chevron-left,... {transform:scaleX(-1)}
+    - command: "T6 runtime: /matches ar, open season Select (after/navprobe.mjs, after/seldir.mjs)"
+      result: PASS
+      output: |
+        seldir: {"htmlDir":"rtl","optDirection":"rtl","dirAncestors":["DIV[dir=rtl]#listbox","DIV[dir=rtl]"],"triggerDirection":"rtl"}
+        option: padding-inline-start 8px == padding-right 8px, padding-inline-end 32px == padding-left 32px (RTL resolution)
+        indicator: computed left 8px, right 149.875px (auto-resolved), x=23 with item 15..187 -> at inline-end (left edge in RTL). Attempt 1 had left 149.875px / right 8px.
+    - command: "T7 authenticated FDR"
+      result: NOT_EXECUTED
+      output: "Unchanged: no credentials/backend access; left for the Verifier."
+  dev_server: "bun run dev -- --host 127.0.0.1 --port 4180 from /home/user/bg0026; stopped after the runs (port 4180 closed)."
