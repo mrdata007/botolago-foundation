@@ -110,8 +110,8 @@ export interface AuditResult {
  * reviewed act: state in the commit message why the count moved.
  */
 export const BASELINES: Baselines = {
-  W1: 6,
-  W2: 5,
+  W1: 5,
+  W2: 4,
   W3: 237,
   W4: 100,
 };

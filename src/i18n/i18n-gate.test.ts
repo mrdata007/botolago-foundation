@@ -76,9 +76,9 @@ describe("current tree", () => {
     expect(result.ok).toBe(true);
   });
 
-  test("keeps profile.title visible as a named W1 and W2 warning", () => {
-    expect(warning(result, "W1").reported.map((f) => f.key)).toEqual(["profile.title"]);
-    expect(warning(result, "W2").reported.map((f) => f.key)).toEqual(["profile.title"]);
+  test("profile.title is no longer a named W1 or W2 warning", () => {
+    expect(warning(result, "W1").reported.map((f) => f.key)).toEqual([]);
+    expect(warning(result, "W2").reported.map((f) => f.key)).toEqual([]);
   });
 
   test("suppresses each allow-listed key with a justification", () => {
@@ -196,9 +196,9 @@ describe("negative controls", () => {
     expect(result.ok).toBe(false);
   });
 
-  test("making profile.title differ moves W1 off its baseline and fails the gate", () => {
+  test("making an allow-listed key differ moves W1 off its baseline and fails the gate", () => {
     const dicts = clone();
-    dicts.ar["profile.title"] = "الملف الشخصي";
+    dicts.ar["notfound.code"] = "not-identical-anymore";
     const result = auditI18n(dicts, emptyUsageIndex(), ALLOW_LISTS, BASELINES);
     expect(warning(result, "W1").count).toBe(BASELINES.W1 - 1);
     expect(result.baselineViolations.some((f) => f.code === "W1")).toBe(true);
@@ -214,8 +214,8 @@ describe("negative controls", () => {
 
   // The BG-0014 brief's acceptance list expects "app.name removed from the
   // allow-list -> W1=7". That cannot hold: W1 counts identical fr/ar pairs and
-  // the committed baselines (W1=6 with five entries allow-listed, W2=5 with all
-  // five entries allow-listed) are raw counts, so the allow-list annotates a
+  // the committed baselines (W1=5 with five entries allow-listed, W2=4 with four
+  // of those five entries counted) are raw counts, so the allow-list annotates a
   // finding rather than removing it from the count. What removing an entry does
   // change is visibility, which is what this test pins.
   test("removing an allow-list entry makes that key a named W1 warning", () => {
@@ -229,7 +229,7 @@ describe("negative controls", () => {
     );
     const w1 = warning(result, "W1");
     expect(w1.count).toBe(BASELINES.W1);
-    expect(w1.reported.map((f) => f.key).sort()).toEqual(["app.name", "profile.title"]);
+    expect(w1.reported.map((f) => f.key).sort()).toEqual(["app.name"]);
   });
 });
 
