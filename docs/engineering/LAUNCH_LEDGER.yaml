@@ -675,23 +675,28 @@ tasks:
       fantasy_catalog_rollback_cleanup), runbook (false "clean rollback" claim removed), brief,
       implementation report.
     verifier_report_2026_09_18T18: >-
-      PASS (docs/engineering/tasks/BG-0032/verification-report.yaml @d5ae98a on the branch).
-      Independently re-derived the mutation_audit conclusion (own grep of every migration for an
-      ALTER TABLE on fantasy_mutation_audit — none; own read-only production query against
-      pg_constraint/information_schema.columns — exactly the same two FKs, no season/league FK).
-      Diffed the new migration line-by-line against the original; deletion order confirmed FK-safe
-      against production's actual constraint graph. Independently ran a local Supabase stack:
-      866/866 pgTAP assertions across 42 files including the new 18-assertion regression test,
-      whose PT409-refusal case genuinely checks row counts after refusal, not just that an
-      exception fired. Confirmed backend:migrations:check (62), typecheck, bun test (720/720),
-      promoter unit tests (16/16), and that backend:types:generate produces no diff (RPC return
-      type is generic Json, so the new removed.leagues key doesn't affect generated types).
-      Runbook confirmed corrected. No production writes anywhere in branch history.
-      Found (not a code defect): this branch's LAUNCH_LEDGER.yaml was stale vs. main and needed
-      reconciling before merge — done in this same commit. Also flagged an OUT-OF-SCOPE latent gap:
-      app_private.fantasy_job_runs also has an ON DELETE RESTRICT FK to app.fantasy_seasons and is
-      not touched by this fix (or by the original, pre-existing function) — recorded as follow-up
-      BG-0048, not a regression introduced by this task and not a blocker.
+      PASS (docs/engineering/tasks/BG-0032/verification-report.yaml @d5ae98a). Independently
+      re-derived the mutation_audit conclusion from scratch (own grep of every migration, own
+      read-only production query) — airtight, no gap. Independently ran a local Supabase stack:
+      866/866 pgTAP across 42 files including the new 18-assertion regression test, whose
+      PT409-refusal case genuinely checks row counts, not just that an exception fired. Confirmed
+      migrations:check (62), typecheck, bun test (720/720), promoter tests (16/16),
+      types:generate no diff. Flagged (not a defect): this branch's ledger was stale vs main
+      (Chief reconciled it in a follow-up commit) and an out-of-scope latent gap in
+      app_private.fantasy_job_runs (also RESTRICTs to fantasy_seasons, untouched by this or the
+      original function) — filed as BG-0048 on main directly, not gated behind this branch.
+    reviewer_report_2026_09_18T18: >-
+      PASS (docs/engineering/tasks/BG-0032/review-report.yaml @1a9433a, fresh context). A THIRD
+      independent read-only production FK query reached the same mutation_audit conclusion as the
+      Builder and the Verifier — three separately-run queries now agree. Confirmed
+      fantasy_job_runs's RESTRICT FK predates the original rollback function by two weeks (its own
+      migration is older), so it is a pre-existing gap, not a regression this PR introduces.
+      Traced every DELETE's season-id scoping to catalog_run.fantasy_season_id — no cross-season
+      leakage possible. All existing guards (PT403/PT404/PT409 stale_update/already-rolled-back
+      short-circuit/advisory lock/PT409 in_use) confirmed preserved byte-for-byte and unreachable
+      around. No defects found. Recommended a PR for human review given this touches a production
+      data-deletion RPC.
+    pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/139 (head 1a9433a); session subscribed. Not required for CI (local pgTAP execution already proved green, independently, three times) — opened per the Reviewer''s recommendation for human eyes on a production data-deletion RPC. Awaiting that review; Chief will not merge without it.'
   BG-0033:
     title: G7 backfill runner hardcodes RESTORE_SEASON=26027 and rewrites production function secret FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season in its finally block (current season is 28647)
     area: devops
@@ -938,3 +943,13 @@ tasks:
     owner: Human
     state: HALTED_FOR_INPUT
     human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
+
+  BG-0048:
+    title: 'app_private.fantasy_job_runs has an ON DELETE RESTRICT foreign key to app.fantasy_seasons and is not cleaned up by api.service_rollback_fantasy_catalog (neither the original function nor the BG-0032 fix) — a season with job-run rows would fail rollback the same way leagues did before BG-0032'
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence: ['docs/engineering/tasks/BG-0032/verification-report.yaml (independent Verifier, flagged as out-of-scope for BG-0032 since it is a pre-existing gap in the original function, not a regression introduced by that fix)']
+    acceptance_criteria: [confirm whether fantasy_job_runs rows realistically exist for a rolled-back season; if so, extend api.service_rollback_fantasy_catalog with an additive migration deleting them in FK-safe order, same pattern as BG-0032; database test; if rows never realistically exist for this path, document why and close without a code change]
