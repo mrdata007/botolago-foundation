@@ -73,6 +73,7 @@ tasks:
     update_2026_09_18: owner reports SUPABASE_ACCESS_TOKEN refreshed in production-admin-activation; preflight retry requires BG-0037 first (promoter inventory check fails on main because 20260918130000/140000 are not in the manifest, before any management-API call)
     preflight_retry_2026_09_18: 'run 35343091384 (batch fantasy_calendar_sync, main 943e892): promotion_failed: authenticated account does not own the selected project — the refreshed token authenticates (no HTTP 401) but belongs to an account without access to project tkewgajrljbwgwedqsxn; no write was attempted'
     human_action_2: Generate the personal access token from a Supabase account that is a member of the organization owning BotolaGO Production V2 (tkewgajrljbwgwedqsxn) and store it as SUPABASE_ACCESS_TOKEN in environment production-admin-activation; then the Chief re-runs the preflight with batch fantasy_calendar_sync
+    owner_2026_09_18b: 'do not block on identifying the issuer of the old token; token replaced from an account with access to the BotolaGO org / Production V2; use the sanitized preflight (BG-0039 merged) to decide conclusively; if it authenticates, close the identity question; if 401/403, return the sanitized response and required scope; no workaround'
 
   BG-0003:
     title: Launch risk — SportsMonks placeholder kickoffs vs GW1 deadline; automated escalation guard
@@ -171,6 +172,8 @@ tasks:
     attempt_2: {builder: DONE (agent/BG-0027-ratings-fail-closed @4388116, work commit b1c15d9; new migration 20260918150000_fantasy_rating_degeneracy_guard.sql), verifier: PASS (docs/engineering/tasks/BG-0027/verification-report-attempt2.yaml; 3 rolled-back production rehearsals, guard raised PT409 fantasy_rating_inputs_degenerate with zero inserts), reviewer: running (fresh context)}
     owner_2026_09_18: 'Run the complete affected pgTAP suite in an isolated non-production environment; if unavailable record NOT_EXECUTED and retain the gate; never describe the SQL suite as passing; final evidence must include both the worker coverage fix and the pre-stage guard; pricing gate stays separate from the deadline-guard promotion. Also needs its own manifest entry (BG-0042).'
     halt_reason: 'Reviewer attempt-2 correction requires an EXECUTED pgTAP run before merge; backend:db:test runs only on pull_request events; owner has not authorized pull requests for agent branches. Decision needed: authorize a PR for agent/BG-0027-ratings-fail-closed (Chief merges after CI green + Reviewer PASS), or accept merge on static evidence (not recommended).'
+    owner_2026_09_18b: 'PULL REQUEST route authorised first: execute the affected pgTAP suite through backend-quality CI (isolated supabase start/reset), record the environment, capture pass/fail, run migration validation, Verifier reviews executed results independently; Supabase preview branch only if the PR route is proven incapable (then state cost and lifetime)'
+    pr_prep: BG-0042 Builder merging origin/main (BG-0039 promoter changes) into the branch before the PR is opened
 
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
@@ -354,7 +357,7 @@ tasks:
     evidence:
       - docs/engineering/tasks/BG-0011-0018/extractor-production-data.yaml
     next: 'Researcher brief for team short codes/colours (Builder-Data, source: official club identities — no invention) once P0 items are through; provider dependency for rounds/kickoffs tracked in BG-0003/BG-0005'
-    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data DONE (agent/BG-0018-club-codes @e8635f0; rolled-back rehearsal 9 rows then 0, collateral 0, residue clean), verifier: running, reviewer: pending}
+    roles: {researcher: DONE (docs/engineering/tasks/BG-0018/engineering-brief.yaml, status HALTED_FOR_INPUT), builder: Builder-Data DONE (agent/BG-0018-club-codes @e8635f0; rolled-back rehearsal 9 rows then 0, collateral 0, residue clean), verifier: PASS (docs/engineering/tasks/BG-0018/verification-report.yaml; independent rolled-back rehearsal reproduced 9/0/0, 21 active rows confirmed), reviewer: running (fresh context)}
     facts:
       - the column is app.teams.code (not short_code); only provider ingestion writes it (SportsMonks short_code, present for Wydad only as WCA); nothing writes primary_color/secondary_color
       - the UI already reads code/primaryColor/secondaryColor (presentFootballClub); no src change needed; jerseys stay on src/lib/kits.ts by design
