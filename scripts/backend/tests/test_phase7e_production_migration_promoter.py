@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import importlib.util
+import re
 import sys
 import tempfile
 import unittest
@@ -59,8 +60,8 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
         self.assertEqual(expected, sorted(actual))
         versions = [filename.split("_", 1)[0] for filename in actual]
         self.assertEqual(versions, sorted(versions))
-        self.assertEqual(57, len(actual))
-        self.assertEqual(57, len(set(actual)))
+        self.assertEqual(59, len(actual))
+        self.assertEqual(59, len(set(actual)))
         self.assertEqual(
             (
                 "20260803173344_fantasy_preactivation_hardening.sql",
@@ -79,7 +80,24 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             "RUN_PHASE7E_B_PRODUCTION_FANTASY_CALENDAR_SYNC",
             PROMOTER.CONFIRMATIONS["fantasy_calendar_sync"],
         )
-        for batch in ("launch_recovery_2026_09_14", "fantasy_calendar_sync"):
+        self.assertEqual(
+            (
+                "20260918130000_fantasy_deadline_watch.sql",
+                "20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql",
+            ),
+            PROMOTER.BATCHES["fantasy_deadline_guard"],
+        )
+        self.assertEqual("fantasy_deadline_guard", list(PROMOTER.BATCHES)[-1])
+        self.assertEqual(57, len(PROMOTER.batch_history_prefix("fantasy_deadline_guard")))
+        self.assertEqual(
+            "RUN_PHASE7E_B_PRODUCTION_FANTASY_DEADLINE_GUARD",
+            PROMOTER.CONFIRMATIONS["fantasy_deadline_guard"],
+        )
+        for batch in (
+            "launch_recovery_2026_09_14",
+            "fantasy_calendar_sync",
+            "fantasy_deadline_guard",
+        ):
             self.assertEqual(
                 frozenset({"football-ingest", "news-ingest"}),
                 PROMOTER.EXPECTED_EDGE_FUNCTIONS_BY_BATCH[batch],
@@ -303,6 +321,34 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             "RUN_PHASE7E_B_PRODUCTION_RELEASE_ACTIVATION",
             PROMOTER.CONFIRMATIONS["release_activation"],
         )
+
+    def test_workflow_batch_choices_match_the_manifest_batches_in_order(self) -> None:
+        workflow = (
+            Path(__file__).resolve().parents[3]
+            / ".github"
+            / "workflows"
+            / "phase7e-b-production-migration-promotion.yml"
+        ).read_text(encoding="utf-8")
+        match = re.search(
+            r"migration_batch:\n(?:[ \t]+.*\n)*?[ \t]+options:\n"
+            r"(?P<options>(?:[ \t]+- .+\n)+)",
+            workflow,
+        )
+        assert match is not None
+        options = [
+            line.strip()[2:]
+            for line in match.group("options").splitlines()
+            if line.strip()
+        ]
+        # The immutable post-Gate-4 baseline was promoted through separately
+        # reviewed provider canaries and is deliberately not dispatchable; every
+        # other batch must be offered, in manifest order, ending with the newest.
+        dispatchable = [
+            batch for batch in PROMOTER.BATCHES if batch != "post_gate4_baseline"
+        ]
+        self.assertEqual(dispatchable, options)
+        self.assertEqual(list(PROMOTER.BATCHES)[-1], options[-1])
+        self.assertTrue(set(options) <= set(PROMOTER.BATCHES))
 
     def test_release_activation_accepts_only_the_reviewed_edge_functions(self) -> None:
         class Client:
