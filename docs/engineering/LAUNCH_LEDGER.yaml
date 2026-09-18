@@ -160,7 +160,7 @@ tasks:
     severity: P1
     user_impact: prevents a repeat of BG-0011 on the next activation or re-stage.
     owner: Chief
-    state: RUNNING
+    state: DONE
     depends_on: []
     acceptance_criteria:
       - a ratings run with records_fetched = 0 (or coverage below a minimum share) ends failed with an explicit error code and inserts zero rows
@@ -182,6 +182,12 @@ tasks:
     pr_prep: BG-0042 Builder merging origin/main (BG-0039 promoter changes) into the branch before the PR is opened
     pull_request: 'https://github.com/mrdata007/botolago-foundation/pull/136 (head 203e3e2, includes the BG-0042 manifest batch and merged main c3fb050); backend-quality CI executes backend:db:test, db:lint and migrations; session subscribed to PR events; Verifier reviews executed results independently after CI'
     ci_run_425: 'PR #136 head 60cf11e — backend:db:test PASS: 40 files, 821 tests, All tests successful (fantasy_rating_degeneracy_guard.test.sql ok); backend:db:lint passed; backend:types:check FAILED because src/backend/generated/database.types.ts is stale for service_fantasy_deadline_watch and service_sync_fantasy_calendar (migrations already on main since the BG-0001/BG-0003 merges, which bypassed CI) — not this PR; fix = commit the CI-regenerated types (artifact generated-database-types-35345865108) into the branch'
+    types_fix: 'BG-0047: CI-regenerated types ported into the branch (commit 952bdef); backend:types:check green from run 35346523879 onward'
+    ci_run_final: 'PR #136 head 952bdef, run 35346523879 — database-quality success (821/821 pgTAP incl. fantasy_rating_degeneracy_guard.test.sql, lint clean, types current), application-quality success; excerpt docs/engineering/tasks/BG-0027/ci-run-35346523879.txt'
+    attempt_4: {verifier: PASS, independent, fresh context (docs/engineering/tasks/BG-0027/verification-report-attempt4.yaml) — re-fetched run 35346523879 directly, confirmed head SHA matched the branch tip and the executed pgTAP line, confirmed no code/migration/test drift since attempt-3 verified commit; reviewer: PASS, fresh context (docs/engineering/tasks/BG-0027/review-report-attempt3.yaml) — independently re-derived the corrected scenario-3 pricing, diffed migration function bodies for additive-only grants, re-pulled the CI log directly; reviewed final head 5e18a40 after re-confirming CI green there (run 35369458400)}
+    merged: 'Chief merge, --no-ff equivalent (merge_method=merge), main merge commit 5a7f378918683ee2e33a56cdeca1efd67831a06f, PR #136 head 5e18a400c11e6eacfce144431590c9b44ae03612 (2026-09-18)'
+    state_final: DONE
+    production_status: 'NOT LIVE. This merge lands the worker fix and the additive fantasy_rating_degeneracy_guard migration on the main branch only. The guard does not exist in Production V2 until the fantasy_rating_degeneracy_guard batch is promoted through Phase 7E-B, which is blocked by BG-0002. Do not describe the guard as protecting production.'
 
   BG-0010:
     title: Fantasy end-to-end functionality (create team, transfers, pick team, chips, points, leagues, persistence)
@@ -579,12 +585,12 @@ tasks:
     area: devops
     severity: P1
     owner: Chief
-    state: BUILT
+    state: DONE
     depends_on: []
     roles: {builder: Builder-DevOps DONE (agent/BG-0027-ratings-fail-closed @3865ffb; main merged in cleanly; 11 tests OK; inventory 60), verifier: folded into the BG-0027 CI/PR verification pass, reviewer: same}
-    ordering_hazard: 'load_migrations requires manifest order == version order. BG-0031 (20260918160000, batch season_bounds_guard) will merge first; BG-0027 migration is 20260918150000 and would then have to be inserted BEFORE season_bounds_guard, which breaks the production history-prefix check once season_bounds_guard is promoted. Resolution when BG-0027 is ready to merge: rename its migration to 20260918170000 (never applied anywhere) and place its batch last.'
-    head: '203e3e2 — two clean merges of main (eb4a2f0 brings f58a402, 203e3e2 brings c3fb050); 16 promoter tests OK; inventory 60'
-    note: BG-0042 implementation report base/commits fields stale (pre-merge); refresh requested in the same PR before merge
+    ordering_hazard: 'load_migrations requires manifest order == version order. BG-0031 (20260918160000, batch season_bounds_guard) would need this migration renamed if it merged first. Did not happen: BG-0027 (20260918150000) merged to main FIRST (merge commit 5a7f378918683ee2e33a56cdeca1efd67831a06f) as planned in BG-0031''s own sequencing note, at its original migration number, no rename needed. BG-0031 must now merge main into its branch and move the season_bounds_guard prefix assertion from 59 to 60 before it can merge.'
+    head: 'merged to main at 5a7f378918683ee2e33a56cdeca1efd67831a06f as part of the BG-0027 PR #136 merge'
+    note: 'Closed with BG-0027; no separate PR was needed since this batch shipped inside PR #136.'
 
   BG-0043:
     title: 'app.teams has 21 active rows, not 16: Chabab Mohammédia, JS Soualem, Olympic Safi, Olympique Dcheïra and Yacoub El Mansour remain active=true (last written 2026-08-02), so api.football_team_catalog exposes five non-2026/27 clubs'
