@@ -629,6 +629,35 @@ tasks:
         the guard is additive and does not itself lock anything); a rolled-back rehearsal proving
         the trigger and the monotone-update guard behave as reviewed (do not mutate the real
         app.seasons row in this step — that is Action C, separate and owner-gated).
+        EXECUTED 2026-09-18T19:53Z under the same owner approval as Action A, immediately after
+        Action A''s verification completed. Preconditions re-verified fresh (not reused from A):
+        main HEAD refreshed to 9f29087c1b3b38d739ef63bba05c16f585189e25; migration file sha256
+        6d9e2e07a08a4fa8ce7193b05cf2c44f90b19c4ea74306872f0df9b27d934d2e confirmed unchanged since
+        PR #137 merge; production history confirmed latest-applied was 20260918150000 (Action A),
+        NOT yet containing 20260918160000; org/project reconfirmed (Pro plan, ACTIVE_HEALTHY).
+        Dispatch: run 35388450160, confirmation RUN_PHASE7E_B_PRODUCTION_SEASON_BOUNDS_GUARD.
+        RESULT: SUCCESS. historyCountBefore 60 -> historyCountAfter 61, completedInSelectedBatchAfter
+        1, result PASS; applied-migrations.json sha256 matches the repository file exactly; backup/
+        edge-function/project snapshot unchanged (7 completed backups, ACTIVE_HEALTHY).
+        Post-change verification (all read-only or rolled back, zero persisted writes): (1)
+        information_schema.columns confirms app.seasons.bounds_locked_at (timestamptz, nullable)
+        and bounds_locked_reason (text, nullable) both exist; (2) pg_get_functiondef of both
+        app_private.protect_locked_season_bounds and the re-created api.ingest_football_catalog_
+        entity match the reviewed migration text exactly (cross-checked against the actual file);
+        (3) pg_trigger confirms seasons_protect_locked_bounds exists on app.seasons, BEFORE UPDATE,
+        enabled; (4) a rolled-back rehearsal (begin;...rollback;) locked the real target row, then
+        attempted an unrelated UPDATE setting ends_on=2099-01-01/starts_on=2000-01-01 — the trigger
+        silently restored both to their original values (2026-09-24/2026-09-24), proving lock
+        protection; (5) a SEPARATE rolled-back rehearsal called the actual live
+        api.ingest_football_catalog_entity RPC with a synthetic SportsMonks payload (provider
+        sportsmonks, season external_id 28647, competition external_id 860 — both real mapping
+        values, read confirmed first) claiming endsOn=2026-09-25 (below the real floor) with a
+        freshness stamp newer than the current mapping so it would not be rejected as a stale
+        update; the RPC returned {"outcome":"updated","endsOnPreserved":true,
+        "startsOnPreserved":false} and the row was confirmed unchanged (still 2026-09-24/2026-09-24)
+        before the transaction was rolled back — proving the monotone-update guard fires exactly as
+        reviewed. No production write persisted anywhere in this verification; both rehearsals used
+        begin;...rollback; per standing rule. ACTION B: DONE.
 
       ACTION C — the one-row app.seasons correction (BG-0031, separate from and AFTER Action B).
         This is a real, consequential production data write, not a migration promotion, and needs
