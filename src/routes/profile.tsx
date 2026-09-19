@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { Trans } from "@/components/common/Trans";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
+import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
 import { Logo } from "@/components/brand/Logo";
 import {
@@ -21,6 +22,12 @@ import {
   Trophy,
   Languages,
   ChevronRight,
+  KeyRound,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+  Mail,
+  AtSign,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import {
@@ -229,8 +236,45 @@ function AuthenticatedProfile({
         </div>
       </section>
 
+      {/* Personal details */}
+      <Group title={t("profile.section.personal")}>
+        <div className="divide-y divide-[var(--border-subtle,rgba(0,0,0,0.06))]">
+          <InfoRow icon={<Mail className="h-4 w-4" />} label={t("profile.email")}>
+            {user.email}
+          </InfoRow>
+          <InfoRow icon={<AtSign className="h-4 w-4" />} label={t("profile.username")}>
+            @{user.username}
+          </InfoRow>
+          <InfoRow icon={<Trophy className="h-4 w-4" />} label={t("profile.fav_club")}>
+            {favoriteClub ? (
+              <span className="flex items-center gap-1.5">
+                <ClubCrest club={favoriteClub} />
+                {favoriteClubLabel}
+              </span>
+            ) : (
+              "—"
+            )}
+          </InfoRow>
+        </div>
+        <button
+          onClick={() => navigate({ to: "/auth/profile-setup" })}
+          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
+        >
+          <div className="flex items-center gap-3 text-sm text-foreground">
+            <span
+              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
+              aria-hidden
+            >
+              <Pencil className="h-4 w-4" />
+            </span>
+            <span className="font-semibold">{t("profile.edit")}</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+        </button>
+      </Group>
+
       {/* Preferences group */}
-      <Group title={t("profile.notifications")}>
+      <Group title={t("profile.section.preferences")}>
         <div className="divide-y divide-[var(--border-subtle,rgba(0,0,0,0.06))]">
           {notifItems.map(([k, label]) => (
             <div key={k} className="flex items-center justify-between px-4 py-3">
@@ -258,33 +302,29 @@ function AuthenticatedProfile({
               </span>
             </div>
           ))}
-        </div>
-      </Group>
-
-      {/* Language */}
-      <Group title={t("profile.language")}>
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3 text-sm text-foreground">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-xl"
-              style={{
-                background: "color-mix(in oklab, var(--brand-primary) 12%, transparent)",
-                color: "var(--brand-primary)",
-              }}
-              aria-hidden
-            >
-              <Languages className="h-4 w-4" />
-            </span>
-            <span className="font-semibold">{t("language.switch")}</span>
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3 text-sm text-foreground">
+              <span
+                className="grid h-8 w-8 place-items-center rounded-xl"
+                style={{
+                  background: "color-mix(in oklab, var(--brand-primary) 12%, transparent)",
+                  color: "var(--brand-primary)",
+                }}
+                aria-hidden
+              >
+                <Languages className="h-4 w-4" />
+              </span>
+              <span className="font-semibold">{t("language.switch")}</span>
+            </div>
+            <LanguageSwitcher />
           </div>
-          <LanguageSwitcher />
         </div>
       </Group>
 
-      {/* Account actions */}
-      <Group title={t("profile.title")}>
+      {/* Account security */}
+      <Group title={t("profile.section.security")}>
         <button
-          onClick={() => navigate({ to: "/auth/profile-setup" })}
+          onClick={() => navigate({ to: "/auth/update-password" })}
           className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
         >
           <div className="flex items-center gap-3 text-sm text-foreground">
@@ -292,22 +332,219 @@ function AuthenticatedProfile({
               className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
               aria-hidden
             >
-              <Pencil className="h-4 w-4" />
+              <KeyRound className="h-4 w-4" />
             </span>
-            <span className="font-semibold">{t("profile.edit")}</span>
+            <span className="text-start">
+              <span className="block font-semibold">{t("profile.change_password")}</span>
+              <span className="block text-xs font-normal text-muted-foreground">
+                {t("profile.change_password_desc")}
+              </span>
+            </span>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+        <button
+          onClick={onSignOut}
+          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
+        >
+          <div className="flex items-center gap-3 text-sm text-foreground">
+            <span
+              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
+              aria-hidden
+            >
+              <LogOut className="h-4 w-4" />
+            </span>
+            <span className="font-semibold">{t("profile.sign_out")}</span>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
         </button>
       </Group>
 
-      <div className="mt-6">
-        <button
-          onClick={onSignOut}
-          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 text-sm font-bold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+      {/* Danger zone */}
+      <DeleteAccountSection />
+    </>
+  );
+}
+
+/* -------------------------------- info row -------------------------------- */
+
+function InfoRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3 text-sm text-foreground">
+        <span
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-xl"
+          style={{
+            background: "color-mix(in oklab, var(--brand-accent) 12%, transparent)",
+            color: "var(--brand-accent)",
+          }}
+          aria-hidden
         >
-          <LogOut className="h-4 w-4" aria-hidden /> {t("profile.sign_out")}
-        </button>
+          {icon}
+        </span>
+        <span className="font-semibold">{label}</span>
       </div>
+      <span className="min-w-0 truncate text-end text-sm font-bold text-foreground">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/* ---------------------------- danger zone / delete ------------------------ */
+
+function DeleteAccountSection() {
+  const { t } = useI18n();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void authService.getAccountDeletionStatus().then((res) => {
+      if (!cancelled && res.ok && res.data) setPending(res.data.pending);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setAcknowledged(false);
+  };
+
+  const confirmDelete = async () => {
+    if (!acknowledged || submitting) return;
+    setSubmitting(true);
+    const res = await authService.requestAccountDeletion();
+    setSubmitting(false);
+    if (!res.ok) {
+      toast.error(t("profile.delete_error_toast"));
+      return;
+    }
+    setPending(true);
+    closeDialog();
+    toast.success(t("profile.delete_success_toast"));
+  };
+
+  const cancelDeletion = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const res = await authService.cancelAccountDeletion();
+    setSubmitting(false);
+    if (!res.ok) {
+      toast.error(t("profile.delete_error_toast"));
+      return;
+    }
+    setPending(false);
+    toast.success(t("profile.delete_cancelled_toast"));
+  };
+
+  return (
+    <>
+      <section className="mt-6">
+        <div className="mb-2 px-1 text-[11px] font-bold uppercase tracking-widest text-destructive/80">
+          {t("profile.section.danger")}
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-destructive/25 bg-destructive/5">
+          {pending ? (
+            <div className="flex items-start gap-3 px-4 py-4">
+              <span
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/15 text-destructive"
+                aria-hidden
+              >
+                <AlertTriangle className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-foreground">
+                  {t("profile.delete_pending_title")}
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t("profile.delete_pending_body")}
+                </p>
+                <button
+                  onClick={cancelDeletion}
+                  disabled={submitting}
+                  className="mt-3 inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-input bg-background px-3 text-xs font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                >
+                  {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
+                  {t("profile.delete_cancel_request_cta")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setDialogOpen(true)}
+              className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-destructive/10 focus-visible:outline-none"
+            >
+              <div className="flex items-center gap-3 text-sm">
+                <span
+                  className="grid h-8 w-8 place-items-center rounded-xl bg-destructive/15 text-destructive"
+                  aria-hidden
+                >
+                  <Trash2 className="h-4 w-4" />
+                </span>
+                <span>
+                  <span className="block font-bold text-destructive">
+                    {t("profile.delete_account")}
+                  </span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {t("profile.delete_account_desc")}
+                  </span>
+                </span>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-destructive/70" aria-hidden />
+            </button>
+          )}
+        </div>
+      </section>
+
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("profile.delete_confirm_title")}</DialogTitle>
+            <DialogDescription>{t("profile.delete_confirm_body")}</DialogDescription>
+          </DialogHeader>
+          <label className="mt-2 flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-xs font-semibold text-foreground">
+            <input
+              type="checkbox"
+              checked={acknowledged}
+              onChange={(e) => setAcknowledged(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span>{t("profile.delete_confirm_checkbox")}</span>
+          </label>
+          <div className="mt-3 grid gap-2">
+            <button
+              onClick={confirmDelete}
+              disabled={!acknowledged || submitting}
+              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-destructive px-4 text-sm font-bold text-destructive-foreground transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {t("profile.delete_confirm_cta")}
+            </button>
+            <button
+              onClick={closeDialog}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-input bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              {t("profile.delete_cancel_cta")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

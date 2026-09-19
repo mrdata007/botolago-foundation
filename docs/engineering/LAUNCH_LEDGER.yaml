@@ -648,15 +648,26 @@ tasks:
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
     area: cms
-    severity: P1
+    severity: P0
     user_impact: No editorial screen exists; articles enter only through ingestion RPCs.
-    owner: Human
-    state: HALTED_FOR_INPUT
+    owner: Chief
+    state: RUNNING
+    depends_on: []
     evidence:
       - docs/engineering/tasks/BG-0012-0013/scout-report.yaml — no admin.news*/cms routes; editorial schema (stories, article_editions, revisions, taxonomies, SEO/canonical columns) exists in 20260720110053_news_editorial_catalog.sql
       - docs/backend/PHASE_4_NEWS_REPORT.md and NEWS_OPERATIONS_RUNBOOK.md state an Admin CMS UI was explicitly out of scope
-    human_action: >
-      Product decision — is an in-app CMS (create/edit/draft/publish/unpublish, images, slug, category, tags, author, SEO, preview, scheduling) a launch requirement? If yes it is a new feature (Researcher brief → Builder-CMS, multi-day); if no, BG-0012 closes as out of launch scope and the quality gate is satisfied by ingestion + rendering checks only.
+      - supabase/migrations/20260720110107_news_api_security.sql already defines api.editorial_create_draft, api.editorial_update_article, api.editorial_transition_article, api.editorial_set_placement, api.editorial_soft_delete_story alongside the full public read surface (news_feed, news_home_modules, news_article_detail, news_related_articles, news_search, news_taxonomies, news_team_filters, save_article/unsave_article) — the editorial RPC surface is materially more complete than the earlier scout pass characterized; what is missing is exclusively the Admin CMS UI (and possibly a small number of additive RPCs for media registration / revision history reads, to be confirmed) built on top of it
+    owner_decision_2026_09_19: >-
+      RESOLVED — an in-app editorial CMS IS a launch requirement. It must support real editorial
+      operations (create, edit, draft, preview, publish, unpublish, schedule, placements, media,
+      bilingual FR/AR editions) without requiring developers to hand-edit SQL, source files or
+      database rows. Reuse the existing News domain model, RLS, and editorial RPCs; do not build a
+      second article database, a second CMS backend, or a second auth/role model; do not expose
+      canonical app/app_private tables directly to the browser; do not weaken RLS. Add only the
+      smallest reviewed additive backend change for any operation genuinely missing from the
+      existing RPC model. Tracked as its own workstream (BG-0012 News+CMS launch, branch
+      agent/news-cms-launch, base main@108435e).
+    human_action: 'RESOLVED -- see owner_decision_2026_09_19. Do NOT close this task until the CMS is implemented, independently verified, deployed, and usable end-to-end (a real story can be created, previewed, published, changed, and removed from publication through the actual UI and security model).'
   BG-0013:
     title: Full-article / news ingestion (provenance, duplicates, attribution, images)
     area: news

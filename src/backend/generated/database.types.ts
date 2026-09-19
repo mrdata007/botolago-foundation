@@ -553,6 +553,7 @@ export type Database = {
           p_author_id?: string
           p_body_format: Database["app"]["Enums"]["article_body_format"]
           p_body_html: string
+          p_body_html_mac: string
           p_body_source: string
           p_language: string
           p_publisher_id?: string
@@ -562,6 +563,41 @@ export type Database = {
           p_story_id?: string
           p_summary: string
           p_title: string
+        }
+        Returns: Json
+      }
+      editorial_get_article: {
+        Args: { p_article_edition_id: string }
+        Returns: Json
+      }
+      editorial_list_revisions: {
+        Args: { p_article_edition_id: string; p_limit?: number }
+        Returns: Json
+      }
+      editorial_list_stories: {
+        Args: {
+          p_after_id?: string
+          p_after_updated_at?: string
+          p_language?: string
+          p_limit?: number
+          p_query?: string
+          p_status?: Database["app"]["Enums"]["publication_status"]
+        }
+        Returns: Json
+      }
+      editorial_register_media: {
+        Args: {
+          p_alt_text: string
+          p_attribution_url?: string
+          p_caption?: string
+          p_copyright_owner?: string
+          p_credit?: string
+          p_height: number
+          p_kind?: Database["app"]["Enums"]["media_kind"]
+          p_license_url?: string
+          p_mime_type: string
+          p_storage_path: string
+          p_width: number
         }
         Returns: Json
       }
@@ -595,6 +631,7 @@ export type Database = {
           p_article_edition_id: string
           p_body_format: Database["app"]["Enums"]["article_body_format"]
           p_body_html: string
+          p_body_html_mac: string
           p_body_source: string
           p_expected_updated_at: string
           p_hero_asset_id?: string
@@ -609,6 +646,7 @@ export type Database = {
         }
         Returns: Json
       }
+      editorial_write_secret_for_service: { Args: never; Returns: string }
       fantasy_fixture_difficulty: {
         Args: {
           p_from_gameweek: number

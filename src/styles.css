@@ -38,6 +38,18 @@
   --brand-accent-2: oklch(0.72 0.14 232);     /* cyan-ish highlight */
   --brand-charcoal: oklch(0.20 0.015 260);
 
+  /* ---- News editorial gradients (BG-0012) -----------------------
+     Exact hex brand spec for the /news redesign. These are additive
+     tokens for News surfaces only — never used by Fantasy, and never
+     replacing the oklch --brand-* scale used elsewhere in the app. */
+  --news-gradient-hero: linear-gradient(125deg, #00195A 0%, #0151FC 55%, #49CFFF 100%);
+  --news-gradient-ocean: linear-gradient(135deg, #000C2D 0%, #0036B0 55%, #0151FC 100%);
+  --news-gradient-matchday: linear-gradient(110deg, #002787 0%, #0151FC 55%, #85ADFF 100%);
+  --news-gradient-aqua: linear-gradient(90deg, #0151FC 0%, #1F8CFF 55%, #49CFFF 100%);
+  --news-gradient-dark: linear-gradient(145deg, #000C2D 0%, #00195A 55%, #0036B0 100%);
+  --news-gradient-light: linear-gradient(115deg, #FFFFFF 0%, #E6EEFF 55%, #C2D6FF 100%);
+  --news-gradient-promo: linear-gradient(130deg, #0036B0 0%, #0151FC 55%, #49CFFF 100%);
+
   /* ---- Extra semantic accents ---------------------------------- */
   --accent-cyan: oklch(0.75 0.13 220);
   --accent-indigo: oklch(0.55 0.16 275);

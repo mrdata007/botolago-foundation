@@ -376,6 +376,14 @@ export class LocalMockAuthService implements AuthService {
     return { ok: true };
   }
 
+  async getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>> {
+    this.init();
+    await simulateLatency();
+    if (this.readSession().status !== "authenticated")
+      return { ok: false, errorCode: "unauthorized" };
+    return { ok: true, data: { pending: safeGet<{ requestId: string }>(K_DELETION) !== null } };
+  }
+
   async signOut(options?: SignOutOptions): Promise<void> {
     this.init();
     this.setSession(null);

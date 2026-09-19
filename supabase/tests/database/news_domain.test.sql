@@ -162,12 +162,59 @@ insert into auth.users (
   'authenticated', 'authenticated', 'news-admin@example.test', 'hash', '{}',
   '{"username":"news_admin"}', statement_timestamp(), statement_timestamp()
 );
-insert into app_private.editorial_memberships (user_id, role)
-values ('f4000000-0000-4000-8000-000000000001', 'admin');
+-- BG-0012: has_editorial_role now resolves through the Admin staff role
+-- model, not the legacy editorial_memberships table — grant the
+-- content_admin role (editorial.write + editorial.publish +
+-- editorial.manage_placements) to cover this fixture's full workflow.
+insert into app_private.staff_principals (auth_user_id)
+values ('f4000000-0000-4000-8000-000000000001');
+insert into app_private.staff_role_assignments (staff_principal_id, role_id, grant_reason)
+select principal.id, role.id, 'news_domain.test.sql fixture.'
+from app_private.staff_principals principal
+join app_private.admin_roles role on role.name = 'content_admin'
+where principal.auth_user_id = 'f4000000-0000-4000-8000-000000000001';
+-- has_editorial_role also requires a verified MFA factor and an aal2
+-- session assertion (every editorial.* permission is seeded
+-- requires_mfa = true).
+insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at)
+values (
+  'f4100000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001',
+  'Primary TOTP', 'totp', 'verified', statement_timestamp(), statement_timestamp()
+);
+-- The write RPC now requires proof (an HMAC over body_html) that content was
+-- sanitized server-side by the news-editorial-write Edge Function -- see
+-- app_private.verify_editorial_content_mac. Only a superuser-ish test role
+-- can read app_private.news_editorial_write_keys directly; compute it here,
+-- before dropping to `authenticated`, exactly like the real Edge Function
+-- would for this same literal body_html.
+select set_config(
+  'test.workflow_body_mac',
+  encode(
+    extensions.hmac(
+      convert_to('<p>Contenu de workflow éditorial suffisamment long.</p>', 'utf8'),
+      (select secret from app_private.news_editorial_write_keys where id = true),
+      'sha256'
+    ),
+    'hex'
+  ),
+  true
+);
+select set_config(
+  'test.workflow_update_mac',
+  encode(
+    extensions.hmac(
+      convert_to('<p>Contenu de workflow éditorial mis à jour et suffisamment long.</p>', 'utf8'),
+      (select secret from app_private.news_editorial_write_keys where id = true),
+      'sha256'
+    ),
+    'hex'
+  ),
+  true
+);
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"f4000000-0000-4000-8000-000000000001","role":"authenticated"}', true
+  '{"sub":"f4000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}', true
 );
 select set_config(
   'test.news_draft_id',
@@ -175,9 +222,71 @@ select set_config(
     'fr', 'workflow-transition-test', 'Article de workflow éditorial',
     'Un résumé suffisamment long pour tester les transitions éditoriales.',
     'markdown'::app.article_body_format, repeat('Contenu de workflow. ', 4),
-    '<p>Contenu de workflow éditorial suffisamment long.</p>', 3::smallint, 'test'
+    '<p>Contenu de workflow éditorial suffisamment long.</p>', 3::smallint, 'test',
+    p_body_html_mac := current_setting('test.workflow_body_mac')
   ) ->> 'articleId',
   true
+);
+select extensions.throws_ok(
+  $$select api.editorial_create_draft(
+    'fr', 'mac-bypass-attempt', 'Tentative de contournement',
+    'Un résumé suffisamment long pour tester le rejet du contenu non signé.',
+    'markdown'::app.article_body_format, 'Source.',
+    '<p>Contenu envoyé sans passer par la fonction de sanitation serveur.</p>', 3::smallint, 'test',
+    p_body_html_mac := 'deadbeef'
+  )$$,
+  '42501',
+  'news_editorial_content_not_sanitized',
+  'a call with an invalid body_html_mac is rejected before persistence, even from an otherwise-authorized editor'
+);
+select extensions.throws_ok(
+  $$select api.editorial_create_draft(
+    'fr', 'mac-mismatch-attempt', 'Tentative de contournement 2',
+    'Un résumé suffisamment long pour tester le rejet du contenu non signé.',
+    'markdown'::app.article_body_format, 'Source.',
+    '<p>Ce contenu ne correspond pas au HMAC fourni ci-dessous.</p>', 3::smallint, 'test',
+    p_body_html_mac := current_setting('test.workflow_body_mac')
+  )$$,
+  '42501',
+  'news_editorial_content_not_sanitized',
+  'a MAC computed over different content than the one being persisted is rejected -- the MAC is bound to the exact bytes, not just "a" valid signature'
+);
+-- editorial_update_article enforces the exact same server-side-sanitization
+-- proof as editorial_create_draft. `authenticated` has no direct SELECT
+-- grant on app.article_editions (RPC-only access), so p_expected_updated_at
+-- must come from a granted RPC (editorial_get_article), not a raw subquery
+-- on the table -- a raw subquery is evaluated as a plain argument expression
+-- under the calling role's own privileges before the RPC call even happens,
+-- and fails with "permission denied for table article_editions" instead of
+-- ever reaching editorial_update_article's own checks.
+select extensions.throws_ok(
+  $$select api.editorial_update_article(
+    current_setting('test.news_draft_id')::uuid,
+    (api.editorial_get_article(current_setting('test.news_draft_id')::uuid) ->> 'updatedAt')::timestamptz,
+    'workflow-transition-test', 'Article de workflow éditorial',
+    null, 'Un résumé suffisamment long pour tester les transitions éditoriales.',
+    'markdown'::app.article_body_format, 'Source.',
+    '<p>Contenu envoyé sans passer par la fonction de sanitation serveur.</p>', 3::smallint, 'test',
+    'deadbeef'
+  )$$,
+  '42501',
+  'news_editorial_content_not_sanitized',
+  'editorial_update_article also rejects an invalid body_html_mac before persisting anything'
+);
+select extensions.is(
+  (
+    api.editorial_update_article(
+      current_setting('test.news_draft_id')::uuid,
+      (api.editorial_get_article(current_setting('test.news_draft_id')::uuid) ->> 'updatedAt')::timestamptz,
+      'workflow-transition-test', 'Article de workflow éditorial', null,
+      'Un résumé suffisamment long pour tester les transitions éditoriales.',
+      'markdown'::app.article_body_format, 'Source mise à jour et suffisante.',
+      '<p>Contenu de workflow éditorial mis à jour et suffisamment long.</p>', 3::smallint, 'test',
+      current_setting('test.workflow_update_mac')
+    ) ->> 'status'
+  ),
+  'draft',
+  'editorial_update_article succeeds once a valid body_html_mac accompanies the content'
 );
 select extensions.is(
   api.editorial_transition_article(

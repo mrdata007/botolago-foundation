@@ -1,0 +1,260 @@
+task: BG-0012
+builder: Builder-CMS
+branch: agent/news-cms-launch
+summary: >
+  Bridged News editorial authority onto the existing Admin staff role/permission
+  model (collapsing two parallel role systems into one), added the missing CMS
+  read/write RPCs, a trusted server-side media upload path, the frontend
+  repository/contract surface, and a first working in-app editorial UI
+  (list / create / edit-publish-placement) under /admin/news.
+
+verification_environment_limitation: >
+  This sandbox has no Docker daemon, so `supabase start`/local Postgres is not
+  available here. bun run backend:db:reset, backend:db:test, and
+  backend:db:lint could NOT be executed in this session. All SQL was written
+  and manually re-verified against the exact existing migrations (column
+  names, constraints, enum values, RLS/grant conventions) instead of being
+  run. The reviewing/verification session MUST run those three commands
+  before merge; if anything fails, the most likely spots are noted below.
+  Everything that could run in this sandbox (bun test, bun run typecheck,
+  bun run lint, bun run build) was run repeatedly and is green.
+
+migrations:
+  - file: supabase/migrations/20260919130000_news_editorial_admin_bridge.sql
+    what_it_does:
+      - >
+        Redefines app_private.has_editorial_role(app_private.editorial_role)
+        to resolve authority from the Admin staff model instead of the
+        standalone app_private.editorial_memberships table: looks up the
+        caller's active app_private.staff_principals row by auth.uid(), then
+        calls app_private.admin_has_permission(principal_id, <permission>).
+        Signature, language (sql), volatility (stable) and security definer
+        are unchanged, so every existing api.editorial_* caller keeps working
+        with zero changes to those functions.
+      - >
+        Deviation from the literal brief mapping (editor->editorial.write,
+        publisher->editorial.publish, admin->editorial.manage_placements
+        as one fixed permission each): the seeded 'publisher' Admin role has
+        editorial.publish but NOT editorial.write, and 'content_admin' has
+        both. A single fixed permission per tier would have broken the
+        original editor⊂publisher⊂admin hierarchy (a publisher could no
+        longer create/edit drafts, which the old editorial_memberships model
+        allowed). Each tier is instead satisfied by holding ANY permission
+        that implies that tier or higher (editor tier = has editorial.write
+        OR editorial.publish; publisher tier = has editorial.publish; admin
+        tier = has editorial.manage_placements, i.e. content_admin or
+        platform_admin only). This was caught and fixed via a self-authored
+        pgTAP scenario before being treated as done.
+      - app_private.editorial_memberships table is left in place, unused, not dropped (no destructive change; a follow-up ticket can retire it).
+      - "New RPC api.editorial_list_stories(p_language, p_status, p_query, p_limit, p_after_updated_at, p_after_id) returns jsonb — keyset-paginated CMS listing across every status, gated by has_editorial_role('editor')."
+      - "New RPC api.editorial_list_revisions(p_article_edition_id, p_limit) returns jsonb — reads app.article_revisions newest-first, gated by has_editorial_role('editor')."
+      - "New RPC api.editorial_register_media(p_storage_path, p_mime_type, p_width, p_height, p_alt_text, p_caption, p_credit, p_copyright_owner, p_license_url, p_attribution_url, p_kind) returns jsonb — validates the same shapes as app.media_assets' CHECK constraints before insert, sets validation_status='validated'/validated_at=now() (this is the trusted post-upload registration step), gated by has_editorial_role('editor')."
+      - >
+        DEVIATION (added beyond the brief's exact RPC list): api.editorial_get_article(p_article_edition_id)
+        returns jsonb. The brief's RPC list (editorial_list_stories,
+        editorial_list_revisions, editorial_register_media) has no way to
+        fetch one edition's full editable content (subtitle/body
+        source/SEO/hero) — editorial_list_stories returns only a summary row
+        and editorial_list_revisions returns only prior snapshots (empty for
+        a fresh draft with zero edits). Without this RPC, the required
+        item-8 editor route cannot prefill its form after a page load or
+        direct navigation. Added as a small, additive, same-gate
+        (has_editorial_role('editor')) read RPC.
+      - Grants follow the exact existing pattern (revoke all from public/anon/authenticated/service_role, then grant execute to authenticated only for the new api.* functions, and to postgres only for the app_private bridge function).
+
+new_rpc_signatures:
+  - "api.editorial_list_stories(p_language text default null, p_status app.publication_status default null, p_query text default null, p_limit integer default 20, p_after_updated_at timestamptz default null, p_after_id uuid default null) returns jsonb"
+  - "api.editorial_list_revisions(p_article_edition_id uuid, p_limit integer default 20) returns jsonb"
+  - "api.editorial_register_media(p_storage_path text, p_mime_type text, p_width integer, p_height integer, p_alt_text text, p_caption text default null, p_credit text default null, p_copyright_owner text default null, p_license_url text default null, p_attribution_url text default null, p_kind app.media_kind default 'article_hero') returns jsonb"
+  - "api.editorial_get_article(p_article_edition_id uuid) returns jsonb  # not in original brief; see deviation note above"
+
+media_upload_path:
+  edge_function: supabase/functions/news-media-upload/index.ts
+  shared_logic: supabase/functions/_shared/news-media-upload.ts (unit-tested, matches the existing handleGnewsRequest pattern for testability)
+  flow:
+    - Verifies the caller's Authorization bearer token belongs to a real authenticated user (rejects missing/anon) via a user-scoped Supabase client's auth.getUser().
+    - Parses a multipart upload; validates client-declared MIME against the exact same allowlist as the news-media bucket (image/avif|jpeg|png|webp) and size <= 10MiB BEFORE touching storage.
+    - Requires altText + width + height form fields (width/height are read client-side from the decoded image before upload, since the Edge runtime has no image decoder available here — documented limitation below).
+    - Uploads to the news-media bucket at news/<uuid>.<ext> using the function's service-role client.
+    - Calls api.editorial_register_media AS THE ORIGINAL CALLING USER (their own JWT, not service role) — so the exact same has_editorial_role('editor') gate that protects every other editorial RPC also protects this path, with zero duplicated authorization logic, per the brief's stated preference.
+    - On any registration failure, deletes the just-uploaded object before returning the error (no orphaned files), and maps 42501->403, 22023->422, else 400.
+    - Returns {mediaAssetId, storagePath, publicUrl} on success (201).
+  known_limitation: >
+    Image width/height are supplied by the browser (read via an <img> decode
+    of the local file before upload) rather than verified server-side inside
+    the Edge Function, since Deno's edge runtime has no bundled image
+    decoder here. api.editorial_register_media still enforces bounds
+    (1-12000px) but cannot detect a caller lying about the true pixel
+    dimensions of an otherwise-valid image. Low severity (this is an
+    editorial-staff-only, authenticated path, not public), flagged as a
+    known gap rather than silently left unmentioned.
+
+frontend_repository_contract:
+  file: src/backend/news/contracts.ts
+  added:
+    - "EDITORIAL_STATUSES / EditorialStatus, ARTICLE_VISIBILITIES / ArticleVisibility, PLACEMENT_TYPES / PlacementType"
+    - "editorialStorySummarySchema / EditorialStorySummaryDto, editorialStoryPageSchema / EditorialStoryPageDto (editorial_list_stories DTO)"
+    - "articleEditorialDetailSchema / ArticleEditorialDetailDto — includes subtitle/bodyFormat/bodySource/status/visibility/updatedAt/seoTitle/seoDescription/heroAssetId, exactly the fields the public articleCardSchema/articleDetailSchema intentionally omit, as the brief specified (editorial_get_article DTO)"
+    - "editorialRevisionSchema / EditorialRevisionDto (editorial_list_revisions DTO)"
+    - "CreateDraftInput/Result, UpdateArticleInput/Result, TransitionArticleInput/Result, SetPlacementInput/Result, ListStoriesInput, RegisterMediaInput/Result"
+    - "NewsRepository interface extended with createDraft, updateArticle, transitionArticle, setPlacement, softDeleteStory, listStories, listRevisions, getEditorialArticle (deviation addition), registerMedia"
+  implementation: src/backend/news/supabase-repository.ts (SupabaseNewsRepository) — every new method uses the same context.schema('api').rpc(...) + throwIfError + zod parse idiom as the existing public methods; added encodeEditorialCursor/decodeEditorialCursor mirroring encodeNewsCursor/decodeCursor.
+  mock_repository: src/backend/news/mock-repository.ts — implements the 9 new interface methods as explicit "unsupported in preview" throws (the mock backs only the public preview surface; the CMS always talks to SupabaseNewsRepository), so the interface stays satisfied without pretending the preview mock supports editorial workflows.
+  error_mapping: >
+    src/backend/news/errors.ts — added distinct typed codes
+    article_not_editable, placement_requires_published_article,
+    editorial_conflict, story_not_found, invalid_media_payload (collapsing
+    the 6 editorial_register_media validation messages, which are all the
+    same class of "bad media payload" for the UI to react to) mapped from
+    the exact Postgres error messages: news_article_not_editable,
+    news_placement_requires_published_article, news_editorial_conflict,
+    news_story_not_found, news_invalid_media_storage_path/mime_type/
+    dimensions/alt_text/license_url/attribution_url. 40001/22023/23505/42501
+    are each still distinguishable via these distinct .code values, per the
+    brief's explicit instruction not to collapse them into one generic error.
+  generated_types: >
+    src/backend/generated/database.types.ts updated by hand to add the 4 new
+    RPC function signatures (editorial_get_article, editorial_list_revisions,
+    editorial_list_stories, editorial_register_media) in the same shape the
+    Supabase CLI codegen produces, since the real codegen requires a live
+    database this sandbox does not have. The reviewing session should run
+    `bun run backend:types:generate` against a real instance and diff against
+    this hand-written version to confirm they match exactly.
+
+admin_routes:
+  - file: src/routes/admin.news.tsx
+    purpose: Article list — filters by language/status, free-text title search, shows status/visibility/updatedAt/author, "New article" button, links to the editor. Loader gates on editorial.read.
+  - file: src/routes/admin.news.new.tsx
+    purpose: >
+      Create flow — language picker, slug/title/summary/body (plain-textarea
+      Markdown per the brief's explicit vertical-slice allowance), sanitizes
+      server-shaped HTML via sanitizeEditorialHtml before ever calling
+      createDraft, then navigates to the editor route. Loader gates on
+      editorial.write.
+  - file: src/routes/admin.news.$articleEditionId.tsx
+    purpose: >
+      Full editor — content fields, hero image upload (real upload path via
+      news-media-upload, not a manual-media-id fallback), explicit Save with
+      optimistic-concurrency conflict handling (surfaces editorial_conflict
+      distinctly and tells the editor to reload), status transition buttons
+      computed from a client-side copy of the state machine for which
+      buttons to SHOW (the RPC's own role/state checks are the only real
+      authority; a stale or role-mismatched click is rejected server-side
+      and the rejection is surfaced, never silently retried or spoofed),
+      placement controls enabled only once status === 'published',
+      revision-history panel (editorial_list_revisions), unsaved-changes
+      protection (dirty tracking + beforeunload confirm; see limitation
+      below for in-app navigation), and a gated Preview panel that renders
+      the current draft content through sanitizeEditorialHtml + a dangerouslySetInnerHTML
+      block scoped to this editorial.write-gated route only — never a public
+      preview URL. Loader gates on editorial.write.
+  route_access_functions_added: "loadAdminNewsReadRouteAccess (editorial.read), loadAdminNewsWriteRouteAccess (editorial.write) in src/backend/admin/route-access.functions.ts, following the exact per-permission loader pattern in admin.staff.tsx / admin.security.tsx."
+  preview_reuse_note: >
+    src/routes/news.$articleId.tsx was read (not edited, per instructions)
+    for its rendering approach, but its component is tightly coupled to
+    AppShell/useQuery/newsService (the public repository) and was not
+    extracted into a shared component by the other builder who owns that
+    file. Rather than reach into and refactor a file this task was told not
+    to touch, the editor's Preview panel does its own minimal
+    sanitize-and-render of title/subtitle/body, which is honest about being
+    a CMS-only preview rather than a pixel-identical clone of the public
+    page. Flagged as a known simplification, not a silent shortcut.
+
+editorial_role_provisioning_for_testing:
+  finding: >
+    src/routes/admin.staff.tsx already lets a security.manage_staff-holding
+    admin assign the 'editor', 'publisher', and 'content_admin' Admin roles
+    to any staff principal via api.admin_assign_role (the existing
+    DirectlyAssignableAdminRole select list already includes all three).
+    Because this task's bridge migration makes Admin roles the sole source
+    of editorial authority, that existing screen is now, unmodified, the
+    real production path for granting CMS access — no new UI was built for
+    this, since it would have duplicated an already-correct screen.
+  pgtap_fixtures: >
+    For automated pgTAP coverage, roles are granted by inserting directly
+    into app_private.staff_principals / app_private.staff_role_assignments
+    (bypassing api.admin_assign_role's MFA-verified-target-user +
+    30-minute-approval-workflow-for-platform_admin requirements), exactly
+    the same pattern already used by supabase/tests/database/
+    admin_authorization.test.sql for its own fixtures. This is a deliberate,
+    precedented choice, not a workaround: admin_assign_role's real-world
+    guardrails (recent reauth, target MFA enrollment, self-escalation
+    checks) are outside what a deterministic pgTAP fixture should exercise.
+
+tests:
+  added:
+    - file: supabase/tests/database/news_editorial_admin_bridge.test.sql
+      covers: >
+        an Admin-role 'editor' can call editorial_create_draft (bridge
+        works); a user with an Admin role at all (only a legacy, now-inert
+        editorial_memberships row) cannot; an Admin-role 'publisher' can
+        transition draft->in_review->published while a plain 'editor'
+        cannot publish (42501); editorial_list_stories surfaces the article
+        and rejects a lone cursor param (22023); editorial_list_revisions
+        returns snapshots and rejects an unknown id (P0002);
+        editorial_get_article round-trips and rejects an unknown id;
+        editorial_register_media's 6 validation branches each throw their
+        distinct 22023 message, and a valid payload succeeds.
+    - file: supabase/tests/database/news_editorial_lifecycle.test.sql
+      covers: >
+        the exact end-to-end scenario requested — create draft as editor ->
+        publish attempt as editor fails 42501 -> editor moves it to
+        in_review -> publisher publishes -> api.news_article_detail now
+        returns it publicly -> publisher sets a 'featured' placement ->
+        publisher unpublishes -> api.news_article_detail no longer returns
+        it (P0002) -> api.editorial_list_stories (as editor) still shows it.
+    - file: supabase/functions/_shared/news-media-upload.test.ts
+      covers: "8 bun:test cases for the Edge Function's pure handler: missing/anon auth, unsupported mime rejected before storage, oversized payload rejected before storage, missing alt/dimensions, successful upload+registration as the calling user with the right public URL shape, orphan cleanup + error passthrough when registration is refused, and no registration call at all when the storage upload itself fails. All 8 pass (bun test)."
+    - file: src/backend/news/errors.test.ts
+      covers: "mapNewsError distinctly maps every new editorial Postgres error message to its own typed code (not collapsed into one generic error, per the brief), collapses the 6 media-validation messages into one invalid_media_payload code, and still falls back correctly for a bare 42501 / unrecognized error. All 4 tests pass."
+  extended: []
+  not_run_here_needs_ci: >
+    supabase/tests/database/*.test.sql (pgTAP) — no local Postgres/Docker in
+    this sandbox. bun run backend:db:reset / backend:db:test / backend:db:lint
+    must be run by the reviewing session before merge.
+  run_in_this_sandbox:
+    - "bun test — 811 pass, 0 fail (includes both new frontend/edge-function suites above)."
+    - "bun run typecheck — clean."
+    - "bun run lint — clean (only pre-existing, unrelated react-refresh warnings remain)."
+    - "bun run build — succeeds (also regenerates src/routeTree.gen.ts to include the 3 new /admin/news* routes, which is committed)."
+
+not_built_from_brief:
+  - item: "admin.news.media.tsx / admin.news.taxonomy.tsx / admin.news.placements.tsx as separate routes"
+    reason: "Explicit out-of-scope decision, exactly as the brief allows — media is folded into the article editor, placements are folded into the article editor, taxonomy management UI is skipped entirely (no write RPC exists for taxonomies and the brief says adding one is out of scope; pre-seed taxonomies via SQL for the demo)."
+  - item: "Full Markdown-to-HTML rendering (headings, lists, links, images) in the body editor"
+    reason: "Time/scope: the create/edit forms use a minimal paragraph-splitting Markdown-ish transform before sanitization, matching the brief's explicit allowance that a full rich-text editor is not required for this vertical slice. A real Markdown parser (e.g. reusing whatever the public site's renderer uses) is a reasonable fast-follow."
+  - item: "In-app router navigation blocking for unsaved changes (only browser close/refresh is guarded via beforeunload)"
+    reason: "Time: TanStack Router's navigation-blocking hook was not wired up; a dirty-state confirm() only guards the explicit status-transition buttons today. Fast-follow: add a route-level navigation blocker."
+  - item: "Server-side verification of uploaded image pixel dimensions"
+    reason: "Architectural/time: the Edge runtime has no bundled image decoder available in this repo; width/height are client-supplied and only range-validated server-side. See known_limitation under media_upload_path."
+  - item: "Actually running supabase db reset / backend:db:test / backend:db:lint"
+    reason: "Genuine environment blocker: no Docker daemon in this sandbox. All SQL was hand-verified against the real schema/migrations instead; the reviewing session must run these three before merge."
+  - item: "Regenerating src/backend/generated/database.types.ts via the real Supabase CLI codegen"
+    reason: "Same Docker/live-database blocker; the 4 new RPC entries were added by hand in the exact shape the generator produces. Verify with bun run backend:types:check / backend:types:generate against a real instance."
+
+files_touched:
+  new:
+    - supabase/migrations/20260919130000_news_editorial_admin_bridge.sql
+    - supabase/functions/news-media-upload/index.ts
+    - supabase/functions/_shared/news-media-upload.ts
+    - supabase/functions/_shared/news-media-upload.test.ts
+    - supabase/tests/database/news_editorial_admin_bridge.test.sql
+    - supabase/tests/database/news_editorial_lifecycle.test.sql
+    - src/routes/admin.news.tsx
+    - src/routes/admin.news.new.tsx
+    - "src/routes/admin.news.$articleEditionId.tsx"
+    - src/backend/news/errors.test.ts
+    - docs/engineering/tasks/BG-0012/builder-cms-report.yaml
+  modified:
+    - src/backend/news/contracts.ts
+    - src/backend/news/errors.ts
+    - src/backend/news/supabase-repository.ts
+    - src/backend/news/mock-repository.ts
+    - src/backend/admin/route-access.functions.ts
+    - src/backend/generated/database.types.ts
+    - src/routeTree.gen.ts (auto-regenerated by bun run build)
+  explicitly_not_touched_per_instructions:
+    - src/routes/news.tsx
+    - "src/routes/news.$articleId.tsx"
+    - src/styles.css
+    - Fantasy code/migrations

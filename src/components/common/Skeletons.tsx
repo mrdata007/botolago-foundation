@@ -108,6 +108,22 @@ export function AlertRowSkeleton() {
   );
 }
 
+export function StandingsRowSkeleton() {
+  return (
+    <div
+      className="flex items-center gap-2.5 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[color:var(--surface)] px-3 py-2"
+      aria-hidden
+    >
+      <Shimmer className="h-4 w-4" />
+      <Shimmer className="h-7 w-7 rounded-xl" />
+      <Shimmer className="h-3 flex-1" />
+      <Shimmer className="h-3 w-7" />
+      <Shimmer className="h-3 w-8" />
+      <Shimmer className="h-3 w-8" />
+    </div>
+  );
+}
+
 export function LeagueRowSkeleton() {
   return (
     <div className="surface-2 flex items-center gap-3 px-3 py-3" aria-hidden>

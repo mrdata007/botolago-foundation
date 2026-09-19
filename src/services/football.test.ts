@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
-import { presentFootballClub, selectFootballDataMode } from "./football";
+import { footballService, presentFootballClub, selectFootballDataMode } from "./football";
 
 const context = { actorId: null, requestId: "test" } as const;
 
@@ -69,5 +69,30 @@ describe("Football frontend repository cutover", () => {
       "https://botolago-test.supabase.co/storage/v1/object/public/football-media/football/teams/1001/crest.png",
     );
     expect(club.crestPlaceholder).toBe(team.code);
+  });
+
+  test("match detail page exposes lineups without fabricating data when the provider has none", async () => {
+    const repository = new MockFootballRepository();
+    const matches = await repository.getHomeMatches("fr", 1, context);
+    const detail = await footballService.getMatchDetailPage(matches[0]!.id, "fr");
+
+    // The mock provider has not published lineups yet — the page must say
+    // so via an empty array rather than inventing a line-up.
+    expect(Array.isArray(detail.lineups)).toBe(true);
+    expect(detail.lineups).toHaveLength(0);
+    expect(detail.match.id).toBe(matches[0]!.id);
+  });
+
+  test("standings rows expose full W/D/L/form so the table never needs invented stats", async () => {
+    const repository = new MockFootballRepository();
+    const seasons = await repository.getSeasons("fr", 12, context);
+    const current = seasons.find((s) => s.isCurrent)!;
+    const standings = await repository.getStandings(current.id, "fr", context);
+
+    expect(standings.length).toBeGreaterThan(0);
+    for (const row of standings) {
+      expect(row.played).toBe(row.won + row.drawn + row.lost);
+      expect(typeof row.form === "string" || row.form === null).toBe(true);
+    }
   });
 });

@@ -103,18 +103,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "BotolaGO — Actualités et matchs du football marocain" },
+      { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
         name: "description",
         content:
-          "Consultez les actualités disponibles et le calendrier du football marocain, avec une interface en français et en arabe. La Fantasy ouvrira ultérieurement.",
+          "Actualités, calendrier et Fantasy de la Botola Pro, avec une interface en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
-      { property: "og:title", content: "BotolaGO — Actualités et matchs du football marocain" },
+      {
+        property: "og:title",
+        content: "BotolaGO — Actualités, matchs et Fantasy du football marocain",
+      },
       {
         property: "og:description",
-        content:
-          "Actualités et informations de match disponibles pour la Botola Pro. La Fantasy ouvrira ultérieurement.",
+        content: "Actualités, informations de match et Fantasy pour la Botola Pro.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

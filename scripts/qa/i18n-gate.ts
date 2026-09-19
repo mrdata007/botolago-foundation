@@ -110,10 +110,49 @@ export interface AuditResult {
  * reviewed act: state in the commit message why the count moved.
  */
 export const BASELINES: Baselines = {
-  W1: 5,
+  W1: 4,
   W2: 4,
-  W3: 237,
-  W4: 100,
+  // BG-0012: the /news redesign replaced the hardcoded tab UI
+  // (news.tab.*, and its category-name-keyed news.section.transfers/
+  // analysis/interviews) with real taxonomy-driven category chips, and
+  // dropped the on-page saved-articles rail (still reachable from
+  // /profile) and the manual fr/ar edition selector. That retires 10
+  // dictionary keys (news.tab.for_you/latest/transfers/analysis/
+  // interviews, news.section.transfers/analysis/interviews/saved,
+  // news.saved.empty) and 4 template-key t() call sites that switched
+  // between them, moving W3 237 -> 245 and W4 100 -> 96.
+  //
+  // BG-0012 (Agent D3, account/profile redesign): the redesigned Profile
+  // "Informations personnelles" section now renders an explicit e-mail row
+  // via a literal `t("profile.email")` call, which was previously dead
+  // copy. That takes one more key off the unreferenced list, moving
+  // W3 245 -> 244.
+  //
+  // BG-0012 (Agent A, shared shell + Accueil redesign): the Accueil rebuild
+  // added 3 new copy keys and retired 11 keys that became fully unused,
+  // and dropped one non-literal t() call site.
+  //
+  // BG-0012 (Agent D1, Matches redesign): the new Lineups tab / standings
+  // table replaced the fake "Momentum" tab, retiring its dictionary keys.
+  //
+  // BG-0012 (Agent D2, Players/Stats/Transfers redesign): porting
+  // fantasy.players.tsx, fantasy.players.$playerId.tsx and
+  // fantasy.rankings.tsx off `LegacyFantasyPage`/ad hoc back links onto
+  // the shared `FplHeader` orphans fantasy.players.title,
+  // fantasy.rankings.title, fantasy.rankings.subtitle and common.back, and
+  // replaces a non-literal ternary t() call with FplSegmented options
+  // carrying one literal t() call each.
+  //
+  // Combined effect of all four parallel redesign workstreams, re-measured
+  // on the fully integrated tree (each workstream's own delta above was
+  // computed independently against the pre-integration baseline of
+  // W3 245 / W4 96 in its own isolated worktree; overlapping keys/call
+  // sites between workstreams mean the sum of the deltas isn't the actual
+  // total, so the true combined numbers were measured directly by running
+  // `bun scripts/qa/i18n-gate.ts` on the merged tree): W3 245 -> 248,
+  // W4 96 -> 94.
+  W3: 248,
+  W4: 94,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

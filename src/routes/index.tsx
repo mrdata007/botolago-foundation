@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -8,16 +8,15 @@ import {
   CircleDot,
   Bell,
   Newspaper,
-  Heart,
-  TrendingUp,
   Trophy,
+  Compass,
+  UserRound,
 } from "lucide-react";
 
-import { newsService, type NewsLanguageSelection } from "@/services/news";
+import { newsService } from "@/services/news";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
-import { followService } from "@/services/follows";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
@@ -27,15 +26,14 @@ import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
-import { PlayerRow } from "@/components/common/PlayerRow";
+import { ClubCrest } from "@/components/common/ClubCrest";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import {
   HeroSkeleton,
   MatchCardSkeleton,
   ArticleCardSkeleton,
-  PlayerRowSkeleton,
   AlertRowSkeleton,
-  LeagueRowSkeleton,
+  StandingsRowSkeleton,
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
@@ -84,20 +82,18 @@ function HomePage() {
 }
 
 /**
- * BotolaGO Home — Design System V2 editorial redesign.
+ * BotolaGO Home (Accueil) — dashboard redesign (BG-0012).
  *
- * Layout intent:
- *   1. Hero  — greeting eyebrow + manager H1 + date/GW meta, followed by
- *              the Fantasy summary hero card. Feels like a premium landing.
- *   2. Live/upcoming matches — score-first, highly scannable.
- *   3. Fantasy alerts — colored tone-per-severity.
- *   4. Lead story — editorial 16:10 with strong overlay + refined chip.
- *   5. Followed clubs — three refined article cards.
- *   6. Trending players — ranked leaderboard.
- *   7. Private leagues — structured, badge-first.
+ * A genuine "control center" landing screen, not a duplicate of the News
+ * page. Fixed structure, styled with the same semantic tokens/surfaces as
+ * the Fantasy design system (`--brand-*`, `surface-*`, `shadow-*`):
  *
- * Each section owns its identity via SectionHeader (eyebrow + icon) and
- * flows into the next through Section's consistent rhythm + stagger.
+ *   1. Compact greeting        — eyebrow + name + gameweek/date, no giant hero
+ *   2. Matches                 — live/upcoming, score-first cards
+ *   3. Fantasy                 — gameweek deadline + team entry/summary card
+ *   4. News preview            — a few curated cards linking into /news
+ *   5. Standings snapshot      — top of the table, only when real data exists
+ *   6. Discovery links         — quick access to Matches/Fantasy/News/Profile
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
@@ -107,7 +103,6 @@ function HomeContent() {
   const availability = useFantasyAvailability();
   const fantasyReady = !availability.isError && availability.data?.status === "ready";
   const canCreate = availability.data?.status === "ready" && availability.data.canCreate;
-  const [newsLanguage, setNewsLanguage] = useState<NewsLanguageSelection>("auto");
 
   const summaryQ = useQuery({
     queryKey: key("summary"),
@@ -134,34 +129,38 @@ function HomeContent() {
     enabled: fantasyReady,
   });
   const newsQ = useQuery({
-    queryKey: ["news", "edition", lang, newsLanguage],
-    queryFn: () => newsService.getEdition(lang, newsLanguage),
-  });
-  const followedQ = useQuery({
-    queryKey: ["identity", "followed-teams", status, lang],
-    queryFn: () =>
-      status === "authenticated" ? followService.getFollowedTeams(lang) : Promise.resolve([]),
-  });
-  const trendingQ = useQuery({
-    queryKey: ["trending"],
-    queryFn: () => fantasyService.getTrendingPlayers(),
-    enabled: fantasyReady,
+    queryKey: ["news", "edition", lang, "auto"] as const,
+    queryFn: () => newsService.getEdition(lang, "auto"),
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
-  const leaguesQ = useQuery({
-    queryKey: key("leagues", "private"),
-    queryFn: () => fantasyService.getLeagues("private"),
-    enabled: fantasyReady && source !== "guest",
+
+  // Standings snapshot reuses the same real data source as /matches
+  // (getHomeMatches never carries a table; a season-scoped fetch does).
+  // No standings route/component exists yet, so this section renders only
+  // once a real, non-empty table comes back — never a fabricated one.
+  const seasonsQ = useQuery({
+    queryKey: ["football", "seasons", lang],
+    queryFn: () => footballService.getSeasons(lang),
+  });
+  const currentSeasonId = useMemo(
+    () => seasonsQ.data?.find((season) => season.isCurrent)?.id ?? seasonsQ.data?.[0]?.id,
+    [seasonsQ.data],
+  );
+  const standingsQ = useQuery({
+    queryKey: ["football", "home-standings", lang, currentSeasonId],
+    queryFn: () => footballService.getMatchDay(new Date(), lang, currentSeasonId),
+    enabled: seasonsQ.isSuccess,
   });
 
   const clubById = (id: string) =>
     matchesQ.data?.clubs.find((club) => club.id === id) ??
+    standingsQ.data?.clubs.find((club) => club.id === id) ??
     clubsQ.data?.find((club) => club.id === id);
 
-  // Localized full date used in the hero meta line.
+  // Localized full date used in the greeting meta line.
   const dateLine = useMemo(() => {
     const fmt = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
       weekday: "long",
@@ -171,12 +170,24 @@ function HomeContent() {
     return fmt.format(new Date());
   }, [lang]);
 
-  const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
+  // Up to three curated stories: the edition's lead plus its next articles.
+  // Never the full News page — a lightweight preview only.
+  const newsPreview = useMemo(() => {
+    const edition = newsQ.data;
+    if (!edition) return null;
+    const rest = edition.articles.filter((a) => a.id !== edition.lead?.id);
+    return [...(edition.lead ? [edition.lead] : []), ...rest].slice(0, 3);
+  }, [newsQ.data]);
+
+  const standingsLoading = seasonsQ.isPending || (seasonsQ.isSuccess && standingsQ.isPending);
+  const standingsFailed = seasonsQ.isError || standingsQ.isError;
+  const standingsRows = standingsQ.data?.standings ?? [];
+  const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
     <AppShell>
       {/* -------------------------------------------------------- */}
-      {/* Hero                                                     */}
+      {/* 1. Compact greeting                                      */}
       {/* -------------------------------------------------------- */}
       <div
         className={cn(
@@ -190,7 +201,7 @@ function HomeContent() {
             {greeting}
           </span>
         </div>
-        <h1 className="mt-1.5 truncate text-[28px] font-black leading-[1.05] tracking-tight text-foreground sm:text-[32px]">
+        <h1 className="mt-1.5 truncate text-[22px] font-black leading-[1.1] tracking-tight text-foreground sm:text-2xl">
           {user?.displayName?.trim() || summaryQ.data?.managerName || "Manager"}
         </h1>
         <p className="mt-1 truncate text-[13px] text-[color:var(--text-secondary)]">
@@ -200,10 +211,43 @@ function HomeContent() {
         </p>
       </div>
 
-      <div
-        className="mt-5 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 ease-out"
-        style={{ animationDelay: "60ms", animationFillMode: "both" }}
-      >
+      {/* -------------------------------------------------------- */}
+      {/* 2. Matches                                                */}
+      {/* -------------------------------------------------------- */}
+      <Section index={1}>
+        <SectionHeader
+          eyebrow={t("nav.matches")}
+          icon={CircleDot}
+          title={t("home.live_upcoming")}
+          action={<ViewAllLink to="/matches" />}
+        />
+        <div className="grid gap-2">
+          {matchesQ.isLoading && (
+            <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
+          )}
+          {matchesQ.isError && <ErrorState onRetry={() => void matchesQ.refetch()} />}
+          {!matchesQ.isLoading && matchesQ.data?.matches.length === 0 && (
+            <EmptyState compact>{t("state.empty")}</EmptyState>
+          )}
+          {matchesQ.data?.matches.map((m) => {
+            const home = clubById(m.homeClubId);
+            const away = clubById(m.awayClubId);
+            if (!home || !away) return null;
+            return <MatchCard key={m.id} match={m} home={home} away={away} />;
+          })}
+        </div>
+      </Section>
+
+      {/* -------------------------------------------------------- */}
+      {/* 3. Fantasy — gameweek deadline / team entry                */}
+      {/* -------------------------------------------------------- */}
+      <Section index={2}>
+        <SectionHeader
+          eyebrow={t("nav.fantasy")}
+          icon={Trophy}
+          title={t("home.fantasy_hub")}
+          action={<ViewAllLink to="/fantasy" />}
+        />
         {status === "loading" || availability.isPending ? (
           <HeroSkeleton />
         ) : availability.isError ? (
@@ -242,214 +286,133 @@ function HomeContent() {
         ) : (
           <HeroSkeleton />
         )}
-      </div>
 
-      {/* -------------------------------------------------------- */}
-      {/* Live & upcoming matches                                  */}
-      {/* -------------------------------------------------------- */}
-      <Section index={1}>
-        <SectionHeader
-          eyebrow={t("nav.matches")}
-          icon={CircleDot}
-          title={t("home.live_upcoming")}
-          action={<ViewAllLink to="/matches" />}
-        />
-        <div className="grid gap-2">
-          {matchesQ.isLoading && (
-            <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
-          )}
-          {matchesQ.isError && <ErrorState onRetry={() => void matchesQ.refetch()} />}
-          {!matchesQ.isLoading && matchesQ.data?.matches.length === 0 && (
-            <EmptyState compact>{t("state.empty")}</EmptyState>
-          )}
-          {matchesQ.data?.matches.map((m) => {
-            const home = clubById(m.homeClubId);
-            const away = clubById(m.awayClubId);
-            if (!home || !away) return null;
-            return <MatchCard key={m.id} match={m} home={home} away={away} />;
-          })}
-        </div>
-      </Section>
-
-      {/* -------------------------------------------------------- */}
-      {/* Fantasy alerts                                           */}
-      {/* -------------------------------------------------------- */}
-      {fantasyReady && (
-        <Section index={2}>
-          <SectionHeader eyebrow={t("nav.fantasy")} icon={Bell} title={t("home.fantasy_alerts")} />
-          {alertsQ.isError || playersQ.isError ? (
-            <ErrorState
-              onRetry={() => {
-                void alertsQ.refetch();
-                void playersQ.refetch();
-              }}
-            />
-          ) : alertsQ.data && playersQ.data ? (
-            alertsQ.data.length === 0 ? (
-              <EmptyState compact>{t("state.empty")}</EmptyState>
+        {fantasyReady && source !== "guest" && (
+          <div className="mt-3">
+            {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
+              alertsQ.data.length > 0 && (
+                <>
+                  <div className="mb-1.5 inline-flex items-center gap-1.5">
+                    <Bell
+                      className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]"
+                      aria-hidden
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+                      {t("home.fantasy_alerts")}
+                    </span>
+                  </div>
+                  <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
+                </>
+              )
             ) : (
-              <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
-            )
-          ) : (
-            <SkeletonList count={2}>{() => <AlertRowSkeleton />}</SkeletonList>
-          )}
-        </Section>
-      )}
-
-      {/* -------------------------------------------------------- */}
-      {/* Lead story                                               */}
-      {/* -------------------------------------------------------- */}
-      <Section index={3}>
-        <SectionHeader eyebrow={t("nav.news")} icon={Newspaper} title={t("home.lead_story")} />
-        <div className="mb-3 space-y-2">
-          <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <span>{t("news.language.label")}</span>
-            <select
-              value={newsLanguage}
-              onChange={(event) => setNewsLanguage(event.target.value as NewsLanguageSelection)}
-              className="surface-3 min-h-11 rounded-xl border border-[var(--border-subtle)] px-3 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]"
-            >
-              <option value="auto">{t("news.language.auto")}</option>
-              <option value="fr">{t("news.language.fr")}</option>
-              <option value="ar">{t("news.language.ar")}</option>
-            </select>
-          </label>
-          {newsQ.data && newsQ.data.articles.length > 0 && (
-            <p role="status" className="text-xs text-[color:var(--text-secondary)]">
-              {t(
-                newsQ.data.language === "ar"
-                  ? "news.language.original_ar"
-                  : "news.language.original_fr",
-              )}
-            </p>
-          )}
-        </div>
-        {newsQ.isError ? (
-          <ErrorState onRetry={() => void newsQ.refetch()} />
-        ) : newsQ.isPending ? (
-          <ArticleCardSkeleton variant="lead" />
-        ) : newsQ.data.lead ? (
-          <ArticleCard article={newsQ.data.lead} variant="lead" clubs={clubsQ.data ?? []} />
-        ) : (
-          <EmptyState>{t("news.language.empty")}</EmptyState>
+              <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
+            )}
+          </div>
         )}
       </Section>
 
       {/* -------------------------------------------------------- */}
-      {/* Followed clubs                                           */}
+      {/* 4. News preview                                           */}
       {/* -------------------------------------------------------- */}
-      <Section index={4}>
+      <Section index={3}>
         <SectionHeader
           eyebrow={t("nav.news")}
-          icon={Heart}
-          title={t("home.followed_news")}
-          subtitle={followedQ.data?.map((c) => tr(c.shortName)).join(" · ")}
+          icon={Newspaper}
+          title={t("home.news_preview")}
           action={<ViewAllLink to="/news" />}
         />
-        <div className="grid gap-3">
+        <div className="grid gap-2.5">
           {newsQ.isError ? (
             <ErrorState onRetry={() => void newsQ.refetch()} />
-          ) : !newsQ.data ? (
+          ) : !newsPreview ? (
             <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
-          ) : newsQ.data.articles.length === 0 ? (
-            <EmptyState compact>{t("news.language.empty")}</EmptyState>
-          ) : null}
-          {newsQ.data?.articles.slice(0, 3).map((a) => (
-            <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />
-          ))}
+          ) : newsPreview.length === 0 ? (
+            <EmptyState compact>{t("state.empty")}</EmptyState>
+          ) : (
+            newsPreview.map((a) => (
+              <ArticleCard key={a.id} article={a} variant="compact" clubs={clubsQ.data ?? []} />
+            ))
+          )}
         </div>
       </Section>
 
       {/* -------------------------------------------------------- */}
-      {/* Trending players                                         */}
+      {/* 5. Standings snapshot — only when the backend has one     */}
       {/* -------------------------------------------------------- */}
-      {fantasyReady && (
-        <Section index={5}>
-          <SectionHeader eyebrow={t("nav.fantasy")} icon={TrendingUp} title={t("home.trending")} />
-          <div className="grid gap-2">
-            {trendingQ.isError ? (
-              <ErrorState onRetry={() => void trendingQ.refetch()} />
-            ) : !trendingQ.data ? (
-              <SkeletonList count={4}>{() => <PlayerRowSkeleton />}</SkeletonList>
-            ) : null}
-            {trendingQ.data?.map((p, i) => (
-              <PlayerRow key={p.id} player={p} club={clubById(p.clubId)} rank={i + 1} />
-            ))}
-          </div>
+      {showStandings && (
+        <Section index={4}>
+          <SectionHeader
+            eyebrow={t("matches.competition.botola")}
+            title={t("matches.table_preview")}
+            action={<ViewAllLink to="/matches" />}
+          />
+          {standingsLoading ? (
+            <SkeletonList count={5}>{() => <StandingsRowSkeleton />}</SkeletonList>
+          ) : standingsFailed ? (
+            <ErrorState
+              onRetry={() => {
+                void seasonsQ.refetch();
+                void standingsQ.refetch();
+              }}
+            />
+          ) : (
+            <div className="grid gap-1.5">
+              {standingsRows.slice(0, 5).map((row) => {
+                const club = clubById(row.clubId);
+                if (!club) return null;
+                return (
+                  <div
+                    key={row.clubId}
+                    className="flex items-center gap-2.5 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[color:var(--surface)] px-3 py-2"
+                  >
+                    <span
+                      className="w-4 shrink-0 text-center font-mono text-xs font-black tabular-nums text-[color:var(--text-muted)]"
+                      aria-hidden
+                    >
+                      {row.position}
+                    </span>
+                    <ClubCrest club={club} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">
+                      {tr(club.shortName)}
+                    </span>
+                    <span
+                      className="w-7 shrink-0 text-center text-[11px] tabular-nums text-[color:var(--text-muted)]"
+                      aria-label={t("matches.table.played")}
+                    >
+                      {row.played}
+                    </span>
+                    <span
+                      className="w-8 shrink-0 text-center text-[11px] tabular-nums text-[color:var(--text-muted)]"
+                      aria-label={t("matches.table.goal_difference")}
+                    >
+                      {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+                    </span>
+                    <span
+                      className="w-8 shrink-0 text-end text-sm font-black tabular-nums text-foreground"
+                      aria-label={t("matches.table.points")}
+                    >
+                      {row.points}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Section>
       )}
 
       {/* -------------------------------------------------------- */}
-      {/* Private leagues                                          */}
+      {/* 6. Discovery links                                        */}
       {/* -------------------------------------------------------- */}
-      {fantasyReady && (
-        <Section index={6} className="pb-2">
-          <SectionHeader
-            eyebrow={t("nav.fantasy")}
-            icon={Trophy}
-            title={t("home.private_leagues")}
-            action={<ViewAllLink to="/fantasy" />}
-          />
-          <div className="grid gap-2">
-            {source === "guest" ? (
-              <Link
-                to="/auth/login"
-                search={{ next: "/fantasy/leagues" }}
-                className="surface-2-interactive flex min-h-20 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
-              >
-                {t("auth.prompt.login")}
-              </Link>
-            ) : leaguesQ.isError ? (
-              <ErrorState onRetry={() => void leaguesQ.refetch()} />
-            ) : !leaguesQ.data ? (
-              <SkeletonList count={3}>{() => <LeagueRowSkeleton />}</SkeletonList>
-            ) : null}
-            {source !== "guest" &&
-              leaguesQ.data?.map((l) => {
-                const delta =
-                  l.previousRank === null || l.rank === null ? 0 : l.previousRank - l.rank;
-                const climbed = delta > 0;
-                const dropped = delta < 0;
-                return (
-                  <div
-                    key={l.id}
-                    className={cn("surface-2-interactive flex items-center gap-3 px-3 py-3")}
-                  >
-                    <div
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-black text-white shadow-inner"
-                      style={{ backgroundImage: "var(--bg-brand-gradient)" }}
-                      aria-hidden
-                    >
-                      {l.rank === null ? "—" : `#${l.rank}`}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold text-foreground">{l.name}</div>
-                      <div className="truncate text-[11px] text-[color:var(--text-muted)]">
-                        {nf.format(l.members)} managers
-                      </div>
-                    </div>
-                    <div
-                      className={cn(
-                        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-black tabular-nums",
-                        climbed &&
-                          "bg-[color:color-mix(in_oklab,var(--color-success)_14%,transparent)] text-[color:var(--color-success)]",
-                        dropped &&
-                          "bg-[color:color-mix(in_oklab,var(--color-danger)_14%,transparent)] text-[color:var(--color-danger)]",
-                        !climbed &&
-                          !dropped &&
-                          "bg-[color:var(--surface-hover)] text-[color:var(--text-secondary)]",
-                      )}
-                      aria-label={climbed ? `+${delta}` : dropped ? `${delta}` : "0"}
-                    >
-                      <span aria-hidden>{climbed ? "▲" : dropped ? "▼" : "="}</span>
-                      {Math.abs(delta) || 0}
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </Section>
-      )}
+      <Section index={5} className="pb-2">
+        <SectionHeader icon={Compass} title={t("home.explore")} />
+        <div className="grid grid-cols-2 gap-2">
+          <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
+          <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
+          <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />
+          <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+        </div>
+      </Section>
     </AppShell>
   );
 }
@@ -468,6 +431,39 @@ function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
     >
       {t("home.view_all")}
       <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+    </Link>
+  );
+}
+
+function DiscoveryLink({
+  to,
+  icon: Icon,
+  label,
+}: {
+  to: "/matches" | "/fantasy" | "/news" | "/profile";
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  label: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "surface-2-interactive flex items-center gap-2.5 px-3.5 py-3",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+      )}
+    >
+      <span
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-inner"
+        style={{ backgroundImage: "var(--bg-brand-gradient)" }}
+        aria-hidden
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="truncate text-sm font-black text-foreground">{label}</span>
+      <ChevronRight
+        className="ms-auto h-4 w-4 shrink-0 text-[color:var(--text-muted)]"
+        aria-hidden
+      />
     </Link>
   );
 }

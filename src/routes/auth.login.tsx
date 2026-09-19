@@ -9,6 +9,8 @@ import {
   AuthDivider,
   AuthFieldError,
   AuthFieldLabel,
+  GoogleGlyph,
+  AppleGlyph,
 } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
@@ -210,26 +212,5 @@ function LoginPage() {
         </p>
       </form>
     </AuthShell>
-  );
-}
-
-function GoogleGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.5c-.2 1.4-1.7 4-5.5 4-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.6 6.7 2.6 12S6.8 21.5 12 21.5c6.9 0 9.5-4.8 9.5-7.3 0-.5 0-.9-.1-1.4H12z"
-      />
-    </svg>
-  );
-}
-function AppleGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M16.4 12.7c0-2.4 2-3.5 2.1-3.6-1.1-1.7-2.9-1.9-3.6-2-1.5-.2-2.9.9-3.7.9-.8 0-2-.9-3.2-.8-1.7 0-3.2 1-4 2.5-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3.1 2.5 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.6-1-2.6-4.1zM14 5.5c.7-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.2 1.9-1 3 1 0 2-.6 2.7-1.4z"
-      />
-    </svg>
   );
 }
