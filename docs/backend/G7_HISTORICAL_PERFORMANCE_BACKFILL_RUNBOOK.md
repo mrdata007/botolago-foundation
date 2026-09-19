@@ -119,6 +119,41 @@ migrations run when `skip_deploy` is requested.
 4. Follow up with a `--capture-only` dispatch to confirm the fingerprints are now stable and that
    `FOOTBALL_INGESTION_TRIGGER_SECRET` is absent (unless intentionally restored).
 
+## Fixture coverage rule (BG-0011 option B) — a relaxation, stated plainly
+
+The 22-provider-starter invariant did **not** change: SportsMonks always reports exactly 22 raw
+starter rows (`type_id` 11) per finished fixture — this is universal (measured 240/240). What
+changed is how many of those 22 may lack a `player_id` ("anonymous") before the fixture is usable:
+
+- **Before BG-0011**: all 22 starters had to be identified (`player_id` present). Measured against
+  real production data, 64/240 season-26027 fixtures failed this and were never ingested at all.
+- **After BG-0011 (current rule)**: up to **4** of the 22 raw starters may be anonymous. Identified
+  starters = 22 − anonymous. Only identified rows are ever persisted; anonymous rows are never
+  assigned to any player, never treated as another player's stats, and never recorded as an
+  "observed zero" appearance/minutes for anyone. Measured coverage: **238/240** season-26027
+  fixtures are usable under this rule. The other **2, fixtures 19596474 (7 anonymous of 22
+  starters) and 19596475 (8 anonymous of 22), are quarantined entirely** — none of their rows, not
+  even the identified ones, feed pricing — because they exceed the 4-anonymous cap. This is a
+  genuine data limitation in the provider's payload for those two fixtures, not a mapping defect.
+
+This is a deliberate, scoped **relaxation** of the old rule, not "the same invariant read more
+carefully." It applies **only** to this historical (completed-season) ingestion path — the
+`api.ingest_historical_player_fixture_performance` / `app.player_fixture_performances` /
+`app_private.historical_performance_fixture_coverage` family, `sportsmonks-fixture:`-prefixed
+`source_version`s. It does **not** apply to the live current-season Fantasy scoring path (separate
+tables and RPCs in `20260914200726_current_finished_fixture_performances.sql`,
+`sportsmonks-current-fixture:`-prefixed `source_version`s), which still requires zero anonymous
+starters. See `docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml`
+for the full enforcement-point list and `supabase/migrations/20260919120000_historical_anonymous_starter_tolerance.sql`
+for the schema/RPC changes.
+
+**What this means for the runner's evidence**: `fixturesProcessed` (should still reach 240) is
+fixtures *attempted*, not fixtures whose data feeds pricing. Each season result now separately
+reports `acceptedFixtures` (usable) and `quarantinedFixtures` (over the anonymous-starter cap,
+contributed zero rows). Never read `fixturesProcessed` alone as "240 fully ingested fixtures" — a
+season can legitimately finish with `acceptedFixtures: 238, quarantinedFixtures: 2` and still be a
+clean, verdict-`pass` run.
+
 ## What proves restoration in the evidence
 
 - `restoration.verified: true` — the authoritative signal; the finalize step also fails the run

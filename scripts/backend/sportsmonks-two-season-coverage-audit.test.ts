@@ -18,11 +18,11 @@ function fixtureId(seasonId: number, windowIndex: number, index: number): number
   return seasonId * 1_000 + windowIndex * 100 + index + 1;
 }
 
-function lineupFixture(id: number, seasonId: number, incompleteStarter: boolean) {
+function lineupFixture(id: number, seasonId: number, anonymousStarters: number) {
   const lineups = Array.from({ length: 40 }, (_, index) => ({
     id: id * 100 + index,
     fixture_id: id,
-    player_id: incompleteStarter && index === 10 ? null : id * 1_000 + index + 1,
+    player_id: index < anonymousStarters ? null : id * 1_000 + index + 1,
     team_id: index < 20 ? 500 : 600,
     type_id: index < 11 || (index >= 20 && index < 31) ? 11 : 12,
     details: [
@@ -77,7 +77,7 @@ describe("SportsMonks two-season historical fixture coverage audit", () => {
       if (seasonId) {
         expect(url.searchParams.get("include")).toBe("lineups.details");
         expect(url.searchParams.get("filters")).toContain("lineupDetailTypes:52");
-        return json({ data: lineupFixture(id, seasonId, id === badFixtureId) });
+        return json({ data: lineupFixture(id, seasonId, id === badFixtureId ? 5 : 0) });
       }
       return json({});
     };
@@ -99,38 +99,38 @@ describe("SportsMonks two-season historical fixture coverage audit", () => {
       verdict: "fail",
     });
     expect(evidence.seasons).toHaveLength(2);
+    // BG-0011 option B: the bad fixture now carries 5 anonymous starters (one over the tolerated
+    // cap of 4), so it is quarantined outright under the new dedicated error code rather than the
+    // generic coverage-mismatch code; its counts are excluded entirely from the season aggregate
+    // (not partially added), so the aggregate below reflects only the 239 clean fixtures.
     expect(evidence.seasons[0]).toMatchObject({
       id: 26_027,
       fixturesDiscovered: 240,
       requests: 246,
       counts: {
-        fixturesWithCoverage: 240,
-        lineupRowsSeen: 9_600,
-        validPlayerRows: 9_599,
-        excludedIncompleteRows: 1,
-        starterRows: 5_279,
-        minimumStarterRows: 21,
+        fixturesWithCoverage: 239,
+        lineupRowsSeen: 9_560,
+        validPlayerRows: 9_560,
+        excludedIncompleteRows: 0,
+        starterRows: 5_258,
+        minimumStarterRows: 22,
         maximumStarterRows: 22,
       },
       failedFixtures: 1,
       failures: [
         {
           fixtureId: badFixtureId,
-          errorCode: "historical_fixture_coverage_incomplete",
+          errorCode: "historical_fixture_anonymous_starters_exceeded",
           diagnostic: {
-            lineupRowsSeen: 40,
-            validPlayerRows: 39,
-            excludedIncompleteRows: 1,
-            starterRows: 21,
-            teamCount: 2,
-            invalidDetailRows: 0,
-            failures: ["starter_rows_mismatch"],
+            fixtureId: badFixtureId,
+            anonymousStarterRows: 5,
+            identifiedStarterRows: 17,
           },
           incompleteRows: {
-            starterRows: 1,
+            starterRows: 5,
             benchRows: 0,
             unknownTypeRows: 0,
-            rowsWithTeamId: 1,
+            rowsWithTeamId: 5,
           },
         },
       ],

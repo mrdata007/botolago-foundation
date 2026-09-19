@@ -78,8 +78,17 @@ function numericCursor(value: unknown, code: string): string {
   return value;
 }
 
+/** BG-0011 option B: at most this many of a fixture's 22 raw starters may be anonymous. An
+ * accepted fixture may therefore legitimately persist as few as 22 - 4 = 18 identified starters
+ * (plus its bench). A quarantined fixture persists 0 rows and still counts toward
+ * fixturesProcessed (it was attempted), never toward performanceRows. */
+const MAX_ANONYMOUS_STARTER_ROWS = 4;
+const MIN_IDENTIFIED_STARTER_ROWS = 22 - MAX_ANONYMOUS_STARTER_ROWS;
+
 interface ValidatedBatch {
   readonly fixturesProcessed: number;
+  readonly acceptedFixtures: number;
+  readonly quarantinedFixtures: number;
   readonly performanceRows: number;
   readonly excludedIncompleteRows: number;
   readonly excludedMappingRows: number;
@@ -98,7 +107,16 @@ export function validateHistoricalPerformanceBatch(
     response.fixturesProcessed,
     "invalid_historical_fixture_count",
   );
-  const performanceRows = positiveInteger(
+  const quarantinedFixtures = nonNegativeInteger(
+    response.quarantinedFixtures,
+    "invalid_historical_quarantined_fixture_count",
+  );
+  const acceptedFixtures = nonNegativeInteger(
+    response.acceptedFixtures,
+    "invalid_historical_accepted_fixture_count",
+  );
+  // performanceRows may legitimately be 0 when every fixture in this batch was quarantined.
+  const performanceRows = nonNegativeInteger(
     response.performanceRows,
     "invalid_historical_performance_count",
   );
@@ -116,10 +134,14 @@ export function validateHistoricalPerformanceBatch(
     response.action !== "ingest_batch" ||
     response.expectedFixtureCount !== EXPECTED_FIXTURES_PER_SEASON ||
     fixturesProcessed > BATCH_SIZE ||
-    performanceRows < fixturesProcessed * 22 ||
-    performanceRows > fixturesProcessed * 100 ||
+    acceptedFixtures + quarantinedFixtures !== fixturesProcessed ||
+    // BG-0011 option B: an accepted fixture persists at least MIN_IDENTIFIED_STARTER_ROWS rows
+    // (its identified starters) plus whatever identified bench rows it also has; a quarantined
+    // fixture persists none. This is the relaxed floor that replaces the old `* 22` requirement.
+    performanceRows < acceptedFixtures * MIN_IDENTIFIED_STARTER_ROWS ||
+    performanceRows > acceptedFixtures * 100 ||
     excludedMappingRows > excludedIncompleteRows ||
-    counters.rejected !== 0 ||
+    counters.rejected !== quarantinedFixtures ||
     nonNegativeInteger(counters.validated, "invalid_historical_validated_count") !==
       performanceRows ||
     typeof response.hasMore !== "boolean"
@@ -139,6 +161,8 @@ export function validateHistoricalPerformanceBatch(
   }
   return {
     fixturesProcessed,
+    acceptedFixtures,
+    quarantinedFixtures,
     performanceRows,
     excludedIncompleteRows,
     excludedMappingRows,
@@ -970,6 +994,15 @@ export async function runHistoricalPerformanceBackfill(
       requiredMappedTeamsPerFixture: 2,
       maxTotalExcludedRowsPerFixture: 20,
     },
+    // BG-0011 option B: identity-completeness tolerance. See the migration
+    // 20260919120000_historical_anonymous_starter_tolerance.sql and
+    // docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml.
+    anonymousStarterTolerance: {
+      rule: "at most 4 of a fixture's 22 raw provider starters may be anonymous (missing player_id); more than 4 quarantines the whole fixture",
+      maxAnonymousStarterRowsPerFixture: MAX_ANONYMOUS_STARTER_ROWS,
+      minAcceptedIdentifiedStarterRowsPerFixture: MIN_IDENTIFIED_STARTER_ROWS,
+      measuredCoverage: "238/240 season-26027 fixtures accepted; fixtures 19596474 (7 anonymous) and 19596475 (8 anonymous) quarantined (BG-0044)",
+    },
     commands: [],
     seasons: [],
     restoration: { attempted: false, succeeded: false },
@@ -996,6 +1029,8 @@ export async function runHistoricalPerformanceBackfill(
 
       let cursor: string | null = null;
       let fixturesProcessed = 0;
+      let acceptedFixtures = 0;
+      let quarantinedFixtures = 0;
       let performanceRows = 0;
       let excludedIncompleteRows = 0;
       let excludedMappingRows = 0;
@@ -1015,6 +1050,8 @@ export async function runHistoricalPerformanceBackfill(
         );
         const batch = validateHistoricalPerformanceBatch(invocation.response, season.id, cursor);
         fixturesProcessed += batch.fixturesProcessed;
+        acceptedFixtures += batch.acceptedFixtures;
+        quarantinedFixtures += batch.quarantinedFixtures;
         performanceRows += batch.performanceRows;
         excludedIncompleteRows += batch.excludedIncompleteRows;
         excludedMappingRows += batch.excludedMappingRows;
@@ -1023,6 +1060,8 @@ export async function runHistoricalPerformanceBackfill(
           status: invocation.status,
           responseFile: invocation.responseFile,
           fixturesProcessed: batch.fixturesProcessed,
+          acceptedFixtures: batch.acceptedFixtures,
+          quarantinedFixtures: batch.quarantinedFixtures,
           performanceRows: batch.performanceRows,
           excludedIncompleteRows: batch.excludedIncompleteRows,
           excludedMappingRows: batch.excludedMappingRows,
@@ -1033,7 +1072,13 @@ export async function runHistoricalPerformanceBackfill(
           throw new HistoricalPerformanceBackfillError(`season_${season.id}_batch_limit_exceeded`);
         }
       }
+      // fixturesProcessed counts every fixture ATTEMPTED (accepted + quarantined), not fixtures
+      // whose data is actually usable for pricing. It must still equal all 240 finished fixtures
+      // of the season -- every one of them was looked at, even the ones later quarantined.
       if (fixturesProcessed !== EXPECTED_FIXTURES_PER_SEASON) {
+        throw new HistoricalPerformanceBackfillError(`season_${season.id}_fixture_count_mismatch`);
+      }
+      if (acceptedFixtures + quarantinedFixtures !== fixturesProcessed) {
         throw new HistoricalPerformanceBackfillError(`season_${season.id}_fixture_count_mismatch`);
       }
 
@@ -1054,7 +1099,13 @@ export async function runHistoricalPerformanceBackfill(
         name: season.name,
         completed: true,
         current: false,
+        // Never collapse this into a single "fixturesProcessed" headline: fixturesProcessed is
+        // fixtures attempted, acceptedFixtures is fixtures whose rows actually feed pricing, and
+        // quarantinedFixtures had more than MAX_ANONYMOUS_STARTER_ROWS_PER_FIXTURE anonymous
+        // starters and contributed zero rows.
         fixturesProcessed,
+        acceptedFixtures,
+        quarantinedFixtures,
         performanceRows,
         excludedIncompleteRows,
         excludedMappingRows,

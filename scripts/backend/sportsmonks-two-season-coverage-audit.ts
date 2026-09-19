@@ -287,7 +287,12 @@ export async function runTwoSeasonCoverageAudit(
           : "unexpected_coverage_audit_normalization_failure";
         const failure: CoverageFailure = { fixtureId, errorCode };
         if (error.diagnostic) {
-          addCoverage(counts, error.diagnostic as JsonRecord);
+          // BG-0011 option B: historical_fixture_anonymous_starters_exceeded carries a narrower
+          // diagnostic (anonymousStarterRows/identifiedStarterRows only, no full coverage
+          // accounting) since the fixture is quarantined outright, not coverage-mismatched.
+          if (error.code === "historical_fixture_coverage_incomplete") {
+            addCoverage(counts, error.diagnostic as JsonRecord);
+          }
           failure.diagnostic = error.diagnostic;
         }
         const incompleteRows = incompleteRowSummary(fixture);

@@ -1,0 +1,151 @@
+task_id: BG-0011-OWNER-3
+role: Builder
+attempt: 1
+branch: agent/BG-0011-option-b-identity-completeness
+generated_at: "2026-09-19T00:00Z"
+
+summary: >
+  Implemented option (b) from engineering-brief-a1-starter-rows.yaml, using BG-0044's measured
+  coverage (238/240, exactly 2 outliers: fixtures 19596474 and 19596475) rather than the earlier
+  estimate (237/240, cap 3). The old rule (exactly 22 identified starters) is replaced by: exactly
+  22 raw provider starters (unchanged, universal), of which at most 4 may be anonymous; a fixture
+  with more than 4 anonymous starters is quarantined entirely. Scope is limited to the historical
+  (completed-season) SportsMonks ingestion path by table/RPC/source-version/season-status
+  separation from the live current-season path (all four levels, detailed in the engineering
+  brief). Pricing/rating formulas were not touched.
+
+files_changed:
+  - path: supabase/functions/_shared/sportsmonks-historical-player-performance.ts
+    change: >
+      normalizeHistoricalFixture computes anonymousStarterRows separately from starterRows
+      (identified starters); replaces the old absolute `starterRows !== 22` check with (1) a
+      renamed universal raw-total check (raw_starter_rows_mismatch, unchanged meaning) and (2) a
+      new distinct error historical_fixture_anonymous_starters_exceeded when
+      anonymousStarterRows > 4 (MAX_ANONYMOUS_STARTER_ROWS). ingestBatch now catches that specific
+      error per fixture, calls the new quarantine RPC, and continues the batch instead of aborting
+      it; the batch response gains acceptedFixtures/quarantinedFixtures/quarantinedFixtureIds/
+      anonymousStarterRowsTotal. rpc() error mapping extended for the new DB error message.
+  - path: supabase/functions/_shared/sportsmonks-historical-player-performance.test.ts
+    change: "Updated 2 existing assertions for the renamed failure code and new anonymousStarterRows field."
+  - path: supabase/functions/_shared/sportsmonks-historical-anonymous-starters.test.ts
+    change: "NEW. Regression tests (a)-(g) plus (f)'s structural boundary, run against the real normalizeHistoricalFixture."
+  - path: supabase/migrations/20260919120000_historical_anonymous_starter_tolerance.sql
+    change: >
+      NEW, forward-only, additive. Adds anonymous_starter_rows/identified_starter_rows columns and
+      relaxes historical_performance_coverage_counts_check; adds
+      app_private.historical_performance_fixture_quarantine table; adds
+      api.quarantine_historical_player_fixture_performance RPC; create-or-replaces
+      api.ingest_historical_player_fixture_performance (accepts the new coverage fields, rejects
+      anonymous>4 outright, persists new columns) and api.football_historical_player_rating_inputs
+      (excludes quarantined fixtures from expected_fixture_count, relaxes the performance_count
+      floor from *22 to *18). Does not edit any already-applied migration file.
+  - path: supabase/tests/database/historical_player_performances.test.sql
+    change: >
+      Updated the existing fixture's p_coverage to include anonymousStarterRows/
+      identifiedStarterRows (required by the new RPC contract). Added a second and third fixture
+      exercising: (b) exactly 4 anonymous starters (accepted), (h) idempotent re-ingestion, (c)/(g)
+      5 anonymous starters (rejected, zero rows persisted), the dedicated quarantine RPC (including
+      its own independent <=4 refusal), and api.football_historical_player_rating_inputs's
+      quarantine-aware expected_fixture_count/quarantinedFixtureCount.
+  - path: scripts/backend/g7-historical-performance-backfill-runner.ts
+    change: >
+      validateHistoricalPerformanceBatch requires/validates acceptedFixtures + quarantinedFixtures
+      === fixturesProcessed and relaxes the row floor from `* 22` to `acceptedFixtures * 18`. The
+      season loop and evidence record acceptedFixtures/quarantinedFixtures separately (never
+      collapsed into one "N fully ingested" figure). Evidence gains an anonymousStarterTolerance
+      block documenting the rule and measured coverage.
+  - path: scripts/backend/g7-historical-performance-backfill-runner.test.ts
+    change: "Updated 3 existing fake-response fixtures for the new required fields; added 1 new test for a batch containing a quarantined fixture."
+  - path: scripts/backend/sportsmonks-historical-performance-probe.ts
+    change: >
+      HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES renamed starter_rows_mismatch ->
+      raw_starter_rows_mismatch; identityTolerantPass updated to the new terminology;
+      classifyFixtureInvariants explicitly handles the new
+      historical_fixture_anonymous_starters_exceeded error code (this is a read-only research/
+      measurement tool, not an enforcement point, but it directly imports and calls
+      normalizeHistoricalFixture so it had to track the behavior change).
+  - path: scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    change: "Updated 9 existing test cases whose synthetic fixture shapes or expected failure codes were affected by the rule change (see below for why each needed to change, not just be re-snapshotted)."
+  - path: scripts/backend/sportsmonks-two-season-coverage-audit.ts
+    change: "The catch branch now only feeds a coverage failure's diagnostic into the running totals for historical_fixture_coverage_incomplete (the anonymous-starters-exceeded diagnostic has a different, narrower shape and must not be misread as full coverage counts)."
+  - path: scripts/backend/sportsmonks-two-season-coverage-audit.test.ts
+    change: "Updated the one bad-fixture scenario from 1 anonymous starter (now legitimately accepted) to 5 (still over the cap) so the test still exercises a real failure path."
+  - path: docs/backend/G7_HISTORICAL_PERFORMANCE_BACKFILL_RUNBOOK.md
+    change: "New section stating the rule honestly as a relaxation, its scope, and how to read the runner's accepted/quarantined evidence fields."
+  - path: docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml
+    change: "NEW. The revised engineering brief (does not overwrite the existing a1/option-a briefs)."
+  - path: docs/engineering/tasks/BG-0011/non-production-preview-2026-09-19.md
+    change: "NEW. The non-production preview report."
+  - path: docs/engineering/tasks/BG-0011/implementation-report-option-b.yaml
+    change: "NEW. This file."
+
+why_the_probe_test_rewrites_are_not_cosmetic: >
+  scripts/backend/sportsmonks-historical-performance-probe.ts directly imports and calls
+  normalizeHistoricalFixture, so it is not a mock of the worker -- it is a second real execution of
+  it. Several of its existing test fixtures used the OLD workaround shape of "N declared starters +
+  M anonymous starter rows" where N + M did not equal 22 (a pattern that only worked because the
+  old worker code never checked the raw total, only the identified count). Under the new
+  raw_starter_rows_mismatch check, those shapes now trip an invariant they were never meant to
+  exercise. Each rewritten fixture keeps the SAME intended failure mode (e.g. "more than 100
+  lineup rows", "fewer than 22 identified rows", "more than 20 excluded rows") while making the raw
+  starter total correctly sum to 22, using anonymous *substitutes* (which do not affect the starter
+  count) instead of anonymous *starters* wherever the test was not specifically about anonymous
+  starters. The one test genuinely about the halting fixture (19489216) was changed from 1
+  anonymous starter (now correctly accepted, no longer representative of a failure) to 5 (one over
+  the cap), since 1 anonymous starter is exactly the case this task makes newly acceptable.
+
+tests_added_and_results:
+  bun_unit_tests:
+    command: "bun test  (run from repo root, no flags — the full suite)"
+    result: "757 pass, 0 fail, 10111 expect() calls, across 119 files"
+    note: >
+      This is the FULL existing bun test suite plus everything added by this task, not a filtered
+      subset. It includes supabase/functions/_shared/sportsmonks-historical-anonymous-starters.test.ts
+      (new, 8 tests covering cases a-g plus a sanity test), the updated
+      sportsmonks-historical-player-performance.test.ts, the updated g7-historical-performance-
+      backfill-runner.test.ts, the updated sportsmonks-historical-performance-probe.test.ts, and the
+      updated sportsmonks-two-season-coverage-audit.test.ts.
+    typecheck: "`npx tsc --noEmit` (repo tsconfig, which covers src/** only) exits 0. supabase/functions/** and scripts/backend/** are NOT covered by the repo's tsconfig (pre-existing; not something this task changed) and are only type-checked implicitly by bun's transpiler at test-run time, not by a full tsc pass."
+  per_case_mapping:
+    a: "0 anonymous starters, baseline — covered by both the new anonymous-starters test file and the pre-existing historical-player-performance test file. PASS."
+    b: "exactly 4 anonymous starters, boundary passes — new TS unit test PASS; also added as a pgTAP case (NOT executed, see below)."
+    c: "5 anonymous starters, boundary fails/quarantined — new TS unit test PASS; also added as a pgTAP case (NOT executed)."
+    d: "invalid raw starter totals (21 raw starters) still fails, unrelated to this change — new TS unit test PASS."
+    e: "wrong team count / duplicate player rows still fail — new TS unit tests (e1, e2) PASS."
+    f: "identified-but-possibly-unmapped player_id is not conflated with anonymous — new TS structural regression test PASS (this boundary is otherwise exercised by the pre-existing 'one unmappable substitute is quarantined explicitly' pgTAP case, which the mapping-quarantine column already covered before this task; NOT re-executed here, see below)."
+    g: "the two real outlier fixtures' shape (7 and 8 anonymous) both fail — new TS unit tests (g1, g2) PASS."
+    h: "repeat execution / idempotency of an already-accepted fixture — added as a pgTAP case (NOT executed, see below)."
+    i: "a degenerate/empty rating result is still rejected downstream (BG-0027 guard) — NOT touched by this task (no file under this task's scope calls into or modifies the degeneracy guard's tables/triggers introduced by 20260918150000_fantasy_rating_degeneracy_guard.sql); NOT re-executed here because it requires the same local Postgres this task could not start. Verified by inspection only: this task's changes to api.football_historical_player_rating_inputs only change which fixtures are counted as expected/covered before the aggregate query runs; the aggregate query itself, and everything downstream of it (calculatePreseasonRatings, the ratings RPC, the degeneracy guard), is byte-for-byte unchanged."
+
+what_could_not_be_verified_and_why:
+  - item: "supabase/tests/database/historical_player_performances.test.sql (pgTAP, including all newly added BG-0011 cases)"
+    reason: >
+      This sandbox has the `docker` CLI client but NO running Docker daemon
+      (`docker ps` / `docker info` fail with "dial unix /var/run/docker.sock: connect: no such
+      file or directory") and no `supabase` CLI binary is installed
+      (`supabase --version` -> command not found). `supabase db reset --local` and
+      `supabase test db --local` were not attempted beyond confirming these prerequisites are
+      absent, since neither can succeed without a container runtime. The migration SQL and the new
+      pgTAP assertions were reviewed by hand against the same arithmetic the RPC bodies perform
+      (worked through by hand in this session for every new assertion — see the inline comments in
+      the .sql file), but this is NOT a substitute for actually running them, and is reported here
+      as unverified, not as passing.
+  - item: "A local/isolated Supabase stack for the non-production preview's 'real' data path"
+    reason: "Same missing Docker daemon / supabase CLI. The non-production preview therefore runs the real TypeScript functions (normalizeHistoricalFixture, calculatePreseasonRatings) directly in bun against synthetic/illustrative data, rather than through an actual Postgres + PostgREST + Edge Function stack. This is stated explicitly and repeatedly in non-production-preview-2026-09-19.md."
+  - item: "Re-verifying BG-0044's 238/240 measurement against live production data"
+    reason: "This task is not authorized to touch production (tkewgajrljbwgwedqsxn) in any way, per explicit constraint. The 238/240 figure and the two outlier fixture ids are carried over from BG-0044's prior measurement, not re-measured here."
+  - item: "The Fantasy catalog's real mapped/unmapped/eligible counts (539/497/459/42)"
+    reason: "Same reason: no DB access in this sandbox, no production access permitted. Carried over from the prior probe and labeled as such throughout."
+
+production_prerequisites_before_dispatch:
+  - "Independent Verifier review of this diff and migration."
+  - "Run supabase/tests/database/historical_player_performances.test.sql against a real local or staging Postgres (this task could not)."
+  - "Re-run scripts/backend/sportsmonks-historical-performance-probe.ts against real production data with expectedCommit pinned to this branch's eventual merge commit, to reconfirm 238/240 and the two outlier fixture ids against the current live provider payload."
+  - "Resolve whatever currently blocks migration promotion to tkewgajrljbwgwedqsxn (BG-0002 per the prior brief, or its successor) before this migration can be applied to production."
+  - "Chief/Owner sign-off to actually dispatch the G7 backfill runner against production. This implementation branch does not do so, does not call any GitHub Actions dispatch tool, and does not call any Supabase MCP tool against tkewgajrljbwgwedqsxn."
+
+honesty_notes:
+  - "The rule change is described throughout as a RELAXATION, never as 'all invariants preserved unchanged' — because it is not that."
+  - "No test result in this report is claimed without having actually been run in this session (bun test output pasted above is the real, current output of the working tree at the reported commit)."
+  - "Every DB-level (pgTAP) claim is explicitly marked NOT EXECUTED, not passing."
+  - "The non-production preview's squad/price numbers are explicitly labeled ILLUSTRATIVE, not measured."

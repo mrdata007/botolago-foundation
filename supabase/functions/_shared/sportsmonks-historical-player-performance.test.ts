@@ -103,6 +103,7 @@ describe("SportsMonks completed-fixture player performances", () => {
         validPlayerRows: 23,
         excludedIncompleteRows: 1,
         starterRows: 22,
+        anonymousStarterRows: 0,
         teamCount: 2,
         detailRows: 69,
         invalidDetailRows: 0,
@@ -247,9 +248,10 @@ describe("SportsMonks completed-fixture player performances", () => {
         validPlayerRows: 23,
         excludedIncompleteRows: 0,
         starterRows: 21,
+        anonymousStarterRows: 0,
         teamCount: 2,
         invalidDetailRows: 0,
-        failures: ["starter_rows_mismatch"],
+        failures: ["raw_starter_rows_mismatch"],
       },
     });
   });

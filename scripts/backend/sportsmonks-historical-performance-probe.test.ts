@@ -214,12 +214,15 @@ function invariantFetcher(
     expect(url.searchParams.get("filters")).toBe(
       "lineupDetailTypes:52,57,79,83,84,85,88,112,113,118,119,194,324",
     );
+    // BG-0011 option B: 1 anonymous starter is now within the tolerated cap, so the halting
+    // fixture's shape has to carry 5 (over the cap of 4) to still genuinely fail under the new
+    // rule; the raw starter total stays exactly 22 either way (17 identified + 5 anonymous).
     const payload =
       options.payloadFor?.(fixtureId) ??
       lineupPayload(fixtureId, SEASON_ID, {
-        valid: fixtureId === HALTING_FIXTURE_ID ? 39 : 40,
-        starters: fixtureId === HALTING_FIXTURE_ID ? 21 : 22,
-        incomplete: fixtureId === HALTING_FIXTURE_ID ? 1 : 0,
+        valid: fixtureId === HALTING_FIXTURE_ID ? 35 : 40,
+        starters: fixtureId === HALTING_FIXTURE_ID ? 17 : 22,
+        incomplete: fixtureId === HALTING_FIXTURE_ID ? 5 : 0,
       });
     return Response.json(payload);
   };
@@ -464,7 +467,10 @@ describe("SportsMonks historical performance coverage invariants", () => {
   });
 
   it("tells provider-declared starters apart from identified ones (19489216 shape)", async () => {
-    // 22 declared starters + 18 declared substitutes; one starter and one substitute lack player_id.
+    // 22 declared starters + 18 declared substitutes; one starter and one substitute lack
+    // player_id. BG-0011 option B (implemented): 1 anonymous starter is within the tolerated cap,
+    // so the worker itself now accepts this fixture (it no longer needs the identity-tolerant
+    // diagnostic overlay to say so).
     const row = await classify({ valid: 38, starters: 21, incomplete: 1, anonymousSubstitutes: 1 });
     expect(row).toEqual({
       fixtureId: 1,
@@ -477,8 +483,8 @@ describe("SportsMonks historical performance coverage invariants", () => {
       starterRows: 21,
       teamCount: 2,
       invalidDetailRows: 0,
-      failures: ["starter_rows_mismatch"],
-      pass: false,
+      failures: [],
+      pass: true,
       rawStarterRows: 22,
       rawSubstituteRows: 18,
       anonymousStarterRows: 1,
@@ -493,17 +499,19 @@ describe("SportsMonks historical performance coverage invariants", () => {
     const row = await classify({ valid: 35, starters: 17, incomplete: 5 });
     expect(row).toMatchObject({
       starterRows: 17,
-      failures: ["starter_rows_mismatch"],
+      failures: ["historical_fixture_anonymous_starters_exceeded"],
       pass: false,
       rawStarterRows: 22,
       anonymousStarterRows: 5,
       anonymousSubstituteRows: 0,
       identityTolerantPass: false,
     });
-    // Exactly four anonymous starters is the cap and still reads as tolerant.
+    // Exactly four anonymous starters is the cap and now genuinely passes (not just "tolerant").
     await expect(classify({ valid: 36, starters: 18, incomplete: 4 })).resolves.toMatchObject({
       rawStarterRows: 22,
       anonymousStarterRows: 4,
+      failures: [],
+      pass: true,
       identityTolerantPass: true,
     });
   });
@@ -515,11 +523,13 @@ describe("SportsMonks historical performance coverage invariants", () => {
       failures: ["team_count_mismatch"],
       identityTolerantPass: false,
     });
-    // 21 declared starters: the provider itself is short, not merely anonymous.
+    // 21 declared starters: the provider itself is short, not merely anonymous. This is the raw
+    // starter-count invariant (unrelated to BG-0011's anonymous-tolerance) and still fails outright.
     await expect(classify({ valid: 40, starters: 21 })).resolves.toMatchObject({
       rawStarterRows: 21,
       rawSubstituteRows: 19,
       anonymousStarterRows: 0,
+      failures: ["raw_starter_rows_mismatch"],
       identityTolerantPass: false,
     });
   });
@@ -586,48 +596,58 @@ describe("SportsMonks historical performance coverage invariants", () => {
   });
 
   it("names lineup_rows_out_of_range when the lineup list exceeds 100 rows", async () => {
-    const row = await classify({ valid: 100, starters: 22, incomplete: 1 });
+    // 22 raw starters (unchanged, universal invariant), 100 identified rows total (within the
+    // valid_player_rows bound) plus one anonymous substitute to push the raw lineup list to 101 —
+    // isolating lineup_rows_out_of_range from valid_player_rows_out_of_range.
+    const row = await classify({ valid: 100, starters: 22, anonymousSubstitutes: 1 });
     expect(row).toMatchObject({
       lineupRows: 101,
       validPlayerRows: 100,
       excludedIncompleteRows: 1,
+      anonymousStarterRows: 0,
       failures: ["lineup_rows_out_of_range"],
       pass: false,
     });
   });
 
   it("names valid_player_rows_out_of_range when fewer than 22 rows carry a player id", async () => {
-    const row = await classify({ valid: 21, starters: 21, incomplete: 19 });
+    // 21 identified starters + 1 anonymous starter = 22 raw starters (still exact); only 21 total
+    // identified rows, which is below the 22 floor regardless of the anonymous-starter tolerance.
+    const row = await classify({ valid: 21, starters: 21, incomplete: 1 });
     expect(row).toMatchObject({
-      lineupRows: 40,
+      lineupRows: 22,
       validPlayerRows: 21,
-      excludedIncompleteRows: 19,
+      excludedIncompleteRows: 1,
       starterRows: 21,
-      failures: ["valid_player_rows_out_of_range", "starter_rows_mismatch"],
+      failures: ["valid_player_rows_out_of_range"],
       pass: false,
     });
   });
 
   it("names incomplete_rows_limit_exceeded above 20 incomplete rows", async () => {
-    const row = await classify({ valid: 44, starters: 22, incomplete: 21 });
+    // 22 raw starters, all identified (no anonymous-starter interaction); the 21 excluded rows are
+    // anonymous substitutes, so this exercises only incomplete_rows_limit_exceeded.
+    const row = await classify({ valid: 44, starters: 22, anonymousSubstitutes: 21 });
     expect(row).toMatchObject({
       lineupRows: 65,
       validPlayerRows: 44,
       excludedIncompleteRows: 21,
       starterRows: 22,
+      anonymousStarterRows: 0,
       failures: ["incomplete_rows_limit_exceeded"],
       pass: false,
     });
   });
 
-  it("names starter_rows_mismatch when the two lineups do not expose 22 starters", async () => {
+  it("names raw_starter_rows_mismatch when the provider itself does not expose 22 starters", async () => {
     const row = await classify({ valid: 40, starters: 21 });
     expect(row).toMatchObject({
       lineupRows: 40,
       validPlayerRows: 40,
       starterRows: 21,
+      anonymousStarterRows: 0,
       teamCount: 2,
-      failures: ["starter_rows_mismatch"],
+      failures: ["raw_starter_rows_mismatch"],
       pass: false,
     });
   });
@@ -735,13 +755,14 @@ describe("SportsMonks historical performance coverage invariants", () => {
         lineup_rows_out_of_range: 0,
         valid_player_rows_out_of_range: 0,
         incomplete_rows_limit_exceeded: 0,
-        starter_rows_mismatch: 1,
+        raw_starter_rows_mismatch: 0,
         team_count_mismatch: 0,
         invalid_detail_rows_present: 0,
+        historical_fixture_anonymous_starters_exceeded: 1,
       },
       rawStarterExactly22: 240,
-      identityTolerantPassing: 240,
-      anonymousStarterHistogram: { "0": 239, "1": 1 },
+      identityTolerantPassing: 239,
+      anonymousStarterHistogram: { "0": 239, "5": 1 },
     });
     expect(season.rows).toHaveLength(240);
     expect(season.rows.map((row) => row.fixtureId)).toEqual(SEASON_FIXTURE_IDS);
@@ -750,21 +771,21 @@ describe("SportsMonks historical performance coverage invariants", () => {
       seasonId: SEASON_ID,
       kickoff: "2025-09-12T17:00:00.000Z",
       enumerated: true,
-      lineupRows: 40,
-      validPlayerRows: 39,
-      excludedIncompleteRows: 1,
-      starterRows: 21,
-      teamCount: 2,
-      invalidDetailRows: 0,
-      failures: ["starter_rows_mismatch"],
+      lineupRows: null,
+      validPlayerRows: null,
+      excludedIncompleteRows: null,
+      starterRows: 17,
+      teamCount: null,
+      invalidDetailRows: null,
+      failures: ["historical_fixture_anonymous_starters_exceeded"],
       pass: false,
       rawStarterRows: 22,
       rawSubstituteRows: 18,
-      anonymousStarterRows: 1,
+      anonymousStarterRows: 5,
       anonymousSubstituteRows: 0,
-      anonymousRowsWithTeamId: 1,
+      anonymousRowsWithTeamId: 5,
       anonymousRowsWithNameOrJersey: 0,
-      identityTolerantPass: true,
+      identityTolerantPass: false,
     });
 
     const serialized = JSON.stringify(evidence);
@@ -798,17 +819,23 @@ describe("SportsMonks historical performance coverage invariants", () => {
     expect(season.rows.find((row) => row.fixtureId === HALTING_FIXTURE_ID)).toMatchObject({
       enumerated: false,
       kickoff: null,
-      failures: ["starter_rows_mismatch"],
+      failures: ["historical_fixture_anonymous_starters_exceeded"],
       pass: false,
     });
     expect(season.rows.some((row) => row.fixtureId === 19489300)).toBe(false);
   });
 
   it("aggregates every failure code across the season", async () => {
+    // Every shape keeps exactly 22 raw provider starters (the universal, unrelated-to-BG-0011
+    // invariant); each isolates one coverage failure via anonymous *substitutes* (never counted
+    // as anonymous starters) or, for 19489211, one tolerated anonymous starter alongside a low
+    // total row count. 19489216 (the historical halting fixture, via the default fetcher shape)
+    // carries 5 anonymous starters — one over BG-0011's cap of 4 — so it still fails, but now
+    // under the dedicated anonymous-starters-exceeded code rather than a generic mismatch.
     const shapes = new Map<number, LineupShape>([
-      [19489210, { valid: 100, starters: 22, incomplete: 1 }],
-      [19489211, { valid: 21, starters: 21, incomplete: 19 }],
-      [19489212, { valid: 44, starters: 22, incomplete: 21 }],
+      [19489210, { valid: 100, starters: 22, anonymousSubstitutes: 1 }],
+      [19489211, { valid: 21, starters: 21, incomplete: 1 }],
+      [19489212, { valid: 44, starters: 22, anonymousSubstitutes: 21 }],
       [19489213, { valid: 40, starters: 22, teams: 3 }],
       [19489214, { valid: 40, starters: 22, badDetail: true }],
     ]);
@@ -832,16 +859,15 @@ describe("SportsMonks historical performance coverage invariants", () => {
         lineup_rows_out_of_range: 1,
         valid_player_rows_out_of_range: 1,
         incomplete_rows_limit_exceeded: 1,
-        starter_rows_mismatch: 2,
+        raw_starter_rows_mismatch: 0,
         team_count_mismatch: 1,
         invalid_detail_rows_present: 0,
         invalid_provider_detail: 1,
+        historical_fixture_anonymous_starters_exceeded: 1,
       },
-      // 19489210/11/12 declare 23/40/43 starters; the halting fixture (1 anonymous starter)
-      // and the 234 clean fixtures read as tolerant; every other failing row fails another code.
-      rawStarterExactly22: 237,
-      identityTolerantPassing: 235,
-      anonymousStarterHistogram: { "0": 236, "1": 2, "19": 1, "21": 1 },
+      rawStarterExactly22: 240,
+      identityTolerantPassing: 234,
+      anonymousStarterHistogram: { "0": 238, "1": 1, "5": 1 },
     });
   });
 
