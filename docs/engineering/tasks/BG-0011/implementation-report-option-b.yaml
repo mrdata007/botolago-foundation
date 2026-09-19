@@ -3,7 +3,77 @@ role: Builder
 attempt: 1
 branch: agent/BG-0011-option-b-identity-completeness
 generated_at: "2026-09-19T00:00Z"
-addendum_applied: "Two owner addenda (2026-09-19). First: production check performed by the Chief on the two outlier fixtures -- see production_check_finding below. Second: two concrete issues found by the coordinator reading the actual migration SQL (a disguised delete-then-reinsert quarantine table, and a factually wrong scope comment) -- see second_correction_2026_09_19 below. This file reports the CURRENT, POST-both-corrections state; the first correction's now-superseded design (a separate quarantine table) is not this branch's final state and is described only where needed to explain what changed."
+addendum_applied: "THREE owner/reviewer rounds (2026-09-19). First: production check performed by the Chief on the two outlier fixtures -- see production_check_finding below. Second: two concrete issues found by the coordinator reading the actual migration SQL (a disguised delete-then-reinsert quarantine table, and a factually wrong scope comment) -- see second_correction_2026_09_19 below. Third: a CRITICAL, release-blocking wire-format bug found by a fresh-context Reviewer that both bun and pgTAP were structurally blind to -- see third_correction_2026_09_19_critical_wire_format_bug below. This file reports the CURRENT, post-all-three-corrections state."
+
+third_correction_2026_09_19_critical_wire_format_bug:
+  severity: CRITICAL
+  what_the_reviewer_found: >
+    supabase/functions/_shared/sportsmonks-historical-player-performance.ts built the ACCEPT-path
+    `coverage` object without an `identifiedStarterRows` key -- only the QUARANTINE path's
+    diagnostic copy had that key added (via a spread-and-override). The two paths were supposed to
+    be symmetric and were not: whoever (this Builder, in an earlier round) added the new BG-0011
+    fields patched the quarantine diagnostic but never went back to the base `coverage` object the
+    accept path also uses. Since `api.ingest_historical_player_fixture_performance` reads
+    `identified_starter_rows := (p_coverage ->> 'identifiedStarterRows')::integer` and immediately
+    rejects the call with INVALID_PROVIDER_PAYLOAD when that resolves to SQL NULL, EVERY SINGLE
+    accepted historical fixture ingest call -- not just the 2 quarantined outliers, all 238 meant
+    to succeed -- would have failed outright in real use. This is a total regression of this task's
+    entire purpose, and it shipped past two prior rounds of "758/758 bun, 911/911 pgTAP, all green"
+    reporting from this Builder.
+  why_this_builder_s_own_tests_never_caught_it (root-cause self-assessment, not just the fix): >
+    (1) The bun unit tests mock the Supabase RPC client and assert with `toMatchObject`, a SUBSET
+    match -- a payload missing a key never fails a `toMatchObject` assertion that doesn't name that
+    key, and none of this task's tests asserted the FULL shape of `p_coverage`. (2) The pgTAP tests
+    call the SQL RPCs with JSONB literals this Builder hand-wrote directly in the .sql file, always
+    including every field a human remembers to type -- they never once passed the REAL object the
+    TypeScript code actually produces. The TS-to-SQL wire format itself had never been exercised
+    end to end by anything in this branch until this round. Both are real, structural gaps in this
+    Builder's own test discipline, not bad luck; the fix below closes the gap with a new test
+    category, not just a one-line patch to the symptom.
+  the_fix: >
+    supabase/functions/_shared/sportsmonks-historical-player-performance.ts: the `coverage` object
+    (previously built once, then used as-is for the accept-path return and separately
+    spread-and-overridden for the quarantine diagnostic) now includes `identifiedStarterRows:
+    starterRows` directly, at its single point of construction, so BOTH the accept-path return and
+    the quarantine-path diagnostic use the exact same, already-complete object -- eliminating the
+    class of bug (two call sites reading one shared object, only one of them patched) rather than
+    just adding the missing key back. Confirmed `anonymousStarterRows` was already present in this
+    object (only `identifiedStarterRows` was missing).
+  new_test_category_added: >
+    scripts/backend/historical-performance-e2e-wire-format.test.ts (NEW). No precedent for a
+    bun:test file that talks to a running local Postgres existed in this repo (every other
+    *.test.ts mocks its dependencies; every DB-level test is a pgTAP .test.sql run via
+    `supabase test db`). This file uses Bun's built-in `Bun.SQL` client (ships with Bun 1.3.11,
+    no new package dependency) pointed at the local stack's direct Postgres port
+    (`supabase/config.toml`'s `[db] port`, 55322). It (1) calls the REAL, unmocked
+    `normalizeHistoricalFixture` with a realistic synthetic SportsMonks-shaped payload for an
+    accepted fixture (3 anonymous starters, within the 0-4 cap), (2) takes its REAL returned
+    `coverage`/`rows`/`sourceVersion` completely unmodified (only remapping team/player external
+    ids to ones seeded in the local DB, which stands in for the provider-mapping step, not for the
+    coverage/rows shape itself), (3) sends them to the REAL `api.ingest_historical_player_fixture_performance`
+    RPC running in the REAL local Postgres, and asserts it succeeds (not INVALID_PROVIDER_PAYLOAD).
+    It does the mirror image for a quarantined fixture (6 anonymous starters) against
+    `api.quarantine_historical_player_fixture_performance`. If it cannot reach a local Postgres
+    within 3 seconds, every test in the file is skipped with an explicit console message (so it
+    never breaks `bun test` for a contributor without a local stack running) -- for THIS task's own
+    verification it was confirmed to actually run, not skip (see results below). It cleans up its
+    own seed rows in `afterAll` so repeated runs against the same local stack are idempotent
+    (verified by running it twice in a row with no reset in between).
+  sibling_instance_check (explicitly requested by the reviewer): >
+    Grepped every `->> '<key>'` read in the new migration
+    (20260919120000_historical_anonymous_starter_tolerance.sql) against the TypeScript object(s)
+    that produce the value sent as that RPC's jsonb parameter: (1) per-row fields (externalPlayerId,
+    externalTeamId, started, appeared, minutes, goals, assists, cleanSheets, goalsConceded, saves,
+    penaltiesSaved, penaltiesMissed, yellowCards, redCards, secondYellowDismissals, ownGoals,
+    providerRating) match the `HistoricalPlayerPerformanceRow` interface exactly, key for key --
+    this interface is unconditionally fully populated (built once in `emptyPerformance()` then
+    mutated, never partially), so there is no missing-key risk of this class here. (2) The coverage
+    object's 8 SQL-read keys (anonymousStarterRows, identifiedStarterRows, lineupRowsSeen,
+    validPlayerRows, excludedIncompleteRows, teamCount, detailRows, invalidDetailRows) are all now
+    present on the single object both RPCs consume (the fix above). (3) No other TS-built object in
+    this task's changed files is sent as a jsonb RPC parameter read via `->>` in SQL. This was the
+    only instance of this bug class in this branch's changes, and the new e2e test (not just this
+    manual grep) is what would catch a future recurrence.
 
 second_correction_2026_09_19:
   issue_1_quarantine_table_was_delete_then_reinsert:
@@ -139,6 +209,12 @@ all_or_nothing_quarantine (owner addendum item 3): >
   after the rejected call).
 
 files_changed:
+  - path: scripts/backend/historical-performance-e2e-wire-format.test.ts
+    change: "NEW (third correction). The end-to-end wire-format test described above."
+  - path: supabase/functions/_shared/sportsmonks-historical-player-performance.ts (third correction, on top of the second-correction changes already listed below)
+    change: "Fixed the critical coverage-object bug (identifiedStarterRows now present at the object's single point of construction, used identically by both the accept and quarantine call sites). Also: counts.fetched now incremented for quarantined fixtures too (minor fix 5)."
+  - path: scripts/backend/g7-historical-performance-backfill-runner.ts (third correction)
+    change: "mappingQuarantine.requiredMappedStartersPerFixture: 22 replaced with mappingQuarantine.mappedStartersPerFixtureRange (minor fix 4)."
   - path: supabase/functions/_shared/sportsmonks-historical-player-performance.ts
     change: >
       normalizeHistoricalFixture computes anonymousStarterRows separately from starterRows
@@ -247,7 +323,17 @@ verification_method: >
   (`npx supabase stop`) after the test run; nothing here reaches or resembles production
   (project ref tkewgajrljbwgwedqsxn was never referenced by any command in this session).
 
-tests_added_and_results (re-run after the second correction, current numbers):
+tests_added_and_results_FINAL (re-run after the third/critical correction; supersedes all earlier numbers in this file):
+  bun_test: "760 pass, 0 fail, 10130 expect() calls, across 120 files (119 pre-existing + the new historical-performance-e2e-wire-format.test.ts, which contributes 2 of the 760 and ran for real against a local Postgres, not skipped)."
+  bun_run_lint: "0 errors, 12 pre-existing warnings in unrelated src/** files (react-refresh, untouched by this task)."
+  npx_tsc_noEmit: "exits 0."
+  pgtap_full_suite: "npx supabase db start && npx supabase db reset --local && npx supabase test db --local supabase/tests/database -> ALL 42 test files pass, 911 tests total, Result: PASS."
+  new_e2e_wire_format_test: "2/2 pass (confirmed run against the real local Postgres, not skipped -- verified separately by stopping the stack and observing both tests print an explicit SKIPPED message and pass trivially, then restarting the stack and observing both actually exercise the real RPCs with 7 real expect() calls)."
+  minor_fixes_confirmed:
+    - "(4) scripts/backend/g7-historical-performance-backfill-runner.ts: mappingQuarantine.requiredMappedStartersPerFixture: 22 (stale/misleading) replaced with mappingQuarantine.mappedStartersPerFixtureRange: { minimum: MIN_IDENTIFIED_STARTER_ROWS (18), maximum: 22, note: ... }, with an inline comment explaining why a flat 22 is no longer correct. No test referenced the old field name/value."
+    - "(5) supabase/functions/_shared/sportsmonks-historical-player-performance.ts: counts.fetched is now incremented for a quarantined fixture too (using the quarantine diagnostic's coverage.lineupRowsSeen), not just the accept path -- a quarantined fixture WAS fetched from the provider, it just was not persisted."
+
+tests_added_and_results (re-run after the second correction, current numbers -- SUPERSEDED by tests_added_and_results_FINAL above, kept for history):
   bun_unit_tests:
     command: "bun test  (run from repo root, no flags — the full suite)"
     result: "758 pass, 0 fail, 10123 expect() calls, across 119 files"

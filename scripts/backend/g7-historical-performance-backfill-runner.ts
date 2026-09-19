@@ -990,7 +990,17 @@ export async function runHistoricalPerformanceBackfill(
     },
     mappingQuarantine: {
       unmappedPlayerRows: "exclude",
-      requiredMappedStartersPerFixture: 22,
+      // BG-0011 option B: this used to be a flat 22 (every raw starter had to resolve to a
+      // mapped player). It no longer is -- an accepted fixture may legitimately have as few as
+      // 18 mapped starters (22 raw starters minus up to MAX_ANONYMOUS_STARTER_ROWS anonymous
+      // ones, which never reach the mapping step at all). Do not read this as "required"; it is
+      // the accepted RANGE. See anonymousStarterTolerance below for the anonymous-starter rule
+      // itself.
+      mappedStartersPerFixtureRange: {
+        minimum: MIN_IDENTIFIED_STARTER_ROWS,
+        maximum: 22,
+        note: "minimum reflects up to 4 tolerated anonymous starters (BG-0011 option B); maximum is the universal 22 raw-starter invariant",
+      },
       requiredMappedTeamsPerFixture: 2,
       maxTotalExcludedRowsPerFixture: 20,
     },

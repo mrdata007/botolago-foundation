@@ -569,11 +569,23 @@ export async function normalizeHistoricalFixture(
   // row in app_private.historical_performance_fixture_coverage (BG-0011 option B, single-table
   // design — quarantine is a coverage_outcome, not a separate table).
   const sourceVersion = `sportsmonks-fixture:${await sha256({ fixtureId, seasonId, rows })}`;
+  // CRITICAL: this single `coverage` object is sent as `p_coverage` to BOTH DB RPCs --
+  // api.ingest_historical_player_fixture_performance (accept path, below) AND
+  // api.quarantine_historical_player_fixture_performance (quarantine path, via the thrown
+  // error's diagnostic). Both RPCs read `identifiedStarterRows` via `p_coverage ->> 'identifiedStarterRows'`
+  // and reject the call outright (NULL -> INVALID_PROVIDER_PAYLOAD) if it is missing. It MUST be
+  // present here, on this one object, not bolted on separately per call site -- a prior version of
+  // this file added it only to the quarantine path's diagnostic copy and left this object (used
+  // by the accept path, i.e. every one of the ~238 fixtures meant to succeed) without it, which
+  // would have made every single accepted historical fixture ingest call fail outright. Keep
+  // `starterRows` too (the established NormalizedHistoricalFixture field name, read by other
+  // callers) -- both keys carry the same identified-starter count.
   const coverage = {
     lineupRowsSeen: fixture.lineups.length,
     validPlayerRows: rows.length,
     excludedIncompleteRows,
     starterRows,
+    identifiedStarterRows: starterRows,
     anonymousStarterRows,
     teamCount: teamIds.size,
     detailRows,
@@ -591,11 +603,7 @@ export async function normalizeHistoricalFixture(
       sourceVersion,
       anonymousStarterRows,
       identifiedStarterRows: starterRows,
-      // The DB quarantine RPC's p_coverage expects identifiedStarterRows (mirroring
-      // api.ingest_historical_player_fixture_performance's p_coverage shape exactly); `coverage`
-      // (the NormalizedHistoricalFixture shape) instead keeps the established `starterRows` name.
-      // Both key names are provided here so this one object serves both call sites.
-      coverage: { ...coverage, identifiedStarterRows: starterRows },
+      coverage,
     });
   }
   return {
@@ -909,6 +917,13 @@ async function ingestBatch(
           // of its rows, not even identified ones, are persisted — and the batch continues.
           quarantinedFixtures += 1;
           anonymousStarterRowsTotal += Number(error.diagnostic.anonymousStarterRows ?? 0);
+          // A quarantined fixture WAS still fetched from the provider (that is how its anonymous
+          // count was even determined) -- it just was not persisted. Count it, so `fetched` isn't
+          // understated relative to the provider calls actually made this batch.
+          counts.fetched += Number(
+            (error.diagnostic.coverage as { lineupRowsSeen?: number } | undefined)
+              ?.lineupRowsSeen ?? 0,
+          );
           quarantinedFixtureIds.push(fixture.externalFixtureId);
           await rpc(dependencies.client, "quarantine_historical_player_fixture_performance", {
             p_provider_name: "sportsmonks",
