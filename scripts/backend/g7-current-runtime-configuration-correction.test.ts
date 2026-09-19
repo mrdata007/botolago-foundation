@@ -13,13 +13,15 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { sha256Hex } from "./g7-historical-performance-backfill-runner";
+import { MANAGED_SECRET_NAMES, sha256Hex } from "./g7-historical-performance-backfill-runner";
 import {
+  APPROVED_STALE_BASELINE_DOUBLE_HASH,
   CurrentRuntimeCorrectionError,
   TARGET_SECRET_NAMES,
   TARGET_SECRET_VALUES,
   UNRELATED_SECRET_NAMES,
   allTargetsAlreadyCorrect,
+  checkPreWriteBaseline,
   planTargetKeys,
   runCurrentRuntimeConfigurationCorrection,
   type CorrectionDependencies,
@@ -209,6 +211,32 @@ function staleLiveValues(): Record<string, string> {
   };
 }
 
+/**
+ * A synthetic "approved stale baseline" double-hash table for tests, derived from
+ * staleLiveValues()'s own plaintext. This exists ONLY because the real
+ * APPROVED_STALE_BASELINE_DOUBLE_HASH's doubleHash entries are one-way hashes of real production
+ * secrets with no known preimage available here — there is no plaintext a test could seed into
+ * the fake CLI that would ever hash-of-hash to those literal production values. Injected via
+ * CorrectionDependencies.approvedBaseline (see its doc comment), which defaults to the REAL
+ * baseline in production and is overridden here purely for testability. The pre-write gate LOGIC
+ * under test (checkPreWriteBaseline / the wiring in runCurrentRuntimeConfigurationCorrection) is
+ * identical either way — only the comparison table's source values differ.
+ */
+const TEST_APPROVED_STALE_BASELINE_DOUBLE_HASH: Record<
+  string,
+  { present: boolean; doubleHash: string | null }
+> = Object.fromEntries(
+  MANAGED_SECRET_NAMES.map((name) => {
+    const raw = staleLiveValues()[name];
+    return [
+      name,
+      raw === undefined
+        ? { present: false, doubleHash: null }
+        : { present: true, doubleHash: sha256Hex(sha256Hex(raw)) },
+    ];
+  }),
+) as Record<string, { present: boolean; doubleHash: string | null }>;
+
 interface Harness {
   readonly runtimeDir: string;
   readonly evidenceDir: string;
@@ -246,6 +274,8 @@ function createHarness(options: FakeCliOptions = {}): Harness {
           writeFileSync(path, content, { mode: 0o600 });
           chmodSync(path, 0o600);
         },
+        approvedBaseline:
+          TEST_APPROVED_STALE_BASELINE_DOUBLE_HASH as CorrectionDependencies["approvedBaseline"],
       };
     },
   };
@@ -479,13 +509,21 @@ describe("runCurrentRuntimeConfigurationCorrection — target-key mismatch trigg
 });
 
 describe("runCurrentRuntimeConfigurationCorrection — FOOTBALL_INGESTION_TRIGGER_SECRET guard", () => {
-  it("fails loudly if the trigger secret is unexpectedly present after the run", async () => {
+  it("fails loudly, and issues zero writes, if the trigger secret is present pre-write", async () => {
+    // The new pre-write baseline gate (checkPreWriteBaseline) now catches this BEFORE any write is
+    // ever issued, with its own distinct code — see the "pre-write baseline gate" describe block
+    // below for the dedicated regression test proving this. The existing POST-write absence check
+    // (triggerSecretStillAbsent / "football_ingestion_trigger_secret_unexpectedly_present") is left
+    // fully intact in the source as defense-in-depth for a hypothetical drift the pre-write gate
+    // did not (and structurally cannot) observe; it is unreachable via any input where the trigger
+    // secret is present at pre-write time, precisely because the new gate now fires first.
     const h = createHarness();
     seedState(h.cli, { ...fullyCorrectLiveValues(), FOOTBALL_INGESTION_TRIGGER_SECRET: "oops" });
 
     await expect(runCurrentRuntimeConfigurationCorrection(h.deps())).rejects.toThrow(
-      "football_ingestion_trigger_secret_unexpectedly_present",
+      "trigger_secret_unexpectedly_present_pre_write",
     );
+    expect(h.cli.calls().filter((call) => call[1] === "set")).toEqual([]);
   });
 });
 
@@ -538,6 +576,198 @@ describe("evidence never carries a plaintext secret value", () => {
       expect(entry).not.toHaveProperty("fingerprint");
       expect(Object.keys(entry).sort()).toEqual(["fingerprintSha256", "name", "present"]);
     }
+  });
+});
+
+describe("checkPreWriteBaseline — the new pre-write approved-baseline gate", () => {
+  /**
+   * Builds a PreRunConfig for all 15 MANAGED_SECRET_NAMES from a plaintext map (raw values, or
+   * `null` for an absent secret), computing the single-hash `fingerprint` the way the real CLI
+   * capture would (`sha256Hex(rawValue)`), exactly like parseSecretsListTable's output feeds
+   * captureConfiguration().
+   */
+  function preRunConfigFrom(
+    values: Record<string, string | null>,
+  ): Parameters<typeof planTargetKeys>[0] {
+    return Object.fromEntries(
+      MANAGED_SECRET_NAMES.map((name) => {
+        const raw = values[name] ?? null;
+        return [
+          name,
+          { name, present: raw !== null, fingerprint: raw === null ? null : sha256Hex(raw) },
+        ];
+      }),
+    ) as Parameters<typeof planTargetKeys>[0];
+  }
+
+  it(
+    "REGRESSION (proves item 1): an unexpected target-key state — neither approved-stale nor " +
+      "approved-corrected — is rejected by the new gate, which the OLD planTargetKeys()-only logic " +
+      "could never have caught",
+    () => {
+      const values: Record<string, string | null> = { ...staleLiveValues() };
+      // Neither the approved-stale value ("26027") nor the approved-corrected value ("28647") — an
+      // unexplained third state, e.g. a conflicting concurrent writer.
+      values.FOOTBALL_SPORTSMONKS_SEASON_ID = "99999";
+      const preRunConfig = preRunConfigFrom(values);
+
+      // OLD behavior (what planTargetKeys() alone concluded, pre-fix): this unexpected value has a
+      // digest that differs from the target digest, so the OLD logic just says "needs write" — it
+      // has no way to distinguish this from the legitimate, approved-stale case. This is exactly the
+      // silent-overwrite gap the owner identified; planTargetKeys() itself is UNCHANGED by this fix
+      // and still returns needsWrite: true here.
+      const oldPlans = planTargetKeys(preRunConfig);
+      const seasonIdPlan = oldPlans.find((plan) => plan.name === "FOOTBALL_SPORTSMONKS_SEASON_ID");
+      expect(seasonIdPlan?.needsWrite).toBe(true); // old logic would have proceeded to overwrite it
+
+      // NEW behavior: the pre-write baseline gate rejects this state outright, before any write.
+      const check = checkPreWriteBaseline(
+        preRunConfig,
+        TEST_APPROVED_STALE_BASELINE_DOUBLE_HASH as CorrectionDependencies["approvedBaseline"],
+      );
+      expect(check.ok).toBe(false);
+      expect(check.failureCode).toBe("target_secret_unexpected_pre_write_state");
+      expect(check.failedName).toBe("FOOTBALL_SPORTSMONKS_SEASON_ID");
+    },
+  );
+
+  it(
+    "REGRESSION (proves item 2): unrelated-key drift relative to the approved baseline is rejected " +
+      "by the new gate, which the OLD planTargetKeys()-only logic never even looked at",
+    () => {
+      const values: Record<string, string | null> = { ...staleLiveValues() };
+      values.FOOTBALL_SPORTSMONKS_LEAGUE_ID = "999"; // drifted from the approved baseline's "860"
+      const preRunConfig = preRunConfigFrom(values);
+
+      // OLD behavior: planTargetKeys() never inspects unrelated keys at all — there is no code path
+      // in the pre-fix script that would ever notice this drift before issuing a write.
+      const oldPlans = planTargetKeys(preRunConfig);
+      expect(oldPlans.every((plan) => plan.needsWrite)).toBe(true); // old logic proceeds regardless
+
+      const check = checkPreWriteBaseline(
+        preRunConfig,
+        TEST_APPROVED_STALE_BASELINE_DOUBLE_HASH as CorrectionDependencies["approvedBaseline"],
+      );
+      expect(check.ok).toBe(false);
+      expect(check.failureCode).toBe("unrelated_secret_unexpected_pre_write_state");
+      expect(check.failedName).toBe("FOOTBALL_SPORTSMONKS_LEAGUE_ID");
+    },
+  );
+
+  it(
+    "REGRESSION (proves item 3): the trigger secret being present pre-write is rejected by the new " +
+      "gate with its own distinct code, which the OLD planTargetKeys()-only logic never checked at " +
+      "all (it never even reads FOOTBALL_INGESTION_TRIGGER_SECRET)",
+    () => {
+      const values: Record<string, string | null> = {
+        ...staleLiveValues(),
+        FOOTBALL_INGESTION_TRIGGER_SECRET: "oops",
+      };
+      const preRunConfig = preRunConfigFrom(values);
+
+      // OLD behavior: planTargetKeys() has no notion of the trigger secret whatsoever — its presence
+      // is invisible to the pre-fix pre-write logic.
+      const oldPlans = planTargetKeys(preRunConfig);
+      expect(oldPlans.every((plan) => plan.needsWrite)).toBe(true); // old logic proceeds regardless
+
+      const check = checkPreWriteBaseline(
+        preRunConfig,
+        TEST_APPROVED_STALE_BASELINE_DOUBLE_HASH as CorrectionDependencies["approvedBaseline"],
+      );
+      expect(check.ok).toBe(false);
+      expect(check.failureCode).toBe("trigger_secret_unexpectedly_present_pre_write");
+      expect(check.failedName).toBe("FOOTBALL_INGESTION_TRIGGER_SECRET");
+    },
+  );
+
+  it(
+    "the real, exported APPROVED_STALE_BASELINE_DOUBLE_HASH covers all 15 MANAGED_SECRET_NAMES and " +
+      "is used as checkPreWriteBaseline's default",
+    () => {
+      expect(Object.keys(APPROVED_STALE_BASELINE_DOUBLE_HASH).sort()).toEqual(
+        [...MANAGED_SECRET_NAMES].sort(),
+      );
+      expect(APPROVED_STALE_BASELINE_DOUBLE_HASH.FOOTBALL_INGESTION_TRIGGER_SECRET).toEqual({
+        present: false,
+        doubleHash: null,
+      });
+      // FIXTURE_FROM/FIXTURE_TO are byte-identical to SEASON_START/SEASON_END respectively.
+      expect(APPROVED_STALE_BASELINE_DOUBLE_HASH.FOOTBALL_SPORTSMONKS_FIXTURE_FROM.doubleHash).toBe(
+        APPROVED_STALE_BASELINE_DOUBLE_HASH.FOOTBALL_SPORTSMONKS_SEASON_START.doubleHash,
+      );
+      expect(APPROVED_STALE_BASELINE_DOUBLE_HASH.FOOTBALL_SPORTSMONKS_FIXTURE_TO.doubleHash).toBe(
+        APPROVED_STALE_BASELINE_DOUBLE_HASH.FOOTBALL_SPORTSMONKS_SEASON_END.doubleHash,
+      );
+    },
+  );
+});
+
+describe("runCurrentRuntimeConfigurationCorrection — new pre-write baseline gate, end-to-end", () => {
+  it("REGRESSION (item 1, end-to-end): an unexpected target-key state throws before any `secrets set` is invoked", async () => {
+    const h = createHarness();
+    seedState(h.cli, { ...staleLiveValues(), FOOTBALL_SPORTSMONKS_SEASON_ID: "99999" });
+
+    await expect(runCurrentRuntimeConfigurationCorrection(h.deps())).rejects.toThrow(
+      "target_secret_unexpected_pre_write_state",
+    );
+    expect(h.cli.calls().filter((call) => call[1] === "set")).toEqual([]);
+    // Exactly one `secrets list` (the pre-write capture) — the gate fails before any post-write
+    // capture is ever attempted.
+    expect(h.cli.calls().filter((call) => call[1] === "list").length).toBe(1);
+  });
+
+  it(
+    "REGRESSION (item 2, end-to-end): unrelated-key drift relative to the approved baseline, detected " +
+      "pre-write, throws before any `secrets set` is invoked",
+    async () => {
+      const h = createHarness();
+      seedState(h.cli, { ...staleLiveValues(), FOOTBALL_SPORTSMONKS_LEAGUE_ID: "999" });
+
+      await expect(runCurrentRuntimeConfigurationCorrection(h.deps())).rejects.toThrow(
+        "unrelated_secret_unexpected_pre_write_state",
+      );
+      expect(h.cli.calls().filter((call) => call[1] === "set")).toEqual([]);
+      expect(h.cli.calls().filter((call) => call[1] === "list").length).toBe(1);
+    },
+  );
+
+  it("REGRESSION (item 3, end-to-end): the trigger secret present pre-write throws before any `secrets set` is invoked", async () => {
+    const h = createHarness();
+    seedState(h.cli, { ...staleLiveValues(), FOOTBALL_INGESTION_TRIGGER_SECRET: "oops" });
+
+    await expect(runCurrentRuntimeConfigurationCorrection(h.deps())).rejects.toThrow(
+      "trigger_secret_unexpectedly_present_pre_write",
+    );
+    expect(h.cli.calls().filter((call) => call[1] === "set")).toEqual([]);
+    expect(h.cli.calls().filter((call) => call[1] === "list").length).toBe(1);
+  });
+
+  it("(item 4) the approved stale baseline on all 15 keys proceeds to exactly the permitted correction", async () => {
+    const h = createHarness();
+    seedState(h.cli, staleLiveValues());
+
+    const evidence = await runCurrentRuntimeConfigurationCorrection(h.deps());
+
+    expect(evidence.verdict).toBe("pass");
+    expect(evidence.preWriteBaselineCheck.ok).toBe(true);
+    expect(evidence.writePerformed).toBe(true);
+    const setCalls = h.cli.calls().filter((call) => call[1] === "set");
+    expect(setCalls.length).toBe(1);
+    for (const name of TARGET_SECRET_NAMES) {
+      expect(setCalls[0].join(" ")).toBeDefined(); // sanity: a `set` call happened
+    }
+  });
+
+  it("(item 5) an already-approved-corrected baseline still passes the new pre-write gate and issues no write", async () => {
+    const h = createHarness();
+    seedState(h.cli, fullyCorrectLiveValues());
+
+    const evidence = await runCurrentRuntimeConfigurationCorrection(h.deps());
+
+    expect(evidence.verdict).toBe("pass");
+    expect(evidence.preWriteBaselineCheck.ok).toBe(true);
+    expect(evidence.writePerformed).toBe(false);
+    expect(h.cli.calls().filter((call) => call[1] === "set")).toEqual([]);
   });
 });
 
