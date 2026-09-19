@@ -113,6 +113,8 @@ export interface AuthService {
   completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>>;
   requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>>;
   cancelAccountDeletion(): Promise<AuthResult>;
+  /** Real backend-read state, not local UI state — survives reload/another device. */
+  getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>>;
   signOut(options?: SignOutOptions): Promise<void>;
 }
 

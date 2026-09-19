@@ -173,10 +173,18 @@ select principal.id, role.id, 'news_domain.test.sql fixture.'
 from app_private.staff_principals principal
 join app_private.admin_roles role on role.name = 'content_admin'
 where principal.auth_user_id = 'f4000000-0000-4000-8000-000000000001';
+-- has_editorial_role also requires a verified MFA factor and an aal2
+-- session assertion (every editorial.* permission is seeded
+-- requires_mfa = true).
+insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at)
+values (
+  'f4100000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001',
+  'Primary TOTP', 'totp', 'verified', statement_timestamp(), statement_timestamp()
+);
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"f4000000-0000-4000-8000-000000000001","role":"authenticated"}', true
+  '{"sub":"f4000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}', true
 );
 select set_config(
   'test.news_draft_id',

@@ -363,6 +363,19 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
+  async getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>> {
+    const actorId = this.cachedSession.user?.id ?? null;
+    try {
+      const requests = await accountSecurity.listDeletionRequests(context(actorId));
+      return {
+        ok: true,
+        data: { pending: requests.some((request) => request.status === "requested") },
+      };
+    } catch (error) {
+      return { ok: false, errorCode: mapIdentityCode(error) };
+    }
+  }
+
   async signOut(options?: SignOutOptions): Promise<void> {
     const scope = options?.scope ?? "local";
     const actorId = this.cachedSession.user?.id ?? null;

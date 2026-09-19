@@ -29,6 +29,21 @@ values
   ('92000000-0000-4000-8000-000000000001'),
   ('92000000-0000-4000-8000-000000000002');
 
+-- BG-0012: has_editorial_role now also requires a verified MFA factor and
+-- an aal2 session assertion (every editorial.* permission is seeded
+-- requires_mfa = true) -- mirror the pattern established in
+-- admin_authorization.test.sql.
+insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at)
+values
+  (
+    '92100000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001',
+    'Primary TOTP', 'totp', 'verified', statement_timestamp(), statement_timestamp()
+  ),
+  (
+    '92100000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000002',
+    'Primary TOTP', 'totp', 'verified', statement_timestamp(), statement_timestamp()
+  );
+
 insert into app_private.staff_role_assignments (staff_principal_id, role_id, grant_reason)
 select principal.id, role.id, 'BG-0012 editorial lifecycle pgTAP fixture.'
 from app_private.staff_principals principal
@@ -45,7 +60,7 @@ where principal.auth_user_id = '92000000-0000-4000-8000-000000000002';
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"92000000-0000-4000-8000-000000000001","role":"authenticated"}', true
+  '{"sub":"92000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}', true
 );
 select set_config(
   'test.lifecycle_article_id',
@@ -87,7 +102,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"92000000-0000-4000-8000-000000000002","role":"authenticated"}', true
+  '{"sub":"92000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}', true
 );
 select extensions.lives_ok(
   $$select api.editorial_transition_article(
@@ -111,7 +126,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"92000000-0000-4000-8000-000000000002","role":"authenticated"}', true
+  '{"sub":"92000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}', true
 );
 select extensions.lives_ok(
   $$select api.editorial_set_placement(
@@ -143,7 +158,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"92000000-0000-4000-8000-000000000001","role":"authenticated"}', true
+  '{"sub":"92000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}', true
 );
 select extensions.ok(
   (

@@ -45,6 +45,15 @@ const NEXT_STATUSES: Record<EditorialStatus, readonly EditorialStatus[]> = {
   archived: ["draft"],
 };
 
+// Mirrors api.editorial_update_article's own guard exactly (news_article_not_editable):
+// content edits are only accepted while the edition is draft/in_review/rejected/unpublished.
+const EDITABLE_STATUSES: readonly EditorialStatus[] = [
+  "draft",
+  "in_review",
+  "rejected",
+  "unpublished",
+];
+
 const PLACEMENTS: readonly PlacementType[] = [
   "home_lead",
   "news_lead",
@@ -85,6 +94,7 @@ function AdminNewsEditRoute() {
   const [showPreview, setShowPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = async () => {
@@ -181,6 +191,29 @@ function AdminNewsEditRoute() {
 
   const transition = async (targetStatus: EditorialStatus) => {
     if (access.state !== "authorized" || !article) return;
+    let scheduledAtIso: string | null = null;
+    if (targetStatus === "scheduled") {
+      if (!scheduledAtLocal) {
+        setMessage(
+          rtl
+            ? "اختر تاريخ ووقت النشر المجدول أولاً."
+            : "Choisissez d’abord une date et une heure de publication programmée.",
+        );
+        return;
+      }
+      const parsed = new Date(scheduledAtLocal);
+      if (Number.isNaN(parsed.getTime())) {
+        setMessage(rtl ? "تاريخ الجدولة غير صالح." : "Date de programmation invalide.");
+        return;
+      }
+      if (parsed.getTime() <= Date.now()) {
+        setMessage(
+          rtl ? "يجب أن يكون موعد النشر في المستقبل." : "La date programmée doit être future.",
+        );
+        return;
+      }
+      scheduledAtIso = parsed.toISOString();
+    }
     if (
       dirty &&
       !window.confirm(
@@ -192,10 +225,11 @@ function AdminNewsEditRoute() {
     setMessage(null);
     try {
       const result = await repository.transitionArticle(
-        { articleEditionId: article.id, targetStatus },
+        { articleEditionId: article.id, targetStatus, scheduledAt: scheduledAtIso },
         adminRepositoryContext(access),
       );
       setArticle({ ...article, status: result.status, visibility: result.visibility });
+      setScheduledAtLocal("");
       setMessage(rtl ? `الحالة الجديدة: ${result.status}` : `Nouveau statut : ${result.status}`);
     } catch (error) {
       setMessage(
@@ -263,6 +297,8 @@ function AdminNewsEditRoute() {
     }
   };
 
+  const isEditable = article ? EDITABLE_STATUSES.includes(article.status) : false;
+
   return (
     <AdminFunctionalRoute
       access={access}
@@ -287,11 +323,20 @@ function AdminNewsEditRoute() {
             )}
           </div>
 
+          {!isEditable && (
+            <p className="text-xs text-slate-400" data-testid="admin-news-not-editable">
+              {rtl
+                ? "لا يمكن تعديل المحتوى في هذه الحالة. غيّر الحالة أولاً إن كان ذلك ممكناً."
+                : "Le contenu n’est pas modifiable dans ce statut. Changez d’abord de statut si possible."}
+            </p>
+          )}
+
           <label className="grid gap-2 text-sm">
             <span>{rtl ? "العنوان" : "Titre"}</span>
             <input
               value={title}
               onChange={(event) => markDirty(setTitle)(event.target.value)}
+              disabled={!isEditable}
               className={adminFieldClass}
             />
           </label>
@@ -300,6 +345,7 @@ function AdminNewsEditRoute() {
             <input
               value={subtitle}
               onChange={(event) => markDirty(setSubtitle)(event.target.value)}
+              disabled={!isEditable}
               className={adminFieldClass}
             />
           </label>
@@ -307,6 +353,7 @@ function AdminNewsEditRoute() {
             <span>{rtl ? "الملخص" : "Résumé"}</span>
             <textarea
               value={summary}
+              disabled={!isEditable}
               onChange={(event) => markDirty(setSummary)(event.target.value)}
               rows={3}
               className={adminFieldClass}
@@ -317,6 +364,7 @@ function AdminNewsEditRoute() {
             <textarea
               value={bodyMarkdown}
               onChange={(event) => markDirty(setBodyMarkdown)(event.target.value)}
+              disabled={!isEditable}
               rows={14}
               className={adminFieldClass}
             />
@@ -328,6 +376,7 @@ function AdminNewsEditRoute() {
               <input
                 value={seoTitle}
                 onChange={(event) => markDirty(setSeoTitle)(event.target.value)}
+                disabled={!isEditable}
                 maxLength={70}
                 className={adminFieldClass}
               />
@@ -337,6 +386,7 @@ function AdminNewsEditRoute() {
               <input
                 value={seoDescription}
                 onChange={(event) => markDirty(setSeoDescription)(event.target.value)}
+                disabled={!isEditable}
                 maxLength={170}
                 className={adminFieldClass}
               />
@@ -349,6 +399,7 @@ function AdminNewsEditRoute() {
               ref={fileInputRef}
               type="file"
               accept="image/avif,image/jpeg,image/png,image/webp"
+              disabled={!isEditable}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void uploadHero(file);
@@ -371,7 +422,7 @@ function AdminNewsEditRoute() {
             <button
               type="button"
               className={adminButtonClass}
-              disabled={busy || !dirty}
+              disabled={busy || !dirty || !isEditable}
               onClick={() => void save()}
               data-testid="admin-news-save"
             >
@@ -395,6 +446,20 @@ function AdminNewsEditRoute() {
 
           <section aria-label={rtl ? "الانتقال بين الحالات" : "Transitions de statut"}>
             <h3 className="text-sm font-semibold">{rtl ? "الحالة" : "Statut"}</h3>
+            {NEXT_STATUSES[article.status].includes("scheduled") && (
+              <label className="mt-2 grid max-w-xs gap-2 text-sm">
+                <span>
+                  {rtl ? "تاريخ ووقت النشر المجدول" : "Date et heure de publication programmée"}
+                </span>
+                <input
+                  type="datetime-local"
+                  value={scheduledAtLocal}
+                  onChange={(event) => setScheduledAtLocal(event.target.value)}
+                  className={adminFieldClass}
+                  data-testid="admin-news-scheduled-at"
+                />
+              </label>
+            )}
             <div className="mt-2 flex flex-wrap gap-2">
               {NEXT_STATUSES[article.status].map((next) => (
                 <button
@@ -405,7 +470,7 @@ function AdminNewsEditRoute() {
                       ? adminDangerButtonClass
                       : adminButtonClass
                   }
-                  disabled={busy}
+                  disabled={busy || (next === "scheduled" && !scheduledAtLocal)}
                   onClick={() => void transition(next)}
                   data-testid={`admin-news-transition-${next}`}
                 >

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { Trans } from "@/components/common/Trans";
@@ -407,6 +407,16 @@ function DeleteAccountSection() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void authService.getAccountDeletionStatus().then((res) => {
+      if (!cancelled && res.ok && res.data) setPending(res.data.pending);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const closeDialog = () => {
     setDialogOpen(false);
