@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
-import { newsService } from "@/services/news";
+import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
@@ -13,14 +13,22 @@ import { useI18n } from "@/i18n/provider";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
-import { buildArticleHead } from "@/lib/article-meta";
+import { resolveMediaUrl } from "@/lib/media";
+import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
+import { gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
 
 export const Route = createFileRoute("/news/$articleId")({
   loader: async ({ params, context }) => {
     try {
       return await context.queryClient.ensureQueryData({
-        queryKey: ["news", "article", "fr", params.articleId],
-        queryFn: () => newsService.getArticle(params.articleId, "fr"),
+        queryKey: ["news", "article-detail-v2", "fr", params.articleId],
+        queryFn: () =>
+          getArticleWithLanguageFallback(
+            getNewsRepository(),
+            params.articleId,
+            "fr",
+            publicNewsContext(),
+          ),
       });
     } catch {
       return null;
@@ -32,14 +40,15 @@ export const Route = createFileRoute("/news/$articleId")({
 
 function ArticlePage() {
   const { articleId } = Route.useParams();
-  const { t, tr, lang, dir } = useI18n();
+  const { t, lang, dir } = useI18n();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const initialArticle = Route.useLoaderData();
 
   const articleQ = useQuery({
-    queryKey: ["news", "article", lang, articleId],
-    queryFn: () => newsService.getArticle(articleId, lang),
+    queryKey: ["news", "article-detail-v2", lang, articleId],
+    queryFn: () =>
+      getArticleWithLanguageFallback(getNewsRepository(), articleId, lang, publicNewsContext()),
     initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
   });
   const relatedQ = useQuery({
@@ -93,20 +102,24 @@ function ArticlePage() {
 
   const contentLanguage = article.language ?? lang;
   const clubs = clubsQ.data ?? [];
-  const clubNames = article.clubIds
-    .map((id) => clubs.find((c) => c.id === id))
-    .filter(Boolean)
-    .map((c) => tr(c!.shortName));
+  const teamNames = article.teams.map((team) => team.name);
+  const topicTags = article.taxonomies.filter((tax) => tax.type !== "category");
+  const byline = article.author?.name ?? article.publisher?.name;
+  const heroUrl = resolveMediaUrl(article.hero);
+  const hasDistinctUpdate =
+    !!article.updatedAt &&
+    article.updatedAt !== article.publishedAt &&
+    Math.abs(Date.parse(article.updatedAt) - Date.parse(article.publishedAt)) > 60_000;
 
   const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+  const canonicalUrl = buildCanonicalArticleUrl(article.id);
   const share = async () => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
     try {
       if (typeof navigator !== "undefined" && "share" in navigator) {
         await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({
-          title: tr(article.title),
-          text: tr(article.excerpt),
-          url,
+          title: article.title,
+          text: article.subtitle ?? article.summary,
+          url: canonicalUrl,
         });
         return;
       }
@@ -114,7 +127,7 @@ function ArticlePage() {
       /* user cancelled or blocked */
     }
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(canonicalUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -164,16 +177,28 @@ function ArticlePage() {
       )}
 
       {/* Hero image */}
-      <div className="mt-4 overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)] shadow-card">
-        <MediaImage
-          src={article.heroUrl}
-          alt={article.heroAlt ?? tr(article.title)}
-          fallback={article.heroGradient}
-          loading="eager"
-          fetchPriority="high"
-          className="aspect-[16/10] w-full animate-in fade-in duration-500"
-        />
-      </div>
+      <figure className="mt-4">
+        <div className="overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)] shadow-card">
+          <MediaImage
+            src={heroUrl}
+            alt={article.hero?.alt ?? article.title}
+            fallback={gradientTokenForId(article.id)}
+            loading="eager"
+            fetchPriority="high"
+            className="aspect-[16/10] w-full animate-in fade-in duration-500"
+          />
+        </div>
+        {(article.hero?.caption || article.hero?.credit) && (
+          <figcaption
+            dir={contentLanguage === "ar" ? "rtl" : "ltr"}
+            className="mt-1.5 text-[11px] text-[color:var(--text-muted)]"
+          >
+            {article.hero?.caption}
+            {article.hero?.caption && article.hero?.credit ? " — " : ""}
+            {article.hero?.credit}
+          </figcaption>
+        )}
+      </figure>
 
       {/* Article surface — a calmer L1 elevated reading card sitting on the news mesh */}
       <article
@@ -187,11 +212,11 @@ function ArticlePage() {
         )}
       >
         {/* Category eyebrow */}
-        {article.tag && (
+        {article.primaryCategory && (
           <div className="mb-2 inline-flex items-center gap-1.5">
             <span aria-hidden className="h-3 w-0.5 rounded-full bg-[color:var(--brand-accent)]" />
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--brand-accent)]">
-              {tr(article.tag)}
+              {article.primaryCategory.name}
             </span>
           </div>
         )}
@@ -203,18 +228,20 @@ function ArticlePage() {
             contentLanguage === "ar" && "leading-[1.35]",
           )}
         >
-          {tr(article.title)}
+          {article.title}
         </h1>
 
         {/* Deck / subtitle */}
-        <p
-          className={cn(
-            "mt-3 text-[15px] leading-relaxed text-[color:var(--text-secondary)] sm:text-base",
-            contentLanguage === "ar" && "text-[16px] leading-[1.85]",
-          )}
-        >
-          {tr(article.excerpt)}
-        </p>
+        {(article.subtitle ?? article.summary) && (
+          <p
+            className={cn(
+              "mt-3 text-[15px] leading-relaxed text-[color:var(--text-secondary)] sm:text-base",
+              contentLanguage === "ar" && "text-[16px] leading-[1.85]",
+            )}
+          >
+            {article.subtitle ?? article.summary}
+          </p>
+        )}
 
         {/* Byline */}
         <div
@@ -222,35 +249,69 @@ function ArticlePage() {
           dir={dir}
           className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[var(--border-subtle)] py-3 text-xs text-[color:var(--text-muted)]"
         >
-          <span className="font-semibold text-foreground">
-            {t("article.by")} {tr(article.authorName)}
-          </span>
-          <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+          {byline && (
+            <>
+              <span className="font-semibold text-foreground">
+                {t("article.by")} {byline}
+              </span>
+              <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+            </>
+          )}
           <span title={formatFullDate(article.publishedAt, lang)}>
             {t("article.published")} {formatRelativeTime(article.publishedAt, lang)}
           </span>
+          {hasDistinctUpdate && (
+            <>
+              <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+              <span title={formatFullDate(article.updatedAt, lang)}>
+                {t("article.updated")} {formatRelativeTime(article.updatedAt, lang)}
+              </span>
+            </>
+          )}
           <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            {article.readMinutes} {t("news.read_min")}
+            {article.readingTimeMinutes} {t("news.read_min")}
           </span>
-          {clubNames.length > 0 && (
+          {teamNames.length > 0 && (
             <>
               <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
-              <span className="truncate">{clubNames.join(" · ")}</span>
+              <span className="truncate">{teamNames.join(" · ")}</span>
             </>
           )}
         </div>
 
-        {/* Body */}
+        {/* Body — pre-sanitized server-side HTML */}
         <div
           className={cn(
             "mt-5 max-w-[68ch] space-y-4 text-[16px] leading-[1.75] text-foreground/90",
             contentLanguage === "ar" && "text-[17px] leading-[2]",
           )}
         >
-          <div dangerouslySetInnerHTML={{ __html: article.bodyHtml ?? "" }} />
+          <div dangerouslySetInnerHTML={{ __html: article.bodyHtml }} />
         </div>
+
+        {/* Topic/team tags */}
+        {(topicTags.length > 0 || teamNames.length > 0) && (
+          <div className="mt-5 flex flex-wrap gap-1.5 border-t border-[var(--border-subtle)] pt-4">
+            {topicTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="rounded-full bg-[color:var(--surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--text-secondary)]"
+              >
+                {tag.name}
+              </span>
+            ))}
+            {article.teams.map((team) => (
+              <span
+                key={team.id}
+                className="rounded-full bg-[color:var(--surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--text-secondary)]"
+              >
+                {team.name}
+              </span>
+            ))}
+          </div>
+        )}
       </article>
 
       {/* Related */}
@@ -259,7 +320,7 @@ function ArticlePage() {
           <SectionHeader title={t("article.related")} eyebrow={t("article.related")} />
           <div className="grid gap-2.5">
             {related.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubsQ.data ?? []} />
+              <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubs} />
             ))}
           </div>
         </Section>

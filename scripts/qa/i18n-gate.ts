@@ -112,8 +112,17 @@ export interface AuditResult {
 export const BASELINES: Baselines = {
   W1: 5,
   W2: 4,
-  W3: 237,
-  W4: 100,
+  // BG-0012: the /news redesign replaced the hardcoded tab UI
+  // (news.tab.*, and its category-name-keyed news.section.transfers/
+  // analysis/interviews) with real taxonomy-driven category chips, and
+  // dropped the on-page saved-articles rail (still reachable from
+  // /profile) and the manual fr/ar edition selector. That retires 10
+  // dictionary keys (news.tab.for_you/latest/transfers/analysis/
+  // interviews, news.section.transfers/analysis/interviews/saved,
+  // news.saved.empty) and 4 template-key t() call sites that switched
+  // between them, moving W3 237 -> 245 and W4 100 -> 96.
+  W3: 245,
+  W4: 96,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
