@@ -1366,6 +1366,47 @@ tasks:
       current_season_id/current_season_start/current_season_end/current_fixture_from/
       current_fixture_to/current_team_ids restoration inputs. The historical backfill remains
       undispatched until then.
+    current_runtime_correction_applied_2026_09_19: >-
+      APPLIED. Branch agent/g7-current-runtime-correction merged to main via PR #141 (squash commit
+      d63d47fd976fb50ccaa1dbd8530c8dd620baf857), after independent Verifier PASS and fresh-context
+      Reviewer PASS on candidate 86dc0bd (both re-derived the digest arithmetic independently and
+      found no blocking issues), and after real CI (Backend quality run 35436332339 attempt 2 --
+      attempt 1 stalled on database-quality''s backend:db:start and was cancelled/rerun once,
+      standard bounded flake handling) passed on the merge candidate.
+      PRE-DISPATCH DRIFT CHECK: g7-production-secret-configuration-diagnostic.yml re-dispatched
+      fresh against main@d63d47f (run 35437437800, SUCCESS) immediately before the correction;
+      all 15 managed keys'' digests confirmed byte-identical to the last capture (run 35433673462,
+      2026-09-19T09:04Z) -- zero drift, safe to proceed.
+      CORRECTION DISPATCH: g7-current-runtime-configuration-correction.yml dispatched against
+      main@d63d47f (run 35437493711, SUCCESS). Evidence artifact retrieved and independently
+      verified (not just the workflow''s own exit code):
+      - preWriteBaselineCheck: ok=true, all 15 keys matched the approved-stale baseline exactly.
+      - targetPlan: all six target keys needsWrite=true (confirming the pre-existing 26027 drift).
+      - writePerformed=true, exactly ONE `secrets set` call (attempt 1, exitCode 0) -- no retry
+      needed.
+      - perKeyVerdict: all six targets verdict="corrected"; all nine unrelated keys plus the
+      trigger secret verdict="unrelated-unchanged" (byte-identical to this run''s own pre-write
+      capture).
+      - triggerSecretStillAbsent=true. verdict="pass".
+      INDEPENDENT POST-WRITE VERIFICATION (performed directly, not trusting the workflow''s verdict
+      alone): recomputed sha256(sha256(value)) locally for all six approved plaintext values and
+      confirmed an EXACT match against the post-write fingerprintSha256 for every one of
+      SEASON_ID=28647, SEASON_START=2026-09-24, SEASON_END=2027-06-30, TEAM_IDS (16-team string),
+      FIXTURE_FROM=2026-09-24, FIXTURE_TO=2027-01-01. Confirmed all nine unrelated keys'' and the
+      trigger secret''s fingerprints are byte-identical between the pre-write and post-write
+      captures in the same evidence artifact.
+      NEW BASELINE FOR STEP 4: the post-write fingerprints captured in run 35437493711''s evidence
+      (g7-current-runtime-configuration-correction-35437493711 artifact) are now the verified
+      pre-backfill baseline. The six approved values themselves (SEASON_ID=28647,
+      SEASON_START=2026-09-24, SEASON_END=2027-06-30, TEAM_IDS as above, FIXTURE_FROM=2026-09-24,
+      FIXTURE_TO=2027-01-01) are the restoration inputs for BG-0011 Step 4''s
+      current_season_id/current_season_start/current_season_end/current_fixture_from/
+      current_fixture_to/current_team_ids. The prior full-rollback limitation (old 26027 TEAM_IDS
+      plaintext permanently unresolved) is now moot for forward operation -- production runs on
+      the new, fully evidence-backed 28647 configuration -- but remains true as a historical fact:
+      the old value can never be reconstructed.
+      STEP 4 (historical backfill) rechecked and dispatched next; see
+      historical_backfill_season_26027_2026_09_19 below for outcome.
 
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
