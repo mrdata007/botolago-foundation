@@ -370,6 +370,22 @@ tasks:
       this recommendation alone — it is evidence-backed sizing only, per the standing
       owner_decisions_2026_09_18 constraint that any coverage-rule change needs a revised brief
       and independent verification before execution.
+    owner_decision_BG-0011-OWNER-3_2026_09_19: >-
+      APPROVED (owner, 2026-09-19): proceed with option (b) as a bounded, explicitly documented
+      identity-completeness rule change to the historical (SportsMonks season 26027) pricing-input
+      path only — NOT a change to live Fantasy scoring, NOT the uniform-price Option B. The rule
+      is stated honestly as a relaxation (22 provider-reported starters required, unchanged;
+      up to 4 of those 22 may be anonymous/unidentified; the two fixtures exceeding the cap,
+      19596474 and 19596475, are quarantined entirely), not as "preserving every invariant
+      unchanged." AUTHORIZED NOW: revise the brief, independently validate it, implement on a
+      task branch, test in an isolated non-production environment, generate a non-production
+      ratings/pricing preview, and prepare the exact subsequent production approval packet.
+      NOT AUTHORIZED NOW: production migration promotion, production backfill, catalog rollback
+      or re-stage, account/team deletion, registration changes, automation activation, or public
+      deployment. Full owner instruction (identity/mapping tracking separation, quarantine
+      handling, per-enforcement-point implementation, player-level coverage report, specific
+      regression test matrix, BG-0032 deployment-status check) dispatched to a Builder on branch
+      agent/BG-0011-option-b-identity-completeness; see that task's own report once it lands.
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
@@ -743,7 +759,17 @@ tasks:
     area: fantasy
     severity: P1
     owner: Chief
-    state: BUILT
+    state: MERGED
+    merged_2026_09_18T20: 'PR #139 merged to main as c72f9ad (owner merge authorization, discretionary hold lifted). Migration 20260918170000_fantasy_catalog_rollback_cleanup.sql is on main only.'
+    production_deployment_status_2026_09_19: >-
+      NOT DEPLOYED. Checked directly via mcp__Supabase__list_migrations against project
+      tkewgajrljbwgwedqsxn: the production migration history's latest applied entry is
+      20260918160000 (season_bounds_guard). 20260918170000_fantasy_catalog_rollback_cleanup is
+      absent from production. Merged is not applied — this migration still requires a separate
+      Phase 7E-B promotion dispatch (its own batch, fantasy_catalog_rollback_cleanup, already
+      exists in the promoter manifest per the PR) with explicit owner authorization before
+      api.service_rollback_fantasy_catalog's fix is live. Do not list this as an available
+      production prerequisite without this caveat.
     evidence: ['docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml findings (pg_get_functiondef contains neither fantasy_leagues nor fantasy_league_memberships)']
     acceptance_criteria: [additive migration re-creating the RPC with ordered league/membership/audit cleanup preserving PT409 fantasy_catalog_in_use semantics; database test; runbook corrected]
     roles: {researcher: 'N/A (Builder produced docs/engineering/tasks/BG-0032/engineering-brief.yaml itself)', builder: 'DONE (branch agent/BG-0032-rollback-cleanup, docs/engineering/tasks/BG-0032/implementation-report.yaml)', verifier: 'PASS (docs/engineering/tasks/BG-0032/verification-report.yaml, independent, re-derived the mutation_audit conclusion from scratch)', reviewer: pending}
