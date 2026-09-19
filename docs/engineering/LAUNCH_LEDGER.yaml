@@ -576,6 +576,57 @@ tasks:
       None of steps 1, 2, 3 or 4 have been dispatched or authorized by this record — this is the
       ordered plan only, per BG-0011-OWNER-3's "prepare the exact subsequent production approval
       packet" authorization, not an execution.
+    conditional_production_approval_2026_09_19: >-
+      Owner approved (2026-09-19) the five packet steps above as separate, sequential actions,
+      each gated on the prior one's verification. Compatibility precondition checked and resolved
+      before starting: neither g7-production-historical-performance-backfill.yml nor
+      g7-sportsmonks-historical-performance-coverage.yml has a schedule trigger (workflow_dispatch
+      only, confirmed by reading both files) -- the historical ingestion path is never invoked
+      automatically, so there is no window between migration promotion (step 2) and worker
+      redeploy (step 4) where an incompatible old-code football-ingest could call the new RPC;
+      the only actor that ever dispatches historical ingestion is the backfill workflow itself
+      (step 4), which redeploys football-ingest as one of its own steps before its mutation step
+      runs. Also found: the backfill workflow's own "Apply reviewed forward-only migrations" step
+      runs `supabase db push --linked` (not the Phase 7E-B promoter) -- doing steps 1 and 2 via
+      Phase 7E-B first, exactly as instructed, makes that step a safe no-op by the time step 4
+      runs, rather than relying on the less-audited db push path to apply either migration.
+    step1_promote_fantasy_catalog_rollback_cleanup_2026_09_19: >-
+      Preflight: fetched current main (f1449fd88fe81bd85ce141917a134e71776b29f4), confirmed the
+      migration file byte-identical since its original review/merge (c72f9ad, diff empty, sha256
+      6a62e88efbe0aab6435a13fbec5c955808d7aff4b6fa083a547e8cfe60628f73), confirmed via
+      mcp__Supabase__get_project the correct project (tkewgajrljbwgwedqsxn, BotolaGO Production
+      V2, ACTIVE_HEALTHY, eu-west-3), confirmed via mcp__Supabase__list_migrations the batch was
+      not already applied (latest was season_bounds_guard), confirmed no prior Phase 7E-B run for
+      this batch. Dispatched run 35428629322 (expected_commit f1449fd88..., confirmation
+      RUN_PHASE7E_B_PRODUCTION_FANTASY_CATALOG_ROLLBACK_CLEANUP): SUCCESS. Post-change
+      verification: mcp__Supabase__list_migrations confirms 20260918170000_fantasy_catalog_
+      rollback_cleanup is now the latest applied entry; pg_get_functiondef(api.service_rollback_
+      fantasy_catalog) matches the reviewed source exactly (ordered rankings/memberships/leagues
+      cleanup, fantasy_teams never touched); has_function_privilege confirms execute granted only
+      to service_role (authenticated/anon both false); confirmed INSTALLATION ONLY, RPC NOT
+      invoked -- fantasy_seasons_count=1, fantasy_teams_count=3 (both unchanged from the standing
+      BG-0048 snapshot baseline), rolled_back_runs_count=0.
+    step2_promote_historical_anonymous_starter_tolerance_2026_09_19: >-
+      Preflight: re-fetched main (unchanged, f1449fd88fe81bd85ce141917a134e71776b29f4), confirmed
+      the migration file byte-identical since the final pre-merge commit (e359ec0, diff empty).
+      Dispatched run 35428801148 (same expected_commit, confirmation RUN_PHASE7E_B_PRODUCTION_
+      HISTORICAL_ANONYMOUS_STARTER_TOLERANCE): SUCCESS. Post-change verification: mcp__Supabase__
+      list_migrations confirms 20260919120000_historical_anonymous_starter_tolerance is now the
+      latest applied entry; all four new columns present on app_private.historical_performance_
+      fixture_coverage with correct defaults (anonymous_starter_rows int/0, identified_starter_
+      rows int/22, coverage_outcome text/'accepted', quarantine_reason text/null);
+      pg_get_functiondef confirms api.quarantine_historical_player_fixture_performance matches
+      the reviewed source exactly (independent re-check logic, single UPSERT, zero DELETE);
+      pg_get_constraintdef confirms both historical_performance_coverage_counts_check (derived
+      coverage_outcome, forced starter_rows=0/performance_rows=0 when quarantined, and the hard
+      source_version-scoped guard `anonymous_starter_rows = 0 OR source_version ~
+      '^sportsmonks-fixture:[0-9a-f]{64}$'`) and historical_performance_coverage_outcome_reason_
+      check are live and match the reviewed source; execute granted only to service_role on both
+      RPCs; confirmed zero live impact -- quarantined_rows_now=0 (no ingestion has run under the
+      new rule yet) and zero current-season-prefixed rows carry any nonzero anonymous_starter_
+      rows (the ADD CONSTRAINT itself succeeding is independent proof no pre-existing row could
+      have violated it). Schema only; no worker deployed yet (deliberately deferred to step 4 per
+      the packet).
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
