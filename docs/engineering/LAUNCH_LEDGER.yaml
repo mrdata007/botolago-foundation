@@ -1261,6 +1261,113 @@ tasks:
       (28647) would be a NEW configuration change, not a restoration, and is explicitly not
       authorized by the standing approvals on file. BG-0011 Step 4 remains undispatched pending
       an explicit owner decision on how to resolve this drift.
+    current_runtime_correction_packet_2026_09_19: >-
+      Owner decision (2026-09-19): stale 26027 configuration must NOT be restored; treat this as a
+      NEW current-runtime correction, separate from BG-0011's restoration. Season-end policy
+      confirmed by the owner: use the locked database boundary 2027-06-30 as an OWNER-APPROVED
+      OPERATIONAL boundary (not a verified official final-match date); SportsMonks' own
+      seasonEndingAt=2026-09-24 (identical to its own start date -- internally implausible) is a
+      conflicting provider value, not license to overwrite the locked database bound. Not asking
+      this again absent genuinely new evidence.
+      PROPOSED CONFIGURATION (six operational settings, verified, not yet applied):
+      (1) FOOTBALL_SPORTSMONKS_SEASON_ID = 28647. Evidence: app.seasons row d03223b0 (is_current
+      true, status active) joined to app_private.football_provider_mappings (entity_type=season,
+      provider=sportsmonks) = 28647; independently cross-checked live against the SportsMonks
+      provider via football-current-roster-audit.yml run 35432830010 (seasonId 28647, seasonName
+      "2026/2027", league 860) -- exact match.
+      (2) FOOTBALL_SPORTSMONKS_SEASON_START = 2026-09-24. Evidence: app.seasons.starts_on
+      (season_bounds_guard-protected); cross-checked live -- provider run 35432830010 reports
+      seasonStartingAt 2026-09-24 -- exact match.
+      (3) FOOTBALL_SPORTSMONKS_SEASON_END = 2027-06-30 (OPERATIONAL boundary, owner-approved, per
+      the policy above -- NOT the provider''s own value, which conflicts and is not used).
+      Evidence: app.seasons.ends_on (season_bounds_guard-protected, itself an owner-approved
+      correction from earlier this session). Explicitly documented as operational, not a verified
+      final-match date.
+      (4) FOOTBALL_SPORTSMONKS_TEAM_IDS = "306,2846,6856,9369,9511,9535,16845,16847,16850,16851,
+      16853,16858,16938,227263,228516,270260" (16 teams, ascending numeric order -- the chosen
+      deterministic representation). Evidence: derived from app.teams joined to
+      app_private.football_provider_mappings, scoped to teams actually fielding fixtures in the
+      current season (app.fixtures.season_id = current season, distinct home/away team ids) --
+      independently cross-checked live against the SportsMonks provider via the SAME roster-audit
+      run 35432830010 (clubs[].teamExternalId, all 16 provider-verified current-season teams) --
+      EXACT MATCH, byte-identical set, both sources agree. Differs from the stale 26027 list at
+      exactly 3 clubs (9511/16938/228516 now current vs 16849/16937/274759 previously), consistent
+      with a normal season-to-season promotion/relegation turnover, not a data-quality concern.
+      (5) FOOTBALL_SPORTSMONKS_FIXTURE_FROM / FIXTURE_TO: NOT the season''s full range. Computed
+      using the existing reviewed window-selection logic (boundedFixtureWindow(),
+      scripts/backend/sportsmonks-production-probe.ts:254-272, the same function
+      sportsmonks-production-probe.ts/gate2e already use), which caps every window at 100
+      inclusive days and slides forward on each refresh. Evaluated for today (2026-09-19, before
+      season start): FIXTURE_FROM = 2026-09-24, FIXTURE_TO = 2027-01-01, inclusiveDays = 100 (the
+      maximum). This is the FIRST window only and explicitly does NOT cover the whole season
+      (2026-09-24 through 2027-06-30). Illustrative (not applied) subsequent windows the SAME
+      function would produce on later refreshes, showing the sliding behavior: a refresh on
+      2027-01-15 -> 2026-10-08..2027-01-15 (100 days); a refresh on 2027-06-25 (near season end)
+      -> 2027-03-18..2027-06-25 (100 days); a refresh on/after 2027-06-30 -> 2027-03-23..2027-06-30
+      (100 days, capped at the operational end). This configuration therefore requires periodic
+      refresh across the season to keep pulling current fixtures -- a one-time value is not a
+      season-long solution and must not be presented as one.
+      (6) FOOTBALL_INGESTION_TRIGGER_SECRET = ABSENT. Evidence: g7-production-secret-configuration-
+      diagnostic.yml, freshly re-dispatched today for this correction (run 35433673462, SUCCESS,
+      2026-09-19T09:04Z) -- present:false, byte-identical to the first capture (run 35431986960,
+      08:26Z) and to every other digest in both captures, confirming nothing has mutated production
+      in between. Per the existing "preserve absence" policy and the reviewed current-season
+      runtime, no new trigger secret is being introduced by this correction.
+      Unrelated settings (FOOTBALL_PROVIDER, _BASE_URL, LEAGUE_ID, COUNTRY_CODE,
+      COMPETITION_TYPE, TIMEOUT_MS, MAX_RETRIES, SPORTSMONKS_API_TOKEN) are left unchanged --
+      confirmed present and matching the runner''s own hardcoded constants in both diagnostic
+      captures; SPORTSMONKS_API_TOKEN continues to be sourced live from the GitHub secret, never
+      handled as plaintext by the Chief.
+      VALIDATION RESULTS: roster-audit cross-check (run 35432830010) -- team list byte-identical
+      to the DB-derived candidate, season id/start byte-identical, season end flagged as
+      conflicting (handled per the owner''s policy above, not silently overwritten). Fresh
+      diagnostic re-check (run 35433673462) -- confirms current state unchanged and
+      TRIGGER_SECRET still absent. No production secret was set, unset, or otherwise mutated by
+      any check in this investigation; no ingestion was invoked; no diagnostic endpoint was
+      deployed (only the two already-existing, already-reviewed read-only workflows were
+      dispatched).
+      EXACT SCOPED PRODUCTION CHANGE THIS WOULD REQUIRE (NOT YET AUTHORIZED, NOT APPLIED): a single
+      `supabase secrets set --project-ref tkewgajrljbwgwedqsxn` call writing exactly the six
+      values above (SEASON_ID, SEASON_START, SEASON_END, TEAM_IDS, FIXTURE_FROM, FIXTURE_TO) --
+      no other key touched, FOOTBALL_INGESTION_TRIGGER_SECRET left unset, all other keys
+      unchanged. This is a NEW production mutation distinct from BG-0011''s backfill approval and
+      requires its own separate owner authorization before any dispatch.
+      POST-CHANGE VERIFICATION APPROACH (for when/if authorized): immediately after the write, a
+      fresh dispatch of g7-production-secret-configuration-diagnostic.yml to capture the new
+      digests; compare each of the six changed keys'' new fingerprintSha256 against
+      sha256(sha256(the proposed plaintext value)) computed locally, exactly as this
+      investigation''s own cross-checks were performed, requiring an exact match on every one
+      before treating the correction as verified; confirm the eight unrelated keys'' digests are
+      BYTE-IDENTICAL to both captures in this record (68b3535.../etc., i.e. unchanged); confirm
+      FOOTBALL_INGESTION_TRIGGER_SECRET is still present:false.
+      RECOVERY LIMITATION, STATED PLAINLY: a full rollback to the PRIOR (stale 26027) configuration
+      is NOT available, because FOOTBALL_SPORTSMONKS_TEAM_IDS'' exact prior live value was never
+      recovered (remains UNRESOLVED per the earlier forensic table) -- only its digest is known,
+      not its plaintext, so the OLD value could never be re-proven and re-written even if that
+      were desired. This is a one-way correction, not a reversible edit.
+      CONCRETE RECOVERY PROCEDURE for a partial write or failed post-change verification instead
+      of a rollback: (a) if `secrets set` itself fails outright (network/API error) before any
+      key is confirmed written, no recovery action is needed -- the prior (stale) state remains
+      intact and unverifiable-but-unchanged; re-attempt the same six-value write from this same
+      packet. (b) if `secrets set` partially succeeds (the Supabase CLI writes an env-file batch
+      as a single call, so a partial per-key failure is not the expected failure mode, but if
+      observed): re-dispatch the SAME six-value write again -- it is idempotent, since every
+      value in this packet is deterministic and reproducible from the evidence sources cited
+      above, not from a one-time capture. (c) if post-change verification finds a MISMATCH on any
+      of the six keys: do not proceed to the historical backfill; re-run the diagnostic once more
+      to rule out a stale read; if the mismatch persists, re-issue the single write for the
+      mismatched key(s) only, using the exact same evidence-backed value from this packet, then
+      re-verify. (d) at no point does recovery involve reconstructing or guessing the old 26027
+      TEAM_IDS value, weakening the fingerprint check, or proceeding to backfill on an unverified
+      configuration.
+      STEP 4 SEQUENCING: only once this correction is separately approved, applied, and its
+      post-change verification passes exactly as specified above should its fingerprints be
+      captured as the new known-good pre-backfill baseline and used as BG-0011 Step 4''s
+      current_season_id/current_season_start/current_season_end/current_fixture_from/
+      current_fixture_to/current_team_ids restoration inputs. The historical backfill remains
+      undispatched until then.
+
+  BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
     area: devops
     severity: P0
