@@ -151,8 +151,15 @@ export const BASELINES: Baselines = {
   // total, so the true combined numbers were measured directly by running
   // `bun scripts/qa/i18n-gate.ts` on the merged tree): W3 245 -> 248,
   // W4 96 -> 94.
+  //
+  // MFA/TOTP setup + login step-up: new dynamic-key t() call sites for
+  // rendering a `TranslationKey`-typed error state (`t(error)`), the same
+  // established pattern already used by auth.verify.tsx/auth.login.tsx,
+  // in the new /profile/security enrollment page and /auth/mfa-challenge
+  // login step-up page. W3 unchanged (every new key is referenced); W4
+  // 94 -> 97.
   W3: 248,
-  W4: 94,
+  W4: 97,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

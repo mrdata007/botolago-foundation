@@ -23,6 +23,7 @@ import {
   Languages,
   ChevronRight,
   KeyRound,
+  ShieldCheck,
   Trash2,
   AlertTriangle,
   Loader2,
@@ -338,6 +339,26 @@ function AuthenticatedProfile({
               <span className="block font-semibold">{t("profile.change_password")}</span>
               <span className="block text-xs font-normal text-muted-foreground">
                 {t("profile.change_password_desc")}
+              </span>
+            </span>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+        <button
+          onClick={() => navigate({ to: "/profile/security" })}
+          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
+        >
+          <div className="flex items-center gap-3 text-sm text-foreground">
+            <span
+              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
+              aria-hidden
+            >
+              <ShieldCheck className="h-4 w-4" />
+            </span>
+            <span className="text-start">
+              <span className="block font-semibold">{t("profile.mfa_setup")}</span>
+              <span className="block text-xs font-normal text-muted-foreground">
+                {t("profile.mfa_setup_desc")}
               </span>
             </span>
           </div>
