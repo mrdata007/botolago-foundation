@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
@@ -56,8 +56,19 @@ export const Route = createFileRoute("/profile")({
       },
     ],
   }),
-  component: ProfilePage,
+  component: ProfileRootRoute,
 });
+
+// This route now has a child route (/profile/security). A parent route in a
+// nested (dot-separated) file hierarchy must render <Outlet /> itself or the
+// deeper match never appears -- the URL changes but the parent's own UI stays
+// on screen. Same defect already fixed in admin.news.tsx and admin.staff.tsx.
+function ProfileRootRoute() {
+  const isChildRoute = useRouterState({
+    select: (state) => state.matches.some((match) => match.routeId === "/profile/security"),
+  });
+  return isChildRoute ? <Outlet /> : <ProfilePage />;
+}
 
 function ProfilePage() {
   const { t, tr, lang } = useI18n();
