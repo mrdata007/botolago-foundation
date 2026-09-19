@@ -1200,8 +1200,67 @@ tasks:
       it. Chief has NOT merged, will NOT
       merge without (1), and is NOT claiming that human review has happened. This hold is scoped to
       PR #138 only and does not block BG-0032 or the promotion-approval packet below.'
-
-  BG-0034:
+    restore_guard_correction_2026_09_19: >-
+      Owner-approved (2026-09-19) narrow correction, dispatched as branch
+      agent/g7-restore-guard-correction (final commit d359e7c589722f9dd1b66b8d20630d25bd4a55b8,
+      merged to main as 76c026c). Two real defects found by the Chief's own direct code read
+      (fingerprintMatches accepted a captured digest as if it were the original plaintext via a
+      `suppliedValue === fingerprint` fallback; performRestore's post-restore verification
+      compared against what was just written, not the ORIGINAL pre-run captured baseline) fixed,
+      with six regression tests, independently verified (each fix's regression test confirmed to
+      fail when that fix alone is reverted). Also added a new, strictly read-only diagnostic
+      workflow (g7-production-secret-configuration-diagnostic.yml, --capture-only mode only, zero
+      secret-set/unset/deploy/migrate/ingest capability) and moved the trigger-secret input to a
+      GitHub Environment secret. 36/36 tests pass, typecheck/lint clean, independently reproduced.
+    secret_configuration_diagnostic_result_2026_09_19: >-
+      Dispatched the new read-only diagnostic (run 35431986960, SUCCESS) against production
+      immediately after merge. Downloaded and inspected the evidence directly. CRITICAL FINDING,
+      confirmed by exact SHA-256 digest match against real production data (not inferred):
+      FOOTBALL_SPORTSMONKS_SEASON_ID is currently "26027" (digest-verified) -- the STALE,
+      completed historical (2025/26) season -- NOT "28647" (the live 2026/27 season). This is
+      the exact defect this task''s own title predicted ("rewrites production function secret
+      FOOTBALL_SPORTSMONKS_SEASON_ID to a completed season... current season is 28647") having
+      actually manifested in production before the restore-guard fix existed, and never corrected
+      since. Full digest-verified findings, evidence-backed candidates only (no guessing):
+      FOOTBALL_INGESTION_TRIGGER_SECRET: ABSENT (no plaintext needed; restore is a plain unset).
+      FOOTBALL_PROVIDER, FOOTBALL_PROVIDER_BASE_URL, FOOTBALL_SPORTSMONKS_LEAGUE_ID,
+      FOOTBALL_SPORTSMONKS_COUNTRY_CODE, FOOTBALL_SPORTSMONKS_COMPETITION_TYPE,
+      FOOTBALL_PROVIDER_TIMEOUT_MS, FOOTBALL_PROVIDER_MAX_RETRIES: present, MATCHED against the
+      runner''s own hardcoded constants -- unchanged, no drift.
+      SPORTSMONKS_API_TOKEN: present; not a recovery concern, supplied live via the GitHub secret
+      at every dispatch.
+      FOOTBALL_SPORTSMONKS_SEASON_ID: present, MATCHED "26027" (tested and digest-confirmed;
+      "28647" tested and does NOT match).
+      FOOTBALL_SPORTSMONKS_SEASON_START: present, MATCHED "2025-09-12" (season 26027''s own
+      start, sourced from gate2c/gate2d/gate3b/gate4''s own shared hardcoded value).
+      FOOTBALL_SPORTSMONKS_SEASON_END: present, MATCHED "2026-07-05" (season 26027''s own end,
+      same source).
+      FOOTBALL_SPORTSMONKS_FIXTURE_FROM: present, MATCHED "2025-09-12" -- byte-identical digest
+      to SEASON_START, meaning the live value equals the season start exactly. Every reviewed
+      canary workflow that sets this field (gate2d, gate3b) hardcodes it to "2026-03-28" instead,
+      which does NOT match -- ruling both out as the source. The only coherent explanation,
+      consistent with this task''s own history, is one of the three failed Aug-2 G7 backfill
+      attempts (whose restore was broken, which is why BG-0033 exists) successfully completed its
+      OWN secrets-set step (using the full season window as the fixture window, no narrower
+      sub-range) before failing later in the run, and was never restored since.
+      FOOTBALL_SPORTSMONKS_FIXTURE_TO: present, MATCHED "2026-07-05" -- same reasoning,
+      byte-identical to SEASON_END.
+      FOOTBALL_SPORTSMONKS_TEAM_IDS: present, UNRESOLVED. Tested the one evidence-backed candidate
+      found (gate3b''s own executed team-ids list, confirmed via that workflow''s successful run
+      30667946654 and its exact commit''s secrets-set step) -- does NOT match. No other
+      evidence-backed candidate exists in the repository''s history for this exact current value.
+      Consequence for BG-0011 Step 4 (the historical backfill): cannot proceed as originally
+      framed. Supplying "28647" (the live current season) as current_season_id would be correctly
+      REFUSED by the now-fixed restore-provability check, since it cannot be proven against the
+      actual captured digest (26027''s) -- this is the guard working exactly as designed, not a
+      new blocker introduced today. Supplying "26027" (the value that IS provable) would only
+      restore production to its own already-wrong state, and TEAM_IDS remains unresolved even for
+      that path. This is no longer a "missing input" problem alone -- it is a genuine, separate,
+      pre-existing production configuration drift, confirmed today, that predates and is
+      independent of anything dispatched this session. Correcting it to the true live season
+      (28647) would be a NEW configuration change, not a restoration, and is explicitly not
+      authorized by the standing approvals on file. BG-0011 Step 4 remains undispatched pending
+      an explicit owner decision on how to resolve this drift.
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
     area: devops
     severity: P0
