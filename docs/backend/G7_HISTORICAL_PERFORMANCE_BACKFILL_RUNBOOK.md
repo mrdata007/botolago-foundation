@@ -40,9 +40,16 @@ verdict is `fail` even if the backfill batches themselves all passed.
 
 `FOOTBALL_INGESTION_TRIGGER_SECRET` is special-cased: if it is absent before the run, it is unset
 again afterward (it is a one-time value the runner itself generates for the run). If it is
-*present* before the run, its value is unrecoverable unless the reviewed dispatch also supplies
-`current_trigger_secret` matching its captured fingerprint — otherwise the runner refuses to run at
-all. Always dispatch `--capture-only` first to learn whether it is currently set.
+*present* before the run, its value is unrecoverable unless the `G7_CURRENT_TRIGGER_SECRET`
+GitHub Environment secret (on `production-admin-activation`) matches its captured fingerprint —
+otherwise the runner refuses to run at all. This is a repository/environment secret, not a
+workflow_dispatch input, so a real trigger-secret plaintext value never has to be pasted into the
+manual dispatch form. If `FOOTBALL_INGESTION_TRIGGER_SECRET` is not actually set in production
+(the common case), leave the environment secret unset; an unset environment secret resolves to an
+empty string, which the runner already treats as "not supplied". Always dispatch `--capture-only`
+first to learn whether it is currently set, and if it ever is, have a human with repo-admin access
+add/update `G7_CURRENT_TRIGGER_SECRET` in the `production-admin-activation` Environment before
+dispatching a restore.
 
 ## Modes
 
@@ -110,9 +117,11 @@ migrations run when `skip_deploy` is requested.
 ## Recovery: the restore post-step was also killed
 
 1. Do not re-run the same workflow run (`GITHUB_RUN_ATTEMPT` must stay `1`; the guard forbids it).
-2. Dispatch a **new** run with `restore_only: true`, the same reviewed `current_season_id` /
+2. Dispatch a **new** run with `restore_only: true` and the same reviewed `current_season_id` /
    `current_season_start` / `current_season_end` / `current_fixture_from` / `current_fixture_to` /
-   `current_team_ids` inputs, and (if needed) `current_trigger_secret`.
+   `current_team_ids` inputs. If `FOOTBALL_INGESTION_TRIGGER_SECRET` is currently set in
+   production, confirm the `G7_CURRENT_TRIGGER_SECRET` Environment secret is already set on
+   `production-admin-activation` before dispatching (there is no per-dispatch input for it).
 3. This dispatch captures the live configuration fresh, proves the same reviewed inputs against it,
    writes them back, and verifies — the finalize step reports
    `G7_PRODUCTION_HISTORICAL_PERFORMANCE_RESTORE_ONLY_PASS` on success.

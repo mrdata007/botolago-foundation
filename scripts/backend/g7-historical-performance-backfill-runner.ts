@@ -12,6 +12,19 @@ const EXPECTED_FIXTURES_PER_SEASON = 240;
 const MAX_BATCHES_PER_SEASON = 60;
 const BATCH_SIZE = 5;
 const CONFIRMATION = "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL";
+/**
+ * A second, narrower confirmation phrase accepted ONLY for `mode === "capture-only"` (a strictly
+ * read-only `supabase secrets list`, never a `set`/`unset`/deploy/db-push/ingestion call — see
+ * `runHistoricalPerformanceBackfill`). It exists so the standalone diagnostic workflow
+ * (.github/workflows/g7-production-secret-configuration-diagnostic.yml) never has to ask an
+ * operator to type the SAME confirmation phrase used to authorize the full two-season historical
+ * mutation, which would risk normalizing that phrase as "just what you type for this script" and
+ * inviting it to be pasted into the wrong dispatch form. It does not replace `CONFIRMATION`: the
+ * main backfill workflow's own internal `--capture-only` step (part of the same dispatch as its
+ * mutating steps) still authenticates with `CONFIRMATION`, which capture-only continues to accept
+ * — this only ADDS an alternate value, and only for the one mode that can never mutate anything.
+ */
+export const CAPTURE_ONLY_DIAGNOSTIC_CONFIRMATION = "RUN_G7_SECRET_CONFIGURATION_DIAGNOSTIC";
 const ALGORITHM_VERSION = "botolago-preseason-rating-v2-fixture-performance";
 const PROVIDER_BASE_URL = "https://api.sportmonks.com/v3/football";
 const PROVIDER_TIMEOUT_MS = "15000";
@@ -282,8 +295,27 @@ export function sha256Hex(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
+/**
+ * A SHA-256 hex digest: 64 lowercase hex characters. This is the shape `sha256Hex` produces and
+ * the shape every real digest in this file's tests, evidence and pre-run-config.json carries.
+ *
+ * The Management API's `value` field for a secret (which the CLI prints as the DIGEST column) has
+ * never been confirmed against a real API response with a member-scoped token — see
+ * docs/engineering/tasks/BG-0033/engineering-brief.yaml's INFERRED classification at "The `value`
+ * returned by GET /v1/projects/{ref}/secrets is a SHA-256 digest of the stored secret" — but that
+ * same brief explicitly designs the restore proof to "fail closed if the fingerprint algorithm is
+ * not sha256". Enforcing this shape here is exactly that fail-closed behavior: a captured
+ * `fingerprint` that is not 64 lowercase hex characters can never come from `sha256Hex`, so it
+ * cannot be a value this function could ever legitimately match, and must not be silently
+ * accepted or compared against.
+ */
+const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
+
 function fingerprintMatches(suppliedValue: string, fingerprint: string): boolean {
-  return sha256Hex(suppliedValue) === fingerprint || suppliedValue === fingerprint;
+  if (!SHA256_HEX_PATTERN.test(fingerprint)) {
+    throw new HistoricalPerformanceBackfillError("production_config_fingerprint_shape_invalid");
+  }
+  return sha256Hex(suppliedValue) === fingerprint;
 }
 
 /** Parses the Supabase CLI's `secrets list` two-column NAME/DIGEST text table. Never call with --output. */
@@ -558,6 +590,13 @@ interface RestorePlan {
     readonly catalogLabelMatchesProvider: boolean;
     readonly providerIsCurrentAndLeagueMatches: boolean;
   };
+  /**
+   * The ORIGINAL configuration captured before any mutation this run made. performRestore's
+   * post-restore verification must prove the secret is back to THIS state — not merely that it
+   * reads back as whatever this same run just wrote (plan.setValues), which would be nearly
+   * tautological. See performRestore.
+   */
+  readonly preRunConfig: PreRunConfig;
 }
 
 async function verifyCurrentSeasonIdentity(
@@ -681,7 +720,7 @@ async function buildRestorePlan(
 
   const crossCheck = await verifyCurrentSeasonIdentity(deps, currentSeasonId);
 
-  return { setValues, unsetNames, currentSeasonId, crossCheck };
+  return { setValues, unsetNames, currentSeasonId, crossCheck, preRunConfig };
 }
 
 // ---------------------------------------------------------------------------
@@ -734,22 +773,36 @@ async function performRestore(
   );
   const observedTable = parseSecretsListTable(verifyList.stdout);
 
+  // Verification proves the secret is back to its ORIGINAL, pre-run state (plan.preRunConfig) —
+  // not merely that it reads back as whatever this same call just wrote (plan.setValues). Those
+  // two would agree on every successful write, which is why comparing against setValues is nearly
+  // tautological and does not actually prove restoration. We don't have the original plaintext to
+  // re-hash, so the correct check is a direct digest-to-digest equality: two digests of the same
+  // plaintext are byte-identical, so the freshly observed fingerprint must equal
+  // preRunConfig[name].fingerprint exactly.
   const perName: JsonRecord[] = [];
   let verified = setResult.exitCode === 0 && (plan.unsetNames.length === 0 || unsetExit === 0);
   for (const name of MANAGED_SECRET_NAMES) {
-    const shouldBePresent = Object.hasOwn(plan.setValues, name);
+    const original = plan.preRunConfig[name];
     const observedFingerprint = observedTable.get(name) ?? null;
     const observedPresent = observedFingerprint !== null;
     let fingerprintMatched: boolean | null = null;
-    if (shouldBePresent) {
+    if (original.present) {
       fingerprintMatched =
-        observedPresent && fingerprintMatches(plan.setValues[name]!, observedFingerprint!);
+        observedPresent &&
+        original.fingerprint !== null &&
+        observedFingerprint === original.fingerprint;
     }
-    const nameOk = shouldBePresent
+    const nameOk = original.present
       ? observedPresent && fingerprintMatched === true
       : !observedPresent;
     if (!nameOk) verified = false;
-    perName.push({ name, expectedPresent: shouldBePresent, observedPresent, fingerprintMatched });
+    perName.push({
+      name,
+      expectedPresent: original.present,
+      observedPresent,
+      fingerprintMatched,
+    });
   }
 
   return {
@@ -811,8 +864,11 @@ export function parseMode(argv: readonly string[]): RunnerMode {
   return "default";
 }
 
-function checkGuards(deps: RunnerDependencies): string {
-  if (deps.env.GITHUB_ACTIONS !== "true" || required(deps, "CONFIRMATION") !== CONFIRMATION) {
+function checkGuards(deps: RunnerDependencies, mode: RunnerMode): string {
+  const suppliedConfirmation = required(deps, "CONFIRMATION");
+  const acceptedConfirmations: readonly string[] =
+    mode === "capture-only" ? [CONFIRMATION, CAPTURE_ONLY_DIAGNOSTIC_CONFIRMATION] : [CONFIRMATION];
+  if (deps.env.GITHUB_ACTIONS !== "true" || !acceptedConfirmations.includes(suppliedConfirmation)) {
     throw new HistoricalPerformanceBackfillError("production_runner_guard_failed");
   }
   if (required(deps, "EXPECTED_PROJECT_REF") !== EXPECTED_PROJECT_REF) {
@@ -898,7 +954,7 @@ export async function runHistoricalPerformanceBackfill(
   deps: RunnerDependencies,
   mode: RunnerMode = "default",
 ): Promise<JsonRecord> {
-  const expectedCommit = checkGuards(deps);
+  const expectedCommit = checkGuards(deps, mode);
   const runtimeDirectory = resolve(required(deps, "G7_BACKFILL_RUNTIME_DIR"));
   const evidenceDirectory = resolve(required(deps, "G7_BACKFILL_EVIDENCE_DIR"));
 
