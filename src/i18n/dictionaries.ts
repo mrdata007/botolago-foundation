@@ -819,7 +819,7 @@ export const dictionaries = {
 
     "welcome.title": "Bienvenue sur BotolaGO",
     "welcome.description":
-      "Consultez les actualités et les informations de match disponibles du football marocain. La Fantasy ouvrira ultérieurement.",
+      "Actualités, matchs et Fantasy : suivez le football marocain au même endroit.",
     "welcome.cta_primary": "Explorer BotolaGO",
     "welcome.secondary_prompt": "Vous avez déjà un compte ?",
     "welcome.cta_secondary": "Se connecter",
@@ -1889,7 +1889,7 @@ export const dictionaries = {
 
     "welcome.title": "مرحبًا بك في BotolaGO",
     "welcome.description":
-      "تصفح الأخبار ومعلومات المباريات المتاحة لكرة القدم المغربية. ستُفتح الفانتازي لاحقًا.",
+      "الأخبار والمباريات والفانتازي: تابع كرة القدم المغربية في مكان واحد.",
     "welcome.cta_primary": "استكشف BotolaGO",
     "welcome.secondary_prompt": "لديك حساب بالفعل؟",
     "welcome.cta_secondary": "تسجيل الدخول",
