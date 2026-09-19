@@ -627,6 +627,23 @@ tasks:
       rows (the ADD CONSTRAINT itself succeeding is independent proof no pre-existing row could
       have violated it). Schema only; no worker deployed yet (deliberately deferred to step 4 per
       the packet).
+    step3_read_only_provider_recheck_2026_09_19: >-
+      Re-fetched main (9a455e772b3c02bdb6c3d0ca8ac28495ee20bc34) immediately before dispatch.
+      Dispatched g7-sportsmonks-historical-performance-coverage.yml run 35429044844 (expected_
+      commit matching exactly, confirmation RUN_G7_HISTORICAL_PERFORMANCE_PROBE_CLASSIFY):
+      SUCCESS in ~2.5 minutes. Downloaded and inspected the evidence artifact
+      (sportsmonks-historical-performance-invariants.json) directly: RECONFIRMED, no material
+      change from the BG-0044 baseline -- 240/240 season-26027 fixtures enumerated
+      (enumerationComplete true); 238 passing / 2 failing, with the probe's own primary
+      classification now using the new rule's error code directly
+      (historical_fixture_anonymous_starters_exceeded=2, every other failure code 0); the same
+      two exact outlier fixtures, 19596474 (7 anonymous of 22 raw starters) and 19596475 (8
+      anonymous of 22); rawStarterExactly22=240 (still universal); anonymousStarterHistogram
+      {0:176, 1:50, 2:11, 4:1, 7:1, 8:1} (identical distribution to BG-0044). Per the owner's
+      instruction, this was treated as an observation to verify, not a count to force -- it
+      matched, so no threshold was touched and neither excluded fixture was reactivated.
+      READY for step 4, pending its own separate explicit dispatch and the BG-0002/time-box
+      re-verification the packet requires at that point.
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
