@@ -146,6 +146,20 @@ BATCHES: dict[str, tuple[str, ...]] = {
     "fantasy_catalog_rollback_cleanup": (
         "20260918170000_fantasy_catalog_rollback_cleanup.sql",
     ),
+    # BG-0011 option B: bounded anonymous-starter tolerance for historical
+    # (completed-season) SportsMonks player-performance ingestion. Adds
+    # anonymous_starter_rows/identified_starter_rows/coverage_outcome/
+    # quarantine_reason to app_private.historical_performance_fixture_coverage,
+    # relaxes its counts CHECK, and create-or-replaces
+    # api.ingest_historical_player_fixture_performance,
+    # api.quarantine_historical_player_fixture_performance and
+    # api.football_historical_player_rating_inputs. Does not touch the live
+    # current-season path's own RPCs/columns beyond the shared table's new,
+    # additive columns (all default-compatible with the unmodified
+    # current-season insert).
+    "historical_anonymous_starter_tolerance": (
+        "20260919120000_historical_anonymous_starter_tolerance.sql",
+    ),
 }
 
 CONFIRMATIONS = {
@@ -168,6 +182,10 @@ EXPECTED_EDGE_FUNCTIONS_BY_BATCH: dict[str, frozenset[str]] = {
     "fantasy_rating_degeneracy_guard": frozenset({"football-ingest", "news-ingest"}),
     "season_bounds_guard": frozenset({"football-ingest", "news-ingest"}),
     "fantasy_catalog_rollback_cleanup": frozenset({"football-ingest", "news-ingest"}),
+    # This batch's worker code (sportsmonks-historical-player-performance.ts) is bundled into
+    # football-ingest, same as every batch since release_activation; production's deployed
+    # Edge Function inventory is otherwise unchanged.
+    "historical_anonymous_starter_tolerance": frozenset({"football-ingest", "news-ingest"}),
 }
 
 # These migrations were promoted through separately reviewed provider canaries
