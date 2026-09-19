@@ -110,7 +110,7 @@ export interface AuditResult {
  * reviewed act: state in the commit message why the count moved.
  */
 export const BASELINES: Baselines = {
-  W1: 5,
+  W1: 4,
   W2: 4,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
@@ -127,8 +127,24 @@ export const BASELINES: Baselines = {
   // via a literal `t("profile.email")` call, which was previously dead
   // copy. That takes one more key off the unreferenced list, moving
   // W3 245 -> 244.
-  W3: 244,
-  W4: 96,
+  //
+  // BG-0012 (Agent A, shared shell + Accueil redesign): the Accueil rebuild
+  // added 3 new copy keys and retired 11 keys that became fully unused,
+  // and dropped one non-literal t() call site.
+  //
+  // BG-0012 (Agent D1, Matches redesign): the new Lineups tab / standings
+  // table replaced the fake "Momentum" tab, retiring its dictionary keys.
+  //
+  // BG-0012 (Agent D2, Players/Stats/Transfers redesign): porting these
+  // screens onto shared FplHeader/FplSegmented orphaned a few per-page
+  // title/back-link keys and removed one non-literal t() call site.
+  //
+  // Combined effect of all four parallel redesign workstreams, measured on
+  // the integrated tree — see the integration commit for the exact figures.
+  // TODO(integration): placeholder pending D1+D2 merge — recomputed and
+  // fixed up in the final integration commit before this branch is pushed.
+  W3: 0,
+  W4: 0,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
