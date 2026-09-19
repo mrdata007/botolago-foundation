@@ -522,6 +522,7 @@ describe("G7 historical performance production response validation", () => {
         },
         24_319,
         9_240,
+        240,
       ),
     ).toMatchObject({
       candidates: 612,
@@ -547,8 +548,83 @@ describe("G7 historical performance production response validation", () => {
         },
         24_319,
         9_240,
+        240,
       ),
     ).toThrow("historical_rating_derivation_mismatch");
+  });
+
+  // BG-0044: expectedFixtureCount validates fixtures that actually fed rating derivation
+  // (acceptedFixtures), which after BG-0011 option B whole-fixture quarantine can legitimately be
+  // below the flat 240-per-season total. It must be compared against the run's own dynamically
+  // computed acceptedFixtures value, never against the hardcoded EXPECTED_FIXTURES_PER_SEASON
+  // constant (that constant validates a different quantity: fixtures ATTEMPTED).
+  function derivationResponse(overrides: Partial<Record<string, unknown>> = {}) {
+    return {
+      provider: "sportsmonks",
+      seasonId: 26_027,
+      action: "derive_ratings",
+      historicalOnly: true,
+      algorithmVersion: "botolago-preseason-rating-v2-fixture-performance",
+      expectedFixtureCount: 238,
+      performanceRows: 9_258,
+      candidates: 521,
+      sourceVersion: `sportsmonks-season-fixtures:${"b".repeat(64)}`,
+      ratingRange: { minimum: 4.2, maximum: 9.8 },
+      counters: { validated: 521, rejected: 0 },
+      ...overrides,
+    };
+  }
+
+  it("BG-0044 real-world scenario: passes when expectedFixtureCount (238) matches the run's own acceptedFixtures (238), with 2 fixtures whole-fixture quarantined out of 240", () => {
+    // This is the exact production scenario (season 26027, workflow run 35438310171,
+    // 2026-09-19) that the unfixed code incorrectly failed: 238 accepted + 2 quarantined = 240
+    // attempted, 9258 performance rows, 521 rating candidates -- all real, correct data.
+    expect(
+      validateHistoricalRatingDerivation(
+        derivationResponse({ expectedFixtureCount: 238 }),
+        26_027,
+        9_258,
+        238,
+      ),
+    ).toMatchObject({ candidates: 521 });
+  });
+
+  it("BG-0044: fails when the worker reports expectedFixtureCount 240 but this run's acceptedFixtures is genuinely 238 (worker still assuming a flat 240)", () => {
+    expect(() =>
+      validateHistoricalRatingDerivation(
+        derivationResponse({ expectedFixtureCount: 240 }),
+        26_027,
+        9_258,
+        238,
+      ),
+    ).toThrow("historical_rating_derivation_mismatch");
+  });
+
+  it("BG-0044: fails when the worker reports expectedFixtureCount 238 but this run's acceptedFixtures is actually 240 (worker under-reporting)", () => {
+    expect(() =>
+      validateHistoricalRatingDerivation(
+        derivationResponse({ expectedFixtureCount: 238 }),
+        26_027,
+        9_258,
+        240,
+      ),
+    ).toThrow("historical_rating_derivation_mismatch");
+  });
+
+  it("BG-0044: still passes the pre-existing all-clear case (zero quarantines, acceptedFixtures === 240 === fixturesProcessed) exactly as before this fix", () => {
+    expect(
+      validateHistoricalRatingDerivation(
+        derivationResponse({
+          expectedFixtureCount: 240,
+          performanceRows: 9_240,
+          candidates: 612,
+          counters: { validated: 612, rejected: 0 },
+        }),
+        26_027,
+        9_240,
+        240,
+      ),
+    ).toMatchObject({ candidates: 612 });
   });
 });
 
