@@ -1699,3 +1699,160 @@ tasks:
       fantasy_teams rows are covered by whatever specific deletion approval is in force at that
       time. No job-history deletion, account deletion, or production rollback is authorized by
       this snapshot or by BG-0048's existence.
+
+  BG-0049:
+    title: 'Fantasy catalog re-stage readiness: coverage reconciliation, isolated rehearsal, production approval packet (2026-09-19)'
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: DONE_NO_GO
+    depends_on: [BG-0011, BG-0023, BG-0032, BG-0033, BG-0048]
+    evidence: ['docs/backend/FANTASY_CATALOG_ACTIVATION_RUNBOOK.md', 'supabase/tests/database/fantasy_catalog_activation.test.sql', 'supabase/tests/database/fantasy_catalog_rollback_cleanup.test.sql', 'isolated rehearsal branch igjchlaggefoypludqoa (created and deleted this task, no persistent artifact)']
+    production_approval_packet_2026_09_19: >-
+      GO/NO-GO: NO-GO for immediate production execution of the catalog rollback+re-stage.
+      Readiness analysis and isolated rehearsal are COMPLETE and support GO in principle, but two
+      concrete prerequisites are unmet in actual reviewed code/product-decision terms, not merely
+      unperformed steps. Specific reason: (1) no reviewed RPC exists anywhere in the codebase to
+      remove the 3 existing app.fantasy_teams rows blocking the fantasy_catalog_in_use guard --
+      every FK from fantasy_teams (squad memberships, lineups, lineup_players, transfer batches,
+      chip uses, free-hit snapshots, mutation_audit) is ON DELETE RESTRICT and no
+      delete_fantasy_team-equivalent function was found; (2) BG-0023 (delete-or-keep the underlying
+      synthetic accounts) remains HALTED_FOR_INPUT, an explicit owner product decision, unresolved.
+      Both are prerequisites for the guard to ever legitimately clear, not steps this task is
+      authorized to perform (LIMITS: no production account/team/job-history deletion).
+      1) RECONCILED COVERAGE (fresh live query against app_private.fantasy_catalog_candidates for
+      football season 28647, uuid d03223b0-8f4a-4309-93e1-2a708d7c3584, 539 current-roster
+      players): 393 positive-confidence historical ratings; 34 with a genuine season-26027 v2
+      rating (botolago-preseason-rating-v2-fixture-performance) but confidence=0 -- confirmed via
+      code (confidence = min(1, minutes/900) in
+      supabase/functions/_shared/sportsmonks-player-ratings.ts:557) to mean the player recorded
+      zero total minutes that season, a legitimate outcome, not a defect; 52 with only a stale
+      season-24319 botolago-preseason-rating-v1 record at confidence=0 (no season-26027 data for
+      that player); 60 with no rating record at all. 34+52+60=146 zero-confidence total, matching
+      the previously-reported figure exactly but now correctly attributed by source rather than
+      collapsed into one bucket. All three all-zero-confidence clubs (Amal Tiznit ext-id 228516,
+      Moghreb Tétouan ext-id 9511, Widad Témara ext-id 16938) independently confirmed to have ZERO
+      fixtures in season 26027 (direct SQL count) -- these are the exact three promoted/newly-
+      current clubs already identified in BG-0033''s season correction (season-to-season turnover
+      vs the prior stale 26027 roster), so their zero-confidence status is genuinely unavailable
+      history, NOT a mapping defect. No repair performed or needed; existing neutral fallback
+      correctly retained for these players.
+      REMAINING LIMITATION: fresh-context Reviewer confirmed by direct code inspection
+      (app_private.fantasy_initial_price_v1 and fantasy_rating_inputs_degenerate) that the pricing
+      formula and degeneracy guard are BOTH confidence-only and cannot distinguish the three
+      zero-confidence sub-cases from each other -- this is expected, correct behavior per the
+      approved formula, not a gap requiring further work.
+      2) CANDIDATE COUNT AND PRICE DISTRIBUTION: 539 current-season candidates from the LIVE
+      formula (unchanged, not modified by this task). If re-staged today with real data:
+      GK 60 (26 fallback/10 low-confidence/24 solid, price 4.8-6.3, avg 5.08), DEF 156 (44/16/96,
+      4.7-6.8, avg 5.40), MID 195 (52/41/102, 6.5-12.0, avg 8.04), FWD 128 (24/22/82, 6.3-12.0,
+      avg 8.23); overall 4.7-12.0, avg 6.99. CONTRASTED WITH THE ACTUAL LIVE PRODUCTION CATALOG
+      (staged 2026-09-17, before the season correction, before the season-26027 backfill, and
+      before the fantasy_rating_inputs_degenerate migration existed): confirmed via direct query
+      that ALL 539 live players are frozen at neutral rating-6.0/confidence-0 prices -- only 3
+      DISTINCT prices exist across the entire live catalog. This is the concrete, demonstrated case
+      for re-staging: the live catalog predates the guard that exists specifically to prevent this,
+      and predates the real historical data that would fix it.
+      3) SQUAD-VALIDATION AND REHEARSAL RESULTS (isolated Supabase branch igjchlaggefoypludqoa,
+      schema-only clone via migration replay, with_data:false, zero production rows, created and
+      deleted within this task at owner-approved cost $0.01344/hr): synthetic 16-club/240-player
+      catalog seeded with a realistic ~73%/27% positive/zero-confidence mix; full
+      preview->stage->verify->reopen sequence run via the real, unmodified
+      api.preview_fantasy_catalog_activation / api.service_stage_fantasy_catalog /
+      api.service_open_fantasy_registration functions -- ready:true, 240/30/240 players/gameweeks/
+      fixtures, 59 distinct prices (4.00-12.50), matching the "richer picture" prediction versus
+      production''s 3 distinct prices. Real squad-validation RPC (api.create_fantasy_team /
+      app_private.fantasy_validate_selection, ruleset botolago-fantasy-v1.1: squad_size=15,
+      initial_budget=100.00, max_players_per_club=3, quotas GK2/DEF5/MID5/FWD3) exercised against
+      REAL computed prices with three accepted example squads (budget 71.80, balanced 85.00,
+      premium 98.00, all quota/club-limit-valid, max 3-per-club) and three confirmed rejections
+      (cost>100 -> PT400 budget_exceeded; wrong quota -> PT400 invalid_squad; 4-per-club ->
+      PT400 club_limit_exceeded). Rollback rehearsed: PT409 fantasy_catalog_in_use correctly fired
+      while synthetic teams existed; succeeded cleanly once removed, with the
+      fantasy_catalog_activation_runs journal row preserved and rolled_back_at set (BG-0032 fix
+      confirmed genuinely working, not merely assumed); safe re-stage with a fresh idempotency key
+      immediately after rollback confirmed to succeed cleanly. Degeneracy guard independently
+      confirmed to fire (PT409 fantasy_rating_inputs_degenerate, before any insert) against a
+      synthetic all-neutral catalog reproducing production''s pre-fix condition exactly.
+      CRITICAL FINDING, independently reproduced live TWICE (by the Builder and, separately, fresh,
+      by the independent Verifier): inserting a synthetic app_private.fantasy_job_runs row (tested
+      both season-scoped and gameweek-scoped) and then calling api.service_rollback_fantasy_catalog
+      produces a raw, uncaught Postgres 23503 foreign-key-violation error
+      (fantasy_job_runs_fantasy_season_id_fkey / fantasy_job_runs_gameweek_id_fkey) rather than a
+      clean application error, fully blocking rollback until the row is removed. This is BG-0048,
+      now proven real rather than theoretical. Fresh-context Reviewer independently confirmed via
+      direct source inspection that the failure is fully transactionally atomic (Postgres rolls
+      back every prior delete in the same call on the unhandled exception) -- a clean abort, not
+      partial corruption -- and that the only realistic writer of job_runs rows
+      (scripts/backend/fantasy-season-orchestrator.ts via
+      .github/workflows/fantasy-season-orchestrator.yml) is gated behind FANTASY_AUTOMATION_ENABLED
+      (confirmed off, BG-0004 HOLD, unchanged) or a deliberate owner-only manual dispatch, so the
+      real-world risk today is a process-control matter (don''t manually dispatch the orchestrator
+      during the maintenance window; re-check both FK paths immediately before dispatch, not from
+      a stale snapshot) rather than a code blocker for this one re-stage -- but BG-0048 should be
+      fixed in code as a fast-follow before BG-0004 (automation) is ever turned on, since
+      accumulated real job-run rows would make rollback of that season effectively permanently
+      broken without the fix.
+      Independent Verifier note: one narrative correction -- the Builder''s report described the
+      re-staged season (daa541d2-dfcc-4c6e-8a22-31fc239b8a45) as "currently existing" on the
+      branch at report time; the Verifier found it had since been rolled back as part of the
+      BG-0048 test sequence (rolled_back_at set, zero live rows), and independently re-staged an
+      equivalent catalog itself to reconfirm the underlying mechanics (59 distinct prices,
+      4.00-12.50 range) still hold. This is a state-timing discrepancy in the report, not a
+      substantive finding error; all six of the Verifier''s independent checks otherwise PASSED,
+      including a full fresh live reproduction of the BG-0048 defect.
+      4) EXACT AFFECTED RECORDS AND PROPOSED HANDLING OF EXISTING TEST TEAMS (read-only production
+      query, fresh): fantasy season 9918cf95-9ed5-4d7b-99ca-eb9bfc29a258 (2026/2027,
+      registration_open) currently has exactly 3 app.fantasy_teams rows: "E2E Botola XI"
+      (ccd4d5c4-2cd2-4b0d-82f4-7f22f0d435b9, owner e2e.fantasy.recovery@botolago.com), "QA Botola
+      XI" (84f211c8-5a09-40e1-9318-c4035d5520a9, owner e2e.fantasy.newcomer@botolago.com), "QA
+      Botola XI" (cc4bf92b-30a1-4d65-bb05-4ac49ecb91f9, owner e2e.fantasy.launch@botolago.com), all
+      created 2026-09-18, all owned by @botolago.com-domain synthetic test/QA/E2E accounts (not
+      observed real end users). PROPOSED HANDLING: per the owner''s explicit instruction not to
+      assume this count/appearance alone is sufficient proof of ownership or deletion authorization,
+      and per the LIMITS forbidding account/team deletion in this task, NO handling is proposed as
+      executable now. The actual removal requires (a) a reviewed team-removal RPC that does not yet
+      exist in the codebase (new, scoped implementation work, not covered by this task), and (b)
+      the still-open BG-0023 human product decision on the underlying accounts. Recorded here as
+      the exact blocking prerequisite, not resolved.
+      5) CURRENT DEADLINE CONSTRAINTS (fresh, re-checked immediately before writing this packet,
+      2026-09-19T13:13:57Z): season status registration_open; exactly one gameweek exists
+      (sequence 1, status open, deadline_at 2026-09-23T22:30:00Z, ~4.4 days away at check time).
+      fantasy_job_runs: 0 rows on both the season-level and gameweek-level FK paths, unchanged from
+      the earlier same-day snapshot. FANTASY_AUTOMATION_ENABLED confirmed off (7/7 most recent
+      scheduled fantasy-season-orchestrator.yml runs concluded "skipped").
+      6) EXACT ORDERED PRODUCTION OPERATIONS (NOT AUTHORIZED, NOT DISPATCHED -- for the record only,
+      pending the prerequisites above): (a) implement and independently review a scoped
+      team-removal RPC, FK-safe per the same pattern as BG-0032''s league/membership/ranking
+      cleanup; (b) obtain the owner''s BG-0023 decision and execute it via that reviewed RPC for
+      exactly the 3 named teams above; (c) fix BG-0048 (job_runs cleanup in
+      api.service_rollback_fantasy_catalog) via its own reviewed migration, OR explicitly accept
+      the process-control mitigation documented above as sufficient for this one operation; (d)
+      immediately before dispatch: re-run api.preview_fantasy_catalog_activation fresh, confirm
+      ready:true and ratingDegeneracy.degenerate:false, confirm zero fantasy_job_runs rows on both
+      FK paths fresh, confirm the deadline margin against whatever the then-current gameweek-1
+      deadline is; (e) call api.service_rollback_fantasy_catalog with the exact current activation
+      id and digest; (f) verify the rollback''s own returned counts and that the activation journal
+      shows rolled_back_at set; (g) generate a new idempotency key and call
+      api.service_stage_fantasy_catalog against the same football season; (h) verify per the
+      runbook (season planned, gameweeks scheduled, fixtures assigned once, player/evidence/price-
+      history counts match, non-degenerate price distribution); (i) re-run the preview once more
+      immediately before opening, confirm the digest is unchanged and the first deadline is still
+      >24h away; (j) generate a different idempotency key and call
+      api.service_open_fantasy_registration; (k) verify registration_open, only gameweek 1 open,
+      public Fantasy read contracts expose the new catalog.
+      7) POST-CHANGE VERIFICATION AND RECOVERY: verification steps are (d)/(f)/(h)/(i)/(k) above,
+      all read-only confirmations against the runbook''s own stated invariants, using the same
+      preview/stage/verify discipline rehearsed on the isolated branch. RECOVERY: if stage fails
+      after a successful rollback, the football season and its canonical data are untouched (the
+      Fantasy layer was already fully removed by the rollback and no partial Fantasy state can
+      exist per the FK-safe delete order proven on the branch) -- retry staging with a fresh
+      idempotency key using the exact same reviewed inputs; this is safe and idempotent, proven by
+      the branch''s successful re-stage-after-rollback rehearsal. If rollback itself fails on the
+      BG-0048 job_runs FK violation, the operation aborts atomically (proven on the branch: zero
+      partial deletion, all prior state fully intact) -- do not retry blindly; identify and remove
+      the specific blocking job_runs row(s) (or resolve via a reviewed BG-0048 fix) before retrying.
+      No step in this packet has been dispatched. No production catalog rollback/rebuild/re-stage,
+      account/team/job-history deletion, published-price/registration/formula/automation change, or
+      public deployment was performed by this task, per its explicit authorization boundary.
+    isolated_rehearsal_cost_note: 'Supabase development branch igjchlaggefoypludqoa created with owner confirmation of the $0.01344/hour cost (get_cost/confirm_cost), used for the full rehearsal in this packet, and deleted immediately after evidence was captured. No persistent cost remains.'
