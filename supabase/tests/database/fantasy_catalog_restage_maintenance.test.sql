@@ -27,7 +27,7 @@ insert into app.competitions (id, slug, name, short_name, competition_type, coun
 select md5('restage-competition:' || suffix)::uuid,
   'restage-maintenance-' || suffix, 'Restage Maintenance ' || suffix, 'RML',
   'league', 'd0000000-0000-4000-8000-000000000001', true
-from unnest(array['happy', 'control', 'extra', 'jobruns', 'atomic']) suffix;
+from unnest(array['happy', 'control', 'extra', 'jobruns', 'atomic', 'permuted']) suffix;
 
 insert into app.teams (id, slug, name, short_name, code, country_id, active)
 select md5('restage-club:' || team_number)::uuid,
@@ -303,6 +303,92 @@ select extensions.is(
   3, 'fixture setup: exactly 3 teams exist for the happy-path fantasy season'
 );
 
+-- Byte-for-byte copy of pg_temp.fantasy_catalog_restage_pre_export from
+-- scripts/backend/fantasy-catalog-restage-maintenance.sql — same
+-- keep-in-sync note as the maintenance function below.
+create function pg_temp.fantasy_catalog_restage_pre_export(
+  p_fantasy_season_id uuid,
+  p_allowed_team_ids uuid[]
+)
+returns table (export_json jsonb)
+language sql
+stable
+as $$
+  select jsonb_build_object(
+    'exportedAt', statement_timestamp(),
+    'fantasySeasonId', p_fantasy_season_id,
+    'allowedTeamIds', to_jsonb(p_allowed_team_ids),
+    'activationRun', (
+      select to_jsonb(run) from app_private.fantasy_catalog_activation_runs run
+      where run.fantasy_season_id = p_fantasy_season_id
+    ),
+    'gameweeks', (
+      select coalesce(jsonb_agg(to_jsonb(gameweek)), '[]'::jsonb)
+      from app.fantasy_gameweeks gameweek
+      where gameweek.fantasy_season_id = p_fantasy_season_id
+    ),
+    'teams', (
+      select coalesce(jsonb_agg(to_jsonb(team)), '[]'::jsonb)
+      from app.fantasy_teams team
+      where team.id = any (p_allowed_team_ids)
+    ),
+    'squadMemberships', (
+      select coalesce(jsonb_agg(to_jsonb(squad)), '[]'::jsonb)
+      from app.fantasy_squad_memberships squad
+      where squad.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'transferBatches', (
+      select coalesce(jsonb_agg(to_jsonb(batch)), '[]'::jsonb)
+      from app.fantasy_transfer_batches batch
+      where batch.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'transfers', (
+      select coalesce(jsonb_agg(to_jsonb(transfer)), '[]'::jsonb)
+      from app.fantasy_transfers transfer
+      join app.fantasy_transfer_batches batch on batch.id = transfer.transfer_batch_id
+      where batch.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'lineups', (
+      select coalesce(jsonb_agg(to_jsonb(lineup)), '[]'::jsonb)
+      from app.fantasy_lineups lineup
+      where lineup.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'lineupPlayers', (
+      select coalesce(jsonb_agg(to_jsonb(lineup_player)), '[]'::jsonb)
+      from app.fantasy_lineup_players lineup_player
+      join app.fantasy_lineups lineup on lineup.id = lineup_player.lineup_id
+      where lineup.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'leagueMemberships', (
+      select coalesce(jsonb_agg(to_jsonb(membership)), '[]'::jsonb)
+      from app.fantasy_league_memberships membership
+      where membership.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'leagues', (
+      select coalesce(jsonb_agg(to_jsonb(league)), '[]'::jsonb)
+      from app.fantasy_leagues league
+      where league.fantasy_season_id = p_fantasy_season_id
+    ),
+    'mutationAudit', (
+      select coalesce(jsonb_agg(to_jsonb(audit)), '[]'::jsonb)
+      from app_private.fantasy_mutation_audit audit
+      where audit.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'priceEvidence', (
+      select coalesce(jsonb_agg(to_jsonb(evidence)), '[]'::jsonb)
+      from app_private.fantasy_initial_price_evidence evidence
+      join app.fantasy_players player on player.id = evidence.fantasy_player_id
+      where player.fantasy_season_id = p_fantasy_season_id
+    ),
+    'priceHistory', (
+      select coalesce(jsonb_agg(to_jsonb(history)), '[]'::jsonb)
+      from app.fantasy_player_price_history history
+      join app.fantasy_players player on player.id = history.fantasy_player_id
+      where player.fantasy_season_id = p_fantasy_season_id
+    )
+  ) as export_json;
+$$;
+
 -- Load the maintenance function under test. This is an intentional,
 -- byte-for-byte copy of the pg_temp.fantasy_catalog_restage_maintenance
 -- function body from scripts/backend/fantasy-catalog-restage-maintenance.sql
@@ -433,15 +519,17 @@ begin
         v_other_team_count, p_fantasy_season_id);
   end if;
 
+  -- Kept byte-for-byte in sync with scripts/backend/fantasy-catalog-restage-maintenance.sql
+  -- (strict pairwise team/owner correspondence, not independent set membership).
   select count(*) into v_bad_owner_count
-  from app.fantasy_teams team
+  from unnest(p_allowed_team_ids, p_allowed_owner_ids) as expected(team_id, owner_id)
+  join app.fantasy_teams team on team.id = expected.team_id
   where team.fantasy_season_id = p_fantasy_season_id
-    and (team.id <> all (p_allowed_team_ids)
-      or team.user_id <> all (p_allowed_owner_ids));
+    and team.user_id <> expected.owner_id;
   if v_bad_owner_count > 0 then
     raise exception using errcode = 'PT409',
       message = 'fantasy_restage_maintenance_unexpected_owner',
-      detail = 'a team id/owner pair for this season does not match the allow-listed set';
+      detail = 'a team id/owner pair for this season does not match the allow-listed pairing';
   end if;
 
   if (select count(*) from app.fantasy_teams team
@@ -449,6 +537,14 @@ begin
         and team.fantasy_season_id = p_fantasy_season_id) <> 3 then
     raise exception using errcode = 'PT409',
       message = 'fantasy_restage_maintenance_allowlisted_team_missing';
+  end if;
+
+  if (select count(distinct team.user_id) from app.fantasy_teams team
+      where team.fantasy_season_id = p_fantasy_season_id
+        and team.user_id = any (p_allowed_owner_ids)) <> 3 then
+    raise exception using errcode = 'PT409',
+      message = 'fantasy_restage_maintenance_allowlisted_owner_missing',
+      detail = 'not all 3 allow-listed owner ids own one of this season''s teams';
   end if;
 
   select count(*) into v_squad_memberships
@@ -844,6 +940,92 @@ select extensions.is(
   (select count(*)::integer from app.fantasy_seasons
    where id = current_setting('test.extra_fantasy_season')::uuid),
   1, 'the season under the aborted attempt is untouched'
+);
+
+-- =======================================================================
+-- Negative: the 3 correct teams exist, but two owners are PERMUTED across
+-- them (team ids match the allow-list exactly; owner ids are each drawn
+-- from the allow-list, but assigned to the wrong team) → the strict
+-- pairwise check must abort before any deletion, proving this is not just
+-- independent set-membership on team ids and owner ids.
+-- =======================================================================
+select set_config('test.permuted_football_season',
+  pg_temp.fantasy_restage_build_catalog('permuted', true)::text, true);
+select set_config('test.permuted_stage',
+  pg_temp.fantasy_restage_stage(
+    current_setting('test.permuted_football_season')::uuid,
+    'd1a00000-0000-4000-8000-000000000015'
+  )::text, true);
+select set_config('test.permuted_fantasy_season',
+  current_setting('test.permuted_stage')::jsonb ->> 'fantasySeasonId', true);
+-- Team f001 is (incorrectly) owned by owner f002, and vice versa; f003 is correct.
+select pg_temp.fantasy_restage_seed_e2e_team(
+  'e2e15000-0000-4000-8000-00000000f001', 'e2e00000-0000-4000-8000-00000000f002',
+  'e2e.fantasy.recovery@botolago.test', current_setting('test.permuted_fantasy_season')::uuid
+);
+select pg_temp.fantasy_restage_seed_e2e_team(
+  'e2e15000-0000-4000-8000-00000000f002', 'e2e00000-0000-4000-8000-00000000f001',
+  'e2e.fantasy.newcomer@botolago.test', current_setting('test.permuted_fantasy_season')::uuid
+);
+select pg_temp.fantasy_restage_seed_e2e_team(
+  'e2e15000-0000-4000-8000-00000000f003', 'e2e00000-0000-4000-8000-00000000f003',
+  'e2e.fantasy.launch@botolago.test', current_setting('test.permuted_fantasy_season')::uuid
+);
+
+select extensions.throws_ok(
+  $$select * from pg_temp.fantasy_catalog_restage_maintenance(
+    p_fantasy_season_id => current_setting('test.permuted_fantasy_season')::uuid,
+    p_football_season_id => current_setting('test.permuted_football_season')::uuid,
+    p_activation_run_id => (current_setting('test.permuted_stage')::jsonb ->> 'activationId')::uuid,
+    p_allowed_team_ids => array[
+      'e2e15000-0000-4000-8000-00000000f001', 'e2e15000-0000-4000-8000-00000000f002',
+      'e2e15000-0000-4000-8000-00000000f003']::uuid[],
+    p_allowed_owner_ids => array[
+      'e2e00000-0000-4000-8000-00000000f001', 'e2e00000-0000-4000-8000-00000000f002',
+      'e2e00000-0000-4000-8000-00000000f003']::uuid[],
+    p_expected_squad_memberships => 15, p_expected_transfer_batches => 3,
+    p_expected_transfers => 3, p_expected_lineups => 3, p_expected_lineup_players => 6,
+    p_expected_league_memberships => 3, p_expected_mutation_audit_rows => 3,
+    p_expected_leagues => 3,
+    p_ruleset_code => 'botolago-fantasy-v1.1', p_expected_team_count => 16,
+    p_expected_round_count => 1, p_expected_fixture_count => 8,
+    p_minimum_player_count => 240, p_maximum_player_count => 800,
+    p_new_idempotency_key => 'd1a00000-0000-4000-8000-000000000016'
+  )$$,
+  'PT409', 'fantasy_restage_maintenance_unexpected_owner',
+  'a permuted (but individually allow-listed) team/owner pairing aborts before any deletion'
+);
+select extensions.is(
+  (select count(*)::integer from app.fantasy_teams
+   where fantasy_season_id = current_setting('test.permuted_fantasy_season')::uuid),
+  3, 'all 3 teams remain, untouched, after the aborted permuted-owner attempt'
+);
+
+-- =======================================================================
+-- Read-only pre-export sanity check: run it against the still-intact
+-- "permuted" scenario above and confirm it returns the expected shape and
+-- counts without deleting or modifying anything.
+-- =======================================================================
+select set_config('test.export_json',
+  (select export_json::text from pg_temp.fantasy_catalog_restage_pre_export(
+    p_fantasy_season_id => current_setting('test.permuted_fantasy_season')::uuid,
+    p_allowed_team_ids => array[
+      'e2e15000-0000-4000-8000-00000000f001', 'e2e15000-0000-4000-8000-00000000f002',
+      'e2e15000-0000-4000-8000-00000000f003']::uuid[]
+  )), true);
+select extensions.is(
+  jsonb_array_length(current_setting('test.export_json')::jsonb -> 'teams'),
+  3, 'pre-export returns exactly the 3 allow-listed teams'
+);
+select extensions.is(
+  (current_setting('test.export_json')::jsonb -> 'activationRun' ->> 'fantasy_season_id')::uuid,
+  current_setting('test.permuted_fantasy_season')::uuid,
+  'pre-export includes the activation run row for this fantasy season'
+);
+select extensions.is(
+  (select count(*)::integer from app.fantasy_teams
+   where fantasy_season_id = current_setting('test.permuted_fantasy_season')::uuid),
+  3, 'the pre-export is genuinely read-only: all 3 teams still present afterward'
 );
 
 -- =======================================================================

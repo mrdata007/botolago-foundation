@@ -148,13 +148,43 @@
 --   catalog and fail loudly with fantasy_catalog_already_staged, which is a
 --   symptom of skipping this checklist, not a bug in the RPC.
 --
+-- PRE-ROLLBACK EVIDENCE EXPORT (brief step A6 — MANDATORY, run first)
+--   The deletes below are irreversible: there is no un-rollback RPC and no
+--   supported way to reconstruct a deleted team/league/price-evidence row.
+--   Before ever calling fantasy_catalog_restage_maintenance(...), run
+--   pg_temp.fantasy_catalog_restage_pre_export(...) below (same session,
+--   same BYPASSRLS requirement, fully read-only) and save its single JSONB
+--   row to a PROTECTED location OUTSIDE this git repository (e.g. an
+--   operator-only secrets/evidence store) — never commit its output to
+--   GitHub, since it contains real player/team/user identifiers. This is
+--   the only durable record of the deleted state if a later step needs to
+--   be reasoned about after the fact; it is a read/export step, not a
+--   recovery mechanism (there is still no un-delete).
+--
 -- USAGE
 --   Run under an owner/BYPASSRLS psql session, e.g.:
 --     psql "$DB_URL" -v ON_ERROR_STOP=1 -f scripts/backend/fantasy-catalog-restage-maintenance.sql
---   Then, in the SAME session, call the function with the real arguments,
---   e.g. for production (after independently re-verifying every count and
---   recomputing nothing by hand — the script reads the stored digest and
---   the fresh preview digest itself):
+--   Then, in the SAME session, FIRST capture the evidence export, e.g.:
+--     \t on
+--     \o /path/outside/this/repo/pre-rollback-evidence-<timestamp>.json
+--     select export_json from pg_temp.fantasy_catalog_restage_pre_export(
+--       p_fantasy_season_id => '9918cf95-9ed5-4d7b-99ca-eb9bfc29a258',
+--       p_allowed_team_ids  => array[
+--         'ccd4d5c4-2cd2-4b0d-82f4-7f22f0d435b9',
+--         '84f211c8-5a09-40e1-9318-c4035d5520a9',
+--         'cc4bf92b-30a1-4d65-bb05-4ac49ecb91f9'
+--       ]::uuid[]
+--     );
+--     \o
+--     \t off
+--   Confirm the file was written and its row counts look sane BEFORE
+--   proceeding. Only then call the destructive function with the real
+--   arguments (the two arrays below are PARALLEL: p_allowed_team_ids[i]
+--   must be owned by p_allowed_owner_ids[i] — this is enforced by a strict
+--   pairwise check, not independent set membership), e.g. for production
+--   (after independently re-verifying every count and recomputing nothing
+--   by hand — the script reads the stored digest and the fresh preview
+--   digest itself):
 --     select * from pg_temp.fantasy_catalog_restage_maintenance(
 --       p_fantasy_season_id      => '9918cf95-9ed5-4d7b-99ca-eb9bfc29a258',
 --       p_football_season_id     => 'd03223b0-8f4a-4309-93e1-2a708d7c3584',
@@ -187,6 +217,99 @@
 --     );
 --   Nothing is committed until the calling session issues COMMIT. Review the
 --   RAISE NOTICE output and the returned row before committing.
+
+-- ---------------------------------------------------------------------
+-- Read-only pre-rollback evidence export (brief step A6). Takes only the
+-- fantasy season id and the allow-listed team ids; performs no write of
+-- any kind. Returns one JSONB document containing everything the
+-- destructive function below is about to delete or roll back, so it can
+-- be captured before that happens. Safe to run under any role that can
+-- read app.*/app_private.* (still recommended to run it in the SAME
+-- BYPASSRLS session as the destructive step, to avoid any RLS-filtered
+-- partial view of the data being exported).
+-- ---------------------------------------------------------------------
+create or replace function pg_temp.fantasy_catalog_restage_pre_export(
+  p_fantasy_season_id uuid,
+  p_allowed_team_ids uuid[]
+)
+returns table (export_json jsonb)
+language sql
+stable
+as $$
+  select jsonb_build_object(
+    'exportedAt', statement_timestamp(),
+    'fantasySeasonId', p_fantasy_season_id,
+    'allowedTeamIds', to_jsonb(p_allowed_team_ids),
+    'activationRun', (
+      select to_jsonb(run) from app_private.fantasy_catalog_activation_runs run
+      where run.fantasy_season_id = p_fantasy_season_id
+    ),
+    'gameweeks', (
+      select coalesce(jsonb_agg(to_jsonb(gameweek)), '[]'::jsonb)
+      from app.fantasy_gameweeks gameweek
+      where gameweek.fantasy_season_id = p_fantasy_season_id
+    ),
+    'teams', (
+      select coalesce(jsonb_agg(to_jsonb(team)), '[]'::jsonb)
+      from app.fantasy_teams team
+      where team.id = any (p_allowed_team_ids)
+    ),
+    'squadMemberships', (
+      select coalesce(jsonb_agg(to_jsonb(squad)), '[]'::jsonb)
+      from app.fantasy_squad_memberships squad
+      where squad.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'transferBatches', (
+      select coalesce(jsonb_agg(to_jsonb(batch)), '[]'::jsonb)
+      from app.fantasy_transfer_batches batch
+      where batch.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'transfers', (
+      select coalesce(jsonb_agg(to_jsonb(transfer)), '[]'::jsonb)
+      from app.fantasy_transfers transfer
+      join app.fantasy_transfer_batches batch on batch.id = transfer.transfer_batch_id
+      where batch.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'lineups', (
+      select coalesce(jsonb_agg(to_jsonb(lineup)), '[]'::jsonb)
+      from app.fantasy_lineups lineup
+      where lineup.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'lineupPlayers', (
+      select coalesce(jsonb_agg(to_jsonb(lineup_player)), '[]'::jsonb)
+      from app.fantasy_lineup_players lineup_player
+      join app.fantasy_lineups lineup on lineup.id = lineup_player.lineup_id
+      where lineup.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'leagueMemberships', (
+      select coalesce(jsonb_agg(to_jsonb(membership)), '[]'::jsonb)
+      from app.fantasy_league_memberships membership
+      where membership.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'leagues', (
+      select coalesce(jsonb_agg(to_jsonb(league)), '[]'::jsonb)
+      from app.fantasy_leagues league
+      where league.fantasy_season_id = p_fantasy_season_id
+    ),
+    'mutationAudit', (
+      select coalesce(jsonb_agg(to_jsonb(audit)), '[]'::jsonb)
+      from app_private.fantasy_mutation_audit audit
+      where audit.fantasy_team_id = any (p_allowed_team_ids)
+    ),
+    'priceEvidence', (
+      select coalesce(jsonb_agg(to_jsonb(evidence)), '[]'::jsonb)
+      from app_private.fantasy_initial_price_evidence evidence
+      join app.fantasy_players player on player.id = evidence.fantasy_player_id
+      where player.fantasy_season_id = p_fantasy_season_id
+    ),
+    'priceHistory', (
+      select coalesce(jsonb_agg(to_jsonb(history)), '[]'::jsonb)
+      from app.fantasy_player_price_history history
+      join app.fantasy_players player on player.id = history.fantasy_player_id
+      where player.fantasy_season_id = p_fantasy_season_id
+    )
+  ) as export_json;
+$$;
 
 create or replace function pg_temp.fantasy_catalog_restage_maintenance(
   p_fantasy_season_id uuid,
@@ -339,25 +462,43 @@ begin
         v_other_team_count, p_fantasy_season_id);
   end if;
 
+  -- Strict PAIRWISE (team id, owner id) correspondence: p_allowed_team_ids
+  -- and p_allowed_owner_ids are parallel arrays (index i's team must be
+  -- owned by index i's owner), not two independent allow-lists. A team
+  -- whose owner is drawn from the allow-list but assigned to the WRONG
+  -- team (owners permuted across the 3 correct teams), or an allow-listed
+  -- owner id owning none of the 3 teams while another is duplicated, must
+  -- abort here rather than silently pass a set-membership-only check.
   select count(*) into v_bad_owner_count
-  from app.fantasy_teams team
+  from unnest(p_allowed_team_ids, p_allowed_owner_ids) as expected(team_id, owner_id)
+  join app.fantasy_teams team on team.id = expected.team_id
   where team.fantasy_season_id = p_fantasy_season_id
-    and (team.id <> all (p_allowed_team_ids)
-      or team.user_id <> all (p_allowed_owner_ids));
+    and team.user_id <> expected.owner_id;
   if v_bad_owner_count > 0 then
     raise exception using errcode = 'PT409',
       message = 'fantasy_restage_maintenance_unexpected_owner',
-      detail = 'a team id/owner pair for this season does not match the allow-listed set';
+      detail = 'a team id/owner pair for this season does not match the allow-listed pairing';
   end if;
 
   -- Every allow-listed id must actually exist (guards against a caller
   -- passing a stale or wrong id list that would otherwise "pass" simply
-  -- because nothing unexpected was found).
+  -- because nothing unexpected was found). Checked for BOTH the team ids
+  -- and, separately, the distinct owner ids, so an allow-listed owner that
+  -- owns none of the 3 teams cannot slip past the pairwise check above by
+  -- virtue of that check only ever iterating actually-existing teams.
   if (select count(*) from app.fantasy_teams team
       where team.id = any (p_allowed_team_ids)
         and team.fantasy_season_id = p_fantasy_season_id) <> 3 then
     raise exception using errcode = 'PT409',
       message = 'fantasy_restage_maintenance_allowlisted_team_missing';
+  end if;
+
+  if (select count(distinct team.user_id) from app.fantasy_teams team
+      where team.fantasy_season_id = p_fantasy_season_id
+        and team.user_id = any (p_allowed_owner_ids)) <> 3 then
+    raise exception using errcode = 'PT409',
+      message = 'fantasy_restage_maintenance_allowlisted_owner_missing',
+      detail = 'not all 3 allow-listed owner ids own one of this season''s teams';
   end if;
 
   -- Count each dependent table directly, scoped to the 3 allow-listed team
