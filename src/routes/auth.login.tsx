@@ -95,7 +95,16 @@ function LoginPage() {
     const res = await authService.signInWithEmail(email, password);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.credentials" });
+      setErrors({
+        form:
+          res.errorCode === "rate_limited"
+            ? "auth.error.rate_limited"
+            : res.errorCode === "network"
+              ? "auth.error.network"
+              : res.errorCode === "email_unconfirmed"
+                ? "auth.error.email_unconfirmed"
+                : "auth.error.credentials",
+      });
       return;
     }
     await continueAfterAuth(res.data?.profileComplete);

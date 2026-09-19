@@ -1000,6 +1000,8 @@ export const dictionaries = {
     "auth.error.email_taken": "Un compte existe déjà avec cet e-mail.",
     "auth.error.terms_required": "Vous devez accepter les conditions.",
     "auth.error.credentials": "E-mail ou mot de passe incorrect.",
+    "auth.error.email_unconfirmed":
+      "E-mail non confirmé. Vérifiez votre boîte de réception, puis réessayez.",
     "auth.error.generic": "Une erreur est survenue. Réessayez.",
     "auth.error.network": "Connexion impossible. Vérifiez votre réseau et réessayez.",
     "auth.error.rate_limited": "Trop de tentatives. Patientez un moment avant de réessayer.",
@@ -2136,6 +2138,8 @@ export const dictionaries = {
     "auth.error.email_taken": "يوجد حساب بهذا البريد بالفعل.",
     "auth.error.terms_required": "يجب قبول الشروط.",
     "auth.error.credentials": "البريد أو كلمة المرور غير صحيحة.",
+    "auth.error.email_unconfirmed":
+      "لم يتم تأكيد البريد الإلكتروني. تحقق من صندوق الوارد ثم حاول مجددًا.",
     "auth.error.generic": "حدث خطأ. حاول مجددًا.",
     "auth.error.network": "تعذر الاتصال. تحقق من الشبكة وحاول مرة أخرى.",
     "auth.error.rate_limited": "محاولات كثيرة جدًا. انتظر قليلًا ثم حاول مجددًا.",
