@@ -5,11 +5,11 @@ import { Radio, CalendarClock, CalendarRange, CheckCircle2 } from "lucide-react"
 import { footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
-import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
 import { CompetitionHeader } from "@/components/matches/CompetitionHeader";
+import { StandingsTable } from "@/components/matches/StandingsTable";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
 import {
@@ -100,7 +100,7 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
 }
 
 function MatchesPage() {
-  const { t, tr, lang, dir } = useI18n();
+  const { t, lang, dir } = useI18n();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -454,64 +454,7 @@ function MatchesPage() {
           0 ? (
           <EmptyState compact>{t("matches.table.empty")}</EmptyState>
         ) : (
-          <div className="overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] shadow-card">
-            <table className="w-full text-sm">
-              <thead className="bg-[color:var(--surface-hover)] text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                <tr>
-                  <th
-                    scope="col"
-                    aria-label={t("matches.table.rank")}
-                    className="px-3 py-2 text-start"
-                  >
-                    #
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-start">
-                    {t("matches.table.team")}
-                  </th>
-                  <th scope="col" className="px-2 py-2 text-center">
-                    <span aria-hidden>{t("matches.table.played_short")}</span>
-                    <span className="sr-only">{t("matches.table.played")}</span>
-                  </th>
-                  <th scope="col" className="px-2 py-2 text-center">
-                    <span aria-hidden>{t("matches.table.goal_difference_short")}</span>
-                    <span className="sr-only">{t("matches.table.goal_difference")}</span>
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-end">
-                    <span aria-hidden>{t("matches.table.points_short")}</span>
-                    <span className="sr-only">{t("matches.table.points")}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {matchesQ.data?.standings.map((row) => {
-                  const club = clubById(row.clubId);
-                  if (!club) return null;
-                  return (
-                    <tr key={row.clubId} className="border-t border-[var(--border-subtle)]">
-                      <td className="px-3 py-2 font-mono text-xs tabular-nums text-[color:var(--text-muted)]">
-                        {row.position}
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <ClubCrest club={club} size="sm" />
-                          <span className="truncate font-semibold text-foreground">
-                            {tr(club.shortName)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-2 py-2 text-center tabular-nums">{row.played}</td>
-                      <td className="px-2 py-2 text-center tabular-nums">
-                        {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
-                      </td>
-                      <td className="px-3 py-2 text-end font-black tabular-nums text-foreground">
-                        {row.points}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <StandingsTable rows={matchesQ.data?.standings ?? []} clubById={clubById} />
         )}
       </Section>
 
