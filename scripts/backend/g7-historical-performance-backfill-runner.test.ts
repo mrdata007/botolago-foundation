@@ -5,14 +5,17 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  CAPTURE_ONLY_DIAGNOSTIC_CONFIRMATION,
   HistoricalPerformanceBackfillError,
   MANAGED_SECRET_NAMES,
   parseMode,
@@ -859,5 +862,330 @@ describe("HistoricalPerformanceBackfillError", () => {
     const error = new HistoricalPerformanceBackfillError("some_code");
     expect(error.code).toBe("some_code");
     expect(error.message).toBe("some_code");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BG-0033-OWNER-3 regression tests: Defect 1 (fingerprintMatches accepted the digest itself as
+// plaintext) and Defect 2 (post-restore verification compared against what was just supplied,
+// not the original pre-run baseline).
+// ---------------------------------------------------------------------------
+
+/** Recursively collects {path, content} for every regular file under `dir`. */
+function readAllFiles(dir: string): Array<{ path: string; content: string }> {
+  const results: Array<{ path: string; content: string }> = [];
+  for (const entry of readdirSync(dir)) {
+    const entryPath = join(dir, entry);
+    if (statSync(entryPath).isDirectory()) {
+      results.push(...readAllFiles(entryPath));
+    } else {
+      results.push({ path: entryPath, content: readFileSync(entryPath, "utf8") });
+    }
+  }
+  return results;
+}
+
+/**
+ * A fake Supabase CLI identical to createFakeCli, except its `secrets list` output, from the
+ * FIRST `list` call issued after any `set` call has run, replaces the digest of `corruptedName`
+ * with `corruptedFingerprint` instead of the value's real sha256. This models the post-restore
+ * verification step observing a fingerprint that is unrelated to the true original captured
+ * digest — e.g. a stale/incorrect backend response — while the initial pre-run capture (the
+ * FIRST `list` call, before any `set`) still reports the real, correct digest.
+ */
+function createFakeCliWithVerificationDrift(
+  dir: string,
+  corruptedName: string,
+  corruptedFingerprint: string,
+): FakeCli {
+  const cliPath = join(dir, "fake-supabase-drift");
+  const stateFile = join(dir, "state.json");
+  const callLogFile = join(dir, "calls.jsonl");
+  const setHappenedFile = join(dir, "set-happened");
+  writeFileSync(stateFile, "{}");
+  writeFileSync(callLogFile, "");
+  const script = `#!/usr/bin/env bun
+import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+
+const args = process.argv.slice(2);
+const stateFile = ${JSON.stringify(stateFile)};
+const callLog = ${JSON.stringify(callLogFile)};
+const setHappenedFile = ${JSON.stringify(setHappenedFile)};
+const corruptedName = ${JSON.stringify(corruptedName)};
+const corruptedFingerprint = ${JSON.stringify(corruptedFingerprint)};
+function sha256(v) { return createHash("sha256").update(v, "utf8").digest("hex"); }
+function loadState() { return JSON.parse(readFileSync(stateFile, "utf8")); }
+function saveState(s) { writeFileSync(stateFile, JSON.stringify(s)); }
+appendFileSync(callLog, JSON.stringify(args) + "\\n");
+const [group, sub, ...rest] = args;
+if (group !== "secrets") { console.error("FAKE_CLI_UNSUPPORTED"); process.exit(1); }
+if (sub === "list") {
+  const state = loadState();
+  const afterSet = existsSync(setHappenedFile);
+  const lines = ["NAME | DIGEST"];
+  for (const name of Object.keys(state).sort()) {
+    const digest = (afterSet && name === corruptedName) ? corruptedFingerprint : state[name];
+    lines.push(\`\${name} | \${digest}\`);
+  }
+  console.log(lines.join("\\n"));
+  process.exit(0);
+}
+if (sub === "set") {
+  const envFileIndex = rest.indexOf("--env-file");
+  const envFile = rest[envFileIndex + 1];
+  const content = readFileSync(envFile, "utf8");
+  const state = loadState();
+  for (const line of content.split("\\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf("=");
+    const name = trimmed.slice(0, eq);
+    const value = trimmed.slice(eq + 1);
+    state[name] = sha256(value);
+  }
+  saveState(state);
+  writeFileSync(setHappenedFile, "1");
+  process.exit(0);
+}
+if (sub === "unset") {
+  const projectIndex = rest.indexOf("--project-ref");
+  const names = projectIndex === -1 ? rest : rest.slice(0, projectIndex);
+  if (names.length === 0) { console.error("FAKE_CLI_REFUSING_ZERO_NAME_UNSET"); process.exit(1); }
+  const state = loadState();
+  for (const name of names) delete state[name];
+  saveState(state);
+  process.exit(0);
+}
+console.error("FAKE_CLI_UNSUPPORTED_SUBCOMMAND");
+process.exit(1);
+`;
+  writeFileSync(cliPath, script);
+  chmodSync(cliPath, 0o755);
+  return {
+    cliPath,
+    stateFile,
+    callLogFile,
+    calls: () =>
+      readFileSync(callLogFile, "utf8")
+        .split("\n")
+        .filter((line) => line.trim().length > 0)
+        .map((line) => JSON.parse(line) as string[]),
+    state: () => JSON.parse(readFileSync(stateFile, "utf8")) as Record<string, string>,
+  };
+}
+
+describe("capture-only diagnostic confirmation is mode-scoped, never a mutation bypass", () => {
+  it("accepts CAPTURE_ONLY_DIAGNOSTIC_CONFIRMATION for --capture-only", async () => {
+    const h = createHarness();
+    seedState(h.cli, { SPORTSMONKS_API_TOKEN: "provider-token-value" });
+    const deps = h.deps({ CONFIRMATION: CAPTURE_ONLY_DIAGNOSTIC_CONFIRMATION });
+    const evidence = await runHistoricalPerformanceBackfill(deps, "capture-only");
+    expect(evidence.verdict).toBe("pass");
+  });
+
+  it("still accepts the shared CONFIRMATION for --capture-only (the main workflow's own internal capture step)", async () => {
+    const h = createHarness();
+    seedState(h.cli, { SPORTSMONKS_API_TOKEN: "provider-token-value" });
+    const deps = h.deps(); // default harness CONFIRMATION is the shared one
+    const evidence = await runHistoricalPerformanceBackfill(deps, "capture-only");
+    expect(evidence.verdict).toBe("pass");
+  });
+
+  it("REJECTS the diagnostic-only confirmation for every mutating mode (default, restore, restore-only)", async () => {
+    for (const mode of ["default", "restore", "restore-only"] as const) {
+      const h = createHarness();
+      seedState(h.cli, currentRestoreValues());
+      const deps = h.deps({ CONFIRMATION: CAPTURE_ONLY_DIAGNOSTIC_CONFIRMATION });
+      await expect(runHistoricalPerformanceBackfill(deps, mode)).rejects.toThrow(
+        "production_runner_guard_failed",
+      );
+      expect(h.cli.calls()).toEqual([]);
+    }
+  });
+});
+
+describe("Defect 1 correction — fingerprintMatches never accepts a digest as plaintext", () => {
+  it("1. a correct original plaintext value passes fingerprintMatches and restoration proceeds", async () => {
+    const h = createHarness();
+    seedState(h.cli, currentRestoreValues()); // trigger absent pre-run
+    const deps = h.deps({ G7_DRY_RUN: "1" }); // dry run still runs buildRestorePlan's proof
+    const evidence = await runHistoricalPerformanceBackfill(deps, "default");
+    expect(evidence.verdict).toBe("pass");
+    expect(evidence.dryRun).toBe(true);
+    // The proof succeeded for every present managed secret, including a genuine sha256Hex match.
+    expect(h.cli.calls()).toEqual([["secrets", "list", "--project-ref", EXPECTED_PROJECT_REF]]);
+  });
+
+  it("2. an incorrect restore value fails BEFORE any mutation (no set/unset ever invoked)", async () => {
+    const h = createHarness();
+    seedState(h.cli, {
+      ...currentRestoreValues(),
+      // The live FOOTBALL_SPORTSMONKS_LEAGUE_ID digest does not correspond to the constant "860"
+      // the runner will supply, so the proof must fail before anything is written.
+      FOOTBALL_SPORTSMONKS_LEAGUE_ID: "not-eight-sixty",
+    });
+    const deps = h.deps();
+    await expect(runHistoricalPerformanceBackfill(deps, "default")).rejects.toThrow(
+      "production_config_restore_unprovable",
+    );
+    const calls = h.cli.calls();
+    expect(calls).toEqual([["secrets", "list", "--project-ref", EXPECTED_PROJECT_REF]]);
+    expect(calls.some((call) => call[1] === "set" || call[1] === "unset")).toBe(false);
+  });
+
+  it("3. REGRESSION: supplying the captured digest itself as the restore value fails, not passes", async () => {
+    const h = createHarness();
+    // Seed every managed secret EXCEPT SPORTSMONKS_API_TOKEN with correct real digests.
+    const { SPORTSMONKS_API_TOKEN: _unused, ...otherRestoreValues } = currentRestoreValues();
+    seedState(h.cli, otherRestoreValues);
+
+    // The real (never-supplied) original plaintext, and its digest as `secrets list` would report it.
+    const realTokenValue = "the-actual-original-provider-token-plaintext";
+    const capturedDigest = sha256Hex(realTokenValue);
+    const state = h.cli.state();
+    state.SPORTSMONKS_API_TOKEN = capturedDigest;
+    writeFileSync(h.cli.stateFile, JSON.stringify(state));
+
+    // The regression: an operator supplies the DIGEST ITSELF as the "restore value", instead of
+    // the real plaintext. Under the pre-fix `fingerprintMatches` (`sha256Hex(x) === fp || x ===
+    // fp`), `capturedDigest === capturedDigest` would have trivially and INCORRECTLY passed.
+    expect(capturedDigest).toBe(capturedDigest); // the old code's accepted (buggy) condition
+    expect(sha256Hex(capturedDigest)).not.toBe(capturedDigest); // the fixed code's condition
+
+    const deps = h.deps({ SPORTSMONKS_API_TOKEN: capturedDigest });
+    await expect(runHistoricalPerformanceBackfill(deps, "default")).rejects.toThrow(
+      "production_config_restore_unprovable",
+    );
+    expect(h.cli.calls()).toEqual([["secrets", "list", "--project-ref", EXPECTED_PROJECT_REF]]);
+  });
+});
+
+describe("Defect 2 correction — post-restore verification compares against the ORIGINAL baseline", () => {
+  it("4. REGRESSION: a post-restore fingerprint that differs from the original baseline fails verification, even when it matches plan.setValues", async () => {
+    const base = tempDir("botolago-g7-drift-");
+    const runtimeDir = join(base, "runtime");
+    const evidenceDir = join(base, "evidence");
+    mkdirSync(runtimeDir, { recursive: true });
+    mkdirSync(evidenceDir, { recursive: true });
+    writeManifest(evidenceDir);
+    const githubEnvFile = join(base, "github-env");
+    writeFileSync(githubEnvFile, "");
+
+    // The corrupted post-restore digest is set to the exact literal plaintext ("860") that
+    // buildRestorePlan supplies for FOOTBALL_SPORTSMONKS_LEAGUE_ID. Under the PRE-FIX
+    // performRestore (which verified via `fingerprintMatches(plan.setValues[name],
+    // observedFingerprint)`), `"860" === "860"` would have matched via the very same
+    // plaintext-equality fallback Defect 1 removed — "matching plan.setValues" — even though it is
+    // nowhere close to the real sha256 digest ORIGINALLY captured for this name pre-run.
+    const cli = createFakeCliWithVerificationDrift(base, "FOOTBALL_SPORTSMONKS_LEAGUE_ID", "860");
+    seedState(cli, currentRestoreValues()); // trigger absent pre-run
+
+    const deps: RunnerDependencies = {
+      env: {
+        GITHUB_ACTIONS: "true",
+        CONFIRMATION: "RUN_G7_TWO_SEASON_HISTORICAL_PERFORMANCE_BACKFILL",
+        EXPECTED_PROJECT_REF,
+        EXPECTED_COMMIT,
+        GITHUB_SHA: EXPECTED_COMMIT,
+        G7_BACKFILL_RUNTIME_DIR: runtimeDir,
+        G7_BACKFILL_EVIDENCE_DIR: evidenceDir,
+        G7_SEASON_IDS: "26027",
+        SPORTSMONKS_API_TOKEN: "provider-token-value",
+        SUPABASE_SECRET_KEY: "secret-key-value",
+        GITHUB_ENV: githubEnvFile,
+        ...CURRENT_RUNTIME_INPUTS,
+      },
+      cliPath: cli.cliPath,
+      fetch: createFakeFetch().fetch,
+      now: () => new Date("2026-09-18T00:00:00Z"),
+      writeFile: async (path, content) => {
+        writeFileSync(path, content, { mode: 0o600 });
+        chmodSync(path, 0o600);
+      },
+    };
+
+    await expect(runHistoricalPerformanceBackfill(deps, "restore-only")).rejects.toThrow(
+      "production_config_restore_unverified",
+    );
+
+    const written = JSON.parse(
+      readFileSync(join(evidenceDir, "restore-only-result.json"), "utf8"),
+    ) as Record<string, unknown>;
+    expect(written.verdict).toBe("fail");
+    const restoration = written.restoration as Record<string, unknown>;
+    expect(restoration.verified).toBe(false);
+    const perName = restoration.perName as Array<Record<string, unknown>>;
+    const corrupted = perName.find((row) => row.name === "FOOTBALL_SPORTSMONKS_LEAGUE_ID")!;
+    expect(corrupted.expectedPresent).toBe(true);
+    expect(corrupted.observedPresent).toBe(true);
+    expect(corrupted.fingerprintMatched).toBe(false);
+  });
+});
+
+describe("Originally-absent secrets stay absent after restoration", () => {
+  it("5. a key captured as present:false is confirmed absent after restoration, and only unset (never set) is called for it", async () => {
+    const h = createHarness();
+    // Every managed secret is seeded EXCEPT FOOTBALL_SPORTSMONKS_COUNTRY_CODE (and the trigger,
+    // which is always absent in currentRestoreValues()): it was never present in production.
+    const { FOOTBALL_SPORTSMONKS_COUNTRY_CODE: _unused, ...partialRestoreValues } =
+      currentRestoreValues();
+    seedState(h.cli, partialRestoreValues);
+
+    const deps = h.deps();
+    const evidence = await runHistoricalPerformanceBackfill(deps, "restore-only");
+    expect(evidence.verdict).toBe("pass");
+    const restoration = evidence.restoration as Record<string, unknown>;
+    expect(restoration.verified).toBe(true);
+    const perName = restoration.perName as Array<Record<string, unknown>>;
+    const countryCode = perName.find((row) => row.name === "FOOTBALL_SPORTSMONKS_COUNTRY_CODE")!;
+    expect(countryCode.expectedPresent).toBe(false);
+    expect(countryCode.observedPresent).toBe(false);
+    expect(countryCode.fingerprintMatched).toBeNull();
+
+    // It must have been unset, and never set.
+    const unsetCall = h.cli.calls().find((call) => call[1] === "unset");
+    expect(unsetCall).toContain("FOOTBALL_SPORTSMONKS_COUNTRY_CODE");
+    const restoreEnv = readFileSync(join(h.runtimeDir, "restore-production-config.env"), "utf8");
+    expect(restoreEnv).not.toContain("FOOTBALL_SPORTSMONKS_COUNTRY_CODE");
+
+    // It is genuinely absent from the live (fake) CLI state after restoration.
+    expect(Object.hasOwn(h.cli.state(), "FOOTBALL_SPORTSMONKS_COUNTRY_CODE")).toBe(false);
+  });
+});
+
+describe("Evidence never carries a plaintext secret value", () => {
+  it("6. no file written to the evidence directory across capture/restore/verify contains a known test plaintext value", async () => {
+    const h = createHarness();
+    seedState(h.cli, {
+      ...currentRestoreValues(),
+      FOOTBALL_INGESTION_TRIGGER_SECRET: "live-trigger-value-for-leak-check",
+    });
+    const { fetch } = createFakeFetch();
+    const deps = h.deps({ G7_CURRENT_TRIGGER_SECRET: "live-trigger-value-for-leak-check" }, fetch);
+
+    const evidence = await runHistoricalPerformanceBackfill(deps, "default");
+    expect(evidence.verdict).toBe("pass");
+
+    const knownPlaintextSecrets = [
+      "provider-token-value", // SPORTSMONKS_API_TOKEN
+      "live-trigger-value-for-leak-check", // FOOTBALL_INGESTION_TRIGGER_SECRET / G7_CURRENT_TRIGGER_SECRET
+      "secret-key-value", // SUPABASE_SECRET_KEY
+    ];
+
+    // The returned evidence object (what a caller would serialize/upload) must be clean.
+    const evidenceText = JSON.stringify(evidence);
+    for (const plaintext of knownPlaintextSecrets) {
+      expect(evidenceText).not.toContain(plaintext);
+    }
+
+    // Every file actually written into the EVIDENCE directory (as opposed to the runtime
+    // directory, which by design transiently holds real env files consumed by `secrets set` and
+    // is deleted by the workflow's cleanup step before anything is uploaded) must also be clean.
+    for (const file of readAllFiles(h.evidenceDir)) {
+      for (const plaintext of knownPlaintextSecrets) {
+        expect(file.content).not.toContain(plaintext);
+      }
+    }
   });
 });

@@ -39,10 +39,6 @@ on:
         description: Comma-separated live FOOTBALL_SPORTSMONKS_TEAM_IDS to restore
         required: true
         type: string
-      current_trigger_secret:
-        description: Only if FOOTBALL_INGESTION_TRIGGER_SECRET is currently set in production (a capture-only dispatch tells you); leave blank otherwise
-        required: false
-        type: string
       restore_only:
         description: Recovery path only — skip preflight/migrations/deploy/mutation and just re-assert + verify the reviewed current-runtime configuration
         required: false
@@ -91,7 +87,20 @@ jobs:
       G7_CURRENT_FIXTURE_FROM: ${{ inputs.current_fixture_from }}
       G7_CURRENT_FIXTURE_TO: ${{ inputs.current_fixture_to }}
       G7_CURRENT_TEAM_IDS: ${{ inputs.current_team_ids }}
-      G7_CURRENT_TRIGGER_SECRET: ${{ inputs.current_trigger_secret }}
+      # Read from a GitHub Environment secret rather than a workflow_dispatch input, so a real
+      # FOOTBALL_INGESTION_TRIGGER_SECRET plaintext value never has to be pasted into the manual
+      # dispatch form (browser history, dispatch-audit UI, etc.). If this secret does not exist in
+      # the production-admin-activation Environment, this resolves to an empty string at runtime;
+      # `optional(deps, "G7_CURRENT_TRIGGER_SECRET")` already treats empty/unset as "not supplied",
+      # and buildRestorePlan already refuses to proceed (production_config_restore_unprovable) when
+      # the trigger secret is captured as present but nothing was supplied to prove it — so this is
+      # fail-closed by construction, not by a change made here.
+      #
+      # OPERATOR NOTE: a human with repo-admin access must add this secret to the
+      # production-admin-activation GitHub Environment out-of-band if/when
+      # FOOTBALL_INGESTION_TRIGGER_SECRET is ever actually set in production. This workflow cannot
+      # create or set that secret's value.
+      G7_CURRENT_TRIGGER_SECRET: ${{ secrets.G7_CURRENT_TRIGGER_SECRET }}
       G7_RESTORE_ONLY: ${{ inputs.restore_only }}
       G7_SKIP_DEPLOY: ${{ inputs.skip_deploy }}
       G7_EXPECTED_FUNCTION_VERSION: ${{ inputs.expected_function_version }}
