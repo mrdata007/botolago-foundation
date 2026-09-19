@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-19T14:33:00Z
+updated: 2026-09-19T15:02:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -1982,3 +1982,92 @@ tasks:
       handling, local rehearsal of the real 16/1/8 profile, independent review) is now complete and
       merged.
     isolated_rehearsal_cost_note: 'Supabase development branch igjchlaggefoypludqoa created with owner confirmation of the $0.01344/hour cost (get_cost/confirm_cost), used for the full rehearsal in this packet, and deleted immediately after evidence was captured. No persistent cost remains.'
+
+  BG-0051:
+    title: 'Fantasy catalog re-stage EXECUTED in production under owner conditional authorization (2026-09-19T14:59-15:02Z)'
+    area: fantasy
+    severity: P1
+    owner: Human
+    state: DONE
+    depends_on: [BG-0050]
+    authorization_reference: 'Owner message "BOTOLAGO -- CONDITIONAL AUTHORIZATION TO EXECUTE BG-0050", 2026-09-19, citing script commit 8584d413a89de7ffaee3d3b9ee47c317b6714f33 and approval packet BG-0050/f36c810'
+    execution_record_2026_09_19: >-
+      This is a factual execution record, not a new approval packet (per the owner's explicit
+      instruction not to create another one for this authorized scope).
+      1) DELTA REVIEW: independent fresh-eyes review of the exact fix commit (8be19dc, owner-pairwise
+      check + pre-export function) returned PASS -- pairwise/cardinality/NULL-safety logic traced
+      against the real production identifiers, both pgTAP test-file copies confirmed byte-for-byte
+      (or line-for-line, comments excluded) consistent with the canonical script, no injected issue
+      found. One non-blocking defense-in-depth note (pairwise check alone is not NULL-safe, but its
+      sibling distinct-owner-count check catches it, and production inputs are literal hardcoded
+      UUIDs, not attacker-controlled).
+      2) PROTECTED EXPORT: captured before any destructive step, via the reviewed
+      pg_temp.fantasy_catalog_restage_pre_export() function plus supplemental read-only queries for
+      everything api.service_rollback_fantasy_catalog additionally deletes (fantasy_seasons row,
+      fantasy_competitions row, the full 539-row fantasy_players catalog, fixture_assignments,
+      rankings). Saved outside git to the operator's local evidence store (not committed, not pasted
+      into GitHub); combined file sha256 421e367fe35e1ff4224f447606cc2f88d0220bcf704255600e01ddfcddc59370
+      (743259 bytes). Sanitized row-count manifest: gameweeks=1, fixture_assignments=8,
+      leagues=4, league_memberships=4, rankings=0, teams=3, squad_memberships=53,
+      transfer_batches=8, transfers=8, lineups=3, lineup_players=45, mutation_audit=16,
+      price_evidence=539, price_history=539, fantasy_players=539. All counts matched BG-0050's
+      approved figures exactly -- confirmed as a real export, not a placeholder.
+      3) TARGET/SCOPE RECHECK (fresh, 2026-09-19T14:57Z, immediately before execution): team/owner
+      pairs verified exactly against auth.users -- ccd4d5c4-2cd2-4b0d-82f4-7f22f0d435b9 ->
+      e2e00000-0000-4000-8000-00000000f001 (e2e.fantasy.recovery@), 84f211c8-5a09-40e1-9318-c4035d5520a9
+      -> ...f002 (e2e.fantasy.newcomer@), cc4bf92b-30a1-4d65-bb05-4ac49ecb91f9 -> ...f003
+      (e2e.fantasy.launch@), matching the owner's message exactly. Exactly 3 teams in the season (no
+      unexpected 4th). fantasy_job_runs = 0 on both the season-scoped and gameweek-scoped FK paths.
+      Exactly 1 open (non-rolled-back) catalog activation run for the football season, matching the
+      recorded id/digest. 0 non-AccessShare locks on any fantasy_* table; 0 other in-flight
+      staged-not-opened activations for ANY season (no conflicting operation anywhere). Automation
+      confirmed disabled by a fresh scheduled orchestrator run (14:22:41Z) concluding "skipped".
+      Org plan confirmed Pro (backup baseline); project ACTIVE_HEALTHY. Execution session confirmed
+      running as `postgres` with rolbypassrls=true, satisfying the function's own BYPASSRLS gate.
+      4) ATOMIC EXECUTION (single transaction, one continuous session, explicit BEGIN...COMMIT, the
+      canonical function body embedded verbatim -- diffed line-for-line against
+      scripts/backend/fantasy-catalog-restage-maintenance.sql @ 8584d41 with only comments differing):
+      called pg_temp.fantasy_catalog_restage_maintenance with fresh idempotency key
+      435f29ed-8601-4679-bf8f-00f68562b046. Removed exactly 53 squad_memberships, 8 transfer_batches,
+      8 transfers, 3 lineups, 45 lineup_players, 4 league_memberships, 16 mutation_audit rows, 3
+      teams -- matching the approved counts exactly. Rollback of activation
+      c0de2026-0917-4a11-8f00-000000000001 succeeded (rolledBackAt=2026-09-19T14:59:44.839754Z,
+      alreadyRolledBack=false, removed leagues=4/players=539/fixtures=8/gameweeks=1). Fresh preview
+      was non-degenerate (candidates=539, distinctRatings=45, maxConfidence=1). Stage succeeded with
+      NEW source digest f6182b2d78986547d3b34a166372b2b08bf3dce87d7d8f3e69b2deb3b7937056 (confirming
+      genuinely new computed prices, not a repeat of the old frozen digest), new fantasy season
+      5ada3e98-2929-405a-a3f1-a26de8e51933, 539 players, 1 gameweek, 8 fixtures, price range
+      4.70-12.00. A pre-COMMIT verification block independently re-checked the function's own claimed
+      results against persisted state (removal counts, old activation retired, old teams gone, new
+      season status=planned, 1 gameweek scheduled, digest present, player count in range, all 3 auth
+      accounts still present) before the transaction was allowed to COMMIT; all checks passed.
+      5) POST-COMMIT VERIFICATION (fresh, independent reads in a new connection): new season status
+      planned, 1 gameweek status scheduled with deadline_at unchanged at 2026-09-23T22:30:00Z, 539
+      players with 69 DISTINCT prices (4.70-12.00) -- confirmed non-degenerate and genuinely
+      differentiated, replacing the old frozen 3-distinct-price catalog. 0 of the 3 old teams remain;
+      old fantasy_seasons row (9918cf95-...) confirmed deleted by the rollback. All 3 auth.users rows
+      and all 3 app.profiles rows for the retained accounts confirmed still present (BG-0023 decision
+      honored). Old activation confirmed rolled_back_at set; new activation confirmed staged_at set.
+      6) REGISTRATION REOPENED SEPARATELY (its own transaction, its own idempotency key
+      cb1d0df3-c6d5-4ccc-9199-6b2873aeb1c7, called only after independently re-verifying: fresh
+      preview ready=true, digest unchanged, non-degenerate, AND the first scheduled gameweek's
+      deadline more than 24h away -- all checked in a guarded block that would abort before ever
+      calling the RPC on any mismatch): api.service_open_fantasy_registration succeeded,
+      openedAt=2026-09-19T15:02:00.502277Z, first gameweek 7fcb28c5-9b69-4591-bcda-437c6c961c5c.
+      7) PUBLIC READ-CONTRACT VERIFICATION (as the actual `anon` Postgres role via SET ROLE, not an
+      admin-privileged read): api.fantasy_hub('fr') returned the NEW season
+      (id=5ada3e98-2929-405a-a3f1-a26de8e51933, status=registration_open) and NEW gameweek
+      (id=7fcb28c5-..., status=open, sequence=1, deadlineAt=2026-09-23T22:30:00Z) exactly as an
+      unauthenticated public client would see it. api.fantasy_player_pool(...) as anon returned real
+      differentiated prices (top players at 12.00, 12.00, 11.80) with correct names/positions/clubs --
+      confirmed the new catalog and its prices are genuinely live on the public read path, not merely
+      present in the database.
+      8) UNRELATED DATA: fantasy_competitions row for this football season is a freshly-created row
+      (f133fffa-..., active=true) since the old one (f997c5c8-...) had no other referencing season and
+      was removed by the rollback as designed; this is expected competition-record churn inherent to
+      the reviewed rollback RPC, not an unintended side effect. No other season, team, league, or
+      account was touched; no job history, football fixture/player/performance data, rating or pricing
+      formula, or automation setting was modified.
+      9) REMAINING BLOCKER: none for this authorized scope. Full app launch, News/CMS, and the
+      testing-tool workstream remain explicitly out of scope and untouched, per the owner's message.
+    protected_export_location_note: 'Full export retained outside git in the operator/session evidence store; NOT committed to GitHub or pasted into chat in raw form, per the owner''s explicit instruction. Only its sha256 checksum and sanitized row-count manifest are recorded above.'
