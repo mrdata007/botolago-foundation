@@ -553,6 +553,7 @@ export type Database = {
           p_author_id?: string
           p_body_format: Database["app"]["Enums"]["article_body_format"]
           p_body_html: string
+          p_body_html_mac: string
           p_body_source: string
           p_language: string
           p_publisher_id?: string
@@ -630,6 +631,7 @@ export type Database = {
           p_article_edition_id: string
           p_body_format: Database["app"]["Enums"]["article_body_format"]
           p_body_html: string
+          p_body_html_mac: string
           p_body_source: string
           p_expected_updated_at: string
           p_hero_asset_id?: string
@@ -644,6 +646,7 @@ export type Database = {
         }
         Returns: Json
       }
+      editorial_write_secret_for_service: { Args: never; Returns: string }
       fantasy_fixture_difficulty: {
         Args: {
           p_from_gameweek: number
