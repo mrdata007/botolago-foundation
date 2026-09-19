@@ -501,6 +501,81 @@ tasks:
       production — confirmed via mcp__Supabase__list_migrations, latest applied entry is still
       20260918160000 (season_bounds_guard) — so it is not an available production prerequisite
       without its own separate promotion dispatch either.
+    merged_2026_09_19: >-
+      PR #140 opened, real CI executed and verified from the actual job log (not re-used prior
+      local numbers): application-quality and database-quality both success on head e359ec0.
+      database-quality log directly confirms the new wire-format test genuinely executed (not
+      skipped): 'bun test scripts/backend/historical-performance-e2e-wire-format.test.ts' ->
+      '(pass) ... the ACCEPT path's real normalizeHistoricalFixture output is accepted, unmodified,
+      by the real ingest RPC' / '(pass) ... the QUARANTINE path's real diagnostic coverage is
+      accepted, unmodified, by the real quarantine RPC' -> '2 pass, 0 fail, 7 expect() calls' —
+      real assertions, not the 0-assertion skip path. Followed immediately by
+      'Files=42, Tests=911, ... Result: PASS' (pgTAP), clean db lint, and
+      'Generated database types are current.' No enforced branch-protection or required human
+      review exists on this repo (verified precedent all session); only bot noise on the PR
+      (Codex usage-limit notice, Vercel preview status) — no actionable finding, no review posted.
+      Confirmed before merge that none of the 21 changed paths match any push-triggered workflow
+      (push triggers on this repo only fire on specific docs/production/*trigger.json paths or
+      backend/* branches, neither touched); merging performs no production action.
+      Merged via the PR path (ordinary merge commit, ff-mergeable, no history rewrite): merge SHA
+      4b333168e3aa13a4ff407eb92982f208ee9a27b5. Before merging, also found and fixed two more real
+      gaps during final-candidate verification (same rigor as the three defects above): the new
+      migration had no entry in the Phase 7E-B promoter's BATCHES manifest (would have broken
+      every future production dispatch, not just this one — registered it, added the
+      EXPECTED_EDGE_FUNCTIONS_BY_BATCH entry, the workflow's migration_batch option, and updated
+      the promoter's own unit tests, 16/16 passing); and src/backend/generated/database.types.ts
+      was stale for the new quarantine_historical_player_fixture_performance RPC (would have
+      failed CI's hard type-drift exit-1 step) — regenerated, backend:types:check clean. Both
+      independently spot-checked by the Chief directly against the diffs, not merely accepted from
+      the Builder's report. Final commit before merge: e359ec0f52c8b77479865a48ab53231b79d4ec08.
+    production_execution_packet_2026_09_19: >-
+      Ordered from the ACTUAL deployed state (mcp__Supabase__list_migrations, latest applied entry
+      still 20260918160000 season_bounds_guard) and the reviewed migration chain, not assumed:
+      STEP 1 (prerequisite, hard-enforced, not just good practice) — promote
+      20260918170000_fantasy_catalog_rollback_cleanup.sql (BG-0032) via Phase 7E-B, batch
+      fantasy_catalog_rollback_cleanup. This is REQUIRED before step 2 can even be attempted:
+      the promoter's batch_history_prefix() computes every migration before a requested batch in
+      BATCHES dict order and its dispatch check (line ~607-616) raises
+      "remote migration history is not an exact prefix of the selected batch" unless production's
+      actual applied history exactly matches that prefix. Since historical_anonymous_starter_
+      tolerance now sits immediately after fantasy_catalog_rollback_cleanup in the manifest, and
+      production's history does not yet include fantasy_catalog_rollback_cleanup at all,
+      dispatching BG-0011's batch before this one would fail outright, not silently degrade.
+      Standard action A/B/C-style pre/post-flight discipline applies (fresh SHA check, backup
+      readiness, unaltered reviewed file, post-change verification) — this is genuinely new
+      production risk requiring its own separate owner authorization; BG-0011's approval does not
+      cover it.
+      STEP 2 — promote 20260919120000_historical_anonymous_starter_tolerance.sql (BG-0011 option
+      b) via Phase 7E-B, batch historical_anonymous_starter_tolerance (now registered). Adds the
+      new columns/constraints/RPCs to production; does NOT by itself change any live behavior
+      (nothing currently calls the new RPC in production, and the deployed football-ingest edge
+      function still runs its OLD code until step 3 or step 4).
+      STEP 3 — the bounded, read-only provider recheck: dispatch
+      g7-sportsmonks-historical-performance-coverage.yml on the merged commit to reconfirm 238/240
+      and the exact two fixture IDs (data could theoretically have moved). VERIFIED this does NOT
+      require the edge function to be redeployed first: it runs scripts/backend/
+      sportsmonks-historical-performance-probe.ts directly as a standalone script checked out at
+      expected_commit, never through the deployed football-ingest function — so it already
+      reflects this branch's new classification logic as soon as it runs on a commit that
+      includes it, independent of step 4.
+      STEP 4 — the separately approved historical backfill itself: dispatch
+      g7-production-historical-performance-backfill.yml. VERIFIED this workflow redeploys
+      football-ingest itself, by default (skip_deploy defaults to false; supabase functions
+      deploy football-ingest is one of its own steps) — no separate manual edge-function
+      deployment step is needed or should be added. This is the step that actually makes the new
+      worker code live in production. Requires its own separate owner approval (not covered by
+      BG-0011-OWNER-3, which authorized implementation/testing only), current BG-0002
+      credential/backup-readiness re-verification at dispatch time, and the standing corrected
+      time-box (registration reopened before 2026-09-22T22:30:00Z).
+      STEP 5 — real player-level coverage and ratings/pricing validation against the actual
+      backfilled data (not the non-production preview's carried-over/illustrative figures) —
+      read-only verification after step 4, before any further action.
+      STEP 6 (separately gated, NOT part of this packet) — any later catalog rebuild/re-stage
+      remains blocked on its own distinct owner authorization, exactly as the standing BG-0011
+      owner_decisions_2026_09_18 record already states; nothing in this packet authorizes it.
+      None of steps 1, 2, 3 or 4 have been dispatched or authorized by this record — this is the
+      ordered plan only, per BG-0011-OWNER-3's "prepare the exact subsequent production approval
+      packet" authorization, not an execution.
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
