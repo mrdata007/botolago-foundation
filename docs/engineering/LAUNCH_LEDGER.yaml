@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-19T15:22:00Z
+updated: 2026-09-19T15:40:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -2100,3 +2100,89 @@ tasks:
       exploration (the anonymous session never authenticated, so no team was created via the UI path);
       the one persisted team is the backend-RPC one from proof (1), created for a retained E2E account
       for exactly this kind of testing.
+
+  BG-0053:
+    title: 'New FPL-reference Fantasy screens (already merged Sept 18) deployed to production — botolago.com was serving a stale pre-redesign build'
+    area: frontend
+    severity: P1
+    owner: Human
+    state: DONE
+    depends_on: [BG-0052]
+    root_cause_2026_09_19T15_40Z: >-
+      The owner reported the new BotolaGO/Figma-derived Fantasy screens were not visible on
+      botolago.com despite "previously implemented" work. Investigation (git history across all
+      154 remote branches + local worktrees, Lovable's own edit/message history, and the actual
+      live JS bundle) found: the redesign was NOT missing from git -- three commits already on
+      main (5e6035c, b6ce7c4, 3b2083a, all 2026-09-18 04:26-05:26 UTC, well before today's
+      BG-0050/51/52 catalog work) add src/components/fpl/* (FplPitch, FplPlayerCard, FplChipsRow,
+      SquadBuilderScreen, AddPlayerScreen, TransferConfirmScreen, PlayerActionSheet,
+      FantasyScreenGate) and rewrite every src/routes/fantasy.*.tsx route, plus
+      BOTOLAGO_FPL_SCREEN_MATRIX.md documenting 27 Figma reference states + 6 derived states
+      against Figma file CMGPbsWSIhMAwc6xLF6y7b. A separate already-merged commit (9ba8808,
+      BG-0026) covers navigation/header RTL. No branch anywhere (remote or the ~40 local
+      worktrees checked) had unmerged design work; the only unmerged design-looking branches
+      (old gpt-engineer-app[bot] "Design System V2" lineage, agent/sorare-inspired-fantasy-
+      decisions, codex/atlas-matchday) are either git-disjoint from main's root or superseded by
+      the Sept 18 rebuild -- none were merged.
+      The ACTUAL problem was a stale production publish: this repo's CI (30 GitHub Actions
+      workflows checked) only deploys Supabase Edge Functions and runs DB/backend gates -- none
+      of them build or publish the frontend. The Vite/TanStack frontend is published exclusively
+      through Lovable's own deploy pipeline (Cloudflare-backed; `.output` build generates a
+      wrangler config), which is external to git and does not auto-trigger on push to main
+      (matching the earlier, still-open BG-0022 finding: "botolago.com still serves main@5731246
+      tree; main now 2c7b1e7"). Direct proof: before redeploying, the live bundle at
+      botolago.com/fantasy/create loaded chunks named PlayerShirt, JerseyVisual,
+      PlayerPickerDrawer, FantasyChipCard, FantasyAccessGate, ConflictBar -- none of the new
+      Fpl*/SquadBuilderScreen/FantasyScreenGate component names appeared anywhere in any loaded
+      chunk across /fantasy, /fantasy/create, /fantasy/team, /fantasy/transfers, /fantasy/points,
+      /fantasy/leagues.
+    action_taken: >-
+      No merge or cherry-pick was needed or performed (the design work was already on main, ahead
+      of and including all of today's backend/catalog fixes). Verified main builds clean before
+      deploying: `bun run typecheck` clean, `bun run build` succeeded (vite build + nitro/wrangler
+      output), `bun test` 799 pass / 0 fail. Triggered a fresh publish via the Lovable MCP
+      deploy_project tool (project 9f9face2-4733-42fd-aa13-174fbe9f6c87, deployment
+      d85b6be7-3439-4c6b-8c9b-a330bc7a524d) -- this is the project's actual production-publish
+      mechanism, not a git action. Confirmed the served bundle hash changed
+      (index-BMn5E2e5.js -> index-gRYw0M9g.js) and that /fantasy/create now loads
+      SquadBuilderScreen-CbGoiKTg.js with zero old-component chunks present.
+    screens_verified_live_2026_09_19T15_40Z: >-
+      All screenshots taken against https://botolago.com directly (not localhost), after the
+      redeploy. Fantasy hub (/fantasy): full new design confirmed -- gradient hero, GW1 pill +
+      deadline, 2x3 action grid (Composer l'equipe/Transferts/Calendrier/Difficulte des
+      matchs/Statistiques joueurs/Meilleurs joueurs), Classement general banner, Actualites cards,
+      Ligues & Coupes section -- structurally matching Figma node 1:166 (fetched and compared
+      directly) almost 1:1 with BotolaGO branding substituted, exactly as the brief specified.
+      Fixture Difficulty Rating (/fantasy/fixtures): fixed Team column, per-GW colour-coded
+      difficulty cells with opponent code + H/A, floating FDR legend -- matches FPL-011 spec
+      exactly (an initial screenshot caught it mid-load with an empty box; a longer wait showed
+      full real data, confirmed via network trace: api.fantasy_fixture_difficulty 200 with real
+      16-club data -- not a defect). Help & Rules (/fantasy/help): section-pill accordion matching
+      FPL-024. Join a league (/fantasy/leagues/join): correct header ("Ligues"/"Termine",
+      "Rejoindre une ligue" title, Privee/Publique tabs) matching FPL-020. Team profile
+      (/fantasy/profile): "Saison en cours"/"Profil du manager" tabs matching FPL-026/027.
+      Squad selection, Team screen, Transfers, Points, and Leagues bodies all correctly show the
+      new design's guest-required state ("Compte requis" card with Se connecter/Creer un compte)
+      for an unauthenticated visitor -- consistent with the documented FPL-D04 guest state, not a
+      break; each screen's own header/title/tabs render correctly per-route even in that state.
+      No authenticated-state screenshots were captured (fantasy-e2e GitHub Environment / BG-0028
+      test credentials still do not exist; none were created, consistent with BG-0023). Backend
+      functionality behind the new screens was independently confirmed working today in BG-0052
+      (a real squad persisted via api.create_fantasy_team against the current catalog). Desktop
+      nav (1440px, /fantasy): Accueil/Actualites/Fantasy/Matches/Profil header with active-tab
+      state renders correctly; the new hub composition holds at desktop width. News (/news) and
+      Matches (/matches): unaffected, rendering normally -- confirmed out of the Sept 18 redesign
+      mandate per BOTOLAGO_FPL_SCREEN_MATRIX.md's own scope note ("news, player detail... left
+      untouched"), so their unchanged appearance is expected, not a missed screen. Home (/): shows
+      a pre-existing (July 2026, unrelated) welcome/onboarding screen whose copy ("La Fantasy
+      ouvrira ulterieurement" -- Fantasy will open later) is now stale given Fantasy is open;
+      flagged as a follow-up content fix, not a redesign-visibility defect.
+    remaining_differences_from_figma: >-
+      None found in the structural/component comparison performed (hub layout checked directly
+      against Figma node 1:166; other screens checked against BOTOLAGO_FPL_SCREEN_MATRIX.md's own
+      documented verdicts, all PASS or PASS* where population depends on data volume the single-
+      gameweek season doesn't have yet -- e.g. points/league-standings rows). Two non-blocking
+      items noted for follow-up, neither a redesign gap: (1) the Home welcome screen's stale
+      "Fantasy will open later" copy (pre-existing, unrelated component); (2) full authenticated-
+      state visual verification (Pick Team pitch, populated Transfers, League standings with real
+      rows) still needs the fantasy-e2e credentials (BG-0028) to capture directly in a browser.
