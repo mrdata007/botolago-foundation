@@ -1,7 +1,7 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { getNewsApi } from "@/integrations/supabase/v2-client";
+import { getNewsApi, supabaseV2 } from "@/integrations/supabase/v2-client";
 import {
   articleCardSchema,
   articleDetailSchema,
@@ -50,6 +50,35 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 // still sending the actual null value over the wire.
 function nullableText(value: string | null | undefined): string {
   return value as unknown as string;
+}
+
+// Both editorial write actions go through the news-editorial-write Edge
+// Function rather than calling api.editorial_create_draft/editorial_update_article
+// directly: that function is the only caller that can produce a body_html
+// HMAC the RPC will accept (see app_private.verify_editorial_content_mac),
+// because it is the only place body_html is actually sanitized server-side.
+// Calling the RPC directly from the browser with a client-side-only
+// "sanitized" string is no longer sufficient -- the RPC itself now rejects
+// it. Authorization is unaffected: this still forwards the caller's own
+// session, so has_editorial_role()/RLS/MFA-AAL2 run exactly as before.
+async function invokeEditorialWrite(body: Record<string, unknown>): Promise<unknown> {
+  const { data, error } = await supabaseV2.functions.invoke("news-editorial-write", { body });
+  if (error) {
+    let mapped: { message?: string; code?: string; details?: string } | null = null;
+    const context = (error as { context?: unknown }).context;
+    if (context instanceof Response) {
+      const parsed = (await context.json().catch(() => null)) as {
+        error?: { message?: string; code?: string };
+      } | null;
+      mapped = parsed?.error ?? null;
+    }
+    throwIfError({
+      message: mapped?.message ?? error.message ?? "editorial_write_failed",
+      code: mapped?.code,
+      details: mapped?.details,
+    } as PostgrestError);
+  }
+  return data;
 }
 
 function requireUuid(value: string): string {
@@ -181,21 +210,19 @@ export class SupabaseNewsRepository implements NewsRepository {
     input: CreateDraftInput,
     _context: RepositoryContext,
   ): Promise<CreateDraftResult> {
-    const { data, error } = await getNewsApi().rpc("editorial_create_draft", {
-      p_language: input.language,
-      p_slug: input.slug,
-      p_title: input.title,
-      p_summary: input.summary,
-      p_body_format: input.bodyFormat,
-      p_body_source: nullableText(input.bodySource),
-      p_body_html: input.bodyHtml,
-      p_reading_time_minutes: input.readingTimeMinutes,
-      p_sanitizer_version: input.sanitizerVersion,
-      p_story_id: input.storyId ?? undefined,
-      p_author_id: input.authorId ?? undefined,
-      p_publisher_id: input.publisherId ?? undefined,
+    const data = await invokeEditorialWrite({
+      action: "create_draft",
+      language: input.language,
+      slug: input.slug,
+      title: input.title,
+      summary: input.summary,
+      bodyFormat: input.bodyFormat,
+      bodySource: nullableText(input.bodySource),
+      bodyHtml: input.bodyHtml,
+      storyId: input.storyId ?? undefined,
+      authorId: input.authorId ?? undefined,
+      publisherId: input.publisherId ?? undefined,
     });
-    throwIfError(error);
     return parse(
       z.object({
         storyId: z.string().uuid(),
@@ -210,23 +237,21 @@ export class SupabaseNewsRepository implements NewsRepository {
     input: UpdateArticleInput,
     _context: RepositoryContext,
   ): Promise<UpdateArticleResult> {
-    const { data, error } = await getNewsApi().rpc("editorial_update_article", {
-      p_article_edition_id: requireUuid(input.articleEditionId),
-      p_expected_updated_at: input.expectedUpdatedAt,
-      p_slug: input.slug,
-      p_title: input.title,
-      p_subtitle: nullableText(input.subtitle),
-      p_summary: input.summary,
-      p_body_format: input.bodyFormat,
-      p_body_source: nullableText(input.bodySource),
-      p_body_html: input.bodyHtml,
-      p_reading_time_minutes: input.readingTimeMinutes,
-      p_sanitizer_version: input.sanitizerVersion,
-      p_hero_asset_id: input.heroAssetId ?? undefined,
-      p_seo_title: input.seoTitle ?? undefined,
-      p_seo_description: input.seoDescription ?? undefined,
+    const data = await invokeEditorialWrite({
+      action: "update_article",
+      articleEditionId: requireUuid(input.articleEditionId),
+      expectedUpdatedAt: input.expectedUpdatedAt,
+      slug: input.slug,
+      title: input.title,
+      subtitle: nullableText(input.subtitle),
+      summary: input.summary,
+      bodyFormat: input.bodyFormat,
+      bodySource: nullableText(input.bodySource),
+      bodyHtml: input.bodyHtml,
+      heroAssetId: input.heroAssetId ?? undefined,
+      seoTitle: input.seoTitle ?? undefined,
+      seoDescription: input.seoDescription ?? undefined,
     });
-    throwIfError(error);
     return parse(
       z.object({
         articleId: z.string().uuid(),

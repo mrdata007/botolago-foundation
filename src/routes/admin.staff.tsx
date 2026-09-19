@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { loadAdminStaffRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
@@ -19,8 +19,22 @@ export const Route = createFileRoute("/admin/staff")({
   ssr: false,
   loader: () => loadAdminStaffRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
-  component: AdminStaffRoute,
+  component: AdminStaffRootRoute,
 });
+
+// This route has a child route ($principalId). Without this, TanStack
+// Router still matches it but never renders it: a parent route in a nested
+// (dot-separated) file hierarchy must render <Outlet /> itself for a deeper
+// match to appear at all -- the exact same defect already found and fixed
+// in admin.news.tsx (see that file's comment for the full explanation).
+// Missing this made /admin/staff/$principalId silently unreachable: the URL
+// changed but the staff list stayed on screen.
+function AdminStaffRootRoute() {
+  const isChildRoute = useRouterState({
+    select: (state) => state.matches.some((match) => match.routeId === "/admin/staff/$principalId"),
+  });
+  return isChildRoute ? <Outlet /> : <AdminStaffRoute />;
+}
 
 function AdminStaffRoute() {
   const access = Route.useLoaderData();

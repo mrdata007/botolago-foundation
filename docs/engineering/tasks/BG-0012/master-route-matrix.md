@@ -43,7 +43,7 @@ Legend for status:
 | `/fantasy/points` | Fantasy | ACCEPTED — FANTASY BASELINE | — | Fantasy RPCs | yes | yes | |
 | `/fantasy/profile` | Fantasy (fantasy-scoped profile) | ACCEPTED — FANTASY BASELINE | — | Fantasy RPCs | yes | yes | Out of scope for D3 per ownership map — kept with Fantasy |
 | `/fantasy/rankings` | Player/Stats | REDESIGNED | Agent D2 | Fantasy ranking RPCs | yes | yes | Ported off `LegacyFantasyPage` |
-| `/fantasy/rules` | Fantasy | ACCEPTED — FANTASY BASELINE | — | — | yes | yes | Still uses `LegacyFantasyPage` — out of scope, kept with Fantasy |
+| `/fantasy/rules` | Fantasy | ACCEPTED — FANTASY BASELINE | — | — | yes | yes | Uses `LegacyFantasyPage`, but visually inspected (2026-09-19, FR/desktop) and confirmed to already render the accepted Fantasy design system (`FantasyFrame` + `FplHeader`) end to end — the component *name* is legacy, the rendered shell is current. Not a redesign gap; left alone. |
 | `/fantasy/team` | Fantasy | ACCEPTED — FANTASY BASELINE | — | Fantasy RPCs | yes | yes | |
 | `/fantasy/top-players` | Player/Stats | REDESIGNED | Agent D2 | Fantasy/player RPCs | yes | yes | Ported off `LegacyFantasyPage` |
 | `/fantasy/transfers` | Player/Stats/Transfers | ACCEPTED — FANTASY BASELINE | — | Fantasy RPCs | yes | yes | D2 investigated per instructions: confirmed already fully on the `--fpl-*` design system (composes only already-styled subcomponents) — no change needed |
@@ -54,8 +54,8 @@ Legend for status:
 | `/admin/news/new` | Admin CMS | IMPLEMENTED (new) | Builder-CMS | Editorial bridge RPCs | yes | yes | Draft creation |
 | `/admin/news/$articleEditionId` | Admin CMS | IMPLEMENTED (new) | Builder-CMS | Editorial bridge RPCs | yes | yes | Edit/preview/lifecycle transitions/media |
 | `/admin/security` | Admin | ADMINISTRATIVE | — | Admin RPCs | yes | yes | Pre-existing, untouched |
-| `/admin/staff` | Admin | ADMINISTRATIVE | — | Admin RPCs | yes | yes | Pre-existing, untouched |
-| `/admin/staff/$principalId` | Admin | ADMINISTRATIVE | — | Admin RPCs | yes | yes | Pre-existing, untouched |
+| `/admin/staff` | Admin | ADMINISTRATIVE | — | Admin RPCs | yes | yes | Pre-existing; fixed missing `<Outlet/>` (2026-09-19), see follow-up note below |
+| `/admin/staff/$principalId` | Admin | ADMINISTRATIVE | — | Admin RPCs | yes | yes | Pre-existing; was silently unreachable until the `<Outlet/>` fix above |
 | `/mcp` | Infra | OBSOLETE / UNREACHABLE | — | — | n/a | n/a | Lovable MCP-JS server route wiring, not a user-facing page |
 | `/.lovable/oauth/consent` | Infra | OBSOLETE / UNREACHABLE | — | — | n/a | n/a | Internal OAuth consent screen for the Lovable platform |
 
@@ -66,9 +66,13 @@ League has them"), the following stay `REFERENCE ONLY / UNSUPPORTED` and are **n
 this app:
 
 - Managers, Awards, Man of the Match, Hall of Fame, historical archives — no real data source.
-- Legal/Help content (Terms & Conditions, Privacy Policy, FAQ) — Agent D3 confirmed no such
-  content exists anywhere in the app (only two generic consent strings). Not fabricated. This is
-  a **content gap for the business/owner to fill**, not a design gap.
+- **Legal/Help content (Terms & Conditions, Privacy Policy, FAQ) — `OWNER/LEGAL CONTENT GATE —
+  NOT IMPLEMENTABLE WITHOUT APPROVED CONTENT`.** Agent D3 confirmed no such content exists
+  anywhere in the app (only two generic consent strings), and no approved legal copy has been
+  supplied. This is deliberately **not** manufactured. It is not a design gap and not closed by
+  any engineering fix pass — it is a standing **production-launch gate** that only the
+  business/owner can clear by supplying approved copy. Once that copy exists, these pages can be
+  implemented on the current BotolaGO design system in a follow-up pass.
 - Badge/shirt scanning — hardware-specific Premier League commercial feature, explicitly out of
   scope per the owner's own instructions unless separately approved.
 - Player comparison — Agent D2 did not build a dedicated comparison tool; existing player data
@@ -76,7 +80,12 @@ this app:
 
 ## Known follow-up items (not blockers for this checkpoint, tracked for later)
 
-- `src/components/fpl/LegacyFantasyPage.tsx` is not yet removable — `/fantasy/rules` still
-  imports it and is out of scope for this phase (accepted Fantasy baseline).
+- `src/components/fpl/LegacyFantasyPage.tsx` keeps its name for now, but is **not** a visual gap:
+  `/fantasy/rules` was visually inspected and already renders the accepted Fantasy design system
+  (`FantasyFrame` + `FplHeader`) end to end. Renaming the component is a zero-risk, purely
+  cosmetic cleanup that can happen whenever convenient — not a redesign, not a blocker.
 - Full league/competition standings existed as an addressable gap before D1's work; now closed
   via `StandingsTable.tsx` sourced from real `StandingRowDto` fields.
+- `admin.staff.tsx` had the same missing-`<Outlet/>` nested-route defect as `admin.news.tsx`
+  (fixed 2026-09-19): `/admin/staff/$principalId` was silently unreachable in the UI. Now fixed
+  identically; see `AdminStaffRootRoute` in that file.

@@ -56,6 +56,27 @@ from app_private.staff_principals principal
 join app_private.admin_roles role on role.name = 'publisher'
 where principal.auth_user_id = '92000000-0000-4000-8000-000000000002';
 
+-- The write RPC now requires proof (an HMAC over body_html) that content was
+-- sanitized server-side by the news-editorial-write Edge Function -- see
+-- app_private.verify_editorial_content_mac. Only a superuser-ish test role
+-- can read app_private.news_editorial_write_keys directly; compute it here,
+-- before dropping to `authenticated`.
+select set_config(
+  'test.lifecycle_body_mac',
+  encode(
+    extensions.hmac(
+      convert_to(
+        '<p>Analyse tactique complète du derby de Casablanca pour le test de cycle de vie.</p>',
+        'utf8'
+      ),
+      (select secret from app_private.news_editorial_write_keys where id = true),
+      'sha256'
+    ),
+    'hex'
+  ),
+  true
+);
+
 -- Step 1: create draft as editor.
 set local role authenticated;
 select set_config(
@@ -70,7 +91,8 @@ select set_config(
       'Résumé complet pour la publication du cycle de vie éditorial.',
       'markdown', repeat('Analyse tactique complète du derby. ', 6),
       '<p>Analyse tactique complète du derby de Casablanca pour le test de cycle de vie.</p>',
-      5::smallint, 'sanitize-html@2.17.5'
+      5::smallint, 'sanitize-html@2.17.5',
+      p_body_html_mac := current_setting('test.lifecycle_body_mac')
     ) ->> 'articleId'
   ),
   true

@@ -68,6 +68,25 @@ where principal.auth_user_id = '91000000-0000-4000-8000-000000000002';
 insert into app_private.editorial_memberships (user_id, role, active)
 values ('91000000-0000-4000-8000-000000000003', 'admin', true);
 
+-- The write RPC now requires proof (an HMAC over body_html) that content was
+-- sanitized server-side by the news-editorial-write Edge Function -- see
+-- app_private.verify_editorial_content_mac. Only a superuser-ish test role
+-- can read app_private.news_editorial_write_keys directly; compute it here,
+-- before dropping to `authenticated`, for the fixed body_html literal this
+-- file's draft-creation calls share.
+select set_config(
+  'test.bridge_body_mac',
+  encode(
+    extensions.hmac(
+      convert_to('<p>Contenu de brouillon suffisant pour le test du pont.</p>', 'utf8'),
+      (select secret from app_private.news_editorial_write_keys where id = true),
+      'sha256'
+    ),
+    'hex'
+  ),
+  true
+);
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -79,7 +98,8 @@ select extensions.lives_ok(
     'Résumé suffisant pour satisfaire la contrainte de longueur minimale.',
     'markdown', repeat('Contenu de brouillon suffisant. ', 4),
     '<p>Contenu de brouillon suffisant pour le test du pont.</p>',
-    2::smallint, 'sanitize-html@2.17.5'
+    2::smallint, 'sanitize-html@2.17.5',
+    p_body_html_mac := current_setting('test.bridge_body_mac')
   )$$,
   'an Admin-role editor can create an editorial draft through the bridged has_editorial_role'
 );
@@ -91,7 +111,8 @@ select set_config(
       'Résumé suffisant pour satisfaire la contrainte de longueur minimale.',
       'markdown', repeat('Contenu de brouillon suffisant. ', 4),
       '<p>Contenu de brouillon suffisant pour le test du pont.</p>',
-      2::smallint, 'sanitize-html@2.17.5'
+      2::smallint, 'sanitize-html@2.17.5',
+      p_body_html_mac := current_setting('test.bridge_body_mac')
     ) ->> 'articleId'
   ),
   true
@@ -116,7 +137,8 @@ select extensions.throws_ok(
     'Résumé suffisant pour satisfaire la contrainte de longueur minimale.',
     'markdown', repeat('Contenu de brouillon suffisant. ', 4),
     '<p>Contenu de brouillon suffisant pour le test du pont.</p>',
-    2::smallint, 'sanitize-html@2.17.5'
+    2::smallint, 'sanitize-html@2.17.5',
+    p_body_html_mac := 'irrelevant-fails-on-role-check-first'
   )$$,
   '42501', null,
   'a legacy editorial_memberships row with no Admin staff role grants nothing'
