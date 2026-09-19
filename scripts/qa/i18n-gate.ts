@@ -143,12 +143,16 @@ export const BASELINES: Baselines = {
   // replaces a non-literal ternary t() call with FplSegmented options
   // carrying one literal t() call each.
   //
-  // Combined effect of all four parallel redesign workstreams, measured on
-  // the integrated tree — see the integration commit for the exact figures.
-  // TODO(integration): placeholder pending D1 merge — recomputed and fixed
-  // up in the final integration commit before this branch is pushed.
-  W3: 0,
-  W4: 0,
+  // Combined effect of all four parallel redesign workstreams, re-measured
+  // on the fully integrated tree (each workstream's own delta above was
+  // computed independently against the pre-integration baseline of
+  // W3 245 / W4 96 in its own isolated worktree; overlapping keys/call
+  // sites between workstreams mean the sum of the deltas isn't the actual
+  // total, so the true combined numbers were measured directly by running
+  // `bun scripts/qa/i18n-gate.ts` on the merged tree): W3 245 -> 248,
+  // W4 96 -> 94.
+  W3: 248,
+  W4: 94,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
