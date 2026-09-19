@@ -1668,8 +1668,16 @@ tasks:
     area: data
     severity: P1
     owner: Human
-    state: HALTED_FOR_INPUT
-    human_action: 'product decision (recommendation: delete after first real gameweek close is verified)'
+    state: DONE
+    owner_decision_2026_09_19: >-
+      RETAIN the three existing QA/E2E login accounts and profiles (e2e.fantasy.recovery@,
+      e2e.fantasy.newcomer@, e2e.fantasy.launch@ -- all @botolago.com) for launch testing. Do NOT
+      delete auth users or profiles, change passwords, or alter roles. This decision does not
+      authorize deleting their old Fantasy teams or dependent test-game records -- that is tracked
+      as a separate, narrowly scoped maintenance operation under BG-0049/BG-0011 Option A (A6-A11),
+      not account deletion. Final test-account visibility/security checks remain tracked separately
+      for launch (see BG-0049''s ordered operations and any follow-on security review).
+    human_action: 'RESOLVED -- see owner_decision_2026_09_19. This task no longer blocks BG-0011/BG-0049 on "delete or keep accounts."'
 
   BG-0048:
     title: 'app_private.fantasy_job_runs has an ON DELETE RESTRICT foreign key to app.fantasy_seasons and is not cleaned up by api.service_rollback_fantasy_catalog (neither the original function nor the BG-0032 fix) — a season with job-run rows would fail rollback the same way leagues did before BG-0032'
