@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-18T11:40:00Z
+updated: 2026-09-19T14:33:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -1863,4 +1863,122 @@ tasks:
       No step in this packet has been dispatched. No production catalog rollback/rebuild/re-stage,
       account/team/job-history deletion, published-price/registration/formula/automation change, or
       public deployment was performed by this task, per its explicit authorization boundary.
+
+  BG-0050:
+    title: 'Fantasy catalog re-stage maintenance script: reviewed, tested, ONE executable production approval packet (2026-09-19) -- resolves BG-0049''s two blocking prerequisites'
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: DONE_GO_SCRIPT_NOT_EXECUTED
+    depends_on: [BG-0011, BG-0023, BG-0032, BG-0033, BG-0048, BG-0049]
+    evidence: ['scripts/backend/fantasy-catalog-restage-maintenance.sql (main@8584d41)', 'supabase/tests/database/fantasy_catalog_restage_maintenance.test.sql (main@8584d41)', 'PR #143 (merged, squash commit 8584d413a89de7ffaee3d3b9ee47c317b6714f33)', 'docs/engineering/tasks/BG-0011/engineering-brief-option-a.yaml (A6-A11, reused not replaced)']
+    owner_decision_reference: 'BG-0023 owner_decision_2026_09_19 (retain the 3 synthetic accounts; this task cleans up only their old teams and dependents, not the accounts)'
+    production_approval_packet_2026_09_19T14_33Z: >-
+      GO for the SCRIPT/PREPARATION deliverable. NO-GO (not yet authorized) for actual production
+      execution -- that remains a separate, later decision per this task's own authorization
+      boundary. This packet resolves BOTH blocking prerequisites BG-0049 identified: (1) BG-0023 is
+      now DONE via the owner's 2026-09-19 retention decision (recorded on BG-0023 above); (2) a
+      reviewed, tested administrative maintenance transaction now exists
+      (scripts/backend/fantasy-catalog-restage-maintenance.sql) implementing brief steps A6-A10 as a
+      session-local pg_temp function, per the owner's explicit instruction not to build a new
+      general-purpose deletion RPC or public endpoint -- no repository rule (RLS/grants model, CI
+      guard, CLAUDE.md/AGENTS.md, migration convention) was found requiring a persisted api.* RPC for
+      an internal, BYPASSRLS-only, operator-run maintenance transaction; this is documented in the
+      script's own header.
+      1) REVIEWED SCRIPT/COMMIT AND TEST EVIDENCE: PR #143 merged to main as commit
+      8584d413a89de7ffaee3d3b9ee47c317b6714f33 (squash of 2 commits, head sha 8be19dc). Two
+      independent review rounds already completed on this exact script before merge: an independent
+      Verifier (live two-session concurrency reproduction; confirmed BG-0032's league cleanup via
+      pg_get_functiondef; found and required the owner-id pairwise-check gap, fixed) and a
+      fresh-context Reviewer (traced the concurrency argument to also cover a job_runs race; required
+      the missing pre-rollback evidence export per brief step A6, fixed). Final CI-verified state:
+      bun run backend:db:test -- Files=43, Tests=946, PASS; bun run backend:db:lint -- no schema
+      errors. GitHub Actions "Backend quality" run 35448463287 concluded success on rerun (the first
+      attempt hung on the backend:db:start step, a known intermittent flake already seen twice today
+      on PRs #141/#142 and resolved the same way: one cancel + one rerun, no third retry needed).
+      2) EXACT PRODUCTION RECORDS TO REMOVE AND RECORDS TO RETAIN: fresh read-only re-verification
+      against production (2026-09-19T14:33Z, immediately before writing this packet) confirms every
+      count is UNCHANGED from BG-0049's snapshot -- no drift. Fantasy season
+      9918cf95-9ed5-4d7b-99ca-eb9bfc29a258 (football season d03223b0-8f4a-4309-93e1-2a708d7c3584,
+      status registration_open) has exactly 3 app.fantasy_teams rows, scoped to the BG-0049
+      allowlist: ccd4d5c4-2cd2-4b0d-82f4-7f22f0d435b9 (owner e2e.fantasy.recovery@botolago.com),
+      84f211c8-5a09-40e1-9318-c4035d5520a9 (owner e2e.fantasy.newcomer@botolago.com),
+      cc4bf92b-30a1-4d65-bb05-4ac49ecb91f9 (owner e2e.fantasy.launch@botolago.com). Dependent counts
+      scoped to exactly these 3 team ids (re-verified fresh, matching BG-0049 exactly): 53
+      squad_memberships, 8 transfer_batches, 8 transfers, 3 lineups, 45 lineup_players, 4
+      league_memberships, 16 mutation_audit rows. TO REMOVE: these 3 teams and only these 8
+      categories of their direct dependents, in the script's strict FK-safe order (transfers ->
+      transfer_batches -> lineup_players -> lineups -> squad_memberships -> league_memberships ->
+      mutation_audit -> teams; leagues are NOT deleted here, confirmed unnecessary since BG-0032
+      already made api.service_rollback_fantasy_catalog clean up app.fantasy_leagues/
+      fantasy_league_memberships/fantasy_rankings). TO RETAIN: the 3 auth users and profiles for
+      e2e.fantasy.recovery/newcomer/launch@botolago.com (per BG-0023's owner decision -- the script
+      never touches auth.users or profiles), all unrelated seasons/teams/accounts, and the
+      fantasy_catalog_activation_runs journal row itself (rolled back, not deleted, per BG-0032).
+      Current activation run for this football season: id c0de2026-0917-4a11-8f00-000000000001,
+      source_digest 9eede640c67a423c1f5804f856e1732469847763c5b37df3f2bf8482c7a5885b, staged_at
+      2026-09-17T21:03:52Z, opened_at 2026-09-17T21:04:14Z, rolled_back_at null (fresh-read,
+      unchanged) -- the script re-reads this digest live immediately before calling
+      api.service_rollback_fantasy_catalog rather than trusting a cached value.
+      3) PROTECTED EXPORT AND RECOVERY ARRANGEMENTS: pg_temp.fantasy_catalog_restage_pre_export(),
+      added in this same PR as brief step A6, is a read-only, non-destructive companion function that
+      must be called and its output captured OUTSIDE the repository (never committed -- it contains
+      real identifiers) as the mandatory first step, before the destructive maintenance function ever
+      runs. It exports the activation run row, every dependent row about to be deleted or rolled
+      back, and price/rating evidence for the season, scoped to the exact allowlisted team ids.
+      RECOVERY: proven on the local pgTAP suite's "Target atomic" scenario -- a forced-degenerate
+      re-stage inside the same transaction as the cleanup causes the whole transaction (cleanup +
+      rollback + re-stage) to abort atomically, leaving the 3 teams and all counts fully untouched
+      (rolled_back_at remains null on the old run); this matches BG-0049's rehearsed recovery
+      behavior exactly, now covered by an automated regression test rather than only a manual
+      rehearsal narrative.
+      4) TESTED CONCURRENCY AND TRANSACTION BOUNDARIES: the maintenance function's advisory lock
+      (pg_advisory_xact_lock on 'fantasy:catalog:' || football_season_id, the same namespace
+      api.service_stage_fantasy_catalog/service_rollback_fantasy_catalog already use) is in a
+      DIFFERENT namespace from api.create_fantasy_team's lock (keyed by user_id + fantasy_season_id)
+      -- proven live, independently, twice: once by the Builder and once separately by the Verifier
+      using a genuine two-session Postgres test with clock_timestamp() timing. This means the design
+      is detect-and-abort, not blocking: a concurrent team creation during the maintenance window is
+      NOT prevented by the lock itself, but is caught by (a) the script's own exact-team-count and
+      exact-team-id re-assertion immediately before any delete (a 4th team, allowlisted or not, fails
+      the "exactly 3 teams, all 3 allowlisted, none extra" check with zero changes made), and (b)
+      api.service_rollback_fantasy_catalog's own pre-existing fantasy_catalog_in_use recheck. Both
+      the job_runs FK-violation abort path (BG-0048, both season-scoped and gameweek-scoped, kept
+      deliberately narrow -- detect and refuse, no cleanup) and the staging-failure path are
+      confirmed transactionally atomic: an unhandled exception anywhere rolls back the entire
+      enclosing transaction (cleanup + rollback + re-stage together), never a partial state. Fresh
+      read-only re-check (2026-09-19T14:33Z): 0 fantasy_job_runs rows on both the season-level and
+      gameweek-level FK paths, unchanged from BG-0049 and BG-0048's snapshot.
+      5) CURRENT DEADLINE CONSTRAINTS (fresh, 2026-09-19T14:33:09Z): season status
+      registration_open; exactly one gameweek exists (sequence 1, status open, deadline_at
+      2026-09-23T22:30:00Z, ~4.3 days away at check time, unchanged from BG-0049). Per the runbook
+      and the original brief's constraint, api.service_open_fantasy_registration -- which this
+      script deliberately does NOT call -- must still complete with a safe margin ahead of that
+      deadline if a re-stage is later approved and executed; this remains a separately verified,
+      separately authorized step, not part of this script.
+      6) ORDERED OPERATION AND VERIFICATION STEPS (mirrors the script's own header and brief A6-A11;
+      NOT AUTHORIZED, NOT DISPATCHED by this task): (a) call
+      pg_temp.fantasy_catalog_restage_pre_export() first, save its output outside the repo; (b) as a
+      BYPASSRLS session, re-verify live: exactly 3 teams matching the allowlist with correct pairwise
+      owners, 0 fantasy_job_runs rows on both FK paths, current activation run id/digest, deadline
+      margin against the then-current gameweek-1 deadline; (c) call
+      pg_temp.fantasy_catalog_restage_maintenance(...) with the exact ids/expected-counts/new
+      idempotency key as arguments -- in one transaction this deletes the 3 teams' dependents in
+      FK-safe order, calls api.service_rollback_fantasy_catalog with the freshly-read digest, then
+      api.preview_fantasy_catalog_activation and api.service_stage_fantasy_catalog with the new key;
+      (d) inspect the function's returned removal counts and stage_result/rollback_result jsonb
+      before committing; (e) COMMIT explicitly (the script never commits itself); (f) verify per the
+      runbook: season staged, gameweeks/fixtures assigned once, non-degenerate price distribution;
+      (g) separately, later, verify deadline margin fresh again and call
+      api.service_open_fantasy_registration in its OWN transaction (per the brief's own instruction
+      this stays independently verified, never combined with the destructive step).
+      7) VERDICT: GO for the reviewed script and its test coverage as a merged, ready-to-use
+      preparation artifact. NO-GO / NOT AUTHORIZED for running it against production, per this task's
+      explicit authorization boundary ("Production account/team/data deletion, catalog replacement,
+      registration changes and deployment are NOT authorized by this message"). Precise reason for
+      the NO-GO on execution: authorization for production execution is a distinct, later owner
+      decision this task was not asked to make -- everything this task WAS asked to make ready
+      (account-retention decision, cleanup-scoping plan, safety-as-a-whole design, BG-0048 narrow
+      handling, local rehearsal of the real 16/1/8 profile, independent review) is now complete and
+      merged.
     isolated_rehearsal_cost_note: 'Supabase development branch igjchlaggefoypludqoa created with owner confirmation of the $0.01344/hour cost (get_cost/confirm_cost), used for the full rehearsal in this packet, and deleted immediately after evidence was captured. No persistent cost remains.'
