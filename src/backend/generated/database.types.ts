@@ -1109,6 +1109,17 @@ export type Database = {
         }
         Returns: Json
       }
+      quarantine_historical_player_fixture_performance: {
+        Args: {
+          p_coverage: Json
+          p_fixture_external_id: string
+          p_observed_at: string
+          p_provider_name: string
+          p_season_external_id: string
+          p_source_version: string
+        }
+        Returns: Json
+      }
       record_football_ingestion_rejection: {
         Args: {
           p_entity_type: string
