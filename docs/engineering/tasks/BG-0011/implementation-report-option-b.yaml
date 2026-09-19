@@ -1,0 +1,424 @@
+task_id: BG-0011-OWNER-3
+role: Builder
+attempt: 1
+branch: agent/BG-0011-option-b-identity-completeness
+generated_at: "2026-09-19T00:00Z"
+addendum_applied: "THREE owner/reviewer rounds (2026-09-19). First: production check performed by the Chief on the two outlier fixtures -- see production_check_finding below. Second: two concrete issues found by the coordinator reading the actual migration SQL (a disguised delete-then-reinsert quarantine table, and a factually wrong scope comment) -- see second_correction_2026_09_19 below. Third: a CRITICAL, release-blocking wire-format bug found by a fresh-context Reviewer that both bun and pgTAP were structurally blind to -- see third_correction_2026_09_19_critical_wire_format_bug below. This file reports the CURRENT, post-all-three-corrections state."
+
+third_correction_2026_09_19_critical_wire_format_bug:
+  severity: CRITICAL
+  what_the_reviewer_found: >
+    supabase/functions/_shared/sportsmonks-historical-player-performance.ts built the ACCEPT-path
+    `coverage` object without an `identifiedStarterRows` key -- only the QUARANTINE path's
+    diagnostic copy had that key added (via a spread-and-override). The two paths were supposed to
+    be symmetric and were not: whoever (this Builder, in an earlier round) added the new BG-0011
+    fields patched the quarantine diagnostic but never went back to the base `coverage` object the
+    accept path also uses. Since `api.ingest_historical_player_fixture_performance` reads
+    `identified_starter_rows := (p_coverage ->> 'identifiedStarterRows')::integer` and immediately
+    rejects the call with INVALID_PROVIDER_PAYLOAD when that resolves to SQL NULL, EVERY SINGLE
+    accepted historical fixture ingest call -- not just the 2 quarantined outliers, all 238 meant
+    to succeed -- would have failed outright in real use. This is a total regression of this task's
+    entire purpose, and it shipped past two prior rounds of "758/758 bun, 911/911 pgTAP, all green"
+    reporting from this Builder.
+  why_this_builder_s_own_tests_never_caught_it (root-cause self-assessment, not just the fix): >
+    (1) The bun unit tests mock the Supabase RPC client and assert with `toMatchObject`, a SUBSET
+    match -- a payload missing a key never fails a `toMatchObject` assertion that doesn't name that
+    key, and none of this task's tests asserted the FULL shape of `p_coverage`. (2) The pgTAP tests
+    call the SQL RPCs with JSONB literals this Builder hand-wrote directly in the .sql file, always
+    including every field a human remembers to type -- they never once passed the REAL object the
+    TypeScript code actually produces. The TS-to-SQL wire format itself had never been exercised
+    end to end by anything in this branch until this round. Both are real, structural gaps in this
+    Builder's own test discipline, not bad luck; the fix below closes the gap with a new test
+    category, not just a one-line patch to the symptom.
+  the_fix: >
+    supabase/functions/_shared/sportsmonks-historical-player-performance.ts: the `coverage` object
+    (previously built once, then used as-is for the accept-path return and separately
+    spread-and-overridden for the quarantine diagnostic) now includes `identifiedStarterRows:
+    starterRows` directly, at its single point of construction, so BOTH the accept-path return and
+    the quarantine-path diagnostic use the exact same, already-complete object -- eliminating the
+    class of bug (two call sites reading one shared object, only one of them patched) rather than
+    just adding the missing key back. Confirmed `anonymousStarterRows` was already present in this
+    object (only `identifiedStarterRows` was missing).
+  new_test_category_added: >
+    scripts/backend/historical-performance-e2e-wire-format.test.ts (NEW). No precedent for a
+    bun:test file that talks to a running local Postgres existed in this repo (every other
+    *.test.ts mocks its dependencies; every DB-level test is a pgTAP .test.sql run via
+    `supabase test db`). This file uses Bun's built-in `Bun.SQL` client (ships with Bun 1.3.11,
+    no new package dependency) pointed at the local stack's direct Postgres port
+    (`supabase/config.toml`'s `[db] port`, 55322). It (1) calls the REAL, unmocked
+    `normalizeHistoricalFixture` with a realistic synthetic SportsMonks-shaped payload for an
+    accepted fixture (3 anonymous starters, within the 0-4 cap), (2) takes its REAL returned
+    `coverage`/`rows`/`sourceVersion` completely unmodified (only remapping team/player external
+    ids to ones seeded in the local DB, which stands in for the provider-mapping step, not for the
+    coverage/rows shape itself), (3) sends them to the REAL `api.ingest_historical_player_fixture_performance`
+    RPC running in the REAL local Postgres, and asserts it succeeds (not INVALID_PROVIDER_PAYLOAD).
+    It does the mirror image for a quarantined fixture (6 anonymous starters) against
+    `api.quarantine_historical_player_fixture_performance`. If it cannot reach a local Postgres
+    within 3 seconds, every test in the file is skipped with an explicit console message (so it
+    never breaks `bun test` for a contributor without a local stack running) -- for THIS task's own
+    verification it was confirmed to actually run, not skip (see results below). It cleans up its
+    own seed rows in `afterAll` so repeated runs against the same local stack are idempotent
+    (verified by running it twice in a row with no reset in between).
+  sibling_instance_check (explicitly requested by the reviewer): >
+    Grepped every `->> '<key>'` read in the new migration
+    (20260919120000_historical_anonymous_starter_tolerance.sql) against the TypeScript object(s)
+    that produce the value sent as that RPC's jsonb parameter: (1) per-row fields (externalPlayerId,
+    externalTeamId, started, appeared, minutes, goals, assists, cleanSheets, goalsConceded, saves,
+    penaltiesSaved, penaltiesMissed, yellowCards, redCards, secondYellowDismissals, ownGoals,
+    providerRating) match the `HistoricalPlayerPerformanceRow` interface exactly, key for key --
+    this interface is unconditionally fully populated (built once in `emptyPerformance()` then
+    mutated, never partially), so there is no missing-key risk of this class here. (2) The coverage
+    object's 8 SQL-read keys (anonymousStarterRows, identifiedStarterRows, lineupRowsSeen,
+    validPlayerRows, excludedIncompleteRows, teamCount, detailRows, invalidDetailRows) are all now
+    present on the single object both RPCs consume (the fix above). (3) No other TS-built object in
+    this task's changed files is sent as a jsonb RPC parameter read via `->>` in SQL. This was the
+    only instance of this bug class in this branch's changes, and the new e2e test (not just this
+    manual grep) is what would catch a future recurrence.
+
+second_correction_2026_09_19:
+  issue_1_quarantine_table_was_delete_then_reinsert:
+    finding: >
+      The first correction's app_private.historical_performance_fixture_quarantine table was a
+      genuine delete-then-reinsert-elsewhere pattern: api.quarantine_historical_player_fixture_performance
+      deleted the fixture's app_private.historical_performance_fixture_coverage row and inserted a
+      thinner row into a different table, carrying none of lineup_rows_seen / valid_player_rows /
+      excluded_incomplete_rows / detail_rows / invalid_detail_rows / team_count / source_version /
+      provider_observed_at. The pgTAP tests proved the fixture/player/mapping rows survived but
+      never proved the COVERAGE row survived, because it didn't.
+    fix: >
+      Single-table redesign. app_private.historical_performance_fixture_quarantine is DELETED from
+      this migration entirely -- it does not exist anywhere in this branch (verified by
+      `grep -rn historical_performance_fixture_quarantine` across supabase/, docs/, scripts/: the
+      only remaining hits are prose in docs describing this history). Instead,
+      app_private.historical_performance_fixture_coverage gained coverage_outcome
+      ('accepted'|'quarantined') and quarantine_reason columns.
+      api.quarantine_historical_player_fixture_performance now UPSERTs the SAME row a fixture has
+      always had (or its first-ever row), mirroring api.ingest_historical_player_fixture_performance's
+      p_coverage shape exactly (p_source_version + p_coverage, not two bare integers), carrying the
+      full audit trail. Contains NO DELETE statement. Accepting a fixture again
+      (api.ingest_historical_player_fixture_performance) flips the SAME row's coverage_outcome back
+      to 'accepted' and clears quarantine_reason via its ordinary ON CONFLICT DO UPDATE -- also no
+      DELETE.
+    constraint_redesign: >
+      historical_performance_coverage_counts_check now derives coverage_outcome from the facts
+      (`(coverage_outcome = 'quarantined') = (anonymous_starter_rows > 4)`) and forces a quarantined
+      row's starter_rows/performance_rows to exactly 0 at the constraint level via a CASE
+      expression, not by RPC discipline alone. One subtlety this required fixing after the first
+      local pgTAP run failed on it: the pre-existing (immutable) historical_performance_coverage_reconciled_check
+      requires `not reconciled or performance_rows = valid_player_rows`; since a quarantined row's
+      performance_rows is forced to 0 while valid_player_rows keeps the audit value, `reconciled`
+      must be `false` for a quarantined row. This is correct, not a weakening: every query that
+      matters (api.football_historical_player_rating_inputs) filters explicitly by
+      `coverage_outcome = 'accepted'`, not by `reconciled`, so a quarantined row's reconciled value
+      has no bearing on it being (correctly) excluded.
+    difficulty_encountered_and_resolved: >
+      Getting the constraint predicate right took three real local-Postgres iterations (see
+      bugs_found_and_fixed_by_this_run below) -- this is disclosed plainly rather than presented as
+      clean on the first attempt. All three were found and fixed via actual execution, not left as
+      known issues.
+  issue_2_scope_comment_was_factually_wrong:
+    finding: >
+      The migration's header comment claimed "the live current-season Fantasy scoring/ingestion
+      path uses ENTIRELY SEPARATE tables and RPCs" naming a table
+      (app_private.current_finished_fixture_coverage) and an RPC
+      (api.ingest_current_finished_fixture_performance) that DO NOT EXIST.
+      20260914200726_current_finished_fixture_performances.sql instead ADDS COLUMNS to the SAME
+      app_private.historical_performance_fixture_coverage and app.player_fixture_performances
+      tables this migration modifies, via api.ingest_current_player_fixture_performance (the real
+      RPC name). That data is read by app_private.fantasy_scoring_input_document
+      (20260914200719_fantasy_scoring_worker_contracts.sql), called from
+      app_private.fantasy_assert_scoring_snapshot in the live gameweek-finalization path
+      (20260914200730_fantasy_verified_finalization.sql) -- confirmed not to be dead code.
+    fix: >
+      The migration's header comment is corrected to state this plainly (see the file itself) and
+      names the three real files. Real safety now rests on: (1) row-level season-status scoping
+      (unchanged, was already correct); (2) a NEW hard CHECK constraint,
+      `anonymous_starter_rows = 0 or source_version ~ '^sportsmonks-fixture:[0-9a-f]{64}$'`, making
+      it a Postgres-enforced impossibility (not an accident of defaults) for a current-season row
+      to ever carry a nonzero anonymous-starter count; (3) column-default compatibility with the
+      unmodified current-season RPC's existing insert. Both (2) and (3) are now regression-tested
+      against a real local Postgres (see per_case_mapping items scope-1/scope-2 below).
+
+summary: >
+  Implemented option (b) from engineering-brief-a1-starter-rows.yaml, using BG-0044's measured
+  coverage (238/240, exactly 2 outliers: fixtures 19596474 and 19596475) rather than the earlier
+  estimate (237/240, cap 3). The old rule (exactly 22 identified starters) is replaced by: exactly
+  22 raw provider starters (unchanged, universal), of which at most 4 may be anonymous; a fixture
+  with more than 4 anonymous starters is quarantined entirely -- ALL of its rows, including its
+  14-15 identified-player rows, are excluded, not just the anonymous ones. Scope is limited to the
+  historical (completed-season) SportsMonks ingestion path by table/RPC/source-version/
+  season-status separation from the live current-season path (all four levels, detailed in the
+  engineering brief, and now regression-tested end to end -- see below). Pricing/rating formulas
+  were not touched.
+
+reporting_language_used_throughout (per owner addendum item 6): >
+  "240 historical fixtures enumerated; 2 named fixtures (19596474, 19596475) quarantined; 238
+  candidates for acceptance, subject to all remaining validation (lineup_rows_out_of_range,
+  valid_player_rows_out_of_range, incomplete_rows_limit_exceeded, team_count_mismatch,
+  invalid_detail_rows_present)." This exact framing (never "240 ingested", never "238 accepted"
+  as a completed fact) is used in the engineering brief, the runbook, and this report.
+
+production_check_finding (owner addendum item 5, performed by the Chief with production
+  read-only access this Builder does not have -- reported here verbatim, not re-derived):
+  performed_by: "Chief (read-only query against project tkewgajrljbwgwedqsxn)"
+  performed_by_this_builder: false
+  findings:
+    - "Fixture 19596474 maps to internal fixture_id 8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e (app_private.football_provider_mappings, provider=sportsmonks, entity_type=fixture)."
+    - "Fixture 19596475 maps to internal fixture_id d30eb1d6-d257-49f4-a9ee-02c2ee9cc2b6 (same table/provider/entity_type)."
+    - "app_private.historical_performance_fixture_coverage has ZERO rows for either fixture_id."
+    - "app.player_fixture_performances has ZERO rows for either fixture_id (228 total rows in that table currently, all from 6 fixtures backfilled in an earlier partial run; neither outlier fixture is among them)."
+  conclusion: "Neither outlier fixture has contributed to any persisted rating or pricing output in production."
+  affected_derived_outputs: "NONE. No recalculation of any already-persisted rating, price, or other derived output is needed, because nothing derived from these two fixtures was ever persisted. This is not this Builder's own inference -- it is the Chief's live, read-only production finding, cited verbatim above."
+
+no_delete_confirmation (owner addendum item 1, RECONFIRMED after the second correction): >
+  Confirmed by direct grep (`grep -n "delete from" supabase/migrations/20260919120000_historical_anonymous_starter_tolerance.sql`):
+  ZERO `delete from` statements anywhere in the current migration. The first correction's two
+  DELETEs (one clearing a coverage row, one clearing a quarantine-table row) are both GONE now
+  that quarantine is a coverage_outcome on the same row rather than a second table -- there is
+  nothing left to delete-and-move. Nothing in this branch, at any point, ever deletes from
+  app.fixtures, app.players, app_private.football_provider_mappings, or
+  app.player_fixture_performances (the last is only ever soft-deactivated via `active = false`,
+  exactly as the pre-existing code already did). Fixture records, player identities/relationships,
+  and provider-mapping audit evidence for the two outlier fixtures (and every other fixture) remain
+  fully intact and retrievable -- proven by regression test (k) below AND by the new
+  accept-quarantine-accept cycle test (fixture 4, item 7 below), all executed against a real local
+  Postgres.
+
+traceable_quarantine_marker (owner addendum item 2, REDESIGNED per the second correction): >
+  app_private.historical_performance_fixture_coverage (the SAME table every fixture's coverage row
+  already lived in -- no second table) now carries coverage_outcome ('accepted'|'quarantined') and
+  quarantine_reason, constrained by CHECK to the single explicit value
+  'anonymous_starter_rows_exceeded' (not an implicit "absent from a query result"), and further
+  constrained so coverage_outcome can never disagree with the measured anonymous_starter_rows fact.
+  A later audit reads the fixture's own, single, always-present coverage row -- no join to a second
+  table -- to see exactly whether and why it was quarantined, when (provider_observed_at,
+  created_at, updated_at), and (unlike the first correction) what the full original audit trail
+  (lineup_rows_seen, valid_player_rows, team_count, etc.) was at quarantine time.
+
+all_or_nothing_quarantine (owner addendum item 3): >
+  Enforced at TWO independent layers, both regression-tested: (1) worker layer --
+  normalizeHistoricalFixture throws historical_fixture_anonymous_starters_exceeded before ever
+  returning a `rows` array, so ingestBAtch never even attempts to call the ingest RPC for an
+  over-cap fixture (proven by the new end-to-end unit test below, which asserts
+  ingest_historical_player_fixture_performance is called exactly zero times for the quarantined
+  fixture in a batch that also contains a normal fixture). (2) DB layer, defense in depth -- even
+  if a caller bug sent an over-cap fixture's rows to api.ingest_historical_player_fixture_performance
+  directly, the RPC raises HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED before its first mutating
+  statement, so zero rows are ever inserted (proven by pgTAP case (c)/(g), executed against a real
+  local Postgres, asserting `count(*) = 0` in app.player_fixture_performances for that fixture
+  after the rejected call).
+
+files_changed:
+  - path: scripts/backend/historical-performance-e2e-wire-format.test.ts
+    change: "NEW (third correction). The end-to-end wire-format test described above."
+  - path: supabase/functions/_shared/sportsmonks-historical-player-performance.ts (third correction, on top of the second-correction changes already listed below)
+    change: "Fixed the critical coverage-object bug (identifiedStarterRows now present at the object's single point of construction, used identically by both the accept and quarantine call sites). Also: counts.fetched now incremented for quarantined fixtures too (minor fix 5)."
+  - path: scripts/backend/g7-historical-performance-backfill-runner.ts (third correction)
+    change: "mappingQuarantine.requiredMappedStartersPerFixture: 22 replaced with mappingQuarantine.mappedStartersPerFixtureRange (minor fix 4)."
+  - path: supabase/functions/_shared/sportsmonks-historical-player-performance.ts
+    change: >
+      normalizeHistoricalFixture computes anonymousStarterRows separately from starterRows
+      (identified starters); replaces the old absolute `starterRows !== 22` check with (1) a
+      renamed universal raw-total check (raw_starter_rows_mismatch, unchanged meaning) and (2) a
+      new distinct error historical_fixture_anonymous_starters_exceeded when
+      anonymousStarterRows > 4 (MAX_ANONYMOUS_STARTER_ROWS). ingestBatch now catches that specific
+      error per fixture, calls the new quarantine RPC, and continues the batch instead of aborting
+      it; the batch response gains acceptedFixtures/quarantinedFixtures/quarantinedFixtureIds/
+      anonymousStarterRowsTotal. rpc() error mapping extended for the new DB error message.
+  - path: supabase/functions/_shared/sportsmonks-historical-player-performance.test.ts
+    change: "Updated 2 existing assertions for the renamed failure code and new anonymousStarterRows field."
+  - path: supabase/functions/_shared/sportsmonks-historical-anonymous-starters.test.ts
+    change: >
+      NEW. Regression tests (a)-(g) run against the real normalizeHistoricalFixture, plus (owner
+      addendum) an end-to-end batch test proving ingest_historical_player_fixture_performance is
+      never called for a quarantined fixture and that a normal fixture sharing the same batch is
+      completely unaffected.
+  - path: supabase/migrations/20260919120000_historical_anonymous_starter_tolerance.sql
+    change: >
+      NEW, forward-only, additive; REDESIGNED for the second correction (see
+      second_correction_2026_09_19 above -- this description is of the CURRENT, final state).
+      Adds anonymous_starter_rows / identified_starter_rows / coverage_outcome / quarantine_reason
+      columns directly to app_private.historical_performance_fixture_coverage (no second table).
+      Relaxes historical_performance_coverage_counts_check so coverage_outcome is derived from
+      anonymous_starter_rows > 4, a quarantined row is forced to starter_rows = 0 and
+      performance_rows = 0 at the constraint level, and anonymous_starter_rows > 0 is tied to the
+      historical source_version prefix by a hard CHECK (not an accident of defaults). Adds
+      api.quarantine_historical_player_fixture_performance, which UPSERTs the fixture's own
+      coverage row (mirroring the ingest RPC's p_coverage shape) with coverage_outcome =
+      'quarantined' and NO DELETE anywhere. Create-or-replaces
+      api.ingest_historical_player_fixture_performance (accepts the new coverage fields, rejects
+      anonymous>4 outright with zero rows persisted, and its UPSERT sets coverage_outcome =
+      'accepted' / quarantine_reason = null on the SAME row) and
+      api.football_historical_player_rating_inputs (excludes fixtures with coverage_outcome =
+      'quarantined' from expected_fixture_count, filtered on the same table with no second-table
+      join; relaxes the performance_count floor from *22 to *18). Does not edit any already-applied
+      migration file. Corrects the header comment's scope claim (see second_correction_2026_09_19,
+      issue 2). Real bugs found and fixed by actually running this migration locally across TWO
+      rounds of local pgTAP execution (see verification_method and bugs_found_and_fixed_by_this_run
+      below): (round 1, first correction's design) the anonymous-starter-cap check was ordered
+      before the season/fixture lookups, breaking an unrelated current-season test's expected
+      error code; the relaxed CHECK's performance_rows formula double-subtracted
+      excluded_mapping_rows. (round 2, this second correction's single-table redesign) a
+      quarantined row's forced performance_rows = 0 conflicts with the pre-existing (immutable)
+      historical_performance_coverage_reconciled_check unless reconciled is also set to false for
+      quarantined rows -- fixed, and confirmed harmless because every query that matters filters by
+      coverage_outcome, not reconciled; two of this session's own new pgTAP test literals used
+      'g'/'h'/'i' as fake sha256 hex digests, which are not valid hex characters (0-9a-f only) --
+      fixed to use valid hex digit literals throughout.
+  - path: supabase/tests/database/historical_player_performances.test.sql
+    change: >
+      Updated the existing fixture's p_coverage to include anonymousStarterRows/
+      identifiedStarterRows (required by the new RPC contract). Added a second and third fixture
+      exercising: (b) exactly 4 anonymous starters (accepted), (h)/(l) idempotent re-ingestion and
+      idempotent re-quarantine, (c)/(g) 5 anonymous starters (rejected, zero rows persisted), the
+      dedicated quarantine RPC (including its own independent <=4 refusal), (j)
+      api.football_historical_player_rating_inputs's quarantine-aware expected_fixture_count/
+      quarantinedFixtureCount/performanceCount (proving the quarantined fixture contributes zero
+      rows to the aggregate), (4)/owner-addendum a player who appears in both the quarantined
+      fixture and two accepted fixtures keeps exactly those two accepted fixtures' performances
+      (180 minutes / 2 appearances, not 270/3 and not 0/0), and (k)/owner-addendum that the
+      quarantined fixture's own record, its provider mapping, and a player who appeared in it are
+      all still SELECT-able after the migration runs (nothing deleted).
+  - path: scripts/backend/g7-historical-performance-backfill-runner.ts
+    change: >
+      validateHistoricalPerformanceBatch requires/validates acceptedFixtures + quarantinedFixtures
+      === fixturesProcessed and relaxes the row floor from `* 22` to `acceptedFixtures * 18`. The
+      season loop and evidence record acceptedFixtures/quarantinedFixtures separately (never
+      collapsed into one "N fully ingested" figure). Evidence gains an anonymousStarterTolerance
+      block documenting the rule and measured coverage.
+  - path: scripts/backend/g7-historical-performance-backfill-runner.test.ts
+    change: "Updated 3 existing fake-response fixtures for the new required fields; added 1 new test for a batch containing a quarantined fixture."
+  - path: scripts/backend/sportsmonks-historical-performance-probe.ts
+    change: >
+      HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES renamed starter_rows_mismatch ->
+      raw_starter_rows_mismatch; identityTolerantPass updated to the new terminology;
+      classifyFixtureInvariants explicitly handles the new
+      historical_fixture_anonymous_starters_exceeded error code (this is a read-only research/
+      measurement tool, not an enforcement point, but it directly imports and calls
+      normalizeHistoricalFixture so it had to track the behavior change).
+  - path: scripts/backend/sportsmonks-historical-performance-probe.test.ts
+    change: "Updated 9 existing test cases whose synthetic fixture shapes or expected failure codes were affected by the rule change (each keeps its original intended failure mode; see the prior commit for the per-case reasoning)."
+  - path: scripts/backend/sportsmonks-two-season-coverage-audit.ts
+    change: "The catch branch now only feeds a coverage failure's diagnostic into the running totals for historical_fixture_coverage_incomplete (the anonymous-starters-exceeded diagnostic has a different, narrower shape and must not be misread as full coverage counts)."
+  - path: scripts/backend/sportsmonks-two-season-coverage-audit.test.ts
+    change: "Updated the one bad-fixture scenario from 1 anonymous starter (now legitimately accepted) to 5 (still over the cap) so the test still exercises a real failure path."
+  - path: docs/backend/G7_HISTORICAL_PERFORMANCE_BACKFILL_RUNBOOK.md
+    change: "New section stating the rule honestly as a relaxation, its scope, and how to read the runner's accepted/quarantined evidence fields."
+  - path: docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml
+    change: "NEW. The revised engineering brief (does not overwrite the existing a1/option-a briefs)."
+  - path: docs/engineering/tasks/BG-0011/non-production-preview-2026-09-19.md
+    change: "NEW. The non-production preview report."
+  - path: docs/engineering/tasks/BG-0011/implementation-report-option-b.yaml
+    change: "NEW/updated. This file, including the owner-addendum findings."
+
+verification_method: >
+  This sandbox does NOT have persistent Docker access by default (the daemon was not running at
+  session start), but the `docker` CLI, a `dockerd` binary, and every Supabase local-dev image
+  (postgres, postgrest, gotrue, kong, storage-api, pg_prove, etc.) were already present on disk.
+  `dockerd` was started manually in this session, `npx supabase db start` brought up a real local
+  Postgres 17 with every migration in this repo applied in order (including this task's new one),
+  and `npx supabase test db` ran the FULL pgTAP suite (all 42 .test.sql files, not just the
+  historical-performance one) against it. This is real execution, not a hand-derivation -- and it
+  is exactly how it caught the two real bugs listed above. The stack was stopped
+  (`npx supabase stop`) after the test run; nothing here reaches or resembles production
+  (project ref tkewgajrljbwgwedqsxn was never referenced by any command in this session).
+
+tests_added_and_results_FINAL (re-run after the third/critical correction; supersedes all earlier numbers in this file):
+  bun_test: "760 pass, 0 fail, 10130 expect() calls, across 120 files (119 pre-existing + the new historical-performance-e2e-wire-format.test.ts, which contributes 2 of the 760 and ran for real against a local Postgres, not skipped)."
+  bun_run_lint: "0 errors, 12 pre-existing warnings in unrelated src/** files (react-refresh, untouched by this task)."
+  npx_tsc_noEmit: "exits 0."
+  pgtap_full_suite: "npx supabase db start && npx supabase db reset --local && npx supabase test db --local supabase/tests/database -> ALL 42 test files pass, 911 tests total, Result: PASS."
+  new_e2e_wire_format_test: "2/2 pass (confirmed run against the real local Postgres, not skipped -- verified separately by stopping the stack and observing both tests print an explicit SKIPPED message and pass trivially, then restarting the stack and observing both actually exercise the real RPCs with 7 real expect() calls)."
+  minor_fixes_confirmed:
+    - "(4) scripts/backend/g7-historical-performance-backfill-runner.ts: mappingQuarantine.requiredMappedStartersPerFixture: 22 (stale/misleading) replaced with mappingQuarantine.mappedStartersPerFixtureRange: { minimum: MIN_IDENTIFIED_STARTER_ROWS (18), maximum: 22, note: ... }, with an inline comment explaining why a flat 22 is no longer correct. No test referenced the old field name/value."
+    - "(5) supabase/functions/_shared/sportsmonks-historical-player-performance.ts: counts.fetched is now incremented for a quarantined fixture too (using the quarantine diagnostic's coverage.lineupRowsSeen), not just the accept path -- a quarantined fixture WAS fetched from the provider, it just was not persisted."
+
+tests_added_and_results (re-run after the second correction, current numbers -- SUPERSEDED by tests_added_and_results_FINAL above, kept for history):
+  bun_unit_tests:
+    command: "bun test  (run from repo root, no flags — the full suite)"
+    result: "758 pass, 0 fail, 10123 expect() calls, across 119 files"
+    note: >
+      Full existing bun suite plus everything added by this task, including the end-to-end
+      quarantine test (updated for the new quarantine RPC signature: p_source_version + p_coverage,
+      not two bare integers).
+    typecheck: "`npx tsc --noEmit` (repo tsconfig, which covers src/** only) exits 0. supabase/functions/** and scripts/backend/** are NOT covered by the repo's tsconfig (pre-existing, not something this task changed)."
+  pgtap_database_tests:
+    command: "npx supabase db start (or db reset --local after a migration edit); npx supabase test db"
+    result: "ALL 42 test files pass, 911 tests total, 0 failures (`Result: PASS`)."
+    five_named_files_the_coordinator_asked_about (all touch the shared tables from the live-scoring side, all unmodified by this task, all confirmed passing in the SAME run as this migration): >
+      current_finished_fixture_performances.test.sql -- ok;
+      fantasy_scoring_worker.test.sql -- ok;
+      fantasy_verified_finalization.test.sql -- ok;
+      fantasy_postwork_journal.test.sql -- ok;
+      fantasy_finalized_notification_batches.test.sql -- ok.
+      (Verbatim from the `npx supabase test db` run's per-file summary lines.)
+    also_includes: >
+      supabase/tests/database/historical_player_performances.test.sql (all BG-0011 cases including
+      the second correction's new ones -- 40 subtests in this file alone), and
+      fantasy_rating_degeneracy_guard.test.sql (BG-0027 guard, unmodified, still passing).
+    bugs_found_and_fixed_by_this_run (across both rounds of local execution this task performed):
+      - "Round 1 (first correction's design): anonymous-starter-cap check ordered before season/fixture lookup, breaking an unrelated existing current-season test's expected error code -- fixed by reordering."
+      - "Round 1: relaxed CHECK constraint's performance_rows formula subtracted excluded_mapping_rows a second time (double-counting against the pre-existing insert semantics) -- fixed."
+      - "Round 2 (second correction's single-table redesign): a quarantined row's forced performance_rows = 0 violated the pre-existing (immutable) historical_performance_coverage_reconciled_check (`not reconciled or performance_rows = valid_player_rows`) -- fixed by setting reconciled = false for quarantined rows, confirmed harmless since every query that matters filters by coverage_outcome, not reconciled."
+      - "Round 2: two new pgTAP test literals used repeat('g'/'h'/'i', 64) as fake source_version sha256 digests; g/h/i are not valid hex characters (the source_version CHECK requires [0-9a-f]) -- fixed to use valid hex digits (0-9a-f) throughout every fake digest in this test file."
+      - "Round 2: two new pgTAP quarantine-call test literals set validPlayerRows below 22 (the pre-existing, unrelated valid_player_rows >= 22 floor), which is realistic for the worker's pre-mapping identified-starter count alone but not for the audited total (starters + bench) the table column stores -- fixed by using a realistic total (e.g. 17 identified starters + 8 identified bench = 25) that still clears the floor, matching the real production shape where bench rows keep this total above 22 even when several starters are anonymous."
+  per_case_mapping:
+    a: "0 anonymous starters, baseline — TS unit test PASS; also exercised by the pre-existing pgTAP fixture. PASS (real Postgres)."
+    b: "exactly 4 anonymous starters, boundary passes — TS unit test PASS; pgTAP case PASS (real Postgres, `npx supabase test db`)."
+    c: "5 anonymous starters, boundary fails/quarantined, zero rows persisted — TS unit test PASS; pgTAP case PASS (real Postgres), including the explicit `count(*) = 0` assertion the owner addendum specifically asked for."
+    d: "invalid raw starter totals (21 raw starters) still fails, unrelated to this change — TS unit test PASS."
+    e: "wrong team count / duplicate player rows still fail — TS unit tests (e1, e2) PASS."
+    f: "identified-but-possibly-unmapped player_id is not conflated with anonymous — TS structural regression test PASS; the pre-existing 'one unmappable substitute is quarantined explicitly' pgTAP case (unchanged mapping-quarantine behavior) PASS (real Postgres)."
+    g: "the two real outlier fixtures' shape (7 and 8 anonymous) both fail — TS unit tests (g1, g2) PASS; pgTAP 5-anonymous case PASS (real Postgres)."
+    h: "repeat execution / idempotency of an already-accepted fixture — pgTAP case PASS (real Postgres): re-ingesting the same source_version leaves exactly the same 22 active rows, no duplicates."
+    i: "a degenerate/empty rating result is still rejected downstream (BG-0027 guard) — NOT touched by this task; fantasy_rating_degeneracy_guard.test.sql (unmodified by this task) PASS in the same `npx supabase test db` run, confirming the guard still works after this migration is applied to the same database."
+    j: "both outlier fixtures excluded from the rating-input aggregation RPC's output entirely — pgTAP case PASS (real Postgres): performanceCount === 44 (fixtures 1 and 2's active rows), never 61 (44 + fixture 3's 25 identified-but-rejected rows)."
+    k: "the quarantined fixture's fixture/player/mapping records AND its own coverage row all still SELECT successfully after the migration runs — pgTAP case PASS (real Postgres): fixture row, provider mapping row, and a shared player's row all present and countable; separately, exactly one coverage row (never zero, never two) for the quarantined fixture, carrying the corrected quarantine-call audit values."
+    l: "re-running the quarantine RPC against the same fixture is idempotent — pgTAP case PASS (real Postgres): calling it twice leaves exactly one coverage row, coverage_outcome still 'quarantined', no throw, no duplicate."
+    accept_quarantine_accept_cycle (owner addendum item 7, fixture 4, single-table proof): >
+      pgTAP PASS (real Postgres): fixture 4 is (1) accepted cleanly (22 active rows,
+      coverage_outcome = 'accepted'), (2) re-quarantined by a corrected payload showing 5 anonymous
+      starters -- exactly one coverage row remains, now carrying the CORRECTED
+      lineup_rows_seen/valid_player_rows/excluded_incomplete_rows from the quarantine call (27/22/5,
+      asserted via a `row(...)` equality, not just individually), and all 22 of its performance rows
+      are deactivated; (3) the rating-input aggregate at this point shows quarantinedFixtureCount=2,
+      expectedFixtureCount=2, performanceCount=44 (unaffected); (4) re-quarantining again is
+      idempotent (still one row); (5) accepting fixture 4 again via a further-corrected clean
+      payload flips coverage_outcome back to 'accepted' and quarantine_reason to null on the SAME
+      row (still exactly one row for fixture 4), and the final rating-input snapshot shows
+      quarantinedFixtureCount=1, expectedFixtureCount=3, performanceCount=66 (fixtures 1, 2 and 4).
+    scope_1_current_season_shaped_row_still_valid: >
+      pgTAP PASS (real Postgres): a row inserted with source_version matching
+      'sportsmonks-current-fixture:...' and every other column matching exactly what
+      api.ingest_current_player_fixture_performance's own (unmodified) insert would produce still
+      satisfies every constraint; anonymous_starter_rows and coverage_outcome sit at their defaults
+      (0, 'accepted') as expected.
+    scope_2_current_season_row_cannot_carry_anonymous_starters: >
+      pgTAP PASS (real Postgres), two sub-cases: an UPDATE giving that same current-season-prefixed
+      row anonymous_starter_rows = 3 is REJECTED (sqlstate 23514); a fresh INSERT ... ON CONFLICT
+      DO UPDATE attempting the same on a different current-season-prefixed row is also REJECTED
+      (sqlstate 23514). Proves the new source_version-scoped CHECK constraint is a real,
+      Postgres-enforced barrier, not an accident of which RPC happens to set which column.
+
+what_could_not_be_verified_and_why:
+  - item: "Re-verifying BG-0044's 238/240 measurement, and the Chief's production-check finding above, against live production data"
+    reason: "This task is not authorized to touch production (tkewgajrljbwgwedqsxn) in any way, per explicit constraint. Both figures are cited from the Chief's/BG-0044's own production access, not independently re-measured by this Builder."
+  - item: "The Fantasy catalog's real mapped/unmapped/eligible counts (539/497/459/42), used in the non-production preview"
+    reason: "No production access permitted for this Builder. Carried over from a prior probe and labeled as such."
+  - item: "The non-production preview's squad/rating/price numbers"
+    reason: "Illustrative synthetic data by design (no real catalog data reachable) -- labeled ILLUSTRATIVE throughout non-production-preview-2026-09-19.md, not something 'not yet verified' but something never claimed as real."
+
+production_prerequisites_before_dispatch:
+  - "Independent Verifier review of this diff and migration (now backed by a real local pgTAP run, not just static review)."
+  - "Re-run scripts/backend/sportsmonks-historical-performance-probe.ts against real production data with expectedCommit pinned to this branch's eventual merge commit, to reconfirm 238/240 and the two outlier fixture ids against the current live provider payload."
+  - "Resolve whatever currently blocks migration promotion to tkewgajrljbwgwedqsxn (BG-0002 per the prior brief, or its successor) before this migration can be applied to production."
+  - "Chief/Owner sign-off to actually dispatch the G7 backfill runner against production. This implementation branch does not do so, does not call any GitHub Actions dispatch tool, and does not call any Supabase MCP tool against tkewgajrljbwgwedqsxn."
+  - "No recalculation of previously-persisted derived outputs is required (see production_check_finding above) -- this is not a prerequisite still owed, it is a closed finding, restated here for completeness."
+
+honesty_notes:
+  - "The rule change is described throughout as a RELAXATION, never as 'all invariants preserved unchanged' — because it is not that."
+  - "No test result in this report is claimed without having actually been run in this session, including the pgTAP suite, which this report initially (before the first owner addendum) incorrectly assumed could not be run at all -- that assumption was wrong, and was corrected."
+  - "The production-check finding is the Chief's, not this Builder's; it is cited, not re-derived, and is clearly marked as such."
+  - "The non-production preview's squad/price numbers are explicitly labeled ILLUSTRATIVE, not measured."
+  - "The SECOND correction in this report is not cosmetic wordsmithing on top of a design that was already fine: the first correction's quarantine mechanism genuinely deleted a coverage row and replaced it with a thinner one elsewhere, and its scope comment genuinely named a table and RPC that do not exist. Both are stated here plainly, not minimized, alongside what replaced them and how the replacement was verified (a real local Postgres run, not re-reading the same code more carefully)."
+  - "Every constraint-design difficulty encountered while building the single-table redesign (the reconciled-column interaction, the hex-digit test-literal bug, the valid_player_rows floor interaction) is disclosed in bugs_found_and_fixed_by_this_run above, not silently patched over."

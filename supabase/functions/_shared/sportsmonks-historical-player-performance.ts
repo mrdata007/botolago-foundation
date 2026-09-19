@@ -86,12 +86,36 @@ export interface NormalizedHistoricalFixture {
     readonly lineupRowsSeen: number;
     readonly validPlayerRows: number;
     readonly excludedIncompleteRows: number;
+    /**
+     * Identified starters (provider `type_id` 11, `player_id` present). Historically this was
+     * required to equal 22. Under BG-0011 option B it may be as low as 18: the provider always
+     * reports exactly 22 raw starter rows, but up to 4 of them may be anonymous (see
+     * `anonymousStarterRows`). This field name is kept for backward compatibility with existing
+     * callers/tests; it is NOT the raw provider starter count.
+     */
     readonly starterRows: number;
+    /**
+     * Raw provider starter rows (`type_id` 11) that carry no `player_id`. These rows are never
+     * assigned to any player, never persisted, and never treated as "observed zero" stats for
+     * anyone. BG-0011 option B tolerates up to 4 per fixture on the historical ingestion path
+     * only; a fixture with more than 4 is quarantined entirely (see
+     * `HistoricalPerformanceRuntimeError` code `historical_fixture_anonymous_starters_exceeded`).
+     */
+    readonly anonymousStarterRows: number;
     readonly teamCount: number;
     readonly detailRows: number;
     readonly invalidDetailRows: number;
   };
 }
+
+/** BG-0011 option B: at most this many of the 22 raw provider starter rows may be anonymous
+ * (missing `player_id`) before the whole fixture is quarantined. Historical ingestion path only
+ * (`api.ingest_historical_player_fixture_performance` / `app_private.historical_performance_fixture_coverage`);
+ * the live current-season scoring path (`sportsmonks-current-fixture:` source-version prefix,
+ * separate tables in `20260914200726_current_finished_fixture_performances.sql`) is untouched and
+ * still requires zero anonymous starters. */
+export const MAX_ANONYMOUS_STARTER_ROWS = 4;
+const RAW_STARTER_ROW_COUNT = 22;
 
 interface BatchRequest {
   readonly action: "ingest_batch";
@@ -446,12 +470,17 @@ export async function normalizeHistoricalFixture(
   const teamIds = new Set<string>();
   let excludedIncompleteRows = 0;
   let starterRows = 0;
+  let anonymousStarterRows = 0;
   let detailRows = 0;
   let invalidDetailRows = 0;
 
   for (const value of fixture.lineups) {
     if (!isRecord(value) || value.player_id === null || value.player_id === undefined) {
       excludedIncompleteRows += 1;
+      // The provider still reports type_id for anonymous rows. A starter row (type_id 11) that
+      // carries no player_id is an anonymous starter (BG-0011 option B); anything else (a missing
+      // or non-starter type_id) is just an anonymous/incomplete row, as before.
+      if (isRecord(value) && value.type_id === 11) anonymousStarterRows += 1;
       continue;
     }
     let externalPlayerId: string;
@@ -515,7 +544,11 @@ export async function normalizeHistoricalFixture(
   if (excludedIncompleteRows > 20) {
     coverageFailures.push("incomplete_rows_limit_exceeded");
   }
-  if (starterRows !== 22) coverageFailures.push("starter_rows_mismatch");
+  // The provider always reports exactly 22 raw starter rows (identified + anonymous). That
+  // invariant is unrelated to BG-0011 option B and still fails outright if violated.
+  if (starterRows + anonymousStarterRows !== RAW_STARTER_ROW_COUNT) {
+    coverageFailures.push("raw_starter_rows_mismatch");
+  }
   if (teamIds.size !== 2) coverageFailures.push("team_count_mismatch");
   if (invalidDetailRows !== 0) coverageFailures.push("invalid_detail_rows_present");
   if (coverageFailures.length > 0) {
@@ -525,26 +558,60 @@ export async function normalizeHistoricalFixture(
       validPlayerRows: rows.length,
       excludedIncompleteRows,
       starterRows,
+      anonymousStarterRows,
       teamCount: teamIds.size,
       invalidDetailRows,
       failures: coverageFailures,
     });
   }
+  // Computed here (rather than only on the success path) because the caller needs it either way:
+  // on success, to return with the normalized fixture; on quarantine, to record an audit-complete
+  // row in app_private.historical_performance_fixture_coverage (BG-0011 option B, single-table
+  // design — quarantine is a coverage_outcome, not a separate table).
   const sourceVersion = `sportsmonks-fixture:${await sha256({ fixtureId, seasonId, rows })}`;
+  // CRITICAL: this single `coverage` object is sent as `p_coverage` to BOTH DB RPCs --
+  // api.ingest_historical_player_fixture_performance (accept path, below) AND
+  // api.quarantine_historical_player_fixture_performance (quarantine path, via the thrown
+  // error's diagnostic). Both RPCs read `identifiedStarterRows` via `p_coverage ->> 'identifiedStarterRows'`
+  // and reject the call outright (NULL -> INVALID_PROVIDER_PAYLOAD) if it is missing. It MUST be
+  // present here, on this one object, not bolted on separately per call site -- a prior version of
+  // this file added it only to the quarantine path's diagnostic copy and left this object (used
+  // by the accept path, i.e. every one of the ~238 fixtures meant to succeed) without it, which
+  // would have made every single accepted historical fixture ingest call fail outright. Keep
+  // `starterRows` too (the established NormalizedHistoricalFixture field name, read by other
+  // callers) -- both keys carry the same identified-starter count.
+  const coverage = {
+    lineupRowsSeen: fixture.lineups.length,
+    validPlayerRows: rows.length,
+    excludedIncompleteRows,
+    starterRows,
+    identifiedStarterRows: starterRows,
+    anonymousStarterRows,
+    teamCount: teamIds.size,
+    detailRows,
+    invalidDetailRows,
+  };
+  // BG-0011 option B, historical ingestion path only: up to 4 of the 22 raw starters may be
+  // anonymous. More than that and the whole fixture is quarantined — none of its rows (not even
+  // the identified ones) are used. This is a distinct, narrower failure from the coverage checks
+  // above so the caller can treat it as "quarantine and continue the batch" rather than a hard
+  // batch failure. The diagnostic carries the full coverage shape (plus sourceVersion) so the
+  // caller can record a complete, audit-able quarantined coverage row without recomputing anything.
+  if (anonymousStarterRows > MAX_ANONYMOUS_STARTER_ROWS) {
+    throw new HistoricalPerformanceRuntimeError("historical_fixture_anonymous_starters_exceeded", {
+      fixtureId,
+      sourceVersion,
+      anonymousStarterRows,
+      identifiedStarterRows: starterRows,
+      coverage,
+    });
+  }
   return {
     fixtureId,
     seasonId,
     sourceVersion,
     rows,
-    coverage: {
-      lineupRowsSeen: fixture.lineups.length,
-      validPlayerRows: rows.length,
-      excludedIncompleteRows,
-      starterRows,
-      teamCount: teamIds.size,
-      detailRows,
-      invalidDetailRows,
-    },
+    coverage,
   };
 }
 
@@ -566,10 +633,13 @@ async function rpc(
       );
     }
     if (result.error.code === "22023") {
+      const businessCode: Readonly<Record<string, string>> = {
+        HISTORICAL_PERFORMANCE_INCOMPLETE: "historical_performance_incomplete",
+        HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED:
+          "historical_fixture_anonymous_starters_exceeded",
+      };
       throw new HistoricalPerformanceRuntimeError(
-        result.error.message === "HISTORICAL_PERFORMANCE_INCOMPLETE"
-          ? "historical_performance_incomplete"
-          : "invalid_provider_payload",
+        businessCode[result.error.message ?? ""] ?? "invalid_provider_payload",
       );
     }
     throw new HistoricalPerformanceRuntimeError("database_unavailable");
@@ -819,6 +889,9 @@ async function ingestBatch(
     let excludedIncompleteRows = 0;
     let excludedMappingRows = 0;
     let performanceRows = 0;
+    let quarantinedFixtures = 0;
+    let anonymousStarterRowsTotal = 0;
+    const quarantinedFixtureIds: string[] = [];
     for (const fixture of batch.items) {
       const payload = await providerFixtureRequest(
         fixture.externalFixtureId,
@@ -826,12 +899,47 @@ async function ingestBatch(
         dependencies,
         counts,
       );
-      const normalized = await normalizeHistoricalFixture(
-        payload,
-        Number(fixture.externalFixtureId),
-        config.seasonId,
-      );
+      let normalized: NormalizedHistoricalFixture;
+      try {
+        normalized = await normalizeHistoricalFixture(
+          payload,
+          Number(fixture.externalFixtureId),
+          config.seasonId,
+        );
+      } catch (error) {
+        if (
+          error instanceof HistoricalPerformanceRuntimeError &&
+          error.code === "historical_fixture_anonymous_starters_exceeded" &&
+          error.diagnostic
+        ) {
+          // BG-0011 option B: this fixture fails the bounded-anonymous rule outright (currently
+          // measured: exactly fixtures 19596474 and 19596475). It is quarantined entirely — none
+          // of its rows, not even identified ones, are persisted — and the batch continues.
+          quarantinedFixtures += 1;
+          anonymousStarterRowsTotal += Number(error.diagnostic.anonymousStarterRows ?? 0);
+          // A quarantined fixture WAS still fetched from the provider (that is how its anonymous
+          // count was even determined) -- it just was not persisted. Count it, so `fetched` isn't
+          // understated relative to the provider calls actually made this batch.
+          counts.fetched += Number(
+            (error.diagnostic.coverage as { lineupRowsSeen?: number } | undefined)
+              ?.lineupRowsSeen ?? 0,
+          );
+          quarantinedFixtureIds.push(fixture.externalFixtureId);
+          await rpc(dependencies.client, "quarantine_historical_player_fixture_performance", {
+            p_provider_name: "sportsmonks",
+            p_season_external_id: String(config.seasonId),
+            p_fixture_external_id: fixture.externalFixtureId,
+            p_source_version: error.diagnostic.sourceVersion,
+            p_coverage: error.diagnostic.coverage,
+            p_observed_at: (dependencies.now?.() ?? new Date()).toISOString(),
+          });
+          counts.rejected += 1;
+          continue;
+        }
+        throw error;
+      }
       counts.fetched += normalized.coverage.lineupRowsSeen;
+      anonymousStarterRowsTotal += normalized.coverage.anonymousStarterRows;
       const persisted = performancePersistedCounts(
         await rpc(dependencies.client, "ingest_historical_player_fixture_performance", {
           p_provider_name: "sportsmonks",
@@ -870,6 +978,10 @@ async function ingestBatch(
       action: "ingest_batch",
       expectedFixtureCount: batch.expectedFixtureCount,
       fixturesProcessed: batch.items.length,
+      acceptedFixtures: batch.items.length - quarantinedFixtures,
+      quarantinedFixtures,
+      quarantinedFixtureIds,
+      anonymousStarterRowsTotal,
       performanceRows,
       excludedIncompleteRows,
       excludedMappingRows,

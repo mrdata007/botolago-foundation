@@ -56,7 +56,6 @@ const PROVIDER_SUBSTITUTE_TYPE_ID = 12;
 const DECLARED_STARTERS_PER_FIXTURE = 22;
 /** Recommended cap on anonymous starters for the identity-tolerant reading (BG-0011 option b). */
 const IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP = 4;
-const STARTER_ROWS_FAILURE_CODE = "starter_rows_mismatch";
 
 /**
  * Seasons whose every fixture is classified against the edge worker's coverage
@@ -78,10 +77,19 @@ export const HISTORICAL_PERFORMANCE_COVERAGE_FAILURE_CODES = [
   "lineup_rows_out_of_range",
   "valid_player_rows_out_of_range",
   "incomplete_rows_limit_exceeded",
-  "starter_rows_mismatch",
+  "raw_starter_rows_mismatch",
   "team_count_mismatch",
   "invalid_detail_rows_present",
 ] as const;
+
+/**
+ * BG-0011 option B (implemented): normalizeHistoricalFixture no longer fails a fixture merely
+ * for having fewer than 22 *identified* starters. It fails outright, with this separate top-level
+ * error code (not one of the coverageFailures above), only when more than
+ * IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP of the 22 raw starters are anonymous.
+ */
+export const HISTORICAL_PERFORMANCE_ANONYMOUS_STARTERS_EXCEEDED_CODE =
+  "historical_fixture_anonymous_starters_exceeded" as const;
 
 const FANTASY_DETAIL_TYPE_IDS = new Set([
   52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 119, 194, 321, 322, 324,
@@ -592,7 +600,7 @@ export function identityTolerantPass(counters: RawLineupCounters, failures: stri
     counters.rawStarterRows === DECLARED_STARTERS_PER_FIXTURE &&
     counters.anonymousStarterRows !== null &&
     counters.anonymousStarterRows <= IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP &&
-    failures.every((code) => code === STARTER_ROWS_FAILURE_CODE)
+    failures.every((code) => code === HISTORICAL_PERFORMANCE_ANONYMOUS_STARTERS_EXCEEDED_CODE)
   );
 }
 
@@ -668,6 +676,31 @@ export async function classifyFixtureInvariants(
           "invalid_invariant_diagnostic",
         ),
         failures,
+        pass: false,
+      });
+    }
+    if (
+      error.code === HISTORICAL_PERFORMANCE_ANONYMOUS_STARTERS_EXCEEDED_CODE &&
+      isRecord(diagnostic)
+    ) {
+      // BG-0011 option B: all other coverage invariants held, but more than
+      // IDENTITY_TOLERANT_ANONYMOUS_STARTER_CAP of the 22 raw starters are anonymous. The worker
+      // quarantines the whole fixture; the probe still records what it can from the diagnostic.
+      return withCounters({
+        fixtureId,
+        seasonId,
+        kickoff,
+        enumerated,
+        lineupRows: null,
+        validPlayerRows: null,
+        excludedIncompleteRows: null,
+        starterRows: nonNegativeInteger(
+          diagnostic.identifiedStarterRows,
+          "invalid_invariant_diagnostic",
+        ),
+        teamCount: null,
+        invalidDetailRows: null,
+        failures: [HISTORICAL_PERFORMANCE_ANONYMOUS_STARTERS_EXCEEDED_CODE],
         pass: false,
       });
     }
