@@ -5,14 +5,30 @@ import { getNewsApi } from "@/integrations/supabase/v2-client";
 import {
   articleCardSchema,
   articleDetailSchema,
+  articleEditorialDetailSchema,
   articlePageSchema,
+  editorialRevisionSchema,
+  editorialStoryPageSchema,
   homeModulesSchema,
   newsTeamFilterSchema,
   type ArticlePageDto,
+  type CreateDraftInput,
+  type CreateDraftResult,
+  type EditorialRevisionDto,
+  type EditorialStoryPageDto,
+  type ListStoriesInput,
   type NewsFeedInput,
   type NewsLanguage,
   type NewsRepository,
   type NewsSearchInput,
+  type RegisterMediaInput,
+  type RegisterMediaResult,
+  type SetPlacementInput,
+  type SetPlacementResult,
+  type TransitionArticleInput,
+  type TransitionArticleResult,
+  type UpdateArticleInput,
+  type UpdateArticleResult,
 } from "./contracts";
 import { mapNewsError, NewsError } from "./errors";
 
@@ -25,6 +41,15 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   if (!parsed.success)
     throw new NewsError("data_unavailable", "The News API returned an invalid DTO.", parsed.error);
   return parsed.data;
+}
+
+// The generated RPC arg types mark every `text` column-backed parameter as a
+// required non-null `string`, even when the underlying Postgres function
+// happily accepts (and the CHECK constraints sometimes require) null. This
+// narrow cast keeps call sites honest about the real nullable DTOs while
+// still sending the actual null value over the wire.
+function nullableText(value: string | null | undefined): string {
+  return value as unknown as string;
 }
 
 function requireUuid(value: string): string {
@@ -47,6 +72,23 @@ function decodeCursor(
 }
 
 export function encodeNewsCursor(cursor: ArticlePageDto["nextCursor"]): string | null {
+  return cursor ? encodeURIComponent(JSON.stringify(cursor)) : null;
+}
+
+function decodeEditorialCursor(
+  value: string | null | undefined,
+): { updatedAt: string; id: string } | null {
+  if (!value) return null;
+  try {
+    return z
+      .object({ updatedAt: z.string().datetime({ offset: true }), id: z.string().uuid() })
+      .parse(JSON.parse(decodeURIComponent(value)));
+  } catch (error) {
+    throw new NewsError("invalid_cursor", "Invalid CMS pagination cursor.", error);
+  }
+}
+
+export function encodeEditorialCursor(cursor: EditorialStoryPageDto["nextCursor"]): string | null {
   return cursor ? encodeURIComponent(JSON.stringify(cursor)) : null;
 }
 
@@ -131,5 +173,174 @@ export class SupabaseNewsRepository implements NewsRepository {
       p_article_edition_id: requireUuid(articleId),
     });
     throwIfError(error);
+  }
+
+  // --- Editorial (CMS) surface ---------------------------------------
+
+  async createDraft(
+    input: CreateDraftInput,
+    _context: RepositoryContext,
+  ): Promise<CreateDraftResult> {
+    const { data, error } = await getNewsApi().rpc("editorial_create_draft", {
+      p_language: input.language,
+      p_slug: input.slug,
+      p_title: input.title,
+      p_summary: input.summary,
+      p_body_format: input.bodyFormat,
+      p_body_source: nullableText(input.bodySource),
+      p_body_html: input.bodyHtml,
+      p_reading_time_minutes: input.readingTimeMinutes,
+      p_sanitizer_version: input.sanitizerVersion,
+      p_story_id: input.storyId ?? undefined,
+      p_author_id: input.authorId ?? undefined,
+      p_publisher_id: input.publisherId ?? undefined,
+    });
+    throwIfError(error);
+    return parse(
+      z.object({
+        storyId: z.string().uuid(),
+        articleId: z.string().uuid(),
+        status: z.string(),
+      }),
+      data,
+    ) as CreateDraftResult;
+  }
+
+  async updateArticle(
+    input: UpdateArticleInput,
+    _context: RepositoryContext,
+  ): Promise<UpdateArticleResult> {
+    const { data, error } = await getNewsApi().rpc("editorial_update_article", {
+      p_article_edition_id: requireUuid(input.articleEditionId),
+      p_expected_updated_at: input.expectedUpdatedAt,
+      p_slug: input.slug,
+      p_title: input.title,
+      p_subtitle: nullableText(input.subtitle),
+      p_summary: input.summary,
+      p_body_format: input.bodyFormat,
+      p_body_source: nullableText(input.bodySource),
+      p_body_html: input.bodyHtml,
+      p_reading_time_minutes: input.readingTimeMinutes,
+      p_sanitizer_version: input.sanitizerVersion,
+      p_hero_asset_id: input.heroAssetId ?? undefined,
+      p_seo_title: input.seoTitle ?? undefined,
+      p_seo_description: input.seoDescription ?? undefined,
+    });
+    throwIfError(error);
+    return parse(
+      z.object({
+        articleId: z.string().uuid(),
+        status: z.string(),
+        updatedAt: z.string(),
+      }),
+      data,
+    ) as UpdateArticleResult;
+  }
+
+  async transitionArticle(
+    input: TransitionArticleInput,
+    _context: RepositoryContext,
+  ): Promise<TransitionArticleResult> {
+    const { data, error } = await getNewsApi().rpc("editorial_transition_article", {
+      p_article_edition_id: requireUuid(input.articleEditionId),
+      p_target_status: input.targetStatus,
+      p_scheduled_at: input.scheduledAt ?? undefined,
+      p_visibility: input.visibility ?? undefined,
+    });
+    throwIfError(error);
+    return parse(
+      z.object({
+        articleId: z.string().uuid(),
+        status: z.string(),
+        visibility: z.string(),
+      }),
+      data,
+    ) as TransitionArticleResult;
+  }
+
+  async setPlacement(
+    input: SetPlacementInput,
+    _context: RepositoryContext,
+  ): Promise<SetPlacementResult> {
+    const { data, error } = await getNewsApi().rpc("editorial_set_placement", {
+      p_article_edition_id: requireUuid(input.articleEditionId),
+      p_placement_type: input.placementType,
+      p_scope_type: input.scopeType ?? undefined,
+      p_scope_id: input.scopeId ?? undefined,
+      p_priority: input.priority ?? undefined,
+      p_starts_at: input.startsAt ?? undefined,
+      p_ends_at: input.endsAt ?? undefined,
+    });
+    throwIfError(error);
+    return parse(
+      z.object({ placementId: z.string().uuid(), articleId: z.string().uuid() }),
+      data,
+    ) as SetPlacementResult;
+  }
+
+  async softDeleteStory(storyId: string, _context: RepositoryContext): Promise<void> {
+    const { error } = await getNewsApi().rpc("editorial_soft_delete_story", {
+      p_story_id: requireUuid(storyId),
+    });
+    throwIfError(error);
+  }
+
+  async listStories(
+    input: ListStoriesInput,
+    _context: RepositoryContext,
+  ): Promise<EditorialStoryPageDto> {
+    const cursor = decodeEditorialCursor(input.cursor);
+    const { data, error } = await getNewsApi().rpc("editorial_list_stories", {
+      p_language: input.language ?? undefined,
+      p_status: input.status ?? undefined,
+      p_query: input.query ?? undefined,
+      p_limit: input.limit ?? 20,
+      p_after_updated_at: cursor?.updatedAt,
+      p_after_id: cursor?.id,
+    });
+    throwIfError(error);
+    return parse(editorialStoryPageSchema, data);
+  }
+
+  async listRevisions(
+    articleEditionId: string,
+    limit: number,
+    _context: RepositoryContext,
+  ): Promise<readonly EditorialRevisionDto[]> {
+    const { data, error } = await getNewsApi().rpc("editorial_list_revisions", {
+      p_article_edition_id: requireUuid(articleEditionId),
+      p_limit: limit,
+    });
+    throwIfError(error);
+    return parse(z.array(editorialRevisionSchema), data);
+  }
+
+  async getEditorialArticle(articleEditionId: string, _context: RepositoryContext) {
+    const { data, error } = await getNewsApi().rpc("editorial_get_article", {
+      p_article_edition_id: requireUuid(articleEditionId),
+    });
+    throwIfError(error);
+    return parse(articleEditorialDetailSchema, data);
+  }
+
+  async registerMedia(
+    input: RegisterMediaInput,
+    _context: RepositoryContext,
+  ): Promise<RegisterMediaResult> {
+    const { data, error } = await getNewsApi().rpc("editorial_register_media", {
+      p_storage_path: input.storagePath,
+      p_mime_type: input.mimeType,
+      p_width: input.width,
+      p_height: input.height,
+      p_alt_text: input.altText,
+      p_caption: input.caption ?? undefined,
+      p_credit: input.credit ?? undefined,
+      p_copyright_owner: input.copyrightOwner ?? undefined,
+      p_license_url: input.licenseUrl ?? undefined,
+      p_attribution_url: input.attributionUrl ?? undefined,
+      p_kind: input.kind ?? undefined,
+    });
+    throwIfError(error);
+    return parse(z.object({ mediaAssetId: z.string().uuid() }), data);
   }
 }

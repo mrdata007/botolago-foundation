@@ -26,3 +26,15 @@ export const loadAdminSecurityRouteAccess = createServerFn({ method: "POST" }).h
     await loadAdminRouteAccessForPermission("security.revoke_staff"),
   );
 });
+
+export const loadAdminNewsReadRouteAccess = createServerFn({ method: "POST" }).handler(async () => {
+  const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+  return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("editorial.read"));
+});
+
+export const loadAdminNewsWriteRouteAccess = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+    return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("editorial.write"));
+  },
+);

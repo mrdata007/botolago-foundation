@@ -3,12 +3,26 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   ArticleCardDto,
   ArticleDetailDto,
+  ArticleEditorialDetailDto,
   ArticlePageDto,
+  CreateDraftInput,
+  CreateDraftResult,
+  EditorialRevisionDto,
+  EditorialStoryPageDto,
+  ListStoriesInput,
   NewsFeedInput,
   NewsLanguage,
   NewsRepository,
   NewsSearchInput,
   NewsTeamFilterDto,
+  RegisterMediaInput,
+  RegisterMediaResult,
+  SetPlacementInput,
+  SetPlacementResult,
+  TransitionArticleInput,
+  TransitionArticleResult,
+  UpdateArticleInput,
+  UpdateArticleResult,
 } from "./contracts";
 import { NewsError } from "./errors";
 
@@ -174,5 +188,72 @@ export class MockNewsRepository implements NewsRepository {
 
   async unsave(articleId: string, _context: RepositoryContext): Promise<void> {
     this.saved.delete(articleId);
+  }
+
+  // The preview mock backs only the public reading surface; the CMS always
+  // talks to SupabaseNewsRepository, so these are intentionally unimplemented.
+  private unsupported(): never {
+    throw new NewsError("data_unavailable", "Editorial operations are not available in preview.");
+  }
+
+  async createDraft(
+    _input: CreateDraftInput,
+    _context: RepositoryContext,
+  ): Promise<CreateDraftResult> {
+    this.unsupported();
+  }
+
+  async updateArticle(
+    _input: UpdateArticleInput,
+    _context: RepositoryContext,
+  ): Promise<UpdateArticleResult> {
+    this.unsupported();
+  }
+
+  async transitionArticle(
+    _input: TransitionArticleInput,
+    _context: RepositoryContext,
+  ): Promise<TransitionArticleResult> {
+    this.unsupported();
+  }
+
+  async setPlacement(
+    _input: SetPlacementInput,
+    _context: RepositoryContext,
+  ): Promise<SetPlacementResult> {
+    this.unsupported();
+  }
+
+  async softDeleteStory(_storyId: string, _context: RepositoryContext): Promise<void> {
+    this.unsupported();
+  }
+
+  async listStories(
+    _input: ListStoriesInput,
+    _context: RepositoryContext,
+  ): Promise<EditorialStoryPageDto> {
+    this.unsupported();
+  }
+
+  async listRevisions(
+    _articleEditionId: string,
+    _limit: number,
+    _context: RepositoryContext,
+  ): Promise<readonly EditorialRevisionDto[]> {
+    this.unsupported();
+  }
+
+  async getEditorialArticle(
+    _articleEditionId: string,
+    _context: RepositoryContext,
+  ): Promise<ArticleEditorialDetailDto> {
+    this.unsupported();
+  }
+
+  async registerMedia(
+    _input: RegisterMediaInput,
+    _context: RepositoryContext,
+  ): Promise<RegisterMediaResult> {
+    this.unsupported();
   }
 }
