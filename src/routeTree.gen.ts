@@ -41,6 +41,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-pas
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
+import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -49,6 +50,8 @@ import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.pla
 import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
 import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
+import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
+import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
@@ -212,6 +215,11 @@ const AdminSecurityRoute = AdminSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNewsRoute = AdminNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -254,6 +262,17 @@ const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
   path: '/$principalId',
   getParentRoute: () => AdminStaffRoute,
 } as any)
+const AdminNewsNewRoute = AdminNewsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminNewsRoute,
+} as any)
+const AdminNewsArticleEditionIdRoute =
+  AdminNewsArticleEditionIdRouteImport.update({
+    id: '/$articleEditionId',
+    path: '/$articleEditionId',
+    getParentRoute: () => AdminNewsRoute,
+  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -278,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -305,6 +325,8 @@ export interface FileRoutesByFullPath {
   '/matches/': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
+  '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
@@ -321,6 +343,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -348,6 +371,8 @@ export interface FileRoutesByTo {
   '/matches': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
+  '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
@@ -366,6 +391,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -393,6 +419,8 @@ export interface FileRoutesById {
   '/matches/': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
+  '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
@@ -412,6 +440,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin/approvals'
     | '/admin/audit'
+    | '/admin/news'
     | '/admin/security'
     | '/admin/staff'
     | '/auth/callback'
@@ -439,6 +468,8 @@ export interface FileRouteTypes {
     | '/matches/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/news/$articleEditionId'
+    | '/admin/news/new'
     | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
@@ -455,6 +486,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin/approvals'
     | '/admin/audit'
+    | '/admin/news'
     | '/admin/security'
     | '/admin/staff'
     | '/auth/callback'
@@ -482,6 +514,8 @@ export interface FileRouteTypes {
     | '/matches'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/news/$articleEditionId'
+    | '/admin/news/new'
     | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
@@ -499,6 +533,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin/approvals'
     | '/admin/audit'
+    | '/admin/news'
     | '/admin/security'
     | '/admin/staff'
     | '/auth/callback'
@@ -526,6 +561,8 @@ export interface FileRouteTypes {
     | '/matches/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/news/$articleEditionId'
+    | '/admin/news/new'
     | '/admin/staff/$principalId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
@@ -774,6 +811,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSecurityRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/news': {
+      id: '/admin/news'
+      path: '/news'
+      fullPath: '/admin/news'
+      preLoaderRoute: typeof AdminNewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/audit': {
       id: '/admin/audit'
       path: '/audit'
@@ -830,6 +874,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStaffPrincipalIdRouteImport
       parentRoute: typeof AdminStaffRoute
     }
+    '/admin/news/new': {
+      id: '/admin/news/new'
+      path: '/new'
+      fullPath: '/admin/news/new'
+      preLoaderRoute: typeof AdminNewsNewRouteImport
+      parentRoute: typeof AdminNewsRoute
+    }
+    '/admin/news/$articleEditionId': {
+      id: '/admin/news/$articleEditionId'
+      path: '/$articleEditionId'
+      fullPath: '/admin/news/$articleEditionId'
+      preLoaderRoute: typeof AdminNewsArticleEditionIdRouteImport
+      parentRoute: typeof AdminNewsRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -847,6 +905,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminNewsRouteChildren {
+  AdminNewsArticleEditionIdRoute: typeof AdminNewsArticleEditionIdRoute
+  AdminNewsNewRoute: typeof AdminNewsNewRoute
+}
+
+const AdminNewsRouteChildren: AdminNewsRouteChildren = {
+  AdminNewsArticleEditionIdRoute: AdminNewsArticleEditionIdRoute,
+  AdminNewsNewRoute: AdminNewsNewRoute,
+}
+
+const AdminNewsRouteWithChildren = AdminNewsRoute._addFileChildren(
+  AdminNewsRouteChildren,
+)
+
 interface AdminStaffRouteChildren {
   AdminStaffPrincipalIdRoute: typeof AdminStaffPrincipalIdRoute
 }
@@ -862,6 +934,7 @@ const AdminStaffRouteWithChildren = AdminStaffRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminNewsRoute: typeof AdminNewsRouteWithChildren
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
 }
@@ -869,6 +942,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminNewsRoute: AdminNewsRouteWithChildren,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
 }
