@@ -1,16 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { FplHeader, FplSegmented } from "@/components/fpl/primitives";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import { LoadingState, EmptyState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
+import { getKitForClub } from "@/lib/kits";
 import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
@@ -26,12 +28,18 @@ const tabs: { key: Tab; label: TranslationKey }[] = [
   { key: "news", label: "fantasy.players.tab.news" },
 ];
 
+/**
+ * FPL "Player info" reconstructed on the Fantasy design system: the shared
+ * Back header (`FplHeader`), a jersey/ink hero plate and the same
+ * `FplSegmented` tab control the rest of Fantasy uses for Squad/List.
+ */
 function PlayerDetailFramed() {
   const { t } = useI18n();
   return (
-    <LegacyFantasyPage title={t("fpl.player_info")} backTo="/fantasy/players">
+    <FantasyFrame>
+      <FplHeader title={t("fpl.player_info")} backTo="/fantasy/players" />
       <PlayerDetailPage />
-    </LegacyFantasyPage>
+    </FantasyFrame>
   );
 }
 
@@ -53,61 +61,59 @@ function PlayerDetailPage() {
   });
   const [tab, setTab] = useState<Tab>("overview");
 
-  if (playerQ.isLoading) return <LoadingState />;
+  if (playerQ.isLoading) {
+    return (
+      <div className="bg-white px-4 pb-6 pt-3">
+        <LoadingState />
+      </div>
+    );
+  }
   const p = playerQ.data;
-  if (!p || !clubsQ.data) return <EmptyState />;
+  if (!p || !clubsQ.data) {
+    return (
+      <div className="bg-white px-4 pb-6 pt-3">
+        <EmptyState />
+      </div>
+    );
+  }
   const clubs = clubsQ.data;
   const club = clubs.find((c) => c.id === p.clubId);
+  const kit = getKitForClub(club, p.kitPattern);
   const playerFixtures = (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId).slice(0, 5);
 
   return (
-    <div>
-      <Link
-        to="/fantasy/players"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t("common.back")}
-      </Link>
-
-      <div className="mt-2 glass-surface glass-strong flex items-center gap-3 rounded-3xl border border-[var(--glass-border)] p-4">
-        {club && <ClubCrest club={club} size="lg" />}
+    <div className="bg-white px-4 pb-6 pt-3">
+      <div className="flex items-center gap-3 rounded-[10px] border border-[color:var(--fpl-grey)] p-4">
+        <JerseyVisual kit={kit} size={48} imageUrl={p.jerseyImageUrl} ariaLabel={tr(p.name)} />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-lg font-black text-foreground">{tr(p.name)}</div>
+          <div className="truncate text-lg font-black text-[color:var(--fpl-ink-deep)]">
+            {tr(p.name)}
+          </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">
+            <span className="text-[color:var(--fpl-grey-text)]">
               {t(`player.pos.${p.position}` as TranslationKey)}
             </span>
-            {club && <span className="text-muted-foreground">· {tr(club.name)}</span>}
+            {club && <span className="text-[color:var(--fpl-grey-text)]">· {tr(club.name)}</span>}
             {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
           </div>
         </div>
         <div className="text-end">
-          <div className="text-lg font-black tabular-nums text-brand-accent">
+          <div className="fpl-tabular text-lg font-black text-[color:var(--fpl-ink)]">
             {nf.format(p.price)}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="text-[10px] uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
             {t("fantasy.price")}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 flex gap-1 overflow-x-auto scrollbar-none">
-        {tabs.map((it) => (
-          <button
-            key={it.key}
-            onClick={() => setTab(it.key)}
-            className={cn(
-              "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold",
-              tab === it.key
-                ? "bg-[color:var(--brand-primary)] text-white"
-                : "bg-white/60 ring-1 ring-black/5",
-            )}
-            aria-pressed={tab === it.key}
-          >
-            {t(it.label)}
-          </button>
-        ))}
-      </div>
+      <FplSegmented
+        className="mt-3"
+        tone="onLight"
+        value={tab}
+        onChange={setTab}
+        options={tabs.map((it) => ({ value: it.key, label: t(it.label) }))}
+      />
 
       <div className="mt-3">
         {tab === "overview" && (
@@ -120,10 +126,10 @@ function PlayerDetailPage() {
         )}
 
         {tab === "history" && (
-          <div className="rounded-2xl bg-card ring-1 ring-black/5 p-3">
-            <div className="text-sm text-muted-foreground">
-              {tr(p.name)}: {p.totalPoints} pts sur la saison ({nf.format(p.form)} / journée en
-              moyenne).
+          <div className="rounded-[10px] border border-[color:var(--fpl-grey)] p-3">
+            <div className="text-sm text-[color:var(--fpl-grey-text)]">
+              {tr(p.name)}: {p.totalPoints} {t("fantasy.points.abbr")} ({nf.format(p.form)} /{" "}
+              {t("fpl.gameweek").toLowerCase()}).
             </div>
           </div>
         )}
@@ -136,24 +142,24 @@ function PlayerDetailPage() {
               return (
                 <div
                   key={f.gameweek}
-                  className="flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5"
+                  className="flex items-center gap-2 border-b border-[color:var(--fpl-grey)] py-2"
                 >
-                  <div className="w-14 shrink-0 text-[11px] font-bold text-muted-foreground">
+                  <div className="w-14 shrink-0 text-[11px] font-bold text-[color:var(--fpl-grey-text)]">
                     GW {f.gameweek}
                   </div>
                   {opp && <ClubCrest club={opp} size="sm" />}
-                  <div className="flex-1 text-sm font-semibold">
+                  <div className="flex-1 text-sm font-semibold text-[color:var(--fpl-ink-deep)]">
                     {opp && tr(opp.shortName)}{" "}
-                    <span className="text-muted-foreground">
+                    <span className="text-[color:var(--fpl-grey-text)]">
                       ({f.isHome ? t("common.home") : t("common.away")})
                     </span>
                     {f.isDouble && (
-                      <span className="ms-1 rounded bg-emerald-500/15 px-1 text-[9px] font-black text-emerald-700">
+                      <span className="ms-1 rounded bg-[color:var(--fpl-green)] px-1 text-[9px] font-black text-[color:var(--fpl-ink-deep)]">
                         DGW
                       </span>
                     )}
                     {f.isBlank && (
-                      <span className="ms-1 rounded bg-neutral-500/20 px-1 text-[9px] font-black text-neutral-700">
+                      <span className="ms-1 rounded bg-[color:var(--fpl-grey)] px-1 text-[9px] font-black text-[color:var(--fpl-grey-text)]">
                         BGW
                       </span>
                     )}
@@ -184,7 +190,7 @@ function PlayerDetailPage() {
         )}
 
         {tab === "news" && (
-          <div className="rounded-2xl bg-card p-4 text-sm text-muted-foreground ring-1 ring-black/5">
+          <div className="rounded-[10px] border border-[color:var(--fpl-grey)] p-4 text-sm text-[color:var(--fpl-grey-text)]">
             {p.news ? tr(p.news) : t("state.empty")}
           </div>
         )}
@@ -195,9 +201,9 @@ function PlayerDetailPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] px-2 py-3 text-center">
-      <div className="text-lg font-black tabular-nums text-brand-accent">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+    <div className="rounded-[10px] border border-[color:var(--fpl-grey)] px-2 py-3 text-center">
+      <div className="fpl-tabular text-lg font-black text-[color:var(--fpl-ink)]">{value}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
         {label}
       </div>
     </div>
@@ -205,9 +211,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 function StatDl({ k, v }: { k: string; v: string }) {
   return (
-    <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{k}</div>
-      <div className="text-sm font-black tabular-nums text-foreground">{v}</div>
+    <div className="rounded-[8px] bg-[color:var(--fpl-grey)] px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
+        {k}
+      </div>
+      <div className="fpl-tabular text-sm font-black text-[color:var(--fpl-ink-deep)]">{v}</div>
     </div>
   );
 }

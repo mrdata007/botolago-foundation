@@ -1,11 +1,16 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * Fixture Difficulty Rating pill on the same `--fpl-fdr-*` scale the FPL
+ * reference uses (1 easiest/green → 5 hardest/dark red), already defined in
+ * `styles.css` for reuse across the Fantasy design system.
+ */
 const tones: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: "bg-emerald-500 text-white",
-  2: "bg-emerald-300 text-emerald-950",
-  3: "bg-neutral-300 text-neutral-800",
-  4: "bg-orange-400 text-orange-950",
-  5: "bg-red-600 text-white",
+  1: "bg-[color:var(--fpl-fdr-1)] text-[color:var(--fpl-ink-deep)]",
+  2: "bg-[color:var(--fpl-fdr-2)] text-[color:var(--fpl-ink-deep)]",
+  3: "bg-[color:var(--fpl-fdr-3)] text-[color:var(--fpl-ink-deep)]",
+  4: "bg-[color:var(--fpl-fdr-4)] text-white",
+  5: "bg-[color:var(--fpl-fdr-5)] text-white",
 };
 
 export function DifficultyBadge({
@@ -20,7 +25,7 @@ export function DifficultyBadge({
   return (
     <div
       className={cn(
-        "grid min-h-9 place-items-center rounded-lg px-1.5 text-center text-[10px] font-black leading-tight",
+        "grid min-h-9 place-items-center rounded-[4px] px-1.5 text-center text-[10px] font-black leading-tight",
         tones[difficulty],
         className,
       )}

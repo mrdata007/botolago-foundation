@@ -121,8 +121,20 @@ export const BASELINES: Baselines = {
   // interviews, news.section.transfers/analysis/interviews/saved,
   // news.saved.empty) and 4 template-key t() call sites that switched
   // between them, moving W3 237 -> 245 and W4 100 -> 96.
-  W3: 245,
-  W4: 96,
+  //
+  // BG-0012 (Agent D2 — Players/Stats/Transfers redesign): porting
+  // fantasy.players.tsx, fantasy.players.$playerId.tsx and
+  // fantasy.rankings.tsx off `LegacyFantasyPage`/ad hoc back links onto
+  // the shared `FplHeader` retires their own duplicate title/back-link
+  // markup, orphaning fantasy.players.title, fantasy.rankings.title,
+  // fantasy.rankings.subtitle (the header now carries the page title) and
+  // common.back (its only two call sites both had their own "‹ Back" link
+  // replaced by `FplHeader`'s built-in one). Moving W3 245 -> 249. The
+  // same pass also replaced fantasy.rankings.tsx's ternary
+  // `t(key === "overall" ? ... : ...)` sort-tab labels with `FplSegmented`
+  // options carrying one literal `t()` call each, moving W4 96 -> 95.
+  W3: 249,
+  W4: 95,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
