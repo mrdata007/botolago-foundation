@@ -252,11 +252,17 @@ select extensions.throws_ok(
   'a MAC computed over different content than the one being persisted is rejected -- the MAC is bound to the exact bytes, not just "a" valid signature'
 );
 -- editorial_update_article enforces the exact same server-side-sanitization
--- proof as editorial_create_draft.
+-- proof as editorial_create_draft. `authenticated` has no direct SELECT
+-- grant on app.article_editions (RPC-only access), so p_expected_updated_at
+-- must come from a granted RPC (editorial_get_article), not a raw subquery
+-- on the table -- a raw subquery is evaluated as a plain argument expression
+-- under the calling role's own privileges before the RPC call even happens,
+-- and fails with "permission denied for table article_editions" instead of
+-- ever reaching editorial_update_article's own checks.
 select extensions.throws_ok(
   $$select api.editorial_update_article(
     current_setting('test.news_draft_id')::uuid,
-    (select updated_at from app.article_editions where id = current_setting('test.news_draft_id')::uuid),
+    (api.editorial_get_article(current_setting('test.news_draft_id')::uuid) ->> 'updatedAt')::timestamptz,
     'workflow-transition-test', 'Article de workflow éditorial',
     null, 'Un résumé suffisamment long pour tester les transitions éditoriales.',
     'markdown'::app.article_body_format, 'Source.',
@@ -271,7 +277,7 @@ select extensions.is(
   (
     api.editorial_update_article(
       current_setting('test.news_draft_id')::uuid,
-      (select updated_at from app.article_editions where id = current_setting('test.news_draft_id')::uuid),
+      (api.editorial_get_article(current_setting('test.news_draft_id')::uuid) ->> 'updatedAt')::timestamptz,
       'workflow-transition-test', 'Article de workflow éditorial', null,
       'Un résumé suffisamment long pour tester les transitions éditoriales.',
       'markdown'::app.article_body_format, 'Source mise à jour.',
