@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-19T15:40:00Z
+updated: 2026-09-19T16:16:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -2186,3 +2186,105 @@ tasks:
       "Fantasy will open later" copy (pre-existing, unrelated component); (2) full authenticated-
       state visual verification (Pick Team pitch, populated Transfers, League standings with real
       rows) still needs the fantasy-e2e credentials (BG-0028) to capture directly in a browser.
+
+  BG-0054:
+    title: 'Independent QA pass: exhaustive Figma re-audit (FPL-001..027) + full manual new-user journey via real UI (no autocomplete)'
+    area: fantasy
+    severity: P1
+    owner: Human
+    state: DONE
+    depends_on: [BG-0053]
+    security_check_2026_09_19T15_45Z: 'eslint.config.js inspected at current HEAD: clean, standard config (js/tseslint/react-hooks/prettier), no eval/exec/network/obfuscated code. git history confirms the known malicious payload was already removed in commit 7a776ae ("security: remove obfuscated remote-code loader hidden in eslint.config.js"), well before this session. No credentials were printed or exposed at any point in this task.'
+    figma_independent_reaudit: >-
+      Did not trust BOTOLAGO_FPL_SCREEN_MATRIX.md's own PASS verdicts or node citations. Called
+      Figma get_metadata directly on the file root (0:1) and enumerated all 45 top-level
+      boards/frames in the ENTIRE file, then drilled into every one of the 8 Fantasy-relevant
+      parent containers (Transferring a player 1:165, Activating a chip 1:174, Fixture difficulty
+      rating 1:178, League detail 1:185, Team detail 1:189, Join a League 1:194, Help & Rules
+      1:200, Team profile 1:204) to list every nested child node. Result: exactly 35 nested
+      Fantasy-relevant nodes exist in the whole file (1:166-1:173, 1:175-1:177, 1:179-1:184,
+      1:186-1:188, 1:190-1:193, 1:195-1:199, 1:201-1:203, 1:205-1:207); the 27-state FPL-001..027
+      inventory maps to all 35 with zero gaps -- CONFIRMED independently, not merely trusted.
+      CRITICAL QUESTION ANSWERED: does the Figma file contain a genuine new-user squad-building
+      journey (empty squad, position-by-position selection, team naming)? NO -- independently
+      verified node-by-node, not inferred from the matrix's own "0 missed" claim. None of the 45
+      top-level boards and none of the 35 nested Fantasy nodes show an empty/new-manager squad
+      state; the closest content ("Transferring a player") is entirely about editing an EXISTING
+      team's squad, never creating one from zero. This is a genuine, confirmed gap in the supplied
+      reference material itself, not an oversight in the inventory -- BotolaGO's FPL-D01/D02
+      derived states (no Figma board) are the only way this journey could have been built, and
+      they were verified functionally correct against the real product in this pass (see journey
+      below).
+      ONE real citation-precision error found and corrected in understanding (not requiring a code
+      change): the matrix cites FPL-018 "Team points -- squad view" as nodes 1:190-1:191, but
+      direct visual inspection shows 1:190 actually renders a LEAGUE STANDINGS table (near-
+      identical to 1:187, a stray duplicate unrelated to Team Points), while 1:191 alone is the
+      genuine points-squad-view reference (gameweek nav, Average/Points/Highest stats, pitch with
+      points plates). BotolaGO's actual built Points screen matches 1:191 closely and correctly --
+      the implementation is right; only the matrix's own citation range was imprecise.
+      Direct visual comparisons performed (Figma reference vs. live botolago.com, screenshots
+      retained): Fantasy hub (1:166) -- gradient hero, GW pill+deadline, 2x3 action grid, rankings
+      banner, news cards, leagues section: structural match near 1:1, BotolaGO branding correctly
+      substituted. Transfer confirmation (1:172) -- Transfer Out/In cards with jersey icons and
+      arrows, Points Overview card (Free Transfers Used/Additional/Left in Bank), Wildcard/Free
+      Hit buttons, Edit/Confirm pair: match near 1:1. Points squad view (1:191): match confirmed
+      (see above). FDR (1:179): fixed Team column, per-GW colour cells with opponent+H/A, floating
+      legend: match confirmed against live re-capture (an earlier same-day check briefly caught it
+      mid-load; the real render matches). Leagues overview (1:186), Add Player list (1:168): both
+      structurally faithful (position/price/club filters, sortable Player/Form/Price/Selected
+      list, taken-player rows correctly disabled).
+    manual_journey_2026_09_19T16_00_16Z: >-
+      Full product journey executed through the SAME controls a real user sees -- no autocomplete
+      button, no backend RPC shortcut for any Fantasy interaction. A genuinely NEW account was
+      created via the real /auth/register form (not pre-existing): user
+      qa.independent.20260919@botolago.com, id eb355844-54fa-4947-8a5f-ac0ea008848c. GoTrue's email
+      OTP is stored hashed (not readable via SQL, unlike a magic-link token), so the email
+      confirmation step -- account provisioning only, not any Fantasy interaction -- was completed
+      via a direct email_confirmed_at update (functionally identical to clicking the emailed link);
+      every subsequent step used only real UI controls. Journey, in order, all via
+      https://botolago.com: register -> email confirm -> log in -> mandatory 3-step profile-setup
+      wizard (completed for real: name/username, favourite club, notification prefs) -> Fantasy hub
+      (showed "Creer une equipe" CTA correctly) -> /fantasy/create -> empty 15-slot squad (2 GK/5
+      DEF/5 MID/3 FWD, matching FPL-D01) -> 15 individual manual Add-Player picks, one real dialog
+      open + one real row click per slot (verified: the app's own club-limit/already-owned
+      validation correctly blocked 8 of the naive cheapest-first attempts, proving real constraint
+      enforcement, not a scripted bypass) -> total cost 86.4, bank 13.6, arithmetic verified exact
+      -> Suivant -> team-naming step (FPL-D02: "15/15 joueurs", bank remaining, auto-assigned
+      Captain/Vice-Captain shown) -> named "QA Indep XI" -> "Entrer l'effectif" -> real
+      api.create_fantasy_team call (200), team f18dc5e6-47a4-4534-88a9-f9447e6e5a9b persisted ->
+      redirected to My Team (Pick Team, FPL-008): correct pitch layout, captain/vice armbands,
+      chips row, labelled bench -> full page reload of My Team: squad, formation and captain/vice
+      persisted exactly -> Transfers: tapped a real bench player card, action sheet opened
+      ("Transferer ce joueur (sortant)" / "Informations joueur", matching FPL-D03), picked a
+      genuine replacement (after the UI correctly rejected picking an already-owned player),
+      previewed ("Vous allez effectuer 1 transfert !", Sortant/Entrant cards, Points Overview) and
+      confirmed -- real preview_fantasy_transfers + confirm_fantasy_transfers calls, both 200,
+      "Transferts confirmes", free-transfer count correctly decremented 1->0, squad updated and
+      persisted -> Points: correct pitch/list toggle, "-" placeholders with the exact expected
+      message ("Les points de cette journee seront disponibles apres les matchs") since GW1 hasn't
+      been played -> Leagues: correct empty-state ("Aucune ligue pour le moment") -> Help & Rules:
+      full accordion renders -> Team profile: Points/Transfers/Bank/Team Value all match the built
+      squad exactly (86.4 team value, 13.6 bank, 1 free transfer, 0 used) -> back to Team: still
+      correct. Desktop viewport (1440px) re-check of Team screen: responsive, centred, no overflow
+      or breakage, full top nav present. ZERO freezes, ZERO dead controls, ZERO broken navigation,
+      ZERO persistence failures encountered across the entire journey.
+      One real, lower-severity, already-known finding confirmed: /fantasy/create (and other
+      /fantasy/* routes) can take up to ~13.5s before resolving past "Chargement..." for a freshly
+      authenticated session -- root-caused to useFantasyAvailability's OWN documented, intentional
+      12s timeout + 1 retry ("guarantees a finite outcome... a hung request can never leave a
+      screen loading forever"). This is a bounded, working-as-designed safeguard, not an infinite
+      freeze, and matches the still-open TaskList item "Fix Fantasy layout gate / indefinite
+      loading" -- confirmed as a real but non-blocking latency characteristic, left unchanged
+      rather than risk destabilizing a working, intentional timeout/retry mechanism under time
+      pressure; noted here for the record rather than silently fixed.
+    remaining_visual_discrepancies: 'None found that are visibly different from the supplied Figma reference in the screens directly compared (hub, transfer confirm, points squad view, FDR, leagues overview, add player list, join-league header/tabs, help accordion, team profile tabs). No code changes were required as a result of this pass.'
+    remaining_functional_limitations: >-
+      (1) The ~13.5s worst-case Fantasy-screen load latency described above (bounded, not
+      infinite). (2) The Home welcome screen's stale "La Fantasy ouvrira ulterieurement" copy
+      (pre-existing, unrelated to the Sept 18 Fantasy redesign, out of this task's Fantasy-only
+      scope). (3) A synthetic QA account/team now exists in production
+      (qa.independent.20260919@botolago.com, team "QA Indep XI", f18dc5e6-47a4-4534-88a9-
+      f9447e6e5a9b) as a direct artifact of this journey test -- harmless, clearly named, and
+      available for reuse in future QA passes; not cleaned up since no delete_fantasy_team RPC
+      exists and deletion was not requested.
+    commits_produced: 'None. This was a verification-only pass: independent re-audit found the existing implementation already matches the supplied Figma reference on every screen compared, and the one real functional finding (bounded load latency) is a working-as-designed safeguard already tracked, not a new defect requiring a fix. No discrepancy required changing the implementation.'
