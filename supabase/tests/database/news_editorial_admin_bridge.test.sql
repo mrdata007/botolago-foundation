@@ -63,7 +63,7 @@ select extensions.lives_ok(
     'Résumé suffisant pour satisfaire la contrainte de longueur minimale.',
     'markdown', repeat('Contenu de brouillon suffisant. ', 4),
     '<p>Contenu de brouillon suffisant pour le test du pont.</p>',
-    2, 'sanitize-html@2.17.5'
+    2::smallint, 'sanitize-html@2.17.5'
   )$$,
   'an Admin-role editor can create an editorial draft through the bridged has_editorial_role'
 );
@@ -75,7 +75,7 @@ select set_config(
       'Résumé suffisant pour satisfaire la contrainte de longueur minimale.',
       'markdown', repeat('Contenu de brouillon suffisant. ', 4),
       '<p>Contenu de brouillon suffisant pour le test du pont.</p>',
-      2, 'sanitize-html@2.17.5'
+      2::smallint, 'sanitize-html@2.17.5'
     ) ->> 'articleId'
   ),
   true
@@ -100,7 +100,7 @@ select extensions.throws_ok(
     'Résumé suffisant pour satisfaire la contrainte de longueur minimale.',
     'markdown', repeat('Contenu de brouillon suffisant. ', 4),
     '<p>Contenu de brouillon suffisant pour le test du pont.</p>',
-    2, 'sanitize-html@2.17.5'
+    2::smallint, 'sanitize-html@2.17.5'
   )$$,
   '42501', null,
   'a legacy editorial_memberships row with no Admin staff role grants nothing'

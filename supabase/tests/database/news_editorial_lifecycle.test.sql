@@ -55,7 +55,7 @@ select set_config(
       'Résumé complet pour la publication du cycle de vie éditorial.',
       'markdown', repeat('Analyse tactique complète du derby. ', 6),
       '<p>Analyse tactique complète du derby de Casablanca pour le test de cycle de vie.</p>',
-      5, 'sanitize-html@2.17.5'
+      5::smallint, 'sanitize-html@2.17.5'
     ) ->> 'articleId'
   ),
   true

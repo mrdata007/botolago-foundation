@@ -162,8 +162,17 @@ insert into auth.users (
   'authenticated', 'authenticated', 'news-admin@example.test', 'hash', '{}',
   '{"username":"news_admin"}', statement_timestamp(), statement_timestamp()
 );
-insert into app_private.editorial_memberships (user_id, role)
-values ('f4000000-0000-4000-8000-000000000001', 'admin');
+-- BG-0012: has_editorial_role now resolves through the Admin staff role
+-- model, not the legacy editorial_memberships table — grant the
+-- content_admin role (editorial.write + editorial.publish +
+-- editorial.manage_placements) to cover this fixture's full workflow.
+insert into app_private.staff_principals (auth_user_id)
+values ('f4000000-0000-4000-8000-000000000001');
+insert into app_private.staff_role_assignments (staff_principal_id, role_id, grant_reason)
+select principal.id, role.id, 'news_domain.test.sql fixture.'
+from app_private.staff_principals principal
+join app_private.admin_roles role on role.name = 'content_admin'
+where principal.auth_user_id = 'f4000000-0000-4000-8000-000000000001';
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
