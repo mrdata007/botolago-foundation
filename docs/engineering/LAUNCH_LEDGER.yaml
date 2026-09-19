@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-19T15:02:00Z
+updated: 2026-09-19T15:22:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -2071,3 +2071,32 @@ tasks:
       9) REMAINING BLOCKER: none for this authorized scope. Full app launch, News/CMS, and the
       testing-tool workstream remain explicitly out of scope and untouched, per the owner's message.
     protected_export_location_note: 'Full export retained outside git in the operator/session evidence store; NOT committed to GitHub or pasted into chat in raw form, per the owner''s explicit instruction. Only its sha256 checksum and sanitized row-count manifest are recorded above.'
+
+  BG-0052:
+    title: 'Squad creation verified working on the live site (botolago.com) against the BG-0051 catalog'
+    area: fantasy
+    severity: P2
+    owner: Human
+    state: DONE
+    depends_on: [BG-0051]
+    verification_2026_09_19T15_22Z: >-
+      Two independent proofs, no login credentials required or used (fantasy-e2e GitHub Environment /
+      BG-0028 remains unresolved -- no valid test-account password is available, and none was created
+      or reset, per BG-0023). 1) BACKEND: called the real api.create_fantasy_team RPC as the genuine
+      retained account e2e.fantasy.recovery@botolago.com (owner e2e00000-0000-4000-8000-00000000f001),
+      with a real 15-player selection built from the new catalog (2 GK/5 DEF/5 MID/3 FWD, cost 86.40,
+      no club over 3) -- succeeded and persisted team e31cc2de-6f50-415b-91d1-f98615b5c164 (status
+      active, bank 13.60, teamValue 86.40, correct captain/vice-captain flags). 2) LIVE FRONTEND:
+      Playwright against the actual https://botolago.com/fantasy and /fantasy/create pages (anonymous):
+      confirmed real network calls to the production RPCs (fantasy_hub x4, fantasy_player_pool x6, all
+      200); confirmed the hub shows Journee 1 OUVERTE with the correct deadline countdown; confirmed
+      the create-squad page renders the correct new-ruleset quotas (GB 0/2, DEF 0/5, MIL 0/5, ATT 0/3,
+      budget 100); clicked the site''s own "Completer automatiquement" button and it built a complete,
+      quota-valid 15/15 squad using real players and real new-catalog prices (bank 13.6, team value
+      86.4), with the site''s own client-side validation confirming "Equipe completee."; with a team
+      name filled in, clicking "Enregistrer mon equipe" correctly showed "Compte requis" (account
+      required) rather than any error -- the expected, correct auth gate for an anonymous visitor, not
+      a defect. Screenshots sent to the user. No production data was modified by the frontend
+      exploration (the anonymous session never authenticated, so no team was created via the UI path);
+      the one persisted team is the backend-RPC one from proof (1), created for a retained E2E account
+      for exactly this kind of testing.
