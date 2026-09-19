@@ -1888,8 +1888,7 @@ export const dictionaries = {
     "fantasy.tab.top": "أفضل 5",
 
     "welcome.title": "مرحبًا بك في BotolaGO",
-    "welcome.description":
-      "الأخبار والمباريات والفانتازي: تابع كرة القدم المغربية في مكان واحد.",
+    "welcome.description": "الأخبار والمباريات والفانتازي: تابع كرة القدم المغربية في مكان واحد.",
     "welcome.cta_primary": "استكشف BotolaGO",
     "welcome.secondary_prompt": "لديك حساب بالفعل؟",
     "welcome.cta_secondary": "تسجيل الدخول",
