@@ -110,7 +110,7 @@ export interface AuditResult {
  * reviewed act: state in the commit message why the count moved.
  */
 export const BASELINES: Baselines = {
-  W1: 5,
+  W1: 4,
   W2: 4,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
@@ -122,7 +122,7 @@ export const BASELINES: Baselines = {
   // news.saved.empty) and 4 template-key t() call sites that switched
   // between them, moving W3 237 -> 245 and W4 100 -> 96.
   W3: 245,
-  W4: 96,
+  W4: 95,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

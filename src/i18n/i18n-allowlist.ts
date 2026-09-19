@@ -19,7 +19,6 @@ export const IDENTICAL_ALLOWED = {
   "app.name": "Brand name; deliberately untranslated in both languages.",
   "language.french": "Endonym: the French option is labelled 'Français' in the Arabic UI too.",
   "language.arabic": "Endonym: the Arabic option is labelled 'العربية' in the French UI too.",
-  "news.language.ar": "Language filter chip; mirrors the endonym used by language.arabic.",
   "notfound.code": "HTTP status code 404, not natural-language copy.",
 } as const satisfies Partial<Record<TranslationKey, string>>;
 
@@ -28,7 +27,6 @@ export const NO_ARABIC_SCRIPT_ALLOWED = {
   "app.name": "Brand name in Latin script by design.",
   "language.french": "French endonym, written in Latin script by definition.",
   "language.arabic": "Endonym; already Arabic script, listed for symmetry with W1.",
-  "news.language.ar": "Endonym; already Arabic script, listed for symmetry with W1.",
   "notfound.code": "Numeric HTTP status code.",
   "auth.email_placeholder": "Example email address; an address is not localized.",
 } as const satisfies Partial<Record<TranslationKey, string>>;
