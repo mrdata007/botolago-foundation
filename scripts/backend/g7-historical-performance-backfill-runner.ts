@@ -188,7 +188,15 @@ export function validateHistoricalRatingDerivation(
   value: unknown,
   expectedSeasonId: number,
   expectedPerformanceRows: number,
+  expectedAcceptedFixtureCount: number,
 ): JsonRecord {
+  if (
+    !Number.isSafeInteger(expectedAcceptedFixtureCount) ||
+    expectedAcceptedFixtureCount < 0 ||
+    expectedAcceptedFixtureCount > EXPECTED_FIXTURES_PER_SEASON
+  ) {
+    throw new HistoricalPerformanceBackfillError("invalid_expected_accepted_fixture_count");
+  }
   const response = object(value, "invalid_historical_rating_derivation");
   const range = object(response.ratingRange, "invalid_historical_rating_range");
   const counters = object(response.counters, "invalid_historical_rating_counters");
@@ -201,7 +209,12 @@ export function validateHistoricalRatingDerivation(
     response.action !== "derive_ratings" ||
     response.historicalOnly !== true ||
     response.algorithmVersion !== ALGORITHM_VERSION ||
-    response.expectedFixtureCount !== EXPECTED_FIXTURES_PER_SEASON ||
+    // BG-0011 option B: expectedFixtureCount reflects fixtures that actually fed rating
+    // derivation (acceptedFixtures), which can legitimately be below the flat 240-per-season
+    // total once whole-fixture quarantines are subtracted. It must NOT be compared against the
+    // hardcoded EXPECTED_FIXTURES_PER_SEASON constant -- that validates a different quantity
+    // (fixtures ATTEMPTED, see the fixturesProcessed check at the call site).
+    response.expectedFixtureCount !== expectedAcceptedFixtureCount ||
     response.performanceRows !== expectedPerformanceRows ||
     candidates < 100 ||
     candidates > 1_000 ||
@@ -1160,6 +1173,7 @@ export async function runHistoricalPerformanceBackfill(
         derivation.response,
         season.id,
         performanceRows,
+        acceptedFixtures,
       );
       seasonResults.push({
         id: season.id,
