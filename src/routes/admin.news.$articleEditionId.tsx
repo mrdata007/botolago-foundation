@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadAdminNewsWriteRouteAccess } from "@/backend/admin/route-access.functions";
+import { loadAdminNewsReadRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
 import {
   adminButtonClass,
@@ -26,7 +26,16 @@ import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/news/$articleEditionId")({
   ssr: false,
-  loader: () => loadAdminNewsWriteRouteAccess(),
+  // Page-level gate is deliberately just "can view editorial content"
+  // (editorial.read), not "can write" (editorial.write): the publisher role
+  // is seeded with editorial.publish but not editorial.write, and a
+  // publisher must be able to open this exact page to review and publish
+  // an in_review article -- the page's own description already says real
+  // authorization is arbitrated server-side per action (save/transition
+  // each re-check has_editorial_role at the correct tier); gating the page
+  // itself on editorial.write silently locked every pure-publisher account
+  // out of the review/publish step entirely.
+  loader: () => loadAdminNewsReadRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsEditRoute,
 });

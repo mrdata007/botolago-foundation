@@ -65,10 +65,20 @@ export interface NewsMediaUploadDependencies {
   readonly randomId?: () => string;
 }
 
+// The browser calls this function with a multipart body and an explicit
+// Authorization header (a Bearer JWT, not a cookie), which always triggers a
+// CORS preflight. Without a response to that OPTIONS request, every real
+// browser call fails before it even reaches the POST handler below.
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
+};
+
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...CORS_HEADERS },
   });
 }
 
@@ -98,6 +108,9 @@ export async function handleNewsMediaUploadRequest(
   request: Request,
   deps: NewsMediaUploadDependencies,
 ): Promise<Response> {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   if (request.method !== "POST") {
     return jsonResponse({ error: "method_not_allowed" }, 405);
   }

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { loadAdminNewsReadRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/admin/news")({
   ssr: false,
   loader: () => loadAdminNewsReadRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
-  component: AdminNewsListRoute,
+  component: AdminNewsRoute,
 });
 
 const STATUSES: readonly EditorialStatus[] = [
@@ -32,6 +32,23 @@ const STATUSES: readonly EditorialStatus[] = [
   "archived",
   "rejected",
 ];
+
+// This route has two child routes (new, $articleEditionId). Without this,
+// TanStack Router still matches them but never renders them: a parent route
+// in a nested (dot-separated) file hierarchy must render <Outlet /> itself
+// for a deeper match to appear at all, exactly like /news does for
+// /news/$articleId. Missing this made "Nouvel article" and every article
+// edit link silently unreachable (URL changes, but this list stays put).
+function AdminNewsRoute() {
+  const isChildRoute = useRouterState({
+    select: (state) =>
+      state.matches.some(
+        (match) =>
+          match.routeId === "/admin/news/new" || match.routeId === "/admin/news/$articleEditionId",
+      ),
+  });
+  return isChildRoute ? <Outlet /> : <AdminNewsListRoute />;
+}
 
 function AdminNewsListRoute() {
   const access = Route.useLoaderData();

@@ -96,6 +96,16 @@ function deps(
 const validImage = new Blob([new Uint8Array([1, 2, 3, 4])], { type: "image/jpeg" });
 
 describe("handleNewsMediaUploadRequest", () => {
+  it("answers a CORS preflight without ever requiring a bearer token", async () => {
+    const response = await handleNewsMediaUploadRequest(
+      new Request("https://example.test/news-media-upload", { method: "OPTIONS" }),
+      deps(),
+    );
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+  });
+
   it("rejects a request with no bearer token", async () => {
     const response = await handleNewsMediaUploadRequest(
       new Request("https://example.test/news-media-upload", { method: "POST" }),
