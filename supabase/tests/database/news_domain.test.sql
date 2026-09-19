@@ -280,7 +280,7 @@ select extensions.is(
       (api.editorial_get_article(current_setting('test.news_draft_id')::uuid) ->> 'updatedAt')::timestamptz,
       'workflow-transition-test', 'Article de workflow éditorial', null,
       'Un résumé suffisamment long pour tester les transitions éditoriales.',
-      'markdown'::app.article_body_format, 'Source mise à jour.',
+      'markdown'::app.article_body_format, 'Source mise à jour et suffisante.',
       '<p>Contenu de workflow éditorial mis à jour et suffisamment long.</p>', 3::smallint, 'test',
       current_setting('test.workflow_update_mac')
     ) ->> 'status'
