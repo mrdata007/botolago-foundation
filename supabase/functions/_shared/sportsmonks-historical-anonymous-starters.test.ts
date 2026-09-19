@@ -23,7 +23,10 @@ import {
 const FIXTURE_ID = 19_596_474;
 const SEASON_ID = 26_027;
 
-function baseLineup(index: number, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function baseLineup(
+  index: number,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
     id: 1_000 + index,
     fixture_id: FIXTURE_ID,
@@ -51,9 +54,7 @@ function fixtureWithAnonymousStarters(
   const lineups: Record<string, unknown>[] = [];
   for (let index = 0; index < 22; index += 1) {
     const anonymous = index < anonymousStarterCount;
-    lineups.push(
-      baseLineup(index, anonymous ? { player_id: null, team_id: null } : {}),
-    );
+    lineups.push(baseLineup(index, anonymous ? { player_id: null, team_id: null } : {}));
   }
   for (let index = 0; index < benchCount; index += 1) {
     lineups.push(baseLineup(22 + index));
@@ -124,9 +125,7 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
     const payload = fixtureWithAnonymousStarters(0, 5) as { data: Record<string, unknown> };
     const lineups = payload.data.lineups as Array<Record<string, unknown>>;
     lineups[21]!.type_id = 12; // one fewer raw starter than the provider ever actually sends
-    await expect(
-      normalizeHistoricalFixture(payload, FIXTURE_ID, SEASON_ID),
-    ).rejects.toMatchObject({
+    await expect(normalizeHistoricalFixture(payload, FIXTURE_ID, SEASON_ID)).rejects.toMatchObject({
       code: "historical_fixture_coverage_incomplete",
       diagnostic: { failures: ["raw_starter_rows_mismatch"] },
     });
@@ -171,7 +170,11 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
 
   it("(g1) fixture 19596474 shape (7 anonymous of 22 starters) fails", async () => {
     await expect(
-      normalizeHistoricalFixture(fixtureWithAnonymousStarters(7, 10, 19_596_474), 19_596_474, SEASON_ID),
+      normalizeHistoricalFixture(
+        fixtureWithAnonymousStarters(7, 10, 19_596_474),
+        19_596_474,
+        SEASON_ID,
+      ),
     ).rejects.toMatchObject({
       code: "historical_fixture_anonymous_starters_exceeded",
       diagnostic: { fixtureId: 19_596_474, anonymousStarterRows: 7, identifiedStarterRows: 15 },
@@ -180,7 +183,11 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
 
   it("(g2) fixture 19596475 shape (8 anonymous of 22 starters) fails", async () => {
     await expect(
-      normalizeHistoricalFixture(fixtureWithAnonymousStarters(8, 10, 19_596_475), 19_596_475, SEASON_ID),
+      normalizeHistoricalFixture(
+        fixtureWithAnonymousStarters(8, 10, 19_596_475),
+        19_596_475,
+        SEASON_ID,
+      ),
     ).rejects.toMatchObject({
       code: "historical_fixture_anonymous_starters_exceeded",
       diagnostic: { fixtureId: 19_596_475, anonymousStarterRows: 8, identifiedStarterRows: 14 },
@@ -188,9 +195,12 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
   });
 
   it("re-throws HistoricalPerformanceRuntimeError instances (sanity on the error type used above)", () => {
-    const error = new HistoricalPerformanceRuntimeError("historical_fixture_anonymous_starters_exceeded", {
-      anonymousStarterRows: 5,
-    });
+    const error = new HistoricalPerformanceRuntimeError(
+      "historical_fixture_anonymous_starters_exceeded",
+      {
+        anonymousStarterRows: 5,
+      },
+    );
     expect(error.code).toBe("historical_fixture_anonymous_starters_exceeded");
   });
 
@@ -264,7 +274,10 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
                 expectedFixtureCount: 240,
                 items: [
                   { externalFixtureId: "19596474", kickoffAt: "2025-11-01T16:00:00Z" },
-                  { externalFixtureId: String(NORMAL_FIXTURE_ID), kickoffAt: "2025-11-02T16:00:00Z" },
+                  {
+                    externalFixtureId: String(NORMAL_FIXTURE_ID),
+                    kickoffAt: "2025-11-02T16:00:00Z",
+                  },
                 ],
                 nextCursor: null,
                 hasMore: false,
@@ -317,7 +330,9 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
       // once (for the normal fixture only) and quarantine_historical_player_fixture_performance
       // exactly once (for 19596474 only) -- never both for the same fixture, never the ingest RPC
       // for the quarantined one.
-      const ingestCalls = calls.filter((call) => call.name === "ingest_historical_player_fixture_performance");
+      const ingestCalls = calls.filter(
+        (call) => call.name === "ingest_historical_player_fixture_performance",
+      );
       const quarantineCalls = calls.filter(
         (call) => call.name === "quarantine_historical_player_fixture_performance",
       );

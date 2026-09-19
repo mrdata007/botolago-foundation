@@ -1001,7 +1001,8 @@ export async function runHistoricalPerformanceBackfill(
       rule: "at most 4 of a fixture's 22 raw provider starters may be anonymous (missing player_id); more than 4 quarantines the whole fixture",
       maxAnonymousStarterRowsPerFixture: MAX_ANONYMOUS_STARTER_ROWS,
       minAcceptedIdentifiedStarterRowsPerFixture: MIN_IDENTIFIED_STARTER_ROWS,
-      measuredCoverage: "238/240 season-26027 fixtures accepted; fixtures 19596474 (7 anonymous) and 19596475 (8 anonymous) quarantined (BG-0044)",
+      measuredCoverage:
+        "238/240 season-26027 fixtures accepted; fixtures 19596474 (7 anonymous) and 19596475 (8 anonymous) quarantined (BG-0044)",
     },
     commands: [],
     seasons: [],

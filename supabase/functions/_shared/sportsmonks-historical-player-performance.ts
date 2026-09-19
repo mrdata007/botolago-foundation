@@ -627,7 +627,8 @@ async function rpc(
     if (result.error.code === "22023") {
       const businessCode: Readonly<Record<string, string>> = {
         HISTORICAL_PERFORMANCE_INCOMPLETE: "historical_performance_incomplete",
-        HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED: "historical_fixture_anonymous_starters_exceeded",
+        HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED:
+          "historical_fixture_anonymous_starters_exceeded",
       };
       throw new HistoricalPerformanceRuntimeError(
         businessCode[result.error.message ?? ""] ?? "invalid_provider_payload",
