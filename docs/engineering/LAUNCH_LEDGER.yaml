@@ -1407,6 +1407,59 @@ tasks:
       the old value can never be reconstructed.
       STEP 4 (historical backfill) rechecked and dispatched next; see
       historical_backfill_season_26027_2026_09_19 below for outcome.
+    historical_backfill_season_26027_2026_09_19: >-
+      PARTIAL: real production data operations completed correctly, but the workflow''s own
+      verdict is FAIL due to a genuine, unrelated validation bug -- this is NOT a clean pass and
+      Step 5 (coverage/pricing validation) has NOT been performed on the strength of this run.
+      PREREQUISITE RECHECK (before dispatch): zero pending migrations (production''s 63 applied
+      migrations byte-match the repo''s 63 migration files at main@163efa2); no concurrent/queued
+      run on this or any botolago-production-v2-mutation-group workflow; quality gates (62 tests,
+      typecheck, migrations/secrets checks) all pass locally against the dispatched tree; the
+      reviewed ticket file (docs/production/g7-historical-performance-backfill-trigger.json) was
+      found STALE in its mappingQuarantine description (still describes the pre-BG-0011 row-
+      exclusion model, not the actual whole-fixture coverage_outcome/anonymousStarterTolerance
+      design the code runs) -- flagged as a documentation gap, not a dispatch blocker, since the
+      ticket''s own exact-match check is self-referential against the workflow''s own frozen
+      expected-JSON and does not gate against runner behavior; still needs correcting separately.
+      DISPATCH: g7-production-historical-performance-backfill.yml run 35438310171, main@163efa2,
+      season_ids=26027 only, current_* restoration inputs = the six approved 28647 values.
+      RESULT (from the run''s own evidence artifact, independently downloaded and inspected):
+      preflight/migrations/deploy all succeeded; the mutation step ran and, per its own result
+      JSON (g7-historical-performance-backfill-result.json), the real backfill completed
+      correctly -- 238/240 season-26027 fixtures accepted, fixtures 19596474 (7 anonymous
+      starters) and 19596475 (8 anonymous starters) correctly QUARANTINED (coverage_outcome, not
+      deleted) exactly as required; 9,258 performance rows written; rating derivation produced
+      521 candidates, ratingRange 5.1-9.6, counters inserted=521/rejected=0. Despite this, the
+      overall runner verdict is "fail", failureCode="historical_rating_derivation_mismatch".
+      ROOT CAUSE (found by direct code inspection, not the run''s own report):
+      scripts/backend/g7-historical-performance-backfill-runner.ts''s
+      validateHistoricalRatingDerivation() requires the derivation worker''s reported
+      expectedFixtureCount to equal the hardcoded EXPECTED_FIXTURES_PER_SEASON constant (240) --
+      but the worker correctly reports 238 (the ACCEPTED-fixture count actually used for rating
+      derivation, excluding the two legitimately whole-fixture-quarantined records introduced by
+      BG-0011 option B). This validator was never updated when whole-fixture quarantine was
+      introduced, so it now rejects a genuinely correct 238-fixture derivation as a "mismatch".
+      This is a real bug, distinct from and unrelated to the fixturesProcessed check two lines
+      above it in the same file, which correctly already expects 240 (all fixtures ATTEMPTED,
+      including the quarantined two) and passed.
+      RESTORATION: ran via the workflow''s "if: always()" restore step regardless of the mutation
+      failure, and reported success in the run''s own evidence (all 15 keys fingerprintMatched).
+      INDEPENDENTLY RE-VERIFIED (not trusting the run''s self-report): a fresh
+      g7-production-secret-configuration-diagnostic.yml dispatch (run 35438590811, post-backfill)
+      confirms all 15 managed secrets are genuinely back on the corrected 28647 baseline --
+      byte-identical to the fingerprints captured immediately after the BG-0033 current-runtime
+      correction. Production runtime configuration is NOT left in a broken or 26027 state.
+      CONSEQUENCE: this is the "genuinely failed prerequisite" the standing approval requires
+      stopping for. The underlying season-26027 data (performance rows, ratings, quarantine
+      records for 19596474/19596475) already exists in production and appears correct and
+      idempotent-safe to leave in place, but the run cannot be called a clean, verified pass, and
+      Step 5''s real coverage/pricing validation has not been attempted on unverified grounds.
+      NEXT STEP (not yet done, requires its own reviewed fix before re-dispatch): correct
+      validateHistoricalRatingDerivation() to compare expectedFixtureCount against the run''s own
+      acceptedFixtures count (238) rather than the flat EXPECTED_FIXTURES_PER_SEASON constant,
+      through the same Builder/Verifier/Reviewer discipline used for every other change this
+      session, then re-dispatch (idempotent UPSERT design should make this safe) and re-verify
+      before any Step 5 coverage/pricing work.
 
   BG-0034:
     title: Option A step A0 — read-only SportsMonks probe classifying fixture 19489216 and all season-26027 fixtures against the six worker coverage invariants
