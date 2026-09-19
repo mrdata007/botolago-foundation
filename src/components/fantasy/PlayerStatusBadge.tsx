@@ -3,12 +3,17 @@ import type { Player } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 
-const tone = {
-  available: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
-  injured: "bg-red-500/10 text-red-700 border-red-500/30",
-  doubtful: "bg-amber-500/10 text-amber-800 border-amber-500/30",
-  suspended: "bg-neutral-800/10 text-neutral-800 border-neutral-800/30",
-} as const;
+/**
+ * Availability pill, ported onto the Fantasy `--fpl-*` tokens: pink for a
+ * confirmed absence, amber for a doubt, ink/grey for a suspension — the same
+ * palette `FplPlayerCard`'s availability glyph and `FplStateBadge` use.
+ */
+const tone: Record<Player["status"], string> = {
+  available: "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]",
+  injured: "bg-[color:var(--fpl-pink)] text-white",
+  doubtful: "bg-[color:var(--fpl-amber)] text-[color:var(--fpl-ink-deep)]",
+  suspended: "bg-[color:var(--fpl-ink)] text-white",
+};
 
 export function PlayerStatusBadge({
   status,
@@ -21,7 +26,7 @@ export function PlayerStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide",
         tone[status],
         className,
       )}

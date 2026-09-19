@@ -135,14 +135,18 @@ export const BASELINES: Baselines = {
   // BG-0012 (Agent D1, Matches redesign): the new Lineups tab / standings
   // table replaced the fake "Momentum" tab, retiring its dictionary keys.
   //
-  // BG-0012 (Agent D2, Players/Stats/Transfers redesign): porting these
-  // screens onto shared FplHeader/FplSegmented orphaned a few per-page
-  // title/back-link keys and removed one non-literal t() call site.
+  // BG-0012 (Agent D2, Players/Stats/Transfers redesign): porting
+  // fantasy.players.tsx, fantasy.players.$playerId.tsx and
+  // fantasy.rankings.tsx off `LegacyFantasyPage`/ad hoc back links onto
+  // the shared `FplHeader` orphans fantasy.players.title,
+  // fantasy.rankings.title, fantasy.rankings.subtitle and common.back, and
+  // replaces a non-literal ternary t() call with FplSegmented options
+  // carrying one literal t() call each.
   //
   // Combined effect of all four parallel redesign workstreams, measured on
   // the integrated tree — see the integration commit for the exact figures.
-  // TODO(integration): placeholder pending D1+D2 merge — recomputed and
-  // fixed up in the final integration commit before this branch is pushed.
+  // TODO(integration): placeholder pending D1 merge — recomputed and fixed
+  // up in the final integration commit before this branch is pushed.
   W3: 0,
   W4: 0,
 };

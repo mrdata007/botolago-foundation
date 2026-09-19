@@ -14,6 +14,10 @@ function crestFor(standing: LeagueStanding, clubs?: Club[]): Club | undefined {
   return clubs[h % clubs.length];
 }
 
+/**
+ * Top-3 podium, ported onto the Fantasy `--fpl-*` tokens: ink/cyan for 1st,
+ * grey for 2nd/3rd, same family as `FplStateBadge`/`FplPill`.
+ */
 export function RankingsPodium({
   podium,
   clubs,
@@ -30,10 +34,10 @@ export function RankingsPodium({
   // Visual order: 2nd, 1st, 3rd.
   const order = [podium[1], podium[0], podium[2]];
   const heights = ["pt-6", "pt-0", "pt-9"];
-  const tones = [
-    "from-slate-200/70 to-slate-100/30 ring-slate-400/30",
-    "from-amber-200/80 to-amber-100/30 ring-amber-500/40",
-    "from-orange-200/70 to-orange-100/30 ring-orange-500/30",
+  const surfaces = [
+    "bg-[color:var(--fpl-grey)]",
+    "text-[color:var(--fpl-ink)]",
+    "bg-[color:var(--fpl-grey)]",
   ];
 
   return (
@@ -41,42 +45,65 @@ export function RankingsPodium({
       {order.map((s, i) => {
         const club = crestFor(s, clubs);
         const isMe = meId && s.managerId === meId;
+        const first = i === 1;
         return (
           <div key={s.managerId} className={heights[i]}>
             <div
               className={cn(
-                "glass-surface glass-regular flex h-full flex-col items-center gap-1.5 rounded-2xl bg-gradient-to-b px-2 py-3 text-center ring-1",
-                tones[i],
-                isMe && "outline outline-2 outline-[color:var(--brand-accent)]",
+                "flex h-full flex-col items-center gap-1.5 rounded-[10px] px-2 py-3 text-center",
+                first ? "" : surfaces[i],
+                isMe && "ring-2 ring-[color:var(--fpl-ink)]",
               )}
+              style={first ? { backgroundImage: "var(--fpl-grad)" } : undefined}
             >
               <div className="relative">
                 {club ? (
                   <ClubCrest club={club} size="md" />
                 ) : (
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--brand-accent)]/15 text-[11px] font-black text-[color:var(--brand-accent)]">
+                  <span
+                    className={cn(
+                      "grid h-9 w-9 place-items-center rounded-xl text-[11px] font-black",
+                      first
+                        ? "bg-white/70 text-[color:var(--fpl-ink)]"
+                        : "bg-white text-[color:var(--fpl-ink)]",
+                    )}
+                  >
                     {s.teamName.slice(0, 2).toUpperCase()}
                   </span>
                 )}
                 {s.rank === 1 && (
                   <Crown
-                    className="absolute -top-3 start-1/2 h-4 w-4 -translate-x-1/2 text-amber-500"
+                    className="absolute -top-3 start-1/2 h-4 w-4 -translate-x-1/2 text-[color:var(--fpl-ink-deep)]"
                     aria-hidden
                   />
                 )}
               </div>
-              <span className="inline-grid h-5 min-w-5 place-items-center rounded-full bg-background/70 px-1.5 text-[11px] font-black tabular-nums text-foreground ring-1 ring-black/5">
+              <span
+                className={cn(
+                  "inline-grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black tabular-nums",
+                  first
+                    ? "bg-white/70 text-[color:var(--fpl-ink-deep)]"
+                    : "bg-white text-[color:var(--fpl-ink-deep)]",
+                )}
+              >
                 {s.rank}
               </span>
               <div className="min-w-0">
-                <div className="truncate text-[11px] font-black text-foreground">
+                <div
+                  className={cn(
+                    "truncate text-[11px] font-black",
+                    first ? "text-[color:var(--fpl-ink-deep)]" : "text-[color:var(--fpl-ink-deep)]",
+                  )}
+                >
                   {s.managerName}
                 </div>
-                <div className="truncate text-[10px] text-muted-foreground">{s.teamName}</div>
+                <div className="truncate text-[10px] text-[color:var(--fpl-grey-text)]">
+                  {s.teamName}
+                </div>
               </div>
-              <div className="text-sm font-black tabular-nums text-foreground">
+              <div className="text-sm font-black tabular-nums text-[color:var(--fpl-ink-deep)]">
                 {nf.format(s.totalScore)}
-                <span className="ms-1 text-[10px] font-bold text-muted-foreground">
+                <span className="ms-1 text-[10px] font-bold text-[color:var(--fpl-grey-text)]">
                   {t("fantasy.points.abbr")}
                 </span>
               </div>
