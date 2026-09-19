@@ -564,34 +564,46 @@ export async function normalizeHistoricalFixture(
       failures: coverageFailures,
     });
   }
+  // Computed here (rather than only on the success path) because the caller needs it either way:
+  // on success, to return with the normalized fixture; on quarantine, to record an audit-complete
+  // row in app_private.historical_performance_fixture_coverage (BG-0011 option B, single-table
+  // design — quarantine is a coverage_outcome, not a separate table).
+  const sourceVersion = `sportsmonks-fixture:${await sha256({ fixtureId, seasonId, rows })}`;
+  const coverage = {
+    lineupRowsSeen: fixture.lineups.length,
+    validPlayerRows: rows.length,
+    excludedIncompleteRows,
+    starterRows,
+    anonymousStarterRows,
+    teamCount: teamIds.size,
+    detailRows,
+    invalidDetailRows,
+  };
   // BG-0011 option B, historical ingestion path only: up to 4 of the 22 raw starters may be
   // anonymous. More than that and the whole fixture is quarantined — none of its rows (not even
   // the identified ones) are used. This is a distinct, narrower failure from the coverage checks
   // above so the caller can treat it as "quarantine and continue the batch" rather than a hard
-  // batch failure.
+  // batch failure. The diagnostic carries the full coverage shape (plus sourceVersion) so the
+  // caller can record a complete, audit-able quarantined coverage row without recomputing anything.
   if (anonymousStarterRows > MAX_ANONYMOUS_STARTER_ROWS) {
     throw new HistoricalPerformanceRuntimeError("historical_fixture_anonymous_starters_exceeded", {
       fixtureId,
+      sourceVersion,
       anonymousStarterRows,
       identifiedStarterRows: starterRows,
+      // The DB quarantine RPC's p_coverage expects identifiedStarterRows (mirroring
+      // api.ingest_historical_player_fixture_performance's p_coverage shape exactly); `coverage`
+      // (the NormalizedHistoricalFixture shape) instead keeps the established `starterRows` name.
+      // Both key names are provided here so this one object serves both call sites.
+      coverage: { ...coverage, identifiedStarterRows: starterRows },
     });
   }
-  const sourceVersion = `sportsmonks-fixture:${await sha256({ fixtureId, seasonId, rows })}`;
   return {
     fixtureId,
     seasonId,
     sourceVersion,
     rows,
-    coverage: {
-      lineupRowsSeen: fixture.lineups.length,
-      validPlayerRows: rows.length,
-      excludedIncompleteRows,
-      starterRows,
-      anonymousStarterRows,
-      teamCount: teamIds.size,
-      detailRows,
-      invalidDetailRows,
-    },
+    coverage,
   };
 }
 
@@ -901,8 +913,8 @@ async function ingestBatch(
             p_provider_name: "sportsmonks",
             p_season_external_id: String(config.seasonId),
             p_fixture_external_id: fixture.externalFixtureId,
-            p_anonymous_starter_rows: error.diagnostic.anonymousStarterRows,
-            p_identified_starter_rows: error.diagnostic.identifiedStarterRows,
+            p_source_version: error.diagnostic.sourceVersion,
+            p_coverage: error.diagnostic.coverage,
             p_observed_at: (dependencies.now?.() ?? new Date()).toISOString(),
           });
           counts.rejected += 1;

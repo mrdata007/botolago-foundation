@@ -272,9 +272,16 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
             }
             if (name === "quarantine_historical_player_fixture_performance") {
               expect(args.p_fixture_external_id).toBe("19596474");
-              expect(args.p_anonymous_starter_rows).toBe(7);
-              expect(args.p_identified_starter_rows).toBe(15);
-              return { fixtureId: "8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e", quarantined: true };
+              expect(args.p_source_version).toMatch(/^sportsmonks-fixture:[0-9a-f]{64}$/);
+              const coverage = args.p_coverage as Record<string, unknown>;
+              expect(coverage.anonymousStarterRows).toBe(7);
+              expect(coverage.identifiedStarterRows).toBe(15);
+              expect(coverage.teamCount).toBe(2);
+              return {
+                fixtureId: "8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e",
+                coverageOutcome: "quarantined",
+                quarantineReason: "anonymous_starter_rows_exceeded",
+              };
             }
             if (name === "ingest_historical_player_fixture_performance") {
               // Must never be called for 19596474 -- asserted structurally below via the call log,

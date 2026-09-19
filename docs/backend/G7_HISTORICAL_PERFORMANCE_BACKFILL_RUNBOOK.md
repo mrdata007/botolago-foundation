@@ -137,14 +137,23 @@ changed is how many of those 22 may lack a `player_id` ("anonymous") before the 
   genuine data limitation in the provider's payload for those two fixtures, not a mapping defect.
 
 This is a deliberate, scoped **relaxation** of the old rule, not "the same invariant read more
-carefully." It applies **only** to this historical (completed-season) ingestion path — the
-`api.ingest_historical_player_fixture_performance` / `app.player_fixture_performances` /
-`app_private.historical_performance_fixture_coverage` family, `sportsmonks-fixture:`-prefixed
-`source_version`s. It does **not** apply to the live current-season Fantasy scoring path (separate
-tables and RPCs in `20260914200726_current_finished_fixture_performances.sql`,
-`sportsmonks-current-fixture:`-prefixed `source_version`s), which still requires zero anonymous
-starters. See `docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml`
-for the full enforcement-point list and `supabase/migrations/20260919120000_historical_anonymous_starter_tolerance.sql`
+carefully." It applies **only** to this historical (completed-season) ingestion path —
+`api.ingest_historical_player_fixture_performance` / `api.quarantine_historical_player_fixture_performance`,
+`sportsmonks-fixture:`-prefixed `source_version`s. **Correction (second owner pass)**:
+`app.player_fixture_performances` and `app_private.historical_performance_fixture_coverage` are
+**not** exclusive to this path — they are SHARED, at the table level, with the live current-season
+Fantasy scoring/ingestion path (`api.ingest_current_player_fixture_performance` in
+`20260914200726_current_finished_fixture_performances.sql`, `sportsmonks-current-fixture:`-prefixed
+`source_version`s; that data also feeds `app_private.fantasy_scoring_input_document` /
+`app_private.fantasy_assert_scoring_snapshot`, called from the live gameweek-finalization path in
+`20260914200730_fantasy_verified_finalization.sql` — this is not dead code). What actually keeps
+the relaxation away from live scoring is: (1) both historical RPCs requiring
+`season.status = 'completed' and not is_current` before touching any row; (2) a hard DB-level
+CHECK constraint tying `anonymous_starter_rows > 0` to the `'sportsmonks-fixture:'` prefix, so a
+current-season row can never carry a nonzero anonymous-starter count even by accident; (3) the new
+columns' defaults exactly matching what the unmodified current-season RPC already produces. See
+`docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml` for the full
+enforcement-point list and `supabase/migrations/20260919120000_historical_anonymous_starter_tolerance.sql`
 for the schema/RPC changes.
 
 **What this means for the runner's evidence**: `fixturesProcessed` (should still reach 240) is
@@ -161,13 +170,20 @@ validation" (`lineup_rows_out_of_range`, `valid_player_rows_out_of_range`,
 round this up to "240 ingested", and never imply the 238 are already fully validated/accepted —
 every one of them is still subject to every other existing check.
 
-**Quarantine is traceable and all-or-nothing**: `app_private.historical_performance_fixture_quarantine`
-records an explicit `reason` (`'anonymous_starter_rows_exceeded'`), never an implicit
-"excluded because it failed a query filter". A quarantined fixture's identified rows are never
-persisted either — not row-by-row, the whole fixture is excluded. Nothing is ever `DELETE`d from
-`app.fixtures`, `app.players`, or `app_private.football_provider_mappings`; the quarantined
-fixture's own record, its provider mapping, and any player who appeared in it remain fully
-retrievable.
+**Quarantine is traceable and all-or-nothing, single-table design**: quarantine is a
+`coverage_outcome` (`'accepted'` or `'quarantined'`) on the SAME
+`app_private.historical_performance_fixture_coverage` row a fixture has always had — not a
+separate table. A quarantined row carries an explicit `quarantine_reason`
+(`'anonymous_starter_rows_exceeded'`), never an implicit "excluded because it failed a query
+filter", and `coverage_outcome` is derived from `anonymous_starter_rows > 4` by a hard CHECK
+constraint, never an independently settable flag. A quarantined fixture's identified rows are
+never persisted either — not row-by-row, the whole fixture is excluded (`starter_rows = 0` and
+`performance_rows = 0`, also enforced by that CHECK constraint). Nothing is ever `DELETE`d from
+`app.fixtures`, `app.players`, `app_private.football_provider_mappings`, or (for that matter)
+`app_private.historical_performance_fixture_coverage` itself; the quarantined fixture's own
+record, its provider mapping, and any player who appeared in it remain fully retrievable, and a
+fixture that moves between accepted and quarantined (e.g. a corrected payload) UPSERTs the same
+row rather than deleting and recreating it elsewhere.
 
 **Production status of the two named outliers (checked read-only by the Chief, 2026-09-19)**:
 fixture 19596474 → internal fixture_id `8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e`; fixture 19596475 →

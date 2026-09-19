@@ -13,29 +13,68 @@
 -- rule; fixtures 19596474 (7 anonymous of 22 starters) and 19596475 (8 anonymous of 22) remain
 -- quarantined even under the relaxed rule.
 --
--- SCOPE: this migration touches only the historical ingestion path --
--- app.player_fixture_performances / app_private.historical_performance_fixture_coverage / the
--- api.ingest_historical_player_fixture_performance, api.football_historical_player_rating_inputs
--- RPCs (all originally defined in 20260802010100_historical_player_performances.sql and
--- 20260802010200_historical_performance_mapping_quarantine.sql, which remain untouched files).
--- The live current-season Fantasy scoring/ingestion path uses ENTIRELY SEPARATE tables and RPCs
--- (see 20260914200726_current_finished_fixture_performances.sql:
--- app_private.current_finished_fixture_coverage / api.ingest_current_finished_fixture_performance)
--- and a distinct source_version prefix ('sportsmonks-current-fixture:' vs this path's
--- 'sportsmonks-fixture:'); that RPC still hardcodes `starter_rows = 22` unconditionally and is not
--- touched by anything in this file. The historical RPCs below additionally still gate on
--- `target_season.status = 'completed' and not target_season.is_current`, which by itself already
--- excludes any live/current season. This is table-level, function-level and source-version-level
--- separation, not merely an application-level check.
+-- SCOPE (corrected 2026-09-19, second owner correction -- the first cut of this comment was
+-- factually wrong and is not repeated here):
+-- app_private.historical_performance_fixture_coverage and app.player_fixture_performances are
+-- NOT exclusive to this historical path. They are SHARED, at the table level, with the live
+-- current-season Fantasy scoring/ingestion path:
+--   * 20260914200726_current_finished_fixture_performances.sql ADDS COLUMNS to these same two
+--     tables (scoring_statistics_complete, etc.) and its api.ingest_current_player_fixture_performance
+--     RPC inserts current-season rows into them directly, distinguished by a
+--     'sportsmonks-current-fixture:<sha256>' source_version prefix (vs this historical path's
+--     'sportsmonks-fixture:<sha256>').
+--   * 20260914200719_fantasy_scoring_worker_contracts.sql's app_private.fantasy_scoring_input_document
+--     reads app.player_fixture_performances.active and
+--     app_private.historical_performance_fixture_coverage directly for a current-season
+--     gameweek's fixtures.
+--   * 20260914200730_fantasy_verified_finalization.sql's app_private.fantasy_assert_scoring_snapshot
+--     calls that document builder from the live gameweek-finalization path. This is not dead code.
+-- What actually keeps this migration's relaxation away from live scoring is NOT table separation.
+-- It is:
+--   (1) ROW-level scoping: both RPCs this migration adds/changes
+--       (api.quarantine_historical_player_fixture_performance,
+--       api.ingest_historical_player_fixture_performance) require
+--       `target_season.status = 'completed' and not target_season.is_current and
+--       target_season.ends_on < current_date` before touching any row -- a live/current season
+--       can never reach either RPC.
+--   (2) A NEW hard DB-level CHECK constraint (historical_performance_coverage_counts_check, below)
+--       tying anonymous_starter_rows > 0 to the 'sportsmonks-fixture:' source_version prefix, so a
+--       nonzero anonymous-starter count can never exist on a current-season
+--       ('sportsmonks-current-fixture:') row even by accident -- not merely because the
+--       current-season RPC happens to never set that column.
+--   (3) Column-default compatibility: anonymous_starter_rows/identified_starter_rows/
+--       coverage_outcome/quarantine_reason are added with defaults (0/22/'accepted'/null) that
+--       exactly match what api.ingest_current_player_fixture_performance's existing, UNMODIFIED
+--       insert (which never lists these columns) already produces.
+-- See supabase/tests/database/historical_player_performances.test.sql for the regression tests
+-- proving (2) and (3) with a real current-season-shaped row, executed against a real local
+-- Postgres.
 
 -- ---------------------------------------------------------------------------
 -- 1. New columns + relaxed CHECK constraint on the coverage table.
+--
+-- Single-table design (owner correction 2026-09-19): quarantine is a `coverage_outcome` on THIS
+-- table, not a separate table. A separate table would have meant deleting this table's row and
+-- replacing it with a thinner one carrying none of lineup_rows_seen / valid_player_rows /
+-- excluded_incomplete_rows / detail_rows / invalid_detail_rows / team_count / source_version /
+-- provider_observed_at -- a delete-then-reinsert-elsewhere in disguise. Instead, the SAME row a
+-- fixture has always had (or its first-ever row, if this is the first processing attempt) is
+-- UPSERTed, carrying the full audit trail regardless of outcome.
 -- ---------------------------------------------------------------------------
 
 alter table app_private.historical_performance_fixture_coverage
   add column anonymous_starter_rows integer not null default 0;
 alter table app_private.historical_performance_fixture_coverage
   add column identified_starter_rows integer not null default 22;
+alter table app_private.historical_performance_fixture_coverage
+  add column coverage_outcome text not null default 'accepted'
+  check (coverage_outcome in ('accepted', 'quarantined'));
+alter table app_private.historical_performance_fixture_coverage
+  add column quarantine_reason text
+  check (quarantine_reason is null or quarantine_reason = 'anonymous_starter_rows_exceeded');
+alter table app_private.historical_performance_fixture_coverage
+  add constraint historical_performance_coverage_outcome_reason_check
+  check ((coverage_outcome = 'quarantined') = (quarantine_reason is not null));
 
 alter table app_private.historical_performance_fixture_coverage
   drop constraint historical_performance_coverage_counts_check;
@@ -45,84 +84,67 @@ alter table app_private.historical_performance_fixture_coverage
     and valid_player_rows between 22 and 100
     and excluded_incomplete_rows between 0 and 20
     and lineup_rows_seen = valid_player_rows + excluded_incomplete_rows
-    -- BG-0011 option B: up to 4 of the 22 raw provider starters may be anonymous.
-    and anonymous_starter_rows between 0 and 4
+    -- BG-0011 option B: anonymous_starter_rows itself is bounded 0..22 (the raw starter total);
+    -- whether that count is TOLERATED (<=4, accepted) or not (>4, quarantined) is enforced by the
+    -- coverage_outcome tie below, not by bounding this column to 0..4.
+    and anonymous_starter_rows between 0 and 22
     and identified_starter_rows = 22 - anonymous_starter_rows
-    -- starter_rows is the MAPPED, persisted starter count (post provider-mapping exclusion); it
-    -- can only be less than or equal to the identified count, never more.
-    and starter_rows between 0 and identified_starter_rows
     and team_count = 2
     and detail_rows >= 0
     and invalid_detail_rows >= 0
-    -- valid_player_rows here (as in the base migration and the quarantine migration before it)
-    -- stores the POST-mapping-exclusion persisted count (active_count), the same value as
-    -- performance_rows -- not the pre-mapping count the worker reports in p_coverage.
-    and performance_rows = valid_player_rows
+    -- coverage_outcome is DERIVED from the measured facts, never an independently settable flag
+    -- someone could set inconsistently with anonymous_starter_rows.
+    and (coverage_outcome = 'quarantined') = (anonymous_starter_rows > 4)
+    -- A quarantined fixture persists NOTHING: forced to zero at the constraint level, not just by
+    -- RPC discipline. An accepted fixture's starter_rows (mapped, persisted) can be at most its
+    -- identified count, and its performance_rows must equal valid_player_rows exactly (as before
+    -- BG-0011; valid_player_rows here stores the post-mapping-exclusion persisted count, the same
+    -- value as performance_rows, per the pre-existing insert semantics from
+    -- 20260802010200_historical_performance_mapping_quarantine.sql).
+    and (case
+      when coverage_outcome = 'accepted' then
+        starter_rows between 0 and identified_starter_rows
+        and performance_rows = valid_player_rows
+      else
+        starter_rows = 0 and performance_rows = 0
+    end)
+    -- Hard DB-level scope guarantee (see the header comment's point (2)): only the historical
+    -- 'sportsmonks-fixture:' source_version prefix may ever carry a nonzero anonymous-starter
+    -- count. A current-season ('sportsmonks-current-fixture:') row is forced to
+    -- anonymous_starter_rows = 0 regardless of what any RPC does or does not set.
+    and (anonymous_starter_rows = 0 or source_version ~ '^sportsmonks-fixture:[0-9a-f]{64}$')
   );
 
 comment on column app_private.historical_performance_fixture_coverage.anonymous_starter_rows is
-  'BG-0011 option B: raw provider starter rows (type_id 11) with no player_id, tolerated up to 4 per fixture. Never assigned to any player.';
+  'BG-0011 option B: raw provider starter rows (type_id 11) with no player_id, tolerated up to 4 per fixture (historical source_version prefix only; hard-gated at the CHECK-constraint level). Never assigned to any player.';
 comment on column app_private.historical_performance_fixture_coverage.identified_starter_rows is
-  'BG-0011 option B: 22 minus anonymous_starter_rows. Distinct from starter_rows, which is further reduced by provider-mapping exclusions.';
+  'BG-0011 option B: 22 minus anonymous_starter_rows. Distinct from starter_rows, which is further reduced by provider-mapping exclusions and forced to 0 for a quarantined fixture.';
 comment on column app_private.historical_performance_fixture_coverage.starter_rows is
-  'Mapped, persisted starter rows (identified AND resolved via app_private.football_provider_mappings to a BotolaGO player).';
+  'Mapped, persisted starter rows (identified AND resolved via app_private.football_provider_mappings to a BotolaGO player). Forced to 0 when coverage_outcome = quarantined.';
+comment on column app_private.historical_performance_fixture_coverage.coverage_outcome is
+  'BG-0011 option B: accepted or quarantined, DERIVED from anonymous_starter_rows > 4 (see historical_performance_coverage_counts_check) -- never an independently settable flag.';
+comment on column app_private.historical_performance_fixture_coverage.quarantine_reason is
+  'BG-0011 option B: explicit, traceable reason a fixture was quarantined (currently the only possible value is anonymous_starter_rows_exceeded). Null iff coverage_outcome = accepted.';
 
 -- ---------------------------------------------------------------------------
--- 2. Quarantine table: fixtures that fail the bounded-anonymous rule outright. Their rows are
---    never persisted to app.player_fixture_performances or the coverage table above at all.
--- ---------------------------------------------------------------------------
-
-create table app_private.historical_performance_fixture_quarantine (
-  fixture_id uuid primary key references app.fixtures(id) on delete restrict,
-  football_season_id uuid not null references app.seasons(id) on delete restrict,
-  source_provider text not null,
-  anonymous_starter_rows integer not null,
-  identified_starter_rows integer not null,
-  reason text not null,
-  provider_observed_at timestamptz not null,
-  created_at timestamptz not null default statement_timestamp(),
-  updated_at timestamptz not null default statement_timestamp(),
-  constraint historical_performance_quarantine_provider_check
-    check (source_provider ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
-  constraint historical_performance_quarantine_reason_check
-    check (reason = 'anonymous_starter_rows_exceeded'),
-  constraint historical_performance_quarantine_counts_check check (
-    anonymous_starter_rows between 5 and 22
-    and identified_starter_rows = 22 - anonymous_starter_rows
-  )
-);
-
-create index historical_performance_quarantine_season_idx
-  on app_private.historical_performance_fixture_quarantine (football_season_id, fixture_id);
-
-alter table app_private.historical_performance_fixture_quarantine enable row level security;
-alter table app_private.historical_performance_fixture_quarantine force row level security;
-revoke all on table app_private.historical_performance_fixture_quarantine
-  from public, anon, authenticated;
-grant select, insert, update on table app_private.historical_performance_fixture_quarantine
-  to service_role;
-
-create trigger historical_performance_fixture_quarantine_set_updated_at
-before update on app_private.historical_performance_fixture_quarantine
-for each row execute function app_private.set_updated_at();
-
-comment on table app_private.historical_performance_fixture_quarantine is
-  'BG-0011 option B: fixtures with more than 4 anonymous starters. Quarantined entirely -- none of their rows (not even identified ones) are used for pricing. Excluded from api.football_historical_player_rating_inputs''s expected-fixture-count so the other accepted fixtures are not blocked forever.';
-
--- ---------------------------------------------------------------------------
--- 3. New RPC: record a quarantine decision. Called by the worker only after
---    normalizeHistoricalFixture itself has already determined the fixture is over the cap; this
---    RPC does not re-validate the shape of the provider payload (it only accepts the two counts)
---    but it DOES independently re-check anonymous_starter_rows > 4 so a caller bug can never
---    quarantine a fixture that should have been accepted.
+-- 2. api.quarantine_historical_player_fixture_performance: UPSERTs the SAME coverage row a
+--    fixture has always had (inserting one for the first time if this is the fixture's first
+--    processing attempt) with coverage_outcome = 'quarantined'. Mirrors
+--    api.ingest_historical_player_fixture_performance's p_coverage shape exactly (both take
+--    p_provider_name/p_season_external_id/p_fixture_external_id/p_source_version/p_coverage/
+--    p_observed_at) so the worker builds one coverage object either way. NO DELETE anywhere in
+--    this function. Independently re-derives and re-checks anonymous_starter_rows > 4 from
+--    p_coverage (never trusts the caller's classification) so a caller bug can never quarantine a
+--    fixture that should have been accepted -- and the table's own CHECK constraint above is a
+--    second, unconditional backstop against exactly that.
 -- ---------------------------------------------------------------------------
 
 create or replace function api.quarantine_historical_player_fixture_performance(
   p_provider_name text,
   p_season_external_id text,
   p_fixture_external_id text,
-  p_anonymous_starter_rows integer,
-  p_identified_starter_rows integer,
+  p_source_version text,
+  p_coverage jsonb,
   p_observed_at timestamptz
 ) returns jsonb
 language plpgsql
@@ -132,6 +154,14 @@ as $$
 declare
   target_season app.seasons%rowtype;
   target_fixture app.fixtures%rowtype;
+  anonymous_starter_rows integer;
+  identified_starter_rows integer;
+  lineup_rows_seen integer;
+  valid_player_rows integer;
+  excluded_incomplete_rows integer;
+  team_count integer;
+  detail_rows integer;
+  invalid_detail_rows integer;
 begin
   if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), auth.role()) <> 'service_role' then
     raise exception using errcode = '42501', message = 'football_service_role_required';
@@ -139,11 +169,33 @@ begin
   if p_provider_name <> 'sportsmonks'
     or p_season_external_id !~ '^[1-9][0-9]*$'
     or p_fixture_external_id !~ '^[1-9][0-9]*$'
+    or p_source_version !~ '^sportsmonks-fixture:[0-9a-f]{64}$'
     or p_observed_at is null
     or p_observed_at > statement_timestamp() + interval '5 minutes'
-    or p_anonymous_starter_rows <= 4
-    or p_anonymous_starter_rows > 22
-    or p_identified_starter_rows <> 22 - p_anonymous_starter_rows
+    or jsonb_typeof(p_coverage) <> 'object'
+  then
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+  end if;
+
+  anonymous_starter_rows := (p_coverage ->> 'anonymousStarterRows')::integer;
+  identified_starter_rows := (p_coverage ->> 'identifiedStarterRows')::integer;
+  lineup_rows_seen := (p_coverage ->> 'lineupRowsSeen')::integer;
+  valid_player_rows := (p_coverage ->> 'validPlayerRows')::integer;
+  excluded_incomplete_rows := (p_coverage ->> 'excludedIncompleteRows')::integer;
+  team_count := (p_coverage ->> 'teamCount')::integer;
+  detail_rows := (p_coverage ->> 'detailRows')::integer;
+  invalid_detail_rows := (p_coverage ->> 'invalidDetailRows')::integer;
+
+  -- Independent re-check of the classification -- this RPC never quarantines a fixture that
+  -- should have been accepted, no matter what the caller believes.
+  if anonymous_starter_rows is null or anonymous_starter_rows <= 4 or anonymous_starter_rows > 22
+    or identified_starter_rows is null or identified_starter_rows <> 22 - anonymous_starter_rows
+    or lineup_rows_seen is null or lineup_rows_seen not between 22 and 100
+    or excluded_incomplete_rows is null or excluded_incomplete_rows not between 0 and 20
+    or valid_player_rows is null or valid_player_rows <> lineup_rows_seen - excluded_incomplete_rows
+    or team_count is null or team_count <> 2
+    or detail_rows is null or detail_rows < 0
+    or invalid_detail_rows is null or invalid_detail_rows < 0
   then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
   end if;
@@ -179,39 +231,62 @@ begin
     raise exception using errcode = 'P0002', message = 'FIXTURE_MAPPING_NOT_FOUND';
   end if;
 
-  -- Never leave a partial trace: a quarantined fixture must not also hold coverage/performance
-  -- rows from an earlier accepted attempt (should not happen, but this makes the invariant exact).
+  -- A fixture being (re-)quarantined must not also hold active performance rows from an earlier
+  -- accepted attempt (e.g. a corrected provider payload now shows more anonymous starters than a
+  -- prior attempt did).
   update app.player_fixture_performances
   set active = false, updated_at = statement_timestamp()
   where fixture_id = target_fixture.id and active;
-  delete from app_private.historical_performance_fixture_coverage
-  where fixture_id = target_fixture.id;
 
-  insert into app_private.historical_performance_fixture_quarantine (
-    fixture_id, football_season_id, source_provider,
-    anonymous_starter_rows, identified_starter_rows, reason, provider_observed_at
+  insert into app_private.historical_performance_fixture_coverage (
+    fixture_id, football_season_id, source_provider, source_version,
+    lineup_rows_seen, valid_player_rows, excluded_incomplete_rows, excluded_mapping_rows,
+    starter_rows, anonymous_starter_rows, identified_starter_rows,
+    team_count, detail_rows, invalid_detail_rows, performance_rows,
+    reconciled, coverage_outcome, quarantine_reason, provider_observed_at
   ) values (
-    target_fixture.id, target_season.id, p_provider_name,
-    p_anonymous_starter_rows, p_identified_starter_rows,
-    'anonymous_starter_rows_exceeded', p_observed_at
+    target_fixture.id, target_season.id, p_provider_name, p_source_version,
+    lineup_rows_seen, valid_player_rows, excluded_incomplete_rows, 0,
+    0, anonymous_starter_rows, identified_starter_rows,
+    team_count, detail_rows, invalid_detail_rows, 0,
+    -- reconciled = false: the pre-existing (immutable)
+    -- historical_performance_coverage_reconciled_check requires
+    -- `not reconciled or performance_rows = valid_player_rows`, and a quarantined row's
+    -- performance_rows (forced to 0) never equals its audit valid_player_rows. This is correct,
+    -- not a weakening: every rating-input query below filters explicitly by
+    -- coverage_outcome = 'accepted' (not by reconciled), so a quarantined row's reconciled value
+    -- has no bearing on whether it is (correctly) excluded.
+    false, 'quarantined', 'anonymous_starter_rows_exceeded', p_observed_at
   ) on conflict (fixture_id) do update set
     football_season_id = excluded.football_season_id,
     source_provider = excluded.source_provider,
+    source_version = excluded.source_version,
+    lineup_rows_seen = excluded.lineup_rows_seen,
+    valid_player_rows = excluded.valid_player_rows,
+    excluded_incomplete_rows = excluded.excluded_incomplete_rows,
+    excluded_mapping_rows = 0,
+    starter_rows = 0,
     anonymous_starter_rows = excluded.anonymous_starter_rows,
     identified_starter_rows = excluded.identified_starter_rows,
-    reason = excluded.reason,
+    team_count = excluded.team_count,
+    detail_rows = excluded.detail_rows,
+    invalid_detail_rows = excluded.invalid_detail_rows,
+    performance_rows = 0,
+    reconciled = false,
+    coverage_outcome = 'quarantined',
+    quarantine_reason = 'anonymous_starter_rows_exceeded',
     provider_observed_at = greatest(
-      app_private.historical_performance_fixture_quarantine.provider_observed_at,
+      app_private.historical_performance_fixture_coverage.provider_observed_at,
       excluded.provider_observed_at
     ),
     updated_at = statement_timestamp();
 
   return jsonb_build_object(
     'fixtureId', target_fixture.id,
-    'quarantined', true,
-    'reason', 'anonymous_starter_rows_exceeded',
-    'anonymousStarterRows', p_anonymous_starter_rows,
-    'identifiedStarterRows', p_identified_starter_rows
+    'coverageOutcome', 'quarantined',
+    'quarantineReason', 'anonymous_starter_rows_exceeded',
+    'anonymousStarterRows', anonymous_starter_rows,
+    'identifiedStarterRows', identified_starter_rows
   );
 exception
   when invalid_text_representation or numeric_value_out_of_range
@@ -221,18 +296,21 @@ end;
 $$;
 
 revoke all on function api.quarantine_historical_player_fixture_performance(
-  text, text, text, integer, integer, timestamptz
+  text, text, text, text, jsonb, timestamptz
 ) from public, anon, authenticated;
 grant execute on function api.quarantine_historical_player_fixture_performance(
-  text, text, text, integer, integer, timestamptz
+  text, text, text, text, jsonb, timestamptz
 ) to service_role;
 
 -- ---------------------------------------------------------------------------
--- 4. api.ingest_historical_player_fixture_performance: accept anonymousStarterRows/
+-- 3. api.ingest_historical_player_fixture_performance: accept anonymousStarterRows/
 --    identifiedStarterRows in p_coverage, reject (never partially ingest) when
 --    anonymousStarterRows > 4, relax the post-persist starter reconciliation accordingly, and
---    persist the two new columns. Everything else is unchanged from the quarantine migration's
---    version (20260802010200_historical_performance_mapping_quarantine.sql).
+--    persist the two new columns plus coverage_outcome = 'accepted' / quarantine_reason = null
+--    (which naturally flips a fixture back from a prior quarantined state on the SAME row, via
+--    the ordinary ON CONFLICT DO UPDATE below -- no DELETE needed or present). Everything else is
+--    unchanged from the quarantine migration's version
+--    (20260802010200_historical_performance_mapping_quarantine.sql).
 -- ---------------------------------------------------------------------------
 
 create or replace function api.ingest_historical_player_fixture_performance(
@@ -344,12 +422,6 @@ begin
   if anonymous_starter_rows > 4 then
     raise exception using errcode = '22023', message = 'HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED';
   end if;
-
-  -- A fixture that was previously quarantined must not carry both a quarantine record and live
-  -- performance rows; accepting it now (anonymous_starter_rows back within the cap on a corrected
-  -- provider payload) clears the quarantine record.
-  delete from app_private.historical_performance_fixture_quarantine
-  where fixture_id = target_fixture.id;
 
   update app.player_fixture_performances
   set active = false, updated_at = statement_timestamp()
@@ -501,7 +573,8 @@ begin
     fixture_id, football_season_id, source_provider, source_version,
     lineup_rows_seen, valid_player_rows, excluded_incomplete_rows,
     excluded_mapping_rows, starter_rows, anonymous_starter_rows, identified_starter_rows,
-    team_count, detail_rows, invalid_detail_rows, performance_rows, reconciled, provider_observed_at
+    team_count, detail_rows, invalid_detail_rows, performance_rows, reconciled,
+    coverage_outcome, quarantine_reason, provider_observed_at
   ) values (
     target_fixture.id, target_season.id, p_provider_name, p_source_version,
     (p_coverage ->> 'lineupRowsSeen')::integer,
@@ -510,7 +583,7 @@ begin
     team_count,
     (p_coverage ->> 'detailRows')::integer,
     (p_coverage ->> 'invalidDetailRows')::integer,
-    active_count, true, p_observed_at
+    active_count, true, 'accepted', null, p_observed_at
   ) on conflict (fixture_id) do update set
     football_season_id = excluded.football_season_id,
     source_provider = excluded.source_provider,
@@ -527,6 +600,11 @@ begin
     invalid_detail_rows = excluded.invalid_detail_rows,
     performance_rows = excluded.performance_rows,
     reconciled = excluded.reconciled,
+    -- Accepting a fixture (including one that a corrected payload now brings back within the
+    -- anonymous-starter cap) always flips this SAME row back to accepted and clears the
+    -- quarantine reason -- no DELETE, no second table, no second row.
+    coverage_outcome = 'accepted',
+    quarantine_reason = null,
     provider_observed_at = greatest(
       app_private.historical_performance_fixture_coverage.provider_observed_at,
       excluded.provider_observed_at
@@ -560,12 +638,14 @@ grant execute on function api.ingest_historical_player_fixture_performance(
 ) to service_role;
 
 -- ---------------------------------------------------------------------------
--- 5. api.football_historical_player_rating_inputs: a fixture that is permanently quarantined
+-- 4. api.football_historical_player_rating_inputs: a fixture that is permanently quarantined
 --    (more than 4 anonymous starters) must not block the season's rating derivation forever.
---    expected_fixture_count now excludes quarantined fixtures; covered_fixture_count must still
---    equal that (adjusted) expectation exactly. The performance_count floor is relaxed from
---    expected_fixture_count * 22 to expected_fixture_count * 18 (22 - the 4-anonymous cap), since
---    an accepted fixture may legitimately persist as few as 18 identified starters plus its bench.
+--    expected_fixture_count now excludes quarantined fixtures (filtered by coverage_outcome on
+--    the SAME table -- no join to a second table); covered_fixture_count must still equal that
+--    (adjusted) expectation exactly, and is now also explicitly filtered to accepted rows. The
+--    performance_count floor is relaxed from expected_fixture_count * 22 to
+--    expected_fixture_count * 18 (22 - the 4-anonymous cap), since an accepted fixture may
+--    legitimately persist as few as 18 identified starters plus its bench.
 -- ---------------------------------------------------------------------------
 
 create or replace function api.football_historical_player_rating_inputs(
@@ -610,12 +690,13 @@ begin
 
   select count(*) into quarantined_fixture_count
   from app.fixtures fixture
-  join app_private.historical_performance_fixture_quarantine quarantine
-    on quarantine.fixture_id = fixture.id
+  join app_private.historical_performance_fixture_coverage coverage
+    on coverage.fixture_id = fixture.id
   where fixture.season_id = target_season.id
     and fixture.status = 'finished'
-    and quarantine.football_season_id = target_season.id
-    and quarantine.source_provider = p_provider_name;
+    and coverage.football_season_id = target_season.id
+    and coverage.source_provider = p_provider_name
+    and coverage.coverage_outcome = 'quarantined';
 
   select count(*) into expected_fixture_count
   from app.fixtures fixture
@@ -623,9 +704,9 @@ begin
   -- BG-0011 option B: quarantined fixtures are excluded from what this season is expected to
   -- cover, so the other accepted fixtures are never blocked by the 2 (measured) permanent
   -- outliers. This never silently accepts a season with MORE incompleteness than the rule
-  -- permits: only fixtures with an explicit, reasoned quarantine record are excluded here, and
-  -- every quarantine record requires anonymous_starter_rows > 4 (enforced by that table's own
-  -- CHECK constraint).
+  -- permits: only fixtures with coverage_outcome = 'quarantined' are excluded here, and that
+  -- outcome is itself derived from anonymous_starter_rows > 4 by a hard CHECK constraint, not an
+  -- independently settable flag.
   expected_fixture_count := expected_fixture_count - quarantined_fixture_count;
 
   select count(*) into covered_fixture_count
@@ -636,6 +717,7 @@ begin
     and fixture.status = 'finished'
     and coverage.football_season_id = target_season.id
     and coverage.source_provider = p_provider_name
+    and coverage.coverage_outcome = 'accepted'
     and coverage.reconciled
     and coverage.invalid_detail_rows = 0
     and coverage.performance_rows = (
@@ -650,7 +732,9 @@ begin
   from app.player_fixture_performances performance
   join app.fixtures fixture on fixture.id = performance.fixture_id
   join app_private.historical_performance_fixture_coverage coverage
-    on coverage.fixture_id = fixture.id and coverage.reconciled
+    on coverage.fixture_id = fixture.id
+    and coverage.reconciled
+    and coverage.coverage_outcome = 'accepted'
   where performance.football_season_id = target_season.id
     and fixture.season_id = target_season.id
     and fixture.status = 'finished'
@@ -687,7 +771,9 @@ begin
     from app.player_fixture_performances performance
     join app.fixtures fixture on fixture.id = performance.fixture_id
     join app_private.historical_performance_fixture_coverage coverage
-      on coverage.fixture_id = fixture.id and coverage.reconciled
+      on coverage.fixture_id = fixture.id
+      and coverage.reconciled
+      and coverage.coverage_outcome = 'accepted'
     where performance.football_season_id = target_season.id
       and fixture.season_id = target_season.id
       and fixture.status = 'finished'
@@ -710,6 +796,7 @@ begin
     where coverage.football_season_id = target_season.id
       and coverage.source_provider = p_provider_name
       and coverage.reconciled
+      and coverage.coverage_outcome = 'accepted'
       and fixture.season_id = target_season.id
       and fixture.status = 'finished'
   )
@@ -759,4 +846,4 @@ grant execute on function api.football_historical_player_rating_inputs(text, tex
   to service_role;
 
 comment on function api.football_historical_player_rating_inputs(text, text) is
-  'BG-0011 option B: expected_fixture_count excludes fixtures recorded in app_private.historical_performance_fixture_quarantine, so 2 permanently-anonymous-heavy fixtures (measured: 19596474, 19596475 for season 26027) do not block the other 238 from being priced.';
+  'BG-0011 option B: expected_fixture_count excludes fixtures whose coverage_outcome = quarantined, so 2 permanently-anonymous-heavy fixtures (measured: 19596474, 19596475 for season 26027) do not block the other 238 from being priced.';
