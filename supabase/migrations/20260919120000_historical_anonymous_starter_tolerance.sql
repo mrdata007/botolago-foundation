@@ -54,7 +54,10 @@ alter table app_private.historical_performance_fixture_coverage
     and team_count = 2
     and detail_rows >= 0
     and invalid_detail_rows >= 0
-    and performance_rows = valid_player_rows - excluded_mapping_rows
+    -- valid_player_rows here (as in the base migration and the quarantine migration before it)
+    -- stores the POST-mapping-exclusion persisted count (active_count), the same value as
+    -- performance_rows -- not the pre-mapping count the worker reports in p_coverage.
+    and performance_rows = valid_player_rows
   );
 
 comment on column app_private.historical_performance_fixture_coverage.anonymous_starter_rows is
@@ -269,8 +272,6 @@ begin
   if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), auth.role()) <> 'service_role' then
     raise exception using errcode = '42501', message = 'football_service_role_required';
   end if;
-  anonymous_starter_rows := (p_coverage ->> 'anonymousStarterRows')::integer;
-  identified_starter_rows := (p_coverage ->> 'identifiedStarterRows')::integer;
   if p_provider_name <> 'sportsmonks'
     or p_season_external_id !~ '^[1-9][0-9]*$'
     or p_fixture_external_id !~ '^[1-9][0-9]*$'
@@ -281,16 +282,6 @@ begin
     or jsonb_array_length(p_rows) not between 22 and 100
     or jsonb_typeof(p_coverage) <> 'object'
   then
-    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
-  end if;
-  -- BG-0011 option B: reject outright (never partially ingest) before any mutation. The caller
-  -- (the worker) is expected to have already routed anonymous_starter_rows > 4 to
-  -- api.quarantine_historical_player_fixture_performance instead of calling this RPC at all; this
-  -- is defense in depth, not the primary gate.
-  if anonymous_starter_rows is null or anonymous_starter_rows > 4 then
-    raise exception using errcode = '22023', message = 'HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED';
-  end if;
-  if identified_starter_rows is null or identified_starter_rows <> 22 - anonymous_starter_rows then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
   end if;
 
@@ -325,6 +316,8 @@ begin
     raise exception using errcode = 'P0002', message = 'FIXTURE_MAPPING_NOT_FOUND';
   end if;
 
+  anonymous_starter_rows := (p_coverage ->> 'anonymousStarterRows')::integer;
+  identified_starter_rows := (p_coverage ->> 'identifiedStarterRows')::integer;
   provider_excluded_count := (p_coverage ->> 'excludedIncompleteRows')::integer;
   if (p_coverage ->> 'lineupRowsSeen')::integer not between 22 and 100
     or (p_coverage ->> 'validPlayerRows')::integer <> jsonb_array_length(p_rows)
@@ -336,6 +329,20 @@ begin
     or (p_coverage ->> 'invalidDetailRows')::integer <> 0
   then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+  end if;
+  if identified_starter_rows is null or anonymous_starter_rows is null
+    or identified_starter_rows <> 22 - anonymous_starter_rows
+  then
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+  end if;
+  -- BG-0011 option B: reject outright (never partially ingest) before any mutation. The caller
+  -- (the worker) is expected to have already routed anonymous_starter_rows > 4 to
+  -- api.quarantine_historical_player_fixture_performance instead of calling this RPC at all; this
+  -- is defense in depth, not the primary gate. Deliberately checked AFTER the season/fixture
+  -- lookups above (a current-season or unmapped-fixture call must still fail with
+  -- COMPLETED_SEASON_REQUIRED / *_MAPPING_NOT_FOUND, never with this historical-only code).
+  if anonymous_starter_rows > 4 then
+    raise exception using errcode = '22023', message = 'HISTORICAL_FIXTURE_ANONYMOUS_STARTERS_EXCEEDED';
   end if;
 
   -- A fixture that was previously quarantined must not carry both a quarantine record and live

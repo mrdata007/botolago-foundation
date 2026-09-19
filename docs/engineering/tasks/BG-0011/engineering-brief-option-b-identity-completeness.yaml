@@ -156,9 +156,31 @@ not_changed:
   - "Any already-applied migration file -- all changes are in a new, additive migration."
   - "lineup_rows_out_of_range, valid_player_rows_out_of_range, incomplete_rows_limit_exceeded, team_count_mismatch, invalid_detail_rows_present -- all still hard-gate exactly as before."
 
+owner_addendum_2026_09_19:
+  summary: >
+    The owner separately authorized the Chief to run a read-only production check specifically on
+    the two outlier fixtures. Findings (Chief's, not this Builder's -- this Builder has no
+    production access): fixture 19596474 -> internal fixture_id
+    8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e; fixture 19596475 -> internal fixture_id
+    d30eb1d6-d257-49f4-a9ee-02c2ee9cc2b6; both confirmed present in
+    app_private.football_provider_mappings; app_private.historical_performance_fixture_coverage
+    and app.player_fixture_performances have ZERO rows for either. Conclusion: neither outlier
+    fixture has ever contributed to any persisted rating or pricing output -- affected derived
+    outputs: NONE, no recalculation required. Reporting language fixed throughout to: "240
+    historical fixtures enumerated; 2 named fixtures (19596474, 19596475) quarantined; 238
+    candidates for acceptance, subject to all remaining validation." Fold-in requirements (all
+    satisfied, all now backed by a REAL local pgTAP run against Postgres 17 via
+    `npx supabase db start && npx supabase test db`, not static review): no DELETE of any
+    fixture/player/mapping row anywhere in this change; a traceable, explicit quarantine reason
+    column (not an implicit query-filter exclusion); all-or-nothing quarantine proven by a
+    `count(*) = 0` regression test; a cross-fixture player-eligibility regression test; and three
+    new regression cases (j) rating-input aggregate excludes the quarantined fixture entirely, (k)
+    quarantined fixture/player/mapping records still SELECT successfully, (l) idempotent
+    re-quarantine. See implementation-report-option-b.yaml for the exact test results.
+
 production_prerequisites_before_dispatch:
-  - "Independent Verifier review of this branch and its migration."
-  - "A local/staging Supabase run of supabase/tests/database/historical_player_performances.test.sql (pgTAP) -- NOT executed in this sandbox; see implementation-report-option-b.yaml for why."
+  - "Independent Verifier review of this branch and its migration (now backed by a real local pgTAP run: 42/42 test files pass, 886/886 tests, including the unmodified current-season and BG-0027-degeneracy-guard suites run against the same database)."
   - "Re-run scripts/backend/sportsmonks-historical-performance-probe.ts against real production data with expectedCommit pinned to this branch's merge commit, to reconfirm 238/240 / fixtures 19596474 & 19596475 against the LIVE provider payload (BG-0044's numbers were captured before this implementation existed)."
   - "BG-0002 (or whatever currently blocks migration promotion) must be resolved before this migration can be applied to tkewgajrljbwgwedqsxn."
   - "Chief/Owner sign-off to dispatch the G7 backfill runner against production -- this implementation does not do so and is not authorized to."
+  - "No recalculation of previously-persisted derived outputs is owed (Chief's production finding above): neither outlier fixture ever contributed to a persisted rating or price."

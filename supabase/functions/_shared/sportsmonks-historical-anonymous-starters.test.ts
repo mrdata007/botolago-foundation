@@ -3,7 +3,9 @@ import { describe, expect, it } from "bun:test";
 import {
   HistoricalPerformanceRuntimeError,
   MAX_ANONYMOUS_STARTER_ROWS,
+  handleSportsMonksHistoricalPlayerPerformanceRequest,
   normalizeHistoricalFixture,
+  type HistoricalPerformanceRpcClient,
 } from "./sportsmonks-historical-player-performance";
 
 // BG-0011 option B regression tests.
@@ -190,5 +192,132 @@ describe("BG-0011 option B: bounded anonymous starters (historical ingestion pat
       anonymousStarterRows: 5,
     });
     expect(error.code).toBe("historical_fixture_anonymous_starters_exceeded");
+  });
+
+  // Owner addendum (production-confirmed 2026-09-19): fixture 19596474 maps to internal
+  // fixture_id 8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e; fixture 19596475 maps to
+  // d30eb1d6-d257-49f4-a9ee-02c2ee9cc2b6. Neither has ever had a coverage row or any
+  // app.player_fixture_performances row in production. These end-to-end batch tests prove, at
+  // the worker layer, exactly the guarantee that finding depends on going forward: a quarantined
+  // fixture's identified rows are NEVER sent to the ingest RPC -- only the dedicated quarantine
+  // RPC is called for it -- and a normal fixture sharing the same batch is completely unaffected.
+  describe("end-to-end batch: quarantine is all-or-nothing and never blocks the rest of the batch", () => {
+    const NORMAL_FIXTURE_ID = 19_489_500;
+
+    function rpcClient(
+      handler: (name: string, args: Record<string, unknown>) => unknown,
+    ): HistoricalPerformanceRpcClient {
+      return {
+        schema: () => ({
+          rpc: async (name, args) => ({ data: handler(name, args), error: null }),
+        }),
+      };
+    }
+
+    function request(body: Record<string, unknown>): Request {
+      return new Request("https://example.test/functions/v1/football-ingest", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-botolago-ingestion-key": "historical-performance-trigger-secret-1234567890",
+        },
+        body: JSON.stringify(body),
+      });
+    }
+
+    it("(3)/(j) quarantines fixture 19596474 with zero rows sent to the ingest RPC, while the batch's other fixture ingests normally", async () => {
+      const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const response = await handleSportsMonksHistoricalPlayerPerformanceRequest(
+        request({
+          job: "historical_player_performances",
+          action: "ingest_batch",
+          afterFixtureExternalId: null,
+          batchSize: 5,
+        }),
+        {
+          environment: {
+            SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-1234567890",
+            FOOTBALL_INGESTION_TRIGGER_SECRET: "historical-performance-trigger-secret-1234567890",
+            FOOTBALL_PROVIDER: "sportsmonks",
+            FOOTBALL_PROVIDER_BASE_URL: "https://api.sportmonks.com/v3/football",
+            FOOTBALL_SPORTSMONKS_SEASON_ID: String(SEASON_ID),
+            FOOTBALL_PROVIDER_TIMEOUT_MS: "15000",
+            FOOTBALL_PROVIDER_MAX_RETRIES: "2",
+          },
+          now: () => new Date("2026-09-19T00:00:00.000Z"),
+          fetch: async (input) => {
+            const url = new URL(input instanceof Request ? input.url : input.toString());
+            const fixtureId = Number(url.pathname.split("/").at(-1));
+            if (fixtureId === 19_596_474) {
+              return Response.json(fixtureWithAnonymousStarters(7, 10, 19_596_474));
+            }
+            return Response.json(fixtureWithAnonymousStarters(0, 5, NORMAL_FIXTURE_ID));
+          },
+          client: rpcClient((name, args) => {
+            calls.push({ name, args });
+            if (name === "begin_historical_performance_ingestion") {
+              return "44444444-4444-4444-8444-444444444444";
+            }
+            if (name === "football_historical_performance_fixture_batch") {
+              return {
+                seasonExternalId: String(SEASON_ID),
+                expectedFixtureCount: 240,
+                items: [
+                  { externalFixtureId: "19596474", kickoffAt: "2025-11-01T16:00:00Z" },
+                  { externalFixtureId: String(NORMAL_FIXTURE_ID), kickoffAt: "2025-11-02T16:00:00Z" },
+                ],
+                nextCursor: null,
+                hasMore: false,
+              };
+            }
+            if (name === "quarantine_historical_player_fixture_performance") {
+              expect(args.p_fixture_external_id).toBe("19596474");
+              expect(args.p_anonymous_starter_rows).toBe(7);
+              expect(args.p_identified_starter_rows).toBe(15);
+              return { fixtureId: "8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e", quarantined: true };
+            }
+            if (name === "ingest_historical_player_fixture_performance") {
+              // Must never be called for 19596474 -- asserted structurally below via the call log,
+              // and here defensively: any p_fixture_external_id other than the normal fixture's
+              // fails the test outright.
+              expect(args.p_fixture_external_id).toBe(String(NORMAL_FIXTURE_ID));
+              return {
+                inserted: 27,
+                updated: 0,
+                skipped: 0,
+                active: 27,
+                excludedMappingRows: 0,
+                excludedIncompleteRows: 0,
+                reconciled: true,
+              };
+            }
+            if (name === "complete_football_ingestion") return true;
+            throw new Error(`unexpected rpc ${name}`);
+          }),
+        },
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body).toMatchObject({
+        fixturesProcessed: 2,
+        acceptedFixtures: 1,
+        quarantinedFixtures: 1,
+        quarantinedFixtureIds: ["19596474"],
+        performanceRows: 27,
+      });
+      // The decisive assertion: ingest_historical_player_fixture_performance was called exactly
+      // once (for the normal fixture only) and quarantine_historical_player_fixture_performance
+      // exactly once (for 19596474 only) -- never both for the same fixture, never the ingest RPC
+      // for the quarantined one.
+      const ingestCalls = calls.filter((call) => call.name === "ingest_historical_player_fixture_performance");
+      const quarantineCalls = calls.filter(
+        (call) => call.name === "quarantine_historical_player_fixture_performance",
+      );
+      expect(ingestCalls).toHaveLength(1);
+      expect(quarantineCalls).toHaveLength(1);
+      expect(ingestCalls[0]!.args.p_fixture_external_id).toBe(String(NORMAL_FIXTURE_ID));
+      expect(quarantineCalls[0]!.args.p_fixture_external_id).toBe("19596474");
+    });
   });
 });

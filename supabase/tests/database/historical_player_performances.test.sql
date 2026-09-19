@@ -558,7 +558,82 @@ select extensions.is(
   '1',
   'rating inputs report how many fixtures were quarantined'
 );
+
+-- (j) the quarantined fixture contributes nothing to the rating-input aggregate: performanceCount
+-- must equal exactly the two accepted fixtures' active rows (22 + 22 = 44), never 44 + fixture
+-- 3's 17 identified-but-rejected rows.
+select extensions.is(
+  api.football_historical_player_rating_inputs('sportsmonks', '28001') ->> 'performanceCount',
+  '44',
+  'the quarantined fixture contributes zero rows to the rating-input aggregate (44, not 61)'
+);
+
+-- (4) a player who appears in the quarantined fixture (19800003) still has their OTHER,
+-- accepted fixtures' performances counted normally: player number 10 started fixture 1 (90
+-- minutes) and fixture 2 (90 minutes, since number <= 18) and was listed (never persisted) in the
+-- rejected fixture 3 -- their rating input must show appearances=2, minutes=180, not 3/270 and not
+-- 0/0.
+select extensions.is(
+  (
+    select (row ->> 'minutes')::integer
+    from jsonb_array_elements(
+      api.football_historical_player_rating_inputs('sportsmonks', '28001') -> 'rows'
+    ) row
+    where row ->> 'externalPlayerId' = '80010'
+  ),
+  180,
+  'a player who also appears in the quarantined fixture keeps both of their accepted-fixture performances (180 minutes, not 270 or 0)'
+);
+select extensions.is(
+  (
+    select (row ->> 'appearances')::integer
+    from jsonb_array_elements(
+      api.football_historical_player_rating_inputs('sportsmonks', '28001') -> 'rows'
+    ) row
+    where row ->> 'externalPlayerId' = '80010'
+  ),
+  2,
+  'the same player shows exactly 2 counted appearances (the 2 accepted fixtures), not 3'
+);
 reset role;
+
+-- (k) nothing was deleted: the quarantined fixture, its players and its provider mapping still
+-- SELECT successfully from the base tables after the migration and the quarantine RPC ran.
+select extensions.ok(
+  (select count(*) from app.fixtures where id = '52000000-0000-4000-8000-000000000003') = 1,
+  'the quarantined fixture record itself is never deleted'
+);
+select extensions.ok(
+  (
+    select count(*) from app_private.football_provider_mappings
+    where provider_name = 'sportsmonks' and entity_type = 'fixture' and external_id = '19800003'
+  ) = 1,
+  'the quarantined fixture''s provider mapping is never deleted'
+);
+select extensions.ok(
+  (select count(*) from app.players where id = md5('historical-performance-player-10')::uuid) = 1,
+  'a player who appeared in the quarantined fixture is never deleted'
+);
+
+-- (l) idempotent re-run of the quarantine RPC: calling it again with the same facts must not
+-- duplicate the quarantine record or throw.
+set local role service_role;
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(
+  api.quarantine_historical_player_fixture_performance(
+    'sportsmonks', '28001', '19800003', 5, 17, statement_timestamp()
+  ) ->> 'quarantined',
+  'true',
+  'repeat-quarantining the same fixture is safe and idempotent'
+);
+reset role;
+select extensions.is(
+  (select count(*)::integer from app_private.historical_performance_fixture_quarantine
+   where fixture_id = '52000000-0000-4000-8000-000000000003'),
+  1,
+  'idempotent re-quarantine does not duplicate the quarantine record'
+);
 
 select * from extensions.finish();
 rollback;

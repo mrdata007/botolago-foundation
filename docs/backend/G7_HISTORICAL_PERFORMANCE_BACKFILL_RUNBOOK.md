@@ -154,6 +154,28 @@ contributed zero rows). Never read `fixturesProcessed` alone as "240 fully inges
 season can legitimately finish with `acceptedFixtures: 238, quarantinedFixtures: 2` and still be a
 clean, verdict-`pass` run.
 
+**The exact reporting language to use**: "240 historical fixtures enumerated; 2 named fixtures
+(19596474, 19596475) quarantined; 238 candidates for acceptance, subject to all remaining
+validation" (`lineup_rows_out_of_range`, `valid_player_rows_out_of_range`,
+`incomplete_rows_limit_exceeded`, `team_count_mismatch`, `invalid_detail_rows_present`). Never
+round this up to "240 ingested", and never imply the 238 are already fully validated/accepted —
+every one of them is still subject to every other existing check.
+
+**Quarantine is traceable and all-or-nothing**: `app_private.historical_performance_fixture_quarantine`
+records an explicit `reason` (`'anonymous_starter_rows_exceeded'`), never an implicit
+"excluded because it failed a query filter". A quarantined fixture's identified rows are never
+persisted either — not row-by-row, the whole fixture is excluded. Nothing is ever `DELETE`d from
+`app.fixtures`, `app.players`, or `app_private.football_provider_mappings`; the quarantined
+fixture's own record, its provider mapping, and any player who appeared in it remain fully
+retrievable.
+
+**Production status of the two named outliers (checked read-only by the Chief, 2026-09-19)**:
+fixture 19596474 → internal fixture_id `8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e`; fixture 19596475 →
+`d30eb1d6-d257-49f4-a9ee-02c2ee9cc2b6`. Neither has any row in
+`app_private.historical_performance_fixture_coverage` or `app.player_fixture_performances` today.
+**Affected derived outputs: NONE** — neither fixture has ever contributed to a persisted rating or
+price, so no recalculation of anything already persisted is needed once this rule ships.
+
 ## What proves restoration in the evidence
 
 - `restoration.verified: true` — the authoritative signal; the finalize step also fails the run
