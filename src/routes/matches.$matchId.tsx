@@ -15,10 +15,11 @@ import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import { MatchTabs, type MatchTabKey } from "@/components/matches/MatchTabs";
 import { EventTimeline } from "@/components/matches/EventTimeline";
 import { StatComparison } from "@/components/matches/StatComparison";
+import { LineupsView } from "@/components/matches/LineupsView";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "momentum", "h2h"];
+const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
 export const Route = createFileRoute("/matches/$matchId")({
   validateSearch: (search: Record<string, unknown>): { tab: MatchTabKey } => {
@@ -204,15 +205,13 @@ function MatchDetailPage() {
           />
         )}
 
-        {tab === "momentum" && (
+        {tab === "lineups" && (
           <div>
             <SectionHeader
-              title={t("matches.detail.momentum_title")}
-              eyebrow={t("matches.detail.tab.momentum")}
+              title={t("matches.detail.lineups_title")}
+              eyebrow={t("matches.detail.tab.lineups")}
             />
-            <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
-              {t("matches.detail.momentum_unavailable")}
-            </div>
+            <LineupsView lineups={detailQ.data?.lineups ?? []} home={home} away={away} />
           </div>
         )}
 

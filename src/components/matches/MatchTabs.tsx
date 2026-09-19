@@ -2,12 +2,12 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
-export type MatchTabKey = "summary" | "stats" | "momentum" | "h2h";
+export type MatchTabKey = "summary" | "stats" | "lineups" | "h2h";
 
 export const MATCH_TABS: { key: MatchTabKey; label: TranslationKey }[] = [
   { key: "summary", label: "matches.detail.tab.summary" },
   { key: "stats", label: "matches.detail.tab.stats" },
-  { key: "momentum", label: "matches.detail.tab.momentum" },
+  { key: "lineups", label: "matches.detail.tab.lineups" },
   { key: "h2h", label: "matches.detail.tab.h2h" },
 ];
 

@@ -4,6 +4,7 @@ import type {
   FootballLanguage,
   FootballRepository,
   MatchCardDto,
+  MatchLineupDto,
   SeasonSummaryDto,
   StandingRowDto,
   TeamSummaryDto,
@@ -212,22 +213,27 @@ export const footballService = {
       match: Match;
       headToHead: readonly Match[];
       live: MatchLiveDetail;
+      /** Confirmed/provisional lineups, one entry per team. Empty when the
+       * provider has not published lineups yet — never fabricated. */
+      lineups: readonly MatchLineupDto[];
     }
   > {
     const repository = getFootballRepository();
     const detail = await repository.getMatchDetail(id, language, requestContext());
     const match = toMatch(detail);
-    const [headToHead, standings, timeline, statistics] = await Promise.all([
+    const [headToHead, standings, timeline, statistics, lineups] = await Promise.all([
       repository.getHeadToHead(id, language, 5, requestContext()),
       repository.getStandings(detail.seasonId, language, requestContext()),
       repository.getTimeline(id, language, requestContext()),
       repository.getStatistics(id, language, requestContext()),
+      repository.getLineups(id, language, requestContext()),
     ]);
     const allMatches = [detail, ...headToHead];
     return {
       match,
       headToHead: headToHead.map(toMatch),
       live: presentMatchLiveDetail(match, timeline, statistics),
+      lineups,
       matches: allMatches.map(toMatch),
       clubs: uniqueClubs(allMatches, standings),
       standings: standings.map(toTableRow),
