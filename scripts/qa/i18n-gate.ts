@@ -121,7 +121,13 @@ export const BASELINES: Baselines = {
   // interviews, news.section.transfers/analysis/interviews/saved,
   // news.saved.empty) and 4 template-key t() call sites that switched
   // between them, moving W3 237 -> 245 and W4 100 -> 96.
-  W3: 245,
+  //
+  // BG-0012 (Agent D3, account/profile redesign): the redesigned Profile
+  // "Informations personnelles" section now renders an explicit e-mail row
+  // via a literal `t("profile.email")` call, which was previously dead
+  // copy. That takes one more key off the unreferenced list, moving
+  // W3 245 -> 244.
+  W3: 244,
   W4: 96,
 };
 

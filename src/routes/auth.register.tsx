@@ -8,6 +8,8 @@ import {
   AuthDivider,
   AuthFieldError,
   AuthFieldLabel,
+  GoogleGlyph,
+  AppleGlyph,
 } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
@@ -308,14 +310,14 @@ function RegisterPage() {
             onClick={() => onSocial("google")}
             disabled={submitting}
           >
-            <span>Google</span>
+            <GoogleGlyph /> {t("auth.google")}
           </AuthSecondaryButton>
           <AuthSecondaryButton
             type="button"
             onClick={() => onSocial("apple")}
             disabled={submitting}
           >
-            <span>Apple</span>
+            <AppleGlyph /> {t("auth.apple")}
           </AuthSecondaryButton>
         </div>
 
