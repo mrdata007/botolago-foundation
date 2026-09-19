@@ -386,6 +386,121 @@ tasks:
       handling, per-enforcement-point implementation, player-level coverage report, specific
       regression test matrix, BG-0032 deployment-status check) dispatched to a Builder on branch
       agent/BG-0011-option-b-identity-completeness; see that task's own report once it lands.
+    option_b_implementation_2026_09_19: >-
+      Branch agent/BG-0011-option-b-identity-completeness, final commit 628555a247b010e1571a113c48e8bc7e4e218b37
+      (NOT merged to main — deliberately left open for an explicit owner decision on whether to
+      merge the branch now or hold it until production-promotion time; the owner's authorization
+      list stopped at "prepare the exact subsequent production approval packet" and did not name
+      merging to main). Docs: docs/engineering/tasks/BG-0011/engineering-brief-option-b-identity-completeness.yaml,
+      implementation-report-option-b.yaml, non-production-preview-2026-09-19.md.
+      Rule (stated honestly, not as invariant-preserving): 22 raw provider starters required per
+      fixture (unchanged, measured universal 240/240); up to 4 of those 22 may be anonymous
+      (missing player_id) and are never assigned to any player or recorded as an observed zero;
+      a fixture with more than 4 anonymous starters is quarantined ENTIRELY (none of its rows,
+      not even identified ones, used). Scoped strictly to the historical SportsMonks path
+      (source_version prefix sportsmonks-fixture:, season status completed and not current) —
+      never the live current-season Fantasy scoring path (sportsmonks-current-fixture: prefix),
+      which shares the same underlying tables (app_private.historical_performance_fixture_coverage,
+      app.player_fixture_performances) with the live gameweek-finalization RPC chain
+      (app_private.fantasy_assert_scoring_snapshot, called from
+      20260914200730_fantasy_verified_finalization.sql) — this table-sharing was NOT originally
+      disclosed accurately (see correction 2 below) and is now a hard, source_version-regex-scoped
+      CHECK constraint, not an accident of column defaults.
+      Preservation policy (owner-mandated): single-table design on the pre-existing
+      historical_performance_fixture_coverage table (no second table, no DELETE anywhere in the
+      migration); coverage_outcome ('accepted'|'quarantined') and quarantine_reason
+      ('anonymous_starter_rows_exceeded') are DERIVED by CHECK constraint from the measured
+      anonymous_starter_rows count, never an independently-settable flag; a quarantined row is
+      forced to starter_rows=0/performance_rows=0 at the constraint level while its full original
+      audit fields (lineup_rows_seen, valid_player_rows, source_version, etc.) remain intact and
+      selectable; performance rows are soft-deactivated (active=false), never deleted; fixture,
+      player and provider-mapping rows are never touched.
+      Multi-pass process (three real defects found and fixed across rounds, not zero-defect on
+      first pass — recorded honestly):
+      (1) Chief's own direct code read (not the Builder's self-report) caught the first-pass
+      quarantine mechanism doing exactly the delete-then-reinsert-elsewhere pattern the owner had
+      explicitly forbidden (moving the coverage row into a separate, thinner quarantine table) —
+      corrected to the single-table upsert design above.
+      (2) Chief's own direct code read caught the migration's own header comment falsely claiming
+      the live current-season scoring path used "entirely separate tables" naming a table/RPC that
+      do not exist — corrected to an accurate scope comment plus the hard source_version-scoped
+      CHECK constraint, with new tests proving a current-season-shaped row can never carry a
+      nonzero anonymous-starter count (both a bare UPDATE and the actual upsert path rejected,
+      sqlstate 23514).
+      (3) An independent fresh-context Reviewer (separate agent from the Builder and the separate
+      independent Verifier) caught a CRITICAL, release-blocking bug neither the Builder's own
+      tests nor the independent Verifier's re-run of those same tests could see: the worker's
+      accept-path coverage object never included identifiedStarterRows (only the quarantine
+      path's diagnostic had it), so api.ingest_historical_player_fixture_performance's NOT NULL
+      check on that field would have rejected EVERY real accepted fixture in production use — a
+      total regression of the feature, invisible to both suites because the bun tests mock the RPC
+      client with subset-matching assertions and the pgTAP tests call the SQL RPC with hand-built
+      JSONB that always included the field, so the actual TS-to-SQL wire format was never
+      exercised end-to-end by anything. Fixed by constructing the coverage object once and sharing
+      it between both call sites (eliminating the class of bug, not just the one instance), plus a
+      new genuine end-to-end test (scripts/backend/historical-performance-e2e-wire-format.test.ts)
+      that feeds the real worker's real output into the real RPCs against a live local Postgres.
+      That new test was then found (by the same Reviewer, on a focused re-check) to be wired into
+      nothing — bun run test (CI's application-quality job) runs with no database up, so it would
+      silently skip in CI forever, providing zero regression protection. Fixed with a two-line CI
+      step in database-quality (after backend:db:start/db:reset, before backend:db:test), verified
+      locally to produce real assertions (7 expect() calls) rather than the 0-assertion skip path.
+      Independent Verifier verdict: PASS (fresh agent, isolated worktree, independently reproduced
+      758/758 bun and 42/42 pgTAP files / 911/911 tests before the critical bug was found — its own
+      full independent re-run did not happen to exercise the wire-format gap either, which is
+      exactly why the fresh-context Reviewer step mattered).
+      Fresh-context Reviewer verdict: PASS on final state (after the critical-bug fix and the
+      CI-wiring fix), having independently found the critical bug on its first pass and confirmed
+      the fix's completeness (grepped every p_coverage call site and every ->>'...' key the SQL
+      reads) on its second, focused pass.
+      Final verified numbers (all independently reproduced by the Verifier and/or Reviewer, not
+      solely the Builder's own claim): bun test 760/760 (758 pre-existing + 2 new genuine e2e
+      wire-format tests); pgTAP 42/42 files, 911/911 tests, including the five pre-existing files
+      that touch the shared live-scoring tables (current_finished_fixture_performances.test.sql,
+      fantasy_scoring_worker.test.sql, fantasy_verified_finalization.test.sql,
+      fantasy_postwork_journal.test.sql, fantasy_finalized_notification_batches.test.sql) and
+      20260918150000_fantasy_rating_degeneracy_guard.sql's own test, all confirmed byte-identical
+      to main and passing unchanged; typecheck clean; lint clean.
+      Fixture coverage (honest phrasing, not rounded up): 240 historical season-26027 fixtures
+      enumerated; 2 named fixtures quarantined (19596474: 7 anonymous of 22 starters, internal id
+      8f9c8cd8-29d7-4d22-afd2-8cfb3573fe9e; 19596475: 8 anonymous of 22, internal id
+      d30eb1d6-d257-49f4-a9ee-02c2ee9cc2b6); 238 candidates for acceptance, still subject to every
+      other pre-existing validation (lineup_rows_out_of_range, valid_player_rows_out_of_range,
+      incomplete_rows_limit_exceeded, team_count_mismatch, invalid_detail_rows_present,
+      provider-mapping exclusion) — not yet a claim that all 238 will actually pass every other
+      check in a real backfill run, only that they are not excluded by the anonymous-starter rule.
+      Player-level coverage: NOT independently re-measured against live production in this task
+      (would require a production backfill dispatch, not authorized); the non-production preview
+      carries forward the last real measured catalog baseline (539 players, 497 mapped, 459
+      eligible, 42 unmapped, from the prior a1_result probe) labeled explicitly as carried-over,
+      not re-verified here, alongside clearly-labeled illustrative/simulated figures (a
+      synthetic-payload run of the real worker function reproducing 238/240, and a hand-mirrored
+      copy of the existing fantasy_initial_price_v1 formula against an illustrative synthetic
+      squad) — the preview explicitly disclaims itself as non-production and not a promise of
+      final prices; legitimate price ties are noted as allowed, not treated as a defect.
+      Affected derived outputs of quarantining these two fixtures specifically: NONE. Checked
+      directly against production (read-only, mcp__Supabase__execute_sql,
+      project tkewgajrljbwgwedqsxn) before any implementation began: both fixtures' internal ids
+      have zero rows in app_private.historical_performance_fixture_coverage and zero rows in
+      app.player_fixture_performances (which holds 228 total rows, all from the six fixtures
+      backfilled in an earlier partial run — neither outlier fixture among them). Neither fixture
+      has ever contributed to any persisted rating or price; no recalculation of any already-
+      persisted output is required.
+      Production prerequisites still required before any of this could run against real data
+      (none authorized or attempted here): (1) owner decision on whether to merge this branch to
+      main now or hold it; (2) if merged, Phase 7E-B promotion dispatch of the new migration
+      (20260919120000_historical_anonymous_starter_tolerance.sql) against Production V2, under the
+      same expected_commit/confirmation-string discipline as prior promotions; (3) re-running the
+      SportsMonks coverage probe against live production data on the merged commit to reconfirm
+      238/240 and the exact two fixture IDs still hold (data could theoretically have changed);
+      (4) the G7 backfill runner dispatch itself, under its own separate owner approval, BG-0002
+      credential/backup-readiness gates (already resolved, but must be re-verified current at
+      dispatch time per the standing pre-action checklist), and the standing time-box/registration
+      constraints already on file for BG-0011. Separately, BG-0032's own migration
+      (20260918170000_fantasy_catalog_rollback_cleanup.sql, merged to main) remains UNAPPLIED to
+      production — confirmed via mcp__Supabase__list_migrations, latest applied entry is still
+      20260918160000 (season_bounds_guard) — so it is not an available production prerequisite
+      without its own separate promotion dispatch either.
 
   BG-0012:
     title: CMS (articles, drafts, publish, images, SEO)
