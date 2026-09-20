@@ -61,6 +61,9 @@ function LoginPage() {
   // AAL check itself fails (e.g. offline), fail open rather than block sign-in.
   const continueAfterAuth = async (profileComplete: boolean | undefined) => {
     try {
+      // The demo/mock backend has no Supabase project behind it, so skip the
+      // round-trip entirely rather than relying on the catch below.
+      if (IS_MOCK_AUTH) throw new Error("mock_auth_no_mfa");
       const levels = await getAssuranceLevels(supabase.auth.mfa);
       if (requiresLoginChallenge(levels)) {
         navigate({ to: "/auth/mfa-challenge", search: { next: next ?? "/" } });

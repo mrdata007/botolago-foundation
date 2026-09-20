@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   enrollTotpFactor,
   getAssuranceLevels,
+  isAal2,
   listVerifiedTotpFactors,
+  unenrollFactor,
   verifyTotpFactor,
   type AssuranceLevels,
   type TotpEnrollment,
@@ -69,11 +71,12 @@ function SecurityPage() {
     }
   }, [status, navigate]);
 
-  const refreshStatus = async () => {
+  const refreshStatus = async (isCancelled: () => boolean = () => false) => {
     const [nextFactors, nextLevels] = await Promise.all([
       listVerifiedTotpFactors(supabase.auth.mfa),
       getAssuranceLevels(supabase.auth.mfa),
     ]);
+    if (isCancelled()) return;
     setFactors(nextFactors);
     setLevels(nextLevels);
   };
@@ -86,7 +89,7 @@ function SecurityPage() {
     let cancelled = false;
     (async () => {
       try {
-        await refreshStatus();
+        await refreshStatus(() => cancelled);
       } catch {
         // Best-effort status load -- the page still renders the enroll CTA below.
       } finally {
@@ -111,10 +114,22 @@ function SecurityPage() {
     }
   };
 
-  const cancelEnrollment = () => {
+  // enroll() has already created an unverified factor server-side, so dropping
+  // local state alone would strand it on the account -- repeated start/cancel
+  // cycles would pile up factors until GoTrue's per-user limit starts
+  // rejecting new enrollments with a confusing "already enrolled".
+  const cancelEnrollment = async () => {
+    const abandoned = enrollment;
     setEnrollment(null);
     setCode("");
     setError(null);
+    if (!abandoned) return;
+    try {
+      await unenrollFactor(supabase.auth.mfa, abandoned.factorId);
+    } catch {
+      // Best-effort cleanup: the user has already left the flow, and a
+      // leftover unverified factor must not surface as an error to them.
+    }
   };
 
   const submitVerification = async (ev: React.FormEvent) => {
@@ -152,7 +167,7 @@ function SecurityPage() {
   };
 
   const enrolled = factors.length > 0;
-  const isAal2 = levels?.currentLevel === "aal2";
+  const sessionIsAal2 = levels ? isAal2(levels) : false;
 
   return (
     <AppShell>
@@ -188,7 +203,12 @@ function SecurityPage() {
               {t("auth.mfa.secret_label")}
             </div>
             <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-xl border border-input bg-muted/50 px-3 py-2 text-xs font-mono tracking-wider">
+              {/* dir="ltr" so bidi reordering can never scramble the secret
+                  for an Arabic (RTL) reader typing it in manually. */}
+              <code
+                dir="ltr"
+                className="min-w-0 flex-1 truncate rounded-xl border border-input bg-muted/50 px-3 py-2 text-start text-xs font-mono tracking-wider"
+              >
                 {enrollment.secret}
               </code>
               <button
@@ -296,8 +316,10 @@ function SecurityPage() {
           {levels && (
             <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2 text-xs">
               <span className="font-semibold text-muted-foreground">{t("auth.mfa.aal_label")}</span>
-              <span className={`font-bold ${isAal2 ? "text-emerald-700" : "text-foreground"}`}>
-                {isAal2 ? t("auth.mfa.aal2_value") : t("auth.mfa.aal1_value")}
+              <span
+                className={`font-bold ${sessionIsAal2 ? "text-emerald-700" : "text-foreground"}`}
+              >
+                {sessionIsAal2 ? t("auth.mfa.aal2_value") : t("auth.mfa.aal1_value")}
               </span>
             </div>
           )}

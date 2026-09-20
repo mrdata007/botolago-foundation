@@ -18,6 +18,20 @@ describe("mapMfaError", () => {
     expect(mapped.code).toBe("invalid_code");
   });
 
+  it("classifies a rejected code mentioning the challenge as invalid_code, not expired", () => {
+    // Supabase phrases a wrong code with both words; expiry must not win here,
+    // or the user is told to retry a code that will never be accepted.
+    const mapped = mapMfaError({ message: "Invalid TOTP code for this challenge" });
+    expect(mapped.code).toBe("invalid_code");
+  });
+
+  it("classifies a duplicate friendly name as already_enrolled", () => {
+    const mapped = mapMfaError({
+      message: "A factor with the friendly name already exists",
+    });
+    expect(mapped.code).toBe("already_enrolled");
+  });
+
   it("classifies an expired challenge message as challenge_expired and retryable", () => {
     const mapped = mapMfaError({ message: "MFA challenge has expired" });
     expect(mapped.code).toBe("challenge_expired");

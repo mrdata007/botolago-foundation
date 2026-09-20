@@ -5,6 +5,7 @@ import {
   isAal2,
   listVerifiedTotpFactors,
   requiresLoginChallenge,
+  unenrollFactor,
   verifyTotpFactor,
   type MfaAuthClient,
 } from "./mfa";
@@ -25,6 +26,7 @@ function fakeClient(overrides: Partial<MfaAuthClient> = {}): MfaAuthClient {
     }),
     challenge: async () => ({ data: { id: CHALLENGE_ID }, error: null }),
     verify: async () => ({ data: { access_token: "fake-jwt" }, error: null }),
+    unenroll: async () => ({ data: { id: FACTOR_ID }, error: null }),
     listFactors: async () => ({ data: { totp: [] }, error: null }),
     getAuthenticatorAssuranceLevel: async () => ({
       data: { currentLevel: "aal1", nextLevel: "aal1" },
@@ -101,6 +103,29 @@ describe("verifyTotpFactor", () => {
       code: "factor_not_found",
     });
     expect(verifyCalled).toBe(false);
+  });
+});
+
+describe("unenrollFactor", () => {
+  it("removes the abandoned factor by id", async () => {
+    let unenrollArgs: unknown;
+    const client = fakeClient({
+      unenroll: async (params) => {
+        unenrollArgs = params;
+        return { data: { id: FACTOR_ID }, error: null };
+      },
+    });
+    await unenrollFactor(client, FACTOR_ID);
+    expect(unenrollArgs).toEqual({ factorId: FACTOR_ID });
+  });
+
+  it("maps a failure rather than resolving silently", async () => {
+    const client = fakeClient({
+      unenroll: async () => ({ data: null, error: { message: "factor not found" } }),
+    });
+    await expect(unenrollFactor(client, FACTOR_ID)).rejects.toMatchObject({
+      code: "factor_not_found",
+    });
   });
 });
 

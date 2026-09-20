@@ -927,6 +927,9 @@ export const dictionaries = {
     "auth.mfa_challenge.error_invalid": "Code invalide.",
     "auth.mfa_challenge.error_expired": "Code expiré. Réessayez.",
     "auth.mfa_challenge.error_generic": "Une erreur est survenue. Réessayez.",
+    "auth.mfa_challenge.error_no_factor":
+      "Aucune application d'authentification n'est associée à ce compte.",
+    "auth.mfa_challenge.continue_without": "Continuer sans vérification",
 
     "auth.forgot.title": "Mot de passe oublié",
     "auth.forgot.subtitle":
@@ -2068,6 +2071,8 @@ export const dictionaries = {
     "auth.mfa_challenge.error_invalid": "رمز غير صالح.",
     "auth.mfa_challenge.error_expired": "انتهت صلاحية الرمز. حاول مجدداً.",
     "auth.mfa_challenge.error_generic": "حدث خطأ. حاول مجدداً.",
+    "auth.mfa_challenge.error_no_factor": "لا يوجد تطبيق مصادقة مرتبط بهذا الحساب.",
+    "auth.mfa_challenge.continue_without": "المتابعة بدون تحقق",
 
     "auth.forgot.title": "استعادة كلمة المرور",
     "auth.forgot.subtitle": "أدخل بريدك. إن كان لديك حساب، ستصلك رسالة لإعادة التعيين.",

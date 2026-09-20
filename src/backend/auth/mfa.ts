@@ -61,6 +61,10 @@ export interface MfaAuthClient {
     data: unknown | null;
     error: MfaClientError | null;
   }>;
+  unenroll(params: { factorId: string }): Promise<{
+    data: unknown | null;
+    error: MfaClientError | null;
+  }>;
   listFactors(): Promise<{
     data: {
       totp: ReadonlyArray<{
@@ -129,6 +133,18 @@ export async function verifyTotpFactor(
     code: trimmed,
   });
   if (verified.error) throw mapMfaError(verified.error);
+}
+
+/**
+ * `supabase.auth.mfa.unenroll()`. Used to clean up the unverified factor that
+ * `enroll()` creates when the user abandons enrollment -- without this, every
+ * abandoned attempt leaves a factor behind until GoTrue's per-user limit
+ * starts rejecting new enrollments. Removing a *verified* factor additionally
+ * requires an AAL2 session, which Supabase enforces server-side.
+ */
+export async function unenrollFactor(mfa: MfaAuthClient, factorId: string): Promise<void> {
+  const { error } = await mfa.unenroll({ factorId });
+  if (error) throw mapMfaError(error);
 }
 
 /** Lists only verified TOTP factors -- what a security page should show as "enrolled". */

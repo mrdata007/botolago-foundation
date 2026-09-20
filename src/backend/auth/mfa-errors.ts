@@ -50,7 +50,7 @@ export function mapMfaError(error: unknown): MfaError {
   if (status === 401 || message.includes("unauthorized") || message.includes("not authenticated")) {
     return new MfaError("unauthorized", "Authentication is required.", { cause: error });
   }
-  if (message.includes("already enrolled") || message.includes("friendly name")) {
+  if (message.includes("already enrolled") || message.includes("already exists")) {
     return new MfaError("already_enrolled", "A factor with this name is already enrolled.", {
       cause: error,
     });
@@ -60,14 +60,17 @@ export function mapMfaError(error: unknown): MfaError {
       cause: error,
     });
   }
-  if (message.includes("expired") || message.includes("challenge")) {
+  // Checked before the expiry branch: Supabase phrases a rejected code as
+  // "Invalid TOTP code ... challenge", which an expiry-first check would
+  // mislabel as "expired" and tell the user to retry an identical code.
+  if (message.includes("invalid") && (message.includes("code") || message.includes("totp"))) {
+    return new MfaError("invalid_code", "The verification code is incorrect.", { cause: error });
+  }
+  if (message.includes("expired")) {
     return new MfaError("challenge_expired", "The verification challenge expired. Try again.", {
       retryable: true,
       cause: error,
     });
-  }
-  if (message.includes("invalid") && (message.includes("code") || message.includes("totp"))) {
-    return new MfaError("invalid_code", "The verification code is incorrect.", { cause: error });
   }
   if (/failed to fetch|network|fetcherror/.test(message)) {
     return new MfaError("network", "The authentication service is unavailable.", {
