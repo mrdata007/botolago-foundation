@@ -111,6 +111,10 @@ function RegisterPage() {
         setErrors({ username: "auth.error.username_taken" });
       else if (res.errorCode === "invalid_username" || res.errorCode === "reserved_username")
         setErrors({ username: "auth.error.username_invalid" });
+      // A 429 here is usually the confirmation-email send limit, not the user
+      // doing anything wrong -- saying so beats a blanket "an error occurred".
+      else if (res.errorCode === "rate_limited") setErrors({ form: "auth.error.rate_limited" });
+      else if (res.errorCode === "network") setErrors({ form: "auth.error.network" });
       else setErrors({ form: "auth.error.generic" });
       return;
     }

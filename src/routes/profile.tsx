@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
@@ -23,6 +23,7 @@ import {
   Languages,
   ChevronRight,
   KeyRound,
+  ShieldCheck,
   Trash2,
   AlertTriangle,
   Loader2,
@@ -55,8 +56,19 @@ export const Route = createFileRoute("/profile")({
       },
     ],
   }),
-  component: ProfilePage,
+  component: ProfileRootRoute,
 });
+
+// This route now has a child route (/profile/security). A parent route in a
+// nested (dot-separated) file hierarchy must render <Outlet /> itself or the
+// deeper match never appears -- the URL changes but the parent's own UI stays
+// on screen. Same defect already fixed in admin.news.tsx and admin.staff.tsx.
+function ProfileRootRoute() {
+  const isChildRoute = useRouterState({
+    select: (state) => state.matches.some((match) => match.routeId === "/profile/security"),
+  });
+  return isChildRoute ? <Outlet /> : <ProfilePage />;
+}
 
 function ProfilePage() {
   const { t, tr, lang } = useI18n();
@@ -338,6 +350,26 @@ function AuthenticatedProfile({
               <span className="block font-semibold">{t("profile.change_password")}</span>
               <span className="block text-xs font-normal text-muted-foreground">
                 {t("profile.change_password_desc")}
+              </span>
+            </span>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+        <button
+          onClick={() => navigate({ to: "/profile/security" })}
+          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
+        >
+          <div className="flex items-center gap-3 text-sm text-foreground">
+            <span
+              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
+              aria-hidden
+            >
+              <ShieldCheck className="h-4 w-4" />
+            </span>
+            <span className="text-start">
+              <span className="block font-semibold">{t("profile.mfa_setup")}</span>
+              <span className="block text-xs font-normal text-muted-foreground">
+                {t("profile.mfa_setup_desc")}
               </span>
             </span>
           </div>

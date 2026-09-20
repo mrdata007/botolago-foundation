@@ -17,6 +17,8 @@ import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { supabase } from "@/integrations/supabase/client";
+import { getAssuranceLevels, requiresLoginChallenge } from "@/backend/auth/mfa";
 
 function sanitizeNext(raw: unknown): string | undefined {
   if (typeof raw !== "string" || !raw) return undefined;
@@ -52,6 +54,29 @@ function LoginPage() {
     navigate({ to: "/auth/profile-setup", search: { next: next ?? "/" } });
   };
 
+  // A password (or OAuth) sign-in only ever reaches AAL1. If this account
+  // already has a verified TOTP factor enrolled, Supabase's own
+  // getAuthenticatorAssuranceLevel() reports nextLevel: "aal2" -- route
+  // through the login MFA challenge instead of straight into the app. If the
+  // AAL check itself fails (e.g. offline), fail open rather than block sign-in.
+  const continueAfterAuth = async (profileComplete: boolean | undefined) => {
+    try {
+      // The demo/mock backend has no Supabase project behind it, so skip the
+      // round-trip entirely rather than relying on the catch below.
+      if (IS_MOCK_AUTH) throw new Error("mock_auth_no_mfa");
+      const levels = await getAssuranceLevels(supabase.auth.mfa);
+      if (requiresLoginChallenge(levels)) {
+        navigate({ to: "/auth/mfa-challenge", search: { next: next ?? "/" } });
+        return;
+      }
+    } catch {
+      // Fall through to normal post-login routing.
+    }
+    markWelcomeDone();
+    toast.success(t("auth.success.login"));
+    goAfterLogin(profileComplete);
+  };
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -73,12 +98,19 @@ function LoginPage() {
     const res = await authService.signInWithEmail(email, password);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.credentials" });
+      setErrors({
+        form:
+          res.errorCode === "rate_limited"
+            ? "auth.error.rate_limited"
+            : res.errorCode === "network"
+              ? "auth.error.network"
+              : res.errorCode === "email_unconfirmed"
+                ? "auth.error.email_unconfirmed"
+                : "auth.error.credentials",
+      });
       return;
     }
-    markWelcomeDone();
-    toast.success(t("auth.success.login"));
-    goAfterLogin(res.data?.profileComplete);
+    await continueAfterAuth(res.data?.profileComplete);
   };
 
   const onSocial = async (provider: "google" | "apple") => {
@@ -92,9 +124,7 @@ function LoginPage() {
       setErrors({ form: "auth.error.generic" });
       return;
     }
-    markWelcomeDone();
-    toast.success(t("auth.success.login"));
-    goAfterLogin(res.data?.profileComplete);
+    await continueAfterAuth(res.data?.profileComplete);
   };
 
   return (

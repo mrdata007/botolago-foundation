@@ -18,6 +18,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
+import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
@@ -36,6 +37,7 @@ import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
+import { Route as AuthMfaChallengeRouteImport } from './routes/auth.mfa-challenge'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -99,6 +101,11 @@ const FantasyIndexRoute = FantasyIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => FantasyRoute,
+} as any)
+const ProfileSecurityRoute = ProfileSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => ProfileRoute,
 } as any)
 const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   id: '/$articleId',
@@ -188,6 +195,11 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
 const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
   id: '/profile-setup',
   path: '/profile-setup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthMfaChallengeRoute = AuthMfaChallengeRouteImport.update({
+  id: '/mfa-challenge',
+  path: '/mfa-challenge',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -292,7 +304,7 @@ export interface FileRoutesByFullPath {
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
@@ -303,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa-challenge': typeof AuthMfaChallengeRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -321,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/profile/security': typeof ProfileSecurityRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -338,7 +352,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
@@ -349,6 +363,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa-challenge': typeof AuthMfaChallengeRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -367,6 +382,7 @@ export interface FileRoutesByTo {
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/profile/security': typeof ProfileSecurityRoute
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -386,7 +402,7 @@ export interface FileRoutesById {
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
@@ -397,6 +413,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/mfa-challenge': typeof AuthMfaChallengeRoute
   '/auth/profile-setup': typeof AuthProfileSetupRoute
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
@@ -415,6 +432,7 @@ export interface FileRoutesById {
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/profile/security': typeof ProfileSecurityRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -446,6 +464,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa-challenge'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -464,6 +483,7 @@ export interface FileRouteTypes {
     | '/fantasy/transfers'
     | '/matches/$matchId'
     | '/news/$articleId'
+    | '/profile/security'
     | '/fantasy/'
     | '/matches/'
     | '/.lovable/oauth/consent'
@@ -492,6 +512,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa-challenge'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -510,6 +531,7 @@ export interface FileRouteTypes {
     | '/fantasy/transfers'
     | '/matches/$matchId'
     | '/news/$articleId'
+    | '/profile/security'
     | '/fantasy'
     | '/matches'
     | '/.lovable/oauth/consent'
@@ -539,6 +561,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/mfa-challenge'
     | '/auth/profile-setup'
     | '/auth/register'
     | '/auth/update-password'
@@ -557,6 +580,7 @@ export interface FileRouteTypes {
     | '/fantasy/transfers'
     | '/matches/$matchId'
     | '/news/$articleId'
+    | '/profile/security'
     | '/fantasy/'
     | '/matches/'
     | '/.lovable/oauth/consent'
@@ -576,7 +600,7 @@ export interface RootRouteChildren {
   FantasyRoute: typeof FantasyRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
-  ProfileRoute: typeof ProfileRoute
+  ProfileRoute: typeof ProfileRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
@@ -649,6 +673,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/'
       preLoaderRoute: typeof FantasyIndexRouteImport
       parentRoute: typeof FantasyRoute
+    }
+    '/profile/security': {
+      id: '/profile/security'
+      path: '/security'
+      fullPath: '/profile/security'
+      preLoaderRoute: typeof ProfileSecurityRouteImport
+      parentRoute: typeof ProfileRoute
     }
     '/news/$articleId': {
       id: '/news/$articleId'
@@ -774,6 +805,13 @@ declare module '@tanstack/react-router' {
       path: '/profile-setup'
       fullPath: '/auth/profile-setup'
       preLoaderRoute: typeof AuthProfileSetupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/mfa-challenge': {
+      id: '/auth/mfa-challenge'
+      path: '/mfa-challenge'
+      fullPath: '/auth/mfa-challenge'
+      preLoaderRoute: typeof AuthMfaChallengeRouteImport
       parentRoute: typeof AuthRoute
     }
     '/auth/login': {
@@ -953,6 +991,7 @@ interface AuthRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthMfaChallengeRoute: typeof AuthMfaChallengeRoute
   AuthProfileSetupRoute: typeof AuthProfileSetupRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
@@ -963,6 +1002,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthMfaChallengeRoute: AuthMfaChallengeRoute,
   AuthProfileSetupRoute: AuthProfileSetupRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
@@ -1042,6 +1082,17 @@ const NewsRouteChildren: NewsRouteChildren = {
 
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
+interface ProfileRouteChildren {
+  ProfileSecurityRoute: typeof ProfileSecurityRoute
+}
+
+const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileSecurityRoute: ProfileSecurityRoute,
+}
+
+const ProfileRouteWithChildren =
+  ProfileRoute._addFileChildren(ProfileRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1049,7 +1100,7 @@ const rootRouteChildren: RootRouteChildren = {
   FantasyRoute: FantasyRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
-  ProfileRoute: ProfileRoute,
+  ProfileRoute: ProfileRouteWithChildren,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
