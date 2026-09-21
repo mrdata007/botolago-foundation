@@ -15,8 +15,18 @@ import { AdminError, mapAdminError } from "./errors";
  * whether it sent a token, and neither value says anything about staff
  * membership or any other account. This mirrors RFC 6750, which distinguishes a
  * missing credential from `error="invalid_token"` for exactly this reason.
+ *
+ * `backend_unauthenticated` is a third, unrelated case: the caller's token
+ * verified fine and the control plane then reported an unauthenticated result
+ * of its own. Labelling that `invalid_token` would blame a credential that was
+ * accepted, and would fold two causes back into one reference -- the exact
+ * conflation this exists to remove.
  */
-export const UNAUTHENTICATED_REASONS = ["missing_token", "invalid_token"] as const;
+export const UNAUTHENTICATED_REASONS = [
+  "missing_token",
+  "invalid_token",
+  "backend_unauthenticated",
+] as const;
 export type UnauthenticatedReason = (typeof UNAUTHENTICATED_REASONS)[number];
 
 /**
@@ -24,7 +34,10 @@ export type UnauthenticatedReason = (typeof UNAUTHENTICATED_REASONS)[number];
  * as a support reference so a recurrence is self-diagnosing instead of needing
  * another round of black-box probing.
  *
- * - `expired`      the JWT's own `exp` had passed
+ * - `expired`      the token's own `exp` had passed. Note this is checked
+ *                  before the signature is, so an unverified token can report
+ *                  it -- it means "this token claims to be expired", not
+ *                  "a session we recognise has run out"
  * - `rejected`     the Auth server or signature check refused it
  * - `unverifiable` verification could not be completed (JWKS/network failure)
  *
@@ -71,11 +84,8 @@ export interface AdminRouteDependencies {
   describeIdentityFailure?(): UnauthenticatedDetail | undefined;
 }
 
-function identityRejected(
-  dependencies: AdminRouteDependencies,
-  fallback?: UnauthenticatedDetail,
-): AdminRouteState {
-  const detail = dependencies.describeIdentityFailure?.() ?? fallback;
+function identityRejected(dependencies: AdminRouteDependencies): AdminRouteState {
+  const detail = dependencies.describeIdentityFailure?.();
   return { state: "unauthenticated", reason: "invalid_token", ...(detail ? { detail } : {}) };
 }
 
@@ -89,8 +99,11 @@ export async function resolveAdminRouteAccess(
   try {
     identity = await dependencies.verifyIdentity();
   } catch {
-    // A throw escaped verification entirely, so nothing classified it.
-    return identityRejected(dependencies, "unverifiable");
+    // A throw escaped verification without being classified, so the cause is
+    // genuinely unknown. Report no detail rather than naming one: guessing
+    // `unverifiable` would accuse the server of an outage on evidence that an
+    // anonymous caller can manufacture with a malformed token.
+    return identityRejected(dependencies);
   }
   if (!identity) return identityRejected(dependencies);
 
@@ -128,7 +141,8 @@ export async function resolveAdminRouteAccess(
         return { state: "forbidden" };
       default:
         if (error instanceof AdminError && error.code === "unauthenticated") {
-          return { state: "unauthenticated", reason: "invalid_token" };
+          // Identity already verified above; this came from the control plane.
+          return { state: "unauthenticated", reason: "backend_unauthenticated" };
         }
         return { state: "backend_unavailable" };
     }
@@ -159,6 +173,14 @@ type AdminCopy = {
   readonly states: Record<AdminRouteStateName | "loading", { title: string; description: string }>;
   /** Shown instead of `states.unauthenticated` when the bearer token was rejected. */
   readonly invalidToken: { title: string; description: string };
+  /**
+   * Shown when the server could not reach a verdict on the credential at all.
+   * Distinct from `invalidToken` on purpose: nothing says the reader's session
+   * is bad, so telling them to sign in again would be a wrong instruction.
+   */
+  readonly verificationUnavailable: { title: string; description: string };
+  /** Label for the support reference printed on every non-authorized panel. */
+  readonly referenceLabel: string;
   readonly labels: {
     identity: string;
     roles: string;
@@ -217,6 +239,12 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       title: "Session expirée",
       description: "Votre session n’est plus valide. Reconnectez-vous, puis rouvrez cet espace.",
     },
+    verificationUnavailable: {
+      title: "Vérification impossible",
+      description:
+        "Votre session n’a pas pu être vérifiée pour le moment. Réessayez dans quelques instants — il n’est pas nécessaire de vous reconnecter.",
+    },
+    referenceLabel: "Réf.",
     labels: {
       identity: "Identité authentifiée",
       roles: "Rôles actifs",
@@ -278,6 +306,12 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       title: "انتهت صلاحية الجلسة",
       description: "لم تعد جلستك صالحة. سجّل الدخول من جديد ثم افتح هذه المساحة.",
     },
+    verificationUnavailable: {
+      title: "تعذّر التحقق",
+      description:
+        "تعذّر التحقق من جلستك حاليًا. أعد المحاولة بعد قليل — لا حاجة إلى تسجيل الدخول من جديد.",
+    },
+    referenceLabel: "المرجع",
     labels: {
       identity: "الهوية الموثّقة",
       roles: "الأدوار النشطة",

@@ -43,15 +43,29 @@ function AdminStatePanel({
   // from what is on screen. It names only the outcome and the caller's own
   // credential -- never an account, a role, or whether either exists.
   const reference = [state, reason, detail].filter(Boolean).join("/");
-  const content =
-    state === "unauthenticated" && reason === "invalid_token"
+
+  // Nothing here implicates the reader's credential: either the server could
+  // not reach a verdict on it, or the failure came from the control plane
+  // after it had already been accepted. Signing in again would not help, and
+  // saying "session expired" would be a false diagnosis.
+  const serverSideFailure =
+    state === "unauthenticated" &&
+    (detail === "unverifiable" || reason === "backend_unauthenticated");
+
+  const content = !serverSideFailure
+    ? state === "unauthenticated" && reason === "invalid_token"
       ? copy.invalidToken
-      : copy.states[state];
-  // Every state a sign-in can clear needs a way to sign in. "unauthenticated"
-  // previously rendered a dead end: the copy asked the reader to connect, with
-  // no link to do it.
+      : copy.states[state]
+    : copy.verificationUnavailable;
+
+  // Every state a sign-in can actually clear needs a way to sign in.
+  // "unauthenticated" previously rendered a dead end: the copy asked the reader
+  // to connect, with no link to do it. It must stay off where signing in is
+  // not the remedy.
   const showSignIn =
-    state === "unauthenticated" || state === "recent_auth_required" || state === "mfa_required";
+    (state === "unauthenticated" && !serverSideFailure) ||
+    state === "recent_auth_required" ||
+    state === "mfa_required";
   return (
     <main
       dir={copy.dir}
@@ -75,10 +89,15 @@ function AdminStatePanel({
           </Link>
         )}
         {state !== "loading" && state !== "authorized" && (
-          <p className="mt-6 font-mono text-xs text-slate-500" data-testid="admin-state-reference">
-            <span dir="ltr">
-              {copy.dir === "rtl" ? `${reference} :المرجع` : `Réf. : ${reference}`}
-            </span>
+          <p className="mt-6 text-xs text-slate-500" data-testid="admin-state-reference">
+            {copy.referenceLabel}
+            {" : "}
+            {/* Only the value is forced LTR, so the label keeps its logical
+                position for a screen reader and survives copy/paste. Mirroring
+                the whole string by hand renders correctly and reads backwards. */}
+            <bdi dir="ltr" className="font-mono">
+              {reference}
+            </bdi>
           </p>
         )}
       </section>

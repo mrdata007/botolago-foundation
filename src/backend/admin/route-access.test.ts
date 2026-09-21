@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { classifyIdentityFailure } from "./route-access.server";
+import { AdminError } from "./errors";
 import {
   adminRouteStateSchema,
   getAdminCopy,
@@ -8,6 +9,7 @@ import {
   requireAdminRoutePermission,
   resolveAdminRouteAccess,
   type AdminRouteDependencies,
+  type UnauthenticatedDetail,
 } from "./route-access";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -155,7 +157,9 @@ describe("unauthenticated reason discriminator", () => {
     expect(result).toEqual({ state: "unauthenticated", reason: "invalid_token" });
   });
 
-  it("reports invalid_token when identity verification throws", async () => {
+  it("names no detail when a throw escapes verification unclassified", async () => {
+    // Guessing "unverifiable" here would accuse the server of an outage on
+    // evidence any anonymous caller can manufacture with a malformed token.
     const result = await resolveAdminRouteAccess({
       verifyIdentity: async () => {
         throw new Error("jwks unreachable");
@@ -164,30 +168,39 @@ describe("unauthenticated reason discriminator", () => {
         throw new Error("must not load");
       },
     });
-    expect(result).toEqual({
-      state: "unauthenticated",
-      reason: "invalid_token",
-      detail: "unverifiable",
-    });
+    expect(result).toEqual({ state: "unauthenticated", reason: "invalid_token" });
   });
 
-  it("never reports missing_token once a token has been handed to verification", async () => {
-    // missing_token is only ever produced by the request layer, before these
-    // dependencies exist. If it could also appear here the two causes would be
-    // conflated again.
-    for (const verifyIdentity of [
-      async () => null,
-      async () => {
-        throw new Error("boom");
+  it("distinguishes a rejected credential from a control-plane refusal", async () => {
+    // Both render "unauthenticated". If they shared a reason the conflation
+    // this exists to remove would simply move down a layer.
+    const rejectedCredential = await resolveAdminRouteAccess({
+      verifyIdentity: async () => null,
+      loadContext: async () => context(),
+    });
+    const controlPlaneRefusal = await resolveAdminRouteAccess({
+      verifyIdentity: async () => ({ userId: USER_ID, email: null }),
+      loadContext: async () => {
+        throw new AdminError("unauthenticated", "Authentication is required.");
       },
-    ] as AdminRouteDependencies["verifyIdentity"][]) {
-      const result = await resolveAdminRouteAccess({
-        verifyIdentity,
-        loadContext: async () => context(),
-      });
-      expect(result).toMatchObject({ state: "unauthenticated" });
-      expect(result).not.toMatchObject({ reason: "missing_token" });
-    }
+    });
+    expect(rejectedCredential).toMatchObject({ reason: "invalid_token" });
+    expect(controlPlaneRefusal).toEqual({
+      state: "unauthenticated",
+      reason: "backend_unauthenticated",
+    });
+    expect(rejectedCredential).not.toEqual(controlPlaneRefusal);
+  });
+
+  it("does not blame the credential for a failure that happened after it was accepted", async () => {
+    const result = await resolveAdminRouteAccess({
+      verifyIdentity: async () => ({ userId: USER_ID, email: null }),
+      loadContext: async () => {
+        throw new AdminError("unauthenticated", "Authentication is required.");
+      },
+    });
+    expect(result).toMatchObject({ reason: "backend_unauthenticated" });
+    expect(result).not.toMatchObject({ reason: "invalid_token" });
   });
 
   it("keeps a non-staff account on forbidden rather than any unauthenticated state", async () => {
@@ -217,11 +230,29 @@ describe("unauthenticated reason discriminator", () => {
     ).toThrow();
   });
 
-  it("gives both languages distinct copy for a rejected token", () => {
+  it("gives both languages distinct copy for each unauthenticated cause", () => {
     for (const lang of ["fr", "ar"] as const) {
       const copy = getAdminCopy(lang);
-      expect(copy.invalidToken.title.length).toBeGreaterThan(0);
-      expect(copy.invalidToken.title).not.toBe(copy.states.unauthenticated.title);
+      const titles = [
+        copy.states.unauthenticated.title,
+        copy.invalidToken.title,
+        copy.verificationUnavailable.title,
+      ];
+      expect(new Set(titles).size).toBe(3);
+      for (const title of titles) expect(title.length).toBeGreaterThan(0);
+      expect(copy.referenceLabel.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("never tells a reader to sign in again over a failure that is not theirs", () => {
+    // "Vérification impossible" must not carry re-authentication wording: the
+    // credential may be perfectly valid and signing in again would not help.
+    for (const lang of ["fr", "ar"] as const) {
+      const copy = getAdminCopy(lang);
+      const text =
+        `${copy.verificationUnavailable.title} ${copy.verificationUnavailable.description}`.toLowerCase();
+      expect(text).not.toContain("expir");
+      expect(text).not.toContain("انتهت");
     }
   });
 });
@@ -240,20 +271,14 @@ describe("identity failure classification", () => {
     });
   });
 
-  it("treats a throw that escaped verification as unverifiable", async () => {
-    // Nothing classified it, so it never reached a verdict. Calling that
-    // "rejected" would send the reader to re-authenticate over a server fault.
+  it("leaves an unclassified throw without a detail", async () => {
     const result = await resolveAdminRouteAccess({
       verifyIdentity: async () => {
         throw new Error("boom");
       },
       loadContext: async () => context(),
     });
-    expect(result).toEqual({
-      state: "unauthenticated",
-      reason: "invalid_token",
-      detail: "unverifiable",
-    });
+    expect(result).toEqual({ state: "unauthenticated", reason: "invalid_token" });
   });
 
   it("omits detail entirely when the caller does not classify", async () => {
@@ -264,24 +289,24 @@ describe("identity failure classification", () => {
     expect(result).toEqual({ state: "unauthenticated", reason: "invalid_token" });
   });
 
-  it("does not let a stale detail leak onto a later successful request", async () => {
-    let call = 0;
-    let failure: "expired" | undefined;
+  it("reads the detail fresh on each attempt rather than pinning the first", async () => {
+    // The classifier is consulted after verification, so a describe() whose
+    // answer changes between attempts must be re-read, not cached.
+    const answers: (UnauthenticatedDetail | undefined)[] = ["expired", "rejected", undefined];
+    let attempt = 0;
     const deps: AdminRouteDependencies = {
-      describeIdentityFailure: () => failure,
-      verifyIdentity: async () => {
-        call += 1;
-        if (call === 1) {
-          failure = "expired";
-          return null;
-        }
-        failure = undefined;
-        return { userId: USER_ID, email: null };
-      },
+      describeIdentityFailure: () => answers[attempt],
+      verifyIdentity: async () => null,
       loadContext: async () => context(),
     };
     expect(await resolveAdminRouteAccess(deps)).toMatchObject({ detail: "expired" });
-    expect((await resolveAdminRouteAccess(deps)).state).toBe("authorized");
+    attempt = 1;
+    expect(await resolveAdminRouteAccess(deps)).toMatchObject({ detail: "rejected" });
+    attempt = 2;
+    expect(await resolveAdminRouteAccess(deps)).toEqual({
+      state: "unauthenticated",
+      reason: "invalid_token",
+    });
   });
 });
 
@@ -318,5 +343,51 @@ describe("classifyIdentityFailure", () => {
       message: "user bob@example.com token eyJhbGciOiJFUzI1NiIs",
     });
     expect(UNAUTHENTICATED_DETAILS).toContain(category);
+  });
+});
+
+describe("classifyIdentityFailure resists a forged verdict", () => {
+  // The whole point of `unverifiable` is that it accuses the server, not the
+  // caller. An operator who sees it goes looking for an outage. So a caller
+  // must not be able to produce it on demand.
+  it("calls a malformed token rejected, not unverifiable", () => {
+    // getClaims rethrows a plain Error for these -- decodeJWT reaches
+    // JSON.parse on base64url-shaped-but-not-JSON segments.
+    expect(classifyIdentityFailure(new Error("Invalid UTF-8 sequence"))).toBe("rejected");
+    expect(classifyIdentityFailure(new Error("Invalid alg claim"))).toBe("rejected");
+    expect(classifyIdentityFailure(new Error("Unexpected token in JSON"))).toBe("rejected");
+    expect(
+      classifyIdentityFailure({ name: "AuthInvalidJwtError", message: "Invalid JWT structure" }),
+    ).toBe("rejected");
+  });
+
+  it("reserves unverifiable for genuine transport failures", () => {
+    for (const error of [
+      { message: "Failed to fetch" },
+      { message: "fetch failed" },
+      { message: "network error" },
+      { message: "socket timeout" },
+      { message: "request timed out" },
+      { message: "jwks endpoint unreachable" },
+      { message: "connect ECONNREFUSED 10.0.0.1:443" },
+      { message: "getaddrinfo ENOTFOUND supabase.co" },
+      { status: 503, message: "upstream" },
+    ]) {
+      expect(classifyIdentityFailure(error)).toBe("unverifiable");
+    }
+  });
+
+  it("treats a network deadline as an outage rather than an expired session", () => {
+    // "expired" appears in some timeout messages. Matching it first would turn
+    // an outage into a false "your session expired, sign in again".
+    expect(classifyIdentityFailure({ message: "socket timeout: deadline expired" })).toBe(
+      "unverifiable",
+    );
+  });
+
+  it("only reports expired for a credential-side expiry", () => {
+    expect(
+      classifyIdentityFailure({ name: "AuthInvalidJwtError", message: "JWT has expired" }),
+    ).toBe("expired");
   });
 });
