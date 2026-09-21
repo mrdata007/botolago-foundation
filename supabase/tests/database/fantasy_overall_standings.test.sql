@@ -24,7 +24,9 @@ values
   ('c2000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001',
     '2089/90', '2089-08-01', '2090-06-30', 'active', true),
   ('c2000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001',
-    '2090/91', '2090-08-01', '2091-06-30', 'scheduled', false);
+    -- app.season_status is (planned, active, completed, cancelled) -- there is
+    -- no 'scheduled' member. A not-yet-started football season is 'planned'.
+    '2090/91', '2090-08-01', '2091-06-30', 'planned', false);
 insert into app.rounds (id, season_id, round_number, name, status) values
   ('c3000000-0000-4000-8000-000000000001', 'c2000000-0000-4000-8000-000000000001',
     1, 'Gameweek 1', 'completed'),
@@ -44,18 +46,26 @@ insert into app.fantasy_seasons (
     '2089/90', 'active', '2089-08-01', '2090-06-30'),
   ('c6300000-0000-4000-8000-000000000002', 'c6000000-0000-4000-8000-000000000001',
     'c2000000-0000-4000-8000-000000000002', 'f6100000-0000-4000-8000-000000000100',
-    '2090/91', 'draft', '2090-08-01', '2091-06-30');
+    -- app.fantasy_season_status is (planned, registration_open, active,
+    -- completed, cancelled) -- there is no 'draft' member. 'planned' also keeps
+    -- fantasy_seasons_one_active_idx satisfied: only one season may be active.
+    '2090/91', 'planned', '2090-08-01', '2091-06-30');
 
+-- fantasy_gameweeks_finalized_check: a 'finalized' (or 'corrected') gameweek
+-- must carry a non-null finalized_at AND points_state = 'final'. Both columns
+-- are therefore spelled out here rather than left to their defaults.
 insert into app.fantasy_gameweeks (
   id, fantasy_season_id, football_round_id, sequence_number, name,
-  deadline_at, starts_at, ends_at, status
+  deadline_at, starts_at, ends_at, status, finalized_at, points_state
 ) values
   ('c6400000-0000-4000-8000-000000000001', 'c6300000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001', 1, 'Gameweek 1',
-    '2090-01-01T11:00:00Z', '2090-01-01T12:00:00Z', '2090-01-08T12:00:00Z', 'finalized'),
+    '2090-01-01T11:00:00Z', '2090-01-01T12:00:00Z', '2090-01-08T12:00:00Z', 'finalized',
+    '2090-01-08T13:00:00Z', 'final'),
   ('c6400000-0000-4000-8000-000000000002', 'c6300000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000002', 2, 'Gameweek 2',
-    '2090-01-08T11:00:00Z', '2090-01-08T12:00:00Z', '2090-01-15T12:00:00Z', 'finalized');
+    '2090-01-08T11:00:00Z', '2090-01-08T12:00:00Z', '2090-01-15T12:00:00Z', 'finalized',
+    '2090-01-15T13:00:00Z', 'final');
 
 insert into auth.users (
   id, instance_id, aud, role, email, email_confirmed_at, encrypted_password,

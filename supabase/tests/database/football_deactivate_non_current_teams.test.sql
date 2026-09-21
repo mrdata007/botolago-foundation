@@ -19,7 +19,20 @@
 -- partition app.teams.
 begin;
 
-select extensions.no_plan();
+-- An explicit plan, NOT extensions.no_plan().
+--
+-- pgTAP keeps its "tests run so far" counter in a temporary table, and this
+-- file rolls back to a savepoint five times (see the scenario-isolation note
+-- above). Each `rollback to savepoint` reverts that counter along with the
+-- fixture, so at `finish()` pgTAP believed only 10 of the 20 assertions had
+-- run and emitted `1..10` — a bad plan, even though all 20 assertions passed.
+-- (Assertion NUMBERING stays correct because it comes from a sequence, which
+-- a rollback does not rewind; only the count pgTAP reports at the end is lost.)
+--
+-- Declaring the plan up front emits `1..20` before the first savepoint, so it
+-- cannot be rolled back. Keep this number in step with the assertion count
+-- whenever an assertion is added or removed below.
+select extensions.plan(20);
 
 -- ---------------------------------------------------------------------
 -- Maintenance body — SYNCED COPY of scripts/backend/football-deactivate-non-current-teams.sql
@@ -443,5 +456,13 @@ select extensions.is(
 
 rollback to savepoint bg0043_catalog;
 
-select * from extensions.finish();
+-- No extensions.finish() here, deliberately.
+--
+-- The plan is declared up front (see the note at the top of this file), so
+-- finish() has no plan left to emit. All it would still do is compare its
+-- savepoint-reverted counter against the plan and print a misleading
+-- "Looks like you planned 20 tests but ran 10" diagnostic on a run where
+-- every one of the 20 assertions passed. The plan line already holds the
+-- suite to 20 assertions: pg_prove fails this file if fewer (or more) than
+-- 20 `ok` lines are emitted, so nothing is lost by omitting finish().
 rollback;
