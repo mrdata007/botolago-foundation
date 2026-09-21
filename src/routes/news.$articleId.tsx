@@ -15,6 +15,7 @@ import { useBackTo } from "@/lib/back-navigation";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
+import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import { gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
@@ -218,6 +219,10 @@ function ArticlePage() {
             src={heroUrl}
             alt={article.hero?.alt ?? article.title}
             fallback={gradientTokenForId(article.id)}
+            // Same branded plate the cards use (BG-0076): a reader who taps a
+            // hero-less card must not land on a second empty block. No club
+            // directory is loaded on this route, so this one is wordmark-only.
+            placeholder={<ArticleHeroFallback category={article.primaryCategory?.slug} />}
             loading="eager"
             fetchPriority="high"
             className="aspect-[16/10] w-full animate-in fade-in duration-500"

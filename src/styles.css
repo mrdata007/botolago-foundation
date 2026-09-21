@@ -90,6 +90,26 @@
     oklch(0.802 0.132 226) 100%
   );
 
+  /* ---- News category plates (BG-0076) ---------------------------
+     The base colour of the branded placeholder a News card paints when
+     an edition has no hero, or when its hero fails to load. One colour
+     per `ArticleCategory`, so the absence of a photo still carries the
+     section's identity instead of reading as a broken image.
+
+     Stated as a flat colour rather than a gradient on purpose: the
+     component builds the gradient itself with `to bottom`, which is
+     direction-neutral. A `deg` angle is physical and would land on the
+     opposite edge in Arabic.
+
+     Each is dark enough for the white wordmark to sit on it at AA in
+     both themes; the `.dark` overrides drop L a step so the plate does
+     not glare against the dark page. */
+  --news-plate-latest: oklch(0.36 0.13 262);
+  --news-plate-transfers: oklch(0.38 0.1 205);
+  --news-plate-analysis: oklch(0.36 0.11 295);
+  --news-plate-interviews: oklch(0.37 0.1 165);
+  --news-plate-for-you: oklch(0.37 0.14 245);
+
   /* ---- Extra semantic accents ---------------------------------- */
   --accent-cyan: oklch(0.75 0.13 220);
   --accent-indigo: oklch(0.55 0.16 275);
@@ -895,6 +915,13 @@ html[dir="rtl"] .lucide-arrow-left {
     oklch(0.38 0.19 263) 55%,
     oklch(0.6 0.11 226) 100%
   );
+
+  /* Category plates, one step deeper on a dark page (BG-0076). */
+  --news-plate-latest: oklch(0.28 0.1 262);
+  --news-plate-transfers: oklch(0.29 0.08 205);
+  --news-plate-analysis: oklch(0.28 0.09 295);
+  --news-plate-interviews: oklch(0.29 0.08 165);
+  --news-plate-for-you: oklch(0.29 0.11 245);
 }
 
 /* ==================================================================
