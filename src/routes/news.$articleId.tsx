@@ -282,14 +282,17 @@ function ArticlePage() {
         </div>
 
         {/* Body — pre-sanitized server-side HTML */}
+        {/* `editorial-body` styles the injected HTML itself. The previous
+            `space-y-4` sat on this wrapper while every paragraph went into a
+            single child, so it spaced exactly one element and the body ran
+            together with no gaps at all. */}
         <div
           className={cn(
-            "mt-5 max-w-[68ch] space-y-4 text-[16px] leading-[1.75] text-foreground/90",
+            "editorial-body mt-5 max-w-[68ch] text-[16px] leading-[1.75] text-foreground/90",
             contentLanguage === "ar" && "text-[17px] leading-[2]",
           )}
-        >
-          <div dangerouslySetInnerHTML={{ __html: article.bodyHtml }} />
-        </div>
+          dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
+        />
 
         {/* Topic/team tags */}
         {(topicTags.length > 0 || teamNames.length > 0) && (
