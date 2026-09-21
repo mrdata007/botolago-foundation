@@ -16,7 +16,7 @@
  * finds; the probe seeds `botolago.language` in an init script for this reason.
  *
  * ---------------------------------------------------------------------------
- * THE FOUR ASSERTIONS, AND WHY EACH EXISTS
+ * THE ASSERTIONS, AND WHY EACH EXISTS
  * ---------------------------------------------------------------------------
  *
  * 1. `scroll` — document scrollWidth beyond the viewport. The obvious test,
@@ -25,33 +25,48 @@
  *    content is being cut. On its own it reports a clean page every time.
  *
  * 2. `past` — an element whose border box crosses a viewport edge. Catches
- *    what (1) cannot. Three exclusions, each for a pattern that is correct:
+ *    what (1) cannot. Its exclusions were all bought with wrong answers:
  *      - `position: fixed` — a bar pinned to the viewport is not overflow.
  *      - anything inside `<svg>` — a child's box is in the SVG's coordinate
  *        space and is clipped by the SVG viewport; it cannot overflow a page.
- *      - anything inside an `overflow-x: auto|scroll` ancestor — a wide table
- *        or a horizontal rail is SUPPOSED to extend past the fold.
- *    Without those three, this assertion reported 62 findings that were all
- *    decorative circles and scrollable table headers.
+ *      - anything whose ancestor constrains the x axis, whether by scrolling
+ *        it (`auto`/`scroll` — a wide table or a rail is SUPPOSED to extend
+ *        past the fold) or by masking it (`hidden`/`clip`). Only checking for
+ *        scrollers left the masks in: a shimmer sweep parked at `-left-1/3`
+ *        inside an `overflow-hidden` parent is never visible off-screen, but
+ *        its own box sits well outside the viewport.
+ *    Before the first two, this reported 62 findings that were decorative
+ *    circles and scrollable table headers. After them, 13 — of which every
+ *    one turned out to be a mask or a glow, which is what added the third.
  *
- * 3. `clipW` — a text leaf wider than its own box, where the box hides the
+ * 3. `decorative` — the same geometry as `past`, on an element with no text
+ *    and `pointer-events: none`. A blurred glow bleeding off the edge is a
+ *    design decision. It is reported rather than dropped, because
+ *    "decorative" is a judgement and a real element that has quietly become
+ *    `pointer-events-none` should stay visible in the output.
+ *
+ * 4. `clipW` — a text leaf wider than its own box, where the box hides the
  *    overflow AND does not end in an ellipsis. With an ellipsis it is designed
  *    truncation; without one it is a sliced word.
  *
- * 4. `clipH` — a text leaf taller than its own box, where the box hides the
+ * 5. `clipH` — a text leaf taller than its own box, where the box hides the
  *    overflow. This is the one that found the real defect: `leading-none` on
  *    `ui.text.micro` and on the whole stat ramp gives the line box exactly the
  *    font size, and a font's ink does not fit in its own em. The bottom-nav
  *    label loses 2px of Latin descender and 5px of Arabic ink.
  *
- * An earlier version of this probe tested `scrollHeight > clientHeight` on
- * every text leaf regardless of computed overflow, and reported 82 of 104
- * route/viewport pairs as findings — nearly all line-box rounding on elements
- * where nothing is hidden and text simply wraps. Overflow is only a defect
- * when something clips it, so the computed overflow is part of the test rather
- * than a filter applied afterwards. `sr-only` boxes (1x1 with hidden overflow)
- * are excluded for the same reason: they match "text bigger than its box" by
- * construction, which is the entire point of the pattern.
+ * An earlier version tested `scrollHeight > clientHeight` on every text leaf
+ * regardless of computed overflow, and reported 82 of 104 route/viewport pairs
+ * as findings — nearly all line-box rounding on elements where nothing is
+ * hidden and text simply wraps. Overflow is only a defect when something clips
+ * it, so the computed overflow is part of the test rather than a filter
+ * applied afterwards. `sr-only` boxes (1x1 with hidden overflow) are excluded
+ * for the same reason: they match "text bigger than its box" by construction,
+ * which is the entire point of the pattern.
+ *
+ * The through-line: every number this file prints was wrong once, and each
+ * exclusion is a defect it claimed to find and did not have. Treat a new
+ * finding the same way — open the element before believing the count.
  */
 
 import { chromium } from "playwright";
@@ -97,18 +112,40 @@ const LANGS = (process.env.PROBE_LANGS ?? "fr,ar").split(",");
 
 const PROBE = () => {
   const vw = document.documentElement.clientWidth;
-  const out = { scroll: document.documentElement.scrollWidth - vw, past: [], clipW: [], clipH: [] };
+  const out = {
+    scroll: document.documentElement.scrollWidth - vw,
+    past: [],
+    decorative: [],
+    clipW: [],
+    clipH: [],
+  };
   const hides = (v) => v === "hidden" || v === "clip";
 
-  const inScroller = (el) => {
+  /**
+   * An ancestor that constrains the x axis at all — `auto`/`scroll` (an
+   * intentional rail or wide table) or `hidden`/`clip` (a mask) — means this
+   * element cannot put anything past the fold on its own. Checking only for
+   * scrollers missed the masks: a shimmer sweep parked at `-left-1/3` inside
+   * an `overflow-hidden` parent is never visible off-screen, but its own box
+   * sits well outside the viewport.
+   */
+  const xConstrained = (el) => {
     for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
       const o = getComputedStyle(a).overflowX;
-      if (o === "auto" || o === "scroll") return true;
+      if (o === "auto" || o === "scroll" || hides(o)) return true;
     }
     return false;
   };
   const inSvg = (el) => el.closest("svg") !== null;
   const srOnly = (el) => el.clientWidth <= 1 || el.clientHeight <= 1;
+  /**
+   * A blurred glow bleeding off the edge is a design decision, not overflow.
+   * Counted separately rather than dropped: "decorative" is a judgement, and
+   * a real element that has quietly become `pointer-events-none` should still
+   * be visible in the output rather than silently filtered away.
+   */
+  const decorative = (el, cs) =>
+    cs.pointerEvents === "none" && (el.textContent || "").trim().length === 0;
 
   for (const el of document.querySelectorAll("body *")) {
     const cs = getComputedStyle(el);
@@ -119,12 +156,12 @@ const PROBE = () => {
     if (
       cs.position !== "fixed" &&
       !inSvg(el) &&
-      !inScroller(el) &&
+      !xConstrained(el) &&
       (r.right > vw + 1 || r.left < -1)
     ) {
-      out.past.push(
-        `<${el.tagName.toLowerCase()}> [${Math.round(r.left)}..${Math.round(r.right)}] vw=${vw}`,
-      );
+      const where = `<${el.tagName.toLowerCase()}> [${Math.round(r.left)}..${Math.round(r.right)}] vw=${vw}`;
+      const cls = (el.className || "").toString().slice(0, 60);
+      out[decorative(el, cs) ? "decorative" : "past"].push(`${where} ${cls}`);
     }
 
     const isTextLeaf = el.children.length === 0 && (el.textContent || "").trim().length > 0;
@@ -147,7 +184,7 @@ const PROBE = () => {
       }
     }
   }
-  for (const k of ["past", "clipW", "clipH"]) out[k] = [...new Set(out[k])];
+  for (const k of ["past", "decorative", "clipW", "clipH"]) out[k] = [...new Set(out[k])];
   return out;
 };
 
@@ -171,7 +208,13 @@ for (const lang of LANGS) {
       await page.waitForTimeout(Number(process.env.PROBE_SETTLE ?? 900));
       checks++;
       const r = await page.evaluate(PROBE);
-      if (r.scroll > 1 || r.past.length || r.clipW.length || r.clipH.length) {
+      if (
+        r.scroll > 1 ||
+        r.past.length ||
+        r.decorative.length ||
+        r.clipW.length ||
+        r.clipH.length
+      ) {
         rows.push({ lang, width, route, ...r });
       }
     }
@@ -186,10 +229,11 @@ console.log(
 );
 console.log(`${rows.length} route/viewport pairs with findings`);
 console.log(
-  `scroll ${rows.filter((r) => r.scroll > 1).length} · past ${total("past")} · clipW ${total("clipW")} · clipH ${total("clipH")}\n`,
+  `scroll ${rows.filter((r) => r.scroll > 1).length} · past ${total("past")} · clipW ${total("clipW")} · clipH ${total("clipH")}` +
+    ` · decorative ${total("decorative")} (reported, not counted as defects)\n`,
 );
 
-for (const kind of ["scroll", "past", "clipW", "clipH"]) {
+for (const kind of ["scroll", "past", "clipW", "clipH", "decorative"]) {
   const hit = rows.filter((r) => (kind === "scroll" ? r.scroll > 1 : r[kind].length));
   if (!hit.length) {
     console.log(`### ${kind}: none`);

@@ -1109,7 +1109,7 @@ tasks:
     owner: Chief
     # Was "BLOCKED on BG-0092, BG-0093, BG-0095, BG-0111" -- those are branch names, and
     # every one of them collides with an unrelated entry in this ledger. See BG-0117.
-    state: BLOCKED # on the two lanes still running, BG-0121 and BG-0122
+    state: READY # unblocked 2026-09-21: all four lanes merged into chief/launch-fixes-3
     depends_on: [BG-0118, BG-0119, BG-0120, BG-0121, BG-0122]
     evidence:
       - docs/engineering/POLISH_PASS_PLAN.md
@@ -1286,27 +1286,55 @@ tasks:
     area: design
     severity: P1
     owner: Chief
-    state: IN_PROGRESS
+    state: DONE # commit 3be6338, merged into chief/launch-fixes-3 at 433b50a
     depends_on: [BG-0118]
     branch: bg-0095-leagues-players # NOT ledger BG-0095, the formation-lock defect; see BG-0117
-    evidence: []
-    note: Running at the time of writing.
+    evidence:
+      - divergence across the 13 owned files 387 -> 0; repo 1534 -> 1147, a delta of exactly -387, so nothing outside the lane moved
+      - "/fantasy/players put all 539 players in the document: 37,191px -> 3,562px at 390px via a 25-row window and a pager, with api.fantasy_player_pool's keyset contract untouched"
+      - "/fantasy/top-players said \"Aucun contenu disponible\" for GW1; fantasy_top_players genuinely returns [] for an unplayed gameweek, so the empty state now names the gameweek. The hardcoded ?? 14 fallback is gone"
+      - club filter offered 21 clubs where 16 have players; chips now derive from the pool
+      - "FDR header named a 24-27 Sept gameweek \"27 sept.\"; now 24-27 sept. / 24-27 شتنبر via Intl.formatRange with MATCH_TIME_ZONE"
+      - "React #418 on /fantasy/players/$playerId: the loader warmed a server-only cache with no SSR query bridge in src/router.tsx, so the server rendered a full page and the client's first render rendered the loading state. Fixed by carrying the player through router loader data as initialData"
+      - "Latin names truncated from the wrong end in Arabic tables: dir=\"auto\" on the truncating cell, not the row or table"
+      - rankings table was 421px in a 358px wrapper at 390px, hiding Total behind a sideways scroll; table-fixed, now 358px
+      - "seven-fixture assertion PASS: 14 [data-fdr-fixture] cells across 14 team rows in all 16 combinations, FAR Rabat and Raja absent, cross-checked against the RPC"
+      - 128 combinations, 0 horizontal scroll and 0 overflow; contrast by glyph-pixel diff of two rasterised passes, 586 elements, 1 failing control
+    note: >
+      Verified against pinned real production payloads served at the browser edge, because
+      this branch calls RPCs production does not have (BG-0088) and the sandbox relay drops
+      Supabase tunnels under browser load. The harness reproduced the brief's 37,191px to the
+      pixel before any change, which is what licenses the after-numbers. Raised BG-0126 and
+      BG-0127.
 
   BG-0122:
     title: "Launch polish batch: the ten UI defects raised against the live site"
     area: design
     severity: P1
     owner: Chief
-    state: IN_PROGRESS
+    state: DONE # commit 09f53ee, merged into chief/launch-fixes-3 at 38327fa
     depends_on: []
     branch: bg-0111-launch-polish # BG-0111 was never allocated in this ledger; see BG-0117
-    evidence: []
+    evidence:
+      - "Home tiles were not truncating, they were breaking the word: [overflow-wrap:anywhere] rendered \"Classemen / t général\". grid-cols-2 sm:grid-cols-4 takes the caption box 64px -> 147px against a 108px longest caption. No label shortened"
+      - "/matches filter tabs: 411px of content in a 358px track, \"Résultats\" spanning 329-424px in a 390px viewport, scrollbar suppressed in all three engines. Now a four-column grid with no scroller"
+      - 24 French value strings, with article agreement ("La deadline est dépassée" -> "La date limite est dépassée", "le Wildcard" -> "le Joker"); Arabic block byte-identical
+      - OAUTH_PROVIDERS_ENABLED false, divider gated with the buttons; no provider is enabled in Supabase
+      - ThemeRow returns null, gating both call sites; asserted absent from body.innerText in fr/ar x signed-in/anonymous
+      - "\"Triple Capitaine\" did NOT visibly truncate at exactly 390px: 103px of text in a 108.7px box, 5.7px of margin with truncate waiting to collect it. The failure mode was removed rather than the margin"
+      - "fixture plate had two causes: club `code` is blank rather than null for most of the league so ?? never fired, and the opponent was resolved by an id that only matches in cloud mode. Now renders FUS (D), RCA (D), FAR (E)"
+      - "MatchTabs had its own truncation, \"Statistique…\"/\"Composition…\" at 390px FR, fixed at the call site"
+      - 60 screenshots and assertions-before/after.json in docs/engineering/tasks/BG-0111/evidence/, measured on its own server at 4293
     note: >
-      Desktop centring, dir="auto" on Latin names in Arabic tables, Home stat-tile clipping
-      at 390px, /matches tab overflow, fr "Deadline" -> "Date limite" and "Wildcard" ->
-      "Joker", rendering only OAuth providers actually enabled, removing the Apparence row
-      while DARK_MODE_ENABLED is false, the Triple Capitaine chip, and the pitch fixture
-      plate's missing opponent code. Running at the time of writing.
+      Test count moved 1438 -> 1453 deliberately: 15 added, none changed or removed -- 9 for
+      the club short-code derivation (blank code, a short_name that IS the code, particle
+      names like "Renaissance Sportive de Berkane" -> RSB) and 6 source-shape guards for the
+      two flags. None asserts a flag is false, so they survive a flip.
+
+      On the crest question the owner raised: the crest fits at 14px in the 18px plate band,
+      but at that size it reads as a colour signature rather than a legible badge, so the
+      letters are the legible identity and it ships as crest AND code. Crest alone needs
+      about 20px, i.e. a taller band. Raised BG-0128.
 
   BG-0123:
     title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
@@ -1356,6 +1384,16 @@ tasks:
         overflow, 0 horizontal text clipping, 13 elements past a viewport edge, and 632 vertically
         clipped text leaves. Also present on / and /matches, so this is the whole public app, not Fantasy.
       - "leading-tight (1.25) is not enough either: h1 at fs=19px lh=23.75px measures scrollHeight 31 > clientHeight 24 in Arabic"
+      - >
+        independently confirmed by BG-0122, which hit the same thing on the Home Fantasy
+        tiles from the other direction: ui.text.micro's leading-none "shaved the descenders
+        off journée/général", scrollHeight 24 against clientHeight 22, and 4 of 4 Arabic
+        captions clipped with 17px glyphs in an 11px box.
+      - >
+        on the fully integrated tree (all four lanes merged), scripts/qa/layout-probe.mjs
+        over 16 routes x 4 widths x 2 languages measures scroll 0, past 0, clipW 0,
+        decorative 0 and clipH 1200. This is the ONLY layout defect class left in the public
+        app, and it is on 82 of 128 route/viewport pairs.
     note: >
       The clipping needs three things at once and has all three: a line box no taller than the
       font size, text whose ink exceeds its own em (which is every font), and an ancestor
@@ -1381,23 +1419,137 @@ tasks:
       --bottomnav-h that a taller label has to be re-checked against.
 
   BG-0125:
-    title: Thirteen elements cross a viewport edge on the hub, My Team and top players
+    title: "Thirteen elements crossing a viewport edge: triaged, all artifacts, probe corrected"
+    area: design
+    severity: P2
+    owner: Chief
+    state: DONE # triaged 2026-09-21; no defect, the probe was wrong
+    depends_on: []
+    evidence:
+      - "the two shapes behind all thirteen: a blurred glow (pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl) and a shimmer sweep (pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg])"
+      - the sweep's parent carries overflow-hidden, so it is masked and never visible off-screen, but its own border box sits far outside the viewport
+      - the glow is a decorative bleed with no text and no pointer events
+      - "after correcting the probe, the fully integrated tree measures 0 past and 0 decorative across 128 checks (16 routes x 4 widths x 2 languages)"
+    note: >
+      Opened each one rather than reasoning about it, which is what this entry said to do,
+      and none was a defect. The probe's ancestor check only looked for overflow-x auto or
+      scroll, so it treated a MASKING ancestor (hidden/clip) as no constraint at all -- the
+      shimmer sweep is deliberately parked outside its parent and swept across. Fixed at
+      source in scripts/qa/layout-probe.mjs, which now also reports decorative bleeds in
+      their own bucket rather than dropping them, so a real element that has quietly become
+      pointer-events-none stays visible in the output.
+
+      Recorded as DONE rather than deleted: this is the third wrong answer this probe gave
+      before it gave a right one (82 findings, then 62, then 13, now 0), and that history is
+      the reason to open an element before believing a count.
+
+  BG-0126:
+    title: GameweekSelector renders its value at 1.12:1 in dark and its controls at 36px
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - "src/components/fantasy/GameweekSelector.tsx uses --fpl-ink-deep as a FOREGROUND, which is the BG-0083 defect verbatim"
+      - measured at 1.12:1 in dark by BG-0121 while verifying its own routes
+      - the increment/decrement controls are 36x36px against a 44px floor (--ui-tap-min)
+    note: >
+      Raised by BG-0121 as KIT-1 against a component it does not own. The contrast half is
+      unreachable at launch -- DARK_MODE_ENABLED is false -- but the 36px controls are live
+      in both themes, on /fantasy/points and /fantasy/top-players, and a 36px target is a
+      defect a thumb finds immediately. Same family as BG-0116: a component BG-0118 aliased
+      but did not convert call site by call site.
+
+  BG-0127:
+    title: A 32-hex-character invite code cannot be shared by voice
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - BG-0121 did the presentation work -- grouped in fours, monospaced, tabular, selectable, a copy control, and an unbroken string to the clipboard and to assistive tech
+      - the underlying value is still 32 hexadecimal characters
+    note: >
+      Presentation has gone as far as presentation can. The remaining problem is the value:
+      a league invite is a thing one person reads to another, and 32 hex characters is not
+      readable aloud in any language. The fix is a shorter, unambiguous, case-insensitive
+      code at the point it is generated, which is a backend change and therefore explicitly
+      out of the design migration's scope. Recorded so the recommendation is not lost with
+      the lane that made it.
+
+  BG-0128:
+    title: The pitch fixture plate is too short for a crest to carry club identity on its own
     area: design
     severity: P2
     owner: Chief
     state: QUEUED
-    depends_on: [BG-0121]
+    depends_on: [BG-0113]
     evidence:
-      - "fr/ar 390 and 430 /fantasy/team and /fantasy: <div> [-34..424] and <span> [-74..48] at vw=390"
-      - "fr/ar 390 and 430 /fantasy/top-players: <div> [190..414] (fr) and [-24..200] (ar) at vw=390"
-      - measured by scripts/qa/layout-probe.mjs after excluding fixed bars, SVG internals and overflow-x scrollers
+      - the crest fits at 14px inside the 18px plate band, with composed content 58px (fr) / 55px (ar) in a 68px box
+      - at 14px a crest reads as a colour signature, not a legible badge
+      - carrying identity on the crest alone needs about 20px, i.e. a taller band
     note: >
-      Document scrollWidth is clean on all 104 pairs, which is the point of the assertion:
-      html/body set overflow-x:clip, so the page never grows a scrollbar and the usual test
-      reports nothing while content is being cut. Each of the thirteen still needs to be
-      opened individually -- a full-bleed band using negative margin is correct and will look
-      identical to this probe -- so this is a list to triage, not thirteen confirmed defects.
-      Sequenced with the polish pass, which is when the screens are open anyway.
+      Answers the owner's question directly rather than leaving it implied: the plate ships
+      as crest AND code, because the letters are the legible identity at this size. Making
+      the crest sufficient on its own is a geometry change to the plate, which belongs with
+      the rest of the pitch work in the polish pass.
+
+      Compounding it, BG-0112 records that primary_color and secondary_color are null for
+      all 21 clubs in production, so even a larger crest slot has no club colour behind it.
+      Two independent reasons the crest cannot yet carry identity alone.
+
+  BG-0129:
+    title: Kit gaps found by the shell lane -- the RTL back chevron does not mirror, UiCard drops ARIA
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - "UiHeader's back chevron: its POSITION mirrors under dir=rtl but the glyph does not, so it points away from the direction it navigates"
+      - UiCard does not forward ARIA props, so a caller cannot label a card or mark it as a region
+      - six --brand-primary-as-text instances sit outside BG-0118's ownership -- common/Trans.tsx (19 call sites), common/SectionHeader.tsx (17), AccentEyebrow, WelcomeScreen, StatComparison, ConsentLine, and PlayerShirt
+    note: >
+      The chevron is the only one visible to a user today, and only in Arabic. The six
+      --brand-primary call sites are a light-mode no-op -- --brand-primary and light
+      --ui-ink-fg are the same colour -- so the substitution is safe and invisible now, and
+      is what makes those files theme-correct when DARK_MODE_ENABLED flips. BG-0118 left
+      them rather than reach outside its files, which was right.
+
+  BG-0130:
+    title: MatchTabs clips "Compositions" below about 370px
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - BG-0122 fixed the 390px case at the call site; below ~370px the label still clips
+      - needs either shorter vocabulary or a UiSegmented change, both outside a call-site fix
+    note: >
+      390px is the design floor, so this is below spec rather than at it -- but 360px phones
+      are common enough in Morocco that it is worth closing. Same shape as BG-0115: the kit
+      has no step that fits, so the screen removes content. UiSegmented owns the fix.
+
+  BG-0131:
+    title: The mock football and fantasy repositories do not share a club id space
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - reported independently by BG-0119 and BG-0122; src/backend/football/mock-repository.ts
+      - BG-0119 could not verify its club column against real club names without patching it locally, which it did, measured, and reverted
+      - it is also why every shirt in mock mode renders the default navy kit -- getKitForClub never matches
+    note: >
+      Only affects mock mode, so no user sees it. It does affect every agent and contributor
+      who verifies a Fantasy screen without production credentials, which is most of them:
+      the screens render, the club names and kits are silently wrong, and nothing says so.
+      Two separate lanes lost time to it and neither could fix it, because src/backend was
+      out of scope for both. It is in scope for nobody at the moment, which is why it is here.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
