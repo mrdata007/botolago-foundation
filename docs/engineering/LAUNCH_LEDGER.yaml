@@ -831,6 +831,30 @@ tasks:
       frontend. Publishing first breaks /fantasy for every visitor. Live production is
       unaffected today because main does not call either RPC.
 
+  BG-0100:
+    title: Match and fixture times are formatted in the browser's timezone in six places, while match cards pin Africa/Casablanca
+    area: frontend
+    severity: P1
+    owner: Builder
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - pinned to MATCH_TIME_ZONE ("Africa/Casablanca", src/lib/match-kickoff.ts:3) -- MatchCard.tsx:93,98; MatchScoreHeader.tsx:29,34; fantasy.fixtures.tsx:95; fantasy.index.tsx:70; fantasy.leagues.$leagueId.tsx:72; fpl/primitives.tsx:102
+      - NOT pinned, so browser-local -- DateStrip.tsx:71,72,73,117; matches.index.tsx:209; matches.$matchId.tsx:155; index.tsx:193
+    user_impact: >
+      Inside one page the two disagree. A match kicking off 2026-09-24 20:00Z renders as
+      21:00 on a pinned card, while the unpinned day strip groups and labels it by the
+      viewer's own timezone -- so for anyone outside UTC+1 the strip can file a match
+      under the wrong day while the card beside it shows the right time. It is an
+      internal contradiction, not merely a display preference.
+    note: >
+      The Fantasy DEADLINE is already correct and browser-independent: every surface that
+      renders it pins Africa/Casablanca, which is why the live site shows "jeudi 24 sept.,
+      19:30" for 2026-09-24T18:30Z regardless of viewer. That requirement is satisfied;
+      this entry is the neighbouring defect found while verifying it.
+      src/lib/format-time.ts is also unpinned but serves only News, which is hidden, so it
+      is low priority rather than launch-blocking.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
