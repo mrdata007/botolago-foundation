@@ -950,6 +950,96 @@ tasks:
       Deprecate once the routes stop passing it. Deliberately not removed mid-migration:
       it is load-bearing in call sites three lanes are editing right now.
 
+  BG-0106:
+    title: Signup still cannot be completed -- the confirm-signup template is still Supabase's stock default
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - live E2E 2026-09-21 -- registered a real address; the delivered mail body is "<h2>Confirm your email address</h2>" plus one verify link, ZERO digits anywhere
+      - sender noreply@mail.app.supabase.io; confirmation_sent_at set, email_confirmed_at null
+      - the UI still reads "Nous avons envoye un code a 6 chiffres"
+    question: >
+      The {{ .Token }} template edit has not taken effect -- the template being sent is
+      still the stock default. Was it saved on the "Confirm signup" template specifically,
+      and in the production project (tkewgajrljbwgwedqsxn)? Until it is, no new user can
+      reach the product except by clicking the link, and the six-digit screen is dead UI.
+    note: >
+      The link itself DOES work and does establish a session, so the account path is not
+      broken -- only the flow the product advertises.
+
+  BG-0107:
+    title: /auth/callback is not in the Supabase redirect allowlist, so profile setup and deep links are skipped
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - the client sends emailRedirectTo getCallbackUrl(next) at src/services/auth-supabase.ts:210
+      - the delivered link carries redirect_to=https://www.botolago.com -- the site ROOT, not /auth/callback
+      - Supabase falls back to the Site URL when the requested redirect is not allowlisted
+    question: >
+      Add https://botolago.com/auth/callback (and the /** wildcard) to Authentication ->
+      URL Configuration -> Redirect URLs. Until then the app's callback route never runs:
+      /auth/profile-setup is skipped for every confirmed user and the `next` deep link is
+      discarded, so everyone lands on the homepage.
+    note: >
+      The www -> apex redirect itself is fixed and working (303 -> www.botolago.com ->
+      302 -> botolago.com). BG-0093's original complaint is refuted; this is what replaced it.
+
+  BG-0108:
+    title: Production sends auth mail through Supabase's built-in service and is already rate-limited
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - sender is noreply@mail.app.supabase.io, which Supabase documents as not for production use
+      - after 2 signup emails and 1 password-reset request, POST /auth/v1/recover returned 429
+    question: >
+      A custom SMTP provider needs configuring before launch. The built-in service caps
+      signups at a handful per hour, so a launch day with real traffic locks new users out
+      of the product entirely.
+    note: >
+      The UI degrades correctly ("Trop de tentatives. Patientez un moment...") -- this is a
+      capacity and configuration problem, not a frontend one.
+
+  BG-0109:
+    title: FAR Rabat and Raja players are fully purchasable with no GW1 fixture and no warning
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0086]
+    evidence:
+      - 64 players (FAR 31, Raja 33), priced up to 11.70, active and eligible and selectable
+      - three were added to a draft with no blocker, no warning and no toast
+      - their player-detail Calendrier tab reads "Aucun contenu disponible" and both clubs are absent from the difficulty grid
+    note: >
+      A direct consequence of deferring the postponed fixture, and the right trade -- but
+      the player pool does not reflect it. A manager can spend a third of the budget on
+      players who cannot score in GW1 and gets no signal at all. The deferral is correct;
+      the pool failing to surface it is the defect. Needs a product decision as much as a
+      fix: warn, mark unavailable, or exclude.
+
+  BG-0110:
+    title: Wydad Casablanca renders as "WCA" because its short_name is a code, not a name
+    area: data
+    severity: P2
+    owner: Owner
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - app.teams.short_name = 'WCA' for Wydad Casablanca; every other club's short_name is its full name
+      - the difficulty grid reads "WCA | WCA" where peers read "AMA | Amal Tiznit"
+    note: >
+      One-row data fix, not a code change. Deliberately not patched in the UI -- a special
+      case for one club hides the inconsistency instead of removing it.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy

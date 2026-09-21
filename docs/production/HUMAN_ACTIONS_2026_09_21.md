@@ -471,6 +471,71 @@ visit as §2.1.
 
 ---
 
+## 2.4 Signup is STILL broken — re-verified live after your template fix (BG-0106/0107/0108)
+
+A full journey against `https://botolago.com` on 2026-09-21 evening. Three separate
+auth-configuration problems, all in the Supabase dashboard, none fixable in code.
+
+### 2.4.1 The `{{ .Token }}` edit has not taken effect
+
+Registering a real address still delivers the **stock Supabase default template**. The
+whole body is `<h2>Confirm your email address</h2>` plus one verify link. **Zero digits
+anywhere.** Meanwhile `/auth/verify` still asks for a six-digit code, so the screen is
+dead UI and no new user can reach the product the way the product says to.
+
+Worth checking: was it saved on the **"Confirm signup"** template specifically, and in the
+**production** project `tkewgajrljbwgwedqsxn`? Editing a different template, or a
+different project, produces exactly this.
+
+The link itself does work and does establish a session, so the account path is intact —
+only the advertised flow is broken.
+
+### 2.4.2 `/auth/callback` is not in the redirect allowlist
+
+The app asks Supabase to return users to `https://botolago.com/auth/callback`
+(`src/services/auth-supabase.ts:210`). The delivered link instead carries
+`redirect_to=https://www.botolago.com` — the **site root**. Supabase falls back to the
+Site URL when the requested redirect is not allowlisted.
+
+So the app's callback route never runs: **`/auth/profile-setup` is skipped for every
+confirmed user** and any `next` deep link is discarded. Everyone lands on the homepage.
+
+Fix: Authentication → URL Configuration → **Redirect URLs** → add
+`https://botolago.com/auth/callback` and `https://botolago.com/**`.
+
+Good news in the same check: the `www` → apex redirect is fixed and working
+(`303 → www.botolago.com → 302 → botolago.com`). The old `botolago.app` problem is gone.
+
+### 2.4.3 Auth mail goes through Supabase's built-in service, and it is already rate-limiting
+
+Sender is `noreply@mail.app.supabase.io` — the built-in service, which Supabase documents
+as **not for production use**. After two signup emails and one password reset, the reset
+endpoint returned **429**.
+
+That caps real signups at a handful per hour. On a launch day with actual traffic, new
+users are simply locked out. **Configure a custom SMTP provider before launch.** The UI
+degrades correctly ("Trop de tentatives…"), so this will look like a quiet failure rather
+than an outage — which is worse.
+
+---
+
+## 2.5 Test data to delete (BG-0090)
+
+Two accounts were created during the live journey:
+
+- **`compak2026+bg0090@gmail.com`** — confirmed, owns the squad "BG0090 Verif FC"
+  (15 players, 87.2M). This was the one permitted account and squad.
+- **`alisarhane73+bg0090@gmail.com`** — created, never confirmed, no squad and no
+  profile. Delete.
+
+`scripts/backend/fantasy-cleanup-qa-artifacts.sql` (§4.6) is the guarded path for this.
+Note its account-deletion half will refuse today: the only deletion path files a
+_request_, no worker processes it, and six tables reference `app.profiles` with
+`ON DELETE RESTRICT`. The script names which one blocks rather than letting Postgres
+throw mid-transaction.
+
+---
+
 ## 3. Security and configuration
 
 ### 3.1 Enable leaked-password protection
