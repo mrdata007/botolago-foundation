@@ -12,11 +12,13 @@ import { FplPitch } from "@/components/fpl/FplPitch";
 import { FplPlayerCard } from "@/components/fpl/FplPlayerCard";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadListTable } from "@/components/fpl/SquadListTable";
-import { FplButton, FplDeadlineLine, FplHeader, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useNextFixtures } from "@/components/fpl/useNextFixtures";
+import { ui, UiButton, UiHeader, UiSegmented } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { cn } from "@/lib/utils";
 import {
   activateChip,
   canActivateChip,
@@ -50,6 +52,31 @@ function isTeamDraftPayload(v: unknown): v is TeamDraftPayload {
 }
 
 const PICK_TEAM_CHIPS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain"];
+
+/**
+ * "Journée 14 Deadline: 24 sept. 2026 à 19:30" under the header title.
+ *
+ * `timeZone: MATCH_TIME_ZONE` is not optional (BG-0100): without it the
+ * formatter follows the viewer's browser and this line disagrees with every
+ * other kickoff and deadline on the screen.
+ */
+function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso: string }) {
+  const { t, lang } = useI18n();
+  const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: MATCH_TIME_ZONE,
+  }).format(new Date(deadlineIso));
+  return (
+    <p className={cn("mt-1 text-center", ui.text.secondary, ui.tone.onGradHeader)}>
+      {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
+      <strong className="[font-weight:var(--ui-weight-heavy)]">{formatted}</strong>
+    </p>
+  );
+}
 
 /** Derive the formation from the starting XI so a swap DEF↔MID or bench move re-slots correctly. */
 function formationOf(
@@ -133,7 +160,7 @@ function PickTeamBody() {
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
       <>
-        <FplHeader title={t("fpl.pick_team")} backTo="/fantasy" />
+        <UiHeader title={t("fpl.pick_team")} backTo="/fantasy" tone="gradient" />
         <FantasyScreenGate state={screen} next="/fantasy/team">
           <div />
         </FantasyScreenGate>
@@ -413,59 +440,59 @@ function PickTeamBody() {
 
   return (
     <>
-      <FplHeader
+      <UiHeader
         title={t("fpl.pick_team")}
         backTo="/fantasy"
-        left={
+        tone="gradient"
+        leading={
           confirmPending ? (
-            <button
-              type="button"
-              onClick={cancelChanges}
-              className="inline-flex min-h-9 items-center gap-1 rounded-[6px] bg-[color:var(--fpl-ink)] px-3 text-[14px] font-extrabold text-white"
-            >
+            <UiButton size="sm" variant="ink" onClick={cancelChanges}>
               <X className="h-4 w-4" aria-hidden />
               {t("fpl.cancel")}
-            </button>
+            </UiButton>
           ) : undefined
         }
-        right={
+        trailing={
           confirmPending ? (
-            <button
-              type="button"
+            <UiButton
+              size="sm"
+              variant="ink"
               onClick={onConfirm}
               disabled={saving}
-              className="inline-flex min-h-9 items-center gap-1 rounded-[6px] bg-[color:var(--fpl-ink)] px-3 text-[14px] font-extrabold text-[color:var(--fpl-green)] disabled:opacity-60"
+              className={cn(ui.tone.onInk, "disabled:opacity-60")}
             >
               <Check className="h-4 w-4" aria-hidden />
               {saving ? t("fpl.saving") : t("fpl.confirm")}
-            </button>
+            </UiButton>
           ) : null
         }
       >
-        <FplDeadlineLine gameweek={gameweek.number} deadlineIso={gameweek.deadline} />
-        <FplSegmented
+        <DeadlineLine gameweek={gameweek.number} deadlineIso={gameweek.deadline} />
+        <UiSegmented
           className="mt-3"
+          tone="onGradient"
           value={view}
           onChange={setView}
+          label={t("fantasy.view.toggle_label")}
           options={[
             { value: "squad", label: t("fpl.squad") },
             { value: "list", label: t("fpl.list") },
           ]}
         />
-      </FplHeader>
+      </UiHeader>
 
       <div className="px-3 pt-3">
         <FplChipsRow chips={chipViews} onSelect={deadlineLocked ? undefined : onChipSelect} />
         {chipsState.active &&
         !pendingChip &&
         (owned.snapshot?.activeChipCancellable || !isCloud) ? (
-          <button
-            type="button"
+          <UiButton
+            variant="ghost"
             onClick={() => void cancelActiveChip()}
-            className="mt-2 w-full text-center text-[12px] font-bold text-[color:var(--fpl-ink)] underline"
+            className="mt-2 underline"
           >
             {t("fantasy.chip.deactivate")}
-          </button>
+          </UiButton>
         ) : null}
       </div>
 
@@ -505,10 +532,15 @@ function PickTeamBody() {
       )}
 
       {selectedId ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] px-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
-          <FplButton variant="ink" onClick={() => setSelectedId(null)}>
+        <div
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[var(--ui-column-max)] px-4",
+            ui.safe.bottom,
+          )}
+        >
+          <UiButton variant="ink" onClick={() => setSelectedId(null)}>
             <X className="h-4 w-4" aria-hidden /> {t("fpl.cancel")} — {t("fpl.substitute")}
-          </FplButton>
+          </UiButton>
         </div>
       ) : null}
 

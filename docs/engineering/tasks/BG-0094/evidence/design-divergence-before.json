@@ -1,0 +1,782 @@
+[
+  {
+    "file": "src/lib/kits.ts",
+    "total": 95,
+    "counts": {
+      "hardColour": 95
+    }
+  },
+  {
+    "file": "src/routes/admin.news.$articleEditionId.tsx",
+    "total": 92,
+    "counts": {
+      "radiusV2": 4,
+      "typeRamp": 19,
+      "hardColour": 69
+    }
+  },
+  {
+    "file": "src/routes/fantasy.top-players.tsx",
+    "total": 85,
+    "counts": {
+      "typeRamp": 16,
+      "shadow": 1,
+      "tracking": 8,
+      "hardColour": 25,
+      "fpl": 35
+    }
+  },
+  {
+    "file": "src/styles.css",
+    "total": 81,
+    "counts": {
+      "legacySurface": 40,
+      "hardColour": 21,
+      "fpl": 20
+    }
+  },
+  {
+    "file": "src/routes/fantasy.index.tsx",
+    "total": 52,
+    "counts": {
+      "radiusV2": 1,
+      "shadow": 3,
+      "tracking": 2,
+      "hardColour": 13,
+      "fpl": 33
+    }
+  },
+  {
+    "file": "src/routes/fantasy.players.tsx",
+    "total": 52,
+    "counts": {
+      "typeRamp": 6,
+      "tracking": 1,
+      "hardColour": 5,
+      "fpl": 40
+    }
+  },
+  {
+    "file": "src/components/fpl/primitives.tsx",
+    "total": 51,
+    "counts": {
+      "shadow": 3,
+      "tracking": 2,
+      "hardColour": 10,
+      "fpl": 36
+    }
+  },
+  {
+    "file": "src/routes/admin.tsx",
+    "total": 48,
+    "counts": {
+      "radiusV2": 4,
+      "typeRamp": 12,
+      "hardColour": 32
+    }
+  },
+  {
+    "file": "src/routes/fantasy.players.$playerId.tsx",
+    "total": 45,
+    "counts": {
+      "typeRamp": 9,
+      "tracking": 3,
+      "hardColour": 3,
+      "fpl": 30
+    }
+  },
+  {
+    "file": "src/components/fantasy/MyRankCard.tsx",
+    "total": 44,
+    "counts": {
+      "typeRamp": 10,
+      "tracking": 2,
+      "hardColour": 5,
+      "fpl": 27
+    }
+  },
+  {
+    "file": "src/routes/admin.news.tsx",
+    "total": 43,
+    "counts": {
+      "typeRamp": 7,
+      "hardColour": 36
+    }
+  },
+  {
+    "file": "src/components/admin/AdminSurfaces.tsx",
+    "total": 38,
+    "counts": {
+      "radiusV2": 4,
+      "typeRamp": 4,
+      "hardColour": 30
+    }
+  },
+  {
+    "file": "src/routes/fantasy.rankings.tsx",
+    "total": 35,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 7,
+      "tracking": 1,
+      "hardColour": 1,
+      "fpl": 25
+    }
+  },
+  {
+    "file": "src/routes/fantasy.fixtures.tsx",
+    "total": 32,
+    "counts": {
+      "hardColour": 9,
+      "fpl": 23
+    }
+  },
+  {
+    "file": "src/components/welcome/WelcomeScreen.tsx",
+    "total": 28,
+    "counts": {
+      "radiusV2": 2,
+      "typeRamp": 6,
+      "hardColour": 20
+    }
+  },
+  {
+    "file": "src/components/fpl/FplPlayerCard.tsx",
+    "total": 27,
+    "counts": {
+      "hardColour": 15,
+      "fpl": 12
+    }
+  },
+  {
+    "file": "src/routes/admin.staff.tsx",
+    "total": 26,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 9,
+      "hardColour": 16
+    }
+  },
+  {
+    "file": "src/components/fantasy/Pitch.tsx",
+    "total": 24,
+    "counts": {
+      "tracking": 1,
+      "hardColour": 23
+    }
+  },
+  {
+    "file": "src/components/fantasy/LeagueTable.tsx",
+    "total": 22,
+    "counts": {
+      "radiusV2": 3,
+      "legacySurface": 3,
+      "typeRamp": 2,
+      "tracking": 2,
+      "hardColour": 12
+    }
+  },
+  {
+    "file": "src/components/fpl/FantasyScreenGate.tsx",
+    "total": 22,
+    "counts": {
+      "shadow": 5,
+      "hardColour": 6,
+      "fpl": 11
+    }
+  },
+  {
+    "file": "src/components/fantasy/RankingsPodium.tsx",
+    "total": 21,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 1,
+      "hardColour": 4,
+      "fpl": 15
+    }
+  },
+  {
+    "file": "src/components/fantasy/FantasyImportPrompt.tsx",
+    "total": 20,
+    "counts": {
+      "radiusV2": 4,
+      "legacySurface": 4,
+      "typeRamp": 5,
+      "hardColour": 7
+    }
+  },
+  {
+    "file": "src/components/fantasy/PlayerPickerDrawer.tsx",
+    "total": 19,
+    "counts": {
+      "radiusV2": 3,
+      "legacySurface": 3,
+      "typeRamp": 4,
+      "tracking": 2,
+      "hardColour": 7
+    }
+  },
+  {
+    "file": "src/components/fpl/AddPlayerScreen.tsx",
+    "total": 18,
+    "counts": {
+      "hardColour": 6,
+      "fpl": 12
+    }
+  },
+  {
+    "file": "src/routes/fantasy.points.tsx",
+    "total": 18,
+    "counts": {
+      "hardColour": 5,
+      "fpl": 13
+    }
+  },
+  {
+    "file": "src/components/fpl/TransferConfirmScreen.tsx",
+    "total": 17,
+    "counts": {
+      "shadow": 2,
+      "hardColour": 3,
+      "fpl": 12
+    }
+  },
+  {
+    "file": "src/routes/admin.staff.$principalId.tsx",
+    "total": 17,
+    "counts": {
+      "typeRamp": 8,
+      "hardColour": 9
+    }
+  },
+  {
+    "file": "src/routes/fantasy.leagues.tsx",
+    "total": 17,
+    "counts": {
+      "shadow": 1,
+      "hardColour": 5,
+      "fpl": 11
+    }
+  },
+  {
+    "file": "src/components/admin/AdminDestructiveAction.tsx",
+    "total": 16,
+    "counts": {
+      "radiusV2": 2,
+      "typeRamp": 4,
+      "hardColour": 10
+    }
+  },
+  {
+    "file": "src/components/fantasy/FantasyAccessGate.tsx",
+    "total": 15,
+    "counts": {
+      "radiusV2": 4,
+      "legacySurface": 2,
+      "typeRamp": 6,
+      "hardColour": 3
+    }
+  },
+  {
+    "file": "src/components/fantasy/CloudSyncBanner.tsx",
+    "total": 14,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 1,
+      "hardColour": 12
+    }
+  },
+  {
+    "file": "src/components/fantasy/ConflictBar.tsx",
+    "total": 14,
+    "counts": {
+      "radiusV2": 3,
+      "legacySurface": 1,
+      "shadow": 1,
+      "hardColour": 9
+    }
+  },
+  {
+    "file": "src/components/fantasy/FantasySubNav.tsx",
+    "total": 14,
+    "counts": {
+      "radiusV2": 2,
+      "legacySurface": 3,
+      "typeRamp": 2,
+      "hardColour": 7
+    }
+  },
+  {
+    "file": "src/components/fpl/PlayerActionSheet.tsx",
+    "total": 14,
+    "counts": {
+      "hardColour": 5,
+      "fpl": 9
+    }
+  },
+  {
+    "file": "src/routes/admin.news.new.tsx",
+    "total": 14,
+    "counts": {
+      "typeRamp": 7,
+      "hardColour": 7
+    }
+  },
+  {
+    "file": "src/routes/[.]lovable.oauth.consent.tsx",
+    "total": 13,
+    "counts": {
+      "radiusV2": 4,
+      "legacySurface": 1,
+      "typeRamp": 8
+    }
+  },
+  {
+    "file": "src/components/fantasy/JerseyVisual.tsx",
+    "total": 12,
+    "counts": {
+      "hardColour": 12
+    }
+  },
+  {
+    "file": "src/components/fpl/FplChipsRow.tsx",
+    "total": 12,
+    "counts": {
+      "shadow": 1,
+      "tracking": 1,
+      "hardColour": 4,
+      "fpl": 6
+    }
+  },
+  {
+    "file": "src/routes/fantasy.leagues.join.tsx",
+    "total": 12,
+    "counts": {
+      "fpl": 12
+    }
+  },
+  {
+    "file": "src/components/fantasy/PlayerShirt.tsx",
+    "total": 11,
+    "counts": {
+      "radiusV2": 1,
+      "shadow": 2,
+      "hardColour": 8
+    }
+  },
+  {
+    "file": "src/components/fpl/SquadListTable.tsx",
+    "total": 11,
+    "counts": {
+      "hardColour": 5,
+      "fpl": 6
+    }
+  },
+  {
+    "file": "src/components/ui/dropdown-menu.tsx",
+    "total": 11,
+    "counts": {
+      "typeRamp": 6,
+      "shadow": 1,
+      "physicalDir": 4
+    }
+  },
+  {
+    "file": "src/components/fantasy/DifficultyBadge.tsx",
+    "total": 10,
+    "counts": {
+      "hardColour": 2,
+      "fpl": 8
+    }
+  },
+  {
+    "file": "src/components/fantasy/UnsavedBadge.tsx",
+    "total": 10,
+    "counts": {
+      "radiusV2": 2,
+      "legacySurface": 1,
+      "shadow": 1,
+      "hardColour": 6
+    }
+  },
+  {
+    "file": "src/components/fpl/SquadBuilderScreen.tsx",
+    "total": 10,
+    "counts": {
+      "hardColour": 2,
+      "fpl": 8
+    }
+  },
+  {
+    "file": "src/components/ui/calendar.tsx",
+    "total": 10,
+    "counts": {
+      "typeRamp": 4,
+      "physicalDir": 6
+    }
+  },
+  {
+    "file": "src/routes/fantasy.leagues.$leagueId.tsx",
+    "total": 10,
+    "counts": {
+      "shadow": 1,
+      "hardColour": 2,
+      "fpl": 7
+    }
+  },
+  {
+    "file": "src/components/fantasy/GameweekSelector.tsx",
+    "total": 9,
+    "counts": {
+      "typeRamp": 1,
+      "tracking": 1,
+      "hardColour": 2,
+      "fpl": 5
+    }
+  },
+  {
+    "file": "src/components/fantasy/PlayerStatusBadge.tsx",
+    "total": 9,
+    "counts": {
+      "tracking": 1,
+      "hardColour": 2,
+      "fpl": 6
+    }
+  },
+  {
+    "file": "src/components/ui/sonner.tsx",
+    "total": 9,
+    "counts": {
+      "radiusV2": 3,
+      "legacySurface": 2,
+      "typeRamp": 4
+    }
+  },
+  {
+    "file": "src/routes/admin.approvals.tsx",
+    "total": 9,
+    "counts": {
+      "typeRamp": 4,
+      "hardColour": 5
+    }
+  },
+  {
+    "file": "src/routes/admin.audit.tsx",
+    "total": 9,
+    "counts": {
+      "typeRamp": 4,
+      "hardColour": 5
+    }
+  },
+  {
+    "file": "src/components/fpl/FplPitch.tsx",
+    "total": 8,
+    "counts": {
+      "hardColour": 3,
+      "fpl": 5
+    }
+  },
+  {
+    "file": "src/lib/error-page.ts",
+    "total": 8,
+    "counts": {
+      "hardColour": 8
+    }
+  },
+  {
+    "file": "src/routes/admin.security.tsx",
+    "total": 8,
+    "counts": {
+      "typeRamp": 3,
+      "hardColour": 5
+    }
+  },
+  {
+    "file": "src/routes/fantasy.help.tsx",
+    "total": 8,
+    "counts": {
+      "hardColour": 2,
+      "fpl": 6
+    }
+  },
+  {
+    "file": "src/routes/fantasy.profile.tsx",
+    "total": 8,
+    "counts": {
+      "shadow": 2,
+      "hardColour": 3,
+      "fpl": 3
+    }
+  },
+  {
+    "file": "src/components/fantasy/FantasyOnboarding.tsx",
+    "total": 7,
+    "counts": {
+      "radiusV2": 2,
+      "legacySurface": 1,
+      "typeRamp": 3,
+      "hardColour": 1
+    }
+  },
+  {
+    "file": "src/components/fantasy/PlayerNameplate.tsx",
+    "total": 7,
+    "counts": {
+      "hardColour": 7
+    }
+  },
+  {
+    "file": "src/components/fpl/FplStatBar.tsx",
+    "total": 7,
+    "counts": {
+      "hardColour": 1,
+      "fpl": 6
+    }
+  },
+  {
+    "file": "src/components/ui/command.tsx",
+    "total": 7,
+    "counts": {
+      "typeRamp": 5,
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/ui/select.tsx",
+    "total": 7,
+    "counts": {
+      "typeRamp": 3,
+      "shadow": 2,
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/ui/sheet.tsx",
+    "total": 7,
+    "counts": {
+      "typeRamp": 2,
+      "hardColour": 1,
+      "physicalDir": 4
+    }
+  },
+  {
+    "file": "src/routes/fantasy.create.tsx",
+    "total": 7,
+    "counts": {
+      "shadow": 1,
+      "hardColour": 1,
+      "fpl": 5
+    }
+  },
+  {
+    "file": "src/components/fantasy/SquadListToggle.tsx",
+    "total": 5,
+    "counts": {
+      "legacySurface": 3,
+      "typeRamp": 1,
+      "hardColour": 1
+    }
+  },
+  {
+    "file": "src/components/ui/alert-dialog.tsx",
+    "total": 5,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 2,
+      "hardColour": 1,
+      "physicalDir": 1
+    }
+  },
+  {
+    "file": "src/components/ui/alert.tsx",
+    "total": 5,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 2,
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/ui/table.tsx",
+    "total": 5,
+    "counts": {
+      "typeRamp": 2,
+      "physicalDir": 3
+    }
+  },
+  {
+    "file": "src/routes/fantasy.team.tsx",
+    "total": 5,
+    "counts": {
+      "hardColour": 1,
+      "fpl": 4
+    }
+  },
+  {
+    "file": "src/components/fantasy/FantasyMobileNav.tsx",
+    "total": 4,
+    "counts": {
+      "radiusV2": 3,
+      "legacySurface": 1
+    }
+  },
+  {
+    "file": "src/components/fpl/FantasyFrame.tsx",
+    "total": 4,
+    "counts": {
+      "hardColour": 2,
+      "fpl": 2
+    }
+  },
+  {
+    "file": "src/components/shell/PageBackground.tsx",
+    "total": 4,
+    "counts": {
+      "hardColour": 4
+    }
+  },
+  {
+    "file": "src/components/ui/input.tsx",
+    "total": 4,
+    "counts": {
+      "typeRamp": 3,
+      "shadow": 1
+    }
+  },
+  {
+    "file": "src/components/fantasy/FantasyUnavailableState.tsx",
+    "total": 3,
+    "counts": {
+      "legacySurface": 1,
+      "typeRamp": 2
+    }
+  },
+  {
+    "file": "src/components/ui/accordion.tsx",
+    "total": 3,
+    "counts": {
+      "typeRamp": 2,
+      "physicalDir": 1
+    }
+  },
+  {
+    "file": "src/components/ui/dialog.tsx",
+    "total": 3,
+    "counts": {
+      "typeRamp": 2,
+      "hardColour": 1
+    }
+  },
+  {
+    "file": "src/components/ui/popover.tsx",
+    "total": 3,
+    "counts": {
+      "shadow": 1,
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/ui/textarea.tsx",
+    "total": 3,
+    "counts": {
+      "typeRamp": 2,
+      "shadow": 1
+    }
+  },
+  {
+    "file": "src/components/ui/tooltip.tsx",
+    "total": 3,
+    "counts": {
+      "typeRamp": 1,
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/fantasy/RankChangeIndicator.tsx",
+    "total": 2,
+    "counts": {
+      "fpl": 2
+    }
+  },
+  {
+    "file": "src/components/ui/card.tsx",
+    "total": 2,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 1
+    }
+  },
+  {
+    "file": "src/components/ui/input-otp.tsx",
+    "total": 2,
+    "counts": {
+      "typeRamp": 1,
+      "shadow": 1
+    }
+  },
+  {
+    "file": "src/components/ui/pagination.tsx",
+    "total": 2,
+    "counts": {
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/ui/resizable.tsx",
+    "total": 2,
+    "counts": {
+      "physicalDir": 2
+    }
+  },
+  {
+    "file": "src/components/ui/tabs.tsx",
+    "total": 2,
+    "counts": {
+      "radiusV2": 1,
+      "typeRamp": 1
+    }
+  },
+  {
+    "file": "src/components/ui/toggle.tsx",
+    "total": 2,
+    "counts": {
+      "typeRamp": 1,
+      "shadow": 1
+    }
+  },
+  {
+    "file": "src/components/auth/AuthShell.tsx",
+    "total": 1,
+    "counts": {
+      "hardColour": 1
+    }
+  },
+  {
+    "file": "src/components/splash/SplashScreen.tsx",
+    "total": 1,
+    "counts": {
+      "physicalDir": 1
+    }
+  },
+  {
+    "file": "src/components/ui/badge.tsx",
+    "total": 1,
+    "counts": {
+      "typeRamp": 1
+    }
+  },
+  {
+    "file": "src/components/ui/label.tsx",
+    "total": 1,
+    "counts": {
+      "typeRamp": 1
+    }
+  },
+  {
+    "file": "src/components/ui/switch.tsx",
+    "total": 1,
+    "counts": {
+      "shadow": 1
+    }
+  }
+]

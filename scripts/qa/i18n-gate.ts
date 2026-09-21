@@ -216,7 +216,21 @@ export const BASELINES: Baselines = {
   // deliberately left in place -- the Fantasy screens are mid-migration and the
   // strings will be wanted again; delete them in the same pass that settles the
   // Fantasy copy, not before.
-  W3: 262,
+  //
+  // BG-0094 (pitch / My Team / Points): /fantasy/points now states the things
+  // it was computing but never showing -- how settled the gameweek's scoring
+  // is, who the armband actually landed on and at what multiplier, what the
+  // bench scored, what a transfer hit cost and which chip was live. Nine keys
+  // that were written for exactly this and had no call site anywhere get
+  // their first one: fantasy.points.status.live, .status.final,
+  // .effective_captain, .multiplier, .vice_takeover, .hit, .active_chip,
+  // .no_active_chip and .bench. That is the "strings will be wanted again"
+  // case above arriving, so W3 falls 262 -> 253. Nothing was orphaned in
+  // exchange. W4 is unchanged on purpose: every new branch is
+  // `cond ? t("a") : t("b")`, a chain of literal calls, including the active
+  // chip's name, which is spelled out per chip rather than interpolated from
+  // the chip key.
+  W3: 253,
   W4: 88,
 };
 
