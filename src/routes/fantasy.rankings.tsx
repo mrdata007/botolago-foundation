@@ -196,7 +196,13 @@ function RankingsPage() {
             </div>
 
             {data.rows.length === 0 ? (
-              <EmptyState>{t("fantasy.rankings.empty")}</EmptyState>
+              // "No manager matches your search" is only true if one was typed.
+              // With no public league ranked yet it was shown to every visitor,
+              // beside an empty search box, blaming them for a query they
+              // never made.
+              <EmptyState>
+                {search.trim() ? t("fantasy.rankings.empty") : t("fantasy.rankings.empty_yet")}
+              </EmptyState>
             ) : (
               <ul>
                 {data.rows.map((row) => (

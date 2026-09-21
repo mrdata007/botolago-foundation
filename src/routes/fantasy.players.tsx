@@ -14,6 +14,7 @@ import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { getKitForClub } from "@/lib/kits";
 import { useI18n } from "@/i18n/provider";
+import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Position } from "@/types/fantasy";
@@ -44,17 +45,6 @@ function PlayersRoute() {
 
 type SortKey = "points" | "form" | "price" | "ownership";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
-const WATCH_KEY = "botolago.fantasy.watchlist";
-
-function readWatch(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(window.localStorage.getItem(WATCH_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
@@ -72,17 +62,7 @@ function PlayersPage() {
   const [clubId, setClubId] = useState("");
   const [sort, setSort] = useState<SortKey>("points");
   const [compare, setCompare] = useState<string[]>([]); // up to 2
-  const [watch, setWatch] = useState<string[]>(readWatch());
-
-  const toggleWatch = (id: string) => {
-    const next = watch.includes(id) ? watch.filter((x) => x !== id) : [...watch, id];
-    setWatch(next);
-    try {
-      window.localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
-  };
+  const watchlist = useWatchlist();
   const toggleCompare = (id: string) => {
     setCompare((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
@@ -258,7 +238,7 @@ function PlayersPage() {
             const c = clubOf(p.clubId);
             const oppc = p.nextOpponentClubId ? clubOf(p.nextOpponentClubId) : undefined;
             const kit = getKitForClub(c, p.kitPattern);
-            const inWatch = watch.includes(p.id);
+            const inWatch = watchlist.isWatched(p.id);
             const inCompare = compare.includes(p.id);
             return (
               <div
@@ -301,7 +281,7 @@ function PlayersPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <button
-                    onClick={() => toggleWatch(p.id)}
+                    onClick={() => watchlist.toggle(p.id)}
                     aria-label={
                       inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
                     }
