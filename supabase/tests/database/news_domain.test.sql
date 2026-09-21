@@ -6,10 +6,15 @@ insert into app.authors (id, slug, display_name)
 values ('a4000000-0000-4000-8000-000000000001', 'botolago-editor', 'BotolaGO Editor');
 insert into app.publishers (id, slug, name, source_type, trust_status)
 values ('b4000000-0000-4000-8000-000000000001', 'botolago', 'BotolaGO', 'internal', 'trusted');
+-- Test-scoped slugs. Product taxonomy is seeded by migration now, and a
+-- fixture that claims a real slug collides with it on
+-- taxonomies_type_slug_key. Nothing below asserts on these slugs -- the
+-- fixtures are referenced by id -- so scoping them keeps every assertion
+-- intact and stops the next seeded term from breaking this file again.
 insert into app.taxonomies (id, taxonomy_type, slug, display_order)
 values
-  ('c4000000-0000-4000-8000-000000000001', 'category', 'analysis', 1),
-  ('c4000000-0000-4000-8000-000000000002', 'tag', 'botola-pro', 1);
+  ('c4000000-0000-4000-8000-000000000001', 'category', 'news-domain-test-analysis', 1),
+  ('c4000000-0000-4000-8000-000000000002', 'tag', 'news-domain-test-botola-pro', 1);
 insert into app.taxonomy_translations (taxonomy_id, language, display_name)
 values
   ('c4000000-0000-4000-8000-000000000001', 'fr', 'Analyse'),

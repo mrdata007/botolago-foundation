@@ -99,12 +99,20 @@ set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
--- Seed one club and its Arabic, French and abbreviated forms, exactly as the
--- curated alias set does.
+-- Catalog setup runs as the owner, not as service_role: the whole point of
+-- this schema is that service_role holds no direct table privilege, so an
+-- insert under that role is correctly denied.
+reset role;
 insert into app.teams (slug, name, short_name, code, active)
 values ('news-engine-test-club', 'News Engine Test Club', 'NETC', 'NETC', true)
 on conflict (slug) do nothing;
 
+set local role service_role;
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+-- Seed its Arabic, French and abbreviated forms, exactly as the curated alias
+-- set does, through the service-role RPC.
 select api.news_engine_upsert_alias(
   'team', (select id from app.teams where slug = 'news-engine-test-club'),
   'نادي الاختبار الرياضي', 'ar', 1.0, 'seed'
