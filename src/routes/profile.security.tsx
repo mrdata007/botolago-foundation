@@ -13,6 +13,7 @@ import {
   getAssuranceLevels,
   isAal2,
   listVerifiedTotpFactors,
+  toQrDataUrl,
   unenrollFactor,
   verifyTotpFactor,
   type AssuranceLevels,
@@ -44,11 +45,6 @@ function errorKey(code: MfaErrorCode): TranslationKey {
     default:
       return "auth.mfa.error.generic";
   }
-}
-
-/** The QR payload from `enroll()` is raw SVG markup; encode it for a `data:` URI `src`. */
-function qrDataUrl(qrCodeSvg: string): string {
-  return `data:image/svg+xml;utf-8,${encodeURIComponent(qrCodeSvg)}`;
 }
 
 function SecurityPage() {
@@ -192,7 +188,7 @@ function SecurityPage() {
 
           <div className="mt-4 flex justify-center">
             <img
-              src={qrDataUrl(enrollment.qrCodeSvg)}
+              src={toQrDataUrl(enrollment.qrCodeSvg)}
               alt={t("auth.mfa.scan_title")}
               className="h-44 w-44 rounded-xl border border-[var(--border-subtle,rgba(0,0,0,0.06))] bg-white p-2"
             />
