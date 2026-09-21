@@ -558,8 +558,8 @@ tasks:
     title: Signup cannot be completed on botolago.com -- the verify screen asks for a 6-digit code that is never sent
     area: auth
     severity: P0
-    owner: HALTED_FOR_INPUT
-    state: HALTED_FOR_INPUT
+    owner: Owner
+    state: RESOLVED_BY_OWNER # 2026-09-21 -- adding {{ .Token }} to the Supabase confirm-signup template; the six-digit UI stays
     depends_on: []
     evidence:
       - live QA 2026-09-21 on https://botolago.com with two real new accounts
@@ -576,8 +576,8 @@ tasks:
     title: The confirmation link lands on www.botolago.app, a second deployment, so the session is created on the wrong origin
     area: auth
     severity: P0
-    owner: HALTED_FOR_INPUT
-    state: HALTED_FOR_INPUT
+    owner: Owner
+    state: RESOLVED_BY_OWNER # 2026-09-21 -- Site URL and redirect allow-list now set to botolago.com; www.botolago.app stays, do not touch
     depends_on: []
     evidence:
       - signup POST requests redirect_to=https://botolago.com/auth/callback, Supabase overrides it with its configured Site URL
@@ -625,6 +625,44 @@ tasks:
     note: >
       Largely mooted if News ships hidden (BG-0091), but the split-source defect is real and
       returns the moment News is switched back on.
+
+  BG-0097:
+    title: Rotate the credentials recorded in FANTASY_LAUNCH_HARDENING_2026_09_18 section 1
+    area: security
+    severity: P2
+    owner: Owner
+    state: DEFERRED # owner decision 2026-09-21 -- post-launch, explicitly not blocking
+    depends_on: []
+    note: >
+      They were written into a document in the repository, so treat them as disclosed
+      regardless of who has read it. Deferred, not dismissed.
+
+  BG-0098:
+    title: Set SUPABASE_URL and the matching service-role key in the Lovable hosting environment
+    area: config
+    severity: P2
+    owner: Owner
+    state: DEFERRED # owner decision 2026-09-21 -- post-launch, explicitly not blocking
+    depends_on: []
+
+  BG-0099:
+    title: GW1 deadline stays as stored; automation is on, so the deadline may realign itself before 2026-09-23 22:30Z
+    area: fantasy
+    severity: P2
+    owner: Owner
+    state: DECIDED # 2026-09-21 -- leave as stored, no manual realign, no users expected this week
+    depends_on: []
+    evidence:
+      - app_private.fantasy_guard_deadline_change raises PT409 once statement_timestamp() >= old.deadline_at
+      - so from 2026-09-23T22:30:00Z the GW1 deadline is immutable to the orchestrator, the realign script and any manual UPDATE alike
+      - FOOTBALL_CURRENT_SCHEDULE_ENABLED and FANTASY_AUTOMATION_ENABLED are now both set
+    note: >
+      The two decisions interact. If SportsMonks publishes all eight real kickoffs before
+      that instant, the hourly orchestrator will rewrite deadline_at/starts_at/ends_at by
+      itself -- a realign, just an automatic one, and strictly later rather than earlier.
+      If they publish after it, assignment kickoffs realign while the deadline and window
+      stay stale, and nothing short of a migration altering the trigger can correct them.
+      Recorded as the owner's call.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6

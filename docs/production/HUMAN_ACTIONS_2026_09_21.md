@@ -10,6 +10,68 @@ it, so you can re-check anything before you act on it.
 
 ---
 
+## Owner decisions recorded 2026-09-21
+
+- **GW1 deadline: leave as stored. No realign.** No users are expected this
+  week. §0.2 below is therefore **not** to be run — it is kept for reference and
+  because the situation changes if kickoffs publish. Read §0.4 first: automation
+  is now on, and that interacts with this decision.
+- **`FANTASY_AUTOMATION_ENABLED` and `FOOTBALL_CURRENT_SCHEDULE_ENABLED`: set.**
+- **`ELBOTOLA_SCHEDULE_ENABLED` and `GNEWS_SCHEDULE_ENABLED`: stay off.**
+  Confirmed — the News stand-down wins. §1.3 and §1.4 are settled, not open.
+- **Signup: email-template fix.** `{{ .Token }}` is being added to the Supabase
+  confirmation template and the existing six-digit UI stays. §2.1 is settled.
+- **Site URL and redirect allow-list: now set to `botolago.com`.** §2.2 is done.
+- **`www.botolago.app` stays for now — do not touch it.**
+- **Credential rotation (§3.2) and the Lovable service-role `SUPABASE_URL`
+  (§3.3): deferred to post-launch.** Not blocking; marked `DEFERRED` in the
+  ledger.
+
+---
+
+### 0.4 One consequence of switching automation on, given "no realign"
+
+These two decisions interact, and the interaction is not obvious.
+
+**The deadline may now move by itself, without anyone running anything.**
+`FOOTBALL_CURRENT_SCHEDULE_ENABLED` ingests real kickoffs daily at 07:43 UTC;
+`FANTASY_AUTOMATION_ENABLED` runs `api.service_sync_fantasy_calendar` hourly. If
+SportsMonks publishes all eight real kickoffs **before** Wednesday 22:30 UTC,
+the orchestrator will realign the assignments _and_ rewrite
+`deadline_at`/`starts_at`/`ends_at`. That is a realign — just an automatic one.
+
+It moves in the safe direction. The real matches are on 2026-09-24, so
+`kickoff − 90 minutes` is necessarily **later** than the stored 2026-09-23
+22:30 UTC: managers would get more time, never less.
+
+**After Wednesday 22:30 UTC the deadline becomes immutable — at the database
+level, not by convention.** `app_private.fantasy_guard_deadline_change` is a
+trigger on `app.fantasy_gameweeks`:
+
+```sql
+if old.status <> 'open' or statement_timestamp() >= old.deadline_at then
+  raise exception using errcode = 'PT409', message = 'fantasy_gameweek_locked';
+end if;
+```
+
+So from that instant, **nothing** can change GW1's deadline: not the
+orchestrator, not `fantasy-realign-gameweek-calendar.sql` (which guards on the
+same condition), not a hand-written `UPDATE` in the SQL editor. Only a migration
+that alters or drops that trigger could, and that is a much larger decision.
+
+What that leaves, if kickoffs publish after Wednesday 22:30 UTC: the assignment
+kickoffs realign to the real times (that step is not deadline-gated), while
+`deadline_at` stays 2026-09-23 22:30 UTC and `starts_at`/`ends_at` stay
+2026-09-24 00:00–06:00 UTC. Squads would lock well before the first match, and
+the stored window would no longer contain the fixtures it is supposed to cover.
+
+Given that no users are expected this week, that may be entirely acceptable —
+it is your call and it is recorded as made. Flagging it only because "leave as
+stored" and "automation on" cannot both hold once the provider publishes, and
+the door closes for good on Wednesday at 22:30 UTC.
+
+---
+
 ## 0. Before Wednesday 2026-09-23 22:30 UTC — the GW1 deadline
 
 **This is the only item with a hard clock on it.**
@@ -85,7 +147,7 @@ their squads roughly a day early — and the lifecycle worker separately refuses
 to freeze a gameweek whose fixture kickoff differs from its assignment
 (`fantasy_fixture_resolution_required`), which blocks the gameweek entirely.
 
-### 0.2 Realigning GW1 by hand
+### 0.2 Realigning GW1 by hand — NOT TO BE RUN (owner decision: leave as stored)
 
 Use `scripts/backend/fantasy-realign-gameweek-calendar.sql`. It derives the
 deadline from the ruleset (90 minutes before the first kickoff); it never
@@ -268,7 +330,7 @@ Evidence for "off": `app_private.fantasy_job_runs` has 0 rows; the last football
 ingestion run was 2026-09-18 10:06 UTC; the last news ingestion run was
 2026-09-18 04:42 UTC (18 runs total, none since).
 
-### 1.1 `FANTASY_AUTOMATION_ENABLED` — **set this**
+### 1.1 `FANTASY_AUTOMATION_ENABLED` — **DONE, set by the owner 2026-09-21**
 
 |                |                                                                                                                                                                                                                   |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -282,7 +344,7 @@ Note the ordering trap: switching this on does **not** retroactively fix GW1
 (see §0.1). Do §0.2 as well unless you have confirmed all eight real kickoffs
 landed before Wednesday 22:30 UTC.
 
-### 1.2 `FOOTBALL_CURRENT_SCHEDULE_ENABLED` — **set this, but it needs a second value**
+### 1.2 `FOOTBALL_CURRENT_SCHEDULE_ENABLED` — **DONE, set by the owner 2026-09-21** (still needs the canary run id below)
 
 |                |                                                                                                                                          |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -299,12 +361,10 @@ the current implementation against what was verified at that run, and refuses to
 proceed if either has changed since. If you set the schedule variable without
 the canary id, the run will fail closed rather than ingest unverified code.
 
-### 1.3 `ELBOTOLA_SCHEDULE_ENABLED` — **DO NOT SET. Confirm with me first.**
+### 1.3 `ELBOTOLA_SCHEDULE_ENABLED` — **SETTLED: stays off.**
 
-The sweep asks for this to be switched on. **That contradicts your decision of
-2026-09-21 to unpublish the link-out articles and hide News for launch.** I have
-assumed the later decision wins and built the News stand-down accordingly; this
-variable stays off.
+The sweep asked for this to be switched on. The owner confirmed on 2026-09-21
+that the News stand-down wins and this variable stays off.
 
 For the record, the schedule is already off in two ways now: the variable is
 unset, and the stand-down removes the `schedule:` trigger from
@@ -335,7 +395,7 @@ Found by a live QA run on 2026-09-21 using two real new accounts. **A new user
 cannot currently complete signup.** Both accounts had to be confirmed by
 invoking the Supabase verify URL outside the browser.
 
-### 2.1 The verify screen asks for a code that is never sent — **decision needed**
+### 2.1 The verify screen asks for a code that is never sent — **SETTLED: template fix**
 
 `/auth/verify` renders "Nous avons envoyé un code à 6 chiffres à …" and a
 six-box code input. The only mail Supabase sends is a magic link containing no
@@ -356,7 +416,7 @@ you want?**
 I am not picking for you: one is a template edit you own, the other changes what
 the product does.
 
-### 2.2 The confirmation link lands on the wrong domain — **fix in Supabase**
+### 2.2 The confirmation link lands on the wrong domain — **DONE by the owner 2026-09-21**
 
 The signup request asks for `redirect_to=https://botolago.com/auth/callback`.
 Supabase overrides it with the project's configured **Site URL**, and the
@@ -394,13 +454,13 @@ visit as §2.1.
 Supabase → Authentication → Password security → enable "Leaked password
 protection". Currently a WARN from the Supabase advisor. One toggle.
 
-### 3.2 Rotate the credentials in the hardening doc
+### 3.2 Rotate the credentials in the hardening doc — DEFERRED to post-launch
 
 `docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §1` (BG-0021). They were written
 into a document in the repository, so treat them as disclosed regardless of who
 has read it. Rotate, then update whatever consumes them.
 
-### 3.3 Set `SUPABASE_URL` and the matching service-role key in Lovable
+### 3.3 Set `SUPABASE_URL` and the matching service-role key in Lovable — DEFERRED to post-launch
 
 BG-0060. The Lovable hosting environment needs both, and the key must match the
 URL — a service-role key from a different project fails in ways that look like
