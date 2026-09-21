@@ -102,8 +102,13 @@ export interface Gameweek {
   status?: FantasyGameweekStatus;
   pointsState?: FantasyPointsState;
   rankingAvailable?: boolean;
-  averagePoints: number;
-  highestPoints: number;
+  /**
+   * BG-0075 — the gameweek-wide average and highest team score. `null` while no
+   * team has been scored; never 0, which would read as "everybody scored
+   * nothing". Populated from `api.fantasy_gameweek_summary`.
+   */
+  averagePoints: number | null;
+  highestPoints: number | null;
   chipActive?: LocalizedString;
 }
 
