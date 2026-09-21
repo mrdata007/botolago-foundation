@@ -19,6 +19,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
 import { Section } from "@/components/common/Section";
 import { FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
@@ -37,6 +38,7 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
@@ -104,8 +106,10 @@ function HomePage() {
  * BotolaGO Home (Accueil) — dashboard redesign (BG-0012).
  *
  * A genuine "control center" landing screen, not a duplicate of the News
- * page. Fixed structure, styled with the same semantic tokens/surfaces as
- * the Fantasy design system (`--brand-*`, `surface-*`, `shadow-*`):
+ * page. Fixed structure, now drawn in the product design language: the UI
+ * kit's type scale, 6px radii, opaque `--ui-surface` cards and one shadow
+ * token — no V2 glass (`surface-4`/`surface-2`), no Tailwind type ramp and
+ * no responsive type steps, which the language never takes:
  *
  *   1. Compact greeting        — eyebrow + name + gameweek/date, no giant hero
  *   2. Matches                 — live/upcoming, score-first cards
@@ -215,19 +219,21 @@ function HomeContent() {
         )}
       >
         <div className="inline-flex items-center gap-1.5">
-          <Flame className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]" aria-hidden />
-          <span className="text-[11px] font-black uppercase tracking-[0.16em] text-brand">
-            {greeting}
-          </span>
+          <Flame className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
+          {/* `ui.text.label` replaces the V2 eyebrow idiom
+              (`text-[11px] font-black uppercase tracking-[0.16em]`): the
+              language has one label token, and its tracking is `ltr:`-only so
+              Arabic is never letter-spaced (BG-0069). */}
+          <span className={cn(ui.text.label, ui.tone.ink)}>{greeting}</span>
         </div>
         {/* The visible line is the manager's name, which says nothing about the
             page. Crawlers and screen-reader users get a descriptive H1 instead,
             and the name keeps its exact visual treatment below it. */}
         <h1 className="sr-only">{HOME_TITLE}</h1>
-        <div className="mt-1.5 truncate text-[22px] font-black leading-[1.1] tracking-tight text-foreground sm:text-2xl">
+        <div className={cn("mt-1.5 truncate", ui.text.hero, ui.tone.default)}>
           {user?.displayName?.trim() || summaryQ.data?.managerName || "Manager"}
         </div>
-        <p className="mt-1 truncate text-[13px] text-[color:var(--text-secondary)]">
+        <p className={cn("mt-1 truncate", ui.text.meta, ui.tone.muted)}>
           {gwQ.data ? `${t("home.gameweek")} ${gwQ.data.number}` : ""}
           {gwQ.data ? " · " : ""}
           <span className="capitalize">{dateLine}</span>
@@ -280,7 +286,13 @@ function HomeContent() {
         ) : source === "guest" ? (
           <Link
             to={canCreate ? "/fantasy/create" : "/fantasy"}
-            className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+            className={cn(
+              "flex min-h-24 items-center justify-center px-4 text-center",
+              ui.surface.card,
+              ui.text.bodyStrong,
+              ui.tone.ink,
+              ui.focus,
+            )}
           >
             {t(canCreate ? "fantasy.create.title" : "fantasy.title")}
           </Link>
@@ -302,7 +314,13 @@ function HomeContent() {
         ) : summaryQ.isSuccess && summaryQ.data === null ? (
           <Link
             to={canCreate ? "/fantasy/create" : "/fantasy"}
-            className="surface-4 flex min-h-24 items-center justify-center rounded-2xl px-4 text-center text-sm font-black text-[color:var(--brand-primary)]"
+            className={cn(
+              "flex min-h-24 items-center justify-center px-4 text-center",
+              ui.surface.card,
+              ui.text.bodyStrong,
+              ui.tone.ink,
+              ui.focus,
+            )}
           >
             {t(canCreate ? "fantasy.create.title" : "fantasy.title")}
           </Link>
@@ -316,13 +334,15 @@ function HomeContent() {
               alertsQ.data.length > 0 && (
                 <>
                   <div className="mb-1.5 inline-flex items-center gap-1.5">
-                    <Bell
-                      className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]"
-                      aria-hidden
+                    <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
+                    {/* `home.fantasy_alerts` carries `{accent}` markers, so
+                        it must go through <Trans> — rendered raw it prints
+                        the literal markers on screen. */}
+                    <Trans
+                      text={t("home.fantasy_alerts")}
+                      className={cn(ui.text.label, ui.tone.muted)}
+                      accentClassName={ui.tone.ink}
                     />
-                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                      {t("home.fantasy_alerts")}
-                    </span>
                   </div>
                   <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
                 </>
@@ -386,32 +406,61 @@ function HomeContent() {
                 return (
                   <div
                     key={row.clubId}
-                    className="flex items-center gap-2.5 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[color:var(--surface)] px-3 py-2"
+                    className={cn("flex items-center gap-2.5 px-3 py-2", ui.surface.card)}
                   >
                     <span
-                      className="w-4 shrink-0 text-center font-mono text-xs font-black tabular-nums text-[color:var(--text-muted)]"
+                      className={cn(
+                        "w-4 shrink-0 text-center font-mono",
+                        ui.text.meta,
+                        "[font-weight:var(--ui-weight-heavy)]",
+                        ui.text.tabular,
+                        ui.tone.muted,
+                      )}
                       aria-hidden
                     >
                       {row.position}
                     </span>
                     <ClubCrest club={club} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">
+                    <span
+                      className={cn(
+                        "min-w-0 flex-1 truncate",
+                        ui.text.body,
+                        "[font-weight:var(--ui-weight-heavy)]",
+                        ui.tone.default,
+                      )}
+                    >
                       {tr(club.shortName)}
                     </span>
                     <span
-                      className="w-7 shrink-0 text-center text-[11px] tabular-nums text-[color:var(--text-muted)]"
+                      className={cn(
+                        "w-7 shrink-0 text-center",
+                        ui.text.micro,
+                        ui.text.tabular,
+                        ui.tone.muted,
+                      )}
                       aria-label={t("matches.table.played")}
                     >
                       {row.played}
                     </span>
                     <span
-                      className="w-8 shrink-0 text-center text-[11px] tabular-nums text-[color:var(--text-muted)]"
+                      className={cn(
+                        "w-8 shrink-0 text-center",
+                        ui.text.micro,
+                        ui.text.tabular,
+                        ui.tone.muted,
+                      )}
                       aria-label={t("matches.table.goal_difference")}
                     >
                       {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
                     </span>
                     <span
-                      className="w-8 shrink-0 text-end text-sm font-black tabular-nums text-foreground"
+                      className={cn(
+                        "w-8 shrink-0 text-end",
+                        ui.text.body,
+                        "[font-weight:var(--ui-weight-hero)]",
+                        ui.text.tabular,
+                        ui.tone.default,
+                      )}
                       aria-label={t("matches.table.points")}
                     >
                       {row.points}
@@ -446,14 +495,19 @@ function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
     <Link
       to={to}
       className={cn(
-        "inline-flex min-h-9 items-center gap-0.5 rounded-lg px-2 py-1.5 text-xs font-semibold",
-        "text-[color:var(--brand-accent)] transition-colors duration-[var(--duration-quick)]",
-        "hover:bg-[color:color-mix(in_oklab,var(--brand-accent)_10%,transparent)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
+        "inline-flex items-center gap-0.5 px-2 py-1.5",
+        "min-h-[var(--ui-tap-min)]",
+        ui.radius.control,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+        ui.tone.ink,
+        "transition-colors duration-[var(--duration-quick)]",
+        "hover:bg-[color:var(--ui-surface-sunken)]",
+        ui.focus,
       )}
     >
       {t("home.view_all")}
-      <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+      <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
     </Link>
   );
 }
@@ -471,20 +525,32 @@ function DiscoveryLink({
     <Link
       to={to}
       className={cn(
-        "surface-2-interactive flex items-center gap-2.5 px-3.5 py-3",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        "flex items-center gap-2.5 px-3.5 py-3",
+        "min-h-[var(--ui-row-min)]",
+        ui.surface.card,
+        "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+        ui.focus,
       )}
     >
       <span
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-inner"
-        style={{ backgroundImage: "var(--bg-brand-gradient)" }}
+        className={cn(
+          "grid h-9 w-9 shrink-0 place-items-center",
+          ui.radius.control,
+          "text-[color:var(--ui-ink-deep)]",
+        )}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
         aria-hidden
       >
         <Icon className="h-4 w-4" aria-hidden />
       </span>
-      <span className="truncate text-sm font-black text-foreground">{label}</span>
+      {/* Wraps rather than truncates: at 390px the two-up tile leaves ~75px
+          for the label, and "Actualités" / "الملف الشخصي" do not fit on one
+          line at the language's 15px body step. */}
+      <span className={cn("min-w-0 flex-1 leading-tight", ui.text.bodyStrong, ui.tone.default)}>
+        {label}
+      </span>
       <ChevronRight
-        className="ms-auto h-4 w-4 shrink-0 text-[color:var(--text-muted)]"
+        className={cn("ms-auto h-4 w-4 shrink-0 rtl:rotate-180", ui.tone.muted)}
         aria-hidden
       />
     </Link>

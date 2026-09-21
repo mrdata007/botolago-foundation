@@ -22,6 +22,8 @@ import {
 } from "@/backend/auth/mfa";
 import { MfaError, type MfaErrorCode } from "@/backend/auth/mfa-errors";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { ui, UiButton, UiCard } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile/security")({
   head: () => ({
@@ -167,54 +169,75 @@ function SecurityPage() {
 
   return (
     <AppShell>
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand whitespace-pre-wrap">{t("auth.mfa.title")}</span>
+      <h1 className={cn("pt-2", ui.text.title, ui.tone.ink)}>
+        <span className="whitespace-pre-wrap">{t("auth.mfa.title")}</span>
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t("auth.mfa.subtitle")}</p>
+      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.mfa.subtitle")}</p>
 
       {IS_MOCK_AUTH ? (
-        <div className="mt-6 rounded-2xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 p-5 text-sm text-muted-foreground shadow-sm">
+        <UiCard padding="lg" className={cn("mt-6", ui.text.body, ui.tone.muted)}>
           {t("auth.mfa.demo_unavailable")}
-        </div>
+        </UiCard>
       ) : loading ? (
-        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className={cn("mt-6 flex items-center gap-2", ui.text.body, ui.tone.muted)}>
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           {t("auth.mfa.loading")}
         </div>
       ) : enrollment ? (
-        <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 p-5 shadow-sm">
-          <h2 className="text-sm font-bold text-foreground">{t("auth.mfa.scan_title")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{t("auth.mfa.scan_body")}</p>
+        <UiCard as="section" padding="lg" className="mt-6 overflow-hidden">
+          <h2 className={cn(ui.text.section, ui.tone.default)}>{t("auth.mfa.scan_title")}</h2>
+          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.mfa.scan_body")}</p>
 
           <div className="mt-4 flex justify-center">
             <img
               src={toQrDataUrl(enrollment.qrCodeSvg)}
               alt={t("auth.mfa.scan_title")}
-              className="h-44 w-44 rounded-xl border border-[var(--border-subtle,rgba(0,0,0,0.06))] bg-white p-2"
+              className={cn(
+                "h-44 w-44 border p-2",
+                ui.radius.control,
+                "border-[color:var(--ui-rule)] bg-[color:var(--ui-surface)]",
+              )}
             />
           </div>
 
           <div className="mt-4">
-            <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <div className={cn("mb-1", ui.text.label, ui.tone.muted)}>
               {t("auth.mfa.secret_label")}
             </div>
             <div className="flex items-center gap-2">
               {/* dir="ltr" so bidi reordering can never scramble the secret
-                  for an Arabic (RTL) reader typing it in manually. */}
+                  for an Arabic (RTL) reader typing it in manually. The
+                  `ltr:` prefix on the tracking is the BG-0069 rule: this
+                  element is Latin-only, but the class must still say so. */}
               <code
                 dir="ltr"
-                className="min-w-0 flex-1 truncate rounded-xl border border-input bg-muted/50 px-3 py-2 text-start text-xs font-mono tracking-wider"
+                className={cn(
+                  "min-w-0 flex-1 truncate px-3 py-2 text-start font-mono ltr:tracking-wider",
+                  ui.radius.control,
+                  ui.rule.all,
+                  ui.surface.sunken,
+                  ui.text.meta,
+                )}
               >
                 {enrollment.secret}
               </code>
               <button
                 type="button"
                 onClick={copySecret}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-input bg-background text-foreground/80 hover:bg-muted"
+                className={cn(
+                  "inline-flex shrink-0 items-center justify-center",
+                  ui.space.tap,
+                  ui.radius.control,
+                  ui.rule.all,
+                  ui.surface.card,
+                  ui.tone.default,
+                  ui.focus,
+                  "hover:bg-[color:var(--ui-surface-sunken)]",
+                )}
                 aria-label={t("auth.mfa.secret_copy")}
               >
                 {copied ? (
-                  <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+                  <Check className="h-4 w-4 text-[color:var(--ui-positive)]" aria-hidden />
                 ) : (
                   <Copy className="h-4 w-4" aria-hidden />
                 )}
@@ -223,7 +246,7 @@ function SecurityPage() {
             <p
               role="status"
               aria-live="polite"
-              className="mt-1 min-h-[14px] text-[11px] text-emerald-700"
+              className={cn("mt-1 min-h-[14px]", ui.text.micro, "text-[color:var(--ui-positive)]")}
             >
               {copied ? t("auth.mfa.secret_copied") : ""}
             </p>
@@ -231,9 +254,7 @@ function SecurityPage() {
 
           <form onSubmit={submitVerification} noValidate className="mt-5 grid gap-3">
             <div className="flex flex-col items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t("auth.mfa.code_label")}
-              </label>
+              <label className={cn(ui.text.label, ui.tone.muted)}>{t("auth.mfa.code_label")}</label>
               <InputOTP
                 maxLength={6}
                 value={code}
@@ -257,51 +278,54 @@ function SecurityPage() {
                 <p
                   role="alert"
                   aria-live="polite"
-                  className="text-xs font-semibold text-destructive"
+                  className={cn(
+                    ui.text.meta,
+                    "[font-weight:var(--ui-weight-heavy)] text-[color:var(--ui-negative)]",
+                  )}
                 >
                   {t(error)}
                 </p>
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <UiButton type="submit" disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {t("auth.mfa.verify_cta")}
-            </button>
-            <button
-              type="button"
+            </UiButton>
+            <UiButton
+              variant="outline"
               onClick={cancelEnrollment}
               disabled={submitting}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-input bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="text-[color:var(--ui-on-surface)]"
             >
               {t("auth.mfa.cancel_cta")}
-            </button>
+            </UiButton>
           </form>
-        </section>
+        </UiCard>
       ) : (
-        <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 p-5 shadow-sm">
+        <UiCard as="section" padding="lg" className="mt-6 overflow-hidden">
           <div className="flex items-start gap-3">
             <span
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                enrolled ? "bg-emerald-500/15 text-emerald-700" : "bg-muted text-foreground/70"
-              }`}
+              className={cn(
+                "grid h-10 w-10 shrink-0 place-items-center",
+                ui.radius.control,
+                enrolled
+                  ? "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive)]"
+                  : cn(ui.surface.sunken, ui.tone.muted),
+              )}
               aria-hidden
             >
               {enrolled ? <ShieldCheck className="h-5 w-5" /> : <ShieldOff className="h-5 w-5" />}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-foreground">
+              <div className={cn(ui.text.bodyStrong, ui.tone.default)}>
                 {enrolled ? t("auth.mfa.enabled_title") : t("auth.mfa.title")}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
                 {enrolled ? t("auth.mfa.enabled_body") : t("auth.mfa.disabled_body")}
               </p>
               {enrolled && factors[0] && (
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className={cn("mt-1", ui.text.micro, ui.tone.muted)}>
                   {t("auth.mfa.enabled_since")}{" "}
                   {new Date(factors[0].createdAt).toLocaleDateString()}
                 </p>
@@ -310,10 +334,20 @@ function SecurityPage() {
           </div>
 
           {levels && (
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2 text-xs">
-              <span className="font-semibold text-muted-foreground">{t("auth.mfa.aal_label")}</span>
+            <div
+              className={cn(
+                "mt-4 flex items-center justify-between gap-3 px-3 py-2",
+                ui.radius.control,
+                ui.surface.sunken,
+                ui.text.meta,
+              )}
+            >
+              <span className={ui.tone.muted}>{t("auth.mfa.aal_label")}</span>
               <span
-                className={`font-bold ${sessionIsAal2 ? "text-emerald-700" : "text-foreground"}`}
+                className={cn(
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  sessionIsAal2 ? "text-[color:var(--ui-positive)]" : ui.tone.default,
+                )}
               >
                 {sessionIsAal2 ? t("auth.mfa.aal2_value") : t("auth.mfa.aal1_value")}
               </span>
@@ -321,30 +355,29 @@ function SecurityPage() {
           )}
 
           {!enrolled && (
-            <button
-              type="button"
-              onClick={startEnrollment}
-              disabled={submitting}
-              className="mt-4 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <UiButton className="mt-4" onClick={startEnrollment} disabled={submitting}>
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
                 <KeyRound className="h-4 w-4" aria-hidden />
               )}
               {t("auth.mfa.enroll_cta")}
-            </button>
+            </UiButton>
           )}
           {error && !enrolled && (
             <p
               role="alert"
               aria-live="polite"
-              className="mt-2 text-xs font-semibold text-destructive"
+              className={cn(
+                "mt-2",
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-heavy)] text-[color:var(--ui-negative)]",
+              )}
             >
               {t(error)}
             </p>
           )}
-        </section>
+        </UiCard>
       )}
     </AppShell>
   );
