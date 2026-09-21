@@ -1059,6 +1059,57 @@ tasks:
       One-row data fix, not a code change. Deliberately not patched in the UI -- a special
       case for one club hides the inconsistency instead of removing it.
 
+  BG-0112:
+    title: Club colours do not exist in production data, so kit-coloured shirts and crest chips cannot be rendered from it
+    area: data
+    severity: P2
+    owner: Owner
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - app.teams across 21 active clubs -- primary_color null 21/21, secondary_color null 21/21
+      - code null 13/21, so a short-code fallback fails for most of the league
+      - crest_asset_id populated 21/21, and api.fantasy_player_pool already returns crestAssetId per player
+      - short_name equals name for 20/21; the exception is Wydad Casablanca, whose short_name is the literal string "WCA" (BG-0110)
+    note: >
+      Raised by the polish standard, which asks for kit-coloured shirts and crest chips
+      with a 1px ring. The crest half is buildable today; the colour half is not, and no
+      amount of frontend work creates it. getKitForClub falls through to the default navy
+      on production exactly as it does in mock, which is why every shirt on the pitch
+      looks the same. Populating primary_color and secondary_color for the 16 current
+      clubs would do more for the pitch than any styling change in the polish pass.
+
+  BG-0113:
+    title: Premium polish pass -- token audit complete, execution staged behind the in-flight lanes
+    area: design
+    severity: P1
+    owner: Chief
+    state: BLOCKED # on BG-0092, BG-0093, BG-0095, BG-0111 landing
+    depends_on: [BG-0092, BG-0093, BG-0095, BG-0111]
+    evidence:
+      - docs/engineering/POLISH_PASS_PLAN.md
+    note: >
+      The pass is specified token -> component -> screen, and most of it lands in tokens
+      and the kit. Four lanes are converting the kit's consumers right now, so
+      consolidating six radii into two or changing the body weight would re-render every
+      screen they are mid-way through and conflict with all four diffs. Staged rather
+      than started. The screenshot baseline is deferred for the same reason: a before/
+      captured now would be stale by the time polish begins and would misattribute the
+      lanes' work to this pass.
+    audit_findings:
+      - no line-height or letter-spacing tokens exist at all, so the scale carries size and a per-component weight only
+      - the weight ramp starts at 600, so body copy is semibold everywhere and headings have no contrast to gain
+      - six radii where the standard allows two, the largest single visual change in the pass
+      - four shadow tokens where the standard allows one, and --ui-shadow-raised is 0 -1px 0, a top hairline misnamed as a shadow
+      - the third surface is "sunken", not "raised", so the page/card/raised hierarchy is not expressible today
+      - prefers-reduced-motion appears exactly once in the stylesheet; no duration tokens exist
+      - no Arabic-specific size or line-height adjustment, so equal px does not mean equal visual weight between the two scripts
+      - tabular figures set in two places, one of which is a comment
+    already_satisfied:
+      - the three-level ink ramp exists and all 46 kit colour pairs measured >=4.5:1 in BG-0091
+      - physical-direction utilities are at zero across src/, and Arabic letter-spacing was neutralised in BG-0069
+      - UiStatePanel, UiEmptyState, UiErrorState and UiSkeleton already exist -- the state work is adoption, not construction
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
