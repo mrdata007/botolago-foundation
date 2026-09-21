@@ -417,6 +417,31 @@ select extensions.ok(
 reset role;
 
 -- ---------------------------------------------------------------------------
+-- The public surface leaks no engine internals
+-- ---------------------------------------------------------------------------
+--
+-- Published articles must read as BotolaGO editorial coverage. No crawler
+-- name, parser identifier, source id, source URL or ingestion field may reach
+-- a browser. The card DTO is the shape every public feed and detail response
+-- is built from, so asserting on its source is the cheapest way to catch a
+-- regression that adds one.
+
+select extensions.ok(
+  (select prosrc from pg_proc p
+   join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'app_private' and p.proname = 'news_article_card')
+  !~* '(sourceUrl|sourceArticleId|externalId|parserVersion|contentHash|clusterKey|sanitizerVersion|normalized_source_text)',
+  'the public article DTO exposes no source, parser or ingestion field'
+);
+
+select extensions.ok(
+  not has_table_privilege('anon', 'app_private.news_extracted_facts', 'select')
+  and not has_table_privilege('anon', 'app_private.news_generation_attempts', 'select')
+  and not has_table_privilege('anon', 'app_private.news_engine_runs', 'select'),
+  'anonymous clients cannot read facts, generation attempts or run history'
+);
+
+-- ---------------------------------------------------------------------------
 -- Seeded configuration
 -- ---------------------------------------------------------------------------
 
