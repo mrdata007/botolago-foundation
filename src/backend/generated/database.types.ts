@@ -675,11 +675,7 @@ export type Database = {
         Returns: Json
       }
       fantasy_leagues: {
-        Args: {
-          p_limit?: number
-          p_season_id: string
-          p_visibility?: Database["app"]["Enums"]["fantasy_league_visibility"]
-        }
+        Args: { p_limit?: number; p_season_id: string; p_visibility?: string }
         Returns: Json
       }
       fantasy_player_pool: {

@@ -102,7 +102,18 @@ function TeamProfileBody() {
                 label={t("fpl.free_transfers")}
                 value={chips.active === "wildcard" ? t("fpl.unlimited") : team.freeTransfers}
               />
-              <FplKeyValueRow label={t("fpl.gw_transfers_made")} value={team.pendingTransfers} />
+              {/* "Transfers made this gameweek" is deliberately not shown.
+                  A signed-in manager reads through V2CloudFantasyRepository,
+                  whose snapshot() sets `pendingTransfers: 0` on both of its
+                  branches -- it has nothing else to set it from, since its
+                  source FantasyTeamDto (src/backend/fantasy/contracts.ts)
+                  carries no transfers-made field and api.confirm_fantasy_-
+                  transfers takes no such argument. So this row could only ever
+                  read 0, however many transfers a manager had made, and a
+                  number that is always wrong is worse than no number.
+                  The count does exist server-side, in
+                  app.fantasy_transfer_batches.transfers_count. Restore the row
+                  once the DTO carries it -- not before. */}
               <FplKeyValueRow label={t("fpl.bank")} value={nf.format(team.bank)} />
               <FplKeyValueRow
                 label={t("fpl.team_value")}

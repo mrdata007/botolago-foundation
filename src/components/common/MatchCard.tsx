@@ -263,7 +263,19 @@ export function MatchCard({
       search={{ tab: "summary" }}
       aria-label={a11yLabel}
       className={cn(
-        "group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        // `min-w-0` is load-bearing, not cosmetic. Every caller renders these
+        // cards into a single-column `grid`, whose implicit `auto` track is
+        // sized to the largest item's content-based minimum. The club-name
+        // spans below are `truncate` (`white-space: nowrap`), so the card's
+        // min-content width is the full, untruncated name — and `min-w-0` on
+        // the inner name columns only relaxes *their* flex minimum, it does
+        // not stop that minimum propagating out into the grid track. Without
+        // this the track grows past the page gutter and the card's trailing
+        // edge (the away crest and name in LTR, the matchday chip in RTL) is
+        // clipped away by `html, body { overflow-x: clip }` with no scroll to
+        // reach it. `min-width: 0` is inert in normal flow, so it changes
+        // nothing except the grid/flex track this card is allowed to demand.
+        "group block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         surfaceClass,
         // Live cards get a very soft ambient tint on the trailing edge.
         isLive && "relative overflow-hidden",

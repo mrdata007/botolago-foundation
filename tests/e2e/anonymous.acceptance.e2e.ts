@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalOverflow, initializeLanguage, observePage } from "./support";
+import {
+  expectNoClippedMatchCards,
+  expectNoHorizontalOverflow,
+  initializeLanguage,
+  observePage,
+} from "./support";
 
 const viewports = [
   { name: "mobile-320", width: 320, height: 700 },
@@ -28,6 +33,7 @@ for (const language of ["fr", "ar"] as const) {
         );
         await expect(page.locator("body")).toBeVisible();
         await expectNoHorizontalOverflow(page);
+        await expectNoClippedMatchCards(page);
 
         // BG-0035 regression: @layer base's `body { font-family: var(--font-sans) }`
         // must not defeat the html[dir=rtl] Arabic font switch.

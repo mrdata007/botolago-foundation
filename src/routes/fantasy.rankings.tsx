@@ -7,8 +7,10 @@ import { useAuth } from "@/auth/AuthProvider";
 import { footballService } from "@/services/football";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { useOwnedTeam } from "@/services/use-owned-team";
 import { RankingsPodium } from "@/components/fantasy/RankingsPodium";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
+import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -63,6 +65,7 @@ function RankingsPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const { source, key } = useFantasyDataSource();
+  const owned = useOwnedTeam();
   const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
 
   const [sort, setSort] = useState<RankingsSort>("overall");
@@ -92,6 +95,17 @@ function RankingsPage() {
         totalScore: summary.totalPoints,
       }
     : undefined;
+
+  // Team ownership is read from the owned snapshot, never inferred from the
+  // standing: before the first gameweek is scored nobody has a standing, and
+  // that must not be reported as "you have no team".
+  const presence = selectTeamPresence({
+    source: owned.source,
+    squadSize: owned.team?.squad.length ?? 0,
+    teamName: owned.team?.teamName ?? summary?.teamName ?? null,
+    isLoading: owned.isLoading,
+    errored: !!owned.error,
+  });
 
   const rankingsQ = useQuery({
     queryKey: key("rankings", sort, page, search, me?.totalScore ?? null),
@@ -136,7 +150,11 @@ function RankingsPage() {
             <RankingsPodium podium={data.podium} clubs={clubs} meId={data.myRank?.managerId} />
           )}
 
-          <MyRankCard standing={data.myRank} onJump={data.myRank ? jumpToMe : undefined} />
+          <MyRankCard
+            standing={data.myRank}
+            presence={presence}
+            onJump={data.myRank ? jumpToMe : undefined}
+          />
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <FplSegmented
@@ -178,7 +196,13 @@ function RankingsPage() {
             </div>
 
             {data.rows.length === 0 ? (
-              <EmptyState>{t("fantasy.rankings.empty")}</EmptyState>
+              // "No manager matches your search" is only true if one was typed.
+              // With no public league ranked yet it was shown to every visitor,
+              // beside an empty search box, blaming them for a query they
+              // never made.
+              <EmptyState>
+                {search.trim() ? t("fantasy.rankings.empty") : t("fantasy.rankings.empty_yet")}
+              </EmptyState>
             ) : (
               <ul>
                 {data.rows.map((row) => (

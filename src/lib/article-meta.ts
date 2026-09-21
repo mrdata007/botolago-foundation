@@ -48,6 +48,26 @@ export function buildArticleJsonLd(
 }
 
 /**
+ * Serializes JSON-LD for embedding inside a `<script>` element.
+ *
+ * The router writes a head script's children with `dangerouslySetInnerHTML`,
+ * so nothing between the tags is escaped. Every string in this block --
+ * headline, description, author name -- is editor-supplied, and a `</script>`
+ * inside any of them would close the element early and leave the rest of the
+ * value being parsed as markup in the document head.
+ *
+ * Escaping `<`, `>` and `&` as \u-sequences closes that off. JSON parsers read
+ * them back as the original characters, so a consumer (or a crawler) sees the
+ * text exactly as written; only the bytes on the wire change.
+ */
+export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
+  return JSON.stringify(jsonLd)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
+/**
  * Route `head()` metadata for an article edition. Reads whichever
  * language edition actually loaded (`article.language`) instead of
  * assuming French, so an Arabic edition's real title/summary populate the
@@ -92,16 +112,14 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
         : []),
     ],
     links: [{ rel: "canonical", href: canonical }],
+    // A head script is declared flat: every key other than `children` becomes an
+    // attribute, and the router supplies the `script` tag itself. Wrapping it as
+    // {tag, attrs, children} -- which reads like the shape the router renders --
+    // instead emitted `<script tag="script" attrs="[object Object]">`. The type
+    // was lost with it, so browsers ran the JSON as JavaScript and threw on
+    // every article, and no crawler ever saw the structured data.
     ...(jsonLd
-      ? {
-          scripts: [
-            {
-              tag: "script" as const,
-              attrs: { type: "application/ld+json" },
-              children: JSON.stringify(jsonLd),
-            },
-          ],
-        }
+      ? { scripts: [{ type: "application/ld+json", children: serializeJsonLd(jsonLd) }] }
       : {}),
   };
 }

@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { Award, Bookmark, Crown, Medal, Share2, Star, UserPlus } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import { useI18n } from "@/i18n/provider";
+import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -60,20 +62,40 @@ function TopPlayersFramed() {
 
 function ShareButton() {
   const { t } = useI18n();
+
+  // navigator.share exists on phones and almost nowhere on the desktop web, so
+  // guarding on it and doing nothing else left this button visibly inert for
+  // every desktop reader: a press, and no response of any kind. Copying the
+  // link is the same intent by another route, and it is what the article and
+  // match pages already do.
+  const share = async () => {
+    const url = typeof window === "undefined" ? "" : window.location.href;
+    if (!url) return;
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    if (typeof nav.share === "function") {
+      try {
+        await nav.share({ title: t("fantasy.top.title"), url });
+        return;
+      } catch {
+        // A dismissed share sheet rejects. That is the reader declining, not a
+        // failure, so it must not fall through to copying a link they did not
+        // ask for.
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t("article.share_copied"));
+    } catch {
+      toast.error(t("fantasy.error.network"));
+    }
+  };
+
   return (
     <button
       type="button"
-      aria-label="share"
-      onClick={() => {
-        if (typeof navigator !== "undefined" && "share" in navigator) {
-          void (navigator as Navigator & { share: (d: ShareData) => Promise<void> })
-            .share({
-              title: t("fantasy.top.title"),
-              url: typeof window !== "undefined" ? window.location.href : "",
-            })
-            .catch(() => undefined);
-        }
-      }}
+      aria-label={t("article.share")}
+      onClick={() => void share()}
       className="grid h-9 w-9 place-items-center rounded-full bg-white/35 text-[color:var(--fpl-ink)]"
     >
       <Share2 className="h-4 w-4" aria-hidden />
@@ -192,6 +214,7 @@ type CardProps = {
 
 function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
   const navigate = useNavigate();
+  const watchlist = useWatchlist();
   const { player, club, top } = entry;
   const kit = getKitForClub(club, player.kitPattern);
 
@@ -286,10 +309,22 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
         </button>
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-[6px] border border-white/30 bg-white/10 px-3 py-2.5 text-xs font-semibold text-white backdrop-blur"
+          onClick={() => watchlist.toggle(player.id)}
+          aria-pressed={watchlist.isWatched(player.id)}
+          className={cn(
+            "inline-flex items-center justify-center gap-2 rounded-[6px] border px-3 py-2.5 text-xs font-semibold backdrop-blur",
+            watchlist.isWatched(player.id)
+              ? "border-[color:var(--fpl-amber)] bg-[color:var(--fpl-amber)] text-[color:var(--fpl-ink-deep)]"
+              : "border-white/30 bg-white/10 text-white",
+          )}
         >
-          <Bookmark className="h-4 w-4" aria-hidden />
-          {t("fantasy.top.add_watchlist")}
+          <Bookmark
+            className={cn("h-4 w-4", watchlist.isWatched(player.id) && "fill-current")}
+            aria-hidden
+          />
+          {watchlist.isWatched(player.id)
+            ? t("fantasy.players.remove_watch")
+            : t("fantasy.top.add_watchlist")}
         </button>
         <button
           type="button"

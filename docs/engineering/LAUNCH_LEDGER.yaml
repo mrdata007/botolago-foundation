@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-21T10:05:00Z
+updated: 2026-09-21T11:20:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -16,10 +16,83 @@ human_actions_open:
     action: Create GitHub Environment fantasy-e2e (E2E_FANTASY_EMAIL/PASSWORD, staging URL/key) and variable FANTASY_E2E_ENABLED; confirm the synthetic manager's project.
   - id: BG-0023
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
+  - id: BG-0065
+    action: Decide the French content plan — the newest French article is ~8 weeks old while Arabic is current. Enable a French ingestion source, publish French editions, or accept a lagging French rail.
+  - id: BG-0066
+    action: Upgrade the Lovable workspace plan to remove the attribution badge overlaying the bottom nav, or say to keep it and the Chief will move the nav clear of it.
+  - id: BG-0067
+    action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
 
 tasks:
 
-  BG-0051:
+  BG-0056:
+    title: LAUNCH CHIEF — Fantasy production regression PASSED (newcomer journey, FR/AR, phone+desktop)
+    area: fantasy
+    severity: P0
+    owner: Chief
+    state: DONE
+    depends_on: []
+    evidence:
+      - Full newcomer journey end to end on production with zero console errors, zero page errors,
+        zero failed requests and zero 4xx/5xx across 17 routes, two languages, two viewports
+      - 15 players enforced as 2 GK / 5 DEF / 5 MID / 3 FWD; 4th same-club pick rejected with a toast
+      - Budget boundary exact at bank 5.7 (all rows above disabled, all at/below enabled)
+      - 539 fantasy players carry 69 DISTINCT prices 4.7-12.0 — not the neutral fallback (closes the
+        BG-0011 concern for the launch roster)
+      - Journée 1, deadline 23 sept 2026 23:30, "Saison en cours"; the season_closed string is never
+        rendered on any route in either language
+      - Squad and transfer both survived a fresh browser context carrying only the session
+    note: Lane closed per mandate. Do not re-audit Fantasy absent a new regression.
+
+  BG-0057:
+    title: Duplicate player records in the production roster
+    area: data
+    severity: P1
+    user_impact: >
+      Four names resolve to more than one active player row. If only one of a pair is wired to match
+      events, a manager who picks the other scores nothing all season.
+    owner: Human (roster authority)
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    findings:
+      - Abdallah Boukhanfer x2 — Hassania Agadir, MID, 7.20 both; DOB 2000-01-01 vs 1998-01-01
+      - Abdoulaye Coulibaly x3 — Wydad; FWD 7.50 (DOB 2008-01-01), MID 7.20 (DOB null), MID 7.20 (DOB 1991-04-06)
+      - Yassine El Ghazouani x2 — Moghreb Tetouan, DEF, 5.00 both; DOB null vs 1996-04-10
+      - Salaheddine Errahouli x2 — not in the fantasy pool; DOB 2002-01-01 vs 2002-10-12
+    pattern: >
+      In every group exactly one row carries a real date of birth and the others carry a Jan-1
+      placeholder or null — the signature of records merged from two provider feeds.
+    blast_radius_today: >
+      Zero. All affected rows have ownedBySquads = 0 and no point events, and GW1 is unplayed.
+      It becomes real the moment managers build squads against GW1.
+    why_not_chief_resolved: >
+      Deciding which Abdoulaye Coulibaly is the real Wydad player is a roster judgement, not an
+      engineering one — a club can legitimately field two players of the same name. Deactivating the
+      wrong row removes a real player from the game for the whole season. Needs the provider feed or
+      the owner to say which id is canonical; the fix itself is then a reversible active=false.
+
+  BG-0058:
+    title: news_article_detail returns HTTP 500 for a not-found article
+    area: news
+    severity: P2
+    user_impact: None. The reader sees the article.
+    owner: Chief
+    state: QUEUED
+    detail: >
+      /news/$articleId deliberately tries one language then falls back to the other so a UUID link
+      stays readable across locales (services/news.ts getArticleWithLanguageFallback). The first
+      attempt for an Arabic-only article raises news_article_not_found (P0002), which PostgREST
+      surfaces as HTTP 500 rather than a not-found. The fallback then succeeds and the article
+      renders, so nothing is broken for the reader — but a normal path logs a 500, which will mask
+      real incidents once production error monitoring matters.
+    why_deferred: >
+      The principled fix changes the RPC's raised condition — a migration on a database-sensitive
+      path requiring the heavy review route — to correct something with no user-visible breakage.
+      Not a pre-launch risk worth taking. The route loader also hardcodes "fr", which makes the
+      wasted first attempt certain for Arabic readers; it feeds SEO head tags, so it is not simply
+      removable.
+
+  BG-0059:
     title: LAUNCH CHIEF — Admin authentication restored; non-staff acceptance proven on production
     area: auth
     severity: P0
@@ -37,13 +110,14 @@ tasks:
       - Owner reported Ref. unauthenticated/invalid_token/rejected (token arrived and was refused)
       - Round-trip probe: real kid ffe6387d cost 144ms (~1.2 RTT) before, 1ms (0.01 RTT) after
       - Owner confirmed the Admin console renders with platform_admin, 34 permissions, AAL2
-      - Non-staff acceptance on production 2026-09-21: authenticated non-staff -> forbidden
+      - >-
+        Non-staff acceptance on production 2026-09-21 — authenticated non-staff -> forbidden
         ("Accès interdit" / "الدخول مرفوض"); anonymous -> unauthenticated/missing_token; no staff
         data in the DOM; verified FR and AR
     commits: [c101fea, 5c8e024, 0877914, e6f6420, e052f63, ae287aa]
     verification: {status: PASS, by: owner (console) + chief (production probes, non-staff acceptance)}
 
-  BG-0052:
+  BG-0060:
     title: LAUNCH CHIEF — Server workers may target the wrong Supabase project (service-role)
     area: infra
     severity: P1
@@ -53,7 +127,7 @@ tasks:
       not fail; it writes production content into another project's database silently.
     owner: Human (credential) + Chief (guard)
     state: HALTED_FOR_INPUT
-    depends_on: [BG-0051]
+    depends_on: [BG-0059]
     chief_action_taken: >
       Added assertServerProjectMatchesApplication: a service-role client whose project disagrees
       with the application's now refuses to start and names both sides. Deliberately does NOT
@@ -66,6 +140,249 @@ tasks:
     blast_radius_today: >
       Low. Ingestion schedules are disabled, so no worker is currently writing. This must be
       corrected before ingestion or notifications are enabled.
+
+  BG-0061:
+    title: Dead V1 Fantasy cloud repository and a stale generated Supabase types file
+    area: fantasy
+    severity: P2
+    user_impact: None today. Nothing on the live path reaches this code.
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    detail: >
+      createFantasyOwnedRepository returns V2CloudFantasyRepository for every signed-in manager,
+      so CloudFantasyRepository (src/services/fantasy-owned-repository.ts) and
+      src/services/fantasy-cloud-repo.ts are unreachable. Both read
+      public.fantasy_teams.pending_transfers, and production has neither that table (the live one
+      is app.fantasy_teams) nor that column. The V1 payload builders in
+      src/services/fantasy-payloads.ts likewise target save_fantasy_team_v2 and a
+      confirm_fantasy_transfers taking _pending_transfers; production exposes only
+      api.confirm_fantasy_transfers(p_team_id, p_gameweek_id, p_transfers, p_expected_version,
+      p_idempotency_key, p_chip_type).
+    root_cause: >
+      src/integrations/supabase/types.ts is a generated file that still describes a public schema
+      the database has since moved to app/api. Because it typechecks, the dead code reads as
+      live — which is how the always-zero transfers row in BG-0062 survived review.
+    found_while: Verifying the claim that no transfers-made value is persisted (BG-0062).
+    why_deferred: >
+      Deleting a repository and regenerating the Supabase types touches every Fantasy call site,
+      for no user-visible gain. Post-launch cleanup, not a launch gate.
+
+  BG-0062:
+    title: Fantasy team profile showed a "transfers made this gameweek" row that always read 0
+    area: fantasy
+    severity: P2
+    user_impact: >
+      Every manager saw 0 transfers made, however many they had made. Wrong rather than missing,
+      so it invited managers to distrust the rest of the card.
+    owner: Chief
+    state: DONE
+    depends_on: []
+    root_cause: >
+      The row was bound to team.pendingTransfers. V2CloudFantasyRepository.snapshot() sets that
+      field to 0 on both of its branches and has nothing else to set it from — its source
+      FantasyTeamDto (src/backend/fantasy/contracts.ts) carries no transfers-made field, and
+      api.confirm_fantasy_transfers takes no such argument.
+    resolution: >
+      Row removed, with a comment naming what has to carry the value before it returns. The count
+      itself is not lost — app.fantasy_transfer_batches.transfers_count holds it server-side.
+      fpl.gw_transfers_made dropped from both dictionaries so the i18n gate's unused-key warning
+      stays at its committed baseline of 248.
+    verification: {status: PASS, by: chief (1112 tests, typecheck, eslint, prettier, i18n gate)}
+
+  BG-0063:
+    title: LAUNCH CHIEF — /fantasy/rankings was dead for every signed-out visitor
+    area: fantasy
+    severity: P0
+    user_impact: >
+      The page hung about 12 seconds on "Chargement…" and then showed "Une erreur est survenue".
+      Anonymous visitors are most of the launch audience, and rankings is a linked hub tile.
+    owner: Chief
+    state: DONE
+    depends_on: []
+    root_cause: >
+      api.fantasy_leagues declared p_visibility as app.fantasy_league_visibility. An argument is
+      coerced to its parameter type in the CALLER's context, before a SECURITY DEFINER body is
+      entered, so naming an app-schema type required the caller to hold USAGE on app. anon does
+      not by design; authenticated does. The body was never at fault.
+    why_it_looked_intermittent: >
+      Omitting p_visibility succeeds, because the DEFAULT is evaluated inside the function. Only a
+      call that actually sends "public" fails -- which is what the rankings page sends. Early crawl
+      lanes that did not reach that call looked green.
+    evidence:
+      - >-
+        before -- anon+visibility: 42501 permission denied for schema app; anon without it: OK;
+        authenticated+visibility: OK
+      - >-
+        after -- anon+public OK; anon+private OK with 0 rows (no leak); anon+garbage PT400;
+        anon+limit 999 PT400; authenticated+public OK
+    resolution: >
+      Migration 20260921120000: p_visibility becomes text and the enum is resolved inside the
+      definer body. Deliberately NOT a grant of USAGE on app to anon, which would have fixed the
+      symptom by opening the entire private schema. Grants, visibility predicate and security
+      properties are unchanged.
+    blast_radius: >
+      api.fantasy_leagues was the only anon-callable function in api naming an app-schema type;
+      every other one is authenticated-only and authenticated holds USAGE on app. Confirmed by
+      catalog query, not by inspection.
+    verification: {status: PASS, by: chief (six-case production probe as anon and authenticated)}
+
+  BG-0064:
+    title: LAUNCH CHIEF — Four production defects found by an anonymous crawl, all fixed
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    depends_on: []
+    findings_fixed:
+      - >-
+        Back control landed on about:blank. Three surfaces called router.history.back() directly;
+        opened cold (shared link, search result, push, bookmark) the app is the first history
+        entry, so back left the site. Silent -- no console output. Now useBackTo(fallback).
+      - >-
+        Article JSON-LD was declared {tag, attrs, children}, but the router builds the script
+        itself and turns every other key into an attribute. Emitted <script tag="script"
+        attrs="[object Object]"> with no type, so browsers RAN the JSON and crawlers saw nothing.
+        The old test asserted on the object we built rather than the shape the router consumes,
+        which is why it passed.
+      - >-
+        Head-script children are written with dangerouslySetInnerHTML and every string in the
+        JSON-LD is editor-supplied, so a </script> in a headline would have escaped into the
+        document head. serializeJsonLd now escapes < > & as \u-sequences.
+      - >-
+        French home news rail rendered Arabic headlines. getNewsEdition's "auto" mode picked the
+        freshest feed regardless of locale. The reader's own locale now wins whenever it has
+        articles; the other language remains the empty-feed fallback, symmetric in both directions.
+    verification: {status: PASS, by: chief (1132 tests, typecheck, eslint, prettier)}
+
+  BG-0065:
+    title: French news feed has no recent content
+    area: content
+    severity: P1
+    user_impact: >
+      With the locale fix in BG-0064, a French reader now correctly gets French headlines -- but
+      the newest French article is from 2026-07-28, roughly eight weeks old, against 98 Arabic
+      editions whose newest is 2026-09-17. The French home rail is right in language and stale in
+      substance.
+    owner: Human (content) + Chief (ingestion)
+    state: HALTED_FOR_INPUT
+    depends_on: [BG-0064]
+    detail: >
+      app.article_editions: fr published 10, newest 2026-07-28; ar published 98, newest
+      2026-09-17. The approved ingestion source (ElBotola) is Arabic, and ingestion schedules are
+      currently disabled (see BG-0060). Showing Arabic to French readers was the previous
+      workaround; it is not an acceptable one.
+    human_action_required: >
+      Decide the French content plan for launch: enable a French source for ingestion, publish
+      French editions through the CMS, or accept a French rail that lags. The Chief cannot choose
+      a content source or author editorial copy.
+
+  BG-0066:
+    title: OWNER BLOCKER — Lovable builder badge is live on the production site
+    area: infra
+    severity: P1
+    user_impact: >
+      A fixed badge (z-index 1000000, pointer-events auto, linking to lovable.dev) covers the
+      lower ~47% of the Matches and Profil bottom-nav tabs at 390px and hides both labels, and
+      overlays the register CTA on /auth/login and /auth/register. Centre taps still navigate, so
+      the nav is degraded rather than blocked.
+    owner: Human (plan)
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    detail: >
+      The badge is not in this repository. It is injected by Lovable's hosting, and workspace
+      "Ali's Lovable" (6PyjZbJSDH7dSs7Ojq6I) is on the free plan, where the badge is the required
+      attribution. No Lovable MCP tool exposes a setting for it.
+    why_not_chief_resolved: >
+      Suppressing another party's required attribution with CSS would be circumventing the terms
+      the free plan is granted under. That is the owner's decision to make by changing plan, not
+      the Chief's to make by hiding the element.
+    human_action_required: >
+      Either upgrade the Lovable workspace plan so the badge is removed at source, or accept it
+      and say so, in which case the Chief will reposition the bottom nav to sit clear of it.
+
+  BG-0067:
+    title: OWNER BLOCKER — Terms of Service and Privacy Policy do not exist
+    area: legal
+    severity: P1
+    user_impact: >
+      /auth/register states "J'accepte les Conditions d'utilisation et la Politique de
+      confidentialité." as plain unlinked text. Every account created at launch agrees to
+      documents no one can read. /terms /privacy /faq /legal /cgu /confidentialite /about
+      /contact all return 404.
+    owner: Human (legal)
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    detail: >
+      Searched the repository: no legal copy exists in any form -- no route, no markdown, no
+      dictionary entry beyond the two consent sentences at dictionaries.ts:855 and :876.
+    why_not_chief_resolved: >
+      These are binding documents about real data handling by a real operator. Drafting them would
+      mean inventing commitments the owner has not made, and a plausible-looking placeholder is
+      more dangerous than a visible gap because it reads as genuine.
+    human_action_required: >
+      Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
+      build the routes, link them from the consent line, and add them to the footer.
+
+  BG-0068:
+    title: Club names are never Arabic, because no team translation exists
+    area: data
+    severity: P2
+    user_impact: >
+      Every club name renders in Latin script on Arabic surfaces. For an Arabic-first Moroccan
+      audience this is the most visible remaining language gap.
+    owner: Human (names) + Chief (schema)
+    state: QUEUED
+    depends_on: []
+    detail: >
+      app.teams carries a single name and short_name and no language. The codebase has the
+      translation pattern already -- app.competition_translations, country_translations,
+      taxonomy_translations, venue_translations -- but app.team_translations was never created,
+      so there is nothing for the Arabic surfaces to read. This is a schema and content gap, not
+      a rendering fault; nothing in the UI is doing anything wrong.
+    plan: >
+      Add app.team_translations mirroring the existing pattern, surface it through the team
+      catalog RPC and the Club DTO, then populate it. The canonical Arabic names of the Botola
+      clubs are well known, but they are the clubs' own names and should be confirmed rather than
+      transliterated by an agent.
+    why_deferred: >
+      A migration plus a DTO change plus content for every club, to fix something that is legible
+      today. Not a launch gate; it is the first thing to do after one.
+
+  BG-0069:
+    title: Arabic text carries letter-spacing across the application
+    area: frontend
+    severity: P2
+    user_impact: >
+      38 distinct tracking-* patterns apply to Arabic text -- labels at 0.6px, badges at 1.6px
+      and 1.4px, and negative tracking-tight on Arabic headings. Chromium preserves the joins, so
+      letterforms do not visibly disconnect; the result is wrong spacing, not broken shaping.
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    rule: >
+      Arabic is cursive and its letters join. Neither pulling them apart (tracking-wide) nor
+      pushing them together (tracking-tight) is correct: the right amount is none. Every tracking
+      utility that can reach Arabic text must be prefixed ltr:.
+    prior_art: >
+      Already applied to ADMIN_LABEL_CLASS and the Admin console headings; this is the same fix
+      across the rest of the surfaces.
+    why_deferred: >
+      A wide mechanical change across many files, competing for the same files as the 390px
+      match-card work. Worth doing in one deliberate pass rather than threaded through a release.
+
+  BG-0070:
+    title: /matches ignores its own tab query parameter
+    area: frontend
+    severity: P2
+    user_impact: >
+      /matches?tab=results and ?tab=standings open on the default tab. The in-page tabs work but
+      never write the URL, so a tab cannot be linked to or restored on reload. The match detail
+      page does this correctly, so the two behave differently.
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
@@ -367,7 +684,9 @@ tasks:
     owner_decisions_needed:
       - BG-0011-OWNER-2: reduce the backfill scope to season 26027 only (2024/25 is provably not used for pricing; runner/preflight currently force both seasons)
       - confirm the corrected time box; A0 go/no-go by 2026-09-19T12:00Z, A4 green by 2026-09-21T18:00Z, A7–A11 by 2026-09-22T22:30Z
-    plan: A0 probe (BG-0034, in progress) → A1 go/no-go → A2 worker quarantine + additive coverage-threshold migration → A3 dispatch workflow (season_ids, skip_deploy, RESTORE_SEASON fix) → A4 backfill (needs BG-0002) → A5 read-only proof → A6 export → A7–A10 single transaction → A11 open → A12 docs
+    # Renamed from a second `plan:`. YAML resolves a repeated key last-wins, so
+    # this scalar was silently discarding the role assignments in `plan:` above.
+    step_sequence: A0 probe (BG-0034, in progress) → A1 go/no-go → A2 worker quarantine + additive coverage-threshold migration → A3 dispatch workflow (season_ids, skip_deploy, RESTORE_SEASON fix) → A4 backfill (needs BG-0002) → A5 read-only proof → A6 export → A7–A10 single transaction → A11 open → A12 docs
     new_defects_found: [BG-0031, BG-0032, BG-0033]
     a0_result_2026_09_18: '64 of 240 season-26027 fixtures (27%) fail the worker invariant starter_rows_mismatch and nothing else; the defect is systemic, not a single fixture. A1 go/no-go needs a Researcher analysis of the failing set (starterRows distribution, whether 21-starter fixtures are usable) and an owner decision on the coverage threshold (≥73% max achievable without relaxing the invariant).'
     owner_decisions_2026_09_18:
