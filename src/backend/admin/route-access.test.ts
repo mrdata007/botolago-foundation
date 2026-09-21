@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
+import { classifyIdentityFailure } from "./route-access.server";
 import {
   adminRouteStateSchema,
   getAdminCopy,
+  UNAUTHENTICATED_DETAILS,
   maskEmail,
   requireAdminRoutePermission,
   resolveAdminRouteAccess,
@@ -162,7 +164,11 @@ describe("unauthenticated reason discriminator", () => {
         throw new Error("must not load");
       },
     });
-    expect(result).toEqual({ state: "unauthenticated", reason: "invalid_token" });
+    expect(result).toEqual({
+      state: "unauthenticated",
+      reason: "invalid_token",
+      detail: "unverifiable",
+    });
   });
 
   it("never reports missing_token once a token has been handed to verification", async () => {
@@ -217,5 +223,100 @@ describe("unauthenticated reason discriminator", () => {
       expect(copy.invalidToken.title.length).toBeGreaterThan(0);
       expect(copy.invalidToken.title).not.toBe(copy.states.unauthenticated.title);
     }
+  });
+});
+
+describe("identity failure classification", () => {
+  it("carries the classified detail onto the unauthenticated state", async () => {
+    const result = await resolveAdminRouteAccess({
+      verifyIdentity: async () => null,
+      describeIdentityFailure: () => "expired",
+      loadContext: async () => context(),
+    });
+    expect(result).toEqual({
+      state: "unauthenticated",
+      reason: "invalid_token",
+      detail: "expired",
+    });
+  });
+
+  it("treats a throw that escaped verification as unverifiable", async () => {
+    // Nothing classified it, so it never reached a verdict. Calling that
+    // "rejected" would send the reader to re-authenticate over a server fault.
+    const result = await resolveAdminRouteAccess({
+      verifyIdentity: async () => {
+        throw new Error("boom");
+      },
+      loadContext: async () => context(),
+    });
+    expect(result).toEqual({
+      state: "unauthenticated",
+      reason: "invalid_token",
+      detail: "unverifiable",
+    });
+  });
+
+  it("omits detail entirely when the caller does not classify", async () => {
+    const result = await resolveAdminRouteAccess({
+      verifyIdentity: async () => null,
+      loadContext: async () => context(),
+    });
+    expect(result).toEqual({ state: "unauthenticated", reason: "invalid_token" });
+  });
+
+  it("does not let a stale detail leak onto a later successful request", async () => {
+    let call = 0;
+    let failure: "expired" | undefined;
+    const deps: AdminRouteDependencies = {
+      describeIdentityFailure: () => failure,
+      verifyIdentity: async () => {
+        call += 1;
+        if (call === 1) {
+          failure = "expired";
+          return null;
+        }
+        failure = undefined;
+        return { userId: USER_ID, email: null };
+      },
+      loadContext: async () => context(),
+    };
+    expect(await resolveAdminRouteAccess(deps)).toMatchObject({ detail: "expired" });
+    expect((await resolveAdminRouteAccess(deps)).state).toBe("authorized");
+  });
+});
+
+describe("classifyIdentityFailure", () => {
+  it("names an expired token so the reader is told to sign in again", () => {
+    expect(
+      classifyIdentityFailure({ name: "AuthInvalidJwtError", message: "JWT has expired" }),
+    ).toBe("expired");
+  });
+
+  it("separates a verification outage from a refusal", () => {
+    // These never reached a verdict: the credential may well be fine.
+    expect(classifyIdentityFailure({ message: "Failed to fetch" })).toBe("unverifiable");
+    expect(classifyIdentityFailure({ message: "jwks endpoint unreachable" })).toBe("unverifiable");
+    expect(classifyIdentityFailure({ message: "socket timeout" })).toBe("unverifiable");
+    expect(classifyIdentityFailure({ status: 503, message: "upstream" })).toBe("unverifiable");
+  });
+
+  it("collapses a genuine refusal, and anything unrecognised, to rejected", () => {
+    expect(classifyIdentityFailure({ name: "AuthApiError", message: "invalid claim" })).toBe(
+      "rejected",
+    );
+    expect(
+      classifyIdentityFailure({ name: "AuthInvalidJwtError", message: "Invalid JWT signature" }),
+    ).toBe("rejected");
+    expect(classifyIdentityFailure(null)).toBe("rejected");
+    expect(classifyIdentityFailure(undefined)).toBe("rejected");
+    expect(classifyIdentityFailure({ message: "something bizarre" })).toBe("rejected");
+  });
+
+  it("never echoes anything from the error into the category", () => {
+    // The category is a fixed vocabulary; a hostile message cannot widen it.
+    const category = classifyIdentityFailure({
+      message: "user bob@example.com token eyJhbGciOiJFUzI1NiIs",
+    });
+    expect(UNAUTHENTICATED_DETAILS).toContain(category);
   });
 });

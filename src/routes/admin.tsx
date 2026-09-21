@@ -10,6 +10,7 @@ import {
   getAdminCopy,
   type AdminRouteState,
   type AdminRouteStateName,
+  type UnauthenticatedDetail,
   type UnauthenticatedReason,
 } from "@/backend/admin/route-access";
 import { useI18n } from "@/i18n/provider";
@@ -31,11 +32,17 @@ function AdminStatePanel({
   state,
   copy,
   reason,
+  detail,
 }: {
   state: AdminRouteStateName | "loading";
   copy: ReturnType<typeof getAdminCopy>;
   reason?: UnauthenticatedReason;
+  detail?: UnauthenticatedDetail;
 }) {
+  // A support reference, so a refused sign-in can be reported and diagnosed
+  // from what is on screen. It names only the outcome and the caller's own
+  // credential -- never an account, a role, or whether either exists.
+  const reference = [state, reason, detail].filter(Boolean).join("/");
   const content =
     state === "unauthenticated" && reason === "invalid_token"
       ? copy.invalidToken
@@ -67,6 +74,13 @@ function AdminStatePanel({
             {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
           </Link>
         )}
+        {state !== "loading" && state !== "authorized" && (
+          <p className="mt-6 font-mono text-xs text-slate-500" data-testid="admin-state-reference">
+            <span dir="ltr">
+              {copy.dir === "rtl" ? `${reference} :المرجع` : `Réf. : ${reference}`}
+            </span>
+          </p>
+        )}
       </section>
     </main>
   );
@@ -85,6 +99,7 @@ function AdminRoute() {
         state={result.state}
         copy={copy}
         reason={result.state === "unauthenticated" ? result.reason : undefined}
+        detail={result.state === "unauthenticated" ? result.detail : undefined}
       />
     );
   }

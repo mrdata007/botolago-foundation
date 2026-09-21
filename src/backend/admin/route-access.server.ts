@@ -3,7 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/backend/generated/database.types";
 import type { AdminPermission } from "./contracts";
 import { AdminControlPlaneService } from "./control-plane-service";
-import { requireAdminRoutePermission, resolveAdminRouteAccess } from "./route-access";
+import {
+  requireAdminRoutePermission,
+  resolveAdminRouteAccess,
+  type UnauthenticatedDetail,
+} from "./route-access";
 import { SupabaseAdminControlPlaneRepository } from "./supabase-control-plane-repository";
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -29,6 +33,32 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+/**
+ * Maps a Supabase auth failure onto a coarse, non-sensitive category.
+ *
+ * Reads only the error's name and message -- never the token, its claims, or
+ * any account data -- and collapses everything unrecognised to `rejected`
+ * rather than guessing.
+ */
+export function classifyIdentityFailure(error: unknown): UnauthenticatedDetail {
+  const source = error as { name?: string; message?: string; status?: number } | null | undefined;
+  const text = `${source?.name ?? ""} ${source?.message ?? ""}`.toLowerCase();
+  if (text.includes("expired")) return "expired";
+  // A transport failure means verification never reached a verdict; calling
+  // that "rejected" would send the reader off to re-authenticate over what is
+  // really a server-side outage.
+  if (
+    text.includes("fetch") ||
+    text.includes("network") ||
+    text.includes("timeout") ||
+    text.includes("jwks") ||
+    (typeof source?.status === "number" && source.status >= 500)
+  ) {
+    return "unverifiable";
+  }
+  return "rejected";
+}
+
 export async function loadAdminRouteAccessForRequest() {
   const request = getRequest();
   const authHeader = request.headers.get("authorization");
@@ -52,12 +82,22 @@ export async function loadAdminRouteAccessForRequest() {
   );
   const service = new AdminControlPlaneService(repository);
 
+  // Classifies the most recent verification failure so a rejected token is
+  // distinguishable from an absent one without another round of probing.
+  // Derived only from the error's type and message, never from token contents.
+  let identityFailure: UnauthenticatedDetail | undefined;
+
   return resolveAdminRouteAccess({
+    describeIdentityFailure: () => identityFailure,
     verifyIdentity: async () => {
+      identityFailure = undefined;
       const { data, error } = await client.auth.getClaims(token);
       const claims = data?.claims;
       const userId = claims?.sub;
-      if (error || typeof userId !== "string") return null;
+      if (error || typeof userId !== "string") {
+        identityFailure = classifyIdentityFailure(error);
+        return null;
+      }
       return {
         userId,
         email: typeof claims?.email === "string" ? claims.email : null,

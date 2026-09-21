@@ -19,10 +19,27 @@ import { AdminError, mapAdminError } from "./errors";
 export const UNAUTHENTICATED_REASONS = ["missing_token", "invalid_token"] as const;
 export type UnauthenticatedReason = (typeof UNAUTHENTICATED_REASONS)[number];
 
+/**
+ * A coarse classification of *why* a presented token failed verification, shown
+ * as a support reference so a recurrence is self-diagnosing instead of needing
+ * another round of black-box probing.
+ *
+ * - `expired`      the JWT's own `exp` had passed
+ * - `rejected`     the Auth server or signature check refused it
+ * - `unverifiable` verification could not be completed (JWKS/network failure)
+ *
+ * Every value describes the caller's own credential and nothing else, so this
+ * is safe to surface -- it says nothing about any account, staff membership, or
+ * whether the subject even exists.
+ */
+export const UNAUTHENTICATED_DETAILS = ["expired", "rejected", "unverifiable"] as const;
+export type UnauthenticatedDetail = (typeof UNAUTHENTICATED_DETAILS)[number];
+
 export const adminRouteStateSchema = z.discriminatedUnion("state", [
   z.object({
     state: z.literal("unauthenticated"),
     reason: z.enum(UNAUTHENTICATED_REASONS).optional(),
+    detail: z.enum(UNAUTHENTICATED_DETAILS).optional(),
   }),
   z.object({ state: z.literal("forbidden") }),
   z.object({ state: z.literal("mfa_required") }),
@@ -46,6 +63,20 @@ export type AdminRouteStateName = AdminRouteState["state"];
 export interface AdminRouteDependencies {
   verifyIdentity(): Promise<{ userId: string; email: string | null } | null>;
   loadContext(userId: string): Promise<unknown>;
+  /**
+   * Optional: classifies the most recent `verifyIdentity` failure. Kept
+   * separate so the identity contract stays `identity | null` and callers that
+   * do not classify need no changes.
+   */
+  describeIdentityFailure?(): UnauthenticatedDetail | undefined;
+}
+
+function identityRejected(
+  dependencies: AdminRouteDependencies,
+  fallback?: UnauthenticatedDetail,
+): AdminRouteState {
+  const detail = dependencies.describeIdentityFailure?.() ?? fallback;
+  return { state: "unauthenticated", reason: "invalid_token", ...(detail ? { detail } : {}) };
 }
 
 export async function resolveAdminRouteAccess(
@@ -58,9 +89,10 @@ export async function resolveAdminRouteAccess(
   try {
     identity = await dependencies.verifyIdentity();
   } catch {
-    return { state: "unauthenticated", reason: "invalid_token" };
+    // A throw escaped verification entirely, so nothing classified it.
+    return identityRejected(dependencies, "unverifiable");
   }
-  if (!identity) return { state: "unauthenticated", reason: "invalid_token" };
+  if (!identity) return identityRejected(dependencies);
 
   try {
     const context = staffContextSchema.parse(await dependencies.loadContext(identity.userId));
