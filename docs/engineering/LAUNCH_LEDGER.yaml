@@ -1013,7 +1013,7 @@ tasks:
     area: fantasy
     severity: P1
     owner: Chief
-    state: QUEUED
+    state: DECIDED # Chief decision 2026-09-21; implement as a focused pass after the four Fantasy lanes land
     depends_on: [BG-0086]
     evidence:
       - 64 players (FAR 31, Raja 33), priced up to 11.70, active and eligible and selectable
@@ -1025,6 +1025,25 @@ tasks:
       players who cannot score in GW1 and gets no signal at all. The deferral is correct;
       the pool failing to surface it is the defect. Needs a product decision as much as a
       fix: warn, mark unavailable, or exclude.
+    decision: >
+      Mark unavailable with a reason; do NOT exclude and do NOT block selection.
+      Excluding them silently is its own surprise -- a manager who knows Raja exists and
+      cannot find a single Raja player learns nothing except that the app is broken. And
+      blocking selection would be domain logic, which this migration is explicitly not
+      allowed to change. A badge plus a line on the player detail is presentation of data
+      the frontend already holds: the player's club has no counting fixture in the current
+      gameweek.
+    sequencing: >
+      Deliberately NOT routed into the four in-flight Fantasy lanes. The signal has to
+      appear in the pool list, the picker and the player detail -- three files owned by
+      three different lanes -- so injecting it now would create exactly the cross-lane
+      conflict the ownership split exists to prevent. It lands as one coherent pass once
+      they merge, which also means one reviewer sees the whole behaviour rather than three
+      partial versions of it.
+    open_question_for_owner: >
+      Whether to also surface it at squad-confirmation time ("3 of your 15 players have no
+      fixture this gameweek"). That is a nudge with product weight rather than a defect
+      fix, so it is not being built unasked.
 
   BG-0110:
     title: Wydad Casablanca renders as "WCA" because its short_name is a code, not a name
