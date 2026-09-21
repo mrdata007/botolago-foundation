@@ -56,4 +56,32 @@ describe("Accueil (Home) structural contract", () => {
     expect(source).toContain('to="/news"');
     expect(source).toContain('to="/profile"');
   });
+
+  /**
+   * BG-0091 — News is hidden at launch. The section and the discovery tile
+   * above stay in the source (this is a hide, not a deletion) but both must be
+   * behind `NEWS_ENABLED`, and Home must not fetch a News edition while the
+   * flag is off. These assertions are what stops the rail reappearing by
+   * accident; they are satisfied by the flag being honoured, not by its value.
+   */
+  describe("News is gated on NEWS_ENABLED", () => {
+    test("Home imports the flag", () => {
+      expect(source).toContain('import { NEWS_ENABLED } from "@/lib/feature-flags"');
+    });
+
+    test("the news preview section is behind the flag", () => {
+      expect(source).toContain("{NEWS_ENABLED && (\n        <Section index={3}>");
+    });
+
+    test("the news discovery tile is behind the flag", () => {
+      expect(source).toContain(
+        '{NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}',
+      );
+    });
+
+    test("the news edition query does not run while the flag is off", () => {
+      const query = source.slice(source.indexOf("queryFn: () => newsService.getEdition("));
+      expect(query.slice(0, 120)).toContain("enabled: NEWS_ENABLED");
+    });
+  });
 });
