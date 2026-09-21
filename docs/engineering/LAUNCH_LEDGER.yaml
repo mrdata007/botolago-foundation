@@ -324,6 +324,65 @@ tasks:
       Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
       build the routes, link them from the consent line, and add them to the footer.
 
+  BG-0068:
+    title: Club names are never Arabic, because no team translation exists
+    area: data
+    severity: P2
+    user_impact: >
+      Every club name renders in Latin script on Arabic surfaces. For an Arabic-first Moroccan
+      audience this is the most visible remaining language gap.
+    owner: Human (names) + Chief (schema)
+    state: QUEUED
+    depends_on: []
+    detail: >
+      app.teams carries a single name and short_name and no language. The codebase has the
+      translation pattern already -- app.competition_translations, country_translations,
+      taxonomy_translations, venue_translations -- but app.team_translations was never created,
+      so there is nothing for the Arabic surfaces to read. This is a schema and content gap, not
+      a rendering fault; nothing in the UI is doing anything wrong.
+    plan: >
+      Add app.team_translations mirroring the existing pattern, surface it through the team
+      catalog RPC and the Club DTO, then populate it. The canonical Arabic names of the Botola
+      clubs are well known, but they are the clubs' own names and should be confirmed rather than
+      transliterated by an agent.
+    why_deferred: >
+      A migration plus a DTO change plus content for every club, to fix something that is legible
+      today. Not a launch gate; it is the first thing to do after one.
+
+  BG-0069:
+    title: Arabic text carries letter-spacing across the application
+    area: frontend
+    severity: P2
+    user_impact: >
+      38 distinct tracking-* patterns apply to Arabic text -- labels at 0.6px, badges at 1.6px
+      and 1.4px, and negative tracking-tight on Arabic headings. Chromium preserves the joins, so
+      letterforms do not visibly disconnect; the result is wrong spacing, not broken shaping.
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    rule: >
+      Arabic is cursive and its letters join. Neither pulling them apart (tracking-wide) nor
+      pushing them together (tracking-tight) is correct: the right amount is none. Every tracking
+      utility that can reach Arabic text must be prefixed ltr:.
+    prior_art: >
+      Already applied to ADMIN_LABEL_CLASS and the Admin console headings; this is the same fix
+      across the rest of the surfaces.
+    why_deferred: >
+      A wide mechanical change across many files, competing for the same files as the 390px
+      match-card work. Worth doing in one deliberate pass rather than threaded through a release.
+
+  BG-0070:
+    title: /matches ignores its own tab query parameter
+    area: frontend
+    severity: P2
+    user_impact: >
+      /matches?tab=results and ?tab=standings open on the default tab. The in-page tabs work but
+      never write the URL, so a tab cannot be linked to or restored on reload. The match detail
+      page does this correctly, so the two behave differently.
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
