@@ -14,7 +14,9 @@ export function Logo({ variant = "full", className }: LogoProps) {
         width={1024}
         height={1024}
         decoding="async"
-        className={`h-9 w-9 rounded-xl object-cover ring-1 ring-white/20 ${className ?? ""}`}
+        // Kit radius and a hairline from the rule token; the V2 `rounded-xl`
+        // + `ring-white/20` only read correctly on a dark chrome.
+        className={`h-9 w-9 rounded-[var(--ui-radius-control)] object-cover ring-1 ring-[color:var(--ui-rule)] ${className ?? ""}`}
       />
     );
   }

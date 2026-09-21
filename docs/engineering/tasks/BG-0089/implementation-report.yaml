@@ -1,0 +1,396 @@
+task_id: BG-0089
+role: Builder
+attempt: 1
+branch: bg-0089-design-consistency
+base: origin/chief/launch-fixes-3
+status: partial — the public application surface is converted; the rest is measured, owned elsewhere, and listed
+
+headline: >
+  The public application no longer contains a single V2 glass surface, V2
+  radius, Tailwind type-ramp size or unprefixed `tracking-*`. Product-wide,
+  divergence from the kit fell from 1898 to 1728 — because 96% of what is left
+  belongs to lanes other than this one. The honest answer to "can global design
+  consistency be called PASS" is in `remaining_work` below, and it is no.
+
+# ---------------------------------------------------------------------------
+# THE TABLE. Produced by `bun scripts/qa/design-divergence.ts`, before any
+# change and again after. Comments and import specifiers are stripped before
+# counting, so nothing here is inflated by prose describing the problem.
+# ---------------------------------------------------------------------------
+
+divergence_by_rule:
+  columns: [rule, before, after, delta]
+  rows:
+    - ["v2 radii (rounded-lg/xl/2xl/3xl)", 88, 74, -14]
+    - ["legacy surfaces (glass-*/surface-N/--glass-border/cta-brand/press-tile)", 87, 74, -13]
+    - ["Tailwind type ramp (text-xs…text-4xl)", 306, 260, -46]
+    - ["shadow-sm / shadow-md", 41, 40, -1]
+    - ["tracking-* without ltr: (BG-0069, damages Arabic)", 79, 35, -44]
+    - ["hardcoded colours (hex / rgb( / bg-white / named palettes)", 732, 687, -45]
+    - ["physical direction utilities", 101, 101, 0]
+    - ["--fpl-* usage", 464, 457, -7]
+    - ["TOTAL", 1898, 1728, -170]
+    - ["files carrying at least one", 130, 105, -25]
+
+divergence_by_owner:
+  note: >
+    The same 1728 remaining, split by who owns the files. This is the number
+    that answers the owner's question, because "global design consistency"
+    cannot be finished by a lane that is not allowed to touch 96% of what is
+    left.
+  columns: [area, before, after, delta, owner]
+  rows:
+    - [
+        "public application (Home, Matches, match pages, Profile, auth, nav, states, News)",
+        207,
+        47,
+        -160,
+        "this lane",
+      ]
+    - ["Fantasy routes + src/components/fantasy + src/components/fpl", 964, 964, 0, "Fantasy lanes"]
+    - ["admin routes + src/components/admin", 322, 320, -2, "not a launch surface"]
+    - ["vendored shadcn, unreachable from the app", 176, 170, -6, "nobody — see F2"]
+    - ["vendored shadcn, actually rendered", 41, 39, -2, "foundation lane"]
+    - [
+        "src/styles.css, src/lib/kits.ts, src/theme, src/lib/error-page.ts",
+        188,
+        188,
+        0,
+        "foundation lane / exempt",
+      ]
+
+worst_offenders_before:
+  note: "Top of the table at the start of this lane, for the migration plan."
+  columns: [count, file, breakdown]
+  rows:
+    - [
+        95,
+        "src/lib/kits.ts",
+        "hardColour:95 — club kit colour DATA, not styling; exempt in practice",
+      ]
+    - [
+        94,
+        "src/routes/admin.news.$articleEditionId.tsx",
+        "typeRamp:19 hardColour:69 radiusV2:4 tracking:2",
+      ]
+    - [85, "src/routes/fantasy.top-players.tsx", "fpl:35 hardColour:25 typeRamp:16 tracking:8"]
+    - [85, "src/styles.css", "legacySurface:40 hardColour:23 fpl:22 — the token file itself"]
+    - [52, "src/routes/fantasy.index.tsx", "fpl:33 hardColour:13"]
+    - [52, "src/routes/fantasy.players.tsx", "fpl:40 typeRamp:6"]
+    - [51, "src/components/fpl/primitives.tsx", "fpl:36 hardColour:10"]
+    - [48, "src/routes/admin.tsx", "hardColour:32 typeRamp:12"]
+    - [45, "src/routes/fantasy.players.$playerId.tsx", "fpl:30 typeRamp:9"]
+    - [44, "src/components/fantasy/MyRankCard.tsx", "fpl:27 typeRamp:10"]
+    - [43, "src/routes/admin.news.tsx", "hardColour:36 typeRamp:7"]
+    - [38, "src/components/admin/AdminSurfaces.tsx", "hardColour:30 typeRamp:4"]
+    - [35, "src/components/fantasy/TransferReviewPanel.tsx", "hardColour:15 typeRamp:8 radiusV2:7"]
+    - [35, "src/routes/fantasy.rankings.tsx", "fpl:25 typeRamp:7"]
+    - [32, "src/routes/fantasy.fixtures.tsx", "fpl:23 hardColour:9"]
+    - [29, "src/components/ui/sidebar.tsx", "physicalDir:18 typeRamp:9 — dead vendored file"]
+    - [29, "src/components/welcome/WelcomeScreen.tsx", "hardColour:20 typeRamp:6 radiusV2:2"]
+
+files_taken_to_zero:
+  - src/routes/__root.tsx
+  - src/components/shell/FirstLaunchLanguage.tsx
+  - src/components/shell/LanguageSwitcher.tsx
+  - src/components/matches/MatchScoreHeader.tsx
+  - src/components/matches/LineupsView.tsx
+  - src/components/matches/StandingsTable.tsx
+  - src/components/matches/CompetitionHeader.tsx
+  - src/components/matches/EventTimeline.tsx
+  - src/components/matches/StatComparison.tsx
+  - src/components/matches/LiveIndicator.tsx
+  - src/components/common/FantasyAlertList.tsx
+  - src/components/common/ClubCrest.tsx
+  - src/components/common/SectionHeader.tsx
+  - src/components/common/AccentEyebrow.tsx
+  - src/components/common/DeadlineCountdown.tsx
+  - src/components/legal/LegalDocumentView.tsx
+  - src/components/auth/AuthPromptDialog.tsx
+  - src/components/auth/AuthModeBadge.tsx
+  - src/components/brand/Logo.tsx
+  - src/routes/profile.tsx
+  - src/components/news/CategoryChips.tsx
+  - src/components/news/ClubFilterRow.tsx
+  - src/components/news/SavedButton.tsx
+  - src/components/news/LatestFeed.tsx
+  - src/components/news/PlacementBadge.tsx
+
+# ---------------------------------------------------------------------------
+# What changed
+# ---------------------------------------------------------------------------
+
+changes:
+  - area: 404 and error states (src/routes/__root.tsx)
+    what: >
+      The two screens a visitor can reach with no app shell around them were
+      the last two still painting a `cta-brand` pill, `text-brand` and the
+      Tailwind ramp. Both now use kit tokens. They deliberately stay on plain
+      elements rather than `UiButton`/`UiLinkButton`, because the error
+      boundary renders when the router may itself be what failed, so nothing
+      there should need router context to paint.
+
+  - area: first-launch language chooser (src/components/shell/FirstLaunchLanguage.tsx)
+    what: >
+      The first screen a new visitor ever sees, and the loudest surviving
+      piece of V2: a 24px-radius `glass-surface glass-strong` panel with
+      `border-white/20`, `shadow-2xl`, `bg-white/40` option tiles and a
+      `cta-brand` pill — all light-only. Now an opaque kit card with kit
+      radii, type scale and ink/gradient pairings. 22 divergences to 0.
+
+  - area: navigation
+    what: >
+      `TopBar` desktop nav links were 36px tall (meta type + `py-2`) against
+      the product's 44px floor; they now carry `ui.space.tap`.
+      `LanguageSwitcher`'s trigger was a V2 glass pill sitting directly beside
+      those links and is now the same vocabulary, also at 44px.
+
+  - area: match pages
+    what: >
+      `MatchScoreHeader` (ten unprefixed `tracking-*`, `--brand-accent`,
+      `--surface-hover`, the Tailwind ramp), `LineupsView`, `CompetitionHeader`
+      and the `EventTimeline` / `StatComparison` empty states moved to kit
+      tokens. `StandingsTable`'s form pills were painting straight out of the
+      Fantasy `--fpl-*` palette — a light-only reconstruction with no dark
+      counterpart (BG-0084) — and now use `--ui-positive` / `--ui-negative` /
+      `--ui-surface-sunken`.
+
+  - area: standings sort controls
+    what: >
+      The column-header sort buttons measured 6–24px wide by 15px tall. They
+      are the only way to sort the table. Now `ui.space.tap` (44px), which
+      costs nothing at 390px because the table already sits in an
+      `overflow-x-auto` scroller.
+
+  - area: Home
+    what: >
+      `FantasySummaryCard`'s four metric captions were `truncate` in a
+      four-across 390px row, which cut three of four French captions mid-word
+      ("Points de la…", "Classement gén…"). They now wrap to two clamped
+      lines; the grid stretches the tiles so the row stays aligned.
+
+  - area: Profile, auth, legal
+    what: >
+      `profile.tsx`'s legal-link row, `AuthPromptDialog`'s two CTAs,
+      `AuthModeBadge` (a raw `bg-amber-500/90` + `text-black`, illegible the
+      moment the app is in dark mode), `LegalDocumentView` and
+      `FantasyAlertList` (`text-sky-900` on `bg-sky-500/10`, same problem) all
+      moved to kit tokens.
+
+  - area: Arabic letter-spacing (BG-0069)
+    what: >
+      44 unprefixed `tracking-*` declarations were given the `ltr:` prefix
+      across matches, common, shell, auth, news, admin and the vendored shadcn
+      files that are actually rendered. Arabic letterforms join, and spacing
+      them apart breaks the word.
+    caveat: >
+      35 remain, every one of them in `src/routes/fantasy.*`,
+      `src/components/fantasy/**` or `src/components/fpl/**`. Those files are
+      owned by the Fantasy lanes. The fix is mechanical — prefix with `ltr:` —
+      and it is listed in `remaining_work` so it does not get lost.
+
+  - area: News (behind NEWS_ENABLED=false, done because it was cheap)
+    what: >
+      `CategoryChips` is now the kit's `UiChip`; its row also stopped claiming
+      `role="tablist"`, which it never was — selecting a category filters a
+      feed in place, it does not switch panels. `ClubFilterRow`, `SavedButton`,
+      `LatestFeed` and `PlacementBadge` moved off `--glass-border` /
+      `bg-white/50` / `--brand-accent` onto kit tokens.
+
+  - area: BG-0100 — competition timezone
+    what: >
+      Six date formatters followed the viewer's browser while the match card
+      beside them pinned `Africa/Casablanca`. Fixing the formatters alone
+      would not have been enough: the day *boundary* arithmetic was also
+      browser-local, so a 20:00 Casablanca kickoff was bucketed into the wrong
+      day for anyone outside UTC+1, and the backend (already correctly asked
+      for a Casablanca day) had its answer re-filtered through the wrong
+      calendar.
+    added:
+      file: src/lib/match-kickoff.ts
+      exports: [matchDayKey, isSameMatchDay, startOfMatchDay, addMatchDays, matchDayFromKey]
+      notes: >
+        The zone offset is read at the instant in question rather than
+        hardcoded, because Morocco is not a fixed +01:00 — the clock drops to
+        +00:00 for Ramadan and back. `addMatchDays` therefore steps calendar
+        days, not 86_400_000 ms.
+    call_sites_fixed:
+      - "src/components/matches/DateStrip.tsx — four formatters, the day boundaries, the ±N stepping and the same-day test"
+      - "src/routes/matches.index.tsx — the heading formatter, `sameDay`, `startOfDay`, `dateFromKey` and the React Query key"
+      - "src/routes/matches.$matchId.tsx — the match-day heading"
+      - "src/routes/index.tsx — the Home greeting's date line"
+      - "src/services/football.ts — `dateKey()`, which builds the day sent to the backend"
+    left_alone_deliberately:
+      - "src/lib/format-time.ts — also unpinned, but serves only News (NEWS_ENABLED=false); tracked separately."
+      - "The Fantasy deadline — every surface that renders it already pins Africa/Casablanca."
+    test: src/lib/match-day.timezone.test.ts
+    test_notes: >
+      14 assertions run in child processes launched under TZ=UTC,
+      America/Los_Angeles, America/Sao_Paulo, Asia/Tokyo and Pacific/Auckland.
+      `TZ` is read once at startup, so reassigning `process.env.TZ` mid-run
+      does not move the local calendar and a single-process test would have
+      proved nothing. One test asserts the broken and correct answers actually
+      differ ("2026-09-25" locally in Auckland vs "2026-09-24" in the
+      competition calendar), so the suite fails loudly if it ever stops
+      testing anything.
+
+# ---------------------------------------------------------------------------
+# Requests for the foundation lane (NOT made here — the kit is not mine)
+# ---------------------------------------------------------------------------
+
+kit_change_requests:
+  - id: K1
+    component: UiSegmented
+    request: >
+      A `size` prop, and a 44px floor on every segment. Segments are
+      `min-h-10` (40px), under the product's own tap floor, on what is the
+      primary navigation of the screens that use it. They also hardcode
+      `ui.text.body` (15px), and four French tab labels
+      (Résumé / Stats / Compos / H2H) do not fit a 390px row at that size.
+    evidence: "Measured live at 390px and 1440px, FR and AR: the two Fantasy hub segments render 160×40 and 205×40."
+    current_workaround: >
+      `src/components/matches/MatchTabs.tsx` carries two arbitrary variants —
+      `[&>button]:min-h-[var(--ui-tap-min)]` and
+      `[&>button]:text-[length:var(--ui-text-meta)]` — reaching into the kit's
+      internals from a call site. Left in place as instructed.
+
+  - id: K2
+    component: UiChip
+    request: >
+      Forward the `ref` to the underlying `<button>`, and accept an
+      `aria-current` passthrough.
+    why: >
+      `src/components/matches/DateStrip.tsx` has to wrap every chip in a
+      positioning `<div>` purely to hang a ref for scroll-into-view, and a day
+      in a date strip is a position within a set, not a toggle — it should
+      announce `aria-current="date"`, but the chip only offers `aria-pressed`,
+      so the strip claims the wrong semantics. Both would be removed by this
+      change.
+
+  - id: K3
+    component: MatchCard
+    request: "Deprecate and then remove the `glass` prop."
+    why: >
+      It is inert — both settings resolve to the same kit card — and no caller
+      in the repository passes it. Verified by grep across src/.
+
+  - id: K4
+    component: "ui.tone.ink on light surfaces (relates to BG-0083)"
+    request: "Already known, restated with a live example."
+    why: >
+      `src/components/shell/ThemeSwitcher.tsx` documents why it cannot reuse
+      `UiSegmented`: the active segment paints `text-[color:var(--ui-ink)]` on
+      `var(--ui-surface)`, and `--ui-ink` is a dark navy in BOTH themes, so on
+      the dark surface the active label computes to roughly 1.4:1. A second
+      component now exists working around the same token.
+
+# ---------------------------------------------------------------------------
+# Honest accounting of what is left
+# ---------------------------------------------------------------------------
+
+remaining_work:
+  verdict: >
+    Global design consistency is NOT PASS. It is PASS for the public
+    application surface this lane owns and was able to verify end to end. 1728
+    divergences remain across src/, and 1681 of them (97%) are in files this
+    lane was told not to touch.
+
+  items:
+    - id: R1
+      size: large
+      count: 964
+      what: "Fantasy routes, src/components/fantasy and src/components/fpl."
+      detail: >
+        Built on `--fpl-*`, which styles.css documents as a light-only
+        reconstruction with no `.dark` counterpart, plus literal `bg-white`.
+        Includes 35 unprefixed `tracking-*` — a live Arabic defect (BG-0069) on
+        Fantasy screens.
+      owner: "Fantasy lanes / BG-0084"
+      note: >
+        ~105 of these are in five components nothing imports — SquadListView,
+        PlayerPickerDrawer, TransferReviewPanel, GameweekStatusStrip,
+        FantasyChipCard. Confirm before converting them.
+
+    - id: R2
+      size: medium
+      count: 320
+      what: "Admin routes and src/components/admin."
+      detail: >
+        `admin.news.$articleEditionId.tsx` alone carries 92 (69 hardcoded
+        colours). Not a launch surface and not user-facing, but it is part of
+        "the product looks like one application" if any staff member sees it.
+      owner: unassigned
+
+    - id: R3
+      size: small-but-free
+      count: 170
+      what: "40 vendored shadcn files in src/components/ui/ that nothing imports."
+      detail: >
+        sidebar (29), menubar (24), context-menu (22), calendar (10),
+        navigation-menu (10), chart (8), carousel (6), table (5), accordion,
+        alert, alert-dialog, badge, breadcrumb, hover-card, label, pagination,
+        popover, resizable, scroll-area, switch, tabs, textarea, toggle,
+        tooltip and the rest. Only dialog, dropdown-menu, input-otp, select,
+        sheet and sonner are reachable from app code.
+      recommendation: >
+        Delete them. That removes 170 of the 1728 — a tenth of the product's
+        apparent inconsistency — at zero visual risk, and it is a smaller
+        change than converting them. It is a decision, not a conversion, so
+        this lane did not take it.
+      owner: unassigned
+
+    - id: R4
+      size: small
+      count: 188
+      what: "src/styles.css (85), src/lib/kits.ts (95), src/theme, src/lib/error-page.ts (8)."
+      detail: >
+        `kits.ts` is club kit colour DATA, not styling — it should stay hex and
+        should arguably be exempted from the meter. `error-page.ts` is a
+        standalone HTML string served when the app bundle itself fails to
+        load, so it cannot reference app CSS custom properties. `styles.css` is
+        the token file.
+      owner: "foundation lane / exempt"
+
+    - id: R5
+      size: small
+      count: 39
+      what: "The six vendored shadcn components that ARE rendered: dialog, dropdown-menu, input-otp, select, sheet, sonner."
+      detail: "Mostly the Tailwind type ramp and physical direction utilities inside Radix-driven markup."
+      owner: foundation lane
+
+    - id: R6
+      size: "small, but a design decision"
+      count: 47
+      what: "What is left on the public surface this lane owns."
+      breakdown:
+        - [
+            "src/components/welcome/WelcomeScreen.tsx",
+            28,
+            "A white-on-dark hero that reads its contrast from the V2 dark mesh. Converting it means deciding whether BotolaGO still wants a dark welcome screen at all — a redesign, not a tidy-up. Its 20px-tall guest button, the only way past the sign-up wall, was raised to 44px.",
+          ]
+        - [
+            "src/routes/[.]lovable.oauth.consent.tsx",
+            13,
+            "The Lovable OAuth consent page. An integration surface, not a product screen.",
+          ]
+        - [
+            "src/components/shell/PageBackground.tsx",
+            4,
+            "The `auth` variant's decorative SVG mesh, aria-hidden, kept to match WelcomeScreen. Converts with it.",
+          ]
+        - [
+            "src/components/auth/AuthShell.tsx",
+            1,
+            "The Google logo's brand hex in an inline SVG. Correct as-is.",
+          ]
+        - [
+            "src/components/splash/SplashScreen.tsx",
+            1,
+            "`-left-1/3` on a decorative aria-hidden shimmer sweep whose keyframe translates in X; making it logical would mirror it away from its animation.",
+          ]
+
+  estimate: >
+    R3 is hours (a delete plus a test run). R2 and R5 are each roughly a day.
+    R1 is the large one — days, and it is a redesign of the most complex
+    screens in the product, which is why it is BG-0084 and split across
+    dedicated lanes. R6 is a single design call on the welcome screen.

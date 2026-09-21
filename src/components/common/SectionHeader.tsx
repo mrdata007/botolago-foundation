@@ -1,5 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import { Trans } from "./Trans";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 /**
  * Design System V2 — Section header.
@@ -43,17 +45,17 @@ export function SectionHeader({
               <Icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]" aria-hidden />
             )}
             {eyebrow && (
-              <span className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-brand">
+              <span className="truncate text-[10px] font-black uppercase ltr:tracking-[0.16em] text-brand">
                 {eyebrow}
               </span>
             )}
           </div>
         )}
-        <h2 className="truncate text-[17px] font-black tracking-tight text-foreground sm:text-lg">
+        <h2 className={cn("truncate", ui.text.section, ui.tone.default)}>
           <Trans text={title} />
         </h2>
         {subtitle && (
-          <p className="mt-0.5 truncate text-xs text-[color:var(--text-secondary)]">{subtitle}</p>
+          <p className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.muted)}>{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0 self-center">{action}</div>}

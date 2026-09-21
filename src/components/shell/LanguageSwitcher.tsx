@@ -1,5 +1,7 @@
 import { Languages } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +14,19 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-white/40 px-2.5 py-1.5 text-xs font-semibold text-foreground backdrop-blur transition-colors hover:bg-white/60"
+        className={cn(
+          // The trigger sits in the top bar next to the nav links, so it
+          // carries the same kit vocabulary they do rather than a V2 glass
+          // pill: sunken surface, kit radius, kit meta type, 44px tap floor.
+          "inline-flex items-center justify-center gap-1.5 px-2.5 transition-colors",
+          ui.space.tap,
+          ui.radius.control,
+          ui.surface.sunken,
+          ui.text.meta,
+          "[font-weight:var(--ui-weight-heavy)]",
+          ui.focus,
+          "hover:text-[color:var(--ui-ink)]",
+        )}
         aria-label={t("language.switch")}
       >
         <Languages className="h-4 w-4" aria-hidden />

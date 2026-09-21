@@ -1,4 +1,6 @@
 import type { LegalBlock, LegalDocument } from "@/content/legal/documents";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 /**
  * Renders a `LegalDocument` from `src/content/legal/documents.ts`.
@@ -32,9 +34,7 @@ export function LegalDocumentView({
     // sized by its widest descendant. Without it a table's intrinsic minimum
     // would propagate out and widen the page past the gutter at 390px.
     <article className="min-w-0 pb-6 text-start">
-      <h1 className="text-balance text-2xl font-black leading-tight text-foreground">
-        {doc.title}
-      </h1>
+      <h1 className={cn("text-balance", ui.text.hero, ui.tone.default)}>{doc.title}</h1>
       {doc.blocks.map((block, index) => (
         <Block key={index} block={block} tableScrollHint={tableScrollHint} />
       ))}
@@ -48,16 +48,22 @@ function Block({ block, tableScrollHint }: { block: LegalBlock; tableScrollHint:
       // Every heading in both documents is a top-level numbered section
       // ("1. …" … "16. …"); the source has no sub-headings, so a single <h2>
       // level under the document's <h1> is the whole outline.
-      return (
-        <h2 className="mt-7 text-base font-bold leading-snug text-foreground">{block.text}</h2>
-      );
+      return <h2 className={cn("mt-7", ui.text.section, ui.tone.default)}>{block.text}</h2>;
 
     case "paragraph":
-      return <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{block.text}</p>;
+      return (
+        <p className={cn("mt-3 leading-relaxed", ui.text.secondary, ui.tone.muted)}>{block.text}</p>
+      );
 
     case "list":
       return (
-        <ul className="mt-3 list-disc space-y-2 ps-5 text-sm leading-relaxed text-muted-foreground">
+        <ul
+          className={cn(
+            "mt-3 list-disc space-y-2 ps-5 leading-relaxed",
+            ui.text.secondary,
+            ui.tone.muted,
+          )}
+        >
           {block.items.map((item, index) => (
             <li key={index} className="ps-1">
               {item}
@@ -103,16 +109,26 @@ function Table({
       role="group"
       aria-label={scrollHint}
       tabIndex={0}
-      className="mt-4 max-w-full overflow-x-auto rounded-xl border border-[var(--border-subtle,rgba(0,0,0,0.06))] bg-[color:var(--surface,#fff)]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+      className={cn(
+        "mt-4 max-w-full overflow-x-auto",
+        ui.radius.control,
+        ui.rule.all,
+        ui.surface.card,
+        ui.focus,
+      )}
     >
-      <table className={`${minWidth} border-collapse text-start text-xs`}>
+      <table className={cn(minWidth, "border-collapse text-start", ui.text.meta)}>
         <thead>
           <tr className="bg-muted/60">
             {head.map((cell, index) => (
               <th
                 key={index}
                 scope="col"
-                className="border-b border-[var(--border-subtle,rgba(0,0,0,0.06))] px-3 py-2 text-start align-top font-bold text-foreground"
+                className={cn(
+                  "px-3 py-2 text-start align-top [font-weight:var(--ui-weight-heavy)]",
+                  ui.rule.block,
+                  ui.tone.default,
+                )}
               >
                 {cell}
               </th>
@@ -121,10 +137,7 @@ function Table({
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr
-              key={rowIndex}
-              className="border-b border-[var(--border-subtle,rgba(0,0,0,0.06))] last:border-b-0"
-            >
+            <tr key={rowIndex} className={cn(ui.rule.block, "last:border-b-0")}>
               {row.map((cell, cellIndex) => (
                 <td
                   key={cellIndex}

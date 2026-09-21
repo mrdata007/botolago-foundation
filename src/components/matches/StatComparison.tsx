@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { MatchStatisticComparisonDto } from "@/backend/football/contracts";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { ui } from "@/components/ui-kit";
 
 /** Generic comparison rows backed exclusively by canonical provider statistics. */
 export function StatComparison({
@@ -24,7 +25,15 @@ export function StatComparison({
 
   if (stats.length === 0) {
     return (
-      <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
+      <div
+        className={cn(
+          "border border-dashed border-[color:var(--ui-rule)] px-4 py-8 text-center",
+          ui.radius.control,
+          ui.surface.sunken,
+          ui.text.secondary,
+          ui.tone.muted,
+        )}
+      >
         {t("matches.detail.no_stats")}
       </div>
     );
@@ -44,7 +53,7 @@ export function StatComparison({
 
   return (
     <div className="rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] p-4 shadow-card">
-      <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-3 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-3 text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
         <span className="truncate">{homeName}</span>
         <span className="truncate text-end">{awayName}</span>
       </div>
@@ -72,7 +81,7 @@ export function StatComparison({
                 >
                   {displayValue(home, stat.homeDisplayValue, stat.valueType, stat.unit)}
                 </span>
-                <span className="text-center text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--text-muted)]">
+                <span className="text-center text-[10px] font-black uppercase ltr:tracking-[0.12em] text-[color:var(--text-muted)]">
                   {stat.label}
                 </span>
                 <span

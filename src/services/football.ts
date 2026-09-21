@@ -13,6 +13,7 @@ import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { resolveMediaUrl } from "@/lib/media";
+import { matchDayKey } from "@/lib/match-kickoff";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
 
 export type FootballDataMode = "mock" | "supabase";
@@ -148,9 +149,13 @@ function uniqueClubs(
   return [...teams.values()].map((team) => presentFootballClub(team));
 }
 
-function dateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
+/**
+ * The day key sent to the backend, which resolves it against
+ * `Africa/Casablanca`. Reading the browser's calendar fields here asked for a
+ * different day than the page then filtered on, for every viewer outside
+ * UTC+1 (BG-0100).
+ */
+const dateKey = matchDayKey;
 
 export interface FootballMatchCollection {
   readonly matches: readonly Match[];

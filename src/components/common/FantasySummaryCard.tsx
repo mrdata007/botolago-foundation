@@ -130,8 +130,22 @@ function Metric({
         {value}
       </div>
       {/* `micro` rather than `label`: four metrics share a 390px row, so the
-          caption has to stay dense enough not to truncate to nothing. */}
-      <div className={cn("mt-1 truncate", ui.text.micro, ui.tone.muted)}>{label}</div>
+          caption has to stay dense.
+          It wraps rather than truncates. At 390px each tile is 64px wide and
+          "Points de la journée" needs 106px, so `truncate` was cutting three
+          of the four captions mid-word — "Points de la…", "Classement gén…" —
+          which is exactly the kind of meaning-carrying clipping the launch
+          check forbids. Two clamped lines fit at this size, and the grid
+          stretches the tiles so the row stays aligned. */}
+      <div
+        className={cn(
+          "mt-1 line-clamp-2 leading-tight [overflow-wrap:anywhere]",
+          ui.text.micro,
+          ui.tone.muted,
+        )}
+      >
+        {label}
+      </div>
     </div>
   );
 }

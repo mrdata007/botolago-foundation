@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthProvider";
 import { followService } from "@/services/follows";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
@@ -59,10 +60,10 @@ export function ClubFilterRow({
               aria-pressed={followedIds.has(club.id)}
               disabled={followMutation.isPending}
               className={cn(
-                "ms-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide",
-                followedIds.has(club.id)
-                  ? "bg-[color:var(--brand-accent)] text-white"
-                  : "bg-muted text-muted-foreground",
+                "ms-1 px-1.5 py-0.5",
+                ui.radius.control,
+                ui.text.label,
+                followedIds.has(club.id) ? ui.surface.ink : cn(ui.surface.sunken, ui.tone.muted),
               )}
             >
               {followedIds.has(club.id) ? t("news.following") : t("news.follow")}
@@ -103,11 +104,19 @@ function ClubChip({
       }}
       aria-pressed={active}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer select-none items-center gap-1 rounded-full border py-1 pe-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        // The kit's chip vocabulary, hand-applied rather than via `UiChip`:
+        // this chip contains a nested follow-toggle <button>, so it must not
+        // itself be a <button>. Everything visual still comes from the kit.
+        "inline-flex cursor-pointer select-none items-center gap-1 py-1 pe-3 transition-colors",
+        ui.space.tap,
+        ui.radius.full,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-strong)]",
+        ui.focus,
         leading ? "ps-1" : "ps-3",
         active
-          ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
-          : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
+          ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]")
+          : cn(ui.surface.sunken, ui.tone.muted),
       )}
     >
       {leading}

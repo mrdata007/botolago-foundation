@@ -19,3 +19,113 @@ export function isKickoffTimeUnconfirmed(match: Pick<Match, "kickoff" | "status"
     kickoff.getUTCMilliseconds() === 0
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Competition calendar days (BG-0100)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Match days belong to the competition, not to the viewer.
+ *
+ * A kickoff is a single instant, but "which day is this match on" is a
+ * calendar question, and the only calendar the answer can sensibly come from
+ * is the competition's own (`MATCH_TIME_ZONE`). Deriving it from the
+ * browser's zone instead — `new Date(kickoff).getDate()` — files a 20:00
+ * Casablanca kickoff under the previous day for a viewer in São Paulo and
+ * under the next day for one in Sydney, while the match card beside it,
+ * which pins the zone when it formats the time, keeps saying otherwise. One
+ * page, two answers.
+ *
+ * Everything below reads and writes the competition calendar, so the day a
+ * strip highlights, the day a request asks the backend for, the day a match
+ * is filtered into and the day a heading names are all the same day for
+ * every viewer on earth.
+ */
+
+const DAY_PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone: MATCH_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
+type ZoneParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
+
+function zoneParts(instant: Date): ZoneParts {
+  const out: Record<string, number> = {};
+  for (const part of DAY_PARTS.formatToParts(instant)) {
+    if (part.type !== "literal") out[part.type] = Number(part.value);
+  }
+  return out as unknown as ZoneParts;
+}
+
+/**
+ * The competition-zone offset, in ms, in effect at `instant`.
+ *
+ * Morocco is not a fixed `+01:00`: the clock drops to `+00:00` for Ramadan
+ * and back afterwards, so the offset has to be read at the instant in
+ * question rather than hardcoded.
+ */
+function zoneOffsetMs(instant: Date): number {
+  const p = zoneParts(instant);
+  const asIfUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  // `instant` carries sub-second precision the parts do not; drop it so the
+  // difference is exactly the offset.
+  return asIfUtc - Math.floor(instant.getTime() / 1000) * 1000;
+}
+
+/** The instant of competition-zone midnight opening the given calendar day. */
+function midnightOf(year: number, month: number, day: number): Date {
+  const wallAsUtc = Date.UTC(year, month - 1, day);
+  // One correction pass resolves the ordinary case; a second settles the day
+  // the offset itself changes, where the first guess can land on the wrong
+  // side of the transition.
+  let instant = new Date(wallAsUtc);
+  for (let i = 0; i < 2; i += 1) instant = new Date(wallAsUtc - zoneOffsetMs(instant));
+  return instant;
+}
+
+/** The competition calendar day a moment falls on, as `YYYY-MM-DD`. */
+export function matchDayKey(value: Date): string {
+  const p = zoneParts(value);
+  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}
+
+/** True when both moments fall on the same competition calendar day. */
+export function isSameMatchDay(a: Date, b: Date): boolean {
+  return matchDayKey(a) === matchDayKey(b);
+}
+
+/** Competition-zone midnight opening the day `value` falls on. */
+export function startOfMatchDay(value: Date): Date {
+  const p = zoneParts(value);
+  return midnightOf(p.year, p.month, p.day);
+}
+
+/**
+ * Competition-zone midnight `days` calendar days after the day `value` falls
+ * on. Calendar arithmetic, not `+ 86_400_000` — across an offset change a day
+ * is not 24 hours long.
+ */
+export function addMatchDays(value: Date, days: number): Date {
+  const p = zoneParts(value);
+  const shifted = new Date(Date.UTC(p.year, p.month - 1, p.day + days));
+  return midnightOf(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, shifted.getUTCDate());
+}
+
+/** Competition-zone midnight of a `YYYY-MM-DD` key. */
+export function matchDayFromKey(key: string): Date {
+  const [year, month, day] = key.split("-").map(Number);
+  return midnightOf(year!, month!, day!);
+}

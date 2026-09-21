@@ -3,6 +3,12 @@ import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { ui, UiButton, UiCard, UiChip } from "@/components/ui-kit";
+import {
+  addMatchDays,
+  isSameMatchDay,
+  MATCH_TIME_ZONE,
+  startOfMatchDay,
+} from "@/lib/match-kickoff";
 
 /**
  * Compact date strip.
@@ -17,6 +23,10 @@ import { ui, UiButton, UiCard, UiChip } from "@/components/ui-kit";
  * shortcut are `UiButton`s, and the shell is a `UiCard`.
  *
  * Public props are unchanged.
+ *
+ * Days are competition-calendar days (`Africa/Casablanca`), not the
+ * viewer's: the strip highlights, groups and labels the same day as the
+ * match cards below it for a viewer in any zone (BG-0100).
  *
  * Still true after the conversion:
  *  - ≥44 px touch targets on nav buttons and each day cell (`--ui-tap-min`)
@@ -45,21 +55,20 @@ export function DateStrip({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLDivElement>(null);
 
-  const startOfDay = (d: Date) => {
-    const c = new Date(d);
-    c.setHours(0, 0, 0, 0);
-    return c;
-  };
-  const today = useMemo(() => startOfDay(new Date()), []);
-  const selectedDay = useMemo(() => startOfDay(selected), [selected]);
-  const minimumDay = useMemo(() => (minDate ? startOfDay(minDate) : null), [minDate]);
-  const maximumDay = useMemo(() => (maxDate ? startOfDay(maxDate) : null), [maxDate]);
+  // Every boundary below is competition-zone midnight. Using the browser's
+  // midnight instead is what filed a 20:00 Casablanca kickoff under the wrong
+  // day for anyone outside UTC+1 (BG-0100).
+  const today = useMemo(() => startOfMatchDay(new Date()), []);
+  const selectedDay = useMemo(() => startOfMatchDay(selected), [selected]);
+  const minimumDay = useMemo(() => (minDate ? startOfMatchDay(minDate) : null), [minDate]);
+  const maximumDay = useMemo(() => (maxDate ? startOfMatchDay(maxDate) : null), [maxDate]);
 
   const days = useMemo(() => {
     const list: Date[] = [];
     for (let i = -rangeDays; i <= rangeDays; i++) {
-      const d = new Date(selectedDay);
-      d.setDate(d.getDate() + i);
+      // Calendar-day steps, not `+ i * 86_400_000`: Morocco's offset moves
+      // for Ramadan, so some days are not 24 hours long.
+      const d = addMatchDays(selectedDay, i);
       if (minimumDay && d < minimumDay) continue;
       if (maximumDay && d > maximumDay) continue;
       list.push(d);
@@ -68,9 +77,16 @@ export function DateStrip({
   }, [selectedDay, rangeDays, minimumDay, maximumDay]);
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
-  const dayFmt = new Intl.DateTimeFormat(locale, { day: "numeric" });
-  const monthFmt = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" });
+  const weekdayFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
+    weekday: "short",
+  });
+  const dayFmt = new Intl.DateTimeFormat(locale, { timeZone: MATCH_TIME_ZONE, day: "numeric" });
+  const monthFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
+    month: "short",
+    year: "numeric",
+  });
 
   // Center the active day when it changes.
   //
@@ -92,17 +108,13 @@ export function DateStrip({
   }, [selectedDay]);
 
   const shiftBy = (delta: number) => {
-    const d = new Date(selectedDay);
-    d.setDate(d.getDate() + delta);
+    const d = addMatchDays(selectedDay, delta);
     if (minimumDay && d < minimumDay) return;
     if (maximumDay && d > maximumDay) return;
     onSelect(d);
   };
 
-  const isSameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+  const isSameDay = isSameMatchDay;
 
   const isToday = isSameDay(selectedDay, today);
   const todayInRange = (!minimumDay || today >= minimumDay) && (!maximumDay || today <= maximumDay);
@@ -115,6 +127,7 @@ export function DateStrip({
   const NextIcon = dir === "rtl" ? ChevronLeft : ChevronRight;
 
   const heading = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",

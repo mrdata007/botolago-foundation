@@ -24,6 +24,9 @@ import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
 import { RotateCcw, Home } from "lucide-react";
 
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
+
 function NotFoundComponent() {
   return (
     <I18nProvider>
@@ -32,19 +35,51 @@ function NotFoundComponent() {
   );
 }
 
+/**
+ * The 404 and error screens are the two pages a visitor can reach with no
+ * app shell around them, which is exactly why they used to be the two that
+ * looked like a different product: the V2 `cta-brand` pill, the Tailwind
+ * type ramp and `text-brand` survived here after every routed screen had
+ * moved on. They now speak the kit's language like everything else.
+ *
+ * They deliberately stay on plain elements and `ui` class tokens rather than
+ * `UiButton`/`UiLinkButton`: the error boundary renders when the router may
+ * itself be the thing that failed, so nothing here should need router
+ * context to paint.
+ */
+const stateActionClass = cn(
+  "inline-flex items-center justify-center gap-2 px-4",
+  ui.space.tap,
+  ui.radius.control,
+  ui.text.bodyStrong,
+  ui.focus,
+  "transition-colors",
+);
+
 function NotFoundBody() {
   const { t, dir } = useI18n();
   return (
-    <div dir={dir} className="flex min-h-dvh items-center justify-center bg-background px-4">
+    <div
+      dir={dir}
+      className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
+    >
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-black text-brand">{t("notfound.code")}</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("notfound.title")}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{t("notfound.description")}</p>
+        <h1
+          className={cn(
+            ui.text.tabular,
+            ui.tone.ink,
+            "text-[calc(var(--ui-text-hero)*2)] [font-weight:var(--ui-weight-hero)] leading-none",
+          )}
+        >
+          {t("notfound.code")}
+        </h1>
+        <h2 className={cn("mt-4", ui.text.title, ui.tone.default)}>{t("notfound.title")}</h2>
+        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("notfound.description")}</p>
         <div className="mt-6">
           <Link
             to="/"
             aria-label={t("state.go_home")}
-            className="inline-flex items-center justify-center gap-2 rounded-md cta-brand px-4 py-2 text-sm font-medium transition-colors"
+            className={cn(stateActionClass, ui.surface.ink)}
           >
             <Home className="h-4 w-4" aria-hidden />
             <span>{t("state.go_home")}</span>
@@ -71,18 +106,22 @@ function ErrorBody({ reset }: { reset: () => void }) {
   const { t, dir } = useI18n();
   const router = useRouter();
   return (
-    <div dir={dir} className="flex min-h-dvh items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("error.title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("error.description")}</p>
+    <div
+      dir={dir}
+      className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
+    >
+      <div className="max-w-md text-center" role="alert">
+        <h1 className={cn(ui.text.title, ui.tone.default)}>{t("error.title")}</h1>
+        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("error.description")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
+            type="button"
             onClick={() => {
               router.invalidate();
               reset();
             }}
             aria-label={t("state.retry")}
-            className="inline-flex items-center justify-center gap-2 rounded-md cta-brand px-4 py-2 text-sm font-medium transition-colors"
+            className={cn(stateActionClass, ui.surface.ink)}
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             <span>{t("state.retry")}</span>
@@ -90,7 +129,12 @@ function ErrorBody({ reset }: { reset: () => void }) {
           <a
             href="/"
             aria-label={t("state.go_home")}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className={cn(
+              stateActionClass,
+              ui.rule.all,
+              ui.tone.default,
+              "hover:bg-[color:var(--ui-surface-sunken)]",
+            )}
           >
             <Home className="h-4 w-4" aria-hidden />
             <span>{t("state.go_home")}</span>

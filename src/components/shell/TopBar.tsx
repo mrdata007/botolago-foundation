@@ -51,7 +51,11 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "px-3 py-2 transition-colors",
+                  // `inline-flex` + the kit's tap minimum: these links were
+                  // 36px tall (meta type + `py-2`), under the 44px floor the
+                  // rest of the product holds to.
+                  "inline-flex items-center justify-center px-3 transition-colors",
+                  ui.space.tap,
                   ui.radius.control,
                   ui.text.meta,
                   "[font-weight:var(--ui-weight-heavy)]",

@@ -21,17 +21,17 @@ export function CompetitionHeader({
   return (
     <div className={cn("flex items-center gap-2.5 px-1 pb-2 pt-1", className)}>
       <div
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white shadow-subtle"
-        style={{ background: "var(--bg-brand-gradient)" }}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-[var(--ui-radius-control)] text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-card)]"
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
         aria-hidden
       >
         <Trophy className="h-4 w-4" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-black tracking-tight text-foreground">
+        <div className="truncate text-[13px] font-black ltr:tracking-tight text-foreground">
           {t("matches.competition.botola")}
         </div>
-        <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+        <div className="truncate text-[10px] font-semibold uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
           {t("matches.competition.country")}
         </div>
       </div>

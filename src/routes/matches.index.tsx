@@ -22,6 +22,13 @@ import {
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import {
+  isSameMatchDay,
+  matchDayFromKey,
+  matchDayKey,
+  MATCH_TIME_ZONE,
+  startOfMatchDay,
+} from "@/lib/match-kickoff";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
@@ -67,24 +74,16 @@ function bucketOf(m: Match): "live" | "upcoming" | "finished" | "other" {
   return "other"; // postponed etc. — rendered under upcoming for the selected date
 }
 
-function sameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function dateFromKey(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year!, month! - 1, day!);
-}
-
-function startOfDay(value: Date): Date {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
+/**
+ * Day identity on this page is the competition's, not the viewer's
+ * (BG-0100). The backend is already asked for a Casablanca day; filtering
+ * the answer back through the browser's calendar is what made a 20:00
+ * kickoff vanish from, or land on the wrong side of, the day the strip above
+ * it was highlighting.
+ */
+const sameDay = isSameMatchDay;
+const dateFromKey = matchDayFromKey;
+const startOfDay = startOfMatchDay;
 
 function dateForSeason(season: FootballSeason): Date {
   const today = startOfDay(new Date());
@@ -132,7 +131,7 @@ function MatchesPage() {
     queryKey: [
       "football",
       "matches",
-      `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`,
+      matchDayKey(selectedDate),
       selectedSeason?.id ?? "default",
       lang,
     ],
@@ -207,6 +206,7 @@ function MatchesPage() {
   }, [dayMatches]);
 
   const dateFmt = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",

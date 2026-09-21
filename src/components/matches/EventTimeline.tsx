@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club } from "@/types/domain";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { ui } from "@/components/ui-kit";
 
 /** Provider-backed key-events timeline. Unknown team attribution stays centred. */
 export function EventTimeline({
@@ -29,7 +30,15 @@ export function EventTimeline({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
+      <div
+        className={cn(
+          "border border-dashed border-[color:var(--ui-rule)] px-4 py-8 text-center",
+          ui.radius.control,
+          ui.surface.sunken,
+          ui.text.secondary,
+          ui.tone.muted,
+        )}
+      >
         {t("matches.detail.no_events")}
       </div>
     );
@@ -63,7 +72,7 @@ function HalfTimeDivider() {
   return (
     <div className="relative my-1 flex items-center gap-2" role="separator">
       <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-      <span className="rounded-full bg-[color:var(--surface-hover)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
+      <span className="rounded-full bg-[color:var(--surface-hover)] px-2.5 py-1 text-[10px] font-black uppercase ltr:tracking-[0.16em] text-[color:var(--text-muted)]">
         {t("matches.status.ht")}
       </span>
       <span className="h-px flex-1 bg-[var(--border-subtle)]" />
@@ -149,7 +158,7 @@ function EventRow({
     >
       <div
         className={cn(
-          "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em]",
+          "flex items-center gap-1.5 text-[10px] font-black uppercase ltr:tracking-[0.14em]",
           isAway && "flex-row-reverse",
         )}
         style={{ color: accent }}

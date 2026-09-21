@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/provider";
 import { Timer } from "lucide-react";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 function diff(target: Date) {
   const ms = Math.max(0, target.getTime() - Date.now());
@@ -19,7 +21,15 @@ export function DeadlineCountdown({ iso }: { iso: string }) {
   }, [iso]);
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-[var(--glass-border)] bg-white/50 px-3 py-1.5 text-xs font-semibold text-foreground backdrop-blur">
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 px-3 py-1.5",
+        ui.radius.full,
+        ui.surface.sunken,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-strong)]",
+      )}
+    >
       <Timer className="h-3.5 w-3.5 text-[color:var(--brand-accent)]" aria-hidden />
       <span className="tabular-nums">
         {now.d}

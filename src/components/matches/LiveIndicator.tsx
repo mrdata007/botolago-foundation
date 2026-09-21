@@ -24,7 +24,7 @@ export function LiveIndicator({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full font-black uppercase tracking-[0.14em]",
+        "inline-flex items-center gap-1 rounded-full font-black uppercase ltr:tracking-[0.14em]",
         "bg-[color:color-mix(in_oklab,var(--color-live)_14%,transparent)] text-[color:var(--color-live)]",
         sizes,
         className,
