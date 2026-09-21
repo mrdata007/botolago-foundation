@@ -760,6 +760,15 @@ function UiOverlayClose({ onSurface = false }: { onSurface?: boolean }) {
  *
  * `title` is required, because a dialog without an accessible name is a
  * defect; pass `titleHidden` when the sheet's own header already shows it.
+ *
+ * WIDTH. It matches the content column (`max-w-2xl`), which is what
+ * `UiScreen width="content"` and `FantasyFrame` both use, so a sheet is exactly
+ * as wide as the screen it rises over. It was pinned to `--ui-column-max`
+ * (480px) to keep a sheet "thumb-width" once the Fantasy column widened past
+ * it. That cap has no effect below 672px — the sheet is already full-bleed on
+ * every phone — so the only place it showed was desktop, where thumb reach is
+ * not a constraint and a 480px sheet under a 672px screen reads as a mistake.
+ * The extra width is also where the picker's price and form columns fit.
  */
 export function UiSheet({
   open,
@@ -791,7 +800,7 @@ export function UiSheet({
         <Dialog.Content
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] flex-col overflow-hidden",
-            "mx-auto w-full max-w-[var(--ui-column-max)]",
+            "mx-auto w-full max-w-2xl",
             "rounded-t-[var(--ui-radius-sheet)]",
             ui.surface.overlay,
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

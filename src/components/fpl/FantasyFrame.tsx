@@ -22,9 +22,11 @@ import { cn } from "@/lib/utils";
  * This deliberately reuses `max-w-2xl` — the kit's own rule for a content
  * column — rather than inventing a third width.
  *
- * (`--ui-column-max` is not wrong; it is the phone-canvas token, and
- * `UiSheet` still uses it so a bottom sheet stays thumb-width. It is just
- * not what a page column in this product is.)
+ * (`--ui-column-max` is not wrong; it is the phone-canvas token, still
+ * offered as `UiScreen width="column"`. It is just not what a page column in
+ * this product is. `UiSheet` was pinned to it too, and no longer is: a 480px
+ * sheet under a 672px screen only ever showed on desktop, where the
+ * "thumb-width" that justified it is not a constraint.)
  *
  * The gutter is NOT applied here, unlike `UiScreen`: Fantasy screens render
  * full-bleed bands of their own — the hero gradient, `FplHeader`, `FplBanner`
