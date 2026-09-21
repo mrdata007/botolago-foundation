@@ -1,13 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { loadAdminStaffRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
-import {
-  adminButtonClass,
-  adminDangerButtonClass,
-  adminFieldClass,
-  adminRepositoryContext,
-} from "@/backend/admin/functional-route-helpers";
+import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
 import { SupabaseAdminControlPlaneRepository } from "@/backend/admin/supabase-control-plane-repository";
 import { SupabaseAdminSecurityOperationsRepository } from "@/backend/admin/supabase-security-operations-repository";
 import type { ApprovalQueueItemDto } from "@/backend/admin/control-plane-contracts";
@@ -21,6 +16,11 @@ import {
   AdminNotice,
   AdminSectionHeading,
 } from "@/components/admin/AdminSurfaces";
+import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import {
+  destructiveActionReducer,
+  IDLE_DESTRUCTIVE_ACTION,
+} from "@/components/admin/destructive-action";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/approvals")({
@@ -48,9 +48,14 @@ function AdminApprovalsRoute() {
   const reads = useMemo(() => new SupabaseAdminControlPlaneRepository(), []);
   const mutations = useMemo(() => new SupabaseAdminSecurityOperationsRepository(), []);
   const [items, setItems] = useState<readonly ApprovalQueueItemDto[]>([]);
-  const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  /**
+   * One armed decision at a time, carrying the motive typed for *that* decision
+   * on *that* request. The queue used to hold a single page-level `reason`,
+   * so a motive written about one request armed "Rejeter" and "Annuler" on
+   * every other row. See `components/admin/destructive-action.ts`.
+   */
+  const [action, dispatch] = useReducer(destructiveActionReducer, IDLE_DESTRUCTIVE_ACTION);
 
   const reload = useCallback(async () => {
     if (access.state !== "authorized") return;
@@ -76,9 +81,9 @@ function AdminApprovalsRoute() {
   const transition = async (
     item: ApprovalQueueItemDto,
     operation: "approve" | "reject" | "cancel" | "execute",
+    reason: string,
   ) => {
     if (access.state !== "authorized") return;
-    setBusyId(item.approvalId);
     setMessage(null);
     try {
       const context = adminRepositoryContext(access);
@@ -102,12 +107,8 @@ function AdminApprovalsRoute() {
       await reload();
     } catch (error) {
       setMessage(`${rtl ? "رُفض الانتقال" : "Transition refusée"}: ${mapAdminError(error).code}`);
-    } finally {
-      setBusyId(null);
     }
   };
-
-  const reasonTooShort = reason.trim().length < MINIMUM_REASON_LENGTH;
 
   return (
     <AdminFunctionalRoute
@@ -122,26 +123,16 @@ function AdminApprovalsRoute() {
     >
       {access.state === "authorized" && (
         <div className="grid gap-6">
-          <section className={`${ADMIN_PANEL_CLASS} p-4`} aria-labelledby="admin-approval-reason">
-            <label className="grid gap-2 text-sm">
-              <span id="admin-approval-reason" className="font-medium text-slate-200">
-                {rtl ? "سبب القرار أو التنفيذ" : "Motif de décision ou d’exécution"}
-              </span>
-              <input
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                minLength={MINIMUM_REASON_LENGTH}
-                maxLength={500}
-                className={adminFieldClass}
-                aria-describedby="admin-approval-reason-hint"
-              />
-            </label>
-            <p id="admin-approval-reason-hint" className="mt-2 text-xs text-slate-400">
-              {rtl
-                ? "مطلوب قبل أي قرار؛ ثمانية أحرف على الأقل، ويُسجَّل في التدقيق."
-                : "Requis avant toute décision : 8 caractères minimum, consigné dans l’audit."}
-            </p>
-          </section>
+          {/* The motive is asked for inside each decision's own confirm step.
+              A single page-level field was the defect: it armed every row. */}
+          <p
+            className={`${ADMIN_PANEL_CLASS} p-4 text-xs leading-6 text-slate-400`}
+            data-testid="admin-approval-reason-hint"
+          >
+            {rtl
+              ? "يتطلب كل قرار تأكيداً صريحاً وسبباً خاصاً بذلك الطلب وحده: ثمانية أحرف على الأقل، ويُسجَّل في التدقيق."
+              : "Chaque décision exige une confirmation explicite et un motif propre à cette demande : 8 caractères minimum, consigné dans l’audit."}
+          </p>
 
           <section aria-labelledby="admin-approvals-heading">
             <AdminSectionHeading id="admin-approvals-heading">
@@ -156,8 +147,10 @@ function AdminApprovalsRoute() {
             ) : (
               <ul className="mt-3 grid gap-3">
                 {items.map((item) => {
-                  const busy = busyId === item.approvalId;
-                  const blocked = busy || reasonTooShort;
+                  // Every action key carries this request's own id, so a motive
+                  // typed here can never reach another row -- nor another
+                  // operation on this same row.
+                  const key = (operation: string) => `${operation}:${item.approvalId}`;
                   // Exactly the same conditions the buttons below use: the
                   // action strip is simply not drawn when none of them apply.
                   const hasActions =
@@ -201,43 +194,105 @@ function AdminApprovalsRoute() {
                       >
                         {item.status === "pending" && (
                           <>
-                            <button
-                              className={`${adminButtonClass} w-full sm:w-auto`}
-                              type="button"
-                              disabled={blocked}
-                              onClick={() => void transition(item, "approve")}
-                            >
-                              {rtl ? "موافقة" : "Approuver"}
-                            </button>
-                            <button
-                              className={`${adminDangerButtonClass} w-full sm:w-auto`}
-                              type="button"
-                              disabled={blocked}
-                              onClick={() => void transition(item, "reject")}
-                            >
-                              {rtl ? "رفض" : "Rejeter"}
-                            </button>
+                            <AdminDestructiveAction
+                              actionKey={key("approve")}
+                              state={action}
+                              dispatch={dispatch}
+                              minimumReasonLength={MINIMUM_REASON_LENGTH}
+                              rtl={rtl}
+                              tone="primary"
+                              testId="admin-approval-approve"
+                              triggerTestId="admin-approval-approve"
+                              triggerLabel={rtl ? "موافقة" : "Approuver"}
+                              confirmLabel={rtl ? "تأكيد الموافقة" : "Confirmer l’approbation"}
+                              confirmPrompt={
+                                <>
+                                  {rtl ? "الموافقة على الطلب " : "Approuver la demande "}
+                                  <AdminDatum className="font-semibold">
+                                    {item.operationType}
+                                  </AdminDatum>
+                                  {rtl
+                                    ? "؟ تصبح قابلة للتنفيذ بعد ذلك."
+                                    : " ? Elle devient exécutable ensuite."}
+                                </>
+                              }
+                              onConfirm={(reason) => transition(item, "approve", reason)}
+                            />
+                            <AdminDestructiveAction
+                              actionKey={key("reject")}
+                              state={action}
+                              dispatch={dispatch}
+                              minimumReasonLength={MINIMUM_REASON_LENGTH}
+                              rtl={rtl}
+                              testId="admin-approval-reject"
+                              triggerTestId="admin-approval-reject"
+                              triggerLabel={rtl ? "رفض" : "Rejeter"}
+                              confirmLabel={rtl ? "تأكيد الرفض" : "Confirmer le rejet"}
+                              confirmPrompt={
+                                <>
+                                  {rtl ? "رفض الطلب " : "Rejeter la demande "}
+                                  <AdminDatum className="font-semibold">
+                                    {item.operationType}
+                                  </AdminDatum>
+                                  {rtl
+                                    ? "؟ القرار نهائي ولا يمكن الموافقة على الطلب بعده."
+                                    : " ? La décision est définitive : la demande ne pourra plus être approuvée."}
+                                </>
+                              }
+                              onConfirm={(reason) => transition(item, "reject", reason)}
+                            />
                             {item.requesterPrincipalId === access.context.staffPrincipalId && (
-                              <button
-                                className={`${adminDangerButtonClass} w-full sm:w-auto`}
-                                type="button"
-                                disabled={blocked}
-                                onClick={() => void transition(item, "cancel")}
-                              >
-                                {rtl ? "إلغاء" : "Annuler"}
-                              </button>
+                              <AdminDestructiveAction
+                                actionKey={key("cancel")}
+                                state={action}
+                                dispatch={dispatch}
+                                minimumReasonLength={MINIMUM_REASON_LENGTH}
+                                rtl={rtl}
+                                testId="admin-approval-cancel"
+                                triggerTestId="admin-approval-cancel"
+                                triggerLabel={rtl ? "إلغاء" : "Annuler"}
+                                confirmLabel={rtl ? "تأكيد الإلغاء" : "Confirmer l’annulation"}
+                                confirmPrompt={
+                                  <>
+                                    {rtl ? "إلغاء طلبك " : "Annuler votre demande "}
+                                    <AdminDatum className="font-semibold">
+                                      {item.operationType}
+                                    </AdminDatum>
+                                    {rtl
+                                      ? "؟ لن يكون بالإمكان الموافقة عليه بعد ذلك."
+                                      : " ? Elle ne pourra plus être approuvée."}
+                                  </>
+                                }
+                                onConfirm={(reason) => transition(item, "cancel", reason)}
+                              />
                             )}
                           </>
                         )}
                         {item.status === "approved" && item.executionStatus === "not_started" && (
-                          <button
-                            className={`${adminButtonClass} w-full sm:w-auto`}
-                            type="button"
-                            disabled={blocked}
-                            onClick={() => void transition(item, "execute")}
-                          >
-                            {rtl ? "تنفيذ مرة واحدة" : "Exécuter une fois"}
-                          </button>
+                          <AdminDestructiveAction
+                            actionKey={key("execute")}
+                            state={action}
+                            dispatch={dispatch}
+                            minimumReasonLength={MINIMUM_REASON_LENGTH}
+                            rtl={rtl}
+                            tone="primary"
+                            testId="admin-approval-execute"
+                            triggerTestId="admin-approval-execute"
+                            triggerLabel={rtl ? "تنفيذ مرة واحدة" : "Exécuter une fois"}
+                            confirmLabel={rtl ? "تأكيد التنفيذ" : "Confirmer l’exécution"}
+                            confirmPrompt={
+                              <>
+                                {rtl ? "تنفيذ الطلب " : "Exécuter la demande "}
+                                <AdminDatum className="font-semibold">
+                                  {item.operationType}
+                                </AdminDatum>
+                                {rtl
+                                  ? "؟ يجري التنفيذ مرة واحدة فقط ولا يمكن التراجع عنه."
+                                  : " ? L’exécution n’a lieu qu’une seule fois et ne peut pas être annulée."}
+                              </>
+                            }
+                            onConfirm={(reason) => transition(item, "execute", reason)}
+                          />
                         )}
                       </div>
                     </li>

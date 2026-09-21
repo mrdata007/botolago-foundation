@@ -1,13 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { loadAdminStaffRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
-import {
-  adminButtonClass,
-  adminDangerButtonClass,
-  adminFieldClass,
-  adminRepositoryContext,
-} from "@/backend/admin/functional-route-helpers";
+import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
 import { SupabaseAdminControlPlaneRepository } from "@/backend/admin/supabase-control-plane-repository";
 import { SupabaseAdminSecurityOperationsRepository } from "@/backend/admin/supabase-security-operations-repository";
 import { SupabaseAdminAuthorizationRepository } from "@/backend/admin/supabase-repository";
@@ -15,6 +10,7 @@ import type { AssignmentHistoryPageDto, StaffAssignmentDto } from "@/backend/adm
 import type { StaffPrincipalSummaryDto } from "@/backend/admin/control-plane-contracts";
 import { mapAdminError } from "@/backend/admin/errors";
 import {
+  ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
   AdminBadge,
   AdminDatum,
@@ -24,6 +20,11 @@ import {
   AdminSectionHeading,
   AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
+import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import {
+  destructiveActionReducer,
+  IDLE_DESTRUCTIVE_ACTION,
+} from "@/components/admin/destructive-action";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/staff/$principalId")({
@@ -54,9 +55,14 @@ function AdminStaffDetailRoute() {
   const [principal, setPrincipal] = useState<StaffPrincipalSummaryDto | null>(null);
   const [assignments, setAssignments] = useState<readonly StaffAssignmentDto[]>([]);
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryPageDto["items"]>([]);
-  const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  /**
+   * One armed action at a time, carrying the motive typed for *that* action.
+   * This page used to hold a single page-level `reason`, which left every
+   * assignment row's "Révoquer le rôle" armed with a motive written about a
+   * different role. See `components/admin/destructive-action.ts`.
+   */
+  const [action, dispatch] = useReducer(destructiveActionReducer, IDLE_DESTRUCTIVE_ACTION);
 
   const reload = useCallback(async () => {
     if (access.state !== "authorized") return;
@@ -81,9 +87,8 @@ function AdminStaffDetailRoute() {
     void reload();
   }, [reload]);
 
-  const mutate = async (operation: "suspend" | "restore" | "emergency") => {
+  const mutate = async (operation: "suspend" | "restore" | "emergency", reason: string) => {
     if (access.state !== "authorized") return;
-    setBusy(true);
     setMessage(null);
     const input = { staffPrincipalId: principalId, reason, idempotencyKey: crypto.randomUUID() };
     try {
@@ -102,14 +107,11 @@ function AdminStaffDetailRoute() {
       await reload();
     } catch (error) {
       setMessage(`${rtl ? "رُفضت العملية" : "Opération refusée"}: ${mapAdminError(error).code}`);
-    } finally {
-      setBusy(false);
     }
   };
 
-  const revokeAssignment = async (assignmentId: string) => {
+  const revokeAssignment = async (assignmentId: string, reason: string) => {
     if (access.state !== "authorized") return;
-    setBusy(true);
     setMessage(null);
     try {
       await mutations.revokeRole(
@@ -126,12 +128,8 @@ function AdminStaffDetailRoute() {
       await reload();
     } catch (error) {
       setMessage(`${rtl ? "رُفض الإلغاء" : "Révocation refusée"}: ${mapAdminError(error).code}`);
-    } finally {
-      setBusy(false);
     }
   };
-
-  const reasonTooShort = reason.trim().length < MINIMUM_REASON_LENGTH;
 
   return (
     <AdminFunctionalRoute
@@ -150,9 +148,10 @@ function AdminStaffDetailRoute() {
               label keeps the ambient direction. It used to be handed to the
               shell as a bare description string, where it could not be. */}
           <p className={`${ADMIN_PANEL_CLASS} flex flex-wrap items-baseline gap-x-2 gap-y-1 p-3`}>
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              {rtl ? "معرّف الهوية" : "Identifiant"}
-            </span>
+            {/* A forked copy of ADMIN_LABEL_CLASS used to live here, with a
+                bare `tracking-wide`: unprefixed letter-spacing pulls joined
+                Arabic letterforms apart. The shared primitive spaces LTR only. */}
+            <span className={ADMIN_LABEL_CLASS}>{rtl ? "معرّف الهوية" : "Identifiant"}</span>
             <AdminDatum className="text-xs text-slate-300">{principalId}</AdminDatum>
           </p>
 
@@ -234,16 +233,34 @@ function AdminStaffDetailRoute() {
                             )}
                           </AdminField>
                         </dl>
-                        {/* Revocation is immediate and audited: the required
-                            motive above is the gate, unchanged here. */}
-                        <button
-                          type="button"
-                          className={`${adminDangerButtonClass} mt-4 w-full sm:w-auto`}
-                          disabled={busy || reasonTooShort}
-                          onClick={() => void revokeAssignment(assignment.assignmentId)}
-                        >
-                          {rtl ? "إلغاء الدور" : "Révoquer le rôle"}
-                        </button>
+                        {/* Revocation is immediate and audited, so it takes a
+                            confirm step of its own. The action key carries the
+                            assignment id: the motive typed here belongs to this
+                            row and cannot arm any other row's revocation. */}
+                        <AdminDestructiveAction
+                          actionKey={`revoke-assignment:${assignment.assignmentId}`}
+                          state={action}
+                          dispatch={dispatch}
+                          minimumReasonLength={MINIMUM_REASON_LENGTH}
+                          rtl={rtl}
+                          className="mt-4"
+                          testId="admin-assignment-revoke"
+                          triggerTestId="admin-assignment-revoke"
+                          triggerLabel={rtl ? "إلغاء الدور" : "Révoquer le rôle"}
+                          confirmLabel={rtl ? "تأكيد الإلغاء" : "Confirmer la révocation"}
+                          confirmPrompt={
+                            <>
+                              {rtl ? "إلغاء الدور " : "Révoquer le rôle "}
+                              <AdminDatum mono={false} className="font-semibold">
+                                {assignment.role}
+                              </AdminDatum>
+                              {rtl
+                                ? "؟ يُسحب هذا الوصول المميّز فوراً ويُطلب إبطال الجلسة."
+                                : " ? Cet accès privilégié est retiré immédiatement et l’invalidation de session est demandée."}
+                            </>
+                          }
+                          onConfirm={(reason) => revokeAssignment(assignment.assignmentId, reason)}
+                        />
                       </li>
                     ))
                   )}
@@ -286,57 +303,85 @@ function AdminStaffDetailRoute() {
                 )}
               </section>
 
-              <section className={`${ADMIN_PANEL_CLASS} p-4`} aria-labelledby="admin-staff-reason">
-                <label className="grid gap-2 text-sm">
-                  <span id="admin-staff-reason" className="font-medium text-slate-200">
-                    {rtl ? "سبب العملية (مطلوب)" : "Motif de l’opération (requis)"}
-                  </span>
-                  <input
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                    minLength={MINIMUM_REASON_LENGTH}
-                    maxLength={500}
-                    className={adminFieldClass}
-                    aria-describedby="admin-staff-reason-hint"
-                  />
-                </label>
-                <p id="admin-staff-reason-hint" className="mt-2 text-xs text-slate-400">
-                  {rtl
-                    ? "ثمانية أحرف على الأقل. يُطبَّق على الإلغاء والتعليق والاستعادة، ويُسجَّل في التدقيق."
-                    : "8 caractères minimum. Vaut pour la révocation, la suspension et la restauration; consigné dans l’audit."}
-                </p>
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {/* Each operation asks for its own motive inside its own confirm
+                  step. The page no longer holds one shared motive that armed
+                  every button on screen at once. */}
+              <section aria-labelledby="admin-staff-operations-heading">
+                <AdminSectionHeading id="admin-staff-operations-heading">
+                  {rtl ? "عمليات الوصول" : "Opérations d’accès"}
+                </AdminSectionHeading>
+                <div
+                  className={`mt-3 ${ADMIN_PANEL_CLASS} grid gap-3 p-4`}
+                  data-testid="admin-staff-operations"
+                >
                   {principal.status === "active" && (
-                    <button
-                      className={`${adminButtonClass} w-full sm:w-auto`}
-                      type="button"
-                      disabled={busy || reasonTooShort}
-                      onClick={() => void mutate("suspend")}
-                    >
-                      {rtl ? "تعليق الوصول" : "Suspendre"}
-                    </button>
+                    <AdminDestructiveAction
+                      actionKey="principal:suspend"
+                      state={action}
+                      dispatch={dispatch}
+                      minimumReasonLength={MINIMUM_REASON_LENGTH}
+                      rtl={rtl}
+                      tone="primary"
+                      testId="admin-staff-suspend"
+                      triggerTestId="admin-staff-suspend"
+                      triggerLabel={rtl ? "تعليق الوصول" : "Suspendre"}
+                      confirmLabel={rtl ? "تأكيد التعليق" : "Confirmer la suspension"}
+                      confirmPrompt={
+                        rtl
+                          ? "تعليق الوصول الإداري لهذه الهوية؟ تبقى الأدوار قائمة، ويُرفض كل وصول إلى وحدة الإدارة حتى الاستعادة."
+                          : "Suspendre l’accès Admin de ce principal ? Les rôles restent en place et tout accès à la console est refusé jusqu’à restauration."
+                      }
+                      onConfirm={(reason) => mutate("suspend", reason)}
+                    />
                   )}
                   {principal.status === "suspended" && (
-                    <button
-                      className={`${adminButtonClass} w-full sm:w-auto`}
-                      type="button"
-                      disabled={busy || reasonTooShort}
-                      onClick={() => void mutate("restore")}
-                    >
-                      {rtl ? "استعادة الوصول" : "Restaurer"}
-                    </button>
+                    <AdminDestructiveAction
+                      actionKey="principal:restore"
+                      state={action}
+                      dispatch={dispatch}
+                      minimumReasonLength={MINIMUM_REASON_LENGTH}
+                      rtl={rtl}
+                      tone="primary"
+                      testId="admin-staff-restore"
+                      triggerTestId="admin-staff-restore"
+                      triggerLabel={rtl ? "استعادة الوصول" : "Restaurer"}
+                      confirmLabel={rtl ? "تأكيد الاستعادة" : "Confirmer la restauration"}
+                      confirmPrompt={
+                        rtl
+                          ? "استعادة الوصول الإداري لهذه الهوية؟ تعود الأدوار النشطة إلى العمل فوراً."
+                          : "Restaurer l’accès Admin de ce principal ? Les rôles actifs reprennent effet immédiatement."
+                      }
+                      onConfirm={(reason) => mutate("restore", reason)}
+                    />
                   )}
                   {principal.status !== "revoked" && (
-                    <button
-                      className={`${adminDangerButtonClass} w-full sm:w-auto`}
-                      type="button"
-                      disabled={busy || reasonTooShort}
-                      onClick={() => void mutate("emergency")}
-                      data-testid="admin-emergency-revocation"
-                    >
-                      {rtl ? "إلغاء طارئ" : "Révocation d’urgence"}
-                    </button>
+                    <AdminDestructiveAction
+                      actionKey="principal:emergency"
+                      state={action}
+                      dispatch={dispatch}
+                      minimumReasonLength={MINIMUM_REASON_LENGTH}
+                      rtl={rtl}
+                      testId="admin-emergency-revocation"
+                      triggerTestId="admin-emergency-revocation"
+                      triggerLabel={rtl ? "إلغاء طارئ" : "Révocation d’urgence"}
+                      confirmLabel={rtl ? "تأكيد الإلغاء الطارئ" : "Confirmer la révocation"}
+                      confirmPrompt={
+                        <>
+                          {rtl ? "إلغاء طارئ للهوية " : "Révocation d’urgence du principal "}
+                          <AdminDatum className="text-xs">{principalId}</AdminDatum>
+                          {rtl
+                            ? "؟ تُسحب كل الأدوار ويُرفض الوصول الإداري فوراً. لا يمكن التراجع عن هذه العملية."
+                            : " ? Tous les rôles sont retirés et l’accès Admin est refusé immédiatement. L’opération est irréversible."}
+                        </>
+                      }
+                      onConfirm={(reason) => mutate("emergency", reason)}
+                    />
                   )}
+                  <p className="text-xs text-slate-400">
+                    {rtl
+                      ? "تتطلب كل عملية تأكيداً صريحاً وسبباً خاصاً بها، ويُسجَّل كلاهما في التدقيق."
+                      : "Chaque opération exige une confirmation explicite et un motif qui lui est propre; les deux sont consignés dans l’audit."}
+                  </p>
                 </div>
               </section>
             </>
