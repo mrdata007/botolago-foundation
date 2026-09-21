@@ -1,0 +1,226 @@
+task_id: BG-0023
+verified_at: 2026-09-21
+branch: bg-0057-roster-hygiene (from origin/chief/launch-fixes-3)
+
+production_reverification:
+  project: tkewgajrljbwgwedqsxn (BotolaGO Production V2)
+  access: read-only SELECT via the Supabase MCP execute_sql tool. NO production write was executed.
+  counts:
+    - metric: auth.users
+      reported: 19
+      found: 19
+      matches: true
+    - metric: "auth.users matching 'e2e.%@botolago.com'"
+      reported: 3
+      found: 3
+      matches: true
+    - metric: app.fantasy_teams
+      reported: 7
+      found: 7
+      matches: true
+    - metric: "ACTIVE app.fantasy_leagues named exactly 'QA Launch Ligue'"
+      reported: 2
+      found: 2
+      matches: true
+    - metric: "members per QA league"
+      reported: 1
+      found: "1 each (member_count = 1 and exactly one active membership row each)"
+      matches: true
+    - metric: app.profiles
+      found: 19
+    - metric: app.fantasy_leagues (all, active)
+      found: 3
+      note: >
+        ADDITIONAL, not in the report: a third active league 'Ligue QA Test'
+        (be13070f-6ec3-464a-a769-212575b932fc, private, 1 member, owner
+        botolagoqa1789998048@uberip.com, created 2026-09-21 14:21). Different name, out of scope.
+        The script matches on exact name equality, so it is untouched, and pgTAP assertion 5
+        asserts that.
+    - metric: app.account_deletion_requests
+      found: 0
+  qa_leagues:
+    - id: f4ae1ae7-e55d-4ec5-9ac6-363ff3a1427a
+      name: QA Launch Ligue
+      visibility: private
+      member_count: 1
+      owner: qa.launch.20260920@botolago.com (4d335e66-f85e-4035-a42e-1b27159ddefb)
+      owner_team: 455f8d6e-fc00-42fa-a1cf-c9dc495fd151 ("QA Launch XI")
+      created_at: 2026-09-20 21:02:50.558444+00
+    - id: fb92f1f1-41c8-4a0e-bc25-1f27110ec802
+      name: QA Launch Ligue
+      visibility: private
+      member_count: 1
+      owner: qa.launch.20260920@botolago.com (4d335e66-f85e-4035-a42e-1b27159ddefb)
+      owner_team: 455f8d6e-fc00-42fa-a1cf-c9dc495fd151 ("QA Launch XI")
+      created_at: 2026-09-20 21:06:00.034097+00
+      note: "Three minutes after the first — a double-submit, same owner, same team."
+  synthetic_accounts:
+    - id: e2e00000-0000-4000-8000-00000000f002
+      email: e2e.fantasy.newcomer@botolago.com
+      created_at: 2026-09-18 04:35:03+00
+      fantasy_teams: 0
+      blocking_rows: "idempotency_keys = 2"
+    - id: e2e00000-0000-4000-8000-00000000f003
+      email: e2e.fantasy.launch@botolago.com
+      created_at: 2026-09-18 06:48:28+00
+      fantasy_teams: 0
+      blocking_rows: "idempotency_keys = 2"
+    - id: e2e00000-0000-4000-8000-00000000f001
+      email: e2e.fantasy.recovery@botolago.com
+      created_at: 2026-09-18 04:26:58+00
+      fantasy_teams: 1 ("BG0052 Verify XI", 15 squad rows, 1 lineup)
+      blocking_rows: "fantasy_teams = 1, mutation_audit = 1, idempotency_keys = 17"
+  account_deletion_path_located:
+    request_rpc: >
+      api.request_account_deletion() in supabase/migrations/20260720075453_identity_domain.sql,
+      called by src/backend/identity/supabase-repositories.ts `requestDeletion`. Files an
+      app.account_deletion_requests row and a security-audit entry. Erases nothing.
+    erasure: >
+      `delete from auth.users` — the ON DELETE CASCADE chain from app.profiles. Confirmed by
+      enumerating every foreign key referencing auth.users and app.profiles in production.
+    no_processor_exists: >
+      An exhaustive pg_proc scan across api/app/app_private for delete/purge/erase/anonymize/archive
+      returns only api.archive_fantasy_league, api.cancel_account_deletion,
+      api.editorial_soft_delete_story, api.request_account_deletion and
+      app_private.audit_account_deletion_change. supabase/functions contains no identity function.
+      There is no worker that turns a deletion request into an erasure, and this lane did not write
+      one.
+
+read_only_guard_rehearsal: >
+  The SELECT half of EVERY guard was run against production as one query. Real numbers:
+  guard_qa_league_count = 2 (matches the expected 2), guard_membership_drift = 0,
+  guard_owner_unresolved = 0, guard_account_count = 3 (matches the expected 3),
+  guard_blocked_by_reference = 3, auth_users_before = 19, active_leagues_before = 3,
+  archived_leagues_before = 0, deletion_requests_before = 0.
+  Conclusion: HALF 1 (archive the leagues) would pass every guard and archive exactly two leagues.
+  HALF 2 (the account-deletion path) would REFUSE with account_blocked_by_reference for all three
+  accounts, because every one of them still holds unexpired app_private.fantasy_idempotency_keys
+  rows (earliest expires_at 2026-09-25, latest 2026-10-18) and e2e.fantasy.recovery additionally
+  owns a fantasy team and a mutation-audit row. That refusal is the correct outcome and is
+  documented for the owner as the expected result, with three options offered.
+
+pgtap:
+  docker_available: true
+  supabase_cli_usable: false
+  detail: >
+    The docker binary exists and `docker info` returns a client block, but the Supabase CLI is not
+    installed on this machine (`which supabase` is empty), so `supabase test db` / `supabase db
+    reset` could not be run and the suite was NOT executed through the repository's own harness.
+  substitute: >
+    The same local harness described in docs/engineering/tasks/BG-0057/verification-report.yaml: a
+    real PostgreSQL 16.13 cluster initdb'd under /var/lib/postgresql/bg0057 with the system
+    postgresql-16-pgtap extension, all 72 supabase/migrations applied in order to a fresh database,
+    plus minimal stand-ins for the Supabase-managed roles and auth/storage objects. This is NOT
+    `supabase db reset`; it is the same migration set on the same major version.
+  migrations_applied: 72
+  result: 27 assertions, 27 ok, 0 not ok
+  assertions:
+    - ok 1 - fixture: three leagues start active — two duplicates and one unrelated
+    - ok 2 - fixture: exactly three accounts match the synthetic pattern
+    - ok 3 - default run: exactly the two duplicate leagues are reported, and nothing else
+    - ok 4 - default run: one league remains active
+    - ok 5 - default run: the unrelated "Ligue QA Test" is left alone
+    - ok 6 - default run: NO account is deleted — p_include_accounts defaults to false
+    - ok 7 - default run: not even a deletion REQUEST is filed
+    - ok 8 - default run: api.archive_fantasy_league wrote one audit row per league
+    - ok 9 - second run: nothing is archived a second time
+    - ok 10 - second run: no additional audit row is written
+    - ok 11 - rollback to savepoint restores all three leagues to active
+    - ok 12 - league-count guard: the wrong expected count refuses and names every matching league
+    - ok 13 - league-count guard: the refusal rolled everything back
+    - ok 14 - membership-drift guard: a second member refuses and names the league
+    - ok 15 - membership-drift guard: nothing was archived
+    - ok 16 - RESTRICT guard: a blocking idempotency key refuses by name instead of a raw FK violation
+    - ok 17 - RESTRICT guard: no account was deleted
+    - ok 18 - RESTRICT guard: the refusal rolled the league archiving back too — the halves share one transaction
+    - ok 19 - account-count guard: a widened pattern that catches a real user refuses and names every match
+    - ok 20 - account-count guard: the real user is still there
+    - ok 21 - account half: 2 league rows plus 3 account rows are reported
+    - ok 22 - account half: the three synthetic accounts are gone
+    - ok 23 - account half: the surviving account is the real user, not a synthetic one
+    - ok 24 - account half: app.profiles cascaded away with auth.users
+    - ok 25 - account half: the leagues were archived in the same transaction
+    - ok 26 - second run: neither half finds anything left to do, and neither raises
+    - ok 27 - rollback to savepoint restores all four accounts
+  plan_line_caveat: >
+    As in the BG-0057 suite, finish() under-reports the plan because `rollback to savepoint` rolls
+    back pgTAP's internal counter. The authoritative count is the 27 `ok` lines and 0 `not ok` lines
+    above.
+  bugs_caught_by_this_suite: >
+    Two real defects in the script, both found by assertions failing and both fixed before commit:
+    (1) a bare `%` instead of `%s` in the qa_league_membership_drift format() call, which turned a
+    named refusal into an opaque `22023: unrecognized format() type specifier` error; (2) a
+    varchar(255) auth.users.email returned into a `text` result column, which raised `structure of
+    query does not match function result type` AFTER the archiving half had already run. Both are
+    recorded in docs/engineering/tasks/BG-0023/implementation-report.yaml.
+  harness_sanity_check: >
+    Three of the repository's existing suites were run unchanged on the same local cluster:
+    football_deactivate_non_current_teams.test.sql -> 20 ok / 0 not ok (exactly the 20 assertions
+    the BG-0043 verification report claims), fantasy_domain.test.sql -> 28 ok / 0 not ok,
+    fantasy_rls.test.sql -> 16 ok / 0 not ok.
+  script_file_rehearsal: >
+    scripts/backend/fantasy-cleanup-qa-artifacts.sql was executed as a WHOLE FILE, completely
+    unchanged, against the same local cluster, twice. (1) Against an empty database: it printed
+    `already_applied (leagues)` and `account half SKIPPED`, and all three review SELECTs ran. (2)
+    Against a database seeded with the synthetic fixture: it archived both duplicates through
+    api.archive_fantasy_league, printed `account half SKIPPED — p_include_accounts is false, so no
+    account-deletion path ran and no account was touched`, returned the two league rows, and the
+    review SELECTs showed 'Ligue QA Test' still active, both duplicates at active=f, the population
+    row with auth_users unchanged, and the two 'archive_league' mutation-audit rows. The session
+    ended with an implicit ROLLBACK. This proves the file itself — not just the body — parses and
+    runs, and that the shipped default deletes nothing.
+  body_sync_check: >
+    The pg_temp body in the script and the copy in the pgTAP test were compared programmatically
+    and are byte-for-byte identical (225 lines).
+
+gates:
+  - command: bun run typecheck
+    result: pass
+    detail: tsc --noEmit, no output.
+  - command: bun test
+    result: "1324 pass, 4 fail, 14783 expect() calls, 1328 tests across 152 files"
+    detail: >
+      The 4 failures are the pre-existing, deliberate ones in
+      src/content/legal/legal-content.test.ts. No other test fails. Exactly 4, as the task states.
+  - command: bun run lint
+    result: "17 problems (0 errors, 17 warnings)"
+    detail: All 17 are pre-existing react-refresh/only-export-components warnings. 0 errors.
+  - command: bun run format:check
+    result: "error in 9 files — all pre-existing"
+    detail: >
+      Identical to the branch baseline. The new .md files were run through prettier so they are
+      clean; the new .yaml and .sql files are clean or not checked.
+  - command: bun run backend:migrations:check
+    result: pass
+    detail: "Validated 72 migration(s). No migration was added, so timestamp 20260921210000 remains unconsumed."
+  - command: bun run backend:secrets:check
+    result: pass
+    detail: No high-confidence secrets found in tracked files.
+  - command: bun run config:integrity:check
+    result: pass
+    detail: "no violations in 36 executed configuration file(s)"
+  - command: bun scripts/qa/i18n-gate.ts
+    result: pass
+    detail: "RESULT: pass (pre-existing opaque-expression advisories only)"
+  - command: bun run build
+    result: pass
+    detail: "vite build + nitro output generated; no errors."
+
+remains_unproven:
+  - >
+    The suite has NOT been run through `supabase test db` against a real Supabase local stack. In
+    particular the CASCADE from auth.users through app.profiles was exercised against a HAND-WRITTEN
+    auth.users stand-in, not GoTrue's real table. The cascade edges themselves come from the
+    repository's own migration (app.profiles.id references auth.users(id) on delete cascade) and
+    were independently confirmed against production's live catalog, but GoTrue's own internal tables
+    (sessions, identities, mfa_factors, one_time_tokens, refresh_tokens) are only approximated
+    locally. Before running HALF 2 against production for real, expect the delete to also remove
+    those rows — they all cascade — and note that the RESTRICT guard will refuse first anyway.
+  - >
+    Nothing in this lane has been executed against production. HALF 2 has only ever run against the
+    local cluster and inside rolled-back transactions. The read-only half of every guard has been
+    rehearsed against production and is reported above.
+  - >
+    Whether the owner wants the accounts deleted at all is an owner decision, presented as
+    Decision 2 in the human-actions section with the irreversibility stated plainly and three
+    options offered.

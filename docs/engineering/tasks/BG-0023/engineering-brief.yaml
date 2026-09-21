@@ -1,0 +1,137 @@
+task_id: BG-0023
+title: Test accounts and duplicate QA leagues in production
+objective: >
+  Production carries synthetic QA artefacts from the launch rehearsals: three e2e.* accounts among
+  19 auth.users, and two ACTIVE fantasy leagues both named "QA Launch Ligue" with one member each.
+  Re-verify the counts and deliver a guarded cleanup script that archives the duplicate leagues
+  (reversible) and, only behind an explicit flag, runs the existing account-deletion path for the
+  three synthetic accounts (irreversible).
+researched_at: 2026-09-21
+sources:
+  - branch: origin/chief/launch-fixes-3 (worktree bg-0057-roster-hygiene)
+  - database: Supabase project tkewgajrljbwgwedqsxn (BotolaGO Production V2), read-only SELECTs only
+  - pattern: scripts/backend/football-deactivate-non-current-teams.sql (BG-0043, landed on this branch today)
+
+findings:
+  # ------------------------------------------------------------------ 1. THE COUNTS REPRODUCE
+  - classification: VERIFIED
+    statement: >
+      Every reported count reproduces exactly: 19 auth.users, of which 3 match
+      'e2e.%@botolago.com'; 19 app.profiles; 7 app.fantasy_teams; 2 ACTIVE app.fantasy_leagues named
+      exactly 'QA Launch Ligue', each with member_count = 1 and exactly one active
+      app.fantasy_league_memberships row.
+    evidence: >
+      select (select count(*) from auth.users), (select count(*) from auth.users where email like
+      'e2e.%@botolago.com'), (select count(*) from app.profiles), (select count(*) from
+      app.fantasy_teams), (select count(*) from app.fantasy_leagues where active and name =
+      'QA Launch Ligue') -> 19 / 3 / 19 / 7 / 2.
+  - classification: ADDITIONAL
+    statement: >
+      There are THREE active leagues in total, not two. The third is 'Ligue QA Test'
+      (be13070f-6ec3-464a-a769-212575b932fc, private, 1 member, owner
+      botolagoqa1789998048@uberip.com, created 2026-09-21 14:21). It is NOT named 'QA Launch Ligue'
+      and is out of scope; the delivered script matches on the exact name, so it is left alone, and
+      a pgTAP scenario asserts that.
+    evidence: "select id, name, active, member_count, owner from app.fantasy_leagues -> 3 rows, all active."
+  - classification: VERIFIED
+    statement: >
+      Both 'QA Launch Ligue' rows are owned by the SAME user, qa.launch.20260920@botolago.com
+      (4d335e66-f85e-4035-a42e-1b27159ddefb), via the same fantasy team 'QA Launch XI'
+      (455f8d6e-fc00-42fa-a1cf-c9dc495fd151). Ids f4ae1ae7-e55d-4ec5-9ac6-363ff3a1427a
+      (created 2026-09-20 21:02:50) and fb92f1f1-41c8-4a0e-bc25-1f27110ec802 (created 21:06:00) —
+      three minutes apart, which is the double-submit that produced them.
+    evidence: "Full league projection joined to auth.users and app.fantasy_league_memberships."
+    consequence: >
+      That owner is NOT one of the three e2e.* accounts, so archiving the leagues and deleting the
+      accounts really are independent decisions — neither depends on the other.
+
+  # ------------------------------------------------------------------ 2. THE EXISTING ARCHIVE PATH
+  - classification: VERIFIED
+    statement: >
+      api.archive_fantasy_league(p_league_id uuid, p_team_id uuid) already exists
+      (supabase/migrations/20260720173500_fantasy_route_read_contracts.sql). It is SECURITY DEFINER,
+      sets app.fantasy_leagues.active = false, requires the caller to be the league owner with an
+      active owner-role membership backed by p_team_id, and writes an
+      app_private.fantasy_mutation_audit row with operation 'archive_league'.
+    consequence: >
+      The script calls this RPC rather than issuing its own UPDATE, impersonating each league's
+      owner by setting request.jwt.claims for the duration of the call and restoring the caller's
+      claims afterwards. Archiving is fully reversible: nothing is deleted and flipping `active`
+      back restores the league with its membership intact.
+
+  # ------------------------------------------------------------------ 3. THE ACCOUNT-DELETION PATH
+  - classification: VERIFIED
+    statement: >
+      The repository has exactly ONE account-deletion path and it is a REQUEST, not an erasure:
+      api.request_account_deletion() (supabase/migrations/20260720075453_identity_domain.sql),
+      called by src/backend/identity/supabase-repositories.ts `requestDeletion`. It inserts an
+      app.account_deletion_requests row and, via the account_deletion_requests_audit_change trigger,
+      writes 'account_deletion_requested' to app_private.security_audit_log. It is cancellable
+      through api.cancel_account_deletion(). There is NO implemented worker, edge function, cron job
+      or script anywhere in the repository that turns such a request into an actual erasure.
+    evidence: >
+      Exhaustive search of pg_proc across api/app/app_private for delete/purge/erase/anonymize
+      -> only api.archive_fantasy_league, api.cancel_account_deletion,
+      api.editorial_soft_delete_story, api.request_account_deletion,
+      app_private.audit_account_deletion_change. supabase/functions contains no identity function.
+      app.account_deletion_requests currently holds 0 rows.
+  - classification: VERIFIED
+    statement: >
+      The erasure itself is the platform cascade the identity schema was designed around:
+      app.profiles.id references auth.users(id) ON DELETE CASCADE, and app.user_preferences,
+      app.followed_teams, app.followed_competitions, app.account_deletion_requests,
+      app.device_registrations, app.notifications, app.notification_subscriptions,
+      app_private.notification_events and app_private.notification_schedules all CASCADE from
+      app.profiles. `delete from auth.users where id = ...` is therefore the erasure, and it is the
+      same delete the Supabase Auth admin API performs.
+    consequence: >
+      The script calls api.request_account_deletion() per account first (so the audit trail the
+      product would have written exists before the rows disappear), then performs the cascade
+      delete. It does not write a new deletion routine.
+  - classification: BLOCKER
+    statement: >
+      SIX tables reference app.profiles with ON DELETE RESTRICT — app.fantasy_teams,
+      app.fantasy_leagues, app.fantasy_league_memberships, app_private.fantasy_mutation_audit,
+      app_private.fantasy_idempotency_keys, app_private.fantasy_corrections. ALL THREE synthetic
+      accounts are currently blocked by at least one of them, so the erasure half WILL REFUSE today.
+    evidence: >
+      e2e.fantasy.launch@botolago.com: idempotency_keys = 2.
+      e2e.fantasy.newcomer@botolago.com: idempotency_keys = 2.
+      e2e.fantasy.recovery@botolago.com: fantasy_teams = 1 ('BG0052 Verify XI', 15 squad rows),
+      mutation_audit = 1, idempotency_keys = 17.
+      None of the idempotency keys have expired: earliest expires_at 2026-09-25, latest 2026-10-18.
+    consequence: >
+      Rather than let Postgres throw a raw foreign-key violation halfway through, the script checks
+      all six tables FIRST and refuses with account_blocked_by_reference, naming each account and
+      every blocking count. This is reported to the owner as the expected outcome, with
+      scripts/backend/fantasy-catalog-restage-maintenance.sql named as the existing teardown path
+      for the fantasy half.
+
+decision:
+  scope: >
+    Deliver scripts/backend/fantasy-cleanup-qa-artifacts.sql with two independent halves, plus
+    supabase/tests/database/fantasy_cleanup_qa_artifacts.test.sql.
+  half_1_always_runs: >
+    Archive the two 'QA Launch Ligue' duplicates through api.archive_fantasy_league. Reversible.
+  half_2_off_by_default: >
+    p_include_accounts defaults to FALSE. Running the file unchanged archives two leagues and
+    deletes nothing — not even a deletion request is filed. The account half requires editing the
+    call to pass `p_include_accounts => true`, which is the '--include-accounts' flag. An
+    irreversible operation must not be reachable by opening a file and pressing run.
+  guards:
+    - unexpected_qa_league_count
+    - qa_league_membership_drift
+    - qa_league_owner_unresolved
+    - archive_count_mismatch
+    - unexpected_account_count
+    - account_blocked_by_reference
+    - account_delete_count_mismatch
+  idempotency: >
+    Both halves operate only on rows that still qualify (still active / still exist). After a
+    committed run each half finds zero, prints already_applied and writes nothing. The count guards
+    accept zero as well as the expected count for exactly this reason; anything in between is drift
+    and still refuses.
+  not_attempted:
+    - Writing an account-deletion worker to process app.account_deletion_requests.
+    - Tearing down the fantasy artefacts that block the erasure (restage-maintenance owns that).
+    - Touching the third, differently named active league 'Ligue QA Test'.

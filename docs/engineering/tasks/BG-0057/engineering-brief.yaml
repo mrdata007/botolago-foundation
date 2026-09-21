@@ -1,0 +1,122 @@
+task_id: BG-0057
+title: Duplicated fantasy players in the 2026/27 staged pool
+objective: >
+  Four duplicate clusters were reported in app.fantasy_players (Boukhanfer x2 at Hassania Agadir,
+  Coulibaly x3 at Wydad Casablanca, El Ghazouani x2 at Moghreb Tetouan, Errahouli x2). Re-verify
+  them against production, then deliver a guarded, parameterised script the owner can run once per
+  decided row to retire the duplicate before launch, while no squad owns any of them.
+researched_at: 2026-09-21
+sources:
+  - branch: origin/chief/launch-fixes-3 (worktree bg-0057-roster-hygiene)
+  - database: Supabase project tkewgajrljbwgwedqsxn (BotolaGO Production V2), read-only SELECTs only
+  - pattern: scripts/backend/football-deactivate-non-current-teams.sql (BG-0043, landed on this branch today)
+
+findings:
+  # ------------------------------------------------------------------ 1. THE REPORT DOES NOT FULLY REPRODUCE
+  - classification: CORRECTION
+    statement: >
+      THREE of the four reported clusters reproduce, not four. There are SEVEN duplicated
+      app.fantasy_players rows in production, not eight. The Errahouli cluster is real but it is a
+      FOOTBALL-CATALOG duplicate, not a fantasy one: neither of its two app.players rows has an
+      app.fantasy_players row at all, so there is nothing for this script to deactivate.
+    evidence: >
+      Exhaustive scan: select lower(unaccent(display_name)), count(*) from app.fantasy_players
+      join app.players group by 1 having count(*) > 1 -> exactly three groups:
+      'abdallah boukhanfer' (2, Hassania Agadir), 'abdoulaye coulibaly' (3, Wydad Casablanca),
+      'yassine el ghazouani' (2, Moghreb Tetouan). Total 7 rows. No fourth group exists under any
+      spelling, and the same scan over lower(unaccent(full_name)) returns only the Boukhanfer and
+      Coulibaly groups.
+  - classification: VERIFIED
+    statement: >
+      The Errahouli duplicate is Salaheddine Errahouli at OLYMPIC SAFI, two app.players rows:
+      01c3fd34-3499-4bed-8734-d4e28b3724a4 (full_name 'Salaheddine Errahouli', dob 2002-01-01,
+      sportsmonks:37714023, 24 player_fixture_performances rows) and
+      123a6829-1c40-4c43-8edf-d64d71a7c827 (full_name 'S. Errahouli', dob 2002-10-12,
+      sportsmonks:37551821, 1 player_fixture_performances row). Both carry 0 app.fantasy_players rows.
+      Olympic Safi is one of the five relegated clubs that BG-0043 deactivates, which is exactly why
+      no fantasy player was priced for either row.
+    evidence: >
+      select ... from app.players where full_name ilike '%Errahouli%' -> 3 rows (the two above plus
+      the unrelated 'Imad El Rahouli' / full_name 'Imad Errahouli' at Moghreb Tetouan, which has 1
+      fantasy row and no duplicate). fantasy_rows = 0 for both Salaheddine rows.
+    consequence: >
+      BG-0057 as scoped (a fantasy-player deactivation) cannot act on it. It is a separate
+      football-catalog dedupe and is reported to the owner as such rather than silently dropped.
+
+  # ------------------------------------------------------------------ 2. THE OWNERSHIP CLAIM HOLDS
+  - classification: VERIFIED
+    statement: >
+      The ownership claim holds in full and is stronger than reported: all seven rows have zero
+      active squad memberships, zero squad memberships of any kind (sold or not), zero transfers,
+      zero free-hit snapshot rows, zero auto-substitutions, zero point events, zero gameweek point
+      rows, and selected_by_count = 0. Nothing anywhere in the fantasy domain references them.
+    evidence: >
+      Read-only rehearsal of every guard over the seven-row candidate set:
+      candidate_rows=7, guard_owned_by_squad=0, guard_squad_history_memberships=0,
+      guard_squad_history_transfers=0, guard_squad_history_freehit=0, guard_squad_history_autosubs=0,
+      guard_point_events=0, guard_gameweek_points=0, guard_still_selected=0, already_applied=0.
+      Pool totals: 539 fantasy players, 539 active, 539 eligible.
+    consequence: >
+      This is the cheap window the task describes. Every guard in the delivered script passes today
+      for every one of the seven rows, so the owner's only real decision is WHICH row to keep.
+
+  # ------------------------------------------------------------------ 3. WHAT THE DATA DOES AND DOES NOT DECIDE
+  - classification: VERIFIED
+    statement: >
+      Every one of the seven rows carries a distinct sportsmonks external id in
+      app_private.football_provider_mappings. No row is provider-less, so "one has a provider id and
+      the other does not" is NOT available as a tie-break for any cluster. The only discriminating
+      fields are date_of_birth (two rows have none), price and position.
+    evidence: >
+      Per-row provider ids: Boukhanfer 37629773 / 37596162; Coulibaly 38213591 / 37789277 / 101165;
+      El Ghazouani 37594384 / 37596176. All non-null.
+  - classification: VERIFIED
+    statement: >
+      Two clusters contain a row whose date_of_birth is NULL and whose provider id is in the
+      37.5-37.6M band shared by the 2026 bulk staging run, against a sibling with a real date of
+      birth. Coulibaly 9dd668bc (dob null, 37789277) and El Ghazouani 069d4a1f (dob null, 37594384,
+      full_name 'Yacine Ghazouani' against the sibling's 'Yassine El Ghazouani'). This is evidence,
+      not proof, and is presented to the owner as such.
+    evidence: >
+      Full seven-row projection in docs/engineering/tasks/BG-0057/human-actions-section.md.
+  - classification: UNDECIDABLE
+    statement: >
+      The Boukhanfer cluster has no discriminator at all beyond date of birth: both rows carry a
+      real dob (2000-01-01 vs 1998-01-01, both January-1st placeholders), identical price 7.20,
+      identical position MID, identical club. The Coulibaly cluster's third row (ac64b701,
+      dob 1991-04-06, sportsmonks:101165) is the only one of the seven with a provider id from the
+      legacy low-id range and a precise (non-January-1st) date of birth.
+    consequence: >
+      No keep/drop is recommended for Boukhanfer. The owner is asked one question per cluster.
+
+decision:
+  scope: >
+    Deliver scripts/backend/fantasy-deactivate-duplicate-player.sql taking exactly ONE
+    fantasy_player_id, plus supabase/tests/database/fantasy_deactivate_duplicate_player.test.sql.
+    Do not act on the Errahouli football-catalog duplicate; report it.
+  parameterisation: >
+    ONE player per run, as explicitly requested. The owner is still deciding which row of each
+    cluster is real; a hardcoded list would force all three decisions into one edit and commit a
+    mistake in any entry alongside the correct ones. The shipped file's call uses the all-zero uuid,
+    which matches nothing, so running it unchanged refuses with player_not_found and writes nothing.
+  writes: >
+    active = false, eligible = false on exactly one app.fantasy_players row, plus one
+    app_private.admin_audit_events row via the existing app_private.write_admin_audit helper
+    (action 'fantasy_catalog.deactivate_duplicate_player', target_domain 'fantasy'). No DELETE
+    anywhere; no price, price history, status, selected_by_count or football-catalog row is touched.
+  guards:
+    - player_not_found
+    - player_owned_by_squad
+    - player_has_squad_history
+    - player_has_point_events
+    - player_has_gameweek_points
+    - player_still_selected
+    - write_count_mismatch
+  idempotency: >
+    A fully applied row prints already_applied, writes nothing (not even an audit row) and returns
+    was_updated = false. A HALF-applied row (exactly one of active/eligible already false) is
+    completed rather than skipped, so the pair never ends inconsistent.
+  not_attempted:
+    - The durable catalog rule that stops the staging pass pricing two rows for one footballer.
+    - The football-catalog dedupe of Salaheddine Errahouli.
+    - Any change to api.fantasy_player_pool's signature or ordering.

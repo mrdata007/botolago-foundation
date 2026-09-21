@@ -1,0 +1,138 @@
+task_id: BG-0023
+branch: bg-0057-roster-hygiene (from origin/chief/launch-fixes-3)
+implemented_at: 2026-09-21
+summary: >
+  Preparation only. Delivers a guarded two-halves cleanup script plus its pgTAP suite. No production
+  write was executed by this lane, and no migration was added.
+
+files_added:
+  - path: scripts/backend/fantasy-cleanup-qa-artifacts.sql
+    role: >
+      The maintenance transaction. begin; -> set_config('request.jwt.claims', …) -> a session-local
+      pg_temp body -> one call with expected counts and the account flag -> three review SELECTs ->
+      a commented-out `-- commit;`. Modelled directly on
+      scripts/backend/football-deactivate-non-current-teams.sql.
+  - path: supabase/tests/database/fantasy_cleanup_qa_artifacts.test.sql
+    role: >
+      pgTAP suite, 27 assertions. Carries a byte-for-byte SYNCED COPY of the pg_temp body (225
+      lines) for the same reason as the BG-0043 and BG-0057 suites.
+  - path: docs/engineering/tasks/BG-0023/engineering-brief.yaml
+  - path: docs/engineering/tasks/BG-0023/implementation-report.yaml
+  - path: docs/engineering/tasks/BG-0023/verification-report.yaml
+  - path: docs/engineering/tasks/BG-0023/human-actions-section.md
+
+files_modified: []
+migrations_added: []
+migrations_modified: []
+
+design:
+  signature: >
+    pg_temp.bg0023_cleanup_qa_artifacts(p_expected_league_count integer,
+    p_expected_account_count integer, p_include_accounts boolean default false,
+    p_league_name text default 'QA Launch Ligue',
+    p_account_email_pattern text default 'e2e.%@botolago.com').
+  half_1_archive:
+    always_runs: true
+    reversible: true
+    mechanism: >
+      Calls the product's OWN api.archive_fantasy_league(p_league_id, p_team_id) once per matching
+      league. That RPC is SECURITY DEFINER and reads auth.uid(), so the body sets
+      request.jwt.claims to {"sub": <league owner>, "role": "authenticated"} for the duration of
+      each call and restores the caller's original claims immediately afterwards. The owner's
+      fantasy team is resolved from the league's own active owner-role membership rather than
+      passed in, so it cannot drift. Each call writes an app_private.fantasy_mutation_audit row
+      with operation 'archive_league'.
+    matching: >
+      Exact name equality on p_league_name, not a LIKE. The third active production league,
+      'Ligue QA Test', is therefore untouched, and a pgTAP scenario asserts that.
+  half_2_accounts:
+    default: OFF (p_include_accounts is false)
+    reversible: false
+    existing_path_called:
+      - >
+        api.request_account_deletion() — the repository's only account-deletion path, called by
+        src/backend/identity/supabase-repositories.ts `requestDeletion`. Invoked once per account,
+        impersonating that account, so the app.account_deletion_requests row and the
+        'account_deletion_requested' security-audit entry a user-initiated deletion would have
+        produced exist BEFORE the rows disappear.
+      - >
+        `delete from auth.users where id in (…)` — the erasure. This is the cascade the identity
+        schema was designed around (app.profiles.id references auth.users(id) ON DELETE CASCADE,
+        with user_preferences, followed_teams, followed_competitions, account_deletion_requests,
+        device_registrations, notifications, notification_subscriptions and the app_private
+        notification tables cascading from app.profiles), and is the same delete the Supabase Auth
+        admin API performs. No new deletion routine was written; the repository contains no worker
+        that turns a request into an erasure, and this lane did not add one.
+    scoping: >
+      The DELETE is scoped to the exact ids captured in the locked temp table, never to the LIKE
+      pattern, so a pattern that widened between the count guard and the write cannot broaden it.
+  guards:
+    - name: unexpected_qa_league_count
+      fires_when: >
+        the number of ACTIVE leagues named exactly p_league_name is neither p_expected_league_count
+        nor zero. Message names every match with its member count.
+    - name: qa_league_membership_drift
+      fires_when: >
+        a matching league does not have exactly one active membership — somebody joined it, so it
+        is no longer a disposable QA duplicate.
+    - name: qa_league_owner_unresolved
+      fires_when: >
+        a matching league's owner has no active owner-role membership backed by a fantasy team, so
+        api.archive_fantasy_league cannot be called on their behalf.
+    - name: archive_count_mismatch
+      fires_when: any league under that name is still active after the archive loop.
+    - name: unexpected_account_count
+      fires_when: >
+        the number of auth.users matching p_account_email_pattern is neither
+        p_expected_account_count nor zero. Message names every match. This is the guard that stops
+        a widened pattern from erasing a real user, and a pgTAP scenario exercises exactly that.
+    - name: account_blocked_by_reference
+      fires_when: >
+        an account still owns rows in any of the six tables that reference app.profiles ON DELETE
+        RESTRICT (app.fantasy_teams, app.fantasy_leagues, app.fantasy_league_memberships,
+        app_private.fantasy_mutation_audit, app_private.fantasy_idempotency_keys,
+        app_private.fantasy_corrections). Checked BEFORE any write, so the operator gets a named
+        refusal listing each account and all six counts instead of a raw foreign-key violation
+        thrown halfway through.
+    - name: account_delete_count_mismatch
+      fires_when: the DELETE removed other than p_expected_account_count rows.
+  locking: >
+    Both the matching leagues and the matching accounts are taken FOR UPDATE before their guards
+    are evaluated.
+  single_transaction: >
+    Both halves share one transaction, so a refusal in the account half rolls the league archiving
+    back too. A pgTAP scenario asserts this rather than leaving it implied.
+  idempotency: >
+    Each half operates only on rows that still qualify. After a committed run each finds zero,
+    prints already_applied and writes nothing. The two count guards accept zero as well as the
+    expected value for exactly this reason; anything strictly in between is drift and still refuses.
+
+bugs_found_and_fixed_during_testing:
+  - bug: >
+      The qa_league_membership_drift message used a bare `%` instead of `%s` in format(), so the
+      guard raised `22023: unrecognized format() type specifier " "` instead of its own named
+      refusal. The guard would still have rolled the transaction back, but the operator would have
+      seen an opaque Postgres error instead of the league name and member count.
+    found_by: "pgTAP scenario 4 (membership-drift guard) — assertion failed with the wrong message."
+    fix: "format('%s (%s): %s active member(s)', …)"
+  - bug: >
+      The account half's `return query` selected auth.users.email (varchar(255)) into the function's
+      declared `entity_label text` column, raising
+      `structure of query does not match function result type`. The archiving half had already
+      completed at that point, so a real run would have failed AFTER doing work — though still
+      inside the transaction, so still rolled back.
+    found_by: "pgTAP scenario 7 (account half, unblocked) — the call errored."
+    fix: "cast to text when the temp table is built: `select account.id, account.email::text as email`."
+
+deviations_from_task: []
+
+constraints_honoured:
+  - No production write was executed. Every production query was a read-only SELECT.
+  - No file under supabase/migrations/ was added or edited; migration count stays 72.
+  - >
+    src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts, every api.service_* function,
+    scripts/backend/fantasy-season-orchestrator.ts and
+    scripts/backend/fantasy-lifecycle-runner.ts are untouched.
+  - api.fantasy_player_pool and api.fantasy_league_standings keep their signature and ordering.
+  - src/backend/generated/database.types.ts is untouched.
+  - docs/engineering/LAUNCH_LEDGER.yaml is untouched.
