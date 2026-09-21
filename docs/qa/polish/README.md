@@ -193,3 +193,62 @@ place rather than quietly dropped:
 The pattern is the same each time: a token file tells you what is _declared_, a
 running page tells you what is _rendered_, and only the second one is the
 product.
+
+---
+
+## BG-0104 — the live badge, and a contrast probe that had to be corrected four times
+
+**When** 2026-09-21.
+
+**The defect.** `--color-live` is a fill — the pulsing dot, the minute bar —
+and at that job its vividness is the point. `LiveIndicator` also used it as
+text, on a `color-mix(… 14%, transparent)` tint of _itself_, so foreground and
+background were two points on one hue ramp. Measured from rasterised sRGB
+against the tint it actually paints (`rgb(253,226,226)`): **3.30:1 at 10px**,
+on `/matches`, in light mode, on the live site.
+
+The ledger recorded 4.04:1 — measured against white, which is not what the
+component renders. Same shape as BG-0114.
+
+**The fix** is the split this codebase already made for `--ui-ink` /
+`--ui-ink-fg`: one token cannot be both a fill and a foreground.
+`--color-live-fg: oklch(0.5 0.22 27)` moves only the lightness, 0.62 → 0.50 at
+identical chroma and hue, so it reads as the same red one step deeper.
+**5.21:1** on the tint, 6.38:1 on white. The dot and the bar keep the vivid
+token.
+
+### The instrument, and its four wrong answers
+
+`scripts/qa/contrast-probe.mjs` is committed because getting this right took
+four corrections, and the next person should inherit them rather than repeat
+them.
+
+1. **Parsing `oklch()` by hand.** Avoided from the start — every colour is
+   resolved by making Chromium _paint_ it onto a 1×1 canvas and reading the
+   sRGB back.
+2. **Compositing only ancestor `background-color`.** `PageBackground` renders
+   its mesh as an absolutely-positioned **sibling** at `-z-10`, so the welcome
+   screen's white text has no background on its ancestor chain at all. The walk
+   composited down to the page's light `background-color` and reported
+   white-on-white at 1.04:1 — six confident failures on a screen that measures
+   5.77:1 to 15.03:1.
+3. **Splitting ink from backdrop by percentile.** Taking the 25th and 98th
+   percentile assumes glyphs are ≥2% of the box. True for a sentence, false for
+   "18" in a wide plate, where the 98th percentile is still backdrop and the
+   ratio comes back **1.00:1**. A dozen of those were reported as failures.
+   Replaced by a histogram: the mode is the backdrop at any text density, and
+   the ink is the furthest bin still holding ≥0.4% of pixels — which also steps
+   over anti-aliasing. Below that threshold it returns `null`, because an
+   element too sparse to judge is unmeasured, not passing.
+4. **Screenshotting before the entrance animation finished.** The welcome
+   screen fades in over 700ms after hydration; a capture at 1300ms contained
+   **no glyph pixels at all** — bins 0–3, pure backdrop — and reported
+   "Bienvenue sur BotolaGO" at 1.27:1 against a real 15.03:1. Fixed by waiting
+   on `document.getAnimations()` rather than guessing a delay.
+
+So pass 1 only ever _nominates_; every nomination is re-measured from rendered
+pixels, and only pass 2's number is reported.
+
+**After:** 7 routes × 2 languages, **168 pixel measurements, 0 below AA** — and
+that includes all 78 gradient-backed elements pass 1 cannot judge, which
+independently agrees with BG-0118's own 978-sample sweep.

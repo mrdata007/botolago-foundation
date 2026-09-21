@@ -115,6 +115,19 @@
   --accent-indigo: oklch(0.55 0.16 275);
   --accent-emerald: oklch(0.66 0.14 155);
   --color-live: oklch(0.62 0.22 27);
+  /* BG-0104. `--color-live` is a FILL — the pulsing dot, the minute bar — and
+     at that job its vividness is the point. As TEXT it is not: `LiveIndicator`
+     paints a 14% tint of it and then sets the same colour on top, so
+     foreground and background are two points on one hue ramp. Measured from
+     rasterised sRGB, that pair is 3.30:1 at 10px. Below AA, on the live site,
+     for every visitor watching a match.
+
+     Same split this codebase already uses for `--ui-ink` / `--ui-ink-fg`, and
+     for the same reason: one token cannot be both a fill and a foreground.
+     Only the lightness moves — 0.62 to 0.50 at identical chroma and hue — so
+     it reads as the same red, one step deeper. On the tint it measures
+     5.21:1; on plain white, 6.38:1. */
+  --color-live-fg: oklch(0.5 0.22 27);
   --color-success: oklch(0.6 0.15 155);
   --color-warning: oklch(0.75 0.16 75);
   --color-danger: oklch(0.6 0.22 27);

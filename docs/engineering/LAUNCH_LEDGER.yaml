@@ -948,17 +948,27 @@ tasks:
       foreground. Routed to the shell lane because the instances are chrome-wide.
 
   BG-0104:
-    title: --color-live fails contrast in LIGHT mode, at 4.04:1 on white
+    title: --color-live fails contrast in LIGHT mode, measured 3.30:1 on the tint it is painted over
     area: design
     severity: P2
     owner: Chief
-    state: QUEUED
+    state: DONE # --color-live-fg added 2026-09-21; LiveIndicator text now 5.21:1
     depends_on: []
+    evidence:
+      - >
+        the recorded 4.04:1 was against white. LiveIndicator does not paint it on white: it
+        paints `color-mix(in oklab, var(--color-live) 14%, transparent)` and puts the same
+        token on top, so foreground and background are two points on one hue ramp. Measured
+        from rasterised sRGB against the tint it actually renders (rgb(253,226,226)) the pair
+        is 3.30:1, at 10px, on /matches.
+      - "--color-live stays as the FILL (the pulsing dot, the minute bar), where vividness is the point and no ratio applies"
+      - "--color-live-fg: oklch(0.5 0.22 27) -- only the lightness moves, 0.62 -> 0.50 at identical chroma and hue, so it reads as the same red one step deeper. 5.21:1 on the tint, 6.38:1 on white"
+      - after: scripts/qa/contrast-probe.mjs over 7 routes x 2 languages, 168 pixel measurements, 0 below AA
     note: >
-      Worth separating from the dark-mode work because it is wrong today, on the live
-      site, for every user -- not a defect that only appears once dark mode ships. Two
-      Fantasy labels using --fpl-cyan on white measure 1.38:1 in light for the same
-      reason.
+      Same split this codebase already made for --ui-ink / --ui-ink-fg (BG-0083), for the
+      same reason: one token cannot be both a fill and a foreground. The recorded ratio was
+      optimistic because it measured against the wrong background -- worth noting, since the
+      component painting a tint of the token it then writes on is the same shape as BG-0114.
 
   BG-0105:
     title: MatchCard's glass prop is inert and reads as live API
