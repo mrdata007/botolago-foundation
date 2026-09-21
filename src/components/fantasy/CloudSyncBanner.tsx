@@ -1,7 +1,16 @@
 // Localized status banner for Fantasy cloud sync (Pass 3.1).
 // Reads state from the owned-Fantasy provider. Renders nothing in
 // guest/mock mode. Fully RTL and ≤ 320px safe.
+//
+// Converted to the kit (BG-0092). The three tones were written in the
+// Tailwind named palette (`amber-500/10 text-amber-100`, `emerald-…`,
+// `bg-white/5 text-white/80`) — colours that do not move with the theme, so
+// in light mode the neutral tone rendered white-on-white. They are now
+// `UiAlert`'s tones, which compose their fill from `--ui-positive` /
+// `--ui-caution` / `--ui-ink-fg` over `--ui-surface` and keep
+// `--ui-on-surface` as the foreground in both themes.
 
+import { UiAlert, UiButton, type UiAlertTone } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useFantasyCloudSyncStatus } from "@/services/fantasy-owned-provider";
 
@@ -11,12 +20,16 @@ export function CloudSyncBanner() {
   if (!isCloud) return null;
   if (status === "idle") return null;
 
-  const tone =
+  // `negative` is not only the colour: it is the tone `UiAlert` gives
+  // `role="alert"`, i.e. an assertive live region. The banner was explicitly
+  // assertive for error and conflict ("a mutation was rejected") and polite
+  // otherwise, and that behaviour is preserved by the tone choice.
+  const tone: UiAlertTone =
     status === "conflict" || status === "error"
-      ? "border-amber-400/40 bg-amber-500/10 text-amber-100"
+      ? "negative"
       : status === "saved"
-        ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
-        : "border-white/10 bg-white/5 text-white/80";
+        ? "positive"
+        : "info";
 
   const label =
     status === "loading"
@@ -36,26 +49,27 @@ export function CloudSyncBanner() {
                   : t("fantasy.cloud.error");
 
   const showRetry = status === "error" || status === "conflict";
-  const live: "polite" | "assertive" = showRetry ? "assertive" : "polite";
 
   return (
-    <div
-      role="status"
-      aria-live={live}
-      className={`mx-3 mt-2 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs ${tone}`}
-    >
-      <span className="min-w-0 flex-1 break-words whitespace-normal">{label}</span>
-      {showRetry && (
-        <button
-          type="button"
-          onClick={() => {
-            void reload();
-          }}
-          className="shrink-0 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium hover:bg-white/20 min-h-11"
-        >
-          {status === "conflict" ? t("fantasy.cloud.reload_latest") : t("fantasy.cloud.retry")}
-        </button>
-      )}
+    <div className="mx-3 mt-2">
+      <UiAlert
+        tone={tone}
+        action={
+          showRetry ? (
+            <UiButton
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void reload();
+              }}
+            >
+              {status === "conflict" ? t("fantasy.cloud.reload_latest") : t("fantasy.cloud.retry")}
+            </UiButton>
+          ) : undefined
+        }
+      >
+        <span className="block min-w-0 whitespace-normal break-words">{label}</span>
+      </UiAlert>
     </div>
   );
 }

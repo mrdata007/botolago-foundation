@@ -15,8 +15,10 @@ import {
   FplStateBadge,
 } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { ui, UiCard, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui-kit";
 import { chipDisplayState, type ChipKey } from "@/lib/fantasy-engine";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -89,7 +91,7 @@ function TeamProfileBody() {
       </FplHeader>
       <FantasyScreenGate state={screen} next="/fantasy/profile">
         {tab === "season" && team ? (
-          <section className="mx-3 mt-3 rounded-[6px] bg-white p-4 shadow-sm">
+          <UiCard as="section" className="mx-3 mt-3" padding="md">
             <FplPill>{t("fpl.team_overview")}</FplPill>
             <div className="mt-2">
               <FplKeyValueRow
@@ -130,38 +132,53 @@ function TeamProfileBody() {
             <div className="mt-4">
               <FplLinkButton to="/fantasy/points">{t("fpl.gameweek_history")}</FplLinkButton>
             </div>
-          </section>
+          </UiCard>
         ) : (
           <section className="px-3 pt-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 text-[20px] font-extrabold text-foreground">
-                <span aria-hidden className="text-[28px]">
+              <div
+                className={cn("flex min-w-0 items-center gap-3", ui.text.title, ui.tone.default)}
+              >
+                <span aria-hidden className="shrink-0 text-[28px] leading-none">
                   🇲🇦
                 </span>
-                {user?.displayName ?? ""}
+                <span className="min-w-0 truncate">{user?.displayName ?? ""}</span>
               </div>
               <Link
                 to="/profile"
-                className="inline-flex min-h-11 items-center gap-1 rounded-[4px] bg-white px-3 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
+                className={cn(
+                  "inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center gap-1 px-3",
+                  ui.radius.control,
+                  ui.surface.card,
+                  ui.text.secondary,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.tone.ink,
+                  ui.focus,
+                )}
               >
-                <Settings className="h-4 w-4" aria-hidden /> {t("fpl.manage_account")}
+                <Settings className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="min-w-0 truncate">{t("fpl.manage_account")}</span>
               </Link>
             </div>
-            <div className="mt-4 rounded-[6px] bg-white p-4 shadow-sm">
+            <UiCard className="mt-4" padding="md">
               <FplPill>{t("fpl.season_history")}</FplPill>
-              <table className="mt-2 w-full text-[13px]">
-                <thead>
-                  <tr className="text-[color:var(--fpl-grey-text)]">
-                    <th className="py-1 text-start font-semibold">{t("fpl.season")}</th>
-                    <th className="py-1 text-start font-semibold">{t("fpl.points")}</th>
-                    <th className="py-1 text-start font-semibold">{t("fpl.rank")}</th>
-                  </tr>
-                </thead>
-              </table>
-              <p className="py-4 text-center text-[14px] text-[color:var(--fpl-grey-text)]">
-                {t("fpl.season_history_empty")}
-              </p>
-            </div>
+              <UiTable caption={t("fpl.season_history")} className="mt-2">
+                <UiTHead>
+                  <UiTR>
+                    <UiTH>{t("fpl.season")}</UiTH>
+                    <UiTH numeric>{t("fpl.points")}</UiTH>
+                    <UiTH numeric>{t("fpl.rank")}</UiTH>
+                  </UiTR>
+                </UiTHead>
+                <UiTBody>
+                  <UiTR>
+                    <UiTD colSpan={3} className={cn("py-4 text-center", ui.tone.muted)}>
+                      {t("fpl.season_history_empty")}
+                    </UiTD>
+                  </UiTR>
+                </UiTBody>
+              </UiTable>
+            </UiCard>
           </section>
         )}
       </FantasyScreenGate>

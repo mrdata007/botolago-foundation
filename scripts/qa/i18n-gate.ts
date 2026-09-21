@@ -216,8 +216,20 @@ export const BASELINES: Baselines = {
   // deliberately left in place -- the Fantasy screens are mid-migration and the
   // strings will be wanted again; delete them in the same pass that settles the
   // Fantasy copy, not before.
+  //
+  // BG-0092 (Fantasy V2, Lane A — shared chrome and the hub): converting
+  // `FantasyScreenGate` and `FantasyUnavailableState` onto the kit's state
+  // primitives replaced four computed-key call sites —
+  // ``t(`fantasy.availability.${phase}.title`)`` and its `.body` twin in each
+  // file — with explicit `cond ? t("a") : t("b")` branches, i.e. literal keys
+  // the gate can actually check. That is the shape the gate asks for, so the
+  // four findings are gone rather than suppressed: W4 88 -> 84. W3 is
+  // unchanged: the same keys are still reached, now literally, and the three
+  // keys added in this pass (`fpl.rank.up`/`.down`/`.same`, the accessible
+  // names for the rank-movement glyph, which used to announce a hardcoded
+  // English "up"/"down") each have a literal call site.
   W3: 262,
-  W4: 88,
+  W4: 84,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
