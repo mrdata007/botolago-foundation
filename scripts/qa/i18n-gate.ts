@@ -204,8 +204,20 @@ export const BASELINES: Baselines = {
   // same shape as `player.pos.` and `fantasy.chip.state.`. Every one of the 21
   // new keys is reachable through those prefixes, so W3 is unchanged; W4
   // 97 -> 99.
-  W3: 247,
-  W4: 99,
+  // Dead-code removal, 2026-09-21: eighteen files with no reference anywhere in
+  // src/, tests/ or scripts/ were deleted -- fourteen vendored shadcn components
+  // nothing imports (carousel, chart, sidebar, menubar, navigation-menu and
+  // friends) and four Fantasy components no screen renders (SquadListView,
+  // TransferReviewPanel, GameweekStatusStrip, FantasyChipCard). Their keys are
+  // still in the dictionaries, so W3 rises 247 -> 262: fifteen keys that were
+  // only ever referenced by components the product never mounted. W4 falls
+  // 99 -> 88 because those files carried eleven dynamic t() call sites. Both
+  // moves are the deletion showing up in the meter, not new drift. The keys are
+  // deliberately left in place -- the Fantasy screens are mid-migration and the
+  // strings will be wanted again; delete them in the same pass that settles the
+  // Fantasy copy, not before.
+  W3: 262,
+  W4: 88,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
