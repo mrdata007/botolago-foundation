@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { classifyIdentityFailure } from "./route-access.server";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { classifyIdentityFailure, resolveSupabaseConfig } from "./route-access.server";
 import { AdminError } from "./errors";
 import {
   adminRouteStateSchema,
@@ -462,5 +464,112 @@ describe("selectAdminPanel", () => {
         }
       }
     }
+  });
+});
+
+describe("Supabase project resolution", () => {
+  const keys = [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_URL",
+    "SUPABASE_PUBLISHABLE_KEY",
+  ] as const;
+
+  function withEnv(values: Partial<Record<(typeof keys)[number], string>>, run: () => void) {
+    const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    try {
+      for (const k of keys) delete process.env[k];
+      for (const [k, v] of Object.entries(values)) process.env[k] = v;
+      run();
+    } finally {
+      for (const k of keys) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k] as string;
+      }
+    }
+  }
+
+  it("verifies against the same project the browser signed in to", () => {
+    // The whole failure mode: the Admin gate validating a session against a
+    // different Supabase project than the one that issued it. The signing key
+    // is then absent from the JWKS and the Auth server has never seen the
+    // token, so nobody can ever be authenticated.
+    withEnv(
+      {
+        VITE_SUPABASE_URL: "https://browser-project.supabase.co",
+        VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_browser",
+        SUPABASE_URL: "https://some-other-project.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_other",
+      },
+      () => {
+        expect(resolveSupabaseConfig()).toEqual({
+          url: "https://browser-project.supabase.co",
+          publishableKey: "sb_publishable_browser",
+        });
+      },
+    );
+  });
+
+  it("still accepts server-only variables where a runtime injects those instead", () => {
+    withEnv(
+      {
+        SUPABASE_URL: "https://injected.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_x",
+      },
+      () => {
+        expect(resolveSupabaseConfig()).toEqual({
+          url: "https://injected.supabase.co",
+          publishableKey: "sb_publishable_x",
+        });
+      },
+    );
+  });
+
+  it("reports nothing configured rather than a half-built client", () => {
+    withEnv({}, () => {
+      const config = resolveSupabaseConfig();
+      expect(config.url).toBeFalsy();
+      expect(config.publishableKey).toBeFalsy();
+    });
+  });
+
+  it("reads the same build-time variables as the browser client", () => {
+    // If these drift apart, the gate can once again end up pointed at a
+    // different project than the session it is checking.
+    const client = readFileSync(
+      join(import.meta.dir, "..", "..", "integrations", "supabase", "client.ts"),
+      "utf8",
+    );
+    const server = readFileSync(join(import.meta.dir, "route-access.server.ts"), "utf8");
+    for (const name of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
+      expect(client).toContain(`import.meta.env.${name}`);
+      // The literal member expression is what the bundler substitutes; writing
+      // it any other way silently loses the build-time value.
+      expect(server).toContain(`import.meta.env.${name}`);
+    }
+  });
+
+  it("falls back instead of throwing where import.meta.env does not exist", () => {
+    // A throw here would turn a denied Admin page into a 500 on the auth path.
+    const server = readFileSync(join(import.meta.dir, "route-access.server.ts"), "utf8");
+    expect(server).toMatch(/try\s*\{[\s\S]*import\.meta\.env[\s\S]*\}\s*catch/);
+    withEnv(
+      {
+        SUPABASE_URL: "https://fallback.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_f",
+      },
+      () => {
+        expect(() => resolveSupabaseConfig()).not.toThrow();
+        expect(resolveSupabaseConfig().url).toBe("https://fallback.supabase.co");
+      },
+    );
+  });
+
+  it("never falls back to a service-role credential", () => {
+    // The gate runs with the caller's own token under RLS. A service key here
+    // would silently turn every read into an unrestricted one.
+    const server = readFileSync(join(import.meta.dir, "route-access.server.ts"), "utf8");
+    expect(server).not.toContain("SERVICE_ROLE");
+    expect(server).not.toContain("SUPABASE_SECRET_KEY");
   });
 });
