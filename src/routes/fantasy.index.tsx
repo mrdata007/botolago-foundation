@@ -22,6 +22,7 @@ import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import { FplPill, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useI18n } from "@/i18n/provider";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -46,10 +47,13 @@ function FantasyHub() {
   const team = screen.team;
   const gameweek = screen.gameweek;
 
+  // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
+  // the hub's "News & Video" rail is not rendered and its feed is not fetched.
   const articles = useQuery({
     queryKey: ["fantasy-articles", lang],
     queryFn: () => newsService.getArticles(lang, { category: "for_you" }),
     staleTime: 5 * 60_000,
+    enabled: NEWS_ENABLED,
   });
   // The reference "News & Video" cards always carry a photo: prefer articles
   // with a real hero image and only fall back to the gradient-backed ones
@@ -183,50 +187,52 @@ function FantasyHub() {
         </Link>
       </div>
 
-      {/* News & Video */}
-      <section className="pt-5">
-        <div className="flex items-center justify-between px-4">
-          <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-            {t("fpl.news_video")}
-          </h2>
-          <Link
-            to="/news"
-            className="inline-flex items-center gap-1 text-[14px] font-bold text-[color:var(--fpl-ink)]"
-          >
-            {t("fpl.view_all")} <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
-        <div className="mt-2 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
-          {hubArticles.map((article) => (
+      {/* News & Video — hidden at launch (NEWS_ENABLED). */}
+      {NEWS_ENABLED && (
+        <section className="pt-5">
+          <div className="flex items-center justify-between px-4">
+            <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
+              {t("fpl.news_video")}
+            </h2>
             <Link
-              key={article.id}
-              to="/news/$articleId"
-              params={{ articleId: article.id }}
-              className="w-[190px] shrink-0 snap-start overflow-hidden rounded-[4px] bg-[color:var(--fpl-cyan)]/40"
+              to="/news"
+              className="inline-flex items-center gap-1 text-[14px] font-bold text-[color:var(--fpl-ink)]"
             >
-              {article.heroUrl ? (
-                <MediaImage
-                  src={article.heroUrl}
-                  alt={article.heroAlt ?? ""}
-                  fallback={article.heroGradient}
-                  className="aspect-[16/10] w-full"
-                />
-              ) : null}
-              <p className="line-clamp-3 px-2 py-2 text-[13px] font-bold leading-snug text-[color:var(--fpl-ink-deep)]">
-                {article.title[lang] ?? article.title.fr}
-              </p>
+              {t("fpl.view_all")} <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
-          ))}
-          {articles.isPending
-            ? [0, 1, 2].map((index) => (
-                <div
-                  key={index}
-                  className="h-[170px] w-[190px] shrink-0 animate-pulse rounded-[4px] bg-white motion-reduce:animate-none"
-                />
-              ))
-            : null}
-        </div>
-      </section>
+          </div>
+          <div className="mt-2 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
+            {hubArticles.map((article) => (
+              <Link
+                key={article.id}
+                to="/news/$articleId"
+                params={{ articleId: article.id }}
+                className="w-[190px] shrink-0 snap-start overflow-hidden rounded-[4px] bg-[color:var(--fpl-cyan)]/40"
+              >
+                {article.heroUrl ? (
+                  <MediaImage
+                    src={article.heroUrl}
+                    alt={article.heroAlt ?? ""}
+                    fallback={article.heroGradient}
+                    className="aspect-[16/10] w-full"
+                  />
+                ) : null}
+                <p className="line-clamp-3 px-2 py-2 text-[13px] font-bold leading-snug text-[color:var(--fpl-ink-deep)]">
+                  {article.title[lang] ?? article.title.fr}
+                </p>
+              </Link>
+            ))}
+            {articles.isPending
+              ? [0, 1, 2].map((index) => (
+                  <div
+                    key={index}
+                    className="h-[170px] w-[190px] shrink-0 animate-pulse rounded-[4px] bg-white motion-reduce:animate-none"
+                  />
+                ))
+              : null}
+          </div>
+        </section>
+      )}
 
       {/* Leagues & Cups */}
       <LeaguesAndCups
@@ -245,12 +251,16 @@ function FantasyHub() {
         <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
           {t("fpl.follow")}
         </h2>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <FollowCard
-            to="/news"
-            label={t("nav.news")}
-            icon={<Newspaper className="h-7 w-7" aria-hidden />}
-          />
+        {/* Three tiles with News, two without it — the row stays balanced
+            instead of leaving a gap where the News tile was. */}
+        <div className={cn("mt-3 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
+          {NEWS_ENABLED && (
+            <FollowCard
+              to="/news"
+              label={t("nav.news")}
+              icon={<Newspaper className="h-7 w-7" aria-hidden />}
+            />
+          )}
           <FollowCard
             to="/matches"
             label={t("nav.matches")}

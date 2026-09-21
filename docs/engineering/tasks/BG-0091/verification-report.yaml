@@ -1,0 +1,271 @@
+task_id: BG-0091
+title: Hide the News surface at launch (frontend half) — measured evidence
+branch: bg-0091-hide-news
+base_commit: a4843e3473d9dd053c214de9b0400369e8b80168
+date: 2026-09-21
+
+how_to_read_this: >
+  Everything below was measured, not observed. The browser harness polls the
+  live DOM and reports integer counts; nothing in this report rests on somebody
+  looking at a screenshot.
+
+harness:
+  runner: Playwright, Chromium from /opt/pw-browsers (PLAYWRIGHT_BROWSERS_PATH
+    was already set; `playwright install` was never run)
+  server: "`bun run dev` (Vite 8, TanStack Start SSR + client hydration)"
+  data_mode: "VITE_NEWS_DATA_MODE unset -> mock (MockNewsRepository, in-process)"
+  matrix: >
+    2 languages (fr, ar) x 2 viewports (390x844, 1440x900) x 2 auth states
+    (signed out, signed in) x 6 pages = 48 page loads per run.
+  pages: ["/", "/fantasy", "/profile", "/matches", "/news", "/news/<article uuid>"]
+  measured_per_load:
+    - occurrences of /elbotola/gi in document.documentElement.outerHTML
+    - occurrences of /elbotola/gi in every element's src/href/srcset/poster/style attribute
+    - occurrences of /elbotola/gi inside every script[type="application/ld+json"] block
+    - every anchor href equal to /news or starting with /news/
+    - the final URL after the load settled
+    - console errors and page errors
+    - documentElement.scrollWidth - clientWidth
+    - every element whose bounding box extends past the viewport, skipping any
+      element inside a deliberate overflow-x auto/scroll ancestor
+  signed_in_method: >
+    The 48-load matrix seeds a session in localStorage. Because that stub could
+    in principle fail to authenticate, a separate pass (4 contexts: fr/ar x
+    390/1440) signs in through the real mock auth form with the demo account and
+    re-measures all six pages. That pass confirms `authed = true` in all four
+    contexts — /profile renders the real account (Rachid Demo, @rachid_demo) —
+    so the signed-in condition is genuinely exercised.
+
+reproduction_of_the_qa_finding: >
+  The repository's mock News fixtures carry no third-party attribution at all,
+  so measuring against them would have produced a "before" count of zero and
+  proved nothing. To obtain an honest before/after, the mock repository was
+  TEMPORARILY patched, for measurement only, to the shape production carries:
+  publisher "ElBotola", author "ElBotola", hero sourceUrl on
+  images2.elbotola.com with credit "ElBotola", and an outbound
+  "Lire l'original sur ElBotola" anchor in the article body. This reproduces the
+  seven QA findings in a controlled way. The patch was reverted before the final
+  gate run and before commit; `git status` shows src/backend/news/
+  mock-repository.ts unmodified, and the committed diff does not touch it.
+
+runs:
+  - id: R1
+    label: before (pre-change service, NEWS_ENABLED=true, production-shaped data)
+    meaning: reproduces the shipped-today behaviour the QA run found
+  - id: R2
+    label: data-layer strip only (NEWS_ENABLED=true, production-shaped data)
+    meaning: proves the attribution strip alone clears all seven, flag aside
+  - id: R3
+    label: shipped (NEWS_ENABLED=false, production-shaped data)
+    meaning: the state that ships, against the live data that still exists today
+  - id: R4
+    label: shipped (NEWS_ENABLED=false, pristine mock data)
+    meaning: the state that ships, re-run after the fixture patch was reverted
+
+elbotola_occurrences:
+  units: >
+    Each cell is the total over the 4 loads of that page in that language
+    (2 viewports x 2 auth states). Divide by 4 for per-page-load counts.
+  columns: [dom, src_href_attrs, json_ld]
+  R1_before:
+    home: { fr: [12, 0, 0], ar: [12, 0, 0] }
+    fantasy: { fr: [6, 6, 0], ar: [6, 6, 0] }
+    profile: { fr: [0, 0, 0], ar: [0, 0, 0] }
+    matches: { fr: [0, 0, 0], ar: [0, 0, 0] }
+    news: { fr: [12, 0, 0], ar: [12, 0, 0] }
+    article: { fr: [44, 12, 12], ar: [40, 8, 12] }
+    totals: { dom: 144, attrs: 32, json_ld: 24 }
+    sample_attribute_hits:
+      - "a[href]=https://www.elbotola.com/original-article"
+      - "img[src]=https://images2.elbotola.com/photo.jpg"
+      - "link[href]=https://images2.elbotola.com/photo.jpg   (the route's preload link)"
+    note_on_fr_vs_ar: >
+      The live QA run found zero in French because the French editions carried
+      no third-party byline; the reproduction applies the same publisher to both
+      languages, so R1 shows both. That makes the before/after strictly harder,
+      not easier.
+  R2_data_layer_strip_only:
+    every_page: { dom: 0, attrs: 0, json_ld: 0 }
+    totals: { dom: 0, attrs: 0, json_ld: 0 }
+    first_attempt_caught_a_defect: >
+      The first version of the sanitizer unwrapped off-site anchors instead of
+      removing them, and this run reported dom: 4 on the article page in each
+      language (1 per load) — the residual words "Lire l'original sur ElBotola".
+      The sanitizer was changed to remove an absolute-href anchor together with
+      its text, and the re-run is the zero above. Assert by measuring, not by
+      looking: inspection would have passed the first version.
+  R3_shipped_against_live_shaped_data:
+    every_page: { dom: 0, attrs: 0, json_ld: 0 }
+    totals: { dom: 0, attrs: 0, json_ld: 0 }
+  R4_shipped_against_pristine_mock:
+    every_page: { dom: 0, attrs: 0, json_ld: 0 }
+    totals: { dom: 0, attrs: 0, json_ld: 0 }
+  signed_in_form_login_pass:
+    every_page_both_languages_both_viewports: { dom: 0, attrs: 0, json_ld: 0 }
+
+news_entry_points:
+  measure: distinct anchors with href == "/news" or href starting "/news/"
+  R1_before_total_over_48_loads: 168
+  R3_shipped_total_over_48_loads: 0
+  R4_shipped_total_over_48_loads: 0
+  signed_in_pass: 0 on every page, both languages, both viewports
+  per_page_shipped:
+    home: 0
+    fantasy: 0
+    profile: 0
+    matches: 0
+  nav_text_confirmation: >
+    The signed-in 1440px pass reads the top bar as "Accueil | Fantasy | Matches
+    | Profil" in French and "الرئيسية | فانتازي | المباريات | الملف الشخصي" in
+    Arabic — four items, no Actualités / الأخبار.
+  profile_tile_confirmation: >
+    The signed-in /profile stats strip reads "CLUB FAVORI | — | NOTIFICATIONS |
+    3/3" — two tiles, the saved-articles bookmark tile gone, the row balanced at
+    grid-cols-2.
+
+direct_hits:
+  method: >
+    A separate pass polls document.documentElement.outerHTML on every
+    animation frame from navigation start for News-only markers
+    ("Actualités", "الأخبار", "FILTRER PAR CLUB", "editorial-body",
+    "news-gradient"), then reports which were ever seen.
+  results:
+    - {
+        lang: fr,
+        path: "/news",
+        final_url: "/",
+        news_markers_ever_painted: [],
+        console_errors_attributable: none,
+      }
+    - {
+        lang: fr,
+        path: "/news/<article uuid>",
+        final_url: "/",
+        news_markers_ever_painted: [],
+        console_errors_attributable: none,
+      }
+    - {
+        lang: ar,
+        path: "/news",
+        final_url: "/",
+        news_markers_ever_painted: [],
+        console_errors_attributable: none,
+      }
+    - {
+        lang: ar,
+        path: "/news/<article uuid>",
+        final_url: "/",
+        news_markers_ever_painted: [],
+        console_errors_attributable: none,
+      }
+  conclusion: >
+    No flash: zero News markers were painted at any frame. Both direct hits land
+    on "/" with Home fully rendered. The same result holds in the 48-load matrix
+    for both viewports and both auth states, signed in and signed out.
+  ssr_vs_client: >
+    The redirect is thrown in `beforeLoad`, which the router runs before the
+    loader and before any component renders, in the server render and on client
+    navigation alike — so both paths do the same thing by construction rather
+    than by two separate pieces of code agreeing. The measured evidence is the
+    empty marker list above: an SSR-only or client-only guard would have painted
+    News markup on the other path.
+
+horizontal_overflow:
+  measure_1: "documentElement.scrollWidth - clientWidth"
+  measure_2: >
+    every element's bounding box against the viewport, skipping any element
+    inside an overflow-x auto/scroll ancestor (html/body carry overflow-x: clip,
+    so overflow produces no scrollbar and measure_1 alone is not sufficient)
+  result: >
+    0 on every one of the 48 loads in R3 and R4, at 390px and 1440px, in both
+    languages, signed out and signed in. Zero offending elements under
+    measure_2. The two grid column changes (grid-cols-3 -> grid-cols-2 on the
+    /profile stats strip and the Fantasy "Follow BotolaGO" row) were the only
+    layout risk and neither overflows.
+
+console_errors:
+  attributable_to_this_change: none
+  environmental_only: >
+    One error appears on every page of every run including R1's /matches and
+    /profile, which this change does not touch:
+    "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID", from
+    https://fonts.googleapis.com/css2?family=Manrope...&family=Noto+Sans+Arabic...
+    It is the agent sandbox's TLS-intercepting proxy rejecting the Google Fonts
+    stylesheet, present identically before and after the change. It is not a
+    product defect and will not reproduce outside this sandbox.
+
+gates:
+  baseline_taken_on: origin/chief/launch-fixes-3 @ a4843e3, before any edit
+  typecheck:
+    command: bun run typecheck
+    before: "0 errors"
+    after: "0 errors"
+  test:
+    command: bun test
+    before: "1321 pass, 4 fail, 1325 tests across 152 files"
+    after: "1342 pass, 4 fail, 1346 tests across 153 files"
+    delta: "+21 passing, +1 file; failures unchanged"
+    remaining_failures: >
+      The same 4 pre-existing deliberate failures in
+      src/content/legal/legal-content.test.ts (terms.fr, terms.ar, privacy.fr,
+      privacy.ar "carries no unfilled placeholder") — a publication gate awaiting
+      owner-supplied values. Nothing else fails.
+  lint:
+    command: bun run lint
+    before: "0 errors, 17 warnings (all react-refresh/only-export-components)"
+    after: "0 errors, 17 warnings"
+    note: >
+      The route guard in news.tsx is an unexported function precisely so this
+      change adds no new react-refresh warning.
+  format_check:
+    command: bun run format:check
+    before: "40 warned files, 9 reported errors"
+    after: "byte-identical list of 40 warned files"
+    method: the warned-file lists were diffed; the diff is empty
+    note: pre-existing offenders only; this change introduces none
+  i18n_gate:
+    command: bun scripts/qa/i18n-gate.ts
+    before: "W1 6, W2 6, W3 248, W4 97 — RESULT: pass"
+    after: "W1 6, W2 6, W3 248, W4 97 — RESULT: pass"
+    baseline_edits_required: none
+    keys_that_went_unused: none
+    why_none: >
+      Every News surface was wrapped in a flag guard rather than deleted, so
+      every t("...") call site is still literally present in src/ and the gate's
+      static analysis still counts it as referenced. W3 did not move, so the
+      committed baseline was not touched.
+  build:
+    command: bun run build
+    before: succeeds
+    after: succeeds
+  e2e_suite:
+    status: not run
+    reason: >
+      tests/e2e/*.e2e.ts target staging and a live Supabase project
+      (E2E_BASE_URL / E2E_STAGING_FIRST_EMAIL / E2E_FANTASY_EMAIL), none of
+      which are configured in this environment. The bespoke harness above
+      covers the same browser matrix for this change's surfaces.
+
+could_not_verify:
+  - item: the post-promotion empty-data state against a real Supabase backend
+    reason: >
+      supabase/migrations/20260921170000_news_stand_down.sql has not been
+      applied to production and no Supabase instance is reachable here, so the
+      frontend was exercised in mock mode only.
+    why_it_does_not_block: >
+      With NEWS_ENABLED false the data state is unreachable by construction: the
+      routes redirect in beforeLoad before any loader runs, and the Home,
+      Fantasy and saved-articles queries all carry `enabled: NEWS_ENABLED`, so
+      no News RPC is issued on any surface. Empty results and 108 results reach
+      exactly the same code path — none. The measured runs cover the harder of
+      the two states (R3, data present and carrying full third-party
+      attribution) and R2 additionally shows the surfaces are clean even with
+      the flag ON and that data present.
+  - item: real-device Safari/iOS rendering
+    reason: Chromium only in this environment, per the task's harness.
+  - item: crawler behaviour against the redirect
+    reason: >
+      Requires a deployed origin. The redirect is a client/SSR router redirect,
+      not an HTTP 301; if the Chief wants a server-status redirect for crawlers
+      that is a hosting-layer concern (Nitro route rules) outside this lane, and
+      worth a decision before launch.

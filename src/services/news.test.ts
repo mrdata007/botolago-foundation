@@ -7,11 +7,131 @@ import {
   getNewsEdition,
   newsArticlesForCategory,
   presentArticle,
+  sanitizeArticleAttribution,
   selectNewsDataMode,
   selectNewsLead,
 } from "./news";
+import type { ArticleCardDto, ArticleDetailDto } from "@/backend/news/contracts";
 
 const context = { actorId: null, requestId: "news-test" } as const;
+
+/**
+ * BG-0091 — third-party attribution must never reach a rendered surface.
+ *
+ * The product rule is absolute: BotolaGO displays no third-party source
+ * label, byline, attribution UI, off-site media or outbound "read the
+ * original" link anywhere in the end-user product. It is enforced once at the
+ * data layer, so these tests hold whether or not News is currently hidden by
+ * `NEWS_ENABLED`, and they keep holding if News is switched back on with
+ * licensed content.
+ */
+function detailFixture(overrides: Partial<ArticleDetailDto> = {}): ArticleDetailDto {
+  return {
+    id: "11111111-1111-4111-8111-111111111111",
+    storyId: "22222222-2222-4222-8222-222222222222",
+    language: "ar",
+    slug: "stub",
+    title: "عنوان",
+    subtitle: null,
+    summary: "ملخص",
+    publishedAt: "2026-09-01T10:00:00.000Z",
+    updatedAt: "2026-09-01T10:00:00.000Z",
+    readingTimeMinutes: 2,
+    hero: {
+      id: "33333333-3333-4333-8333-333333333333",
+      sourceUrl: "https://images.example-source.test/photo.jpg",
+      storagePath: null,
+      alt: "alt",
+      caption: "caption",
+      credit: "Example Source",
+      width: 800,
+      height: 500,
+      mimeType: "image/jpeg",
+    },
+    author: { id: "44444444-4444-4444-8444-444444444444", slug: "src", name: "Example Source" },
+    publisher: { id: "44444444-4444-4444-8444-444444444444", slug: "src", name: "Example Source" },
+    primaryCategory: null,
+    tags: [],
+    teamIds: [],
+    competitionIds: [],
+    placement: null,
+    isSaved: false,
+    bodyHtml: '<p>نص <a href="https://example-source.test/a">اقرأ الأصل</a></p>',
+    bodyFormat: "rich_text",
+    seo: { title: null, description: null },
+    taxonomies: [],
+    competitions: [],
+    teams: [],
+    players: [],
+    ...overrides,
+  };
+}
+
+describe("third-party attribution is stripped at the data layer", () => {
+  test("drops the source label, the source byline, the hotlinked hero and the link-out", () => {
+    const safe = sanitizeArticleAttribution(detailFixture());
+
+    expect(safe.publisher).toBeNull();
+    expect(safe.author).toBeNull();
+    expect(safe.hero).toBeNull();
+    expect(safe.bodyHtml).not.toContain("<a");
+    expect(safe.bodyHtml).not.toContain("href");
+    // The off-site link goes with its own text: "read the original on X" is
+    // attribution, so unwrapping it to plain words would not be enough.
+    expect(safe.bodyHtml).not.toContain("اقرأ الأصل");
+    // The surrounding prose survives.
+    expect(safe.bodyHtml).toContain("نص");
+  });
+
+  test("an internal relative link keeps its words", () => {
+    const safe = sanitizeArticleAttribution(
+      detailFixture({ bodyHtml: '<p>voir <a href="/matches">les matchs</a></p>' }),
+    );
+    expect(safe.bodyHtml).toBe("<p>voir les matchs</p>");
+  });
+
+  test("presentArticle never surfaces a source name as the byline", () => {
+    const article = presentArticle(detailFixture());
+    expect(article.authorName.fr).toBe("BotolaGO");
+    expect(article.authorName.ar).toBe("BotolaGO");
+    expect(article.heroUrl).toBeUndefined();
+  });
+
+  test("a genuine editorial byline and a hero we host ourselves are kept", () => {
+    const safe = sanitizeArticleAttribution(
+      detailFixture({
+        author: { id: "55555555-5555-4555-8555-555555555555", slug: "staff", name: "Rédaction" },
+        hero: {
+          id: "33333333-3333-4333-8333-333333333333",
+          sourceUrl: null,
+          storagePath: "news/hero.jpg",
+          alt: "alt",
+          caption: "caption",
+          credit: "Example Source",
+          width: 800,
+          height: 500,
+          mimeType: "image/jpeg",
+        },
+      }),
+    );
+
+    expect(safe.author?.name).toBe("Rédaction");
+    expect(safe.hero?.storagePath).toBe("news/hero.jpg");
+    // The third-party credit line goes with the rest of the attribution.
+    expect(safe.hero?.credit).toBeNull();
+    expect(safe.hero?.caption).toBeNull();
+  });
+
+  test("works on a card DTO too, and does not mutate its input", () => {
+    const { bodyHtml: _body, ...card } = detailFixture();
+    const input = card as ArticleCardDto;
+    const safe = sanitizeArticleAttribution(input);
+
+    expect(safe.publisher).toBeNull();
+    expect(input.publisher?.name).toBe("Example Source");
+    expect("bodyHtml" in safe).toBe(false);
+  });
+});
 
 describe("News frontend repository cutover", () => {
   test("fails closed when production mode is not configured", () => {
@@ -61,7 +181,16 @@ describe("News frontend repository cutover", () => {
     const article = presentArticle(result);
 
     expect(calls).toEqual(["fr", "ar"]);
-    expect(result).toBe(arabicEdition);
+    // BG-0091: article detail is now returned as an attribution-sanitized copy
+    // rather than the repository's own object, so identity no longer holds.
+    // What this test is actually about -- that the Arabic edition is handed
+    // back unrelabeled -- is asserted on the content-bearing fields.
+    expect(result).not.toBe(arabicEdition);
+    expect(result.id).toBe(arabicEdition.id);
+    expect(result.language).toBe("ar");
+    expect(result.title).toBe(arabicEdition.title);
+    // ...and the third-party source label never survives the seam.
+    expect(result.publisher).toBeNull();
     expect(article.language).toBe("ar");
     expect(article.title.fr).toBe(arabicEdition.title);
     expect(article.bodyHtml).toBe(arabicEdition.bodyHtml);

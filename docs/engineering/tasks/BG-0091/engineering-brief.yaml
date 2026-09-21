@@ -1,0 +1,100 @@
+task_id: BG-0091
+title: Hide the News surface at launch (frontend half)
+area: frontend
+severity: P1
+branch: bg-0091-hide-news
+base_branch: chief/launch-fixes-3
+base_commit: a4843e3473d9dd053c214de9b0400369e8b80168
+status: BUILT_AND_VERIFIED
+
+owner_decision: >
+  News does not ship at launch (owner, 2026-09-21). The 108 published articles
+  are machine-ingested third-party link-out stubs. The database half is already
+  merged on this branch: supabase/migrations/20260921170000_news_stand_down.sql
+  unpublishes the articles and stops ingestion publishing, so every News read
+  RPC returns an empty list after promotion. That migration has NOT been applied
+  to production yet, so live data still carries 108 articles. The frontend must
+  therefore behave correctly in both data states.
+
+problem: >
+  Two problems, one change.
+
+  (1) A News surface with no content to show. After promotion, /news, the Home
+  news rail, the Fantasy hub rail and the saved-articles tile all render empty
+  states for a product area that is not shipping.
+
+  (2) A standing product rule was being broken. BotolaGO must not display
+  Elbotola branding, source labels, attribution UI, source URLs or
+  implementation references to Elbotola anywhere in the end-user product. A live
+  QA run found seven instances on the Arabic experience and zero in French:
+    - a visible `ElBotola` source label on every news card on `/`
+    - the same label on every card on `/news`
+    - the same label in the Fantasy hub news rail
+    - the byline `بقلم ElBotola` on all ten Arabic articles
+    - hero images hotlinked from images2.elbotola.com
+    - an outbound "read the original" link in the article body
+    - the same image host inside the article's JSON-LD NewsArticle block
+
+approach: >
+  One exported constant, `NEWS_ENABLED` in src/lib/feature-flags.ts, carrying the
+  owner decision and its date. Every News entry point is gated on it and nothing
+  else. News components, routes and services stay in the tree: this is a
+  launch-time hide, not a deletion, and the owner may licence content later and
+  flip the constant back to `true`.
+
+  Separately, and independently of the flag, third-party attribution is stripped
+  once at the data layer (`sanitizeArticleAttribution` in src/services/news.ts)
+  rather than in each rendering component. Hiding News removes the seven QA
+  findings by construction, but the data-layer strip is what makes the product
+  rule hold if the flag is ever flipped back on, and it is the correct home for
+  the rule regardless. ArticleCard.tsx and FeaturedGrid.tsx were not touched —
+  another lane is rewriting both.
+
+route_decision:
+  choice: redirect_to_home
+  rationale: >
+    /news and article permalinks were live and shared, so a not-found turns every
+    existing bookmark and outbound link into a dead end, where a redirect lands
+    the reader on a working product and keeps working unchanged when the flag
+    flips back on. The pages are also not missing — they are deliberately
+    withheld — so "not found" would be inaccurate to readers and crawlers alike.
+  mechanism: >
+    `beforeLoad` on the /news parent route (and, defensively, on the
+    /news/$articleId child). TanStack Router runs beforeLoad before the loader
+    and before any component renders, on the server render and on client
+    navigation alike. That is what guarantees the SSR path and the client path
+    behave identically, that no News RPC is issued, and that there is no flash of
+    News content. Verified by frame-by-frame DOM polling — see
+    verification-report.yaml, direct_hits.
+
+constraints_honoured:
+  - docs/engineering/LAUNCH_LEDGER.yaml not edited (Chief owns it)
+  - no changes under supabase/, scripts/backend/, .github/workflows/, src/backend/fantasy/
+  - no api.service_* function touched
+  - ui-kit tokens only in anything newly rendered; no hex, no bg-white, no
+    Tailwind type ramp, no rounded-lg/xl/2xl/3xl. In practice this change only
+    REMOVES rendered elements and changes two grid column counts
+    (grid-cols-3 -> grid-cols-2), so it adds no new styled surface at all.
+  - no new tracking-* introduced, so the ltr:-prefix rule has nothing to bind to;
+    logical properties preserved everywhere
+  - 'no `t(cond ? "a" : "b")` introduced (would trip the i18n W4 baseline)'
+  - src/components/common/ArticleCard.tsx and src/components/news/FeaturedGrid.tsx
+    not edited
+  - >-
+    no third-party access control or restriction circumvented. The fix is
+    removing our own display of the attribution, not fetching the content by
+    another route
+
+acceptance:
+  - one exported constant holds the decision; every News surface reads it
+  - /, /fantasy, /profile, /matches show no News entry point in either language,
+    at 390px and 1440px, signed out and signed in
+  - a direct hit on /news and on an article URL redirects to /, with no News
+    content painted at any frame and no console error
+  - zero occurrences of "elbotola" (case-insensitive) in the rendered DOM, in any
+    src/href attribute and in any JSON-LD block, on every page above, in both
+    languages
+  - no horizontal page scroll and no element extending past the viewport
+    (excluding deliberate overflow-x scrollers)
+  - typecheck / test / lint / format:check / i18n-gate / build all at or better
+    than the branch baseline

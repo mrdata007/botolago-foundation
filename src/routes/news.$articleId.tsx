@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
@@ -18,8 +18,19 @@ import { MediaImage } from "@/components/common/FailureAwareImage";
 import { resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import { gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/news/$articleId")({
+  // While News is hidden (owner decision — see `@/lib/feature-flags`) article
+  // permalinks redirect to Home rather than 404; the full rationale is on the
+  // parent route in `news.tsx`. The parent's `beforeLoad` already redirects
+  // before this route is reached, on SSR and on client navigation alike; this
+  // repeat guard keeps the child honest if the route tree is ever reshaped,
+  // and runs before the loader so no News RPC is issued and no article meta or
+  // JSON-LD is ever built.
+  beforeLoad: () => {
+    if (!NEWS_ENABLED) throw redirect({ to: "/", replace: true });
+  },
   loader: async ({ params, context }) => {
     try {
       return await context.queryClient.ensureQueryData({
