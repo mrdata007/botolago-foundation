@@ -1,61 +1,113 @@
-import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { ui } from "@/components/ui-kit";
+import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
+
 /**
- * "‹ Gameweek N ›" control on the Fantasy design system: an ink/grey pill
- * matching the prev/next steppers in `fantasy.points.tsx`'s header.
+ * The "‹ Journée N ›" stepper, on the kit.
+ *
+ * One control for both places that step through gameweeks — the Points header
+ * and Top players — so they cannot drift apart again. `tone="onGradient"`
+ * puts it on a header band; the default sits on a page surface.
+ *
+ * The steppers were 36px squares (under the 44px floor) and announced
+ * themselves as "Journée -1" / "Journée +1"; they now name the gameweek they
+ * actually go to. Chevrons are logical: start = previous, end = next, and
+ * `html[dir="rtl"] .lucide-chevron-*` in styles.css mirrors the glyph so the
+ * arrow points the way the reader travels.
  */
 export function GameweekSelector({
   value,
   min = 1,
   max = 30,
   onChange,
+  tone = "onSurface",
+  showLabel = false,
   className,
 }: {
   value: number;
   min?: number;
   max?: number;
   onChange: (n: number) => void;
+  tone?: "onSurface" | "onGradient";
+  /**
+   * Print "JOURNÉE" above the number. Off by default because the caller
+   * usually already says it — /fantasy/top-players puts its own label beside
+   * the control, and the stepper used to repeat it in 9px capitals right next
+   * to it. The Points header, where the control stands alone, asks for it.
+   */
+  showLabel?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
-  const prev = () => onChange(Math.max(min, value - 1));
-  const next = () => onChange(Math.min(max, value + 1));
-  // Chevrons are logical (start = previous, end = next). The .lucide-chevron-*
-  // classes are flipped in RTL by global styles so the visual arrow matches.
+  const previous = Math.max(min, value - 1);
+  const next = Math.min(max, value + 1);
+  const stepClass = cn(
+    "grid shrink-0 place-items-center",
+    ui.space.tap,
+    ui.radius.full,
+    ui.focus,
+    "transition-colors disabled:opacity-40",
+    tone === "onGradient"
+      ? "text-[color:var(--ui-on-grad-header)] hover:bg-[color:color-mix(in_oklab,var(--ui-on-grad-header)_12%,transparent)]"
+      : cn(ui.tone.ink, "hover:bg-[color:var(--ui-surface)]"),
+  );
+
   return (
     <div
+      role="group"
+      aria-label={t("fantasy.points.gameweek")}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full bg-[color:var(--fpl-grey)] px-1 py-1",
+        "inline-flex items-center gap-1 p-1",
+        ui.radius.track,
+        // On a header band the stepper is deliberately untinted. A
+        // translucent white track over the *dark* header gradient measured
+        // 4.01:1 against `--ui-on-grad-header` — under AA — whereas
+        // `--ui-on-grad-header` on the band itself is the pairing the design
+        // system guarantees in both themes (measured 8.9:1).
+        tone === "onGradient" ? "bg-transparent" : ui.surface.sunken,
         className,
       )}
     >
       <button
         type="button"
-        onClick={prev}
+        onClick={() => onChange(previous)}
         disabled={value <= min}
-        className="grid h-9 w-9 place-items-center rounded-full text-[color:var(--fpl-ink)] transition-colors hover:bg-white disabled:opacity-40"
-        aria-label={t("fantasy.points.gameweek") + " -1"}
+        className={stepClass}
+        aria-label={`${t("fantasy.points.gameweek")} ${previous}`}
       >
-        <ChevronLeft className="h-4 w-4" aria-hidden />
+        <ChevronLeft className="h-5 w-5" aria-hidden />
       </button>
-      <div className="flex min-w-28 select-none flex-col items-center leading-tight">
-        <span className="text-[9px] font-black uppercase tracking-[0.16em] text-[color:var(--fpl-grey-text)]">
-          {t("fantasy.points.gameweek")}
-        </span>
-        <span className="text-sm font-black tabular-nums text-[color:var(--fpl-ink-deep)]">
+      <div className="flex min-w-0 flex-1 select-none flex-col items-center gap-0.5">
+        {showLabel ? (
+          <span
+            className={cn(
+              "truncate",
+              ui.text.label,
+              tone === "onGradient" ? "text-[color:var(--ui-on-grad-header)]" : ui.tone.muted,
+            )}
+          >
+            {t("fantasy.points.gameweek")}
+          </span>
+        ) : null}
+        <span
+          className={cn(
+            ui.stat.md,
+            tone === "onGradient" ? "text-[color:var(--ui-on-grad-header)]" : ui.tone.default,
+          )}
+        >
           {value}
         </span>
       </div>
       <button
         type="button"
-        onClick={next}
+        onClick={() => onChange(next)}
         disabled={value >= max}
-        className="grid h-9 w-9 place-items-center rounded-full text-[color:var(--fpl-ink)] transition-colors hover:bg-white disabled:opacity-40"
-        aria-label={t("fantasy.points.gameweek") + " +1"}
+        className={stepClass}
+        aria-label={`${t("fantasy.points.gameweek")} ${next}`}
       >
-        <ChevronRight className="h-4 w-4" aria-hidden />
+        <ChevronRight className="h-5 w-5" aria-hidden />
       </button>
     </div>
   );

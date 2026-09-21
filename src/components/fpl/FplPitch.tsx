@@ -1,13 +1,25 @@
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
+import { UiPitchSurface } from "@/components/ui-kit";
 
 /**
- * Pitch reconstructed from the FPL "Pick Team" / "Transfers" reference:
- * a flat light-green turf with alternating horizontal mowing bands, white
- * markings (goal + penalty box at the top, centre circle at the bottom),
- * four player rows and a lighter bench strip underneath with position
- * labels. RTL only reorders peers inside a row.
+ * The Fantasy pitch.
+ *
+ * There used to be two pitches in this codebase — this one, drawn with a
+ * literal `rgba(255,255,255,0.92)` for the markings and `--fpl-pitch-*` for
+ * the turf, and `fantasy/Pitch.tsx`. Neither followed the theme. BG-0091
+ * promoted the turf, the bench strip, the markings and the on-turf label
+ * colour into the kit as `--ui-pitch-turf-a/-b`, `--ui-pitch-bench`,
+ * `--ui-pitch-line` and `--ui-on-pitch`, each with a dark counterpart, and
+ * gave the kit `UiPitchSurface` to draw them.
+ *
+ * So this is now an adapter, not a second implementation: one pitch, themed,
+ * direction-neutral (the mowing bands run `to bottom`, so nothing mirrors
+ * wrong under `dir="rtl"` — a row only reorders its peers).
+ *
+ * The props are unchanged on purpose. `/fantasy/team`, `/fantasy/points` and
+ * `SquadBuilderScreen` (which is what `/fantasy/transfers` and
+ * `/fantasy/create` render) all call it exactly as before.
  */
 export function FplPitch({
   rows,
@@ -20,81 +32,17 @@ export function FplPitch({
   rows: ReactNode[][];
   bench?: ReactNode[];
   benchLabels?: string[];
-  /** Bench Boost active: the bench strip gets the gradient outline. */
+  /** Bench Boost active: the bench strip gets the accent outline. */
   benchHighlighted?: boolean;
   className?: string;
 }) {
   return (
-    <div className={cn("relative", className)}>
-      <div
-        className="relative overflow-hidden"
-        style={{
-          background:
-            "repeating-linear-gradient(180deg, var(--fpl-pitch-a) 0 60px, var(--fpl-pitch-b) 60px 120px)",
-        }}
-      >
-        {/* Markings */}
-        <svg
-          aria-hidden
-          viewBox="0 0 100 150"
-          preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 h-full w-full"
-        >
-          <g fill="none" stroke="rgba(255,255,255,0.92)" strokeWidth="0.6">
-            <rect x="3" y="0" width="94" height="150" />
-            <rect x="20" y="0" width="60" height="20" />
-            <rect x="35" y="0" width="30" height="7" />
-            <path d="M 38 20 A 12 12 0 0 0 62 20" />
-            <circle cx="50" cy="150" r="14" />
-            <circle cx="50" cy="150" r="1" fill="rgba(255,255,255,0.92)" />
-          </g>
-          {/* Goal net */}
-          <rect x="41" y="-1" width="18" height="4" fill="rgba(255,255,255,0.75)" />
-        </svg>
-
-        <div className="relative flex flex-col gap-3 px-1 pb-4 pt-3">
-          {rows.map((row, index) => (
-            <div key={index} className="flex items-start justify-evenly gap-1">
-              {row.map((card, cardIndex) => (
-                <div key={cardIndex} className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]">
-                  {card}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {bench && bench.length > 0 ? (
-        <div
-          className={cn(
-            "relative px-2 pb-3 pt-2",
-            benchHighlighted &&
-              "outline outline-2 -outline-offset-2 outline-[color:var(--fpl-cyan)]",
-          )}
-          style={{ background: "var(--fpl-pitch-bench)" }}
-        >
-          {benchLabels ? (
-            <div className="mb-1 flex items-start justify-evenly gap-1">
-              {benchLabels.map((label, index) => (
-                <div
-                  key={index}
-                  className="w-[76px] shrink-0 text-center text-[12px] font-semibold text-[color:var(--fpl-ink-deep)] sm:w-[84px]"
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <div className="flex items-start justify-evenly gap-1">
-            {bench.map((card, index) => (
-              <div key={index} className="w-[76px] shrink-0 sm:w-[84px]">
-                {card}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <UiPitchSurface
+      rows={rows}
+      bench={bench}
+      benchLabels={benchLabels}
+      benchHighlighted={benchHighlighted}
+      className={className}
+    />
   );
 }

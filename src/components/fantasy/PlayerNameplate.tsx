@@ -1,3 +1,4 @@
+import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -10,23 +11,23 @@ interface Props {
 }
 
 /**
- * Two-line on-pitch label with a dark name plate and a bright metric chip.
+ * Two-line on-pitch label: an ink name plate over a metric chip.
  *
- * The dark plate is drawn on a nearly-opaque BotolaGO charcoal so player
- * names remain readable against any turf mow band. The metric chip below
- * carries expected points or fixture context in tabular numerals. Widths
- * are uniform so labels stack cleanly across a row.
+ * Both plates used to be hand-mixed gradients over `--brand-charcoal` and
+ * `--brand-accent` with baked-in `rgba` shadows, so neither followed the
+ * theme. They are now the kit's ink and card surfaces, and the metric keeps
+ * the stat ramp because it is a figure a reader scans.
  */
 export function PlayerNameplate({ name, metric, fixture, className, emphasize }: Props) {
   return (
     <div className={cn("flex w-full flex-col items-center", className)}>
       <div
-        className="w-full max-w-[80px] truncate rounded-t-md px-1.5 py-[3px] text-center text-[10px] font-bold leading-tight text-white"
-        style={{
-          background:
-            "linear-gradient(180deg, color-mix(in oklab, var(--brand-charcoal) 90%, black) 0%, color-mix(in oklab, var(--brand-charcoal) 98%, black) 100%)",
-          boxShadow: "0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
-        }}
+        className={cn(
+          "w-full max-w-[80px] truncate rounded-t-[var(--ui-radius-tight)] px-1.5 py-[3px] text-center leading-tight",
+          ui.surface.inkPlain,
+          ui.text.micro,
+          "[font-weight:var(--ui-weight-heavy)]",
+        )}
         title={name}
       >
         {name}
@@ -34,15 +35,13 @@ export function PlayerNameplate({ name, metric, fixture, className, emphasize }:
       {(metric || fixture) && (
         <div
           className={cn(
-            "w-full max-w-[80px] truncate rounded-b-md px-1.5 py-[2px] text-center text-[10px] font-black tabular-nums leading-tight",
-            emphasize ? "text-white" : "text-foreground",
+            "w-full max-w-[80px] truncate rounded-b-[var(--ui-radius-tight)] px-1.5 py-[2px] text-center leading-tight",
+            ui.stat.sm,
+            emphasize
+              ? "text-[color:var(--ui-ink-deep)]"
+              : "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
           )}
-          style={{
-            background: emphasize
-              ? "linear-gradient(180deg, color-mix(in oklab, var(--brand-accent) 92%, black) 0%, color-mix(in oklab, var(--brand-accent) 78%, black) 100%)"
-              : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(240,244,252,0.92) 100%)",
-            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.06)",
-          }}
+          style={emphasize ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
         >
           {metric ?? fixture}
         </div>
