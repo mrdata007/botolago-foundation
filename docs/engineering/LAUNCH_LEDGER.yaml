@@ -1567,6 +1567,33 @@ tasks:
       Two separate lanes lost time to it and neither could fix it, because src/backend was
       out of scope for both. It is in scope for nobody at the moment, which is why it is here.
 
+  BG-0132:
+    title: GlassCard and FantasyMobileNav are unreachable, and they are why --ui-shadow-raised is misnamed
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - "src/components/ui-glass/GlassCard.tsx has zero references outside its own file -- and is the only file in src/components/ui-glass/"
+      - src/components/fantasy/FantasyMobileNav.tsx has zero references outside its own file
+      - "--ui-shadow-raised is `0 -1px 0 0 <ink 8%>`: a top hairline, not a shadow. Its only two call sites are those two dead files"
+      - "FantasyMobileNav uses it correctly, as the top edge of a bottom-docked bar; GlassCard uses it as a card shadow at intensity=\"strong\", where a top hairline does nothing"
+    note: >
+      A token named "shadow-raised" that is actually a top edge rule will keep being reached
+      for as a shadow -- GlassCard already did. The name is the defect. Renaming it to
+      something that says what it is (--ui-edge-top) is cheap, but both its call sites are
+      dead code, so the honest sequence is to delete the two components first and then decide
+      whether the token has a live use at all.
+
+      GlassCard is also a direct contradiction of the design system: UiCard's own
+      documentation says the Fantasy card is "an opaque surface ... no border and no glass",
+      and the kit contract test forbids hardcoded colours precisely to stop this class of
+      component coming back.
+
+      Not deleted in this pass for the same reason as BG-0123: removing components moves the
+      i18n gate's W3/W4 baselines and the test count, which has already had to be reconciled
+      three times in one day, and neither file is reachable by a user in the meantime.
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy

@@ -60,11 +60,28 @@ loosening (+0.04 to +0.08em) have nowhere to live. Note that any such token has
 to be `ltr:`-only, like `--ui-stat-tracking` already is — letter-spacing breaks
 Arabic letterform joins (BG-0069).
 
-**Gap B — the weight ramp has no normal weight.** The four weights are 600, 700,
-800, 900, and `--ui-weight-body` is **600**. Body copy is semibold everywhere,
-which reads as emphatic rather than composed, and it removes the contrast that
-makes a heading feel like a heading. A normal (400–450) and a medium (500) step
-are needed before any of the "restraint" in this standard is achievable.
+**Gap B — the weight ramp had no normal weight. The claim that came with it was
+wrong.**
+
+This section originally said "body copy is semibold everywhere", read off
+`--ui-weight-body: 600`. Measured instead — a tally of rendered characters by
+computed `font-weight` across seven routes — **8,998 of ~12,000 characters
+(73%) already render at 400**, because most text elements never apply
+`ui.text.body` at all and inherit the document default. There was no
+product-wide semibold problem.
+
+The measurement did find one the reading had missed: `/fantasy/help` rendered
+671 characters, **all** at weight 800, the only route in the product with no
+normal-weight text. Fixed — a collapsed FAQ question is a list-row label, not a
+heading.
+
+`--ui-weight-normal: 400` now exists, for exactly one step: `ui.text.prose`.
+The ramp's "Fantasy never uses 400 for structural text" still holds; a page of
+copy is not structural text. It was added because converting the legal renderer
+onto `prose` moved `/terms` from 7,882 characters at 400 to 7,909 at 600 — a
+regression the conversion introduced, caught by re-running the same tally.
+
+A medium (500) step is still absent, and no screen has yet needed one.
 
 Nine steps is also one more than the standard's eight; `meta` (13) and
 `secondary` (14) are close enough to merge, which is worth doing while the
@@ -177,9 +194,20 @@ The magnitude was also badly underestimated. Not +0.1: Noto Sans Arabic needs
 actually clears its box — measured across the product, not estimated. The
 derivation and the numbers are in BG-0124 and `docs/qa/polish/README.md`.
 
-**Tabular figures** are near-absent: two occurrences in the stylesheet, one of
-which is a comment. `UiTable`'s `numeric` cells set it, nothing else does. Every
-points, price and rank column in the product needs it.
+**Tabular figures — also a wrong reading, corrected.** This said "near-absent:
+two occurrences in the stylesheet, one of which is a comment". Counting
+stylesheet occurrences was the wrong instrument: `STAT_BASE` carries
+`fpl-tabular`, so the entire stat ramp is tabular wherever it is used, and the
+class is applied through `ui.stat.*` rather than written out.
+
+Measured on the live pages — every text leaf whose content is a bare figure,
+checked for computed `font-variant-numeric` — `/matches`, `/fantasy`,
+`/fantasy/rankings` and `/fantasy/top-players` had **zero** proportional
+figures. The one real finding was `/fantasy/points`: seven, all of them the
+`UiPlayerPlate` sub band, which is the points/price plate under each shirt and
+is read as a column of eleven down the pitch. Fixed in the kit. What remains is
+six `<option>` elements in a native select, which the browser draws with system
+UI and does not treat as a column.
 
 ## Order of work, once unblocked
 

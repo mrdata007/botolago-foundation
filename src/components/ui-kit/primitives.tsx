@@ -1388,6 +1388,14 @@ export function UiPlayerPlate({
           className={cn(
             "block w-full truncate rounded-b-[var(--ui-radius-tight)] px-1 py-0.5 text-center",
             ui.text.micro,
+            // This band carries points, price OR a fixture code, and on a
+            // pitch there are eleven of them stacked down the screen — figures
+            // a reader scans as a column even though nothing draws one. It was
+            // the only numeric surface in the product still proportional
+            // (measured: 7 non-tabular figures on /fantasy/points, 0 anywhere
+            // else). Harmless on the fixture variant: tabular-nums only
+            // affects digits, so "FUS (D)" is unchanged.
+            ui.text.tabular,
             "[font-weight:var(--ui-weight-strong)]",
             state === "doubtful" || state === "selected"
               ? "text-[color:var(--ui-ink-deep)]"
