@@ -1,0 +1,523 @@
+task_id: BG-0093
+lane: B — squad building, the player picker, transfers
+role: Builder
+attempt: 1
+branch: bg-0093-squad-picker
+base: origin/chief/launch-fixes-3
+status: complete for the files this lane owns
+
+headline: >
+  Every file this lane owns is at zero divergence from the UI kit, and the
+  picker — the surface the owner singled out — was rebuilt around one idea: a
+  manager must never learn a squad rule from a toast. Both named defects are
+  fixed, and the position filter can no longer contradict its list because the
+  contradictory control no longer exists when a position is imposed.
+  `PlayerPickerDrawer` is deleted; the reasoning is in `player_picker_drawer`
+  below.
+
+# ---------------------------------------------------------------------------
+# THE METER. `bun scripts/qa/design-divergence.ts`, run on the base tree and
+# again on the finished tree in the same worktree. Comments and import
+# specifiers are stripped before counting.
+# ---------------------------------------------------------------------------
+
+divergence_meter:
+  command: bun scripts/qa/design-divergence.ts
+  repo_totals:
+    before: { total: 1534, files: 91 }
+    after: { total: 1438, files: 84 }
+    delta: { total: -96, files: -7 }
+  by_rule:
+    columns: [rule, before, after, delta]
+    rows:
+      - ["v2 radii (rounded-lg/xl/2xl/3xl)", 59, 56, -3]
+      - ["glass-*/surface-N/--glass-border/cta-brand/press-tile", 66, 63, -3]
+      - ["Tailwind type ramp (text-xs…4xl)", 217, 213, -4]
+      - ["shadow-sm / shadow-md", 33, 30, -3]
+      - ["tracking-* without ltr:", 27, 25, -2]
+      - ["hardcoded colours (hex/rgb/bg-white/named palette)", 643, 614, -29]
+      - ["physical direction utilities", 34, 34, 0]
+      - ["--fpl-* usage", 455, 403, -52]
+      - ["TOTAL", 1534, 1438, -96]
+  owned_files:
+    note: >
+      All eight. Every one of them reaches zero; the whole -96 is this lane's
+      files and nothing else moved, which is what strict file ownership across
+      four parallel lanes is supposed to produce.
+    columns: [file, before, after]
+    rows:
+      - ["src/components/fantasy/PlayerPickerDrawer.tsx", 19, "deleted"]
+      - ["src/components/fpl/AddPlayerScreen.tsx", 18, 0]
+      - ["src/components/fpl/TransferConfirmScreen.tsx", 17, 0]
+      - ["src/components/fpl/PlayerActionSheet.tsx", 14, 0]
+      - ["src/components/fpl/SquadListTable.tsx", 11, 0]
+      - ["src/components/fpl/SquadBuilderScreen.tsx", 10, 0]
+      - ["src/routes/fantasy.create.tsx", 7, 0]
+      - ["src/routes/fantasy.transfers.tsx", 0, 0]
+
+# ---------------------------------------------------------------------------
+# THE TWO NAMED DEFECTS
+# ---------------------------------------------------------------------------
+
+named_defects:
+  - id: already-at-limit players are not pre-disabled
+    was: >
+      The picker knew only `bank` and `disabledIds` (players already in the
+      squad). The three-per-club rule lived solely inside the routes' `placeInto`
+      / `onPick` / `onPickIncoming`, so it could only answer AFTER a tap: the
+      manager got toast "Maximum 3 joueurs du même club", the sheet stayed open,
+      and nothing on screen said which of the other rows would do the same.
+    now: >
+      The rule is answered before the tap, by the same code that answers it
+      after. Each route exposes the count `placeInto`/`onPick` already runs as a
+      `clubLimitReached(player)` predicate and hands it to the picker; the
+      picker renders the answer as a disabled row carrying its reason. The
+      routes keep their toasts as the backstop — the rule was not moved, only
+      read a second time.
+    reasons_a_row_can_carry:
+      precedence: taken > no_slot > club_limit > budget
+      keys:
+        - fpl.pick.blocked.taken — "Déjà dans l’effectif" / "موجود في التشكيلة"
+        - fpl.pick.blocked.club_limit — "Limite du club atteinte" / "بلغت حدّ النادي"
+        - fpl.pick.blocked.budget — "Au-dessus du budget" / "يفوق الميزانية"
+        - fpl.pick.blocked.no_slot — "Aucun emplacement libre" / "لا توجد خانة شاغرة"
+    proof: >
+      Driven on /fantasy/create with real mock data: after three Wydad picks,
+      reopening the picker filtered to WAC shows 8 rows, 8 of them disabled —
+      3 "Déjà dans l’effectif" and 5 "Limite du club atteinte". Zero taps
+      produce a toast. See verification-report.yaml, `club_limit_proof`.
+    where:
+      - src/components/fpl/AddPlayerScreen.tsx (`PickBlock`, `blockOf`)
+      - src/routes/fantasy.create.tsx (`clubLimitFor`)
+      - src/routes/fantasy.transfers.tsx (`clubLimitForReplacement`, `clubLimitForIncoming`)
+
+  - id: the position filter contradicts its content
+    investigation: >
+      Worth stating plainly, because the fix is not the one the brief's wording
+      implies. On `chief/launch-fixes-3` the `Poste` select does NOT read "Tous"
+      over a goalkeeper list: opened on a GK slot it reads "GB" and is disabled.
+      Measured in the browser on both entry points, both routes (probe output in
+      verification-report.yaml, `position_filter_investigation`). What DOES
+      reproduce is the same contradiction one step out:
+        1. the locked select is merely `opacity-70` and still enumerates "Tous"
+           plus all four positions, so it opens as a live control offering
+           choices the list will ignore — a filter the screen is overruling;
+        2. "Ajouter un joueur" (the bottom bar, no slot chosen) always read
+           "Tous" and always listed all 47 players, including every player whose
+           position has no empty slot left. Late in a build — say only the two
+           GK slots open — the control says "Tous", the list shows everyone, and
+           39 of those rows answer a tap with
+           "Aucun emplacement libre pour ce poste". Same defect, same cause: the
+           control was not the source of truth for the list;
+        3. the third filter was labelled `fpl.view` — "Vue" — over a control
+           that has always filtered by club.
+    now: >
+      One expression decides both what the list contains and what the control
+      shows, so they cannot disagree. When a position is imposed — by the slot,
+      or because only one position still has a free slot — the picker does not
+      render a select at all: it renders a locked pill naming that position plus
+      the line "Poste imposé par l’emplacement choisi.". A control that cannot
+      be changed is not drawn as a control. When the manager does choose, the
+      select offers exactly the positions that still have somewhere to go, and
+      any stale value outside that set is clamped to "Tous". The club filter is
+      labelled `fantasy.picker.filter_club` ("Club" / "النادي").
+    proof: >
+      /fantasy/create with 13 of 15 slots filled and only the GK slots open:
+      "Ajouter un joueur" renders two selects (Prix max, Club), a locked pill
+      "GB", the lock line, and 8 goalkeeper rows. The Poste select is absent
+      because there is no choice to offer.
+
+# ---------------------------------------------------------------------------
+# THE PICKER
+# ---------------------------------------------------------------------------
+
+player_picker:
+  file: src/components/fpl/AddPlayerScreen.tsx
+  shape_change: >
+    It was a hand-rolled `role="dialog"` div with no focus trap, no Escape and
+    a page that scrolled as one block, carrying a 4-column numeric table whose
+    172px of figures left about 160px for a name — every Botola name past 14
+    characters truncated ("Ahmed Reda …", "Munir Moha…", "Zouhir Laâro…"). It is
+    now a kit `UiSheet`: a real focus-trapped dialog, Escape closes, the scrim
+    dims the pitch behind it, and its close control is labelled `t("fpl.close")`
+    and nothing else.
+  scroll_behaviour: >
+    The sheet is a flex column at 94dvh. Header, bank banner, filters and the
+    sort control are fixed; only the list scrolls. The filters stay reachable
+    after a manager has scrolled 40 rows, which they were not before.
+  one_row_answers_six_questions:
+    who: full name, `ui.text.body` at heavy weight, truncating only past the row
+    club: club short name, first segment of the meta line
+    position: second segment of the meta line
+    price: the one figure on the row, `ui.stat.sm` (tabular) on the inline-end edge
+    availability: >
+      `UiBadge` beside the name whenever `status !== "available"` —
+      `player.status.*`, neutral for "Incertain", negative for blessé/suspendu.
+      The old picker showed availability nowhere at all.
+    can_i_add_him: >
+      `+` when yes, `✓` when this is the player already in the slot, a padlock
+      plus the worded reason when no.
+  cut_to_make_room:
+    - >
+      The three numeric columns became one (price). Form and ownership move onto
+      the meta line and appear only when the list is sorted by them, so every
+      sort stays legible and the name gets ~230px instead of ~160px.
+    - >
+      The dead info glyph. It was a 24px button (below the 44px floor) wired to
+      an `onInfo` prop that neither route ever passed — it did nothing. The row
+      itself is now the control, which is also the bigger tap target.
+  added:
+    - "Search is always visible instead of hidden behind a toggle."
+    - >
+      A `Retirer · <name>` footer when the picker is opened on a slot that
+      already holds a player (create's "Remplacer" path). Before this, a slot
+      could be replaced from the picker but never cleared from it.
+    - "Sort is a `UiSegmented` (Prix / Forme / Sélection) — 44px targets, not 12px header chevrons."
+  blocked_rows_are_readable: >
+    The first attempt dimmed a blocked row to `opacity-45`, which measured
+    3.13:1 on white — the reason a row is blocked is the one thing a manager has
+    to be able to read, and it was the least readable thing on the screen. Only
+    the shirt is dimmed now; the name drops to `ui.tone.muted` (7.46:1) and the
+    reason is `ui.tone.negative` at heavy weight (5.42:1).
+
+# ---------------------------------------------------------------------------
+# PlayerPickerDrawer — THE DECISION
+# ---------------------------------------------------------------------------
+
+player_picker_drawer:
+  decision: DELETED
+  file: src/components/fantasy/PlayerPickerDrawer.tsx
+  also_removed_from: >
+    the `SURFACES` list in src/services/fantasy-runtime.test.ts, which was its
+    only remaining reference anywhere in the repository. A comment there records
+    why, so the next reader does not restore the path.
+  reasoning: >
+    It is not a candidate implementation, it is a worse one. Judged on the six
+    things the owner says a picker row must answer, it answers four and cannot
+    answer the two that matter most:
+      * it has no concept of the bank. `maxPrice` is an optional manual cap the
+        caller may pass; nothing on any row says a player is unaffordable, and
+        nothing disables him;
+      * it has no concept of the three-per-club limit, so it reproduces exactly
+        the defect this task exists to fix;
+      * it is a side drawer, `side={dir === "rtl" ? "left" : "right"}` — it asks
+        the caller to compute a physical side from the text direction, which is
+        the pattern this codebase has driven to zero, and a side drawer is the
+        wrong shape for a thumb on a phone;
+      * it is built on the legacy shadcn `Sheet`, the one that ships the
+        untranslated English "Close" this task was asked to remove;
+      * it carried 19 divergences — `glass-surface`, `rounded-xl`, `bg-white/60`,
+        `ring-black/5`, `tracking-wide` with no `ltr:` prefix (BG-0069).
+    Set against that, the one thing it had that `AddPlayerScreen` lacked was the
+    availability marker, and that is now in `AddPlayerScreen` as a `UiBadge` on
+    the localized `player.status.*` copy.
+    Keeping a second, unreachable picker is the precise drift this migration
+    exists to remove: the next lane would have found two pickers, and no way to
+    tell which one is real without reading both. Deleting it is the cheaper
+    answer than converting 19 divergences in a component nothing renders.
+  what_the_deletion_costs:
+    - "One test: 1438 -> 1437. It is the `SURFACES` loop iteration for the deleted file, nothing else."
+    - "`fantasy.picker.title` becomes unreferenced copy (W3 +1); the key is left in the dictionaries."
+
+# ---------------------------------------------------------------------------
+# TRANSFERS BELONGS TO THE SAME SYSTEM
+# ---------------------------------------------------------------------------
+
+transfers:
+  header: '`UiHeader tone="gradient"`, identical to the squad builder it came from.'
+  gameweek_context: >
+    The confirmation screen gained the gameweek + deadline line the pitch screen
+    has always had, so a manager confirming a transfer can still see what they
+    are confirming it for. `deadlineIso` is a new prop on
+    `TransferConfirmScreen`, passed from the route's `gameweek.deadline`.
+  budget_and_count: "`UiBanner` for the bank, `FplStatBar` for free transfers / wildcard / cost / bank (sibling-owned, untouched)."
+  pitch: "`FplPitch` + `FplPlayerCard` (sibling-owned, untouched)."
+  picker: "the same `AddPlayerScreen` as squad selection, with transfers' own club-limit predicates."
+  confirmation:
+    - >
+      Out and in were two columns; at 390px that cut a real name in half. They
+      are stacked now, each line carrying a coloured inline-start rule and a
+      worded caption, so the pair reads as a sentence and the full names fit.
+    - >
+      The `ArrowLeft` / `ArrowRight` pair is gone. An arrow is a physical
+      direction: it pointed the wrong way under `dir="rtl"`. Direction is now
+      carried by `--ui-negative` / `--ui-positive` rules plus the words
+      "Sortant" / "Entrant", so it survives mirroring and does not rely on
+      colour alone.
+    - "`text-[oklch(0.72_0.19_150)]` (a hardcoded green) became `ui.tone.positive`."
+    - '`${hitPoints}pts` — an untranslated literal — became `${hitPoints} ${t("fantasy.points.abbr")}` ("pts" / "ن").'
+  errors_and_success: "unchanged — the toasts and `fantasy.error.*` branches are proven logic and were not touched."
+
+# ---------------------------------------------------------------------------
+# THE THINGS THE BRIEF NAMED
+# ---------------------------------------------------------------------------
+
+required_fixes:
+  literal_bg_white_text_white:
+    before: 11 occurrences across the six owned components and routes
+    after: 0
+    replaced_with: "`ui.surface.card` / `ui.surface.bar` / `ui.surface.page` / `ui.tone.onInkPlain`"
+    examples:
+      - "AddPlayerScreen: `fixed inset-0 bg-white` and `max-w-[480px] bg-white` — the whole picker was an un-themed white sheet."
+      - "PlayerActionSheet: `bg-[--fpl-ink] text-white` header and `bg-white` body."
+      - "SquadListTable: `bg-white` root; captain/vice markers `bg-black text-white`."
+      - "TransferConfirmScreen: two `bg-white p-3 shadow-sm` cards."
+      - "SquadBuilderScreen: the incoming-player strip, `bg-white` with a `text-white` ink pill."
+      - "fantasy.create: the team-name form, `bg-white p-4 shadow-sm`."
+  fpl_ink_as_text:
+    before: >
+      `text-[color:var(--fpl-ink)]` in the sort header cells, the info glyphs,
+      the action-sheet icons, the cancel link, the chip buttons;
+      `text-[color:var(--fpl-ink-deep)]` on the "select a replacement" line.
+    after: "`ui.tone.ink` (`--ui-ink-fg`) for every one of them — BG-0083, the fill/foreground split."
+  untranslated_close:
+    before: >
+      `PlayerActionSheet` used the shadcn `Sheet`, whose `SheetContent` renders
+      its own close button with a hardcoded `<span class=\"sr-only\">Close</span>`
+      beside the translated one this screen drew itself.
+    after: >
+      Both overlays are kit overlays now. `PlayerActionSheet` and
+      `AddPlayerScreen` are `UiSheet`s with a custom header whose only close
+      control is labelled `t("fpl.close")`. Neither file imports
+      `@/components/ui/sheet` any more.
+  logical_properties: "0 physical-direction utilities in any owned file, before and after. `border-s-2`, `ps-2`, `-ms-1`, `text-end`, `end-3`."
+  tracking: "no `tracking-*` outside the kit's own `ltr:`-prefixed tokens; the owned files declare none."
+  gradients: "no `deg` angles; the kit's `--ui-grad-*` run `to bottom`."
+
+# ---------------------------------------------------------------------------
+# PRESENTATION ONLY
+# ---------------------------------------------------------------------------
+
+logic_untouched:
+  statement: >
+    No squad rule, budget calculation, club-limit check, formation rule,
+    captain/vice selection, persistence path, RPC or transfer accounting was
+    reimplemented, replaced or moved. The services
+    (`fantasy-create-service`, `transfers-service`, `fantasy-engine`,
+    `fantasy-mutation-controller`, `fantasy-drafts-store`, the owned repository
+    and every `owned.repo.*` call) are byte-identical.
+  the_one_thing_that_changed_shape: >
+    Two counts that already existed inside the routes are now also readable from
+    outside them, as `clubLimitFor` / `clubLimitForReplacement` /
+    `clubLimitForIncoming`. They run the same filter over the same state that
+    `placeInto` and `onPick` run; neither was rewritten, and both still run their
+    own check when the tap arrives. One rule, one implementation, two readers.
+  squad_architecture: "2 GK / 5 DEF / 5 MID / 3 FWD preserved — `ROWS`, `ORDER` and the draft slot model are unchanged."
+  new_props_are_optional: >
+    `allowedPositions`, `clubLimitReached`, `currentPlayerId` and `onRemove` all
+    default to the previous behaviour when omitted, so no call site had to change
+    its semantics to compile.
+
+# ---------------------------------------------------------------------------
+# DATES
+# ---------------------------------------------------------------------------
+
+date_formatting:
+  touched:
+    - file: src/components/fpl/SquadBuilderScreen.tsx
+      what: "the deadline line under the header, now a local `DeadlineLine`"
+      timezone: "`timeZone: MATCH_TIME_ZONE` from src/lib/match-kickoff.ts"
+      note: >
+        It replaces `FplDeadlineLine` from the sibling-owned
+        `fpl/primitives.tsx`, which hardcoded the string "Africa/Casablanca" and
+        painted the line in `--fpl-ink` as a text colour on the gradient band.
+        Same instant, same zone, now from the shared constant and on the right
+        foreground token. `FplDeadlineLine` is untouched and still serves the
+        screens that import it.
+    - file: src/components/fpl/TransferConfirmScreen.tsx
+      what: "the new gameweek + deadline line"
+      timezone: "`timeZone: MATCH_TIME_ZONE`"
+  fixtures: >
+    No owned file references a fixture, an opponent or an upcoming-fixture list
+    (`grep` for fixture/nextOpponent/upcoming across all seven returns nothing),
+    so GW1's seven counting fixtures and the deferred FAR Rabat v Raja cannot be
+    reached, let alone changed, from this lane.
+
+# ---------------------------------------------------------------------------
+# i18n
+# ---------------------------------------------------------------------------
+
+i18n:
+  new_keys:
+    note: "identical key sets in fr and ar; no placeholder tokens."
+    keys:
+      - fpl.pick.blocked.taken
+      - fpl.pick.blocked.club_limit
+      - fpl.pick.blocked.budget
+      - fpl.pick.blocked.no_slot
+      - fpl.pick.position_locked
+      - fpl.pick.no_match
+      - fpl.captain_short
+      - fpl.vice_short
+  captain_marker: >
+    The captain/vice markers on the squad list were the literal Latin letters
+    "C" and "V" baked into JSX. They are keys now — "C"/"V" in French, "ق"/"ن"
+    in Arabic.
+  reused_rather_than_invented: >
+    `fantasy.picker.filter_position` / `.filter_price` / `.filter_club` /
+    `.sort` / `.sort.price` / `.sort.form` / `.sort.ownership` were already
+    written and unreferenced. The picker uses them instead of new keys.
+  w4_conversions: >
+    Four `t(`prefix.${expr}`)` call sites became explicit literal branches, per
+    the rule that `t(cond ? "a" : "b")` trips W4 — in `PlayerActionSheet`
+    (position), `SquadBuilderScreen` (position), `SquadListTable` (group heading)
+    and `TransferConfirmScreen` (chip name).
+  baselines_moved:
+    file: scripts/qa/i18n-gate.ts
+    W1: "7 -> 7 (unchanged)"
+    W2: "7 -> 7 (unchanged)"
+    W3: "262 -> 264"
+    W4: "88 -> 81"
+    reasoning_is_committed_in_the_file: true
+    w3_detail:
+      gained_a_call_site_and_left_the_list:
+        - fantasy.picker.filter_position
+        - fantasy.picker.filter_price
+        - fantasy.picker.filter_club
+      newly_unreferenced:
+        - key: fantasy.picker.title
+          why: "its only caller was the deleted PlayerPickerDrawer"
+        - key: fpl.all_clubs
+          why: >
+            "Tous les clubs" does not fit a three-abreast filter column at 390px.
+            The field's own label says Club, so its empty option is `fpl.all`.
+        - key: fpl.position
+          why: "replaced by fantasy.picker.filter_position — same word, copy written for this control"
+        - key: fpl.price
+          why: 'replaced by fantasy.picker.filter_price ("Prix max"), which is what the control does'
+        - key: fpl.view
+          why: '"Vue" labelled a control that has always filtered by club'
+      keys_left_in_place: >
+        deliberately. W3 is a reporting signal, and the gate's own header says
+        never to wire it to key deletion.
+    w4_detail: "-3 from the deleted picker, -4 from the literal-branch conversions."
+  caution_for_the_next_lane: >
+    The gate scans raw source, comments included. A code comment containing the
+    text of a computed `t(` call is counted as a W4 finding. One was written
+    during this task, saw the count move by one, and was reworded. Worth knowing
+    before someone spends an hour hunting a phantom call site.
+
+# ---------------------------------------------------------------------------
+# KIT REQUESTS (foundation lane, BG-0091)
+# ---------------------------------------------------------------------------
+
+kit_requests:
+  - id: badge-tones-fail-AA-on-their-own-fill
+    severity: "blocks a documented primitive from being used for its documented purpose"
+    measured: >
+      `UiBadge tone="negative"` renders `--ui-negative` text on a fill of
+      `color-mix(--ui-negative 18%, transparent)`. Rasterised on the card
+      surface in light: 4.07:1. `tone="positive"` (20% mix): 3.96:1. Both are
+      below AA for text this size.
+    worked_around_by: >
+      TransferConfirmScreen no longer uses those two tones. Out/in are a coloured
+      inline-start rule plus `ui.tone.negative` / `ui.tone.positive` text on the
+      card surface, which measure 5.42:1 and 5.18:1.
+    suggested_fix: >
+      Darken the foreground for the tinted variants, or raise the mix so the
+      pairing is computed rather than assumed. `ui.tone.negative` /
+      `.positive` on a plain surface are fine; it is only the self-tinted badge
+      that fails.
+  - id: no-label-step-fits-a-56px-column-at-390px
+    severity: minor
+    measured: >
+      `ui.text.label` is 12px, uppercase, `ltr:tracking-wide`. "SÉLECTIONNÉ"
+      renders 66px wide and "SÉLECTION" 78px; the squad list's numeric columns
+      are 56px at 390px, so the head was sliced off at the viewport edge.
+    worked_around_by: >
+      `SquadListTable`'s numeric heads use `ui.text.micro` at heavy weight, and
+      the numeric tracks became `minmax(56px,auto)` so a long head widens its
+      track instead of being clipped.
+    suggested_fix: "a `ui.text.labelCompact` (micro size, heavy, no uppercase/tracking), or document micro as the column-head step at phone widths."
+  - id: UiSelect-does-not-fit-three-abreast-at-390px
+    severity: minor
+    measured: >
+      `FIELD_BOX` is `px-3` and `UiSelect` adds `pe-9` for the chevron, at
+      `ui.text.body` (15px). In a 116px column that leaves ~68px of text.
+    worked_around_by: "a local `FILTER_FIELD` constant — `px-2 pe-7` at `ui.text.meta`. Both are ramp steps, not new numbers."
+    suggested_fix: 'a `density="compact"` prop on `UiSelect`, so three filters abreast is a kit-supported arrangement rather than six characters of override in a screen.'
+  - id: UiSheet-height-is-fixed-at-88dvh
+    severity: cosmetic
+    note: >
+      A picker wants to be nearly full height; a four-item action list wants to
+      hug its content. `AddPlayerScreen` passes
+      `className="h-[94dvh] max-h-[94dvh]"` to get there. A `size` prop
+      (`content` | `tall`) would express the intent instead of overriding a
+      utility.
+
+# ---------------------------------------------------------------------------
+# CROSS-LANE
+# ---------------------------------------------------------------------------
+
+depends_on_other_lanes:
+  note: >
+    These are visible inside this lane's screens but live in sibling-owned
+    files. They are the reason /fantasy/transfers is not yet perfect in dark
+    mode, and none of them is this lane's to fix.
+  items:
+    - file: src/components/fpl/FplStatBar.tsx
+      seen_on: "the free transfers / wildcard / cost / bank strip on both owned routes"
+      problem: "`bg-white` root and `--fpl-*` pills — renders as a white band in dark mode"
+    - file: src/components/fpl/FplPlayerCard.tsx
+      seen_on: "every pitch card on both owned routes"
+      problem: "white sub plates in dark mode; 15 hardcoded colours"
+    - file: src/components/fpl/FplPitch.tsx
+      seen_on: "the pitch"
+      problem: "`rgba(255,255,255,…)` markings rather than `--ui-pitch-line`"
+    - file: src/components/fpl/primitives.tsx
+      seen_on: "no longer imported by any owned file"
+      problem: "36 `--fpl-*`; `FplDeadlineLine` hardcodes its time zone and uses `--fpl-ink` as a foreground"
+    - file: src/components/fantasy/JerseyVisual.tsx + src/lib/kits.ts
+      seen_on: "every picker row and pitch card"
+      problem: "95 hardcoded colours in `kits.ts` — club kit artwork, probably legitimately literal, but it is the single largest entry in the meter and someone should rule on it"
+
+# ---------------------------------------------------------------------------
+# GATES
+# ---------------------------------------------------------------------------
+
+gates:
+  - { command: bun run typecheck, result: pass }
+  - command: bun run test
+    result: "1437 pass / 0 fail"
+    expected_by_brief: "1438 pass / 0 fail"
+    explanation: >
+      The missing test is the `SURFACES` loop iteration for the deleted
+      `PlayerPickerDrawer.tsx`. 1438 - 1 = 1437. No test regressed, none was
+      weakened, and the guard still covers all nine remaining surfaces.
+  - { command: bun run lint, result: "pass — 0 errors, 17 pre-existing react-refresh warnings" }
+  - {
+      command: bun run format:check,
+      result: "40 pre-existing failures, none in an owned file (same 40 as on the base tree)",
+    }
+  - {
+      command: bun scripts/qa/i18n-gate.ts,
+      result: "pass — errors none, all four warnings at baseline after the documented W3/W4 move",
+    }
+  - { command: bun run build, result: pass }
+  - { command: bun scripts/qa/design-divergence.ts, result: "1534 -> 1438; all owned files at 0" }
+
+files_changed:
+  owned:
+    - src/components/fpl/AddPlayerScreen.tsx (rewritten)
+    - src/components/fpl/SquadBuilderScreen.tsx
+    - src/components/fpl/PlayerActionSheet.tsx (rewritten)
+    - src/components/fpl/TransferConfirmScreen.tsx
+    - src/components/fpl/SquadListTable.tsx
+    - src/routes/fantasy.create.tsx
+    - src/routes/fantasy.transfers.tsx
+    - src/components/fantasy/PlayerPickerDrawer.tsx (deleted)
+  shared:
+    - path: src/i18n/dictionaries.ts
+      why: "8 new keys x 2 languages"
+      conflict_risk: "high — every lane adds keys here"
+    - path: scripts/qa/i18n-gate.ts
+      why: "W3/W4 baselines, with the reasoning committed beside them"
+      conflict_risk: "high — any lane that moves a key moves these numbers"
+    - path: src/services/fantasy-runtime.test.ts
+      why: "removed the deleted picker from the `SURFACES` guard list"
+      conflict_risk: low
+  not_touched:
+    - "src/components/ui-kit/** and src/styles.css (foundation lane)"
+    - "every other src/routes/fantasy.*"
+    - "every sibling-owned component named in the brief"
+    - "supabase/, scripts/backend/, .github/workflows/, src/backend/, docs/engineering/LAUNCH_LEDGER.yaml"

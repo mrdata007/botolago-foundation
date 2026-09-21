@@ -230,8 +230,38 @@ export const BASELINES: Baselines = {
   // `cond ? t("a") : t("b")`, a chain of literal calls, including the active
   // chip's name, which is spelled out per chip rather than interpolated from
   // the chip key.
-  W3: 253,
-  W4: 88,
+  //
+  // BG-0093 (squad building, player picker, transfers). Two moves, both the
+  // consequence of named decisions rather than drift:
+  //
+  // W3 262 -> 264. Three keys gained their first call site: the picker's
+  // filters now use `fantasy.picker.filter_position` / `.filter_price` /
+  // `.filter_club`, the copy that was written for them, instead of
+  // `fpl.position` / `fpl.price` / `fpl.view`. "Prix max" is what that control
+  // actually does, and `fpl.view` ("Vue") labelled a filter that has always
+  // filtered by club. Those three go the other way, and two more join them:
+  // `fantasy.picker.title`, whose only caller was the deleted second picker
+  // `PlayerPickerDrawer`, and `fpl.all_clubs` ("Tous les clubs"), which does
+  // not fit a three-abreast filter column at 390px -- the field's own label
+  // already says Club, so its empty option is `fpl.all` ("Tous"). Net +5/-3.
+  //
+  // W4 88 -> 81. Seven fewer call sites assemble their key at runtime. Three
+  // left with `PlayerPickerDrawer`. The other four are conversions:
+  // PlayerActionSheet, SquadBuilderScreen, SquadListTable and
+  // TransferConfirmScreen each replaced a `t(`prefix.${expr}`)` with explicit
+  // literal branches, so the position, group and chip labels are now keys the
+  // gate and the TranslationKey type can both see.
+  //
+  // Integration, 2026-09-21: BG-0094 and BG-0093 were measured independently
+  // against the same base (W3 262, W4 88) and each moved it, so neither lane's
+  // number survives the merge. The figures below are the merged tree measured
+  // once, and they are the sum of the two moves rather than a third
+  // adjustment: W3 262 - 9 (BG-0094 gave nine written-but-uncalled keys their
+  // first call site) + 2 (BG-0093 net +5 orphaned / -3 adopted) = 255. W4 88
+  // - 0 (BG-0094 wrote every branch as `cond ? t("a") : t("b")`) - 7 (BG-0093
+  // converted four call sites and deleted three with PlayerPickerDrawer) = 81.
+  W3: 255,
+  W4: 81,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
