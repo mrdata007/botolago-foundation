@@ -351,12 +351,28 @@ tasks:
       - >-
         Match cards at 390px on /matches — L12 R378 W366 with zero clipped descendants, in FR
         (dir=ltr) and AR (dir=rtl) alike; scrollWidth 390 in both
+    behaviour_verified_second_pass:
+      - >-
+        Back control from a COLD article context (the P1-01 scenario) — lands on
+        https://botolago.com/news with h1 "Actualités" and 1231 chars of content, where it
+        previously landed on about:blank with an empty body
+      - >-
+        French home rail — htmlLang fr, 0 Arabic characters and 224 Latin in <main>, against the
+        215 Arabic characters the crawl measured
+      - >-
+        /profile in guest state — 0 hydration errors and no console errors at all, against the
+        React #418 the crawl recorded
     not_verified_and_why: >
       The home page could not be checked for card clipping: it currently renders zero
       /matches/ links, so there are no cards on it to measure. The defect is verified on /matches,
       where it was measured and is reproducible. A first Arabic run was discarded as invalid --
       it reported dir=ltr because the language was seeded under the wrong localStorage key
       (botolago.language, not botolago.lang); the result above is the corrected run.
+    all_six_p1_closed: >
+      Every P1 the anonymous crawl raised is fixed, deployed and confirmed against production
+      rather than inferred from the merge: P1-01 back control, P1-02 match-card clipping,
+      P1-06 anonymous rankings, plus the JSON-LD, news-locale and hydration defects. P1-03
+      (Lovable badge) and P1-05 (legal pages) are BG-0066 and BG-0067, both owner decisions.
 
   BG-0068:
     title: Club names are never Arabic, because no team translation exists
