@@ -8,6 +8,7 @@ import {
 import { loadAdminRouteAccess } from "@/backend/admin/route-access.functions";
 import {
   getAdminCopy,
+  selectAdminPanel,
   type AdminRouteState,
   type AdminRouteStateName,
   type UnauthenticatedDetail,
@@ -42,30 +43,7 @@ function AdminStatePanel({
   // A support reference, so a refused sign-in can be reported and diagnosed
   // from what is on screen. It names only the outcome and the caller's own
   // credential -- never an account, a role, or whether either exists.
-  const reference = [state, reason, detail].filter(Boolean).join("/");
-
-  // Nothing here implicates the reader's credential: either the server could
-  // not reach a verdict on it, or the failure came from the control plane
-  // after it had already been accepted. Signing in again would not help, and
-  // saying "session expired" would be a false diagnosis.
-  const serverSideFailure =
-    state === "unauthenticated" &&
-    (detail === "unverifiable" || reason === "backend_unauthenticated");
-
-  const content = !serverSideFailure
-    ? state === "unauthenticated" && reason === "invalid_token"
-      ? copy.invalidToken
-      : copy.states[state]
-    : copy.verificationUnavailable;
-
-  // Every state a sign-in can actually clear needs a way to sign in.
-  // "unauthenticated" previously rendered a dead end: the copy asked the reader
-  // to connect, with no link to do it. It must stay off where signing in is
-  // not the remedy.
-  const showSignIn =
-    (state === "unauthenticated" && !serverSideFailure) ||
-    state === "recent_auth_required" ||
-    state === "mfa_required";
+  const { content, showSignIn, reference } = selectAdminPanel(state, copy, reason, detail);
   return (
     <main
       dir={copy.dir}

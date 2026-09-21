@@ -8,6 +8,8 @@ import {
   maskEmail,
   requireAdminRoutePermission,
   resolveAdminRouteAccess,
+  selectAdminPanel,
+  UNAUTHENTICATED_REASONS,
   type AdminRouteDependencies,
   type UnauthenticatedDetail,
 } from "./route-access";
@@ -389,5 +391,76 @@ describe("classifyIdentityFailure resists a forged verdict", () => {
     expect(
       classifyIdentityFailure({ name: "AuthInvalidJwtError", message: "JWT has expired" }),
     ).toBe("expired");
+  });
+});
+
+describe("selectAdminPanel", () => {
+  const fr = getAdminCopy("fr");
+
+  it("asks a reader with no token to sign in, and gives them the means", () => {
+    const panel = selectAdminPanel("unauthenticated", fr, "missing_token");
+    expect(panel.content).toBe(fr.states.unauthenticated);
+    expect(panel.showSignIn).toBe(true);
+    expect(panel.reference).toBe("unauthenticated/missing_token");
+  });
+
+  it("tells a reader whose token was refused that their session ended", () => {
+    for (const detail of ["expired", "rejected"] as const) {
+      const panel = selectAdminPanel("unauthenticated", fr, "invalid_token", detail);
+      expect(panel.content).toBe(fr.invalidToken);
+      expect(panel.showSignIn).toBe(true);
+      expect(panel.reference).toBe(`unauthenticated/invalid_token/${detail}`);
+    }
+  });
+
+  it("does not blame the reader when verification could not complete", () => {
+    // Regression: `detail` was computed, sent over the wire, then ignored, so
+    // an unverifiable token still read "Session expirée -- reconnectez-vous".
+    const panel = selectAdminPanel("unauthenticated", fr, "invalid_token", "unverifiable");
+    expect(panel.content).toBe(fr.verificationUnavailable);
+    expect(panel.content).not.toBe(fr.invalidToken);
+    expect(panel.showSignIn).toBe(false);
+  });
+
+  it("does not blame the reader for a control-plane refusal either", () => {
+    const panel = selectAdminPanel("unauthenticated", fr, "backend_unauthenticated");
+    expect(panel.content).toBe(fr.verificationUnavailable);
+    expect(panel.showSignIn).toBe(false);
+    expect(panel.reference).toBe("unauthenticated/backend_unauthenticated");
+  });
+
+  it("keeps the sign-in affordance on the states a sign-in genuinely clears", () => {
+    expect(selectAdminPanel("recent_auth_required", fr).showSignIn).toBe(true);
+    expect(selectAdminPanel("mfa_required", fr).showSignIn).toBe(true);
+  });
+
+  it("offers no sign-in where it would not help", () => {
+    for (const state of ["forbidden", "suspended", "revoked", "backend_unavailable"] as const) {
+      expect(selectAdminPanel(state, fr).showSignIn).toBe(false);
+      expect(selectAdminPanel(state, fr).content).toBe(fr.states[state]);
+    }
+  });
+
+  it("degrades to the plain state name when an older server sends no reason", () => {
+    const panel = selectAdminPanel("unauthenticated", fr);
+    expect(panel.reference).toBe("unauthenticated");
+    expect(panel.content).toBe(fr.states.unauthenticated);
+  });
+
+  it("builds every reference from the fixed vocabulary only", () => {
+    // The reference is printed verbatim in the UI, so it must never become a
+    // channel for anything the server did not choose from a closed set.
+    for (const reason of UNAUTHENTICATED_REASONS) {
+      for (const detail of [...UNAUTHENTICATED_DETAILS, undefined]) {
+        const { reference } = selectAdminPanel("unauthenticated", fr, reason, detail);
+        for (const part of reference.split("/")) {
+          expect([
+            "unauthenticated",
+            ...UNAUTHENTICATED_REASONS,
+            ...UNAUTHENTICATED_DETAILS,
+          ]).toContain(part);
+        }
+      }
+    }
   });
 });
