@@ -1,0 +1,231 @@
+task_id: BG-0068
+role: Builder
+attempt: 1
+branch: bg-0068-team-translations
+base: origin/chief/launch-fixes-3
+status: HALTED_FOR_INPUT (code complete; the Arabic name list awaits owner confirmation)
+
+files:
+  - path: supabase/migrations/20260921190000_team_translations.sql
+    change: added
+    summary: app.team_translations + translation-aware app_private.football_team_json
+  - path: supabase/tests/database/team_translations.test.sql
+    change: added
+    summary: pgTAP — grants, RLS, fallback, ordering, constraints
+  - path: scripts/backend/football-team-arabic-names-seed.sql
+    change: added
+    summary: DRAFT idempotent upsert for the 16 current clubs. NEVER EXECUTED.
+  - path: src/styles.css
+    change: modified
+    summary: BG-0069 rider — one rule neutralising letter-spacing under dir="rtl"
+  - path: docs/engineering/tasks/BG-0068/*.yaml
+    change: added
+
+# ---------------------------------------------------------------------------
+# 1. The table
+# ---------------------------------------------------------------------------
+table:
+  name: app.team_translations
+  columns: team_id uuid, language app.language_code, name text, short_name text, created_at, updated_at
+  primary_key: (team_id, language)
+  mirrored_from: >
+    app.competition_translations, as defined in
+    supabase/migrations/20260720095330_football_catalog.sql. I read that migration and
+    copied its posture rather than inventing one: same FK with ON DELETE CASCADE, same
+    btrim + length checks (2..160 on the name, 1..40 on the short name), same
+    created_at/updated_at defaults, same set_updated_at trigger, and the same security
+    stance — `enable row level security` plus `force row level security`, no policies
+    at all, and no object grants to anon, authenticated or service_role.
+  why_no_policy: >
+    I confirmed against production that app.competition_translations really does carry
+    zero policies and zero non-owner grants (`pg_policy` for its regclass → empty;
+    role_table_grants → postgres only). Forced RLS with no policy denies every role;
+    the browser reaches this data only through the `security definer` api.* functions,
+    which run as postgres. Writing a read policy "to be safe" would have been strictly
+    more permissive than the table it is supposed to mirror.
+  column_name_note: >
+    The column is `name`, per the brief, where competition_translations uses
+    `display_name`. Kept as briefed; flagging the inconsistency so it is a decision and
+    not an accident.
+
+# ---------------------------------------------------------------------------
+# 2. The reads
+# ---------------------------------------------------------------------------
+reads:
+  method: >
+    I pulled every function's current definition from production with
+    pg_get_functiondef before writing anything, and diffed the replacement against it.
+  discovery: >
+    Four of the six named RPCs funnel through one helper. api.football_team_catalog and
+    api.football_standings call app_private.football_team_json directly;
+    api.football_team_summary calls it directly; api.football_match_detail calls
+    app_private.football_match_json, which calls it for homeTeam and awayTeam. Nothing
+    else in the api schema builds a team object. So all four are fixed by editing that
+    single helper, and not one of their bodies is touched — no signature, no filter, no
+    join, no ORDER BY, no error code.
+
+  changed:
+    - function: app_private.football_team_json(uuid, text)
+      diff_against_production: >
+        Exactly three edits. (1) 'name', team.name → 'name',
+        coalesce(translation.name, team.name). (2) 'shortName', team.short_name →
+        'shortName', coalesce(translation.short_name, team.short_name). (3) one added
+        LEFT JOIN app.team_translations ON team_id = team.id AND language =
+        app_private.football_language(requested_language). Everything else — the other
+        eleven jsonb keys in order, the countries and media_assets joins, the
+        validation_status CASE expressions, the WHERE, and `language sql` / `stable` /
+        `security invoker` / `set search_path = ''` — is byte-identical.
+      fan_out: >
+        The join is LEFT and its ON clause covers the full primary key (team_id,
+        language), with language fixed to a single value. It can neither drop a team
+        nor duplicate one. The pgTAP file asserts this rather than leaving it as an
+        argument.
+      language_resolution: >
+        `requested_language` was already a parameter and was already validated by every
+        caller via `perform app_private.football_language(p_language)`; the function
+        simply ignored it until now. The resolution expression is copied verbatim from
+        app_private.football_competition_json so there is one convention, not two.
+
+  unchanged_deliberately:
+    - function: api.football_team_catalog(text, integer)
+      reason: >
+        Untouched. It still orders by `candidate.name, candidate.id` — the LATIN
+        column — inside its subquery and re-orders the aggregate by `team.name,
+        team.id`. Ordering deliberately does not follow the translation: pinning it to
+        the Latin name keeps French and Arabic paginating identically and keeps this
+        change out of six live ORDER BY clauses. Its INVALID_LIMIT check and its 1..100
+        bound are unchanged.
+    - function: api.football_team_summary(uuid, text)
+      reason: Untouched. Still raises P0002 TEAM_NOT_FOUND for an unknown id.
+    - function: api.football_match_detail(uuid, text)
+      reason: Untouched. Still raises P0002 FIXTURE_NOT_FOUND.
+    - function: api.football_standings(uuid, text, text, text)
+      reason: >
+        Untouched. Still orders by `standing.rank, standing.team_id` and still raises
+        22023 INVALID_STANDING_TYPE.
+    - function: api.fantasy_fixture_difficulty(uuid, integer, integer)
+      reason: >
+        Untouched, and nothing to do. Its payload is fixtureId / gameweekId / gameweek /
+        clubId / opponentClubId / kickoffAt / isHome / difficulty / confidence /
+        algorithmVersion — ids and numbers, not one display string. There is no team
+        name in it to translate; the planner screen resolves club names from the
+        catalog, which this change fixes.
+    - function: api.fantasy_player_pool(uuid, text, uuid, numeric, text, numeric, uuid, integer)
+      reason: >
+        Untouched, and this one IS an unfixed gap. It emits teamName and teamShortName
+        and they stay Latin in Arabic. It takes no language argument; CREATE OR REPLACE
+        cannot add a parameter, so it would take a DROP — a signature change, forbidden
+        by the brief, and pinned by the generated types, by
+        src/backend/fantasy/supabase-repository.ts:49 and by the 22 Playwright
+        journeys. A `request.headers`-based alternative was written and deleted: no
+        code in this repo sends Accept-Language, so it would have keyed club names off
+        the viewer's browser locale. See engineering-brief.yaml deviation D1.
+
+# ---------------------------------------------------------------------------
+# 3. Conventions
+# ---------------------------------------------------------------------------
+conventions:
+  security_definer: >
+    No api.* function was redefined, so every `security definer`, `stable`,
+    `set search_path = ''`, revoke/grant pair and PT400/PT404 posture in the api schema
+    is exactly as production holds it. The one redefined function,
+    app_private.football_team_json, keeps `stable`, `security invoker`,
+    `set search_path = ''`, and its `revoke all … from public, anon, authenticated,
+    service_role` + `grant execute … to postgres` pair is restated verbatim.
+  anon_callable: >
+    Unchanged by construction — no grant in the api schema was altered. /matches,
+    /news, /fantasy/players and /fantasy/rankings stay anon-reachable, and the pgTAP
+    file asserts anon's EXECUTE on football_team_catalog, football_match_detail and
+    fantasy_player_pool so a future edit cannot quietly revoke it.
+  bg_0063_trap: >
+    app.language_code appears only inside function bodies. No signature this migration
+    touches names an app-schema type, so no argument is coerced in the caller's
+    context and anon still needs no USAGE on app. The pgTAP file asserts both
+    (`not has_schema_privilege('anon','app','usage')`, and no api function with
+    app.language_code in proargtypes).
+  forward_only: >
+    One new migration file. No existing file under supabase/migrations/ was edited.
+    Timestamp 20260921190000, assigned by the Chief to avoid the collision on
+    20260921160000.
+  no_production_writes: >
+    Every production call in this task was a read: information_schema,
+    pg_get_functiondef, pg_policy, pg_class, role_table_grants, pg_enum, and one
+    SELECT over app.teams / app.team_memberships / app.seasons. No DDL, no DML, no
+    apply_migration. The seed file has never been executed.
+  untouched_files: >
+    src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts, every
+    api.service_* function, scripts/backend/fantasy-season-orchestrator.ts,
+    scripts/backend/fantasy-lifecycle-runner.ts and
+    docs/engineering/LAUNCH_LEDGER.yaml are all unmodified.
+
+# ---------------------------------------------------------------------------
+# 4. The seed
+# ---------------------------------------------------------------------------
+seed:
+  path: scripts/backend/football-team-arabic-names-seed.sql
+  applied: false
+  club_selection: >
+    The 16 ids are every app.teams row with an app.team_memberships row in the season
+    where app.seasons.is_current, read from production. Not guessed, not pattern
+    matched from names. (The obvious query — teams JOIN team_memberships JOIN seasons —
+    returns one row per PLAYER membership, not per club; the file's list comes from the
+    EXISTS form.)
+  idempotency: >
+    `on conflict (team_id, language) do update` on name, short_name and updated_at, so
+    a re-run corrects rather than duplicates. It writes only `ar` rows; French keeps
+    coming from app.teams.name, which the file never touches.
+  guard: >
+    A trailing DO block aborts the transaction if the number of seeded `ar` rows does
+    not equal the number of distinct clubs in the current season, so a stale list
+    cannot be applied silently after the roster moves.
+  halt: >
+    Two rows are low confidence and are marked as such in the file and in the brief:
+    Widad Témara and CR Khemis Zemamra. The Zemamra row is contradictory in production
+    itself — name says "CR Khemis Zemamra", code says "RCAZ", and those parse to
+    different Arabic first words.
+
+# ---------------------------------------------------------------------------
+# 5. BG-0069 rider
+# ---------------------------------------------------------------------------
+bg_0069:
+  brief_premise_corrected: >
+    The brief said the ui-kit conversion had already `ltr:`-prefixed the tracking
+    classes in most components and that the remaining problem might be one straggler.
+    Measured, that is not the case. src/ contains 9 `ltr:tracking-*` occurrences
+    against roughly 96 unprefixed `tracking-*` occurrences spread over 65 files
+    (tracking-wide ×23, tracking-tight ×18, tracking-[0.14em] ×18, tracking-wider ×10,
+    tracking-widest ×9, tracking-[0.16em] ×8, tracking-[0.12em] ×4, plus singles). The
+    prefix is applied in src/components/ui-kit/tokens.ts and eight call sites; every
+    other heading, badge and label in the app was still letter-spaced in Arabic.
+  fix: >
+    One unlayered rule in src/styles.css, in the existing "Directionality &
+    typography" block, next to the other html[dir="rtl"] rules:
+    `html[dir="rtl"] *, html[dir="rtl"] *::before, html[dir="rtl"] *::after
+    { letter-spacing: normal; }`. No per-component edit, no new `tracking-*` anywhere,
+    and no `!important` — Tailwind's utilities live in `@layer utilities` and an
+    unlayered declaration beats a layered one regardless of specificity. Verified in
+    the built bundle: the tracking utilities are emitted at byte ~75 000 inside
+    `@layer utilities` (opens at 10 881) and the new rule at ~161 250, unlayered.
+  measurement: >
+    Real computed styles, not inspection. Built the app
+    (.output/public/assets/styles-CQfbTQCo.css), loaded that stylesheet into headless
+    Chromium via Playwright with eight real className strings lifted from the
+    components, once under dir="rtl" lang="ar" and once under dir="ltr", and read
+    getComputedStyle(...).letterSpacing. The "before" run used the same bundle with the
+    new rule textually removed, so the two runs differ only by that rule.
+  measured_before_after: |
+    sample                          AR before   AR after   FR before   FR after
+    AuthModeBadge                   1px         normal     1px         1px
+    ui/card.tsx CardTitle           -0.4px      normal     -0.4px      -0.4px
+    FplChipsRow                     0.275px     normal     0.275px     0.275px
+    GameweekStatusStrip             1.6px       normal     1.6px       1.6px
+    LeagueTable thead               1.2px       normal     1.2px       1.2px
+    MyRankCard label                0.45px      normal     0.45px      0.45px
+    Pitch badge                     1.4px       normal     1.4px       1.4px
+    ui-kit label (ltr:-prefixed)    normal      normal     0.3px       0.3px
+  notes: >
+    AuthModeBadge's reported 1px in AR is reproduced and fixed. The last row is the
+    control: an already-`ltr:`-prefixed utility was normal in Arabic before the change
+    and is unaffected by it, which is why this rule neutralises nothing twice and
+    nothing in French. The rule stays correct as the remaining components are
+    converted.
