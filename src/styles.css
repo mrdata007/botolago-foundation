@@ -694,6 +694,125 @@ html[dir="rtl"] .lucide-arrow-left {
 }
 
 /* ==================================================================
+   BotolaGO UI Kit — product-wide design tokens (`--ui-*`)
+   ------------------------------------------------------------------
+   The Fantasy section is the design source of truth. Its `--fpl-*`
+   tokens are, however, a *light-only* reconstruction tuned to one
+   screen family (a white phone column under a cyan→indigo gradient):
+   `--fpl-bg`/`--fpl-grey` have no dark counterpart, and several
+   Fantasy surfaces spell `bg-white` / `text-white` literally.
+
+   Rather than rename `--fpl-*` — which would mean editing every
+   Fantasy file and risking exactly the redesign we must not do — this
+   block *promotes* the Fantasy language into a product-wide layer:
+
+     - every value below is the Fantasy value, measured from
+       `src/components/fpl/primitives.tsx`, `FantasyFrame.tsx`,
+       `FantasyScreenGate.tsx` and `src/routes/fantasy*.tsx`;
+     - each one gains a dark counterpart, so the public app can follow
+       light/dark, which Fantasy alone could not;
+     - `--fpl-*` is left byte-for-byte untouched and keeps working.
+
+   `src/components/ui-kit/tokens.ts` mirrors these names as a typed
+   manifest; `ui-kit.contract.test.ts` fails if the two drift apart.
+   ================================================================== */
+:root {
+  /* ---- Type scale ------------------------------------------------
+     Fantasy sizes are px literals, not the Tailwind ramp. Kept as
+     lengths so `text-[length:var(--ui-text-body)]` reads one scale. */
+  --ui-text-hero: 34px; /* hub title */
+  --ui-text-title: 19px; /* screen header title */
+  --ui-text-section: 17px; /* state-panel / section heading */
+  --ui-text-subtitle: 16px; /* header title when flanked both sides */
+  --ui-text-body: 15px; /* body, buttons, rows, tabs */
+  --ui-text-secondary: 14px; /* supporting copy, pills */
+  --ui-text-meta: 13px; /* meta, table cells */
+  --ui-text-label: 12px; /* badges */
+  --ui-text-micro: 11px; /* nav labels, micro captions */
+
+  /* ---- Weights: Fantasy never uses 400 for structural text ------- */
+  --ui-weight-body: 600;
+  --ui-weight-strong: 700;
+  --ui-weight-heavy: 800;
+  --ui-weight-hero: 900;
+
+  /* ---- Radii: Fantasy is square-ish, not the pill-shaped V2 ------ */
+  --ui-radius-control: 6px; /* buttons, cards, pills, banners */
+  --ui-radius-segment: 8px; /* selected tab */
+  --ui-radius-track: 10px; /* segmented-control track */
+  --ui-radius-column: 28px; /* desktop phone column */
+
+  /* ---- Density --------------------------------------------------- */
+  --ui-gutter: 1rem; /* the px-4 screen gutter */
+  --ui-gap: 0.5rem;
+  --ui-gap-lg: 0.75rem;
+  --ui-tap-min: 2.75rem; /* 44px minimum tap target */
+  --ui-row-min: 3rem; /* list row / control height */
+  --ui-column-max: 480px; /* mobile-first single column */
+
+  /* ---- Surfaces (light) ------------------------------------------ */
+  --ui-page: oklch(0.975 0.004 250); /* = --fpl-bg */
+  --ui-surface: oklch(1 0 0); /* the white Fantasy card */
+  --ui-surface-sunken: oklch(0.93 0.006 250); /* = --fpl-grey */
+  --ui-on-surface: oklch(0.16 0.03 260);
+  --ui-on-surface-muted: oklch(0.55 0.02 258); /* = --fpl-grey-text */
+  --ui-rule: oklch(0.93 0.006 250); /* 1px divider */
+
+  /* ---- Brand ink and its on-colour ------------------------------- */
+  --ui-ink: var(--brand-primary);
+  --ui-ink-deep: oklch(0.24 0.09 258);
+  --ui-on-ink: oklch(0.88 0.11 205); /* cyan text on ink, = --fpl-cyan */
+  --ui-on-ink-plain: oklch(1 0 0);
+
+  /* ---- Status ---------------------------------------------------- */
+  --ui-positive: oklch(0.72 0.19 150);
+  --ui-negative: oklch(0.63 0.24 355); /* = --fpl-pink */
+  --ui-caution: oklch(0.82 0.17 80);
+
+  /* ---- Gradients ------------------------------------------------- */
+  --ui-grad-action: linear-gradient(
+    90deg,
+    oklch(0.88 0.19 152) 0%,
+    oklch(0.88 0.11 205) 100%
+  ); /* = --fpl-grad */
+  --ui-grad-header: linear-gradient(
+    180deg,
+    oklch(0.84 0.11 205) 0%,
+    oklch(0.68 0.16 238) 48%,
+    oklch(0.6 0.18 262) 100%
+  ); /* = --fpl-header */
+
+  /* ---- Elevation: Fantasy uses one small shadow, nothing else ---- */
+  --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 12%, transparent);
+  --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
+  --ui-shadow-column: var(--shadow-floating);
+}
+
+.dark {
+  --ui-page: oklch(0.15 0.03 260);
+  --ui-surface: oklch(0.22 0.03 260);
+  --ui-surface-sunken: oklch(0.26 0.03 260);
+  --ui-on-surface: oklch(0.97 0.01 250);
+  --ui-on-surface-muted: oklch(0.7 0.02 258);
+  --ui-rule: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
+
+  --ui-ink: oklch(0.3 0.08 260);
+  --ui-ink-deep: oklch(0.22 0.07 260);
+  --ui-on-ink: oklch(0.88 0.11 205);
+  --ui-on-ink-plain: oklch(0.97 0.01 250);
+
+  --ui-grad-header: linear-gradient(
+    180deg,
+    oklch(0.42 0.1 210) 0%,
+    oklch(0.34 0.12 240) 48%,
+    oklch(0.28 0.12 262) 100%
+  );
+
+  --ui-shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  --ui-shadow-raised: 0 -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ==================================================================
    Editorial article body
    ------------------------------------------------------------------
    Styles the sanitized HTML an article stores in `body_html`, which is
