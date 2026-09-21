@@ -19,6 +19,14 @@ interface JerseyVisualProps {
  * shadow so the shirt reads as a garment rather than a flat icon. Supports
  * several deterministic kit patterns and an optional pixel image with
  * graceful fallback.
+ *
+ * The black/white `rgba(...)` stops below are deliberately literal and are
+ * NOT a palette: they are the lighting on a garment — a highlight, a side
+ * shade, a cuff, an outline — applied over whatever club colours
+ * `getKitForClub` returns. Tokenising them would mean a "shadow colour" that
+ * changes with the theme, which is not how a shadow on an object works, and
+ * would make a light kit and a dark kit shade differently. The club colours
+ * themselves live in `src/lib/kits.ts`.
  */
 export function JerseyVisual({
   kit,
@@ -39,8 +47,10 @@ export function JerseyVisual({
           aria-hidden
           className="absolute inset-0 -m-1 rounded-full"
           style={{
+            // A centred radial, so it does not mirror under `dir="rtl"`, in a
+            // kit accent rather than the legacy `--brand-accent`.
             background:
-              "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 55%, transparent), transparent 70%)",
+              "radial-gradient(closest-side at 50% 50%, color-mix(in oklab, var(--ui-accent-sky) 55%, transparent), transparent 70%)",
             filter: "blur(2px)",
           }}
         />

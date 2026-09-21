@@ -1,18 +1,23 @@
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { Player } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 
 /**
- * Availability pill, ported onto the Fantasy `--fpl-*` tokens: pink for a
- * confirmed absence, amber for a doubt, ink/grey for a suspension — the same
- * palette `FplPlayerCard`'s availability glyph and `FplStateBadge` use.
+ * Availability pill, on the kit.
+ *
+ * Each state uses a pairing the design system already guarantees clears AA in
+ * both themes: a caution fill carries `--ui-ink-deep`, an ink fill carries the
+ * plain on-ink foreground, and "injured" is the negative *foreground* on a
+ * tint of itself rather than a literal white on a mid-lightness pink.
  */
 const tone: Record<Player["status"], string> = {
-  available: "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]",
-  injured: "bg-[color:var(--fpl-pink)] text-white",
-  doubtful: "bg-[color:var(--fpl-amber)] text-[color:var(--fpl-ink-deep)]",
-  suspended: "bg-[color:var(--fpl-ink)] text-white",
+  available: cn(ui.surface.sunken, ui.tone.muted),
+  injured:
+    "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative)]",
+  doubtful: "bg-[color:var(--ui-caution)] text-[color:var(--ui-ink-deep)]",
+  suspended: ui.surface.inkPlain,
 };
 
 export function PlayerStatusBadge({
@@ -26,7 +31,11 @@ export function PlayerStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide",
+        "inline-flex items-center justify-center gap-1 px-2 py-0.5",
+        ui.radius.full,
+        // `ui.text.label` carries the `ltr:`-only tracking: Arabic letterforms
+        // join and must never be letter-spaced (BG-0069).
+        ui.text.label,
         tone[status],
         className,
       )}
