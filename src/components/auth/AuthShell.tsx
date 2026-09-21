@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
 import { useI18n } from "@/i18n/provider";
+import { useBackTo } from "@/lib/back-navigation";
 
 interface Props {
   title: string;
@@ -16,7 +17,9 @@ interface Props {
 
 export function AuthShell({ title, subtitle, children, footer, showBack = true }: Props) {
   const { t, dir } = useI18n();
-  const router = useRouter();
+  // Auth pages are linked to from email (confirmation, password reset) as often
+  // as they are reached in-app, so home is the fallback rather than a listing.
+  const goBack = useBackTo("/");
   const Arrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   return (
@@ -33,7 +36,7 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
           {showBack ? (
             <button
               type="button"
-              onClick={() => router.history.back()}
+              onClick={goBack}
               className="inline-flex items-center gap-1 rounded-xl px-2 py-1.5 text-sm font-semibold text-white/85 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
               aria-label={t("auth.back")}
             >

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Share2 } from "lucide-react";
@@ -17,6 +17,7 @@ import { EventTimeline } from "@/components/matches/EventTimeline";
 import { StatComparison } from "@/components/matches/StatComparison";
 import { LineupsView } from "@/components/matches/LineupsView";
 import { useI18n } from "@/i18n/provider";
+import { useBackTo } from "@/lib/back-navigation";
 import { cn } from "@/lib/utils";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
@@ -34,7 +35,9 @@ function MatchDetailPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang, dir } = useI18n();
-  const router = useRouter();
+  // Articles and matches are the pages most often opened from a shared link,
+  // where there is no in-app entry to go back to; fall back to the listing.
+  const goBack = useBackTo("/matches");
   const [copied, setCopied] = useState(false);
 
   const detailQ = useQuery({
@@ -147,7 +150,7 @@ function MatchDetailPage() {
       <div className="mt-1 flex items-center justify-between gap-2">
         <button
           type="button"
-          onClick={() => router.history.back()}
+          onClick={goBack}
           aria-label={t("article.back")}
           className={cn(
             "inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground",

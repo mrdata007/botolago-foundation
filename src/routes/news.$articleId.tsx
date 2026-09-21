@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { SavedButton } from "@/components/news/SavedButton";
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
+import { useBackTo } from "@/lib/back-navigation";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
@@ -41,7 +42,9 @@ export const Route = createFileRoute("/news/$articleId")({
 function ArticlePage() {
   const { articleId } = Route.useParams();
   const { t, lang, dir } = useI18n();
-  const router = useRouter();
+  // Articles and matches are the pages most often opened from a shared link,
+  // where there is no in-app entry to go back to; fall back to the listing.
+  const goBack = useBackTo("/news");
   const [copied, setCopied] = useState(false);
   const initialArticle = Route.useLoaderData();
 
@@ -141,7 +144,7 @@ function ArticlePage() {
       <div className="mt-1 flex items-center justify-between gap-2">
         <button
           type="button"
-          onClick={() => router.history.back()}
+          onClick={goBack}
           aria-label={t("article.back")}
           className={cn(
             "inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground",

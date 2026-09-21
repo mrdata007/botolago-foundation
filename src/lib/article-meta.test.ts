@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildArticleHead, buildArticleJsonLd, buildCanonicalArticleUrl } from "./article-meta";
+import {
+  buildArticleHead,
+  buildArticleJsonLd,
+  buildCanonicalArticleUrl,
+  serializeJsonLd,
+} from "./article-meta";
 import type { ArticleDetailDto } from "@/backend/news/contracts";
 
 function detail(overrides: Partial<ArticleDetailDto> = {}): ArticleDetailDto {
@@ -109,14 +114,25 @@ describe("article metadata", () => {
     expect(head).not.toHaveProperty("scripts");
   });
 
+  it("declares the JSON-LD script in the flat shape the router renders", () => {
+    // The router builds the <script> itself and turns every key but `children`
+    // into an attribute. Declaring {tag, attrs, children} reads like the output
+    // but produced `<script tag="script" attrs="[object Object]">` with no type,
+    // so the browser ran the JSON as JavaScript and crawlers saw nothing. This
+    // is the assertion that was missing: it pins the input shape, not our own.
+    const head = buildArticleHead(detail(), "article-1");
+    expect(head.scripts).toHaveLength(1);
+    const script = head.scripts![0];
+    expect(script.type).toBe("application/ld+json");
+    expect(script).not.toHaveProperty("tag");
+    expect(script).not.toHaveProperty("attrs");
+    expect(Object.keys(script).sort()).toEqual(["children", "type"]);
+  });
+
   it("attaches a NewsArticle JSON-LD script built only from real DTO fields", () => {
     const article = detail();
     const head = buildArticleHead(article, "article-1");
-    expect(head.scripts).toHaveLength(1);
-    const script = head.scripts![0];
-    expect(script.tag).toBe("script");
-    expect(script.attrs).toEqual({ type: "application/ld+json" });
-    const jsonLd = JSON.parse(script.children!);
+    const jsonLd = JSON.parse(head.scripts![0].children!);
     expect(jsonLd["@type"]).toBe("NewsArticle");
     expect(jsonLd.headline).toBe("Titre officiel");
     expect(jsonLd.datePublished).toBe(article.publishedAt);
@@ -139,5 +155,35 @@ describe("buildArticleJsonLd", () => {
     const article = detail({ hero: null });
     const jsonLd = buildArticleJsonLd(article, "https://botolago.com/news/x")!;
     expect(jsonLd.image).toBeUndefined();
+  });
+});
+
+describe("serializeJsonLd", () => {
+  // The router writes head-script children with dangerouslySetInnerHTML, so an
+  // editor-supplied `</script>` in a headline would close the element early and
+  // leave whatever followed being parsed as markup in the document head.
+  it("cannot be closed early by an editor-supplied string", () => {
+    const serialized = serializeJsonLd({
+      headline: '</script><img src=x onerror="alert(1)">',
+      description: "<!--<script>",
+    });
+    expect(serialized).not.toContain("<");
+    expect(serialized).not.toContain(">");
+    expect(serialized.toLowerCase()).not.toContain("</script");
+  });
+
+  it("escapes the ampersand too, so an entity cannot reintroduce a bracket", () => {
+    expect(serializeJsonLd({ headline: "Raja & Wydad" })).not.toContain("&");
+  });
+
+  it("round-trips: a reader of the JSON sees the original characters", () => {
+    const headline = 'Wydad 2–1 Raja <"officiel"> & suite';
+    const parsed = JSON.parse(serializeJsonLd({ headline })) as { headline: string };
+    expect(parsed.headline).toBe(headline);
+  });
+
+  it("leaves ordinary Arabic and French copy untouched", () => {
+    const jsonLd = { headline: "الوداد ينتصر", description: "Résumé officiel — journée 1" };
+    expect(JSON.parse(serializeJsonLd(jsonLd))).toEqual(jsonLd);
   });
 });
