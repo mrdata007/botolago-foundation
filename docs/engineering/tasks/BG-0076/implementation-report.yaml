@@ -1,0 +1,140 @@
+task_id: BG-0076
+role: Builder
+attempt: 1
+branch: bg-0076-article-image-fallback
+base: origin/chief/launch-fixes-3
+scope: frontend-only
+
+summary: >
+  ArticleCard (all five variants), FeaturedGrid (via ArticleCard) and the
+  article detail hero now paint a branded plate wherever a hero photo is
+  missing or fails to load: the category colour as the ground, the BotolaGO
+  wordmark as the base mark, and the club crest on top when the edition names
+  exactly one club. Editorial images are unchanged; a card with a real photo
+  renders exactly as before.
+
+changes:
+  - file: src/styles.css
+    what: >
+      Five --news-plate-* custom properties (latest, transfers, analysis,
+      interviews, for_you), declared under :root and redeclared one step deeper
+      inside the existing .dark block, matching how --news-gradient-* already
+      follows the theme.
+    why: >
+      The plate's ground colour must carry the section's identity and must
+      follow the theme. Stated as a flat colour, not a gradient, so the
+      component can build the ramp with a direction-neutral `to bottom`.
+
+  - file: src/components/common/ArticleHeroFallback.tsx
+    what: New component. Exports ArticleHeroFallback and plateTokenForCategory.
+    detail: |
+      - Renders `absolute inset-0 grid place-items-center` inside the box
+        MediaImage already sizes — it cannot alter that box.
+      - background-image:
+          linear-gradient(to bottom,
+            var(--news-plate-X) 0%,
+            color-mix(in oklab, var(--news-plate-X) 45%, var(--ui-ink-deep)) 100%)
+        Vertical, so there is no physical angle to mirror.
+      - Wordmark: src/assets/brand/botolago-wordmark-light.svg, w-[72%]
+        max-w-[10rem] at size "sm", w-[52%] max-w-[17rem] at "md". Carries
+        data-article-hero-wordmark so a test can assert it actually decoded.
+      - Crest: the existing ClubCrest, absolutely placed at `start-[7%] top-[7%]`
+        (logical, so it mirrors), only when clubIds has exactly one entry and
+        that club is in the supplied directory.
+      - aria-hidden. The card's <Link> already carries the accessible name, and
+        the plate contains no translated copy, so the i18n gate has nothing to
+        miss.
+      - data-article-hero-fallback="crest" | "wordmark" is the test handle.
+      - plateTokenForCategory narrows a free-form slug (the detail DTO carries
+        one) and falls back to --news-plate-latest.
+
+  - file: src/components/common/FailureAwareImage.tsx
+    what: >
+      The failure path is reused, not duplicated. ImageAttempt already removed
+      a broken image from layout via its own `failed` state; it now also calls
+      an optional `onFailed(src)` from the same onError handler. MediaImage
+      takes a `placeholder` node, tracks the failed URL (not a boolean, because
+      FailureAwareImage re-keys and retries whenever the URL changes) and
+      renders the placeholder when `!src || failedSrc === src`.
+    also: >
+      The box carries data-media-state="image" | "placeholder" so the
+      no-empty-block assertion can measure state rather than infer it.
+    compatibility: >
+      `placeholder` is optional. Callers that do not pass one (JerseyVisual,
+      ClubCrest, the Fantasy hub rail) behave exactly as before.
+
+  - file: src/components/common/ArticleCard.tsx
+    what: >
+      One `heroPlaceholder(size)` helper, passed to the MediaImage of all five
+      variants: lead (16:10, md), row (16:8, md), imageLed (4:5, md), compact
+      (56px square, sm), horizontal (120px square, sm). No other change.
+
+  - file: src/routes/news.$articleId.tsx
+    what: >
+      The detail hero passes the same plate, wordmark-only (this route loads no
+      club directory). A reader tapping a hero-less card would otherwise land
+      on a second empty block.
+
+  - file: src/components/common/article-hero-fallback.test.ts
+    what: >
+      14 bun tests. Every category maps to a token declared exactly twice in
+      styles.css (light + dark); an unknown slug resolves to a real token; the
+      component uses no physical direction utility, no unprefixed tracking-*,
+      no colour literal, no Tailwind radius ramp and no `deg` in its gradient;
+      it is absolutely positioned; MediaImage's placeholder condition and the
+      onFailed wiring are pinned as source text; all five ArticleCard variants
+      pass a placeholder (5 MediaImage, 5 placeholders); the detail route does
+      too.
+    why_source_text: >
+      These are Tailwind class strings and CSS custom properties. Nothing at
+      runtime can observe them, and this repo has no React component-test
+      harness (BG-0012 builder report). Same technique as
+      src/components/ui-kit/ui-kit.contract.test.ts.
+
+  - file: tests/e2e/news-hero-fallback.e2e.ts
+    what: >
+      10 Playwright tests against the real production dataset. See
+      verification-report.yaml.
+
+  - file: playwright.config.ts
+    what: >
+      Optional E2E_CHROMIUM_SPKI_ALLOW adds
+      --ignore-certificate-errors-spki-list=<digest>, trusting exactly one
+      proxy CA public key. Certificate verification stays on for every other
+      authority; this is not --ignore-certificate-errors.
+    why: >
+      Without it the bundled Chromium rejects this sandbox's egress proxy CA,
+      every Supabase RPC fails with ERR_CERT_AUTHORITY_INVALID, and the page
+      under test renders zero article cards — a run that passes while measuring
+      nothing. The flag is opt-in and absent from CI unless the variable is set.
+
+house_rules_check:
+  ui_kit_tokens_only: true
+  no_hex_or_bg_white: true
+  no_tailwind_type_ramp: true
+  no_rounded_lg_xl_2xl_3xl: true
+  tracking_classes_added: 0
+  physical_direction_utilities_added: 0
+  gradient_angle_in_deg: false
+  new_image_assets_added: 0
+  new_translated_strings: 0
+
+forbidden_paths_untouched:
+  - docs/engineering/LAUNCH_LEDGER.yaml
+  - supabase/
+  - scripts/backend/
+  - src/backend/fantasy/
+
+known_gaps:
+  - id: crest-unexercised-in-production
+    detail: >
+      app.story_teams is empty in production, so no live edition names a club
+      and the crest branch does not fire today. It was verified by injecting a
+      single teamId into the news RPC responses at the network layer, and it
+      will begin rendering on its own once story_teams is populated. No code
+      change will be needed then.
+  - id: fantasy-hub-rail
+    detail: >
+      src/routes/fantasy.index.tsx renders its news thumbnails only when
+      heroUrl is present, so it shows no empty block. Left unchanged, and it
+      still compiles against the widened MediaImage props.

@@ -1,0 +1,138 @@
+task_id: BG-0076
+role: Builder
+attempt: 1
+branch: bg-0076-article-image-fallback
+base: origin/chief/launch-fixes-3
+area: news / ui-kit
+scope: frontend-only
+severity: P1
+launch_window: >
+  Above the fold on Home and /news for every French visitor, so it gates the
+  French launch surface. It does not gate any backend or data work.
+
+objective: >
+  A published article edition with no hero asset rendered an empty dark block
+  where the photo belongs. Replace that block with a branded plate — category
+  colour, BotolaGO wordmark, and the club crest when the edition names exactly
+  one club — rendered both when the hero is null and when a hero URL fails to
+  load. This does not replace editorial images; the content decision (what the
+  French feed should contain) is BG-0065 and stays open. The goal is that the
+  absence reads as deliberate rather than broken.
+
+confirmed_finding:
+  source: production Supabase project tkewgajrljbwgwedqsxn, read-only execute_sql
+  query: >
+    select language,
+           count(*) filter (where hero_asset_id is null) as no_hero,
+           count(*) as total
+    from app.article_editions where status = 'published' group by 1;
+  result:
+    - language: fr
+      no_hero: 10
+      total: 10
+    - language: ar
+      no_hero: 37
+      total: 98
+  note: >
+    Matches the brief exactly: every published French edition is hero-less, and
+    37 of 98 Arabic ones are.
+
+additional_data_finding:
+  classification: VERIFIED
+  statement: >
+    app.story_teams is EMPTY in production (select count(*) => 0). No published
+    edition names any club today, so the crest branch of the fallback cannot
+    fire against live data yet. The branch is implemented and was verified by
+    injecting a single teamId into the news RPC responses at the network layer
+    (see verification-report.yaml); it will start rendering on its own the day
+    story_teams is populated.
+  implication_for_owner: >
+    The crest is the strongest identity signal the plate can carry. Populating
+    story_teams — plausibly part of the same editorial pass as BG-0065 — turns
+    every single-club hero-less card from a generic wordmark plate into a
+    club-branded one at no further engineering cost.
+
+surfaces_touched:
+  - path: src/components/common/ArticleHeroFallback.tsx
+    kind: new
+    role: the plate itself
+  - path: src/components/common/FailureAwareImage.tsx
+    kind: modified
+    role: >
+      MediaImage now accepts a `placeholder` node and shows it when there is no
+      src or when the src failed. The failure is reported by the existing
+      FailureAwareImage attempt (new optional `onFailed`), not by a second
+      mechanism.
+  - path: src/components/common/ArticleCard.tsx
+    kind: modified
+    role: passes the plate to all five variants (lead, row, compact, horizontal, imageLed)
+  - path: src/routes/news.$articleId.tsx
+    kind: modified
+    role: >
+      The detail hero gets the same plate. A reader who taps a hero-less card
+      would otherwise land on a second empty block. This route loads no club
+      directory, so that plate is wordmark-only.
+  - path: src/styles.css
+    kind: modified
+    role: --news-plate-* category colours, declared for light and redeclared under .dark
+  - path: src/components/common/article-hero-fallback.test.ts
+    kind: new
+    role: house-rule and wiring contract for the plate
+  - path: tests/e2e/news-hero-fallback.e2e.ts
+    kind: new
+    role: the measured Playwright gate against the real production dataset
+  - path: playwright.config.ts
+    kind: modified
+    role: >
+      Opt-in E2E_CHROMIUM_SPKI_ALLOW, so a run behind a CA-terminating proxy
+      trusts exactly that proxy CA instead of measuring an empty page. It does
+      not disable certificate verification.
+
+constraints_honoured:
+  - docs/engineering/LAUNCH_LEDGER.yaml untouched (Chief owns it)
+  - supabase/, scripts/backend/ and src/backend/fantasy/ untouched
+  - forward-only; no migration edited (no migration added either — frontend-only)
+  - no new image asset added; src/assets/brand/botolago-wordmark-light.svg already fits
+  - "--ui-* tokens and the ui.* class map only; no hex, bg-white, Tailwind type ramp or rounded-lg/xl/2xl/3xl"
+  - every tracking-* stays ltr:-prefixed (none added)
+  - logical properties only (ms-/me-/start-/end-); gradient is `to bottom`, never a deg angle
+
+design_decisions:
+  - decision: The plate is absolutely positioned inside the box MediaImage already sizes.
+    rationale: >
+      Zero layout shift becomes structural rather than something to be measured
+      and hoped for: the aspect ratio is declared by the card variant on the
+      container, and the plate cannot contribute to it.
+  - decision: The gradient runs `to bottom`, not at an angle.
+    rationale: >
+      A `deg` angle is a physical direction. 135deg starts top-left in French
+      and would still start top-left in Arabic — landing on the wrong edge. A
+      vertical ramp is direction-neutral and needs no RTL special case.
+  - decision: Category colour lives in --news-plate-* tokens, not --ui-*.
+    rationale: >
+      The existing --news-gradient-* tokens set the precedent that News-only
+      placeholder colour stays out of the shared kit; and the ui-kit contract
+      test requires UI_TOKENS to match every --ui-* the stylesheet declares,
+      so adding five section colours there would expand the shared manifest
+      for a News-local concern.
+  - decision: The crest is placed with start-/top-, not centred with the wordmark.
+    rationale: >
+      A centred crest would be invisible as a mirror signal and would collide
+      with the wordmark on the 56px compact thumbnail. At the start corner it
+      mirrors to the right edge in Arabic, which is also a measurable RTL
+      assertion (verified: 8.39px from the left edge in FR, 8.39px from the
+      right edge in AR).
+  - decision: The white ("light") wordmark is used in both themes.
+    rationale: >
+      The plate is a dark brand ground in both themes (the .dark values are one
+      step deeper, following the --news-gradient-* precedent), so one wordmark
+      reads correctly on both and no theme-conditional asset swap is needed.
+  - decision: Two sizes only, sm and md.
+    rationale: >
+      sm covers the 56px compact thumbnail and the 120px horizontal square,
+      where an md crest would swamp the plate. Everything else is md.
+
+out_of_scope:
+  - src/routes/fantasy.index.tsx renders its news rail only when heroUrl exists,
+    so it shows no empty block and was left alone.
+  - The editorial content decision for the French feed (BG-0065).

@@ -1,0 +1,262 @@
+task_id: BG-0076
+role: Builder (self-verification; a separate Verifier and Reviewer follow)
+attempt: 1
+branch: bg-0076-article-image-fallback
+base: origin/chief/launch-fixes-3
+verified_against: >
+  The real production dataset (Supabase project tkewgajrljbwgwedqsxn) served
+  through `vite dev --mode production` on http://127.0.0.1:4173, which loads
+  .env.production and therefore VITE_*_DATA_MODE=supabase. Chromium from
+  /opt/pw-browsers via PLAYWRIGHT_BROWSERS_PATH; `playwright install` was never
+  run.
+
+how_to_reproduce: |
+  bun install --frozen-lockfile
+  bunx vite dev --mode production --host 127.0.0.1 --port 4173   # leave running
+  E2E_BASE_URL=http://127.0.0.1:4173 \
+  E2E_CHROMIUM_SPKI_ALLOW='<proxy CA SPKI digest>' \
+    bunx playwright test tests/e2e/news-hero-fallback.e2e.ts
+
+  E2E_CHROMIUM_SPKI_ALLOW is needed only behind a CA-terminating egress proxy.
+  Without it this sandbox's Chromium rejects every Supabase RPC with
+  ERR_CERT_AUTHORITY_INVALID, the page renders zero article cards, and a run
+  would pass while measuring an empty page. The digest is produced with
+    openssl x509 -in <ca>.crt -pubkey -noout | openssl pkey -pubin -outform der \
+      | openssl dgst -sha256 -binary | base64
+  It trusts exactly that one key; verification stays on for every other CA.
+  On a machine with no such proxy, omit the variable entirely.
+
+# ---------------------------------------------------------------- the data
+production_data_at_verification_time:
+  query: >
+    select language, count(*) filter (where hero_asset_id is null) as no_hero,
+    count(*) as total from app.article_editions where status='published' group by 1;
+  fr: { no_hero: 10, total: 10 }
+  ar: { no_hero: 37, total: 98 }
+  story_teams_rows: 0
+  consequence: >
+    Every published French edition renders the fallback. No edition names a
+    club, so the live plates are all wordmark-only; the crest branch was
+    verified separately (see crest_branch below).
+
+# ---------------------------------------------------------------- claim 1
+claim_1_zero_empty_blocks:
+  method: >
+    Not a screenshot. For every element carrying data-media-state inside <main>,
+    the probe reads the state and then asserts what is actually painted:
+    state="image" requires an <img> with naturalWidth > 0; state="placeholder"
+    requires a [data-article-hero-fallback] element with a non-zero box whose
+    computed background-image contains a linear-gradient AND an
+    img[data-article-hero-wordmark] with naturalWidth > 0 and a non-zero
+    rendered box. Anything else is an empty block and fails with a reason
+    string.
+  matrix: Home (/) and /news x {390px, 1280px} x {fr, ar} x {light, dark} = 16 page loads
+  media_boxes_measured: 104
+  empty_blocks_found: 0
+  breakdown_pass_a:
+    # lang | viewport | theme | route | media boxes | with photo | with plate | EMPTY
+    columns: lang, viewport, theme, route, boxes, photo, plate, empty
+    rows:
+      - "fr | 390 | light | / | 3 | 0 | 3 | 0"
+      - "fr | 390 | light | /news | 10 | 0 | 10 | 0"
+      - "fr | 390 | dark | / | 3 | 0 | 3 | 0"
+      - "fr | 390 | dark | /news | 10 | 0 | 10 | 0"
+      - "fr | 1280 | light | / | 3 | 0 | 3 | 0"
+      - "fr | 1280 | light | /news | 10 | 0 | 10 | 0"
+      - "fr | 1280 | dark | / | 3 | 0 | 3 | 0"
+      - "fr | 1280 | dark | /news | 10 | 0 | 10 | 0"
+      - "ar | 390 | light | / | 3 | 3 | 0 | 0"
+      - "ar | 390 | light | /news | 10 | 9 | 1 | 0"
+      - "ar | 390 | dark | / | 3 | 3 | 0 | 0"
+      - "ar | 390 | dark | /news | 10 | 9 | 1 | 0"
+      - "ar | 1280 | light | / | 3 | 3 | 0 | 0"
+      - "ar | 1280 | light | /news | 10 | 9 | 1 | 0"
+      - "ar | 1280 | dark | / | 3 | 3 | 0 | 0"
+      - "ar | 1280 | dark | /news | 10 | 9 | 1 | 0"
+  not_vacuous: >
+    The French rows are the point of the task: 52 of the 104 boxes are French
+    and every one of them is a plate. The Arabic rows prove the other half —
+    real photos still render as photos and are not replaced.
+  theme_evidence:
+    light_plate_background: "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    dark_plate_background_differs: true
+    note: >
+      Read from getComputedStyle, so it is the resolved value, not the authored
+      string; the dark run resolves the same token to the deeper .dark value.
+
+# ---------------------------------------------------------------- claim 2
+claim_2_no_layout_shift:
+  method: >
+    Each page is loaded twice. Pass A is the page as a visitor gets it today.
+    Pass B repeats it with every REMOTE image request aborted at the network
+    layer, so every hero — including the Arabic ones that had a real photo in
+    pass A — falls back to the plate. The width/height of every
+    [data-media-state] box and of every a[href^="/news/"] card is compared
+    between the two passes. Identical boxes mean the plate occupies exactly the
+    hero's box. This is the only comparison that measures the fallback against
+    a real hero rather than against itself, and it exercises the failed-load
+    path as well as the null-hero path.
+  pass_b_state_check: >
+    In pass B, 0 of 104 boxes remained state="image" — the abort really did
+    force the fallback everywhere.
+  media_boxes_identical: 16 of 16 page loads
+  card_boxes_identical: 16 of 16 page loads
+  cards_compared_per_load: { home: 3, news: 10 }
+  empty_blocks_in_pass_b: 0
+  structural_argument: >
+    The plate is `absolute inset-0` inside the box MediaImage already sizes,
+    and every ArticleCard variant declares its own aspect ratio on that box
+    (lead 16/10, row 16/8, imageLed 4/5, compact h-14 w-14, horizontal
+    aspect-square). The plate cannot contribute to the box it fills, so the
+    measurement confirms a property that holds by construction.
+
+# ---------------------------------------------------------------- claim 3
+claim_3_no_horizontal_overflow:
+  scrollWidth_equals_clientWidth: 16 of 16 page loads, both passes (390/390 and 1280/1280)
+  clipped_elements_found: 0
+  why_both_checks: >
+    `html, body { overflow-x: clip }` in styles.css means an overflowing element
+    produces no scrollbar at all, so scrollWidth alone reads clean while content
+    is clipped away. The probe therefore also walks every element under <main>
+    and flags any whose bounding box reaches past the viewport, skipping
+    anything inside a deliberate overflow-x auto/scroll rail.
+
+# ---------------------------------------------------------------- claim 4
+claim_4_arabic_mirrors:
+  side_by_side_card:
+    method: >
+      For every card whose media box is under 60% of the card's width (the
+      side-by-side variants), assert the media hugs the inline-start edge in
+      French and the inline-end edge in Arabic. A card that had been
+      accidentally centred would satisfy neither.
+    fr: media at the start edge on every such card, at neither the end edge
+    ar: 'html[dir="rtl"], media at the end edge on every such card, at neither the start edge'
+    viewports: [390, 1280]
+    result: pass
+  crest_placement:
+    measured_offsets_inside_the_plate:
+      fr_390: { from_left: 8.39px, from_right: 87.61px }
+      fr_1280: { from_left: 8.39px, from_right: 87.61px }
+      ar_390: { from_left: 87.61px, from_right: 8.39px }
+      ar_1280: { from_left: 87.61px, from_right: 8.39px }
+    reading: >
+      `start-[7%]` resolves to the left edge in French and the right edge in
+      Arabic — an exact mirror, same 8.39px inset. This is the direct evidence
+      that the plate's own placement is logical, not physical.
+  gradient_direction: >
+    The plate's gradient is `to bottom`, so there is no angle to land on the
+    wrong edge; the light/dark computed values above show no corner-to-corner
+    component.
+
+# ---------------------------------------------------------------- crest
+crest_branch:
+  status: implemented, verified under injection, not exercisable against live data
+  why: app.story_teams has 0 rows in production, so no edition names any club.
+  method: >
+    The news_feed / news_home_modules RPC responses were patched at the network
+    layer to carry a single teamId, and news_team_filters to include that club,
+    so the component received exactly the shape it will receive once
+    story_teams is populated. Nothing in src/ was modified for this.
+  result:
+    fr_390: { plates: 10, with_crest: 10, wordmark_only: 0 }
+    fr_1280: { plates: 10, with_crest: 10, wordmark_only: 0 }
+    ar_390: { plates: 1, with_crest: 1, wordmark_only: 0 }
+    ar_1280: { plates: 1, with_crest: 1, wordmark_only: 0 }
+  crest_visible: true on every measured plate (non-zero box)
+  note_for_verifier: >
+    This check is deliberately NOT part of the committed spec: a test that
+    rewrites production RPC responses would be pinning a fiction. The committed
+    spec asserts what the live data actually produces. The crest branch's
+    conditions are pinned instead by the component contract test.
+
+# ---------------------------------------------------------------- gates
+gate_results:
+  - gate: bun run typecheck
+    command: tsc --noEmit
+    result: PASS
+    output: no diagnostics, exit 0
+  - gate: bun test
+    result: PASS (pre-existing failures only)
+    numbers: 1335 pass, 4 fail, 14813 expect() calls, 1339 tests across 153 files
+    failures:
+      - "legal documents are publishable > privacy.ar carries no unfilled placeholder"
+      - "legal documents are publishable > privacy.fr carries no unfilled placeholder"
+      - "legal documents are publishable > terms.ar carries no unfilled placeholder"
+      - "legal documents are publishable > terms.fr carries no unfilled placeholder"
+    failure_note: >
+      All four are src/content/legal/legal-content.test.ts, the publication gate
+      awaiting owner-supplied values, named as pre-existing in the task brief.
+      Nothing else fails.
+    added_by_this_task: 14 tests in src/components/common/article-hero-fallback.test.ts, all passing
+  - gate: bun run lint
+    result: PASS
+    numbers: 18 problems (0 errors, 18 warnings)
+    note: >
+      All 18 are the pre-existing react-refresh/only-export-components warnings.
+      The prettier/prettier error the brief warned about in
+      src/routes/fantasy.players.$playerId.tsx is not present on this branch.
+      One prettier/prettier error in the new e2e spec was found and fixed before
+      this run.
+  - gate: bun run format:check
+    result: PASS (pre-existing offenders only)
+    numbers: 40 unformatted files, identical to the branch baseline
+    note: >
+      Every file this task touches or adds passes `prettier --check`, verified
+      individually.
+  - gate: bun scripts/qa/i18n-gate.ts
+    result: PASS
+    numbers: "W1 6 (baseline 6), W2 6 (baseline 6), W3 248 (baseline 248), W4 97 (baseline 97) — all at baseline"
+    note: >
+      The plate adds no translated string at all (it is aria-hidden and carries
+      no copy), so the W4 exact-equality baseline is untouched. No
+      t(cond ? "a" : "b") was written.
+  - gate: bun run build
+    result: PASS
+    output: vite build + nitro output generated, no errors
+  - gate: playwright tests/e2e/news-hero-fallback.e2e.ts
+    result: PASS
+    numbers: 10 passed, 0 failed (2.9m)
+  - gate: playwright tests/e2e/anonymous.acceptance.e2e.ts
+    result: PASS
+    numbers: 12 passed, 0 failed (3.4m)
+    why: >
+      The pre-existing acceptance suite — 5 critical routes x 6 viewports x 2
+      languages, with its own no-overflow and no-clipped-card assertions and a
+      zero-console-error requirement — run as a regression check on the
+      MediaImage change.
+
+flake_note: >
+  One earlier full-suite run showed 1 failure and a later one showed 2, both
+  net::ERR_CONNECTION_REFUSED at page.goto: the local dev server process had
+  died between runs. After restarting it, the suite passed 10/10 and the
+  acceptance suite 12/12. No assertion in the spec ever failed.
+
+evidence_files:
+  - docs/engineering/tasks/BG-0076/evidence/playwright-measurements.json
+    # the full per-cell machine output behind claims 1-3
+  - docs/engineering/tasks/BG-0076/evidence/news-390-fr-light.png
+  - docs/engineering/tasks/BG-0076/evidence/news-390-fr-dark.png
+  - docs/engineering/tasks/BG-0076/evidence/news-390-ar-light.png
+  - docs/engineering/tasks/BG-0076/evidence/news-390-ar-dark.png
+
+residual_risk:
+  - id: crest-never-seen-in-production
+    severity: low
+    detail: >
+      Until app.story_teams is populated, every live plate is wordmark-only.
+      The crest code path ships unexercised by live data. Verified under
+      injection; no code change will be needed when the data arrives.
+  - id: one-plate-per-category-colour
+    severity: low
+    detail: >
+      A feed dominated by one category shows one plate colour repeatedly. That
+      is a deliberate consequence of "category colour" and is the correct
+      read while the French feed has no photos; it is also an argument for
+      BG-0065 rather than for more colours here.
+  - id: dark-theme-not-reachable-in-product
+    severity: informational
+    detail: >
+      Nothing in src/ currently adds the `.dark` class, so dark mode is not
+      user-reachable today. The dark cells above were measured by adding the
+      class in the browser, which is what any future theme switch will do.
+      The plate's dark values are declared and verified either way.
