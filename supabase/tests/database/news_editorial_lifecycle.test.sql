@@ -169,10 +169,19 @@ reset role;
 -- Step 7: the public read model no longer returns it.
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
+-- BG-0058: the not-found answer is raised as SQLSTATE 'PGRST' so PostgREST
+-- returns HTTP 404 instead of 500. The JSON body it carries still says
+-- news_article_not_found, which is what the client maps on; the message text
+-- itself is json_build_object's rendering, so only the SQLSTATE is asserted.
 select extensions.throws_ok(
   $$select api.news_article_detail('fr', 'lifecycle-derby-preview')$$,
-  'P0002', 'news_article_not_found',
+  'PGRST', null,
   'an unpublished article disappears from the public read model'
+);
+select extensions.throws_like(
+  $$select api.news_article_detail('fr', 'lifecycle-derby-preview')$$,
+  '%news_article_not_found%',
+  'the not-found response body still carries news_article_not_found for the client error mapping'
 );
 reset role;
 
