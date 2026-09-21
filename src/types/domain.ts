@@ -7,6 +7,17 @@ export type LocalizedString = Record<Language, string>;
 
 export interface Club {
   id: string;
+  /**
+   * The provider-stable slug (`app.clubs.slug`), when the presenter has one.
+   *
+   * BG-0111 — Fantasy fixture rows and the football club list are produced by
+   * two repositories. In cloud mode both key on the same club UUID; the mock
+   * football repository mints synthetic UUIDs while the Fantasy mocks key on
+   * the source slug ("war", "rca"), so an id-only join silently resolves to
+   * nothing and the pitch renders a fixture with no opponent. Carrying the
+   * slug lets a presenter match on either key without guessing.
+   */
+  slug?: string;
   name: LocalizedString;
   shortName: LocalizedString;
   city: LocalizedString;

@@ -58,8 +58,38 @@ export const NEWS_ENABLED = false;
  * Gated surfaces (keep this list current):
  *   - `src/routes/__root.tsx` — the inline pre-paint theme script
  *   - `src/theme/provider.tsx` — storage adoption, class application, OS listener
- *   - `src/routes/profile.tsx` — the Light/Dark/System control
+ *   - `src/routes/profile.tsx` — the whole "Apparence" row, label included
  *
  * Flip to `true` only when BG-0083 and BG-0084 are both closed.
  */
 export const DARK_MODE_ENABLED = false;
+
+/**
+ * Third-party OAuth sign-in — OFF at launch.
+ *
+ * BG-0111. Signup and login rendered "Continuer avec Google" and "Continuer
+ * avec Apple" against a project that has no OAuth provider enabled at all.
+ * Probed directly against production auth:
+ *
+ *   GET /auth/v1/authorize?provider=<p>
+ *   -> {"error_code":"validation_failed",
+ *       "msg":"Unsupported provider: provider is not enabled"}
+ *
+ * for google, apple, facebook, azure AND github. Every one of those buttons
+ * was dead UI: a tap sent the visitor to an error page, from the two screens
+ * where a failure costs the most.
+ *
+ * This is a HIDE, not a deletion, for the same reason as News: the owner may
+ * enable Google later and should get the buttons back by flipping one
+ * constant rather than rebuilding them. `authService.signInWithGoogle` /
+ * `signInWithApple`, the `GoogleGlyph` / `AppleGlyph` marks and the
+ * `auth.google` / `auth.apple` / `auth.or_continue_with` strings all stay.
+ *
+ * Flip to `true` only once a provider is actually enabled in Supabase Auth,
+ * and prune the button list here to the providers that are.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/auth.login.tsx` — divider + provider buttons
+ *   - `src/routes/auth.register.tsx` — divider + provider buttons
+ */
+export const OAUTH_PROVIDERS_ENABLED = false;

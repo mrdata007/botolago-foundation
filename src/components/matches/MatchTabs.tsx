@@ -37,14 +37,24 @@ export function MatchTabs({
         value={active}
         onChange={onChange}
         label={t("matches.detail.tabs_label")}
-        // Two call-site adjustments, made here rather than by editing the kit:
+        // Call-site adjustments, made here rather than by editing the kit:
         // the kit's segments are 40px tall and these are the primary
         // navigation of the match page, so they are raised to the 44px tap
-        // minimum; and four labels share a 390px row, so they drop from the
-        // body size to the meta size instead of truncating to "Résu…".
+        // minimum; and four labels share a 390px row.
+        //
+        // BG-0111 — the meta step was not enough. Measured at 390px in French,
+        // each segment is an 88px column with a 72px content box, against
+        // "Statistiques" at 80px and "Compositions" at 90px: both rendered as
+        // "Statistique…" and "Composition…". The micro step plus a 4px inline
+        // padding puts the longest label at 76px inside an 80px box, and
+        // `whitespace-normal` means a label that still does not fit wraps at a
+        // word boundary rather than losing its ending. Arabic was never over
+        // (longest 63px) and is unaffected by either change.
         className={cn(
           "[&>button]:min-h-[var(--ui-tap-min)]",
-          "[&>button]:text-[length:var(--ui-text-meta)]",
+          "[&>button]:text-[length:var(--ui-text-micro)]",
+          "[&>button]:px-1",
+          "[&>button]:whitespace-normal [&>button]:[line-height:1.25]",
         )}
         options={MATCH_TABS.map((tab) => ({ value: tab.key, label: t(tab.label) }))}
       />

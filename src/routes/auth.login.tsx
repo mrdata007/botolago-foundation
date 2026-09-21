@@ -16,6 +16,7 @@ import {
   AppleGlyph,
 } from "@/components/auth/AuthShell";
 import { ConsentLine } from "@/components/legal/ConsentLine";
+import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -227,24 +228,32 @@ function LoginPage() {
           {submitting ? t("auth.submitting") : t("auth.login.cta")}
         </AuthPrimaryButton>
 
-        <AuthDivider label={t("auth.or_continue_with")} />
+        {/* BG-0111 — no OAuth provider is enabled on this project, so the
+            divider goes with the buttons: an "ou continuer avec" rule with
+            nothing under it reads as a broken screen. See
+            `OAUTH_PROVIDERS_ENABLED`. */}
+        {OAUTH_PROVIDERS_ENABLED && (
+          <>
+            <AuthDivider label={t("auth.or_continue_with")} />
 
-        <div className="grid gap-2">
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("google")}
-            disabled={submitting}
-          >
-            <GoogleGlyph /> {t("auth.google")}
-          </AuthSecondaryButton>
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("apple")}
-            disabled={submitting}
-          >
-            <AppleGlyph /> {t("auth.apple")}
-          </AuthSecondaryButton>
-        </div>
+            <div className="grid gap-2">
+              <AuthSecondaryButton
+                type="button"
+                onClick={() => onSocial("google")}
+                disabled={submitting}
+              >
+                <GoogleGlyph /> {t("auth.google")}
+              </AuthSecondaryButton>
+              <AuthSecondaryButton
+                type="button"
+                onClick={() => onSocial("apple")}
+                disabled={submitting}
+              >
+                <AppleGlyph /> {t("auth.apple")}
+              </AuthSecondaryButton>
+            </div>
+          </>
+        )}
 
         <p className={cn("mt-2 text-center leading-relaxed", ui.text.micro, ui.tone.muted)}>
           <ConsentLine segments={noticeConsentSegments(t)} />
