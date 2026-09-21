@@ -1,0 +1,155 @@
+task_id: BG-0073
+title: Season-wide fantasy standings reader and frontend wiring
+branch: bg-0073-overall-standings
+
+files_changed:
+  - path: supabase/migrations/20260921180000_fantasy_overall_standings.sql
+    kind: added
+    what: >
+      Adds api.fantasy_overall_standings and one partial covering index,
+      fantasy_rankings_overall_page_idx, on
+      app.fantasy_rankings (fantasy_season_id, gameweek_id, rank, fantasy_team_id)
+      INCLUDE (previous_rank, total_points, gameweek_points, calculated_at)
+      WHERE league_id is null -- the overall mirror of the existing
+      fantasy_rankings_league_overall_page_idx. No table, policy, grant on `app`,
+      or existing function is modified.
+  - path: src/backend/fantasy/contracts.ts
+    kind: modified
+    what: >
+      Adds fantasyOverallStandingSchema, fantasyOverallStandingPageSchema, their
+      inferred types, FantasyOverallStandingsInput, and the getOverallStandings
+      method on the FantasyRepository interface. Nothing existing changed.
+  - path: src/backend/fantasy/supabase-repository.ts
+    kind: modified
+    what: SupabaseFantasyRepository.getOverallStandings -- one rpc call, parsed by the schema.
+  - path: src/backend/generated/database.types.ts
+    kind: modified
+    what: >
+      Adds the api.fantasy_overall_standings Functions entry (Args + Returns: Json)
+      in alphabetical position between fantasy_leagues and fantasy_player_pool.
+      NOTE FOR THE VERIFIER: this file says "do not edit by hand" and is normally
+      produced by `bun run backend:types:generate`, which needs a local Supabase
+      stack. No Docker daemon is available in this environment, so the entry was
+      written by hand to match the generator's formatting exactly. Re-running the
+      generator against a database that has this migration applied should produce
+      a no-op diff; `bun run backend:types:check` is the gate that proves it and
+      it was not runnable here.
+  - path: src/services/fantasy-runtime.ts
+    kind: modified
+    what: >
+      Replaces the largest-public-league lookup in getGlobalRankings with a read
+      of the new RPC. Adds overallStandingDto() (DTO -> LeagueStanding) and
+      overallBoard() (bounded keyset walk of the board, 20 pages of 100, the same
+      bound allPlayers() uses for the player pool). selectRankingsPage still owns
+      sort, search and pagination.
+  - path: src/backend/fantasy/contracts.test.ts
+    kind: modified
+    what: >
+      Three assertions on the new page schema: the empty page parses, the bigint
+      rank/total columns coerce from PostgREST strings, and a row without
+      managerName is rejected.
+  - path: supabase/tests/database/fantasy_overall_standings.test.sql
+    kind: added
+    what: pgTAP coverage (see verification-report.yaml -- NOT EXECUTED, no Docker).
+
+rpc_contract:
+  name: api.fantasy_overall_standings
+  signature: >
+    api.fantasy_overall_standings(
+      p_season_id uuid,
+      p_gameweek_id uuid default null,
+      p_after_rank bigint default null,
+      p_after_team_id uuid default null,
+      p_limit integer default 50
+    ) returns jsonb
+  properties: [stable, security definer, "set search_path = ''"]
+  grants:
+    revoked_from: [public, anon, authenticated, service_role]
+    granted_to: [anon, authenticated, service_role]
+  payload_shape: |
+    {
+      "seasonId":   uuid,
+      "gameweekId": uuid | null,      // the scope actually read; null = season cumulative
+      "items": [
+        {
+          "teamId":        uuid,
+          "teamName":      text,
+          "managerName":   text,      // profile display_name for signed-in callers, else teamName
+          "rank":          bigint,
+          "previousRank":  bigint | null,
+          "totalPoints":   integer,
+          "gameweekPoints": integer | null,
+          "calculatedAt":  timestamptz
+        }
+      ],
+      "nextCursor": { "rank": bigint, "teamId": uuid } | null,
+      "total":      bigint,           // rows in the whole scope, not just this page
+      "myRank":     <one item, same shape> | null
+    }
+  pagination: >
+    Keyset on (rank, fantasy_team_id), identical to api.fantasy_league_standings.
+    Pass the previous page's nextCursor.rank and nextCursor.teamId as p_after_rank
+    and p_after_team_id. Supplying one without the other raises PT400. nextCursor
+    is non-null only when a row genuinely follows the page, so following it never
+    costs a round trip on an empty tail.
+  scope_resolution: >
+    Always `league_id is null` and `fantasy_season_id = p_season_id`.
+    p_gameweek_id non-null  -> gameweek_id = p_gameweek_id (that gameweek's board).
+    p_gameweek_id null      -> the season cumulative rows (gameweek_id is null) if
+                               any exist; otherwise the latest gameweek that has
+                               overall rows, ordered by fantasy_gameweeks.sequence_number;
+                               otherwise an empty page.
+  errors:
+    PT400 validation_failed:
+      - p_season_id is null
+      - p_limit is null or outside 1..100
+      - exactly one of p_after_rank / p_after_team_id supplied
+    PT404 fantasy_season_not_found: p_season_id is not a row in app.fantasy_seasons
+    PT404 fantasy_gameweek_not_found: p_gameweek_id exists but belongs to another season
+    note: >
+      PostgREST maps SQLSTATE PTnnn to HTTP nnn, so these are 400 and 404 at the
+      edge. An existing season with no ranking rows is NOT an error.
+  my_rank: >
+    Page-independent. The standing of the app.fantasy_teams row whose user_id =
+    auth.uid() and status = 'active' in that season, in the resolved scope.
+    auth.uid() is null for anon, so myRank is JSON null -- never a 401 or an error.
+
+empty_state_behaviour:
+  anon_before_first_gameweek: >
+    HTTP 200. {"seasonId": <id>, "gameweekId": null, "items": [], "nextCursor": null,
+    "total": 0, "myRank": null}. Verified read-only against production by running
+    the function's query bodies as a plain SELECT with the live season id --
+    see verification-report.yaml.
+  frontend: >
+    getGlobalRankings returns { rows: [], total: 0, podium: [], myRank: undefined }.
+    fantasy.rankings.tsx renders its existing EmptyState with
+    t("fantasy.rankings.empty_yet") -- "rankings available after the first
+    gameweek" -- because `search` is empty. Not a spinner (data is defined, so
+    LoadingState is skipped) and not an error (no throw, so ErrorState is skipped).
+  why_me_is_dropped_in_cloud_mode: >
+    The route builds a synthetic `me` standing from the summary with
+    managerId: "me" and rank 0. mergeMe() would insert it into the board and
+    re-rank, so an empty board would render one row ("you, rank 1") instead of
+    the empty state. The cloud branch passes me: undefined and takes myRank from
+    the server instead. Mock mode is unchanged and still merges `me`.
+
+bg_0063_guard: >
+  Every parameter type is uuid / bigint / integer, all in pg_catalog. No caller
+  needs USAGE on schema `app` to coerce an argument, and this migration does not
+  grant anon USAGE on `app`. The pgTAP file asserts both.
+
+untouched_on_purpose:
+  - api.fantasy_league_standings (signature, row order and payload unchanged)
+  - api.fantasy_player_pool
+  - every api.service_* function
+  - src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts
+  - scripts/backend/fantasy-season-orchestrator.ts
+  - scripts/backend/fantasy-lifecycle-runner.ts
+  - docs/engineering/LAUNCH_LEDGER.yaml
+  - src/routes/fantasy.rankings.tsx
+  - every file already under supabase/migrations/ (forward-only)
+
+no_production_writes: >
+  Every production interaction was a read-only SELECT through the Supabase MCP
+  execute_sql tool. The function was never created in production; promotion goes
+  through the reviewed migration path.
