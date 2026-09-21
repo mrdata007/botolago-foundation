@@ -93,6 +93,44 @@ function isAllowedMimeType(value: string): value is AllowedMediaMimeType {
   return (ALLOWED_MEDIA_MIME_TYPES as readonly string[]).includes(value);
 }
 
+/**
+ * The permissions `app_private.has_editorial_role('editor')` accepts -- the
+ * gate `api.editorial_register_media` applies, mirrored here so a caller who
+ * cannot possibly pass it is refused *before* their bytes are written.
+ */
+const EDITORIAL_UPLOAD_PERMISSIONS = ["editorial.write", "editorial.publish"] as const;
+
+/**
+ * A cheap pre-flight, never the authorization itself.
+ *
+ * Registration still runs `has_editorial_role('editor')` inside
+ * `api.editorial_register_media` under the caller's own JWT, and that remains
+ * the only thing that decides whether an asset exists. What this adds is
+ * ordering: without it, ANY signed-in account -- no staff principal, no MFA,
+ * no editorial role -- could push up to `MAX_MEDIA_UPLOAD_BYTES` into the
+ * production `news-media` bucket on every request, because the bytes were
+ * stored first and only deleted after registration came back 42501. That is a
+ * free write-and-delete primitive against production storage for every user
+ * with an account.
+ *
+ * `api.get_my_staff_context()` raises for a non-staff caller and reports
+ * `accessAllowed` (active principal + verified email + enrolled MFA + aal2)
+ * plus the effective permission list, which is exactly the shape
+ * `has_editorial_role` evaluates. Anything it does not positively confirm is
+ * treated as refused.
+ */
+function mayUploadEditorialMedia(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const context = value as { accessAllowed?: unknown; permissions?: unknown };
+  if (context.accessAllowed !== true) return false;
+  if (!Array.isArray(context.permissions)) return false;
+  return context.permissions.some(
+    (permission) =>
+      typeof permission === "string" &&
+      (EDITORIAL_UPLOAD_PERMISSIONS as readonly string[]).includes(permission),
+  );
+}
+
 function optionalField(form: FormData, name: string): string | undefined {
   const value = form.get(name);
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
@@ -125,6 +163,13 @@ export async function handleNewsMediaUploadRequest(
   const user = userData?.user ?? null;
   if (userError || !user || user.role === "anon") {
     return jsonResponse({ error: "unauthorized" }, 401);
+  }
+
+  // Refuse before the multipart body is even read, so a caller who can never
+  // register an asset cannot spend storage (or bandwidth) on the attempt.
+  const staffContext = await userClient.schema("api").rpc("get_my_staff_context", {});
+  if (staffContext.error || !mayUploadEditorialMedia(staffContext.data)) {
+    return jsonResponse({ error: "news_editorial_forbidden" }, 403);
   }
 
   let form: FormData;
