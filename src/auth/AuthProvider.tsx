@@ -33,7 +33,23 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession>(() => authService.getSession());
+  // Seeded with what the SERVER renders, not with authService.getSession().
+  //
+  // getSession() has a guest fast-path: on the client it reads the guest flag
+  // out of localStorage and reports "guest" straight away, so a returning guest
+  // does not flash the signed-out UI while Supabase resolves. The server has no
+  // localStorage and returns "loading". Calling it from a state initialiser --
+  // which runs during the client's FIRST render -- therefore produced a tree
+  // that disagreed with the server's, and React threw away the whole server
+  // render and rebuilt it (hydration error #418, seen on /profile in guest
+  // state: the server sent the signed-out card, the client drew the guest one).
+  //
+  // Nothing is lost by waiting. subscribeToSession below pushes the current
+  // session synchronously on subscribe, effects run immediately after
+  // hydration, and that first push takes the same fast-path -- so the guest
+  // state still arrives without a round trip, one frame later, and this time
+  // React keeps the markup it was given.
+  const [session, setSession] = useState<AuthSession>({ user: null, status: "loading" });
   const [prompt, setPrompt] = useState<AuthPromptState>({ open: false });
   const { lang } = useI18n();
   const langRef = useRef(lang);
