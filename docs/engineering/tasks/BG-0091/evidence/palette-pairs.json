@@ -1,0 +1,416 @@
+[
+  {
+    "theme": "light",
+    "name": "body copy on page",
+    "fgToken": "--ui-on-surface",
+    "bgToken": "--ui-page",
+    "ratio": 18.1,
+    "fg": "oklch(0.16 0.03 260)",
+    "bg": "oklch(0.975 0.004 250)"
+  },
+  {
+    "theme": "light",
+    "name": "body copy on card",
+    "fgToken": "--ui-on-surface",
+    "bgToken": "--ui-surface",
+    "ratio": 19.44,
+    "fg": "oklch(0.16 0.03 260)",
+    "bg": "oklch(1 0 0)"
+  },
+  {
+    "theme": "light",
+    "name": "muted copy on card",
+    "fgToken": "--ui-on-surface-muted",
+    "bgToken": "--ui-surface",
+    "ratio": 7.43,
+    "fg": "oklch(0.45 0.02 258)",
+    "bg": "oklch(1 0 0)"
+  },
+  {
+    "theme": "light",
+    "name": "muted copy on page",
+    "fgToken": "--ui-on-surface-muted",
+    "bgToken": "--ui-page",
+    "ratio": 6.92,
+    "fg": "oklch(0.45 0.02 258)",
+    "bg": "oklch(0.975 0.004 250)"
+  },
+  {
+    "theme": "light",
+    "name": "placeholder on field",
+    "fgToken": "--ui-on-surface-faint",
+    "bgToken": "--ui-surface",
+    "ratio": 4.73,
+    "fg": "oklch(0.555 0.02 258)",
+    "bg": "oklch(1 0 0)"
+  },
+  {
+    "theme": "light",
+    "name": "brand text on card",
+    "fgToken": "--ui-ink-fg",
+    "bgToken": "--ui-surface",
+    "ratio": 12.81,
+    "fg": "oklch(0.32 0.1 258)",
+    "bg": "oklch(1 0 0)"
+  },
+  {
+    "theme": "light",
+    "name": "brand text on page",
+    "fgToken": "--ui-ink-fg",
+    "bgToken": "--ui-page",
+    "ratio": 11.93,
+    "fg": "oklch(0.32 0.1 258)",
+    "bg": "oklch(0.975 0.004 250)"
+  },
+  {
+    "theme": "light",
+    "name": "brand text on sunken",
+    "fgToken": "--ui-ink-fg",
+    "bgToken": "--ui-surface-sunken",
+    "ratio": 10.42,
+    "fg": "oklch(0.32 0.1 258)",
+    "bg": "oklch(0.93 0.006 250)"
+  },
+  {
+    "theme": "light",
+    "name": "cyan on ink fill",
+    "fgToken": "--ui-on-ink",
+    "bgToken": "--ui-ink",
+    "ratio": 9.29,
+    "fg": "oklch(0.88 0.11 205)",
+    "bg": "oklch(0.32 0.1 258)"
+  },
+  {
+    "theme": "light",
+    "name": "plain on ink fill",
+    "fgToken": "--ui-on-ink-plain",
+    "bgToken": "--ui-ink",
+    "ratio": 12.81,
+    "fg": "oklch(1 0 0)",
+    "bg": "oklch(0.32 0.1 258)"
+  },
+  {
+    "theme": "light",
+    "name": "positive as text",
+    "fgToken": "--ui-positive",
+    "bgToken": "--ui-surface",
+    "ratio": 5.17,
+    "fg": "oklch(0.52 0.14 150)",
+    "bg": "oklch(1 0 0)"
+  },
+  {
+    "theme": "light",
+    "name": "negative as text",
+    "fgToken": "--ui-negative",
+    "bgToken": "--ui-surface",
+    "ratio": 5.49,
+    "fg": "oklch(0.55 0.22 355)",
+    "bg": "oklch(1 0 0)"
+  },
+  {
+    "theme": "light",
+    "name": "ink-deep on amber fill",
+    "fgToken": "--ui-ink-deep",
+    "bgToken": "--ui-caution",
+    "ratio": 9.34,
+    "fg": "oklch(0.24 0.09 258)",
+    "bg": "oklch(0.82 0.17 80)"
+  },
+  {
+    "theme": "light",
+    "name": "pitch label on turf A",
+    "fgToken": "--ui-on-pitch",
+    "bgToken": "--ui-pitch-turf-a",
+    "ratio": 7.85,
+    "fg": "oklch(0.18 0.04 260)",
+    "bg": "oklch(0.71 0.17 146)"
+  },
+  {
+    "theme": "light",
+    "name": "pitch label on turf B",
+    "fgToken": "--ui-on-pitch",
+    "bgToken": "--ui-pitch-turf-b",
+    "ratio": 6.76,
+    "fg": "oklch(0.18 0.04 260)",
+    "bg": "oklch(0.67 0.17 146)"
+  },
+  {
+    "theme": "light",
+    "name": "bench label",
+    "fgToken": "--ui-on-pitch",
+    "bgToken": "--ui-pitch-bench",
+    "ratio": 10.58,
+    "fg": "oklch(0.18 0.04 260)",
+    "bg": "oklch(0.8 0.12 146)"
+  },
+  {
+    "theme": "light",
+    "name": "FDR 1",
+    "fgToken": "--ui-on-fdr-1",
+    "bgToken": "--ui-fdr-1",
+    "ratio": 12.48,
+    "fg": "oklch(0.2 0.05 150)",
+    "bg": "oklch(0.86 0.19 152)"
+  },
+  {
+    "theme": "light",
+    "name": "FDR 2",
+    "fgToken": "--ui-on-fdr-2",
+    "bgToken": "--ui-fdr-2",
+    "ratio": 14.3,
+    "fg": "oklch(0.2 0.05 150)",
+    "bg": "oklch(0.91 0.13 152)"
+  },
+  {
+    "theme": "light",
+    "name": "FDR 3",
+    "fgToken": "--ui-on-fdr-3",
+    "bgToken": "--ui-fdr-3",
+    "ratio": 13.43,
+    "fg": "oklch(0.2 0.02 260)",
+    "bg": "oklch(0.9 0.006 250)"
+  },
+  {
+    "theme": "light",
+    "name": "FDR 4",
+    "fgToken": "--ui-on-fdr-4",
+    "bgToken": "--ui-fdr-4",
+    "ratio": 5.25,
+    "fg": "oklch(1 0 0)",
+    "bg": "oklch(0.56 0.22 355)"
+  },
+  {
+    "theme": "light",
+    "name": "FDR 5",
+    "fgToken": "--ui-on-fdr-5",
+    "bgToken": "--ui-fdr-5",
+    "ratio": 9.27,
+    "fg": "oklch(1 0 0)",
+    "bg": "oklch(0.42 0.16 345)"
+  },
+  {
+    "theme": "light",
+    "name": "action-gradient start stop",
+    "fgToken": "--ui-ink-deep",
+    "bgToken": "--ui-accent-spring",
+    "ratio": 12.37,
+    "fg": "oklch(0.24 0.09 258)",
+    "bg": "oklch(0.88 0.19 152)"
+  },
+  {
+    "theme": "light",
+    "name": "action-gradient end stop",
+    "fgToken": "--ui-ink-deep",
+    "bgToken": "--ui-accent-sky",
+    "ratio": 12.06,
+    "fg": "oklch(0.24 0.09 258)",
+    "bg": "oklch(0.88 0.11 205)"
+  },
+  {
+    "theme": "dark",
+    "name": "body copy on page",
+    "fgToken": "--ui-on-surface",
+    "bgToken": "--ui-page",
+    "ratio": 18.07,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.15 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "body copy on card",
+    "fgToken": "--ui-on-surface",
+    "bgToken": "--ui-surface",
+    "ratio": 15.89,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.22 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "muted copy on card",
+    "fgToken": "--ui-on-surface-muted",
+    "bgToken": "--ui-surface",
+    "ratio": 8.07,
+    "fg": "oklch(0.76 0.02 258)",
+    "bg": "oklch(0.22 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "muted copy on page",
+    "fgToken": "--ui-on-surface-muted",
+    "bgToken": "--ui-page",
+    "ratio": 9.18,
+    "fg": "oklch(0.76 0.02 258)",
+    "bg": "oklch(0.15 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "placeholder on field",
+    "fgToken": "--ui-on-surface-faint",
+    "bgToken": "--ui-surface",
+    "ratio": 5.16,
+    "fg": "oklch(0.64 0.02 258)",
+    "bg": "oklch(0.22 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "brand text on card",
+    "fgToken": "--ui-ink-fg",
+    "bgToken": "--ui-surface",
+    "ratio": 11.48,
+    "fg": "oklch(0.86 0.08 232)",
+    "bg": "oklch(0.22 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "brand text on page",
+    "fgToken": "--ui-ink-fg",
+    "bgToken": "--ui-page",
+    "ratio": 13.06,
+    "fg": "oklch(0.86 0.08 232)",
+    "bg": "oklch(0.15 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "brand text on sunken",
+    "fgToken": "--ui-ink-fg",
+    "bgToken": "--ui-surface-sunken",
+    "ratio": 10.35,
+    "fg": "oklch(0.86 0.08 232)",
+    "bg": "oklch(0.26 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "cyan on ink fill",
+    "fgToken": "--ui-on-ink",
+    "bgToken": "--ui-ink",
+    "ratio": 10.01,
+    "fg": "oklch(0.88 0.11 205)",
+    "bg": "oklch(0.3 0.08 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "plain on ink fill",
+    "fgToken": "--ui-on-ink-plain",
+    "bgToken": "--ui-ink",
+    "ratio": 12.68,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.3 0.08 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "positive as text",
+    "fgToken": "--ui-positive",
+    "bgToken": "--ui-surface",
+    "ratio": 9.22,
+    "fg": "oklch(0.78 0.17 150)",
+    "bg": "oklch(0.22 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "negative as text",
+    "fgToken": "--ui-negative",
+    "bgToken": "--ui-surface",
+    "ratio": 6.89,
+    "fg": "oklch(0.75 0.19 355)",
+    "bg": "oklch(0.22 0.03 260)"
+  },
+  {
+    "theme": "dark",
+    "name": "ink-deep on amber fill",
+    "fgToken": "--ui-ink-deep",
+    "bgToken": "--ui-caution",
+    "ratio": 10.65,
+    "fg": "oklch(0.22 0.07 260)",
+    "bg": "oklch(0.85 0.16 80)"
+  },
+  {
+    "theme": "dark",
+    "name": "pitch label on turf A",
+    "fgToken": "--ui-on-pitch",
+    "bgToken": "--ui-pitch-turf-a",
+    "ratio": 6.49,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.45 0.11 146)"
+  },
+  {
+    "theme": "dark",
+    "name": "pitch label on turf B",
+    "fgToken": "--ui-on-pitch",
+    "bgToken": "--ui-pitch-turf-b",
+    "ratio": 7.43,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.42 0.11 146)"
+  },
+  {
+    "theme": "dark",
+    "name": "bench label",
+    "fgToken": "--ui-on-pitch",
+    "bgToken": "--ui-pitch-bench",
+    "ratio": 9.64,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.36 0.08 146)"
+  },
+  {
+    "theme": "dark",
+    "name": "FDR 1",
+    "fgToken": "--ui-on-fdr-1",
+    "bgToken": "--ui-fdr-1",
+    "ratio": 7.68,
+    "fg": "oklch(0.99 0.01 150)",
+    "bg": "oklch(0.42 0.12 152)"
+  },
+  {
+    "theme": "dark",
+    "name": "FDR 2",
+    "fgToken": "--ui-on-fdr-2",
+    "bgToken": "--ui-fdr-2",
+    "ratio": 5.9,
+    "fg": "oklch(0.15 0.04 150)",
+    "bg": "oklch(0.63 0.13 152)"
+  },
+  {
+    "theme": "dark",
+    "name": "FDR 3",
+    "fgToken": "--ui-on-fdr-3",
+    "bgToken": "--ui-fdr-3",
+    "ratio": 9.94,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.36 0.01 250)"
+  },
+  {
+    "theme": "dark",
+    "name": "FDR 4",
+    "fgToken": "--ui-on-fdr-4",
+    "bgToken": "--ui-fdr-4",
+    "ratio": 6.41,
+    "fg": "oklch(0.99 0.01 355)",
+    "bg": "oklch(0.5 0.19 355)"
+  },
+  {
+    "theme": "dark",
+    "name": "FDR 5",
+    "fgToken": "--ui-on-fdr-5",
+    "bgToken": "--ui-fdr-5",
+    "ratio": 11.16,
+    "fg": "oklch(0.97 0.01 250)",
+    "bg": "oklch(0.35 0.14 345)"
+  },
+  {
+    "theme": "dark",
+    "name": "action-gradient start stop",
+    "fgToken": "--ui-ink-deep",
+    "bgToken": "--ui-accent-spring",
+    "ratio": 10.63,
+    "fg": "oklch(0.22 0.07 260)",
+    "bg": "oklch(0.82 0.18 152)"
+  },
+  {
+    "theme": "dark",
+    "name": "action-gradient end stop",
+    "fgToken": "--ui-ink-deep",
+    "bgToken": "--ui-accent-sky",
+    "ratio": 10.4,
+    "fg": "oklch(0.22 0.07 260)",
+    "bg": "oklch(0.82 0.11 205)"
+  }
+]

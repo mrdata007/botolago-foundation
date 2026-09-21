@@ -2,22 +2,30 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { UI_THEMED_TOKENS, UI_TOKENS } from "./tokens";
+import { UI_DERIVED_TOKENS, UI_THEMED_TOKENS, UI_TOKENS } from "./tokens";
 
 /**
- * The UI kit is the layer every other page will copy from, so a defect
- * introduced here is a defect introduced product-wide. Three classes of
+ * The UI kit is the layer every other screen is converted against, so a
+ * defect introduced here is a defect introduced product-wide. Five classes of
  * defect have shipped in this codebase before and none of them failed a
  * typecheck or a lint:
  *
  *   1. Physical direction utilities (`ml-`, `pr-`, `text-left`, `border-l`,
- *      `left-`). They look correct in French and silently break Arabic.
+ *      `left-`), and physical gradient angles (`135deg` lands on the
+ *      opposite edge in Arabic). They look correct in French and silently
+ *      break Arabic.
  *   2. Letter-spacing applied to Arabic (`tracking-*` with no `ltr:`
  *      prefix). Arabic letterforms join; spacing them apart in either
  *      direction breaks the word. This is the open defect BG-0069 and the
  *      kit must not reproduce it.
  *   3. Hardcoded colours (`bg-white`, `text-black`, `#rrggbb`,
  *      `text-white`). They pin one theme and make dark mode unreachable.
+ *   4. A fill colour used as a foreground. `--ui-ink` is a dark navy in
+ *      BOTH themes and measured 1.25:1 as text on dark (BG-0083). Text is
+ *      `--ui-ink-fg`.
+ *   5. Two token systems. `--fpl-*` was a light-only palette beside the
+ *      kit; it is now an alias layer and is pinned as one here, so it can
+ *      never drift back into a second system.
  *
  * The kit is scanned as source text, because these are Tailwind class
  * strings: nothing at runtime can observe them.
@@ -25,6 +33,8 @@ import { UI_THEMED_TOKENS, UI_TOKENS } from "./tokens";
 
 const KIT_DIR = import.meta.dir;
 const ROOT = join(KIT_DIR, "..", "..", "..");
+const CSS_PATH = join(ROOT, "src", "styles.css");
+const css = readFileSync(CSS_PATH, "utf8");
 
 const kitFiles = readdirSync(KIT_DIR)
   .filter((name) => /\.tsx?$/.test(name) && !name.endsWith(".test.ts"))
@@ -35,6 +45,54 @@ const stripComments = (code: string) =>
   code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
 const read = (name: string) => stripComments(readFileSync(join(KIT_DIR, name), "utf8"));
+
+/** Every `{ … }` body of a rule whose selector matches, brace-balanced. */
+function cssBlocks(selector: string): string[] {
+  const blocks: string[] = [];
+  const re = new RegExp(`(^|[\\s}])${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{`, "g");
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(css)) !== null) {
+    let depth = 1;
+    let index = re.lastIndex;
+    while (index < css.length && depth > 0) {
+      if (css[index] === "{") depth += 1;
+      else if (css[index] === "}") depth -= 1;
+      index += 1;
+    }
+    blocks.push(css.slice(re.lastIndex, index - 1));
+  }
+  return blocks;
+}
+
+/** `--token: value;` pairs declared anywhere in a block, value brace/paren safe. */
+function declarations(block: string): Map<string, string> {
+  const found = new Map<string, string>();
+  const re = /(--[a-z0-9-]+)\s*:/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(block)) !== null) {
+    let depth = 0;
+    let index = re.lastIndex;
+    while (index < block.length) {
+      const char = block[index];
+      if (char === "(") depth += 1;
+      else if (char === ")") depth -= 1;
+      else if (char === ";" && depth === 0) break;
+      index += 1;
+    }
+    found.set(match[1], block.slice(re.lastIndex, index).trim());
+  }
+  return found;
+}
+
+const rootDeclarations = cssBlocks(":root").reduce((all, block) => {
+  for (const [token, value] of declarations(block)) all.set(token, value);
+  return all;
+}, new Map<string, string>());
+
+const darkDeclarations = cssBlocks(".dark").reduce((all, block) => {
+  for (const [token, value] of declarations(block)) all.set(token, value);
+  return all;
+}, new Map<string, string>());
 
 describe("ui-kit: the kit exists and is non-trivial", () => {
   it("ships tokens, primitives and a barrel", () => {
@@ -62,6 +120,11 @@ describe("ui-kit: direction safety", () => {
     { name: "rounded-r", re: /\brounded-r(-[\w.[\]/-]+)?(?![\w-])/m, use: "rounded-e" },
     { name: "margin-left/right (CSS)", re: /\bmargin-(left|right)\b/m, use: "margin-inline-*" },
     { name: "padding-left/right (CSS)", re: /\bpadding-(left|right)\b/m, use: "padding-inline-*" },
+    {
+      name: "a deg angle in a gradient",
+      re: /(linear|conic)-gradient\([^)]*\d+deg/m,
+      use: "to bottom (a deg angle is physical and mirrors wrong in Arabic)",
+    },
   ];
 
   for (const file of kitFiles) {
@@ -72,6 +135,14 @@ describe("ui-kit: direction safety", () => {
       });
     }
   }
+
+  it("no --ui-* gradient token carries a physical angle", () => {
+    const offenders = [...rootDeclarations, ...darkDeclarations]
+      .filter(([token]) => token.startsWith("--ui-grad-"))
+      .filter(([, value]) => /(linear|conic)-gradient\([^)]*\d+deg/.test(value))
+      .map(([token]) => token);
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe("ui-kit: never letter-space Arabic (BG-0069)", () => {
@@ -101,31 +172,76 @@ describe("ui-kit: theme correctness", () => {
       // `--ui-*` or `currentColor`.
       expect(code).not.toMatch(/\b(bg|text|border|ring|fill|stroke)-(white|black)\b/);
     });
+
+    it(`${file} uses --ui-ink for fills only, never as a foreground (BG-0083)`, () => {
+      const offenders = [
+        ...read(file).matchAll(
+          /(?:text|placeholder|ring|caret|decoration)-\[color:var\(--ui-ink\)\]/g,
+        ),
+      ].map((m) => m[0]);
+      expect(offenders).toEqual([]);
+    });
+
+    it(`${file} reaches for no --fpl-* token`, () => {
+      // The Fantasy names are an alias layer for un-converted screens. The
+      // kit is the thing they alias INTO, so it never points back at them.
+      expect(read(file)).not.toMatch(/--fpl-[a-z]/);
+    });
   }
 
   it("every colour-bearing token is redeclared for dark mode", () => {
-    const css = readFileSync(join(ROOT, "src", "styles.css"), "utf8");
-    const darkBlock = css.slice(css.indexOf("--ui-shadow-column"));
-    for (const token of UI_THEMED_TOKENS) {
-      expect(darkBlock).toContain(`${token}:`);
+    const missing = UI_THEMED_TOKENS.filter((token) => !darkDeclarations.has(token));
+    expect(missing).toEqual([]);
+  });
+
+  it("a derived token is composed only of themed tokens, so it follows the theme", () => {
+    for (const token of UI_DERIVED_TOKENS) {
+      const value = rootDeclarations.get(token);
+      expect(value).toBeDefined();
+      const referenced = [...(value ?? "").matchAll(/var\((--ui-[a-z0-9-]+)\)/g)].map((m) => m[1]);
+      expect(referenced.length).toBeGreaterThan(0);
+      for (const reference of referenced) {
+        expect(UI_THEMED_TOKENS as readonly string[]).toContain(reference);
+      }
+      // …and nothing else: a literal colour inside it would be light-only.
+      expect(value).not.toMatch(/oklch|oklab|#[0-9a-f]{3}|rgba?\(/i);
     }
+  });
+
+  it("no colour-bearing --ui-* token is left without a dark story", () => {
+    const carriesColour = (value: string) =>
+      /oklch\(|oklab\(|color-mix\(|linear-gradient\(|radial-gradient\(|var\(--brand-/.test(value);
+    const accounted = new Set<string>([...UI_THEMED_TOKENS, ...UI_DERIVED_TOKENS]);
+    const orphans = [...rootDeclarations]
+      .filter(([token, value]) => token.startsWith("--ui-") && carriesColour(value))
+      .map(([token]) => token)
+      .filter((token) => !accounted.has(token));
+    expect(orphans).toEqual([]);
   });
 });
 
 describe("ui-kit: the token manifest matches the stylesheet", () => {
-  const css = readFileSync(join(ROOT, "src", "styles.css"), "utf8");
-
   it("declares every token the manifest names", () => {
-    const missing = UI_TOKENS.filter((token) => !css.includes(`${token}:`));
+    const missing = UI_TOKENS.filter((token) => !rootDeclarations.has(token));
     expect(missing).toEqual([]);
   });
 
   it("names every --ui-* token the stylesheet declares", () => {
-    const declared = new Set([...css.matchAll(/(--ui-[a-z0-9-]+)\s*:/g)].map((match) => match[1]));
+    const declared = new Set(
+      [...rootDeclarations.keys(), ...darkDeclarations.keys()].filter((token) =>
+        token.startsWith("--ui-"),
+      ),
+    );
     const unlisted = [...declared].filter(
       (token) => !(UI_TOKENS as readonly string[]).includes(token),
     );
     expect(unlisted).toEqual([]);
+  });
+
+  it("lists every themed and derived token in the manifest", () => {
+    for (const token of [...UI_THEMED_TOKENS, ...UI_DERIVED_TOKENS]) {
+      expect(UI_TOKENS as readonly string[]).toContain(token);
+    }
   });
 
   it("references only tokens that exist", () => {
@@ -135,6 +251,149 @@ describe("ui-kit: the token manifest matches the stylesheet", () => {
         expect(UI_TOKENS as readonly string[]).toContain(token);
       }
     }
+  });
+});
+
+describe("ui-kit: one system — --fpl-* is an alias layer (BG-0091)", () => {
+  const fplDeclarations = [...rootDeclarations].filter(([token]) => token.startsWith("--fpl-"));
+
+  it("still declares the Fantasy names, so un-converted screens keep working", () => {
+    expect(fplDeclarations.length).toBeGreaterThan(15);
+  });
+
+  it("gives every Fantasy token a value that is exactly one --ui-* token", () => {
+    const offenders = fplDeclarations
+      .filter(([, value]) => !/^var\(--ui-[a-z0-9-]+\)$/.test(value))
+      .map(([token, value]) => `${token}: ${value}`);
+    expect(offenders).toEqual([]);
+  });
+
+  it("points every Fantasy token at a token the manifest names", () => {
+    for (const [, value] of fplDeclarations) {
+      const target = value.replace(/^var\(|\)$/g, "");
+      expect(UI_TOKENS as readonly string[]).toContain(target);
+    }
+  });
+
+  it("redeclares no Fantasy token under .dark — the alias carries the theme", () => {
+    const offenders = [...darkDeclarations.keys()].filter((token) => token.startsWith("--fpl-"));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("ui-kit: one scale of each kind", () => {
+  const valuesOf = (prefix: string) =>
+    [...rootDeclarations]
+      .filter(([token]) => token.startsWith(prefix))
+      .map(([token, value]) => [token, value.replace(/\s*\/\*[\s\S]*$/, "").trim()] as const);
+
+  for (const [name, prefix] of [
+    ["type ramp", "--ui-text-"],
+    ["stat ramp", "--ui-stat-"],
+    ["radius set", "--ui-radius-"],
+    ["spacing scale", "--ui-space-"],
+  ] as const) {
+    it(`the ${name} holds no two identical values`, () => {
+      const seen = new Map<string, string>();
+      const duplicates: string[] = [];
+      for (const [token, value] of valuesOf(prefix)) {
+        const previous = seen.get(value);
+        if (previous) duplicates.push(`${token} duplicates ${previous} (${value})`);
+        else seen.set(value, token);
+      }
+      expect(duplicates).toEqual([]);
+    });
+  }
+
+  it("the named density tokens are aliases of the spacing scale, not new numbers", () => {
+    for (const token of ["--ui-gutter", "--ui-gap", "--ui-gap-lg"]) {
+      expect(rootDeclarations.get(token)).toMatch(/^var\(--ui-space-\d\)/);
+    }
+  });
+
+  it("the fixture-difficulty scale has five distinct steps, each with a foreground", () => {
+    const fills = new Set<string>();
+    for (const step of [1, 2, 3, 4, 5]) {
+      const fill = rootDeclarations.get(`--ui-fdr-${step}`);
+      expect(fill).toBeDefined();
+      fills.add(fill ?? "");
+      expect(rootDeclarations.get(`--ui-on-fdr-${step}`)).toBeDefined();
+    }
+    expect(fills.size).toBe(5);
+  });
+});
+
+describe("ui-kit: the primitives keep their promises", () => {
+  const primitives = read("primitives.tsx");
+  const barrel = read("index.ts");
+
+  it("exports every primitive from the barrel", () => {
+    const declared = [...primitives.matchAll(/^export function (Ui[A-Za-z]+)/gm)].map((m) => m[1]);
+    expect(declared.length).toBeGreaterThan(20);
+    const missing = declared.filter((name) => !new RegExp(`\\b${name}\\b`).test(barrel));
+    expect(missing).toEqual([]);
+  });
+
+  it("ships the primitives a screen must not invent for itself", () => {
+    const required = [
+      "UiSheet",
+      "UiModal",
+      "UiInput",
+      "UiSelect",
+      "UiTable",
+      "UiTHead",
+      "UiTBody",
+      "UiTR",
+      "UiTH",
+      "UiTD",
+      "UiStatBlock",
+      "UiPlayerPlate",
+      "UiPlayerRow",
+      "UiPitchSurface",
+      "UiBadge",
+      "UiChip",
+      "UiPill",
+      "UiSkeleton",
+      "UiEmptyState",
+      "UiErrorState",
+      "UiAlert",
+    ];
+    const missing = required.filter(
+      (name) => !new RegExp(`export function ${name}\\b`).test(primitives),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("states no control height as a literal — heights come from the tap/row tokens", () => {
+    // `min-h-0` is the flexbox idiom, not a height.
+    const offenders = [...primitives.matchAll(/min-h-(?!0\b)\d[\w.]*/g)].map((m) => m[0]);
+    expect(offenders).toEqual([]);
+  });
+
+  it("never spells a Close control in English", () => {
+    // Every sheet in the product used to close with a hardcoded "Close".
+    expect(primitives).not.toMatch(/["'>]\s*Close\s*[<"']/);
+    expect(primitives).toMatch(/aria-label=\{t\("fpl\.close"\)\}/);
+  });
+
+  it("gives the segmented control a size prop that starts at the tap floor", () => {
+    expect(primitives).toMatch(/size\?: UiSegmentedSize/);
+    expect(primitives).toMatch(/size === "md"[\s\S]{0,120}--ui-tap-min/);
+  });
+
+  it("lets a chip carry aria-current and a ref", () => {
+    const chip = primitives.slice(primitives.indexOf("export function UiChip"));
+    expect(chip).toMatch(/aria-current/);
+    expect(chip).toMatch(/ref\?: Ref<HTMLButtonElement>/);
+  });
+
+  it("types every stat figure as tabular", () => {
+    const tokens = read("tokens.ts");
+    const statRamp = tokens.slice(tokens.indexOf("stat: {"), tokens.indexOf("tone: {"));
+    for (const step of ["hero:", "lg:", "md:", "sm:"]) {
+      expect(statRamp).toContain(step);
+    }
+    expect(tokens).toMatch(/STAT_BASE = "fpl-tabular/);
   });
 });
 

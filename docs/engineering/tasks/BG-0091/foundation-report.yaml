@@ -1,0 +1,356 @@
+task_id: BG-0091
+role: Builder
+title: Design system V2 foundation — one token layer, the missing primitives, the contract
+branch: bg-0091-foundation
+base: origin/chief/launch-fixes-3
+verdict: PASS
+
+scope:
+  owned: [src/components/ui-kit/**, src/styles.css]
+  deliverables:
+    - docs/engineering/DESIGN_SYSTEM_V2.md
+    - docs/engineering/tasks/BG-0091/foundation-report.yaml
+  not_touched:
+    - src/routes/**, src/components/fpl/**, src/components/fantasy/**, src/components/common/**
+    - supabase/, scripts/backend/, .github/workflows/, src/backend/
+    - docs/engineering/LAUNCH_LEDGER.yaml
+    - NEWS_ENABLED, DARK_MODE_ENABLED (both unchanged; DARK_MODE_ENABLED is still false)
+
+# ------------------------------------------------------------------
+# 1. BG-0083 — --ui-ink used as a text colour
+# ------------------------------------------------------------------
+bg_0083_fix:
+  cause: >
+    `--ui-ink` is a dark navy in BOTH themes — it is a fill/border token. Four
+    places used it as a foreground, so on a dark surface they computed to
+    1.25-1.42:1.
+  change: >
+    Added `--ui-ink-fg`, an explicit theme-correct brand FOREGROUND (light:
+    oklch(0.32 0.1 258), the same navy as before, so light is unchanged; dark:
+    oklch(0.86 0.08 232), a light tint of the brand). `ui.tone.ink` now points
+    at it, as do UiButton outline/ghost/light, the UiSegmented active segment
+    and the focus ring. `--ui-ink` stays exactly as it was and keeps filling
+    and bordering. Also added `--ui-on-grad-header` for the header/hero band,
+    whose dark counterpart is deep — `--ui-ink-deep` on it would have been the
+    same defect one layer down.
+  method: >
+    Rasterised sRGB. Every colour is painted to a 1x1 canvas (the foreground
+    composited over its resolved opaque backdrop) and the resulting bytes go
+    through the WCAG relative-luminance formula, so oklch/oklab/color-mix are
+    never parsed. `before` is `var(--ui-ink)` measured against the SAME
+    backdrop in the SAME run; the backdrops (`--ui-page`, `--ui-surface`) are
+    unchanged by this task, so before/after are directly comparable.
+    Dark mode ships off, so the harness applies `.dark` to <html> itself
+    before first paint, exactly as the shipped theme script would if the flag
+    were on. The flag is untouched.
+  measurements:
+    - case: "Profile h1 (ui.tone.ink, 34px/900)"
+      element: real, /profile
+      light: { before: 12.25, after: 12.25 }
+      dark: { before: 1.42, after: 13.06 }
+    - case: "BottomNav active label (11px/800 on --ui-surface)"
+      element: real at 390px, token pair at 1440px (the bar is md:hidden)
+      light: { before: 12.81, after: 12.81 }
+      dark: { before: 1.25, after: 11.48 }
+    - case: 'UiButton variant="outline" label ("Continuer avec Google", 15px/800)'
+      element: real, /auth/login
+      light: { before: 12.81, after: 12.81 }
+      dark: { before: 1.25, after: 11.48 }
+    - case: 'UiButton variant="ghost" label (15px/800 on --ui-page)'
+      element: token pair --ui-ink-fg on --ui-page
+      light: { before: 11.93, after: 11.93 }
+      dark: { before: 1.42, after: 13.06 }
+    - case: "UiSegmented active segment (13px/700 on --ui-surface)"
+      element: >
+        token pair --ui-ink-fg on --ui-surface. Its only call site is the match
+        DETAIL page, which this sandbox cannot reach with live data, so the
+        exact pair the kit paints was measured instead.
+      light: { before: 12.81, after: 12.81 }
+      dark: { before: 1.25, after: 11.48 }
+  note: >
+    The four `before` numbers in dark reproduce the BG-0081 report exactly
+    (1.42 / 1.25 / 1.25 / 1.25), which is the check that the harness is
+    measuring the same thing that report did.
+  light_unchanged_on_purpose: >
+    `--ui-ink` and `--ui-ink-fg` hold the same value in the light theme, so no
+    light-mode ratio moves. The defect only ever existed in dark.
+  evidence: evidence/contrast-and-overflow.json
+
+palette_audit:
+  method: the same rasterised probe, applied to every foreground/background pair the kit defines
+  pairs_measured: 46 # 23 pairs x 2 themes
+  below_4_5: 0
+  worst: { pair: "placeholder (--ui-on-surface-faint) on --ui-surface, light", ratio: 4.73 }
+  fixed_during_the_task:
+    - "light --ui-on-surface-faint 0.58 -> 0.555 L (4.28 -> 4.73)"
+    - "light --ui-fdr-4 0.63 -> 0.56 L (white on it 3.98 -> 5.25)"
+    - "dark --ui-fdr-1 0.55 -> 0.42 L (4.40 -> 7.68)"
+    - "--ui-positive 0.72 -> 0.52 L and --ui-negative 0.63 -> 0.55 L in light: both are read as TEXT (UiBadge, MatchCard, States) and were 2.6:1 / 4.0:1 before"
+  evidence: evidence/palette-pairs.json
+
+# ------------------------------------------------------------------
+# 2. --fpl-* brought into the system
+# ------------------------------------------------------------------
+fpl_mapping:
+  decision: >
+    One system with a Fantasy-domain section, reached without a flag day.
+    `--fpl-*` is now a pure ALIAS layer: every entry is exactly one
+    `var(--ui-…)` and carries no colour of its own, so the ~450 un-converted
+    Fantasy call sites follow light/dark from this commit while the screen
+    lanes convert them name by name. The contract test fails if any `--fpl-*`
+    value stops being a single `--ui-*` reference, or is redeclared under
+    `.dark`, so it cannot drift back into a second palette.
+  aliased_to_an_existing_kit_token:
+    --fpl-bg: --ui-page
+    --fpl-ink: --ui-ink # fill/border; text call sites must move to --ui-ink-fg
+    --fpl-ink-deep: --ui-ink-deep
+    --fpl-cyan: --ui-on-ink
+    --fpl-pink: --ui-negative
+    --fpl-amber: --ui-caution
+    --fpl-grey: --ui-surface-sunken
+    --fpl-grey-text: --ui-on-surface-muted
+    --fpl-grad: --ui-grad-action
+    --fpl-header: --ui-grad-header
+  promoted_into_the_kit_as_first_class_tokens:
+    reason: no general equivalent exists — a pitch is a pitch, an FDR scale is an FDR scale
+    tokens:
+      --fpl-green: "--ui-accent-spring (the action gradient is now built from --ui-accent-spring/-sky rather than repeating literals)"
+      --fpl-hero: --ui-grad-hero
+      --fpl-pitch-a: --ui-pitch-turf-a
+      --fpl-pitch-b: --ui-pitch-turf-b
+      --fpl-pitch-bench: --ui-pitch-bench
+      --fpl-fdr-1..5: --ui-fdr-1..5
+    added_alongside_them:
+      - "--ui-pitch-line (the markings were a literal rgba inside FplPitch)"
+      - "--ui-on-pitch (the readable foreground on turf and bench)"
+      - "--ui-on-fdr-1..5 (each FDR step now ships the foreground that clears AA on it, so no screen needs `text-white` again)"
+  new_general_tokens:
+    - "--ui-ink-fg — the brand foreground (BG-0083)"
+    - "--ui-on-grad-header — the foreground for the header/hero band, which flips with the theme"
+    - "--ui-on-surface-faint — placeholders and disabled copy"
+    - "--ui-scrim — the dim behind a sheet/modal"
+    - "--ui-shadow-overlay — sheet/modal elevation"
+    - "--ui-accent-spring / --ui-accent-sky — the two action-gradient stops"
+    - "--ui-grad-hero, --ui-radius-tight, --ui-radius-sheet, --ui-space-1..6, --ui-stat-hero/-lg/-md/-sm, --ui-stat-tracking"
+  dark_counterparts: >
+    Every colour-bearing token is redeclared under `.dark` (38 of them), or is
+    derived purely from tokens that are (`--ui-grad-action`, checked as such).
+    Fantasy had no `.dark` block at all before this.
+  gradients_made_direction_neutral: >
+    `--ui-grad-action` was `90deg` (horizontal) — physical, so it ran the wrong
+    way in Arabic. It and `--ui-grad-hero` now run `to bottom` from a centred
+    radial origin. The News gradients further up styles.css still carry `deg`
+    angles; they belong to the News lane and were left alone (reported, not
+    fixed).
+  deliberately_not_renamed: >
+    `--fpl-*` was NOT deleted. Deleting it means editing ~36 files this lane
+    does not own, in the same commit that restyles everything — the two changes
+    would be impossible to tell apart in review.
+
+# ------------------------------------------------------------------
+# 3. Primitives
+# ------------------------------------------------------------------
+primitives:
+  already_existed:
+    [
+      UiScreen,
+      UiHeader,
+      UiCard,
+      UiButton,
+      UiLinkButton,
+      UiSegmented,
+      UiPill,
+      UiChip,
+      UiBadge,
+      UiDivider,
+      UiKeyValueRow,
+      UiBanner,
+      UiSkeleton,
+      UiStatePanel,
+    ]
+  added:
+    - {
+        name: UiSheet,
+        why: 'bottom sheet as a real dialog — focus trap, Escape, and a close control labelled t("fpl.close"). Every sheet in the product closed with a hardcoded English "Close" (src/components/ui/sheet.tsx)',
+      }
+    - { name: UiModal, why: "centred confirmation/short form, same semantics" }
+    - { name: UiInput, why: "labelled text field; error wires aria-invalid + aria-describedby" }
+    - {
+        name: UiSelect,
+        why: "native <select> — already localised, already keyboard-correct, opens the platform picker; chevron on the inline-end edge",
+      }
+    - {
+        name: "UiTable / UiTHead / UiTBody / UiTR / UiTH / UiTD",
+        why: "standings stay a table; `numeric` aligns to the inline-end edge and switches to the tabular stat ramp; the wrapper scrolls instead of pushing the page",
+      }
+    - {
+        name: UiRankMovement,
+        why: "movement glyph WITH an accessible name — colour alone is not a difference",
+      }
+    - { name: UiStatBlock, why: "the stat ramp as a component: value, label, sub" }
+    - {
+        name: UiPlayerPlate,
+        why: "the pitch unit; a <button> only when onClick is given, so an empty slot is not a fake control",
+      }
+    - {
+        name: UiPlayerRow,
+        why: "the list/picker unit; its figures are ui.stat.sm so a picker scans like a table",
+      }
+    - {
+        name: UiPitchSurface,
+        why: "turf, markings and slot geometry as a presentational shell — no formation, squad or substitution logic",
+      }
+    - { name: UiDifficultyCell, why: "FDR square that pairs --ui-fdr-N with --ui-on-fdr-N" }
+    - { name: UiAlert, why: 'inline message; negative announces as role="alert"' }
+    - {
+        name: "UiEmptyState / UiErrorState",
+        why: "UiStatePanel under names that say what they are",
+      }
+  reconciled_rather_than_added:
+    badge_chip_pill: >
+      Five overlapping variants existed (UiPill, UiBadge, UiChip, FplPill,
+      FplStateBadge, plus shadcn badge). No sixth was added. The rule is now
+      documented: UiPill = static emphatic label, UiBadge = status token,
+      UiChip = the interactive one.
+    skeleton: "UiSkeleton already existed and was left as is."
+  kit_defects_fixed:
+    - 'UiSegmented: segments were a hardcoded 40px at the 15px body size. Added `size` ("md" = --ui-tap-min at the meta size, which fits four French labels at 390px; "lg" = --ui-row-min at body size) and raised the default to the tap floor. The two call sites that work around this (MatchTabs, ThemeSwitcher) were left untouched, as briefed.'
+    - 'UiChip: now forwards `ref` and accepts `aria-current` (and drops aria-pressed when aria-current is given), so DateStrip can use aria-current="date" instead of role="group" + aria-pressed. It also now clears the 44px tap floor.'
+    - "UiButton light/outline/ghost: foreground moved to --ui-ink-fg."
+    - "The focus ring moved to --ui-ink-fg: a navy ring on a dark page was invisible."
+  not_mine:
+    matchcard_glass: >
+      `MatchCard`'s inert `glass` prop lives in src/components/common/MatchCard.tsx,
+      not in the kit. Not removed, not renamed, not marked — reported to the
+      Chief as briefed. It is already documented in that file as resolving to
+      the kit's opaque card for both values.
+
+# ------------------------------------------------------------------
+# 4. Scales
+# ------------------------------------------------------------------
+scales:
+  type_ramp: "9 steps, 34/19/17/16/15/14/13/12/11px — unchanged"
+  stat_ramp: "NEW, 4 steps: 30/22/17/13px, tabular figures, own weights, ltr:-only -0.01em tracking"
+  radius_set: "6 steps: 4/6/8/10/16/28px (tight/control/segment/track/sheet/column)"
+  spacing_scale: "one 4px step scale --ui-space-1..6; --ui-gutter/--ui-gap/--ui-gap-lg are aliases of it, not new numbers"
+  shadow_set: "4: card, raised, overlay, column"
+  enforcement: >
+    The contract test fails if any two values inside the type ramp, stat ramp,
+    radius set or spacing scale are identical, and if a density token is a
+    literal instead of an alias of --ui-space-N.
+
+contract_test:
+  file: src/components/ui-kit/ui-kit.contract.test.ts
+  tests: 98 # was 68
+  now_enforces:
+    - physical direction utilities and `deg` gradient angles (kit files AND every --ui-grad-* token)
+    - every tracking-* ltr:-prefixed; no raw letter-spacing
+    - no colour literal (#, rgb(, bg-white, text-black)
+    - "--ui-ink never used as a foreground (BG-0083 cannot come back)"
+    - the kit never reaches into --fpl-*
+    - manifest <-> stylesheet agreement in both directions, parsed with a brace-balanced CSS reader rather than a string slice
+    - every colour-bearing token has a dark counterpart, or is derived only from tokens that do
+    - "no colour-bearing --ui-* token is left unaccounted for in either list"
+    - "every --fpl-* value is exactly one --ui-* reference, points at a token in the manifest, and is never redeclared under .dark"
+    - no duplicate values inside the type/stat/radius/spacing scales; density tokens are aliases
+    - the FDR scale has 5 distinct steps, each with a foreground
+    - the barrel re-exports every primitive; the required primitive list is present
+    - no control height stated as a literal (min-h-N)
+    - no Close control spelled in English; the close label comes from t("fpl.close")
+    - UiSegmented has a size prop that starts at the tap floor; UiChip takes ref + aria-current; ui.stat.* is tabular
+    - the shared shell still draws from the kit
+
+# ------------------------------------------------------------------
+# 5. Gates
+# ------------------------------------------------------------------
+gates:
+  typecheck: { command: bun run typecheck, result: PASS, output: clean }
+  test:
+    command: bun run test
+    result: "1424 pass, 0 fail, 15182 expect() calls, across 156 files"
+    delta: "+30 tests, all of them the extended kit contract (1394 -> 1424). 0 failures."
+  lint:
+    {
+      command: bun run lint,
+      result: "PASS — 19 problems, 0 errors, 19 warnings (all pre-existing react-refresh warnings)",
+    }
+  format_check:
+    command: bun run format:check
+    result: "40 pre-existing offenders"
+    note: "None of them is a file this task touches. The files this task adds and edits are prettier-clean."
+  i18n_gate:
+    command: bun scripts/qa/i18n-gate.ts
+    result: PASS
+    counts: { W1: 7, W2: 7, W3: 247, W4: 99 }
+    baselines: { W1: 7, W2: 7, W3: 247, W4: 99 }
+    baseline_edits: NONE
+    note: 'No new dictionary keys. The only string the new primitives render is the close label, and t("fpl.close") already exists in fr and ar.'
+  build: { command: bun run build, result: "PASS — built in ~0.9s, nitro output generated" }
+
+# ------------------------------------------------------------------
+# 6. Regression sweep
+# ------------------------------------------------------------------
+regression_sweep:
+  runner: Playwright Chromium, PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers (no install run)
+  server: >
+    bun run dev --host 127.0.0.1 --port 4319, started by this task and passed
+    as E2E_BASE_URL. Port 4173 is held by other worktrees on this machine and
+    was deliberately avoided — a measurement against another worktree's server
+    is worthless.
+  matrix: 2 themes x 2 languages (fr, ar) x 2 widths (390, 1440) x 4 pages (Home, Matches, Profile, Fantasy) = 32 loads
+  horizontal_overflow:
+    method: >
+      documentElement.scrollWidth vs clientWidth, PLUS a per-element box check
+      for anything extending past the viewport, skipping elements that are
+      themselves overflow-x auto/scroll/hidden/clip or have such an ancestor —
+      `html, body { overflow-x: clip }` means the page-level number alone
+      cannot see a protruding box.
+    scrollWidth_not_equal_clientWidth: 0 of 32
+    unclipped_elements_past_the_viewport: 0 of 32
+  screenshots:
+    - evidence/light-fantasy-390-fr.png
+    - evidence/dark-fantasy-390-fr.png
+    - evidence/light-profile-390-fr.png
+    - evidence/dark-profile-390-fr.png
+    - evidence/light-matches-390-ar.png
+    - evidence/dark-matches-390-ar.png
+    - evidence/light-home-1440-fr.png
+  whole_page_text_contrast:
+    method: "every element with its own text node, scored against its nearest flat painted backdrop; elements over a background IMAGE are skipped as unmeasurable"
+    light_failures_introduced_by_this_change: 0
+    remaining_failures_and_who_owns_them:
+      - owner: screen lane (src/components/fpl/**)
+        count: 20
+        what: 'literal `bg-white` surfaces in Fantasy screens leave themed text invisible in dark (e.g. "Général" / "Journée 14" at 1.09:1 on rgb(255,255,255))'
+      - owner: screen lane (Fantasy call sites)
+        count: 12
+        what: '`--fpl-ink` / `--fpl-ink-deep` used as a TEXT colour (e.g. "Coupes" 1.13:1, "Notifications" 1.13:1). The alias layer makes them theme-aware but they are still fill tokens used as foregrounds — convert to ui.tone.ink'
+      - owner: News/V1 palette lane
+        count: 16
+        what: "`--brand-primary` used directly as text (`text-brand`), 1.35-1.54:1 in dark"
+      - owner: matches lane
+        count: 16
+        what: "`--color-live` (V1 token) at 4.04:1 on white in LIGHT as well — pre-existing, not a dark regression"
+      - owner: dev-only
+        count: 16
+        what: 'AuthModeBadge "MODE DÉMO" renders literal black, 1.07:1'
+      - owner: none (false positive)
+        count: 24
+        what: "the Welcome screen is a dark mesh in both themes; its white copy is scored against the page colour because the mesh is a background IMAGE on a sibling layer"
+    evidence: evidence/page-text-sweep.json
+
+not_verified:
+  - "Fantasy screens behind auth (squad, pitch, transfers, populated leagues). They were exercised signed-out; UiPitchSurface and UiPlayerPlate are new and have no call site yet, so they are typechecked and contract-tested but not yet rendered with live data."
+  - "The match DETAIL page, the only UiSegmented call site, needs live data this sandbox could not reach; its active segment was measured as the token pair the kit paints."
+  - "Safari/Firefox. Chromium only."
+  - "Real OS theme switching — dark was measured by applying `.dark` before first paint, which is what the shipped theme script does."
+
+handover_to_screen_lanes:
+  read_first: docs/engineering/DESIGN_SYSTEM_V2.md
+  what_a_lane_still_has_to_write_itself:
+    - "Anything data-shaped: a squad grid, a formation picker, a gameweek strip, a countdown, a league-join flow. The kit ships the units (plate, row, pitch shell, table cells) but composes none of them into a screen, on purpose."
+    - "Club crests, jerseys and any club-identity artwork. `UiPlayerPlate`/`UiPlayerRow` take a `visual` node; the kit does not own kit art (JerseyVisual, ClubCrest stay where they are)."
+    - "Translated labels for UiRankMovement (up/down/same) — the kit asks for them rather than inventing keys."
+    - "A toast/snackbar. Not in the kit; the app uses sonner today."
+    - "An avatar, a progress bar, a calendar and a carousel — still only in the shadcn V1 layer (src/components/ui/). If a converted screen needs one, ask for it rather than styling the V1 one."
+    - "Tab ROUTING. UiSegmented is a controlled tablist; it does not own URL state."

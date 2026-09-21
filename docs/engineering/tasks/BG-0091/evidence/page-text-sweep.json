@@ -1,0 +1,1082 @@
+[
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 390,
+    "path": "/",
+    "failures": [
+      {
+        "text": "Bienvenue sur BotolaGO",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "30px",
+        "weight": "900"
+      },
+      {
+        "text": "Actualités, matchs et Fantasy : suivez l",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.8)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "15px",
+        "weight": "400"
+      },
+      {
+        "text": "Vous avez déjà un compte ?",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.7)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "400"
+      },
+      {
+        "text": "Se connecter",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "16px",
+        "weight": "700"
+      },
+      {
+        "text": "Continuer en invité",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.75)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "600"
+      },
+      {
+        "text": "Découvrez BotolaGO sans compte. Certaine",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.55)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "11px",
+        "weight": "400"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 390,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 390,
+    "path": "/profile",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 390,
+    "path": "/fantasy",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/",
+    "failures": [
+      {
+        "text": "Bienvenue sur BotolaGO",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "36px",
+        "weight": "900"
+      },
+      {
+        "text": "Actualités, matchs et Fantasy : suivez l",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.8)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "15px",
+        "weight": "400"
+      },
+      {
+        "text": "Vous avez déjà un compte ?",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.7)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "400"
+      },
+      {
+        "text": "Se connecter",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "16px",
+        "weight": "700"
+      },
+      {
+        "text": "Continuer en invité",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.75)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "600"
+      },
+      {
+        "text": "Découvrez BotolaGO sans compte. Certaine",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.55)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "11px",
+        "weight": "400"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/profile",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/fantasy",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 390,
+    "path": "/",
+    "failures": [
+      {
+        "text": "Bienvenue sur BotolaGO",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "30px",
+        "weight": "900"
+      },
+      {
+        "text": "Actualités, matchs et Fantasy : suivez l",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.8)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "15px",
+        "weight": "400"
+      },
+      {
+        "text": "Vous avez déjà un compte ?",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.7)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "400"
+      },
+      {
+        "text": "Se connecter",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "16px",
+        "weight": "700"
+      },
+      {
+        "text": "Continuer en invité",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.75)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "600"
+      },
+      {
+        "text": "Découvrez BotolaGO sans compte. Certaine",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.55)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "11px",
+        "weight": "400"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 390,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 390,
+    "path": "/profile",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 390,
+    "path": "/fantasy",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/",
+    "failures": [
+      {
+        "text": "Bienvenue sur BotolaGO",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "36px",
+        "weight": "900"
+      },
+      {
+        "text": "Actualités, matchs et Fantasy : suivez l",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.8)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "15px",
+        "weight": "400"
+      },
+      {
+        "text": "Vous avez déjà un compte ?",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455677 0.0000200868 / 0.7)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "400"
+      },
+      {
+        "text": "Se connecter",
+        "ratio": 1.05,
+        "fg": "rgb(255, 255, 255)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "16px",
+        "weight": "700"
+      },
+      {
+        "text": "Continuer en invité",
+        "ratio": 1.04,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.75)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "14px",
+        "weight": "600"
+      },
+      {
+        "text": "Découvrez BotolaGO sans compte. Certaine",
+        "ratio": 1.03,
+        "fg": "oklab(0.999994 0.0000455678 0.0000200868 / 0.55)",
+        "bg": "oklch(0.985 0.005 250)",
+        "size": "11px",
+        "weight": "400"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.04,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(1 0 0)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/profile",
+    "failures": []
+  },
+  {
+    "theme": "light",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/fantasy",
+    "failures": []
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 390,
+    "path": "/",
+    "failures": [
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 390,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "En direct",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "À venir",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "Botola Pro Inwi",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 390,
+    "path": "/profile",
+    "failures": [
+      {
+        "text": "BotolaGO",
+        "ratio": 1.35,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "17px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 390,
+    "path": "/fantasy",
+    "failures": [
+      {
+        "text": "Coupes",
+        "ratio": 1.13,
+        "fg": "oklch(0.3 0.08 260)",
+        "bg": "oklch(0.26 0.03 260)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Rang",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Ligue",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Général",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Journée 14",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Aucune ligue pour le moment.",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "13px",
+        "weight": "400"
+      },
+      {
+        "text": "Notifications",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "Suivre BotolaGO",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/",
+    "failures": [
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "En direct",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "À venir",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "Botola Pro Inwi",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/profile",
+    "failures": [
+      {
+        "text": "BotolaGO",
+        "ratio": 1.35,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "17px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "fr",
+    "width": 1440,
+    "path": "/fantasy",
+    "failures": [
+      {
+        "text": "Coupes",
+        "ratio": 1.13,
+        "fg": "oklch(0.3 0.08 260)",
+        "bg": "oklch(0.26 0.03 260)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Rang",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Ligue",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Général",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Journée 14",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Aucune ligue pour le moment.",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "13px",
+        "weight": "400"
+      },
+      {
+        "text": "Notifications",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "Suivre BotolaGO",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 390,
+    "path": "/",
+    "failures": [
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 390,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "En direct",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "À venir",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "Botola Pro Inwi",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 390,
+    "path": "/profile",
+    "failures": [
+      {
+        "text": "BotolaGO",
+        "ratio": 1.35,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "17px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 390,
+    "path": "/fantasy",
+    "failures": [
+      {
+        "text": "Coupes",
+        "ratio": 1.13,
+        "fg": "oklch(0.3 0.08 260)",
+        "bg": "oklch(0.26 0.03 260)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Rang",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Ligue",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Général",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Journée 14",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Aucune ligue pour le moment.",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "13px",
+        "weight": "400"
+      },
+      {
+        "text": "Notifications",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "Suivre BotolaGO",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/",
+    "failures": [
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/matches",
+    "failures": [
+      {
+        "text": "En direct",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "En direct",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "63′",
+        "ratio": 4.28,
+        "fg": "oklch(0.62 0.22 27)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "À venir",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "Botola Pro Inwi",
+        "ratio": 1.54,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/profile",
+    "failures": [
+      {
+        "text": "BotolaGO",
+        "ratio": 1.35,
+        "fg": "oklch(0.32 0.1 258)",
+        "bg": "oklch(0.22 0.03 260)",
+        "size": "17px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  },
+  {
+    "theme": "dark",
+    "lang": "ar",
+    "width": 1440,
+    "path": "/fantasy",
+    "failures": [
+      {
+        "text": "Coupes",
+        "ratio": 1.13,
+        "fg": "oklch(0.3 0.08 260)",
+        "bg": "oklch(0.26 0.03 260)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Rang",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Ligue",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Général",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Journée 14",
+        "ratio": 1.09,
+        "fg": "oklch(0.97 0.01 250)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "15px",
+        "weight": "700"
+      },
+      {
+        "text": "Aucune ligue pour le moment.",
+        "ratio": 2.14,
+        "fg": "oklch(0.76 0.02 258)",
+        "bg": "rgb(255, 255, 255)",
+        "size": "13px",
+        "weight": "400"
+      },
+      {
+        "text": "Notifications",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "Suivre BotolaGO",
+        "ratio": 1.13,
+        "fg": "oklch(0.22 0.07 260)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "22px",
+        "weight": "800"
+      },
+      {
+        "text": "MODE DÉMO",
+        "ratio": 1.07,
+        "fg": "rgb(0, 0, 0)",
+        "bg": "oklch(0.15 0.03 260)",
+        "size": "10px",
+        "weight": "900"
+      }
+    ]
+  }
+]

@@ -739,88 +739,61 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
-/* ================================================================== */
-/* Fantasy — FPL reference reconstruction tokens (BotolaGO identity)   */
-/* The FPL purple family maps to BotolaGO deep blue; the FPL green→cyan */
-/* CTA gradient maps to BotolaGO's cyan accent family.                  */
-/* ================================================================== */
-:root {
-  --fpl-bg: oklch(0.975 0.004 250);
-  --fpl-ink: var(--brand-primary);
-  --fpl-ink-deep: oklch(0.24 0.09 258);
-  --fpl-cyan: oklch(0.88 0.11 205);
-  --fpl-green: oklch(0.88 0.19 152);
-  --fpl-pink: oklch(0.63 0.24 355);
-  --fpl-amber: oklch(0.82 0.17 80);
-  --fpl-grey: oklch(0.93 0.006 250);
-  --fpl-grey-text: oklch(0.55 0.02 258);
-  --fpl-grad: linear-gradient(90deg, var(--fpl-green) 0%, var(--fpl-cyan) 100%);
-  --fpl-header: linear-gradient(
-    180deg,
-    oklch(0.84 0.11 205) 0%,
-    oklch(0.68 0.16 238) 48%,
-    oklch(0.6 0.18 262) 100%
-  );
-  --fpl-hero:
-    radial-gradient(120% 80% at 85% 10%, oklch(0.9 0.16 150) 0%, transparent 42%),
-    radial-gradient(90% 70% at 15% 90%, oklch(0.62 0.18 262) 0%, transparent 55%),
-    linear-gradient(
-      115deg,
-      oklch(0.86 0.11 205) 0%,
-      oklch(0.7 0.16 240) 45%,
-      oklch(0.46 0.16 270) 100%
-    );
-  --fpl-pitch-a: oklch(0.71 0.17 146);
-  --fpl-pitch-b: oklch(0.67 0.17 146);
-  --fpl-pitch-bench: oklch(0.8 0.12 146);
-  --fpl-fdr-1: oklch(0.86 0.19 152);
-  --fpl-fdr-2: oklch(0.86 0.19 152);
-  --fpl-fdr-3: oklch(0.9 0.006 250);
-  --fpl-fdr-4: oklch(0.63 0.24 355);
-  --fpl-fdr-5: oklch(0.42 0.16 345);
-}
-.fpl-root .lucide-chevron-left {
-}
-.fpl-tabular {
-  font-variant-numeric: tabular-nums;
-}
-
 /* ==================================================================
-   BotolaGO UI Kit — product-wide design tokens (`--ui-*`)
+   BotolaGO Design System V2 — the one token layer (`--ui-*`)
    ------------------------------------------------------------------
-   The Fantasy section is the design source of truth. Its `--fpl-*`
-   tokens are, however, a *light-only* reconstruction tuned to one
-   screen family (a white phone column under a cyan→indigo gradient):
-   `--fpl-bg`/`--fpl-grey` have no dark counterpart, and several
-   Fantasy surfaces spell `bg-white` / `text-white` literally.
+   BG-0091. There used to be two palettes: the extracted kit (`--ui-*`,
+   themed, contract-tested) and the Fantasy inner screens' own
+   reconstruction (`--fpl-*`, light-only, untested). Fantasy is the
+   product's visual source of truth, so the values below ARE the
+   Fantasy values — but they now live in one system, with one dark
+   counterpart each, one spacing scale, one radius set, one shadow set
+   and one type ramp.
 
-   Rather than rename `--fpl-*` — which would mean editing every
-   Fantasy file and risking exactly the redesign we must not do — this
-   block *promotes* the Fantasy language into a product-wide layer:
+   `--fpl-*` still exists, further down, as a pure ALIAS layer: every
+   Fantasy token is `var(--ui-…)` and carries no colour of its own, so
+   the inner screens follow the theme today and can be converted call
+   site by call site without a flag day. `ui-kit.contract.test.ts`
+   fails if an `--fpl-*` token ever carries a literal colour again.
 
-     - every value below is the Fantasy value, measured from
-       `src/components/fpl/primitives.tsx`, `FantasyFrame.tsx`,
-       `FantasyScreenGate.tsx` and `src/routes/fantasy*.tsx`;
-     - each one gains a dark counterpart, so the public app can follow
-       light/dark, which Fantasy alone could not;
-     - `--fpl-*` is left byte-for-byte untouched and keeps working.
+   Rules that hold for everything in here:
+     - every colour-bearing token is redeclared under `.dark`, or is
+       composed purely from tokens that are;
+     - `--ui-ink` is a FILL/BORDER colour (a dark navy in both themes).
+       Text and icons use `--ui-ink-fg`, which is theme-correct. This
+       is the BG-0083 defect: `--ui-ink` as a foreground measured
+       1.25:1 in dark;
+     - gradients run `to bottom` or from a direction-neutral origin. A
+       `deg` angle is physical and lands on the wrong edge in Arabic.
 
-   `src/components/ui-kit/tokens.ts` mirrors these names as a typed
-   manifest; `ui-kit.contract.test.ts` fails if the two drift apart.
+   `src/components/ui-kit/tokens.ts` mirrors every name below as a
+   typed manifest; the contract test fails if the two drift apart.
    ================================================================== */
 :root {
-  /* ---- Type scale ------------------------------------------------
+  /* ---- Type ramp -------------------------------------------------
      Fantasy sizes are px literals, not the Tailwind ramp. Kept as
      lengths so `text-[length:var(--ui-text-body)]` reads one scale. */
   --ui-text-hero: 34px; /* hub title */
   --ui-text-title: 19px; /* screen header title */
   --ui-text-section: 17px; /* state-panel / section heading */
   --ui-text-subtitle: 16px; /* header title when flanked both sides */
-  --ui-text-body: 15px; /* body, buttons, rows, tabs */
+  --ui-text-body: 15px; /* body, buttons, rows */
   --ui-text-secondary: 14px; /* supporting copy, pills */
   --ui-text-meta: 13px; /* meta, table cells */
-  --ui-text-label: 12px; /* badges */
+  --ui-text-label: 12px; /* badges, column heads */
   --ui-text-micro: 11px; /* nav labels, micro captions */
+
+  /* ---- Stat ramp -------------------------------------------------
+     Numerals only: scores, points, prices, ranks. Its own scale
+     because a stat is read as a figure, not as a word — always with
+     `font-variant-numeric: tabular-nums` (`.fpl-tabular`) so columns
+     line up, and always a step tighter than prose. The tracking is
+     applied `ltr:`-only; Arabic-Indic digits must never be spaced. */
+  --ui-stat-hero: 30px; /* the one number a screen is about */
+  --ui-stat-lg: 22px; /* summary tiles */
+  --ui-stat-md: 17px; /* table totals, row emphasis */
+  --ui-stat-sm: 13px; /* dense table cells */
+  --ui-stat-tracking: -0.01em;
 
   /* ---- Weights: Fantasy never uses 400 for structural text ------- */
   --ui-weight-body: 600;
@@ -828,56 +801,119 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-weight-heavy: 800;
   --ui-weight-hero: 900;
 
-  /* ---- Radii: Fantasy is square-ish, not the pill-shaped V2 ------ */
+  /* ---- Radius set: Fantasy is square-ish, not the pill-shaped V2 -- */
+  --ui-radius-tight: 4px; /* difficulty squares, micro tags */
   --ui-radius-control: 6px; /* buttons, cards, pills, banners */
   --ui-radius-segment: 8px; /* selected tab */
-  --ui-radius-track: 10px; /* segmented-control track */
+  --ui-radius-track: 10px; /* segmented-control track, inputs */
+  --ui-radius-sheet: 16px; /* bottom sheet, modal */
   --ui-radius-column: 28px; /* desktop phone column */
 
-  /* ---- Density --------------------------------------------------- */
-  --ui-gutter: 1rem; /* the px-4 screen gutter */
-  --ui-gap: 0.5rem;
-  --ui-gap-lg: 0.75rem;
-  --ui-tap-min: 2.75rem; /* 44px minimum tap target */
-  --ui-row-min: 3rem; /* list row / control height */
+  /* ---- Spacing scale ---------------------------------------------
+     One 4px-based step scale. The named tokens under it are aliases,
+     not extra values, so there is exactly one set of numbers. */
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-5: 1.5rem;
+  --ui-space-6: 2rem;
+
+  --ui-gutter: var(--ui-space-4); /* the px-4 screen gutter */
+  --ui-gap: var(--ui-space-2);
+  --ui-gap-lg: var(--ui-space-3);
+  --ui-tap-min: 2.75rem; /* 44px minimum tap target — a floor, not a size */
+  --ui-row-min: 3rem; /* list row / full-width control height */
   --ui-column-max: 480px; /* mobile-first single column */
 
   /* ---- Surfaces (light) ------------------------------------------ */
-  --ui-page: oklch(0.975 0.004 250); /* = --fpl-bg */
+  --ui-page: oklch(0.975 0.004 250);
   --ui-surface: oklch(1 0 0); /* the white Fantasy card */
-  --ui-surface-sunken: oklch(0.93 0.006 250); /* = --fpl-grey */
+  --ui-surface-sunken: oklch(0.93 0.006 250);
   --ui-on-surface: oklch(0.16 0.03 260);
-  --ui-on-surface-muted: oklch(0.55 0.02 258); /* = --fpl-grey-text */
+  --ui-on-surface-muted: oklch(0.45 0.02 258);
+  --ui-on-surface-faint: oklch(0.555 0.02 258); /* placeholders, disabled copy */
   --ui-rule: oklch(0.93 0.006 250); /* 1px divider */
+  --ui-scrim: color-mix(in oklab, oklch(0.16 0.03 260) 45%, transparent);
 
-  /* ---- Brand ink and its on-colour ------------------------------- */
+  /* ---- Brand ink -------------------------------------------------
+     `--ui-ink` fills and borders. `--ui-ink-fg` is the foreground you
+     put ON page/surface; `--ui-on-ink*` are the foregrounds that go
+     ON an ink fill. Never use `--ui-ink` as a text colour. */
   --ui-ink: var(--brand-primary);
   --ui-ink-deep: oklch(0.24 0.09 258);
-  --ui-on-ink: oklch(0.88 0.11 205); /* cyan text on ink, = --fpl-cyan */
+  --ui-ink-fg: oklch(0.32 0.1 258);
+  --ui-on-ink: oklch(0.88 0.11 205); /* cyan text on ink */
   --ui-on-ink-plain: oklch(1 0 0);
+  /* The foreground for the header/hero BAND. The band is light in the light
+     theme and deep in the dark one, so unlike `--ui-ink-deep` (which sits on
+     the action gradient, light in both themes) this one flips. */
+  --ui-on-grad-header: oklch(0.24 0.09 258);
 
-  /* ---- Status ---------------------------------------------------- */
-  --ui-positive: oklch(0.72 0.19 150);
-  --ui-negative: oklch(0.63 0.24 355); /* = --fpl-pink */
+  /* ---- Accents: the two stops of the Fantasy CTA gradient -------- */
+  --ui-accent-spring: oklch(0.88 0.19 152);
+  --ui-accent-sky: oklch(0.88 0.11 205);
+
+  /* ---- Status ----------------------------------------------------
+     `positive` and `negative` are read as TEXT as well as painted as
+     fills, so both clear 4.5:1 on `--ui-surface` in their own theme.
+     `caution` is amber and is fill-only: pair it with `--ui-ink-deep`. */
+  --ui-positive: oklch(0.52 0.14 150);
+  --ui-negative: oklch(0.55 0.22 355);
   --ui-caution: oklch(0.82 0.17 80);
 
-  /* ---- Gradients ------------------------------------------------- */
+  /* ---- Gradients -------------------------------------------------
+     `to bottom` on purpose: a `deg` angle is physical and mirrors
+     wrong under `dir="rtl"`. The radial origins are centred for the
+     same reason. */
   --ui-grad-action: linear-gradient(
-    90deg,
-    oklch(0.88 0.19 152) 0%,
-    oklch(0.88 0.11 205) 100%
-  ); /* = --fpl-grad */
+    to bottom,
+    var(--ui-accent-spring) 0%,
+    var(--ui-accent-sky) 100%
+  );
   --ui-grad-header: linear-gradient(
-    180deg,
+    to bottom,
     oklch(0.84 0.11 205) 0%,
     oklch(0.68 0.16 238) 48%,
     oklch(0.6 0.18 262) 100%
-  ); /* = --fpl-header */
+  );
+  --ui-grad-hero:
+    radial-gradient(120% 80% at 50% 0%, oklch(0.9 0.16 150) 0%, transparent 45%),
+    linear-gradient(
+      to bottom,
+      oklch(0.86 0.11 205) 0%,
+      oklch(0.7 0.16 240) 45%,
+      oklch(0.46 0.16 270) 100%
+    );
 
-  /* ---- Elevation: Fantasy uses one small shadow, nothing else ---- */
+  /* ---- Elevation: one shadow set, four steps -------------------- */
   --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 12%, transparent);
   --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
+  --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent);
   --ui-shadow-column: var(--shadow-floating);
+
+  /* ---- Fantasy domain --------------------------------------------
+     Promoted from `--fpl-*`: these have no kit equivalent (a pitch is
+     a pitch) but they now live under the kit's naming and contract,
+     and each has a dark counterpart. */
+  --ui-pitch-turf-a: oklch(0.71 0.17 146);
+  --ui-pitch-turf-b: oklch(0.67 0.17 146);
+  --ui-pitch-bench: oklch(0.8 0.12 146);
+  --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 92%, transparent);
+  --ui-on-pitch: oklch(0.18 0.04 260);
+
+  /* Fixture Difficulty Rating, 1 easiest → 5 hardest, each with the
+     foreground that clears AA on it. */
+  --ui-fdr-1: oklch(0.86 0.19 152);
+  --ui-fdr-2: oklch(0.91 0.13 152);
+  --ui-fdr-3: oklch(0.9 0.006 250);
+  --ui-fdr-4: oklch(0.56 0.22 355);
+  --ui-fdr-5: oklch(0.42 0.16 345);
+  --ui-on-fdr-1: oklch(0.2 0.05 150);
+  --ui-on-fdr-2: oklch(0.2 0.05 150);
+  --ui-on-fdr-3: oklch(0.2 0.02 260);
+  --ui-on-fdr-4: oklch(1 0 0);
+  --ui-on-fdr-5: oklch(1 0 0);
 }
 
 .dark {
@@ -885,23 +921,62 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-surface: oklch(0.22 0.03 260);
   --ui-surface-sunken: oklch(0.26 0.03 260);
   --ui-on-surface: oklch(0.97 0.01 250);
-  --ui-on-surface-muted: oklch(0.7 0.02 258);
+  --ui-on-surface-muted: oklch(0.76 0.02 258);
+  --ui-on-surface-faint: oklch(0.64 0.02 258);
   --ui-rule: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
+  --ui-scrim: color-mix(in oklab, oklch(0.08 0.02 260) 68%, transparent);
 
   --ui-ink: oklch(0.3 0.08 260);
   --ui-ink-deep: oklch(0.22 0.07 260);
+  /* The BG-0083 fix: on a dark page the brand foreground has to be a
+     light tint of the brand, not the brand fill. */
+  --ui-ink-fg: oklch(0.86 0.08 232);
   --ui-on-ink: oklch(0.88 0.11 205);
   --ui-on-ink-plain: oklch(0.97 0.01 250);
+  --ui-on-grad-header: oklch(0.97 0.01 250);
+
+  --ui-accent-spring: oklch(0.82 0.18 152);
+  --ui-accent-sky: oklch(0.82 0.11 205);
+
+  --ui-positive: oklch(0.78 0.17 150);
+  --ui-negative: oklch(0.75 0.19 355);
+  --ui-caution: oklch(0.85 0.16 80);
 
   --ui-grad-header: linear-gradient(
-    180deg,
+    to bottom,
     oklch(0.42 0.1 210) 0%,
     oklch(0.34 0.12 240) 48%,
     oklch(0.28 0.12 262) 100%
   );
+  --ui-grad-hero:
+    radial-gradient(120% 80% at 50% 0%, oklch(0.46 0.14 150) 0%, transparent 45%),
+    linear-gradient(
+      to bottom,
+      oklch(0.42 0.1 205) 0%,
+      oklch(0.34 0.12 240) 45%,
+      oklch(0.24 0.1 270) 100%
+    );
 
-  --ui-shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
-  --ui-shadow-raised: 0 -1px 0 0 rgba(255, 255, 255, 0.08);
+  --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, oklch(0 0 0) 55%, transparent);
+  --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, oklch(1 0 0) 8%, transparent);
+  --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
+
+  --ui-pitch-turf-a: oklch(0.45 0.11 146);
+  --ui-pitch-turf-b: oklch(0.42 0.11 146);
+  --ui-pitch-bench: oklch(0.36 0.08 146);
+  --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 72%, transparent);
+  --ui-on-pitch: oklch(0.97 0.01 250);
+
+  --ui-fdr-1: oklch(0.42 0.12 152);
+  --ui-fdr-2: oklch(0.63 0.13 152);
+  --ui-fdr-3: oklch(0.36 0.01 250);
+  --ui-fdr-4: oklch(0.5 0.19 355);
+  --ui-fdr-5: oklch(0.35 0.14 345);
+  --ui-on-fdr-1: oklch(0.99 0.01 150);
+  --ui-on-fdr-2: oklch(0.15 0.04 150);
+  --ui-on-fdr-3: oklch(0.97 0.01 250);
+  --ui-on-fdr-4: oklch(0.99 0.01 355);
+  --ui-on-fdr-5: oklch(0.97 0.01 250);
 
   /* News placeholders, one step deeper so an image-less card sits on a
      dark page instead of burning a hole in it. Same hues, lower L. */
@@ -954,6 +1029,43 @@ html[dir="rtl"] .lucide-arrow-left {
   --news-plate-analysis: oklch(0.28 0.09 295);
   --news-plate-interviews: oklch(0.29 0.08 165);
   --news-plate-for-you: oklch(0.29 0.11 245);
+}
+
+/* ==================================================================
+   Fantasy alias layer (`--fpl-*`)
+   ------------------------------------------------------------------
+   Kept so the ~450 existing Fantasy call sites keep working while the
+   screen lanes convert them, but every entry is now a pointer into
+   the kit above — no `--fpl-*` token carries a colour of its own, so
+   Fantasy follows light/dark for the first time. New code uses the
+   `--ui-*` name; the mapping table is in
+   `docs/engineering/DESIGN_SYSTEM_V2.md`.
+   ================================================================== */
+:root {
+  --fpl-bg: var(--ui-page);
+  --fpl-ink: var(--ui-ink); /* FILL. For text use --ui-ink-fg. */
+  --fpl-ink-deep: var(--ui-ink-deep);
+  --fpl-cyan: var(--ui-on-ink);
+  --fpl-green: var(--ui-accent-spring);
+  --fpl-pink: var(--ui-negative);
+  --fpl-amber: var(--ui-caution);
+  --fpl-grey: var(--ui-surface-sunken);
+  --fpl-grey-text: var(--ui-on-surface-muted);
+  --fpl-grad: var(--ui-grad-action);
+  --fpl-header: var(--ui-grad-header);
+  --fpl-hero: var(--ui-grad-hero);
+  --fpl-pitch-a: var(--ui-pitch-turf-a);
+  --fpl-pitch-b: var(--ui-pitch-turf-b);
+  --fpl-pitch-bench: var(--ui-pitch-bench);
+  --fpl-fdr-1: var(--ui-fdr-1);
+  --fpl-fdr-2: var(--ui-fdr-2);
+  --fpl-fdr-3: var(--ui-fdr-3);
+  --fpl-fdr-4: var(--ui-fdr-4);
+  --fpl-fdr-5: var(--ui-fdr-5);
+}
+
+.fpl-tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==================================================================
