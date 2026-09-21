@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +16,15 @@ import {
   isFantasyRouteActive,
 } from "./fantasy-navigation";
 
+/**
+ * Desktop Fantasy sub-navigation.
+ *
+ * Converted to the kit (BG-0092): the glass bar is now an opaque
+ * `ui.surface.bar` with a hairline rule (glass over a dark page rendered the
+ * active tab's white label on a near-white pane), the active tab takes the
+ * ink fill with `--ui-on-ink-plain` rather than a literal `text-white`, and
+ * every tab clears the 44px tap floor.
+ */
 export function FantasySubNav() {
   const { t, dir } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -22,10 +32,24 @@ export function FantasySubNav() {
     isFantasyRouteActive(pathname, item.to),
   );
 
+  const tabClass = cn(
+    "relative inline-flex min-h-[var(--ui-tap-min)] items-center whitespace-nowrap px-3",
+    ui.radius.control,
+    ui.text.meta,
+    "[font-weight:var(--ui-weight-heavy)]",
+    ui.focus,
+    "transition-colors",
+  );
+
   return (
     <nav
       aria-label={t("nav.fantasy")}
-      className="glass-surface glass-regular sticky top-[var(--topbar-h)] z-20 -mx-3 hidden border-y border-[var(--glass-border)] px-3 py-2 md:block"
+      className={cn(
+        "sticky top-[var(--topbar-h)] z-20 -mx-3 hidden px-3 py-2 md:block",
+        ui.surface.bar,
+        ui.rule.block,
+        ui.rule.blockStart,
+      )}
     >
       <div className="flex items-center gap-1">
         {fantasyPrimaryItems.map((item) => {
@@ -35,19 +59,9 @@ export function FantasySubNav() {
               key={item.to}
               to={item.to}
               className={cn(
-                "relative whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
-                active ? "text-white" : "bg-white/50 text-foreground hover:bg-white/80",
+                tabClass,
+                active ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.muted),
               )}
-              style={
-                active
-                  ? {
-                      backgroundImage: "var(--bg-brand-gradient)",
-                      boxShadow:
-                        "0 6px 14px -8px color-mix(in oklab, var(--brand-accent) 60%, transparent), inset 0 1px 0 rgba(255,255,255,0.20)",
-                    }
-                  : undefined
-              }
               aria-current={active ? "page" : undefined}
             >
               {t(item.labelKey)}
@@ -61,15 +75,13 @@ export function FantasySubNav() {
               type="button"
               aria-current={secondaryActive ? "page" : undefined}
               className={cn(
-                "ms-auto inline-flex min-h-9 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
-                secondaryActive
-                  ? "bg-[color:var(--brand-primary)] text-white"
-                  : "bg-white/50 text-foreground hover:bg-white/80",
+                tabClass,
+                "ms-auto gap-1",
+                secondaryActive ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.muted),
               )}
             >
               {t("fantasy.tab.more")}
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
@@ -81,8 +93,9 @@ export function FantasySubNav() {
                     to={item.to}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "w-full cursor-pointer font-semibold",
-                      active && "bg-accent text-accent-foreground",
+                      "w-full cursor-pointer",
+                      ui.text.body,
+                      active && cn(ui.surface.sunken, ui.tone.ink),
                     )}
                   >
                     {t(item.labelKey)}

@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { ui, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -65,33 +67,47 @@ export function FantasyOnboarding() {
           <DialogTitle>{t("fantasy.onboarding.title")}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center gap-3 py-3 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--bg-brand-gradient)] text-white">
-            <Icon className="h-7 w-7" aria-hidden />
-          </div>
-          <div className="text-base font-black text-foreground">{t(steps[step].titleKey)}</div>
-          <DialogDescription className="text-center">{t(steps[step].bodyKey)}</DialogDescription>
-          <div className="mt-1 flex gap-1">
+          <span
+            className={cn(
+              "grid h-14 w-14 shrink-0 place-items-center",
+              ui.radius.control,
+              "text-[color:var(--ui-ink-deep)]",
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
+            aria-hidden
+          >
+            <Icon className="h-7 w-7" />
+          </span>
+          <div className={cn(ui.text.section, ui.tone.default)}>{t(steps[step].titleKey)}</div>
+          <DialogDescription className={cn("text-center", ui.text.secondary, ui.tone.muted)}>
+            {t(steps[step].bodyKey)}
+          </DialogDescription>
+          <div className="mt-1 flex gap-1" aria-hidden>
             {steps.map((_, i) => (
               <span
                 key={i}
-                className={`h-1.5 w-6 rounded-full transition-colors ${i === step ? "bg-[color:var(--brand-primary)]" : "bg-muted-foreground/30"}`}
+                className={cn("h-1.5 w-6 transition-colors", ui.radius.full)}
+                style={{
+                  backgroundColor:
+                    i === step
+                      ? "var(--ui-ink-fg)"
+                      : "color-mix(in oklab, var(--ui-on-surface-muted) 30%, transparent)",
+                }}
               />
             ))}
           </div>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={finish}
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-          >
+          <UiButton variant="ghost" size="sm" onClick={finish}>
             {t("fantasy.onboarding.skip")}
-          </button>
-          <button
+          </UiButton>
+          <UiButton
+            variant="gradient"
+            size="sm"
             onClick={() => (isLast ? finish() : setStep(step + 1))}
-            className="rounded-xl cta-brand px-4 py-2 text-sm font-semibold hover:opacity-90"
           >
             {isLast ? t("fantasy.onboarding.start") : t("fantasy.onboarding.next")}
-          </button>
+          </UiButton>
         </div>
       </DialogContent>
     </Dialog>

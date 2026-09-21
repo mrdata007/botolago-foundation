@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FplHeader, FplPill } from "@/components/fpl/primitives";
+import { ui } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,12 @@ const SECTIONS: Array<{
 
 /**
  * FPL-024/025 "Help and Rules": "How can we help?" intro, ink section pills
- * and an accordion whose expanded row carries the gradient header.
+ * and an accordion whose expanded row carries the action gradient.
+ *
+ * Converted to the kit (BG-0092). The accordion rows used to sit on literal
+ * `bg-white` with a hand-rolled `rgba()` shadow, and the collapsed chevron
+ * cell took `text-white` on an ink fill — both un-themed, so the expanded
+ * and collapsed states read at ~1.1:1 against a dark card.
  */
 function HelpPage() {
   const { t } = useI18n();
@@ -53,22 +59,26 @@ function HelpPage() {
   return (
     <FantasyFrame background="white">
       <FplHeader title={t("fpl.help_title")} backTo="/fantasy" />
-      <p className="px-4 pt-4 text-[17px] text-foreground">{t("fpl.how_can_we_help")}</p>
+      <p className={cn("pt-4", ui.space.gutter, ui.text.section, ui.tone.default)}>
+        {t("fpl.how_can_we_help")}
+      </p>
       {SECTIONS.map((section) => (
         <section key={section.title} className="mt-4">
-          <div className="px-4">
-            <FplPill className="rounded-t-[6px] rounded-b-none px-4 py-2">
-              {t(section.title)}
-            </FplPill>
-            <div className="h-px bg-[color:var(--fpl-grey)]" />
+          <div className={ui.space.gutter}>
+            <FplPill className="rounded-b-none px-4 py-2">{t(section.title)}</FplPill>
+            <div className={ui.rule.block} />
           </div>
-          <ul className="mt-2 space-y-2 px-4">
+          <ul className={cn("mt-2 space-y-2", ui.space.gutter)}>
             {section.items.map((item) => {
               const expanded = open === item.q;
               return (
                 <li
                   key={item.q}
-                  className="overflow-hidden rounded-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.10)]"
+                  className={cn(
+                    "overflow-hidden",
+                    ui.radius.control,
+                    "shadow-[var(--ui-shadow-card)]",
+                  )}
                 >
                   <button
                     type="button"
@@ -76,18 +86,17 @@ function HelpPage() {
                     onClick={() => setOpen(expanded ? null : item.q)}
                     className={cn(
                       "grid w-full grid-cols-[52px_1fr] items-stretch text-start",
+                      ui.focus,
                       expanded
-                        ? "text-[color:var(--fpl-ink-deep)]"
-                        : "bg-[color:var(--fpl-bg)] text-foreground",
+                        ? "text-[color:var(--ui-ink-deep)]"
+                        : cn(ui.surface.sunken, ui.tone.default),
                     )}
-                    style={expanded ? { backgroundImage: "var(--fpl-grad)" } : undefined}
+                    style={expanded ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
                   >
                     <span
                       className={cn(
                         "grid place-items-center",
-                        expanded
-                          ? "bg-[color:var(--fpl-ink)] text-white"
-                          : "bg-[color:var(--fpl-grey)] text-foreground",
+                        expanded ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.default),
                       )}
                     >
                       {expanded ? (
@@ -96,12 +105,24 @@ function HelpPage() {
                         <ChevronDown className="h-5 w-5" aria-hidden />
                       )}
                     </span>
-                    <span className="px-3 py-3 text-[16px] font-extrabold leading-snug">
+                    <span
+                      className={cn(
+                        "px-3 py-3 leading-snug",
+                        ui.text.subtitle,
+                        "min-h-[var(--ui-tap-min)]",
+                      )}
+                    >
                       {t(item.q)}
                     </span>
                   </button>
                   {expanded ? (
-                    <div className="whitespace-pre-line bg-white px-4 py-3 text-[15px] leading-relaxed text-foreground">
+                    <div
+                      className={cn(
+                        "whitespace-pre-line px-4 py-3 leading-relaxed",
+                        ui.surface.bar,
+                        ui.text.body,
+                      )}
+                    >
                       {t(item.a)}
                     </div>
                   ) : null}

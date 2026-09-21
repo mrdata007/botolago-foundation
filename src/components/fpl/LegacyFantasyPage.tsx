@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { FantasyFrame } from "./FantasyFrame";
 import { FplHeader } from "./primitives";
 
@@ -21,7 +23,7 @@ export function LegacyFantasyPage({
   return (
     <FantasyFrame>
       <FplHeader title={title} backTo={backTo} />
-      <div className="px-4 pb-6 pt-3">{children}</div>
+      <div className={cn("pb-6 pt-3", ui.space.gutter)}>{children}</div>
     </FantasyFrame>
   );
 }
