@@ -8,6 +8,7 @@ import { SavedButton } from "@/components/news/SavedButton";
 import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
 import { MediaImage } from "./FailureAwareImage";
+import { ArticleHeroFallback } from "./ArticleHeroFallback";
 
 /**
  * Article card, five variants:
@@ -53,6 +54,22 @@ export function ArticleCard({
     dir: contentLanguage === "ar" ? "rtl" : "ltr",
   };
   const articleClubs = (clubs ?? []).filter((c) => article.clubIds.includes(c.id)).slice(0, 2);
+
+  /**
+   * The branded plate that stands in for a missing or broken hero (BG-0076).
+   * Rendered by `MediaImage` behind the photo and shown only when there is no
+   * hero URL or the one we have fails, so a card with a real photo is
+   * untouched. It is `absolute inset-0`, so every variant keeps the aspect
+   * ratio it already declared and nothing shifts.
+   */
+  const heroPlaceholder = (size: "sm" | "md") => (
+    <ArticleHeroFallback
+      category={article.category}
+      clubIds={article.clubIds}
+      clubs={clubs}
+      size={size}
+    />
+  );
 
   /** Copy that sits on a photo: always the plain-on-ink token, never white. */
   const onPhoto = "text-[color:var(--ui-on-ink-plain)]";
@@ -139,6 +156,7 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
+            placeholder={heroPlaceholder("md")}
             loading="eager"
             fetchPriority="high"
             className="aspect-[16/10] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02]"
@@ -200,6 +218,7 @@ export function ArticleCard({
           src={article.heroUrl}
           alt=""
           fallback={article.heroGradient}
+          placeholder={heroPlaceholder("sm")}
           className={cn("h-14 w-14 shrink-0", ui.radius.control)}
         />
         <div className="min-w-0 flex-1">
@@ -240,6 +259,7 @@ export function ArticleCard({
               src={article.heroUrl}
               alt=""
               fallback={article.heroGradient}
+              placeholder={heroPlaceholder("sm")}
               className="aspect-square w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
             />
           </div>
@@ -298,6 +318,7 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
+            placeholder={heroPlaceholder("md")}
             className="aspect-[4/5] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
           <div className="absolute inset-0" style={scrim(85, 25)} aria-hidden />
@@ -331,6 +352,7 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
+            placeholder={heroPlaceholder("md")}
             className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
         </div>

@@ -1,0 +1,498 @@
+[
+  {
+    "lang": "fr",
+    "viewport": "390",
+    "theme": "light",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "390",
+    "theme": "light",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "390",
+    "theme": "dark",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.28 0.1 262) 0%, oklab(0.247 -0.0129483 -0.0824772) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "390",
+    "theme": "dark",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.28 0.1 262) 0%, oklab(0.247 -0.0129483 -0.0824772) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "1280",
+    "theme": "light",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "1280",
+    "theme": "light",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "1280",
+    "theme": "dark",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.28 0.1 262) 0%, oklab(0.247 -0.0129483 -0.0824772) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "fr",
+    "viewport": "1280",
+    "theme": "dark",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.28 0.1 262) 0%, oklab(0.247 -0.0129483 -0.0824772) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "390",
+    "theme": "light",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 3,
+      "withPlate": 0,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": null
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "390",
+    "theme": "light",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 9,
+      "withPlate": 1,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "390",
+    "theme": "dark",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 3,
+      "withPlate": 0,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": null
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "390",
+    "theme": "dark",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 9,
+      "withPlate": 1,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.28 0.1 262) 0%, oklab(0.247 -0.0129483 -0.0824772) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "1280",
+    "theme": "light",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 3,
+      "withPlate": 0,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": null
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "1280",
+    "theme": "light",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 9,
+      "withPlate": 1,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.36 0.13 262) 0%, oklab(0.294 -0.0184333 -0.106349) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "1280",
+    "theme": "dark",
+    "route": "/",
+    "passA": {
+      "mediaBoxes": 3,
+      "withPhoto": 3,
+      "withPlate": 0,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": null
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 3,
+      "withPhoto": 0,
+      "withPlate": 3,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 3
+    }
+  },
+  {
+    "lang": "ar",
+    "viewport": "1280",
+    "theme": "dark",
+    "route": "/news",
+    "passA": {
+      "mediaBoxes": 10,
+      "withPhoto": 9,
+      "withPlate": 1,
+      "plateWithCrest": 0,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0,
+      "samplePlateBg": "linear-gradient(oklch(0.28 0.1 262) 0%, oklab(0.247 -0.0129483 -0.0824772) 100%)"
+    },
+    "passB_allImagesAborted": {
+      "mediaBoxes": 10,
+      "withPhoto": 0,
+      "withPlate": 10,
+      "emptyBlocks": 0,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflowingElements": 0
+    },
+    "layoutShift": {
+      "mediaBoxesIdentical": true,
+      "cardBoxesIdentical": true,
+      "cardsCompared": 10
+    }
+  }
+]
