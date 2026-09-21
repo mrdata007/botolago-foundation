@@ -1,0 +1,211 @@
+task_id: BG-0068
+role: Builder
+attempt: 1
+branch: bg-0068-team-translations
+base: origin/chief/launch-fixes-3
+area: football / i18n
+status: HALTED_FOR_INPUT
+rider: BG-0069 (Arabic letter-spacing) — delivered, not halted
+
+objective: >
+  The master plan's TEAM_TRANSLATIONS was never built. app.competition_translations,
+  app.venue_translations, app.country_translations and app.taxonomy_translations all
+  exist; there is no app.team_translations. Every language-aware Football read
+  therefore returns app.teams.name — a Latin string — even for p_language = 'ar', so
+  an Arabic reader sees all 16 Botola clubs spelled in a foreign alphabet. Add the
+  missing table, teach the reads to prefer it, and draft the Arabic names for owner
+  approval.
+
+finding:
+  classification: VERIFIED
+  evidence: >
+    Production tkewgajrljbwgwedqsxn, read-only: `select table_schema, table_name from
+    information_schema.tables where table_name like '%translation%'` returns exactly
+    app.competition_translations, app.country_translations, app.taxonomy_translations
+    and app.venue_translations. No team translations table exists.
+    `pg_get_functiondef(app_private.football_team_json)` shows 'name', team.name and
+    'shortName', team.short_name with `requested_language` accepted and then ignored —
+    the one place a team becomes JSON, and it had no translation join at all.
+
+# ---------------------------------------------------------------------------
+# THE HALT
+# ---------------------------------------------------------------------------
+halt:
+  blocks: nothing
+  why_it_blocks_nothing: >
+    The migration ships app.team_translations EMPTY and every read is
+    coalesce(translation.name, team.name). With the table empty the six RPCs return
+    byte-identical output to today. The migration can be reviewed, merged and applied
+    before a single Arabic name is approved; the seed is a separate owner-run step.
+
+  question_for_owner: >
+    Please confirm, correct, or reject each of the 16 Arabic club names below before
+    anyone runs scripts/backend/football-team-arabic-names-seed.sql. These are not
+    transliterations of the French strings — for almost every club the Arabic name is
+    the ORIGINAL and the Latin one in app.teams is derived — so an agent's rendering is
+    not an acceptable source of truth. Two rows (Zemamra, Témara) are genuinely
+    uncertain and are called out. I have not applied any of this to production.
+
+  club_list_for_confirmation:
+    # team_id | current Latin name | proposed Arabic name | proposed Arabic short name
+    # The 16 clubs are every app.teams row with an app.team_memberships row in the
+    # season where app.seasons.is_current. Read from production; not guessed.
+    - team_id: 80a3fb82-02ae-46bc-aae9-5160ba8f3648
+      latin_name: Wydad Casablanca
+      arabic_name: الوداد الرياضي
+      arabic_short_name: الوداد
+      confidence: high
+      note: >
+        This club's app.teams.short_name is currently the literal code "WCA" rather
+        than a name — a separate French-side defect, flagged, not fixed here.
+    - team_id: 3b0f1fc9-5b29-4a77-bdf8-a54fce0b1a0e
+      latin_name: Raja Casablanca
+      arabic_name: الرجاء الرياضي
+      arabic_short_name: الرجاء
+      confidence: high
+    - team_id: fd6ff8ea-898c-403b-aec3-7d8a41cbc158
+      latin_name: FAR Rabat
+      arabic_name: الجيش الملكي
+      arabic_short_name: الجيش
+      confidence: high
+      note: >
+        Deliberately not a transliteration of "FAR"/"AS FAR". The army club is
+        universally named as such in Arabic. Please confirm you want the common name
+        rather than the full formal one.
+    - team_id: c499006b-2af3-4013-862c-854ab74b59cf
+      latin_name: FUS Rabat
+      arabic_name: الفتح الرياضي
+      arabic_short_name: الفتح
+      confidence: high
+    - team_id: 0257feb3-4c16-431d-a58b-5faf060576ad
+      latin_name: Maghreb Fès
+      arabic_name: المغرب الفاسي
+      arabic_short_name: المغرب الفاسي
+      confidence: high
+      note: Read side by side with Moghreb Tétouan below — the two differ only in the final adjective.
+    - team_id: e3beb52d-fbfb-4180-a39d-7e3d8f965b62
+      latin_name: Moghreb Tétouan
+      arabic_name: المغرب التطواني
+      arabic_short_name: المغرب التطواني
+      confidence: high
+    - team_id: 7b2e23bc-450f-4eb2-9926-4add1a5386e7
+      latin_name: RSB Berkane
+      arabic_name: نهضة بركان
+      arabic_short_name: نهضة بركان
+      confidence: high
+      note: The formal form is longer; the common name is proposed. Confirm which you want.
+    - team_id: d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc
+      latin_name: Difaâ El Jadida
+      arabic_name: الدفاع الحسني الجديدي
+      arabic_short_name: الدفاع الجديدي
+      confidence: high
+    - team_id: 9f8c170d-24ed-41a3-99ca-a06167fd9c8b
+      latin_name: Hassania Agadir
+      arabic_name: حسنية أكادير
+      arabic_short_name: حسنية أكادير
+      confidence: high
+    - team_id: 353e19d7-0a4b-41e6-a491-fc85f6c952d8
+      latin_name: Ittihad Tanger
+      arabic_name: اتحاد طنجة
+      arabic_short_name: اتحاد طنجة
+      confidence: high
+    - team_id: d60d9d72-cb7a-4c94-944f-67081ef0a009
+      latin_name: Kawkab Marrakech
+      arabic_name: الكوكب المراكشي
+      arabic_short_name: الكوكب المراكشي
+      confidence: high
+    - team_id: 1ebd788b-9f71-4a78-bfa8-68359d7f3a3f
+      latin_name: Amal Tiznit
+      arabic_name: أمل تيزنيت
+      arabic_short_name: أمل تيزنيت
+      confidence: high
+    - team_id: 8059c0cf-8b7b-4317-be7e-fd646d377cd0
+      latin_name: CODM Meknès
+      arabic_name: النادي المكناسي
+      arabic_short_name: المكناسي
+      confidence: medium
+      note: >
+        "CODM" is Club Omnisports de Meknès. I am confident the Arabic name is built on
+        المكناسي but not on whether the club is written with the full omnisports formula
+        or the short common form proposed here.
+    - team_id: b78eaee8-93af-4630-8335-b208151cbf37
+      latin_name: UTS Rabat
+      arabic_name: اتحاد تواركة
+      arabic_short_name: اتحاد تواركة
+      confidence: medium
+      note: >
+        "UTS" is Union Touarga Sport. Confident about تواركة; less confident whether the
+        club is habitually written اتحاد تواركة or with الرياضي appended.
+    - team_id: 7d508334-d7a9-4a74-b057-7030c21a0eda
+      latin_name: Widad Témara
+      arabic_name: وداد تمارة
+      arabic_short_name: وداد تمارة
+      confidence: LOW — please supply
+      note: >
+        NOT the Casablanca Wydad; the two share the first word, which makes a wrong
+        rendering here read as a different club entirely. app.teams carries the code
+        "WST". I do not know the club's own written form and will not guess at it.
+    - team_id: dc6fb819-6f3e-4584-ad73-7d567e80d32c
+      latin_name: CR Khemis Zemamra
+      arabic_name: الشباب الرياضي لخميس الزمامرة
+      arabic_short_name: شباب الزمامرة
+      confidence: LOW — please supply
+      note: >
+        The row contradicts itself in production: app.teams.name reads "CR Khemis
+        Zemamra" (which parses as Chabab Riadhi → الشباب) while app.teams.code reads
+        "RCAZ" (which parses as Raja Club Athletic → الرجاء). Those are different first
+        words and I cannot tell from the data which the club actually uses. This row
+        also means the French side may be wrong; worth checking at the same time.
+
+# ---------------------------------------------------------------------------
+# What was built (see implementation-report.yaml for the detail)
+# ---------------------------------------------------------------------------
+delivered:
+  - supabase/migrations/20260921190000_team_translations.sql
+  - supabase/tests/database/team_translations.test.sql
+  - scripts/backend/football-team-arabic-names-seed.sql (DRAFT — never executed)
+  - src/styles.css (BG-0069 rider, one rule)
+
+scope_deviation:
+  - id: D1
+    subject: api.fantasy_player_pool and api.fantasy_fixture_difficulty
+    severity: needs a Chief decision, does not block the rest
+    statement: >
+      The brief asked for six RPCs to coalesce the translated name. Four were done.
+      Two were not, and could not be without breaking a hard rule of the same brief.
+    detail: >
+      api.fantasy_fixture_difficulty(uuid, integer, integer) emits fixtureId,
+      gameweekId, gameweek, clubId, opponentClubId, kickoffAt, isHome, difficulty,
+      confidence and algorithmVersion — ids and numbers. There is no team name in its
+      payload to translate. Adding one would be a payload change, not a translation.
+
+      api.fantasy_player_pool DOES emit teamName and teamShortName and they are Latin
+      in Arabic today, but it takes no language argument. CREATE OR REPLACE cannot add
+      a parameter, so giving it p_language needs a DROP — a signature change, which the
+      brief forbids and which the generated Supabase types,
+      src/backend/fantasy/supabase-repository.ts and the 22 Playwright journeys are
+      pinned to. I wrote and then deleted an alternative that read the language from
+      the `request.headers` GUC: nothing in this codebase sends Accept-Language
+      (`grep -rn "accept-language" src/ scripts/` → no hits), so it would have keyed
+      the squad builder's club names off the viewer's browser locale instead of the
+      app's selected language — a silent wrong answer in place of an honest Latin one.
+    recommendation: >
+      Give api.fantasy_player_pool a p_language parameter in its own release, together
+      with the type regeneration, the repository call site and the journey updates.
+      Until then the squad builder shows Latin club names while every catalog, match,
+      standings and team surface shows Arabic.
+
+  - id: D2
+    subject: src/backend/generated/database.types.ts
+    severity: CI will fail without this
+    statement: >
+      app.team_translations is a new table in a generated schema (public, app, api), so
+      database.types.ts is now stale. `bun run backend:types:generate` shells out to
+      `supabase status` and needs a running local stack; there is no Docker in this
+      environment, so it could not run. Per the brief I did NOT hand-edit the file —
+      the generator's formatting differs from a human's and
+      `bun run backend:types:check` in .github/workflows/backend-quality.yml compares
+      byte-for-byte.
+    action_required: >
+      Whoever has Docker runs `bun run backend:types:generate` on this branch and
+      commits the result before the PR can go green.
