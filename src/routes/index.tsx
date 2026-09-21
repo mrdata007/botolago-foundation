@@ -42,8 +42,27 @@ import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+
+const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
+const HOME_DESCRIPTION =
+  "Suivez la Botola Pro sur BotolaGO : résultats en direct, actualités, classement et votre équipe Fantasy.";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: HOME_TITLE },
+      { name: "description", content: HOME_DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: HOME_TITLE },
+      { property: "og:description", content: HOME_DESCRIPTION },
+      { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/` },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: HOME_TITLE },
+      { name: "twitter:description", content: HOME_DESCRIPTION },
+    ],
+    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` }],
+  }),
   component: HomePage,
 });
 
@@ -201,9 +220,13 @@ function HomeContent() {
             {greeting}
           </span>
         </div>
-        <h1 className="mt-1.5 truncate text-[22px] font-black leading-[1.1] tracking-tight text-foreground sm:text-2xl">
+        {/* The visible line is the manager's name, which says nothing about the
+            page. Crawlers and screen-reader users get a descriptive H1 instead,
+            and the name keeps its exact visual treatment below it. */}
+        <h1 className="sr-only">{HOME_TITLE}</h1>
+        <div className="mt-1.5 truncate text-[22px] font-black leading-[1.1] tracking-tight text-foreground sm:text-2xl">
           {user?.displayName?.trim() || summaryQ.data?.managerName || "Manager"}
-        </h1>
+        </div>
         <p className="mt-1 truncate text-[13px] text-[color:var(--text-secondary)]">
           {gwQ.data ? `${t("home.gameweek")} ${gwQ.data.number}` : ""}
           {gwQ.data ? " · " : ""}
