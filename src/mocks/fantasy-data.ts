@@ -700,9 +700,12 @@ export const fixtureDifficulties: FixtureDifficulty[] = (() => {
 import type { TopPlayerOfWeek } from "@/types/fantasy";
 
 function pickTop(gw: number): TopPlayerOfWeek[] {
-  const pool = [...fantasyPlayers].sort(
-    (a, b) => b.form + b.ownership / 20 - (a.form + a.ownership / 20),
-  );
+  // BG-0071 — `form` is nullable on the domain model now (null = no gameweek
+  // has scored). The mock fixtures always carry a number; `?? 0` keeps this
+  // deterministic ordering honest for the shape rather than the data.
+  const weight = (player: (typeof fantasyPlayers)[number]) =>
+    (player.form ?? 0) + player.ownership / 20;
+  const pool = [...fantasyPlayers].sort((a, b) => weight(b) - weight(a));
   const seeds = [
     { g: 2, a: 1, cs: 0, mins: 90, pts: 15 },
     { g: 1, a: 2, cs: 0, mins: 90, pts: 13 },

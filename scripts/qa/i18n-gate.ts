@@ -127,8 +127,19 @@ export const BASELINES: Baselines = {
   // trailing words for both languages so the segment differs would be editing
   // a consent sentence to satisfy a lint baseline. Moving the number and
   // saying why is what this baseline is for. W1 4 -> 6, W2 4 -> 6.
-  W1: 6,
-  W2: 6,
+  //
+  // BG-0071: `fantasy.stat.none` is the placeholder a stat cell renders when
+  // there is no value yet — a player's form before any gameweek has scored.
+  // Its value is an en dash, identical in fr and ar and in neither script,
+  // which is one new W1 finding and one new W2 finding. It is punctuation
+  // standing in for an absent number, not copy: translating it would mean
+  // putting an Arabic letter where a manager expects a missing figure, and
+  // any letter-shaped substitute would read as data. Both findings are
+  // annotated in `src/i18n/i18n-allowlist.ts`, and — as the header above
+  // says — an allow-list entry annotates a count, it never removes it, so
+  // the two baselines move with it. W1 6 -> 7, W2 6 -> 7.
+  W1: 7,
+  W2: 7,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and
@@ -175,7 +186,15 @@ export const BASELINES: Baselines = {
   // in the new /profile/security enrollment page and /auth/mfa-challenge
   // login step-up page. W3 unchanged (every new key is referenced); W4
   // 94 -> 97.
-  W3: 248,
+  // BG-0071: the player-detail History tab stopped restating the Overview
+  // numbers in a sentence and now renders the real per-gameweek rows from
+  // api.fantasy_player_gameweek_history. Those rows carry a state, so
+  // `fantasy.points.status.provisional` — dictionary copy that until now was
+  // referenced nowhere in src/ — has its first literal call site. Nothing was
+  // orphaned in exchange (`fpl.gameweek`, dropped from that sentence, is still
+  // used on five other screens). W3 248 -> 247; W4 unchanged, because the new
+  // branches are `cond ? t("a") : t("b")`, two literal calls, not `t(cond ? …)`.
+  W3: 247,
   W4: 97,
 };
 
