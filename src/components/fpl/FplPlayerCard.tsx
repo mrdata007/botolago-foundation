@@ -1,4 +1,5 @@
 import { AlertTriangle, Plus, X } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiPlayerPlate } from "@/components/ui-kit";
@@ -60,8 +61,17 @@ export function FplPlayerCard({
 }: {
   player: FantasyPlayer;
   club?: Club;
-  /** Bottom plate text: fixture ("WAC (D)"), price ("5.7"), or points ("8"). */
-  sub?: string;
+  /**
+   * Bottom plate: fixture ("FUS (D)", with the opponent's crest beside the
+   * letters when the club has one), price ("5.7") or points ("8").
+   *
+   * BG-0111 widened this from `string`. The crest is the identity signal, but
+   * at the 14px this band allows it reads as a colour signature rather than a
+   * legible badge, so the letters ship alongside it rather than instead of it.
+   * `UiPlayerPlate.sub` has always been `ReactNode`; this was the narrower of
+   * the two. Every other caller still passes a plain string.
+   */
+  sub?: ReactNode;
   captain?: boolean;
   vice?: boolean;
   highlighted?: boolean;

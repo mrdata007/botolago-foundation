@@ -51,8 +51,32 @@ export function FplChipsRow({
             type="button"
             disabled={!clickable}
             onClick={() => onSelect?.(chip.key)}
+            // BG-0111 — the chip names are fixed product vocabulary, so the
+            // layout accommodates the longest one instead of shortening it.
+            // "Triple Capitaine" measures 103px of text against a 108.7px
+            // content box at 390px: it survived only by 5.7px, and `truncate`
+            // meant any narrower phone (360px is common), a heavier fallback
+            // face while Manrope loads, or a fourth chip in the row clipped it
+            // to "Triple Capitain…". The name now wraps at a word boundary
+            // rather than truncating, and the button is a two-row grid whose
+            // first row takes the slack, so the ink bands and the state bands
+            // stay aligned across chips of different name lengths.
+            //
+            // Merged with the kit conversion, which landed on this file in the
+            // same integration. The STRUCTURE here is BG-0111's — two-row grid,
+            // a wrapping label, no `truncate`. The colour, radius, focus ring
+            // and type are the kit's, because those are the themed,
+            // contract-tested ones: the other side still painted `bg-white`
+            // under `text-white` and carried an un-prefixed `tracking-wide`,
+            // which pulls Arabic letterforms apart (BG-0069).
+            //
+            // BG-0111's `[line-height:1.15]` is dropped for `ui.text.meta`'s
+            // 1.5. This button hides its overflow, and 1.15 cuts glyph ink in
+            // both scripts — measured, with the arithmetic, in BG-0124. 1.5
+            // clears Latin; Arabic needs 1.73 and gets it at the token layer
+            // for the whole product rather than as a literal here.
             className={cn(
-              "flex flex-col justify-between overflow-hidden text-center disabled:cursor-default",
+              "grid grid-rows-[1fr_auto] overflow-hidden text-center disabled:cursor-default",
               "min-h-[var(--ui-tap-min)]",
               ui.radius.tight,
               ui.focus,
@@ -62,7 +86,8 @@ export function FplChipsRow({
           >
             <span
               className={cn(
-                "block truncate px-1 py-1.5",
+                "flex items-center justify-center px-1 py-1.5",
+                "[overflow-wrap:break-word] [hyphens:none]",
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-heavy)]",
                 spent ? cn(ui.surface.sunken, ui.tone.muted) : ui.surface.inkPlain,
