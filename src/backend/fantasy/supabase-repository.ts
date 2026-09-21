@@ -8,6 +8,7 @@ import {
   fantasyHistoryPageSchema,
   fantasyLeaguePageSchema,
   fantasyLeagueStandingPageSchema,
+  fantasyOverallStandingPageSchema,
   fantasyPointsSchema,
   fantasyTeamSchema,
   fantasyTopPlayerSchema,
@@ -18,6 +19,7 @@ import {
   type CreateFantasyTeamInput,
   type FantasyChip,
   type FantasyPlayerPoolInput,
+  type FantasyOverallStandingsInput,
   type FantasyRepository,
   type LineupSelection,
   type TransferInput,
@@ -257,6 +259,23 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return parse(fantasyLeagueStandingPageSchema, data);
+  }
+
+  /**
+   * BG-0073 — the season-wide board, read from the `league_id is null` rows
+   * that the ranking service already writes. Anonymous callers are supported
+   * and get an empty page (never a 401/404) while no gameweek has finalized.
+   */
+  async getOverallStandings(input: FantasyOverallStandingsInput, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_overall_standings", {
+      p_season_id: input.seasonId,
+      p_gameweek_id: input.gameweekId ?? undefined,
+      p_after_rank: input.cursor?.rank,
+      p_after_team_id: input.cursor?.teamId,
+      p_limit: input.limit ?? 100,
+    });
+    check(error);
+    return parse(fantasyOverallStandingPageSchema, data);
   }
 
   async createLeague(
