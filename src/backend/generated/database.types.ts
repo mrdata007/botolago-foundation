@@ -678,7 +678,7 @@ export type Database = {
         Args: {
           p_limit?: number
           p_season_id: string
-          p_visibility?: Database["app"]["Enums"]["fantasy_league_visibility"]
+          p_visibility?: string
         }
         Returns: Json
       }
