@@ -107,6 +107,12 @@ insert into app.teams (slug, name, short_name, code, active)
 values ('news-engine-test-club', 'News Engine Test Club', 'NETC', 'NETC', true)
 on conflict (slug) do nothing;
 
+-- service_role cannot read app.teams either, so every id the assertions below
+-- need is handed over as a transaction-local setting. Re-querying the catalog
+-- under service_role would fail on schema privilege, which is the design.
+select set_config('news_engine_test.team_id', id::text, true)
+from app.teams where slug = 'news-engine-test-club';
+
 set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
@@ -114,15 +120,15 @@ select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 -- Seed its Arabic, French and abbreviated forms, exactly as the curated alias
 -- set does, through the service-role RPC.
 select api.news_engine_upsert_alias(
-  'team', (select id from app.teams where slug = 'news-engine-test-club'),
+  'team', current_setting('news_engine_test.team_id')::uuid,
   'نادي الاختبار الرياضي', 'ar', 1.0, 'seed'
 );
 select api.news_engine_upsert_alias(
-  'team', (select id from app.teams where slug = 'news-engine-test-club'),
+  'team', current_setting('news_engine_test.team_id')::uuid,
   'Test Club AC', 'fr', 1.0, 'seed'
 );
 select api.news_engine_upsert_alias(
-  'team', (select id from app.teams where slug = 'news-engine-test-club'),
+  'team', current_setting('news_engine_test.team_id')::uuid,
   'TCA', 'fr', 0.7, 'seed'
 );
 
@@ -275,9 +281,18 @@ select extensions.is(
   'the discovered item is visible to the fetch stage'
 );
 
+-- The fetch and facts assertions all act on that one item. Its id comes back
+-- through the same read model the runner uses, because service_role has no
+-- direct read on app_private.news_source_items.
+select set_config(
+  'news_engine_test.item_id',
+  api.news_engine_pending_items('discovered', 10, 'elbotola') -> 0 ->> 'id',
+  true
+);
+
 select extensions.throws_ok(
   $$ select api.news_engine_record_fetch(
-       (select id from app_private.news_source_items limit 1),
+       current_setting('news_engine_test.item_id')::uuid,
        'not-a-sha',
        repeat('x', 200)
      ) $$,
@@ -288,7 +303,7 @@ select extensions.throws_ok(
 
 select extensions.throws_ok(
   $$ select api.news_engine_record_fetch(
-       (select id from app_private.news_source_items limit 1),
+       current_setting('news_engine_test.item_id')::uuid,
        repeat('d', 64),
        'too short'
      ) $$,
@@ -299,7 +314,7 @@ select extensions.throws_ok(
 
 select extensions.is(
   api.news_engine_record_fetch(
-    (select id from app_private.news_source_items limit 1),
+    current_setting('news_engine_test.item_id')::uuid,
     repeat('d', 64),
     repeat('محتوى المقال ', 40)
   ) ->> 'outcome',
@@ -309,7 +324,7 @@ select extensions.is(
 
 select extensions.is(
   api.news_engine_record_fetch(
-    (select id from app_private.news_source_items limit 1),
+    current_setting('news_engine_test.item_id')::uuid,
     repeat('d', 64),
     repeat('محتوى المقال ', 40)
   ) ->> 'outcome',
@@ -320,7 +335,7 @@ select extensions.is(
 -- Claim statuses are a closed vocabulary; nothing outside it can be stored.
 select extensions.throws_ok(
   $$ select api.news_engine_record_facts(
-       (select id from app_private.news_source_items limit 1),
+       current_setting('news_engine_test.item_id')::uuid,
        'official_signing', null, null, null, '{}'::uuid[], '{}'::uuid[],
        '[]'::jsonb, null,
        '[{"text":"A claim","status":"definitely_true"}]'::jsonb,
@@ -389,20 +404,23 @@ reset role;
 insert into app_private.news_story_clusters (cluster_key, event_type, primary_event_date)
 values ('official_signing:pgtap-one-click-approval', 'official_signing', current_date);
 
+select set_config('news_engine_test.cluster_id', id::text, true)
+from app_private.news_story_clusters
+where cluster_key = 'official_signing:pgtap-one-click-approval';
+
 set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
 select extensions.is(
   api.news_engine_publish_article(
-    (select id from app_private.news_story_clusters
-     where cluster_key = 'official_signing:pgtap-one-click-approval'),
+    current_setting('news_engine_test.cluster_id')::uuid,
     'ar', 'pgtap-one-click-approval-ar', 'عنوان اختباري صالح للنشر',
     null, 'ملخص اختباري صالح لهذه المقالة.',
     '<p>' || repeat('نص المقال الاختباري. ', 40) || '</p>',
     2, 'sanitize-html@2.17.5', null, null, 'botola-pro',
     array['official-announcement']::text[],
-    array[(select id from app.teams where slug = 'news-engine-test-club')]::uuid[],
+    array[current_setting('news_engine_test.team_id')::uuid]::uuid[],
     '{}'::uuid[], '{}'::uuid[], null, false, null
   ) ->> 'status',
   'in_review',
@@ -435,6 +453,25 @@ select extensions.ok(
    where n.nspname = 'api' and p.proname = 'editorial_transition_article')
   not like '%edition.status = ''draft'' and p_target_status in (''in_review'', ''rejected'', ''published''%',
   'draft -> published remains disallowed, which is why the engine does not use draft'
+);
+
+-- The operator stand-down sweep (PR #154) unpublishes machine editions by
+-- `created_by is null`, and the engine leaves that column null because
+-- app.article_editions.created_by is a foreign key to auth.users and no person
+-- creates an engine article. Once an editor approves one, re-running the sweep
+-- would silently unpublish it. Narrowing the sweep to editions no human has
+-- touched is what keeps an approved article published, so assert it here: the
+-- sweep either does not exist yet (before #154 merges) or spares them.
+select extensions.ok(
+  (select prosrc from pg_proc p
+   join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'app_private' and p.proname = 'news_stand_down_machine_editions')
+  is not distinct from null
+  or (select prosrc from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'app_private' and p.proname = 'news_stand_down_machine_editions')
+     like '%updated_by is null%',
+  'the stand-down sweep never unpublishes an edition an editor has acted on'
 );
 
 set local role service_role;

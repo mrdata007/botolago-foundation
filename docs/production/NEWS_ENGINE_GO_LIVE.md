@@ -219,8 +219,9 @@ If those look right, the pipeline is behaving.
 | limit        | `25`              |
 | mode         | `review-only`     |
 
-Everything lands as a **draft**: `status = 'draft'`, `visibility = 'private'`.
-Nothing is publicly visible. Then inspect:
+Everything lands in **`in_review`** with `visibility = 'private'`. Nothing is
+publicly visible, and nothing publishes itself — see
+[Launch mode](#launch-mode-nothing-publishes-itself) below. Then inspect:
 
 ```sql
 -- as service_role
@@ -252,25 +253,61 @@ the gates, not the volume.
 Same call with `limit: 100`. Re-inspect. Only then consider a larger
 `backfill` run with `--since` / `--until`.
 
-### Step 9 — Enable auto-publish
+### Step 9 — Approve articles one at a time in Admin
 
-Only after batches 1 and 2 have been reviewed and accepted.
+<a id="launch-mode-nothing-publishes-itself"></a>
 
-Set `vars.NEWS_ENGINE_SCHEDULED_MODE` to `publish`, or dispatch with
-`mode: publish`. Even then, an article auto-publishes **only** when all of
-these hold:
+**Launch mode is the shipped default and it needs no configuration.** All
+thirteen publication policies ship with `auto_publish = false`, so the engine
+cannot publish anything on its own — not in `review-only` mode, not in
+`publish` mode, not on a schedule. A pgTAP assertion holds the count of
+auto-publishing event types at zero, so turning one on is a visible act rather
+than drift.
 
-- its event type's policy row has `auto_publish = true` (currently:
-  `match_result`, `fixture_announcement`, `official_signing`, `suspension`,
-  `competition_announcement`);
+Every generated article lands in `in_review`. Approval is one transition:
+
+```sql
+-- the review queue Admin binds to (authenticated editor, not service_role)
+select api.editorial_list_stories(p_status => 'in_review', p_limit => 50);
+
+-- one-click approve
+select api.editorial_transition_article('<article_edition_id>', 'published');
+```
+
+That is the same pair of calls Admin already uses for hand-written articles.
+The engine needed no separate approval surface because its output _is_ an
+ordinary `app.article_editions` row — same statuses, same search index, same
+revision history.
+
+`in_review` rather than `draft` is deliberate:
+`api.editorial_transition_article` permits `in_review -> published` but not
+`draft -> published`, so an article parked in `draft` would cost an editor two
+clicks instead of one.
+
+### Step 9b — (Later, optional) let some event types publish themselves
+
+Do this only after several batches have been reviewed and accepted, and only
+per event type:
+
+```sql
+update app_private.news_publication_policies
+set auto_publish = true
+where event_type = 'match_result';   -- one row, one event type, at a time
+```
+
+Even then, an article auto-publishes only when **all** of these hold:
+
+- its policy row has `auto_publish = true`;
+- the runner was invoked with `mode: publish`;
 - the strongest claim across the cluster is `official`;
 - the cluster has at least the policy's `minimum_source_count` sources;
 - no source conflict was detected;
 - every entity mention resolved;
 - both quality gates returned `passed`.
 
-Transfer rumours, injuries, coach changes and anything unclassified never
-auto-publish, whatever the mode.
+The reviewed thresholds for each event type are already in the table with a
+note saying which are sensible candidates. Transfer rumours, injuries, coach
+changes and anything unclassified should never be turned on.
 
 ### Step 10 — Enable the schedule
 
@@ -363,7 +400,9 @@ source mapping all remain for inspection.
   unchanged returned `outcome: updated` with the same story id and article id,
   not a second article.
 - **Editor publish**: re-calling the same contract with `p_publish = true`
-  moved one edition to `published`/`public` in place.
+  moved one edition to `published`/`public` in place. (That staging run
+  predates launch mode; output now lands in `in_review` and an editor
+  publishes it through `api.editorial_transition_article`.)
 - **Public read path, as `anon`**: `api.news_feed('ar', 5, …)` returned
   exactly the one published edition — the five drafts did not leak — carrying
   the BotolaGO headline, publisher `BotolaGO` (`botolago-newsroom`), the
