@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/backend/generated/database.types";
+import { assertServerProjectMatchesApplication } from "@/backend/config/supabase-project";
 import { mapNewsError, NewsError } from "../errors";
 import type { NormalizedNewsArticle } from "../provider/contracts";
 import type { NewsIngestionCounters, NewsIngestionGateway } from "./contracts";
@@ -9,6 +10,9 @@ function serverClient(): SupabaseClient<Database> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRoleKey)
     throw new NewsError("data_unavailable", "Server News credentials are not configured.");
+  // Service role bypasses RLS: a mispointed worker would write real articles
+  // into another project's database without failing. Refuse instead.
+  assertServerProjectMatchesApplication(url);
   return createClient<Database>(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
