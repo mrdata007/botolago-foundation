@@ -1,5 +1,13 @@
 # ElBotola news recovery
 
+> **Superseded for ElBotola.** The news engine
+> (`docs/production/NEWS_ENGINE_GO_LIVE.md`) now owns the ElBotola source. It
+> extracts facts and composes original BotolaGO articles instead of publishing
+> link stubs, and `news-elbotola-recovery.yml` has lost its schedule. Do not
+> run the stub path and the engine against ElBotola at the same time: both
+> write `app_private.news_source_articles` on the same
+> `(publisher, external_id)` key.
+
 The owner-confirmed 2026-08-03 permission in `ELBOTOLA_INTEGRATION.md` covers
 Arabic headline/link metadata and allowlisted remote hero images. This workflow
 uses the existing adapter with its origin, robots, timestamp, HTML and size
