@@ -2,7 +2,7 @@
 # States: QUEUED READY RUNNING HALTED_FOR_INPUT BLOCKED FAILED REJECTED DONE
 # Severity: P0 blocks launch · P1 launch-degrading · P2 post-launch
 project: BotolaGO
-updated: 2026-09-19T16:16:00Z
+updated: 2026-09-21T10:05:00Z
 human_actions_open:
   # BG-0002 RESOLVED 2026-09-18T17:38Z: credential replaced and org upgraded to Pro (backup
   # readiness). Full preflight now passes; see BG-0002/BG-0003 entries below for evidence.
@@ -18,6 +18,54 @@ human_actions_open:
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
 
 tasks:
+
+  BG-0051:
+    title: LAUNCH CHIEF — Admin authentication restored; non-staff acceptance proven on production
+    area: auth
+    severity: P0
+    user_impact: /admin refused every account, including the sole platform_admin. Admin and CMS were unreachable.
+    owner: Chief
+    state: DONE
+    depends_on: []
+    root_cause: >
+      The Admin route gate resolved its Supabase project from a server-only SUPABASE_URL while the
+      browser authenticated against the build-time VITE_SUPABASE_URL. The two named different
+      projects, so the session signing key was absent from that project's JWKS and every token was
+      presented to an Auth server that had never issued it. Never a regression: /admin is the only
+      createServerFn in the app, so the path was unexercised until the first staff principal existed.
+    evidence:
+      - Owner reported Ref. unauthenticated/invalid_token/rejected (token arrived and was refused)
+      - Round-trip probe: real kid ffe6387d cost 144ms (~1.2 RTT) before, 1ms (0.01 RTT) after
+      - Owner confirmed the Admin console renders with platform_admin, 34 permissions, AAL2
+      - Non-staff acceptance on production 2026-09-21: authenticated non-staff -> forbidden
+        ("Accès interdit" / "الدخول مرفوض"); anonymous -> unauthenticated/missing_token; no staff
+        data in the DOM; verified FR and AR
+    commits: [c101fea, 5c8e024, 0877914, e6f6420, e052f63, ae287aa]
+    verification: {status: PASS, by: owner (console) + chief (production probes, non-staff acceptance)}
+
+  BG-0052:
+    title: LAUNCH CHIEF — Server workers may target the wrong Supabase project (service-role)
+    area: infra
+    severity: P1
+    user_impact: >
+      News ingestion and the notification worker hold a SERVICE ROLE key and read the same
+      server-only SUPABASE_URL that was proven wrong for the Admin gate. A mispointed worker does
+      not fail; it writes production content into another project's database silently.
+    owner: Human (credential) + Chief (guard)
+    state: HALTED_FOR_INPUT
+    depends_on: [BG-0051]
+    chief_action_taken: >
+      Added assertServerProjectMatchesApplication: a service-role client whose project disagrees
+      with the application's now refuses to start and names both sides. Deliberately does NOT
+      substitute the application URL, because the service URL and its key are a matched pair and
+      swapping one half would leave a key that cannot authenticate. Fails closed instead.
+    human_action_required: >
+      Set SUPABASE_URL and its MATCHING SUPABASE_SERVICE_ROLE_KEY in the production hosting
+      environment to project tkewgajrljbwgwedqsxn. Both halves must come from the same project.
+      No Lovable MCP tool exposes environment variables, so the Chief cannot set them.
+    blast_radius_today: >
+      Low. Ingestion schedules are disabled, so no worker is currently writing. This must be
+      corrected before ingestion or notifications are enabled.
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy

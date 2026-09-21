@@ -6,6 +6,7 @@ import {
   notificationLanguageSchema,
   type NotificationEventEnvelope,
 } from "../contracts";
+import { assertServerProjectMatchesApplication } from "@/backend/config/supabase-project";
 import { mapNotificationError, NotificationError } from "../errors";
 import { validateNotificationEvent } from "../events";
 
@@ -17,6 +18,8 @@ function serverClient(): SupabaseClient<Database> {
       "delivery_provider_unavailable",
       "Server notification credentials are not configured.",
     );
+  // Service role bypasses RLS: refuse to deliver against another project.
+  assertServerProjectMatchesApplication(url);
   return createClient<Database>(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
