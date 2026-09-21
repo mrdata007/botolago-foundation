@@ -98,8 +98,35 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-shadow-raised",
 ];
 
-const size = (token: UiToken) => `text-[length:var(${token})]`;
-const weight = (token: UiToken) => `[font-weight:var(${token})]`;
+/**
+ * Tailwind scans source files for *literal* class strings. A class built by
+ * interpolation — `text-[length:var(${token})]` — is never seen, so the
+ * utility is never generated and the element silently falls back to the
+ * inherited 16px/400. Every size and weight below is therefore spelled out
+ * in full exactly once, here, where the scanner can read it. Do not rewrite
+ * these as template literals.
+ */
+const SIZE_CLASS = {
+  "--ui-text-hero": "text-[length:var(--ui-text-hero)]",
+  "--ui-text-title": "text-[length:var(--ui-text-title)]",
+  "--ui-text-section": "text-[length:var(--ui-text-section)]",
+  "--ui-text-subtitle": "text-[length:var(--ui-text-subtitle)]",
+  "--ui-text-body": "text-[length:var(--ui-text-body)]",
+  "--ui-text-secondary": "text-[length:var(--ui-text-secondary)]",
+  "--ui-text-meta": "text-[length:var(--ui-text-meta)]",
+  "--ui-text-label": "text-[length:var(--ui-text-label)]",
+  "--ui-text-micro": "text-[length:var(--ui-text-micro)]",
+} as const satisfies Partial<Record<UiToken, string>>;
+
+const WEIGHT_CLASS = {
+  "--ui-weight-body": "[font-weight:var(--ui-weight-body)]",
+  "--ui-weight-strong": "[font-weight:var(--ui-weight-strong)]",
+  "--ui-weight-heavy": "[font-weight:var(--ui-weight-heavy)]",
+  "--ui-weight-hero": "[font-weight:var(--ui-weight-hero)]",
+} as const satisfies Partial<Record<UiToken, string>>;
+
+const size = (token: keyof typeof SIZE_CLASS) => SIZE_CLASS[token];
+const weight = (token: keyof typeof WEIGHT_CLASS) => WEIGHT_CLASS[token];
 
 /**
  * The design language as class tokens. Compose with `cn()`.

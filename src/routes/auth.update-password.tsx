@@ -11,8 +11,12 @@ import {
   AuthPrimaryButton,
   AuthFieldError,
   AuthFieldLabel,
+  AuthFormError,
   AuthSecondaryButton,
+  authFieldClass,
 } from "@/components/auth/AuthShell";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +27,14 @@ export const Route = createFileRoute("/auth/update-password")({
   head: () => ({ meta: [{ title: "Nouveau mot de passe — BotolaGO" }] }),
   component: UpdatePasswordPage,
 });
+
+/** The password meter, on the status tokens rather than Tailwind palette
+ * literals, so it follows the theme like everything else. */
+function strengthColor(strength: number): string {
+  if (strength <= 1) return "bg-[color:var(--ui-negative)]";
+  if (strength === 2) return "bg-[color:var(--ui-caution)]";
+  return "bg-[color:var(--ui-positive)]";
+}
 
 function UpdatePasswordPage() {
   const { t } = useI18n();
@@ -92,7 +104,14 @@ function UpdatePasswordPage() {
     return (
       <AuthShell title={t("auth.update.success_title")} subtitle={t("auth.update.success_body")}>
         <div className="flex flex-col items-center gap-4 py-2 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600">
+          <div
+            className={cn(
+              "grid h-14 w-14 place-items-center",
+              ui.radius.control,
+              "bg-[color:color-mix(in_oklab,var(--ui-positive)_18%,transparent)]",
+              ui.tone.positive,
+            )}
+          >
             <CheckCircle2 className="h-8 w-8" aria-hidden />
           </div>
           <AuthSecondaryButton onClick={() => navigate({ to: "/" })}>
@@ -117,13 +136,20 @@ function UpdatePasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={!!errors.pw}
               aria-describedby={`${pwId}-err`}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 pe-11 text-sm outline-none focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+              className={cn(authFieldClass, "pe-11")}
             />
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-              className="absolute inset-y-0 end-2 my-1 grid place-items-center rounded-lg px-2 text-muted-foreground hover:bg-muted"
+              className={cn(
+                "absolute inset-y-0 end-1 grid place-items-center px-2",
+                "min-w-[var(--ui-tap-min)]",
+                ui.radius.control,
+                ui.tone.muted,
+                ui.focus,
+                "hover:bg-[color:var(--ui-surface-sunken)]",
+              )}
             >
               {showPw ? (
                 <EyeOff className="h-4 w-4" aria-hidden />
@@ -138,7 +164,11 @@ function UpdatePasswordPage() {
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className={`h-1 flex-1 rounded-full ${i < strength ? (strength <= 1 ? "bg-red-500" : strength === 2 ? "bg-amber-500" : "bg-emerald-500") : "bg-muted"}`}
+                    className={cn(
+                      "h-1 flex-1",
+                      ui.radius.full,
+                      i < strength ? strengthColor(strength) : "bg-[color:var(--ui-rule)]",
+                    )}
                   />
                 ))}
               </div>
@@ -157,20 +187,12 @@ function UpdatePasswordPage() {
             onChange={(e) => setConfirm(e.target.value)}
             aria-invalid={!!errors.cpw}
             aria-describedby={`${cpwId}-err`}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${cpwId}-err`}>{errors.cpw && t(errors.cpw)}</AuthFieldError>
         </div>
 
-        {errors.form && (
-          <p
-            role="alert"
-            aria-live="assertive"
-            className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
-          >
-            {t(errors.form)}
-          </p>
-        )}
+        {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
 
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

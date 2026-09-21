@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { SavedButton } from "@/components/news/SavedButton";
 import { ErrorState, LoadingState } from "@/components/common/States";
+import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
@@ -38,6 +39,16 @@ export const Route = createFileRoute("/news/$articleId")({
   head: ({ loaderData, params }) => buildArticleHead(loaderData, params.articleId),
   component: ArticlePage,
 });
+
+/** The byline separator — one dot, on the rule colour so it follows the theme. */
+function Dot() {
+  return (
+    <span
+      aria-hidden
+      className="h-1 w-1 rounded-full bg-[color:var(--ui-on-surface-muted)] opacity-60"
+    />
+  );
+}
 
 function ArticlePage() {
   const { articleId } = Route.useParams();
@@ -87,18 +98,15 @@ function ArticlePage() {
   if (!article) {
     return (
       <AppShell backgroundVariant="news">
-        <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--surface)] p-6 text-center">
-          <h1 className="text-lg font-black text-foreground">{t("article.not_found_title")}</h1>
-          <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+        <UiCard padding="lg" className="mt-8 text-center">
+          <h1 className={cn(ui.text.section, ui.tone.default)}>{t("article.not_found_title")}</h1>
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
             {t("article.not_found_desc")}
           </p>
-          <Link
-            to="/news"
-            className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg cta-brand px-4 text-sm font-semibold"
-          >
+          <UiLinkButton to="/news" variant="ink" className="mt-4">
             {t("article.back")}
-          </Link>
-        </div>
+          </UiLinkButton>
+        </UiCard>
       </AppShell>
     );
   }
@@ -147,10 +155,13 @@ function ArticlePage() {
           onClick={goBack}
           aria-label={t("article.back")}
           className={cn(
-            "inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground",
-            "bg-[color:var(--surface-glass-strong)] backdrop-blur-md",
-            "border border-[var(--glass-border)] shadow-subtle",
-            "hover:bg-[color:var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+            "inline-flex items-center gap-1.5 px-3",
+            ui.space.tap,
+            ui.radius.control,
+            ui.surface.card,
+            ui.text.bodyStrong,
+            ui.focus,
+            "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
           )}
         >
           <BackArrow className="h-4 w-4" aria-hidden />
@@ -162,7 +173,14 @@ function ArticlePage() {
             type="button"
             onClick={share}
             aria-label={t("article.share")}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-[color:var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]"
+            className={cn(
+              "inline-flex items-center justify-center",
+              ui.space.tap,
+              ui.radius.control,
+              ui.tone.default,
+              ui.focus,
+              "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+            )}
           >
             <Share2 className="h-5 w-5" aria-hidden />
           </button>
@@ -173,7 +191,14 @@ function ArticlePage() {
         <div
           role="status"
           aria-live="polite"
-          className="mt-2 rounded-full bg-[color:var(--brand-accent)]/10 px-3 py-1 text-center text-xs font-semibold text-[color:var(--brand-accent)]"
+          className={cn(
+            "mt-2 px-3 py-1 text-center",
+            ui.radius.control,
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-heavy)]",
+            "bg-[color:color-mix(in_oklab,var(--ui-ink)_12%,transparent)]",
+            ui.tone.default,
+          )}
         >
           {t("article.share_copied")}
         </div>
@@ -181,7 +206,14 @@ function ArticlePage() {
 
       {/* Hero image */}
       <figure className="mt-4">
-        <div className="overflow-hidden rounded-[var(--radius-hero)] border border-[var(--border-subtle)] shadow-card">
+        <div
+          className={cn(
+            "overflow-hidden",
+            ui.radius.control,
+            ui.rule.all,
+            "shadow-[var(--ui-shadow-card)]",
+          )}
+        >
           <MediaImage
             src={heroUrl}
             alt={article.hero?.alt ?? article.title}
@@ -194,7 +226,7 @@ function ArticlePage() {
         {(article.hero?.caption || article.hero?.credit) && (
           <figcaption
             dir={contentLanguage === "ar" ? "rtl" : "ltr"}
-            className="mt-1.5 text-[11px] text-[color:var(--text-muted)]"
+            className={cn("mt-1.5", ui.text.micro, ui.tone.muted)}
           >
             {article.hero?.caption}
             {article.hero?.caption && article.hero?.credit ? " — " : ""}
@@ -203,22 +235,25 @@ function ArticlePage() {
         )}
       </figure>
 
-      {/* Article surface — a calmer L1 elevated reading card sitting on the news mesh */}
+      {/* Article surface — the Fantasy card, at reading width */}
       <article
         lang={contentLanguage}
         dir={contentLanguage === "ar" ? "rtl" : "ltr"}
         className={cn(
-          "relative mt-4 rounded-[var(--radius-hero)] border border-[var(--border-subtle)]",
-          "bg-[color:var(--background-elevated)] shadow-card",
-          "px-4 py-5 sm:px-6 sm:py-7",
+          ui.surface.card,
+          "relative mt-4 px-4 py-5 sm:px-6 sm:py-7",
           "animate-in fade-in-0 slide-in-from-bottom-1 duration-500 ease-out",
         )}
       >
         {/* Category eyebrow */}
         {article.primaryCategory && (
           <div className="mb-2 inline-flex items-center gap-1.5">
-            <span aria-hidden className="h-3 w-0.5 rounded-full bg-[color:var(--brand-accent)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--brand-accent)]">
+            <span
+              aria-hidden
+              className={cn("h-3 w-0.5", ui.radius.full, "bg-[color:var(--ui-ink)]")}
+            />
+            {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+            <span className={cn(ui.text.label, ui.tone.default)}>
               {article.primaryCategory.name}
             </span>
           </div>
@@ -226,10 +261,7 @@ function ArticlePage() {
 
         {/* Headline */}
         <h1
-          className={cn(
-            "text-[26px] font-black leading-[1.12] tracking-tight text-foreground sm:text-[30px]",
-            contentLanguage === "ar" && "leading-[1.35]",
-          )}
+          className={cn(ui.text.hero, ui.tone.default, contentLanguage === "ar" && "leading-snug")}
         >
           {article.title}
         </h1>
@@ -238,8 +270,11 @@ function ArticlePage() {
         {(article.subtitle ?? article.summary) && (
           <p
             className={cn(
-              "mt-3 text-[15px] leading-relaxed text-[color:var(--text-secondary)] sm:text-base",
-              contentLanguage === "ar" && "text-[16px] leading-[1.85]",
+              "mt-3 leading-relaxed",
+              ui.text.subtitle,
+              "[font-weight:var(--ui-weight-body)]",
+              ui.tone.muted,
+              contentLanguage === "ar" && "leading-loose",
             )}
           >
             {article.subtitle ?? article.summary}
@@ -250,14 +285,19 @@ function ArticlePage() {
         <div
           lang={lang}
           dir={dir}
-          className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[var(--border-subtle)] py-3 text-xs text-[color:var(--text-muted)]"
+          className={cn(
+            "mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 py-3",
+            "border-y border-[color:var(--ui-rule)]",
+            ui.text.meta,
+            ui.tone.muted,
+          )}
         >
           {byline && (
             <>
-              <span className="font-semibold text-foreground">
+              <span className={cn("[font-weight:var(--ui-weight-heavy)]", ui.tone.default)}>
                 {t("article.by")} {byline}
               </span>
-              <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+              <Dot />
             </>
           )}
           <span title={formatFullDate(article.publishedAt, lang)}>
@@ -265,20 +305,20 @@ function ArticlePage() {
           </span>
           {hasDistinctUpdate && (
             <>
-              <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+              <Dot />
               <span title={formatFullDate(article.updatedAt, lang)}>
                 {t("article.updated")} {formatRelativeTime(article.updatedAt, lang)}
               </span>
             </>
           )}
-          <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+          <Dot />
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" aria-hidden />
             {article.readingTimeMinutes} {t("news.read_min")}
           </span>
           {teamNames.length > 0 && (
             <>
-              <span className="h-1 w-1 rounded-full bg-[color:var(--text-muted)]/50" aria-hidden />
+              <Dot />
               <span className="truncate">{teamNames.join(" · ")}</span>
             </>
           )}
@@ -288,32 +328,39 @@ function ArticlePage() {
         {/* `editorial-body` styles the injected HTML itself. The previous
             `space-y-4` sat on this wrapper while every paragraph went into a
             single child, so it spaced exactly one element and the body ran
-            together with no gaps at all. */}
+            together with no gaps at all. Sizes come from the type scale —
+            reading copy is one step up from body, and Arabic one more, which
+            is the same relationship the rest of the product uses. */}
         <div
           className={cn(
-            "editorial-body mt-5 max-w-[68ch] text-[16px] leading-[1.75] text-foreground/90",
-            contentLanguage === "ar" && "text-[17px] leading-[2]",
+            "editorial-body mt-5 max-w-[68ch] leading-[1.75]",
+            ui.text.subtitle,
+            "[font-weight:var(--ui-weight-body)]",
+            ui.tone.default,
+            contentLanguage === "ar" && "text-[length:var(--ui-text-section)] leading-loose",
           )}
           dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
         />
 
-        {/* Topic/team tags */}
+        {/* Topic/team tags — 6px chips, the language's control radius */}
         {(topicTags.length > 0 || teamNames.length > 0) && (
-          <div className="mt-5 flex flex-wrap gap-1.5 border-t border-[var(--border-subtle)] pt-4">
-            {topicTags.map((tag) => (
+          <div className="mt-5 flex flex-wrap gap-1.5 border-t border-[color:var(--ui-rule)] pt-4">
+            {[
+              ...topicTags.map((tag) => ({ key: `topic-${tag.id}`, name: tag.name })),
+              ...article.teams.map((team) => ({ key: `team-${team.id}`, name: team.name })),
+            ].map((chip) => (
               <span
-                key={tag.id}
-                className="rounded-full bg-[color:var(--surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--text-secondary)]"
+                key={chip.key}
+                className={cn(
+                  "inline-flex items-center px-2.5 py-1",
+                  ui.radius.control,
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.surface.sunken,
+                  ui.tone.muted,
+                )}
               >
-                {tag.name}
-              </span>
-            ))}
-            {article.teams.map((team) => (
-              <span
-                key={team.id}
-                className="rounded-full bg-[color:var(--surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--text-secondary)]"
-              >
-                {team.name}
+                {chip.name}
               </span>
             ))}
           </div>

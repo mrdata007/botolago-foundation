@@ -7,7 +7,10 @@ import {
   AuthSecondaryButton,
   AuthFieldError,
   AuthFieldLabel,
+  authFieldClass,
 } from "@/components/auth/AuthShell";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
 import { validateEmail } from "@/lib/validation";
@@ -58,7 +61,14 @@ function ForgotPage() {
     return (
       <AuthShell title={t("auth.forgot.success_title")} subtitle={t("auth.forgot.success_body")}>
         <div className="flex flex-col items-center gap-4 py-2 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600">
+          <div
+            className={cn(
+              "grid h-14 w-14 place-items-center",
+              ui.radius.control,
+              "bg-[color:color-mix(in_oklab,var(--ui-positive)_18%,transparent)]",
+              ui.tone.positive,
+            )}
+          >
             <CheckCircle2 className="h-8 w-8" aria-hidden />
           </div>
           <AuthSecondaryButton onClick={() => navigate({ to: "/auth/login" })}>
@@ -85,7 +95,7 @@ function ForgotPage() {
               setError(null);
             }}
             aria-invalid={!!error}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${emailId}-err`}>{error && t(error)}</AuthFieldError>
         </div>
