@@ -664,6 +664,45 @@ tasks:
       stay stale, and nothing short of a migration altering the trigger can correct them.
       Recorded as the owner's call.
 
+  BG-0079:
+    title: Four new pgTAP files fail in CI; the team_translations anon-coercion assertion is itself wrong
+    area: ci
+    severity: P1
+    owner: Builder
+    state: IN_PROGRESS
+    branch: bg-0079-pgtap-fixes
+    depends_on: []
+    evidence:
+      - Backend quality run 468 (35617302393), job database-quality, step backend:db:test
+      - fantasy_overall_standings.test.sql and fantasy_player_season_stats.test.sql exit 3, "No plan found in TAP output" -- fatal error before the plan
+      - football_deactivate_non_current_teams.test.sql ran 20 assertions, 0 failed, but declares plan(10)
+      - team_translations.test.sql test 5 fails -- and the three api functions it flags are correct
+    note: >
+      Test 5 asserted that no api function names app.language_code in its argument list.
+      Three do -- complete_onboarding, update_my_preferences, register_my_notification_device --
+      and all three pre-date this branch. Production says authenticated holds USAGE on app
+      and anon does not, and anon cannot execute any of the three. The BG-0063 coercion trap
+      only bites a caller without that usage, so the real invariant is narrower: no api
+      function EXECUTABLE BY ANON may name an app-schema type in its arguments. The
+      assertion is being rewritten to check the privilege rather than the name.
+
+  BG-0080:
+    title: Remove the temporary rpcAwaitingGeneratedTypes helper once CI's regenerated database.types.ts lands
+    area: ci
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0079]
+    evidence:
+      - src/backend/fantasy/supabase-repository.ts:62 and its two call sites
+    note: >
+      Two lanes left src/backend/generated/database.types.ts in conflicting states -- one
+      hand-edited it against its own do-not-edit header, one refused and left it stale.
+      Neither ships. The frontend lane routed its two new RPCs through a local zod-validated
+      helper instead of hand-editing the file, which is the right call, but the helper is
+      scaffolding: it comes out when the Backend quality database job's uploaded artifact
+      replaces the generated file, or backend:types:check fails for an unrelated reason.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
