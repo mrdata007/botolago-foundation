@@ -505,4 +505,6 @@ select extensions.ok(
 
 reset role;
 
+select * from extensions.finish();
+
 rollback;
