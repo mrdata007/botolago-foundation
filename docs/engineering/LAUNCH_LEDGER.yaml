@@ -691,17 +691,22 @@ tasks:
     area: ci
     severity: P2
     owner: Chief
-    state: QUEUED
+    state: DONE # helper and its cast deleted 2026-09-21, commit 85b863b
     depends_on: [BG-0079]
     evidence:
-      - src/backend/fantasy/supabase-repository.ts:62 and its two call sites
+      - 9335897 committed CI run 35643110537's regenerated database.types.ts verbatim
+      - fantasy_player_season_stats and fantasy_player_gameweek_history are both in the api Functions union
+      - 85b863b deletes the helper; both callers use getFantasyApi().rpc(...) with check(error)
+      - typecheck clean, bun run test 1438 pass / 0 fail, lint 0 errors, build succeeds
     note: >
       Two lanes left src/backend/generated/database.types.ts in conflicting states -- one
       hand-edited it against its own do-not-edit header, one refused and left it stale.
-      Neither ships. The frontend lane routed its two new RPCs through a local zod-validated
-      helper instead of hand-editing the file, which is the right call, but the helper is
-      scaffolding: it comes out when the Backend quality database job's uploaded artifact
-      replaces the generated file, or backend:types:check fails for an unrelated reason.
+      Neither shipped. The frontend lane routed its two new RPCs through a local zod-validated
+      helper instead of hand-editing the file, which was the right call, but the helper was
+      scaffolding: it reached the client through `as unknown as { rpc(fn: string, ...) }`, a
+      hole in the one place this codebase checks RPC names and argument shapes against the
+      database. BG-0079 landed CI's artifact, so the hole had nothing left to cover and came
+      out. A misspelled RPC name in either call is now a compile error, not a runtime PGRST202.
 
   BG-0083:
     title: --ui-ink is used as a text colour and fails contrast in dark mode
