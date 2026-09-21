@@ -2,15 +2,17 @@ import { Plus, RotateCcw, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
+import { ui, UiBanner, UiButton, UiHeader, UiSegmented } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
 import { FplEmptySlot, FplPlayerCard } from "./FplPlayerCard";
 import { FplPitch } from "./FplPitch";
 import { FplStatBar } from "./FplStatBar";
 import { SquadListTable, type SquadListColumn } from "./SquadListTable";
-import { FplBanner, FplButton, FplDeadlineLine, FplHeader, FplSegmented } from "./primitives";
 
 export interface BuilderSlot {
   slot: number;
@@ -18,13 +20,38 @@ export interface BuilderSlot {
   player: FantasyPlayer | null;
   isCaptain?: boolean;
   isViceCaptain?: boolean;
-  /** Incoming player (transfer in) — cyan sub plate like the reference. */
+  /** Incoming player (transfer in) — highlighted sub plate like the reference. */
   highlighted?: boolean;
   /** Sub plate text (price by default). */
   sub?: string;
 }
 
 const ROWS: Position[] = ["GK", "DEF", "MID", "FWD"];
+
+/**
+ * The gameweek deadline, pinned to the competition's own calendar.
+ *
+ * `timeZone: MATCH_TIME_ZONE` is not decoration: without it the formatter
+ * follows the viewer's browser and this line disagrees with every other
+ * deadline on the screen for anyone outside Morocco (BG-0100).
+ */
+function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso: string }) {
+  const { t, lang } = useI18n();
+  const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: MATCH_TIME_ZONE,
+  }).format(new Date(deadlineIso));
+  return (
+    <p className={cn("mt-1 text-center", ui.text.secondary)}>
+      {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
+      <strong className="[font-weight:var(--ui-weight-heavy)]">{formatted}</strong>
+    </p>
+  );
+}
 
 /**
  * FPL-002/004/005/006 "Transfers" composition, shared by first-time squad
@@ -93,6 +120,14 @@ export function SquadBuilderScreen({
   });
   const clubOf = (id: string) => clubs.find((c) => c.id === id);
   const replaceMode = !!incoming;
+  const positionLabel = (value: Position) =>
+    value === "GK"
+      ? t("player.pos.GK")
+      : value === "DEF"
+        ? t("player.pos.DEF")
+        : value === "MID"
+          ? t("player.pos.MID")
+          : t("player.pos.FWD");
 
   const card = (s: BuilderSlot) => {
     const dimmed = replaceMode && s.position !== incoming!.position;
@@ -134,25 +169,24 @@ export function SquadBuilderScreen({
 
   return (
     <>
-      <FplHeader
+      <UiHeader
         title={title}
+        tone="gradient"
         backTo={backTo}
         onBack={onBack}
-        right={
+        trailing={
           onReset && !resetDisabled ? (
-            <button
-              type="button"
-              onClick={onReset}
-              className="inline-flex min-h-9 items-center gap-1 rounded-[6px] bg-[color:var(--fpl-ink)] px-3 text-[13px] font-extrabold text-[color:var(--fpl-green)]"
-            >
+            <UiButton variant="ink" size="sm" onClick={onReset}>
               <RotateCcw className="h-3.5 w-3.5" aria-hidden /> {t("fpl.reset")}
-            </button>
+            </UiButton>
           ) : null
         }
       >
-        <FplDeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />
-        <FplSegmented
+        <DeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />
+        <UiSegmented
           className="mt-3"
+          tone="onGradient"
+          label={t("fpl.squad")}
           value={view}
           onChange={onViewChange}
           options={[
@@ -160,8 +194,8 @@ export function SquadBuilderScreen({
             { value: "list", label: t("fpl.list") },
           ]}
         />
-      </FplHeader>
-      {banner ? <FplBanner>{banner}</FplBanner> : null}
+      </UiHeader>
+      {banner ? <UiBanner>{banner}</UiBanner> : null}
       <FplStatBar items={stats} />
 
       {view === "squad" ? (
@@ -181,13 +215,21 @@ export function SquadBuilderScreen({
 
       {children}
 
-      <div className="sticky bottom-0 z-30 mt-3 bg-[color:var(--fpl-bg)]/95 pb-[max(env(safe-area-inset-bottom),0.75rem)] backdrop-blur">
+      <div className={cn("sticky bottom-0 z-30 mt-3", ui.surface.bar, ui.safe.bottom)}>
         {incoming ? (
           <div
             role="status"
-            className="flex items-center gap-2 border-y border-[color:var(--fpl-grey)] bg-white"
+            className={cn("flex items-center gap-2", ui.rule.block, ui.rule.blockStart)}
           >
-            <span className="inline-flex h-12 items-center gap-2 bg-[color:var(--brand-primary,var(--fpl-ink))] px-3 text-[13px] font-extrabold text-white">
+            <span
+              className={cn(
+                "inline-flex items-center gap-2 px-3",
+                ui.space.row,
+                ui.surface.inkPlain,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-heavy)]",
+              )}
+            >
               {t("fpl.incoming_player")} <UserPlus className="h-4 w-4" aria-hidden />
             </span>
             <span className="flex min-w-0 flex-1 items-center gap-2 py-1">
@@ -197,38 +239,48 @@ export function SquadBuilderScreen({
                 imageUrl={incoming.jerseyImageUrl}
               />
               <span className="min-w-0">
-                <span className="block truncate text-[13px] font-extrabold text-foreground">
+                <span
+                  className={cn(
+                    "block truncate",
+                    ui.text.meta,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.tone.default,
+                  )}
+                >
                   {tr(incoming.name)}
                 </span>
-                <span className="block truncate text-[11px] text-[color:var(--fpl-grey-text)]">
+                <span className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
                   {incomingClub ? tr(incomingClub.shortName) : ""} ·{" "}
-                  {t(`player.pos.${incoming.position}` as never)} · {nf.format(incoming.price)}
+                  {positionLabel(incoming.position)} · {nf.format(incoming.price)}
                 </span>
               </span>
             </span>
             {onCancelIncoming ? (
-              <button
-                type="button"
-                onClick={onCancelIncoming}
-                className="me-2 rounded-[4px] px-2 py-1 text-[12px] font-bold text-[color:var(--fpl-ink)] underline"
-              >
+              <UiButton variant="ghost" size="sm" className="me-1" onClick={onCancelIncoming}>
                 {t("fpl.cancel")}
-              </button>
+              </UiButton>
             ) : null}
           </div>
         ) : null}
         {incoming ? (
-          <p className="px-3 pt-2 text-center text-[12px] font-semibold text-[color:var(--fpl-ink-deep)]">
+          <p className={cn("px-3 pt-2 text-center", ui.text.meta, ui.tone.ink)}>
             {t("fpl.select_replacement")}
           </p>
         ) : null}
+        {/* px-2: at 390px the kit button's 16px gutters push "Ajouter un joueur"
+            onto a second line next to a one-word sibling. */}
         <div className="grid grid-cols-2 gap-2 px-3 pt-2">
-          <FplButton variant="gradient" onClick={onAddPlayer} disabled={replaceMode}>
-            <Plus className="h-4 w-4" aria-hidden /> {t("fpl.add_player")}
-          </FplButton>
-          <FplButton variant="ink" onClick={onNext} disabled={nextDisabled}>
+          <UiButton
+            className="px-2"
+            variant="gradient"
+            onClick={onAddPlayer}
+            disabled={replaceMode}
+          >
+            <Plus className="h-4 w-4 shrink-0" aria-hidden /> {t("fpl.add_player")}
+          </UiButton>
+          <UiButton className="px-2" variant="ink" onClick={onNext} disabled={nextDisabled}>
             {nextLabel ?? t("fpl.next")}
-          </FplButton>
+          </UiButton>
         </div>
       </div>
     </>
