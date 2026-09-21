@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { FileText, Plus, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, FileText, Plus, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { loadAdminNewsReadRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
 import {
@@ -8,9 +8,10 @@ import {
   adminFieldClass,
   adminRepositoryContext,
 } from "@/backend/admin/functional-route-helpers";
-import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
+import { encodeEditorialCursor, SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import type {
   EditorialStatus,
+  EditorialStoryPageDto,
   EditorialStorySummaryDto,
   NewsLanguage,
 } from "@/backend/news/contracts";
@@ -21,6 +22,7 @@ import {
   AdminDatum,
   AdminEmptyState,
   AdminNotice,
+  AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
 import { useI18n } from "@/i18n/provider";
 
@@ -64,6 +66,140 @@ const NEWS_STATUS_TONES: Record<EditorialStatus, string> = {
   rejected: "border-rose-500/40 bg-rose-500/10 text-rose-200",
 };
 
+/* eslint-disable react-refresh/only-export-components --
+   The paging state machine below is deliberately pure and exported so that
+   `admin.news.pagination.test.ts` can exercise the real reset/append/stale
+   rules instead of grepping this file for the shape of them. Nothing but the
+   test imports it, so Fast Refresh has nothing to lose here. */
+
+/**
+ * CMS list paging, on the cursor contract the repository already defines.
+ *
+ * `SupabaseNewsRepository.listStories` takes `ListStoriesInput extends
+ * CursorPageRequest` -- an *encoded* `cursor` string plus a `limit` -- and
+ * returns `EditorialStoryPageDto = { items, nextCursor }`, where `nextCursor`
+ * is the `{ updatedAt, id }` keyset of the last row on the page, or `null`
+ * when the page is the last one. `encodeEditorialCursor` is the round-trip
+ * partner of the repository's own `decodeEditorialCursor`, so the encoded
+ * `nextCursor` of one page is exactly the `cursor` of the next. Underneath,
+ * `api.editorial_list_stories` orders by `(updated_at, id) desc` and pages
+ * with a strict `<` on that pair, so consecutive pages neither skip nor
+ * repeat a row.
+ *
+ * Two invariants this reducer adds on top of that contract:
+ *
+ *  1. Filters never mix. `filters` is the snapshot that produced `items`;
+ *     "load more" is always fetched under it, never under whatever the form
+ *     inputs happen to hold. Re-filtering starts a new `generation`, which
+ *     empties the list and drops the cursor.
+ *  2. Late answers never land. Every request carries the `generation` it was
+ *     issued under; a response from a superseded search (or from a "load
+ *     more" that a re-filter overtook) is discarded instead of appended to a
+ *     list it does not belong to.
+ */
+export type AdminNewsListPhase = "loading" | "loading-more" | "ready" | "error";
+
+export interface AdminNewsFilters {
+  readonly language: NewsLanguage | "";
+  readonly status: EditorialStatus | "";
+  readonly query: string;
+}
+
+export const ADMIN_NEWS_EMPTY_FILTERS: AdminNewsFilters = {
+  language: "",
+  status: "",
+  query: "",
+};
+
+/** `api.editorial_list_stories` clamps `p_limit` to [1, 50]. */
+export const ADMIN_NEWS_PAGE_SIZE = 30;
+
+export interface AdminNewsListState {
+  readonly generation: number;
+  readonly filters: AdminNewsFilters;
+  readonly items: readonly EditorialStorySummaryDto[];
+  /** Encoded `nextCursor` of the page after `items`; `null` means no more. */
+  readonly cursor: string | null;
+  readonly phase: AdminNewsListPhase;
+  readonly error: string | null;
+}
+
+/** The first render is already a load, so the empty state cannot flash. */
+export const ADMIN_NEWS_INITIAL_STATE: AdminNewsListState = {
+  generation: 0,
+  filters: ADMIN_NEWS_EMPTY_FILTERS,
+  items: [],
+  cursor: null,
+  phase: "loading",
+  error: null,
+};
+
+export type AdminNewsListAction =
+  | { readonly type: "search"; readonly generation: number; readonly filters: AdminNewsFilters }
+  | { readonly type: "load-more" }
+  | {
+      readonly type: "page";
+      readonly generation: number;
+      readonly append: boolean;
+      readonly page: EditorialStoryPageDto;
+    }
+  | { readonly type: "failure"; readonly generation: number; readonly message: string };
+
+/** Append by id. The keyset already excludes repeats, but a row edited
+ *  between two requests moves to the head of the ordering and would
+ *  otherwise come back a second time. First occurrence wins. */
+function mergeById(
+  existing: readonly EditorialStorySummaryDto[],
+  incoming: readonly EditorialStorySummaryDto[],
+): readonly EditorialStorySummaryDto[] {
+  const seen = new Set(existing.map((item) => item.id));
+  const merged = [...existing];
+  for (const item of incoming) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+  return merged;
+}
+
+export function adminNewsListReducer(
+  state: AdminNewsListState,
+  action: AdminNewsListAction,
+): AdminNewsListState {
+  switch (action.type) {
+    case "search":
+      // A filter change resets paging: new generation, empty list, no cursor.
+      return {
+        generation: action.generation,
+        filters: action.filters,
+        items: [],
+        cursor: null,
+        phase: "loading",
+        error: null,
+      };
+    case "load-more":
+      if (state.cursor === null) return state;
+      if (state.phase === "loading" || state.phase === "loading-more") return state;
+      return { ...state, phase: "loading-more", error: null };
+    case "page": {
+      if (action.generation !== state.generation) return state;
+      return {
+        ...state,
+        items: action.append ? mergeById(state.items, action.page.items) : action.page.items,
+        cursor: encodeEditorialCursor(action.page.nextCursor),
+        phase: "ready",
+        error: null,
+      };
+    }
+    case "failure":
+      if (action.generation !== state.generation) return state;
+      // The cursor survives, so a failed page can be retried from the button.
+      return { ...state, phase: "error", error: action.message };
+  }
+}
+
+/* eslint-enable react-refresh/only-export-components */
+
 // This route has two child routes (new, $articleEditionId). Without this,
 // TanStack Router still matches them but never renders them: a parent route
 // in a nested (dot-separated) file hierarchy must render <Outlet /> itself
@@ -86,41 +222,71 @@ function AdminNewsListRoute() {
   const { lang } = useI18n();
   const rtl = lang === "ar";
   const repository = useMemo(() => new SupabaseNewsRepository(), []);
+  const [state, dispatch] = useReducer(adminNewsListReducer, ADMIN_NEWS_INITIAL_STATE);
+  // The three inputs are a *draft*: they are what the editor is composing.
+  // `state.filters` is what the list on screen was actually fetched with, and
+  // it is the only thing "load more" ever pages under -- so a half-changed
+  // form can never bleed into the page that follows.
   const [language, setLanguage] = useState<NewsLanguage | "">("");
   const [status, setStatus] = useState<EditorialStatus | "">("");
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<readonly EditorialStorySummaryDto[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const generation = useRef(ADMIN_NEWS_INITIAL_STATE.generation);
 
-  const load = async () => {
-    if (access.state !== "authorized") return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      const page = await repository.listStories(
-        {
-          language: language || null,
-          status: status || null,
-          query: query.trim() || null,
-          limit: 30,
-        },
-        adminRepositoryContext(access),
-      );
-      setItems(page.items);
-    } catch (error) {
-      setMessage(
-        `${rtl ? "تعذّر تحميل المقالات" : "Chargement des articles impossible"}: ${mapNewsError(error as Error).code}`,
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const authorized = access.state === "authorized" ? access : null;
+
+  const fetchPage = useCallback(
+    async (filters: AdminNewsFilters, cursor: string | null, issued: number, append: boolean) => {
+      if (!authorized) return;
+      try {
+        const page = await repository.listStories(
+          {
+            language: filters.language || null,
+            status: filters.status || null,
+            query: filters.query.trim() || null,
+            limit: ADMIN_NEWS_PAGE_SIZE,
+            cursor,
+          },
+          adminRepositoryContext(authorized),
+        );
+        dispatch({ type: "page", generation: issued, append, page });
+      } catch (error) {
+        dispatch({
+          type: "failure",
+          generation: issued,
+          message: `${rtl ? "تعذّر تحميل المقالات" : "Chargement des articles impossible"}: ${
+            mapNewsError(error as Error).code
+          }`,
+        });
+      }
+    },
+    [authorized, repository, rtl],
+  );
+
+  const search = useCallback(
+    (filters: AdminNewsFilters) => {
+      const issued = generation.current + 1;
+      generation.current = issued;
+      dispatch({ type: "search", generation: issued, filters });
+      void fetchPage(filters, null, issued, false);
+    },
+    [fetchPage],
+  );
+
+  const loadMore = useCallback(() => {
+    if (state.cursor === null) return;
+    if (state.phase === "loading" || state.phase === "loading-more") return;
+    dispatch({ type: "load-more" });
+    void fetchPage(state.filters, state.cursor, generation.current, true);
+  }, [fetchPage, state.cursor, state.filters, state.phase]);
 
   useEffect(() => {
-    void load();
+    if (access.state !== "authorized") return;
+    search(ADMIN_NEWS_EMPTY_FILTERS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.state]);
+
+  const loading = state.phase === "loading";
+  const loadingMore = state.phase === "loading-more";
 
   return (
     <AdminFunctionalRoute
@@ -150,7 +316,7 @@ function AdminNewsListRoute() {
             className={`mt-5 ${ADMIN_CARD_CLASS} p-4 sm:p-5`}
             onSubmit={(event) => {
               event.preventDefault();
-              void load();
+              search({ language, status, query });
             }}
           >
             <h3 className={ADMIN_LABEL_CLASS}>{rtl ? "تصفية" : "Filtres"}</h3>
@@ -198,7 +364,7 @@ function AdminNewsListRoute() {
             </div>
             <button
               className={`${adminButtonClass} mt-4 w-full gap-2 sm:w-auto`}
-              disabled={busy}
+              disabled={loading || loadingMore}
               type="submit"
               data-testid="admin-news-filter-submit"
             >
@@ -207,20 +373,26 @@ function AdminNewsListRoute() {
             </button>
           </form>
 
-          {message && (
+          {state.error !== null && (
             <div className="mt-4">
-              <AdminNotice tone="alert">{message}</AdminNotice>
+              <AdminNotice tone="alert" role="alert">
+                {state.error}
+              </AdminNotice>
             </div>
           )}
 
           <h3 className={`mt-6 ${ADMIN_LABEL_CLASS}`} data-testid="admin-news-result-count">
             {rtl ? "المقالات" : "Articles"}
             {" · "}
-            <span className="tabular-nums">{items.length}</span>
+            {/* A count with a "more to come" marker is an LTR run: only the
+                value is forced, the label keeps its logical position. */}
+            <AdminDatum mono={false} className="tabular-nums">
+              {`${state.items.length}${state.cursor === null ? "" : "+"}`}
+            </AdminDatum>
           </h3>
 
           <ul className="mt-3 grid gap-3" data-testid="admin-news-items">
-            {items.map((item) => (
+            {state.items.map((item) => (
               <li key={item.id} data-testid="admin-news-item">
                 {/* The whole card is the link: a one-tap target at 390px. */}
                 <Link
@@ -229,8 +401,10 @@ function AdminNewsListRoute() {
                   className={`block ${ADMIN_CARD_CLASS} p-4 outline-none transition-colors hover:border-slate-700 hover:bg-slate-900 focus-visible:ring-2 focus-visible:ring-emerald-400`}
                 >
                   <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+                    {/* Letter-spacing is LTR-only: Arabic letters join, and
+                        widening them pulls an Arabic status label apart. */}
                     <span
-                      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${NEWS_STATUS_TONES[item.status]}`}
+                      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase ltr:tracking-wide ${NEWS_STATUS_TONES[item.status]}`}
                       data-status={item.status}
                     >
                       {NEWS_STATUS_LABELS[item.status][lang]}
@@ -279,7 +453,10 @@ function AdminNewsListRoute() {
                 </Link>
               </li>
             ))}
-            {items.length === 0 && !busy && (
+            {/* Only ever shown once a page has actually come back empty --
+                never while a request is still in flight, and never instead of
+                the error above. */}
+            {state.phase === "ready" && state.items.length === 0 && (
               <li>
                 <AdminEmptyState testId="admin-news-empty">
                   {rtl ? "لا توجد مقالات مطابقة." : "Aucun article ne correspond à ces filtres."}
@@ -287,6 +464,42 @@ function AdminNewsListRoute() {
               </li>
             )}
           </ul>
+
+          {(loading || loadingMore) && (
+            <div className="mt-3">
+              <AdminSkeletonList rows={loading ? 4 : 2} testId="admin-news-loading" />
+              <p className="sr-only" role="status">
+                {rtl ? "جارٍ تحميل المقالات…" : "Chargement des articles…"}
+              </p>
+            </div>
+          )}
+
+          {state.cursor !== null && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loading || loadingMore}
+              aria-busy={loadingMore}
+              className={`${adminButtonClass} mt-4 w-full gap-2 sm:w-auto`}
+              data-testid="admin-news-load-more"
+            >
+              <ChevronDown className="h-4 w-4" aria-hidden />
+              {loadingMore
+                ? rtl
+                  ? "جارٍ التحميل…"
+                  : "Chargement…"
+                : rtl
+                  ? "تحميل المزيد من المقالات"
+                  : "Charger plus d’articles"}
+            </button>
+          )}
+
+          {/* "No cursor" is only the end of the list once something is in it. */}
+          {state.cursor === null && state.phase === "ready" && state.items.length > 0 && (
+            <p className="mt-4 text-center text-xs text-slate-500" data-testid="admin-news-end">
+              {rtl ? "نهاية القائمة." : "Fin de la liste."}
+            </p>
+          )}
         </>
       )}
     </AdminFunctionalRoute>
