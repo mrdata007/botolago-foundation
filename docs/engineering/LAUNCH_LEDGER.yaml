@@ -708,7 +708,7 @@ tasks:
     area: design
     severity: P1
     owner: Chief
-    state: QUEUED
+    state: DONE # fixed by the foundation lane 2026-09-21, commit 81b7759
     depends_on: []
     blocks: [BG-0081]
     evidence:
@@ -718,6 +718,20 @@ tasks:
       --ui-ink is a dark navy in BOTH themes, so it is a fill and border token, not a
       foreground. Fixing it means changing ui.tone.ink and two kit primitives, which
       restyles every screen -- which is why it is its own task rather than a rider.
+    resolution: >
+      Added --ui-ink-fg, a theme-correct brand foreground, and --ui-on-grad-header for the
+      header/hero band, which carried the same defect one layer down. --ui-ink is unchanged
+      and still fills and borders. Measured in rasterised sRGB, dark mode: Profile h1
+      1.42 -> 13.06, BottomNav active label 1.25 -> 11.48, UiButton outline 1.25 -> 11.48,
+      ghost 1.42 -> 13.06, UiSegmented active segment 1.25 -> 11.48. Light is unchanged by
+      construction, since --ui-ink and --ui-ink-fg hold the same value there. The "before"
+      numbers reproduce BG-0081's exactly, which is how we know the two harnesses measure
+      the same thing.
+    beyond_scope_found: >
+      An audit of all 23 kit colour pairs across both themes found four more palette
+      defects, now fixed: light --ui-positive at 2.6:1 as text, light --ui-negative at
+      4.0:1, light --ui-on-surface-faint at 4.28, light FDR-4 at 3.98 and dark FDR-1 at
+      4.40. All 46 pairs now clear 4.5:1, worst 4.73.
 
   BG-0084:
     title: Fantasy has no dark counterpart -- --fpl-* is light-only and the screens use literal bg-white
@@ -896,6 +910,45 @@ tasks:
       BotolaGO will ever perceive. Recording the number so the GLOBAL DESIGN CONSISTENCY
       verdict can be stated precisely: PASS covers the public product, and admin is a
       known, decided exclusion rather than something that was missed.
+
+  BG-0103:
+    title: --brand-primary rendered as text via text-brand fails contrast in dark
+    area: design
+    severity: P1
+    owner: Builder # routed to the Fantasy shell lane, BG-0092
+    state: IN_PROGRESS
+    depends_on: []
+    evidence:
+      - 16 instances, measured 1.35-1.54:1 in dark mode, rasterised sRGB
+    note: >
+      Same class of defect as BG-0083 one layer out: a brand fill token used as a
+      foreground. Routed to the shell lane because the instances are chrome-wide.
+
+  BG-0104:
+    title: --color-live fails contrast in LIGHT mode, at 4.04:1 on white
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    note: >
+      Worth separating from the dark-mode work because it is wrong today, on the live
+      site, for every user -- not a defect that only appears once dark mode ships. Two
+      Fantasy labels using --fpl-cyan on white measure 1.38:1 in light for the same
+      reason.
+
+  BG-0105:
+    title: MatchCard's glass prop is inert and reads as live API
+    area: design
+    severity: P3
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - src/components/common/MatchCard.tsx -- both settings now resolve to the same kit card; the prop only toggles press feedback
+    note: >
+      Deprecate once the routes stop passing it. Deliberately not removed mid-migration:
+      it is load-bearing in call sites three lanes are editing right now.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
