@@ -84,6 +84,22 @@ export interface MfaAuthClient {
 
 const SIX_DIGIT_CODE = /^\d{6}$/;
 
+/**
+ * Builds the `<img src>` for the enrollment QR code.
+ *
+ * Supabase returns `totp.qr_code` already as a complete `data:` URI. Prefixing
+ * it again produced `data:image/svg+xml;utf-8,data%3Aimage%2F...` -- a data URI
+ * whose payload is an encoded data URI, which no browser can decode, so the QR
+ * rendered broken and users had to fall back to typing the secret by hand.
+ * auth-js documents `qr_code` as raw SVG markup, and older versions returned
+ * exactly that, so both shapes are handled rather than assuming either.
+ */
+export function toQrDataUrl(qrCode: string): string {
+  const value = qrCode.trim();
+  if (value.startsWith("data:")) return value;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}`;
+}
+
 function normalizeAssuranceLevel(value: string | null): AssuranceLevel {
   return value === "aal1" || value === "aal2" ? value : null;
 }

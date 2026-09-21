@@ -5,6 +5,7 @@ import {
   isAal2,
   listVerifiedTotpFactors,
   requiresLoginChallenge,
+  toQrDataUrl,
   unenrollFactor,
   verifyTotpFactor,
   type MfaAuthClient,
@@ -103,6 +104,34 @@ describe("verifyTotpFactor", () => {
       code: "factor_not_found",
     });
     expect(verifyCalled).toBe(false);
+  });
+});
+
+describe("toQrDataUrl", () => {
+  // Regression: Supabase returns qr_code as a finished data URI. Prefixing it
+  // again produced a data URI wrapping an encoded data URI, which browsers
+  // cannot decode -- the QR rendered broken in production and users had to
+  // type the secret by hand.
+  it("returns a Supabase data URI unchanged rather than double-prefixing it", () => {
+    const supabaseValue = "data:image/svg+xml;utf-8,<?xml version='1.0'?><svg/>";
+    expect(toQrDataUrl(supabaseValue)).toBe(supabaseValue);
+  });
+
+  it("never nests a data: URI inside another data: URI", () => {
+    const result = toQrDataUrl("data:image/svg+xml;utf-8,<svg/>");
+    expect(result.indexOf("data:")).toBe(0);
+    expect(result.slice(5).includes("data:")).toBe(false);
+    expect(result.includes("data%3A")).toBe(false);
+  });
+
+  it("encodes raw SVG markup into a valid data URI", () => {
+    const result = toQrDataUrl('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>');
+    expect(result.startsWith("data:image/svg+xml;charset=utf-8,")).toBe(true);
+    expect(result).toContain("%3Csvg");
+  });
+
+  it("tolerates surrounding whitespace", () => {
+    expect(toQrDataUrl("  data:image/svg+xml,<svg/>  ")).toBe("data:image/svg+xml,<svg/>");
   });
 });
 
