@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useSavedArticles } from "@/lib/saved-articles";
+import { ui, UiBadge, UiButton, UiCard } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -58,6 +60,52 @@ export const Route = createFileRoute("/profile")({
   }),
   component: ProfileRootRoute,
 });
+
+/* -------------------------------------------------------------------------- */
+/* Shared row idioms                                                          */
+/*                                                                            */
+/* Profile is a list-of-rows screen, so the Fantasy language shows up here as */
+/* one row shape reused everywhere: a `--ui-row-min` tall line on the surface */
+/* token, 15px body copy, a hairline `--ui-rule` divider at the block end and */
+/* a 6px-radius glyph tile. No glass, no V2 radii, no Tailwind type ramp.     */
+/* -------------------------------------------------------------------------- */
+
+/** The tappable / static row frame: ≥48px tall, gutter-padded, logical only. */
+const ROW = cn("flex w-full items-center justify-between gap-3 px-4 py-3", ui.space.row);
+
+/** Rows after the first inside a card carry the divider on their block start. */
+const ROW_RULE = ui.rule.blockStart;
+
+const ROW_INTERACTIVE = cn(
+  "text-start transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+  "focus-visible:bg-[color:var(--ui-surface-sunken)] focus-visible:outline-none",
+);
+
+/** 32px glyph tile — decorative, so it may sit below the 44px tap minimum. */
+function RowGlyph({
+  children,
+  tone = "sunken",
+}: {
+  children: React.ReactNode;
+  tone?: "sunken" | "ink" | "negative";
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "grid h-8 w-8 shrink-0 place-items-center",
+        ui.radius.control,
+        tone === "sunken" && cn(ui.surface.sunken, ui.tone.muted),
+        tone === "ink" &&
+          "bg-[color:color-mix(in_oklab,var(--ui-ink)_12%,transparent)] text-[color:var(--ui-ink)]",
+        tone === "negative" &&
+          "bg-[color:color-mix(in_oklab,var(--ui-negative)_16%,transparent)] text-[color:var(--ui-negative)]",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
 
 // This route now has a child route (/profile/security). A parent route in a
 // nested (dot-separated) file hierarchy must render <Outlet /> itself or the
@@ -93,8 +141,8 @@ function ProfilePage() {
 
   return (
     <AppShell>
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand whitespace-pre-wrap">{t("profile.title")}</span>
+      <h1 className={cn("pt-2", ui.text.hero, ui.tone.ink)}>
+        <span className="whitespace-pre-wrap">{t("profile.title")}</span>
       </h1>
 
       {status === "authenticated" && user ? (
@@ -117,18 +165,16 @@ function ProfilePage() {
             <DialogDescription>{t("profile.sign_out_body")}</DialogDescription>
           </DialogHeader>
           <div className="mt-2 grid gap-2">
-            <button
-              onClick={() => onSignOut(false)}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold transition-opacity hover:opacity-95"
-            >
+            <UiButton onClick={() => onSignOut(false)}>
               <Check className="h-4 w-4" aria-hidden /> {t("profile.sign_out_keep")}
-            </button>
-            <button
+            </UiButton>
+            <UiButton
+              variant="outline"
               onClick={() => onSignOut(true)}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
+              className="text-[color:var(--ui-negative)]"
             >
               <X className="h-4 w-4" aria-hidden /> {t("profile.sign_out_reset")}
-            </button>
+            </UiButton>
           </div>
         </DialogContent>
       </Dialog>
@@ -167,26 +213,15 @@ function AuthenticatedProfile({
   return (
     <>
       {/* Hero card */}
-      <section
-        className="relative mt-4 overflow-hidden rounded-[var(--radius-card-lg,1.25rem)] border border-[var(--glass-border)] bg-[color:var(--surface)] p-5 shadow-[var(--shadow-elevated,0_10px_30px_-12px_rgba(0,0,0,0.15))]"
-        aria-labelledby="profile-hero-name"
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-16 h-40 opacity-70"
-          style={{
-            background:
-              "radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--brand-primary) 22%, transparent), transparent 70%)",
-          }}
-        />
-        <div className="relative flex items-center gap-4">
+      <section className={cn("mt-4 p-5", ui.surface.card)} aria-labelledby="profile-hero-name">
+        <div className="flex items-center gap-4">
           <div
-            className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl text-white ring-2 ring-white/70"
-            style={{
-              background: "var(--bg-brand-gradient)",
-              boxShadow:
-                "0 12px 30px -12px color-mix(in oklab, var(--brand-primary) 55%, transparent)",
-            }}
+            className={cn(
+              "grid h-20 w-20 shrink-0 place-items-center overflow-hidden",
+              ui.radius.control,
+              "text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-card)]",
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
           >
             {user.avatarDataUrl ? (
               <img src={user.avatarDataUrl} alt="" className="h-full w-full object-cover" />
@@ -195,29 +230,26 @@ function AuthenticatedProfile({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div
-              id="profile-hero-name"
-              className="truncate text-lg font-black tracking-tight text-foreground"
-            >
+            <div id="profile-hero-name" className={cn("truncate", ui.text.title, ui.tone.default)}>
               {user.displayName}
             </div>
-            <div className="mt-0.5 truncate text-xs font-semibold text-[color:var(--brand-accent)]">
-              @{user.username}
-            </div>
-            <div className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</div>
+            <div className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.ink)}>@{user.username}</div>
+            <div className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.muted)}>{user.email}</div>
           </div>
-          <button
+          <UiButton
+            size="sm"
+            variant="outline"
             onClick={() => navigate({ to: "/auth/profile-setup" })}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-xl border border-input bg-background px-2.5 text-[11px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+            className="shrink-0 gap-1 px-2.5 text-[color:var(--ui-on-surface)]"
             aria-label={t("profile.edit")}
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden />
-            <span className="hidden xs:inline sm:inline">{t("profile.edit")}</span>
-          </button>
+            <span className="hidden sm:inline">{t("profile.edit")}</span>
+          </UiButton>
         </div>
 
         {/* Stats strip */}
-        <div className="relative mt-5 grid grid-cols-3 gap-2">
+        <div className="mt-5 grid grid-cols-3 gap-2">
           <StatTile
             icon={<Trophy className="h-4 w-4" aria-hidden />}
             label={t("profile.fav_club")}
@@ -226,7 +258,15 @@ function AuthenticatedProfile({
               favoriteClub ? (
                 <div className="flex items-center gap-1.5">
                   <ClubCrest club={favoriteClub} />
-                  <span className="truncate text-[13px] font-black tabular-nums text-foreground">
+                  <span
+                    className={cn(
+                      "truncate",
+                      ui.text.meta,
+                      "[font-weight:var(--ui-weight-heavy)]",
+                      ui.text.tabular,
+                      ui.tone.default,
+                    )}
+                  >
                     {favoriteClubLabel}
                   </span>
                 </div>
@@ -250,146 +290,77 @@ function AuthenticatedProfile({
 
       {/* Personal details */}
       <Group title={t("profile.section.personal")}>
-        <div className="divide-y divide-[var(--border-subtle,rgba(0,0,0,0.06))]">
-          <InfoRow icon={<Mail className="h-4 w-4" />} label={t("profile.email")}>
-            {user.email}
-          </InfoRow>
-          <InfoRow icon={<AtSign className="h-4 w-4" />} label={t("profile.username")}>
-            @{user.username}
-          </InfoRow>
-          <InfoRow icon={<Trophy className="h-4 w-4" />} label={t("profile.fav_club")}>
-            {favoriteClub ? (
-              <span className="flex items-center gap-1.5">
-                <ClubCrest club={favoriteClub} />
-                {favoriteClubLabel}
-              </span>
-            ) : (
-              "—"
-            )}
-          </InfoRow>
-        </div>
-        <button
-          onClick={() => navigate({ to: "/auth/profile-setup" })}
-          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
-        >
-          <div className="flex items-center gap-3 text-sm text-foreground">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
-              aria-hidden
-            >
-              <Pencil className="h-4 w-4" />
+        <InfoRow icon={<Mail className="h-4 w-4" />} label={t("profile.email")}>
+          {user.email}
+        </InfoRow>
+        <InfoRow icon={<AtSign className="h-4 w-4" />} label={t("profile.username")} ruled>
+          @{user.username}
+        </InfoRow>
+        <InfoRow icon={<Trophy className="h-4 w-4" />} label={t("profile.fav_club")} ruled>
+          {favoriteClub ? (
+            <span className="flex items-center gap-1.5">
+              <ClubCrest club={favoriteClub} />
+              {favoriteClubLabel}
             </span>
-            <span className="font-semibold">{t("profile.edit")}</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
-        </button>
+          ) : (
+            "—"
+          )}
+        </InfoRow>
+        <NavRow
+          icon={<Pencil className="h-4 w-4" />}
+          label={t("profile.edit")}
+          ruled
+          onClick={() => navigate({ to: "/auth/profile-setup" })}
+        />
       </Group>
 
       {/* Preferences group */}
       <Group title={t("profile.section.preferences")}>
-        <div className="divide-y divide-[var(--border-subtle,rgba(0,0,0,0.06))]">
-          {notifItems.map(([k, label]) => (
-            <div key={k} className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3 text-sm text-foreground">
-                <span
-                  className="grid h-8 w-8 place-items-center rounded-xl"
-                  style={{
-                    background: "color-mix(in oklab, var(--brand-accent) 12%, transparent)",
-                    color: "var(--brand-accent)",
-                  }}
-                  aria-hidden
-                >
-                  <Bell className="h-4 w-4" />
-                </span>
-                <span className="font-semibold">{label}</span>
-              </div>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                  user.notifications[k]
-                    ? "bg-emerald-500/15 text-emerald-700"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {user.notifications[k] ? "ON" : "OFF"}
-              </span>
+        {notifItems.map(([k, label], i) => (
+          <div key={k} className={cn(ROW, i > 0 && ROW_RULE)}>
+            <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
+              <RowGlyph tone="ink">
+                <Bell className="h-4 w-4" />
+              </RowGlyph>
+              <span className="[font-weight:var(--ui-weight-heavy)]">{label}</span>
             </div>
-          ))}
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3 text-sm text-foreground">
-              <span
-                className="grid h-8 w-8 place-items-center rounded-xl"
-                style={{
-                  background: "color-mix(in oklab, var(--brand-primary) 12%, transparent)",
-                  color: "var(--brand-primary)",
-                }}
-                aria-hidden
-              >
-                <Languages className="h-4 w-4" />
-              </span>
-              <span className="font-semibold">{t("language.switch")}</span>
-            </div>
-            <LanguageSwitcher />
+            <UiBadge tone={user.notifications[k] ? "positive" : "neutral"}>
+              {user.notifications[k] ? "ON" : "OFF"}
+            </UiBadge>
           </div>
+        ))}
+        <div className={cn(ROW, ROW_RULE)}>
+          <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
+            <RowGlyph tone="ink">
+              <Languages className="h-4 w-4" />
+            </RowGlyph>
+            <span className="[font-weight:var(--ui-weight-heavy)]">{t("language.switch")}</span>
+          </div>
+          <LanguageSwitcher />
         </div>
       </Group>
 
       {/* Account security */}
       <Group title={t("profile.section.security")}>
-        <button
+        <NavRow
+          icon={<KeyRound className="h-4 w-4" />}
+          label={t("profile.change_password")}
+          description={t("profile.change_password_desc")}
           onClick={() => navigate({ to: "/auth/update-password" })}
-          className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
-        >
-          <div className="flex items-center gap-3 text-sm text-foreground">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
-              aria-hidden
-            >
-              <KeyRound className="h-4 w-4" />
-            </span>
-            <span className="text-start">
-              <span className="block font-semibold">{t("profile.change_password")}</span>
-              <span className="block text-xs font-normal text-muted-foreground">
-                {t("profile.change_password_desc")}
-              </span>
-            </span>
-          </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        </button>
-        <button
+        />
+        <NavRow
+          icon={<ShieldCheck className="h-4 w-4" />}
+          label={t("profile.mfa_setup")}
+          description={t("profile.mfa_setup_desc")}
+          ruled
           onClick={() => navigate({ to: "/profile/security" })}
-          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
-        >
-          <div className="flex items-center gap-3 text-sm text-foreground">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
-              aria-hidden
-            >
-              <ShieldCheck className="h-4 w-4" />
-            </span>
-            <span className="text-start">
-              <span className="block font-semibold">{t("profile.mfa_setup")}</span>
-              <span className="block text-xs font-normal text-muted-foreground">
-                {t("profile.mfa_setup_desc")}
-              </span>
-            </span>
-          </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        </button>
-        <button
+        />
+        <NavRow
+          icon={<LogOut className="h-4 w-4" />}
+          label={t("profile.sign_out")}
+          ruled
           onClick={onSignOut}
-          className="flex w-full items-center justify-between border-t border-[var(--border-subtle,rgba(0,0,0,0.06))] px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
-        >
-          <div className="flex items-center gap-3 text-sm text-foreground">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
-              aria-hidden
-            >
-              <LogOut className="h-4 w-4" />
-            </span>
-            <span className="font-semibold">{t("profile.sign_out")}</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
-        </button>
+        />
       </Group>
 
       {/* Danger zone */}
@@ -398,36 +369,65 @@ function AuthenticatedProfile({
   );
 }
 
-/* -------------------------------- info row -------------------------------- */
+/* -------------------------------- rows ------------------------------------ */
 
 function InfoRow({
   icon,
   label,
   children,
+  ruled = false,
 }: {
   icon: React.ReactNode;
   label: string;
   children: React.ReactNode;
+  ruled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <div className="flex min-w-0 items-center gap-3 text-sm text-foreground">
-        <span
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-xl"
-          style={{
-            background: "color-mix(in oklab, var(--brand-accent) 12%, transparent)",
-            color: "var(--brand-accent)",
-          }}
-          aria-hidden
-        >
-          {icon}
-        </span>
-        <span className="font-semibold">{label}</span>
+    <div className={cn(ROW, ruled && ROW_RULE)}>
+      <div className={cn("flex min-w-0 items-center gap-3", ui.text.body, ui.tone.default)}>
+        <RowGlyph tone="ink">{icon}</RowGlyph>
+        <span className="[font-weight:var(--ui-weight-heavy)]">{label}</span>
       </div>
-      <span className="min-w-0 truncate text-end text-sm font-bold text-foreground">
+      <span
+        className={cn(
+          "min-w-0 truncate text-end",
+          ui.text.body,
+          "[font-weight:var(--ui-weight-heavy)]",
+          ui.tone.default,
+        )}
+      >
         {children}
       </span>
     </div>
+  );
+}
+
+function NavRow({
+  icon,
+  label,
+  description,
+  onClick,
+  ruled = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description?: string;
+  onClick: () => void;
+  ruled?: boolean;
+}) {
+  return (
+    <button type="button" onClick={onClick} className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
+      <span className={cn("flex min-w-0 items-center gap-3", ui.text.body, ui.tone.default)}>
+        <RowGlyph>{icon}</RowGlyph>
+        <span className="min-w-0 text-start">
+          <span className="block [font-weight:var(--ui-weight-heavy)]">{label}</span>
+          {description ? (
+            <span className={cn("block", ui.text.meta, ui.tone.muted)}>{description}</span>
+          ) : null}
+        </span>
+      </span>
+      <ChevronRight className={cn("h-4 w-4 shrink-0 rtl:rotate-180", ui.tone.muted)} aria-hidden />
+    </button>
   );
 }
 
@@ -485,57 +485,76 @@ function DeleteAccountSection() {
   return (
     <>
       <section className="mt-6">
-        <div className="mb-2 px-1 text-[11px] font-bold uppercase tracking-widest text-destructive/80">
+        <div className={cn("mb-2 px-1", ui.text.label, "text-[color:var(--ui-negative)]")}>
           {t("profile.section.danger")}
         </div>
-        <div className="overflow-hidden rounded-2xl border border-destructive/25 bg-destructive/5">
+        <div
+          className={cn(
+            "overflow-hidden border",
+            ui.radius.control,
+            "border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
+            "bg-[color:color-mix(in_oklab,var(--ui-negative)_7%,var(--ui-surface))]",
+            "shadow-[var(--ui-shadow-card)]",
+          )}
+        >
           {pending ? (
             <div className="flex items-start gap-3 px-4 py-4">
-              <span
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/15 text-destructive"
-                aria-hidden
-              >
+              <RowGlyph tone="negative">
                 <AlertTriangle className="h-4 w-4" />
-              </span>
+              </RowGlyph>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-foreground">
+                <div
+                  className={cn(
+                    ui.text.body,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.tone.default,
+                  )}
+                >
                   {t("profile.delete_pending_title")}
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className={cn("mt-0.5", ui.text.meta, ui.tone.muted)}>
                   {t("profile.delete_pending_body")}
                 </p>
-                <button
+                <UiButton
+                  size="sm"
+                  variant="outline"
                   onClick={cancelDeletion}
                   disabled={submitting}
-                  className="mt-3 inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-input bg-background px-3 text-xs font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                  className="mt-3 text-[color:var(--ui-on-surface)]"
                 >
                   {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
                   {t("profile.delete_cancel_request_cta")}
-                </button>
+                </UiButton>
               </div>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => setDialogOpen(true)}
-              className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-destructive/10 focus-visible:outline-none"
+              className={cn(
+                ROW,
+                "text-start transition-colors focus-visible:outline-none",
+                "hover:bg-[color:color-mix(in_oklab,var(--ui-negative)_12%,transparent)]",
+                "focus-visible:bg-[color:color-mix(in_oklab,var(--ui-negative)_12%,transparent)]",
+              )}
             >
-              <div className="flex items-center gap-3 text-sm">
-                <span
-                  className="grid h-8 w-8 place-items-center rounded-xl bg-destructive/15 text-destructive"
-                  aria-hidden
-                >
+              <span className={cn("flex min-w-0 items-center gap-3", ui.text.body)}>
+                <RowGlyph tone="negative">
                   <Trash2 className="h-4 w-4" />
-                </span>
-                <span>
-                  <span className="block font-bold text-destructive">
+                </RowGlyph>
+                <span className="min-w-0 text-start">
+                  <span className="block [font-weight:var(--ui-weight-heavy)] text-[color:var(--ui-negative)]">
                     {t("profile.delete_account")}
                   </span>
-                  <span className="block text-xs font-normal text-muted-foreground">
+                  <span className={cn("block", ui.text.meta, ui.tone.muted)}>
                     {t("profile.delete_account_desc")}
                   </span>
                 </span>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-destructive/70" aria-hidden />
+              </span>
+              <ChevronRight
+                className="h-4 w-4 shrink-0 text-[color:var(--ui-negative)] rtl:rotate-180"
+                aria-hidden
+              />
             </button>
           )}
         </div>
@@ -550,30 +569,42 @@ function DeleteAccountSection() {
             <DialogTitle>{t("profile.delete_confirm_title")}</DialogTitle>
             <DialogDescription>{t("profile.delete_confirm_body")}</DialogDescription>
           </DialogHeader>
-          <label className="mt-2 flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-xs font-semibold text-foreground">
+          <label
+            className={cn(
+              "mt-2 flex items-start gap-2 border p-3",
+              ui.radius.control,
+              "border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
+              "bg-[color:color-mix(in_oklab,var(--ui-negative)_7%,transparent)]",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-body)]",
+              ui.tone.default,
+            )}
+          >
             <input
               type="checkbox"
               checked={acknowledged}
               onChange={(e) => setAcknowledged(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-input"
+              className={cn("mt-0.5 h-4 w-4", ui.radius.control)}
             />
             <span>{t("profile.delete_confirm_checkbox")}</span>
           </label>
           <div className="mt-3 grid gap-2">
-            <button
+            <UiButton
+              variant="ink"
               onClick={confirmDelete}
               disabled={!acknowledged || submitting}
-              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-destructive px-4 text-sm font-bold text-destructive-foreground transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)]"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {t("profile.delete_confirm_cta")}
-            </button>
-            <button
+            </UiButton>
+            <UiButton
+              variant="outline"
               onClick={closeDialog}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-input bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="text-[color:var(--ui-on-surface)]"
             >
               {t("profile.delete_cancel_cta")}
-            </button>
+            </UiButton>
           </div>
         </DialogContent>
       </Dialog>
@@ -597,17 +628,32 @@ function StatTile({
   monoValue?: boolean;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-[var(--border-subtle,rgba(0,0,0,0.06))] bg-[color:var(--surface,#fff)]/70 p-3 backdrop-blur-sm">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-        <span className="text-[color:var(--brand-accent)]">{icon}</span>
-        <span className="truncate">{label}</span>
+    <div className={cn("min-w-0 p-3", ui.radius.control, ui.surface.sunken)}>
+      {/* The label wraps rather than truncates: at 390px a three-up tile is
+          ~100px wide and "Notifications" / "الإشعارات" does not fit on one
+          line at any step of the scale. `ui.text.micro` keeps it on the
+          language's 11px step, and its tracking is `ltr:`-only. */}
+      <div className={cn("flex items-start gap-1.5", ui.tone.muted)}>
+        <span className={cn("shrink-0", ui.tone.ink)}>{icon}</span>
+        <span
+          className={cn(
+            ui.text.micro,
+            "[font-weight:var(--ui-weight-heavy)] uppercase leading-tight ltr:tracking-wide",
+          )}
+        >
+          {label}
+        </span>
       </div>
       <div className="mt-1.5 min-w-0">
         {valueSlot ?? (
           <div
-            className={`truncate text-[15px] font-black text-foreground ${
-              monoValue ? "tabular-nums" : ""
-            }`}
+            className={cn(
+              "truncate",
+              ui.text.body,
+              "[font-weight:var(--ui-weight-hero)]",
+              ui.tone.default,
+              monoValue && ui.text.tabular,
+            )}
           >
             {value}
           </div>
@@ -620,12 +666,8 @@ function StatTile({
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="mb-2 px-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-        {title}
-      </h2>
-      <div className="overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 shadow-sm">
-        {children}
-      </div>
+      <h2 className={cn("mb-2 px-1", ui.text.label, ui.tone.muted)}>{title}</h2>
+      <div className={cn("overflow-hidden", ui.surface.card)}>{children}</div>
     </section>
   );
 }
@@ -637,39 +679,27 @@ function GuestProfile() {
   const navigate = useNavigate();
   return (
     <div className="mt-4 grid gap-3">
-      <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 p-5 shadow-sm">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-16 h-32"
-          style={{
-            background:
-              "radial-gradient(60% 60% at 50% 100%, rgba(245, 158, 11, 0.16), transparent 70%)",
-          }}
-        />
-        <div className="relative">
-          <div className="mb-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700">
-            {t("profile.guest_badge")}
-          </div>
-          <h2 className="text-lg font-black text-foreground">
-            <Trans text={t("profile.guest_title")} />
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("profile.guest_body")}</p>
-          <div className="mt-4 grid gap-2">
-            <button
-              onClick={() => navigate({ to: "/auth/register" })}
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
-            >
-              <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
-            </button>
-            <button
-              onClick={() => navigate({ to: "/auth/login" })}
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-input bg-background px-4 text-sm font-semibold hover:bg-muted"
-            >
-              <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
-            </button>
-          </div>
+      <UiCard padding="lg">
+        <UiBadge tone="action" className="mb-2">
+          {t("profile.guest_badge")}
+        </UiBadge>
+        <h2 className={cn(ui.text.section, ui.tone.default)}>
+          <Trans text={t("profile.guest_title")} />
+        </h2>
+        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.guest_body")}</p>
+        <div className="mt-4 grid gap-2">
+          <UiButton onClick={() => navigate({ to: "/auth/register" })}>
+            <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
+          </UiButton>
+          <UiButton
+            variant="outline"
+            onClick={() => navigate({ to: "/auth/login" })}
+            className="text-[color:var(--ui-on-surface)]"
+          >
+            <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
+          </UiButton>
         </div>
-      </div>
+      </UiCard>
     </div>
   );
 }
@@ -678,41 +708,33 @@ function AnonymousProfile() {
   const { t } = useI18n();
   const navigate = useNavigate();
   return (
-    <div className="relative mt-4 overflow-hidden rounded-3xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 p-6 text-center shadow-sm">
+    <UiCard padding="lg" className="mt-4 text-center">
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-20 h-40"
-        style={{
-          background:
-            "radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--brand-primary) 20%, transparent), transparent 70%)",
-        }}
-      />
-      <div className="relative">
-        <div
-          className="mx-auto grid h-16 w-16 place-items-center rounded-2xl p-2 text-white"
-          style={{ background: "var(--bg-brand-gradient)" }}
-        >
-          <Logo variant="icon" className="!h-12 !w-12" />
-        </div>
-        <h2 className="mt-3 text-lg font-black text-foreground">
-          <Trans text={t("profile.anon_title")} />
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("profile.anon_body")}</p>
-        <div className="mt-4 grid gap-2">
-          <button
-            onClick={() => navigate({ to: "/auth/register" })}
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold shadow-md shadow-blue-950/10 transition-opacity hover:opacity-95"
-          >
-            <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
-          </button>
-          <button
-            onClick={() => navigate({ to: "/auth/login" })}
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-input bg-background px-4 text-sm font-semibold hover:bg-muted"
-          >
-            <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
-          </button>
-        </div>
+        className={cn(
+          "mx-auto grid h-16 w-16 place-items-center p-2",
+          ui.radius.control,
+          "text-[color:var(--ui-ink-deep)]",
+        )}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
+      >
+        <Logo variant="icon" className="!h-12 !w-12" />
       </div>
-    </div>
+      <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
+        <Trans text={t("profile.anon_title")} />
+      </h2>
+      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.anon_body")}</p>
+      <div className="mt-4 grid gap-2">
+        <UiButton onClick={() => navigate({ to: "/auth/register" })}>
+          <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
+        </UiButton>
+        <UiButton
+          variant="outline"
+          onClick={() => navigate({ to: "/auth/login" })}
+          className="text-[color:var(--ui-on-surface)]"
+        >
+          <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
+        </UiButton>
+      </div>
+    </UiCard>
   );
 }
