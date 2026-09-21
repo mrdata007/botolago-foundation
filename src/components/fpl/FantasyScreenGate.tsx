@@ -75,7 +75,11 @@ export function FantasyPhaseBody({
       </div>
     );
   }
-  if (phase === "season_closed" || phase === "awaiting_gameweek") {
+  if (
+    phase === "season_closed" ||
+    phase === "awaiting_gameweek" ||
+    phase === "registration_closed"
+  ) {
     return (
       <div role="status" className="mx-4 my-6 rounded-md bg-white p-5 text-center shadow-sm">
         <CalendarClock className="mx-auto h-7 w-7 text-[color:var(--fpl-ink)]" aria-hidden />

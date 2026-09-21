@@ -144,7 +144,11 @@ export class SupabaseAuthService implements AuthService {
   private init() {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
-    void supabase.auth.getSession().then(({ data }) => this.applySession(data.session));
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => this.applySession(data.session))
+      // A failed bootstrap must resolve to "anonymous", never leave the app in "loading" forever.
+      .catch(() => this.applySession(null));
     supabase.auth.onAuthStateChange((_event, session) => {
       void this.applySession(session);
     });

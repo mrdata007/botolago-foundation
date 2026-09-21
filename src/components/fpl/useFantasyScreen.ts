@@ -23,6 +23,8 @@ export type FantasyScreenPhase =
   | "guest"
   /** Signed in, season open, but this manager has no team yet. */
   | "no_team"
+  /** Signed in without a team while the current gameweek no longer accepts new squads. */
+  | "registration_closed"
   /** Everything needed by the screen is available. */
   | "ready";
 
@@ -112,6 +114,8 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
     }
     if (!playersQ.data || !clubsQ.data || !gwQ.data) return { ...base, phase: "loading" };
     if (isCloud && owned.isLoading && !owned.snapshot) return { ...base, phase: "loading" };
+    if (needsTeam && !base.team && !base.canCreate)
+      return { ...base, phase: "registration_closed" };
     if (needsTeam && !base.team) return { ...base, phase: "no_team" };
     return { ...base, phase: "ready" };
     // eslint-disable-next-line react-hooks/exhaustive-deps

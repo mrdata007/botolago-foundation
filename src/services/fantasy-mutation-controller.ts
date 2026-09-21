@@ -14,7 +14,7 @@
 // `context.invalidateOwned()`.
 
 import type { QueryClient } from "@tanstack/react-query";
-import { FantasyRepoError } from "@/services/fantasy-errors";
+import { FantasyRepoError, toRepoError } from "@/services/fantasy-errors";
 import type { FantasySnapshot } from "@/services/fantasy-owned-repository";
 import type { OwnedMutationStatus } from "@/services/fantasy-owned-provider";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
@@ -88,10 +88,7 @@ export async function runOwnedMutation<TArgs>(
     input.onSuccess?.(snapshot);
     return { ok: true, snapshot };
   } catch (err) {
-    const repoErr =
-      err instanceof FantasyRepoError
-        ? err
-        : new FantasyRepoError("unknown", err instanceof Error ? err.message : String(err));
+    const repoErr = err instanceof FantasyRepoError ? err : toRepoError(err);
     const kind: "conflict" | "error" = repoErr.code === "version_conflict" ? "conflict" : "error";
     setStatus(kind, repoErr);
     return { ok: false, error: repoErr, kind };
@@ -117,6 +114,8 @@ export function classifyRepoError(err: FantasyRepoError): {
   isNetwork: boolean;
   isMapping: boolean;
   isValidation: boolean;
+  /** The gameweek deadline passed or the season is closed: the write can never succeed as-is. */
+  isLocked: boolean;
 } {
   return {
     isConflict: err.code === "version_conflict",
@@ -124,5 +123,6 @@ export function classifyRepoError(err: FantasyRepoError): {
     isNetwork: err.code === "network",
     isMapping: err.code === "mapping_incomplete",
     isValidation: err.code === "validation",
+    isLocked: err.code === "gameweek_locked" || err.code === "season_closed",
   };
 }

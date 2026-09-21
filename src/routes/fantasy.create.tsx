@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { FantasyPhaseBody, FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { FplBanner, FplButton, FplHeader, FplKeyValueRow } from "@/components/fpl/primitives";
@@ -152,6 +152,16 @@ function CreateTeamBody() {
       </>
     );
   }
+  // The deadline has passed (or the gameweek is not open): the server would
+  // refuse the squad, so say so instead of letting a newcomer build 15 picks.
+  if (!screen.team && !screen.canCreate) {
+    return (
+      <>
+        <FplHeader title={t("fpl.squad_selection")} backTo="/fantasy" />
+        <FantasyPhaseBody phase="registration_closed" next="/fantasy/create" retry={screen.retry} />
+      </>
+    );
+  }
 
   const slots: BuilderSlot[] = draft.slots.map((s) => ({
     slot: s.slot,
@@ -241,15 +251,17 @@ function CreateTeamBody() {
         return;
       }
       const c = classifyRepoError(res.error);
-      const key: TranslationKey = c.isConflict
-        ? "fantasy.error.version_conflict"
-        : c.isNetwork
-          ? "fantasy.error.network"
-          : c.isPermission
-            ? "fantasy.error.permission"
-            : c.isValidation
-              ? "fantasy.create.error.size"
-              : "fantasy.error.import_generic";
+      const key: TranslationKey = c.isLocked
+        ? "fpl.deadline_passed"
+        : c.isConflict
+          ? "fantasy.error.version_conflict"
+          : c.isNetwork
+            ? "fantasy.error.network"
+            : c.isPermission
+              ? "fantasy.error.permission"
+              : c.isValidation
+                ? "fantasy.create.error.size"
+                : "fantasy.error.import_generic";
       setSaveError(key);
       toast.error(t(key));
     } finally {

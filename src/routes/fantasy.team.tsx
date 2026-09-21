@@ -262,13 +262,15 @@ function PickTeamBody() {
         const c = classifyRepoError(res.error);
         toast.error(
           t(
-            c.isConflict
-              ? "fantasy.error.version_conflict"
-              : c.isNetwork
-                ? "fantasy.error.network"
-                : c.isPermission
-                  ? "fantasy.error.permission"
-                  : "fantasy.error.transfer_failed",
+            c.isLocked
+              ? "fpl.deadline_passed"
+              : c.isConflict
+                ? "fantasy.error.version_conflict"
+                : c.isNetwork
+                  ? "fantasy.error.network"
+                  : c.isPermission
+                    ? "fantasy.error.permission"
+                    : "fantasy.error.transfer_failed",
           ),
         );
         if (c.isConflict) await owned.reload();

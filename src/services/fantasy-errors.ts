@@ -5,6 +5,7 @@
 // in aggregate so the UI (Pass 3 import prompt / conflict banner) can list
 // every gap at once.
 
+import { FantasyError } from "@/backend/fantasy/errors";
 import { FantasyCloudError } from "@/services/fantasy-cloud-repo";
 import { MissingIdMappingError } from "@/services/fantasy-id-map";
 
@@ -19,6 +20,10 @@ export type FantasyRepoErrorCode =
   | "empty_cloud_squad"
   | "not_found"
   | "gameweek_unresolved"
+  /** The gameweek deadline has passed (or the gameweek is not open) — the server refused the write. */
+  | "gameweek_locked"
+  /** No open Fantasy season accepts writes. */
+  | "season_closed"
   | "unknown";
 
 export interface MissingIds {
@@ -56,6 +61,10 @@ export function toRepoError(err: unknown): FantasyRepoError {
     const code = mapCloudCode(err.code);
     return new FantasyRepoError(code, err.message, err.cause ?? err, err.missingIds);
   }
+  // Typed domain errors raised by the Supabase Fantasy repository (api.* RPCs).
+  if (err instanceof FantasyError) {
+    return new FantasyRepoError(mapFantasyDomainCode(err.code), err.message, err);
+  }
   // PostgREST / Supabase error-like plain objects: { code, message, details }.
   const anyErr = err as { code?: string; message?: string } | null;
   const message =
@@ -84,6 +93,44 @@ export function toRepoError(err: unknown): FantasyRepoError {
     return new FantasyRepoError("validation", message, err);
   }
   return new FantasyRepoError("unknown", message, err);
+}
+
+function mapFantasyDomainCode(code: FantasyError["code"]): FantasyRepoErrorCode {
+  switch (code) {
+    case "version_conflict":
+    case "idempotency_conflict":
+      return "version_conflict";
+    case "fantasy_gameweek_locked":
+    case "fantasy_gameweek_not_found":
+      return "gameweek_locked";
+    case "fantasy_season_closed":
+      return "season_closed";
+    case "league_access_denied":
+      return "permission_denied";
+    case "fantasy_team_not_found":
+    case "league_not_found":
+      return "not_found";
+    case "invalid_team_name":
+    case "invalid_squad":
+    case "invalid_formation":
+    case "invalid_transfer":
+    case "budget_exceeded":
+    case "club_limit_exceeded":
+    case "duplicate_player":
+    case "player_not_eligible":
+    case "captain_invalid":
+    case "vice_captain_invalid":
+    case "insufficient_free_transfers":
+    case "fantasy_team_already_exists":
+    case "chip_unavailable":
+    case "chip_already_used":
+    case "chip_conflict":
+    case "invite_code_invalid":
+    case "duplicate_membership":
+      return "validation";
+    default:
+      return "unknown";
+  }
 }
 
 function mapCloudCode(c: FantasyCloudError["code"]): FantasyRepoErrorCode {
