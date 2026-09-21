@@ -36,12 +36,17 @@ insert into app.taxonomies (taxonomy_type, slug, active, display_order) values
   ('category', 'continental', true, 60),
   ('category', 'analysis', true, 70),
   ('category', 'interviews', true, 80),
-  ('topic', 'injuries', true, 100),
-  ('topic', 'suspensions', true, 110),
-  ('topic', 'coaching', true, 120),
-  ('topic', 'official-announcement', true, 130),
-  ('topic', 'fixtures', true, 140),
-  ('topic', 'throne-cup', true, 150)
+  -- These are article tags, not topics. `app_private.news_article_card`
+  -- builds a card's `tags` from taxonomy_type = 'tag', so seeding them as
+  -- 'topic' would attach them to the story but never show them on a feed
+  -- card -- the detail payload would list them and the card would look
+  -- untagged.
+  ('tag', 'injuries', true, 100),
+  ('tag', 'suspensions', true, 110),
+  ('tag', 'coaching', true, 120),
+  ('tag', 'official-announcement', true, 130),
+  ('tag', 'fixtures', true, 140),
+  ('tag', 'throne-cup', true, 150)
 on conflict (taxonomy_type, slug) do nothing;
 
 insert into app.taxonomy_translations (taxonomy_id, language, display_name)
@@ -63,18 +68,18 @@ from (values
   ('category', 'analysis', 'ar', 'تحليلات'),
   ('category', 'interviews', 'fr', 'Entretiens'),
   ('category', 'interviews', 'ar', 'حوارات'),
-  ('topic', 'injuries', 'fr', 'Blessures'),
-  ('topic', 'injuries', 'ar', 'الإصابات'),
-  ('topic', 'suspensions', 'fr', 'Suspensions'),
-  ('topic', 'suspensions', 'ar', 'العقوبات'),
-  ('topic', 'coaching', 'fr', 'Entraîneurs'),
-  ('topic', 'coaching', 'ar', 'الأطر التقنية'),
-  ('topic', 'official-announcement', 'fr', 'Communiqué officiel'),
-  ('topic', 'official-announcement', 'ar', 'بلاغ رسمي'),
-  ('topic', 'fixtures', 'fr', 'Calendrier'),
-  ('topic', 'fixtures', 'ar', 'برنامج المباريات'),
-  ('topic', 'throne-cup', 'fr', 'Coupe du Trône'),
-  ('topic', 'throne-cup', 'ar', 'كأس العرش')
+  ('tag', 'injuries', 'fr', 'Blessures'),
+  ('tag', 'injuries', 'ar', 'الإصابات'),
+  ('tag', 'suspensions', 'fr', 'Suspensions'),
+  ('tag', 'suspensions', 'ar', 'العقوبات'),
+  ('tag', 'coaching', 'fr', 'Entraîneurs'),
+  ('tag', 'coaching', 'ar', 'الأطر التقنية'),
+  ('tag', 'official-announcement', 'fr', 'Communiqué officiel'),
+  ('tag', 'official-announcement', 'ar', 'بلاغ رسمي'),
+  ('tag', 'fixtures', 'fr', 'Calendrier'),
+  ('tag', 'fixtures', 'ar', 'برنامج المباريات'),
+  ('tag', 'throne-cup', 'fr', 'Coupe du Trône'),
+  ('tag', 'throne-cup', 'ar', 'كأس العرش')
 ) as seed(taxonomy_type, slug, language, display_name)
 join app.taxonomies taxonomy
   on taxonomy.taxonomy_type = seed.taxonomy_type::app.taxonomy_type

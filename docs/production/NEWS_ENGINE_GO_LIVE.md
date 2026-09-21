@@ -353,8 +353,50 @@ source mapping all remain for inspection.
 
 - **Clustering**: two separate ElBotola articles about the same Enrique press
   conference resolve to one cluster key and therefore one story.
+- **Full pipeline through the real staging RPCs**, with that live content: a
+  run row, 4 source items discovered, re-discovery reporting 4 duplicates and
+  0 new, 4 fetches then a repeat fetch reporting `skipped` on an unchanged
+  hash, 4 relevance decisions, 4 fact rows, 3 clusters (the two Enrique items
+  sharing one, `created: true` then `created: false`), 6 generation attempts
+  all `passed`, and 6 draft editions.
+- **Idempotency at the publication contract**: republishing an edition
+  unchanged returned `outcome: updated` with the same story id and article id,
+  not a second article.
+- **Editor publish**: re-calling the same contract with `p_publish = true`
+  moved one edition to `published`/`public` in place.
+- **Public read path, as `anon`**: `api.news_feed('ar', 5, …)` returned
+  exactly the one published edition — the five drafts did not leak — carrying
+  the BotolaGO headline, publisher `BotolaGO` (`botolago-newsroom`), the
+  resolved club and competition ids, the localized category
+  "البطولة الاحترافية" and the tag "بلاغ رسمي". `api.news_article_detail`
+  returned the full body, SEO fields, `Wydad Casablanca`, `Botola Pro` and its
+  taxonomies. No source URL, external id, parser version, content hash or
+  ingestion field appears anywhere in either payload.
 - **Service-role enforcement**: `anon` is refused at the grant layer; a session
   with a non-service role claim is refused by the in-function guard.
+
+### Three limitations of the staging run
+
+None is a code defect; all three are staging data gaps that production does
+not have, but they mean these paths were exercised rather than fully proven.
+
+1. **Player resolution returned nothing.** Staging's `app.players` holds 72
+   Botola-focused rows and contains neither Achraf Hakimi nor Sofiane El
+   Fouzi, both Europe-based. The engine did the right thing — recorded them
+   as unresolved rather than inventing a player — so `story_players` stayed
+   empty for two of the three stories. Production holds 929 players, so
+   re-check this after Step 7's first batch.
+2. **No hero media resolved.** Staging has no validated `app.media_assets`, so
+   `news_engine_resolve_hero_asset` correctly returned
+   `origin: botolago_editorial_graphic` with a null asset. Production has 85
+   media assets, including club crests, so a real run should attach one.
+3. **One defect was found and fixed here, not in testing.** The engine's tag
+   vocabulary was seeded as `taxonomy_type = 'topic'`, but the public card DTO
+   builds a card's `tags` from `taxonomy_type = 'tag'`. Tags attached to the
+   story and appeared in the article detail, while every feed card rendered
+   untagged. Only reading the actual anon-role feed payload caught it. Fixed
+   in the seed migration, with a database test pinning both the presence of
+   the tag-typed rows and the absence of topic-typed duplicates.
 
 ### Not verified here, and why
 

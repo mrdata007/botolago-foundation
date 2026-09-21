@@ -454,6 +454,26 @@ select extensions.ok(
   'engine output is published under BotolaGO''s own publisher identity'
 );
 
+-- The generator emits these as an article's `tags`, and the public card DTO
+-- builds `tags` from taxonomy_type = 'tag'. Seeding them as 'topic' attached
+-- them to the story but left every feed card looking untagged.
+select extensions.is(
+  (select count(*)::integer from app.taxonomies
+   where taxonomy_type = 'tag'
+     and slug in ('injuries', 'suspensions', 'coaching', 'official-announcement',
+                  'fixtures', 'throne-cup')),
+  6,
+  'the engine''s tag vocabulary is tag-typed so it reaches feed cards'
+);
+select extensions.is(
+  (select count(*)::integer from app.taxonomies
+   where taxonomy_type = 'topic'
+     and slug in ('injuries', 'suspensions', 'coaching', 'official-announcement',
+                  'fixtures', 'throne-cup')),
+  0,
+  'no stale topic-typed duplicate of a tag slug remains'
+);
+
 select extensions.ok(
   exists (
     select 1 from app_private.news_publication_policies
