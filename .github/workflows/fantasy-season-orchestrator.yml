@@ -44,26 +44,24 @@ permissions:
 
 jobs:
   orchestrate:
-    # Both entry points now require the repository variable. A manual dispatch
-    # bypasses the schedule-only condition -- it does not wait for cron -- but it
-    # is no longer its own authorization: FANTASY_AUTOMATION_ENABLED must be
-    # 'true' for either path to run. Owner decision, 2026-09-21.
+    # Two entry points, two authorizations. The schedule needs the repository
+    # variable, so automation cannot start itself while it is switched off. A
+    # manual dispatch is its own authorization -- owner actor plus the typed
+    # confirmation -- and runs even when the variable is off, so a reviewed
+    # manual pass is always possible. Owner decision, 2026-09-21.
     #
-    # Note what this costs, deliberately: there is no longer a way to take one
-    # reviewed manual pass while automation is switched off, which is what the
-    # dispatch path previously existed for.
-    #
-    # It buys a diagnostic in exchange. `vars` in a job-level `if:` resolves
-    # repository and organization variables only -- environment-scoped variables
-    # are not available here, because the environment below is not applied until
-    # the job starts. So a dispatch that skips proves the variable is missing or
-    # is set on the production-admin-activation environment rather than at
-    # repository level.
+    # One consequence to know when reading a skipped run: because the dispatch
+    # path does not consult the variable, a dispatch running tells you nothing
+    # about whether the variable is set correctly. Only a scheduled run does.
+    # And `vars` in a job-level `if:` resolves repository and organization
+    # variables only -- environment-scoped ones are not available here, since
+    # the environment below is not applied until after this is evaluated. So a
+    # scheduled run that skips means the variable is missing, or is set on the
+    # production-admin-activation environment rather than at repository level.
     if: >-
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
-      vars.FANTASY_AUTOMATION_ENABLED == 'true' &&
-      (github.event_name == 'schedule' ||
+      ((github.event_name == 'schedule' && vars.FANTASY_AUTOMATION_ENABLED == 'true') ||
        (github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007' &&
         inputs.confirmation == 'RUN_FANTASY_ORCHESTRATOR'))
     runs-on: ubuntu-latest
