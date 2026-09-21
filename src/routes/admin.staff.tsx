@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import { loadAdminStaffRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
 import {
@@ -21,6 +21,12 @@ import {
   AdminNotice,
   AdminSectionHeading,
 } from "@/components/admin/AdminSurfaces";
+import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import {
+  destructiveActionReducer,
+  isBusy,
+  IDLE_DESTRUCTIVE_ACTION,
+} from "@/components/admin/destructive-action";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/staff")({
@@ -67,12 +73,20 @@ function AdminStaffRoute() {
   const { lang } = useI18n();
   const repository = useMemo(() => new SupabaseAdminSecurityOperationsRepository(), []);
   const [email, setEmail] = useState("");
-  const [reason, setReason] = useState("");
   const [role, setRole] = useState<DirectlyAssignableAdminRole>("editor");
   const [expiresAt, setExpiresAt] = useState("");
   const [result, setResult] = useState<StaffUserResolutionDto | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /**
+   * One armed action at a time, carrying the motive typed for *that* action.
+   * This page used to hold a single page-level `reason` bound to two inputs and
+   * read by three mutations: a motive typed into "Motif de création" silently
+   * armed "Affecter le rôle standard" and "Demander platform_admin" as well, so
+   * a stray tap granted privilege with a motive written about something else.
+   * See `components/admin/destructive-action.ts` for why this is structural.
+   */
+  const [action, dispatch] = useReducer(destructiveActionReducer, IDLE_DESTRUCTIVE_ACTION);
   const rtl = lang === "ar";
 
   const lookup = async (event: React.FormEvent) => {
@@ -92,9 +106,11 @@ function AdminStaffRoute() {
     }
   };
 
-  const createPrincipal = async () => {
+  /** The motive comes from the confirm step that armed this call, and nowhere
+   *  else. The repository call, its arguments and its idempotency key are
+   *  exactly what they were. */
+  const createPrincipal = async (reason: string) => {
     if (access.state !== "authorized" || !result?.found) return;
-    setBusy(true);
     setMessage(null);
     try {
       const created = await repository.createStaffPrincipal(
@@ -122,14 +138,11 @@ function AdminStaffRoute() {
       });
     } catch (error) {
       setMessage(`${rtl ? "فشل الإنشاء" : "Création refusée"}: ${mapAdminError(error).code}`);
-    } finally {
-      setBusy(false);
     }
   };
 
-  const assignRole = async () => {
+  const assignRole = async (reason: string) => {
     if (access.state !== "authorized" || !result?.found || !result.staffPrincipal) return;
-    setBusy(true);
     setMessage(null);
     try {
       const assignment = await repository.assignStandardRole(
@@ -152,14 +165,11 @@ function AdminStaffRoute() {
       );
     } catch (error) {
       setMessage(`${rtl ? "رُفض منح الدور" : "Affectation refusée"}: ${mapAdminError(error).code}`);
-    } finally {
-      setBusy(false);
     }
   };
 
-  const requestPlatformAdmin = async () => {
+  const requestPlatformAdmin = async (reason: string) => {
     if (access.state !== "authorized" || !result?.found || !result.staffPrincipal) return;
-    setBusy(true);
     setMessage(null);
     try {
       const approval = await repository.requestPlatformAdmin(
@@ -177,12 +187,8 @@ function AdminStaffRoute() {
       );
     } catch (error) {
       setMessage(`${rtl ? "رُفض الطلب" : "Demande refusée"}: ${mapAdminError(error).code}`);
-    } finally {
-      setBusy(false);
     }
   };
-
-  const reasonTooShort = reason.trim().length < MINIMUM_REASON_LENGTH;
 
   return (
     <AdminFunctionalRoute
@@ -223,9 +229,12 @@ function AdminStaffRoute() {
                   required
                 />
               </label>
+              {/* Also held while a mutation runs: resolving a second account
+                  under an armed confirm step would leave that step naming one
+                  person and acting on another. */}
               <button
                 className={`${adminButtonClass} w-full sm:w-auto`}
-                disabled={busy}
+                disabled={busy || isBusy(action)}
                 type="submit"
               >
                 {rtl ? "بحث آمن" : "Résoudre"}
@@ -279,32 +288,34 @@ function AdminStaffRoute() {
 
                 {!result.staffPrincipal && (
                   <div className="mt-5 border-t border-slate-800 pt-5">
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                      <label className="grid gap-2 text-sm">
-                        <span className="text-slate-300">
-                          {rtl ? "سبب الإنشاء" : "Motif de création"}
-                        </span>
-                        <input
-                          value={reason}
-                          onChange={(event) => setReason(event.target.value)}
-                          minLength={MINIMUM_REASON_LENGTH}
-                          maxLength={500}
-                          className={adminFieldClass}
-                          required
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className={`${adminButtonClass} w-full sm:w-auto`}
-                        disabled={
-                          busy || reasonTooShort || !result.emailVerified || !result.mfaVerified
-                        }
-                        onClick={createPrincipal}
-                        data-testid="admin-create-principal"
-                      >
-                        {rtl ? "إنشاء الهوية" : "Créer le principal"}
-                      </button>
-                    </div>
+                    {/* The motive is asked for inside this action's own confirm
+                        step, keyed by the resolved account: it can arm nothing
+                        else on the page. */}
+                    <AdminDestructiveAction
+                      actionKey={`create-principal:${result.authUserId}`}
+                      state={action}
+                      dispatch={dispatch}
+                      minimumReasonLength={MINIMUM_REASON_LENGTH}
+                      rtl={rtl}
+                      tone="primary"
+                      testId="admin-create-principal"
+                      triggerTestId="admin-create-principal"
+                      disabled={!result.emailVerified || !result.mfaVerified}
+                      triggerLabel={rtl ? "إنشاء الهوية" : "Créer le principal"}
+                      confirmLabel={rtl ? "تأكيد الإنشاء" : "Confirmer la création"}
+                      confirmPrompt={
+                        <>
+                          {rtl ? "إنشاء هوية الطاقم لـ " : "Créer l’identité staff de "}
+                          <AdminDatum mono={false} className="font-semibold">
+                            {result.maskedEmail}
+                          </AdminDatum>
+                          {rtl
+                            ? "؟ لا تمنح هذه العملية أي دور، ويبقى الوصول إلى وحدة الإدارة مرفوضاً إلى أن يُسنَد دور صراحةً."
+                            : " ? Cette opération n’accorde aucun rôle: l’accès à la console reste refusé tant qu’un rôle n’a pas été affecté explicitement."}
+                        </>
+                      }
+                      onConfirm={(reason) => createPrincipal(reason)}
+                    />
                     <p className="mt-2 text-xs text-slate-400">
                       {rtl
                         ? "يتطلب بريداً مؤكداً ومصادقة ثنائية مفعّلة، وثمانية أحرف على الأقل للسبب."
@@ -348,52 +359,84 @@ function AdminStaffRoute() {
                           dir="ltr"
                         />
                       </label>
-                      <label className="grid gap-2 text-sm sm:col-span-2">
-                        <span className="text-slate-300">{rtl ? "السبب" : "Motif"}</span>
-                        <input
-                          value={reason}
-                          onChange={(event) => setReason(event.target.value)}
-                          minLength={MINIMUM_REASON_LENGTH}
-                          maxLength={500}
-                          className={adminFieldClass}
-                          aria-describedby="admin-staff-reason-hint"
-                        />
-                      </label>
                     </div>
-                    <p id="admin-staff-reason-hint" className="mt-2 text-xs text-slate-400">
+                    <p className="mt-2 text-xs text-slate-400">
                       {rtl
-                        ? "ثمانية أحرف على الأقل، ويُسجَّل في التدقيق."
-                        : "8 caractères minimum, consigné dans l’audit."}
+                        ? "لكل عملية تأكيد صريح وسبب خاص بها من ثمانية أحرف على الأقل، ويُسجَّل كلاهما في التدقيق."
+                        : "Chaque opération exige une confirmation explicite et un motif qui lui est propre, d’au moins 8 caractères; les deux sont consignés dans l’audit."}
                     </p>
-                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                      <button
-                        type="button"
-                        className={`${adminButtonClass} w-full sm:w-auto`}
-                        disabled={busy || reasonTooShort}
-                        onClick={() => void assignRole()}
-                        data-testid="admin-assign-role"
-                      >
-                        {rtl ? "منح الدور القياسي" : "Affecter le rôle standard"}
-                      </button>
-                      <button
-                        type="button"
-                        className={`${adminButtonClass} w-full sm:w-auto`}
-                        disabled={busy || reasonTooShort}
-                        onClick={() => void requestPlatformAdmin()}
-                        data-testid="admin-request-platform-admin"
-                        aria-describedby="admin-platform-request-description"
-                      >
-                        {rtl ? "طلب platform_admin" : "Demander platform_admin"}
-                      </button>
-                      <span
-                        id="admin-platform-request-description"
-                        className="sr-only"
-                        data-testid="admin-platform-request"
-                      >
-                        {rtl
-                          ? "ينشئ طلب تحكم مزدوج ولا يمنح الدور مباشرة."
-                          : "Crée une demande à double contrôle sans affecter directement le rôle."}
-                      </span>
+                    <div className="mt-4 grid gap-3">
+                      {/* Keyed by the resolved account *and* the selected role:
+                          a motive written for `editor` cannot become the audit
+                          motive of a `security_admin` grant. */}
+                      <AdminDestructiveAction
+                        actionKey={`assign-role:${result.authUserId}:${role}`}
+                        state={action}
+                        dispatch={dispatch}
+                        minimumReasonLength={MINIMUM_REASON_LENGTH}
+                        rtl={rtl}
+                        tone="primary"
+                        testId="admin-assign-role"
+                        triggerTestId="admin-assign-role"
+                        triggerLabel={rtl ? "منح الدور القياسي" : "Affecter le rôle standard"}
+                        confirmLabel={rtl ? "تأكيد منح الدور" : "Confirmer l’affectation"}
+                        confirmPrompt={
+                          <>
+                            {rtl ? "منح الدور " : "Affecter le rôle "}
+                            <AdminDatum mono={false} className="font-semibold">
+                              {role}
+                            </AdminDatum>
+                            {rtl ? " إلى " : " à "}
+                            <AdminDatum mono={false} className="font-semibold">
+                              {result.maskedEmail}
+                            </AdminDatum>
+                            {rtl
+                              ? "؟ يسري الدور فوراً ويفتح كل الصلاحيات المرتبطة به."
+                              : " ? Le rôle prend effet immédiatement et ouvre toutes les permissions qui lui sont attachées."}
+                          </>
+                        }
+                        onConfirm={(reason) => assignRole(reason)}
+                      />
+                      <div className="grid gap-2" data-testid="admin-platform-request">
+                        <AdminDestructiveAction
+                          actionKey={`request-platform-admin:${result.authUserId}`}
+                          state={action}
+                          dispatch={dispatch}
+                          minimumReasonLength={MINIMUM_REASON_LENGTH}
+                          rtl={rtl}
+                          tone="primary"
+                          testId="admin-request-platform-admin"
+                          triggerTestId="admin-request-platform-admin"
+                          triggerLabel={
+                            <>
+                              {rtl ? "طلب " : "Demander "}
+                              <AdminDatum mono={false}>platform_admin</AdminDatum>
+                            </>
+                          }
+                          confirmLabel={rtl ? "تأكيد الطلب" : "Confirmer la demande"}
+                          confirmPrompt={
+                            <>
+                              {rtl ? "طلب دور " : "Demander le rôle "}
+                              <AdminDatum mono={false} className="font-semibold">
+                                platform_admin
+                              </AdminDatum>
+                              {rtl ? " لـ " : " pour "}
+                              <AdminDatum mono={false} className="font-semibold">
+                                {result.maskedEmail}
+                              </AdminDatum>
+                              {rtl
+                                ? "؟ هذا أعلى مستوى صلاحيات في المنصة: تحكم كامل في وحدة الإدارة وفي الأمن وفي الأدوار. لا يمنح الطلب الدور مباشرةً، بل ينشئ موافقة بتحكم مزدوج يجب أن يقرّها مسؤول ثانٍ خلال ثلاثين دقيقة."
+                                : " ? C’est le niveau de privilège le plus élevé de la plateforme: contrôle total de la console, de la sécurité et des rôles. La demande n’affecte pas le rôle: elle ouvre une approbation à double contrôle qu’un second administrateur doit approuver dans les 30 minutes."}
+                            </>
+                          }
+                          onConfirm={(reason) => requestPlatformAdmin(reason)}
+                        />
+                        <p className="text-xs text-slate-400">
+                          {rtl
+                            ? "ينشئ طلب تحكم مزدوج ولا يمنح الدور مباشرة."
+                            : "Crée une demande à double contrôle sans affecter directement le rôle."}
+                        </p>
+                      </div>
                       <Link
                         to="/admin/staff/$principalId"
                         params={{ principalId: result.staffPrincipal.staffPrincipalId }}
