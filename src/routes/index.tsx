@@ -42,8 +42,27 @@ import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+
+const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
+const HOME_DESCRIPTION =
+  "Suivez la Botola Pro sur BotolaGO : résultats en direct, actualités, classement et votre équipe Fantasy.";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: HOME_TITLE },
+      { name: "description", content: HOME_DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: HOME_TITLE },
+      { property: "og:description", content: HOME_DESCRIPTION },
+      { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/` },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: HOME_TITLE },
+      { name: "twitter:description", content: HOME_DESCRIPTION },
+    ],
+    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` }],
+  }),
   component: HomePage,
 });
 
