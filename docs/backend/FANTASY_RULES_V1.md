@@ -106,3 +106,111 @@ Ranking order is deterministic:
 
 No rank is returned until the ranking worker has calculated it. Fixture
 difficulty ratings are disabled in v1.0.
+
+## Player statistics presentation (BG-0071)
+
+The three numbers a manager reads when picking — total points, form, and
+ownership — are _presentation_ of scored data, not scoring rules. They are
+computed at read time and are deliberately **not** part of the immutable
+ruleset: changing any of them is a forward migration, never a ruleset version
+bump. Two read RPCs own them, and nothing else may recompute them (the browser
+in particular must not: the database is the scoring authority).
+
+```
+api.fantasy_player_season_stats(p_season_id uuid, p_through_gameweek_id uuid default null) returns jsonb
+api.fantasy_player_gameweek_history(p_fantasy_player_id uuid) returns jsonb
+```
+
+Both are `stable security definer set search_path = ''` and are executable by
+`anon` as well as `authenticated`: `/fantasy/players` is a public route. Both
+signatures take `uuid` only. That is not a stylistic choice — an argument is
+coerced to its parameter type in the _caller's_ context before a `SECURITY
+DEFINER` body is entered, so naming an `app`-schema enum or domain in a public
+signature demands `USAGE` on `app`, which `anon` does not hold and must not be
+given. See BG-0063 and `20260921120000_fantasy_leagues_anon_callable_signature`.
+Unknown ids answer `PGRST` / HTTP 404 with `PT404`, not 500.
+
+### A "scored" gameweek
+
+A gameweek counts once the scoring worker has written points for it:
+`status in ('provisional', 'finalizing', 'finalized', 'corrected')`. `live` is
+excluded — points are still moving inside a match — and so is `open`, even if
+the worker has staged rows. `corrected` is included deliberately: dropping it
+would erase a gameweek from every total the moment a correction landed.
+
+### Total points
+
+Sum of `coalesce(final_points, provisional_points)` over the player's rows in
+scored gameweeks. Provisional points are shown, not hidden; managers expect
+live-ish numbers, and the History tab's `state` field is what tells them a
+number can still move.
+
+### Form
+
+Form is the FPL convention, which is what every screen is modelled on:
+
+> the mean points per gameweek over the **last 5 scored gameweeks of the
+> season**, to one decimal.
+
+Three consequences the frontend depends on:
+
+- **The window belongs to the season, not to the player.** The same five
+  gameweeks are averaged for everyone. A player with no points row in one of
+  them contributes `0` for that gameweek, exactly as a non-appearance does in
+  FPL. A player whose only good score is older than the window therefore reads
+  `0.0`, which is correct: his form is gone.
+- **Fewer than 5 scored gameweeks → divide by what exists.** With three scored
+  gameweeks the denominator is 3, never 5. Early-season form is not damped
+  towards zero by gameweeks that have not happened.
+- **Zero scored gameweeks → `null`, never `0.0`.** This is the only case that
+  may be null, and it is the one the UI renders as a dash (`fantasy.stat.none`).
+  "Nothing has scored yet" and "this player has genuinely averaged 0.0" are
+  different facts and must not look the same to a manager. Any consumer that
+  coalesces this null to 0 reintroduces the defect BG-0071 exists to fix.
+
+The window size is a constant in the function body (`form_window := 5`), not a
+ruleset column. Moving to last-3 for the shorter 30-gameweek Botola season is a
+one-line forward migration and does not invalidate a season's scoring.
+
+The payload reports `formWindow` and `scoredGameweeksInWindow` so a client can
+label the number ("form over 3 gameweeks") without guessing.
+
+### Ownership
+
+Ownership is **derived at read time** and has no stored counter:
+
+- numerator `ownershipCount` — live squad memberships
+  (`app.fantasy_squad_memberships` with `sold_at is null`) whose
+  `app.fantasy_teams` row is in this season and `status = 'active'`;
+- denominator `activeTeamCount` — active teams in the season, the same
+  population the price-movement worker counts;
+- `ownershipPercent = round(count * 100 / activeTeamCount, 1)`, and `0` when
+  `activeTeamCount = 0` rather than a division by zero.
+
+Suspended and archived squads are out of both numerator and denominator. A
+transfer out drops the player's ownership on the next read; nothing can drift,
+because nothing is cached in a column.
+
+`app.fantasy_players.selected_by_count` is **deprecated and must not be read.**
+It was declared with a default of `0` and a `>= 0` check, exposed through
+`api.fantasy_player_pool` as `selectedByCount`, and written by nothing — no RPC,
+no trigger, no worker. In production all 539 rows were `0` while 105 live squad
+memberships existed. BG-0071 comments it as deprecated but does **not** drop it:
+the column keeps its place in the `fantasy_player_pool` payload so that a
+rollback of this release cannot lose a column and cannot disturb the 22
+Playwright journeys pinned to that function's shape. The `DROP COLUMN` is a
+separate, clearly-marked follow-up migration, to be applied only after the
+frontend has stopped parsing `selectedByCount` as a required field.
+
+### Gameweek history
+
+`api.fantasy_player_gameweek_history` returns one entry per gameweek in which
+the player has a points row, oldest first: `gameweekId`, `gameweekSequence`,
+`gameweekName`, `points`, `minutesPlayed`, `didPlay`, `state`
+(`provisional` | `final`, matching `api.fantasy_top_players`), and `opponents`.
+
+`opponents` is an array, not a single club: a gameweek can legitimately carry
+more than one fixture for a club after a reassignment. Only current assignments
+(`superseded_at is null`) that `counts_points` are considered, and each entry
+carries `teamId`, `shortName`, `name` and `home`. A gameweek with no assignment
+yields an empty array, never null.
