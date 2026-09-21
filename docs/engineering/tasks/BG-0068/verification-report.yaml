@@ -1,0 +1,203 @@
+task_id: BG-0068
+role: Builder (self-verification)
+branch: bg-0068-team-translations
+base: origin/chief/launch-fixes-3
+
+# ---------------------------------------------------------------------------
+# The honest headline
+# ---------------------------------------------------------------------------
+pgtap_execution:
+  ran: false
+  why: >
+    There is no Docker in this environment (`docker info` fails) and no local Postgres
+    (`pg_isready` on /var/run/postgresql:5432 → no response), so
+    `supabase test db --local` could not be started. supabase/tests/database/team_translations.test.sql
+    is written and committed but HAS NOT BEEN EXECUTED. I am not claiming it passes.
+  substitute: >
+    I ran the replacement function body read-only against production instead, with the
+    new table stood in as an inline VALUES CTE. That exercises the real catalogue (21
+    teams, real crests, real countries) against the function as production actually
+    holds it, which is a stronger check of the diff than a synthetic fixture would be,
+    and a weaker check of grants and constraints — which only pgTAP can prove and
+    which therefore remain unexecuted.
+  who_should_run_it: >
+    Whoever has Docker, before merge: `bun run backend:db:reset` then
+    `bun run backend:db:test`.
+
+# ---------------------------------------------------------------------------
+# Read-only production evidence
+# ---------------------------------------------------------------------------
+criteria:
+  - criterion: "V1 — the finding is real: no team translations table exists"
+    result: VERIFIED
+    evidence: >
+      `select table_schema, table_name from information_schema.tables where table_name
+      like '%translation%'` → app.competition_translations, app.country_translations,
+      app.taxonomy_translations, app.venue_translations. No team table.
+      pg_get_functiondef(app_private.football_team_json) returns 'name', team.name —
+      requested_language accepted and unused.
+
+  - criterion: "V2 — an ar translation reaches the payload; a missing one falls back; fr is unaffected"
+    result: VERIFIED
+    evidence: >
+      Ran the new body over app.teams with a three-row synthetic ar translation set.
+      Raja → الرجاء الرياضي / الرجاء; FAR Rabat, with no row, → "FAR Rabat" / "FAR Rabat";
+      the same teams under p_language = 'fr' → "Raja Casablanca" / "Wydad Casablanca",
+      i.e. unchanged. A second query compared the new fr body to
+      app_private.football_team_json(id,'fr') for every team: fr_rows_that_differ = 0.
+
+  - criterion: "V3 — the new LEFT JOIN cannot drop or duplicate a row"
+    result: VERIFIED
+    evidence: >
+      Whole-catalogue comparison, production: teams_total = 21, rows_from_new_body = 21,
+      untranslated_rows_that_differ = 0, names_that_differ = 3 (exactly the three
+      synthetic translations). The ON clause covers the full primary key (team_id,
+      language) with language fixed to one value, so fan-out is structurally
+      impossible; the row count confirms it empirically.
+
+  - criterion: "V4 — nothing but name and shortName changed in the DTO"
+    result: VERIFIED
+    evidence: >
+      `count(*) where new_payload - 'name' - 'shortName' <>
+      app_private.football_team_json(id,'ar') - 'name' - 'shortName'` → 0 across all 21
+      teams. id, slug, code, city, countryCode, crestUrl, crestPath, primaryColor,
+      secondaryColor and active are byte-identical, including the validation_status
+      CASE behaviour.
+
+  - criterion: "V5 — row ordering is unchanged in all six RPCs"
+    result: VERIFIED
+    evidence: >
+      Five of the six function bodies are not modified at all, so their ORDER BY
+      clauses are untouched by construction: football_team_catalog orders by
+      `candidate.name, candidate.id` then `team.name, team.id`; football_standings by
+      `standing.rank, standing.team_id`; fantasy_fixture_difficulty by
+      `sequence_number, club_id, kickoff_at, fixture_id`; fantasy_player_pool by
+      `price desc, id desc` with `limit p_limit + 1`; team_summary and match_detail
+      return a scalar object. Ordering deliberately follows the LATIN name, not the
+      translation, so the two languages paginate identically. Confirmed live:
+      comparing api.football_team_catalog('ar',100) to ('fr',100) position by position
+      gives catalog_order_mismatches = 0 over 21 rows.
+
+  - criterion: "V6 — migration is forward-only and correctly sequenced"
+    result: VERIFIED
+    evidence: >
+      One added file, supabase/migrations/20260921190000_team_translations.sql, using
+      the slot the Chief assigned after the 20260921160000 collision. `git diff
+      --name-status` shows no M or D under supabase/migrations/.
+      `bun run backend:migrations:check` → "Validated 70 migration(s)." (it rejects
+      duplicate timestamps and requires RLS in the creating migration, both of which
+      this file satisfies).
+
+  - criterion: "V7 — RLS, policies and grants mirror app.competition_translations"
+    result: VERIFIED by comparison, NOT executed
+    evidence: >
+      Production reads: pg_class for app.competition_translations →
+      relrowsecurity = true, relforcerowsecurity = true, owner postgres; pg_policy for
+      its regclass → empty; role_table_grants → postgres only, no anon / authenticated
+      / service_role / PUBLIC row. The migration reproduces exactly that: enable + force
+      RLS, no policy, no grant. The pgTAP file asserts all three, unexecuted.
+
+  - criterion: "V8 — anon stays able to call the public-route RPCs, and gains no USAGE on app"
+    result: VERIFIED by construction
+    evidence: >
+      No api.* function and no grant in the api schema is redefined by this migration,
+      so every EXECUTE grant is exactly as production holds it and /matches, /news,
+      /fantasy/players and /fantasy/rankings are unaffected. app.language_code appears
+      only inside function bodies — the BG-0063 trap needs an app-schema type in a
+      public SIGNATURE, and there is none. The pgTAP file pins both, unexecuted.
+
+  - criterion: "V9 — no production write was executed"
+    result: VERIFIED
+    evidence: >
+      Every MCP call was a SELECT over information_schema, pg_proc, pg_policy,
+      pg_class, pg_enum, role_table_grants, app.teams, app.team_memberships and
+      app.seasons, plus read-only simulations built on VALUES CTEs. No apply_migration,
+      no DDL, no DML. scripts/backend/football-team-arabic-names-seed.sql has never
+      been executed anywhere.
+
+  # ---------------------------------------------------------------------------
+  # BG-0069 rider
+  # ---------------------------------------------------------------------------
+  - criterion: "V10 — Arabic letter-spacing is neutralised, French is untouched"
+    result: VERIFIED by runtime measurement
+    evidence: >
+      Built the app, loaded .output/public/assets/styles-CQfbTQCo.css into headless
+      Chromium (Playwright) with eight real className strings lifted from components,
+      under dir="rtl" lang="ar" and dir="ltr", reading
+      getComputedStyle(...).letterSpacing. The "before" run used the identical bundle
+      with the new rule textually removed.
+      AR before → after: AuthModeBadge 1px → normal; ui/card.tsx CardTitle -0.4px →
+      normal; FplChipsRow 0.275px → normal; GameweekStatusStrip 1.6px → normal;
+      LeagueTable thead 1.2px → normal; MyRankCard label 0.45px → normal; Pitch badge
+      1.4px → normal. FR unchanged in every row (1px, -0.4px, 0.275px, 1.6px, 1.2px,
+      0.45px, 1.4px before and after). Control row: an already-`ltr:`-prefixed utility
+      read normal in AR before the change and normal after, and 0.3px in FR throughout.
+      Cascade confirmed in the bundle: tracking utilities at ~byte 75 000 inside
+      `@layer utilities` (opens 10 881), the new rule at ~161 250 and unlayered, so it
+      wins without `!important`.
+    scope_note: >
+      The brief expected one straggler. Measured, src/ has 9 `ltr:tracking-*`
+      occurrences against ~96 unprefixed ones across 65 files, so the single rule is
+      doing real work, not covering an already-solved problem. One rule, no
+      per-component edit, no new `tracking-*` added anywhere.
+
+# ---------------------------------------------------------------------------
+# Gates
+# ---------------------------------------------------------------------------
+gates:
+  - command: bun run typecheck
+    result: pass (clean, no output)
+  - command: bun test
+    result: "1321 pass, 4 fail, 1325 tests across 152 files"
+    note: >
+      The 4 failures are all src/content/legal/legal-content.test.ts, the documented
+      pre-existing deliberate failures on this branch. No new failure.
+  - command: bun run lint
+    result: "17 problems, 0 errors, 17 warnings"
+    note: >
+      All 17 are react-refresh/only-export-components warnings, pre-existing. The
+      prettier/prettier error the brief warned about in
+      src/routes/fantasy.players.$playerId.tsx is NOT present — that lane has landed.
+  - command: bun run format:check
+    result: "40 pre-existing offenders, none of them mine"
+    note: >
+      The offender list was captured in full and none of the files this task touches
+      appears in it (src/styles.css is clean; the .sql files are not matched by
+      prettier; the three BG-0068 yaml files check clean).
+  - command: bun run backend:migrations:check
+    result: "Validated 70 migration(s)."
+  - command: bun run backend:secrets:check
+    result: "No high-confidence secrets found in tracked files."
+  - command: bun run config:integrity:check
+    result: "no violations in 36 executed configuration file(s)."
+  - command: bun scripts/qa/i18n-gate.ts
+    result: "RESULT: pass"
+  - command: bun run build
+    result: "built in 803ms, nitro output generated"
+  - command: bun run backend:db:test (pgTAP)
+    result: NOT RUN — no Docker. See pgtap_execution above.
+  - command: bun run backend:types:generate
+    result: NOT RUN — needs a running local Supabase stack (`supabase status`), no Docker.
+
+outstanding:
+  - id: O1
+    severity: blocks CI
+    statement: >
+      src/backend/generated/database.types.ts is stale: app.team_translations is a new
+      table in a generated schema. I did not hand-edit it — the brief is explicit that
+      the generator's formatting differs from a human's and
+      `bun run backend:types:check` (in .github/workflows/backend-quality.yml) compares
+      byte-for-byte. Someone with Docker must run `bun run backend:types:generate` on
+      this branch and commit the result.
+  - id: O2
+    severity: needs a decision
+    statement: >
+      api.fantasy_player_pool still returns Latin teamName / teamShortName in Arabic,
+      because it takes no language argument and cannot be given one without the
+      signature change the brief forbids. See engineering-brief.yaml deviation D1.
+  - id: O3
+    severity: blocks the seed only
+    statement: >
+      Two of the 16 Arabic club names are low confidence (Widad Témara, CR Khemis
+      Zemamra) and all 16 need owner confirmation. The migration works with the table
+      empty, so this blocks nothing else.

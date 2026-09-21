@@ -580,6 +580,29 @@ html[dir="rtl"] body {
   font-family: var(--font-arabic);
   line-height: 1.75;
 }
+/* BG-0069 — Arabic letterforms join. Any letter-spacing, positive or
+   negative, pulls the joins apart and renders a word as loose disconnected
+   glyphs; there is no "small enough" amount, so the rule is none at all.
+   `ltr:tracking-*` is the house rule and the ui-kit follows it, but at the
+   time of writing only 9 call sites in src/ carry the prefix against ~96 that
+   do not, spread over 65 files. This is the one rule that closes the gap for
+   all of them, including any added tomorrow, and it stays correct after the
+   remaining components are converted -- a prefixed `ltr:tracking-*` never
+   applies under `dir="rtl"` anyway, so this neutralises nothing twice and
+   nothing in French.
+
+   Unlayered on purpose: Tailwind's utilities live in `@layer utilities`, and
+   unlayered declarations beat any layered one regardless of specificity, so
+   this does not need `!important` and does not need to enumerate class names.
+   The `*` reaches the element that actually carries the utility, since
+   `letter-spacing` is inherited and an inherited value never beats one
+   declared on the element itself. */
+html[dir="rtl"] *,
+html[dir="rtl"] *::before,
+html[dir="rtl"] *::after {
+  letter-spacing: normal;
+}
+
 html[dir="rtl"] .lucide-chevron-right {
   transform: scaleX(-1);
 }
