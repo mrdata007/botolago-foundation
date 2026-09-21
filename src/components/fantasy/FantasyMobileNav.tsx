@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ArrowRightLeft, Home, ListChecks, Menu, Shirt, type LucideIcon } from "lucide-react";
 
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
@@ -27,6 +28,14 @@ const icons: Partial<Record<FantasyRoute, LucideIcon>> = {
 
 const mobileItems = fantasyPrimaryItems.filter((item) => item.to !== "/fantasy/leagues");
 
+/**
+ * Phone Fantasy navigation bar.
+ *
+ * Converted to the kit (BG-0092): the `surface-4` glass bar is now an opaque
+ * `ui.surface.bar` on `--ui-shadow-raised`, the active tint is composed from
+ * `--ui-ink-fg` rather than the legacy brand pair, and the labels take
+ * `ui.text.micro` instead of a hardcoded 10px.
+ */
 export function FantasyMobileNav() {
   const { t, dir } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -34,14 +43,30 @@ export function FantasyMobileNav() {
     isFantasyRouteActive(pathname, "/fantasy/leagues") ||
     fantasySecondaryItems.some((item) => isFantasyRouteActive(pathname, item.to));
 
+  const itemClass = (active: boolean) =>
+    cn(
+      "relative flex min-h-[var(--ui-tap-min)] min-w-[var(--ui-tap-min)] flex-1 flex-col",
+      "items-center justify-center gap-0.5 px-1 py-1.5",
+      ui.radius.control,
+      ui.text.micro,
+      "[font-weight:var(--ui-weight-strong)]",
+      ui.focus,
+      "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+      active ? ui.tone.ink : ui.tone.muted,
+    );
+
   return (
     <nav
       aria-label={t("nav.fantasy")}
-      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:hidden"
+      className={cn("fixed inset-x-0 bottom-0 z-40 px-3 pt-2 md:hidden", ui.safe.bottom)}
     >
       <div
-        className="surface-4 mx-auto flex max-w-2xl items-stretch justify-between px-2 py-1.5"
-        style={{ boxShadow: "var(--shadow-navigation)" }}
+        className={cn(
+          "mx-auto flex max-w-2xl items-stretch justify-between px-2 py-1.5",
+          ui.radius.track,
+          ui.surface.bar,
+          "shadow-[var(--ui-shadow-raised)]",
+        )}
       >
         {mobileItems.map((item) => {
           const active = isFantasyRouteActive(pathname, item.to);
@@ -52,18 +77,11 @@ export function FantasyMobileNav() {
               to={item.to}
               aria-current={active ? "page" : undefined}
               aria-label={t(item.labelKey)}
-              className={cn(
-                "relative flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold",
-                "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
-                active
-                  ? "text-[color:var(--brand-accent)]"
-                  : "text-[color:var(--text-muted)] hover:text-foreground",
-              )}
+              className={itemClass(active)}
             >
               <ActiveSurface active={active} />
               <Icon className="h-5 w-5 shrink-0" aria-hidden />
-              <span className="max-w-full truncate leading-none">{t(item.labelKey)}</span>
+              <span className="max-w-full truncate">{t(item.labelKey)}</span>
             </Link>
           );
         })}
@@ -74,18 +92,11 @@ export function FantasyMobileNav() {
               type="button"
               aria-label={t("fantasy.tab.more")}
               aria-current={secondaryActive ? "page" : undefined}
-              className={cn(
-                "relative flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold",
-                "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
-                secondaryActive
-                  ? "text-[color:var(--brand-accent)]"
-                  : "text-[color:var(--text-muted)] hover:text-foreground",
-              )}
+              className={itemClass(secondaryActive)}
             >
               <ActiveSurface active={secondaryActive} />
               <Menu className="h-5 w-5 shrink-0" aria-hidden />
-              <span className="leading-none">{t("fantasy.tab.more")}</span>
+              <span className="max-w-full truncate">{t("fantasy.tab.more")}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="end" sideOffset={10} className="min-w-52">
@@ -97,7 +108,7 @@ export function FantasyMobileNav() {
                   <Link
                     to={item.to}
                     aria-current={isFantasyRouteActive(pathname, item.to) ? "page" : undefined}
-                    className="w-full cursor-pointer font-semibold"
+                    className={cn("w-full cursor-pointer", ui.text.body)}
                   >
                     {t(item.labelKey)}
                   </Link>
@@ -110,8 +121,8 @@ export function FantasyMobileNav() {
                 const Icon = item.icon;
                 return (
                   <DropdownMenuItem key={item.to} asChild>
-                    <Link to={item.to} className="w-full cursor-pointer font-semibold">
-                      <Icon className="h-4 w-4" aria-hidden />
+                    <Link to={item.to} className={cn("w-full cursor-pointer", ui.text.body)}>
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
                       {t(item.labelKey)}
                     </Link>
                   </DropdownMenuItem>
@@ -129,14 +140,14 @@ function ActiveSurface({ active }: { active: boolean }) {
     <span
       aria-hidden
       className={cn(
-        "pointer-events-none absolute inset-1 -z-[1] rounded-xl",
+        "pointer-events-none absolute inset-1 -z-[1]",
+        ui.radius.control,
         "transition-[opacity,transform] duration-[var(--duration-quick)] ease-[var(--ease-emphasized)]",
         active ? "scale-100 opacity-100" : "scale-95 opacity-0",
       )}
       style={{
-        background:
-          "linear-gradient(180deg, color-mix(in oklab, var(--brand-accent) 18%, transparent), color-mix(in oklab, var(--brand-primary) 12%, transparent))",
-        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--brand-accent) 34%, transparent)",
+        backgroundColor: "color-mix(in oklab, var(--ui-ink-fg) 14%, transparent)",
+        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--ui-ink-fg) 30%, transparent)",
       }}
     />
   );

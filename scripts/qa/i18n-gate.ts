@@ -260,8 +260,26 @@ export const BASELINES: Baselines = {
   // first call site) + 2 (BG-0093 net +5 orphaned / -3 adopted) = 255. W4 88
   // - 0 (BG-0094 wrote every branch as `cond ? t("a") : t("b")`) - 7 (BG-0093
   // converted four call sites and deleted three with PlayerPickerDrawer) = 81.
+  //
+  // BG-0092 (Fantasy V2, Lane A — shared chrome and the hub): converting
+  // `FantasyScreenGate` and `FantasyUnavailableState` onto the kit's state
+  // primitives replaced four computed-key call sites —
+  // ``t(`fantasy.availability.${phase}.title`)`` and its `.body` twin in each
+  // file — with explicit `cond ? t("a") : t("b")` branches, i.e. literal keys
+  // the gate can actually check. That is the shape the gate asks for, so the
+  // four findings are gone rather than suppressed: W4 88 -> 84. W3 is
+  // unchanged: the same keys are still reached, now literally, and the three
+  // keys added in this pass (`fpl.rank.up`/`.down`/`.same`, the accessible
+  // names for the rank-movement glyph, which used to announce a hardcoded
+  // English "up"/"down") each have a literal call site.
+  //
+  // Integration, second pass: Lane A measured against the same base again
+  // (W3 262, W4 88), so its numbers do not survive either. W3 stays 255 --
+  // Lane A moved no key on or off the unreferenced list, because the three it
+  // added each have a literal call site and the four it converted still reach
+  // the same keys. W4 81 - 4 = 77.
   W3: 255,
-  W4: 81,
+  W4: 77,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

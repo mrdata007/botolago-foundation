@@ -595,6 +595,11 @@ export const dictionaries = {
     "fpl.general_leagues": "Ligues générales",
     "fpl.private_leagues": "Ligues privées",
     "fpl.rank": "Rang",
+    // Accessible names for the rank-movement glyph. The arrow is colour and
+    // shape only, so these are the whole signal for a screen-reader user.
+    "fpl.rank.up": "En hausse",
+    "fpl.rank.down": "En baisse",
+    "fpl.rank.same": "Inchangé",
     "fpl.league": "Ligue",
     "fpl.notifications": "Notifications",
     "fpl.notifications_body":
@@ -1827,6 +1832,9 @@ export const dictionaries = {
     "fpl.general_leagues": "الدوريات العامة",
     "fpl.private_leagues": "الدوريات الخاصة",
     "fpl.rank": "الرتبة",
+    "fpl.rank.up": "ارتفاع",
+    "fpl.rank.down": "انخفاض",
+    "fpl.rank.same": "دون تغيير",
     "fpl.league": "الدوري",
     "fpl.notifications": "الإشعارات",
     "fpl.notifications_body":

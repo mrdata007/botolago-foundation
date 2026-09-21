@@ -1,0 +1,335 @@
+task_id: BG-0092
+lane: "Lane A — shared Fantasy chrome and the hub"
+builder_type: Builder-Frontend
+branch: bg-0092-fantasy-shell
+base: >
+  origin/chief/launch-fixes-3 @ 38d9430 (the commit the worktree was created from).
+  origin/chief/launch-fixes-3 advanced to e56f56b while this lane was running — it now
+  carries the merged pitch lane and the kit lane's in-flight UiSegmented work. This
+  branch was deliberately NOT rebased or merged onto it: the repo syncs to Lovable and
+  history must not be rewritten, and taking sibling lanes' changes unverified would
+  invalidate this lane's own measurements. Integration is the coordinator's merge.
+
+summary: >
+  Every Fantasy screen in the product renders inside this lane's files, so the work was
+  done once in the shared chrome rather than 200 times at the call sites. `primitives.tsx`
+  — imported by 15 Fantasy routes and 4 sibling-lane components — is now a thin adapter
+  over `@/components/ui-kit` with an unchanged exported API, so screens no sibling lane
+  has converted yet still pick up the themed tokens, the 44px tap floor and the one focus
+  ring. The hub, help, profile, the frame, the gate and the nine `components/fantasy`
+  state components were converted outright.
+
+divergence_meter:
+  command: bun scripts/qa/design-divergence.ts
+  lane_a_owned_files:
+    before: 246
+    after: 0
+    note: "All 18 owned files are at zero on every rule the meter counts."
+  product_total:
+    before: 1534
+    after: 1288
+    files_with_divergences: "91 -> 76"
+  per_file:
+    - { file: src/components/fpl/primitives.tsx, before: 51, after: 0 }
+    - { file: src/routes/fantasy.index.tsx, before: 52, after: 0 }
+    - { file: src/components/fpl/FantasyScreenGate.tsx, before: 22, after: 0 }
+    - { file: src/components/fantasy/FantasyImportPrompt.tsx, before: 20, after: 0 }
+    - { file: src/components/fantasy/FantasyAccessGate.tsx, before: 15, after: 0 }
+    - { file: src/components/fantasy/FantasySubNav.tsx, before: 14, after: 0 }
+    - { file: src/components/fantasy/CloudSyncBanner.tsx, before: 14, after: 0 }
+    - { file: src/components/fantasy/ConflictBar.tsx, before: 14, after: 0 }
+    - { file: src/components/fantasy/UnsavedBadge.tsx, before: 10, after: 0 }
+    - { file: src/routes/fantasy.help.tsx, before: 8, after: 0 }
+    - { file: src/routes/fantasy.profile.tsx, before: 8, after: 0 }
+    - { file: src/components/fantasy/FantasyOnboarding.tsx, before: 7, after: 0 }
+    - { file: src/components/fpl/FantasyFrame.tsx, before: 4, after: 0 }
+    - { file: src/components/fantasy/FantasyMobileNav.tsx, before: 4, after: 0 }
+    - { file: src/components/fantasy/FantasyUnavailableState.tsx, before: 3, after: 0 }
+    - { file: src/components/fpl/LegacyFantasyPage.tsx, before: 0, after: 0 }
+    - { file: src/routes/fantasy.tsx, before: 0, after: 0 }
+    - { file: src/routes/fantasy.rules.tsx, before: 0, after: 0 }
+
+named_defects_fixed:
+  - defect: "Literal bg-white / text-white in src/components/fpl/**"
+    measured_before: "1.09:1 — themed foreground on a permanently white card in dark"
+    fixed_in:
+      - "primitives.tsx — FplButton ink/light, FplLinkButton, FplSegmented track and
+        active segment, FplStateBadge available"
+      - 'FantasyFrame.tsx — background="white" was a literal bg-white on BOTH the page
+        root and the column; it is now the themed surface pair'
+      - "FantasyScreenGate.tsx — all four non-ready states sat on literal white cards"
+      - "fantasy.index.tsx — three translucent bg-white/NN panels and the <style> block's
+        rgba(255,255,255,.55) team card"
+      - "fantasy.help.tsx — the accordion answer pane and the expanded chevron cell"
+    result: "zero literal white/black in any Lane A file (design-divergence hardColour rule = 0)"
+
+  - defect: "--fpl-ink / --fpl-ink-deep used as a TEXT colour (BG-0083)"
+    measured_before: '1.13:1 ("Coupes"); --ui-ink is a dark navy in both themes'
+    fixed_in:
+      - "primitives.tsx — FplHeader title, FplDeadlineLine, FplSegmented labels, FplPill,
+        FplButton/FplLinkButton foregrounds"
+      - "fantasy.index.tsx — nine headings and the hub tiles on --fpl-ink-deep"
+      - "fantasy.profile.tsx, fantasy.help.tsx"
+    rule_applied: >
+      On the header/hero band the foreground is --ui-on-grad-header; on a surface it is
+      ui.tone.ink (--ui-ink-fg); on the action gradient it is --ui-ink-deep. --ui-ink is
+      used only as a fill or border.
+
+  - defect: "--brand-primary used as text (text-brand / text-[color:var(--brand-primary)])"
+    measured_before: "1.35–1.54:1 in dark"
+    fixed_in_my_files:
+      - "src/components/fantasy/FantasyImportPrompt.tsx:179 — text-brand -> ui.tone.ink"
+      - 'src/components/fantasy/FantasyAccessGate.tsx:80 — text-[color:var(--brand-primary)]
+        -> UiLinkButton variant="ghost" (ui.tone.ink)'
+    still_open_outside_my_ownership:
+      - 'src/components/common/Trans.tsx:18 — accentClassName default "text-brand".
+        This is the highest-volume one: Trans is rendered on 19 call sites including
+        fantasy.create.tsx and fantasy.transfers.tsx (sibling lanes).'
+      - "src/components/common/SectionHeader.tsx:48 — 17 call sites across index/matches/news."
+      - "src/components/common/AccentEyebrow.tsx:16 — currently unreferenced."
+      - "src/components/welcome/WelcomeScreen.tsx:61, src/components/matches/StatComparison.tsx:78
+        and :91, src/components/legal/ConsentLine.tsx:22, src/components/fantasy/PlayerShirt.tsx:90
+        (PlayerShirt is a sibling lane's file)."
+    note: >
+      The substitution is safe wherever it is applied: --brand-primary and the light value
+      of --ui-ink-fg are the same colour, oklch(0.32 0.1 258), so routing text-brand to
+      ui.tone.ink is a no-op in light and the whole fix in dark. Not applied to
+      src/components/common/** because ownership is strict while three lanes run and those
+      components render on 30+ non-Fantasy call sites this lane did not verify.
+
+owner_instruction_desktop_column:
+  instruction: "Desktop renders left-aligned; centre it like every other route."
+  what_was_measured: >
+    The column was already centred. Measured on this branch before the change, at 1440x900:
+    main = 480px wide, 480px of gutter on the left AND 480px on the right — (1440-480)/2 = 480,
+    i.e. exactly centred. Same at 1024 (272/272) and 768 (144/144), in fr and ar. The
+    "left offset 480px" in the report is the centred offset, not a left-alignment.
+  what_was_actually_wrong: >
+    The real divergence is WIDTH, which is what produces the symptom the owner describes.
+    Every migrated public route renders through AppShell -> UiScreen width="content", whose
+    rule is max-w-2xl (672px). Fantasy was the one section still on the 480px
+    --ui-column-max phone canvas, so at 1440px two thirds of the viewport was gutter
+    (960 of 1440) and Fantasy read as a different application.
+  fix: >
+    src/components/fpl/FantasyFrame.tsx now uses max-w-2xl — literally the kit's own rule
+    for a content column, not a third invented width — and matches UiScreen's bottom-nav
+    clearance (pb-28 md:pb-12). The gutter is deliberately NOT added here, unlike UiScreen:
+    Fantasy screens render full-bleed bands of their own (hero gradient, FplHeader,
+    FplBanner) and each inner block brings ui.space.gutter itself.
+  verified_after:
+    1440_fr: "/fantasy, /fantasy/rules, /fantasy/help, /fantasy/profile = 672px, 384 left / 384 right — identical to /matches and /profile"
+    1440_ar: "identical"
+    768_fr: "672px, 48 left / 48 right — identical to /matches and /profile"
+    768_ar: "identical"
+    1024: "672px, 176 / 176 — identical to the public routes"
+  cross_lane_consequence_please_read: >
+    This widens the column for EVERY Fantasy screen, including the three sibling lanes'
+    screens, which were built and verified at 480px. Nothing in this lane's re-verification
+    broke at 672px (0 overflow, 0 clipping, 0 tap failures at 768 and 1440 in both
+    languages), and the layouts are fluid rather than fixed, but the pitch, the squad
+    table, the player picker and the transfer screens should be re-checked at 672px by
+    their owners. Also note UiSheet still uses --ui-column-max, so a bottom sheet is now
+    480px inside a 672px column; that reads as a deliberate thumb-width sheet, but it is a
+    visual decision someone should confirm.
+
+kit_requests:
+  - id: KIT-1
+    severity: "AA failure, dark theme"
+    file: src/components/ui-kit/primitives.tsx
+    component: 'UiSegmented tone="onGradient"'
+    measured: >
+      Idle (aria-selected=false) tab label measured 4.44:1 and 4.48:1 against its track in
+      dark, on /fantasy/profile at 390/430/768/1440 in fr and ar. The label is
+      --ui-on-grad-header, which in dark is near-white oklch(0.97 0.01 250) = rgb(240,246,252);
+      the track is color-mix(in oklab, var(--ui-on-ink-plain) 35%, transparent), which over
+      the dark header gradient resolves to rgb(84,115,155).
+    root_cause: >
+      The track is a fixed color-mix and cannot serve a foreground that flips between
+      near-black (light) and near-white (dark).
+    status: >
+      The kit lane has confirmed this defect independently (4.28:1 / 4.38:1) and is fixing
+      it at source. A local workaround was written and then DELIBERATELY REVERTED on the
+      coordinator's instruction, so this lane ships the defect visible rather than papering
+      over it with a one-off colour. It is the only sub-4.5:1 measurement left in this
+      lane's surface.
+  - id: KIT-2
+    severity: "RTL defect"
+    file: src/components/ui-kit/primitives.tsx
+    component: UiHeader
+    detail: >
+      The Back control's glyph is `<ChevronLeft className="h-5 w-5" aria-hidden />` with no
+      rtl mirroring. Under dir="rtl" the control correctly moves to the inline-start (right)
+      edge — verified — but the chevron still points left, i.e. it points away from the
+      direction travel actually goes. The codebase convention for this is rtl:-scale-x-100
+      (arrows) / rtl:rotate-180 (chevrons), already used in routes/profile.tsx,
+      routes/index.tsx and routes/fantasy.points.tsx. Not fixable from this lane:
+      src/components/ui-kit/** is the foundation lane's.
+  - id: KIT-3
+    severity: "minor / API"
+    file: src/components/ui-kit/primitives.tsx
+    component: UiCard
+    detail: >
+      UiCard accepts only children/as/padding/interactive/className, so it silently drops
+      ARIA props. `<UiCard as="section" aria-labelledby="...">` does not compile, which
+      forced FantasyAccessGate to hand-roll `<section className={ui.surface.card}>` to keep
+      its accessible name. Spreading the rest of the element props would remove that.
+
+changes:
+  - file: src/components/fpl/primitives.tsx
+    description: >
+      Rewritten as an adapter over the kit. The exported API is byte-for-byte compatible —
+      same nine components, same props, same semantics — because 15 route files and 4
+      sibling-lane components import it and must keep compiling. FplHeader -> UiHeader
+      (variant gradient/ink -> tone; left/right -> leading/trailing; the historic
+      "Back always falls through to router history" behaviour is preserved via showBack).
+      FplSegmented -> UiSegmented, FplPill -> UiPill, FplButton/FplLinkButton ->
+      UiButton/UiLinkButton, FplBanner -> UiBanner, FplKeyValueRow -> UiKeyValueRow,
+      FplStateBadge -> UiBadge, FplRankMovement -> UiRankMovement.
+      Three behavioural fixes:
+        - FplDeadlineLine formatted with a literal "Africa/Casablanca" string; it now passes
+          MATCH_TIME_ZONE from src/lib/match-kickoff.ts, so it cannot drift from the fixture
+          cards beside it (BG-0100).
+        - FplRankMovement announced a hardcoded English aria-label "up"/"down". The glyph is
+          otherwise colour-and-shape only, so that label is the entire signal for a
+          screen-reader user; it is translated now (fpl.rank.up/.down/.same).
+        - FplButton variant="secondary" was a one-off indigo oklch(0.5 0.17 262) literal with
+          text-white. The kit has no such fill; it maps to variant="outline", which is what
+          that button is (the quieter of two side-by-side actions in TransferConfirmScreen).
+          The variant name is kept in the type so the sibling lane's file still compiles.
+  - file: src/components/fpl/FantasyFrame.tsx
+    description: >
+      Column width matched to the public routes (see owner_instruction_desktop_column).
+      background="white" was a literal bg-white on both the root and the column; it is now
+      ui.surface.bar (the kit's flat opaque surface + matching foreground, no radius or
+      shadow of its own). Radius and shadow come from --ui-radius-column / --ui-shadow-column
+      instead of the legacy --shadow-floating and a literal 28px.
+  - file: src/components/fpl/FantasyScreenGate.tsx
+    description: >
+      The four non-ready phases are now kit state shapes: UiStatePanel loading skeletons
+      (kept at the Fantasy proportions — header row, 420px pitch block, summary row),
+      UiErrorState with retry, UiStatePanel empty for season_closed / awaiting_gameweek, and
+      a UiCard + two UiLinkButtons for the guest branch. The two computed translation keys
+      (`t(\`fantasy.availability.${phase}.title\`)` and its .body twin) became explicit
+      `cond ? t("a") : t("b")` branches, which is the shape the i18n gate can check.
+      No phase logic changed: the redirect effect, the phase switch and `retry` are identical.
+  - file: src/components/fpl/LegacyFantasyPage.tsx
+    description: "Content padding moved to ui.space.gutter."
+  - file: src/routes/fantasy.index.tsx
+    description: >
+      The hub, converted. It carried the largest single cluster of the section's debt:
+      33 --fpl-* references, a <style> block defining .fpl-team-card with a hand-written
+      rgba() fill and a backdrop-filter, three translucent bg-white/NN panels, a literal
+      linear-gradient(180deg, ...) (a degree angle lands on the opposite edge under RTL),
+      two radial gradients anchored at 0%/100% (same problem), and --fpl-ink-deep as a text
+      colour on nine headings. Now: UiCard, UiSkeleton, UiTable for the league rows,
+      ui.text.* / ui.stat.*, --ui-grad-hero and --ui-grad-header, and centred radial origins.
+      The inline <style> block is gone. Arrows carry rtl:-scale-x-100 (they previously did
+      not mirror at all). The notification switch was a 32px control; the track is still
+      32px visually but the button itself now clears --ui-tap-min. The deadline formatter
+      passes MATCH_TIME_ZONE. Every query, queryKey, enabled guard and the NEWS_ENABLED
+      branch are untouched.
+  - file: src/routes/fantasy.help.tsx
+    description: >
+      Accordion converted. The rows sat on literal bg-white with a hand-rolled
+      rgba(0,0,0,0.10) shadow and the collapsed chevron cell was text-white on an ink fill.
+      Now ui.surface.* + --ui-shadow-card, and the question row clears the tap floor.
+  - file: src/routes/fantasy.profile.tsx
+    description: >
+      Cards -> UiCard, season-history table -> UiTable (it was a <thead> with no <tbody>
+      followed by a detached paragraph; the empty line is now a real spanning cell). The
+      manager name truncates instead of pushing the Manage Account button off the row.
+  - file: src/components/fantasy/FantasySubNav.tsx
+    description: >
+      Glass bar -> ui.surface.bar + hairline rules; the active tab's literal text-white ->
+      ui.surface.inkPlain; rounded-xl -> ui.radius.control; text-xs -> ui.text.meta; the
+      --brand-accent focus ring -> ui.focus; tabs raised from 36px to the 44px floor.
+  - file: src/components/fantasy/FantasyMobileNav.tsx
+    description: >
+      surface-4 glass -> ui.surface.bar on --ui-shadow-raised; the active tint composed from
+      --ui-ink-fg instead of the legacy brand pair; 10px literal -> ui.text.micro.
+  - file: src/components/fantasy/FantasyAccessGate.tsx
+    description: >
+      surface-4 + cta-brand + rounded-2xl + Tailwind type ramp -> card surface, UiLinkButton,
+      ui.text.*. The blurred accent blob was drawn from --brand-accent, which has no dark
+      counterpart, and is gone with the glass. Rendered as a plain <section> rather than
+      UiCard only because UiCard drops aria-labelledby (see KIT-3).
+  - file: src/components/fantasy/FantasyUnavailableState.tsx
+    description: >
+      -> UiEmptyState. Also spelled the three reasons out per branch instead of a computed
+      key; the previous template covered season_closed and awaiting_gameweek but the prop
+      type is a three-member union including registration_closed, which had copy in both
+      dictionaries and no checkable call site.
+  - file: src/components/fantasy/CloudSyncBanner.tsx
+    description: >
+      The three tones were Tailwind named-palette pairs (amber-500/10 + amber-100,
+      emerald-*, bg-white/5 + text-white/80) — light-only, and the neutral tone rendered
+      white-on-white in light mode. Now UiAlert. Tone choice preserves the LIVE-REGION
+      behaviour, not just the colour: error and conflict map to "negative", which is the
+      tone UiAlert gives role="alert" (assertive), matching the original
+      aria-live={showRetry ? "assertive" : "polite"}; everything else stays polite.
+  - file: src/components/fantasy/ConflictBar.tsx
+    description: >
+      Tailwind red palette over a backdrop-blur translucent fill -> UiAlert tone="negative",
+      which keeps role="alert"/aria-live="assertive" — the reason this component exists.
+      The invisible-but-present live region for the !visible case is unchanged.
+  - file: src/components/fantasy/UnsavedBadge.tsx
+    description: 'amber-50/85 + amber-900 -> UiAlert tone="caution"; polite status preserved.'
+  - file: src/components/fantasy/FantasyImportPrompt.tsx
+    description: >
+      Glass dialog -> card surface; text-brand -> ui.tone.ink; the emerald/red status
+      messages -> ui.tone.positive / ui.tone.negative; three cta-brand/border-input buttons
+      -> UiButton. All import logic, error classification and marker persistence untouched.
+  - file: src/components/fantasy/FantasyOnboarding.tsx
+    description: >
+      cta-brand and --bg-brand-gradient -> --ui-grad-action; the step dots composed from
+      --ui-ink-fg; the two bare buttons -> UiButton (they were 20px and 36px tall).
+  - file: src/i18n/dictionaries.ts
+    description: >
+      Three new keys with full fr and ar values: fpl.rank.up / .down / .same, the accessible
+      names for the rank-movement glyph, which previously announced English "up"/"down".
+      fr: "En hausse" / "En baisse" / "Inchangé"; ar: "ارتفاع" / "انخفاض" / "دون تغيير".
+  - file: scripts/qa/i18n-gate.ts
+    description: "W4 baseline 88 -> 84. See i18n_baseline_move."
+
+i18n_baseline_move:
+  which: "W4 (t() call sites whose argument is not a literal key)"
+  from: 88
+  to: 84
+  why: >
+    Converting FantasyScreenGate and FantasyUnavailableState onto the kit's state primitives
+    replaced four computed-key call sites — `t(\`fantasy.availability.${phase}.title\`)` and
+    its .body twin in each file — with explicit `cond ? t("a") : t("b")` branches. That is
+    exactly the shape the gate asks for, so the four findings are gone rather than
+    suppressed. The gate is exact-equality on purpose, so the baseline is lowered in the
+    same commit, with the reason recorded in the BASELINES comment block.
+  unchanged:
+    W1: 7
+    W2: 7
+    W3: 262
+  w3_note: >
+    W3 did not move. The same availability keys are still reached, now literally, and each
+    of the three keys added in this pass has a literal call site.
+
+business_logic_untouched:
+  - "No change to squad rules, budget, formations, club limits, selection, persistence,
+    captain logic, transfers, gameweeks, scoring, leagues or auth."
+  - "No RPC, query, queryKey, staleTime, enabled guard or mutation was added, removed or
+    reordered. The hub's three useQuery calls and fantasy.profile's two are identical."
+  - "useFantasyScreen, fantasy-runtime, fantasy-owned-provider, fantasy-data-source and
+    fantasy-state were read but not modified."
+  - "FantasyScreenGate's redirect effect and phase switch are unchanged; only the bodies
+    of the non-ready phases were restyled."
+
+rtl_discipline:
+  physical_direction_utilities: "0 in Lane A files (meter physicalDir rule = 0), unchanged from baseline"
+  tracking: "no bare tracking-* introduced; the kit's ui.text.label carries the only letter-spacing and it is ltr:-prefixed"
+  gradient_angles: "no deg angles. The hub's two decorative radials were re-anchored to 50% origins; the 180deg linear gradient became --ui-grad-header (to bottom)"
+  arrows: "hub arrows carry rtl:-scale-x-100, the established codebase convention; they did not mirror before"
+
+gates:
+  typecheck: "bun run typecheck — clean"
+  test: "bun run test — 1438 pass / 0 fail / 15246 expect() (baseline on this branch was 1438/0/15231; the 15 extra assertions are the i18n gate's own test re-counting the dictionary)"
+  lint: "bun run lint — 0 errors, 17 warnings (all pre-existing react-refresh/only-export-components)"
+  format_check: "bun run format:check — 40 offenders, all pre-existing; none in any file this lane touched"
+  i18n_gate: "bun scripts/qa/i18n-gate.ts — RESULT: pass (W4 baseline moved, see above)"
+  build: "bun run build — succeeded"

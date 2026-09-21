@@ -1,9 +1,17 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, CalendarClock, Loader2, LogIn, UserPlus } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { CalendarClock, Loader2, LogIn, UserPlus } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
+import {
+  ui,
+  UiCard,
+  UiErrorState,
+  UiLinkButton,
+  UiSkeleton,
+  UiStatePanel,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { FplButton } from "./primitives";
+import { cn } from "@/lib/utils";
 import type { FantasyScreenPhase, FantasyScreenState } from "./useFantasyScreen";
 
 /**
@@ -12,6 +20,11 @@ import type { FantasyScreenPhase, FantasyScreenState } from "./useFantasyScreen"
  * state. Loading is a bounded skeleton, errors always expose a retry, closed
  * seasons say so explicitly, guests get sign-in / register, and managers
  * without a team are sent to the squad builder.
+ *
+ * The phases are the kit's state shapes now. Each one used to be a hand-rolled
+ * block on a literal `bg-white` card with `--fpl-*` copy colours, which is
+ * the single place a Fantasy screen is most likely to be seen in dark mode —
+ * a slow or failed request — and the one that read worst there.
  */
 export function FantasyScreenGate({
   state,
@@ -48,77 +61,81 @@ export function FantasyPhaseBody({
   retry: () => void;
 }) {
   const { t } = useI18n();
+
   if (phase === "loading" || phase === "no_team") {
+    // The Fantasy layout is known in advance — a header row, the pitch block
+    // and a summary row — so it is skeletoned at those proportions rather
+    // than replaced by a spinner.
     return (
-      <div role="status" aria-label={t("state.loading")} className="px-4 py-6">
-        <div className="mx-auto mb-4 flex items-center justify-center gap-2 text-[13px] font-semibold text-[color:var(--fpl-grey-text)]">
+      <div role="status" aria-label={t("state.loading")} className={cn("py-6", ui.space.gutter)}>
+        <div
+          className={cn(
+            "mx-auto mb-4 flex items-center justify-center gap-2",
+            ui.text.meta,
+            ui.tone.muted,
+          )}
+        >
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
           {t("state.loading")}
         </div>
         <div className="space-y-3">
-          <div className="h-12 rounded-md bg-white shadow-sm" />
-          <div className="h-[420px] rounded-md bg-[color:var(--fpl-pitch-a)]/40" />
-          <div className="h-24 rounded-md bg-white shadow-sm" />
+          <UiSkeleton className="h-12" />
+          <UiSkeleton className="h-[420px]" />
+          <UiSkeleton className="h-24" />
         </div>
       </div>
     );
   }
+
   if (phase === "error") {
     return (
-      <div role="alert" className="mx-4 my-6 rounded-md bg-white p-5 text-center shadow-sm">
-        <AlertTriangle className="mx-auto h-7 w-7 text-[color:var(--fpl-pink)]" aria-hidden />
-        <h2 className="mt-3 text-[17px] font-extrabold text-foreground">{t("fpl.error.title")}</h2>
-        <p className="mt-1 text-[14px] text-[color:var(--fpl-grey-text)]">{t("fpl.error.body")}</p>
-        <FplButton variant="ink" className="mt-4" onClick={retry}>
-          {t("state.retry")}
-        </FplButton>
-      </div>
+      <UiErrorState
+        className="mx-4 my-6"
+        title={t("fpl.error.title")}
+        body={t("fpl.error.body")}
+        onRetry={retry}
+      />
     );
   }
+
   if (phase === "season_closed" || phase === "awaiting_gameweek") {
     return (
-      <div role="status" className="mx-4 my-6 rounded-md bg-white p-5 text-center shadow-sm">
-        <CalendarClock className="mx-auto h-7 w-7 text-[color:var(--fpl-ink)]" aria-hidden />
-        <h2 className="mt-3 text-[17px] font-extrabold text-foreground">
-          {t(`fantasy.availability.${phase}.title`)}
-        </h2>
-        <p className="mt-1 text-[14px] text-[color:var(--fpl-grey-text)]">
-          {t(`fantasy.availability.${phase}.body`)}
-        </p>
-        <FplButton
-          variant="light"
-          className="mt-4 ring-1 ring-[color:var(--fpl-grey)]"
-          onClick={retry}
-        >
-          {t("state.retry")}
-        </FplButton>
-      </div>
+      <UiStatePanel
+        kind="empty"
+        className="mx-4 my-6"
+        title={
+          <span className="flex flex-col items-center gap-3">
+            <CalendarClock className={cn("h-7 w-7", ui.tone.ink)} aria-hidden />
+            {phase === "season_closed"
+              ? t("fantasy.availability.season_closed.title")
+              : t("fantasy.availability.awaiting_gameweek.title")}
+          </span>
+        }
+        body={
+          phase === "season_closed"
+            ? t("fantasy.availability.season_closed.body")
+            : t("fantasy.availability.awaiting_gameweek.body")
+        }
+        onRetry={retry}
+      />
     );
   }
+
   // guest
   return (
-    <div className="mx-4 my-6 rounded-md bg-white p-5 text-center shadow-sm">
-      <h2 className="text-[17px] font-extrabold text-foreground">{t("auth.prompt.title")}</h2>
-      <p className="mt-1 text-[14px] text-[color:var(--fpl-grey-text)]">{t("auth.prompt.body")}</p>
+    <UiCard padding="lg" className="mx-4 my-6 text-center">
+      <h2 className={cn(ui.text.section, ui.tone.default)}>{t("auth.prompt.title")}</h2>
+      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.prompt.body")}</p>
       <div className="mt-4 grid gap-2">
-        <Link
-          to="/auth/login"
-          search={{ next }}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[6px] px-4 text-[15px] font-extrabold text-[color:var(--fpl-ink)]"
-          style={{ backgroundImage: "var(--fpl-grad)" }}
-        >
+        <UiLinkButton to="/auth/login" search={{ next }} variant="gradient">
           <LogIn className="h-4 w-4" aria-hidden />
           {t("auth.prompt.login")}
-        </Link>
-        <Link
-          to="/auth/register"
-          search={{ next }}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-[color:var(--fpl-ink)] px-4 text-[15px] font-extrabold text-white"
-        >
+        </UiLinkButton>
+        <UiLinkButton to="/auth/register" search={{ next }} variant="ink">
           <UserPlus className="h-4 w-4" aria-hidden />
           {t("auth.prompt.register")}
-        </Link>
+        </UiLinkButton>
       </div>
-    </div>
+    </UiCard>
   );
 }
