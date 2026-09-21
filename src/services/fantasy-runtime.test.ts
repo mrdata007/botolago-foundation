@@ -162,7 +162,10 @@ describe("every player-stat surface renders the dash for a null form", () => {
     "src/routes/fantasy.players.tsx",
     "src/routes/fantasy.players.$playerId.tsx",
     "src/components/fpl/AddPlayerScreen.tsx",
-    "src/components/fantasy/PlayerPickerDrawer.tsx",
+    // BG-0093 removed `src/components/fantasy/PlayerPickerDrawer.tsx`: a second,
+    // unreachable player picker (no component imported it; this list was its
+    // only reference) that knew nothing about the bank or the three-per-club
+    // limit. `AddPlayerScreen` is the live picker and carries the guard.
     "src/components/common/PlayerRow.tsx",
     "src/routes/fantasy.top-players.tsx",
     "src/routes/fantasy.create.tsx",

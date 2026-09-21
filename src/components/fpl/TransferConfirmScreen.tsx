@@ -1,23 +1,27 @@
-import { ArrowLeft, ArrowRight } from "lucide-react";
-
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
+import { ui, UiBanner, UiButton, UiCard, UiHeader, UiKeyValueRow } from "@/components/ui-kit";
 import type { ChipKey, ChipState } from "@/lib/fantasy-engine";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer } from "@/types/fantasy";
-import { FplBanner, FplButton, FplHeader, FplKeyValueRow } from "./primitives";
 
 /**
- * FPL-007 transfer confirmation: ink banner, Out / In columns, activation
- * note, "Points Overview" rows, the Wildcard / Free Hit chip buttons and the
- * "Edit Transfers | Confirm" bottom bar.
+ * FPL-007 transfer confirmation.
+ *
+ * It belongs to the same screen as the pitch it came from, so it keeps that
+ * screen's chrome: the gradient header, the gameweek + deadline line, the ink
+ * banner, then Out / In, the points overview and the chips. Nothing here is a
+ * direction: the old `ArrowLeft` / `ArrowRight` pair pointed the wrong way
+ * under `dir="rtl"`, so out and in are stated as toned badges instead.
  */
 export function TransferConfirmScreen({
   pairs,
   clubs,
   gameweek,
+  deadlineIso,
   freeUsed,
   paidUsed,
   hitPoints,
@@ -31,6 +35,7 @@ export function TransferConfirmScreen({
   pairs: Array<{ out: FantasyPlayer; in: FantasyPlayer }>;
   clubs: Club[];
   gameweek: number;
+  deadlineIso: string;
   freeUsed: number;
   paidUsed: number;
   hitPoints: number;
@@ -46,7 +51,34 @@ export function TransferConfirmScreen({
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
+  const deadline = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    // BG-0100: the competition's calendar, never the viewer's browser.
+    timeZone: MATCH_TIME_ZONE,
+  }).format(new Date(deadlineIso));
+
   const clubOf = (id: string) => clubs.find((c) => c.id === id);
+  const chipLabel = (key: ChipKey) =>
+    key === "wildcard"
+      ? t("fantasy.chip.wildcard")
+      : key === "free_hit"
+        ? t("fantasy.chip.free_hit")
+        : key === "bench_boost"
+          ? t("fantasy.chip.bench_boost")
+          : t("fantasy.chip.triple_captain");
+  const chipStateLabel = (state: ChipState) =>
+    state === "active"
+      ? t("fpl.state.active")
+      : state === "available"
+        ? t("fpl.state.play")
+        : state === "used"
+          ? t("fpl.state.used")
+          : t("fpl.state.unavailable");
+
   const tile = (player: FantasyPlayer) => {
     const club = clubOf(player.clubId);
     return (
@@ -57,11 +89,19 @@ export function TransferConfirmScreen({
           imageUrl={player.jerseyImageUrl}
         />
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-extrabold text-foreground">
+          <div
+            className={cn(
+              "truncate",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.default,
+            )}
+          >
             {tr(player.name)}
           </div>
-          <div className="truncate text-[11px] text-[color:var(--fpl-grey-text)]">
-            {club ? tr(club.shortName) : ""}
+          <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>
+            {club ? tr(club.shortName) : ""} ·{" "}
+            <span className={ui.text.tabular}>{nf.format(player.price)}</span>
           </div>
         </div>
       </div>
@@ -69,103 +109,95 @@ export function TransferConfirmScreen({
   };
 
   return (
-    <div className="flex min-h-[calc(100dvh-0px)] flex-col">
-      <FplHeader title={t("fpl.transfers")} onBack={onEdit} />
-      <FplBanner>
+    <div className="flex min-h-[100dvh] flex-col">
+      <UiHeader title={t("fpl.transfers")} tone="gradient" onBack={onEdit}>
+        <p className={cn("mt-1 text-center", ui.text.secondary)}>
+          {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
+          <strong className="[font-weight:var(--ui-weight-heavy)]">{deadline}</strong>
+        </p>
+      </UiHeader>
+      <UiBanner>
         {pairs.length === 1
           ? t("fpl.about_to_transfer_one")
           : t("fpl.about_to_transfer").replace("{n}", String(pairs.length))}
-      </FplBanner>
+      </UiBanner>
 
-      <section className="mx-3 mt-3 rounded-[6px] bg-white p-3 shadow-sm">
-        <div className="grid grid-cols-2 gap-2 border-b border-[color:var(--fpl-grey)] pb-2 text-center text-[14px] font-extrabold text-foreground">
-          <span>{t("fpl.transfer_out")}</span>
-          <span>{t("fpl.transfer_in")}</span>
-        </div>
-        <ul className="divide-y divide-[color:var(--fpl-grey)]">
+      <UiCard padding="sm" className="mx-3 mt-3">
+        {/*
+          Out and in are stacked, not columned: at 390px two columns cut a real
+          Botola name in half, and the pair reads as a sentence anyway. The side
+          each line belongs to is carried by a coloured inline-start rule plus a
+          worded caption — never by an arrow, which points the wrong way in
+          Arabic, and never by colour alone.
+        */}
+        <ul>
           {pairs.map((pair) => (
-            <li
-              key={pair.out.id + pair.in.id}
-              className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-2"
-            >
-              <div className="flex items-center gap-1">
-                <ArrowLeft className="h-4 w-4 shrink-0 text-[color:var(--fpl-pink)]" aria-hidden />
+            <li key={pair.out.id + pair.in.id} className={cn("py-2", ui.rule.block)}>
+              <div className="flex min-w-0 items-center gap-2 border-s-2 border-[color:var(--ui-negative)] ps-2">
+                <span className={cn("min-w-[4.5rem] shrink-0", ui.text.label, ui.tone.negative)}>
+                  {t("fpl.transfer_out")}
+                </span>
                 {tile(pair.out)}
               </div>
-              <span aria-hidden className="text-[color:var(--fpl-grey)]">
-                |
-              </span>
-              <div className="flex items-center gap-1">
+              <div className="mt-2 flex min-w-0 items-center gap-2 border-s-2 border-[color:var(--ui-positive)] ps-2">
+                <span className={cn("min-w-[4.5rem] shrink-0", ui.text.label, ui.tone.positive)}>
+                  {t("fpl.transfer_in")}
+                </span>
                 {tile(pair.in)}
-                <ArrowRight className="h-4 w-4 shrink-0 text-[oklch(0.72_0.19_150)]" aria-hidden />
               </div>
             </li>
           ))}
         </ul>
-        <p className="pt-3 text-center text-[13px] text-foreground">
+        <p className={cn("pt-3 text-center", ui.text.meta, ui.tone.muted)}>
           {t("fpl.transfers_active_note").replace("{n}", String(gameweek))}
         </p>
-      </section>
+      </UiCard>
 
-      <section className="mx-3 mt-auto rounded-[6px] bg-white p-3 pt-4 shadow-sm">
-        <h2 className="text-[16px] font-extrabold text-foreground">{t("fpl.points_overview")}</h2>
-        <FplKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
-        <FplKeyValueRow
+      <UiCard padding="sm" className="mx-3 mt-3 pt-4">
+        <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.points_overview")}</h2>
+        <UiKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
+        <UiKeyValueRow
           label={t("fpl.additional_transfers_used")}
-          value={`${paidUsed} (${hitPoints}pts)`}
+          value={`${paidUsed} (${hitPoints} ${t("fantasy.points.abbr")})`}
         />
-        <FplKeyValueRow
+        <UiKeyValueRow
           label={t("fpl.left_in_bank")}
           value={nf.format(bankAfter)}
           className="border-b-0"
         />
         <div className="mt-3 grid grid-cols-2 gap-2">
           {chips.map((chip) => {
-            const label = t(`fantasy.chip.${chip.key}` as never);
-            const stateLabel =
-              chip.state === "active"
-                ? t("fpl.state.active")
-                : chip.state === "available"
-                  ? t("fpl.state.play")
-                  : chip.state === "used"
-                    ? t("fpl.state.used")
-                    : t("fpl.state.unavailable");
             const enabled = chip.state === "available" && !!onChip;
             return (
-              <button
+              <UiButton
                 key={chip.key}
-                type="button"
+                variant={chip.state === "active" ? "gradient" : enabled ? "ink" : "light"}
                 disabled={!enabled}
                 onClick={() => onChip?.(chip.key)}
-                className={cn(
-                  "min-h-12 rounded-[6px] px-2 text-[13px] font-extrabold",
-                  chip.state === "active"
-                    ? "text-[color:var(--fpl-ink-deep)]"
-                    : chip.state === "available"
-                      ? "bg-[color:var(--fpl-ink)] text-white"
-                      : "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]",
-                )}
-                style={chip.state === "active" ? { backgroundImage: "var(--fpl-grad)" } : undefined}
+                className="flex-col gap-0 py-1"
               >
-                {label} · {stateLabel}
-              </button>
+                <span className="truncate">{chipLabel(chip.key)}</span>
+                <span className={cn("truncate", ui.text.micro)}>{chipStateLabel(chip.state)}</span>
+              </UiButton>
             );
           })}
         </div>
-      </section>
+      </UiCard>
 
-      <div className="sticky bottom-0 z-30 mt-4 grid grid-cols-2 gap-2 bg-[color:var(--fpl-bg)]/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur">
-        <FplButton variant="secondary" onClick={onEdit} disabled={busy}>
+      <div
+        className={cn(
+          "sticky bottom-0 z-30 mt-4 grid grid-cols-2 gap-2 px-3 pt-2",
+          ui.surface.bar,
+          ui.rule.blockStart,
+          ui.safe.bottom,
+        )}
+      >
+        <UiButton variant="light" onClick={onEdit} disabled={busy}>
           {t("fpl.edit_transfers")}
-        </FplButton>
-        <FplButton
-          variant="ink"
-          className="text-[color:var(--fpl-green)]"
-          onClick={onConfirm}
-          disabled={busy}
-        >
+        </UiButton>
+        <UiButton variant="ink" onClick={onConfirm} disabled={busy}>
           {busy ? t("fpl.saving") : t("fpl.confirm")}
-        </FplButton>
+        </UiButton>
       </div>
     </div>
   );

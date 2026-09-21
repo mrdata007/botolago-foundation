@@ -216,8 +216,29 @@ export const BASELINES: Baselines = {
   // deliberately left in place -- the Fantasy screens are mid-migration and the
   // strings will be wanted again; delete them in the same pass that settles the
   // Fantasy copy, not before.
-  W3: 262,
-  W4: 88,
+  //
+  // BG-0093 (squad building, player picker, transfers). Two moves, both the
+  // consequence of named decisions rather than drift:
+  //
+  // W3 262 -> 264. Three keys gained their first call site: the picker's
+  // filters now use `fantasy.picker.filter_position` / `.filter_price` /
+  // `.filter_club`, the copy that was written for them, instead of
+  // `fpl.position` / `fpl.price` / `fpl.view`. "Prix max" is what that control
+  // actually does, and `fpl.view` ("Vue") labelled a filter that has always
+  // filtered by club. Those three go the other way, and two more join them:
+  // `fantasy.picker.title`, whose only caller was the deleted second picker
+  // `PlayerPickerDrawer`, and `fpl.all_clubs` ("Tous les clubs"), which does
+  // not fit a three-abreast filter column at 390px -- the field's own label
+  // already says Club, so its empty option is `fpl.all` ("Tous"). Net +5/-3.
+  //
+  // W4 88 -> 81. Seven fewer call sites assemble their key at runtime. Three
+  // left with `PlayerPickerDrawer`. The other four are conversions:
+  // PlayerActionSheet, SquadBuilderScreen, SquadListTable and
+  // TransferConfirmScreen each replaced a `t(`prefix.${expr}`)` with explicit
+  // literal branches, so the position, group and chip labels are now keys the
+  // gate and the TranslationKey type can both see.
+  W3: 264,
+  W4: 81,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

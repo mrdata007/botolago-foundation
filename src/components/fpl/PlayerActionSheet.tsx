@@ -1,19 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftRight, Info, Shield, ShieldHalf, Trash2, Undo2, X } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { ui, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
+import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
-import type { FantasyPlayer } from "@/types/fantasy";
+import type { FantasyPlayer, Position } from "@/types/fantasy";
 
 /**
- * Bottom action sheet opened from a player on the Pick Team pitch. The
- * reference set does not include this overlay explicitly, so it follows the
- * same ink/white language as the other reconstructed surfaces: player
- * identity on top, then "Make Captain", "Make Vice-Captain", "Substitute",
- * "Player information".
+ * Bottom action sheet opened from a player on the Pick Team pitch.
+ *
+ * It is a kit `UiSheet`, not the shadcn one: that sheet ships its own close
+ * control labelled with a hardcoded English "Close", which sat next to the
+ * translated one on every Fantasy sheet in the product. The kit's overlay
+ * labels its close control `t("fpl.close")` and nothing else.
  */
 export function PlayerActionSheet({
   open,
@@ -45,79 +48,126 @@ export function PlayerActionSheet({
 }) {
   const { t, tr } = useI18n();
   if (!player) return null;
+
   const kit = getKitForClub(club, player.kitPattern);
-  const row =
-    "flex min-h-14 w-full items-center gap-3 border-b border-[color:var(--fpl-grey)] px-4 text-[15px] font-bold text-foreground";
+  const positionLabel = (value: Position) =>
+    value === "GK"
+      ? t("player.pos.GK")
+      : value === "DEF"
+        ? t("player.pos.DEF")
+        : value === "MID"
+          ? t("player.pos.MID")
+          : t("player.pos.FWD");
+
+  const rowClass = cn(
+    "flex w-full items-center gap-3 px-4 text-start",
+    ui.space.row,
+    ui.rule.block,
+    ui.text.body,
+    "[font-weight:var(--ui-weight-heavy)]",
+    ui.tone.default,
+    ui.focus,
+  );
+  const action = (icon: ReactNode, label: ReactNode, onSelect: () => void, key: string) => (
+    <button key={key} type="button" className={rowClass} onClick={onSelect}>
+      {icon}
+      {label}
+    </button>
+  );
+
+  const header = (
+    <div className={cn("flex items-center gap-3 px-4 py-3", ui.surface.inkPlain)}>
+      <JerseyVisual kit={kit} size={36} imageUrl={player.jerseyImageUrl} />
+      <div className="min-w-0 flex-1">
+        <p className={cn("truncate", ui.text.subtitle)}>{tr(player.name)}</p>
+        <p className={cn("truncate opacity-80", ui.text.meta)}>
+          {club ? tr(club.shortName) : ""} · {positionLabel(player.position)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={t("fpl.close")}
+        className={cn(
+          "grid shrink-0 place-items-center",
+          ui.space.tap,
+          ui.radius.full,
+          ui.focus,
+          "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_15%,transparent)]",
+        )}
+      >
+        <X className="h-5 w-5" aria-hidden />
+      </button>
+    </div>
+  );
+
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="mx-auto max-w-[480px] rounded-t-[16px] p-0">
-        <div className="flex items-center gap-3 bg-[color:var(--fpl-ink)] px-4 py-3 text-white">
-          <JerseyVisual kit={kit} size={36} imageUrl={player.jerseyImageUrl} />
-          <div className="min-w-0 flex-1">
-            <SheetTitle className="truncate text-[16px] font-extrabold text-white">
-              {tr(player.name)}
-            </SheetTitle>
-            <SheetDescription className="truncate text-[12px] text-white/80">
-              {club ? tr(club.shortName) : ""} · {t(`player.pos.${player.position}` as never)}
-            </SheetDescription>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("fpl.close")}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/15"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-        </div>
-        <div className="bg-white pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-          {isStarter && onCaptain ? (
-            <button type="button" className={row} onClick={onCaptain}>
-              <Shield className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
-              {t("fpl.make_captain")}
-            </button>
-          ) : null}
-          {isStarter && onVice ? (
-            <button type="button" className={row} onClick={onVice}>
-              <ShieldHalf className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
-              {t("fpl.make_vice")}
-            </button>
-          ) : null}
-          {onSubstitute ? (
-            <button type="button" className={row} onClick={onSubstitute}>
-              <ArrowLeftRight className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
-              {t("fpl.substitute")}
-            </button>
-          ) : null}
-          {onTransferOut ? (
-            <button type="button" className={row} onClick={onTransferOut}>
-              <ArrowLeftRight className="h-5 w-5 text-[color:var(--fpl-pink)]" aria-hidden />{" "}
-              {t("fpl.transfer_out_player")}
-            </button>
-          ) : null}
-          {onUndo ? (
-            <button type="button" className={row} onClick={onUndo}>
-              <Undo2 className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
-              {t("fpl.undo_transfer")}
-            </button>
-          ) : null}
-          {onRemove ? (
-            <button type="button" className={row} onClick={onRemove}>
-              <Trash2 className="h-5 w-5 text-[color:var(--fpl-pink)]" aria-hidden />{" "}
-              {t("fpl.remove")}
-            </button>
-          ) : null}
-          <Link
-            to="/fantasy/players/$playerId"
-            params={{ playerId: player.id }}
-            className={row}
-            onClick={onClose}
-          >
-            <Info className="h-5 w-5 text-[color:var(--fpl-ink)]" aria-hidden />{" "}
-            {t("fpl.player_info")}
-          </Link>
-        </div>
-      </SheetContent>
-    </Sheet>
+    <UiSheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      title={tr(player.name)}
+      description={club ? tr(club.shortName) : undefined}
+      header={header}
+    >
+      {isStarter && onCaptain
+        ? action(
+            <Shield className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
+            t("fpl.make_captain"),
+            onCaptain,
+            "captain",
+          )
+        : null}
+      {isStarter && onVice
+        ? action(
+            <ShieldHalf className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
+            t("fpl.make_vice"),
+            onVice,
+            "vice",
+          )
+        : null}
+      {onSubstitute
+        ? action(
+            <ArrowLeftRight className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
+            t("fpl.substitute"),
+            onSubstitute,
+            "substitute",
+          )
+        : null}
+      {onTransferOut
+        ? action(
+            <ArrowLeftRight className={cn("h-5 w-5", ui.tone.negative)} aria-hidden />,
+            t("fpl.transfer_out_player"),
+            onTransferOut,
+            "transfer-out",
+          )
+        : null}
+      {onUndo
+        ? action(
+            <Undo2 className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
+            t("fpl.undo_transfer"),
+            onUndo,
+            "undo",
+          )
+        : null}
+      {onRemove
+        ? action(
+            <Trash2 className={cn("h-5 w-5", ui.tone.negative)} aria-hidden />,
+            t("fpl.remove"),
+            onRemove,
+            "remove",
+          )
+        : null}
+      <Link
+        to="/fantasy/players/$playerId"
+        params={{ playerId: player.id }}
+        className={rowClass}
+        onClick={onClose}
+      >
+        <Info className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />
+        {t("fpl.player_info")}
+      </Link>
+    </UiSheet>
   );
 }
