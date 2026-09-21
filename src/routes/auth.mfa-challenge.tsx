@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -161,7 +163,16 @@ function MfaChallengePage() {
           <button
             type="button"
             onClick={() => navigate({ to: "/" })}
-            className="text-center text-xs font-semibold text-muted-foreground hover:text-foreground"
+            className={cn(
+              "inline-flex items-center justify-center px-3 text-center",
+              ui.space.tap,
+              ui.radius.control,
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.muted,
+              ui.focus,
+              "hover:text-[color:var(--ui-on-surface)]",
+            )}
           >
             {t("auth.mfa_challenge.continue_without")}
           </button>

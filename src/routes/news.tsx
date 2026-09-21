@@ -12,6 +12,8 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
@@ -92,9 +94,7 @@ function NewsPage() {
 
   return (
     <AppShell backgroundVariant="news">
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand">{t("news.title")}</span>
-      </h1>
+      <h1 className={cn("pt-2", ui.text.hero, ui.tone.default)}>{t("news.title")}</h1>
 
       {/* Content discovery — real taxonomy-driven category chips */}
       <Section index={0} className="mt-4">
@@ -103,9 +103,9 @@ function NewsPage() {
 
       {/* Club discovery */}
       <Section index={0} className="mt-3">
-        <h2 className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
-          {t("news.filter_clubs")}
-        </h2>
+        {/* `ui.text.label` carries the `ltr:`-prefixed tracking: Arabic
+            letterforms join and must never be letter-spaced (BG-0069). */}
+        <h2 className={cn("mb-2", ui.text.label, ui.tone.muted)}>{t("news.filter_clubs")}</h2>
         <ClubFilterRow
           clubs={clubs}
           selected={clubId}

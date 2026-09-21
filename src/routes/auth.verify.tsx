@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { markWelcomeDone } from "@/lib/welcome";
@@ -97,7 +99,7 @@ function VerifyPage() {
         </div>
 
         {IS_MOCK_AUTH && (
-          <p className="text-center text-[11px] text-muted-foreground">
+          <p className={cn("text-center", ui.text.micro, ui.tone.muted)}>
             {t("auth.verify.demo_hint")}
           </p>
         )}
@@ -107,11 +109,18 @@ function VerifyPage() {
           {submitting ? t("auth.submitting") : t("auth.verify.cta")}
         </AuthPrimaryButton>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className={cn("flex items-center justify-between gap-2", ui.text.meta, ui.tone.muted)}>
           <button
             type="button"
             onClick={() => navigate({ to: "/auth/register", search: { next } })}
-            className="font-semibold hover:text-foreground"
+            className={cn(
+              "inline-flex items-center -ms-2 px-2",
+              ui.space.tap,
+              ui.radius.control,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.focus,
+              "hover:text-[color:var(--ui-on-surface)]",
+            )}
           >
             {t("auth.verify.change_email")}
           </button>
@@ -119,7 +128,15 @@ function VerifyPage() {
             type="button"
             onClick={resend}
             disabled={cooldown > 0}
-            className="font-semibold text-[color:var(--brand-primary)] disabled:text-muted-foreground"
+            className={cn(
+              "inline-flex items-center -me-2 px-2",
+              ui.space.tap,
+              ui.radius.control,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.default,
+              ui.focus,
+              "disabled:text-[color:var(--ui-on-surface-muted)]",
+            )}
           >
             {cooldown > 0 ? `${t("auth.verify.resend_in")} ${cooldown}s` : t("auth.verify.resend")}
           </button>

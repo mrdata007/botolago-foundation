@@ -1,11 +1,65 @@
+// BotolaGO auth — the sign-in surface, on the UI kit.
+//
+// DECISION: auth keeps a deliberate dark identity, but stops being a third
+// design language.
+//
+// Sign-in, sign-up, verification and password reset are the one place in the
+// product where the job is a single focused task and every other affordance
+// is noise. A dark, quiet surface is a legitimate, widely used pattern for
+// that, and `PageBackground`'s `auth` mesh is what these screens read their
+// contrast from — converting them to the light page would flatten that intent
+// for no gain.
+//
+// What was NOT legitimate was everything else that came with it: 12/16/20/24px
+// radii, a type scale (`text-[13.5px]`, `text-[26px]`) that exists nowhere
+// else, `bg-white/10` + `ring-white/20` + `backdrop-blur-md` glass, and
+// `tracking-widest` with no `ltr:` prefix — which letter-spaced Arabic and
+// broke the word (BG-0069). None of that is "a dark theme"; it is drift.
+//
+// So: the mesh stays, the chrome moves onto `--ui-*`. Radii are the kit's
+// 6px control radius, type and weights come from the kit's scale, buttons are
+// `UiButton`, spacing is the kit's gutter/tap/row tokens, and every colour is
+// a token or a `color-mix` of one, including the on-dark text, which is
+// `--ui-on-ink-plain` rather than a literal white. Same product, one focused
+// room inside it.
+//
+// House rules, as everywhere: logical properties only, and every `tracking-*`
+// is `ltr:`-prefixed (the kit's `ui.text.label` already is).
+
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
+import { ui, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { useBackTo } from "@/lib/back-navigation";
+
+/** Text on the dark mesh, and its two quieter steps. */
+const onMesh = "text-[color:var(--ui-on-ink-plain)]";
+const onMeshMuted = "text-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_78%,transparent)]";
+const onMeshFaint = "text-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_62%,transparent)]";
+/** Focus ring for controls sitting on the mesh rather than on the page. */
+const focusOnMesh =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-ink-plain)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent";
+
+/**
+ * The shared field class for every auth input: the kit's control radius,
+ * hairline rule, surface and type scale, at a ≥44px tap height.
+ */
+export const authFieldClass = cn(
+  "w-full px-3 py-3 outline-none",
+  "min-h-[var(--ui-row-min)]",
+  ui.radius.control,
+  ui.rule.all,
+  "bg-[color:var(--ui-surface)]",
+  ui.text.body,
+  ui.tone.default,
+  "focus:border-[color:var(--ui-ink)]",
+  ui.focus,
+);
 
 interface Props {
   title: string;
@@ -23,21 +77,31 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
   const Arrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-x-hidden text-white">
+    <div className={cn("relative min-h-[100dvh] w-full overflow-x-hidden", onMesh)}>
       <PageBackground variant="auth" />
       <div
-        className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5"
-        style={{
-          paddingTop: "max(env(safe-area-inset-top), 1rem)",
-          paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)",
-        }}
+        className={cn(
+          "relative z-10 mx-auto flex min-h-[100dvh] w-full flex-col",
+          "max-w-[var(--ui-column-max)]",
+          ui.space.gutter,
+          ui.safe.top,
+          ui.safe.bottom,
+        )}
       >
         <div className="flex items-center justify-between">
           {showBack ? (
             <button
               type="button"
               onClick={goBack}
-              className="inline-flex items-center gap-1 rounded-xl px-2 py-1.5 text-sm font-semibold text-white/85 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className={cn(
+                "inline-flex items-center gap-1 -ms-2 px-2",
+                ui.space.tap,
+                ui.radius.control,
+                ui.text.body,
+                onMeshMuted,
+                "transition-colors hover:bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_12%,transparent)]",
+                focusOnMesh,
+              )}
               aria-label={t("auth.back")}
             >
               <Arrow className="h-4 w-4" aria-hidden />
@@ -50,39 +114,41 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
         </div>
 
         <div className="mt-4 flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 p-1.5 ring-1 ring-white/20 backdrop-blur-md">
-            <Logo variant="icon" className="!h-9 !w-9 !rounded-xl" />
+          <div
+            className={cn(
+              "grid h-12 w-12 shrink-0 place-items-center p-1.5",
+              ui.radius.control,
+              "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_12%,transparent)]",
+              "border border-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_22%,transparent)]",
+            )}
+          >
+            <Logo variant="icon" className="!h-9 !w-9 !rounded-[var(--ui-radius-control)]" />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-bold uppercase tracking-widest text-white/60">
-              BotolaGO
+            {/* `ui.text.label` letter-spaces Latin only — Arabic joins (BG-0069). */}
+            <div className={cn(ui.text.label, onMeshFaint)}>BotolaGO</div>
+            <div className={cn("truncate", ui.text.meta, onMeshMuted)}>
+              {t("auth.brand_tagline")}
             </div>
-            <div className="truncate text-[13px] text-white/70">{t("auth.brand_tagline")}</div>
           </div>
         </div>
 
         <div className="mt-6">
-          <h1 className="text-2xl font-black tracking-tight sm:text-[26px]">{title}</h1>
+          <h1 className={cn(ui.text.hero, onMesh)}>{title}</h1>
           {subtitle && (
-            <p className="mt-2 max-w-[36ch] text-[13.5px] leading-relaxed text-white/80">
+            <p className={cn("mt-2 max-w-[36ch] leading-relaxed", ui.text.body, onMeshMuted)}>
               {subtitle}
             </p>
           )}
         </div>
 
         <div className="mt-6 flex-1">
-          <div
-            className="rounded-[24px] bg-white/97 p-5 text-foreground ring-1 ring-white/40 sm:p-6"
-            style={{
-              boxShadow:
-                "0 24px 60px -24px rgba(3, 12, 40, 0.55), 0 2px 8px -2px rgba(3, 12, 40, 0.18)",
-            }}
-          >
-            {children}
-          </div>
+          <div className={cn(ui.surface.card, ui.rule.all, "p-4 sm:p-5")}>{children}</div>
         </div>
 
-        {footer && <div className="mt-5 text-center text-sm text-white/85">{footer}</div>}
+        {footer && (
+          <div className={cn("mt-5 text-center", ui.text.body, onMeshMuted)}>{footer}</div>
+        )}
       </div>
     </div>
   );
@@ -90,52 +156,41 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
 
 export function AuthDivider({ label }: { label: string }) {
   return (
-    <div className="my-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-      <span className="h-px flex-1 bg-border" />
+    <div className={cn("my-4 flex items-center gap-3", ui.text.label, ui.tone.muted)}>
+      <span className="h-px flex-1 bg-[color:var(--ui-rule)]" />
       <span>{label}</span>
-      <span className="h-px flex-1 bg-border" />
+      <span className="h-px flex-1 bg-[color:var(--ui-rule)]" />
     </div>
   );
 }
 
 export function AuthPrimaryButton({
   children,
+  className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...props}
-      className={
-        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl cta-brand px-5 text-sm font-bold shadow-lg shadow-blue-950/20 transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/50 disabled:cursor-not-allowed disabled:opacity-60"
-      }
-    >
+    <UiButton variant="gradient" {...props} className={className}>
       {children}
-    </button>
+    </UiButton>
   );
 }
 
 export function AuthSecondaryButton({
   children,
+  className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...props}
-      className={
-        "flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-input bg-white px-5 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
-      }
-    >
+    <UiButton variant="outline" {...props} className={className}>
       {children}
-    </button>
+    </UiButton>
   );
 }
 
 export function AuthFieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
-    <label
-      htmlFor={htmlFor}
-      className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
-    >
+    <label htmlFor={htmlFor} className={cn("mb-1 block", ui.text.label, ui.tone.muted)}>
       {children}
     </label>
   );
@@ -147,20 +202,57 @@ export function AuthFieldError({ id, children }: { id: string; children?: ReactN
       id={id}
       role="alert"
       aria-live="polite"
-      className="mt-1 min-h-[16px] text-xs font-semibold text-destructive"
+      className={cn(
+        "mt-1 min-h-4",
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+        ui.tone.negative,
+      )}
     >
       {children ?? ""}
     </p>
   );
 }
 
+/** A form-level error, inside the card. */
+export function AuthFormError({ children }: { children: ReactNode }) {
+  return (
+    <p
+      role="alert"
+      aria-live="assertive"
+      className={cn(
+        "px-3 py-2",
+        ui.radius.control,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+        "bg-[color:color-mix(in_oklab,var(--ui-negative)_14%,transparent)]",
+        ui.tone.negative,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
 export function AuthLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link to={to} className="font-bold text-white underline-offset-4 hover:underline">
+    <Link
+      to={to}
+      className={cn(
+        "[font-weight:var(--ui-weight-heavy)] underline-offset-4 hover:underline",
+        onMesh,
+      )}
+    >
       {children}
     </Link>
   );
 }
+
+/** The class a footer link on the mesh uses when it is composed inline. */
+export const authMeshLinkClass = cn(
+  "[font-weight:var(--ui-weight-heavy)] underline-offset-4 hover:underline",
+  onMesh,
+);
 
 export function GoogleGlyph() {
   return (

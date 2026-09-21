@@ -12,7 +12,14 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import {
+  AuthShell,
+  AuthPrimaryButton,
+  AuthSecondaryButton,
+  authFieldClass,
+} from "@/components/auth/AuthShell";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
@@ -120,11 +127,22 @@ function ProfileSetupPage() {
   return (
     <AuthShell title={t("auth.setup.title")} subtitle={t("auth.setup.subtitle")} showBack={false}>
       <div className="mb-4">
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+        {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+        <div className={cn("flex items-center justify-between", ui.text.label, ui.tone.muted)}>
           <span>
             {t("auth.setup.step")} {step} {t("auth.setup.of")} {STEPS}
           </span>
-          <button onClick={finish} className="hover:text-foreground">
+          <button
+            type="button"
+            onClick={finish}
+            className={cn(
+              "inline-flex items-center px-2 -me-2",
+              ui.space.tap,
+              ui.radius.control,
+              ui.focus,
+              "hover:text-[color:var(--ui-on-surface)]",
+            )}
+          >
             {t("auth.setup.skip")}
           </button>
         </div>
@@ -132,7 +150,11 @@ function ProfileSetupPage() {
           {Array.from({ length: STEPS }).map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 flex-1 rounded-full ${i < step ? "bg-[color:var(--brand-primary)]" : "bg-muted"}`}
+              className={cn(
+                "h-1.5 flex-1",
+                ui.radius.full,
+                i < step ? "bg-[color:var(--ui-ink)]" : "bg-[color:var(--ui-rule)]",
+              )}
             />
           ))}
         </div>
@@ -142,11 +164,18 @@ function ProfileSetupPage() {
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-muted ring-1 ring-border">
+              <div
+                className={cn(
+                  "grid h-20 w-20 place-items-center overflow-hidden",
+                  ui.radius.control,
+                  ui.surface.sunken,
+                  ui.rule.all,
+                )}
+              >
                 {avatar ? (
                   <img src={avatar} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <Camera className="h-7 w-7 text-muted-foreground" aria-hidden />
+                  <Camera className={cn("h-7 w-7", ui.tone.muted)} aria-hidden />
                 )}
               </div>
               {avatar && (
@@ -154,20 +183,32 @@ function ProfileSetupPage() {
                   type="button"
                   onClick={() => setAvatar(undefined)}
                   aria-label={t("auth.setup.remove")}
-                  className="absolute -end-1 -top-1 grid h-6 w-6 place-items-center rounded-full bg-destructive text-white"
+                  className={cn(
+                    "absolute -end-1 -top-1 grid h-6 w-6 place-items-center",
+                    ui.radius.full,
+                    "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)]",
+                    ui.focus,
+                  )}
                 >
                   <X className="h-3 w-3" aria-hidden />
                 </button>
               )}
             </div>
             <div className="flex-1">
-              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t("auth.setup.avatar")}
-              </div>
+              <div className={cn(ui.text.label, ui.tone.muted)}>{t("auth.setup.avatar")}</div>
               <button
                 type="button"
                 onClick={() => fileInput.current?.click()}
-                className="mt-2 rounded-xl border border-input bg-background px-3 py-2 text-xs font-semibold hover:bg-muted"
+                className={cn(
+                  "mt-2 inline-flex items-center px-3",
+                  ui.space.tap,
+                  ui.radius.control,
+                  ui.rule.all,
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.focus,
+                  "hover:bg-[color:var(--ui-surface-sunken)]",
+                )}
               >
                 {t("auth.setup.upload")}
               </button>
@@ -182,24 +223,21 @@ function ProfileSetupPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="displayName"
-              className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
-            >
+            <label htmlFor="displayName" className={cn("mb-1 block", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.display_name")}
             </label>
             <input
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+              className={authFieldClass}
             />
           </div>
 
           <div>
             <label
               htmlFor="setupUsername"
-              className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
+              className={cn("mb-1 block", ui.text.label, ui.tone.muted)}
             >
               {t("auth.register.username")}
             </label>
@@ -208,7 +246,7 @@ function ProfileSetupPage() {
               autoComplete="username"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+              className={authFieldClass}
             />
           </div>
         </div>
@@ -216,11 +254,13 @@ function ProfileSetupPage() {
 
       {step === 2 && (
         <div className="grid gap-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Trophy className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />{" "}
+          <div className={cn("flex items-center gap-2", ui.text.bodyStrong, ui.tone.default)}>
+            <Trophy className={cn("h-4 w-4", ui.tone.muted)} aria-hidden />{" "}
             {t("auth.setup.fav_club")}
           </div>
-          <p className="-mt-1 text-xs text-muted-foreground">{t("auth.setup.fav_club_hint")}</p>
+          <p className={cn("-mt-1", ui.text.meta, ui.tone.muted)}>
+            {t("auth.setup.fav_club_hint")}
+          </p>
           <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
             {clubsQ.data?.map((c) => {
               const active = favoriteClubId === c.id;
@@ -229,18 +269,24 @@ function ProfileSetupPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setFavoriteClubId(c.id)}
-                  className={`flex items-center gap-3 rounded-2xl border px-3 py-2 text-start transition-colors ${active ? "border-[color:var(--brand-primary)] bg-[color:var(--brand-primary)]/5" : "border-input bg-background hover:bg-muted"}`}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex items-center gap-3 border px-3 py-2 text-start transition-colors",
+                    "min-h-[var(--ui-row-min)]",
+                    ui.radius.control,
+                    ui.focus,
+                    active
+                      ? "border-[color:var(--ui-ink)] bg-[color:color-mix(in_oklab,var(--ui-ink)_8%,transparent)]"
+                      : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)]",
+                  )}
                 >
                   <ClubCrest club={c} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-bold">{tr(c.name)}</div>
-                    <div className="truncate text-[11px] text-muted-foreground">{tr(c.city)}</div>
+                    <div className={cn("truncate", ui.text.bodyStrong)}>{tr(c.name)}</div>
+                    <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>{tr(c.city)}</div>
                   </div>
                   {active && (
-                    <CheckCircle2
-                      className="h-5 w-5 text-[color:var(--brand-primary)]"
-                      aria-hidden
-                    />
+                    <CheckCircle2 className={cn("h-5 w-5", ui.tone.positive)} aria-hidden />
                   )}
                 </button>
               );
@@ -251,8 +297,8 @@ function ProfileSetupPage() {
 
       {step === 3 && (
         <div className="grid gap-4">
-          <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Bell className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />{" "}
+          <div className={cn("flex items-center gap-2", ui.text.bodyStrong, ui.tone.default)}>
+            <Bell className={cn("h-4 w-4", ui.tone.muted)} aria-hidden />{" "}
             {t("auth.setup.notifications")}
           </div>
           {(
@@ -264,23 +310,32 @@ function ProfileSetupPage() {
           ).map(([key, label, desc]) => (
             <label
               key={key}
-              className="flex items-start gap-3 rounded-2xl border border-input bg-background px-3 py-3"
+              className={cn(
+                "flex items-start gap-3 px-3 py-3",
+                "min-h-[var(--ui-row-min)]",
+                ui.radius.control,
+                ui.rule.all,
+              )}
             >
               <input
                 type="checkbox"
                 checked={prefs[key]}
                 onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
-                className="mt-1 h-4 w-4 rounded border-input"
+                className={cn(
+                  "mt-1 h-4 w-4 border-[color:var(--ui-rule)]",
+                  ui.radius.control,
+                  ui.focus,
+                )}
               />
               <div className="flex-1">
-                <div className="text-sm font-bold">{t(label)}</div>
-                <div className="text-xs text-muted-foreground">{t(desc)}</div>
+                <div className={ui.text.bodyStrong}>{t(label)}</div>
+                <div className={cn(ui.text.meta, ui.tone.muted)}>{t(desc)}</div>
               </div>
             </label>
           ))}
 
           <div>
-            <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <div className={cn("mb-1", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.language_confirm")}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -289,7 +344,17 @@ function ProfileSetupPage() {
                   key={l}
                   type="button"
                   onClick={() => setChosenLang(l)}
-                  className={`rounded-xl border px-3 py-2 text-sm font-bold ${chosenLang === l ? "border-[color:var(--brand-primary)] bg-[color:var(--brand-primary)]/5" : "border-input bg-background"}`}
+                  aria-pressed={chosenLang === l}
+                  className={cn(
+                    "inline-flex items-center justify-center border px-3",
+                    ui.space.tap,
+                    ui.radius.control,
+                    ui.text.bodyStrong,
+                    ui.focus,
+                    chosenLang === l
+                      ? "border-[color:var(--ui-ink)] bg-[color:color-mix(in_oklab,var(--ui-ink)_8%,transparent)]"
+                      : "border-[color:var(--ui-rule)]",
+                  )}
                 >
                   {l === "fr" ? "Français" : "العربية"}
                 </button>
@@ -304,7 +369,15 @@ function ProfileSetupPage() {
           type="button"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
-          className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground disabled:opacity-40"
+          className={cn(
+            "inline-flex items-center gap-1 px-3",
+            ui.space.tap,
+            ui.radius.control,
+            ui.text.bodyStrong,
+            ui.tone.muted,
+            ui.focus,
+            "disabled:opacity-40",
+          )}
         >
           <Back className="h-4 w-4" aria-hidden /> {t("auth.setup.previous")}
         </button>
@@ -313,7 +386,7 @@ function ProfileSetupPage() {
             type="button"
             onClick={() => setStep((s) => s + 1)}
             disabled={!canNext}
-            style={{ maxWidth: 200 }}
+            className="max-w-[200px]"
           >
             {t("auth.setup.next")} <Arrow className="h-4 w-4" aria-hidden />
           </AuthPrimaryButton>
@@ -322,7 +395,7 @@ function ProfileSetupPage() {
             type="button"
             onClick={finish}
             disabled={submitting}
-            style={{ maxWidth: 200 }}
+            className="max-w-[200px]"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {t("auth.setup.finish")}
