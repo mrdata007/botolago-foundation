@@ -1,0 +1,362 @@
+task_id: BG-0082
+attempt: 1
+role: Builder-Backend (self-verification)
+branch: bg-0082-story-teams
+base: origin/chief/launch-fixes-3
+verified_at: 2026-09-21
+
+production_state:
+  project: tkewgajrljbwgwedqsxn
+  access: >
+    read-only SELECT through the Supabase MCP tools. No INSERT, UPDATE, DELETE,
+    DDL or apply_migration was executed against production at any point.
+  stories: 108
+  article_editions: 108 # 98 ar, 10 fr
+  story_teams_rows_before: 0
+  team_translations: >
+    does not exist in production yet (20260921190000_team_translations.sql is on
+    this branch, unapplied). The seed does not read it.
+  current_season_clubs: 16
+  current_season_club_names:
+    - Amal Tiznit
+    - CODM Meknès
+    - CR Khemis Zemamra # code 'RCAZ' disagrees with the name
+    - Difaâ El Jadida
+    - FAR Rabat
+    - FUS Rabat
+    - Hassania Agadir
+    - Ittihad Tanger
+    - Kawkab Marrakech
+    - Maghreb Fès
+    - Moghreb Tétouan
+    - Raja Casablanca
+    - RSB Berkane
+    - UTS Rabat
+    - Widad Témara
+    - Wydad Casablanca # short_name is the literal code 'WCA'
+
+# ---------------------------------------------------------------------------
+# What the seed would produce, computed read-only against production BEFORE
+# the migration was written to disk. The query run was the migration's own
+# SELECT, unchanged, wrapped in a count.
+# ---------------------------------------------------------------------------
+match_distribution:
+  stories_total: 108
+  matched_exactly_one_club: 17
+  matched_several_clubs: 3
+  matched_no_club: 88
+  rows_seeded: 23
+
+rows_seeded_explained: >
+  17 single-club stories contribute one row each; 3 two-club stories contribute
+  two rows each. 17 + 6 = 23. The 17 are the stories on which
+  ArticleHeroFallback's crest branch would fire; the 3 are stories where it
+  correctly declines because there is no single crest to show.
+
+# ---------------------------------------------------------------------------
+# The complete matched set — all 23 rows, not a curated selection. Every row
+# the seed would write is listed, including the marginal ones.
+# ---------------------------------------------------------------------------
+matched_rows:
+  - clubs_on_story: 2
+    club: FAR Rabat
+    title: الجيش الملكي يخوض مبارتين وديتين أمام النادي القنيطري والمغرب الفاسي تحضيرا للموسم الجديد
+  - clubs_on_story: 2
+    club: Maghreb Fès
+    title: الجيش الملكي يخوض مبارتين وديتين أمام النادي القنيطري والمغرب الفاسي تحضيرا للموسم الجديد
+  - clubs_on_story: 2
+    club: Wydad Casablanca
+    title: الوداد يختتم تحضيراته للموسم الجديد بودية أمام المغرب التطواني
+  - clubs_on_story: 2
+    club: Moghreb Tétouan
+    title: الوداد يختتم تحضيراته للموسم الجديد بودية أمام المغرب التطواني
+  - clubs_on_story: 2
+    club: Raja Casablanca
+    title: استدعاء الزاكي لشرارة والرشدان يربك حسابات الرجاء والوداد قبل انطلاق البطولة
+  - clubs_on_story: 2
+    club: Wydad Casablanca
+    title: استدعاء الزاكي لشرارة والرشدان يربك حسابات الرجاء والوداد قبل انطلاق البطولة
+  - clubs_on_story: 1
+    club: Hassania Agadir
+    title: 'تأكيدا لما ذكرته "البطولة".. حسنية أكادير يعلن عقد جمعه العام يوم 30 شتنبر'
+  - clubs_on_story: 1
+    club: Maghreb Fès
+    title: بوزوبع يستقيل من رئاسة جمعية المغرب الفاسي
+  - clubs_on_story: 1
+    club: Maghreb Fès
+    title: المغرب الفاسي يعلن غياب علوش 10 أسابيع بسبب خلع كتفي ترقوي وكاليلا 3 أسابيع إثر كسر في القدم
+  - clubs_on_story: 1
+    club: Maghreb Fès
+    title: المغرب الفاسي يحسم صفقة جناح رحيمو البوركينابي ويرسيس ويدراغو
+  - clubs_on_story: 1
+    club: Maghreb Fès
+    title: "Maroc : le Maghreb de Fès décroche le titre de champion national 2025-2026"
+  - clubs_on_story: 1
+    club: Moghreb Tétouan
+    title: 'المغرب التطواني يعلن تسوية ملفات نزاعاته المعروضة على "فيفا" وينتظر الإشعار الرسمي برفع المنع'
+  - clubs_on_story: 1
+    club: Raja Casablanca
+    title: الرجاء يتجه للاستغناء عن ساخو لتسجيل البرازيلي فيليبينهو
+  - clubs_on_story: 1
+    club: Raja Casablanca
+    title: 'باكيز بعد انضمامه إلى الرجاء: "ارتداء قميص هذا الفريق فخر كبير لي وطموحي المنافسة على الألقاب"'
+  - clubs_on_story: 1
+    club: Raja Casablanca
+    title: 'حسين رحيمي: "كبرت في الرجاء وازددت فيه وأقدم له الشكر على ما قدمه لي ولوالدي ولسفيان"'
+    marginal: >
+      A player interview about his upbringing at Raja, not club news. The club
+      is genuinely the subject, so the row is defensible, but a human reading
+      the card would call it a player story.
+  - clubs_on_story: 1
+    club: Raja Casablanca
+    title: تأكيدا لما سبق.. الرجاء الرياضي يعلن رسميا تعاقده مع اللاعب يونس باكيز
+  - clubs_on_story: 1
+    club: RSB Berkane
+    title: نهضة بركان يتوصل لاتفاق مع جمال حركاس
+  - clubs_on_story: 1
+    club: RSB Berkane
+    title: 'أميدو (مدرب ستار سبورت أكاديمي) لـ"البطولة": "نهضة بركان يملك خبرة إفريقية كبيرة.. لكن كل شيء ممكن في كرة القدم"'
+    marginal: >
+      A rival coach talking about Berkane. The club is named and is what the
+      quote is about, so the crest is not wrong, but it is the weakest of the 17.
+  - clubs_on_story: 1
+    club: RSB Berkane
+    title: نهضة بركان يعلن خضوع بوخريص لعملية جراحية في الركبة وعودة المحمدي وخيري للتداريب
+  - clubs_on_story: 1
+    club: Wydad Casablanca
+    title: 'الوداد يعلن تسوية كافة نزاعات المنع الدولي ويؤكد: "لا إبراء لذمة آيت منا"'
+  - clubs_on_story: 1
+    club: Wydad Casablanca
+    title: الوداد يعلن تعاقده مع البوركينابي يوسوفو دايو لمدة موسم واحد في صفقة انتقال حر
+  - clubs_on_story: 1
+    club: Wydad Casablanca
+    title: رسميا/ الوداد الرياضي يعلن تعاقده مع ياسين جبران لثلاثة مواسم
+  - clubs_on_story: 1
+    club: Wydad Casablanca
+    title: "Wydad. Paulo Sérgio, le pari de la rupture avec le passé"
+
+false_positives_found: >
+  None. All 23 rows were read one by one against their titles; every one names
+  the club it is mapped to. There is no row where the crest would show a club
+  the headline does not mention.
+
+known_false_negatives:
+  - title: بطائق الاشتراك السنوية للرجاء الأغلى في البطولة دون مباراة الديربي
+    why: >
+      "للرجاء" carries the attached preposition ل, so "الرجاء" is not a
+      substring. This is the cost of not stemming Arabic prefixes. Missing a
+      crest is the cheap failure and it was chosen deliberately.
+  - scope: >
+      88 stories match nothing. That is the honest shape of the corpus, not a
+      defect: the great majority are about foreign leagues, the national team,
+      Moroccan players abroad or football governance, and name no Botola Pro
+      club at all. Nine current-season clubs (Amal Tiznit, CODM Meknès,
+      CR Khemis Zemamra, Ittihad Tanger, Kawkab Marrakech, UTS Rabat,
+      Widad Témara, Difaâ El Jadida, FUS Rabat) appear in no title in the
+      corpus and therefore get no rows.
+  - club_name_confidence: >
+      The Arabic alias for CODM Meknès ("النادي المكناسي") is the one alias
+      this builder is not fully confident of. It matches nothing in the current
+      corpus, so it costs nothing today; it is flagged so a reviewer who knows
+      the club can correct it in a later migration rather than assume it was
+      checked.
+
+traps_explicitly_handled:
+  wydad_short_name_WCA: >
+    Never read. short_name and code are not matched on at all.
+  zemamra_name_code_disagreement: >
+    Never read. 'CR Khemis Zemamra' is matched by its Arabic name
+    ("نهضة الزمامرة" / "الزمامرة") and the Latin token "Zemamra", not by 'RCAZ'.
+  saudi_al_fateh: >
+    The corpus contains "…أمام الفتح" (the SAUDI club). The bare token الفتح is
+    not an alias, so FUS Rabat is not matched. Asserted in the pgTAP suite.
+  morocco_vs_clubs: >
+    "المغرب" alone means Morocco and appears in many national-team headlines.
+    Only "المغرب الفاسي" and "المغرب التطواني" are aliases. Asserted.
+  widad_temara_vs_wydad_casablanca: >
+    Wydad Casablanca is matched on "الوداد" (with the definite article), which
+    is not a substring of "وداد تمارة". The two clubs cannot cross-match.
+  french_short_codes: >
+    The French title "Barrages Botola Pro: D2 Jour de vérité pour le RCOZ et le
+    KAC" matches nothing, as it should: neither club is in the current season
+    and no code is matched on.
+
+# ---------------------------------------------------------------------------
+# Local database — a real PostgreSQL 16 cluster, not production.
+# ---------------------------------------------------------------------------
+local_database:
+  docker_available: false
+  supabase_cli_usable: false
+  substitute: >
+    A PostgreSQL 16.13 cluster was initdb'd locally, postgresql-16-pgtap was
+    already present in the image, and all 73 files under supabase/migrations
+    were applied in order to a fresh database — including
+    20260921220000_story_teams_seed.sql — plus minimal local stand-ins for the
+    Supabase-managed roles and the auth/storage objects the migrations
+    reference (anon/authenticated/service_role/authenticator,
+    auth.users/sessions/mfa_factors/identities, auth.uid()/jwt()/role()/email(),
+    storage.buckets/objects and storage.foldername/filename/extension). This is
+    the same approach BG-0043 documented. It is not `supabase db reset`; it is
+    the same migration set on the same major version, and it is stated as such.
+  migrations_applied: 73
+  result: the whole set applied with no error
+
+pgtap:
+  file: supabase/tests/database/story_teams_seed.test.sql
+  result: 12 assertions, 12 ok, 0 not ok
+  assertions:
+    - ok 1 - fixture: story_teams starts empty, as production does
+    - ok 2 - a title naming one club produces exactly one story_teams row
+    - ok 3 - and that one row is the club the title actually names
+    - ok 4 - a title naming two clubs records both rather than guessing one
+    - ok 5 - a two-club story therefore never yields a single-club result
+    - ok 6 - and the two rows are the two clubs the title names
+    - ok 7 - a title naming no club gets no row — "المغرب" alone is the country
+    - ok 8 - a club with no current-season membership gets no association invented
+    - ok 9 - the unqualified الفتح does not match FUS Rabat
+    - ok 10 - across the fixture the seed writes exactly the three rows it should
+    - ok 11 - re-running the seed inserts no new row
+    - ok 12 - and leaves every existing row, created_at included, untouched
+  synced_copy_check: >
+    The seed body inside the test and the body in the migration were compared
+    programmatically and are byte-for-byte identical.
+  harness_sanity_check: >
+    supabase/tests/database/news_domain.test.sql was run unchanged on the same
+    local cluster: 19 ok, 0 not ok. The harness executes the repository's
+    existing suites faithfully.
+  authority: >
+    CI's Backend quality `database-quality` job runs the suite on the pull
+    request and is the authority. The numbers above are from the local cluster.
+
+# ---------------------------------------------------------------------------
+# Does the crest branch actually fire? Two halves, both executed.
+# ---------------------------------------------------------------------------
+crest_branch_evidence:
+  half_1_database:
+    what: >
+      On the local cluster, a production-shaped fixture was inserted inside a
+      transaction: a current season, Wydad Casablanca and Raja Casablanca with
+      current-season squad rows, and two PUBLISHED, HERO-LESS Arabic editions
+      copied verbatim from production — one naming Raja only, one naming Raja
+      and Wydad. supabase/migrations/20260921220000_story_teams_seed.sql was
+      then executed as a FILE (\i of the real migration, not a retyped copy),
+      and api.news_feed('ar', 10, …) was called as the `anon` role.
+    before: app.story_teams = 0 rows
+    after: >
+      3 rows — (single-club story → Raja Casablanca) and (two-club story → Raja
+      Casablanca, Wydad Casablanca).
+    api_news_feed_anon_result:
+      - title: الرجاء يتجه للاستغناء عن ساخو لتسجيل البرازيلي فيليبينهو
+        hero: null
+        teamIds_length: 1
+      - title: استدعاء الزاكي لشرارة والرشدان يربك حسابات الرجاء والوداد قبل انطلاق البطولة
+        hero: null
+        teamIds_length: 2
+    conclusion: >
+      The seeded row reaches the browser payload. `hero: null` is what makes
+      MediaImage show the placeholder; `teamIds` of length 1 is exactly the
+      `clubIds` that ArticleHeroFallback tests with `clubIds?.length === 1`.
+      The transaction was rolled back; nothing persisted, and nothing was run
+      against production.
+  half_2_browser:
+    what: >
+      NEWS_ENABLED was flipped to true in the working tree (NOT committed — the
+      commit was confirmed clean of it), the Vite dev server was started, and
+      headless Chromium from /opt/pw-browsers (PLAYWRIGHT_BROWSERS_PATH; no
+      `playwright install` was run) loaded /news and inspected every
+      [data-article-hero-fallback] element in the real DOM.
+    observed:
+      - mode: crest
+        crest_title: RS Berkane
+        card: "Mercato : Berkane finalise un attaquant ivoirien"
+        clubIds_length: 1
+      - mode: crest
+        crest_title: AS FAR
+        card: "Analyse tactique : la pressing haute de l'AS FAR"
+        clubIds_length: 1
+      - mode: crest
+        crest_title: Raja CA
+        card: "Interview : « Le Raja doit retrouver son ADN offensif »"
+        clubIds_length: 1
+      - mode: wordmark
+        card: "Le Wydad relance la course au titre après le derby"
+        clubIds_length: 2
+      - mode: wordmark
+        card: "Fantasy : les meilleurs choix pour la journée 14"
+        clubIds_length: 2
+    page_errors: none
+    conclusion: >
+      On a hero-less article with exactly one club the component renders
+      data-article-hero-fallback="crest" and mounts ClubCrest for that club; on
+      a hero-less article with two clubs it renders "wordmark". The branch
+      fires, and it declines on ambiguity, in a real browser.
+  honest_limitation: >
+    The two halves were proven separately rather than as one chain. There is no
+    PostgREST in this sandbox, so the browser could not be pointed at the local
+    PostgreSQL cluster; the browser half ran against the app's mock data source,
+    which supplies clubIds in exactly the shape half 1 showed api.news_feed
+    produces. What is NOT demonstrated end to end in one process is the wire
+    between PostgREST and the React tree — that wire is unchanged by this task
+    and is exercised by the existing journeys.
+
+gates:
+  - command: bun run typecheck
+    result: pass
+    detail: tsc --noEmit, no output.
+  - command: bun test
+    result: "1380 pass, 4 fail, 14924 expect() calls, 1384 tests across 155 files"
+    detail: >
+      The 4 failures are the pre-existing, deliberate ones in
+      src/content/legal/legal-content.test.ts (terms.ar, terms.fr, privacy.ar,
+      privacy.fr unfilled placeholders). No other test fails.
+  - command: bun run lint
+    result: "18 problems (0 errors, 18 warnings)"
+    detail: All pre-existing react-refresh/only-export-components warnings. 0 errors.
+  - command: bun run format:check
+    result: "40 warnings, error in 9 files — all pre-existing"
+    detail: >
+      Identical to the branch baseline. Neither new .sql file is checked by
+      prettier, and the new .yaml files under docs/engineering/tasks/BG-0082
+      are clean.
+  - command: bun run backend:migrations:check
+    result: pass
+    detail: "Validated 73 migration(s) — 72 before, plus this one."
+  - command: bun run backend:secrets:check
+    result: pass
+    detail: No high-confidence secrets found in tracked files.
+  - command: bun run config:integrity:check
+    result: pass
+    detail: "no violations in 36 executed configuration file(s)"
+  - command: bun scripts/qa/i18n-gate.ts
+    result: pass
+    detail: "RESULT: pass (pre-existing opaque-expression advisories only)"
+  - command: bun run build
+    result: pass
+    detail: Vite + Nitro build completed; .output generated.
+
+could_not_verify:
+  - >
+    Whether the migration's insert is permitted in production without a new RLS
+    policy was established by reading pg_roles (postgres has rolbypassrls =
+    true) and by the precedent of the direct UPDATE in
+    20260921170000_news_stand_down.sql, not by executing a write. If promotion
+    fails on RLS, that is the place to look.
+  - >
+    The Arabic alias for CODM Meknès is unconfirmed (see known_false_negatives).
+    It matches nothing today.
+  - >
+    Everything above is the shape of production as of 2026-09-21. Ingestion
+    keeps running (it simply no longer publishes), so the corpus will have grown
+    by the time the migration is promoted and the seeded count will be higher
+    than 23. The seed is not pinned to 23 anywhere; it matches whatever is
+    present when it runs.
+
+recommendation: >
+  Seed it. 23 rows from 108 stories is a low yield, but the yield is low because
+  the corpus is mostly not about Botola Pro clubs, not because the matching is
+  weak: all 23 rows were reviewed against their titles and none is wrong. Two of
+  the 17 single-club rows are marginal in editorial terms (a player interview
+  and a rival coach's quote), and on both the crest shows a club the headline
+  genuinely names, which is the bar the crest has to clear. The migration is
+  inert until News is switched back on, and re-running it is a no-op, so the
+  cost of being wrong later is a follow-up DELETE of 23 rows.
