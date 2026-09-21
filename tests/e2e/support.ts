@@ -87,3 +87,37 @@ export async function expectNoHorizontalOverflow(page: Page) {
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
     .toBe(true);
 }
+
+/**
+ * `html, body { overflow-x: clip }` in styles.css means content pushed past
+ * the viewport produces no horizontal scrollbar at all, so the check above
+ * stays green while that content is clipped away and unreachable --
+ * `document.documentElement.scrollWidth` reads exactly the viewport width.
+ *
+ * That is how a match card shipped 452px wide inside a 366px content box at
+ * 390px: the single-column `grid` sized its implicit `auto` track to the
+ * card's min-content width (the full, untruncated club name), putting the
+ * away crest and name past the right gutter in French and the matchday chip
+ * past the left one in Arabic. So assert on the boxes a reader can actually
+ * reach, not just on the document's scroll width. A short local club name
+ * hides this, which is why the assertion matters most against real data.
+ */
+export async function expectNoClippedMatchCards(page: Page) {
+  const clipped = await page.evaluate(() => {
+    const viewport = document.documentElement.clientWidth;
+    const offscreen: string[] = [];
+    for (const card of document.querySelectorAll('main a[href^="/matches/"]')) {
+      for (const node of [card, ...card.querySelectorAll("*")]) {
+        const box = node.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) continue;
+        if (box.left >= -1 && box.right <= viewport + 1) continue;
+        const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
+        offscreen.push(
+          `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,
+        );
+      }
+    }
+    return offscreen;
+  });
+  expect(clipped, "match-card content clipped outside the viewport").toEqual([]);
+}
