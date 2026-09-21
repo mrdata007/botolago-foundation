@@ -560,6 +560,12 @@ function LeagueAction({
       to={to}
       className={cn(
         "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2",
+        // An SVG is a flex item and shrinks like any other, so a long label
+        // beside it takes the width out of the icon instead of wrapping.
+        // Measured here: a `lucide-plus` sized `h-4 w-4` rendering 14.0 × 16.0,
+        // the only distorted glyph in the product across six routes. Lucide
+        // draws square, so a squeezed one reads as a drawing mistake.
+        "[&_svg]:shrink-0",
         ui.radius.control,
         ui.surface.sunken,
         ui.text.secondary,

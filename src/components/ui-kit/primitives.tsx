@@ -258,6 +258,15 @@ export type UiButtonSize = "sm" | "md";
 function buttonClass(variant: UiButtonVariant, size: UiButtonSize, className?: string) {
   return cn(
     "inline-flex items-center justify-center gap-2",
+    // A flex item shrinks by default, and an SVG is a flex item like any
+    // other: put a long label beside an icon in a narrow button and the
+    // browser takes the width out of the icon. A Lucide glyph is drawn square,
+    // so the result is a distorted icon rather than a wrapped label — measured
+    // on /fantasy, a `lucide-plus` sized `h-4 w-4` rendering 14.0 x 16.0.
+    // Enforced here rather than as `shrink-0` on every call site: most already
+    // carry it, the ones that forget are the ones that break, and a button is
+    // where icon and label compete for width.
+    "[&_svg]:shrink-0",
     ui.radius.control,
     ui.focus,
     size === "md"

@@ -149,11 +149,24 @@ cost fidelity to the Fantasy design the brief names as the source of truth.
 What is worth doing here is nothing at the token layer, and an audit at the
 screen layer for radii written as literals rather than drawn from these.
 
-### 6–7. Icons and interactive states — audit required
+### 6–7. Icons and interactive states — audited, one defect, now clean
 
-No token-level gap identified yet. Needs a sweep for Lucide stroke width,
-optical sizing against the type scale, and the four states (default, hover,
-pressed, focus-visible, disabled) on every interactive primitive.
+**Interactive states: nothing to do.** 126 interactive elements across six
+routes (`button`, `a[href]`, `input`, `select`, anything focusable), measured
+live: **every one** carries a focus-visible class and **every one** clears
+44×44. Zero flagged.
+
+**Icons: stroke width was already uniform, one glyph was distorted.** All 47
+Lucide icons render at `stroke-width: 2`. Sizes are 12, 14, 16, 20 and 28 — an
+optical scale that tracks the type ramp, not drift.
+
+The one finding was a `lucide-plus` sized `h-4 w-4` rendering **14.0 × 16.0**
+on `/fantasy`. An SVG is a flex item and shrinks like any other, so a long
+label beside it takes the width out of the icon rather than wrapping — and
+Lucide draws square, so the result reads as a drawing mistake. Fixed at that
+call site and, for future ones, on the kit's button base: `[&_svg]:shrink-0`,
+because a button is exactly where an icon and a label compete for width. All
+47 now measure square.
 
 ### 8. Motion — already built (corrects an earlier reading of this audit)
 
