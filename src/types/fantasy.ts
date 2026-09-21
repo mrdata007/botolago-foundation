@@ -164,5 +164,6 @@ export interface TopPlayerOfWeek {
   minutes: number;
   price: number;
   ownershipPercent: number;
-  form: number;
+  /** BG-0071 — see `Player.form`: `null` when no gameweek has scored yet. */
+  form: number | null;
 }

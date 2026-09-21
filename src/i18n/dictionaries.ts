@@ -223,6 +223,10 @@ export const dictionaries = {
     "fantasy.bank": "Banque",
     "fantasy.value": "Valeur",
     "fantasy.form": "Forme",
+    // BG-0071 — the "no data yet" stat placeholder. An en dash, identical in
+    // both languages on purpose: it is punctuation, not copy, and it must be
+    // impossible to confuse with a real 0.0 in either script.
+    "fantasy.stat.none": "–",
     "fantasy.ownership": "Sélection",
     "fantasy.price": "Prix",
     "fantasy.coming_soon": "Le module Fantasy complet arrive bientôt.",
@@ -1422,6 +1426,8 @@ export const dictionaries = {
     "fantasy.bank": "الرصيد",
     "fantasy.value": "القيمة",
     "fantasy.form": "الحالة",
+    // BG-0071 — see the fr entry: deliberately identical punctuation.
+    "fantasy.stat.none": "–",
     "fantasy.ownership": "الاختيار",
     "fantasy.price": "السعر",
     "fantasy.coming_soon": "وحدة فانتازي الكاملة قريباً.",

@@ -17,6 +17,15 @@ import { Search } from "lucide-react";
 
 type SortKey = "price" | "form" | "points" | "ownership";
 
+/**
+ * BG-0071 — descending form, with "no value yet" (`null`) sorted below every
+ * real number, including a real 0.0. Explicit branches rather than a sentinel
+ * subtraction: today every player's form is null, and a comparator returning
+ * NaN for every pair leaves the list in an unspecified order.
+ */
+const compareForm = (a: number | null, b: number | null) =>
+  a === null && b === null ? 0 : a === null ? 1 : b === null ? -1 : b - a;
+
 export function PlayerPickerDrawer({
   open,
   onClose,
@@ -57,7 +66,7 @@ export function PlayerPickerDrawer({
     if (typeof maxPrice === "number") list = list.filter((p) => p.price <= maxPrice + 0.001);
     list.sort((a, b) => {
       if (sort === "price") return b.price - a.price;
-      if (sort === "form") return b.form - a.form;
+      if (sort === "form") return compareForm(a.form, b.form);
       if (sort === "ownership") return b.ownership - a.ownership;
       return b.totalPoints - a.totalPoints;
     });
@@ -160,7 +169,8 @@ export function PlayerPickerDrawer({
                       </div>
                       <div className="mt-0.5 text-[11px] text-muted-foreground">
                         {t(`player.pos.${p.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
-                        {nf.format(p.form)} · {nf.format(p.ownership)}%
+                        {p.form === null ? t("fantasy.stat.none") : nf.format(p.form)} ·{" "}
+                        {nf.format(p.ownership)}%
                       </div>
                     </div>
                     <div className="text-end">

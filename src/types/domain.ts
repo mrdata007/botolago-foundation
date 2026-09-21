@@ -25,7 +25,13 @@ export interface Player {
   position: "GK" | "DEF" | "MID" | "FWD";
   price: number; // millions
   totalPoints: number;
-  form: number;
+  /**
+   * BG-0071 — mean points over the last 5 scored gameweeks of the season, to
+   * one decimal. `null` means NO gameweek has scored yet and is rendered as a
+   * dash (`fantasy.stat.none`), never as `0.0`: a player who genuinely scored
+   * 0 in the window reads a real `0` and the two must not look alike.
+   */
+  form: number | null;
   ownership: number; // %
   status: "available" | "injured" | "doubtful" | "suspended";
 }

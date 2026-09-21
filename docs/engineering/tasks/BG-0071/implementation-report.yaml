@@ -1,0 +1,193 @@
+task_id: BG-0071
+role: Builder-Frontend
+attempt: 1
+area: fantasy
+severity: P1
+branch: bg-0071-frontend
+base: origin/chief/launch-fixes-3
+status: DONE
+
+objective: >
+  Stop the Fantasy picking screens from showing 0 points / 0.0 form / 0.0%
+  selected for all 539 players. The backend half of BG-0071 already landed on
+  the integration branch (supabase/migrations/20260921160000_fantasy_player_statistics.sql,
+  two read RPCs). This lane consumes it: contracts, repository, runtime mapper,
+  the four picking surfaces, and a dash — not "0.0" — wherever form is unknown.
+
+# --------------------------------------------------------------------------
+what_was_wrong:
+  - "src/services/fantasy-runtime.ts playerDto() set totalPoints: 0, form: 0, ownership: 0 unconditionally. Every list, picker and detail page in cloud mode consumed it."
+  - "getTopPlayersOfWeek() set price: 0, ownershipPercent: 0, form: 0 for the same reason."
+  - "The player-detail History tab did not read history at all: it restated the (zeroed) Overview numbers in one sentence."
+  - "Nothing in the UI could tell 'no gameweek has scored yet' from 'this player scored 0'. Both printed 0.0."
+
+# --------------------------------------------------------------------------
+changes:
+  - file: src/backend/fantasy/contracts.ts
+    change: >
+      Added fantasyPlayerSeasonStatSchema / fantasyPlayerSeasonStatsSchema (the
+      RPC returns an OBJECT with activeTeamCount, formWindow,
+      scoredGameweeksInWindow, throughGameweekSequence and items[]) and
+      fantasyPlayerGameweekHistoryEntrySchema /
+      fantasyPlayerGameweekHistorySchema (a bare array, oldest first). Added
+      getPlayerSeasonStats() and getPlayerGameweekHistory() to the
+      FantasyRepository interface.
+    notes: >
+      `form` is `z.coerce.number().nullable()`, with .nullable() OUTSIDE the
+      coercion on purpose: `z.coerce.number()` parses null as 0, which would
+      reintroduce the exact confusion the field exists to prevent. Every other
+      numeric field uses z.coerce because the values arrive from
+      jsonb_build_object over bigint/numeric and PostgREST may serialize either
+      as a JSON number or a string — the same reason price and rank already do.
+  - file: src/backend/fantasy/contracts.ts
+    change: >
+      fantasyPlayerSchema.selectedByCount is now `.optional()` and documented as
+      deprecated.
+    notes: >
+      This is the brief's staged plan (risks §2) and it is what unblocks the
+      follow-up DROP — see `follow_up_unblocked` below. No runtime code reads
+      the field any more; making it optional means the drop needs no second
+      frontend change, while api.fantasy_player_pool's payload stays
+      byte-for-byte what it is today.
+  - file: src/backend/fantasy/supabase-repository.ts
+    change: >
+      Implemented both methods on SupabaseFantasyRepository, following the
+      getOverallStandings precedent (this branch put getOverallStandings on the
+      FantasyRepository contract + SupabaseFantasyRepository, because
+      fantasy-v2.ts is only a data-mode selector/factory with no per-read
+      methods).
+    notes: >
+      Both go through one local helper, `rpcAwaitingGeneratedTypes`. See
+      `generated_types` below: this is NOT a hand-edit of the generated file and
+      the payloads are still zod-validated exactly like every other read.
+  - file: src/types/domain.ts
+    change: "Player.form: number -> number | null, with the semantics documented on the field."
+    notes: >
+      DEVIATION FROM THE BRIEF (and from the prompt), reported below: `form`
+      lives on `Player` in src/types/domain.ts, not in src/types/fantasy.ts.
+      FantasyPlayer extends Player.
+  - file: src/types/fantasy.ts
+    change: "TopPlayerOfWeek.form: number -> number | null."
+  - file: src/services/fantasy-runtime.ts
+    change: >
+      playerDto(dto, stat?) now maps totalPoints, form and ownership from the
+      season aggregate; allPlayers() reads api.fantasy_player_season_stats once
+      per player-list load and merges by fantasyPlayerId; getTopPlayersOfWeek()
+      fills price/ownershipPercent/form from the same pool instead of zeros;
+      new getPlayerGameweekHistory(playerId). Exported playerDto and a new
+      seasonStatsById() for the unit tests.
+    notes: >
+      Edits are confined to playerDto, allPlayers, the top-players mapper and
+      the new method, because a parallel lane is editing getLeagueStandings,
+      getSummary, getCurrentGameweek, getGameweekResult and getGameweekHistory
+      in the same file. The file was NOT reformatted.
+  - file: src/routes/fantasy.players.$playerId.tsx
+    change: >
+      Overview and Stats render the dash for a null form. The History tab now
+      reads api.fantasy_player_gameweek_history (enabled only when the tab is
+      open) and renders one row per scored gameweek: gameweek name, opponent(s)
+      with home/away, a "Provisoire"/"مبدئية" badge while points are
+      provisional, minutes and points. No rows is an EmptyState, not a row of
+      zeros.
+  - file: src/routes/fantasy.players.tsx
+    change: "Dash for null form in the compare panel and the row subtitle; null sorts last under 'Forme'."
+  - file: src/components/fpl/AddPlayerScreen.tsx
+    change: "Dash in the Form column; null sorts last under the Form header."
+  - file: src/components/fantasy/PlayerPickerDrawer.tsx
+    change: "Dash in the row subtitle; null sorts last under 'Forme'."
+  - file: src/i18n/dictionaries.ts
+    change: 'Added fantasy.stat.none = "–" identically in fr and ar.'
+  - file: src/i18n/i18n-allowlist.ts
+    change: "Annotated fantasy.stat.none in both W1 and W2 allow-lists."
+  - file: scripts/qa/i18n-gate.ts
+    change: "Baselines W1 6->7, W2 6->7, W3 248->247, each with its reason in the comment block."
+  - file: src/services/fantasy-runtime.test.ts
+    change: "New. 21 tests over the mapping, the null-vs-zero distinction, and a source guard on every surface that formats a form."
+  - files_touched_only_to_keep_typecheck_green:
+      - src/components/common/PlayerRow.tsx
+      - src/routes/fantasy.top-players.tsx
+      - src/routes/fantasy.create.tsx
+      - src/routes/fantasy.points.tsx
+      - src/routes/fantasy.team.tsx
+      - src/routes/fantasy.transfers.tsx
+      - src/mocks/fantasy-data.ts
+    change: >
+      Each of these formats a player's form. Widening the type made every one a
+      compile error; each got the same `form === null ? t("fantasy.stat.none")
+      : <number>` branch (fantasy-data.ts got a `?? 0` in a mock-only sort
+      weight). They are outside the brief's allowed_paths — see deviations.
+
+# --------------------------------------------------------------------------
+deviations_from_the_brief:
+  - id: D1
+    what: "form was widened in src/types/domain.ts, not src/types/fantasy.ts."
+    why: >
+      The brief and the prompt both name src/types/fantasy.ts. The only `form`
+      in that file is TopPlayerOfWeek.form (which was also widened). A fantasy
+      player's form lives on `Player` in src/types/domain.ts, and FantasyPlayer
+      extends Player. There is no way to make a player's form nullable without
+      touching domain.ts.
+  - id: D2
+    what: "Seven files outside allowed_paths were edited."
+    why: >
+      D1's widening is a breaking type change for every site that formats a
+      form. Leaving them would fail `bun run typecheck`; silencing them with
+      `?? 0` or a cast would print 0.0 for an unknown form — the defect. Each
+      edit is the same one-line branch, nothing else in those files moved.
+  - id: D3
+    what: "Repository methods went on FantasyRepository + SupabaseFantasyRepository, not on src/services/fantasy-v2.ts."
+    why: >
+      Explicitly directed by the prompt and confirmed in the tree:
+      fantasy-v2.ts is a data-mode selector/factory with no per-read methods,
+      and getOverallStandings (BG-0073, on this branch) set the precedent.
+  - id: D4
+    what: "fantasyPlayerSchema.selectedByCount became optional."
+    why: "The brief's own risks §2 sequencing: make it optional, ship, then drop the column."
+
+# --------------------------------------------------------------------------
+generated_types:
+  file: src/backend/generated/database.types.ts
+  status: NOT TOUCHED
+  reason: >
+    The file carries a "do not edit by hand" header and CI compares it
+    byte-for-byte against `supabase gen types` run over a live local database.
+    `bun run backend:types:generate` and `bun run backend:types:check` both
+    require Docker; `docker info` fails in this environment. The file therefore
+    does not yet know about api.fantasy_player_season_stats or
+    api.fantasy_player_gameweek_history, and a typed
+    `getFantasyApi().rpc("fantasy_player_season_stats", …)` would not compile.
+  workaround: >
+    src/backend/fantasy/supabase-repository.ts defines one local helper,
+    `rpcAwaitingGeneratedTypes(name, args)`, holding a single structural view of
+    `rpc`. It is used by exactly the two new methods. Both payloads are still
+    parsed by zod through the same `parse()` used by every other read, so
+    nothing untyped escapes the helper.
+  follow_up: >
+    Delete `rpcAwaitingGeneratedTypes` and call `getFantasyApi().rpc(…)`
+    directly in the commit that lands CI's regenerated database.types.ts. The
+    argument names and return shapes are already correct; only the typing
+    changes.
+
+# --------------------------------------------------------------------------
+follow_up_unblocked:
+  question: "Does this change make `DROP COLUMN app.fantasy_players.selected_by_count` possible?"
+  answer: YES
+  detail: >
+    Nothing in the frontend reads selectedByCount any more: the runtime mapper
+    took it (as a hardcoded 0) and now takes ownershipPercent from
+    api.fantasy_player_season_stats, and fantasyPlayerSchema.selectedByCount is
+    `.optional()`, so a fantasy_player_pool payload that no longer carries the
+    key still parses. A follow-up migration may now both drop the column and
+    remove it from the fantasy_player_pool payload — note that removing a key
+    from that payload is the one thing that changes its shape, so it needs its
+    own review against the 22 Playwright journeys.
+    THE DROP IS NOT WRITTEN HERE, as instructed.
+
+# --------------------------------------------------------------------------
+hard_rules_observed:
+  - "api.fantasy_player_pool and api.fantasy_league_standings: signature and ordering untouched. No migration was added or edited (forward-only respected; none was needed)."
+  - "src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts, api.service_*, scripts/backend/fantasy-season-orchestrator.ts and fantasy-lifecycle-runner.ts: untouched."
+  - "docs/engineering/LAUNCH_LEDGER.yaml: untouched."
+  - "src/backend/generated/database.types.ts: untouched."
+  - "src/components/ui-kit/: untouched. The four surfaces in scope are on the legacy --fpl-* system, not the ui-kit; ui-kit.contract.test.ts scans only src/components/ui-kit and passes. New markup uses logical properties (ms-/me-/text-end) and adds no tracking-* utility."
+  - 'i18n W4: every new branch is `cond ? t("a") : t("b")`, never `t(cond ? "a" : "b")`.'
