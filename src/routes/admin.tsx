@@ -8,8 +8,11 @@ import {
 import { loadAdminRouteAccess } from "@/backend/admin/route-access.functions";
 import {
   getAdminCopy,
+  selectAdminPanel,
   type AdminRouteState,
   type AdminRouteStateName,
+  type UnauthenticatedDetail,
+  type UnauthenticatedReason,
 } from "@/backend/admin/route-access";
 import { useI18n } from "@/i18n/provider";
 
@@ -29,11 +32,18 @@ function AdminLoadingShell() {
 function AdminStatePanel({
   state,
   copy,
+  reason,
+  detail,
 }: {
   state: AdminRouteStateName | "loading";
   copy: ReturnType<typeof getAdminCopy>;
+  reason?: UnauthenticatedReason;
+  detail?: UnauthenticatedDetail;
 }) {
-  const content = copy.states[state];
+  // A support reference, so a refused sign-in can be reported and diagnosed
+  // from what is on screen. It names only the outcome and the caller's own
+  // credential -- never an account, a role, or whether either exists.
+  const { content, showSignIn, reference } = selectAdminPanel(state, copy, reason, detail);
   return (
     <main
       dir={copy.dir}
@@ -46,7 +56,7 @@ function AdminStatePanel({
         <p className="text-sm text-slate-400">{copy.subtitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{content.title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
-        {(state === "recent_auth_required" || state === "mfa_required") && (
+        {showSignIn && (
           <Link
             to="/auth/login"
             search={{ next: "/admin" }}
@@ -55,6 +65,18 @@ function AdminStatePanel({
           >
             {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
           </Link>
+        )}
+        {state !== "loading" && state !== "authorized" && (
+          <p className="mt-6 text-xs text-slate-500" data-testid="admin-state-reference">
+            {copy.referenceLabel}
+            {" : "}
+            {/* Only the value is forced LTR, so the label keeps its logical
+                position for a screen reader and survives copy/paste. Mirroring
+                the whole string by hand renders correctly and reads backwards. */}
+            <bdi dir="ltr" className="font-mono">
+              {reference}
+            </bdi>
+          </p>
         )}
       </section>
     </main>
@@ -69,7 +91,14 @@ function AdminRoute() {
     select: (state) => state.location.pathname === "/admin",
   });
   if (result.state !== "authorized") {
-    return <AdminStatePanel state={result.state} copy={copy} />;
+    return (
+      <AdminStatePanel
+        state={result.state}
+        copy={copy}
+        reason={result.state === "unauthenticated" ? result.reason : undefined}
+        detail={result.state === "unauthenticated" ? result.detail : undefined}
+      />
+    );
   }
 
   const roleNames = result.context.roles.map((role) => role.name);

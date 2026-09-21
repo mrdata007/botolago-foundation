@@ -2,8 +2,58 @@ import { z } from "zod";
 import { staffContextSchema, type AdminPermission } from "./contracts";
 import { AdminError, mapAdminError } from "./errors";
 
+/**
+ * Why an Admin request was treated as unauthenticated.
+ *
+ * `missing_token` and `invalid_token` used to collapse into a bare
+ * `unauthenticated` state, which made a production outage undiagnosable: the
+ * console said "Authentification requise" both when the browser sent no bearer
+ * token at all and when it sent one the server could not verify, and nothing
+ * distinguished the two from the outside.
+ *
+ * Reporting which of the two occurred leaks nothing -- the caller already knows
+ * whether it sent a token, and neither value says anything about staff
+ * membership or any other account. This mirrors RFC 6750, which distinguishes a
+ * missing credential from `error="invalid_token"` for exactly this reason.
+ *
+ * `backend_unauthenticated` is a third, unrelated case: the caller's token
+ * verified fine and the control plane then reported an unauthenticated result
+ * of its own. Labelling that `invalid_token` would blame a credential that was
+ * accepted, and would fold two causes back into one reference -- the exact
+ * conflation this exists to remove.
+ */
+export const UNAUTHENTICATED_REASONS = [
+  "missing_token",
+  "invalid_token",
+  "backend_unauthenticated",
+] as const;
+export type UnauthenticatedReason = (typeof UNAUTHENTICATED_REASONS)[number];
+
+/**
+ * A coarse classification of *why* a presented token failed verification, shown
+ * as a support reference so a recurrence is self-diagnosing instead of needing
+ * another round of black-box probing.
+ *
+ * - `expired`      the token's own `exp` had passed. Note this is checked
+ *                  before the signature is, so an unverified token can report
+ *                  it -- it means "this token claims to be expired", not
+ *                  "a session we recognise has run out"
+ * - `rejected`     the Auth server or signature check refused it
+ * - `unverifiable` verification could not be completed (JWKS/network failure)
+ *
+ * Every value describes the caller's own credential and nothing else, so this
+ * is safe to surface -- it says nothing about any account, staff membership, or
+ * whether the subject even exists.
+ */
+export const UNAUTHENTICATED_DETAILS = ["expired", "rejected", "unverifiable"] as const;
+export type UnauthenticatedDetail = (typeof UNAUTHENTICATED_DETAILS)[number];
+
 export const adminRouteStateSchema = z.discriminatedUnion("state", [
-  z.object({ state: z.literal("unauthenticated") }),
+  z.object({
+    state: z.literal("unauthenticated"),
+    reason: z.enum(UNAUTHENTICATED_REASONS).optional(),
+    detail: z.enum(UNAUTHENTICATED_DETAILS).optional(),
+  }),
   z.object({ state: z.literal("forbidden") }),
   z.object({ state: z.literal("mfa_required") }),
   z.object({ state: z.literal("recent_auth_required") }),
@@ -26,18 +76,36 @@ export type AdminRouteStateName = AdminRouteState["state"];
 export interface AdminRouteDependencies {
   verifyIdentity(): Promise<{ userId: string; email: string | null } | null>;
   loadContext(userId: string): Promise<unknown>;
+  /**
+   * Optional: classifies the most recent `verifyIdentity` failure. Kept
+   * separate so the identity contract stays `identity | null` and callers that
+   * do not classify need no changes.
+   */
+  describeIdentityFailure?(): UnauthenticatedDetail | undefined;
+}
+
+function identityRejected(dependencies: AdminRouteDependencies): AdminRouteState {
+  const detail = dependencies.describeIdentityFailure?.();
+  return { state: "unauthenticated", reason: "invalid_token", ...(detail ? { detail } : {}) };
 }
 
 export async function resolveAdminRouteAccess(
   dependencies: AdminRouteDependencies,
 ): Promise<AdminRouteState> {
   let identity: Awaited<ReturnType<AdminRouteDependencies["verifyIdentity"]>>;
+  // Reaching here means a bearer token was present -- the caller returns
+  // `missing_token` before ever constructing these dependencies -- so any
+  // failure below is a token the server could not verify, not an absent one.
   try {
     identity = await dependencies.verifyIdentity();
   } catch {
-    return { state: "unauthenticated" };
+    // A throw escaped verification without being classified, so the cause is
+    // genuinely unknown. Report no detail rather than naming one: guessing
+    // `unverifiable` would accuse the server of an outage on evidence that an
+    // anonymous caller can manufacture with a malformed token.
+    return identityRejected(dependencies);
   }
-  if (!identity) return { state: "unauthenticated" };
+  if (!identity) return identityRejected(dependencies);
 
   try {
     const context = staffContextSchema.parse(await dependencies.loadContext(identity.userId));
@@ -73,11 +141,57 @@ export async function resolveAdminRouteAccess(
         return { state: "forbidden" };
       default:
         if (error instanceof AdminError && error.code === "unauthenticated") {
-          return { state: "unauthenticated" };
+          // Identity already verified above; this came from the control plane.
+          return { state: "unauthenticated", reason: "backend_unauthenticated" };
         }
         return { state: "backend_unavailable" };
     }
   }
+}
+
+/**
+ * Chooses what a non-authorized Admin panel says and offers.
+ *
+ * Pure, so the decision is testable without a DOM: which copy block applies,
+ * whether signing in again is actually the remedy, and the support reference.
+ * Keeping it out of the component is what stops `detail` being computed,
+ * carried across the wire, and then quietly ignored at the last step.
+ */
+export function selectAdminPanel(
+  state: AdminRouteStateName | "loading",
+  copy: AdminCopy,
+  reason?: UnauthenticatedReason,
+  detail?: UnauthenticatedDetail,
+): {
+  content: { title: string; description: string };
+  showSignIn: boolean;
+  reference: string;
+} {
+  const reference = [state, reason, detail].filter(Boolean).join("/");
+
+  // Neither of these implicates the reader's credential: either the server
+  // could not reach a verdict on it, or the failure arose after it had already
+  // been accepted. Signing in again would not help, and "session expired"
+  // would be a false diagnosis.
+  const serverSideFailure =
+    state === "unauthenticated" &&
+    (detail === "unverifiable" || reason === "backend_unauthenticated");
+
+  const content = serverSideFailure
+    ? copy.verificationUnavailable
+    : state === "unauthenticated" && reason === "invalid_token"
+      ? copy.invalidToken
+      : copy.states[state];
+
+  // Every state a sign-in can actually clear needs a way to sign in;
+  // "unauthenticated" used to render a dead end, asking the reader to connect
+  // with nothing to click. It stays off where signing in is not the remedy.
+  const showSignIn =
+    (state === "unauthenticated" && !serverSideFailure) ||
+    state === "recent_auth_required" ||
+    state === "mfa_required";
+
+  return { content, showSignIn, reference };
 }
 
 export function requireAdminRoutePermission(
@@ -97,11 +211,21 @@ export function maskEmail(email: string | null): string | null {
   return `${local.slice(0, 1)}${"*".repeat(Math.min(Math.max(local.length - 1, 2), 8))}@${domain}`;
 }
 
-type AdminCopy = {
+export type AdminCopy = {
   readonly dir: "ltr" | "rtl";
   readonly title: string;
   readonly subtitle: string;
   readonly states: Record<AdminRouteStateName | "loading", { title: string; description: string }>;
+  /** Shown instead of `states.unauthenticated` when the bearer token was rejected. */
+  readonly invalidToken: { title: string; description: string };
+  /**
+   * Shown when the server could not reach a verdict on the credential at all.
+   * Distinct from `invalidToken` on purpose: nothing says the reader's session
+   * is bad, so telling them to sign in again would be a wrong instruction.
+   */
+  readonly verificationUnavailable: { title: string; description: string };
+  /** Label for the support reference printed on every non-authorized panel. */
+  readonly referenceLabel: string;
   readonly labels: {
     identity: string;
     roles: string;
@@ -156,6 +280,16 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
         description: "Le contexte affiché provient du backend sécurisé.",
       },
     },
+    invalidToken: {
+      title: "Session expirée",
+      description: "Votre session n’est plus valide. Reconnectez-vous, puis rouvrez cet espace.",
+    },
+    verificationUnavailable: {
+      title: "Vérification impossible",
+      description:
+        "Votre session n’a pas pu être vérifiée pour le moment. Réessayez dans quelques instants — il n’est pas nécessaire de vous reconnecter.",
+    },
+    referenceLabel: "Réf.",
     labels: {
       identity: "Identité authentifiée",
       roles: "Rôles actifs",
@@ -213,6 +347,16 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
         description: "السياق المعروض صادر عن الخلفية الآمنة.",
       },
     },
+    invalidToken: {
+      title: "انتهت صلاحية الجلسة",
+      description: "لم تعد جلستك صالحة. سجّل الدخول من جديد ثم افتح هذه المساحة.",
+    },
+    verificationUnavailable: {
+      title: "تعذّر التحقق",
+      description:
+        "تعذّر التحقق من جلستك حاليًا. أعد المحاولة بعد قليل — لا حاجة إلى تسجيل الدخول من جديد.",
+    },
+    referenceLabel: "المرجع",
     labels: {
       identity: "الهوية الموثّقة",
       roles: "الأدوار النشطة",
