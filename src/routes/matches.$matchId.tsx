@@ -19,6 +19,7 @@ import { LineupsView } from "@/components/matches/LineupsView";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
 import { cn } from "@/lib/utils";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -26,6 +27,47 @@ export const Route = createFileRoute("/matches/$matchId")({
   validateSearch: (search: Record<string, unknown>): { tab: MatchTabKey } => {
     const raw = (typeof search.tab === "string" ? search.tab : "summary") as MatchTabKey;
     return { tab: TAB_KEYS.includes(raw) ? raw : "summary" };
+  },
+  // Shared match links previously inherited the site-wide title/description, so
+  // every match preview looked identical. The detail is fetched here (same
+  // query key the component uses, so it is not fetched twice) purely to name
+  // the two clubs in the metadata; a failure falls back to generic copy.
+  loader: async ({ params, context }) => {
+    try {
+      const data = await context.queryClient.ensureQueryData({
+        queryKey: ["football", "match-detail", params.matchId, "fr"],
+        queryFn: () => footballService.getMatchDetailPage(params.matchId, "fr"),
+      });
+      const home = data.clubs.find((club) => club.id === data.match.homeClubId);
+      const away = data.clubs.find((club) => club.id === data.match.awayClubId);
+      if (!home || !away) return null;
+      return { home: home.name.fr, away: away.name.fr };
+    } catch {
+      return null;
+    }
+  },
+  head: ({ params, loaderData }) => {
+    const canonical = `${PUBLIC_SITE_ORIGIN}/matches/${encodeURIComponent(params.matchId)}`;
+    const title = loaderData
+      ? `${loaderData.home} — ${loaderData.away} | BotolaGO`
+      : "Match Botola Pro — BotolaGO";
+    const description = loaderData
+      ? `${loaderData.home} contre ${loaderData.away} : score en direct, composition, statistiques et temps forts sur BotolaGO.`
+      : "Score en direct, compositions, statistiques et temps forts du match sur BotolaGO.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: canonical },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: canonical }],
+    };
   },
   component: MatchDetailPage,
 });

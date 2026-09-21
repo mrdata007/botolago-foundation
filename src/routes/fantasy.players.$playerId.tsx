@@ -14,8 +14,43 @@ import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { getKitForClub } from "@/lib/kits";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
+  // Named metadata for shared player links; the component's own query reuses
+  // this cache entry. Any failure degrades to generic Fantasy copy.
+  loader: async ({ params, context }) => {
+    try {
+      const player = await context.queryClient.ensureQueryData({
+        queryKey: ["fantasy-player", params.playerId],
+        queryFn: () => fantasyService.getPlayer(params.playerId),
+      });
+      return player ? { name: player.name.fr } : null;
+    } catch {
+      return null;
+    }
+  },
+  head: ({ params, loaderData }) => {
+    const canonical = `${PUBLIC_SITE_ORIGIN}/fantasy/players/${encodeURIComponent(params.playerId)}`;
+    const title = loaderData ? `${loaderData.name} — BotolaGO Fantasy` : "Joueur — BotolaGO Fantasy";
+    const description = loaderData
+      ? `Statistiques, forme, prix et prochains matchs de ${loaderData.name} pour votre équipe BotolaGO Fantasy.`
+      : "Statistiques, forme, prix et prochains matchs du joueur pour votre équipe BotolaGO Fantasy.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:type", content: "profile" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: canonical },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: canonical }],
+    };
+  },
   component: PlayerDetailFramed,
 });
 
