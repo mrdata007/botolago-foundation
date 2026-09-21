@@ -107,7 +107,12 @@ function blockToHtml(block: string): string {
 }
 
 function readAttribute(tag: string, name: string): string | undefined {
-  const pattern = new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, "iu");
+  // The attribute name must start a name, not merely end one. `\b` is not
+  // enough: a hyphen is a non-word character, so `\bsrc` happily matches
+  // inside `data-src`, and the reader would return the first attribute whose
+  // name merely ended with the one asked for -- picking `data-src` over the
+  // real `src` and silently rewriting an image to a different URL on save.
+  const pattern = new RegExp(`(?:^|[\\s/])${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, "iu");
   const match = pattern.exec(tag);
   if (!match) return undefined;
   return decodeHtml(match[2] ?? match[3] ?? "");

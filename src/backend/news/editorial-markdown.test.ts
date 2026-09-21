@@ -151,3 +151,55 @@ describe("insertMarkdownBlockAtSelection", () => {
     expect(editorialImageMarkdown(IMAGE_URL, " [Alt] ")).toBe(`![Alt](${IMAGE_URL})`);
   });
 });
+
+describe("attribute reading is not fooled by a prefixed attribute name", () => {
+  // Regression: the reader matched on a word boundary, and a hyphen is a
+  // non-word character, so `\bsrc` matched inside `data-src`. Whichever such
+  // attribute came first won -- silently rewriting a stored image to a
+  // different URL, or replacing its alt text, the next time an editor saved.
+  const REAL = "https://cdn.test/real.webp";
+  const OTHER = "https://attacker.test/other.png";
+
+  test("reads src, not data-src, whichever comes first", () => {
+    expect(
+      editorialHtmlToMarkdown(`<figure><img data-src="${OTHER}" src="${REAL}" /></figure>`),
+    ).toBe(`![](${REAL})`);
+    expect(
+      editorialHtmlToMarkdown(`<figure><img src="${REAL}" data-src="${OTHER}" /></figure>`),
+    ).toBe(`![](${REAL})`);
+  });
+
+  test("reads alt, not data-alt, whichever comes first", () => {
+    expect(
+      editorialHtmlToMarkdown(
+        `<figure><img data-alt="WRONG" src="${REAL}" alt="RIGHT" /></figure>`,
+      ),
+    ).toBe(`![RIGHT](${REAL})`);
+    expect(
+      editorialHtmlToMarkdown(
+        `<figure><img src="${REAL}" alt="RIGHT" data-alt="WRONG" /></figure>`,
+      ),
+    ).toBe(`![RIGHT](${REAL})`);
+  });
+
+  test("ignores any attribute merely ending in the wanted name", () => {
+    for (const decoy of ["data-src", "x-src", "my:src", "foosrc"]) {
+      const html = `<figure><img ${decoy}="${OTHER}" src="${REAL}" /></figure>`;
+      expect(editorialHtmlToMarkdown(html)).toBe(`![](${REAL})`);
+    }
+  });
+
+  test("does not let a decoy attribute smuggle in a disallowed URL", () => {
+    // The decoy carries a scheme the policy forbids. If it were read as src,
+    // the https-only guard would reject it and the image would vanish from the
+    // article entirely -- content loss rather than a bad link.
+    const html = `<figure><img data-src="javascript:alert(1)" src="${REAL}" /></figure>`;
+    expect(editorialHtmlToMarkdown(html)).toBe(`![](${REAL})`);
+  });
+
+  test("still reads a normally-formed tag", () => {
+    expect(editorialHtmlToMarkdown(`<figure><img src="${REAL}" alt="Le derby" /></figure>`)).toBe(
+      `![Le derby](${REAL})`,
+    );
+  });
+});
