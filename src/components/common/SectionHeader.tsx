@@ -44,10 +44,18 @@ export function SectionHeader({
             {Icon && (
               <Icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]" aria-hidden />
             )}
+            {/* On the ramp rather than on a 10px literal (BG-0124). This is
+                exactly what `ui.text.label` is: 12px, heavy, uppercase, with
+                `ltr:`-prefixed tracking so Arabic letterforms are never pulled
+                apart. The 10px had no leading, so at 768px the Arabic eyebrow
+                was cut inside its own `truncate`.
+
+                `text-brand` also went with it: `ui.tone.ink` is `--ui-ink-fg`,
+                which is theme-correct, where `--brand-primary` is the same
+                colour in both themes (BG-0083). A no-op in light, and the
+                reason this line works when dark mode is switched on. */}
             {eyebrow && (
-              <span className="truncate text-[10px] font-black uppercase ltr:tracking-[0.16em] text-brand">
-                {eyebrow}
-              </span>
+              <span className={cn("truncate", ui.text.label, ui.tone.ink)}>{eyebrow}</span>
             )}
           </div>
         )}

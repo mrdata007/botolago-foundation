@@ -65,7 +65,14 @@ export function BottomNav() {
                 )}
               />
               <Icon className="h-5 w-5 shrink-0" aria-hidden />
-              <span className="max-w-full truncate leading-none">{t(item.labelKey)}</span>
+              {/* BG-0124 — this span carried a local `leading-none` that
+                  overrode `ui.text.micro`'s leading on the most-seen element
+                  in the product. Combined with `truncate`, whose
+                  `overflow: hidden` exists for a horizontal ellipsis, it cut
+                  2px off the Latin descender in "Fantasy" and 5px of ink —
+                  about a third — off the Arabic. The ramp already sets the
+                  right leading for both scripts, so this sets none. */}
+              <span className="max-w-full truncate">{t(item.labelKey)}</span>
             </Link>
           );
         })}

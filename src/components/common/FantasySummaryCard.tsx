@@ -144,13 +144,13 @@ function Metric({
           boundaries if a narrower viewport ever needs it, and the grid
           stretches the tiles so the row stays aligned either way.
 
-          `ui.text.micro` carries `leading-none`, i.e. an 11px line box for an
-          11px font, which shaved the descenders off "journée" and "général"
-          against the tile's own clipping. `[line-height:1.35]` is an arbitrary
-          *property* so it wins over the utility regardless of class order. */}
-      <div className={cn("mt-1 [line-height:1.35] break-words", ui.text.micro, ui.tone.muted)}>
-        {label}
-      </div>
+          This used to carry a local `[line-height:1.35]`, because
+          `ui.text.micro` then carried `leading-none` and an 11px line box for
+          an 11px font shaved the descenders off "journée" and "général". The
+          ramp now carries `--ui-leading-flat`, so the override is gone — and
+          it was below the floor anyway: 1.35 is under the 1.36 that Latin ink
+          needs and well under Arabic's 1.73 (BG-0124). */}
+      <div className={cn("mt-1 break-words", ui.text.micro, ui.tone.muted)}>{label}</div>
     </div>
   );
 }

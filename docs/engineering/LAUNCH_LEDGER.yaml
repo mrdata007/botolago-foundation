@@ -1368,8 +1368,14 @@ tasks:
     area: design
     severity: P1
     owner: Chief
-    state: QUEUED
-    depends_on: [BG-0121]
+    state: DONE # fixed 2026-09-21; --ui-leading-* shipped, clipH 1200 -> 0
+    depends_on: []
+    resolution:
+      - "--ui-leading-flat / -copy / -prose on :root, applied through every step of ui.text.* and STAT_BASE, redeclared under :lang(ar) and [dir=rtl]"
+      - "Latin 1.4 / 1.55 / 1.7; Arabic 1.95 / 1.9 / 2.0. Only `flat` is raised that far -- copy and prose wrap, so their overflow is visible and their ink is free"
+      - "after: fr nav label box 0..15 with ink 4.2..15.2; ar box 0..21 with ink 4.2..20.2. Both fit. Nav height 64px (fr) / 70px (ar), inside --bottomnav-h, scrollHeight <= clientHeight"
+      - "three call sites: BottomNav's local leading-none override, FantasySummaryCard's [line-height:1.35] workaround (itself below the 1.36 Latin floor), CompetitionHeader's three literal sizes"
+      - two contract tests added -- the ramp may never use leading-none/tight/normal, and every leading token must have an Arabic counterpart
     evidence:
       - "src/components/ui-kit/tokens.ts:236 -- ui.text.micro is `leading-none`, i.e. line-height equals font-size"
       - "src/components/ui-kit/tokens.ts:219 -- STAT_BASE is `leading-none`, so every stat step inherits it"

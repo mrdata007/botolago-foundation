@@ -38,6 +38,11 @@ export const UI_TOKENS = [
   "--ui-text-meta",
   "--ui-text-label",
   "--ui-text-micro",
+  // leading (BG-0124) — redeclared under :lang(ar)/[dir="rtl"], because the
+  // Arabic face needs a taller line box than the Latin one at the same px.
+  "--ui-leading-flat",
+  "--ui-leading-copy",
+  "--ui-leading-prose",
   // stat ramp (numerals)
   "--ui-stat-hero",
   "--ui-stat-lg",
@@ -216,24 +221,35 @@ const weight = (token: keyof typeof WEIGHT_CLASS) => WEIGHT_CLASS[token];
  * Numerals are always tabular and always a step tighter than prose — and the
  * tightening is `ltr:`-only, because Arabic-Indic digits sit in joined text.
  */
-const STAT_BASE = "fpl-tabular ltr:tracking-[var(--ui-stat-tracking)] leading-none";
+const STAT_BASE =
+  "fpl-tabular ltr:tracking-[var(--ui-stat-tracking)] leading-[var(--ui-leading-flat)]";
 
 /**
  * The design language as class tokens. Compose with `cn()`.
  */
 export const ui = {
-  /** Type ramp. Line heights follow Fantasy: tight for headings, 1.5 for copy. */
+  /**
+   * Type ramp. Every step now carries a leading token rather than a Tailwind
+   * `leading-*` chosen per component — see BG-0124. `flat` is the floor for
+   * anything that has to fit one line; `copy` is for text that wraps.
+   *
+   * Nothing here may use `leading-none`. A font's ink does not fit inside its
+   * own em, and every one of these steps can land inside a `truncate`, which
+   * hides the overflow and cuts the difference off.
+   */
   text: {
-    hero: `${size("--ui-text-hero")} ${weight("--ui-weight-hero")} leading-tight`,
-    title: `${size("--ui-text-title")} ${weight("--ui-weight-heavy")} leading-tight`,
-    section: `${size("--ui-text-section")} ${weight("--ui-weight-heavy")} leading-tight`,
-    subtitle: `${size("--ui-text-subtitle")} ${weight("--ui-weight-heavy")} leading-tight`,
-    body: `${size("--ui-text-body")} ${weight("--ui-weight-body")} leading-normal`,
-    bodyStrong: `${size("--ui-text-body")} ${weight("--ui-weight-heavy")} leading-normal`,
-    secondary: `${size("--ui-text-secondary")} leading-normal`,
-    meta: `${size("--ui-text-meta")} ${weight("--ui-weight-body")} leading-normal`,
-    label: `${size("--ui-text-label")} ${weight("--ui-weight-heavy")} uppercase ltr:tracking-wide`,
-    micro: `${size("--ui-text-micro")} ${weight("--ui-weight-body")} leading-none`,
+    hero: `${size("--ui-text-hero")} ${weight("--ui-weight-hero")} leading-[var(--ui-leading-flat)]`,
+    title: `${size("--ui-text-title")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-flat)]`,
+    section: `${size("--ui-text-section")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-flat)]`,
+    subtitle: `${size("--ui-text-subtitle")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-flat)]`,
+    body: `${size("--ui-text-body")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-copy)]`,
+    bodyStrong: `${size("--ui-text-body")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-copy)]`,
+    secondary: `${size("--ui-text-secondary")} leading-[var(--ui-leading-copy)]`,
+    meta: `${size("--ui-text-meta")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-copy)]`,
+    label: `${size("--ui-text-label")} ${weight("--ui-weight-heavy")} uppercase ltr:tracking-wide leading-[var(--ui-leading-flat)]`,
+    micro: `${size("--ui-text-micro")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-flat)]`,
+    /** Long-form paragraphs: the rules page, help, legal. */
+    prose: `${size("--ui-text-body")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-prose)]`,
     /** Numbers that must line up column to column. */
     tabular: "fpl-tabular",
   },

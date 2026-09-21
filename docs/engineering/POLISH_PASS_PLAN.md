@@ -5,21 +5,22 @@ depth, the pitch, player cards, icons, motion, states, RTL parity, pixel
 alignment. No new screens, features, navigation, information architecture, copy,
 data, routes or RPCs. Anything needing one of those is logged, not done.
 
-## Sequencing: this starts after the in-flight lanes land
+## Sequencing — the lanes have landed, this is now running
 
-Four lanes are editing the kit's consumers right now — the Fantasy shell and
-hub, the squad builder and picker, leagues and player screens, and a
-seven-item defect batch. The pass is specified token → component → screen, and
-"most fixes should land in tokens and the kit, not in route files". Those two
-facts are in direct tension while the lanes run: consolidating six radii into
-two, or changing the body weight, re-renders every screen four agents are
-currently converting, and every one of their diffs would conflict.
+> **Status, 2026-09-21.** All five design-migration lanes (BG-0118 foundation,
+> BG-0119 squad/picker, BG-0120 pitch/points, BG-0121 leagues/players, BG-0122
+> the ten-item batch) are merged into `chief/launch-fixes-3`. The pass is
+> unblocked and the first token item, the leading ramp, has shipped — see
+> BG-0124 and `docs/qa/polish/README.md`.
 
-So the token work is staged behind them rather than started now. The cost is
-waiting; the cost of not waiting is four lanes rebasing onto shifting tokens and
-a merge nobody can review. The screenshot baseline is also deliberately deferred
-— a `before/` captured now would be stale by the time polish begins and would
-misattribute the lanes' changes to this pass.
+The original reason for staging, kept because it is the reason the merge was
+reviewable: the pass is specified token → component → screen, and "most fixes
+should land in tokens and the kit, not in route files". While four lanes were
+converting the kit's consumers, those two facts were in direct tension —
+consolidating six radii into two, or changing the body weight, re-renders every
+screen four agents are mid-way through, and every one of their diffs would
+conflict. The cost of waiting was time; the cost of not waiting would have been
+four lanes rebasing onto shifting tokens.
 
 ## Audit of the existing token layer, against the ten standards
 
@@ -43,11 +44,21 @@ standard asks for:
 | `--ui-text-label`     | 12  | label      |
 | `--ui-text-micro`     | 11  | caption    |
 
-**Gap A — no line-height and no letter-spacing tokens exist at all.** There is no
-`--ui-leading-*` and no `--ui-track-*` family. The standard requires each step to
-carry size, line-height, weight and letter-spacing; today it carries size and a
-weight chosen per component. Heading tightening (−0.01 to −0.02em) and label
-loosening (+0.04 to +0.08em) therefore have nowhere to live.
+**Gap A — no line-height and no letter-spacing tokens existed at all.**
+
+The leading half is **done** (BG-0124): `--ui-leading-flat` / `-copy` /
+`-prose` now hang off `:root`, every step of `ui.text.*` and `STAT_BASE` draws
+from them, and they are redeclared under `:lang(ar)` / `[dir="rtl"]`. This was
+not a tidiness gap. `leading-none` on `ui.text.micro` and the stat ramp gave a
+line box exactly the font size, and inside a `truncate` — whose `overflow:
+hidden` exists for a horizontal ellipsis — that cut 2px off the Latin descender
+and 31% of the Arabic ink on the bottom nav. Across the app the probe counted
+1200 clipped text leaves; it now counts 0. Two contract tests hold the line.
+
+**Still open: `--ui-track-*`.** Heading tightening (−0.01 to −0.02em) and label
+loosening (+0.04 to +0.08em) have nowhere to live. Note that any such token has
+to be `ltr:`-only, like `--ui-stat-tracking` already is — letter-spacing breaks
+Arabic letterform joins (BG-0069).
 
 **Gap B — the weight ramp has no normal weight.** The four weights are 600, 700,
 800, 900, and `--ui-weight-body` is **600**. Body copy is semibold everywhere,
@@ -109,14 +120,21 @@ single occurrence, at `src/styles.css:724`, is a blanket rule:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .mesh-drift { animation: none !important; }
-  .shimmer { animation: none !important; background-image: none !important; }
+  .mesh-drift {
+    animation: none !important;
+  }
+  .shimmer {
+    animation: none !important;
+    background-image: none !important;
+  }
 }
 ```
 
@@ -141,15 +159,23 @@ pass, not a token one.
 `UiStatePanel`, `UiEmptyState`, `UiErrorState`, `UiSkeleton` all exist from
 BG-0091. The work is adoption, not construction.
 
-### 10. RTL — strong, with one real gap
+### 10. RTL — the Arabic adjustment is now in, as leading
 
 Physical-direction utilities are at **zero** across all of `src/`, and Arabic
-letter-spacing was neutralised in BG-0069. The gap is the one the standard names
-explicitly: **no Arabic-specific size or line-height adjustment exists.** The
-Arabic face's x-height differs from the Latin one, so equal `px` does not mean
-equal visual weight. This needs a token pair applied under `:lang(ar)` /
-`[dir="rtl"]`, roughly +1px body size and +0.1 line-height, verified by
-measurement rather than by eye.
+letter-spacing was neutralised in BG-0069.
+
+The gap the standard named explicitly — no Arabic-specific adjustment — is
+**closed**, though not the way this document first guessed. It proposed "+1px
+body size and +0.1 line-height". The size half would have been wrong: changing
+the Arabic font size breaks the shared spacing grid and makes every mixed
+string shift mid-sentence, and this product is full of Latin club names inside
+Arabic tables. Leading moves the box, not the glyph, so the whole adjustment
+lives there.
+
+The magnitude was also badly underestimated. Not +0.1: Noto Sans Arabic needs
+**1.95** against Manrope's 1.4 on single-line text, which is where the ink
+actually clears its box — measured across the product, not estimated. The
+derivation and the numbers are in BG-0124 and `docs/qa/polish/README.md`.
 
 **Tabular figures** are near-absent: two occurrences in the stylesheet, one of
 which is a comment. `UiTable`'s `numeric` cells set it, nothing else does. Every

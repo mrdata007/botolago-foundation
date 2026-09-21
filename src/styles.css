@@ -783,6 +783,38 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-text-label: 12px; /* badges, column heads */
   --ui-text-micro: 11px; /* nav labels, micro captions */
 
+  /* ---- Leading ---------------------------------------------------
+     BG-0124. The ramp used to carry size and weight only, and each
+     component picked its own `leading-*`. Nine different values were
+     in use across `src/`, three of which cut glyphs.
+
+     A font's ink does not fit inside its own em, so `leading-none`
+     (line-height = font-size) guarantees the line box is too short.
+     That is invisible until something hides the overflow — and
+     `truncate` does, because it sets `overflow: hidden` to get a
+     HORIZONTAL ellipsis and clips the vertical axis as a side effect.
+     CSS offers no way out of that: set `overflow-x: hidden` and
+     `overflow-y` computes to `auto`, never `visible`. The only fix is
+     vertical room.
+
+     The floors below are derived, not chosen. For a line box of L and
+     a font of ascent A, descent D and ink descent d, the baseline sits
+     at (L − A − D)/2 + A, so the ink clears the bottom edge only once
+        L ≥ A − D + 2d.
+     Measured at 11px via canvas TextMetrics on the live page:
+       Manrope            A 12, D 3, d 3  ->  L ≥ 15px  -> ratio 1.36
+       Noto Sans Arabic   A 15, D 8, d 6  ->  L ≥ 19px  -> ratio 1.73
+     Those are font properties, so they hold at every step — which is
+     exactly why ONE leading value cannot serve both scripts, and why
+     the Arabic override below is arithmetic rather than taste.
+
+     Three steps, because anything under the Latin floor is unusable
+     and "tight" therefore IS the floor. Verified by re-running
+     `scripts/qa/layout-probe.mjs`, not by eye. */
+  --ui-leading-flat: 1.4; /* single-line labels, headings, stats */
+  --ui-leading-copy: 1.55; /* body copy, rows, buttons */
+  --ui-leading-prose: 1.7; /* long-form paragraphs: rules, help, legal */
+
   /* ---- Stat ramp -------------------------------------------------
      Numerals only: scores, points, prices, ranks. Its own scale
      because a stat is read as a figure, not as a word — always with
@@ -914,6 +946,41 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-on-fdr-3: oklch(0.2 0.02 260);
   --ui-on-fdr-4: oklch(1 0 0);
   --ui-on-fdr-5: oklch(1 0 0);
+}
+
+/* ---- The Arabic leading adjustment (BG-0124) ----------------------
+   Noto Sans Arabic needs a taller line box than Manrope at the same
+   `px`. The ratios are derived in the `--ui-leading-*` block above:
+   Latin ink clears its box at 1.36, Arabic at 1.73. Setting one value
+   for both either cuts Arabic glyphs or leaves French looking airy.
+
+   This is the "Arabic x-height adjustment" the design standard asks
+   for, expressed as leading rather than as size: changing the Arabic
+   FONT SIZE would break the shared spacing grid and make every mixed
+   string (a Latin club name in an Arabic table, which this product is
+   full of) shift mid-sentence. Leading moves the box, not the glyph.
+
+   Both selectors, because the two signals are written independently:
+   `I18nProvider` sets `lang` and `dir` on the document element, and a
+   subtree can carry `dir` alone. Either one alone must be enough. */
+:root:lang(ar),
+:root[dir="rtl"],
+[lang="ar"],
+[dir="rtl"] {
+  /* 1.95, not the 1.73 the derivation gives, and the gap is the point. 1.73
+     is what "فانتازي" needs; strings with fuller diacritics need more, and
+     the floor has to hold for the string nobody measured. Measured across the
+     product, the deepest Arabic ink wanted 66/34, 37/19 and 25/13 — 1.94,
+     1.95 and 1.92 — so 1.95 is the observed ceiling, not a guess.
+
+     Only `flat` is raised that far. It is the step single-line `truncate`d
+     text uses, where hidden overflow turns ink into a cut glyph. `copy` and
+     `prose` wrap, so their overflow is visible and their ink is free to
+     extend; inflating them would only make Arabic paragraphs airy next to
+     French ones, which is the opposite of the parity being aimed at. */
+  --ui-leading-flat: 1.95;
+  --ui-leading-copy: 1.9;
+  --ui-leading-prose: 2;
 }
 
 .dark {

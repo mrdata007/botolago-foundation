@@ -118,6 +118,7 @@ const PROBE = () => {
     decorative: [],
     clipW: [],
     clipH: [],
+    clipHFontBox: [],
   };
   const hides = (v) => v === "hidden" || v === "clip";
 
@@ -146,6 +147,38 @@ const PROBE = () => {
    */
   const decorative = (el, cs) =>
     cs.pointerEvents === "none" && (el.textContent || "").trim().length === 0;
+
+  /**
+   * Does the element's GLYPH INK escape its content box, or only the font's
+   * declared box?
+   *
+   * `scrollHeight` on a text leaf reflects the inline box, which is sized from
+   * the font's declared ascent and descent — room reserved for the tallest
+   * glyph the face can draw, not for the glyphs actually on screen. Once
+   * line-height sits between the real ink height and that declared box,
+   * `scrollHeight > clientHeight` keeps reporting while nothing is visibly
+   * cut. That is exactly where the Arabic ramp lands: at 34px the hero's
+   * declared box is 72px against a 66px line box, and the ink of "فانتازي"
+   * spans 15.1 to 60.1 — comfortably inside.
+   *
+   * So the ink is measured directly. Canvas gives actualBoundingBox*, the ink
+   * extents of this exact string in this exact face, and the baseline is
+   * reconstructed the way the browser places it: half-leading above the
+   * font's ascent. Only ink crossing the content box is a defect.
+   */
+  const inkEscapes = (el, cs) => {
+    const ctx2d = document.createElement("canvas").getContext("2d");
+    if (!ctx2d) return true; // cannot measure: report it rather than hide it
+    ctx2d.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m = ctx2d.measureText((el.textContent || "").trim());
+    const lineHeight = parseFloat(cs.lineHeight);
+    if (!Number.isFinite(lineHeight)) return true; // `normal`: no arithmetic to do
+    const fontBox = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+    const baseline = (lineHeight - fontBox) / 2 + m.fontBoundingBoxAscent;
+    const top = baseline - m.actualBoundingBoxAscent;
+    const bottom = baseline + m.actualBoundingBoxDescent;
+    return top < -0.5 || bottom > el.clientHeight + 0.5;
+  };
 
   for (const el of document.querySelectorAll("body *")) {
     const cs = getComputedStyle(el);
@@ -177,14 +210,15 @@ const PROBE = () => {
         );
       }
       if (hides(cs.overflowY) && el.scrollHeight > el.clientHeight + 1) {
-        out.clipH.push(
+        const line =
           `<${el.tagName.toLowerCase()}> "${label}" ${el.scrollHeight}>${el.clientHeight}` +
-            ` (+${el.scrollHeight - el.clientHeight}px) fs=${cs.fontSize} lh=${cs.lineHeight}`,
-        );
+          ` (+${el.scrollHeight - el.clientHeight}px) fs=${cs.fontSize} lh=${cs.lineHeight}`;
+        out[inkEscapes(el, cs) ? "clipH" : "clipHFontBox"].push(line);
       }
     }
   }
-  for (const k of ["past", "decorative", "clipW", "clipH"]) out[k] = [...new Set(out[k])];
+  for (const k of ["past", "decorative", "clipW", "clipH", "clipHFontBox"])
+    out[k] = [...new Set(out[k])];
   return out;
 };
 
@@ -213,7 +247,8 @@ for (const lang of LANGS) {
         r.past.length ||
         r.decorative.length ||
         r.clipW.length ||
-        r.clipH.length
+        r.clipH.length ||
+        r.clipHFontBox.length
       ) {
         rows.push({ lang, width, route, ...r });
       }
@@ -230,10 +265,11 @@ console.log(
 console.log(`${rows.length} route/viewport pairs with findings`);
 console.log(
   `scroll ${rows.filter((r) => r.scroll > 1).length} · past ${total("past")} · clipW ${total("clipW")} · clipH ${total("clipH")}` +
-    ` · decorative ${total("decorative")} (reported, not counted as defects)\n`,
+    ` · decorative ${total("decorative")}` +
+    ` · clipH-fontbox ${total("clipHFontBox")} (both reported, neither a defect)\n`,
 );
 
-for (const kind of ["scroll", "past", "clipW", "clipH", "decorative"]) {
+for (const kind of ["scroll", "past", "clipW", "clipH", "decorative", "clipHFontBox"]) {
   const hit = rows.filter((r) => (kind === "scroll" ? r.scroll > 1 : r[kind].length));
   if (!hit.length) {
     console.log(`### ${kind}: none`);

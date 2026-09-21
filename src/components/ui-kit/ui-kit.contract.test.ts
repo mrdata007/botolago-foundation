@@ -393,7 +393,43 @@ describe("ui-kit: the primitives keep their promises", () => {
     for (const step of ["hero:", "lg:", "md:", "sm:"]) {
       expect(statRamp).toContain(step);
     }
-    expect(tokens).toMatch(/STAT_BASE = "fpl-tabular/);
+    // Tolerant of a line break: prettier wraps this declaration once the value
+    // grows, and the contract is that STAT_BASE STARTS with `fpl-tabular`, not
+    // that it fits on one line. The previous `/STAT_BASE = "fpl-tabular/`
+    // failed on a reflow that changed nothing about the ramp.
+    expect(tokens).toMatch(/STAT_BASE\s*=\s*\n?\s*"fpl-tabular/);
+  });
+
+  it("gives every type and stat step a leading token, and never leading-none", () => {
+    // BG-0124. `leading-none` sets the line box to the font size, and a font's
+    // ink does not fit inside its own em; inside a `truncate` (overflow:hidden
+    // for a horizontal ellipsis) the difference is cut off. Measured at 11px:
+    // 2px of Latin descender, 5px of Arabic ink — a third of the glyph.
+    const tokens = read("tokens.ts");
+    const ramp = tokens.slice(tokens.indexOf("text: {"), tokens.indexOf("tone: {"));
+    for (const banned of ["leading-none", "leading-tight", "leading-normal"]) {
+      expect(ramp).not.toContain(banned);
+    }
+    for (const step of ["hero:", "title:", "body:", "meta:", "micro:", "label:", "prose:"]) {
+      const line = ramp.split("\n").find((l) => l.trim().startsWith(step));
+      expect(line).toBeDefined();
+      expect(line).toMatch(/leading-\[var\(--ui-leading-(flat|copy|prose)\)\]/);
+    }
+    expect(tokens).toMatch(/STAT_BASE[\s\S]{0,160}leading-\[var\(--ui-leading-flat\)\]/);
+  });
+
+  it("redeclares every leading token for Arabic", () => {
+    // The Arabic face needs a taller line box than the Latin one at the same
+    // px — 1.73 against 1.36, derived from the two fonts' own metrics. One
+    // value cannot serve both scripts, so a leading token with no Arabic
+    // counterpart is a token that clips Arabic.
+    const arabic = css.slice(css.indexOf(":root:lang(ar)"));
+    expect(arabic.length).toBeGreaterThan(0);
+    const block = arabic.slice(0, arabic.indexOf("}"));
+    for (const token of ["--ui-leading-flat", "--ui-leading-copy", "--ui-leading-prose"]) {
+      expect(css).toContain(`${token}:`);
+      expect(block).toContain(`${token}:`);
+    }
   });
 });
 
