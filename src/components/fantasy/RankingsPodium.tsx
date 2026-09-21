@@ -1,9 +1,11 @@
-import type { LeagueStanding } from "@/types/fantasy";
-import type { Club } from "@/types/domain";
+import { Crown } from "lucide-react";
+
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { ui, UiCard, UiStatBlock } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { Crown } from "lucide-react";
+import type { Club } from "@/types/domain";
+import type { LeagueStanding } from "@/types/fantasy";
 
 /** Deterministic crest slot so every podium card carries a badge. */
 function crestFor(standing: LeagueStanding, clubs?: Club[]): Club | undefined {
@@ -15,8 +17,19 @@ function crestFor(standing: LeagueStanding, clubs?: Club[]): Club | undefined {
 }
 
 /**
- * Top-3 podium, ported onto the Fantasy `--fpl-*` tokens: ink/cyan for 1st,
- * grey for 2nd/3rd, same family as `FplStateBadge`/`FplPill`.
+ * Top-3 podium.
+ *
+ * Restraint over decoration: the step heights and the crown stay, because
+ * they are what makes a podium readable at a glance, but the three cards are
+ * ordinary kit cards and the score is a `UiStatBlock` — the same tabular
+ * figure the standings table underneath uses, so the eye moves between them
+ * without re-calibrating.
+ *
+ * Gone: `bg-white/70` over a gradient (an un-themed surface with un-themed
+ * text on it), the `rounded-xl` outside the radius set, and the first-place
+ * card's action-gradient fill, which forced a `--fpl-ink-deep` foreground that
+ * is not a text colour. First place is now marked by the crown, the step and
+ * an ink-toned figure.
  */
 export function RankingsPodium({
   podium,
@@ -33,28 +46,23 @@ export function RankingsPodium({
 
   // Visual order: 2nd, 1st, 3rd.
   const order = [podium[1], podium[0], podium[2]];
-  const heights = ["pt-6", "pt-0", "pt-9"];
-  const surfaces = [
-    "bg-[color:var(--fpl-grey)]",
-    "text-[color:var(--fpl-ink)]",
-    "bg-[color:var(--fpl-grey)]",
-  ];
+  const steps = ["pt-6", "pt-0", "pt-9"];
 
   return (
     <section aria-label={t("fantasy.rankings.podium")} className="grid grid-cols-3 gap-2">
       {order.map((s, i) => {
         const club = crestFor(s, clubs);
-        const isMe = meId && s.managerId === meId;
+        const isMe = !!meId && s.managerId === meId;
         const first = i === 1;
         return (
-          <div key={s.managerId} className={heights[i]}>
-            <div
+          <div key={s.managerId} className={steps[i]}>
+            <UiCard
+              padding="none"
               className={cn(
-                "flex h-full flex-col items-center gap-1.5 rounded-[10px] px-2 py-3 text-center",
-                first ? "" : surfaces[i],
-                isMe && "ring-2 ring-[color:var(--fpl-ink)]",
+                "flex h-full flex-col items-center gap-1.5 px-2 py-3 text-center",
+                first ? "ring-1 ring-[color:var(--ui-ink-fg)]" : ui.surface.sunken,
+                isMe && "ring-2 ring-[color:var(--ui-ink-fg)]",
               )}
-              style={first ? { backgroundImage: "var(--fpl-grad)" } : undefined}
             >
               <div className="relative">
                 {club ? (
@@ -62,52 +70,62 @@ export function RankingsPodium({
                 ) : (
                   <span
                     className={cn(
-                      "grid h-9 w-9 place-items-center rounded-xl text-[11px] font-black",
-                      first
-                        ? "bg-white/70 text-[color:var(--fpl-ink)]"
-                        : "bg-white text-[color:var(--fpl-ink)]",
+                      "grid h-9 w-9 place-items-center",
+                      ui.radius.control,
+                      ui.surface.card,
+                      "shadow-none",
+                      ui.text.micro,
+                      "[font-weight:var(--ui-weight-hero)]",
                     )}
+                    aria-hidden
                   >
                     {s.teamName.slice(0, 2).toUpperCase()}
                   </span>
                 )}
-                {s.rank === 1 && (
+                {s.rank === 1 ? (
                   <Crown
-                    className="absolute -top-3 start-1/2 h-4 w-4 -translate-x-1/2 text-[color:var(--fpl-ink-deep)]"
+                    className={cn(
+                      "absolute -top-3 start-1/2 h-4 w-4 -translate-x-1/2",
+                      ui.tone.ink,
+                    )}
                     aria-hidden
                   />
-                )}
+                ) : null}
               </div>
               <span
                 className={cn(
-                  "inline-grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black tabular-nums",
-                  first
-                    ? "bg-white/70 text-[color:var(--fpl-ink-deep)]"
-                    : "bg-white text-[color:var(--fpl-ink-deep)]",
+                  "inline-grid h-5 min-w-5 place-items-center px-1.5",
+                  ui.radius.full,
+                  ui.surface.inkPlain,
+                  ui.stat.sm,
                 )}
               >
-                {s.rank}
+                {nf.format(s.rank)}
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 self-stretch">
                 <div
+                  dir="auto"
                   className={cn(
-                    "truncate text-[11px] font-black",
-                    first ? "text-[color:var(--fpl-ink-deep)]" : "text-[color:var(--fpl-ink-deep)]",
+                    "truncate",
+                    ui.text.micro,
+                    "[font-weight:var(--ui-weight-hero)]",
+                    ui.tone.default,
                   )}
                 >
                   {s.managerName}
                 </div>
-                <div className="truncate text-[10px] text-[color:var(--fpl-grey-text)]">
+                <div dir="auto" className={cn("truncate", ui.text.micro, ui.tone.muted)}>
                   {s.teamName}
                 </div>
               </div>
-              <div className="text-sm font-black tabular-nums text-[color:var(--fpl-ink-deep)]">
-                {nf.format(s.totalScore)}
-                <span className="ms-1 text-[10px] font-bold text-[color:var(--fpl-grey-text)]">
-                  {t("fantasy.points.abbr")}
-                </span>
-              </div>
-            </div>
+              <UiStatBlock
+                align="center"
+                size="sm"
+                tone={first ? "ink" : "default"}
+                value={nf.format(s.totalScore)}
+                sub={t("fantasy.points.abbr")}
+              />
+            </UiCard>
           </div>
         );
       })}

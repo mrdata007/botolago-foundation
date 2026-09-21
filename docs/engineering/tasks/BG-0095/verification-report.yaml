@@ -1,0 +1,328 @@
+task_id: BG-0095
+lane: "D — leagues, rankings, fixtures/FDR and the player screens"
+branch: bg-0095-leagues-players
+
+method:
+  problem: >
+    Two things stopped a straightforward browser run against production. The
+    frontend on this branch calls `api.fantasy_player_season_stats` and
+    `api.fantasy_gameweek_summary`, neither of which is deployed on the
+    production project (both PGRST202), so /fantasy/fixtures and the player
+    screens resolved to their error state. Separately, the sandbox's egress
+    relay drops Supabase tunnels mid-exchange under a browser's parallel load
+    ("tunnel closed (code 1006) after 36s", recorded by the proxy itself), so
+    even the reachable RPCs were unreliable from Chromium.
+  approach: >
+    The real production payloads were captured once over plain HTTPS, where
+    single requests do succeed, and then served to the running app at the
+    BROWSER EDGE via Playwright request interception. The app, the router, the
+    query layer and every component are the real ones; only the network answer
+    is pinned. The two undeployed RPCs are answered with their contract's
+    documented pre-season shape (`items: []`, `form: null`, `averagePoints:
+    null`), which is the state production is actually in.
+  fidelity_check: >
+    Before any code changed, this harness reproduced the brief's independently
+    measured production defect EXACTLY: /fantasy/players rendered a document
+    37,191px tall at a 390px viewport, matching the brief's figure to the pixel.
+    The difficulty grid rendered 14 team rows with the header reading "27 sept.",
+    also as reported. That agreement is what licenses the after-numbers below.
+  captured_payloads:
+    - "api.fantasy_hub — season 2026/2027, gameweek 1, deadline 2026-09-24T18:30:00Z, rankingAvailable false"
+    - "api.fantasy_fixture_difficulty — 14 rows, all gameweek 1"
+    - "api.fantasy_player_pool — 6 keyset pages, 539 players, 16 distinct clubs"
+    - "api.football_team_catalog — 21 clubs"
+    - "api.fantasy_top_players (gw1) — [] (empty, which is the defect)"
+    - "api.fantasy_gameweeks, api.fantasy_leagues, api.fantasy_rules"
+  environments:
+    - "Production-shaped: vite dev on port 4272 with production Supabase config, payloads pinned as above."
+    - "Mock: vite dev on port 4271 (VITE_*_MODE=mock) for the auth-gated league screens and for tables with enough rows to exercise truncation."
+  ports: >
+    4271 and 4272. Port 4173 (playwright.config's default) was never bound —
+    sibling lanes hold it, and every run passed an explicit base URL.
+  browser: "Chromium from /opt/pw-browsers via PLAYWRIGHT_BROWSERS_PATH. `playwright install` was never run."
+
+gates:
+  typecheck: { command: "bun run typecheck", result: pass }
+  test:
+    command: "bun run test"
+    result: "1438 pass / 0 fail / 15293 expect() calls across 157 files"
+    note: "Matches the required 1438/0 exactly."
+  lint:
+    {
+      command: "bun run lint",
+      result: "0 errors, 17 warnings (all pre-existing react-refresh/only-export-components)",
+    }
+  format_check:
+    command: "bun run format:check"
+    result: "40 pre-existing offenders, none of them files this lane touched"
+  i18n_gate:
+    command: "bun scripts/qa/i18n-gate.ts"
+    result: pass
+    warnings:
+      W1: { value: 7, baseline: 7, moved: false }
+      W2: { value: 7, baseline: 7, moved: false }
+      W3: { value: 260, baseline_before: 262, baseline_after: 260, moved: true }
+      W4: { value: 88, baseline: 88, moved: false }
+    baseline_move_reported: >
+      W3 fell by exactly 2. `/fantasy/players/$playerId` used to hardcode the
+      English literals "DGW" and "BGW"; the Calendrier tab now renders
+      `fantasy.fixtures.double` and `fantasy.fixtures.blank`, which were already
+      translated in both languages and referenced by nothing. The gate's own
+      documentation requires a count that falls to be lowered in the same commit,
+      with the reason recorded; both are done in scripts/qa/i18n-gate.ts.
+      Every other new key is referenced by the screen that added it, so it does
+      not move W3. W4 held at 88: the new copy is written as
+      `cond ? t("a") : t("b")`, and the eight dynamic call sites these files
+      already had are all still present.
+  build: { command: "bun run build", result: pass }
+
+design_divergence_meter:
+  command: "bun scripts/qa/design-divergence.ts"
+  lane: { before: 387, after: 0 }
+  repository: { before: 1534, after: 1147 }
+  note: "All 13 owned files measure 0. The repository delta is exactly the lane's own -387; nothing outside moved."
+
+seven_fixture_assertion:
+  status: PASS
+  what_was_asserted: >
+    /fantasy/fixtures renders exactly 14 `[data-fdr-fixture]` cells in the GW1
+    column across 14 team rows. Fourteen club-cells is seven fixtures, because
+    the grid gives each fixture one cell per club.
+  combinations: "16 (fr/ar x light/dark x 390/430/768/1440) — 14/14 in every one"
+  fixtures_named:
+    - "Amal Tiznit v Ittihad Tanger"
+    - "CODM Meknès v Difaâ El Jadida"
+    - "CR Khemis Zemamra v Maghreb Fès"
+    - "FUS Rabat v UTS Rabat"
+    - "Hassania Agadir v Kawkab Marrakech"
+    - "Moghreb Tétouan v RSB Berkane"
+    - "Widad Témara v Wydad Casablanca"
+  postponed_match: >
+    FAR Rabat and Raja Casablanca appear in NEITHER the fixture list nor the
+    difficulty grid: the 14 team rows are the 14 other clubs. Both clubs do have
+    players in the pool (31 and 33), and both are correctly offered in the
+    players-screen club filter — the postponement removes their GW1 fixture, not
+    the clubs. A FAR Rabat player's detail page renders its Calendrier tab empty,
+    which is the same fact reaching the same conclusion by a second route.
+  why_it_cannot_regress: >
+    The grid emits one marker per service row, with no padding, no filtering and
+    no count assumption anywhere in the file. A stale frontend assumption cannot
+    reintroduce the match because there is no assumption to go stale.
+  cross_checked_against_source: >
+    The same census was run directly against api.fantasy_fixture_difficulty over
+    plain HTTPS: 14 rows, all gameweek 1, 7 distinct fixtures, FAR and Raja
+    absent. The rendered grid and the RPC agree.
+
+players_list_height:
+  viewport: "390x900, 539 players, no filters applied"
+  before:
+    fr: "37191px"
+    ar: "38544px"
+  after:
+    fr: "3562px"
+    ar: "3562px"
+  reduction: "-90.4% (fr), -90.8% (ar)"
+  mechanism: >
+    A 25-row window with a pager, not a taller viewport and not virtualisation.
+    The height is now bounded by the page size regardless of pool size:
+    "Page 1 / 22" over 539 players. The RPC contract is untouched — the service
+    still fetches all 6 keyset pages exactly as before.
+  at_other_widths: "3562px at 390 and 430; 3611px at 768 and 1440. Identical in fr and ar."
+
+layout:
+  combinations: 128
+  breakdown: "8 routes x fr/ar x light/dark x 390/430/768/1440, production-shaped data"
+  horizontal_page_scroll: 0
+  elements_past_the_viewport: 0
+  method_note: >
+    Overflow was measured from element boxes rather than `scrollWidth`, because
+    `overflow-x: clip` hides overflow from `scrollWidth` entirely. Elements
+    inside a deliberate horizontal scroller (the FDR grid, `UiTable`'s wrapper)
+    are excluded by walking ancestors for `overflow-x: auto|scroll`.
+  signed_in_league_screens:
+    combinations: 12
+    result: "0 horizontal scroll, 0 overflowing elements, 0 tap targets under 44px"
+    note: "/fantasy/leagues, /fantasy/leagues/join and a league detail view, signed in via the mock demo account, fr and ar, 390 and 1440."
+
+standings_scan_at_390:
+  status: FIXED
+  finding: >
+    The rankings table measured 421px inside a 358px wrapper at a 390px
+    viewport, so the Total column — the one people came for — sat off-screen
+    behind a sideways scroll. The name column was content-sized, which also meant
+    its `truncate` never engaged.
+  fix: "`table-fixed` with header-sized numeric columns on all three standings tables."
+  after: "358px table in a 358px wrapper. Columns: # 40 / manager 182 / J. 44 / Total 56 / movement 36."
+
+tap_targets:
+  floor: "44px (--ui-tap-min)"
+  findings: 32
+  distinct_controls: 2
+  detail: >
+    All 32 are the same two controls seen once per combination: GameweekSelector's
+    prev/next buttons at 36x36 on /fantasy/top-players. That component is
+    sibling-owned and on this lane's do-not-touch list; raised as KIT-1. Every
+    control in this lane's own files clears the floor, including the FDR sort
+    buttons (18px before), the player-detail tabs (40px before), the players
+    list's watch and compare buttons, and the pagers.
+
+contrast:
+  requirement: ">= 4.5:1, measured from rasterised sRGB"
+  method: >
+    Two passes per page: the page as it renders, then the same page with every
+    glyph painted transparent. A pixel that differs between them is a glyph
+    pixel, and the second pass at that coordinate is the true background behind
+    it — compositing, gradients and overlapping sticky columns included. The
+    reported figure is the 95th percentile of the per-pixel ratios inside each
+    element, which lands on the glyph core and discards the antialiased ramp.
+    A first attempt that took percentiles of the whole element crop was
+    discarded as unsound: a three-letter chip has too few glyph pixels to reach
+    any percentile of its own box, and a sticky column's box overlaps whatever
+    is scrolled underneath it. That method reported 30 "failures" which the
+    glyph-diff method shows are all comfortably passing.
+  elements_measured: 586
+  failures: 2
+  detail: >
+    Both failures are the same control in the two dark-mode passes:
+    GameweekSelector's gameweek number, measured 1.12:1 — foreground rgb(5,25,58)
+    on rgb(27,36,51). It is `text-[color:var(--fpl-ink-deep)]`, i.e.
+    `--ui-ink-deep` used as a foreground, which is the BG-0083 defect exactly.
+    Sibling-owned; raised as KIT-1, not worked around locally.
+  worst_in_lane_owned_files:
+    players: { fr_light: 5.86, fr_dark: 7.22, ar_light: 5.75, ar_dark: 7.28 }
+    player_detail: { fr_light: 5.86, fr_dark: 7.28, ar_light: 5.75, ar_dark: 7.28 }
+    fixtures: { fr_light: 5.25, fr_dark: 5.90, ar_light: 5.25, ar_dark: 5.90 }
+    rankings: { fr_light: 5.63, fr_dark: 6.75, ar_light: 5.75, ar_dark: 7.28 }
+    top_players: { fr_light: 5.30, ar_light: 5.75 }
+
+arabic:
+  document_direction: "rtl confirmed on every ar pass"
+  column_order: >
+    Genuinely mirrored, not visually faked: in the Arabic rankings table the rank
+    column sits at the right edge and the total at the left, with movement
+    furthest left. The mirroring comes from the document direction over logical
+    properties; no `dir`-conditional layout code exists in the lane.
+  latin_name_truncation:
+    status: FIXED
+    finding: >
+      A Latin team or manager name inside an RTL table was clipped at the START
+      of the string — "…iadi de Tanger" instead of "Ittihad Riadi d…". `truncate`
+      places the ellipsis at the end of the ELEMENT's direction, and the element
+      inherited `rtl` from the table.
+    fix: >
+      `dir="auto"` on the truncating name cell itself — not on the row and not on
+      the table, both of which must stay RTL. 20 name cells across rankings, both
+      league tables, the podium, the players list, the player detail and
+      top-players. `<bdi>` was removed where it sat inside the truncating element,
+      since it isolated the text but left the clipping edge wrong; it is kept
+      where a name sits inline within a sentence.
+    evidence:
+      method: >
+        A/B on one live page: the "before" is the shipped page with that single
+        attribute stripped back off, so the two differ by exactly the change.
+        A long Latin name and a long Arabic name were placed in the same table at
+        390px, as requested.
+      before:
+        - "'Ittihad Riadi de Tanger' — dir absent, computed direction rtl, clipped at start-of-string (WRONG)"
+        - "'اتحاد طنجة الرياضي المغربي' — computed direction rtl, correct"
+      after:
+        - "'Ittihad Riadi de Tanger' — dir=auto, computed direction ltr, clipped at end-of-string (CORRECT)"
+        - "'اتحاد طنجة الرياضي المغربي' — dir=auto, computed direction rtl, still correct"
+      screenshots:
+        - "shots/rtl-rankings-BEFORE-ar-390.png — rows 1-2 read '…iadi de Tanger'"
+        - "shots/rtl-rankings-AFTER-ar-390.png — the same rows read 'Ittihad Riadi d…'"
+      screenshot_note: >
+        Both images are the same table: only the two probed rows are reverted in
+        the BEFORE shot, so the defect and the fix sit side by side in one frame.
+
+empty_states:
+  rankings_before_first_gameweek:
+    status: "VERIFIED, not regressed"
+    result: >
+      Renders the empty state — no spinner, no error — for an anonymous caller
+      and with a squad, in fr and ar, light and dark, at all four widths. The
+      page is fully rendered for anonymous visitors.
+    hardened: >
+      A real defect was found and fixed during verification: `UiStatePanel`
+      falls back to `t("state.empty")` — "Aucun contenu disponible." — whenever a
+      caller omits `title`, so the generic string this task exists to remove was
+      still reaching the screen underneath the specific copy. Ten empty states
+      across the lane now name what is empty and say when it will fill.
+    error_vs_empty: >
+      Confirmed distinct: when `api.fantasy_overall_standings` genuinely 404s the
+      screen renders the error state with a retry, not the empty state.
+  top_players_journee_1:
+    status: FIXED
+    before: "'Aucun contenu disponible.' in every state"
+    after: >
+      "Journée 1 pas encore comptabilisée / Le top 5 de la journée 1 sera publié
+      dès que ses matchs auront été joués et les points attribués.", with the
+      gameweek selector still on screen so a reader can move to a scored one.
+  league_detail: "'Pas encore de données. Le classement de cette ligue apparaîtra après la première journée comptabilisée.'"
+
+unknown_versus_zero:
+  status: VERIFIED
+  detail: >
+    On /fantasy/players/$playerId with production data the overview reads
+    "POINTS TOTAUX 0 / FORME – / SÉLECTION 0% / XPTS –": a real zero renders 0,
+    an unknown renders the en dash from `fantasy.stat.none`, and the two sit
+    beside each other in the same row. The players list shows 25 en dashes on a
+    25-row page — one per row's unknown form — while points render as real
+    zeros. `compareForm` sorts nulls below every real number in both sort
+    directions.
+
+timezone:
+  status: VERIFIED
+  detail: >
+    Every formatter in the lane passes `timeZone: MATCH_TIME_ZONE` imported from
+    src/lib/match-kickoff.ts; the two string literals "Africa/Casablanca" that
+    were inlined in this lane are gone. The GW1 column reads "24–27 sept." in
+    French and "24–27 شتنبر" in Arabic from kickoffs spanning
+    2026-09-24T20:00Z to 2026-09-27T18:00Z, and the league "last updated" line
+    renders "lundi 21 sept., 20:38" / "الاثنين، 21 شتنبر، 20:39".
+
+coordinator_items:
+  - item: "21-vs-16 club filter"
+    status: FIXED
+    evidence: "The filter renders 17 chips — 'Tous' plus the 16 clubs with players. The five relegated sides are not offered."
+  - item: "Club filter cannot be deselected"
+    status: FIXED
+    evidence: "Tapping a selected club or position chip clears it; the active sort chip flips direction."
+  - item: "Wydad renders as 'WCA' everywhere"
+    status: "LAYOUT MADE SAFE, data untouched"
+    evidence: >
+      The grid row now reads 'WCA Wydad Casablanca' instead of 'WCA WCA', via a
+      general do-not-print-the-same-string-twice rule, not a special case. The
+      underlying `short_name` row is left to the separate data fix.
+  - item: "Difficulty grid header shows only '27 sept.'"
+    status: FIXED
+    evidence: "Reads '24–27 sept.' / '24–27 شتنبر', locale-formatted, MATCH_TIME_ZONE-pinned."
+  - item: "No price filter on /fantasy/players"
+    status: FIXED
+    evidence: "A `UiSelect` price-max filter with bands derived from the pool's own 4.7–12.0 range."
+  - item: "No asc/desc toggle on the sort control"
+    status: FIXED
+    evidence: "Tapping the active sort flips direction; the chip carries an arrow and an sr-only description of the current order."
+  - item: "React #418 on /fantasy/players/$playerId"
+    status: FIXED
+    evidence: >
+      Root cause identified as the missing SSR query bridge in src/router.tsx —
+      the loader warms a cache that only exists server-side, so the server
+      rendered a populated page and the client's first render rendered the
+      loading state. Fixed by carrying the player through router loader data
+      (which IS serialized) as `initialData`, making both first renders
+      identical. No page errors in any of the 32 player-detail passes.
+  - item: "Do club ids resolve on the Supabase path?"
+    status: ANSWERED
+    evidence: >
+      Yes, perfectly: 0 of 16 pool `footballTeamId` values and 0 of 14
+      `FixtureDifficulty.clubId`/`opponentClubId` values fail to match
+      `football_team_catalog`. The mismatch is mock-only. The real production
+      gaps are null colours (all 21) and null `code` (13 of 21), which is why
+      club identity in this lane leans on the crest and the name.
+
+outstanding:
+  - "GameweekSelector: 36px controls and a 1.12:1 dark foreground. Sibling-owned; KIT-1."
+  - "'JOURNÉE JOURNÉE 1' on top-players until the pitch lane's `showLabel` default reaches this branch."
+  - "UiSegmented tone=onGradient idle-tab contrast in dark — acknowledged, kit fix pending, deliberately not worked around."
+  - "League invite code length: a backend change is recommended (BE-1)."

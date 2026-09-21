@@ -4,8 +4,22 @@ import { useState } from "react";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
-import { FplButton, FplHeader, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import {
+  ui,
+  UiButton,
+  UiEmptyState,
+  UiHeader,
+  UiInput,
+  UiSegmented,
+  UiSkeleton,
+  UiTable,
+  UiTBody,
+  UiTD,
+  UiTH,
+  UiTHead,
+  UiTR,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -16,14 +30,13 @@ export const Route = createFileRoute("/fantasy/leagues/join")({
 });
 
 /**
- * FPL-020/021/022/023 "Join a League": Back / Leagues / Done header, the
- * Private / Public control, code entry with the invalid-code state, the
- * public Classic / Head-to-Head toggle, and the "Players to be added after
- * the next points update" list shown right after joining.
+ * "Join a League": the Private / Public control, code entry with its invalid
+ * state, the public Classic / Head-to-Head toggle, and the members list shown
+ * right after joining.
  */
 function JoinLeaguePage() {
   return (
-    <FantasyFrame background="white">
+    <FantasyFrame>
       <JoinLeagueBody />
     </FantasyFrame>
   );
@@ -87,43 +100,57 @@ function JoinLeagueBody() {
   };
 
   if (joined) {
+    const members = membersQ.data ?? [];
     return (
       <>
-        <FplHeader title="" onBack={() => setJoined(null)} />
-        <p className="px-4 pt-3 text-center text-[13px] text-foreground">
-          {t("fpl.last_updated")}: —
-        </p>
-        <h1 className="px-4 pt-3 text-[20px] font-extrabold text-foreground">
-          {t("fpl.players_to_be_added")}
-        </h1>
-        <table className="mt-3 w-full">
-          <thead>
-            <tr className="text-[13px] text-[color:var(--fpl-grey-text)]">
-              <th className="px-4 py-2 text-start font-semibold">{t("fpl.team")}</th>
-              <th className="px-4 py-2 text-start font-semibold">{t("fpl.manager")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(membersQ.data ?? []).map((row) => (
-              <tr key={row.managerId} className="border-t border-[color:var(--fpl-grey)]">
-                <td className="px-4 py-3 text-[15px] text-foreground">{row.teamName}</td>
-                <td className="px-4 py-3 text-[15px] text-foreground">{row.managerName || "—"}</td>
-              </tr>
-            ))}
-            {membersQ.isPending ? (
-              <tr>
-                <td
-                  colSpan={2}
-                  className="px-4 py-6 text-center text-[13px] text-[color:var(--fpl-grey-text)]"
-                >
-                  {t("state.loading")}
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        <UiHeader title={joined.name} tone="gradient" onBack={() => setJoined(null)} />
+        <div className={cn("px-4 pt-3", ui.surface.page)}>
+          <p className={cn("text-center", ui.text.meta, ui.tone.muted)}>
+            {t("fpl.last_updated")}: {t("fantasy.stat.none")}
+          </p>
+          <h2 className={cn("pt-3", ui.text.section, ui.tone.default)}>
+            {t("fpl.players_to_be_added")}
+          </h2>
+        </div>
+
+        {membersQ.isPending ? (
+          <div role="status" aria-label={t("state.loading")} className="m-4 space-y-2">
+            <UiSkeleton className="h-10" />
+            <UiSkeleton className="h-10" />
+            <UiSkeleton className="h-10" />
+          </div>
+        ) : members.length === 0 ? (
+          <div className="p-4">
+            <UiEmptyState
+              title={t("fantasy.leagues.no_members_title")}
+              body={t("fantasy.leagues.no_members")}
+            />
+          </div>
+        ) : (
+          <UiTable caption={t("fpl.players_to_be_added")} className="mt-3">
+            <UiTHead>
+              <UiTR>
+                <UiTH>{t("fpl.team")}</UiTH>
+                <UiTH>{t("fpl.manager")}</UiTH>
+              </UiTR>
+            </UiTHead>
+            <UiTBody>
+              {members.map((row) => (
+                <UiTR key={row.managerId}>
+                  <UiTD strong dir="auto">
+                    {row.teamName}
+                  </UiTD>
+                  <UiTD dir="auto" className={ui.tone.muted}>
+                    {row.managerName || t("fantasy.stat.none")}
+                  </UiTD>
+                </UiTR>
+              ))}
+            </UiTBody>
+          </UiTable>
+        )}
+
         <div className="px-4 pt-4">
-          <FplButton
+          <UiButton
             variant="ink"
             onClick={() =>
               void nav({
@@ -133,7 +160,7 @@ function JoinLeagueBody() {
             }
           >
             {t("fpl.done")}
-          </FplButton>
+          </UiButton>
         </div>
       </>
     );
@@ -141,24 +168,32 @@ function JoinLeagueBody() {
 
   return (
     <>
-      <FplHeader
+      <UiHeader
         title={t("fpl.leagues")}
+        tone="gradient"
         backTo="/fantasy/leagues"
-        right={
+        trailing={
           <Link
             to="/fantasy/leagues"
-            className="text-[15px] font-semibold text-[color:var(--fpl-ink)]"
+            className={cn(
+              "inline-flex items-center px-2",
+              "min-h-[var(--ui-tap-min)]",
+              ui.text.body,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.radius.control,
+              ui.focus,
+            )}
           >
             {t("fpl.done")}
           </Link>
         }
       >
-        <h1 className="mt-3 text-center text-[30px] font-black text-[color:var(--fpl-ink)]">
-          {t("fpl.join_a_league")}
-        </h1>
-        <FplSegmented
+        <p className={cn("mt-3 text-center", ui.text.title)}>{t("fpl.join_a_league")}</p>
+        <UiSegmented
           className="mt-3"
+          tone="onGradient"
           value={tab}
+          label={t("fpl.join_a_league")}
           onChange={(v) => {
             setTab(v);
             setInvalid(false);
@@ -168,7 +203,8 @@ function JoinLeagueBody() {
             { value: "public", label: t("fpl.public") },
           ]}
         />
-      </FplHeader>
+      </UiHeader>
+
       <FantasyScreenGate state={screen} next="/fantasy/leagues/join">
         {tab === "private" ? (
           <form
@@ -178,74 +214,80 @@ function JoinLeagueBody() {
               void joinPrivate();
             }}
           >
-            {invalid ? (
-              <p
-                role="alert"
-                className="text-center text-[15px] font-semibold text-[color:var(--fpl-pink)]"
-              >
-                {t("fpl.invalid_code")}
-              </p>
-            ) : (
+            {invalid ? null : (
               <>
-                <p className="text-center text-[15px] font-extrabold text-foreground">
+                <p className={cn("text-center", ui.text.bodyStrong, ui.tone.default)}>
                   {t("fpl.private_code_help")}
                 </p>
-                <p className="mt-3 text-center text-[14px] text-foreground">
+                <p className={cn("mt-3 text-center", ui.text.secondary, ui.tone.muted)}>
                   {t("fpl.create_own_league")}
                 </p>
               </>
             )}
-            <input
+            {/* The code is a hex literal: read and typed left-to-right in both
+                languages, and never letter-spaced. */}
+            <UiInput
+              className="mt-8"
+              dir="ltr"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={t("fpl.private_league_code")}
               aria-label={t("fpl.private_league_code")}
-              className={cn(
-                "mt-8 h-12 w-full border-b-2 bg-[color:var(--fpl-grey)] px-3 text-center text-[16px] text-foreground outline-none",
-                invalid ? "border-[color:var(--fpl-pink)]" : "border-[color:var(--fpl-ink)]",
-              )}
+              error={invalid ? t("fpl.invalid_code") : undefined}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              fieldClassName={cn("text-center font-mono", "[font-variant-numeric:tabular-nums]")}
             />
-            <FplButton type="submit" className="mt-3" disabled={!code.trim() || busy}>
+            <UiButton type="submit" className="mt-3" disabled={!code.trim() || busy}>
               {busy ? t("fpl.saving") : t("fpl.join_a_league")}
-            </FplButton>
+            </UiButton>
           </form>
         ) : (
           <div className="px-4 pt-6">
-            <p className="text-center text-[15px] text-foreground">{t("fpl.public_help")}</p>
-            <p className="mt-3 text-center text-[15px] text-foreground">{t("fpl.public_help2")}</p>
-            <p className="mt-3 text-center text-[14px] text-foreground">{t("fpl.classic_help")}</p>
-            <FplSegmented
-              tone="onLight"
+            <p className={cn("text-center", ui.text.body, ui.tone.default)}>
+              {t("fpl.public_help")}
+            </p>
+            <p className={cn("mt-3 text-center", ui.text.body, ui.tone.default)}>
+              {t("fpl.public_help2")}
+            </p>
+            <p className={cn("mt-3 text-center", ui.text.secondary, ui.tone.muted)}>
+              {t("fpl.classic_help")}
+            </p>
+            <UiSegmented
               className="mt-6"
               value={scoring}
               onChange={setScoring}
+              label={t("fpl.classic")}
               options={[
                 { value: "classic", label: t("fpl.classic") },
                 { value: "h2h", label: t("fpl.head_to_head"), disabled: true },
               ]}
             />
-            <p className="mt-1 text-center text-[11px] text-[color:var(--fpl-grey-text)]">
+            <p className={cn("mt-1 text-center", ui.text.micro, ui.tone.muted)}>
               {t("fpl.head_to_head_help")}
             </p>
             {invalid ? (
               <p
                 role="alert"
-                className="mt-3 text-center text-[14px] font-semibold text-[color:var(--fpl-pink)]"
+                className={cn("mt-3 text-center", ui.text.secondary, ui.tone.negative)}
               >
                 {t("state.error")}
               </p>
             ) : null}
-            <FplButton
+            <UiButton
               className="mt-4"
               onClick={() => void joinPublic()}
               disabled={busy || publicQ.isPending || (publicQ.data ?? []).length === 0}
             >
               {busy ? t("fpl.saving") : t("fpl.join_a_league")}
-            </FplButton>
+            </UiButton>
             {(publicQ.data ?? []).length === 0 && !publicQ.isPending ? (
-              <p className="mt-2 text-center text-[13px] text-[color:var(--fpl-grey-text)]">
-                {t("fpl.no_leagues")}
-              </p>
+              <UiEmptyState
+                className="mt-3 shadow-none"
+                title={t("fantasy.leagues.empty_title")}
+                body={t("fpl.no_leagues")}
+              />
             ) : null}
           </div>
         )}

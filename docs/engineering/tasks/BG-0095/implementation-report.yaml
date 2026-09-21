@@ -1,0 +1,397 @@
+task_id: BG-0095
+lane: "D — leagues, rankings, fixtures/FDR and the player screens"
+builder_type: Builder-Frontend
+branch: bg-0095-leagues-players
+base: "origin/chief/launch-fixes-3"
+
+summary: >
+  The eight Fantasy routes and five components in this lane are converted onto
+  the V2 UI kit. Every one of them now measures zero on the design-divergence
+  meter, down from 387 for the lane. Seven live defects are fixed along the way:
+  the unpaginated 539-row player list, the useless "Aucun contenu disponible"
+  on top-players, a club filter offering clubs that cannot return a player, a
+  filter that could not be deselected, a difficulty-grid header that named a
+  four-day gameweek after one of its days, a React #418 hydration failure that
+  fired on every single load of the player detail route, and Latin names
+  truncating from the wrong end inside Arabic tables. League standings stayed
+  tables throughout, as instructed.
+
+design_divergence_meter:
+  command: "bun scripts/qa/design-divergence.ts"
+  lane_total:
+    before: 387
+    after: 0
+  repository_total:
+    before: 1534
+    after: 1147
+    note: >
+      The repository delta is exactly -387, i.e. this lane's own contribution and
+      nothing else. No file outside the lane moved.
+  per_file:
+    - { file: "src/routes/fantasy.top-players.tsx", before: 85, after: 0 }
+    - { file: "src/routes/fantasy.players.tsx", before: 52, after: 0 }
+    - { file: "src/routes/fantasy.players.$playerId.tsx", before: 45, after: 0 }
+    - { file: "src/components/fantasy/MyRankCard.tsx", before: 44, after: 0 }
+    - { file: "src/routes/fantasy.rankings.tsx", before: 35, after: 0 }
+    - { file: "src/routes/fantasy.fixtures.tsx", before: 32, after: 0 }
+    - { file: "src/components/fantasy/LeagueTable.tsx", before: 22, after: 0 }
+    - { file: "src/components/fantasy/RankingsPodium.tsx", before: 21, after: 0 }
+    - { file: "src/routes/fantasy.leagues.tsx", before: 17, after: 0 }
+    - { file: "src/routes/fantasy.leagues.join.tsx", before: 12, after: 0 }
+    - { file: "src/routes/fantasy.leagues.$leagueId.tsx", before: 10, after: 0 }
+    - { file: "src/components/fantasy/DifficultyBadge.tsx", before: 10, after: 0 }
+    - { file: "src/components/fantasy/RankChangeIndicator.tsx", before: 2, after: 0 }
+    - { file: "src/components/fantasy/club-identity.ts", before: 0, after: 0, note: "new file" }
+
+changes:
+  - file: src/routes/fantasy.players.tsx
+    description: >
+      The highest-debt file in the product (40 `--fpl-*`). Converted to the kit
+      and given the three things it was missing.
+
+      PAGINATION. The pool is 539 players and every one of them used to be in
+      the document: 37,191px at a 390px viewport. The list now renders a
+      25-row window with a pager, identical in behaviour to the one on
+      /fantasy/rankings, plus an "N joueurs sur M" line. The data contract is
+      untouched — `fantasyService.getPlayers()` still reads the pinned
+      `api.fantasy_player_pool` keyset pages exactly as before, 6 pages of 100;
+      this is a presentational window over the result it already returned. Any
+      filter or sort change resets to page 1, and the page index is clamped so
+      a stale page on a board that just shrank cannot render empty.
+
+      A CLUB FILTER THAT CAN RETURN SOMETHING. The team catalogue has 21 clubs;
+      16 have players in the pool. The chips are now derived from the pool
+      itself rather than the catalogue, so the five relegated sides that always
+      yielded zero rows are simply not offered. Derived, not configured: the
+      filter cannot outrun the data whatever the catalogue later says.
+
+      FILTERS THAT UNDO WHERE THEY WERE SET. Tapping a selected club or position
+      chip clears it (previously only "Tous" did). Tapping the active sort flips
+      its direction and the chip shows an arrow for the current one, so "Prix"
+      twice reverses. A price filter was added — `UiSelect` over bands derived
+      from the pool's own min/max, so the options always bracket real values.
+
+      Unknown stats stay unknown: form renders `fantasy.stat.none` when null and
+      the number otherwise, including a real 0. `compareForm` now sorts nulls
+      last in BOTH directions, not just descending.
+  - file: src/routes/fantasy.players.$playerId.tsx
+    description: >
+      Converted to the kit, and the React #418 hydration failure fixed — the
+      only erroring route in 72 production loads.
+
+      CAUSE. `src/router.tsx` builds a fresh `QueryClient` per side and wires no
+      SSR dehydrate/hydrate bridge, so the cache this route's loader warms
+      exists only on the server. The server therefore rendered a populated
+      player page while the browser's first render — same component, empty cache
+      — rendered the loading state. Two different trees for the same HTML, so
+      React discarded the server tree, which is how a page silently loses its
+      server-rendered markup. On this route that markup is the point: the
+      `head()` block exists to make shared player links resolve.
+
+      FIX. Router loader data, unlike query state, IS serialized to the client.
+      The loader now returns the whole player instead of just its name, and the
+      component passes it as `initialData`, so both first renders are identical.
+      The page also paints from the server payload instead of refetching it.
+      A second contributor is gone too: the club list is no longer a
+      precondition for rendering the player, so the server-rendered markup for a
+      shared link is the player rather than an empty state.
+
+      Also: the five tabs no longer sit at 40px under a segmented control that
+      cannot fit five French labels at 390px — they are a scrolling `role=tablist`
+      at the 44px floor. `expectedPoints` renders `fantasy.stat.none` instead of
+      a hardcoded em dash, and the double/blank gameweek markers use the
+      translated `fantasy.fixtures.double` / `.blank` instead of literal "DGW" /
+      "BGW".
+  - file: src/routes/fantasy.top-players.tsx
+    description: >
+      36 `--fpl-*` and 23 legacy classes converted, and the live defect fixed.
+
+      For Journée 1 this screen said "Aucun contenu disponible." in every state.
+      `api.fantasy_top_players` returns `[]` for GW1 — verified directly against
+      production — because a top five cannot exist for a gameweek that has not
+      been played, which is exactly where the season is. The empty branch now
+      names the gameweek and says when the five will appear, and the gameweek
+      selector stays on screen so a reader can move to one that has results.
+
+      Also removed the hardcoded `?? 14` fallback gameweek, which asked the
+      backend for a gameweek this season does not have whenever the
+      current-gameweek read had not landed; the fallback chain is now the
+      selection, then the season's current gameweek, then the first gameweek the
+      backend actually reports. `availableGwsQ` joined the loading gate so the
+      selector is never rendered with bogus bounds.
+
+      Gone: `bg-white`, `text-white`, `bg-white/15`, `border-white/30`,
+      `text-white/70`, `shadow-lg`, the Tailwind type ramp, and the bare
+      `tracking-widest` runs (8 of them).
+  - file: src/routes/fantasy.fixtures.tsx
+    description: >
+      The difficulty grid, converted, with two structural guarantees.
+
+      It cannot invent or drop a fixture: every cell is rendered from a row the
+      service returned, one `<div data-fdr-fixture>` per row, with no padding, no
+      filtering and no "a gameweek has N matches" assumption anywhere. The
+      marker exists so the count is assertable from outside the app.
+
+      It cannot name a four-day gameweek after one of its days. The header read
+      "27 sept." for a GW1 that spans 24–27 September, because `kickoffOf` took
+      whichever row came first out of the array. It now renders the real span
+      via `Intl.DateTimeFormat.formatRange` over the gameweek's first and last
+      kickoff, pinned to `MATCH_TIME_ZONE`, with a both-ends fallback if
+      `formatRange` is unavailable. Reads "24–27 sept." in French and
+      "24–27 شتنبر" in Arabic.
+
+      The FDR cells use `UiDifficultyCell`, so steps 4 and 5 no longer pair their
+      fill with a literal `text-white`; each step gets `--ui-on-fdr-N`. The two
+      sort controls were 18px tall and are now on the 44px floor with
+      `aria-pressed`. The opponent cell carries the club's full name and venue
+      to a screen reader and on hover, because `code` is null for 13 of the 21
+      clubs and three letters cannot carry club identity alone.
+  - file: src/routes/fantasy.rankings.tsx
+    description: >
+      Converted, with the launch-blocking empty state preserved and hardened.
+
+      Before any gameweek has scored the board legitimately returns an empty page
+      and that is an EMPTY STATE — not a spinner, not an error. The branch now
+      separates three things that were collapsing together: a failed fetch
+      (`UiErrorState`), a fetch in flight (`UiStatePanel kind="loading"`), and a
+      successful fetch with nothing in it (`UiEmptyState`). It still distinguishes
+      "nothing matches your search" from "nobody is ranked yet", and it no longer
+      falls through to the generic `state.empty` string, which `UiStatePanel`
+      supplies whenever a caller omits `title` — that is how "Aucun contenu
+      disponible." was still reaching this screen after the copy was written.
+
+      The list is a `UiTable` with `table-fixed`. Without fixed layout the name
+      column takes whatever it wants, the `truncate` never engages and the table
+      measured 421px inside a 358px wrapper at a 390px viewport — the total
+      column, the one people came for, sat off-screen behind a sideways scroll.
+      It now measures exactly 358px.
+
+      Fixed a mislabel carried over from the original: the fourth column always
+      renders `totalScore`, but its header switched to "Points de la journée"
+      under the gameweek sort, naming the column after the wrong number. Both
+      figures are always shown; the sort changes the order, not the columns.
+  - file: src/routes/fantasy.leagues.tsx
+    description: >
+      Converted. The league lists stay tables. The real work is `InviteCode`:
+      the backend mints a 32-character hex string
+      (`0035D6D8995B37EA0F05E2331C21FC0F`) that nobody can read down a phone and
+      that wraps mid-token at 390px. It is now grouped in fours, set monospaced
+      at tabular width so 0/O and 1/I are distinguishable, selectable
+      (`user-select: all`), and sits beside a copy control — because copying is
+      what anyone sharing it will actually do. `dir="ltr"` even in Arabic, since
+      a hex literal is transcribed left to right in both languages. The grouping
+      is visual only: `aria-label` and the clipboard both carry the unbroken
+      string.
+  - file: src/routes/fantasy.leagues.$leagueId.tsx
+    description: >
+      Standings as a `UiTable` on the shape the design system's worked example
+      specifies — rank / team / GW / total / movement, numeric columns tabular
+      and inline-end aligned, `table-fixed` so it scans at 390px. Empty and error
+      states are now distinct and both named. The "last updated" line passes
+      `timeZone: MATCH_TIME_ZONE` from `src/lib/match-kickoff.ts` rather than the
+      string literal it used to inline.
+  - file: src/routes/fantasy.leagues.join.tsx
+    description: >
+      Converted. The code field is `dir="ltr"`, monospaced, tabular,
+      `autoCapitalize="characters"`, `spellCheck={false}`, and its invalid state
+      is now the field's own `error` (which wires `aria-invalid` and
+      `aria-describedby`) instead of a paragraph that replaced the help text.
+  - file: src/components/fantasy/LeagueTable.tsx
+    description: >
+      Rebuilt on the kit's table primitives. Gone: the glass surface, the
+      `rounded-2xl`, and the amber/slate/orange medal palette — three hardcoded
+      colour families with no dark counterpart. `table-fixed`, `UiRankMovement`
+      with translated labels, and `UiEmptyState` for the two empty cases.
+      No leading magnifier on the search field: `UiInput` has no adornment slot
+      and faking one with a negative margin breaks as soon as the field grows.
+      Recorded as a kit request.
+  - file: src/components/fantasy/MyRankCard.tsx
+    description: >
+      All four states converted. The literal `bg-white` is gone from every
+      branch — on a themed page that is an un-themed surface, and it is the
+      1.09:1 measurement this work exists to remove. Figures are `UiStatBlock`,
+      so they are tabular and line up with the table below. `UiCard` takes no
+      arbitrary DOM props, so the `data-testid` hooks and live-region roles sit
+      on a style-free wrapper rather than being dropped.
+  - file: src/components/fantasy/RankingsPodium.tsx
+    description: >
+      Restraint over decoration, as instructed. The step heights and the crown
+      stay because they are what makes a podium readable; everything else is
+      ordinary kit cards and a `UiStatBlock`. Gone: `bg-white/70` over a
+      gradient, the `rounded-xl` outside the radius set, and the first-place
+      action-gradient fill that forced `--fpl-ink-deep` as a foreground.
+  - file: src/components/fantasy/RankChangeIndicator.tsx
+    description: >
+      Kept (it carries the numeric delta that `UiRankMovement` does not) and
+      converted. It no longer spells its own green as a raw `oklch(...)`, and it
+      no longer announces the English `"change -3"` — direction is a translated
+      word, magnitude a localized numeral, and the glyph carries the same
+      information for a reader who cannot resolve the colour.
+  - file: src/components/fantasy/DifficultyBadge.tsx
+    description: >
+      Now a thin wrapper over `UiDifficultyCell`. Public props unchanged, plus an
+      optional `title` for the unabbreviated meaning. Steps 4 and 5 no longer
+      pair their fill with a literal `text-white`, and the badge clears the 44px
+      floor because the kit sizes from `--ui-tap-min` rather than `min-h-9`.
+  - file: src/components/fantasy/club-identity.ts
+    description: >
+      New, and the only file added. Two helpers shared by the fixtures grid and
+      the player screens, both answering the same question from production data:
+
+      `clubLabel` prints the short name unless it is the very token the crest
+      beside it already shows. Wydad Casablanca is the one club whose
+      `short_name` is the string "WCA", so the grid read "WCA | WCA" where its
+      neighbours read "AMA | Amal Tiznit". This is a rule about not printing the
+      same string twice, not a special case for one club, so the column stays
+      readable whichever way the underlying data is corrected.
+
+      `clubToken` starts from the crest's own token so a cell and a crest never
+      disagree, and repairs the one way it comes out broken: with `code` null for
+      13 of 21 clubs the fallback is `shortName.slice(0, 3)`, which yields
+      `"JS "` — trailing space and all — for JS Soualem. Anything under three
+      usable characters is rebuilt from the name by whole words.
+  - file: src/i18n/dictionaries.ts
+    description: >
+      29 new keys, identical placeholder sets in fr and ar, every one referenced
+      by the screen that added it. They cover the players list's new controls and
+      empty states, the top-players "not scored yet" copy, the league invite-code
+      help and empty states, and the three rank-movement directions that
+      `UiRankMovement` requires as translated labels.
+  - file: scripts/qa/i18n-gate.ts
+    description: >
+      W3 baseline lowered 262 -> 260, with the reason recorded inline as the
+      gate's own documentation requires. Exactly two previously-dead keys came
+      back into use: `/fantasy/players/$playerId` used to mark a double or blank
+      gameweek with the literal English "DGW" and "BGW" hardcoded in the JSX, and
+      the Calendrier tab now renders `fantasy.fixtures.double` and
+      `fantasy.fixtures.blank`, which were already translated in both languages
+      and referenced by nothing. W1, W2 and W4 are unchanged.
+
+rules_observed:
+  presentation_only: >
+    No service, RPC or contract was touched. `api.fantasy_player_pool` keyset
+    pagination, `api.fantasy_league_standings`, `selectRankingsPage`,
+    `selectMyRankState` and `selectTeamPresence` are all called exactly as
+    before. The players list paginates the array the service already returned;
+    it does not page the RPC. The one loader signature that changed —
+    `/fantasy/players/$playerId` returning the player instead of its name — is
+    that route's own payload, not a data contract, and it is what fixes #418.
+  logical_properties: "Zero physical-direction utilities added; the meter confirms 0 for every lane file."
+  tracking: "No bare `tracking-*` remains in the lane; the kit supplies the `ltr:`-prefixed ones."
+  gradient_angles: "No `deg` angles. The two gradients used come from `--ui-grad-*` tokens."
+  i18n: 'Every new string has an fr and an ar value with identical placeholder tokens. No `t(cond ? "a" : "b")`; W4 is unchanged at 88.'
+  dark_mode: "`DARK_MODE_ENABLED` untouched. Dark was verified by applying `.dark` manually."
+  history: "No force-push, rebase or squash."
+
+kit_requests:
+  - id: KIT-1
+    severity: blocking-for-another-lane
+    component: GameweekSelector
+    detail: >
+      NOT a kit request — a sibling-owned component (pitch lane) with two defects
+      that surface on /fantasy/top-players, which I own and therefore measured.
+      (a) Its prev/next buttons are 36x36, under the 44px floor: 32 of the 32
+      tap-target findings across my 128 verified combinations are these two
+      buttons. (b) Its value is `text-[color:var(--fpl-ink-deep)]` on
+      `bg-[color:var(--fpl-grey)]`, which measures 1.12:1 in dark — the only
+      contrast failure in 586 measured text elements, and a textbook BG-0083
+      instance (`--ui-ink-deep` is a fill, not a foreground). I did not touch the
+      file; it is on the do-not-touch list.
+  - id: KIT-2
+    severity: minor
+    component: UiInput
+    detail: >
+      No leading-adornment slot, so a search field cannot carry the magnifier the
+      old designs had. I dropped the icon rather than fake one with a negative
+      margin (which breaks as soon as the field grows). `type="search"` plus the
+      label carries the meaning, but an `leading`/`trailing` slot would be better.
+  - id: KIT-3
+    severity: minor
+    component: UiSegmented
+    detail: >
+      No scrollable or wrapping mode. Five French tab labels
+      ("Aperçu | Historique | Calendrier | Statistiques | Actualités") cannot fit
+      a 390px segmented control at the 44px floor, so the player detail tabs are
+      a hand-built scrolling `role=tablist` on kit tokens instead. A `size`/overflow
+      variant for 5+ labels would let that go back to the primitive.
+  - id: KIT-4
+    severity: minor
+    component: UiCard
+    detail: >
+      Takes no arbitrary DOM props (`data-testid`, `role`, `aria-*`) and no
+      `onClick`. Two places needed a style-free wrapper around it
+      (MyRankCard's four states) and one needed a plain button instead of it
+      (top-players' ranked cards). A `...props` passthrough would remove both.
+  - id: KIT-5
+    severity: informational
+    component: UiSegmented tone="onGradient"
+    detail: >
+      Acknowledged from the coordinator: idle-tab contrast fails AA in dark
+      (4.28:1 / 4.38:1). Used in fantasy.leagues.$leagueId.tsx and
+      fantasy.leagues.join.tsx. Deliberately NOT worked around locally, as
+      instructed — waiting on the kit fix.
+
+backend_requests:
+  - id: BE-1
+    subject: "League invite code shape"
+    recommendation: yes
+    detail: >
+      Presentation has done what it can — grouped, monospaced, tabular,
+      selectable, copyable, with the unbroken string on the clipboard and to
+      assistive tech — but a 32-character hex string is still unshareable by
+      voice, and that is a generation problem, not a layout one. Two people
+      cannot exchange `0035D6D8995B37EA0F05E2331C21FC0F` over a phone call or
+      read it off a screen into a chat. It needs a shorter, human-transcribable
+      code: 6-8 characters from an unambiguous alphabet (no 0/O, no 1/I/l),
+      case-insensitive on join, uniqueness scoped to active leagues. The mock
+      store already models the right shape ("BOT-SXUHU"). This is backend logic
+      and out of my scope; flagging it as requested.
+  - id: BE-2
+    subject: "Two RPCs this branch calls do not exist on the production project"
+    detail: >
+      `api.fantasy_player_season_stats` and `api.fantasy_gameweek_summary` both
+      return PGRST202 (function not found) on tkewgajrljbwgwedqsxn, as does
+      `api.fantasy_overall_standings`. The frontend on this branch is ahead of
+      the deployed schema. Not my lane; it is why the browser verification runs
+      against pinned production payloads rather than live egress (see the
+      verification report's method section).
+  - id: BE-3
+    subject: "Club identity data"
+    detail: >
+      Confirming the coordinator's finding from my own capture, since my screens
+      depend on it: `primary_color`/`secondary_color` are null for all 21 active
+      clubs, `code` is null for 13 of 21, the only duplicate code ("OLY", Olympic
+      Safi and Olympique Dcheïra) belongs to two clubs with no players in the
+      pool, and `short_name` equals `code` only for Wydad Casablanca. Club ids
+      themselves resolve perfectly on the Supabase path: 0 of 16 pool
+      `footballTeamId` values and 0 of 14 `FixtureDifficulty.clubId` /
+      `opponentClubId` values fail to match `football_team_catalog`. The
+      identity mismatch the pitch lane sees in mock does NOT exist on Supabase.
+
+not_done:
+  - item: "GameweekSelector's 36px controls and its 1.12:1 dark value"
+    reason: "Sibling-owned, explicitly on the do-not-touch list. Raised as KIT-1."
+  - item: "The duplicated 'JOURNÉE' label on /fantasy/top-players"
+    reason: >
+      The heading is mine, the second label is inside GameweekSelector. The pitch
+      lane's `showLabel` prop (default false) has not reached this branch, so the
+      control still prints its own label and the two read "JOURNÉE JOURNÉE 1"
+      today. Per the coordinator's instruction I kept my heading and did not pass
+      `showLabel` (the prop does not exist here yet); the duplication resolves the
+      moment their change merges. Flagging so it is not mistaken for a regression.
+  - item: "Live end-to-end verification against the production database"
+    reason: >
+      Blocked by BE-2 plus a sandbox egress relay that drops Supabase tunnels
+      mid-exchange under a browser's parallel load. Worked around by pinning the
+      real production payloads and serving them at the browser edge; the method
+      and its fidelity check are in the verification report.
+  - item: "A crest image inside the FDR difficulty square"
+    reason: >
+      The coordinator's rule is crest-first for club identity. The FDR cell is a
+      44px colour-coded square whose fill IS the datum; dropping a crest plate
+      into it would fight the colour that the cell exists to communicate, and
+      every crest plate currently renders the same navy because `primary_color`
+      is null league-wide. The cell keeps a compact token and gains the club's
+      full name and venue via `title` and screen-reader text; the crest is used
+      in the row header, the club filter chips and the player screens, where
+      there is room for it. Happy to be overruled.

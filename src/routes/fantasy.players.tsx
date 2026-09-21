@@ -1,34 +1,63 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Search, Star } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FplHeader } from "@/components/fpl/primitives";
-import { fantasyService } from "@/services/fantasy-runtime";
-import { footballService } from "@/services/football";
-import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { clubLabel, clubToken } from "@/components/fantasy/club-identity";
+import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
-import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
-import { getKitForClub } from "@/lib/kits";
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import {
+  ui,
+  UiButton,
+  UiCard,
+  UiChip,
+  UiEmptyState,
+  UiErrorState,
+  UiHeader,
+  UiInput,
+  UiSelect,
+  UiStatePanel,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { useWatchlist } from "@/lib/fantasy-watchlist";
-import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import type { Position } from "@/types/fantasy";
+import { useWatchlist } from "@/lib/fantasy-watchlist";
+import { getKitForClub } from "@/lib/kits";
+import { cn } from "@/lib/utils";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { footballService } from "@/services/football";
+import type { Club } from "@/types/domain";
+import type { FantasyPlayer, Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
   component: PlayersRoute,
 });
 
 /**
- * FPL "Player stats" reconstructed on the Fantasy design system: the same
- * Back header (`FplHeader`) and phone-width column (`FantasyFrame`) as
- * `fantasy.team.tsx`/`fantasy.points.tsx`, with a filterable player list on
- * white background underneath, in the `SquadListTable` row idiom (jersey,
- * ink name plate, right-aligned numeric columns).
+ * Player stats.
+ *
+ * Three things this screen does that the previous one did not:
+ *
+ * 1. **It paginates.** The pool is 539 players and every one of them used to
+ *    be in the document: 37,191px of it at a 390px viewport, which is roughly
+ *    forty-four screens of scroll and a layout/paint cost paid on every
+ *    keystroke in the search box. The data contract is untouched —
+ *    `fantasyService.getPlayers()` still reads the pinned
+ *    `api.fantasy_player_pool` keyset pages exactly as before — this is a
+ *    presentational window over the result it already returns.
+ *
+ * 2. **It only offers filters that can return something.** The club catalogue
+ *    has 21 clubs; 16 of them have players in the pool. Offering the other
+ *    five produced a chip that always yielded an empty list and no obvious way
+ *    back. The chips are derived from the pool itself, so the filter cannot
+ *    outrun the data whatever the catalogue says.
+ *
+ * 3. **Every filter can be undone where it was set.** Tapping a selected club
+ *    or position chip clears it; tapping the active sort flips its direction.
+ *    Previously only the "All" chip cleared a club, and no sort could be
+ *    reversed.
  */
 function PlayersRoute() {
   const isPlayerDetail = useRouterState({
@@ -44,16 +73,25 @@ function PlayersRoute() {
 }
 
 type SortKey = "points" | "form" | "price" | "ownership";
+type SortDir = "asc" | "desc";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
+const PAGE_SIZE = 25;
 
 /**
- * BG-0071 — descending form, with "no value yet" (`null`) sorted below every
- * real number, including a real 0.0. Explicit branches rather than a sentinel
- * subtraction: today every player's form is null, and a comparator returning
- * NaN for every pair leaves the list in an unspecified order.
+ * BG-0071 — form ordering, with "no value yet" (`null`) always sorted below
+ * every real number, including a real 0.0, in BOTH directions. Explicit
+ * branches rather than a sentinel subtraction: today every player's form is
+ * null, and a comparator returning NaN for every pair leaves the list in an
+ * unspecified order.
  */
-const compareForm = (a: number | null, b: number | null) =>
-  a === null && b === null ? 0 : a === null ? 1 : b === null ? -1 : b - a;
+const compareForm = (a: number | null, b: number | null, dir: SortDir) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return dir === "desc" ? b - a : a - b;
+};
+
+const compareNumber = (a: number, b: number, dir: SortDir) => (dir === "desc" ? b - a : a - b);
 
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
@@ -70,41 +108,99 @@ function PlayersPage() {
   const [q, setQ] = useState("");
   const [pos, setPos] = useState<Position | "">("");
   const [clubId, setClubId] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState<SortKey>("points");
+  const [dir, setDir] = useState<SortDir>("desc");
+  const [page, setPage] = useState(1);
   const [compare, setCompare] = useState<string[]>([]); // up to 2
   const watchlist = useWatchlist();
+
   const toggleCompare = (id: string) => {
     setCompare((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      const next = [...prev, id];
-      return next.slice(-2);
+      return [...prev, id].slice(-2);
     });
   };
 
+  /**
+   * Clicking the active sort flips its direction; clicking another selects it
+   * at the direction that reads as "best first" for that column.
+   */
+  const pickSort = (key: SortKey) => {
+    if (key === sort) {
+      setDir((d) => (d === "desc" ? "asc" : "desc"));
+      return;
+    }
+    setSort(key);
+    setDir("desc");
+  };
+
+  const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
+
+  /**
+   * The clubs the filter may offer: the ones that actually have a player in
+   * the pool, in catalogue order. Derived, not configured, so a relegated club
+   * left `active` in the database can never become a dead-end chip.
+   */
+  const filterClubs = useMemo(() => {
+    const withPlayers = new Set(players.map((p) => p.clubId));
+    return (clubsQ.data ?? []).filter((c) => withPlayers.has(c.id));
+  }, [players, clubsQ.data]);
+
+  /** Price bands, derived from the pool so they always bracket real values. */
+  const priceSteps = useMemo(() => {
+    if (players.length === 0) return [];
+    const prices = players.map((p) => p.price);
+    const lo = Math.ceil(Math.min(...prices));
+    const hi = Math.ceil(Math.max(...prices));
+    const steps: number[] = [];
+    for (let v = lo; v <= hi; v += 1) steps.push(v);
+    return steps;
+  }, [players]);
+
   const list = useMemo(() => {
-    let l = (playersQ.data ?? []).slice();
+    let l = players.slice();
     if (pos) l = l.filter((p) => p.position === pos);
     if (clubId) l = l.filter((p) => p.clubId === clubId);
+    if (maxPrice) l = l.filter((p) => p.price <= Number(maxPrice));
     if (q.trim()) {
       const s = q.toLowerCase();
       l = l.filter((p) => p.name.fr.toLowerCase().includes(s) || p.name.ar.includes(q));
     }
     l.sort((a, b) => {
-      if (sort === "price") return b.price - a.price;
-      // BG-0071: an unknown form sorts last, below a genuine 0.
-      if (sort === "form") return compareForm(a.form, b.form);
-      if (sort === "ownership") return b.ownership - a.ownership;
-      return b.totalPoints - a.totalPoints;
+      if (sort === "price") return compareNumber(a.price, b.price, dir);
+      // BG-0071: an unknown form sorts last, below a genuine 0, either way.
+      if (sort === "form") return compareForm(a.form, b.form, dir);
+      if (sort === "ownership") return compareNumber(a.ownership, b.ownership, dir);
+      return compareNumber(a.totalPoints, b.totalPoints, dir);
     });
     return l;
-  }, [playersQ.data, pos, clubId, q, sort]);
+  }, [players, pos, clubId, maxPrice, q, sort, dir]);
+
+  // Any change to the filters or the ordering puts the reader back on page 1;
+  // holding page 7 of a board that just shrank to two pages shows nothing.
+  useEffect(() => {
+    setPage(1);
+  }, [q, pos, clubId, maxPrice, sort, dir]);
+
+  const pageCount = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const visible = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const hasFilters = !!(q.trim() || pos || clubId || maxPrice);
+  const resetFilters = () => {
+    setQ("");
+    setPos("");
+    setClubId("");
+    setMaxPrice("");
+  };
 
   if (playersQ.isError || clubsQ.isError) {
     return (
       <>
-        <FplHeader title={t("fpl.player_stats")} backTo="/fantasy" />
-        <div className="bg-white px-4 pb-6 pt-3">
-          <ErrorState
+        <UiHeader title={t("fpl.player_stats")} tone="gradient" backTo="/fantasy" />
+        <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+          <UiErrorState
             onRetry={() => {
               void playersQ.refetch();
               void clubsQ.refetch();
@@ -117,16 +213,17 @@ function PlayersPage() {
   if (!playersQ.data || !clubsQ.data) {
     return (
       <>
-        <FplHeader title={t("fpl.player_stats")} backTo="/fantasy" />
-        <div className="bg-white px-4 pb-6 pt-3">
-          <LoadingState />
+        <UiHeader title={t("fpl.player_stats")} tone="gradient" backTo="/fantasy" />
+        <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+          <UiStatePanel kind="loading" />
         </div>
       </>
     );
   }
+
   const clubs = clubsQ.data;
   const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
-  const playerOf = (id: string) => playersQ.data!.find((p) => p.id === id)!;
+  const playerOf = (id: string) => players.find((p) => p.id === id);
 
   const sorts: { k: SortKey; labelKey: TranslationKey }[] = [
     { k: "points", labelKey: "fantasy.picker.sort.points" },
@@ -134,222 +231,382 @@ function PlayersPage() {
     { k: "price", labelKey: "fantasy.picker.sort.price" },
     { k: "ownership", labelKey: "fantasy.picker.sort.ownership" },
   ];
+  const DirGlyph = dir === "desc" ? ArrowDown : ArrowUp;
+  const dirLabel = dir === "desc" ? t("fantasy.players.sort_desc") : t("fantasy.players.sort_asc");
 
   return (
     <>
-      <FplHeader title={t("fpl.player_stats")} backTo="/fantasy" />
-      <div className="bg-white px-4 pb-6 pt-3">
-        <label className="flex items-center gap-2 rounded-[10px] border border-[color:var(--fpl-grey)] bg-[color:var(--fpl-grey)]/60 px-3 py-2">
-          <Search className="h-4 w-4 text-[color:var(--fpl-grey-text)]" aria-hidden />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("fantasy.picker.search")}
-            className="w-full bg-transparent text-sm text-[color:var(--fpl-ink-deep)] outline-none placeholder:text-[color:var(--fpl-grey-text)]"
-          />
-        </label>
+      <UiHeader title={t("fpl.player_stats")} tone="gradient" backTo="/fantasy" />
+      <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+        <UiInput
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("fantasy.picker.search")}
+          aria-label={t("fantasy.picker.search")}
+        />
 
-        <div className="mt-2 flex flex-wrap gap-1">
-          <Chip active={pos === ""} onClick={() => setPos("")}>
+        <div
+          className="mt-2 flex flex-wrap gap-1"
+          role="group"
+          aria-label={t("fantasy.players.filter_position")}
+        >
+          <UiChip selected={pos === ""} onClick={() => setPos("")}>
             {t("common.all")}
-          </Chip>
+          </UiChip>
           {positions.map((p) => (
-            <Chip key={p} active={pos === p} onClick={() => setPos(p)}>
+            <UiChip
+              key={p}
+              selected={pos === p}
+              // Tapping the selected chip clears it.
+              onClick={() => setPos((current) => (current === p ? "" : p))}
+            >
               {t(`player.pos.${p}` as TranslationKey)}
-            </Chip>
-          ))}
-        </div>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          <Chip active={clubId === ""} onClick={() => setClubId("")}>
-            {t("common.all")}
-          </Chip>
-          {clubs.map((c) => (
-            <Chip key={c.id} active={clubId === c.id} onClick={() => setClubId(c.id)}>
-              <ClubCrest club={c} size="sm" className="h-5 w-5 rounded-full text-[8px]" />
-              {tr(c.shortName)}
-            </Chip>
-          ))}
-        </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1">
-          <span className="text-[10px] font-black uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
-            {t("fantasy.picker.sort")}:
-          </span>
-          {sorts.map((s) => (
-            <Chip key={s.k} active={sort === s.k} onClick={() => setSort(s.k)}>
-              {t(s.labelKey)}
-            </Chip>
+            </UiChip>
           ))}
         </div>
 
-        {compare.length === 2 && (
-          <div className="mt-3 rounded-[10px] border border-[color:var(--fpl-grey)] p-3">
-            <div className="mb-2 text-sm font-black text-[color:var(--fpl-ink-deep)]">
+        <div
+          className="mt-1.5 flex flex-wrap gap-1"
+          role="group"
+          aria-label={t("fantasy.players.filter_club")}
+        >
+          <UiChip data-club-chip="" selected={clubId === ""} onClick={() => setClubId("")}>
+            {t("common.all")}
+          </UiChip>
+          {filterClubs.map((c) => (
+            <UiChip
+              key={c.id}
+              data-club-chip=""
+              selected={clubId === c.id}
+              onClick={() => setClubId((current) => (current === c.id ? "" : c.id))}
+            >
+              <ClubCrest club={c} size="sm" className="me-1.5 h-5 w-5" />
+              <span className="truncate">{clubLabel(c, tr)}</span>
+            </UiChip>
+          ))}
+        </div>
+
+        {priceSteps.length > 0 ? (
+          <UiSelect
+            className="mt-2"
+            label={t("fantasy.players.price_max")}
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            options={[
+              { value: "", label: t("fantasy.players.price_any") },
+              ...priceSteps.map((v) => ({ value: String(v), label: nf.format(v) })),
+            ]}
+          />
+        ) : null}
+
+        <div
+          className="mt-2 flex flex-wrap items-center gap-1"
+          role="group"
+          aria-label={t("fantasy.picker.sort")}
+        >
+          <span className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.picker.sort")}</span>
+          {sorts.map((s) => (
+            <UiChip
+              key={s.k}
+              selected={sort === s.k}
+              onClick={() => pickSort(s.k)}
+              aria-describedby={sort === s.k ? "players-sort-dir" : undefined}
+            >
+              {t(s.labelKey)}
+              {sort === s.k ? <DirGlyph className="ms-1 h-3 w-3 shrink-0" aria-hidden /> : null}
+            </UiChip>
+          ))}
+          <span id="players-sort-dir" className="sr-only">
+            {dirLabel}
+          </span>
+        </div>
+
+        {compare.length === 2 ? (
+          <UiCard className="mt-3">
+            <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
               {t("fantasy.players.compare_title")}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3">
               {compare.map((id) => {
                 const p = playerOf(id);
+                if (!p) return null;
+                const c = clubOf(p.clubId);
                 return (
-                  <div key={id} className="rounded-[8px] bg-[color:var(--fpl-grey)] p-2">
+                  <div key={id} className={cn("p-2", ui.radius.control, ui.surface.sunken)}>
                     <div className="flex items-center gap-1.5">
-                      {clubOf(p.clubId) && <ClubCrest club={clubOf(p.clubId)!} size="sm" />}
-                      <div className="truncate text-xs font-bold text-[color:var(--fpl-ink-deep)]">
+                      {c ? <ClubCrest club={c} size="sm" /> : null}
+                      <span
+                        dir="auto"
+                        className={cn(
+                          "truncate",
+                          ui.text.meta,
+                          "[font-weight:var(--ui-weight-heavy)]",
+                        )}
+                      >
                         {tr(p.name)}
-                      </div>
+                      </span>
                     </div>
-                    <dl className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
-                      <dt className="text-[color:var(--fpl-grey-text)]">{t("fantasy.price")}</dt>
-                      <dd className="fpl-tabular text-end text-[color:var(--fpl-ink-deep)]">
-                        {nf.format(p.price)}
-                      </dd>
-                      <dt className="text-[color:var(--fpl-grey-text)]">
-                        {t("fantasy.total_points")}
-                      </dt>
-                      <dd className="fpl-tabular text-end text-[color:var(--fpl-ink-deep)]">
-                        {p.totalPoints}
-                      </dd>
-                      <dt className="text-[color:var(--fpl-grey-text)]">{t("fantasy.form")}</dt>
-                      <dd className="fpl-tabular text-end text-[color:var(--fpl-ink-deep)]">
-                        {p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
-                      </dd>
-                      <dt className="text-[color:var(--fpl-grey-text)]">
-                        {t("fantasy.ownership")}
-                      </dt>
-                      <dd className="fpl-tabular text-end text-[color:var(--fpl-ink-deep)]">
-                        {nf.format(p.ownership)}%
-                      </dd>
-                      <dt className="text-[color:var(--fpl-grey-text)]">
-                        {t("fantasy.expected_points")}
-                      </dt>
-                      <dd className="fpl-tabular text-end text-[color:var(--fpl-ink-deep)]">
-                        {p.expectedPoints}
-                      </dd>
+                    <dl className={cn("mt-2 grid grid-cols-2 gap-1", ui.text.micro)}>
+                      <CompareRow label={t("fantasy.price")} value={nf.format(p.price)} />
+                      <CompareRow
+                        label={t("fantasy.total_points")}
+                        value={nf.format(p.totalPoints)}
+                      />
+                      <CompareRow
+                        label={t("fantasy.form")}
+                        // A real 0 must read "0"; only an unknown reads "–".
+                        value={p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
+                      />
+                      <CompareRow
+                        label={t("fantasy.ownership")}
+                        value={`${nf.format(p.ownership)}%`}
+                      />
+                      <CompareRow
+                        label={t("fantasy.expected_points")}
+                        value={
+                          p.expectedPoints === null || p.expectedPoints === undefined
+                            ? t("fantasy.stat.none")
+                            : nf.format(p.expectedPoints)
+                        }
+                      />
                     </dl>
                   </div>
                 );
               })}
             </div>
-            <button
-              onClick={() => setCompare([])}
-              className="mt-2 text-[11px] font-semibold text-[color:var(--fpl-grey-text)] hover:text-[color:var(--fpl-ink)]"
-            >
+            <UiButton size="sm" variant="ghost" className="mt-2" onClick={() => setCompare([])}>
               {t("common.reset")}
-            </button>
-          </div>
-        )}
-        {compare.length === 1 && (
-          <div className="mt-3 rounded-[8px] bg-[color:var(--fpl-grey)] px-3 py-2 text-xs text-[color:var(--fpl-grey-text)]">
+            </UiButton>
+          </UiCard>
+        ) : null}
+        {compare.length === 1 ? (
+          <p
+            className={cn(
+              "mt-3 px-3 py-2",
+              ui.radius.control,
+              ui.surface.sunken,
+              ui.text.meta,
+              ui.tone.muted,
+            )}
+          >
             {t("fantasy.players.pick_two")}
-          </div>
-        )}
+          </p>
+        ) : null}
 
         <div className="mt-3">
-          {list.length === 0 && <EmptyState />}
-          {list.map((p) => {
-            const c = clubOf(p.clubId);
-            const oppc = p.nextOpponentClubId ? clubOf(p.nextOpponentClubId) : undefined;
-            const kit = getKitForClub(c, p.kitPattern);
-            const inWatch = watchlist.isWatched(p.id);
-            const inCompare = compare.includes(p.id);
-            return (
-              <div
-                key={p.id}
-                className="flex items-center gap-2 border-b border-[color:var(--fpl-grey)] py-2"
-              >
-                <Link
-                  to="/fantasy/players/$playerId"
-                  params={{ playerId: p.id }}
-                  className="flex min-w-0 flex-1 items-center gap-2"
-                >
-                  <JerseyVisual kit={kit} size={32} imageUrl={p.jerseyImageUrl} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-bold text-[color:var(--fpl-ink-deep)]">
-                        {tr(p.name)}
-                      </span>
-                      {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-[color:var(--fpl-grey-text)]">
-                      {c && tr(c.shortName)} · {t(`player.pos.${p.position}` as TranslationKey)} ·{" "}
-                      {t("fantasy.form")}{" "}
-                      {p.form === null ? t("fantasy.stat.none") : nf.format(p.form)} ·{" "}
-                      {nf.format(p.ownership)}%
-                    </div>
-                  </div>
-                </Link>
-                {oppc && p.nextFixtureDifficulty && (
-                  <DifficultyBadge
-                    difficulty={p.nextFixtureDifficulty}
-                    label={`${oppc.crestPlaceholder} ${p.nextIsHome ? "(D)" : "(E)"}`}
-                    className="w-14"
+          {list.length === 0 ? (
+            <UiEmptyState
+              title={t("fantasy.players.no_match")}
+              body={t("fantasy.players.empty_filters")}
+              action={
+                hasFilters ? (
+                  <UiButton variant="ink" className="mt-4" onClick={resetFilters}>
+                    {t("fantasy.players.reset_filters")}
+                  </UiButton>
+                ) : undefined
+              }
+            />
+          ) : (
+            <>
+              <p className={cn("pb-1", ui.text.meta, ui.tone.muted)}>
+                {t("fantasy.players.showing")
+                  .replace("{n}", nf.format(visible.length))
+                  .replace("{total}", nf.format(list.length))}
+              </p>
+              <ul>
+                {visible.map((p) => (
+                  <PlayerListRow
+                    key={p.id}
+                    player={p}
+                    club={clubOf(p.clubId)}
+                    opponent={p.nextOpponentClubId ? clubOf(p.nextOpponentClubId) : undefined}
+                    watched={watchlist.isWatched(p.id)}
+                    onToggleWatch={() => watchlist.toggle(p.id)}
+                    inCompare={compare.includes(p.id)}
+                    onToggleCompare={() => toggleCompare(p.id)}
+                    nf={nf}
                   />
-                )}
-                <div className="text-end">
-                  <div className="fpl-tabular text-sm font-black text-[color:var(--fpl-ink-deep)]">
-                    {nf.format(p.price)}
-                  </div>
-                  <div className="text-[10px] text-[color:var(--fpl-grey-text)]">
-                    {p.totalPoints} {t("fantasy.points.abbr")}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => watchlist.toggle(p.id)}
-                    aria-label={
-                      inWatch ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")
-                    }
-                    className={cn(
-                      "grid h-7 w-7 place-items-center rounded-[6px]",
-                      inWatch
-                        ? "bg-[color:var(--fpl-amber)] text-[color:var(--fpl-ink-deep)]"
-                        : "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]",
-                    )}
+                ))}
+              </ul>
+
+              <div data-player-pager="" className="mt-3 flex items-center justify-between gap-3">
+                <p className={cn("min-w-0", ui.text.meta, ui.tone.muted)}>
+                  {t("fantasy.rankings.page")} {nf.format(currentPage)} / {nf.format(pageCount)}
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <PagerButton
+                    label={t("fantasy.rankings.prev")}
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage((c) => Math.max(1, c - 1))}
                   >
-                    <Star className={cn("h-3.5 w-3.5", inWatch && "fill-current")} aria-hidden />
-                  </button>
-                  <button
-                    onClick={() => toggleCompare(p.id)}
-                    className={cn(
-                      "rounded-[6px] px-1.5 py-0.5 text-[10px] font-bold",
-                      inCompare
-                        ? "bg-[color:var(--fpl-ink)] text-white"
-                        : "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]",
-                    )}
+                    <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                  </PagerButton>
+                  <PagerButton
+                    label={t("fantasy.rankings.next")}
+                    disabled={currentPage >= pageCount}
+                    onClick={() => setPage((c) => Math.min(pageCount, c + 1))}
                   >
-                    {t("fantasy.players.compare")}
-                  </button>
+                    <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                  </PagerButton>
                 </div>
               </div>
-            );
-          })}
+            </>
+          )}
         </div>
       </div>
     </>
   );
 }
 
-function Chip({
-  active,
+function CompareRow({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt className={ui.tone.muted}>{label}</dt>
+      <dd className={cn("text-end", ui.stat.sm, ui.tone.default)}>{value}</dd>
+    </>
+  );
+}
+
+function PagerButton({
+  label,
+  disabled,
   onClick,
   children,
 }: {
-  active: boolean;
+  label: string;
+  disabled: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
+      aria-label={label}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
-        active
-          ? "bg-[color:var(--fpl-ink)] text-white"
-          : "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)] hover:text-[color:var(--fpl-ink-deep)]",
+        "grid place-items-center transition-colors disabled:opacity-40",
+        ui.space.tap,
+        ui.radius.control,
+        ui.rule.all,
+        ui.tone.default,
+        ui.focus,
       )}
-      aria-pressed={active}
     >
       {children}
     </button>
+  );
+}
+
+function PlayerListRow({
+  player,
+  club,
+  opponent,
+  watched,
+  onToggleWatch,
+  inCompare,
+  onToggleCompare,
+  nf,
+}: {
+  player: FantasyPlayer;
+  club?: Club;
+  opponent?: Club;
+  watched: boolean;
+  onToggleWatch: () => void;
+  inCompare: boolean;
+  onToggleCompare: () => void;
+  nf: Intl.NumberFormat;
+}) {
+  const { t, tr } = useI18n();
+  const kit = getKitForClub(club, player.kitPattern);
+  return (
+    <li data-player-row="" className={cn("flex items-center gap-2 py-2", ui.rule.block)}>
+      <Link
+        to="/fantasy/players/$playerId"
+        params={{ playerId: player.id }}
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-2",
+          "min-h-[var(--ui-tap-min)]",
+          ui.radius.control,
+          ui.focus,
+        )}
+      >
+        <JerseyVisual kit={kit} size={32} imageUrl={player.jerseyImageUrl} />
+        <span className="min-w-0">
+          <span className="flex items-center gap-1.5">
+            {/* `dir="auto"` on the TRUNCATING element, not inside it: the
+                ellipsis is placed at the end of the element's own direction,
+                so a Latin name inside an inherited RTL box gets clipped at its
+                start ("…s de Rabat" instead of "Ittihad Tanger…"). */}
+            <span
+              dir="auto"
+              className={cn("truncate", ui.text.body, "[font-weight:var(--ui-weight-heavy)]")}
+            >
+              {tr(player.name)}
+            </span>
+            {player.status !== "available" ? <PlayerStatusBadge status={player.status} /> : null}
+          </span>
+          <span className={cn("mt-0.5 block truncate", ui.text.micro, ui.tone.muted)}>
+            {club ? `${clubLabel(club, tr)} · ` : ""}
+            {t(`player.pos.${player.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
+            {/* An unknown form is an en dash, never a fabricated 0.0. */}
+            {player.form === null ? t("fantasy.stat.none") : nf.format(player.form)} ·{" "}
+            {nf.format(player.ownership)}%
+          </span>
+        </span>
+      </Link>
+
+      {opponent && player.nextFixtureDifficulty ? (
+        <DifficultyBadge
+          difficulty={player.nextFixtureDifficulty}
+          label={`${clubToken(opponent, tr)} (${player.nextIsHome ? t("fpl.home_short") : t("fpl.away_short")})`}
+          title={`${tr(opponent.name)} (${player.nextIsHome ? t("common.home") : t("common.away")})`}
+          className="w-16 shrink-0"
+        />
+      ) : null}
+
+      <span className="shrink-0 text-end">
+        <span className={cn("block", ui.stat.sm, ui.tone.default)}>{nf.format(player.price)}</span>
+        <span className={cn("block", ui.text.micro, ui.tone.muted)}>
+          {nf.format(player.totalPoints)} {t("fantasy.points.abbr")}
+        </span>
+      </span>
+
+      <span className="flex shrink-0 flex-col items-stretch gap-1">
+        <button
+          type="button"
+          onClick={onToggleWatch}
+          aria-pressed={watched}
+          aria-label={watched ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")}
+          className={cn(
+            "grid place-items-center",
+            ui.space.tap,
+            ui.radius.control,
+            ui.focus,
+            watched ? "text-[color:var(--ui-ink-deep)]" : cn(ui.surface.sunken, ui.tone.muted),
+          )}
+          style={watched ? { backgroundColor: "var(--ui-caution)" } : undefined}
+        >
+          <Star className={cn("h-4 w-4", watched && "fill-current")} aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={onToggleCompare}
+          aria-pressed={inCompare}
+          className={cn(
+            "px-1.5",
+            "min-h-[var(--ui-tap-min)]",
+            ui.radius.control,
+            ui.text.micro,
+            "[font-weight:var(--ui-weight-heavy)]",
+            ui.focus,
+            inCompare ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.muted),
+          )}
+        >
+          {t("fantasy.players.compare")}
+        </button>
+      </span>
+    </li>
   );
 }
