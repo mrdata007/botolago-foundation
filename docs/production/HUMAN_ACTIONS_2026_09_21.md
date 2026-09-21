@@ -421,6 +421,52 @@ permission bugs rather than configuration ones.
 
 ---
 
+## 4.4a Arabic club names — your confirmation needed (BG-0068)
+
+The table below ships **empty** and every read coalesces to the Latin name, so
+nothing is blocked while you decide: the migration reproduces today's output
+exactly until a seed is approved. Applying a wrong name is the only way to make
+this worse than it is now.
+
+Full file: `scripts/backend/football-team-arabic-names-seed.sql`. These are the
+16 clubs with a membership in the current season, read from production.
+
+| Latin name        | Proposed Arabic               | Proposed short  | Confidence                                                                                                                                                                                 |
+| ----------------- | ----------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wydad Casablanca  | الوداد الرياضي                | الوداد          | high                                                                                                                                                                                       |
+| Raja Casablanca   | الرجاء الرياضي                | الرجاء          | high                                                                                                                                                                                       |
+| FAR Rabat         | الجيش الملكي                  | الجيش           | high — the common name, not a transliteration of "FAR"; say if you want the full formal form                                                                                               |
+| FUS Rabat         | الفتح الرياضي                 | الفتح           | high                                                                                                                                                                                       |
+| Maghreb Fès       | المغرب الفاسي                 | المغرب الفاسي   | high                                                                                                                                                                                       |
+| Moghreb Tétouan   | المغرب التطواني               | المغرب التطواني | high                                                                                                                                                                                       |
+| RSB Berkane       | نهضة بركان                    | نهضة بركان      | high — common form; the formal form is longer                                                                                                                                              |
+| Difaâ El Jadida   | الدفاع الحسني الجديدي         | الدفاع الجديدي  | high                                                                                                                                                                                       |
+| Hassania Agadir   | حسنية أكادير                  | حسنية أكادير    | high                                                                                                                                                                                       |
+| Ittihad Tanger    | اتحاد طنجة                    | اتحاد طنجة      | high                                                                                                                                                                                       |
+| Kawkab Marrakech  | الكوكب المراكشي               | الكوكب المراكشي | high                                                                                                                                                                                       |
+| Amal Tiznit       | أمل تيزنيت                    | أمل تيزنيت      | high                                                                                                                                                                                       |
+| CODM Meknès       | النادي المكناسي               | المكناسي        | **medium** — المكناسي is certain; whether the club writes the full omnisports formula is not                                                                                               |
+| UTS Rabat         | اتحاد تواركة                  | اتحاد تواركة    | **medium** — تواركة is certain; whether الرياضي is appended is not                                                                                                                         |
+| Widad Témara      | وداد تمارة                    | وداد تمارة      | **LOW — please supply.** Not the Casablanca Wydad; a wrong rendering reads as a different club                                                                                             |
+| CR Khemis Zemamra | الشباب الرياضي لخميس الزمامرة | شباب الزمامرة   | **LOW — please supply.** Production contradicts itself: `name` is "CR Khemis Zemamra" (→ الشباب) but `code` is "RCAZ" (→ الرجاء). Different first words — the French row may also be wrong |
+
+**Two rows need you specifically**: Widad Témara and CR Khemis Zemamra. The
+twelve marked high are established names rather than transliterations and are
+safe to accept as a block; the two marked medium differ only in whether a formal
+suffix is written.
+
+There is also one gap this work does **not** close. `api.fantasy_player_pool`
+emits `teamName` and `teamShortName` and still returns Latin in Arabic. It takes
+no language argument, and `CREATE OR REPLACE` cannot add a parameter — giving it
+one means a `DROP`, which changes the signature that the generated types, the
+repository and 22 Playwright journeys are pinned to. That belongs in its own
+release, not here. A header-based workaround was written and then deleted,
+correctly: it would have keyed club names off the viewer's browser locale rather
+than the app's language, which is a silent wrong answer in place of an honest
+Latin one.
+
+---
+
 ## 5. After the PRs merge
 
 **Publish `main` from Lovable** (BG-0022). A GitHub merge is not a deployment.
@@ -436,7 +482,6 @@ moves on its own for unrelated reasons.
 These will be appended to this file as each lane reports. They are named here so
 nothing is silently dropped:
 
-- **§4.4 table** — the 16 Arabic club names for your confirmation (BG-0068).
 - **§4.5 table** — the eight duplicate roster rows with id, DOB and provider
   external id (BG-0057).
 - **§4.6 script** — the guarded QA-league and test-account cleanup (BG-0023).
