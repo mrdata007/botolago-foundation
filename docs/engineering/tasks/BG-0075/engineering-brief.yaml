@@ -1,0 +1,127 @@
+task_id: BG-0075
+title: The points page can only ever show zeros
+area: fantasy
+severity: P1
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+base_branch: chief/launch-fixes-3
+status: VERIFIED_AS_GIVEN
+
+finding: >
+  Reproduced as given. src/services/fantasy-runtime.ts hard-coded
+  `averagePoints: 0, highestPoints: 0` in getCurrentGameweek (:194-195),
+  `autoSubs: []` in pointsDto (:90) and getGameweekHistory (:375),
+  `events: []` for every player in pointsDto (:99) and `breakdown: []` in
+  getGameweekHistory (:376). api.get_my_fantasy_points returns `result` and
+  `players` and neither the point events nor the substitutions -- confirmed by
+  reading pg_get_functiondef on production tkewgajrljbwgwedqsxn (read-only).
+  src/routes/fantasy.points.tsx:178-179 already resolves to null and renders an
+  em dash, so the UI was ready for honest nulls.
+
+what_the_sweep_did_not_say:
+  - id: the domain types could not express "unknown"
+    detail: >
+      Gameweek.averagePoints/highestPoints were required `number`, and
+      GameweekResult's were optional `number`. Neither could carry null, so the
+      only way to satisfy the type was the zero the ticket objects to. Both are
+      now `number | null`. Nothing in the UI reads Gameweek.averagePoints today,
+      so widening it carries no render risk.
+  - id: PointsEvent was invented, not observed
+    detail: >
+      types/fantasy.ts declared `PointsEventKind` as a closed union containing
+      "60min", "yellow", "red" and "conceded". src/backend/fantasy/scoring.ts
+      emits none of those; it writes appearance, goal, assist, clean_sheet,
+      goals_conceded, saves, penalty_save, penalty_miss, yellow_card, red_card,
+      second_yellow_dismissal, own_goal, bonus and player_of_match into
+      app.fantasy_player_point_events.category, which is free text constrained
+      only by `^[a-z][a-z0-9_]{2,79}$`. The union could never have matched a
+      server row. PointsEvent is now {category: string, points, fixtureId?} with
+      the observed set exported as POINTS_EVENT_CATEGORIES for documentation.
+      The `count` multiplier is gone: the ledger stores points already
+      multiplied out (scoring.ts line 76: `add("goal", stats.goals * rules.goal[position])`).
+  - id: GameweekResult.autoSubs asked for prose no backend can produce
+    detail: >
+      It was typed `{outId, inId, reason: LocalizedString}`.
+      app.fantasy_auto_substitutions.reason is a slug
+      (`^[a-z][a-z0-9_]{2,79}$`), and src/backend/fantasy/substitutions.ts:68
+      writes exactly two values -- goalkeeper_did_not_play and
+      outfield_did_not_play. It is now `reasonKey: string`, matching what
+      PointsViewModel.autoSubs already used, and the UI translates it.
+  - id: neither autoSubs nor events had a render site at all
+    detail: >
+      Nothing in src/ read GameweekResult.autoSubs or
+      PlayerPointsBreakdown.events. points-service.ts computes its own autoSubs
+      from the client engine (line 140). The ticket's "the points breakdown
+      already has a per-player row" is the /fantasy/points List view
+      (SquadListTable); the event lines are added under that row.
+  - id: the scoring_rules categories and the ledger categories are different sets
+    detail: >
+      app.fantasy_scoring_rules in production carries 11 distinct categories:
+      appearance_full, appearance_short, direct_red_card, goals_conceded,
+      official_assist, own_goal, penalty_miss, penalty_save, saves,
+      second_yellow_dismissal, yellow_card. The engine writes `appearance`,
+      `red_card`, `goal`, `assist`, `clean_sheet`, `bonus` and
+      `player_of_match`, which that table does not name (goal and clean sheet
+      points come from app.fantasy_position_rules instead). i18n therefore
+      covers the UNION of both sets -- 18 keys -- rather than only the table the
+      ticket named, because either could reach the page.
+
+history_rpc_check_as_instructed:
+  question: does api.get_my_fantasy_history return benchPoints?
+  answer: NO.
+  evidence: >
+    Its jsonb_build_object names gameweekId, sequence, name, score, state,
+    transferHit, chipType, rank, overallRank, teamValue and bank. bench_points
+    lives in app.fantasy_team_gameweek_results and is projected only by
+    api.get_my_fantasy_points, one gameweek at a time.
+  consequence: >
+    getGameweekHistory keeps `benchPoints: 0`, which the task explicitly permits
+    in this case, with the reason recorded in the code. Its averagePoints and
+    highestPoints are set to null rather than 0 for the same reason: the history
+    RPC cannot answer them.
+
+approach:
+  migration: supabase/migrations/20260921200000_fantasy_points_read_surfaces.sql
+  objects:
+    - name: api.fantasy_gameweek_summary(p_gameweek_id uuid)
+      status: new
+      returns: gameweekId, averagePoints, highestPoints, teamCount, pointsState
+      semantics: >
+        averagePoints is round(avg(coalesce(final_score, provisional_score)), 1)
+        over app.fantasy_team_gameweek_results for that gameweek; highestPoints
+        is the max of the same expression. BOTH ARE JSON NULL when teamCount is
+        0. teamCount is always a number so a caller can tell "nobody scored yet"
+        from "an average that is genuinely 0".
+      posture: stable security definer, set search_path = '', revoke all then grant execute to anon/authenticated/service_role
+      errors: PT400 for a null id, PT404 for an unknown gameweek
+      anon: yes -- /fantasy/points is reachable signed out; the single argument is uuid, so no caller needs USAGE on app (BG-0063 guard)
+    - name: api.get_my_fantasy_points(uuid, uuid)
+      status: create or replace, signature unchanged
+      added: >
+        per player an `events` array of {category, points, fixtureId} from
+        app.fantasy_player_point_events where superseded_at is null, ordered by
+        fixture then category; and a top-level `autoSubstitutions` array of
+        {playerOutId, playerInId, sequence, reason} for that team's lineup in
+        that gameweek, ordered by sequence_number. Both default to [] and never
+        null. Ownership is still asserted by app_private.fantasy_assert_owner.
+  indexes:
+    - fantasy_player_point_events_live_lookup_idx -- partial on superseded_at is null, covering category/points/fixture_id
+    - fantasy_team_gameweek_results_gameweek_score_idx -- covering final_score/provisional_score/state
+  frontend:
+    - contracts.ts -- events, autoSubstitutions and the new fantasyGameweekSummarySchema
+    - supabase-repository.ts -- getGameweekSummary
+    - fantasy-runtime.ts -- pointsDto maps events and autoSubs; getCurrentGameweek and getGameweekResult fill average/highest
+    - fantasy.points.tsx -- event lines under each List-view player row, and an auto-substitutions section
+    - SquadListTable.tsx -- an optional renderDetail slot under a player row
+    - dictionaries.ts -- 18 event categories + 2 substitution reasons + 1 heading, fr and ar
+
+null_discipline: >
+  Every unknowable value is null and the UI renders an em dash. No zero is
+  introduced one layer up: the runtime maps `summary?.averagePoints ?? null`,
+  not `?? 0`, and a failed summary read is swallowed into null rather than 0 so
+  the strip degrades to a dash instead of lying.
+
+non_goals:
+  - api.fantasy_player_pool and api.fantasy_league_standings ordering/signature untouched.
+  - No api.service_* function, lifecycle script or scoring/finalization/pricing/ranking module touched.
+  - api.get_my_fantasy_history is not widened; that is a separate change.

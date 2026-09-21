@@ -603,15 +603,18 @@ export const currentGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squ
       ? 1
       : 0;
   const bonus = i === 0 ? 3 : i === 4 ? 2 : i === 8 ? 1 : 0;
+  // BG-0075: one line per scoring category, already multiplied out — the same
+  // shape `app.fantasy_player_point_events` stores and `scorePlayerFixture`
+  // emits. The old shape invented a `kind` union and a separate `count`
+  // multiplier that no backend has ever written.
   const events = [
-    { kind: "appearance" as const, points: bench ? 0 : base },
-    { kind: "60min" as const, points: bench ? 0 : 1 },
-    ...(goals ? [{ kind: "goal" as const, points: 5, count: goals }] : []),
-    ...(assists ? [{ kind: "assist" as const, points: 3, count: assists }] : []),
-    ...(cs ? [{ kind: "clean_sheet" as const, points: 4 }] : []),
-    ...(bonus ? [{ kind: "bonus" as const, points: bonus }] : []),
+    { category: "appearance", points: bench ? 0 : base + 1 },
+    ...(goals ? [{ category: "goal", points: 5 * goals }] : []),
+    ...(assists ? [{ category: "assist", points: 3 * assists }] : []),
+    ...(cs ? [{ category: "clean_sheet", points: 4 }] : []),
+    ...(bonus ? [{ category: "bonus", points: bonus }] : []),
   ];
-  const tp = events.reduce((sum, e) => sum + e.points * (e.count ?? 1), 0);
+  const tp = events.reduce((sum, e) => sum + e.points, 0);
   return {
     playerId: s.playerId,
     totalPoints: s.isCaptain ? tp * 2 : tp,

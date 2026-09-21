@@ -1,0 +1,98 @@
+task_id: BG-0077
+title: Fields that can only ever read zero
+area: fantasy
+severity: P2
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+base_branch: chief/launch-fixes-3
+status: DOES_NOT_REPRODUCE
+outcome: NO CODE CHANGE. Stopped and reported, per the instruction to stop a task whose finding fails to reproduce.
+
+summary: >
+  Both halves of this ticket were checked against production
+  tkewgajrljbwgwedqsxn (read-only) and against the source. Neither is a defect.
+  `pendingTransfers: 0` is the correct value for a freshly read cloud team, and
+  the cloud rules path returns full positions/scoring/chips arrays -- it is only
+  the MOCK that returns empty ones, and no UI reads those three fields at all.
+
+finding_1_pending_transfers:
+  claim: "src/services/fantasy-runtime.ts:77 sets pendingTransfers: 0, a field that can only ever read zero."
+  verdict: DOES NOT REPRODUCE -- the field is supplied on the live path, by the client, by design.
+  evidence:
+    - >
+      FantasyTeam.pendingTransfers is a DRAFT counter, not persisted state. It
+      counts transfers the manager has staged in the browser and not yet
+      confirmed. There is no "pending transfer" concept in the database at all:
+      app.fantasy_transfer_batches rows are written with status 'confirmed' by
+      the confirm RPC, so a team read back from the server necessarily has zero
+      staged transfers.
+    - >
+      src/routes/fantasy.transfers.tsx:465 and :512 set it from the local draft
+      (`pendingTransfers: v.pendingTransfers`), and
+      src/routes/fantasy.team.tsx:244 reads it back. It is therefore non-zero on
+      the live path whenever the manager has staged something.
+    - >
+      src/services/fantasy-cloud-finalize.ts resets it to 0 on finalize
+      (:148, :160, :244) precisely because finalization clears the draft, and
+      src/services/lifecycle-service.test.ts:138 asserts that reset. A server
+      read returning 0 is the same statement.
+  conclusion: >
+    teamDto returning 0 is correct, not a placeholder. Deleting the field under
+    the BG-0062 precedent would break the transfers draft flow, which is the
+    only thing that ever writes it.
+
+finding_2_rules_positions_scoring_chips:
+  claim: >
+    "Around :361-364 the mock rules return empty positions/scoring/chips.
+    Confirm whether the cloud path cloud.getRules returns them -- if it does
+    not, the Help & Rules page is empty in production too."
+  verdict: DOES NOT REPRODUCE, twice over.
+  evidence_the_cloud_path_returns_them:
+    - >
+      api.fantasy_rules(p_season_id uuid) was read with pg_get_functiondef in
+      production. Its jsonb_build_object populates `positions` from
+      app.fantasy_position_rules joined to app.fantasy_positions, `scoring` from
+      app.fantasy_scoring_rules where active, and `chips` from
+      app.fantasy_chip_rules. All three are real projections, not placeholders.
+    - >
+      Calling it in production for the one existing fantasy season
+      (5ada3e98-2929-405a-a3f1-a26de8e51933) returns positions = 4,
+      scoring = 12, chips = 5. First scoring row:
+      {"category":"appearance_full","points":2,"threshold":60,"position":null}.
+    - >
+      Underlying counts: app.fantasy_position_rules 8, app.fantasy_scoring_rules
+      (active) 24, app.fantasy_chip_rules 10, across 2 rulesets.
+    - >
+      src/backend/fantasy/supabase-repository.ts:184 calls that RPC and parses
+      it with fantasyRulesSchema, which types positions and chips as populated
+      object arrays. Nothing strips them.
+  evidence_the_page_is_not_empty:
+    - >
+      src/routes/fantasy.rules.tsx is the only consumer of getRules in the whole
+      repository. It renders four scalars -- rules.squadSize, rules.budget,
+      rules.initialFreeTransfers/transferHitCost and
+      rules.deadline.minutesBeforeFirstFixture -- plus eight static i18n prose
+      sections. It never reads rules.positions, rules.scoring or rules.chips.
+    - >
+      So even in mock mode, where those three arrays are empty, the Help & Rules
+      page renders completely. The empty arrays have no render site anywhere.
+  conclusion: >
+    The live path supplies the data and the page does not consume it. There is
+    nothing broken to fix, and nothing that "can only ever read zero".
+
+bg_0062_precedent_considered: >
+  The precedent says to delete a field from the domain type when nothing can
+  ever supply it. Neither field qualifies: pendingTransfers is supplied by the
+  transfers draft, and positions/scoring/chips are supplied by
+  api.fantasy_rules. Deleting either would remove working data. The only field
+  this lane found that genuinely could not be supplied was
+  GameweekResult.autoSubs' `reason: LocalizedString`, which no backend can
+  produce; that one was narrowed to `reasonKey: string` under BG-0075.
+
+recommendation_for_the_chief: >
+  Close BG-0077 as not-a-defect. If the intent behind it was that the Help &
+  Rules page is thin -- it prints four numbers and eight paragraphs of static
+  copy while the database holds 24 scoring rules, 8 position rules and 10 chip
+  rules that no screen shows -- that is a product gap worth its own ticket, not
+  a zero-valued field. It would be a real improvement and it is entirely a
+  frontend change, since the RPC already returns everything needed.

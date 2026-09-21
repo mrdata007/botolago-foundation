@@ -1,0 +1,99 @@
+task_id: BG-0074
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+status: VERIFIED
+
+database_tests:
+  docker: NOT AVAILABLE
+  substitute: >
+    A real PostgreSQL 16.13 cluster was stood up locally (initdb + pg_ctl,
+    /var/lib/postgresql/bg0074, port 55432) with the postgresql-16-pgtap package
+    already installed on the image. A minimal Supabase-shaped bootstrap created
+    the anon/authenticated/service_role/authenticator roles, the `extensions`
+    schema (pgcrypto + pgtap), an `auth` schema with users/sessions/mfa_factors
+    and the real auth.uid()/auth.role()/auth.jwt() definitions, and a `storage`
+    shim. All 73 committed migrations then applied cleanly in order, followed by
+    this lane's 20260921200000.
+  what_was_actually_run:
+    - command: psql -f supabase/tests/database/fantasy_points_read_surfaces.test.sql
+      result: 31 ok, 0 not ok, 0 psql errors
+    - command: every file in supabase/tests/database/ against the same cluster, twice
+      purpose: regression diff
+      result: >
+        Two databases were built -- `botolago_base` with the 73 committed
+        migrations only, and `botolago` with this lane's migration on top -- and
+        the whole suite was run against each. The two result tables are
+        byte-identical except the one new file, which is 5 ok / 4 not ok / 1
+        psql error on the baseline (as it must be) and 31 ok / 0 not ok with the
+        migration. No existing test changed in either direction.
+  honest_limits:
+    - >
+      Several existing suites (identity_domain, news_rls, admin_authorization and
+      others) abort on this cluster because the auth shim is not the real GoTrue
+      schema. That is an artifact of the substitute environment, not of this
+      change: the failures are identical with and without the migration, which
+      is exactly what the before/after diff above establishes.
+    - >
+      `bun run backend:types:generate` was NOT run. `supabase gen types` shells
+      out to a Docker container even when given --db-url, and there is no Docker
+      daemon here. src/backend/generated/database.types.ts is therefore
+      unchanged and does not yet name api.fantasy_gameweek_summary; CI's
+      artifact is authoritative. See the BG-0075 report for how the one call
+      site type-checks meanwhile.
+
+pgtap_assertions_for_this_task:
+  - anon still holds no USAGE on the app schema
+  - api.fantasy_league_standings keeps its exact signature
+  - anon can still execute api.fantasy_league_standings
+  - anon holds no select privilege on app.profiles
+  - a signed-in league member sees the profile display name
+  - an empty display_name falls back to the fantasy team name
+  - a soft-deleted profile falls back to the fantasy team name
+  - the league page is still ordered by rank, then team id
+  - the item shape is the previous one plus managerName, nothing removed
+  - an anonymous caller sees team names only, never a display_name
+  - the private-league membership check is unchanged for anonymous callers
+
+production_checks_read_only:
+  project: tkewgajrljbwgwedqsxn
+  checks:
+    - api.fantasy_league_standings body read with pg_get_functiondef before the change; no managerName key present.
+    - app.profiles policies confirmed as 2, both owner-scoped.
+    - No write of any kind was issued against production.
+
+screenshots:
+  path: docs/engineering/tasks/BG-0074/screenshots/
+  files:
+    - league-detail-fr-390.png
+    - league-detail-ar-390.png
+    - rankings-fr-390.png
+    - rankings-ar-390.png
+  how: >
+    Chromium from /opt/pw-browsers (chromium-1194), 390x844 at dpr 2,
+    reduced motion, against `bun run dev` on 127.0.0.1:4173.
+    `playwright install` was not run.
+  what_they_show: >
+    Every league row carries a team name AND a manager name, in both languages,
+    and the rankings podium tiles carry a manager name on each of the three
+    tiles. The AR captures are right-to-left with the manager line below the
+    team line, no clipping at 390px.
+  honest_limit: >
+    The dev server runs in mock mode (VITE_FANTASY_DATA_MODE=mock; the captures
+    carry the demo badge), because pointing a browser at the cloud path needs a
+    signed-in production session and this lane is read-only against production.
+    The screenshots therefore prove the rendering contract -- LeagueTable and
+    RankingsPodium show both names when managerName is non-empty and differs
+    from teamName -- not the server resolution. The server resolution is what
+    the pgTAP assertions above cover, and the mapping between the two is the
+    one-line change in getLeagueStandings.
+
+gates:
+  typecheck: pass (tsc --noEmit, no output)
+  test: "1324 pass / 4 fail -- the 4 are the pre-existing deliberate legal-content.test.ts failures"
+  lint: "0 errors, 17 warnings (all pre-existing react-refresh/only-export-components)"
+  format:check: "40 pre-existing offenders; none of them is a file this lane touched (verified by running prettier --check on the changed set: clean)"
+  backend:migrations:check: "Validated 73 migration(s)"
+  backend:secrets:check: pass
+  config:integrity:check: "36 configuration files, no violations"
+  i18n-gate: "pass -- W3 unchanged at 248, W4 raised 97 -> 99 with the reason recorded in scripts/qa/i18n-gate.ts (BG-0075's two new template-prefix call sites)"
+  build: pass

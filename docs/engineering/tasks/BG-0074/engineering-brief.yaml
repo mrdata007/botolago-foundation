@@ -1,0 +1,94 @@
+task_id: BG-0074
+title: Manager names render blank on every league row and on the rankings podium
+area: fantasy
+severity: P1
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+base_branch: chief/launch-fixes-3
+status: VERIFIED_AS_GIVEN
+
+finding: >
+  Reproduced exactly as given. src/services/fantasy-runtime.ts set
+  `managerName: ""` in three places -- teamDto (:67), getSummary (:177) and
+  getLeagueStandings (:272) -- because api.fantasy_league_standings never
+  returned a manager name. Its JSON items carried teamId, teamName, rank,
+  previousRank, totalPoints, gameweekPoints and calculatedAt, and nothing else;
+  confirmed by reading pg_get_functiondef on production project
+  tkewgajrljbwgwedqsxn (read-only).
+
+  src/components/fantasy/LeagueTable.tsx:118 renders the manager line only when
+  `s.managerName && s.managerName !== s.teamName`, so in cloud mode every league
+  row collapsed to a team name alone. src/components/fantasy/RankingsPodium.tsx:98
+  renders `s.managerName` unguarded, so each podium tile carried an empty line.
+  src/routes/fantasy.leagues.$leagueId.tsx:137 renders `row.managerName || " "`.
+
+  The paths named in the sweep are src/components/fantasy/, not
+  src/components/fpl/ as the ticket wrote them; the line numbers are correct.
+
+display_name_is_not_public:
+  status: taken as established, not re-derived
+  source: supabase/migrations/20260921180000_fantasy_overall_standings.sql
+  rule_applied_verbatim: >
+    display_name is resolved only when auth.uid() is present; anonymous callers
+    and any team whose profile row is missing, soft-deleted or blank get the
+    fantasy team name. api.fantasy_overall_standings already returns managerName
+    under this rule and is NOT touched by this lane.
+  spot_check_in_production:
+    app_profiles_policies: 2, both `id = auth.uid()` (select + update, authenticated)
+    anon_select_on_app_profiles: false
+    anon_usage_on_schema_app: false
+
+approach:
+  migration: supabase/migrations/20260921200000_fantasy_points_read_surfaces.sql
+  change: >
+    `create or replace function api.fantasy_league_standings` with the identical
+    signature (p_league_id uuid, p_gameweek_id uuid, p_after_rank bigint,
+    p_after_team_id uuid, p_limit integer), the identical four cursor/gameweek
+    branches in the identical order, one extra `left join app.profiles` per
+    branch and one extra `managerName` key per item. Nothing is re-signed, no
+    key is removed and no ORDER BY changes.
+  why_four_branches_kept: >
+    The function is load-bearing -- the squad builder's keyset pagination and 22
+    Playwright journeys are pinned to it. Collapsing the branches would change
+    the plan shape and the tie-break order, so each branch is reproduced as
+    20260720191839 wrote it.
+  frontend:
+    - src/backend/fantasy/contracts.ts -- managerName added to the league standing item schema
+    - src/services/fantasy-runtime.ts -- getLeagueStandings maps it through
+    - src/services/fantasy-runtime.ts -- getSummary falls back to the team name (see below)
+    - src/components/common/FantasySummaryCard.tsx -- drops the manager line when it equals the team name
+
+get_summary_decision:
+  problem: >
+    FantasySummary.managerName had no server source at all. api.fantasy_hub
+    carries no profile field, and app.profiles.display_name is unreadable
+    outside the owner's own row, so there is nothing to map.
+  decision: >
+    Return the fantasy team name -- the same fallback the RPC itself uses when a
+    profile cannot be resolved -- rather than the empty string. Every consumer
+    already prefers the signed-in user's own client-side displayName over it
+    (src/routes/index.tsx:234 and :310, src/routes/fantasy.rankings.tsx:90), which
+    the task explicitly blesses, so the server value is only ever the fallback.
+  consequence_handled: >
+    FantasySummaryCard.tsx rendered teamName and managerName on consecutive
+    lines, which would have printed the same string twice. It now applies the
+    same guard LeagueTable already used.
+  rejected_alternative: >
+    Calling api.fantasy_overall_standings with limit 1 to read the server-resolved
+    `myRank.managerName`. It costs an extra RPC on the home screen and returns
+    null until the manager is ranked -- which is production today -- so it would
+    have paid latency for the same fallback.
+
+non_goals:
+  - api.fantasy_overall_standings is not modified.
+  - api.fantasy_player_pool is not modified.
+  - No api.service_* function, lifecycle script or scoring/finalization/pricing/ranking module is touched.
+  - anon is not granted USAGE on schema app.
+
+risks:
+  - id: signature drift
+    mitigation: pgTAP pins pg_get_function_identity_arguments to the exact string.
+  - id: row order drift
+    mitigation: pgTAP pins the page order and the exact item key set.
+  - id: display_name leaking to anon
+    mitigation: pgTAP asserts an anonymous caller sees managerName = teamName on every row.

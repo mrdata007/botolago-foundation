@@ -160,6 +160,13 @@ export const fantasyLeagueStandingPageSchema = z.object({
     z.object({
       teamId: postgresUuidSchema,
       teamName: z.string(),
+      /**
+       * BG-0074 — the profile display name for signed-in callers only; the RPC
+       * falls back to the fantasy team name for anonymous callers and for teams
+       * with no readable profile, because `app.profiles.display_name` is not a
+       * public profile field. Treat it as "a name to show", never as identity.
+       */
+      managerName: z.string(),
       rank: z.coerce.number().int().positive(),
       previousRank: z.coerce.number().int().positive().nullable(),
       totalPoints: z.number().int(),
@@ -250,10 +257,51 @@ export const fantasyPointsSchema = z.object({
       finalPoints: z.number().int().nullable(),
       didPlay: z.boolean().nullable(),
       minutesPlayed: z.number().int().nonnegative().nullable(),
+      /**
+       * BG-0075 — the per-category lines behind this player's total, live
+       * ledger rows only (`superseded_at is null`). `category` is free text in
+       * `app.fantasy_player_point_events`, so it stays a string here and the UI
+       * falls back to the raw code when a category has no translation yet.
+       */
+      events: z.array(
+        z.object({
+          category: z.string(),
+          points: z.number().int(),
+          fixtureId: postgresUuidSchema,
+        }),
+      ),
+    }),
+  ),
+  /**
+   * BG-0075 — the substitutions finalization applied to this team in this
+   * gameweek, in the order it applied them. Empty until the gameweek finalizes.
+   */
+  autoSubstitutions: z.array(
+    z.object({
+      playerOutId: postgresUuidSchema,
+      playerInId: postgresUuidSchema,
+      sequence: z.number().int().positive(),
+      reason: z.string(),
     }),
   ),
 });
 export type FantasyPointsDto = z.infer<typeof fantasyPointsSchema>;
+
+/**
+ * BG-0075 — the gameweek-wide Average / Highest strip on /fantasy/points.
+ *
+ * Both figures are null, never zero, while no team has been scored: a zero
+ * would read as "every manager scored nothing", which is the defect this
+ * contract exists to remove. `teamCount` lets a caller tell the two apart.
+ */
+export const fantasyGameweekSummarySchema = z.object({
+  gameweekId: postgresUuidSchema,
+  averagePoints: z.coerce.number().nullable(),
+  highestPoints: z.number().int().nullable(),
+  teamCount: z.coerce.number().int().nonnegative(),
+  pointsState: z.enum(["provisional", "final"]),
+});
+export type FantasyGameweekSummaryDto = z.infer<typeof fantasyGameweekSummarySchema>;
 
 export const fantasyHistoryPageSchema = z.object({
   items: z.array(
@@ -444,6 +492,10 @@ export interface FantasyRepository {
     beforeSequence: number | null,
     context: RepositoryContext,
   ): Promise<FantasyHistoryPageDto>;
+  getGameweekSummary(
+    gameweekId: string,
+    context: RepositoryContext,
+  ): Promise<FantasyGameweekSummaryDto>;
   getLeagues(
     seasonId: string,
     visibility: "public" | "private" | null,

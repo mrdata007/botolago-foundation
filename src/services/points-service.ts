@@ -37,8 +37,8 @@ export interface PointsViewModel {
   originalBenchIds: string[];
   autoSubs: { outId: string; inId: string; reasonKey: string }[];
   breakdown: PlayerPointsBreakdown[];
-  averagePoints?: number;
-  highestPoints?: number;
+  averagePoints?: number | null;
+  highestPoints?: number | null;
   /** ISO timestamp of the compute pass; used by callers for freshness UI. */
   computedAt: string;
   /** True when the gameweek has been closed by `finalizeGameweek`. */
@@ -59,8 +59,8 @@ export interface BuildInputs {
   transferHitPoints: number;
   /** Provisional per-player events + minutes for the current GW. */
   breakdown: PlayerPointsBreakdown[];
-  averagePoints?: number;
-  highestPoints?: number;
+  averagePoints?: number | null;
+  highestPoints?: number | null;
 }
 
 /**

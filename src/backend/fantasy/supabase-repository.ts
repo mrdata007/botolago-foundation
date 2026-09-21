@@ -5,6 +5,7 @@ import { getFantasyApi } from "@/integrations/supabase/v2-client";
 import {
   fantasyHubSchema,
   fantasyGameweekPageSchema,
+  fantasyGameweekSummarySchema,
   fantasyHistoryPageSchema,
   fantasyLeaguePageSchema,
   fantasyLeagueStandingPageSchema,
@@ -231,6 +232,29 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return parse(fantasyHistoryPageSchema, data);
+  }
+
+  /**
+   * BG-0075 — the gameweek-wide Average / Highest strip. Anon-callable on
+   * purpose: /fantasy/points is reachable signed out. Both figures come back
+   * null while `teamCount` is 0, which is production today.
+   */
+  async getGameweekSummary(gameweekId: string, _context: RepositoryContext) {
+    // `src/backend/generated/database.types.ts` is a CI artifact regenerated
+    // from the applied schema, so it does not name this RPC until the migration
+    // that creates it has run. The call is otherwise identical to its
+    // neighbours; the response is validated by the schema below, exactly as a
+    // generated-typed response would be.
+    const { data, error } = await (
+      getFantasyApi() as unknown as {
+        rpc: (
+          name: string,
+          args: Record<string, unknown>,
+        ) => PromiseLike<{ data: unknown; error: PostgrestError | null }>;
+      }
+    ).rpc("fantasy_gameweek_summary", { p_gameweek_id: gameweekId });
+    check(error);
+    return parse(fantasyGameweekSummarySchema, data);
   }
 
   async getLeagues(

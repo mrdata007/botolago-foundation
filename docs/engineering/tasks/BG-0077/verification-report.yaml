@@ -1,0 +1,60 @@
+task_id: BG-0077
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+status: NOT_REPRODUCED
+verdict: No defect. No code change, so no new test and no screenshot.
+
+how_it_was_checked:
+  production_project: tkewgajrljbwgwedqsxn
+  read_only: true
+  queries_run:
+    - description: read the live body of api.fantasy_rules
+      how: select pg_get_functiondef(oid) from pg_proc join pg_namespace ... where nspname='api' and proname='fantasy_rules'
+      result: >
+        positions, scoring and chips are all real sub-selects over
+        app.fantasy_position_rules, app.fantasy_scoring_rules (where active) and
+        app.fantasy_chip_rules. None is a literal or a placeholder.
+    - description: call the function for the live season and measure the arrays
+      how: >
+        select jsonb_array_length(r->'positions'), jsonb_array_length(r->'scoring'),
+        jsonb_array_length(r->'chips') from app.fantasy_seasons cross join lateral
+        (select api.fantasy_rules(id) as r) x
+      result: "positions 4, scoring 12, chips 5 for season 5ada3e98-2929-405a-a3f1-a26de8e51933"
+    - description: count the underlying rules tables
+      result: "fantasy_position_rules 8, fantasy_scoring_rules (active) 24, fantasy_chip_rules 10, fantasy_rulesets 2"
+  source_checks:
+    - description: who consumes getRules
+      how: grep -rln "getRules" src/routes src/components src/hooks
+      result: "exactly one file, src/routes/fantasy.rules.tsx"
+    - description: what that file reads off the result
+      result: >
+        rules.squadSize, rules.budget, rules.initialFreeTransfers,
+        rules.transferHitCost, rules.deadline.minutesBeforeFirstFixture. It never
+        references positions, scoring or chips. The rest of the page is eight
+        static i18n prose cards.
+    - description: who writes pendingTransfers
+      how: grep -rn "pendingTransfers" src/
+      result: >
+        src/routes/fantasy.transfers.tsx:465 and :512 set it from the browser
+        draft; src/routes/fantasy.team.tsx:244 reads it;
+        src/services/fantasy-cloud-finalize.ts resets it to 0 at finalize and
+        src/services/lifecycle-service.test.ts:138 asserts that reset. There is
+        no persisted counterpart in the database.
+
+conclusion: >
+  The ticket's own conditional -- "if it does not, the Help & Rules page is
+  empty in production too" -- resolves to the negative branch: the cloud path
+  DOES return positions, scoring and chips, so there is no production defect.
+  And the page would not have been empty either way, because it does not render
+  those three fields. `pendingTransfers: 0` is likewise the correct value for a
+  team read back from the server, not a permanent zero.
+
+gates:
+  note: >
+    No code changed for BG-0077, so the gate run recorded in the BG-0074 and
+    BG-0075 verification reports covers this branch in full. For convenience:
+    typecheck pass; bun test 1324 pass / 4 pre-existing fails; lint 0 errors;
+    format:check 40 pre-existing offenders, none in the changed set;
+    backend:migrations:check validated 73 migrations; backend:secrets:check
+    pass; config:integrity:check 36 files, no violations; i18n-gate pass;
+    build pass.

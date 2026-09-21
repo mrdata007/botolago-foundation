@@ -1,0 +1,108 @@
+task_id: BG-0075
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+status: IMPLEMENTED
+
+migration:
+  path: supabase/migrations/20260921200000_fantasy_points_read_surfaces.sql
+  timestamp: "20260921200000"
+  shared_with: [BG-0074]
+  new_functions:
+    - api.fantasy_gameweek_summary(uuid)
+  replaced_functions:
+    - api.get_my_fantasy_points(uuid, uuid)
+  new_indexes:
+    - app.fantasy_player_point_events -> fantasy_player_point_events_live_lookup_idx
+    - app.fantasy_team_gameweek_results -> fantasy_team_gameweek_results_gameweek_score_idx
+
+backend_files:
+  - file: src/backend/fantasy/contracts.ts
+    change: >
+      fantasyPointsSchema players gain `events: array({category: string, points: int,
+      fixtureId: uuid})`; a top-level `autoSubstitutions` array is added. New
+      fantasyGameweekSummarySchema with nullable averagePoints/highestPoints and a
+      non-null teamCount. FantasyRepository gains getGameweekSummary.
+  - file: src/backend/fantasy/supabase-repository.ts
+    change: >
+      getGameweekSummary calls the new RPC and validates with the schema.
+      The call site casts getFantasyApi() through a narrow local rpc type
+      because src/backend/generated/database.types.ts is a CI artifact
+      regenerated from the applied schema and does not name a function whose
+      migration has not run yet. The generated file is NOT hand-edited. The
+      response is validated by zod exactly as a generated-typed one would be, so
+      the cast removes a name check, not a shape check.
+
+domain_type_changes:
+  - file: src/types/domain.ts
+    change: Gameweek.averagePoints / highestPoints are `number | null`.
+  - file: src/types/fantasy.ts
+    change: >
+      GameweekResult.averagePoints / highestPoints are `number | null`;
+      GameweekResult.autoSubs uses `reasonKey: string` instead of a
+      `LocalizedString` no backend can produce; PointsEventKind is replaced by
+      `POINTS_EVENT_CATEGORIES` + `PointsEvent {category: string, points,
+      fixtureId?}`, matching what src/backend/fantasy/scoring.ts writes.
+  - files:
+      - src/services/points-service.ts
+      - src/services/lifecycle-service.ts
+      - src/services/fantasy-cloud-finalize.ts
+    change: averagePoints / highestPoints inputs widened to `number | null`.
+  - file: src/mocks/fantasy-data.ts
+    change: >
+      currentGameweekBreakdown emits the real category codes with points already
+      multiplied out, instead of the invented `kind` union plus a separate
+      `count` multiplier. The per-player totals are unchanged (appearance now
+      carries base + 1, which is what the old appearance + "60min" pair summed to).
+
+runtime_changes:
+  file: src/services/fantasy-runtime.ts
+  changes:
+    - pointsDto takes the gameweek summary and maps averagePoints/highestPoints, events and autoSubs.
+    - a gameweekSummary() helper swallows a failed summary read into null so the strip degrades to an em dash rather than taking the page down.
+    - getCurrentGameweek fills averagePoints/highestPoints from the summary.
+    - getGameweekResult fetches the points and the summary in parallel.
+    - getGameweekHistory keeps benchPoints 0 (the history RPC genuinely lacks it, recorded in a comment) and returns null for average/highest.
+
+ui_changes:
+  - file: src/components/fpl/SquadListTable.tsx
+    change: >
+      New optional `renderDetail(player, squadPlayer)` slot. The existing
+      columns grid moved into a wrapper div inside the <li> so the detail can
+      span the full row width; no class on any existing element changed.
+  - file: src/routes/fantasy.points.tsx
+    change: >
+      The List view passes renderDetail, which lists one line per scoring event
+      (translated category, signed points) under the player. A new
+      auto-substitutions section lists "out -> in" with the translated reason.
+      Server autoSubs win over the client engine's when present; the engine list
+      remains the mock-mode fallback.
+    ui_kit_compliance: >
+      Every element added uses the ui.* class map and --ui-* tokens only
+      (ui.text.meta, ui.text.secondary, ui.text.label, ui.text.tabular,
+      ui.tone.muted, ui.tone.default, ui.surface.sunken). No hex, no bg-white,
+      no Tailwind type ramp, no rounded-lg/xl/2xl/3xl, no tracking-* at all, and
+      logical properties only (ms-auto, justify-between); the arrow glyph is
+      mirrored with rtl:-scale-x-100. The surrounding legacy FPL markup was left
+      exactly as it was.
+
+i18n:
+  file: src/i18n/dictionaries.ts
+  keys_added: 21 per language (42 total), fr and ar
+  categories: >
+    appearance, appearance_short, appearance_full, goal, assist, official_assist,
+    clean_sheet, goals_conceded, saves, penalty_save, penalty_miss, yellow_card,
+    red_card, direct_red_card, second_yellow_dismissal, own_goal, bonus,
+    player_of_match -- the union of what scoring.ts writes and what
+    app.fantasy_scoring_rules carries in production.
+  other_keys: fantasy.points.autosubs, and the two substitution reasons
+  gate: >
+    Reached through the `fantasy.points.event.` and
+    `fantasy.points.autosub_reason.` template prefixes, so W3 is unchanged at
+    248. W4 goes 97 -> 99 for the two new non-literal call sites; the baseline
+    in scripts/qa/i18n-gate.ts is updated in the same commit with the reason.
+
+parallel_lane_note: >
+  fantasy-runtime.ts edits stay inside the imports block, pointsDto, the new
+  gameweekSummary helper, getCurrentGameweek, getSummary, getLeagueStandings,
+  getGameweekResult and getGameweekHistory. playerDto, the top-players mapper
+  and the player-detail path are untouched and the file was not reformatted.

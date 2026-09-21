@@ -24,8 +24,8 @@ export interface FinalizeInput {
   team: FantasyTeam;
   players: FantasyPlayer[];
   breakdown: PlayerPointsBreakdown[];
-  averagePoints?: number;
-  highestPoints?: number;
+  averagePoints?: number | null;
+  highestPoints?: number | null;
 }
 
 export interface FinalizeOutput {
