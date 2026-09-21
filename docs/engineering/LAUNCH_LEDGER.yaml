@@ -835,7 +835,7 @@ tasks:
       Not a GW1 blocker. GW1 is complete and correct.
 
   BG-0088:
-    title: The branch calls two RPCs production does not have, so the frontend must not be published before the migrations
+    title: The branch calls four RPCs production does not have, so the frontend must not be published before the migrations
     area: release
     severity: P0
     owner: Chief
@@ -844,11 +844,29 @@ tasks:
     evidence:
       - branch build against production -- 404 fantasy_player_season_stats, 404 fantasy_gameweek_summary, /fantasy renders its error state
       - the same run returned 200 for football_team_catalog and fantasy_hub, so this is not connectivity
-      - both RPCs ship in unpromoted migrations 20260921160000 and 20260921200000
+      - >
+        2026-09-21 re-measured directly against pg_proc on tkewgajrljbwgwedqsxn rather than
+        by HTTP, and the count is four, not two. Every RPC name this branch's src/ calls was
+        checked against api.*: MISSING are fantasy_gameweek_summary,
+        fantasy_overall_standings, fantasy_player_gameweek_history and
+        fantasy_player_season_stats. All 31 others are present.
+      - >
+        production's supabase_migrations.schema_migrations stops at 20260921135655. None of
+        this branch's seven migrations (20260921140000, 160000, 170000, 180000, 190000,
+        200000, 220000) is applied.
+      - the four map to three migrations -- 160000 ships two, 180000 and 200000 one each
     note: >
       Deployment ordering is therefore hard: promote the migrations, THEN publish the
-      frontend. Publishing first breaks /fantasy for every visitor. Live production is
-      unaffected today because main does not call either RPC.
+      frontend. Publishing first breaks /fantasy, the player detail and the overall
+      standings for every visitor with PGRST202. Live production is unaffected today
+      because main calls none of the four.
+
+      A fifth name also came back missing and is NOT part of this -- save_fantasy_team,
+      which exists in no schema in production at all. It is called only from
+      src/services/fantasy-cloud-repo.ts, whose exported `fantasyCloudRepo` object has zero
+      references anywhere outside its own file and test; only its FantasyCloudError class
+      is still used, by fantasy-errors.ts as a compatibility shim. So it is dead code
+      calling RPCs that were never deployed, not a live defect. Recorded as BG-0123.
 
   BG-0100:
     title: Match and fixture times are formatted in the browser's timezone in six places, while match cards pin Africa/Casablanca
@@ -1289,6 +1307,33 @@ tasks:
       "Joker", rendering only OAuth providers actually enabled, removing the Apparence row
       while DARK_MODE_ENABLED is false, the Triple Capitaine chip, and the pitch fixture
       plate's missing opponent code. Running at the time of writing.
+
+  BG-0123:
+    title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - "`fantasyCloudRepo` (fantasy-cloud-repo.ts:363) has zero references in src/ outside its own file and test"
+      - "`mapSupabaseError` and `validateSquadShape` are referenced only by fantasy-cloud-repo.test.ts"
+      - "only FantasyCloudError escapes, into fantasy-errors.ts, which maps its codes onto the current error type"
+      - it calls save_fantasy_team and save_fantasy_lifecycle; neither exists in ANY schema on tkewgajrljbwgwedqsxn, nor does save_fantasy_team_v or finalize_fantasy_gameweek_v
+      - the live path is src/backend/fantasy/supabase-repository.ts against the api schema via getFantasyApi()
+    note: >
+      Found while measuring BG-0088. Worth recording precisely because of how it reads: a
+      grep for save_fantasy_team against production returns "missing", which looks like a
+      broken squad-save until you trace the caller and find nothing reaches it. 620 lines
+      of a second, older repository against the public schema, superseded by the api-schema
+      one, kept alive only by an error class.
+
+      Not deleted now, for two reasons. Deleting it moves the i18n gate's W3/W4 baselines
+      and the test count while two lanes are mid-flight and a third has already had to
+      reconcile those numbers once today. And FantasyCloudError has to be rehomed into
+      fantasy-errors.ts first, which is a real edit to the live error path rather than a
+      deletion. Sequenced with the polish pass, which is already the pass that settles the
+      remaining Fantasy debt.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6

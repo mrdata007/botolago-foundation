@@ -618,6 +618,73 @@ Latin one.
 
 ## 5. After the PRs merge
 
+### 5.1 Promote the migrations FIRST, then publish (BG-0088) — order is not optional
+
+This is the one step in this document where doing the right two things in the
+wrong order breaks the live site for every visitor.
+
+**Measured on production 2026-09-21.** `supabase_migrations.schema_migrations`
+stops at `20260921135655`. None of this branch's seven migrations is applied:
+
+```
+20260921140000_news_article_detail_not_found_status.sql
+20260921160000_fantasy_player_statistics.sql
+20260921170000_news_stand_down.sql
+20260921180000_fantasy_overall_standings.sql
+20260921190000_team_translations.sql
+20260921200000_fantasy_points_read_surfaces.sql
+20260921220000_story_teams_seed.sql
+```
+
+Every RPC name the branch's `src/` calls was checked against `api.*` in
+`pg_proc`. Thirty-one are present. **Four are not**, and all four are created by
+migrations in that list:
+
+| RPC | shipped by | what breaks without it |
+| --- | --- | --- |
+| `fantasy_player_season_stats` | `…160000` | player detail — season stats |
+| `fantasy_player_gameweek_history` | `…160000` | player detail — per-gameweek history |
+| `fantasy_overall_standings` | `…180000` | the overall rankings screen |
+| `fantasy_gameweek_summary` | `…200000` | `/fantasy/points` |
+
+If the frontend is published before the migrations are promoted, those four
+calls return **PGRST202** and the screens render their error state. Live
+production is fine today only because `main` calls none of the four.
+
+So:
+
+1. Promote the migrations through
+   `docs/backend/RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md`.
+2. Re-run the check below and confirm it returns **zero rows**.
+3. Only then publish from Lovable.
+
+```sql
+-- Expect 0 rows. Any row is an RPC the new frontend will call and production lacks.
+with needed(name) as (
+  select unnest(array[
+    'fantasy_player_season_stats','fantasy_player_gameweek_history',
+    'fantasy_overall_standings','fantasy_gameweek_summary'
+  ])
+)
+select n.name as missing_rpc
+from needed n
+where not exists (
+  select 1 from pg_proc p
+  where p.proname = n.name
+    and p.pronamespace = 'api'::regnamespace
+)
+order by n.name;
+```
+
+Run as written on production 2026-09-21, before promotion, it returns all four
+rows — which is how the table above was measured, and confirms the query
+detects the condition rather than silently returning nothing.
+
+There is no rollback for publishing first beyond publishing again, and the
+window between the two is a broken Fantasy section for whoever is on the site.
+
+### 5.2 Publish from Lovable
+
 **Publish `main` from Lovable** (BG-0022). A GitHub merge is not a deployment.
 The frontend only changes when Lovable publishes, so after merging: publish,
 record the deployment id, and verify the live bundle changed — the reliable
