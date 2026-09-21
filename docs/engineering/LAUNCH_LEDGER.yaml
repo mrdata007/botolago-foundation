@@ -790,23 +790,30 @@ tasks:
     title: The 2026/27 fixture list stops after matchday 1 -- the season cannot advance past GW1
     area: data
     severity: P0
-    owner: HALTED_FOR_INPUT
-    state: HALTED_FOR_INPUT
+    owner: Chief
+    state: ACCEPTED # owner checked other outlets 2026-09-21 -- they publish only matchday 1 too, so this is the league's own schedule release, not a provider or ingestion defect
     depends_on: []
     evidence:
       - app.rounds for the current season -- 2 rows; app.fixtures -- 8 rows, all round 1
       - round 2 exists but has 0 fixtures, so api.service_sync_fantasy_calendar notes no_fixtures_published and creates no GW2
       - a 16-club double round robin is 30 rounds / 240 fixtures; the database holds 8
       - the football recovery workflow completed 2026-09-21T16:06:24Z and still produced only round 1, so this is provider coverage, not a missed run
-    question: >
-      Does SportsMonks actually publish the full Botola Pro 2026/27 calendar for this
-      competition, or only the next matchday? If the former, the recovery script's scope
-      needs widening. If the latter, GW2 will only exist once the provider publishes
-      round 2, and the season advances one matchday at a time -- which is workable but
-      should be a decision rather than a surprise.
+    resolution: >
+      Answered by the owner: other outlets publish the same, so the LNFP has released
+      matchday 1 only. Nothing is broken; the season advances one matchday at a time and
+      the recovery script's scope is correct as written.
+    residual_risk: >
+      The chain is now automatic -- provider publishes round 2, the daily football
+      recovery ingests it, the hourly sync creates GW2 -- but there is one timing edge
+      worth watching. api.service_sync_fantasy_calendar refuses to create a gameweek
+      whose computed deadline has already passed (its `deadline_already_passed` note).
+      So if round 2's fixtures land less than 90 minutes before that round's first
+      kickoff, or after it, GW2 is never created at all rather than created late. The
+      scheduled orchestrator is also throttled well below its hourly cron on this repo
+      (observed gaps of 3-8 hours), which widens that window. Worth a check after GW1
+      closes rather than a fix now.
     note: >
-      Not a GW1 blocker. GW1 is complete and correct. This is what stops the season
-      afterwards, and it is the live form of the old BG-0001 concern.
+      Not a GW1 blocker. GW1 is complete and correct.
 
   BG-0088:
     title: The branch calls two RPCs production does not have, so the frontend must not be published before the migrations
