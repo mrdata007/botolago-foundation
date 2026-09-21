@@ -35,4 +35,24 @@ describe("the back controls all use it", () => {
       expect(source).not.toContain("history.back()");
     }
   });
+
+  it("only falls back to paths the router actually has", () => {
+    // The fallback is a plain string, so a typo would not fail the typecheck --
+    // it would strand the reader exactly as before, only on a 404 instead of a
+    // blank tab. Check each one against the generated route tree.
+    const tree = readFileSync(join(root, "src/routeTree.gen.ts"), "utf8");
+    const fallbacks = SURFACES.flatMap((file) => {
+      const source = readFileSync(join(root, file), "utf8");
+      return [...source.matchAll(/useBackTo\("([^"]+)"\)/g)].map((match) => match[1]);
+    });
+    expect(fallbacks.length).toBe(SURFACES.length);
+    for (const path of fallbacks) {
+      // A group's listing is generated with a trailing slash ("/matches/"),
+      // which the router resolves from the bare path.
+      const known =
+        tree.includes(`'${path}': typeof`) ||
+        tree.includes(`'${path.replace(/\/$/, "")}/': typeof`);
+      expect(known).toBe(true);
+    }
+  });
 });
