@@ -42,9 +42,30 @@ select extensions.ok(
 );
 
 -- The BG-0063 trap: an argument is coerced to its parameter type in the
--- CALLER's context, so an app-schema enum in a public signature would force
--- anon to hold USAGE on app. app.language_code must stay inside function
--- bodies.
+-- CALLER's context, before a `security definer` body is ever entered. PostgREST
+-- emits that coercion as an explicit `'fr'::app.language_code` cast, so naming
+-- an app-schema type in an api signature forces the CALLING ROLE to hold USAGE
+-- on app -- which is exactly what the api/app split exists to withhold.
+--
+-- The trap therefore bites a role only if that role lacks USAGE on app. It is a
+-- privilege question, NOT a naming question, and the two are not the same here:
+--
+--   has_schema_privilege('anon',          'app', 'usage')  ->  false
+--   has_schema_privilege('authenticated', 'app', 'usage')  ->  true
+--
+-- So `authenticated` is exempt, and deliberately so. Three api functions have
+-- named app.language_code in their argument lists since well before this test
+-- existed -- complete_onboarding, update_my_preferences and
+-- register_my_notification_device. All three are authenticated-only
+-- (has_function_privilege('anon', ..., 'execute') is false for each, and true
+-- for `authenticated`), and all three work correctly in production. A blanket
+-- "no api function may NAME app.language_code" assertion flags them as
+-- failures even though the code is right; that is what this assertion used to
+-- do, and why it failed. Please do not "re-fix" it back to a name check.
+--
+-- What actually matters, and what is asserted below, is the anonymous surface:
+-- an api function callable by `anon` must not name an app-schema type, because
+-- anon can never satisfy the coercion.
 select extensions.ok(
   not has_schema_privilege('anon', 'app', 'usage'),
   'anon still holds no USAGE on the app schema'
@@ -55,9 +76,17 @@ select extensions.ok(
     from pg_proc procedure
     join pg_namespace namespace on namespace.oid = procedure.pronamespace
     where namespace.nspname = 'api'
-      and 'app.language_code'::regtype::oid = any(procedure.proargtypes)
+      and has_function_privilege('anon', procedure.oid, 'execute')
+      and exists (
+        select 1
+        from unnest(procedure.proargtypes) as argument_type_oid
+        join pg_type argument_type on argument_type.oid = argument_type_oid
+        join pg_namespace argument_namespace
+          on argument_namespace.oid = argument_type.typnamespace
+        where argument_namespace.nspname = 'app'
+      )
   ),
-  'no api function names app.language_code in its argument list'
+  'no anon-executable api function names an app-schema type in its argument list'
 );
 
 select extensions.ok(
@@ -340,5 +369,11 @@ select extensions.throws_ok(
   null,
   'one translation per team per language'
 );
+
+-- Required: extensions.no_plan() at the top defers the plan line to finish(),
+-- so without this call the file emits assertions but never a `1..N` plan and
+-- pg_prove rejects the whole file with "No plan found in TAP output" -- even
+-- when every assertion passes.
+select * from extensions.finish();
 
 rollback;

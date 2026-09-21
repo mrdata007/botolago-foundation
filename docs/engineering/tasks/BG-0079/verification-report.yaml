@@ -1,0 +1,224 @@
+task_id: BG-0079
+attempt: 1
+role: Builder-Backend (self-verification)
+branch: bg-0079-pgtap-fixes
+base: origin/chief/launch-fixes-3
+verified_at: 2026-09-21
+
+source_of_failures:
+  ci_run: Backend quality run 468
+  run_id: "35617302393"
+  job: database-quality
+  reproduced_locally: true
+
+harness:
+  docker_available: false
+  supabase_cli_usable: false
+  what_was_actually_executed: >
+    A real PostgreSQL 16.13 cluster was initdb'd locally (postgresql-16-pgtap 1.3.2 already
+    present), and all 72 files under supabase/migrations were applied IN ORDER to a fresh
+    database, exactly as documented by the BG-0043 lane in
+    docs/engineering/tasks/BG-0043/verification-report.yaml. This is NOT `supabase db reset`; it
+    is the same migration set on the same major version, and it is stated here as such.
+  cluster:
+    data_dir: /var/lib/postgresql/bg0079/data
+    port: 55479 (unix socket only, listen_addresses='')
+    encoding: UTF8
+    locale: C.utf8
+    wal_level: logical
+  migrations_applied: 72
+  stand_ins: >
+    Minimal local substitutes for the Supabase-managed objects a bare cluster lacks: the anon /
+    authenticated / service_role / authenticator roles, auth.users, auth.sessions,
+    auth.mfa_factors, storage.buckets, storage.objects, auth.uid(), auth.role(), auth.jwt(), and
+    the supabase_realtime publication. None of these is shipped; they live only in the scratchpad.
+
+harness_fidelity:
+  why_this_matters: >
+    A harness that is wrong in the same direction as the bug proves nothing. Four independent
+    defects in the stand-ins were found and fixed BEFORE any repository file was touched, each
+    identified by a test failing for a reason that had nothing to do with this task:
+  defects_found_and_fixed_in_the_harness:
+    - auth.users lacked instance_id / aud / role, which every fixture in the suite inserts.
+    - auth.sessions lacked `aal`, and the auth schema was not granted USAGE to the PostgREST
+      roles, so auth.uid() was unresolvable under `set role authenticated`.
+    - auth.uid() / auth.role() read only the legacy request.jwt.claim.* GUCs; the suite sets the
+      request.jwt.claims JSON object, which is what real Supabase reads.
+    - the cluster was first initdb'd as SQL_ASCII, which silently mangled Arabic text and made
+      news_domain's Arabic full-text assertion fail. Re-initdb'd as UTF8.
+    - storage.objects lacked owner_id, and storage tables were not granted to the browser roles.
+  convergence_evidence: >
+    Once those five were corrected, the local suite reported EXACTLY the CI result: 46 files
+    passing and precisely the four files run 468 reported failing, each with the same symptom
+    string — two "No plan found in TAP output" with exit 3, one "Bad plan. You planned 10 tests
+    but ran 20" with Tests: 20 Failed: 0, and one "Failed test 5" in team_translations. That
+    byte-for-byte agreement, reached before any fix was written, is the basis for trusting every
+    result below.
+  independent_sanity_check: >
+    The 46 files that CI passes also passed locally, unmodified, at every stage.
+
+per_failure_results:
+  - file: supabase/tests/database/fantasy_overall_standings.test.sql
+    before: "exit 3, Tests: 0 — No plan found in TAP output"
+    root_cause_observed: >
+      Three stacked fatal fixture errors, each read off the server, not inferred:
+      (1) invalid input value for enum app.season_status: "scheduled";
+      (2) invalid input value for enum app.fantasy_season_status: "draft";
+      (3) violates check constraint "fantasy_gameweeks_finalized_check".
+    after: "Tests=39, 39 ok, 0 not ok, Result: PASS"
+    note: >
+      Every one of the 39 assertions passed on the first run after the fixture loaded. The
+      function under test was never changed and was never wrong.
+
+  - file: supabase/tests/database/fantasy_player_season_stats.test.sql
+    before: "exit 3, Tests: 0 — No plan found in TAP output"
+    root_cause_observed: >
+      Two stacked fatal fixture errors:
+      (1) invalid input value for enum app.season_status: "scheduled" — the exact statement CI's
+          log pointed at;
+      (2) duplicate key value violates unique constraint "fantasy_gameweeks_one_current_idx",
+          because sequence 6 ('provisional') and sequence 7 ('open') both fall inside that
+          partial index's status set for one season.
+    after: "Tests=38, 38 ok, 0 not ok, Result: PASS"
+    scored_status_set_verified: >
+      pg_get_functiondef(api.fantasy_player_season_stats) on the local cluster shows the reader
+      treats a gameweek as scored only when
+      `gameweek.status in ('provisional','finalizing','finalized','corrected')`. 'open' and
+      'scheduled' are both outside that set, so moving sequence 7 from 'open' to 'scheduled'
+      exercises the same path and guards the same invariant.
+
+  - file: supabase/tests/database/football_deactivate_non_current_teams.test.sql
+    before: '"Bad plan. You planned 10 tests but ran 20" (Tests: 20 Failed: 0)'
+    root_cause_observed: >
+      Read directly off the raw TAP stream: twenty `ok` lines followed by the literal plan line
+      `1..10`. no_plan() defers the plan to finish(); pgTAP's counter lives in a temp table; the
+      file's five `rollback to savepoint` statements revert that counter. Numbering survives
+      because it comes from a sequence, which rollback does not rewind.
+    after: "Tests=20, 20 ok, 0 not ok, Result: PASS"
+    assertions_deleted: 0
+
+  - file: supabase/tests/database/team_translations.test.sql
+    before: '"Failed test 5", plus "No plan found in TAP output"'
+    root_cause_observed: >
+      Two independent defects. The assertion was a name check where the real rule is a privilege
+      check; and the file called no_plan() but never finish(), so it emitted no plan line at all —
+      a failure that remained even after all 31 assertions passed.
+    after: "Tests=31, 31 ok, 0 not ok, Result: PASS"
+
+privilege_facts_rederived_locally:
+  note: >
+    Derived on the local cluster from the same migration set, with NO read or write to production.
+    They match the production values quoted in the task assignment exactly.
+  has_schema_privilege_anon_app_usage: false
+  has_schema_privilege_authenticated_app_usage: true
+  has_schema_privilege_service_role_app_usage: false
+  api_functions_naming_app_language_code:
+    - name: api.complete_onboarding
+      anon_execute: false
+      authenticated_execute: true
+    - name: api.update_my_preferences
+      anon_execute: false
+      authenticated_execute: true
+    - name: api.register_my_notification_device
+      anon_execute: false
+      authenticated_execute: true
+
+bg0063_trap_reproduced:
+  method: >
+    A throwaway `api.bg0079_probe(p app.language_code)` security-definer function was created
+    inside a transaction, granted to all three roles, called under each role, and rolled back.
+  results:
+    - "anon,          select api.bg0079_probe('fr'::app.language_code)  ->  ERROR: permission denied for schema app"
+    - "authenticated, select api.bg0079_probe('fr'::app.language_code)  ->  ok"
+    - "service_role,  select api.bg0079_probe('fr'::app.language_code)  ->  ERROR: permission denied for schema app"
+    - "anon,          select api.bg0079_probe('fr')  ->  ok  (a bare literal coerces; the EXPLICIT cast PostgREST emits is what fails)"
+  conclusion: >
+    The trap bites exactly the roles that lack USAGE on app. 'authenticated' is genuinely exempt.
+    A name-based assertion is therefore the wrong shape for this invariant.
+
+mutation_test_of_the_rewritten_assertion:
+  why: >
+    A rewritten assertion is only worth keeping if it still fails on the defect it guards. This was
+    proven, not assumed, inside a rolled-back transaction.
+  results:
+    - "clean tree                                                      -> 0 violations (assertion passes)"
+    - "inject an ANON-executable api fn with an app-typed argument     -> 1 violation  (assertion FAILS, as required)"
+    - "also inject an AUTHENTICATED-only api fn with an app-typed arg  -> still 1 violation (correctly exempt)"
+  conclusion: >
+    The assertion is strictly stronger than before in the dimension that matters (it now covers
+    ANY app-schema type, not just app.language_code) and correctly exempts the role that holds
+    USAGE on app. It is not vacuous.
+
+full_suite:
+  scope: every file in supabase/tests/database, not only the four — a fixture fix can break a neighbour.
+  runner: pg_prove (the same parser `supabase test db` uses)
+  run_on: a database dropped and rebuilt from the bootstrap + all 72 migrations immediately beforehand
+  files: 50
+  files_passing: 50
+  files_failing: 0
+  total_assertions: 1132
+  failing_assertions: 0
+
+gates:
+  - command: bun run typecheck
+    result: pass
+    detail: "tsc --noEmit, no output, exit 0."
+  - command: bun test
+    result: "1345 pass, 4 fail, 14836 expect() calls, 1349 tests across 153 files"
+    detail: >
+      The 4 failures are exactly the pre-existing, deliberate ones in
+      src/content/legal/legal-content.test.ts — terms.fr, terms.ar, privacy.fr, privacy.ar
+      "carries no unfilled placeholder", the publication gate awaiting owner-supplied values. The
+      failing test names were listed explicitly to confirm no other test fails.
+  - command: bun run lint
+    result: "17 problems (0 errors, 17 warnings)"
+    detail: All 17 are pre-existing react-refresh/only-export-components warnings. 0 errors.
+  - command: bun run format:check
+    result: "40 warnings, error in 9 files — all pre-existing"
+    detail: >
+      40 offenders in 9 files, identical to the baseline the BG-0043 lane recorded on this branch.
+      Prettier does not check .sql, so none of the four edited files is in scope; the two new
+      .yaml files under docs/engineering/tasks/BG-0079 are clean.
+  - command: bun run backend:migrations:check
+    result: pass
+    detail: "Validated 72 migration(s). No migration was added, edited or removed."
+  - command: bun run backend:secrets:check
+    result: pass
+    detail: No high-confidence secrets found in tracked files.
+  - command: bun run config:integrity:check
+    result: pass
+    detail: "no violations in 36 executed configuration file(s)"
+  - command: bun scripts/qa/i18n-gate.ts
+    result: pass
+    detail: "RESULT: pass (pre-existing opaque-expression advisories only)"
+  - command: bun run build
+    result: pass
+    detail: Vite + Nitro build completed; .output generated.
+
+diff_scope:
+  files_changed: 4
+  all_under: supabase/tests/database/
+  migrations_changed: 0
+  plus_new_docs: docs/engineering/tasks/BG-0079/{implementation-report,verification-report}.yaml
+
+limits_of_this_verification:
+  - >
+    The cluster is a local stand-in, not a Supabase stack: auth, storage, PostgREST and Realtime
+    are represented by minimal local objects, so anything depending on their real behaviour is out
+    of reach here. What IS covered is the migration set, the pgTAP suite and the privilege graph,
+    which is what all four failures live in.
+  - >
+    The harness reproduced run 468's four failures exactly before any fix was written, which is
+    the strongest available evidence that these results transfer to CI — but it is evidence, not
+    a guarantee, and CI remains the authority.
+  - >
+    Nothing was executed against production. The production privilege facts were taken from the
+    task assignment and independently re-derived locally; they agree.
+
+conclusion: >
+  All four failures from Backend quality run 468 are fixed at their observed root causes. Two were
+  broken fixtures that had never been executed, one was a plan count defeated by pgTAP's counter
+  being rolled back with the savepoints, and one was an assertion whose shape was wrong — a name
+  check standing in for a privilege check. No assertion was deleted, skipped or loosened, no grant
+  was widened, and no migration was touched. The whole suite passes locally: 50 files, 1132
+  assertions, 0 failures.

@@ -5,8 +5,19 @@
 -- cases stay distinguishable from one another:
 --
 --   Season A has 7 gameweeks. Sequences 1-5 are finalized, 6 is provisional,
---   7 is open. So six gameweeks are "scored" and the 5-gameweek form window is
---   sequences 2..6 -- sequence 1 is the sixth-oldest and must fall out.
+--   7 is scheduled. So six gameweeks are "scored" and the 5-gameweek form
+--   window is sequences 2..6 -- sequence 1 is the sixth-oldest and must fall
+--   out.
+--
+--   Sequence 7 is 'scheduled' rather than 'open' because
+--   fantasy_gameweeks_one_current_idx is UNIQUE on (fantasy_season_id) WHERE
+--   status IN (open, locked, live, provisional, finalizing): a season may hold
+--   at most ONE gameweek in that set, and sequence 6 already holds it as
+--   'provisional'. Nothing is lost -- the rule under test is that points in a
+--   gameweek which has not scored are excluded, and the reader treats a
+--   gameweek as scored only when its status is one of provisional/finalizing/
+--   finalized/corrected. 'scheduled' and 'open' are both outside that set, so
+--   the assertion guards exactly the same invariant either way.
 --
 --   Striker (P1)  scored in all six -> total 35, form = (2+4+6+8+5)/5 = 5.0.
 --                 Capped at GW3 the total is 16 and the window shrinks to the
@@ -37,7 +48,9 @@ values
   ('b0200000-0000-4000-8000-000000000001', 'b0100000-0000-4000-8000-000000000001',
     '2089/90', '2089-08-01', '2090-06-30', 'active', true),
   ('b0200000-0000-4000-8000-000000000002', 'b0100000-0000-4000-8000-000000000001',
-    '2090/91', '2090-08-01', '2091-06-30', 'scheduled', false);
+    -- app.season_status is (planned, active, completed, cancelled) -- there is
+    -- no 'scheduled' member. A not-yet-started football season is 'planned'.
+    '2090/91', '2090-08-01', '2091-06-30', 'planned', false);
 
 insert into app.rounds (id, season_id, round_number, name, status)
 select ('b0300000-0000-4000-8000-00000000000' || i)::uuid,
@@ -80,7 +93,9 @@ insert into app.fantasy_seasons (
     '2090/91', 'planned', '2090-08-01T00:00:00Z', '2091-06-30T23:59:59Z');
 
 -- Sequences 1-5 finalized (points_state final + finalized_at, as the catalog
--- check demands), 6 provisional, 7 open.
+-- check demands), 6 provisional, 7 scheduled. Only one gameweek per season may
+-- sit in {open, locked, live, provisional, finalizing}
+-- (fantasy_gameweeks_one_current_idx), and sequence 6 is it.
 insert into app.fantasy_gameweeks (
   id, fantasy_season_id, football_round_id, sequence_number, name,
   deadline_at, starts_at, ends_at, status, points_state, finalized_at
@@ -93,7 +108,7 @@ select
   '2089-09-01T11:00:00Z'::timestamptz + ((i - 1) * interval '7 days'),
   '2089-09-01T12:00:00Z'::timestamptz + ((i - 1) * interval '7 days'),
   '2089-09-02T12:00:00Z'::timestamptz + ((i - 1) * interval '7 days'),
-  (case when i <= 5 then 'finalized' when i = 6 then 'provisional' else 'open' end)
+  (case when i <= 5 then 'finalized' when i = 6 then 'provisional' else 'scheduled' end)
     ::app.fantasy_gameweek_status,
   (case when i <= 5 then 'final' else 'provisional' end)::app.fantasy_points_state,
   case when i <= 5
@@ -153,8 +168,8 @@ insert into app.fantasy_player_gameweek_points (
   7, 7, 45, true, 1, 1, '2089-09-02T12:00:00Z'
 );
 
--- A points row in the OPEN gameweek 7 must not reach any total: the gameweek
--- has not scored, whatever rows the worker has staged.
+-- A points row in the UNSCORED gameweek 7 must not reach any total: the
+-- gameweek has not scored, whatever rows the worker has staged.
 insert into app.fantasy_player_gameweek_points (
   fantasy_player_id, gameweek_id, provisional_points, final_points,
   minutes_played, did_play, calculation_version, football_input_version
@@ -303,7 +318,7 @@ select extensions.is(
   (select (item ->> 'totalPoints')::integer from jsonb_array_elements(current_setting('test.bg0071_stats')::jsonb -> 'items') item
    where item ->> 'fantasyPlayerId' = 'b0900000-0000-4000-8000-000000000003'),
   7,
-  'a points row in an open gameweek is excluded from the season total'
+  'a points row in a gameweek that has not scored is excluded from the season total'
 );
 select extensions.is(
   (select (item ->> 'form')::numeric from jsonb_array_elements(current_setting('test.bg0071_stats')::jsonb -> 'items') item
