@@ -264,6 +264,9 @@ export const dictionaries = {
     "fantasy.rankings.no_team": "Pas encore d'équipe",
     "fantasy.rankings.no_team_desc": "Créez votre équipe pour entrer au classement.",
     "fantasy.rankings.create_team": "Créer mon équipe",
+    "fantasy.rankings.no_rank_yet": "Pas encore de classement",
+    "fantasy.rankings.no_rank_yet_desc":
+      "Votre équipe est enregistrée. Votre rang apparaîtra dès les premiers points marqués.",
     "fantasy.rankings.sort_overall": "Général",
     "fantasy.rankings.sort_gameweek": "Journée",
     "fantasy.rankings.search": "Rechercher un manager ou une équipe",
@@ -1432,6 +1435,8 @@ export const dictionaries = {
     "fantasy.rankings.no_team": "لا يوجد فريق بعد",
     "fantasy.rankings.no_team_desc": "أنشئ فريقك للدخول إلى الترتيب.",
     "fantasy.rankings.create_team": "إنشاء فريقي",
+    "fantasy.rankings.no_rank_yet": "لا يوجد ترتيب بعد",
+    "fantasy.rankings.no_rank_yet_desc": "فريقك مسجَّل. سيظهر ترتيبك بمجرد احتساب أول النقاط.",
     "fantasy.rankings.sort_overall": "عام",
     "fantasy.rankings.sort_gameweek": "الجولة",
     "fantasy.rankings.search": "ابحث عن مدرب أو فريق",
