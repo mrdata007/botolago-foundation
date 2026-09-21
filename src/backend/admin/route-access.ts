@@ -2,8 +2,28 @@ import { z } from "zod";
 import { staffContextSchema, type AdminPermission } from "./contracts";
 import { AdminError, mapAdminError } from "./errors";
 
+/**
+ * Why an Admin request was treated as unauthenticated.
+ *
+ * `missing_token` and `invalid_token` used to collapse into a bare
+ * `unauthenticated` state, which made a production outage undiagnosable: the
+ * console said "Authentification requise" both when the browser sent no bearer
+ * token at all and when it sent one the server could not verify, and nothing
+ * distinguished the two from the outside.
+ *
+ * Reporting which of the two occurred leaks nothing -- the caller already knows
+ * whether it sent a token, and neither value says anything about staff
+ * membership or any other account. This mirrors RFC 6750, which distinguishes a
+ * missing credential from `error="invalid_token"` for exactly this reason.
+ */
+export const UNAUTHENTICATED_REASONS = ["missing_token", "invalid_token"] as const;
+export type UnauthenticatedReason = (typeof UNAUTHENTICATED_REASONS)[number];
+
 export const adminRouteStateSchema = z.discriminatedUnion("state", [
-  z.object({ state: z.literal("unauthenticated") }),
+  z.object({
+    state: z.literal("unauthenticated"),
+    reason: z.enum(UNAUTHENTICATED_REASONS).optional(),
+  }),
   z.object({ state: z.literal("forbidden") }),
   z.object({ state: z.literal("mfa_required") }),
   z.object({ state: z.literal("recent_auth_required") }),
@@ -32,12 +52,15 @@ export async function resolveAdminRouteAccess(
   dependencies: AdminRouteDependencies,
 ): Promise<AdminRouteState> {
   let identity: Awaited<ReturnType<AdminRouteDependencies["verifyIdentity"]>>;
+  // Reaching here means a bearer token was present -- the caller returns
+  // `missing_token` before ever constructing these dependencies -- so any
+  // failure below is a token the server could not verify, not an absent one.
   try {
     identity = await dependencies.verifyIdentity();
   } catch {
-    return { state: "unauthenticated" };
+    return { state: "unauthenticated", reason: "invalid_token" };
   }
-  if (!identity) return { state: "unauthenticated" };
+  if (!identity) return { state: "unauthenticated", reason: "invalid_token" };
 
   try {
     const context = staffContextSchema.parse(await dependencies.loadContext(identity.userId));
@@ -73,7 +96,7 @@ export async function resolveAdminRouteAccess(
         return { state: "forbidden" };
       default:
         if (error instanceof AdminError && error.code === "unauthenticated") {
-          return { state: "unauthenticated" };
+          return { state: "unauthenticated", reason: "invalid_token" };
         }
         return { state: "backend_unavailable" };
     }
@@ -102,6 +125,8 @@ type AdminCopy = {
   readonly title: string;
   readonly subtitle: string;
   readonly states: Record<AdminRouteStateName | "loading", { title: string; description: string }>;
+  /** Shown instead of `states.unauthenticated` when the bearer token was rejected. */
+  readonly invalidToken: { title: string; description: string };
   readonly labels: {
     identity: string;
     roles: string;
@@ -155,6 +180,10 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
         title: "Accès autorisé",
         description: "Le contexte affiché provient du backend sécurisé.",
       },
+    },
+    invalidToken: {
+      title: "Session expirée",
+      description: "Votre session n’est plus valide. Reconnectez-vous, puis rouvrez cet espace.",
     },
     labels: {
       identity: "Identité authentifiée",
@@ -212,6 +241,10 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
         title: "الدخول مسموح",
         description: "السياق المعروض صادر عن الخلفية الآمنة.",
       },
+    },
+    invalidToken: {
+      title: "انتهت صلاحية الجلسة",
+      description: "لم تعد جلستك صالحة. سجّل الدخول من جديد ثم افتح هذه المساحة.",
     },
     labels: {
       identity: "الهوية الموثّقة",

@@ -36,7 +36,7 @@ export async function loadAdminRouteAccessForRequest() {
   const url = process.env.SUPABASE_URL;
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !publishableKey) return { state: "backend_unavailable" as const };
-  if (!token) return { state: "unauthenticated" as const };
+  if (!token) return { state: "unauthenticated" as const, reason: "missing_token" as const };
 
   const client = createClient<Database>(url, publishableKey, {
     global: {

@@ -10,6 +10,7 @@ import {
   getAdminCopy,
   type AdminRouteState,
   type AdminRouteStateName,
+  type UnauthenticatedReason,
 } from "@/backend/admin/route-access";
 import { useI18n } from "@/i18n/provider";
 
@@ -29,11 +30,21 @@ function AdminLoadingShell() {
 function AdminStatePanel({
   state,
   copy,
+  reason,
 }: {
   state: AdminRouteStateName | "loading";
   copy: ReturnType<typeof getAdminCopy>;
+  reason?: UnauthenticatedReason;
 }) {
-  const content = copy.states[state];
+  const content =
+    state === "unauthenticated" && reason === "invalid_token"
+      ? copy.invalidToken
+      : copy.states[state];
+  // Every state a sign-in can clear needs a way to sign in. "unauthenticated"
+  // previously rendered a dead end: the copy asked the reader to connect, with
+  // no link to do it.
+  const showSignIn =
+    state === "unauthenticated" || state === "recent_auth_required" || state === "mfa_required";
   return (
     <main
       dir={copy.dir}
@@ -46,7 +57,7 @@ function AdminStatePanel({
         <p className="text-sm text-slate-400">{copy.subtitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{content.title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
-        {(state === "recent_auth_required" || state === "mfa_required") && (
+        {showSignIn && (
           <Link
             to="/auth/login"
             search={{ next: "/admin" }}
@@ -69,7 +80,13 @@ function AdminRoute() {
     select: (state) => state.location.pathname === "/admin",
   });
   if (result.state !== "authorized") {
-    return <AdminStatePanel state={result.state} copy={copy} />;
+    return (
+      <AdminStatePanel
+        state={result.state}
+        copy={copy}
+        reason={result.state === "unauthenticated" ? result.reason : undefined}
+      />
+    );
   }
 
   const roleNames = result.context.roles.map((role) => role.name);
