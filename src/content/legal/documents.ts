@@ -326,7 +326,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "1. Responsable du traitement" },
       {
         type: "paragraph",
-        text: "[Raison sociale], RC n° [numéro RC], ICE n° [numéro ICE], [adresse], Agadir, Maroc. Contact données personnelles : [email de contact]. Traitement déclaré à la CNDP sous le n° [numéro de récépissé CNDP].",
+        text: "[Raison sociale], RC n° [numéro RC], ICE n° [numéro ICE], [adresse], Agadir, Maroc. Contact données personnelles : [email de contact]. Déclaration CNDP : déclaration en cours.",
       },
       { type: "heading", text: "2. Données collectées" },
       {
@@ -505,7 +505,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
         type: "paragraph",
-        text: "[الاسم التجاري للشركة]، السجل التجاري رقم [رقم السجل التجاري]، التعريف الموحد للمقاولة رقم [رقم ICE]، [العنوان]، أكادير، المغرب. للتواصل بخصوص المعطيات الشخصية: [البريد الإلكتروني]. المعالجة مصرّح بها لدى اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (CNDP) تحت رقم [رقم وصل التصريح].",
+        text: "[الاسم التجاري للشركة]، السجل التجاري رقم [رقم السجل التجاري]، التعريف الموحد للمقاولة رقم [رقم ICE]، [العنوان]، أكادير، المغرب. للتواصل بخصوص المعطيات الشخصية: [البريد الإلكتروني]. التصريح لدى اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (CNDP): التصريح جارٍ.",
       },
       { type: "heading", text: "2. البيانات التي نجمعها" },
       {
