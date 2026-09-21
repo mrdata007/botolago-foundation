@@ -8,6 +8,9 @@ import {
   AuthDivider,
   AuthFieldError,
   AuthFieldLabel,
+  AuthFormError,
+  authFieldClass,
+  authMeshLinkClass,
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
@@ -16,6 +19,8 @@ import {
   noticeConsentSegments,
   registerConsentSegments,
 } from "@/components/legal/consent-segments";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
 import {
@@ -50,6 +55,14 @@ type Errors = {
   terms?: TranslationKey;
   form?: TranslationKey;
 };
+
+/** The password meter, on the status tokens rather than Tailwind palette
+ * literals, so it follows the theme like everything else. */
+function strengthColor(strength: number): string {
+  if (strength <= 1) return "bg-[color:var(--ui-negative)]";
+  if (strength === 2) return "bg-[color:var(--ui-caution)]";
+  return "bg-[color:var(--ui-positive)]";
+}
 
 function RegisterPage() {
   const { t, lang } = useI18n();
@@ -153,11 +166,7 @@ function RegisterPage() {
       footer={
         <span>
           {t("auth.register.have_account")}{" "}
-          <Link
-            to="/auth/login"
-            search={{ next }}
-            className="font-bold text-white underline-offset-4 hover:underline"
-          >
+          <Link to="/auth/login" search={{ next }} className={authMeshLinkClass}>
             {t("auth.register.login_link")}
           </Link>
         </span>
@@ -175,7 +184,7 @@ function RegisterPage() {
             onChange={(e) => setFullName(e.target.value)}
             aria-invalid={!!errors.fullName}
             aria-describedby={`${ids.name}-err`}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${ids.name}-err`}>
             {errors.fullName && t(errors.fullName)}
@@ -193,7 +202,7 @@ function RegisterPage() {
             onChange={(e) => setUsername(e.target.value)}
             aria-invalid={!!errors.username}
             aria-describedby={`${ids.username}-err`}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${ids.username}-err`}>
             {errors.username && t(errors.username)}
@@ -212,7 +221,7 @@ function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={!!errors.email}
             aria-describedby={`${ids.email}-err`}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${ids.email}-err`}>{errors.email && t(errors.email)}</AuthFieldError>
         </div>
@@ -228,13 +237,20 @@ function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={!!errors.password}
               aria-describedby={`${ids.pw}-err ${ids.pw}-strength`}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 pe-11 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+              className={cn(authFieldClass, "pe-11")}
             />
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-              className="absolute inset-y-0 end-2 my-1 grid place-items-center rounded-lg px-2 text-muted-foreground hover:bg-muted"
+              className={cn(
+                "absolute inset-y-0 end-1 grid place-items-center px-2",
+                "min-w-[var(--ui-tap-min)]",
+                ui.radius.control,
+                ui.tone.muted,
+                ui.focus,
+                "hover:bg-[color:var(--ui-surface-sunken)]",
+              )}
             >
               {showPw ? (
                 <EyeOff className="h-4 w-4" aria-hidden />
@@ -249,13 +265,16 @@ function RegisterPage() {
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className={`h-1 flex-1 rounded-full ${i < strength ? (strength <= 1 ? "bg-red-500" : strength === 2 ? "bg-amber-500" : "bg-emerald-500") : "bg-muted"}`}
+                    className={cn(
+                      "h-1 flex-1",
+                      ui.radius.full,
+                      i < strength ? strengthColor(strength) : "bg-[color:var(--ui-rule)]",
+                    )}
                   />
                 ))}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {t(strengthLabelKey)}
-              </span>
+              {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+              <span className={cn(ui.text.label, ui.tone.muted)}>{t(strengthLabelKey)}</span>
             </div>
           )}
           <AuthFieldError id={`${ids.pw}-err`}>
@@ -273,38 +292,44 @@ function RegisterPage() {
             onChange={(e) => setConfirm(e.target.value)}
             aria-invalid={!!errors.confirmPassword}
             aria-describedby={`${ids.cpw}-err`}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${ids.cpw}-err`}>
             {errors.confirmPassword && t(errors.confirmPassword)}
           </AuthFieldError>
         </div>
 
-        <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+        <label
+          className={cn(
+            "flex items-start gap-2 py-3 leading-relaxed",
+            "min-h-[var(--ui-tap-min)]",
+            ui.text.meta,
+            ui.tone.muted,
+          )}
+        >
           <input
             type="checkbox"
             checked={terms}
             onChange={(e) => setTerms(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-input"
+            className={cn(
+              "mt-0.5 h-4 w-4 border-[color:var(--ui-rule)]",
+              ui.radius.control,
+              ui.focus,
+            )}
             aria-invalid={!!errors.terms}
           />
           <ConsentLine segments={registerConsentSegments(t)} />
         </label>
         {errors.terms && (
-          <p role="alert" className="text-xs font-semibold text-destructive">
+          <p
+            role="alert"
+            className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.negative)}
+          >
             {t(errors.terms)}
           </p>
         )}
 
-        {errors.form && (
-          <p
-            role="alert"
-            aria-live="assertive"
-            className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
-          >
-            {t(errors.form)}
-          </p>
-        )}
+        {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
 
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
@@ -330,12 +355,15 @@ function RegisterPage() {
           </AuthSecondaryButton>
         </div>
 
-        <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+        <p className={cn("text-center leading-relaxed", ui.text.micro, ui.tone.muted)}>
           <ConsentLine segments={noticeConsentSegments(t)} />{" "}
           <Link
             to="/auth/login"
             search={{ next }}
-            className="font-semibold text-[color:var(--brand-primary)] hover:underline"
+            className={cn(
+              "[font-weight:var(--ui-weight-heavy)] underline underline-offset-4",
+              ui.tone.default,
+            )}
           >
             {t("auth.register.login_link")}
           </Link>

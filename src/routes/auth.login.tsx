@@ -9,11 +9,16 @@ import {
   AuthDivider,
   AuthFieldError,
   AuthFieldLabel,
+  AuthFormError,
+  authFieldClass,
+  authMeshLinkClass,
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
@@ -136,11 +141,7 @@ function LoginPage() {
       footer={
         <span>
           {t("auth.login.no_account")}{" "}
-          <Link
-            to="/auth/register"
-            search={{ next: next ?? "/" }}
-            className="font-bold text-white underline-offset-4 hover:underline"
-          >
+          <Link to="/auth/register" search={{ next: next ?? "/" }} className={authMeshLinkClass}>
             {t("auth.login.create_link")}
           </Link>
         </span>
@@ -159,7 +160,7 @@ function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={!!errors.email}
             aria-describedby={`${emailId}-err`}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none ring-0 focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+            className={authFieldClass}
           />
           <AuthFieldError id={`${emailId}-err`}>{errors.email && t(errors.email)}</AuthFieldError>
         </div>
@@ -169,7 +170,14 @@ function LoginPage() {
             <AuthFieldLabel htmlFor={passwordId}>{t("auth.password")}</AuthFieldLabel>
             <Link
               to="/auth/forgot-password"
-              className="text-xs font-semibold text-[color:var(--brand-primary)] hover:underline"
+              className={cn(
+                "inline-flex items-center -me-2 px-2",
+                ui.space.tap,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-heavy)]",
+                ui.tone.default,
+                "underline underline-offset-4",
+              )}
             >
               {t("auth.login.forgot")}
             </Link>
@@ -183,13 +191,20 @@ function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={!!errors.password}
               aria-describedby={`${passwordId}-err`}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 pe-11 text-sm outline-none focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
+              className={cn(authFieldClass, "pe-11")}
             />
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-              className="absolute inset-y-0 end-2 my-1 grid place-items-center rounded-lg px-2 text-muted-foreground hover:bg-muted"
+              className={cn(
+                "absolute inset-y-0 end-1 grid place-items-center px-2",
+                "min-w-[var(--ui-tap-min)]",
+                ui.radius.control,
+                ui.tone.muted,
+                ui.focus,
+                "hover:bg-[color:var(--ui-surface-sunken)]",
+              )}
             >
               {showPw ? (
                 <EyeOff className="h-4 w-4" aria-hidden />
@@ -203,17 +218,9 @@ function LoginPage() {
           </AuthFieldError>
         </div>
 
-        {errors.form && (
-          <p
-            role="alert"
-            aria-live="assertive"
-            className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
-          >
-            {t(errors.form)}
-          </p>
-        )}
+        {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
 
-        {IS_MOCK_AUTH && <p className="text-[11px] text-muted-foreground">{t("auth.demo_hint")}</p>}
+        {IS_MOCK_AUTH && <p className={cn(ui.text.micro, ui.tone.muted)}>{t("auth.demo_hint")}</p>}
 
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
@@ -239,7 +246,7 @@ function LoginPage() {
           </AuthSecondaryButton>
         </div>
 
-        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+        <p className={cn("mt-2 text-center leading-relaxed", ui.text.micro, ui.tone.muted)}>
           <ConsentLine segments={noticeConsentSegments(t)} />
         </p>
       </form>

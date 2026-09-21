@@ -39,16 +39,56 @@
   --brand-charcoal: oklch(0.2 0.015 260);
 
   /* ---- News editorial gradients (BG-0012) -----------------------
-     Exact hex brand spec for the /news redesign. These are additive
-     tokens for News surfaces only — never used by Fantasy, and never
-     replacing the oklch --brand-* scale used elsewhere in the app. */
-  --news-gradient-hero: linear-gradient(125deg, #00195a 0%, #0151fc 55%, #49cfff 100%);
-  --news-gradient-ocean: linear-gradient(135deg, #000c2d 0%, #0036b0 55%, #0151fc 100%);
-  --news-gradient-matchday: linear-gradient(110deg, #002787 0%, #0151fc 55%, #85adff 100%);
-  --news-gradient-aqua: linear-gradient(90deg, #0151fc 0%, #1f8cff 55%, #49cfff 100%);
-  --news-gradient-dark: linear-gradient(145deg, #000c2d 0%, #00195a 55%, #0036b0 100%);
-  --news-gradient-light: linear-gradient(115deg, #ffffff 0%, #e6eeff 55%, #c2d6ff 100%);
-  --news-gradient-promo: linear-gradient(130deg, #0036b0 0%, #0151fc 55%, #49cfff 100%);
+     The image-less card placeholders for News. They were authored as
+     literal hex, which pinned them to one theme: on a dark page the
+     light ramp glared and the dark ramp vanished into the surface, and
+     nothing about them could follow `.dark`. They are now stated in
+     oklch like the rest of the system (same perceived hues as the
+     original spec) and redeclared under `.dark` one step deeper, so
+     News finally follows the theme. Still News-only: Fantasy and the
+     shell draw from `--ui-*`. */
+  --news-gradient-hero: linear-gradient(
+    125deg,
+    oklch(0.251 0.12 262) 0%,
+    oklch(0.524 0.26 263) 55%,
+    oklch(0.802 0.132 226) 100%
+  );
+  --news-gradient-ocean: linear-gradient(
+    135deg,
+    oklch(0.169 0.071 260) 0%,
+    oklch(0.4 0.199 263) 55%,
+    oklch(0.524 0.26 263) 100%
+  );
+  --news-gradient-matchday: linear-gradient(
+    110deg,
+    oklch(0.329 0.164 263) 0%,
+    oklch(0.524 0.26 263) 55%,
+    oklch(0.752 0.127 264) 100%
+  );
+  --news-gradient-aqua: linear-gradient(
+    90deg,
+    oklch(0.524 0.26 263) 0%,
+    oklch(0.644 0.194 254) 55%,
+    oklch(0.802 0.132 226) 100%
+  );
+  --news-gradient-dark: linear-gradient(
+    145deg,
+    oklch(0.169 0.071 260) 0%,
+    oklch(0.251 0.12 262) 55%,
+    oklch(0.4 0.199 263) 100%
+  );
+  --news-gradient-light: linear-gradient(
+    115deg,
+    oklch(1 0 0) 0%,
+    oklch(0.948 0.024 266) 55%,
+    oklch(0.875 0.061 265) 100%
+  );
+  --news-gradient-promo: linear-gradient(
+    130deg,
+    oklch(0.4 0.199 263) 0%,
+    oklch(0.524 0.26 263) 55%,
+    oklch(0.802 0.132 226) 100%
+  );
 
   /* ---- Extra semantic accents ---------------------------------- */
   --accent-cyan: oklch(0.75 0.13 220);
@@ -810,6 +850,51 @@ html[dir="rtl"] .lucide-arrow-left {
 
   --ui-shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
   --ui-shadow-raised: 0 -1px 0 0 rgba(255, 255, 255, 0.08);
+
+  /* News placeholders, one step deeper so an image-less card sits on a
+     dark page instead of burning a hole in it. Same hues, lower L. */
+  --news-gradient-hero: linear-gradient(
+    125deg,
+    oklch(0.18 0.09 262) 0%,
+    oklch(0.38 0.19 263) 55%,
+    oklch(0.6 0.11 226) 100%
+  );
+  --news-gradient-ocean: linear-gradient(
+    135deg,
+    oklch(0.14 0.06 260) 0%,
+    oklch(0.3 0.15 263) 55%,
+    oklch(0.4 0.19 263) 100%
+  );
+  --news-gradient-matchday: linear-gradient(
+    110deg,
+    oklch(0.24 0.12 263) 0%,
+    oklch(0.38 0.19 263) 55%,
+    oklch(0.56 0.1 264) 100%
+  );
+  --news-gradient-aqua: linear-gradient(
+    90deg,
+    oklch(0.38 0.19 263) 0%,
+    oklch(0.48 0.15 254) 55%,
+    oklch(0.6 0.11 226) 100%
+  );
+  --news-gradient-dark: linear-gradient(
+    145deg,
+    oklch(0.13 0.05 260) 0%,
+    oklch(0.19 0.09 262) 55%,
+    oklch(0.3 0.15 263) 100%
+  );
+  --news-gradient-light: linear-gradient(
+    115deg,
+    oklch(0.42 0.04 265) 0%,
+    oklch(0.34 0.05 266) 55%,
+    oklch(0.28 0.06 265) 100%
+  );
+  --news-gradient-promo: linear-gradient(
+    130deg,
+    oklch(0.3 0.15 263) 0%,
+    oklch(0.38 0.19 263) 55%,
+    oklch(0.6 0.11 226) 100%
+  );
 }
 
 /* ==================================================================
