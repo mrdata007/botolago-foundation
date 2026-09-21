@@ -153,6 +153,12 @@ export interface PublishArticleResult {
   readonly language: NewsEngineLanguage;
   readonly status: string;
   readonly published: boolean;
+  /**
+   * True when the call asked to publish and the event type's policy refused.
+   * Launch mode ships with every policy off, so a `--publish` run reports this
+   * rather than looking like it published when it filed for review instead.
+   */
+  readonly autoPublishWithheld?: boolean;
 }
 
 export interface RecordFailureInput {

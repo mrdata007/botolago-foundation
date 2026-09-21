@@ -276,6 +276,8 @@ declare
   target_visibility app.article_visibility;
   item record;
   relation_count integer;
+  publish_requested boolean;
+  auto_publish_allowed boolean;
 begin
   perform app_private.news_engine_require_service_role();
 
@@ -387,7 +389,24 @@ begin
   -- also the honest description of the state: both quality gates passed and a
   -- human has not yet signed it off. Only a passing verdict reaches this
   -- function, so nothing half-checked is ever presented for approval.
-  if coalesce(p_publish, false) then
+  --
+  -- Whether output may publish itself is a property of the event type, not of
+  -- the caller. The runner already consults the policy before asking, but a
+  -- request to publish is checked again here, because this function is the
+  -- only way anything the engine produces reaches app.article_editions and it
+  -- is reachable by any service-role caller — the CLI's `--publish` flag, a
+  -- future job, a console session. Enforcing launch mode in the runner alone
+  -- would mean the guarantee held only as long as every caller remembered it.
+  --
+  -- Unknown event type resolves to false: an event type with no reviewed
+  -- policy has not been cleared to publish itself.
+  publish_requested := coalesce(p_publish, false);
+  select coalesce(policy.auto_publish, false) into auto_publish_allowed
+  from app_private.news_publication_policies policy
+  where policy.event_type = cluster.event_type;
+  auto_publish_allowed := coalesce(auto_publish_allowed, false);
+
+  if publish_requested and auto_publish_allowed then
     target_status := 'published';
     target_visibility := 'public';
   else
@@ -559,7 +578,11 @@ begin
     'slug', final_slug,
     'language', p_language,
     'status', target_status,
-    'published', target_status = 'published'
+    'published', target_status = 'published',
+    -- True when the caller asked to publish and the event type's policy said
+    -- no. The runner surfaces this rather than letting a `--publish` run look
+    -- like it published when it filed for review instead.
+    'autoPublishWithheld', publish_requested and not auto_publish_allowed
   );
 end;
 $$;

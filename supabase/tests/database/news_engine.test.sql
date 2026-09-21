@@ -424,10 +424,75 @@ select extensions.is(
     '{}'::uuid[], '{}'::uuid[], null, false, null
   ) ->> 'status',
   'in_review',
-  'engine output lands in in_review, never published, whatever the runner asked for'
+  'engine output lands in in_review rather than draft'
+);
+
+-- The assertion above only shows that a caller who did not ask to publish gets
+-- `in_review`, which proves nothing about launch mode. This is the one that
+-- does: ask to publish, on an event type whose policy says no, and still get
+-- `in_review`. It is what stops `--publish`, or any other service-role caller,
+-- from putting an unreviewed article in front of readers.
+select extensions.is(
+  api.news_engine_publish_article(
+    current_setting('news_engine_test.cluster_id')::uuid,
+    'fr', 'pgtap-launch-mode-withheld-fr', 'Un titre de test valide pour la publication',
+    null, 'Un résumé de test valide pour cet article.',
+    '<p>' || repeat('texte de l''article de test. ', 40) || '</p>',
+    2, 'sanitize-html@2.17.5', null, null, 'botola-pro',
+    array['official-announcement']::text[],
+    array[current_setting('news_engine_test.team_id')::uuid]::uuid[],
+    '{}'::uuid[], '{}'::uuid[], null, true, null
+  ) ->> 'status',
+  'in_review',
+  'a caller asking to publish is still held for review while launch mode is on'
+);
+
+-- And it says so, rather than reporting a publish that did not happen.
+select extensions.is(
+  (api.news_engine_publish_article(
+    current_setting('news_engine_test.cluster_id')::uuid,
+    'fr', 'pgtap-launch-mode-withheld-fr', 'Un titre de test valide pour la publication',
+    null, 'Un résumé de test valide pour cet article.',
+    '<p>' || repeat('texte de l''article de test. ', 40) || '</p>',
+    2, 'sanitize-html@2.17.5', null, null, 'botola-pro',
+    array['official-announcement']::text[],
+    array[current_setting('news_engine_test.team_id')::uuid]::uuid[],
+    '{}'::uuid[], '{}'::uuid[], null, true, null
+  ) ->> 'autoPublishWithheld')::boolean,
+  true,
+  'the contract reports that it withheld the publish instead of silently downgrading'
+);
+
+-- Launch mode has to be a switch, not a wall: Step 9b of the runbook turns one
+-- event type on with a single UPDATE, and this proves that still works. The
+-- row is put back immediately so the launch-mode count assertion below is
+-- measuring the seeded state, not this fixture.
+reset role;
+update app_private.news_publication_policies
+set auto_publish = true where event_type = 'official_signing';
+
+set local role service_role;
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+select extensions.is(
+  api.news_engine_publish_article(
+    current_setting('news_engine_test.cluster_id')::uuid,
+    'fr', 'pgtap-launch-mode-withheld-fr', 'Un titre de test valide pour la publication',
+    null, 'Un résumé de test valide pour cet article.',
+    '<p>' || repeat('texte de l''article de test. ', 40) || '</p>',
+    2, 'sanitize-html@2.17.5', null, null, 'botola-pro',
+    array['official-announcement']::text[],
+    array[current_setting('news_engine_test.team_id')::uuid]::uuid[],
+    '{}'::uuid[], '{}'::uuid[], null, true, null
+  ) ->> 'status',
+  'published',
+  'turning one event type on is all it takes for that type to publish itself'
 );
 
 reset role;
+update app_private.news_publication_policies
+set auto_publish = false where event_type = 'official_signing';
 
 select extensions.ok(
   (select status from app.article_editions where slug = 'pgtap-one-click-approval-ar')

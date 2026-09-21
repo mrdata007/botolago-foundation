@@ -40,15 +40,16 @@ the file is the last step of this runbook.
 
 ## 2. What ships
 
-### Migrations (5, all additive)
+### Migrations (6, all additive)
 
-| File                                             | Contents                                                                                                                                              |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20260922100000_news_engine_core.sql`            | 12 `app_private` tables, 8 enums, RLS enabled and forced on all of them, updated-at triggers                                                          |
-| `20260922100100_news_engine_pipeline_api.sql`    | 18 service-role `api` RPCs: run ledger, source claim, discovery, fetch, relevance, entities, facts, clustering, failure inbox                         |
-| `20260922100200_news_engine_publication_api.sql` | Generation attempts, the publication contract, unpublish, status and failure read models, source administration                                       |
-| `20260922100300_news_engine_seed.sql`            | BotolaGO newsroom publisher, editorial taxonomy (14 terms, AR+FR labels), 13 publication policies, the ElBotola source row (disabled), entity aliases |
-| `20260922100400_news_engine_media.sql`           | Hero resolution from BotolaGO-owned catalog media only                                                                                                |
+| File                                                          | Contents                                                                                                                                              |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260922100000_news_engine_core.sql`                         | 12 `app_private` tables, 8 enums, RLS enabled and forced on all of them, updated-at triggers                                                          |
+| `20260922100100_news_engine_pipeline_api.sql`                 | 18 service-role `api` RPCs: run ledger, source claim, discovery, fetch, relevance, entities, facts, clustering, failure inbox                         |
+| `20260922100200_news_engine_publication_api.sql`              | Generation attempts, the publication contract, unpublish, status and failure read models, source administration                                       |
+| `20260922100300_news_engine_seed.sql`                         | BotolaGO newsroom publisher, editorial taxonomy (14 terms, AR+FR labels), 13 publication policies, the ElBotola source row (disabled), entity aliases |
+| `20260922100400_news_engine_media.sql`                        | Hero resolution from BotolaGO-owned catalog media only                                                                                                |
+| `20260922100500_news_stand_down_spares_approved_editions.sql` | Narrows PR #154's stand-down sweep so it cannot unpublish an article an editor approved (see §7)                                                      |
 
 Every new table lives in `app_private` with RLS enabled **and forced** and no
 policy, so the only access path is a `security definer` function in `api` that
@@ -86,6 +87,62 @@ the engine is offline, Fantasy is unaffected.
 ## 3. Owner activation sequence
 
 Each step is reversible and none of them is implied by merging the branch.
+
+### Step 0 — Every switch, and the order to flip them
+
+Nothing below is flipped by merging. Merged and deployed, the engine is inert:
+it collects nothing, generates nothing, publishes nothing, and `/news` is not
+reachable. Eight things have to change, and the order matters.
+
+| #   | Switch                                                       | Where it lives                                                           | Ships as                       | Flip to                    |
+| --- | ------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------ | -------------------------- |
+| 1   | `SUPABASE_SECRET_KEY`                                        | GitHub → environment `newsroom` → secret                                 | absent                         | the production service key |
+| 2   | `SUPABASE_PRODUCTION_URL`, `SUPABASE_PRODUCTION_PROJECT_REF` | GitHub → environment `newsroom` → variables                              | absent                         | see Step 1's table         |
+| 3   | `NEWS_ENGINE_SCHEDULED_MODE`                                 | GitHub → environment `newsroom` → variable                               | absent                         | `review-only`              |
+| 4   | `article_fetch_approved`                                     | DB row: `app_private.news_engine_sources` where `slug = 'elbotola'`      | `false`                        | `true`                     |
+| 5   | `enabled`                                                    | DB row: same row                                                         | `false`                        | `true`                     |
+| 6   | _(no switch)_ first run, then editor approval                | `workflow_dispatch` → Admin → News                                       | —                              | —                          |
+| 7   | `NEWS_ENABLED`                                               | `src/lib/feature-flags.ts` — **code change + deploy**, not configuration | `false` (arrives with PR #154) | `true`                     |
+| 8   | `NEWS_ENGINE_SCHEDULE_ENABLED`                               | GitHub → environment `newsroom` → variable                               | absent                         | `true`                     |
+
+Two more are already correct and need no action: `ANTHROPIC_API_KEY` is present
+in the `newsroom` environment, and `VITE_NEWS_DATA_MODE` is already `supabase`
+in `.env.production`. `NEWS_ENGINE_MODEL` is optional — unset means
+`claude-opus-5`.
+
+**Why this order.**
+
+- **1–3 before anything else.** The runner refuses to start without the service
+  key, and a scheduled run with no `NEWS_ENGINE_SCHEDULED_MODE` has no job to
+  do. Setting these changes no behaviour on its own.
+- **4 before 5.** `article_fetch_approved` is the editorial and terms-of-use
+  decision to read article pages rather than only listings; `enabled` is the
+  operational decision to collect at all. Approving the read first means that
+  when collection starts it is already running the approved shape, and it keeps
+  the two decisions separately revocable.
+- **6 before 7.** Generated articles land in `in_review`, which is invisible to
+  the public whatever `NEWS_ENABLED` says, so the engine can run and editors can
+  review while the surface is still hidden. Flipping `NEWS_ENABLED` first would
+  ship an empty `/news` to real users. Admin is **not** gated on `NEWS_ENABLED`
+  — no `admin.*` route references it — so editors can approve before the flag
+  moves. Verified by `git grep NEWS_ENABLED -- src`.
+- **7 is a deploy, not a toggle.** `NEWS_ENABLED` is a hardcoded boolean literal
+  so the bundler can tree-shake the disabled branches. Changing it means a
+  commit and a Lovable publish; there is no runtime override, and no environment
+  variable will do it.
+- **8 last.** The crons are the only thing that makes the engine run without a
+  person. Turn them on once a manual batch has been reviewed end to end and the
+  public surface is live, not before.
+
+**Reversing.** Unset `NEWS_ENGINE_SCHEDULE_ENABLED` to stop the crons; set
+`enabled = false` on the source to stop collection; set `NEWS_ENABLED = false`
+and redeploy to hide the surface. None of these unpublishes anything already
+published — see §4.
+
+**Not a switch, deliberately.** `app_private.news_publication_policies.auto_publish`
+is `false` for all thirteen event types and stays that way. That is launch mode:
+every generated article waits for a person. Step 9b covers turning one on later,
+and it is a per-event-type `UPDATE`, never a blanket flip.
 
 ### Step 1 — Configure the `newsroom` GitHub environment
 
@@ -264,6 +321,19 @@ cannot publish anything on its own — not in `review-only` mode, not in
 auto-publishing event types at zero, so turning one on is a visible act rather
 than drift.
 
+It is enforced twice, in two different places, on purpose:
+
+1. **In the runner.** `runGenerationAndPublication` only asks to publish when
+   the event type's policy allows it, on top of six other conditions.
+2. **In the database.** `api.news_engine_publish_article` re-reads the policy
+   itself and refuses `p_publish = true` when the policy says no, returning
+   `in_review` and `autoPublishWithheld: true`. This is the one that matters
+   operationally: the publication contract is reachable by _any_ service-role
+   caller — the CLI's `--publish` flag, a future job, a console session — and a
+   guarantee that lives only in TypeScript holds only as long as every caller
+   remembers it. An event type with no policy row at all resolves to false, so
+   the default is closed.
+
 Every generated article lands in `in_review`. Approval is one transition:
 
 ```sql
@@ -284,6 +354,24 @@ revision history.
 `draft -> published`, so an article parked in `draft` would cost an editor two
 clicks instead of one.
 
+**In the Admin UI, this is literally one click.** Confirmed in the shipped
+code, not assumed:
+
+- `src/routes/admin.news.tsx` lists with `status: filters.status || null`, so
+  the default list already includes `in_review`, and the status filter has an
+  `in_review` option.
+- `src/routes/admin.news.$articleEditionId.tsx` declares
+  `in_review: ["draft", "scheduled", "published", "rejected"]` and renders one
+  button per allowed next status — so an `in_review` article shows a single
+  **Publié / منشور** button (`data-testid="admin-news-transition-published"`)
+  that calls `api.editorial_transition_article` directly. No save step first,
+  no status dropdown to set.
+- That page gates its own visibility on `editorial.read`, not
+  `editorial.write`, specifically so a publisher-role account can open it and
+  approve.
+- No `admin.*` route references `NEWS_ENABLED`, so editors can review and
+  approve while the public surface is still hidden (`git grep NEWS_ENABLED -- src`).
+
 ### Step 9b — (Later, optional) let some event types publish themselves
 
 Do this only after several batches have been reviewed and accepted, and only
@@ -294,6 +382,10 @@ update app_private.news_publication_policies
 set auto_publish = true
 where event_type = 'match_result';   -- one row, one event type, at a time
 ```
+
+That one `UPDATE` is genuinely all it takes — there is no second switch and no
+deploy. A pgTAP assertion flips a policy row and checks that the same call then
+returns `published`, so launch mode is a switch rather than a wall.
 
 Even then, an article auto-publishes only when **all** of these hold:
 
@@ -450,40 +542,62 @@ Everything around the model call is verified. The model call itself is not, and
 **Step 5's dry run is what verifies it** — it exercises `AnthropicNewsModel`
 end to end and writes nothing. Do not skip it.
 
-## 6. One mechanical step before the branch can go green
+## 6. Generated database types — done
 
-`src/backend/generated/database.types.ts` has **not** been regenerated for the
-five new migrations. This session had no Docker, so `supabase start` — which
-`bun run backend:types:generate` needs — could not run.
+`src/backend/generated/database.types.ts` is regenerated and committed, +340
+lines covering the new engine RPCs.
 
-The engine does not depend on that file: the gateway declares its own minimal
-RPC client interface rather than importing `Database`, so `bun run typecheck`
-is clean either way. But CI's `database-quality` job spins up a local stack
-from the migrations and compares, so `bun run backend:types:check` will report
-drift and fail until the file is regenerated.
+This session had no Docker, so `supabase start` — which
+`bun run backend:types:generate` needs — could not run locally. CI's
+`database-quality` job does have Docker: it spins up a local stack from the
+migrations, detects the drift, regenerates, and uploads the result as the
+`generated-database-types-<run id>` artifact. The committed file is that
+artifact, taken from run `35630237654`, not hand-written.
 
-On any machine with Docker:
+If the migrations change again and Docker is still unavailable, repeat that:
+push, let `database-quality` fail on type drift, download the artifact it
+uploaded, commit it. On a machine with Docker the direct route is
 
 ```bash
-bun run backend:db:start
-bun run backend:db:reset
-bun run backend:types:generate
-git add src/backend/generated/database.types.ts && git commit
+bun run backend:db:start && bun run backend:db:reset && bun run backend:types:generate
 ```
 
-CI also uploads the regenerated file as the `generated-database-types-<run id>`
-artifact on that failure, so it can be taken straight from the failed run
-instead.
+## 7. Three issues found on the way
 
-## 7. Two pre-existing issues found on the way
+None is caused by this branch; all three are recorded so they are not lost.
 
-Neither is caused by this branch; both are recorded so they are not lost.
+0. **PR #154's stand-down sweep would have unpublished the whole newsroom.**
+   This one is fixed here, in
+   `20260922100500_news_stand_down_spares_approved_editions.sql`, because
+   leaving it would have made the engine unusable.
+
+   `app_private.news_stand_down_machine_editions()` unpublishes every published
+   edition with `created_by is null`. That column is a foreign key to
+   `auth.users` and no person creates an engine article, so the engine leaves it
+   null — including after an editor has read the article and clicked publish.
+   The function is re-runnable by design, so one later invocation would have
+   silently unpublished every approved article.
+
+   The fix adds one predicate: `and updated_by is null`.
+   `api.editorial_transition_article` stamps `updated_by = auth.uid()` on every
+   transition, so an edition a person acted on is now excluded — which is what
+   the sweep's own comment already promised ("never touches human-authored
+   editions"). It is not a behaviour change for the rows the sweep was written
+   for: on production all 108 published editions with `created_by is null` also
+   have `updated_by is null`, so it still catches every one of them. Verified
+   against staging in a rolled-back transaction — the legacy stub is
+   unpublished, an editor-approved article stays published, and a second run
+   moves nothing.
+
+   The migration is guarded on the function existing, so applied before PR #154
+   merges it is a no-op and creates nothing.
 
 1. **`bun run lint` was already failing on `main`.** One Prettier error in
-   `src/routes/fantasy.players.$playerId.tsx:35`. It is a Fantasy route file,
-   outside this session's scope, so it was left alone; the fix is
-   `bunx prettier --write src/routes/fantasy.players.\$playerId.tsx`. Until it
-   is applied, the lint gate is red for reasons unrelated to the news engine.
+   `src/routes/fantasy.players.$playerId.tsx:35` (105 characters against a
+   `printWidth` of 100). **PR #154 already fixes it** — commit `3f429f4` on
+   `chief/launch-fixes-3` is exactly that reformat, and `bunx eslint .` on that
+   branch reports 0 errors. No separate fix is needed or wanted: a second PR
+   touching the same line would only collide with #154, which merges first.
 
 2. **The pre-existing news ingestion RPCs share a guard that can fail open.**
    `api.news_ingest_provider_article` and its siblings test
