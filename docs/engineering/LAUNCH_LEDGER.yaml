@@ -332,7 +332,7 @@ tasks:
       Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
       build the routes, link them from the consent line, and add them to the footer.
 
-  BG-0071:
+  BG-0072:
     title: LAUNCH CHIEF — PR 152 merged and verified live on botolago.com
     area: release
     severity: P0
