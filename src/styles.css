@@ -316,12 +316,27 @@
 /* Utilities                                                          */
 /* ================================================================== */
 
-/* --- Typographic brand accents ------------------------------------ */
+/* --- Typographic brand accent ------------------------------------ */
+
+/* BG-0129. This was `var(--brand-primary)`, which is a FILL colour: it is
+   declared once on `:root` and never redeclared under `.dark`, so every piece
+   of text wearing it stayed a deep navy on a dark page. That is the BG-0083
+   defect, and `text-brand` is the highest-volume instance of it — the default
+   `accentClassName` of `Trans`, so it reaches every accented title in the
+   product, plus `AccentEyebrow` and the rest.
+
+   `--ui-ink-fg` is the themed foreground counterpart and resolves to exactly
+   the same value in light: both compute to `oklch(32% .1 258)`, verified from
+   the live document rather than read off the source. So this changes nothing
+   anyone can see today, and is what makes those call sites correct the moment
+   DARK_MODE_ENABLED is flipped.
+
+   `text-brand-accent` was removed with it: `--brand-accent` has the same
+   fill-as-foreground problem and the utility had zero call sites in `src/`. A
+   dead utility that would reintroduce the defect the first time someone
+   reached for it is worse than no utility. */
 @utility text-brand {
-  color: var(--brand-primary);
-}
-@utility text-brand-accent {
-  color: var(--brand-accent);
+  color: var(--ui-ink-fg);
 }
 
 /* --- Primary call-to-action (brand gradient) ---------------------- */

@@ -1454,18 +1454,25 @@ tasks:
     area: design
     severity: P1
     owner: Chief
-    state: QUEUED
+    state: DONE # already fixed by the merge; verified by measurement 2026-09-21, not by reading
     depends_on: []
     evidence:
       - "src/components/fantasy/GameweekSelector.tsx uses --fpl-ink-deep as a FOREGROUND, which is the BG-0083 defect verbatim"
       - measured at 1.12:1 in dark by BG-0121 while verifying its own routes
       - the increment/decrement controls are 36x36px against a 44px floor (--ui-tap-min)
+      - >
+        RE-MEASURED on the integrated tree: both steppers are 44x44 on /fantasy/points and
+        /fantasy/top-players, in fr and ar. The value renders oklch(0.24 0.09 258)
+        (--ui-on-grad-header) on the Points header and oklch(0.16 0.03 260)
+        (--ui-on-surface) on a page surface -- both themed tokens, neither --fpl-ink-deep.
+        The aria-labels name the gameweek they navigate to ("Journée 13" / "Journée 14")
+        rather than "Journée -1" / "Journée +1".
     note: >
-      Raised by BG-0121 as KIT-1 against a component it does not own. The contrast half is
-      unreachable at launch -- DARK_MODE_ENABLED is false -- but the 36px controls are live
-      in both themes, on /fantasy/points and /fantasy/top-players, and a 36px target is a
-      defect a thumb finds immediately. Same family as BG-0116: a component BG-0118 aliased
-      but did not convert call site by call site.
+      Raised by BG-0121 as KIT-1 against a component it does not own, and real when it was
+      raised: BG-0121 branched before the sibling lanes converted this component, so it
+      measured its own base. The conversion landed in BG-0118/BG-0120 and the merge carried
+      it. Closed on measurement rather than on the component's own doc comment, which
+      claimed the fix -- a comment asserting a fix is not evidence of one.
 
   BG-0127:
     title: A 32-hex-character invite code cannot be shared by voice
@@ -1511,18 +1518,21 @@ tasks:
     area: design
     severity: P2
     owner: Chief
-    state: QUEUED
+    state: DONE # chevron refuted, UiCard fixed, text-brand fixed at the utility 2026-09-21
     depends_on: [BG-0113]
     evidence:
-      - "UiHeader's back chevron: its POSITION mirrors under dir=rtl but the glyph does not, so it points away from the direction it navigates"
-      - UiCard does not forward ARIA props, so a caller cannot label a card or mark it as a region
-      - six --brand-primary-as-text instances sit outside BG-0118's ownership -- common/Trans.tsx (19 call sites), common/SectionHeader.tsx (17), AccentEyebrow, WelcomeScreen, StatComparison, ConsentLine, and PlayerShirt
+      - "chevron: REFUTED on the integrated tree. Under dir=rtl every .lucide-chevron-* carries matrix(-1,0,0,1,0,0) -- scaleX(-1) -- from the rules at styles.css:626-637, and the position flips too (x 12 -> 358 at 390px). Both halves mirror."
+      - "UiCard: CONFIRMED and fixed. It destructured a fixed prop set and forwarded nothing, so role, id and every aria-* were dropped. Now passed through, deliberately narrow -- ARIA plus role and id, not arbitrary DOM props, because spreading everything would let a caller put onClick on a plain div, which is what `interactive` and `as` exist to prevent."
+      - "six --brand-primary-as-text instances: one closed. SectionHeader's eyebrow went to ui.tone.ink in the BG-0124 pass. Five remain -- Trans.tsx (19 call sites), AccentEyebrow, WelcomeScreen, StatComparison, ConsentLine, PlayerShirt."
     note: >
-      The chevron is the only one visible to a user today, and only in Arabic. The six
-      --brand-primary call sites are a light-mode no-op -- --brand-primary and light
-      --ui-ink-fg are the same colour -- so the substitution is safe and invisible now, and
-      is what makes those files theme-correct when DARK_MODE_ENABLED flips. BG-0118 left
-      them rather than reach outside its files, which was right.
+      The chevron was the one item claimed to be visible to a user today, and it is not:
+      measured rather than read, it mirrors correctly in both position and glyph. Recorded
+      as refuted rather than deleted, because "the RTL chevron is broken" is a claim that
+      will be made again and this is the measurement that answers it.
+
+      The five remaining --brand-primary call sites are a light-mode no-op -- --brand-primary
+      and light --ui-ink-fg are the same colour -- so the substitution is safe and invisible
+      now, and is what makes those files theme-correct when DARK_MODE_ENABLED flips.
 
   BG-0130:
     title: MatchTabs clips "Compositions" below about 370px

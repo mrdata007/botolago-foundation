@@ -26,6 +26,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { AlertTriangle, ChevronDown, ChevronLeft, Info, Loader2, X } from "lucide-react";
 import type {
   AnchorHTMLAttributes,
+  AriaAttributes,
   ButtonHTMLAttributes,
   ElementType,
   InputHTMLAttributes,
@@ -197,6 +198,14 @@ export function UiHeader({
  * The Fantasy card: an opaque surface, 6px radius, one small shadow, no
  * border and no glass. `interactive` adds the press feedback used on tappable
  * tiles.
+ *
+ * ARIA and `role`/`id` pass through (BG-0129). They used not to, so a caller
+ * could not label a card, mark it as a region, or point an
+ * `aria-labelledby`/`aria-describedby` at one — and a card is exactly the kind
+ * of box that wants a name. The pass-through is deliberately narrow: ARIA plus
+ * `role` and `id`, not arbitrary DOM props. Spreading everything would let a
+ * caller attach `onClick` to a plain `div`, which is the tappable-card defect
+ * `interactive` and `as` exist to prevent.
  */
 export function UiCard({
   children,
@@ -204,15 +213,23 @@ export function UiCard({
   padding = "md",
   interactive = false,
   className,
+  role,
+  id,
+  ...aria
 }: {
   children: ReactNode;
   as?: ElementType;
   padding?: "none" | "sm" | "md" | "lg";
   interactive?: boolean;
   className?: string;
-}) {
+  role?: string;
+  id?: string;
+} & AriaAttributes) {
   return (
     <Tag
+      role={role}
+      id={id}
+      {...aria}
       className={cn(
         ui.surface.card,
         padding === "sm" && "p-3",
