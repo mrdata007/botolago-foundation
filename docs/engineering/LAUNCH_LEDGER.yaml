@@ -1335,6 +1335,70 @@ tasks:
       deletion. Sequenced with the polish pass, which is already the pass that settles the
       remaining Fantasy debt.
 
+  BG-0124:
+    title: leading-none on the micro and stat ramps clips glyph ink in both languages, and a third of it in Arabic
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0121]
+    evidence:
+      - "src/components/ui-kit/tokens.ts:236 -- ui.text.micro is `leading-none`, i.e. line-height equals font-size"
+      - "src/components/ui-kit/tokens.ts:219 -- STAT_BASE is `leading-none`, so every stat step inherits it"
+      - >
+        measured from the font's own metrics via canvas TextMetrics on the live bottom nav at
+        390px, 11px/11px with overflow-y hidden and a content box of 0..11:
+        fr "Fantasy" (Manrope) ink spans y=2..13, so 2px of descender is cut;
+        ar "فانتازي" (Noto Sans Arabic) ink spans y=-1..15, so 1px is cut at the top and 4px at
+        the bottom -- 5px of 16px, about a third of the glyph ink.
+      - >
+        scripts/qa/layout-probe.mjs over 13 Fantasy routes x 4 widths x 2 languages: 0 document
+        overflow, 0 horizontal text clipping, 13 elements past a viewport edge, and 632 vertically
+        clipped text leaves. Also present on / and /matches, so this is the whole public app, not Fantasy.
+      - "leading-tight (1.25) is not enough either: h1 at fs=19px lh=23.75px measures scrollHeight 31 > clientHeight 24 in Arabic"
+    note: >
+      The clipping needs three things at once and has all three: a line box no taller than the
+      font size, text whose ink exceeds its own em (which is every font), and an ancestor
+      utility that hides the overflow -- `truncate` sets overflow:hidden for a HORIZONTAL
+      ellipsis and clips vertically as a side effect. CSS cannot hide one axis and show the
+      other; setting overflow-x hidden computes overflow-y to auto. So the fix has to be
+      vertical room, not a change of overflow.
+
+      Arithmetic for the fix, from the measured metrics at 11px. Latin: font ascent 12 +
+      descent 3, ink ascent 8 + descent 3, so the ink fits only once line-height >= 15px, a
+      ratio of 1.36. Arabic: font ascent 15 + descent 8, ink ascent 10 + descent 6, needing
+      line-height >= 19px, a ratio of 1.73. Those are font-metric properties and hold across
+      the scale, which is exactly why one leading value cannot serve both scripts and why the
+      polish standard asks for an Arabic-specific adjustment.
+
+      This is BG-0113's Gap A arriving as a visible defect rather than a missing token. The
+      fix is the --ui-leading-* family with a :lang(ar) override, applied through the ramp, so
+      it is sequenced into the polish pass rather than patched at the two call sites -- every
+      other `leading-none` and `leading-tight` in the kit has the same problem waiting.
+
+      NOT fixed ahead of the pass because it changes vertical rhythm on every screen in the
+      product while BG-0121 is still verifying its own, and the bottom nav has a fixed
+      --bottomnav-h that a taller label has to be re-checked against.
+
+  BG-0125:
+    title: Thirteen elements cross a viewport edge on the hub, My Team and top players
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0121]
+    evidence:
+      - "fr/ar 390 and 430 /fantasy/team and /fantasy: <div> [-34..424] and <span> [-74..48] at vw=390"
+      - "fr/ar 390 and 430 /fantasy/top-players: <div> [190..414] (fr) and [-24..200] (ar) at vw=390"
+      - measured by scripts/qa/layout-probe.mjs after excluding fixed bars, SVG internals and overflow-x scrollers
+    note: >
+      Document scrollWidth is clean on all 104 pairs, which is the point of the assertion:
+      html/body set overflow-x:clip, so the page never grows a scrollbar and the usual test
+      reports nothing while content is being cut. Each of the thirteen still needs to be
+      opened individually -- a full-bleed band using negative margin is correct and will look
+      identical to this probe -- so this is a list to triage, not thirteen confirmed defects.
+      Sequenced with the polish pass, which is when the screens are open anyway.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
