@@ -40,16 +40,15 @@ the file is the last step of this runbook.
 
 ## 2. What ships
 
-### Migrations (6, all additive)
+### Migrations (5, all additive)
 
-| File                                                          | Contents                                                                                                                                              |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20260922100000_news_engine_core.sql`                         | 12 `app_private` tables, 8 enums, RLS enabled and forced on all of them, updated-at triggers                                                          |
-| `20260922100100_news_engine_pipeline_api.sql`                 | 18 service-role `api` RPCs: run ledger, source claim, discovery, fetch, relevance, entities, facts, clustering, failure inbox                         |
-| `20260922100200_news_engine_publication_api.sql`              | Generation attempts, the publication contract, unpublish, status and failure read models, source administration                                       |
-| `20260922100300_news_engine_seed.sql`                         | BotolaGO newsroom publisher, editorial taxonomy (14 terms, AR+FR labels), 13 publication policies, the ElBotola source row (disabled), entity aliases |
-| `20260922100400_news_engine_media.sql`                        | Hero resolution from BotolaGO-owned catalog media only                                                                                                |
-| `20260922100500_news_stand_down_spares_approved_editions.sql` | Narrows PR #154's stand-down sweep so it cannot unpublish an article an editor approved (see §7)                                                      |
+| File                                             | Contents                                                                                                                                              |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260922100000_news_engine_core.sql`            | 12 `app_private` tables, 8 enums, RLS enabled and forced on all of them, updated-at triggers                                                          |
+| `20260922100100_news_engine_pipeline_api.sql`    | 18 service-role `api` RPCs: run ledger, source claim, discovery, fetch, relevance, entities, facts, clustering, failure inbox                         |
+| `20260922100200_news_engine_publication_api.sql` | Generation attempts, the publication contract, unpublish, status and failure read models, source administration                                       |
+| `20260922100300_news_engine_seed.sql`            | BotolaGO newsroom publisher, editorial taxonomy (14 terms, AR+FR labels), 13 publication policies, the ElBotola source row (disabled), entity aliases |
+| `20260922100400_news_engine_media.sql`           | Hero resolution from BotolaGO-owned catalog media only                                                                                                |
 
 Every new table lives in `app_private` with RLS enabled **and forced** and no
 policy, so the only access path is a `security definer` function in `api` that
@@ -567,21 +566,19 @@ bun run backend:db:start && bun run backend:db:reset && bun run backend:types:ge
 None is caused by this branch; all three are recorded so they are not lost.
 
 0. **PR #154's stand-down sweep would have unpublished the whole newsroom.**
-   This one is fixed here, in
-   `20260922100500_news_stand_down_spares_approved_editions.sql`, because
-   leaving it would have made the engine unusable.
+   **Found here, fixed in #154.** This branch no longer carries a patch for it.
 
-   `app_private.news_stand_down_machine_editions()` unpublishes every published
+   `app_private.news_stand_down_machine_editions()` unpublished every published
    edition with `created_by is null`. That column is a foreign key to
    `auth.users` and no person creates an engine article, so the engine leaves it
    null — including after an editor has read the article and clicked publish.
    The function is re-runnable by design, so one later invocation would have
    silently unpublished every approved article.
 
-   The fix adds one predicate: `and updated_by is null`.
+   The fix is one predicate: `and updated_by is null`.
    `api.editorial_transition_article` stamps `updated_by = auth.uid()` on every
-   transition, so an edition a person acted on is now excluded — which is what
-   the sweep's own comment already promised ("never touches human-authored
+   transition, so an edition a person acted on is excluded — which is what the
+   sweep's own comment already promised ("never touches human-authored
    editions"). It is not a behaviour change for the rows the sweep was written
    for: on production all 108 published editions with `created_by is null` also
    have `updated_by is null`, so it still catches every one of them. Verified
@@ -589,8 +586,16 @@ None is caused by this branch; all three are recorded so they are not lost.
    unpublished, an editor-approved article stays published, and a second run
    moves nothing.
 
-   The migration is guarded on the function existing, so applied before PR #154
-   merges it is a no-op and creates nothing.
+   This branch carried that patch as a guarded migration while #154 was still
+   without it. #154 has since adopted the same predicate verbatim, so the
+   duplicate was removed rather than left to re-apply an identical function.
+
+   What stays here is the assertion, in `news_engine.test.sql`: the sweep either
+   does not exist or spares editions a person has acted on. It passes on this
+   branch alone (the function is not there yet) and after the rebase (it is, and
+   it carries the predicate). If #154's predicate is ever reverted, that
+   assertion is what fails — the protection the engine depends on is pinned by a
+   test rather than by a copy of someone else's migration.
 
 1. **`bun run lint` was already failing on `main`.** One Prettier error in
    `src/routes/fantasy.players.$playerId.tsx:35` (105 characters against a
