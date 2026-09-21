@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { newsService } from "@/services/news";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -151,9 +152,13 @@ function HomeContent() {
     queryFn: () => fantasyService.getTrendingPlayers(),
     enabled: fantasyReady,
   });
+  // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
+  // the edition is not even fetched: no News RPC, no third-party media URLs
+  // reaching the document, nothing to flash before the section is skipped.
   const newsQ = useQuery({
     queryKey: ["news", "edition", lang, "auto"] as const,
     queryFn: () => newsService.getEdition(lang, "auto"),
+    enabled: NEWS_ENABLED,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -355,29 +360,31 @@ function HomeContent() {
       </Section>
 
       {/* -------------------------------------------------------- */}
-      {/* 4. News preview                                           */}
+      {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
       {/* -------------------------------------------------------- */}
-      <Section index={3}>
-        <SectionHeader
-          eyebrow={t("nav.news")}
-          icon={Newspaper}
-          title={t("home.news_preview")}
-          action={<ViewAllLink to="/news" />}
-        />
-        <div className="grid gap-2.5">
-          {newsQ.isError ? (
-            <ErrorState onRetry={() => void newsQ.refetch()} />
-          ) : !newsPreview ? (
-            <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
-          ) : newsPreview.length === 0 ? (
-            <EmptyState compact>{t("state.empty")}</EmptyState>
-          ) : (
-            newsPreview.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="compact" clubs={clubsQ.data ?? []} />
-            ))
-          )}
-        </div>
-      </Section>
+      {NEWS_ENABLED && (
+        <Section index={3}>
+          <SectionHeader
+            eyebrow={t("nav.news")}
+            icon={Newspaper}
+            title={t("home.news_preview")}
+            action={<ViewAllLink to="/news" />}
+          />
+          <div className="grid gap-2.5">
+            {newsQ.isError ? (
+              <ErrorState onRetry={() => void newsQ.refetch()} />
+            ) : !newsPreview ? (
+              <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+            ) : newsPreview.length === 0 ? (
+              <EmptyState compact>{t("state.empty")}</EmptyState>
+            ) : (
+              newsPreview.map((a) => (
+                <ArticleCard key={a.id} article={a} variant="compact" clubs={clubsQ.data ?? []} />
+              ))
+            )}
+          </div>
+        </Section>
+      )}
 
       {/* -------------------------------------------------------- */}
       {/* 5. Standings snapshot — only when the backend has one     */}
@@ -481,7 +488,8 @@ function HomeContent() {
         <div className="grid grid-cols-2 gap-2">
           <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
           <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
-          <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />
+          {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
+          {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
           <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
         </div>
       </Section>

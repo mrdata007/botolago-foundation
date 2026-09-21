@@ -71,26 +71,102 @@ function fallbackGradient(id: string): string {
   ][Number.isNaN(variant) ? 0 : variant]!;
 }
 
+/**
+ * BG-0091 — strip third-party attribution at the data layer.
+ *
+ * Standing product rule: BotolaGO does not display a third-party source
+ * label, byline, attribution UI, off-site media or outbound "read the
+ * original" link anywhere in the end-user product. The News DTOs carry all
+ * four for ingested content, so they are removed here — once, at the seam
+ * every News surface reads through — rather than in each component, which
+ * would leave the next new surface to rediscover the rule.
+ *
+ * The rule is written generically and names no provider, because the fix is
+ * "we do not republish other people's attribution", not "hide one name":
+ *
+ *   - `publisher` is dropped outright. It is the source label and BotolaGO
+ *     never renders one; our own publisher identity is the literal
+ *     "BotolaGO" applied downstream.
+ *   - `author` is dropped when it is just the publisher wearing a byline
+ *     (identical name), which is the signature of a machine-ingested stub.
+ *     A genuine editorial author survives, so licensed content keeps its
+ *     byline if News is switched back on.
+ *   - a hero that exists only as an off-site `sourceUrl`, with no
+ *     `storagePath` of our own, is dropped: we do not hotlink somebody
+ *     else's image host, and the card/article falls back to the brand
+ *     gradient. A hero we actually hold in storage is kept, and its
+ *     third-party `credit`/`caption` text is cleared with the same reason.
+ *   - an anchor in `bodyHtml` pointing off-site is removed *with its text*,
+ *     not merely unwrapped. Measuring the rendered DOM is what showed why:
+ *     unwrapping left the words "read the original on <source>" behind, which
+ *     is attribution in its own right. Anchors that are not absolute URLs
+ *     (our own relative links) are unwrapped instead, so internal prose keeps
+ *     its words.
+ *
+ * Nothing here fetches, rehosts or otherwise works around a third party's
+ * access controls — it only removes our own display of their attribution.
+ */
+function sameName(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+}
+
+/**
+ * Removes every off-site anchor and the text it wraps, and unwraps the rest.
+ *
+ * The body HTML is already sanitized server-side (`src/backend/news/
+ * sanitizer.ts`), so this operates on a known-narrow tag set; it is an
+ * editorial-policy pass, not a security boundary.
+ */
+function removeOutboundLinks(html: string): string {
+  return html
+    .replace(/<a\b[^>]*\bhref\s*=\s*["']https?:\/\/[^>]*>[\s\S]*?<\/a\s*>/gi, "")
+    .replace(/<a\b[^>]*>/gi, "")
+    .replace(/<\/a\s*>/gi, "")
+    .replace(/<p>\s*<\/p>/gi, "");
+}
+
+export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDetailDto>(dto: T): T {
+  const publisherName = dto.publisher?.name;
+  const hero = dto.hero;
+  const ownHero = hero && hero.storagePath ? { ...hero, credit: null, caption: null } : null;
+
+  const sanitized: T = {
+    ...dto,
+    publisher: null,
+    author: sameName(dto.author?.name, publisherName) ? null : dto.author,
+    hero: ownHero,
+  };
+
+  if ("bodyHtml" in sanitized && typeof sanitized.bodyHtml === "string") {
+    (sanitized as ArticleDetailDto).bodyHtml = removeOutboundLinks(sanitized.bodyHtml);
+  }
+
+  return sanitized;
+}
+
 export function presentArticle(
   dto: ArticleCardDto | ArticleDetailDto,
   supabaseUrl?: string | null,
 ): Article {
+  const safe = sanitizeArticleAttribution(dto);
   return {
-    id: dto.id,
-    language: dto.language,
-    title: localized(dto.title),
-    excerpt: localized(dto.subtitle ?? dto.summary),
-    category: category(dto.primaryCategory?.slug),
-    clubIds: [...dto.teamIds],
-    authorName: localized(dto.author?.name ?? dto.publisher?.name ?? "BotolaGO"),
-    publishedAt: dto.publishedAt,
-    readMinutes: dto.readingTimeMinutes,
-    heroGradient: fallbackGradient(dto.id),
-    heroUrl: resolveMediaUrl(dto.hero, supabaseUrl),
-    heroAlt: dto.hero?.alt ?? undefined,
-    isLead: dto.placement === "home_lead" || dto.placement === "news_lead",
-    tag: dto.tags[0] ? localized(dto.tags[0].name) : undefined,
-    bodyHtml: "bodyHtml" in dto ? dto.bodyHtml : undefined,
+    id: safe.id,
+    language: safe.language,
+    title: localized(safe.title),
+    excerpt: localized(safe.subtitle ?? safe.summary),
+    category: category(safe.primaryCategory?.slug),
+    clubIds: [...safe.teamIds],
+    // No source label: either our own editorial byline or the product itself.
+    authorName: localized(safe.author?.name ?? "BotolaGO"),
+    publishedAt: safe.publishedAt,
+    readMinutes: safe.readingTimeMinutes,
+    heroGradient: fallbackGradient(safe.id),
+    heroUrl: resolveMediaUrl(safe.hero, supabaseUrl),
+    heroAlt: safe.hero?.alt ?? undefined,
+    isLead: safe.placement === "home_lead" || safe.placement === "news_lead",
+    tag: safe.tags[0] ? localized(safe.tags[0].name) : undefined,
+    bodyHtml: "bodyHtml" in safe ? safe.bodyHtml : undefined,
   };
 }
 
@@ -191,8 +267,15 @@ export async function getArticleWithLanguageFallback(
   language: NewsLanguage,
   requestContext: RepositoryContext,
 ): Promise<ArticleDetailDto> {
+  // Every article-detail read in the product goes through here -- the route
+  // loader (which feeds `buildArticleHead`, and with it the JSON-LD block),
+  // the client query and `newsService.getArticle`. Sanitizing at this single
+  // seam is what keeps third-party attribution out of the rendered byline,
+  // the hero, the body and the structured data alike.
   try {
-    return await repository.getArticle(identifier, language, requestContext);
+    return sanitizeArticleAttribution(
+      await repository.getArticle(identifier, language, requestContext),
+    );
   } catch (error) {
     // Edition UUID links remain readable when shared with a viewer in the other locale.
     // Slugs are language-specific; operational and authorization failures must surface.
@@ -203,7 +286,9 @@ export async function getArticleWithLanguageFallback(
     ) {
       throw error;
     }
-    return repository.getArticle(identifier, language === "fr" ? "ar" : "fr", requestContext);
+    return sanitizeArticleAttribution(
+      await repository.getArticle(identifier, language === "fr" ? "ar" : "fr", requestContext),
+    );
   }
 }
 

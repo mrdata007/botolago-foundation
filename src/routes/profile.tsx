@@ -40,6 +40,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
 import { ui, UiBadge, UiButton, UiCard } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -249,8 +250,10 @@ function AuthenticatedProfile({
           </UiButton>
         </div>
 
-        {/* Stats strip */}
-        <div className="mt-5 grid grid-cols-3 gap-2">
+        {/* Stats strip — three tiles with News, two without it, so the row
+            stays balanced instead of leaving a gap where the saved-articles
+            tile was (owner decision — see `@/lib/feature-flags`). */}
+        <div className={cn("mt-5 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
           <StatTile
             icon={<Trophy className="h-4 w-4" aria-hidden />}
             label={t("profile.fav_club")}
@@ -274,12 +277,16 @@ function AuthenticatedProfile({
               ) : undefined
             }
           />
-          <StatTile
-            icon={<Bookmark className="h-4 w-4" aria-hidden />}
-            label={t("news.bookmark")}
-            value={String(saved.hydrated ? saved.ids.length : 0)}
-            monoValue
-          />
+          {/* Saved articles — hidden at launch (NEWS_ENABLED); there is no
+              News surface to save from or navigate to. */}
+          {NEWS_ENABLED && (
+            <StatTile
+              icon={<Bookmark className="h-4 w-4" aria-hidden />}
+              label={t("news.bookmark")}
+              value={String(saved.hydrated ? saved.ids.length : 0)}
+              monoValue
+            />
+          )}
           <StatTile
             icon={<Bell className="h-4 w-4" aria-hidden />}
             label={t("profile.notifications")}
