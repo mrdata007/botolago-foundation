@@ -1,5 +1,11 @@
 # Moving botolago.com from Lovable hosting to Vercel
 
+> **Status: fallback, not the plan of record.** The owner chose to upgrade the
+> Lovable plan instead, which drops the badge at source in minutes and changes
+> nothing else. Keep this document: it is the escape route if the plan lapses,
+> if Lovable hosting becomes unsuitable, or if a second host is ever wanted for
+> resilience. Everything measured below was measured, and stays true.
+
 Why: the "Made with Lovable" badge is injected by Lovable's hosting, not by this
 repository — it is an `<aside id="lovable-badge">` appended before `</body>`,
 with its own inline `<style>` and `<script>`. Nothing in `src/` produces it, so

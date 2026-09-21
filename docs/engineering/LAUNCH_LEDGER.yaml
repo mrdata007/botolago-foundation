@@ -19,7 +19,7 @@ human_actions_open:
   - id: BG-0065
     action: Decide the French content plan — the newest French article is ~8 weeks old while Arabic is current. Enable a French ingestion source, publish French editions, or accept a lagging French rail.
   - id: BG-0066
-    action: "Vercel cutover chosen over a plan upgrade: set the nine VITE_* variables on the botolago-foundation Vercel project and move DNS. Full checklist in docs/engineering/VERCEL_CUTOVER.md.
+    action: "Upgrade the Lovable workspace plan (Ali's Lovable, currently free) so the attribution badge is dropped at source. Owner-only: no billing, plan or badge control exists in the Lovable MCP surface. The Vercel cutover in docs/engineering/VERCEL_CUTOVER.md is kept as the fallback route, not the plan of record.
   - id: BG-0067
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
 
