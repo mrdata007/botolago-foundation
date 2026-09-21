@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
@@ -29,6 +29,7 @@ import {
   Loader2,
   Mail,
   AtSign,
+  FileText,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import {
@@ -363,6 +364,23 @@ function AuthenticatedProfile({
         />
       </Group>
 
+      {/* Legal — same Group chrome and row layout as the sections above, so it
+          reads as one more section rather than a bolted-on footer. These are
+          plain router links rather than buttons because they navigate. */}
+      <Group title={t("profile.section.legal")}>
+        <LegalRow
+          to="/terms"
+          label={t("profile.legal.terms")}
+          description={t("profile.legal.terms_desc")}
+        />
+        <LegalRow
+          to="/privacy"
+          label={t("profile.legal.privacy")}
+          description={t("profile.legal.privacy_desc")}
+          divided
+        />
+      </Group>
+
       {/* Danger zone */}
       <DeleteAccountSection />
     </>
@@ -660,6 +678,48 @@ function StatTile({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * One row of the legal Group. Same chrome as the account-security rows above
+ * (icon chip, title over description, chevron), but a router `Link` rather
+ * than a `button` — it goes to a page. `text-start` and the logical `gap`
+ * keep it mirrored in Arabic; the chevron is `ChevronRight`, matching the
+ * rest of the page, which already flips with the RTL layout.
+ */
+function LegalRow({
+  to,
+  label,
+  description,
+  divided,
+}: {
+  to: "/terms" | "/privacy";
+  label: string;
+  description: string;
+  divided?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none${
+        divided ? " border-t border-[var(--border-subtle,rgba(0,0,0,0.06))]" : ""
+      }`}
+    >
+      <div className="flex items-center gap-3 text-sm text-foreground">
+        <span
+          className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
+          aria-hidden
+        >
+          <FileText className="h-4 w-4" />
+        </span>
+        <span className="text-start">
+          <span className="block font-semibold">{label}</span>
+          <span className="block text-xs font-normal text-muted-foreground">{description}</span>
+        </span>
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+    </Link>
   );
 }
 

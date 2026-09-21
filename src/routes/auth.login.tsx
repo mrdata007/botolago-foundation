@@ -12,6 +12,8 @@ import {
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
+import { ConsentLine } from "@/components/legal/ConsentLine";
+import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
 import { validateEmail, validatePassword } from "@/lib/validation";
@@ -238,7 +240,7 @@ function LoginPage() {
         </div>
 
         <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-          {t("auth.terms_notice")}
+          <ConsentLine segments={noticeConsentSegments(t)} />
         </p>
       </form>
     </AuthShell>
