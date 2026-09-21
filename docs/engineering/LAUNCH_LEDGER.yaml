@@ -324,6 +324,40 @@ tasks:
       Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
       build the routes, link them from the consent line, and add them to the footer.
 
+  BG-0071:
+    title: LAUNCH CHIEF — PR 152 merged and verified live on botolago.com
+    area: release
+    severity: P0
+    owner: Chief
+    state: DONE
+    depends_on: [BG-0063, BG-0064]
+    release:
+      merge_commit: b1ecd3bf1a7dd048b77309feafe54860fa01bcbe
+      pull_request: 152
+      lovable_deployment_id: 9e6c6187-1dc6-44ed-9fc2-6acf7f101331
+      ci: Backend quality run 466 on 1b441d4 — database-quality and application-quality both success
+    bundle_proof: >
+      A merge is not a deployment and a changed HTML hash is not a changed bundle. The first read
+      after publishing showed a different html sha256 while the asset set, the byte length (48673)
+      and MatchCard-B9pYSySp.js were all identical -- only a volatile value in the head had moved.
+      The real signal was the content-hashed chunk: MatchCard-B9pYSySp.js -> MatchCard-CbpLzh5e.js.
+    behaviour_verified_on_production:
+      - >-
+        Article JSON-LD — one real <script type="application/ld+json">, parses as NewsArticle, no
+        tag=/attrs= attributes, no raw < in the payload
+      - >-
+        api.fantasy_leagues anonymous with p_visibility=public — HTTP 200 (was 401 / 42501), the
+        exact call the rankings page makes
+      - >-
+        Match cards at 390px on /matches — L12 R378 W366 with zero clipped descendants, in FR
+        (dir=ltr) and AR (dir=rtl) alike; scrollWidth 390 in both
+    not_verified_and_why: >
+      The home page could not be checked for card clipping: it currently renders zero
+      /matches/ links, so there are no cards on it to measure. The defect is verified on /matches,
+      where it was measured and is reproducible. A first Arabic run was discarded as invalid --
+      it reported dir=ltr because the language was seeded under the wrong localStorage key
+      (botolago.language, not botolago.lang); the result above is the corrected run.
+
   BG-0068:
     title: Club names are never Arabic, because no team translation exists
     area: data
