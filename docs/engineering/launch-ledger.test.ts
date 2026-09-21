@@ -81,4 +81,46 @@ describe("launch ledger", () => {
     expect(actions.length).toBe(ids.length);
     expect(block.length).toBe(ids.length + actions.length);
   });
+
+  it("never repeats a field inside one task, which is what a lost id looks like", () => {
+    // Dropping a `  BG-00xx:` line while editing does not break the parse: the
+    // orphaned entry's fields are simply absorbed by the one above it, and YAML
+    // resolves the repeated keys last-wins. The visible symptom is a task
+    // silently wearing another task's title and state, and the id-uniqueness
+    // check above cannot see it because one of the two ids no longer exists.
+    const offenders: string[] = [];
+    let current = "";
+    let seen = new Set<string>();
+    lines.forEach((line, index) => {
+      const header = /^ {2}(BG-\d{4}):\s*$/.exec(line);
+      if (header) {
+        current = header[1];
+        seen = new Set();
+        return;
+      }
+      if (!current) return;
+      // Only a task's own top-level fields; deeper lines belong to its values.
+      const field = /^ {4}([a-z_]+):/.exec(line);
+      if (!field) return;
+      if (seen.has(field[1]))
+        offenders.push(`${current} repeats "${field[1]}" at line ${index + 1}`);
+      seen.add(field[1]);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it("gives every task a title and a state", () => {
+    const entries = lines.reduce<{ id: string; fields: string[] }[]>((all, line) => {
+      const header = /^ {2}(BG-\d{4}):\s*$/.exec(line);
+      if (header) return [...all, { id: header[1], fields: [] }];
+      const field = /^ {4}([a-z_]+):/.exec(line);
+      if (field && all.length) all[all.length - 1].fields.push(field[1]);
+      return all;
+    }, []);
+    expect(entries.length).toBeGreaterThan(0);
+    const incomplete = entries
+      .filter((entry) => !entry.fields.includes("title") || !entry.fields.includes("state"))
+      .map((entry) => entry.id);
+    expect(incomplete).toEqual([]);
+  });
 });

@@ -16,6 +16,12 @@ human_actions_open:
     action: Create GitHub Environment fantasy-e2e (E2E_FANTASY_EMAIL/PASSWORD, staging URL/key) and variable FANTASY_E2E_ENABLED; confirm the synthetic manager's project.
   - id: BG-0023
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
+  - id: BG-0065
+    action: Decide the French content plan — the newest French article is ~8 weeks old while Arabic is current. Enable a French ingestion source, publish French editions, or accept a lagging French rail.
+  - id: BG-0066
+    action: Upgrade the Lovable workspace plan to remove the attribution badge overlaying the bottom nav, or say to keep it and the Chief will move the nav clear of it.
+  - id: BG-0067
+    action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
 
 tasks:
 
@@ -183,6 +189,140 @@ tasks:
       fpl.gw_transfers_made dropped from both dictionaries so the i18n gate's unused-key warning
       stays at its committed baseline of 248.
     verification: {status: PASS, by: chief (1112 tests, typecheck, eslint, prettier, i18n gate)}
+
+  BG-0063:
+    title: LAUNCH CHIEF — /fantasy/rankings was dead for every signed-out visitor
+    area: fantasy
+    severity: P0
+    user_impact: >
+      The page hung about 12 seconds on "Chargement…" and then showed "Une erreur est survenue".
+      Anonymous visitors are most of the launch audience, and rankings is a linked hub tile.
+    owner: Chief
+    state: DONE
+    depends_on: []
+    root_cause: >
+      api.fantasy_leagues declared p_visibility as app.fantasy_league_visibility. An argument is
+      coerced to its parameter type in the CALLER's context, before a SECURITY DEFINER body is
+      entered, so naming an app-schema type required the caller to hold USAGE on app. anon does
+      not by design; authenticated does. The body was never at fault.
+    why_it_looked_intermittent: >
+      Omitting p_visibility succeeds, because the DEFAULT is evaluated inside the function. Only a
+      call that actually sends "public" fails -- which is what the rankings page sends. Early crawl
+      lanes that did not reach that call looked green.
+    evidence:
+      - >-
+        before -- anon+visibility: 42501 permission denied for schema app; anon without it: OK;
+        authenticated+visibility: OK
+      - >-
+        after -- anon+public OK; anon+private OK with 0 rows (no leak); anon+garbage PT400;
+        anon+limit 999 PT400; authenticated+public OK
+    resolution: >
+      Migration 20260921120000: p_visibility becomes text and the enum is resolved inside the
+      definer body. Deliberately NOT a grant of USAGE on app to anon, which would have fixed the
+      symptom by opening the entire private schema. Grants, visibility predicate and security
+      properties are unchanged.
+    blast_radius: >
+      api.fantasy_leagues was the only anon-callable function in api naming an app-schema type;
+      every other one is authenticated-only and authenticated holds USAGE on app. Confirmed by
+      catalog query, not by inspection.
+    verification: {status: PASS, by: chief (six-case production probe as anon and authenticated)}
+
+  BG-0064:
+    title: LAUNCH CHIEF — Four production defects found by an anonymous crawl, all fixed
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    depends_on: []
+    findings_fixed:
+      - >-
+        Back control landed on about:blank. Three surfaces called router.history.back() directly;
+        opened cold (shared link, search result, push, bookmark) the app is the first history
+        entry, so back left the site. Silent -- no console output. Now useBackTo(fallback).
+      - >-
+        Article JSON-LD was declared {tag, attrs, children}, but the router builds the script
+        itself and turns every other key into an attribute. Emitted <script tag="script"
+        attrs="[object Object]"> with no type, so browsers RAN the JSON and crawlers saw nothing.
+        The old test asserted on the object we built rather than the shape the router consumes,
+        which is why it passed.
+      - >-
+        Head-script children are written with dangerouslySetInnerHTML and every string in the
+        JSON-LD is editor-supplied, so a </script> in a headline would have escaped into the
+        document head. serializeJsonLd now escapes < > & as \u-sequences.
+      - >-
+        French home news rail rendered Arabic headlines. getNewsEdition's "auto" mode picked the
+        freshest feed regardless of locale. The reader's own locale now wins whenever it has
+        articles; the other language remains the empty-feed fallback, symmetric in both directions.
+    verification: {status: PASS, by: chief (1132 tests, typecheck, eslint, prettier)}
+
+  BG-0065:
+    title: French news feed has no recent content
+    area: content
+    severity: P1
+    user_impact: >
+      With the locale fix in BG-0064, a French reader now correctly gets French headlines -- but
+      the newest French article is from 2026-07-28, roughly eight weeks old, against 98 Arabic
+      editions whose newest is 2026-09-17. The French home rail is right in language and stale in
+      substance.
+    owner: Human (content) + Chief (ingestion)
+    state: HALTED_FOR_INPUT
+    depends_on: [BG-0064]
+    detail: >
+      app.article_editions: fr published 10, newest 2026-07-28; ar published 98, newest
+      2026-09-17. The approved ingestion source (ElBotola) is Arabic, and ingestion schedules are
+      currently disabled (see BG-0060). Showing Arabic to French readers was the previous
+      workaround; it is not an acceptable one.
+    human_action_required: >
+      Decide the French content plan for launch: enable a French source for ingestion, publish
+      French editions through the CMS, or accept a French rail that lags. The Chief cannot choose
+      a content source or author editorial copy.
+
+  BG-0066:
+    title: OWNER BLOCKER — Lovable builder badge is live on the production site
+    area: infra
+    severity: P1
+    user_impact: >
+      A fixed badge (z-index 1000000, pointer-events auto, linking to lovable.dev) covers the
+      lower ~47% of the Matches and Profil bottom-nav tabs at 390px and hides both labels, and
+      overlays the register CTA on /auth/login and /auth/register. Centre taps still navigate, so
+      the nav is degraded rather than blocked.
+    owner: Human (plan)
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    detail: >
+      The badge is not in this repository. It is injected by Lovable's hosting, and workspace
+      "Ali's Lovable" (6PyjZbJSDH7dSs7Ojq6I) is on the free plan, where the badge is the required
+      attribution. No Lovable MCP tool exposes a setting for it.
+    why_not_chief_resolved: >
+      Suppressing another party's required attribution with CSS would be circumventing the terms
+      the free plan is granted under. That is the owner's decision to make by changing plan, not
+      the Chief's to make by hiding the element.
+    human_action_required: >
+      Either upgrade the Lovable workspace plan so the badge is removed at source, or accept it
+      and say so, in which case the Chief will reposition the bottom nav to sit clear of it.
+
+  BG-0067:
+    title: OWNER BLOCKER — Terms of Service and Privacy Policy do not exist
+    area: legal
+    severity: P1
+    user_impact: >
+      /auth/register states "J'accepte les Conditions d'utilisation et la Politique de
+      confidentialité." as plain unlinked text. Every account created at launch agrees to
+      documents no one can read. /terms /privacy /faq /legal /cgu /confidentialite /about
+      /contact all return 404.
+    owner: Human (legal)
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    detail: >
+      Searched the repository: no legal copy exists in any form -- no route, no markdown, no
+      dictionary entry beyond the two consent sentences at dictionaries.ts:855 and :876.
+    why_not_chief_resolved: >
+      These are binding documents about real data handling by a real operator. Drafting them would
+      mean inventing commitments the owner has not made, and a plausible-looking placeholder is
+      more dangerous than a visible gap because it reads as genuine.
+    human_action_required: >
+      Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
+      build the routes, link them from the consent line, and add them to the footer.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
@@ -485,7 +625,9 @@ tasks:
     owner_decisions_needed:
       - BG-0011-OWNER-2: reduce the backfill scope to season 26027 only (2024/25 is provably not used for pricing; runner/preflight currently force both seasons)
       - confirm the corrected time box; A0 go/no-go by 2026-09-19T12:00Z, A4 green by 2026-09-21T18:00Z, A7–A11 by 2026-09-22T22:30Z
-    plan: A0 probe (BG-0034, in progress) → A1 go/no-go → A2 worker quarantine + additive coverage-threshold migration → A3 dispatch workflow (season_ids, skip_deploy, RESTORE_SEASON fix) → A4 backfill (needs BG-0002) → A5 read-only proof → A6 export → A7–A10 single transaction → A11 open → A12 docs
+    # Renamed from a second `plan:`. YAML resolves a repeated key last-wins, so
+    # this scalar was silently discarding the role assignments in `plan:` above.
+    step_sequence: A0 probe (BG-0034, in progress) → A1 go/no-go → A2 worker quarantine + additive coverage-threshold migration → A3 dispatch workflow (season_ids, skip_deploy, RESTORE_SEASON fix) → A4 backfill (needs BG-0002) → A5 read-only proof → A6 export → A7–A10 single transaction → A11 open → A12 docs
     new_defects_found: [BG-0031, BG-0032, BG-0033]
     a0_result_2026_09_18: '64 of 240 season-26027 fixtures (27%) fail the worker invariant starter_rows_mismatch and nothing else; the defect is systemic, not a single fixture. A1 go/no-go needs a Researcher analysis of the failing set (starterRows distribution, whether 21-starter fixtures are usable) and an owner decision on the coverage threshold (≥73% max achievable without relaxing the invariant).'
     owner_decisions_2026_09_18:
