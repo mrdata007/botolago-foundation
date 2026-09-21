@@ -6,7 +6,8 @@ export type AdminConsoleRoute =
   | "/admin/staff/$principalId"
   | "/admin/approvals"
   | "/admin/audit"
-  | "/admin/security";
+  | "/admin/security"
+  | "/admin/news";
 
 export type AdminConsoleSurface = "route" | "state" | "dialog";
 
@@ -27,6 +28,13 @@ export interface AdminConsoleScreenContract {
   };
 }
 
+// The frozen Phase 7C/7D security-console surface: every screen, dialog and
+// state of the staff/approvals/audit/security flows, each pinned to an
+// implemented `admin_*` RPC and to an MFA/recent-auth/dual-control decision
+// taken in that phase. It is NOT an index of every route reachable under
+// /admin -- later consoles (Editorial CMS and the rest) are gated by their own
+// loaders and carry no Phase 7D security posture, so they do not belong here.
+// Adding one would assert MFA/dual-control semantics nobody specified for it.
 export const ADMIN_CONSOLE_SCREENS = [
   {
     id: "access-gate",
@@ -309,6 +317,9 @@ export const ADMIN_CONSOLE_SCREENS = [
   },
 ] as const satisfies readonly AdminConsoleScreenContract[];
 
+// Rendered by the Admin shell, filtered on the caller's server-resolved
+// permissions: an entry here is a link, never an authority. Each target route
+// re-checks its own permission in its loader.
 export const ADMIN_CONSOLE_NAV_ITEMS = [
   {
     route: "/admin/staff",
@@ -333,6 +344,12 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     permission: "security.revoke_staff",
     testId: "admin-nav-security",
     labels: { fr: "Sécurité", ar: "الأمان" },
+  },
+  {
+    route: "/admin/news",
+    permission: "editorial.read",
+    testId: "admin-nav-news",
+    labels: { fr: "Actualités", ar: "الأخبار" },
   },
 ] as const satisfies readonly {
   readonly route: Exclude<AdminConsoleRoute, "/admin" | "/admin/staff/$principalId">;

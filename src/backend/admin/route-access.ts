@@ -214,7 +214,6 @@ export function maskEmail(email: string | null): string | null {
 export type AdminCopy = {
   readonly dir: "ltr" | "rtl";
   readonly title: string;
-  readonly subtitle: string;
   readonly states: Record<AdminRouteStateName | "loading", { title: string; description: string }>;
   /** Shown instead of `states.unauthenticated` when the bearer token was rejected. */
   readonly invalidToken: { title: string; description: string };
@@ -233,6 +232,12 @@ export type AdminCopy = {
     security: string;
     pendingRevocation: string;
     none: string;
+    /** Heading above the read-only session context cards. */
+    contextHeading: string;
+    /** Heading above the console's module cards. */
+    modulesHeading: string;
+    /** Badge on a module that is described but not yet openable. */
+    soon: string;
   };
   readonly sections: readonly string[];
 };
@@ -241,7 +246,6 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
   fr: {
     dir: "ltr",
     title: "Administration BotolaGO",
-    subtitle: "Opérations de sécurité — Phase 7C",
     states: {
       loading: {
         title: "Vérification de l’accès",
@@ -297,6 +301,9 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       security: "Sécurité de session",
       pendingRevocation: "Révocation en attente",
       none: "Aucun",
+      contextHeading: "Contexte de session",
+      modulesHeading: "Modules d’administration",
+      soon: "Bientôt",
     },
     sections: [
       "Affectations du personnel",
@@ -308,7 +315,6 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
   ar: {
     dir: "rtl",
     title: "إدارة BotolaGO",
-    subtitle: "عمليات الأمان — المرحلة 7C",
     states: {
       loading: {
         title: "التحقق من الصلاحية",
@@ -364,6 +370,9 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       security: "أمان الجلسة",
       pendingRevocation: "إلغاء جلسة قيد الانتظار",
       none: "لا يوجد",
+      contextHeading: "سياق الجلسة",
+      modulesHeading: "وحدات الإدارة",
+      soon: "قريبًا",
     },
     sections: ["تعيينات طاقم الإدارة", "قائمة الموافقات", "سجل الأمان", "دليل الأدوار"],
   },

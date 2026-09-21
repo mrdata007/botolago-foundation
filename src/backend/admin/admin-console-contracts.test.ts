@@ -8,7 +8,17 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/approvals",
   "/admin/audit",
   "/admin/security",
+  "/admin/news",
 ]);
+
+// Route files backing each console nav target, relative to this test.
+const NAV_ROUTE_FILES: Record<string, string> = {
+  "/admin/staff": "../../routes/admin.staff.tsx",
+  "/admin/approvals": "../../routes/admin.approvals.tsx",
+  "/admin/audit": "../../routes/admin.audit.tsx",
+  "/admin/security": "../../routes/admin.security.tsx",
+  "/admin/news": "../../routes/admin.news.tsx",
+};
 
 const IMPLEMENTED_OPERATIONS = new Set([
   "get_my_staff_context",
@@ -81,6 +91,56 @@ describe("Frozen Admin Console contracts", () => {
         ),
       ),
     ).toBe(true);
+  });
+
+  it("links the News CMS from the console nav, gated on editorial.read", () => {
+    const news = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/news");
+    expect(news).toBeDefined();
+    expect(news?.permission).toBe("editorial.read");
+    expect(news?.testId).toBe("admin-nav-news");
+    expect(news?.labels.fr).toBe("Actualités");
+    expect(news?.labels.ar).toBe("الأخبار");
+  });
+
+  it("shows a nav entry only to a principal holding its permission", () => {
+    // Mirrors the filter the Admin shell applies to ADMIN_CONSOLE_NAV_ITEMS.
+    const visibleTo = (permissions: readonly string[]) =>
+      ADMIN_CONSOLE_NAV_ITEMS.filter((item) => permissions.includes(item.permission)).map(
+        (item) => item.testId,
+      );
+
+    expect(visibleTo(["editorial.read"])).toEqual(["admin-nav-news"]);
+    expect(visibleTo(["editorial.write"])).toEqual([]);
+    expect(visibleTo([])).toEqual([]);
+    expect(visibleTo(["security.manage_staff"])).not.toContain("admin-nav-news");
+    expect(visibleTo(["security.read_audit", "editorial.read"])).toEqual([
+      "admin-nav-audit",
+      "admin-nav-news",
+    ]);
+  });
+
+  it("points every nav entry at an implemented route file", async () => {
+    for (const item of ADMIN_CONSOLE_NAV_ITEMS) {
+      expect(IMPLEMENTED_ROUTES.has(item.route)).toBe(true);
+      const file = NAV_ROUTE_FILES[item.route];
+      expect(file).toBeDefined();
+      const source = await Bun.file(new URL(file, import.meta.url)).text();
+      expect(source).toContain(`createFileRoute("${item.route}")`);
+      // The link is never the authority: the route re-checks access server-side.
+      expect(source).toContain("loader:");
+    }
+  });
+
+  it("keeps ADMIN_CONSOLE_SCREENS scoped to the frozen security surface", () => {
+    // Deliberate: the screens contract pins Phase 7C/7D security screens to
+    // `admin_*` RPCs and MFA/dual-control decisions. The Editorial CMS is not
+    // part of it, so /admin/news is a nav target only.
+    expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/news")).toBe(false);
+    for (const screen of ADMIN_CONSOLE_SCREENS) {
+      expect(screen.apiOperations.every((operation) => operation.startsWith("admin_"))).toBe(
+        screen.permission !== null,
+      );
+    }
   });
 
   it("wires every frozen browser hook into the functional Admin shell", async () => {
