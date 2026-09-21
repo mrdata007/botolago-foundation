@@ -44,11 +44,11 @@ the file is the last step of this runbook.
 
 | File                                             | Contents                                                                                                                                              |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20260921140000_news_engine_core.sql`            | 12 `app_private` tables, 8 enums, RLS enabled and forced on all of them, updated-at triggers                                                          |
-| `20260921140100_news_engine_pipeline_api.sql`    | 18 service-role `api` RPCs: run ledger, source claim, discovery, fetch, relevance, entities, facts, clustering, failure inbox                         |
-| `20260921140200_news_engine_publication_api.sql` | Generation attempts, the publication contract, unpublish, status and failure read models, source administration                                       |
-| `20260921140300_news_engine_seed.sql`            | BotolaGO newsroom publisher, editorial taxonomy (14 terms, AR+FR labels), 13 publication policies, the ElBotola source row (disabled), entity aliases |
-| `20260921140400_news_engine_media.sql`           | Hero resolution from BotolaGO-owned catalog media only                                                                                                |
+| `20260922100000_news_engine_core.sql`            | 12 `app_private` tables, 8 enums, RLS enabled and forced on all of them, updated-at triggers                                                          |
+| `20260922100100_news_engine_pipeline_api.sql`    | 18 service-role `api` RPCs: run ledger, source claim, discovery, fetch, relevance, entities, facts, clustering, failure inbox                         |
+| `20260922100200_news_engine_publication_api.sql` | Generation attempts, the publication contract, unpublish, status and failure read models, source administration                                       |
+| `20260922100300_news_engine_seed.sql`            | BotolaGO newsroom publisher, editorial taxonomy (14 terms, AR+FR labels), 13 publication policies, the ElBotola source row (disabled), entity aliases |
+| `20260922100400_news_engine_media.sql`           | Hero resolution from BotolaGO-owned catalog media only                                                                                                |
 
 Every new table lives in `app_private` with RLS enabled **and forced** and no
 policy, so the only access path is a `security definer` function in `api` that
