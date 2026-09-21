@@ -1,0 +1,88 @@
+task_id: BG-0082
+title: Populate app.story_teams so a News card can render a club crest
+role: Builder-Backend
+branch: bg-0082-story-teams
+base: origin/chief/launch-fixes-3
+date: 2026-09-21
+
+problem: >
+  app.story_teams holds 0 rows against 108 stories. BG-0076 shipped
+  src/components/common/ArticleHeroFallback.tsx, which paints a branded plate
+  where a hero photo would be and puts a club crest on that plate when the
+  edition names EXACTLY ONE club. Nothing links a story to a team, so on live
+  data that branch has never fired: every plate in production is wordmark-only.
+
+launch_context:
+  news_hidden: >
+    NEWS_ENABLED in src/lib/feature-flags.ts is false and
+    supabase/migrations/20260921170000_news_stand_down.sql unpublishes all 108
+    editions. This work therefore has NO user-visible effect today. It is
+    correctness banked for the day News is switched back on, and it was built
+    at that pace deliberately rather than urgently.
+  corpus: >
+    The 108 stories are machine-ingested third-party link-out stubs with short
+    bodies. 98 editions are Arabic, 10 French. The title is the only reliable
+    signal about which club a story concerns, so the title is the only text the
+    seed reads.
+
+decisions:
+  - id: forward_only_migration
+    decision: >
+      Ship the mapping as supabase/migrations/20260921220000_story_teams_seed.sql
+      and nothing else. Production writes go through the reviewed migration
+      path; the mapping is data the application depends on, so it belongs in a
+      migration rather than in an operator script. No existing migration file is
+      touched. Timestamp 20260921220000 was free (…160000–…210000 are taken).
+  - id: alias_list_not_teams_name
+    decision: >
+      Match on an alias list carried by the migration, keyed to app.teams.name.
+      app.teams.name is Latin for every club; 98 of 108 editions are Arabic, so
+      matching app.teams.name against the corpus would find almost nothing.
+    rejected_alternative: >
+      Reading app.team_translations (20260921190000_team_translations.sql). It
+      ships EMPTY pending owner confirmation of the Arabic names and, at the
+      time of writing, does not exist in production at all. Depending on it
+      would seed zero rows. A later migration can widen the match once it is
+      seeded; nothing here conflicts, because the insert is idempotent.
+  - id: never_match_code_or_short_name
+    decision: >
+      app.teams.code and app.teams.short_name are never read. Production carries
+      short_name = 'WCA' for Wydad Casablanca (a literal code, not a name) and
+      code = 'RCAZ' for 'CR Khemis Zemamra' (a code that disagrees with its own
+      name), and a two/three-letter token matched against free text produces
+      false positives. Every alias is a full club name or an unambiguous
+      multi-word form. In particular the bare Arabic token "الفتح" is NOT an
+      alias for FUS Rabat — the corpus contains a headline about the Saudi club
+      of that name — only "الفتح الرباطي" / "الفتح الرياضي" are. The same logic
+      keeps "المغرب" (Morocco) out in favour of "المغرب الفاسي" and
+      "المغرب التطواني".
+  - id: ambiguity_record_both
+    decision: >
+      When a title names two clubs, record BOTH rows rather than neither. Both
+      rows are true, and the crest branch keys off clubIds.length === 1, so two
+      rows make it decline on its own. Recording both therefore costs the crest
+      nothing and gains api.news_team_filters and the search document
+      (app_private.refresh_story_search_trigger fires on this table) a correct
+      association. Writing neither would throw that away for the same crest
+      behaviour.
+  - id: current_season_only
+    decision: >
+      Only the 16 clubs with a current-season row in app.team_memberships are
+      eligible. No association is invented for a relegated club.
+  - id: idempotent
+    decision: >
+      on conflict (story_id, team_id) do nothing, on the table's own primary
+      key. A second run inserts nothing and fires no trigger.
+
+out_of_scope:
+  - Changing NEWS_ENABLED, in the repository or in the shipped bundle.
+  - Editing any existing file under supabase/migrations/.
+  - Any production write. Nothing in this task was executed against
+    tkewgajrljbwgwedqsxn except read-only SELECTs.
+  - Seeding app.team_translations, which is the owner's separate decision.
+  - Improving the French corpus itself (BG-0065).
+
+deliverables:
+  - supabase/migrations/20260921220000_story_teams_seed.sql
+  - supabase/tests/database/story_teams_seed.test.sql
+  - docs/engineering/tasks/BG-0082/{engineering-brief,implementation-report,verification-report}.yaml
