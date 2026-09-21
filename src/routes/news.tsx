@@ -103,9 +103,9 @@ function NewsPage() {
 
       {/* Club discovery */}
       <Section index={0} className="mt-3">
-        <div className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
+        <h2 className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
           {t("news.filter_clubs")}
-        </div>
+        </h2>
         <ClubFilterRow
           clubs={clubs}
           selected={clubId}

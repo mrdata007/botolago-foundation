@@ -220,9 +220,13 @@ function HomeContent() {
             {greeting}
           </span>
         </div>
-        <h1 className="mt-1.5 truncate text-[22px] font-black leading-[1.1] tracking-tight text-foreground sm:text-2xl">
+        {/* The visible line is the manager's name, which says nothing about the
+            page. Crawlers and screen-reader users get a descriptive H1 instead,
+            and the name keeps its exact visual treatment below it. */}
+        <h1 className="sr-only">{HOME_TITLE}</h1>
+        <div className="mt-1.5 truncate text-[22px] font-black leading-[1.1] tracking-tight text-foreground sm:text-2xl">
           {user?.displayName?.trim() || summaryQ.data?.managerName || "Manager"}
-        </h1>
+        </div>
         <p className="mt-1 truncate text-[13px] text-[color:var(--text-secondary)]">
           {gwQ.data ? `${t("home.gameweek")} ${gwQ.data.number}` : ""}
           {gwQ.data ? " · " : ""}

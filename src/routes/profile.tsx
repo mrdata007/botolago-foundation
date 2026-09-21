@@ -620,9 +620,9 @@ function StatTile({
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
-      <div className="mb-2 px-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+      <h2 className="mb-2 px-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
         {title}
-      </div>
+      </h2>
       <div className="overflow-hidden rounded-2xl border border-[var(--glass-border)] bg-[color:var(--surface,#fff)]/85 shadow-sm">
         {children}
       </div>

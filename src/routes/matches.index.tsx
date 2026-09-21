@@ -21,23 +21,28 @@ import {
 } from "@/components/ui/select";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
+
+const MATCHES_TITLE = "Matchs Botola Pro — scores en direct | BotolaGO";
+const MATCHES_DESCRIPTION =
+  "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
 export const Route = createFileRoute("/matches/")({
   head: () => ({
     meta: [
-      { title: "Matchs — BotolaGO" },
-      {
-        name: "description",
-        content: "Suivez tous les matchs de la Botola Pro : en direct, à venir et résultats.",
-      },
-      { property: "og:title", content: "Matchs — BotolaGO" },
-      {
-        property: "og:description",
-        content: "Suivez tous les matchs de la Botola Pro : en direct, à venir et résultats.",
-      },
+      { title: MATCHES_TITLE },
+      { name: "description", content: MATCHES_DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: MATCHES_TITLE },
+      { property: "og:description", content: MATCHES_DESCRIPTION },
+      { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/matches` },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: MATCHES_TITLE },
+      { name: "twitter:description", content: MATCHES_DESCRIPTION },
     ],
+    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/matches` }],
   }),
   component: MatchesPage,
 });
