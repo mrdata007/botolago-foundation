@@ -533,16 +533,36 @@ describe("Supabase project resolution", () => {
     });
   });
 
-  it("resolves in the same order as the browser client", () => {
-    // If these two drift apart, the gate can once again end up pointed at a
+  it("reads the same build-time variables as the browser client", () => {
+    // If these drift apart, the gate can once again end up pointed at a
     // different project than the session it is checking.
     const client = readFileSync(
       join(import.meta.dir, "..", "..", "integrations", "supabase", "client.ts"),
       "utf8",
     );
-    expect(client).toContain("import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL");
     const server = readFileSync(join(import.meta.dir, "route-access.server.ts"), "utf8");
-    expect(server).toContain("import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL");
+    for (const name of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
+      expect(client).toContain(`import.meta.env.${name}`);
+      // The literal member expression is what the bundler substitutes; writing
+      // it any other way silently loses the build-time value.
+      expect(server).toContain(`import.meta.env.${name}`);
+    }
+  });
+
+  it("falls back instead of throwing where import.meta.env does not exist", () => {
+    // A throw here would turn a denied Admin page into a 500 on the auth path.
+    const server = readFileSync(join(import.meta.dir, "route-access.server.ts"), "utf8");
+    expect(server).toMatch(/try\s*\{[\s\S]*import\.meta\.env[\s\S]*\}\s*catch/);
+    withEnv(
+      {
+        SUPABASE_URL: "https://fallback.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_f",
+      },
+      () => {
+        expect(() => resolveSupabaseConfig()).not.toThrow();
+        expect(resolveSupabaseConfig().url).toBe("https://fallback.supabase.co");
+      },
+    );
   });
 
   it("never falls back to a service-role credential", () => {

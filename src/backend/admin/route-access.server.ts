@@ -86,11 +86,26 @@ export function classifyIdentityFailure(error: unknown): UnauthenticatedDetail {
  * instead. The publishable key is public by design and constrained by RLS --
  * it is already in the browser bundle -- so this exposes nothing new.
  */
+function buildTimeEnv(key: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISHABLE_KEY") {
+  // Written as two literal member expressions because that is the shape the
+  // bundler substitutes at build time. The try/catch covers any runtime where
+  // neither the substitution nor an `import.meta.env` object exists: falling
+  // back to the server variable is recoverable, whereas throwing here would
+  // turn a denied page into a 500 on the authentication path.
+  try {
+    return key === "VITE_SUPABASE_URL"
+      ? import.meta.env.VITE_SUPABASE_URL
+      : import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  } catch {
+    return undefined;
+  }
+}
+
 export function resolveSupabaseConfig(): { url?: string; publishableKey?: string } {
   return {
-    url: import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+    url: buildTimeEnv("VITE_SUPABASE_URL") || process.env.SUPABASE_URL,
     publishableKey:
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY,
+      buildTimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY") || process.env.SUPABASE_PUBLISHABLE_KEY,
   };
 }
 
