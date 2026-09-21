@@ -855,6 +855,48 @@ tasks:
       src/lib/format-time.ts is also unpinned but serves only News, which is hidden, so it
       is low priority rather than launch-blocking.
 
+  BG-0101:
+    title: Release-branch audit -- chief/launch-fixes-3 as the pre-launch release candidate
+    area: release
+    severity: P1
+    owner: Chief
+    state: IN_PROGRESS # audit started early as preparation; finalise only after the migration and E2E are green
+    depends_on: [BG-0084, BG-0089, BG-0090]
+    findings:
+      commits_ahead_of_main: 68
+      diff_vs_main: 274 files, +37888 / -4621
+      unrelated_experiments_found: >
+        Exactly one, and it is documentation only: docs/engineering/VERCEL_CUTOVER.md,
+        from the abandoned host cutover. There is no vercel.json and no code artefact.
+        Keeping it: the owner's own decision was "switch back to the Lovable upgrade,
+        keep Vercel as fallback", so it is an endorsed fallback plan rather than a
+        stranded experiment, and it carries a banner saying it is not the plan of record.
+      evidence_weight: >
+        3.2 MB of verification screenshots and JSON across the BG-0071, BG-0074, BG-0076
+        and BG-0081 task folders. Permanent repo weight for one-off artefacts, and this
+        repo syncs to Lovable. Keeping it anyway: it is the proof behind the claims those
+        lanes made, and deleting evidence after the fact to save 3 MB would hollow out
+        the verification record. Revisit as a housekeeping pass after launch, not now.
+    note: >
+      Scope is NOT frozen yet. The Fantasy migration (BG-0084) is the critical path and
+      the foundation lane it depends on is still running.
+
+  BG-0102:
+    title: The admin console carries 320 design divergences and is not being migrated for launch
+    area: design
+    severity: P2
+    owner: Chief
+    state: DEFERRED # deliberate scope decision, not an oversight
+    depends_on: []
+    evidence:
+      - scripts/qa/design-divergence.ts, by-owner breakdown -- admin 322 before, 320 after the public-application lane
+    note: >
+      The owner's instruction scopes the migration to the ENTIRE PUBLIC application, and
+      the admin console is staff-only -- it is not a surface a normal user navigating
+      BotolaGO will ever perceive. Recording the number so the GLOBAL DESIGN CONSISTENCY
+      verdict can be stated precisely: PASS covers the public product, and admin is a
+      known, decided exclusion rather than something that was missed.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
