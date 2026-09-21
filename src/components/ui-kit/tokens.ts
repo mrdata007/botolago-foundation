@@ -10,7 +10,7 @@
  * language without importing a component — `className={ui.text.body}` is the
  * supported way to write "Fantasy body text" anywhere in the product.
  *
- * Two rules hold everywhere in this folder and are enforced by the contract
+ * Rules that hold everywhere in this folder, all enforced by the contract
  * test:
  *
  *   1. Logical properties only. No `ml-/mr-/pl-/pr-`, no `left-/right-`,
@@ -20,11 +20,15 @@
  *      apart in either direction breaks the word. Any `tracking-*` must be
  *      `ltr:`-prefixed so it applies to Latin only. This is the open defect
  *      BG-0069 and it must not be reproduced in new code.
+ *   3. `--ui-ink` is a fill/border colour, never a foreground. Text and
+ *      icons in the brand colour use `--ui-ink-fg` (`ui.tone.ink`), which
+ *      is theme-correct; `--ui-ink` is a dark navy in BOTH themes and
+ *      measured 1.25:1 as a foreground on dark (BG-0083).
  */
 
 /** Every `--ui-*` custom property the kit relies on. */
 export const UI_TOKENS = [
-  // type scale
+  // type ramp
   "--ui-text-hero",
   "--ui-text-title",
   "--ui-text-section",
@@ -34,16 +38,31 @@ export const UI_TOKENS = [
   "--ui-text-meta",
   "--ui-text-label",
   "--ui-text-micro",
+  // stat ramp (numerals)
+  "--ui-stat-hero",
+  "--ui-stat-lg",
+  "--ui-stat-md",
+  "--ui-stat-sm",
+  "--ui-stat-tracking",
   // weights
   "--ui-weight-body",
   "--ui-weight-strong",
   "--ui-weight-heavy",
   "--ui-weight-hero",
   // radii
+  "--ui-radius-tight",
   "--ui-radius-control",
   "--ui-radius-segment",
   "--ui-radius-track",
+  "--ui-radius-sheet",
   "--ui-radius-column",
+  // spacing scale
+  "--ui-space-1",
+  "--ui-space-2",
+  "--ui-space-3",
+  "--ui-space-4",
+  "--ui-space-5",
+  "--ui-space-6",
   // density
   "--ui-gutter",
   "--ui-gap",
@@ -57,12 +76,19 @@ export const UI_TOKENS = [
   "--ui-surface-sunken",
   "--ui-on-surface",
   "--ui-on-surface-muted",
+  "--ui-on-surface-faint",
   "--ui-rule",
+  "--ui-scrim",
   // ink
   "--ui-ink",
   "--ui-ink-deep",
+  "--ui-ink-fg",
   "--ui-on-ink",
   "--ui-on-ink-plain",
+  "--ui-on-grad-header",
+  // accents
+  "--ui-accent-spring",
+  "--ui-accent-sky",
   // status
   "--ui-positive",
   "--ui-negative",
@@ -70,10 +96,29 @@ export const UI_TOKENS = [
   // gradients
   "--ui-grad-action",
   "--ui-grad-header",
+  "--ui-grad-hero",
   // elevation
   "--ui-shadow-card",
   "--ui-shadow-raised",
+  "--ui-shadow-overlay",
   "--ui-shadow-column",
+  // Fantasy domain — the pitch
+  "--ui-pitch-turf-a",
+  "--ui-pitch-turf-b",
+  "--ui-pitch-bench",
+  "--ui-pitch-line",
+  "--ui-on-pitch",
+  // Fantasy domain — fixture difficulty
+  "--ui-fdr-1",
+  "--ui-fdr-2",
+  "--ui-fdr-3",
+  "--ui-fdr-4",
+  "--ui-fdr-5",
+  "--ui-on-fdr-1",
+  "--ui-on-fdr-2",
+  "--ui-on-fdr-3",
+  "--ui-on-fdr-4",
+  "--ui-on-fdr-5",
 ] as const;
 
 export type UiToken = (typeof UI_TOKENS)[number];
@@ -88,15 +133,50 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-surface-sunken",
   "--ui-on-surface",
   "--ui-on-surface-muted",
+  "--ui-on-surface-faint",
   "--ui-rule",
+  "--ui-scrim",
   "--ui-ink",
   "--ui-ink-deep",
+  "--ui-ink-fg",
   "--ui-on-ink",
   "--ui-on-ink-plain",
+  "--ui-on-grad-header",
+  "--ui-accent-spring",
+  "--ui-accent-sky",
+  "--ui-positive",
+  "--ui-negative",
+  "--ui-caution",
   "--ui-grad-header",
+  "--ui-grad-hero",
   "--ui-shadow-card",
   "--ui-shadow-raised",
+  "--ui-shadow-overlay",
+  "--ui-pitch-turf-a",
+  "--ui-pitch-turf-b",
+  "--ui-pitch-bench",
+  "--ui-pitch-line",
+  "--ui-on-pitch",
+  "--ui-fdr-1",
+  "--ui-fdr-2",
+  "--ui-fdr-3",
+  "--ui-fdr-4",
+  "--ui-fdr-5",
+  "--ui-on-fdr-1",
+  "--ui-on-fdr-2",
+  "--ui-on-fdr-3",
+  "--ui-on-fdr-4",
+  "--ui-on-fdr-5",
 ];
+
+/**
+ * Colour-bearing tokens that are NOT redeclared under `.dark` because they
+ * are composed entirely from tokens that are — redeclaring them would be a
+ * second copy of the same values, i.e. exactly the drift this manifest
+ * exists to prevent. The contract test checks that each one's light value
+ * only references themed tokens.
+ */
+export const UI_DERIVED_TOKENS: readonly UiToken[] = ["--ui-grad-action"];
 
 /**
  * Tailwind scans source files for *literal* class strings. A class built by
@@ -116,6 +196,10 @@ const SIZE_CLASS = {
   "--ui-text-meta": "text-[length:var(--ui-text-meta)]",
   "--ui-text-label": "text-[length:var(--ui-text-label)]",
   "--ui-text-micro": "text-[length:var(--ui-text-micro)]",
+  "--ui-stat-hero": "text-[length:var(--ui-stat-hero)]",
+  "--ui-stat-lg": "text-[length:var(--ui-stat-lg)]",
+  "--ui-stat-md": "text-[length:var(--ui-stat-md)]",
+  "--ui-stat-sm": "text-[length:var(--ui-stat-sm)]",
 } as const satisfies Partial<Record<UiToken, string>>;
 
 const WEIGHT_CLASS = {
@@ -129,10 +213,16 @@ const size = (token: keyof typeof SIZE_CLASS) => SIZE_CLASS[token];
 const weight = (token: keyof typeof WEIGHT_CLASS) => WEIGHT_CLASS[token];
 
 /**
+ * Numerals are always tabular and always a step tighter than prose — and the
+ * tightening is `ltr:`-only, because Arabic-Indic digits sit in joined text.
+ */
+const STAT_BASE = "fpl-tabular ltr:tracking-[var(--ui-stat-tracking)] leading-none";
+
+/**
  * The design language as class tokens. Compose with `cn()`.
  */
 export const ui = {
-  /** Type scale. Line heights follow Fantasy: tight for headings, 1.5 for copy. */
+  /** Type ramp. Line heights follow Fantasy: tight for headings, 1.5 for copy. */
   text: {
     hero: `${size("--ui-text-hero")} ${weight("--ui-weight-hero")} leading-tight`,
     title: `${size("--ui-text-title")} ${weight("--ui-weight-heavy")} leading-tight`,
@@ -148,12 +238,28 @@ export const ui = {
     tabular: "fpl-tabular",
   },
 
+  /**
+   * Stat ramp — numerals only (points, price, rank, score). Use these, not
+   * `ui.text.*`, for anything a reader scans as a figure.
+   */
+  stat: {
+    hero: `${size("--ui-stat-hero")} ${weight("--ui-weight-hero")} ${STAT_BASE}`,
+    lg: `${size("--ui-stat-lg")} ${weight("--ui-weight-hero")} ${STAT_BASE}`,
+    md: `${size("--ui-stat-md")} ${weight("--ui-weight-heavy")} ${STAT_BASE}`,
+    sm: `${size("--ui-stat-sm")} ${weight("--ui-weight-strong")} ${STAT_BASE}`,
+  },
+
   /** Foreground colours. */
   tone: {
     default: "text-[color:var(--ui-on-surface)]",
     muted: "text-[color:var(--ui-on-surface-muted)]",
-    ink: "text-[color:var(--ui-ink)]",
+    faint: "text-[color:var(--ui-on-surface-faint)]",
+    /** The brand foreground. Theme-correct — never `--ui-ink`, see BG-0083. */
+    ink: "text-[color:var(--ui-ink-fg)]",
     onInk: "text-[color:var(--ui-on-ink)]",
+    /** The foreground for the header/hero gradient band. */
+    onGradHeader: "text-[color:var(--ui-on-grad-header)]",
+    onInkPlain: "text-[color:var(--ui-on-ink-plain)]",
     positive: "text-[color:var(--ui-positive)]",
     negative: "text-[color:var(--ui-negative)]",
   },
@@ -164,8 +270,13 @@ export const ui = {
     card: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] rounded-[var(--ui-radius-control)] shadow-[var(--ui-shadow-card)]",
     sunken: "bg-[color:var(--ui-surface-sunken)] text-[color:var(--ui-on-surface)]",
     ink: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink)]",
+    /** An ink fill carrying plain (non-cyan) foreground. */
+    inkPlain: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)]",
     /** Full-bleed bar: an opaque surface with a hairline rule, no glass. */
     bar: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
+    /** Sheets, modals and popovers: the raised surface above the scrim. */
+    overlay:
+      "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] shadow-[var(--ui-shadow-overlay)]",
   },
 
   /** Hairline dividers — logical edges only, so RTL mirrors. */
@@ -185,9 +296,11 @@ export const ui = {
   },
 
   radius: {
+    tight: "rounded-[var(--ui-radius-tight)]",
     control: "rounded-[var(--ui-radius-control)]",
     segment: "rounded-[var(--ui-radius-segment)]",
     track: "rounded-[var(--ui-radius-track)]",
+    sheet: "rounded-[var(--ui-radius-sheet)]",
     full: "rounded-full",
   },
 
@@ -197,7 +310,11 @@ export const ui = {
     bottom: "pb-[max(env(safe-area-inset-bottom),0.5rem)]",
   },
 
-  /** Focus ring, identical everywhere so the product reads as one. */
+  /**
+   * Focus ring, identical everywhere so the product reads as one. Drawn in
+   * `--ui-ink-fg`: the ring has to be visible against the page in BOTH
+   * themes, which a fill colour is not.
+   */
   focus:
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink-fg)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
 } as const;
