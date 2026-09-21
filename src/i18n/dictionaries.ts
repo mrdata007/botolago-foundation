@@ -488,6 +488,17 @@ export const dictionaries = {
     "notfound.code": "404",
     "notfound.title": "Page introuvable",
     "notfound.description": "Cette page n'existe pas ou a été déplacée.",
+
+    // /terms and /privacy. The documents themselves live in
+    // src/content/legal/documents.ts and carry their own titles; these are the
+    // page metadata and the accessible name of the scrollable table wrapper.
+    "legal.terms.meta_title": "Conditions d'utilisation — BotolaGO",
+    "legal.terms.meta_description":
+      "Les conditions générales d'utilisation de BotolaGO : compte, règles du jeu Fantasy, dotations, responsabilité et droit applicable.",
+    "legal.privacy.meta_title": "Politique de confidentialité — BotolaGO",
+    "legal.privacy.meta_description":
+      "Comment BotolaGO collecte, utilise et conserve vos données personnelles, et comment exercer vos droits.",
+    "legal.table_scroll_hint": "Tableau — faites défiler horizontalement pour tout voir",
     "error.title": "Cette page ne s'est pas chargée",
     "error.description": "Un incident est survenu. Vous pouvez réessayer ou revenir à l'accueil.",
 
@@ -852,8 +863,17 @@ export const dictionaries = {
     "auth.or_continue_with": "ou continuer avec",
     "auth.google": "Continuer avec Google",
     "auth.apple": "Continuer avec Apple",
-    "auth.terms_notice":
-      "En continuant, vous acceptez nos Conditions et Politique de confidentialité.",
+    // Consent sentences are stored as five ordered segments, not as one
+    // string: the renderer turns the two middle labels into links to /terms
+    // and /privacy. Each language owns its own spacing — French wants spaces
+    // around " et notre ", Arabic binds " و" to the word that follows it — so
+    // the connective is a segment rather than something the renderer inserts.
+    // See src/components/legal/consent-segments.ts.
+    "auth.terms_notice.lead": "En continuant, vous acceptez nos ",
+    "auth.terms_notice.terms_link": "Conditions d'utilisation",
+    "auth.terms_notice.middle": " et notre ",
+    "auth.terms_notice.privacy_link": "Politique de confidentialité",
+    "auth.terms_notice.tail": ".",
     "auth.demo_hint": "Démo : demo@botolago.ma / demo1234",
     "auth.submitting": "Un instant…",
 
@@ -873,8 +893,11 @@ export const dictionaries = {
     "auth.register.username": "Nom d'utilisateur",
     "auth.register.username_placeholder": "ex : rachid_1998",
     "auth.register.confirm_password": "Confirmer le mot de passe",
-    "auth.register.accept_terms":
-      "J'accepte les Conditions d'utilisation et la Politique de confidentialité.",
+    "auth.register.accept_terms.lead": "J'accepte les ",
+    "auth.register.accept_terms.terms_link": "Conditions d'utilisation",
+    "auth.register.accept_terms.middle": " et la ",
+    "auth.register.accept_terms.privacy_link": "Politique de confidentialité",
+    "auth.register.accept_terms.tail": ".",
     "auth.register.have_account": "Vous avez déjà un compte ?",
     "auth.register.login_link": "Se connecter",
     "auth.register.password_strength": "Force du mot de passe",
@@ -1046,6 +1069,11 @@ export const dictionaries = {
     "profile.section.personal": "Informations personnelles",
     "profile.section.preferences": "Préférences",
     "profile.section.security": "Sécurité du compte",
+    "profile.section.legal": "Informations légales",
+    "profile.legal.terms": "Conditions d'utilisation",
+    "profile.legal.terms_desc": "Les règles du jeu et de votre compte BotolaGO.",
+    "profile.legal.privacy": "Politique de confidentialité",
+    "profile.legal.privacy_desc": "Les données que nous collectons et ce que nous en faisons.",
     "profile.section.danger": "Supprimer le compte",
     "profile.change_password": "Changer le mot de passe",
     "profile.change_password_desc": "Recevez un lien pour définir un nouveau mot de passe.",
@@ -1654,6 +1682,14 @@ export const dictionaries = {
     "notfound.code": "404",
     "notfound.title": "الصفحة غير موجودة",
     "notfound.description": "هذه الصفحة غير موجودة أو تم نقلها.",
+
+    "legal.terms.meta_title": "شروط الاستخدام — BotolaGO",
+    "legal.terms.meta_description":
+      "الشروط العامة لاستخدام BotolaGO: الحساب، قواعد لعبة الفانتازي، الجوائز، المسؤولية والقانون الواجب التطبيق.",
+    "legal.privacy.meta_title": "سياسة الخصوصية — BotolaGO",
+    "legal.privacy.meta_description":
+      "كيف يجمع BotolaGO بياناتك الشخصية ويستعملها ويحتفظ بها، وكيف تمارس حقوقك.",
+    "legal.table_scroll_hint": "جدول — مرّره أفقيًا لعرض كامل محتواه",
     "error.title": "تعذّر تحميل هذه الصفحة",
     "error.description": "حدث خطأ ما. يمكنك إعادة المحاولة أو العودة إلى الرئيسية.",
 
@@ -2003,7 +2039,11 @@ export const dictionaries = {
     "auth.or_continue_with": "أو تابع باستخدام",
     "auth.google": "المتابعة بواسطة Google",
     "auth.apple": "المتابعة بواسطة Apple",
-    "auth.terms_notice": "بمواصلتك فإنك توافق على الشروط وسياسة الخصوصية.",
+    "auth.terms_notice.lead": "بمواصلتك فإنك توافق على ",
+    "auth.terms_notice.terms_link": "شروط الاستخدام",
+    "auth.terms_notice.middle": " و",
+    "auth.terms_notice.privacy_link": "سياسة الخصوصية",
+    "auth.terms_notice.tail": ".",
     "auth.demo_hint": "تجريبي: demo@botolago.ma / demo1234",
     "auth.submitting": "لحظة من فضلك…",
 
@@ -2022,7 +2062,11 @@ export const dictionaries = {
     "auth.register.username": "اسم المستخدم",
     "auth.register.username_placeholder": "مثال: rachid_1998",
     "auth.register.confirm_password": "تأكيد كلمة المرور",
-    "auth.register.accept_terms": "أوافق على شروط الاستخدام وسياسة الخصوصية.",
+    "auth.register.accept_terms.lead": "أوافق على ",
+    "auth.register.accept_terms.terms_link": "شروط الاستخدام",
+    "auth.register.accept_terms.middle": " و",
+    "auth.register.accept_terms.privacy_link": "سياسة الخصوصية",
+    "auth.register.accept_terms.tail": ".",
     "auth.register.have_account": "لديك حساب بالفعل؟",
     "auth.register.login_link": "تسجيل الدخول",
     "auth.register.password_strength": "قوة كلمة المرور",
@@ -2187,6 +2231,11 @@ export const dictionaries = {
     "profile.section.personal": "المعلومات الشخصية",
     "profile.section.preferences": "التفضيلات",
     "profile.section.security": "أمان الحساب",
+    "profile.section.legal": "المعلومات القانونية",
+    "profile.legal.terms": "شروط الاستخدام",
+    "profile.legal.terms_desc": "قواعد اللعبة وقواعد حسابك في BotolaGO.",
+    "profile.legal.privacy": "سياسة الخصوصية",
+    "profile.legal.privacy_desc": "البيانات التي نجمعها وما نقوم به تجاهها.",
     "profile.section.danger": "حذف الحساب",
     "profile.change_password": "تغيير كلمة المرور",
     "profile.change_password_desc": "استلم رابطاً لتعيين كلمة مرور جديدة.",

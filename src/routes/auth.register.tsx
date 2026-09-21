@@ -11,6 +11,11 @@ import {
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
+import { ConsentLine } from "@/components/legal/ConsentLine";
+import {
+  noticeConsentSegments,
+  registerConsentSegments,
+} from "@/components/legal/consent-segments";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
 import {
@@ -283,7 +288,7 @@ function RegisterPage() {
             className="mt-0.5 h-4 w-4 rounded border-input"
             aria-invalid={!!errors.terms}
           />
-          <span>{t("auth.register.accept_terms")}</span>
+          <ConsentLine segments={registerConsentSegments(t)} />
         </label>
         {errors.terms && (
           <p role="alert" className="text-xs font-semibold text-destructive">
@@ -326,7 +331,7 @@ function RegisterPage() {
         </div>
 
         <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-          {t("auth.terms_notice")}{" "}
+          <ConsentLine segments={noticeConsentSegments(t)} />{" "}
           <Link
             to="/auth/login"
             search={{ next }}

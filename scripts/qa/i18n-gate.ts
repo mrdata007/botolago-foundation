@@ -110,8 +110,25 @@ export interface AuditResult {
  * reviewed act: state in the commit message why the count moved.
  */
 export const BASELINES: Baselines = {
-  W1: 4,
-  W2: 4,
+  // Legal pages (/terms, /privacy): the two consent sentences on
+  // /auth/register and /auth/login were split into five ordered segments each
+  // so that "Conditions d'utilisation" and "Politique de confidentialité" can
+  // be real links in both languages without slicing a finished string in JS —
+  // impossible to do safely for Arabic. Four of each sentence's five segments
+  // differ between fr and ar. The fifth, `tail`, is the sentence-final full
+  // stop, which is "." in both languages and in Latin script in both.
+  //
+  // That is two new W1 findings and the same two new W2 findings —
+  // `auth.register.accept_terms.tail` and `auth.terms_notice.tail` — and they
+  // are counted, not suppressed: the allow-lists annotate a finding, they
+  // never remove it. The alternative shapes were all worse. Folding the stop
+  // into the privacy link label would underline it and put punctuation inside
+  // the link text; dropping it would silently change the copy; inventing
+  // trailing words for both languages so the segment differs would be editing
+  // a consent sentence to satisfy a lint baseline. Moving the number and
+  // saying why is what this baseline is for. W1 4 -> 6, W2 4 -> 6.
+  W1: 6,
+  W2: 6,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and
