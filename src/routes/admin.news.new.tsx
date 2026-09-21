@@ -13,6 +13,7 @@ import {
   NEWS_SANITIZER_VERSION,
   calculateReadingTime,
 } from "@/backend/news/sanitizer";
+import { markdownToEditorialHtml } from "@/backend/news/editorial-markdown";
 import { mapNewsError } from "@/backend/news/errors";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { useI18n } from "@/i18n/provider";
@@ -23,17 +24,6 @@ export const Route = createFileRoute("/admin/news/new")({
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsNewRoute,
 });
-
-// Server-rendered from Markdown-ish plain text for this vertical slice: a
-// full Markdown-to-HTML pipeline is out of scope, so paragraphs are wrapped
-// and the result is still run through the same server-side sanitizer used
-// everywhere else before it is ever sent as body_html.
-function naiveMarkdownToHtml(source: string): string {
-  return source
-    .split(/\n{2,}/u)
-    .map((paragraph) => `<p>${paragraph.trim()}</p>`)
-    .join("");
-}
 
 function AdminNewsNewRoute() {
   const access = Route.useLoaderData();
@@ -55,7 +45,7 @@ function AdminNewsNewRoute() {
     setBusy(true);
     setMessage(null);
     try {
-      const bodyHtml = sanitizeEditorialHtml(naiveMarkdownToHtml(body));
+      const bodyHtml = sanitizeEditorialHtml(markdownToEditorialHtml(body));
       const created = await repository.createDraft(
         {
           language,

@@ -21,6 +21,14 @@ import type {
   EditorialStatus,
   PlacementType,
 } from "@/backend/news/contracts";
+import {
+  editorialHtmlToMarkdown,
+  editorialImageMarkdown,
+  insertMarkdownBlockAtSelection,
+  isAllowedEditorialImageUrl,
+  markdownToEditorialHtml,
+} from "@/backend/news/editorial-markdown";
+import { resolveMediaUrl } from "@/lib/media";
 import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { useI18n } from "@/i18n/provider";
 
@@ -72,16 +80,14 @@ const PLACEMENTS: readonly PlacementType[] = [
   "trending",
 ];
 
-function naiveMarkdownToHtml(source: string): string {
-  return source
-    .split(/\n{2,}/u)
-    .map((paragraph) => `<p>${paragraph.trim()}</p>`)
-    .join("");
+// Response shape of the `news-media-upload` Edge Function.
+interface NewsMediaUploadResult {
+  readonly mediaAssetId: string;
+  readonly storagePath?: string | null;
+  readonly publicUrl?: string | null;
 }
 
-function naiveHtmlToMarkdown(html: string): string {
-  return html.replace(/<\/p>\s*<p>/giu, "\n\n").replace(/<\/?p>/giu, "");
-}
+const ACCEPTED_IMAGE_TYPES = "image/avif,image/jpeg,image/png,image/webp";
 
 function AdminNewsEditRoute() {
   const access = Route.useLoaderData();
@@ -105,6 +111,8 @@ function AdminNewsEditRoute() {
   const [busy, setBusy] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const bodyImageInputRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   const load = async () => {
     if (access.state !== "authorized") return;
@@ -120,7 +128,7 @@ function AdminNewsEditRoute() {
       setTitle(detail.title);
       setSubtitle(detail.subtitle ?? "");
       setSummary(detail.summary);
-      setBodyMarkdown(detail.bodySource ?? naiveHtmlToMarkdown(detail.bodyHtml));
+      setBodyMarkdown(detail.bodySource ?? editorialHtmlToMarkdown(detail.bodyHtml));
       setSeoTitle(detail.seoTitle ?? "");
       setSeoDescription(detail.seoDescription ?? "");
       setHeroAssetId(detail.heroAssetId);
@@ -161,7 +169,7 @@ function AdminNewsEditRoute() {
     setBusy(true);
     setMessage(null);
     try {
-      const bodyHtml = sanitizeEditorialHtml(naiveMarkdownToHtml(bodyMarkdown));
+      const bodyHtml = sanitizeEditorialHtml(markdownToEditorialHtml(bodyMarkdown));
       const result = await repository.updateArticle(
         {
           articleEditionId: article.id,
@@ -268,32 +276,41 @@ function AdminNewsEditRoute() {
     }
   };
 
+  // Shared by the hero upload and the in-body image insertion: same Edge
+  // Function, same multipart contract (`news-media-upload` requires alt text
+  // and real pixel dimensions and rejects anything that is not an allowed
+  // image type).
+  const uploadNewsMedia = async (file: File, altText: string): Promise<NewsMediaUploadResult> => {
+    const { data: session } = await supabaseV2.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) throw new Error("no_session");
+    const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => reject(new Error("invalid_image"));
+      img.src = URL.createObjectURL(file);
+    });
+    const form = new FormData();
+    form.set("file", file, file.name);
+    form.set("altText", altText);
+    form.set("width", String(dimensions.width));
+    form.set("height", String(dimensions.height));
+    const { data, error } = await supabaseV2.functions.invoke("news-media-upload", {
+      body: form,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (error) throw error;
+    const uploadResult = data as NewsMediaUploadResult | null;
+    if (!uploadResult?.mediaAssetId) throw new Error("upload_failed");
+    return uploadResult;
+  };
+
   const uploadHero = async (file: File) => {
     if (access.state !== "authorized") return;
     setBusy(true);
     setMessage(null);
     try {
-      const { data: session } = await supabaseV2.auth.getSession();
-      const token = session.session?.access_token;
-      if (!token) throw new Error("no_session");
-      const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-        img.onerror = () => reject(new Error("invalid_image"));
-        img.src = URL.createObjectURL(file);
-      });
-      const form = new FormData();
-      form.set("file", file, file.name);
-      form.set("altText", title || "Article hero image");
-      form.set("width", String(dimensions.width));
-      form.set("height", String(dimensions.height));
-      const { data, error } = await supabaseV2.functions.invoke("news-media-upload", {
-        body: form,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (error) throw error;
-      const uploadResult = data as { mediaAssetId: string } | null;
-      if (!uploadResult?.mediaAssetId) throw new Error("upload_failed");
+      const uploadResult = await uploadNewsMedia(file, title || "Article hero image");
       setHeroAssetId(uploadResult.mediaAssetId);
       setDirty(true);
       setMessage(
@@ -301,6 +318,62 @@ function AdminNewsEditRoute() {
       );
     } catch {
       setMessage(rtl ? "تعذّر رفع الصورة." : "Téléversement de l’image impossible.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const insertBodyImage = async (file: File) => {
+    if (access.state !== "authorized" || !isEditable) return;
+    // Asked before the upload starts: the Edge Function itself refuses an
+    // upload without alt text, and the alt text becomes the figcaption.
+    const answer = window.prompt(
+      rtl
+        ? "النص البديل للصورة (يُستخدم أيضاً كتعليق أسفل الصورة):"
+        : "Texte alternatif de l’image (sert aussi de légende) :",
+      title,
+    );
+    if (answer === null) return;
+    const altText = answer.trim();
+    setBusy(true);
+    setMessage(null);
+    try {
+      const uploadResult = await uploadNewsMedia(file, altText || title || file.name);
+      // The public URL is derived through the same resolver the public site
+      // uses, from the storage path the Edge Function returns, rather than
+      // hand-built here; the function's own `publicUrl` is the fallback.
+      const url =
+        resolveMediaUrl({ storagePath: uploadResult.storagePath ?? null }) ??
+        resolveMediaUrl({ sourceUrl: uploadResult.publicUrl ?? null });
+      if (!url || !isAllowedEditorialImageUrl(url)) throw new Error("unresolvable_media_url");
+
+      const textarea = bodyRef.current;
+      const selectionStart = textarea?.selectionStart ?? bodyMarkdown.length;
+      const selectionEnd = textarea?.selectionEnd ?? bodyMarkdown.length;
+      const insertion = insertMarkdownBlockAtSelection(
+        bodyMarkdown,
+        selectionStart,
+        selectionEnd,
+        editorialImageMarkdown(url, altText),
+      );
+      setBodyMarkdown(insertion.value);
+      setDirty(true);
+      setMessage(
+        rtl
+          ? "تم إدراج الصورة في موضع المؤشر. احفظ لتطبيقها."
+          : "Image insérée à la position du curseur. Enregistrez pour l’appliquer.",
+      );
+      // Restore the caret after React has re-rendered the textarea value.
+      window.requestAnimationFrame(() => {
+        const node = bodyRef.current;
+        if (!node) return;
+        node.focus();
+        node.setSelectionRange(insertion.caret, insertion.caret);
+      });
+    } catch {
+      setMessage(
+        rtl ? "تعذّر إدراج الصورة في المحتوى." : "Insertion de l’image dans le contenu impossible.",
+      );
     } finally {
       setBusy(false);
     }
@@ -368,16 +441,50 @@ function AdminNewsEditRoute() {
               className={adminFieldClass}
             />
           </label>
-          <label className="grid gap-2 text-sm">
-            <span>{rtl ? "المحتوى" : "Contenu"}</span>
-            <textarea
-              value={bodyMarkdown}
-              onChange={(event) => markDirty(setBodyMarkdown)(event.target.value)}
-              disabled={!isEditable}
-              rows={14}
-              className={adminFieldClass}
-            />
-          </label>
+          <div className="grid gap-2 text-sm">
+            <label className="grid gap-2">
+              <span>{rtl ? "المحتوى" : "Contenu"}</span>
+              <textarea
+                ref={bodyRef}
+                value={bodyMarkdown}
+                onChange={(event) => markDirty(setBodyMarkdown)(event.target.value)}
+                disabled={!isEditable}
+                rows={14}
+                dir={rtl ? "rtl" : "ltr"}
+                className={adminFieldClass}
+                data-testid="admin-news-body"
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={bodyImageInputRef}
+                type="file"
+                accept={ACCEPTED_IMAGE_TYPES}
+                className="hidden"
+                data-testid="admin-news-body-image-input"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  // Reset so re-picking the same file fires `change` again.
+                  event.target.value = "";
+                  if (file) void insertBodyImage(file);
+                }}
+              />
+              <button
+                type="button"
+                className={adminButtonClass}
+                disabled={busy || !isEditable}
+                onClick={() => bodyImageInputRef.current?.click()}
+                data-testid="admin-news-insert-body-image"
+              >
+                {rtl ? "إدراج صورة في المحتوى" : "Insérer une image dans le contenu"}
+              </button>
+              <span className="text-xs text-slate-400">
+                {rtl
+                  ? "تُدرَج الصورة عند موضع المؤشر بصيغة ‎![نص بديل](رابط)‎، ولا تُقبل إلا الروابط الآمنة (https)."
+                  : "L’image est insérée à la position du curseur au format ![texte alternatif](lien) ; seuls les liens https sont acceptés."}
+              </span>
+            </div>
+          </div>
 
           <div className="grid gap-2 text-sm sm:grid-cols-2">
             <label className="grid gap-2">
@@ -407,7 +514,7 @@ function AdminNewsEditRoute() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/avif,image/jpeg,image/png,image/webp"
+              accept={ACCEPTED_IMAGE_TYPES}
               disabled={!isEditable}
               onChange={(event) => {
                 const file = event.target.files?.[0];
@@ -545,7 +652,7 @@ function AdminNewsEditRoute() {
                 // behind editorial access (this whole route requires
                 // editorial.write); never reachable from a public URL.
                 dangerouslySetInnerHTML={{
-                  __html: sanitizeEditorialHtml(naiveMarkdownToHtml(bodyMarkdown)),
+                  __html: sanitizeEditorialHtml(markdownToEditorialHtml(bodyMarkdown)),
                 }}
               />
             </section>
