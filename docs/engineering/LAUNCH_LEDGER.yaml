@@ -755,6 +755,75 @@ tasks:
       deadline recomputes from the remainder, and a fixture that un-postpones is
       re-assigned rather than silently lost.
 
+  BG-0086:
+    title: GW1 deadline realigned to the real kickoff; the postponed FAR v Raja assignment deferred
+    area: fantasy
+    severity: P0
+    owner: Chief
+    state: DONE
+    depends_on: []
+    executed_at: 2026-09-21T16:4xZ against production tkewgajrljbwgwedqsxn, owner-authorized
+    before:
+      deadline_at: 2026-09-23T22:30:00Z
+      starts_at: 2026-09-24T00:00:00Z
+      ends_at: 2026-09-24T06:00:00Z
+      counting_assignments: 8
+      unconfirmed_kickoffs: 1
+    after:
+      deadline_at: 2026-09-24T18:30:00Z
+      starts_at: 2026-09-24T20:00:00Z
+      ends_at: 2026-09-28T00:00:00Z
+      counting_assignments: 7
+      unconfirmed_kickoffs: 0
+    evidence:
+      - dry run executed the identical code path and aborted deliberately, carrying the computed state out in the error message; rollback re-verified before executing for real
+      - all eight fixture updated_at values byte-identical to the baseline taken immediately before execution -- zero fixture rows modified
+      - anon REST -- fantasy_hub 200 deadlineAt 18:30Z, fantasy_gameweeks 200 endsAt 2026-09-28T00:00Z, fantasy_player_pool 200, fantasy_rules 200
+      - live botolago.com/fantasy reads "Journee 1 Deadline: jeudi 24 sept., 19:30" (19:30 Morocco = 18:30Z), zero console errors
+    note: >
+      scripts/backend/fantasy-realign-gameweek-calendar.sql was NOT used and must not be:
+      its hardcoded gameweek id does not exist, its guard rejects the postponed fixture,
+      and its first UPDATE would have flattened all seven real kickoffs to the first one.
+      scripts/backend/fantasy-gw1-defer-postponed-and-realign.sql is the script that ran.
+
+  BG-0087:
+    title: The 2026/27 fixture list stops after matchday 1 -- the season cannot advance past GW1
+    area: data
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - app.rounds for the current season -- 2 rows; app.fixtures -- 8 rows, all round 1
+      - round 2 exists but has 0 fixtures, so api.service_sync_fantasy_calendar notes no_fixtures_published and creates no GW2
+      - a 16-club double round robin is 30 rounds / 240 fixtures; the database holds 8
+      - the football recovery workflow completed 2026-09-21T16:06:24Z and still produced only round 1, so this is provider coverage, not a missed run
+    question: >
+      Does SportsMonks actually publish the full Botola Pro 2026/27 calendar for this
+      competition, or only the next matchday? If the former, the recovery script's scope
+      needs widening. If the latter, GW2 will only exist once the provider publishes
+      round 2, and the season advances one matchday at a time -- which is workable but
+      should be a decision rather than a surprise.
+    note: >
+      Not a GW1 blocker. GW1 is complete and correct. This is what stops the season
+      afterwards, and it is the live form of the old BG-0001 concern.
+
+  BG-0088:
+    title: The branch calls two RPCs production does not have, so the frontend must not be published before the migrations
+    area: release
+    severity: P0
+    owner: Chief
+    state: OPEN
+    depends_on: []
+    evidence:
+      - branch build against production -- 404 fantasy_player_season_stats, 404 fantasy_gameweek_summary, /fantasy renders its error state
+      - the same run returned 200 for football_team_catalog and fantasy_hub, so this is not connectivity
+      - both RPCs ship in unpromoted migrations 20260921160000 and 20260921200000
+    note: >
+      Deployment ordering is therefore hard: promote the migrations, THEN publish the
+      frontend. Publishing first breaks /fantasy for every visitor. Live production is
+      unaffected today because main does not call either RPC.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
