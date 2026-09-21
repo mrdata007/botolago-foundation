@@ -1625,7 +1625,7 @@ export function UiDifficultyCell({
     <div
       title={title}
       className={cn(
-        "grid min-h-[var(--ui-tap-min)] place-items-center px-1.5 text-center leading-tight",
+        "grid min-h-[var(--ui-tap-min)] place-items-center px-1.5 text-center",
         ui.radius.tight,
         ui.text.micro,
         "[font-weight:var(--ui-weight-hero)]",

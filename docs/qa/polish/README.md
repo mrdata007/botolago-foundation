@@ -132,3 +132,64 @@ silently did not apply, so rows whose only finding was a font-box overflow
 were never recorded and the run printed a clean `0`. It looked like the best
 possible result, which is the reason to distrust it. Always cross-check a
 "clean" run against a single element measured by hand.
+
+---
+
+## The literal-leading sweep, and three more corrections to the audit
+
+**When** 2026-09-21, continuing the token pass after BG-0124 landed.
+
+With the ramp carrying leading per step and per script, every remaining
+Tailwind `leading-*` in `src/` became a second source of truth for the same
+property — resolved by class order rather than by intent, and carrying no
+Arabic adjustment. Fourteen of them, in eleven files, all removed or replaced
+with the ramp step that was already the right answer:
+
+| where                      | was                                     | now                                  |
+| -------------------------- | --------------------------------------- | ------------------------------------ |
+| `AuthShell` subtitle       | `leading-relaxed` + `ui.text.body`      | `ui.text.prose`                      |
+| `FantasyAccessGate` body   | `leading-relaxed` + `ui.text.secondary` | `ui.text.prose`                      |
+| `FantasyAlertList` message | bare `leading-snug`                     | ramp (parent `ui.text.secondary`)    |
+| `FplStatBar` label         | `leading-tight` + `ui.text.micro`       | ramp                                 |
+| `PlayerNameplate` ×2       | `leading-tight` on truncated bands      | ramp                                 |
+| `DateStrip` ×2             | `leading-tight`, `leading-none`         | ramp                                 |
+| `UiFdrSquare`              | `leading-tight`                         | ramp                                 |
+| `SquadListTable` head      | `leading-tight`                         | ramp                                 |
+| `FantasySummaryCard` value | `leading-none`                          | ramp                                 |
+| `LegalDocumentView` ×3     | `leading-relaxed`                       | `ui.text.prose` / `ui.text.meta`     |
+| `WelcomeScreen` ×2         | `leading-tight`, `leading-relaxed`      | `--ui-leading-flat`, `ui.text.prose` |
+
+After: `layout-probe` over 16 routes × 4 widths × 2 languages — scroll 0, past
+0, clipW 0, **clipH 0**, decorative 0.
+
+### Three audit claims that measurement refuted
+
+The plan document's token audit was written by reading `src/styles.css`. Three
+of its findings did not survive being measured, and all three are corrected in
+place rather than quietly dropped:
+
+1. **"Body copy is semibold everywhere."** A tally of rendered characters by
+   computed `font-weight` across seven routes: 8,998 of ~12,000 (73%) already
+   render at 400. The reading was of `--ui-weight-body: 600`; most text never
+   applies `ui.text.body` at all. What the tally _did_ find was `/fantasy/help`
+   at 100% weight 800 — 671 characters, the only route with no normal-weight
+   text — which the reading had missed entirely.
+
+2. **"Tabular figures are near-absent."** Counted stylesheet occurrences, which
+   is the wrong instrument: `STAT_BASE` carries `fpl-tabular`, so the whole stat
+   ramp is tabular through `ui.stat.*`. Measured on the pages — every text leaf
+   whose content is a bare figure — four of six routes had **zero** proportional
+   figures. One real finding: the `UiPlayerPlate` sub band, eleven figures
+   stacked down a pitch. Fixed.
+
+3. **"Six radii where the standard wants two."** Counting the call sites and
+   opening them says otherwise: `track 10` and `segment 8` are one component's
+   outer and inner radius (a concentric nesting pair, not two values), and
+   `tight 4` sits on 80px nameplates and ~20px difficulty squares, where a
+   6px radius reads as a lozenge. Radius is optical against box size. **Not
+   consolidated** — it would cost fidelity to the design the brief names as the
+   source of truth, which is the opposite of polish.
+
+The pattern is the same each time: a token file tells you what is _declared_, a
+running page tells you what is _rendered_, and only the second one is the
+product.

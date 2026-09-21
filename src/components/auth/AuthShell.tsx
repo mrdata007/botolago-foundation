@@ -136,9 +136,7 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
         <div className="mt-6">
           <h1 className={cn(ui.text.hero, onMesh)}>{title}</h1>
           {subtitle && (
-            <p className={cn("mt-2 max-w-[36ch] leading-relaxed", ui.text.body, onMeshMuted)}>
-              {subtitle}
-            </p>
+            <p className={cn("mt-2 max-w-[36ch]", ui.text.prose, onMeshMuted)}>{subtitle}</p>
           )}
         </div>
 

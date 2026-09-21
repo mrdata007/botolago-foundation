@@ -113,15 +113,41 @@ three ink levels, and every one of the 46 kit colour pairs was verified at
 satisfied; the work is auditing screens for the single-tint rule on
 success/warn/danger and for stray gradients on non-CTA buttons.
 
-### 5. Radius — six, where the standard wants two
+### 5. Radius — six values, and on inspection all six earn their place
 
 `tight 4` · `control 6` · `segment 8` · `track 10` · `sheet 16` · `column 28`.
 
-Consolidating to large (cards, sheets) + small (chips, inputs, buttons) + pill
-is the single largest visual change in this pass, and the one most likely to
-conflict with in-flight work — another reason for the sequencing above. Note
-`column 28` is the desktop phone-column frame and may survive as a third,
-structural value rather than a component radius.
+This section originally called for consolidating to "large + small + pill" and
+called it the largest visual change in the pass. Having counted the call sites
+and opened them, that would have been change for its own sake. **Not doing it**,
+and the reasoning matters more than the verdict:
+
+| token     | px  | uses | what it is                                     |
+| --------- | --- | ---- | ---------------------------------------------- |
+| `control` | 6   | 122  | the product's radius, by an order of magnitude |
+| `full`    | —   | 45   | the pill                                       |
+| `track`   | 10  | 10   | the segmented-control container                |
+| `tight`   | 4   | 7    | nameplates, FDR squares, chip cards            |
+| `segment` | 8   | 4    | the selected tab INSIDE that container         |
+| `sheet`   | 16  | 4    | bottom sheets                                  |
+| `column`  | 28  | 3    | the desktop phone-column frame                 |
+
+Two of those "extra" values are not extra. `track 10` and `segment 8` are one
+component's outer and inner radius, and the 2px difference is the standard
+nested-radius relationship — an inner corner concentric with its outer one. And
+`tight 4` sits on genuinely small boxes: an 80px-wide player nameplate with 3px
+of padding, a ~20px difficulty square. Radius reads optically against the size
+of the box it is on, so a single value applied to both a 300px card and a 20px
+square makes one of them wrong. A 20px square at `control 6` is visibly a
+lozenge.
+
+So the set is really: one product radius, one pill, one micro step for small
+boxes, a correct nesting pair for one component, and two structural values
+(sheet, desktop frame). That is a scale, not drift, and flattening it would
+cost fidelity to the Fantasy design the brief names as the source of truth.
+
+What is worth doing here is nothing at the token layer, and an audit at the
+screen layer for radii written as literals rather than drawn from these.
 
 ### 6–7. Icons and interactive states — audit required
 

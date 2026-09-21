@@ -30,7 +30,7 @@ export function FplStatBar({
           key={index}
           className="flex min-w-0 flex-col items-center justify-end gap-1 text-center"
         >
-          <span className={cn("leading-tight", ui.text.micro, ui.tone.muted)}>{item.label}</span>
+          <span className={cn(ui.text.micro, ui.tone.muted)}>{item.label}</span>
           <span
             className={cn(
               "inline-flex min-h-6 w-full items-center justify-center truncate px-1",

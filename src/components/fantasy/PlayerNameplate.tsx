@@ -23,7 +23,7 @@ export function PlayerNameplate({ name, metric, fixture, className, emphasize }:
     <div className={cn("flex w-full flex-col items-center", className)}>
       <div
         className={cn(
-          "w-full max-w-[80px] truncate rounded-t-[var(--ui-radius-tight)] px-1.5 py-[3px] text-center leading-tight",
+          "w-full max-w-[80px] truncate rounded-t-[var(--ui-radius-tight)] px-1.5 py-[3px] text-center",
           ui.surface.inkPlain,
           ui.text.micro,
           "[font-weight:var(--ui-weight-heavy)]",
@@ -35,7 +35,7 @@ export function PlayerNameplate({ name, metric, fixture, className, emphasize }:
       {(metric || fixture) && (
         <div
           className={cn(
-            "w-full max-w-[80px] truncate rounded-b-[var(--ui-radius-tight)] px-1.5 py-[2px] text-center leading-tight",
+            "w-full max-w-[80px] truncate rounded-b-[var(--ui-radius-tight)] px-1.5 py-[2px] text-center",
             ui.stat.sm,
             emphasize
               ? "text-[color:var(--ui-ink-deep)]"

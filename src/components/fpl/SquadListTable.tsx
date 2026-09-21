@@ -107,7 +107,7 @@ export function SquadListTable({
           <span
             key={column.key}
             className={cn(
-              "text-end leading-tight",
+              "text-end",
               ui.text.micro,
               "[font-weight:var(--ui-weight-heavy)]",
               ui.tone.muted,

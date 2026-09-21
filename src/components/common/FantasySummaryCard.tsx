@@ -132,7 +132,7 @@ function Metric({
       <div
         className={cn(
           ui.text.tabular,
-          "[font-weight:var(--ui-weight-hero)] leading-none",
+          "[font-weight:var(--ui-weight-hero)]",
           accent ? ui.tone.ink : ui.tone.default,
           small ? ui.text.meta : ui.text.body,
         )}

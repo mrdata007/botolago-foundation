@@ -189,7 +189,6 @@ export function DateStrip({
                   className={cn(
                     "flex-col justify-center px-2.5 py-1.5",
                     ui.space.tap,
-                    "leading-tight",
                     // An unselected "today" is hinted with the ink tone so it
                     // stays findable in a long strip.
                     !active && isDayToday && ui.tone.ink,
@@ -200,7 +199,7 @@ export function DateStrip({
                   </span>
                   <span
                     className={cn(
-                      "mt-0.5 leading-none",
+                      "mt-0.5",
                       ui.text.body,
                       ui.text.tabular,
                       "[font-weight:var(--ui-weight-hero)]",

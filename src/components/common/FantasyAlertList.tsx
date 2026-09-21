@@ -46,7 +46,7 @@ export function FantasyAlertList({
             <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <div className={cn("min-w-0", ui.text.secondary)}>
               {player && <div className="font-bold">{tr(player.name)}</div>}
-              <div className="leading-snug">{tr(a.message)}</div>
+              <div>{tr(a.message)}</div>
             </div>
           </li>
         );

@@ -52,7 +52,7 @@ export function FantasyAccessGate({
       >
         {t("auth.prompt.title")}
       </h1>
-      <p className={cn("mx-auto mt-2 max-w-md leading-relaxed", ui.text.secondary, ui.tone.muted)}>
+      <p className={cn("mx-auto mt-2 max-w-md", ui.text.prose, ui.tone.muted)}>
         {t("auth.prompt.body")}
       </p>
 
