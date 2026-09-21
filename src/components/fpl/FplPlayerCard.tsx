@@ -1,4 +1,5 @@
 import { AlertTriangle, Plus, X } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { useI18n } from "@/i18n/provider";
@@ -30,8 +31,13 @@ export function FplPlayerCard({
 }: {
   player: FantasyPlayer;
   club?: Club;
-  /** Bottom plate text: fixture ("WAC (D)"), price ("5.7"), or points ("8"). */
-  sub?: string;
+  /**
+   * Bottom plate: fixture ("WAC (D)", with the opponent crest when there is
+   * one), price ("5.7") or points ("8"). BG-0111 widened this from `string`
+   * so the fixture plate can carry the crest beside the letters; every other
+   * caller still passes a plain string.
+   */
+  sub?: ReactNode;
   captain?: boolean;
   vice?: boolean;
   highlighted?: boolean;
@@ -112,7 +118,8 @@ export function FplPlayerCard({
         </span>
         <span
           className={cn(
-            "w-full truncate rounded-b-[3px] px-1 text-center text-[11px] font-semibold leading-[18px]",
+            "flex w-full items-center justify-center gap-1 overflow-hidden whitespace-nowrap",
+            "rounded-b-[3px] px-1 text-center text-[11px] font-semibold leading-[18px]",
             highlighted
               ? "bg-[color:var(--fpl-cyan)] text-[color:var(--fpl-ink-deep)]"
               : doubtful

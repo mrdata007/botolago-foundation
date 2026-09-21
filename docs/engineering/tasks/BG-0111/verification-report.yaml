@@ -1,0 +1,372 @@
+task: BG-0111
+lane: builder
+branch: bg-0111-launch-polish
+base_commit: d5c59ee
+date: 2026-09-21
+
+how_this_was_measured:
+  server: >
+    Own Vite dev server on 127.0.0.1:4293, started from this worktree, with
+    E2E_BASE_URL pointing at it. Port 4173 (playwright.config's default outside CI)
+    was never bound by this lane — a run against a sibling lane's tree on the shared
+    port has already produced one false result in this project.
+  browser: Chromium from PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers. `playwright install`
+    was never run.
+  data_mode: mock (VITE_*_DATA_MODE defaults), signed in as the demo user
+    demo@botolago.ma through the real login form.
+  viewports: 390x900 and 1440x900, deviceScaleFactor 2, reducedMotion reduce, in fr and
+    ar. Screenshots are full-page.
+  assertions_not_eyeballing: >
+    Three independent checks per capture, because `html, body { overflow-x: clip }`
+    makes any single one unreliable:
+      1. document.documentElement.scrollWidth against the viewport;
+      2. every laid-out box's left/right against the viewport, skipping content inside
+         a deliberate horizontal scroller and counting decorative text-free
+         aria-hidden nodes (the auth mesh) separately;
+      3. per-element text clipping: a Range measurement of the real text width against
+         the element's content box, plus line-clamp overflow and overflow:hidden.
+    Every scroller on the page is listed with its scrollWidth and clientWidth, so "it
+    scrolls with no affordance" is a measurement rather than an impression.
+  raw:
+    - docs/engineering/tasks/BG-0111/evidence/assertions-before.json
+    - docs/engineering/tasks/BG-0111/evidence/assertions-after.json
+  before_evidence_integrity: >
+    The "before" pass was captured against the base tree itself, not from memory: the
+    work was committed, `git checkout <base> -- src` restored the base sources, the
+    pass ran, and the work was restored from the commit. The before and after passes
+    therefore use the identical assertion code.
+
+gates:
+  typecheck:
+    command: bun run typecheck
+    result: pass, no output
+  test:
+    command: bun run test
+    result: 1453 pass / 0 fail / 15270 expect() calls across 158 files
+    baseline_was: 1438 pass / 0 fail
+    why_it_moved: >
+      DELIBERATE, and flagged here because the brief gave 1438 as a tripwire. 15 tests
+      were added, none changed, none removed: 9 in the new
+      src/lib/club-identity.test.ts (the item-7 letter derivation, including the exact
+      production shapes — blank code, short_name that IS the code, particle names) and
+      6 in src/lib/feature-flags.test.ts (that OAUTH_PROVIDERS_ENABLED is one constant
+      carrying its probe evidence, that both auth routes gate on it with the divider
+      inside the gate, that the glyphs and strings stay in the tree, and that Profile's
+      Appearance row is gated label-and-all). Running `bun run test` at the base commit
+      still gives 1438; the delta is exactly these 15. None of them asserts a flag is
+      `false`, so they keep passing when a flag is flipped on.
+  lint:
+    command: bun run lint
+    result: 0 errors, 17 warnings — all pre-existing react-refresh/only-export-components
+      warnings in files this branch does not touch
+  format_check:
+    command: bun run format:check
+    result: 40 warn + 11 parse-error files, all pre-existing
+    checked: >
+      Every file this branch touches passes. The 11 parse errors are malformed YAML in
+      other tasks' docs (BG-0003, BG-0011, BG-0012, BG-0014, BG-0020, BG-0032, BG-0081
+      and LAUNCH_LEDGER.yaml). Both deliverable YAMLs in this directory parse and are
+      Prettier-clean.
+  i18n_gate:
+    command: bun scripts/qa/i18n-gate.ts
+    result: RESULT pass
+    warnings: W1 7 (baseline 7), W2 7 (baseline 7), W3 262 (baseline 262), W4 88
+      (baseline 88) — every one at baseline, before and after
+    baseline_moves: none. No key was added, renamed or removed and no new string was
+      introduced, so no counter could move.
+  build:
+    command: bun run build
+    result: pass — legal-placeholder gate ok, client and server bundles built, nitro
+      output generated
+  design_divergence:
+    command: bun scripts/qa/design-divergence.ts
+    before: 1534 across 91 files
+    after: 1533 across 91 files
+    delta: >
+      -1, in src/components/fpl/FplChipsRow.tsx (12 -> 11): the un-prefixed
+      `tracking-wide` became `ltr:tracking-wide`. No rule went up. physicalDir is 34
+      before and after, and all 34 are in the untouched legacy shadcn layer
+      (src/components/ui/**, 33) plus src/components/splash/SplashScreen.tsx (1) — the
+      converted product surface is at zero and this branch keeps it there.
+
+per_item:
+  - id: 1
+    surface: / (home), the Fantasy summary card's stat tiles
+    evidence:
+      before:
+        - evidence/item1-home-fantasy-tiles-before-fr-390.png
+        - evidence/item1-home-fantasy-tiles-before-ar-390.png
+        - evidence/item1-home-fantasy-tiles-before-fr-1440.png
+        - evidence/item1-home-fantasy-tiles-before-ar-1440.png
+      after:
+        - evidence/item1-home-fantasy-tiles-after-fr-390.png
+        - evidence/item1-home-fantasy-tiles-after-ar-390.png
+        - evidence/item1-home-fantasy-tiles-after-fr-1440.png
+        - evidence/item1-home-fantasy-tiles-after-ar-1440.png
+    measured_before:
+      caption_box: 64px wide, 22px tall, line-height 11px for an 11px font
+      fr: >
+        "Classement général" rendered as "Classemen / t général" — the word itself
+        broken by `[overflow-wrap:anywhere]`, visible in the before screenshot. All
+        three two-line captions measured scrollHeight 24px against clientHeight 22px,
+        i.e. 2px of descender ("j" in journée, "g" in général) shaved by the clamp's
+        overflow:hidden.
+      ar: 4 of 4 captions flagged by the clip scan — 17px of Arabic glyph extent inside
+        an 11px box, at 390px and at 1440px alike.
+    measured_after:
+      caption_box: 147px wide, 15px tall, computed line-height 14.85px
+      fr: 'one line each, no break, no clamp, no ellipsis. Longest: "Classement général"
+        108px, "Points de la journée" 106px, both inside 147px.'
+      ar: 0 clipped at 390px and at 1440px (was 4 and 4). Glyph extent 18px now sits in
+        the tile's own 8px block padding rather than against a clipping edge.
+      page: no horizontal page scroll, no element box past the viewport, in either
+        language at either width.
+
+  - id: 2
+    surface: /matches, the sticky status filter row
+    evidence:
+      before:
+        - evidence/item2-matches-filter-tabs-before-fr-390.png
+        - evidence/item2-matches-filter-tabs-before-ar-390.png
+        - evidence/item2-matches-filter-tabs-before-fr-1440.png
+        - evidence/item2-matches-filter-tabs-before-ar-1440.png
+      after:
+        - evidence/item2-matches-filter-tabs-after-fr-390.png
+        - evidence/item2-matches-filter-tabs-after-ar-390.png
+        - evidence/item2-matches-filter-tabs-after-fr-1440.png
+        - evidence/item2-matches-filter-tabs-after-ar-1440.png
+    measured_before:
+      track: "role=tablist, 411px of content in a 358px client box, overflow-x: auto,
+        scrollbar suppressed in all three engines."
+      tabs_fr: "Tous 84px (19..103), En direct 115px (107..222), À venir 99px (226..325),
+        Résultats 95px (329..424) — the last one crossing the 390px viewport edge."
+      ar: fit at 390px; this was French-only.
+    measured_after:
+      track: "grid, four 85px columns, no scroller. The role=tablist entry is gone from
+        the scroller list at 390px fr: 3 scrollers -> 2."
+      labels: >
+        Longest French label "Résultats" 62px inside a 69px content box; the count sits
+        on its own line so a two- or three-digit count cannot push a label out.
+      remaining_scrollers: >
+        Two at 390px, both pre-existing, both legitimate and both with visible
+        affordances: the DateStrip day carousel (role=group, 777px in 238px — it has
+        prev/next chevrons and partially visible neighbour days) and the standings
+        table wrapper (459px in 356px — UiTable scrolls horizontally by design rather
+        than pushing the page, per the design system).
+      page: no horizontal page scroll, no element box past the viewport, fr and ar, 390
+        and 1440.
+
+  - id: 2b
+    surface: /matches/$matchId, the match detail section tabs (found, not reported)
+    evidence:
+      before:
+        - evidence/item2b-match-detail-tabs-before-fr-390.png
+        - evidence/item2b-match-detail-tabs-before-ar-390.png
+      after:
+        - evidence/item2b-match-detail-tabs-after-fr-390.png
+        - evidence/item2b-match-detail-tabs-after-ar-390.png
+    measured_before:
+      fr_390: 88px column, 72px content box. "Statistiques" text 80px -> ellipsised.
+        "Compositions" text 90px -> ellipsised. 2 clipped.
+      ar_390: longest 63px in 72px. 0 clipped.
+    measured_after:
+      fr_390: 88px column, 80px content box. Résumé 44px, Statistiques 67px,
+        Compositions 76px, Face à face 58px. 0 clipped.
+      ar_390: 0 clipped (40 / 55 / 43 / 50 in 80px).
+    residual_not_fixed:
+      at_360px: >
+        "Compositions" is 76px against a 72.5px content box and clips again. 390px is
+        what the brief specifies and what is verified; below ~370px this control needs
+        either shorter product vocabulary ("Stats", "Compos") or a change to
+        `UiSegmented`, which is the foundation lane's file. Flagged rather than fixed
+        by widening the kit from a call site.
+
+  - id: 3
+    surface: French dictionary, shown on /fantasy/rules and /fantasy/team
+    evidence:
+      before:
+        - evidence/item3-i18n-deadline-joker-before-fr-390.png
+        - evidence/item3-i18n-deadline-joker-before-ar-390.png
+      after:
+        - evidence/item3-i18n-deadline-joker-after-fr-390.png
+        - evidence/item3-i18n-deadline-joker-after-ar-390.png
+    verified:
+      - >
+        No English "Deadline" or "Wildcard" value remains anywhere in the fr block:
+        grepping the fr half of dictionaries.ts for a value containing either word
+        returns nothing. The remaining matches are key NAMES (home.deadline,
+        fpl.wildcard), which are unchanged by design.
+      - >
+        The ar block is byte-identical. The diff is 24 changed lines, all above the
+        `ar:` block, all value-only.
+      - >
+        Rendered: /fantasy/rules shows "DATES LIMITES", "Dates limites" and "Chaque
+        journée a une date limite. Les modifications après la date limite sont
+        refusées."; /fantasy/team's header line shows "Journée 14 Date limite: 23
+        sept. 2026"; Profile shows "Dates limites Fantasy". The Arabic screenshots are
+        unchanged ("الموعد النهائي" throughout).
+      - i18n gate pass with every warning counter at baseline.
+    merge_conflict_warning: The newer chief tip still has all 12 English values. See the
+      implementation report.
+
+  - id: 4
+    surface: /auth/login and /auth/register
+    evidence:
+      before:
+        - evidence/item4a-auth-login-before-fr-390.png
+        - evidence/item4a-auth-login-before-ar-390.png
+        - evidence/item4a-auth-login-before-fr-1440.png
+        - evidence/item4a-auth-login-before-ar-1440.png
+        - evidence/item4b-auth-register-before-fr-390.png
+        - evidence/item4b-auth-register-before-ar-390.png
+        - evidence/item4b-auth-register-before-fr-1440.png
+        - evidence/item4b-auth-register-before-ar-1440.png
+      after:
+        - evidence/item4a-auth-login-after-fr-390.png
+        - evidence/item4a-auth-login-after-ar-390.png
+        - evidence/item4a-auth-login-after-fr-1440.png
+        - evidence/item4a-auth-login-after-ar-1440.png
+        - evidence/item4b-auth-register-after-fr-390.png
+        - evidence/item4b-auth-register-after-ar-390.png
+        - evidence/item4b-auth-register-after-fr-1440.png
+        - evidence/item4b-auth-register-after-ar-1440.png
+    verified: >
+      Both screens, both languages, both widths: no Google button, no Apple button, no
+      "ou continuer avec" divider. The consent line now follows the primary CTA
+      directly and the card closes cleanly. The offscreen decorative nodes the scan
+      reports on these pages (four mesh circles/paths) are the aria-hidden
+      PageBackground artwork, deliberately oversized and identical before and after —
+      counted separately and not treated as defects.
+    not_verifiable_here: >
+      The production probe itself (GET /auth/v1/authorize?provider=…) is the Chief's
+      measurement, recorded verbatim in the flag's doc comment. This lane did not
+      re-run it and does not claim to have.
+
+  - id: 5
+    surface: /profile, Preferences group
+    evidence:
+      before:
+        - evidence/item5-profile-appearance-before-fr-390.png
+        - evidence/item5-profile-appearance-before-ar-390.png
+        - evidence/item5-profile-appearance-before-fr-1440.png
+        - evidence/item5-profile-appearance-before-ar-1440.png
+      after:
+        - evidence/item5-profile-appearance-after-fr-390.png
+        - evidence/item5-profile-appearance-after-ar-390.png
+        - evidence/item5-profile-appearance-after-fr-1440.png
+        - evidence/item5-profile-appearance-after-ar-1440.png
+    verified: >
+      Asserted on document.body.innerText across four combinations — fr and ar, signed
+      in and anonymous. "Apparence" / "المظهر" absent in all four, and no theme option
+      label (Clair / Sombre / Système / فاتح / داكن / النظام) present in any. The
+      Preferences group ends on the Language row with no dangling rule and no empty
+      row. DARK_MODE_ENABLED is unchanged.
+
+  - id: 6
+    surface: /fantasy/team, the chip cards above the pitch
+    evidence:
+      before:
+        - evidence/item6-fpl-chips-row-before-fr-390.png
+        - evidence/item6-fpl-chips-row-before-ar-390.png
+      after:
+        - evidence/item6-fpl-chips-row-after-fr-390.png
+        - evidence/item6-fpl-chips-row-after-ar-390.png
+    measured_before: >
+      390px fr, three chips: each chip 116.7px wide, 108.7px content box. "Triple
+      Capitaine" text 103px — 5.7px of margin, not truncated in this build but one
+      step from it, and `truncate` on the label meant the failure mode was
+      "Triple Capitain…". "Bench Boost" 80px, "Free Hit" 51px.
+    measured_after: >
+      No `truncate` anywhere on the chip label, so no ellipsis is reachable at any
+      width; the name wraps at a word boundary instead. At 390px all three still sit
+      on one line and the ink and state bands stay aligned because the button is a
+      two-row grid. 0 clipped in the scan, fr and ar.
+    honest_note: >
+      The reported symptom did not reproduce as a visible ellipsis at exactly 390px in
+      this build — the before screenshot shows "Triple Capitaine" intact with 5.7px to
+      spare. The owner may have seen it on a 360px device or before the webfont
+      settled. The fix removes the failure mode rather than widening the margin, which
+      is what the brief asked for ("the layout has to accommodate the longest one").
+
+  - id: 7
+    surface: /fantasy/team, the pitch fixture plates
+    evidence:
+      before:
+        - evidence/item7-pitch-fixture-plate-before-fr-390.png
+        - evidence/item7-pitch-fixture-plate-before-ar-390.png
+      after:
+        - evidence/item7-pitch-fixture-plate-after-fr-390.png
+        - evidence/item7-pitch-fixture-plate-after-ar-390.png
+    measured_before: >
+      Every one of the 15 plates read "(D)" or "(E)" with nothing before it. Confirmed
+      element by element, not from the screenshot: the plate's text content was exactly
+      "(D)" / "(E)".
+    what_is_actually_rendered_now:
+      fr: >
+        "FUS (D)", "RCA (D)", "FAR (E)", "MAT (D)", "RSB (E)" — a real opponent code on
+        every plate, from the derivation, for all 15 players including the bench.
+      ar: '"FUS (م)", "RCA (م)" — same codes, the home/away marker localised.'
+      geometry: >
+        Plate 76x18px, content box 68px. Text-only "RCA (D)" measures 41px in French
+        and 37-38px in Arabic. Nothing clipped in either language.
+      crest_branch: >
+        The crest renders at 14px inside the 18px band, inline before the letters with
+        a 4px gap. Measured by inserting a 14px box into a live plate: the composed
+        content is 58px (fr) / 55px (ar) against the 68px content box — it fits with
+        10-13px to spare and does not clip.
+      legibility_answer: >
+        Asked directly: at 14px a Botola club crest reads as a colour-and-shape
+        signature, not as a legible badge — enough to tell RCA's green from FAR's navy
+        at a glance, not enough to identify a club you do not already know. The LETTERS
+        are the legible identity at plate size, and the crest is a supporting cue. That
+        is why this ships as crest AND code rather than crest alone: dropping the
+        letters for the crest would have traded one unreadable plate for another. If
+        the owner wants the crest to carry identity on its own it needs ~20px, which
+        means a taller plate band and is a pitch-layout change, not a plate change.
+    not_reproducible_in_this_environment:
+      crest_images: >
+        The mock football repository returns crestUrl: null and crestPath: null for
+        every club, so no screenshot in this evidence set shows an actual crest — the
+        after screenshots show the letters-and-marker branch. The crest branch is
+        verified by geometry (above) and by construction, not by a rendered crest. On
+        production crest_asset_id is populated for all 21 clubs, so that branch is the
+        one that will run there.
+      club_kits: >
+        Every shirt on the mock pitch renders the default navy, before and after. The
+        cause in mock is the id-space mismatch described in the implementation report;
+        on production the owner measured a different cause (primary_color null for all
+        21). Neither is fixed here: `clubOf` lives in src/routes/fantasy.team.tsx,
+        which this lane does not own, and the colours are backend data. Reported, not
+        touched.
+
+found_and_deliberately_not_fixed:
+  - id: player-surname-ellipsis
+    where: /fantasy/team pitch name plates
+    measured: '"Salah-Eddine" 71px of text in a 68px content box, ellipsised to
+      "Salah-Eddi…" at 390px fr. Present before and after, unchanged by this branch.'
+    why_not: >
+      Not one of the seven, and it is a different class of problem: a player surname is
+      unbounded provider data, not fixed product vocabulary, so the plate cannot be
+      sized to the longest one and truncation with a full accessible name on the button
+      is a defensible answer. Raising it rather than widening a plate on my own
+      initiative.
+  - id: match-tabs-below-370px
+    where: /matches/$matchId section tabs
+    see: per_item item 2b, residual_not_fixed
+  - id: fantasy-football-id-space-mismatch-in-mock
+    where: src/backend/football/mock-repository.ts mints synthetic UUIDs while the
+      Fantasy mocks key on source slugs
+    impact: >
+      Any screen that joins Fantasy data to a football Club by id resolves nothing in
+      mock — club kits, crests and club names on the pitch. Item 7 works around it in
+      its own presenter by matching on slug as well as id, which is correct in both
+      modes, but the underlying mismatch is still there and src/backend/ is out of this
+      lane's ownership.
+
+conclusion: >
+  Seven reported items fixed, one additional truncation found and fixed inside a named
+  file, three residuals reported with numbers. All gates green with one deliberate,
+  explained movement (1438 -> 1453 tests). No flag value changed, no RPC touched, no
+  business logic changed, no physical-direction utility or un-prefixed tracking added.
+  The base branch moved 15 commits during the run and three files overlap — merge, do
+  not fast-forward.

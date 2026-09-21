@@ -317,14 +317,26 @@ function MatchesPage() {
           "bg-[color:var(--ui-page)]",
         )}
       >
+        {/* BG-0111 — the four filters are a grid, not a scroller.
+            At 390px this row measured 411px of content inside a 358px track,
+            so "Résultats" ran from 329px to 424px: cut off at the viewport
+            edge. It was reachable only by scrolling a row with the scrollbar
+            suppressed (`[scrollbar-width:none]` + `::-webkit-scrollbar:hidden`)
+            and no other affordance, so nothing on screen said it scrolled.
+
+            Four equal columns give each filter 85px. The label drops from the
+            body step to the meta step and the count moves onto its own line
+            underneath, which fits the longest French label ("Résultats",
+            62px) inside the 69px content box with room to spare and keeps the
+            fit independent of how many digits a count grows to. The row no
+            longer scrolls at all. */}
         <div
           role="tablist"
           aria-label={t("matches.a11y.status_filters")}
           className={cn(
-            "flex items-center gap-1 overflow-x-auto p-[3px]",
+            "grid grid-cols-4 items-stretch gap-1 p-[3px]",
             ui.radius.track,
             ui.surface.sunken,
-            "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
           )}
         >
           {filterTabs.map((it) => {
@@ -345,10 +357,11 @@ function MatchesPage() {
                 aria-selected={active}
                 onClick={() => setFilter(it.key)}
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 transition-colors",
+                  "flex min-w-0 flex-col items-center justify-center gap-0.5 px-1.5 py-1",
+                  "transition-colors",
                   "min-h-[var(--ui-tap-min)]",
                   ui.radius.segment,
-                  ui.text.body,
+                  ui.text.meta,
                   "[font-weight:var(--ui-weight-strong)]",
                   ui.focus,
                   active
@@ -359,24 +372,27 @@ function MatchesPage() {
                     : cn(ui.tone.muted, "hover:text-[color:var(--ui-on-surface)]"),
                 )}
               >
-                <span>{t(it.label)}</span>
-                {count > 0 && (
-                  <span
-                    className={cn(
-                      "inline-flex min-w-5 items-center justify-center px-1.5",
-                      ui.radius.control,
-                      ui.text.micro,
-                      "[font-weight:var(--ui-weight-heavy)]",
-                      ui.text.tabular,
-                      active
-                        ? "bg-[color:color-mix(in_oklab,var(--ui-on-surface)_10%,transparent)] text-[color:var(--ui-on-surface)]"
-                        : cn(ui.surface.page, ui.tone.muted),
-                    )}
-                    aria-hidden
-                  >
-                    {count}
-                  </span>
-                )}
+                <span className="max-w-full [line-height:1.2]">{t(it.label)}</span>
+                {/* Always rendered, zero included: it keeps the four segments
+                    the same height and it answers "why is this filter empty?"
+                    before the tap rather than after. Still `aria-hidden` — the
+                    tab's accessible name stays the label alone. */}
+                <span
+                  className={cn(
+                    "inline-flex min-w-5 items-center justify-center px-1.5",
+                    ui.radius.control,
+                    ui.text.micro,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.text.tabular,
+                    active
+                      ? "bg-[color:color-mix(in_oklab,var(--ui-on-surface)_10%,transparent)] text-[color:var(--ui-on-surface)]"
+                      : cn(ui.surface.page, ui.tone.muted),
+                    count === 0 && "opacity-60",
+                  )}
+                  aria-hidden
+                >
+                  {count}
+                </span>
               </button>
             );
           })}

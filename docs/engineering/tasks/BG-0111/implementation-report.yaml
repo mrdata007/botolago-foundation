@@ -1,0 +1,326 @@
+task: BG-0111
+title: Seven owner-reported launch defects — home tiles, filter tabs, French copy, dead
+  OAuth buttons, the empty Apparence row, the chips row and the pitch fixture plate
+lane: builder
+branch: bg-0111-launch-polish
+base_commit: d5c59ee
+base_ref_at_checkout: origin/chief/launch-fixes-3
+date: 2026-09-21
+
+summary: >
+  All seven items are implemented and measured. One of them (item 1) was reported as
+  "clips Classement général" and turned out to be worse than reported once measured —
+  the previous fix bought its fit by breaking the word itself. One of them (item 7)
+  had two independent causes, only one of which was the one the owner asked about.
+  Two additional defects were found inside the named files and fixed with them; one
+  further defect was found, measured and deliberately left alone. Scope was kept to
+  presentation: no RPC, no business logic, no flag values changed.
+
+base_branch_moved_during_the_run: >
+  IMPORTANT FOR THE MERGE. This branch was cut from origin/chief/launch-fixes-3 at
+  d5c59ee. While the work was in flight that ref advanced 15 commits to 410cd8b
+  (BG-0093 squad picker, BG-0094 pitch/points, BG-0092 fantasy shell, BG-0088, the
+  column widening). I did NOT rebase onto it: rebasing mid-flight onto a tip three
+  sibling lanes are still moving is how merges become unresolvable, and every number
+  in the verification report was measured against d5c59ee. Merge this branch rather
+  than fast-forwarding it. Three files overlap with what landed on the newer tip:
+  overlaps:
+    - file: src/i18n/dictionaries.ts
+      note: >
+        The newer tip still carries 12 English "Deadline"/"Wildcard" values in the fr
+        block. My edit is value-strings-only on 24 lines; re-apply by value, not by
+        line number. The ar block is untouched on both sides.
+    - file: src/components/fpl/FplChipsRow.tsx
+      note: >
+        A sibling lane converted this onto the UI kit on the newer tip, and its chip
+        label still carries `truncate` (line 65 there), so the item-6 defect is still
+        open on that version. Re-apply the fix as described under item 6: drop
+        `truncate`, wrap at a word boundary, make the button a two-row grid so the
+        bands stay aligned.
+    - file: src/components/fpl/FplPlayerCard.tsx
+      note: >
+        On the newer tip this delegates to the kit's `UiPlayerPlate` and keeps
+        `sub?: string`. My item-7 change widens `sub` to `ReactNode` so the plate can
+        carry the opponent crest. On the newer tip that widening belongs to
+        `UiPlayerPlate` in src/components/ui-kit/, which this lane does not own — it
+        needs the foundation lane, or the crest half of item 7 has to ship as
+        letters-only. The letters half (`useNextFixtures`, `club-identity`,
+        `presentFootballClub`) applies unchanged and is the part that closes the
+        reported defect.
+
+items:
+  - id: 1
+    reported: 'Home Fantasy stat tiles clip "Classement général" at 390px.'
+    status: fixed
+    files:
+      - src/components/common/FantasySummaryCard.tsx
+    what_was_actually_wrong: >
+      Two things, and neither was a simple truncation. At 390px the four-up row left
+      each tile a 64px caption box. The captions were `line-clamp-2` with
+      `[overflow-wrap:anywhere]`, so "Classement général" did not truncate — it broke
+      the word: the tile rendered "Classemen / t général". That is the same
+      meaning-destroying clipping one layer down. Separately, `ui.text.micro` carries
+      `leading-none`, i.e. an 11px line box for an 11px font, and the clamp's
+      `overflow: hidden` then shaved the descenders off "journée" and "général"
+      (measured scrollHeight 24px against clientHeight 22px). In Arabic it was worse:
+      a 17px glyph extent inside an 11px box, all four captions clipped.
+    fix: >
+      Two columns at phone width, four from `sm` (`grid-cols-2 sm:grid-cols-4`), and
+      the clamp and the anywhere-break removed. Each caption box goes from 64px to
+      147px, which fits every French and Arabic caption on one full line — longest is
+      "Classement général" at 108px. `[line-height:1.35]` is written as an arbitrary
+      *property* so it beats `leading-none` regardless of class order; verified as a
+      computed 14.85px in the browser, not assumed.
+    why_not_shortened: >
+      Shortening was the other option offered. It was not needed once the tiles had
+      room, and "Classement général" and "Points de la journée" both carry their
+      meaning in the last word.
+    i18n: no new strings, no dictionary change.
+
+  - id: 2
+    reported: '/matches filter tabs overflow at 390px — "Résultats" is cut off.'
+    status: fixed
+    files:
+      - src/routes/matches.index.tsx
+    measured_before: >
+      At 390px FR the row held 411px of content in a 358px track. "Résultats" spanned
+      329px..424px in a 390px viewport. The track was `overflow-x-auto` with
+      `[scrollbar-width:none]`, `[-ms-overflow-style:none]` and
+      `[&::-webkit-scrollbar]:hidden` — it scrolled, and nothing on screen said so.
+      Arabic fit (shorter labels), so this was French-only.
+    fix: >
+      Four equal columns, no scroller at all. Each filter gets an 85px column; the
+      label drops from the body step to the meta step and the count moves to its own
+      line underneath. Longest French label "Résultats" is 62px inside a 69px content
+      box, and the fit no longer depends on how many digits a count grows to — which
+      an inline badge did: with four two-digit counts the inline layout came back over
+      the track width.
+    deliberate_behaviour_change: >
+      The count is now always rendered, zero included (dimmed at zero), where before
+      it appeared only above zero. Two reasons: it keeps the four segments the same
+      height, and it answers "why is this filter empty?" before the tap. The count
+      stays `aria-hidden`, so the tab's accessible name is still the label alone and
+      no new string was needed.
+
+  - id: 2b
+    reported: not reported — found inside a file the brief named
+    status: fixed
+    files:
+      - src/components/matches/MatchTabs.tsx
+    note: >
+      The brief named MatchTabs.tsx alongside matches.index.tsx for item 2. It is a
+      different control (the match DETAIL tabs), and it had its own truncation.
+    measured_before: >
+      At 390px FR each segment is an 88px column with a 72px content box, against
+      "Statistiques" at 80px and "Compositions" at 90px. Both rendered as
+      "Statistique…" and "Composition…". Arabic was never over (longest 63px).
+    fix: >
+      Call-site only, the kit untouched: the micro type step, a 4px inline padding and
+      `whitespace-normal`. Longest label now 76px inside an 80px box. Nothing clipped
+      at 390px in either language.
+    residual: >
+      Below roughly 370px viewport width "Compositions" (76px) exceeds the content box
+      again — at 360px the box is 72.5px. Closing that needs either shorter product
+      vocabulary or a change to `UiSegmented`, which this lane does not own. Recorded
+      in the verification report with the numbers.
+
+  - id: 3
+    reported: 'French copy: "Deadline" -> "Date limite", "Wildcard" -> "Joker".'
+    status: fixed
+    files:
+      - src/i18n/dictionaries.ts
+    what_changed: 24 fr value strings on 24 lines. No key added, renamed or removed; no
+      reordering; no reformatting; the ar block untouched.
+    keys:
+      deadline:
+        - home.deadline
+        - fantasy.next_deadline
+        - fantasy.transfers.deadline_locked
+        - fantasy.transfers.error.deadline
+        - fantasy.points.recompute_locked
+        - fantasy.rules.deadlines
+        - fantasy.rules.deadlines_desc
+        - fantasy.faq.q_transfers_a
+        - fantasy.faq.q_lock_a
+        - fpl.deadline
+        - fpl.notifications_body
+        - fpl.transfers_active_note
+        - fpl.deadline_passed
+        - fantasy.chip.confirm_desc
+        - fantasy.engine.deadline_passed
+        - fantasy.deadline.locked
+        - fantasy.deadline.open
+        - fantasy.team.error.deadline_crossed_revert
+        - auth.setup.notif_deadline_desc
+        - profile.notif.deadline
+      wildcard:
+        - fantasy.chip.wildcard
+        - fantasy.faq.q_chips
+        - fantasy.faq.q_chips_a
+        - fpl.wildcard
+    grammar_notes: >
+      Not a blind find-and-replace. "Deadline" as a bare label becomes "Date limite";
+      plural labels become "Dates limites" (fantasy.rules.deadlines,
+      profile.notif.deadline); inside sentences the article agrees ("La deadline est
+      dépassée" -> "La date limite est dépassée", "avant la deadline" -> "avant la
+      date limite"). "le Wildcard" -> "le Joker" keeps the masculine article.
+    i18n_baseline: >
+      NO baseline moved. `bun scripts/qa/i18n-gate.ts` reports W1 7 / W2 7 / W3 262 /
+      W4 88, all at baseline, RESULT pass — before and after. These are value edits to
+      keys that already existed in both languages, so no counter can move.
+
+  - id: 4
+    reported: Signup and login render Google and Apple buttons for providers that do not
+      exist.
+    status: fixed
+    decision: flag, not deletion — the brief's preference, and it is cheap
+    files:
+      - src/lib/feature-flags.ts
+      - src/routes/auth.login.tsx
+      - src/routes/auth.register.tsx
+      - src/lib/feature-flags.test.ts
+    fix: >
+      New `OAUTH_PROVIDERS_ENABLED = false`, written in the same shape as
+      `NEWS_ENABLED`: the production probe evidence is recorded in the constant's
+      doc comment (the exact validation_failed / "Unsupported provider: provider is
+      not enabled" payload, and the five providers probed), the gated surfaces are
+      listed, and nothing is deleted. `authService.signInWithGoogle` /
+      `signInWithApple`, `GoogleGlyph` / `AppleGlyph` and the `auth.google` /
+      `auth.apple` / `auth.or_continue_with` strings all stay, so enabling Google
+      later is one constant.
+    divider: >
+      The `AuthDivider` sits INSIDE the gate on both screens. An "ou continuer avec"
+      rule over an empty gap is the same defect wearing a hat. With the buttons gone
+      the consent line follows the primary CTA directly.
+    guard: >
+      Source-shape tests in feature-flags.test.ts assert the flag is a single
+      constant, that both routes import it and gate on it, that the divider is inside
+      the gate, and that the glyphs and strings are still in the tree. None of them
+      asserts the flag is `false`, so they keep passing when it is flipped.
+    i18n: no new strings.
+
+  - id: 5
+    reported: Remove the "Apparence" row from Profile while DARK_MODE_ENABLED is false.
+    status: fixed
+    files:
+      - src/routes/profile.tsx
+      - src/lib/feature-flags.ts
+      - src/lib/feature-flags.test.ts
+    fix: >
+      `ThemeRow` returns null when the flag is false, so the glyph and the "Apparence"
+      label go with the switcher. One early return covers both call sites
+      (`AuthenticatedProfile`'s Preferences group and `DevicePreferences` for a
+      signed-out visitor), and neither is left with a dangling rule: DevicePreferences
+      still opens with an unruled LanguageRow, and the signed-in group's rows carry
+      their rule on the block start. The flag VALUE is unchanged; its doc comment's
+      "gated surfaces" list now says the whole row rather than the control.
+    verified: >
+      "Apparence" / "المظهر" and every theme option label absent from the rendered
+      page text in fr and ar, signed-in and anonymous — four combinations, asserted on
+      document.body.innerText, not eyeballed.
+
+  - id: 6
+    reported: '"Triple Capitaine" chip truncates at 390px.'
+    status: fixed
+    files:
+      - src/components/fpl/FplChipsRow.tsx
+    measured_before: >
+      At 390px FR with three chips, "Triple Capitaine" measures 103px of text against
+      a 108.7px content box — it survived by 5.7px and did not visibly truncate in
+      this build. It was one step from doing so: a 360px phone, a heavier fallback
+      face while Manrope loads, or a fourth chip in the row all take it over, and
+      `truncate` meant the result would have been "Triple Capitain…".
+    fix: >
+      The chip names are fixed product vocabulary, so the layout accommodates the
+      longest one instead of shortening it. `truncate` is gone; the name wraps at a
+      word boundary, and the button is a two-row grid (`grid-rows-[1fr_auto]`) whose
+      first row absorbs the slack, so the ink bands and the state bands stay aligned
+      across chips of different name lengths. `[hyphens:none]` keeps the break at
+      whitespace.
+    also: >
+      The state band's `tracking-wide` was not `ltr:`-prefixed, which letter-spaces
+      Arabic and pulls the joins apart (BG-0069). Prefixed while in the file. That is
+      the single point the design-divergence meter drops on this branch.
+
+  - id: 7
+    reported: The pitch fixture plate shows "(D)"/"(E)" with no opponent code.
+    status: fixed
+    files:
+      - src/lib/club-identity.ts
+      - src/lib/club-identity.test.ts
+      - src/services/football.ts
+      - src/types/domain.ts
+      - src/components/fpl/useNextFixtures.tsx
+      - src/components/fpl/FplPlayerCard.tsx
+    two_independent_causes: >
+      The brief supplied one of them; measuring found a second that would have made
+      the first fix invisible.
+      (a) IDENTITY. `crestPlaceholder` came from `team.code ?? shortName.slice(0,3)`.
+      `code` is blank for 13 of the 21 active clubs, and `??` does not fall back on an
+      empty string — only on null. So a resolved club still had no letters to print
+      and the plate read " (D)". This matches the owner's production symptom exactly.
+      (b) RESOLUTION. The opponent club was looked up by id alone. Fantasy fixture
+      rows and the football club list agree on that id in cloud mode; in mock the
+      football repository mints synthetic UUIDs while the Fantasy fixtures key on the
+      source slug ("war", "rca"), so `clubs.find(c => c.id === opponentClubId)` found
+      nothing at all and `?? ""` printed an empty code. The same mismatch is why every
+      shirt on the mock pitch renders the default navy — the owner saw the same
+      symptom on production for a different reason (null primary_color).
+    fix:
+      - >
+        `src/lib/club-identity.ts` — `clubShortCode(code, shortName)` treats a blank
+        or whitespace-only code as absent and falls back to `clubInitials(shortName)`:
+        an already-short name is returned as-is ("WCA"), three or more words give word
+        initials ("Raja Club Athletic" -> "RCA"), fewer give the first three letters
+        ("Wydad Casablanca" -> "WYD", not "WC"), and lower-case particles are skipped
+        so "Renaissance Sportive de Berkane" is RSB and not RSD. It never returns a
+        single letter and never returns letters it was not given. Nine unit tests.
+      - >
+        `presentFootballClub` now uses it, which fixes the blank placeholder
+        product-wide (ClubCrest's initials, the fantasy player list, the fixtures
+        screen), not just on the pitch.
+      - >
+        `Club` carries an optional `slug`, which both repositories already produce on
+        `TeamSummaryDto`, and `useNextFixtures` resolves the opponent by id OR slug.
+        Additive and optional; nothing else has to know.
+      - >
+        `useNextFixtures` is now `.tsx` and returns rendered plate content: the
+        opponent crest at 14px next to its short code and the home/away marker, the
+        code and marker alone when the club has no crest, and NOTHING when the
+        opponent cannot be resolved at all — the caller then falls back to the
+        player's price, which says something, where "(D)" does not. It also returns a
+        `texts` map so the same plate is available as a string.
+      - >
+        `FplPlayerCard.sub` widens from `string` to `ReactNode` so the plate can carry
+        the crest. Every other caller still passes a string.
+    what_is_actually_rendered: see the verification report — measured, with sizes.
+    not_keyed_off_code: confirmed. `clubShortCode` is the only reader of `code` and it
+      uses it only when it carries letters; nothing keys a lookup off it.
+
+out_of_scope_confirmed_untouched:
+  - src/routes/fantasy.* (the fantasy shell and leagues lanes own those)
+  - src/components/ui-kit/**
+  - src/styles.css
+  - supabase/
+  - scripts/backend/
+  - .github/workflows/
+  - src/backend/
+  - docs/engineering/LAUNCH_LEDGER.yaml
+  - Desktop left-alignment on /fantasy* — routed to the Fantasy shell lane
+  - RTL truncation of Latin names in rankings, league tables and the podium — routed to
+    the leagues lane
+flag_values_unchanged:
+  - NEWS_ENABLED is still false
+  - DARK_MODE_ENABLED is still false
+
+house_rules:
+  logical_properties_only: >
+    No physical-direction utility added. The design-divergence meter counts 34 in the
+    tree, unchanged before and after, and every one is in the untouched legacy shadcn
+    layer (src/components/ui/**) plus src/components/splash/SplashScreen.tsx — the
+    converted product surface is at zero and stays there.
+  tracking: >
+    Every `tracking-*` in the diff is `ltr:`-prefixed. The one `tracking-*` added is
+    `ltr:tracking-wide`, replacing an un-prefixed one.
+  gradient_angles: no `deg` angle added.
+  new_strings: none. No fr/ar pair was added, so no i18n baseline moved.

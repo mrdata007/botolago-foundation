@@ -478,9 +478,18 @@ function LanguageRow({ ruled = false }: { ruled?: boolean }) {
  * Appearance sits on its own stacked row rather than inline like the language
  * row: three labelled segments ("Système" / "النظام" being the longest) do not
  * fit beside a label at 390px in either language.
+ *
+ * BG-0111 — the WHOLE row is gated on `DARK_MODE_ENABLED`, not just the
+ * control. Gating the switcher alone left the glyph and the "Apparence" label
+ * rendering above nothing, so Preferences read as a heading with an empty row
+ * under it. Returning `null` gates both call sites at once, and neither is
+ * left with a dangling top rule: `DevicePreferences` still opens with an
+ * unruled `LanguageRow`, and the signed-in group's own rows carry their rule
+ * on the leading edge.
  */
 function ThemeRow({ ruled = false }: { ruled?: boolean }) {
   const { t } = useI18n();
+  if (!DARK_MODE_ENABLED) return null;
   return (
     <div className={cn("px-4 py-3", ui.space.row, ruled && ROW_RULE)}>
       <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
@@ -489,7 +498,7 @@ function ThemeRow({ ruled = false }: { ruled?: boolean }) {
         </RowGlyph>
         <span className="[font-weight:var(--ui-weight-heavy)]">{t("theme.switch")}</span>
       </div>
-      {DARK_MODE_ENABLED ? <ThemeSwitcher className="mt-3" /> : null}
+      <ThemeSwitcher className="mt-3" />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import type {
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
+import { clubShortCode } from "@/lib/club-identity";
 import { resolveMediaUrl } from "@/lib/media";
 import { matchDayKey } from "@/lib/match-kickoff";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
@@ -61,9 +62,16 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
 }
 
 export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
-  const placeholder = team.code ?? team.shortName.slice(0, 3).toUpperCase();
+  // BG-0111 — `team.code` is blank (not null) for 13 of the 21 active clubs on
+  // production, and `??` does not fall back on `""`. That shipped an empty
+  // crest placeholder for most of the league: blank initials in `ClubCrest`
+  // and a bare "(D)" on the pitch fixture plate. `clubShortCode` treats a
+  // whitespace-only code as absent and derives the letters from `short_name`,
+  // which is populated for all 21.
+  const placeholder = clubShortCode(team.code, team.shortName);
   return {
     id: team.id,
+    slug: team.slug,
     name: { fr: team.name, ar: team.name },
     shortName: { fr: team.shortName, ar: team.shortName },
     city: { fr: team.city ?? "", ar: team.city ?? "" },

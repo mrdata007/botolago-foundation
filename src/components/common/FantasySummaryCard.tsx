@@ -86,7 +86,17 @@ export function FantasySummaryCard({
         </div>
       </div>
 
-      <div className="relative mt-4 grid grid-cols-4 gap-2 text-center">
+      {/* BG-0111 — two-up at phone width, four-up from `sm`.
+          The captions are fixed product vocabulary ("Classement général",
+          "Points de la journée"), and at 390px a four-column row leaves each
+          tile 64px of caption width. The longest single WORD, "Classement",
+          measures ~70px there, so no amount of wrapping fits it: the previous
+          `[overflow-wrap:anywhere]` bought a fit by breaking the word itself
+          ("Classemen / t général"), which is the same meaning-destroying
+          clipping the launch check forbids, one layer down. Two columns give
+          each caption ~151px, which fits every French and Arabic caption on a
+          single line with no break, no clamp and no ellipsis. */}
+      <div className="relative mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
         <Metric label={t("fantasy.gw_points")} value={nf.format(summary.gameweekPoints)} accent />
         <Metric label={t("fantasy.total_points")} value={nf.format(summary.totalPoints)} />
         <Metric
@@ -129,21 +139,16 @@ function Metric({
       >
         {value}
       </div>
-      {/* `micro` rather than `label`: four metrics share a 390px row, so the
-          caption has to stay dense.
-          It wraps rather than truncates. At 390px each tile is 64px wide and
-          "Points de la journée" needs 106px, so `truncate` was cutting three
-          of the four captions mid-word — "Points de la…", "Classement gén…" —
-          which is exactly the kind of meaning-carrying clipping the launch
-          check forbids. Two clamped lines fit at this size, and the grid
-          stretches the tiles so the row stays aligned. */}
-      <div
-        className={cn(
-          "mt-1 line-clamp-2 leading-tight [overflow-wrap:anywhere]",
-          ui.text.micro,
-          ui.tone.muted,
-        )}
-      >
+      {/* `micro` rather than `label`: the captions stay dense next to the
+          figure. No clamp and no truncation — the caption wraps at word
+          boundaries if a narrower viewport ever needs it, and the grid
+          stretches the tiles so the row stays aligned either way.
+
+          `ui.text.micro` carries `leading-none`, i.e. an 11px line box for an
+          11px font, which shaved the descenders off "journée" and "général"
+          against the tile's own clipping. `[line-height:1.35]` is an arbitrary
+          *property* so it wins over the utility regardless of class order. */}
+      <div className={cn("mt-1 [line-height:1.35] break-words", ui.text.micro, ui.tone.muted)}>
         {label}
       </div>
     </div>
