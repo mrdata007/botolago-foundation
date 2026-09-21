@@ -183,16 +183,66 @@ describe("Available news editions", () => {
     return { french, arabic, languages, repository };
   }
 
-  test("shows the freshest available Arabic feed to a French viewer without changing its language", async () => {
-    const { repository, arabic, languages } = await fixtures();
+  test("keeps a French reader on the French edition even when the Arabic feed is fresher", async () => {
+    const { repository, french, arabic, languages } = await fixtures();
+    expect(Date.parse(arabic.publishedAt)).toBeGreaterThan(Date.parse(french.publishedAt));
+
     const edition = await getNewsEdition(repository, "fr", "auto", context, now);
+
+    // The other language is still read, so its failures surface and the
+    // fallback below costs no extra round trip.
     expect(languages).toEqual(["fr", "ar"]);
+    expect(edition.language).toBe("fr");
+    expect(edition.articles.map((article) => article.id)).toEqual([french.id]);
+    expect(edition.lead?.language).toBe("fr");
+    expect(edition.lead?.title.fr).toBe(french.title);
+    expect(edition.lead?.publishedAt).toBe(french.publishedAt);
+  });
+
+  test("keeps an Arabic reader on the Arabic edition even when the French feed is fresher", async () => {
+    const { repository, french, arabic, languages } = await fixtures();
+    french.publishedAt = "2026-09-14T19:30:00Z";
+    expect(Date.parse(french.publishedAt)).toBeGreaterThan(Date.parse(arabic.publishedAt));
+
+    const edition = await getNewsEdition(repository, "ar", "auto", context, now);
+
+    expect(languages).toEqual(["ar", "fr"]);
     expect(edition.language).toBe("ar");
-    expect(edition.articles[0]?.id).toBe(arabic.id);
+    expect(edition.articles.map((article) => article.id)).toEqual([arabic.id]);
     expect(edition.lead?.language).toBe("ar");
     expect(edition.lead?.title.fr).toBe(arabic.title);
     expect(edition.lead?.publishedAt).toBe(arabic.publishedAt);
   });
+
+  test("falls back to the other language only when the reader's own feed is empty", async () => {
+    const french = await fixtures();
+    french.repository.getFeed = async (input) => {
+      french.languages.push(input.language);
+      return { items: input.language === "fr" ? [] : [french.arabic], nextCursor: null };
+    };
+    const frenchEdition = await getNewsEdition(french.repository, "fr", "auto", context, now);
+    expect(frenchEdition.language).toBe("ar");
+    expect(frenchEdition.articles.map((article) => article.id)).toEqual([french.arabic.id]);
+
+    const arabic = await fixtures();
+    arabic.repository.getFeed = async (input) => {
+      arabic.languages.push(input.language);
+      return { items: input.language === "ar" ? [] : [arabic.french], nextCursor: null };
+    };
+    const arabicEdition = await getNewsEdition(arabic.repository, "ar", "auto", context, now);
+    expect(arabicEdition.language).toBe("fr");
+    expect(arabicEdition.articles.map((article) => article.id)).toEqual([arabic.french.id]);
+  });
+
+  test.each(["fr", "ar"] as const)(
+    "keeps an all-empty %s edition in the reader's own language",
+    async (language) => {
+      const { repository } = await fixtures();
+      repository.getFeed = async () => ({ items: [], nextCursor: null });
+      const edition = await getNewsEdition(repository, language, "auto", context, now);
+      expect(edition).toEqual({ language, articles: [], lead: null });
+    },
+  );
 
   test("explicit French selection preserves the French archive and reads no Arabic feed", async () => {
     const { repository, french, languages } = await fixtures();
@@ -208,13 +258,6 @@ describe("Available news editions", () => {
     repository.getFeed = async () => ({ items: [], nextCursor: null });
     const edition = await getNewsEdition(repository, "ar", "fr", context, now);
     expect(edition).toEqual({ language: "fr", articles: [], lead: null });
-  });
-
-  test("equally recent editions prefer the interface language", async () => {
-    const { repository, french, arabic } = await fixtures();
-    french.publishedAt = arabic.publishedAt;
-    expect((await getNewsEdition(repository, "fr", "auto", context, now)).language).toBe("fr");
-    expect((await getNewsEdition(repository, "ar", "auto", context, now)).language).toBe("ar");
   });
 
   test.each(["fr", "ar"] as const)(
