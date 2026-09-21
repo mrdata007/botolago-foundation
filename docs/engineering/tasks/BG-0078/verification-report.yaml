@@ -1,0 +1,46 @@
+task_id: BG-0078
+title: Does the hourly orchestrator realign GW1 by itself once SportsMonks publishes the real kickoff?
+answer: NO
+severity: P0
+verified_at: 2026-09-21
+verified_against: production tkewgajrljbwgwedqsxn, read-only
+
+production_state:
+  gameweek: GW1
+  status: open
+  deadline_at: 2026-09-23T22:30:00Z
+  starts_at: 2026-09-24T00:00:00Z
+  active_counting_assignments: 8
+  unconfirmed_kickoffs: 8
+  frozen_assignments: 0
+  fantasy_job_runs_rows: 0
+  deadline_rule_minutes_before_first_fixture: 90
+
+reason_one: >
+  The orchestrator has never run. app_private.fantasy_job_runs has zero rows and
+  fantasy-season-orchestrator.yml is gated on FANTASY_AUTOMATION_ENABLED, which is unset.
+
+reason_two: >
+  Even running, it would change nothing today and can never change GW1 after the
+  deadline instant. All eight fixtures carry the placeholder 2026-09-24T00:00:00Z, and
+  app_private.fantasy_kickoff_confirmed returns false for any kickoff whose UTC
+  time-of-day is exactly 00:00:00. In api.service_sync_fantasy_calendar the realign
+  UPDATE is predicated on fantasy_kickoff_confirmed(f.kickoff_at) so it matches zero
+  rows; unconfirmed_active is then 8, which takes the deadline_unconfirmed branch and
+  skips the whole deadline-and-window update. Once real kickoffs land the function
+  would compute first_kickoff - 90 minutes -- but the write is guarded by
+  "if gw.status = 'open' and gw.deadline_at <= statement_timestamp() then deadline_locked",
+  so from 2026-09-23T22:30:00Z onward GW1's deadline is frozen permanently.
+
+conditions_under_which_the_answer_would_be_yes:
+  - FANTASY_AUTOMATION_ENABLED set, and
+  - SportsMonks publishes non-placeholder kickoffs for all 8 fixtures, and
+  - that happens strictly before 2026-09-23T22:30:00Z
+
+consequence_if_nobody_acts: >
+  The fantasy deadline stays at 2026-09-23 22:30Z while matches kick off during
+  2026-09-24: managers lose their squads about a day early. Separately the lifecycle
+  worker refuses to freeze a gameweek whose fixture kickoff differs from its assignment
+  (fantasy_fixture_resolution_required), which blocks the gameweek outright.
+
+owner_action: docs/production/HUMAN_ACTIONS_2026_09_21.md section 0.2
