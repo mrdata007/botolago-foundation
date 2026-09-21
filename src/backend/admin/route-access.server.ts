@@ -70,6 +70,31 @@ export function classifyIdentityFailure(error: unknown): UnauthenticatedDetail {
 }
 
 /**
+ * Resolves the Supabase project this request's identity is verified against.
+ *
+ * It must be the same project that issued the session, or verification cannot
+ * succeed for anybody: the signing key will not be in the JWKS, and the token
+ * will be presented to an Auth server that has never heard of it. Reading a
+ * server-only `SUPABASE_URL` while the browser signs in against the build-time
+ * `VITE_SUPABASE_URL` leaves nothing tying the two together -- they are set in
+ * different places, and `.env.example` ships the server one pointed at
+ * localhost.
+ *
+ * So prefer the same build-time values the browser uses (see
+ * `integrations/supabase/client.ts`, which resolves in this order), and keep
+ * the server-only variables as the fallback for runtimes that inject them
+ * instead. The publishable key is public by design and constrained by RLS --
+ * it is already in the browser bundle -- so this exposes nothing new.
+ */
+export function resolveSupabaseConfig(): { url?: string; publishableKey?: string } {
+  return {
+    url: import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+    publishableKey:
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY,
+  };
+}
+
+/**
  * One structured line per denied Admin request, so a recurrence is diagnosable
  * from server logs rather than from a reader relaying a code off a screen.
  *
@@ -92,8 +117,7 @@ export async function loadAdminRouteAccessForRequest() {
   const authorizationHeaderPresent = Boolean(authHeader);
   const bearerScheme = authHeader?.startsWith("Bearer ") ?? false;
   const token = bearerScheme ? authHeader!.slice(7) : null;
-  const url = process.env.SUPABASE_URL;
-  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const { url, publishableKey } = resolveSupabaseConfig();
   const trace = { authorizationHeaderPresent, bearerScheme };
   if (!url || !publishableKey) {
     logAdminAccessDenial({ ...trace, state: "backend_unavailable" });
