@@ -62,7 +62,7 @@ export function PlayerRow({
         <div className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>{tr(player.name)}</div>
         <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>
           {t(`player.pos.${player.position}` as TranslationKey)} • {t("fantasy.form")}{" "}
-          {nf.format(player.form)}
+          {player.form === null ? t("fantasy.stat.none") : nf.format(player.form)}
         </div>
       </div>
       <div className="shrink-0 text-end">

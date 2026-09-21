@@ -12,6 +12,8 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FantasyOverallStandingDto,
   FantasyPlayerDto,
+  FantasyPlayerGameweekHistoryEntryDto,
+  FantasyPlayerSeasonStatDto,
   FantasyPointsDto,
   FantasyTeamDto,
 } from "@/backend/fantasy/contracts";
@@ -31,7 +33,20 @@ const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.ran
 const mode = () =>
   selectFantasyDataMode(import.meta.env.VITE_FANTASY_DATA_MODE, import.meta.env.PROD);
 
-function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
+/**
+ * BG-0071 — the pool RPC answers "may I pick this player" (position, club,
+ * price, status); the three numbers a manager actually picks WITH — total
+ * points, form and ownership — come from `api.fantasy_player_season_stats` and
+ * are merged in here by fantasy player id.
+ *
+ * `stat` is undefined only when the player is absent from the season aggregate,
+ * which should not happen (the RPC returns every active+eligible player of the
+ * season). When it does, `form` stays `null` — "unknown" — rather than
+ * inventing a 0. `dto.selectedByCount` is deliberately NOT read: the column has
+ * no writer and is always 0, and this mapper was the last consumer standing
+ * between it and a DROP.
+ */
+export function playerDto(dto: FantasyPlayerDto, stat?: FantasyPlayerSeasonStatDto): FantasyPlayer {
   const status =
     dto.status === "available"
       ? "available"
@@ -46,9 +61,9 @@ function playerDto(dto: FantasyPlayerDto): FantasyPlayer {
     clubId: dto.footballTeamId,
     position: dto.position,
     price: dto.price,
-    totalPoints: 0,
-    form: 0,
-    ownership: 0,
+    totalPoints: stat?.totalPoints ?? 0,
+    form: stat ? stat.form : null,
+    ownership: stat?.ownershipPercent ?? 0,
     status,
   };
 }
@@ -123,8 +138,24 @@ async function hub() {
   return cloud.getHub("fr", context());
 }
 
+/**
+ * BG-0071 — index the season aggregate by fantasy player id so the pool pages
+ * can be merged in one pass. Exported for `fantasy-runtime.test.ts`.
+ */
+export function seasonStatsById(
+  items: readonly FantasyPlayerSeasonStatDto[],
+): Map<string, FantasyPlayerSeasonStatDto> {
+  return new Map(items.map((item) => [item.fantasyPlayerId, item]));
+}
+
 async function allPlayers(): Promise<FantasyPlayer[]> {
   const current = await hub();
+  // One statistics read per player-list load, alongside the paged pool. The
+  // RPC is `stable` and the routes hold the result in React Query, so paging
+  // the pool does not re-read it.
+  const stats = seasonStatsById(
+    (await cloud.getPlayerSeasonStats(current.season.id, null, context())).items,
+  );
   const players: FantasyPlayer[] = [];
   let cursor: { price: number; id: string } | undefined;
   for (let page = 0; page < 20; page += 1) {
@@ -132,7 +163,7 @@ async function allPlayers(): Promise<FantasyPlayer[]> {
       { seasonId: current.season.id, cursor, limit: 100 },
       context(),
     );
-    players.push(...result.items.map(playerDto));
+    players.push(...result.items.map((item) => playerDto(item, stats.get(item.id))));
     if (!result.nextCursor) return players;
     cursor = result.nextCursor;
   }
@@ -433,20 +464,43 @@ export const fantasyService = {
     const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
     const target = gameweeks.items.find((item) => item.sequence === gameweek);
     if (!target) return [];
-    const top = await cloud.getTopPlayers(target.id, context());
-    return top.map((player, index) => ({
-      playerId: player.fantasyPlayerId,
-      rank: (index + 1) as 1 | 2 | 3 | 4 | 5,
-      gameweek,
-      weeklyPoints: player.points,
-      goals: 0,
-      assists: 0,
-      cleanSheets: 0,
-      minutes: player.minutesPlayed,
-      price: 0,
-      ownershipPercent: 0,
-      form: 0,
-    }));
+    // BG-0071: price, ownership and form used to be literal zeros here. They
+    // come from the same season aggregate and pool that every other screen
+    // reads, merged by fantasy player id. A player missing from the pool keeps
+    // price/ownership 0 and form `null` ("unknown"), never a fabricated 0.0.
+    const [top, players] = await Promise.all([
+      cloud.getTopPlayers(target.id, context()),
+      allPlayers(),
+    ]);
+    const byId = new Map(players.map((player) => [player.id, player]));
+    return top.map((player, index) => {
+      const pooled = byId.get(player.fantasyPlayerId);
+      return {
+        playerId: player.fantasyPlayerId,
+        rank: (index + 1) as 1 | 2 | 3 | 4 | 5,
+        gameweek,
+        weeklyPoints: player.points,
+        goals: 0,
+        assists: 0,
+        cleanSheets: 0,
+        minutes: player.minutesPlayed,
+        price: pooled?.price ?? 0,
+        ownershipPercent: pooled?.ownership ?? 0,
+        form: pooled ? pooled.form : null,
+      };
+    });
+  },
+
+  /**
+   * BG-0071 — per-gameweek history for one player, oldest gameweek first, for
+   * the player-detail History tab. Mock mode has no per-player history source,
+   * so it answers with an honest empty list rather than inventing rows.
+   */
+  async getPlayerGameweekHistory(
+    playerId: string,
+  ): Promise<readonly FantasyPlayerGameweekHistoryEntryDto[]> {
+    if (mode() === "mock") return [];
+    return cloud.getPlayerGameweekHistory(playerId, context());
   },
   async getAvailableTopGameweeks(): Promise<number[]> {
     if (mode() === "mock") return mockFantasyService.getAvailableTopGameweeks();

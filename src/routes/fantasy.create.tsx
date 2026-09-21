@@ -368,7 +368,12 @@ function CreateTeamBody() {
         onReset={() => setDraft(initCreateDraft(draft.teamName))}
         resetDisabled={summary.filled === 0}
         listColumns={[
-          { key: "form", label: t("fpl.form"), render: (p) => p.form.toFixed(1) },
+          {
+            key: "form",
+            label: t("fpl.form"),
+            // BG-0071: a dash, not 0.0, while no gameweek has scored.
+            render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+          },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
           { key: "sel", label: t("fpl.selected"), render: (p) => `${p.ownership.toFixed(1)}%` },
         ]}

@@ -97,6 +97,15 @@ function PlayerDetailPage() {
     queryFn: () => fantasyService.getFixtureDifficulty(),
   });
   const [tab, setTab] = useState<Tab>("overview");
+  // BG-0071 — the History tab used to restate the Overview numbers in a
+  // sentence. It now reads the real per-gameweek rows, and only when the tab is
+  // actually opened: the RPC is one read per player and most visitors never
+  // leave Overview.
+  const historyQ = useQuery({
+    queryKey: ["fantasy-player-history", playerId],
+    queryFn: () => fantasyService.getPlayerGameweekHistory(playerId),
+    enabled: tab === "history",
+  });
 
   if (playerQ.isLoading) {
     return (
@@ -156,18 +165,55 @@ function PlayerDetailPage() {
         {tab === "overview" && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Stat label={t("fantasy.total_points")} value={String(p.totalPoints)} />
-            <Stat label={t("fantasy.form")} value={nf.format(p.form)} />
+            <Stat
+              label={t("fantasy.form")}
+              value={p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
+            />
             <Stat label={t("fantasy.ownership")} value={`${nf.format(p.ownership)}%`} />
             <Stat label={t("fantasy.expected_points")} value={String(p.expectedPoints ?? "—")} />
           </div>
         )}
 
         {tab === "history" && (
-          <div className="rounded-[10px] border border-[color:var(--fpl-grey)] p-3">
-            <div className="text-sm text-[color:var(--fpl-grey-text)]">
-              {tr(p.name)}: {p.totalPoints} {t("fantasy.points.abbr")} ({nf.format(p.form)} /{" "}
-              {t("fpl.gameweek").toLowerCase()}).
-            </div>
+          <div className="grid gap-1.5">
+            {historyQ.isLoading && <LoadingState />}
+            {/* A player with no scored gameweek has no rows at all — which is
+                every player until GW1 closes. That is an empty state, not an
+                error, and not a row of zeros. */}
+            {!historyQ.isLoading && (historyQ.data ?? []).length === 0 && <EmptyState />}
+            {(historyQ.data ?? []).map((entry) => (
+              <div
+                key={entry.gameweekId}
+                className="flex items-center gap-2 border-b border-[color:var(--fpl-grey)] py-2"
+              >
+                <div className="w-14 shrink-0 text-[11px] font-bold text-[color:var(--fpl-grey-text)]">
+                  {entry.gameweekName}
+                </div>
+                <div className="min-w-0 flex-1 text-sm font-semibold text-[color:var(--fpl-ink-deep)]">
+                  {/* `opponents` is an array: a club can play twice in one
+                      gameweek after a fixture reassignment. */}
+                  {entry.opponents.map((opponent) => (
+                    <span key={opponent.teamId} className="me-1.5">
+                      {opponent.shortName}{" "}
+                      <span className="text-[color:var(--fpl-grey-text)]">
+                        ({opponent.home ? t("common.home") : t("common.away")})
+                      </span>
+                    </span>
+                  ))}
+                  {entry.state === "provisional" && (
+                    <span className="ms-1 rounded bg-[color:var(--fpl-grey)] px-1 text-[9px] font-black text-[color:var(--fpl-grey-text)]">
+                      {t("fantasy.points.status.provisional")}
+                    </span>
+                  )}
+                </div>
+                <div className="fpl-tabular w-14 shrink-0 text-end text-[11px] text-[color:var(--fpl-grey-text)]">
+                  {entry.minutesPlayed} {t("home.minutes")}
+                </div>
+                <div className="fpl-tabular w-14 shrink-0 text-end text-sm font-black text-[color:var(--fpl-ink-deep)]">
+                  {entry.points} {t("fantasy.points.abbr")}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -214,7 +260,10 @@ function PlayerDetailPage() {
 
         {tab === "stats" && (
           <dl className="grid grid-cols-2 gap-2">
-            <StatDl k={t("fantasy.form")} v={nf.format(p.form)} />
+            <StatDl
+              k={t("fantasy.form")}
+              v={p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
+            />
             <StatDl k={t("fantasy.total_points")} v={String(p.totalPoints)} />
             <StatDl k={t("fantasy.expected_points")} v={String(p.expectedPoints ?? "—")} />
             <StatDl k={t("fantasy.ownership")} v={`${nf.format(p.ownership)}%`} />

@@ -293,7 +293,10 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
           label={t("fantasy.top.ownership")}
           value={`${nf.format(top.ownershipPercent)}%`}
         />
-        <MetaChip label={t("fantasy.top.form")} value={nf.format(top.form)} />
+        <MetaChip
+          label={t("fantasy.top.form")}
+          value={top.form === null ? t("fantasy.stat.none") : nf.format(top.form)}
+        />
       </div>
 
       {/* Actions */}
@@ -439,7 +442,7 @@ function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
           <span>
             {t("fantasy.top.form")}{" "}
             <b className="fpl-tabular font-black text-[color:var(--fpl-ink-deep)]">
-              {nf.format(top.form)}
+              {top.form === null ? t("fantasy.stat.none") : nf.format(top.form)}
             </b>
           </span>
           <span>

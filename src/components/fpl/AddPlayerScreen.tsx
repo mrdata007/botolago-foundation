@@ -12,6 +12,16 @@ import { FplBanner, FplHeader } from "./primitives";
 type SortKey = "form" | "price" | "selected";
 
 /**
+ * BG-0071 — descending form, with "no value yet" (`null`) sorted below every
+ * real number, including a real 0.0. Written as explicit branches rather than a
+ * sentinel subtraction because today EVERY player's form is null (no gameweek
+ * has scored), and `-Infinity - -Infinity` is NaN — a comparator that returns
+ * NaN for every pair leaves the list in an unspecified order.
+ */
+const compareForm = (a: number | null, b: number | null) =>
+  a === null && b === null ? 0 : a === null ? 1 : b === null ? -1 : b - a;
+
+/**
  * FPL-003 "Add Player" reconstructed: full-screen list with a Back header and
  * search control, an ink "Bank" banner, three filter selects (Position /
  * Price / View), a sortable table header (Player / Form / Current Price /
@@ -72,7 +82,7 @@ export function AddPlayerScreen({
       );
     }
     list.sort((a, b) => {
-      if (sort === "form") return b.form - a.form || b.price - a.price;
+      if (sort === "form") return compareForm(a.form, b.form) || b.price - a.price;
       if (sort === "selected") return b.ownership - a.ownership || b.price - a.price;
       return b.price - a.price || a.name.fr.localeCompare(b.name.fr);
     });
@@ -224,7 +234,7 @@ export function AddPlayerScreen({
                     </button>
                   </div>
                   <span className="fpl-tabular text-end text-[13px] text-foreground">
-                    {player.form.toFixed(1)}
+                    {player.form === null ? t("fantasy.stat.none") : player.form.toFixed(1)}
                   </span>
                   <span className="fpl-tabular text-end text-[13px] font-bold text-foreground">
                     {nf.format(player.price)}

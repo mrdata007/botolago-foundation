@@ -1,0 +1,248 @@
+[
+  {
+    "variant": "empty",
+    "lang": "fr",
+    "viewport": "390x844",
+    "listDashCount": 3,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 1,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "Forme",
+      "· ATT · Forme – · 0%",
+      "· MIL · Forme – · 0%",
+      "· GB · Forme – · 0%"
+    ],
+    "historyExcerpt": [
+      "Retour",
+      "Informations joueur",
+      "Ayoub El Kaabi",
+      "ATT",
+      "9,5",
+      "PRIX",
+      "Aperçu",
+      "Historique",
+      "Calendrier",
+      "Statistiques",
+      "Actualités",
+      "Aucun contenu disponible.",
+      "MODE DÉMO"
+    ]
+  },
+  {
+    "variant": "empty",
+    "lang": "fr",
+    "viewport": "1440x900",
+    "listDashCount": 3,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 1,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "Forme",
+      "· ATT · Forme – · 0%",
+      "· MIL · Forme – · 0%",
+      "· GB · Forme – · 0%"
+    ],
+    "historyExcerpt": [
+      "FR",
+      "Retour",
+      "Informations joueur",
+      "Ayoub El Kaabi",
+      "ATT",
+      "9,5",
+      "PRIX",
+      "Aperçu",
+      "Historique",
+      "Calendrier",
+      "Statistiques",
+      "Actualités",
+      "Aucun contenu disponible.",
+      "MODE DÉMO"
+    ]
+  },
+  {
+    "variant": "empty",
+    "lang": "ar",
+    "viewport": "390x844",
+    "listDashCount": 3,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 1,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "الحالة",
+      "· هج · الحالة – · 0%",
+      "· وس · الحالة – · 0%",
+      "· حم · الحالة – · 0%"
+    ],
+    "historyExcerpt": [
+      "رجوع",
+      "معلومات اللاعب",
+      "Ayoub El Kaabi",
+      "هج",
+      "9,5",
+      "السعر",
+      "نظرة عامة",
+      "السجل",
+      "الجدول",
+      "الإحصائيات",
+      "الأخبار",
+      "لا يوجد محتوى.",
+      "وضع تجريبي"
+    ]
+  },
+  {
+    "variant": "empty",
+    "lang": "ar",
+    "viewport": "1440x900",
+    "listDashCount": 3,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 1,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "الحالة",
+      "· هج · الحالة – · 0%",
+      "· وس · الحالة – · 0%",
+      "· حم · الحالة – · 0%"
+    ],
+    "historyExcerpt": [
+      "ع",
+      "رجوع",
+      "معلومات اللاعب",
+      "Ayoub El Kaabi",
+      "هج",
+      "9,5",
+      "السعر",
+      "نظرة عامة",
+      "السجل",
+      "الجدول",
+      "الإحصائيات",
+      "الأخبار",
+      "لا يوجد محتوى.",
+      "وضع تجريبي"
+    ]
+  },
+  {
+    "variant": "populated",
+    "lang": "fr",
+    "viewport": "390x844",
+    "listDashCount": 0,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 0,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "Forme",
+      "· ATT · Forme 7,4 · 50%",
+      "· MIL · Forme 3,2 · 25%",
+      "· GB · Forme 0 · 0%"
+    ],
+    "historyExcerpt": [
+      "Aperçu",
+      "Historique",
+      "Calendrier",
+      "Statistiques",
+      "Actualités",
+      "Journée 4",
+      "WAC (Domicile)",
+      "90 min",
+      "9 pts",
+      "Journée 5",
+      "FAR (Extérieur)Provisoire",
+      "61 min",
+      "2 pts",
+      "MODE DÉMO"
+    ]
+  },
+  {
+    "variant": "populated",
+    "lang": "fr",
+    "viewport": "1440x900",
+    "listDashCount": 0,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 0,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "Forme",
+      "· ATT · Forme 7,4 · 50%",
+      "· MIL · Forme 3,2 · 25%",
+      "· GB · Forme 0 · 0%"
+    ],
+    "historyExcerpt": [
+      "Aperçu",
+      "Historique",
+      "Calendrier",
+      "Statistiques",
+      "Actualités",
+      "Journée 4",
+      "WAC (Domicile)",
+      "90 min",
+      "9 pts",
+      "Journée 5",
+      "FAR (Extérieur)Provisoire",
+      "61 min",
+      "2 pts",
+      "MODE DÉMO"
+    ]
+  },
+  {
+    "variant": "populated",
+    "lang": "ar",
+    "viewport": "390x844",
+    "listDashCount": 0,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 0,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "الحالة",
+      "· هج · الحالة 7,4 · 50%",
+      "· وس · الحالة 3,2 · 25%",
+      "· حم · الحالة 0 · 0%"
+    ],
+    "historyExcerpt": [
+      "نظرة عامة",
+      "السجل",
+      "الجدول",
+      "الإحصائيات",
+      "الأخبار",
+      "Journée 4",
+      "WAC (أرضه)",
+      "90 د",
+      "9 ن",
+      "Journée 5",
+      "FAR (خارج أرضه)مبدئية",
+      "61 د",
+      "2 ن",
+      "وضع تجريبي"
+    ]
+  },
+  {
+    "variant": "populated",
+    "lang": "ar",
+    "viewport": "1440x900",
+    "listDashCount": 0,
+    "listHasZeroDecimal": false,
+    "overviewDashCount": 0,
+    "listRows": ["Ayoub El Kaabi", "Reda Slim", "Anas Zniti"],
+    "listFormCells": [
+      "الحالة",
+      "· هج · الحالة 7,4 · 50%",
+      "· وس · الحالة 3,2 · 25%",
+      "· حم · الحالة 0 · 0%"
+    ],
+    "historyExcerpt": [
+      "نظرة عامة",
+      "السجل",
+      "الجدول",
+      "الإحصائيات",
+      "الأخبار",
+      "Journée 4",
+      "WAC (أرضه)",
+      "90 د",
+      "9 ن",
+      "Journée 5",
+      "FAR (خارج أرضه)مبدئية",
+      "61 د",
+      "2 ن",
+      "وضع تجريبي"
+    ]
+  }
+]
