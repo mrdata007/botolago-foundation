@@ -19,7 +19,7 @@ human_actions_open:
 
 tasks:
 
-  BG-0053:
+  BG-0056:
     title: LAUNCH CHIEF — Fantasy production regression PASSED (newcomer journey, FR/AR, phone+desktop)
     area: fantasy
     severity: P0
@@ -38,7 +38,7 @@ tasks:
       - Squad and transfer both survived a fresh browser context carrying only the session
     note: Lane closed per mandate. Do not re-audit Fantasy absent a new regression.
 
-  BG-0054:
+  BG-0057:
     title: Duplicate player records in the production roster
     area: data
     severity: P1
@@ -65,7 +65,7 @@ tasks:
       wrong row removes a real player from the game for the whole season. Needs the provider feed or
       the owner to say which id is canonical; the fix itself is then a reversible active=false.
 
-  BG-0055:
+  BG-0058:
     title: news_article_detail returns HTTP 500 for a not-found article
     area: news
     severity: P2
@@ -86,7 +86,7 @@ tasks:
       wasted first attempt certain for Arabic readers; it feeds SEO head tags, so it is not simply
       removable.
 
-  BG-0051:
+  BG-0059:
     title: LAUNCH CHIEF — Admin authentication restored; non-staff acceptance proven on production
     area: auth
     severity: P0
@@ -104,13 +104,14 @@ tasks:
       - Owner reported Ref. unauthenticated/invalid_token/rejected (token arrived and was refused)
       - Round-trip probe: real kid ffe6387d cost 144ms (~1.2 RTT) before, 1ms (0.01 RTT) after
       - Owner confirmed the Admin console renders with platform_admin, 34 permissions, AAL2
-      - Non-staff acceptance on production 2026-09-21: authenticated non-staff -> forbidden
+      - >-
+        Non-staff acceptance on production 2026-09-21 — authenticated non-staff -> forbidden
         ("Accès interdit" / "الدخول مرفوض"); anonymous -> unauthenticated/missing_token; no staff
         data in the DOM; verified FR and AR
     commits: [c101fea, 5c8e024, 0877914, e6f6420, e052f63, ae287aa]
     verification: {status: PASS, by: owner (console) + chief (production probes, non-staff acceptance)}
 
-  BG-0052:
+  BG-0060:
     title: LAUNCH CHIEF — Server workers may target the wrong Supabase project (service-role)
     area: infra
     severity: P1
@@ -120,7 +121,7 @@ tasks:
       not fail; it writes production content into another project's database silently.
     owner: Human (credential) + Chief (guard)
     state: HALTED_FOR_INPUT
-    depends_on: [BG-0051]
+    depends_on: [BG-0059]
     chief_action_taken: >
       Added assertServerProjectMatchesApplication: a service-role client whose project disagrees
       with the application's now refuses to start and names both sides. Deliberately does NOT
@@ -133,6 +134,56 @@ tasks:
     blast_radius_today: >
       Low. Ingestion schedules are disabled, so no worker is currently writing. This must be
       corrected before ingestion or notifications are enabled.
+
+  BG-0061:
+    title: Dead V1 Fantasy cloud repository and a stale generated Supabase types file
+    area: fantasy
+    severity: P2
+    user_impact: None today. Nothing on the live path reaches this code.
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    detail: >
+      createFantasyOwnedRepository returns V2CloudFantasyRepository for every signed-in manager,
+      so CloudFantasyRepository (src/services/fantasy-owned-repository.ts) and
+      src/services/fantasy-cloud-repo.ts are unreachable. Both read
+      public.fantasy_teams.pending_transfers, and production has neither that table (the live one
+      is app.fantasy_teams) nor that column. The V1 payload builders in
+      src/services/fantasy-payloads.ts likewise target save_fantasy_team_v2 and a
+      confirm_fantasy_transfers taking _pending_transfers; production exposes only
+      api.confirm_fantasy_transfers(p_team_id, p_gameweek_id, p_transfers, p_expected_version,
+      p_idempotency_key, p_chip_type).
+    root_cause: >
+      src/integrations/supabase/types.ts is a generated file that still describes a public schema
+      the database has since moved to app/api. Because it typechecks, the dead code reads as
+      live — which is how the always-zero transfers row in BG-0062 survived review.
+    found_while: Verifying the claim that no transfers-made value is persisted (BG-0062).
+    why_deferred: >
+      Deleting a repository and regenerating the Supabase types touches every Fantasy call site,
+      for no user-visible gain. Post-launch cleanup, not a launch gate.
+
+  BG-0062:
+    title: Fantasy team profile showed a "transfers made this gameweek" row that always read 0
+    area: fantasy
+    severity: P2
+    user_impact: >
+      Every manager saw 0 transfers made, however many they had made. Wrong rather than missing,
+      so it invited managers to distrust the rest of the card.
+    owner: Chief
+    state: DONE
+    depends_on: []
+    root_cause: >
+      The row was bound to team.pendingTransfers. V2CloudFantasyRepository.snapshot() sets that
+      field to 0 on both of its branches and has nothing else to set it from — its source
+      FantasyTeamDto (src/backend/fantasy/contracts.ts) carries no transfers-made field, and
+      api.confirm_fantasy_transfers takes no such argument.
+    resolution: >
+      Row removed, with a comment naming what has to carry the value before it returns. The count
+      itself is not lost — app.fantasy_transfer_batches.transfers_count holds it server-side.
+      fpl.gw_transfers_made dropped from both dictionaries so the i18n gate's unused-key warning
+      stays at its committed baseline of 248.
+    verification: {status: PASS, by: chief (1112 tests, typecheck, eslint, prettier, i18n gate)}
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
