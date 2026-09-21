@@ -7,7 +7,6 @@ import {
   UserCog,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import {
   ADMIN_CONSOLE_NAV_ITEMS,
   ADMIN_STATE_TEST_IDS,
@@ -21,6 +20,12 @@ import {
   type UnauthenticatedDetail,
   type UnauthenticatedReason,
 } from "@/backend/admin/route-access";
+import {
+  ADMIN_CARD_CLASS,
+  ADMIN_LABEL_CLASS,
+  AdminIconTile,
+  AdminSummaryCard,
+} from "@/components/admin/AdminSurfaces";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin")({
@@ -30,13 +35,9 @@ export const Route = createFileRoute("/admin")({
   component: AdminRoute,
 });
 
-/** Shared card surface, so every Admin panel reads as one set. */
-const ADMIN_CARD_CLASS =
-  "rounded-2xl border border-slate-800 bg-slate-900/70 shadow-lg shadow-slate-950/40";
-
-/** Small uppercase label above a value; `tracking-wide` only, since Arabic
- *  letterforms join and must not be spaced apart. */
-const ADMIN_LABEL_CLASS = "text-[11px] font-semibold uppercase tracking-wide text-slate-400";
+// The card surface, micro-label, icon tile and summary card now live in
+// `@/components/admin/AdminSurfaces`, shared with the five security
+// sub-pages that render inside this shell's <Outlet />. One definition only.
 
 function AdminLoadingShell() {
   const { lang } = useI18n();
@@ -171,14 +172,14 @@ function AdminRoute() {
                 {copy.labels.contextHeading}
               </h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2" data-testid="admin-home">
-                <SafeCard title={copy.labels.identity}>
+                <AdminSummaryCard title={copy.labels.identity}>
                   {/* A masked address and a UUID are both LTR data: only the
                       value is forced, the label keeps the ambient direction. */}
                   <bdi dir="ltr" className="block break-all font-mono text-sm">
                     {result.identity.emailSummary ?? result.identity.userId}
                   </bdi>
-                </SafeCard>
-                <SafeCard title={copy.labels.roles}>
+                </AdminSummaryCard>
+                <AdminSummaryCard title={copy.labels.roles}>
                   <p className="break-words">
                     {roleNames.length > 0 ? (
                       <bdi dir="ltr">{roleNames.join(", ")}</bdi>
@@ -186,13 +187,13 @@ function AdminRoute() {
                       copy.labels.none
                     )}
                   </p>
-                </SafeCard>
-                <SafeCard title={copy.labels.permissions}>
+                </AdminSummaryCard>
+                <AdminSummaryCard title={copy.labels.permissions}>
                   <p className="text-2xl font-semibold tabular-nums">
                     {result.context.permissions.length}
                   </p>
-                </SafeCard>
-                <SafeCard title={copy.labels.security}>
+                </AdminSummaryCard>
+                <AdminSummaryCard title={copy.labels.security}>
                   <p className="flex flex-wrap items-center gap-2">
                     <bdi
                       dir="ltr"
@@ -208,7 +209,7 @@ function AdminRoute() {
                       {result.context.pendingSessionRevocationCount}
                     </span>
                   </p>
-                </SafeCard>
+                </AdminSummaryCard>
               </div>
             </section>
 
@@ -252,23 +253,3 @@ function AdminRoute() {
 /** Module icons, positional and wrapped, so a shorter or longer `sections`
  *  list can never index past the end. */
 const SECTION_ICONS: readonly LucideIcon[] = [UserCog, ClipboardCheck, ScrollText, KeyRound];
-
-function AdminIconTile({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <span
-      className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-      aria-hidden
-    >
-      <Icon className="h-5 w-5" />
-    </span>
-  );
-}
-
-function SafeCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <article className={`${ADMIN_CARD_CLASS} p-4`}>
-      <h3 className={ADMIN_LABEL_CLASS}>{title}</h3>
-      <div className="mt-2 min-w-0 text-sm text-slate-100">{children}</div>
-    </article>
-  );
-}

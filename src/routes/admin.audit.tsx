@@ -6,6 +6,15 @@ import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers
 import { SupabaseAdminControlPlaneRepository } from "@/backend/admin/supabase-control-plane-repository";
 import type { AdminAuditPageDto } from "@/backend/admin/contracts";
 import { mapAdminError } from "@/backend/admin/errors";
+import {
+  ADMIN_LABEL_CLASS,
+  ADMIN_PANEL_CLASS,
+  AdminBadge,
+  AdminDatum,
+  AdminEmptyState,
+  AdminNotice,
+  AdminSkeletonList,
+} from "@/components/admin/AdminSurfaces";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/audit")({
@@ -14,6 +23,14 @@ export const Route = createFileRoute("/admin/audit")({
   pendingComponent: AdminFunctionalLoading,
   component: AdminAuditRoute,
 });
+
+/** Outcome colour, so a refusal or a failure is visible before the row is
+ *  read. Colour is never the only carrier: the outcome word is on screen. */
+function outcomeTone(outcome: AdminAuditPageDto["items"][number]["outcome"]) {
+  if (outcome === "succeeded") return "positive" as const;
+  if (outcome === "denied") return "warning" as const;
+  return "danger" as const;
+}
 
 function AdminAuditRoute() {
   const access = Route.useLoaderData();
@@ -47,29 +64,68 @@ function AdminAuditRoute() {
       testId="admin-audit-log"
     >
       {access.state === "authorized" && (
-        <>
-          {page?.items.length === 0 && (
-            <p className="text-sm text-slate-400">{rtl ? "لا توجد أحداث." : "Aucun événement."}</p>
-          )}
-          <ol className="grid gap-3">
-            {page?.items.map((event) => (
-              <li key={event.id} className="rounded-lg border border-slate-700 p-4 text-sm">
-                <p className="font-medium">
-                  {event.action} · {event.outcome}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {event.occurredAt} · {event.correlationId}
-                </p>
-                <p className="mt-2 text-slate-300">{event.reason}</p>
-              </li>
-            ))}
-          </ol>
+        <div className="grid gap-4">
           {message && (
-            <p className="text-sm text-amber-200" role="alert">
+            <AdminNotice tone="alert" role="alert" testId="admin-audit-message">
               {message}
-            </p>
+            </AdminNotice>
           )}
-        </>
+
+          {!page && !message && <AdminSkeletonList rows={3} testId="admin-audit-loading" />}
+
+          {page?.items.length === 0 && (
+            <AdminEmptyState testId="admin-audit-empty">
+              {rtl ? "لا توجد أحداث." : "Aucun événement."}
+            </AdminEmptyState>
+          )}
+
+          {page && page.items.length > 0 && (
+            <ol className="grid gap-3">
+              {page.items.map((event) => (
+                <li
+                  key={event.id}
+                  className={`${ADMIN_PANEL_CLASS} p-4`}
+                  data-testid="admin-audit-event"
+                >
+                  {/* The action slug and the outcome are machine values: the
+                      label around them keeps the ambient direction, only the
+                      data is forced LTR. */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <AdminDatum className="text-sm font-semibold text-slate-100">
+                      {event.action}
+                    </AdminDatum>
+                    <AdminBadge tone={outcomeTone(event.outcome)}>
+                      <AdminDatum mono={false}>{event.outcome}</AdminDatum>
+                    </AdminBadge>
+                  </div>
+
+                  <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="min-w-0">
+                      <dt className={ADMIN_LABEL_CLASS}>{rtl ? "التاريخ" : "Horodatage"}</dt>
+                      <dd className="mt-1 text-xs text-slate-300">
+                        <AdminDatum>{event.occurredAt}</AdminDatum>
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className={ADMIN_LABEL_CLASS}>
+                        {rtl ? "معرّف الارتباط" : "Corrélation"}
+                      </dt>
+                      <dd className="mt-1 text-xs text-slate-300">
+                        <AdminDatum>{event.correlationId}</AdminDatum>
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {event.reason && (
+                    <p className="mt-3 border-t border-slate-800 pt-3 text-sm leading-6 text-slate-300">
+                      {event.reason}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       )}
     </AdminFunctionalRoute>
   );

@@ -1,14 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { loadAdminSecurityRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
-import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
+import {
+  adminButtonClass,
+  adminFieldClass,
+  adminRepositoryContext,
+} from "@/backend/admin/functional-route-helpers";
 import { SupabaseAdminControlPlaneRepository } from "@/backend/admin/supabase-control-plane-repository";
 import type {
   RevocationStatusDto,
   RevocationWorkerHealthDto,
 } from "@/backend/admin/control-plane-contracts";
 import { mapAdminError } from "@/backend/admin/errors";
+import {
+  ADMIN_LABEL_CLASS,
+  ADMIN_PANEL_CLASS,
+  AdminDatum,
+  AdminField,
+  AdminIconTile,
+  AdminNotice,
+  AdminSectionHeading,
+} from "@/components/admin/AdminSurfaces";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/security")({
@@ -17,6 +31,34 @@ export const Route = createFileRoute("/admin/security")({
   pendingComponent: AdminFunctionalLoading,
   component: AdminSecurityRoute,
 });
+
+/** One queue counter. Two per row on a phone, four from `sm` up. */
+function QueueStat({
+  label,
+  value,
+  alarming,
+}: {
+  label: string;
+  value: number;
+  alarming?: boolean;
+}) {
+  return (
+    <div className={`${ADMIN_PANEL_CLASS} p-3`}>
+      {/* The counter name is an English queue term: LTR data, while the cell
+          itself keeps the ambient direction. */}
+      <dt className={ADMIN_LABEL_CLASS}>
+        <AdminDatum mono={false}>{label}</AdminDatum>
+      </dt>
+      <dd
+        className={`mt-1 text-2xl font-semibold tabular-nums ${
+          alarming && value > 0 ? "text-rose-300" : "text-slate-100"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 function AdminSecurityRoute() {
   const access = Route.useLoaderData();
@@ -68,82 +110,101 @@ function AdminSecurityRoute() {
       testId="admin-security-status"
     >
       {access.state === "authorized" && (
-        <>
-          {health && (
-            <dl className="grid gap-3 text-sm sm:grid-cols-4" data-testid="admin-worker-health">
-              <div>
-                <dt className="text-slate-400">Queued</dt>
-                <dd>{health.queue.pending}</dd>
+        <div className="grid gap-6">
+          <section aria-labelledby="admin-worker-health-heading">
+            <AdminSectionHeading id="admin-worker-health-heading">
+              {rtl ? "طابور الإبطال" : "File d’invalidation"}
+            </AdminSectionHeading>
+            {health ? (
+              <dl
+                className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
+                data-testid="admin-worker-health"
+              >
+                <QueueStat label="Queued" value={health.queue.pending} />
+                <QueueStat label="Processing" value={health.queue.processing} />
+                <QueueStat label="Retry" value={health.queue.retrying} />
+                <QueueStat label="Dead-letter" value={health.queue.deadLetter} alarming />
+              </dl>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-hidden>
+                {Array.from({ length: 4 }, (_, index) => (
+                  <div key={index} className={`${ADMIN_PANEL_CLASS} h-[72px] animate-pulse`} />
+                ))}
               </div>
-              <div>
-                <dt className="text-slate-400">Processing</dt>
-                <dd>{health.queue.processing}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-400">Retry</dt>
-                <dd>{health.queue.retrying}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-400">Dead-letter</dt>
-                <dd>{health.queue.deadLetter}</dd>
-              </div>
-            </dl>
-          )}
-          <form
-            className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]"
-            onSubmit={loadRevocation}
-            data-testid="admin-revocation-status"
-          >
-            <label className="grid gap-2 text-sm">
-              <span>{rtl ? "معرّف عضو الطاقم" : "Identifiant du principal"}</span>
-              <input
-                value={principalId}
-                onChange={(event) => setPrincipalId(event.target.value)}
-                className="min-h-11 rounded-lg border border-slate-700 bg-slate-950 px-3 text-slate-100"
-                inputMode="text"
-                required
-              />
-            </label>
-            <button
-              className="min-h-11 self-end rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-slate-950"
-              type="submit"
+            )}
+          </section>
+
+          <section aria-labelledby="admin-revocation-lookup-heading">
+            <AdminSectionHeading id="admin-revocation-lookup-heading">
+              {rtl ? "فحص عضو الطاقم" : "Vérifier un principal"}
+            </AdminSectionHeading>
+            <form
+              className={`mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end ${ADMIN_PANEL_CLASS} p-4`}
+              onSubmit={loadRevocation}
+              data-testid="admin-revocation-status"
             >
-              {rtl ? "فحص الحالة" : "Vérifier l’état"}
-            </button>
-          </form>
-          {revocation && (
-            <dl className="mt-4 grid gap-3 rounded-lg border border-slate-700 p-4 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-slate-400">{rtl ? "الوصول الإداري" : "Accès Admin"}</dt>
-                <dd>
-                  {revocation.pendingCount === 0
-                    ? rtl
-                      ? "لا توجد عملية معلّقة"
-                      : "Aucune action en attente"
-                    : `${revocation.pendingCount} pending`}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-400">{rtl ? "إجراء المزوّد" : "Action fournisseur"}</dt>
-                <dd>
-                  {revocation.latest
-                    ? `${revocation.latest.status} · ${revocation.latest.resultCode ?? revocation.latest.lastErrorCode ?? "bounded"}`
-                    : "not_requested"}
-                </dd>
-              </div>
-            </dl>
-          )}
-          <p className="mt-5 rounded-lg border border-slate-700 p-4 text-sm text-slate-300">
-            {rtl
-              ? "لا يوجد زر متصفح لتشغيل عامل service-role. الاستدعاء اليدوي محمي وخارج واجهة المستخدم."
-              : "Aucun bouton navigateur ne peut lancer le worker service-role. L’invocation manuelle reste protégée et hors UI."}
-          </p>
-          {message && (
-            <p className="mt-4 text-sm text-amber-200" role="alert">
-              {message}
+              <label className="grid gap-2 text-sm">
+                <span className="text-slate-300">
+                  {rtl ? "معرّف عضو الطاقم" : "Identifiant du principal"}
+                </span>
+                {/* A UUID is typed and read left-to-right even in Arabic. */}
+                <input
+                  value={principalId}
+                  onChange={(event) => setPrincipalId(event.target.value)}
+                  className={`${adminFieldClass} font-mono`}
+                  dir="ltr"
+                  inputMode="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  required
+                />
+              </label>
+              <button className={`${adminButtonClass} w-full sm:w-auto`} type="submit">
+                {rtl ? "فحص الحالة" : "Vérifier l’état"}
+              </button>
+            </form>
+
+            {revocation && (
+              <dl className={`mt-3 grid gap-4 sm:grid-cols-2 ${ADMIN_PANEL_CLASS} p-4`}>
+                <AdminField label={rtl ? "الوصول الإداري" : "Accès Admin"}>
+                  {revocation.pendingCount === 0 ? (
+                    rtl ? (
+                      "لا توجد عملية معلّقة"
+                    ) : (
+                      "Aucune action en attente"
+                    )
+                  ) : (
+                    <span className="text-amber-200">
+                      <AdminDatum mono={false}>{`${revocation.pendingCount} pending`}</AdminDatum>
+                    </span>
+                  )}
+                </AdminField>
+                <AdminField label={rtl ? "إجراء المزوّد" : "Action fournisseur"}>
+                  <AdminDatum mono={false}>
+                    {revocation.latest
+                      ? `${revocation.latest.status} · ${revocation.latest.resultCode ?? revocation.latest.lastErrorCode ?? "bounded"}`
+                      : "not_requested"}
+                  </AdminDatum>
+                </AdminField>
+              </dl>
+            )}
+          </section>
+
+          <section className={`${ADMIN_PANEL_CLASS} flex items-start gap-3 p-4`}>
+            <AdminIconTile icon={ShieldAlert} />
+            <p className="min-w-0 flex-1 text-sm leading-6 text-slate-300">
+              {rtl
+                ? "لا يوجد زر متصفح لتشغيل عامل service-role. الاستدعاء اليدوي محمي وخارج واجهة المستخدم."
+                : "Aucun bouton navigateur ne peut lancer le worker service-role. L’invocation manuelle reste protégée et hors UI."}
             </p>
+          </section>
+
+          {message && (
+            <AdminNotice tone="alert" role="alert" testId="admin-security-message">
+              {message}
+            </AdminNotice>
           )}
-        </>
+        </div>
       )}
     </AdminFunctionalRoute>
   );

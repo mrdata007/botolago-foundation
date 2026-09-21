@@ -13,6 +13,14 @@ import type {
   StaffUserResolutionDto,
 } from "@/backend/admin/security-operations-contracts";
 import { mapAdminError } from "@/backend/admin/errors";
+import {
+  ADMIN_PANEL_CLASS,
+  AdminBadge,
+  AdminDatum,
+  AdminField,
+  AdminNotice,
+  AdminSectionHeading,
+} from "@/components/admin/AdminSurfaces";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/staff")({
@@ -21,6 +29,24 @@ export const Route = createFileRoute("/admin/staff")({
   pendingComponent: AdminFunctionalLoading,
   component: AdminStaffRootRoute,
 });
+
+/** The shortest reason the server accepts. Mirrored only so the caller can
+ *  see why a button stays disabled; the server re-validates every call. */
+const MINIMUM_REASON_LENGTH = 8;
+
+/** The directly assignable roles, in the order the console offers them.
+ *  `platform_admin` is deliberately absent: it goes through dual control. */
+const ASSIGNABLE_ROLES: readonly DirectlyAssignableAdminRole[] = [
+  "editor",
+  "publisher",
+  "content_admin",
+  "football_operator",
+  "fantasy_operator",
+  "notification_operator",
+  "support_agent",
+  "moderator",
+  "security_admin",
+];
 
 // This route has a child route ($principalId). Without this, TanStack
 // Router still matches it but never renders it: a parent route in a nested
@@ -156,6 +182,8 @@ function AdminStaffRoute() {
     }
   };
 
+  const reasonTooShort = reason.trim().length < MINIMUM_REASON_LENGTH;
+
   return (
     <AdminFunctionalRoute
       access={access}
@@ -168,179 +196,218 @@ function AdminStaffRoute() {
       testId="admin-staff-list"
     >
       {access.state === "authorized" && (
-        <>
-          <form
-            className="grid gap-3 sm:grid-cols-[1fr_auto]"
-            onSubmit={lookup}
-            data-testid="admin-user-eligibility"
-          >
-            <label className="grid gap-2 text-sm">
-              <span>{rtl ? "البريد الإلكتروني المطابق" : "E-mail exact"}</span>
-              <input
-                type="email"
-                autoComplete="off"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className={adminFieldClass}
-                required
-              />
-            </label>
-            <button className={`${adminButtonClass} self-end`} disabled={busy} type="submit">
-              {rtl ? "بحث آمن" : "Résoudre"}
-            </button>
-          </form>
+        <div className="grid gap-6">
+          <section aria-labelledby="admin-staff-lookup-heading">
+            <AdminSectionHeading id="admin-staff-lookup-heading">
+              {rtl ? "بحث مطابق" : "Recherche exacte"}
+            </AdminSectionHeading>
+            <form
+              className={`mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end ${ADMIN_PANEL_CLASS} p-4`}
+              onSubmit={lookup}
+              data-testid="admin-user-eligibility"
+            >
+              <label className="grid gap-2 text-sm">
+                <span className="text-slate-300">
+                  {rtl ? "البريد الإلكتروني المطابق" : "E-mail exact"}
+                </span>
+                {/* An address is typed and read left-to-right in both
+                    languages; the label above keeps the ambient direction. */}
+                <input
+                  type="email"
+                  autoComplete="off"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className={adminFieldClass}
+                  dir="ltr"
+                  spellCheck={false}
+                  required
+                />
+              </label>
+              <button
+                className={`${adminButtonClass} w-full sm:w-auto`}
+                disabled={busy}
+                type="submit"
+              >
+                {rtl ? "بحث آمن" : "Résoudre"}
+              </button>
+            </form>
+          </section>
 
-          {message && (
-            <p className="mt-4 text-sm text-amber-200" role="status">
-              {message}
-            </p>
+          {message && <AdminNotice testId="admin-staff-message">{message}</AdminNotice>}
+
+          {/* The server already answers this lookup with a bounded error code
+              and nothing else; the page shows that code rather than inventing
+              a sentence about whether an account exists. */}
+          {result && !result.found && (
+            <AdminNotice testId="admin-staff-unresolved">
+              {rtl ? "لا نتيجة قابلة للاستخدام" : "Aucun résultat exploitable"}
+              {" : "}
+              <AdminDatum mono className="text-xs">
+                {result.errorCode}
+              </AdminDatum>
+            </AdminNotice>
           )}
 
           {result?.found && (
-            <article className="mt-5 rounded-lg border border-slate-700 p-4">
-              <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-slate-400">E-mail</dt>
-                  <dd>{result.maskedEmail}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-400">MFA</dt>
-                  <dd>{result.mfaVerified ? "AAL2 eligible" : "required"}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-400">UUID Auth</dt>
-                  <dd className="break-all">{result.authUserId}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-400">Principal</dt>
-                  <dd>{result.staffPrincipal?.status ?? "none"}</dd>
-                </div>
-              </dl>
+            <section aria-labelledby="admin-staff-result-heading">
+              <AdminSectionHeading id="admin-staff-result-heading">
+                {rtl ? "نتيجة البحث" : "Résultat"}
+              </AdminSectionHeading>
+              <article className={`mt-3 ${ADMIN_PANEL_CLASS} p-4`} data-testid="admin-staff-result">
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  <AdminField label={rtl ? "البريد الإلكتروني" : "E-mail"}>
+                    <AdminDatum className="text-slate-100">{result.maskedEmail}</AdminDatum>
+                  </AdminField>
+                  <AdminField label="MFA">
+                    <AdminBadge tone={result.mfaVerified ? "positive" : "warning"}>
+                      <AdminDatum mono={false}>
+                        {result.mfaVerified ? "AAL2 eligible" : "required"}
+                      </AdminDatum>
+                    </AdminBadge>
+                  </AdminField>
+                  <AdminField label={rtl ? "معرّف المصادقة" : "UUID Auth"}>
+                    <AdminDatum className="text-xs text-slate-300">{result.authUserId}</AdminDatum>
+                  </AdminField>
+                  <AdminField label={rtl ? "هوية الطاقم" : "Principal"}>
+                    <AdminBadge tone={result.staffPrincipal ? "positive" : "neutral"}>
+                      <AdminDatum mono={false}>
+                        {result.staffPrincipal?.status ?? "none"}
+                      </AdminDatum>
+                    </AdminBadge>
+                  </AdminField>
+                </dl>
 
-              {!result.staffPrincipal && (
-                <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-                  <label className="grid gap-2 text-sm">
-                    <span>{rtl ? "سبب الإنشاء" : "Motif de création"}</span>
-                    <input
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                      minLength={8}
-                      maxLength={500}
-                      className={adminFieldClass}
-                      required
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className={`${adminButtonClass} self-end`}
-                    disabled={
-                      busy ||
-                      reason.trim().length < 8 ||
-                      !result.emailVerified ||
-                      !result.mfaVerified
-                    }
-                    onClick={createPrincipal}
-                    data-testid="admin-create-principal"
-                  >
-                    {rtl ? "إنشاء الهوية" : "Créer le principal"}
-                  </button>
-                </div>
-              )}
-
-              {result.staffPrincipal && (
-                <>
-                  <div
-                    className="mt-5 grid gap-3 sm:grid-cols-2"
-                    data-testid="admin-role-assignment"
-                  >
-                    <label className="grid gap-2 text-sm">
-                      <span>{rtl ? "الدور القياسي" : "Rôle standard"}</span>
-                      <select
-                        value={role}
-                        onChange={(event) =>
-                          setRole(event.target.value as DirectlyAssignableAdminRole)
+                {!result.staffPrincipal && (
+                  <div className="mt-5 border-t border-slate-800 pt-5">
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                      <label className="grid gap-2 text-sm">
+                        <span className="text-slate-300">
+                          {rtl ? "سبب الإنشاء" : "Motif de création"}
+                        </span>
+                        <input
+                          value={reason}
+                          onChange={(event) => setReason(event.target.value)}
+                          minLength={MINIMUM_REASON_LENGTH}
+                          maxLength={500}
+                          className={adminFieldClass}
+                          required
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className={`${adminButtonClass} w-full sm:w-auto`}
+                        disabled={
+                          busy || reasonTooShort || !result.emailVerified || !result.mfaVerified
                         }
-                        className={adminFieldClass}
+                        onClick={createPrincipal}
+                        data-testid="admin-create-principal"
                       >
-                        {[
-                          "editor",
-                          "publisher",
-                          "content_admin",
-                          "football_operator",
-                          "fantasy_operator",
-                          "notification_operator",
-                          "support_agent",
-                          "moderator",
-                          "security_admin",
-                        ].map((value) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid gap-2 text-sm">
-                      <span>{rtl ? "انتهاء اختياري" : "Expiration optionnelle"}</span>
-                      <input
-                        type="datetime-local"
-                        value={expiresAt}
-                        onChange={(event) => setExpiresAt(event.target.value)}
-                        className={adminFieldClass}
-                      />
-                    </label>
-                    <label className="grid gap-2 text-sm sm:col-span-2">
-                      <span>{rtl ? "السبب" : "Motif"}</span>
-                      <input
-                        value={reason}
-                        onChange={(event) => setReason(event.target.value)}
-                        minLength={8}
-                        maxLength={500}
-                        className={adminFieldClass}
-                      />
-                    </label>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      className={adminButtonClass}
-                      disabled={busy || reason.trim().length < 8}
-                      onClick={() => void assignRole()}
-                      data-testid="admin-assign-role"
-                    >
-                      {rtl ? "منح الدور القياسي" : "Affecter le rôle standard"}
-                    </button>
-                    <button
-                      type="button"
-                      className={adminButtonClass}
-                      disabled={busy || reason.trim().length < 8}
-                      onClick={() => void requestPlatformAdmin()}
-                      data-testid="admin-request-platform-admin"
-                      aria-describedby="admin-platform-request-description"
-                    >
-                      {rtl ? "طلب platform_admin" : "Demander platform_admin"}
-                    </button>
-                    <span
-                      id="admin-platform-request-description"
-                      className="sr-only"
-                      data-testid="admin-platform-request"
-                    >
+                        {rtl ? "إنشاء الهوية" : "Créer le principal"}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">
                       {rtl
-                        ? "ينشئ طلب تحكم مزدوج ولا يمنح الدور مباشرة."
-                        : "Crée une demande à double contrôle sans affecter directement le rôle."}
-                    </span>
-                    <Link
-                      to="/admin/staff/$principalId"
-                      params={{ principalId: result.staffPrincipal.staffPrincipalId }}
-                      className="inline-flex min-h-11 items-center rounded-lg border border-slate-600 px-4 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                    >
-                      {rtl ? "فتح سجل الطاقم" : "Ouvrir le dossier staff"}
-                    </Link>
+                        ? "يتطلب بريداً مؤكداً ومصادقة ثنائية مفعّلة، وثمانية أحرف على الأقل للسبب."
+                        : "Exige une adresse vérifiée, une MFA active et un motif d’au moins 8 caractères."}
+                    </p>
                   </div>
-                </>
-              )}
-            </article>
+                )}
+
+                {result.staffPrincipal && (
+                  <div className="mt-5 border-t border-slate-800 pt-5">
+                    <div className="grid gap-3 sm:grid-cols-2" data-testid="admin-role-assignment">
+                      <label className="grid gap-2 text-sm">
+                        <span className="text-slate-300">
+                          {rtl ? "الدور القياسي" : "Rôle standard"}
+                        </span>
+                        {/* Role slugs are LTR machine values. */}
+                        <select
+                          value={role}
+                          onChange={(event) =>
+                            setRole(event.target.value as DirectlyAssignableAdminRole)
+                          }
+                          className={adminFieldClass}
+                          dir="ltr"
+                        >
+                          {ASSIGNABLE_ROLES.map((value) => (
+                            <option key={value} value={value}>
+                              {value}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-2 text-sm">
+                        <span className="text-slate-300">
+                          {rtl ? "انتهاء اختياري" : "Expiration optionnelle"}
+                        </span>
+                        <input
+                          type="datetime-local"
+                          value={expiresAt}
+                          onChange={(event) => setExpiresAt(event.target.value)}
+                          className={adminFieldClass}
+                          dir="ltr"
+                        />
+                      </label>
+                      <label className="grid gap-2 text-sm sm:col-span-2">
+                        <span className="text-slate-300">{rtl ? "السبب" : "Motif"}</span>
+                        <input
+                          value={reason}
+                          onChange={(event) => setReason(event.target.value)}
+                          minLength={MINIMUM_REASON_LENGTH}
+                          maxLength={500}
+                          className={adminFieldClass}
+                          aria-describedby="admin-staff-reason-hint"
+                        />
+                      </label>
+                    </div>
+                    <p id="admin-staff-reason-hint" className="mt-2 text-xs text-slate-400">
+                      {rtl
+                        ? "ثمانية أحرف على الأقل، ويُسجَّل في التدقيق."
+                        : "8 caractères minimum, consigné dans l’audit."}
+                    </p>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      <button
+                        type="button"
+                        className={`${adminButtonClass} w-full sm:w-auto`}
+                        disabled={busy || reasonTooShort}
+                        onClick={() => void assignRole()}
+                        data-testid="admin-assign-role"
+                      >
+                        {rtl ? "منح الدور القياسي" : "Affecter le rôle standard"}
+                      </button>
+                      <button
+                        type="button"
+                        className={`${adminButtonClass} w-full sm:w-auto`}
+                        disabled={busy || reasonTooShort}
+                        onClick={() => void requestPlatformAdmin()}
+                        data-testid="admin-request-platform-admin"
+                        aria-describedby="admin-platform-request-description"
+                      >
+                        {rtl ? "طلب platform_admin" : "Demander platform_admin"}
+                      </button>
+                      <span
+                        id="admin-platform-request-description"
+                        className="sr-only"
+                        data-testid="admin-platform-request"
+                      >
+                        {rtl
+                          ? "ينشئ طلب تحكم مزدوج ولا يمنح الدور مباشرة."
+                          : "Crée une demande à double contrôle sans affecter directement le rôle."}
+                      </span>
+                      <Link
+                        to="/admin/staff/$principalId"
+                        params={{ principalId: result.staffPrincipal.staffPrincipalId }}
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-200 outline-none transition-colors hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400 sm:w-auto"
+                      >
+                        {rtl ? "فتح سجل الطاقم" : "Ouvrir le dossier staff"}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </article>
+            </section>
           )}
-        </>
+        </div>
       )}
     </AdminFunctionalRoute>
   );
