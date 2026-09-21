@@ -10,7 +10,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "bun test --path-ignore-patterns='**/legal-content.test.ts'",
+    "test": "bun test",
     "test:legal": "bun test src/content/legal/legal-content.test.ts",
     "legal:gate": "bun scripts/qa/legal-placeholder-gate.ts",
     "test:e2e": "playwright test",

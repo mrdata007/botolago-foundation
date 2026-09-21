@@ -8,11 +8,12 @@
  * registration number belongs is worse, because the sentence around it asserts
  * a registration that has not been issued.
  *
- * `src/content/legal/legal-content.test.ts` states that as a test and is
- * deliberately red. It no longer runs in `bun test`, so it cannot block
- * ordinary CI on a value nobody can supply yet -- see package.json's
- * `--path-ignore-patterns`. This script is the other half of that trade: the
- * check still exists, and it stands between the documents and production.
+ * `src/content/legal/legal-content.test.ts` states that as a test. It was
+ * briefly excluded from `bun test` while the blanks were unfillable; the blanks
+ * now carry interim wording, it passes, and it is back in the CI lane as
+ * regression cover. This script is the second line: a unit test can be deleted
+ * or skipped, and it would not notice a value that is merely stale rather than
+ * bracketed. This stands between the documents and production.
  *
  * It fails ONLY for a production build. "Production" is decided by the resolved
  * VITE_APP_URL matching the live origin, which `.env.production` already sets
