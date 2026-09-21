@@ -53,9 +53,20 @@ export function isAllowedEditorialImageUrl(url: string): boolean {
   }
 }
 
-/** The Markdown snippet an editor's inserted image is represented by. */
+/**
+ * The Markdown snippet an editor's inserted image is represented by.
+ *
+ * The alt text is flattened to a single line and the URL's parentheses are
+ * percent-encoded, because both would otherwise produce markdown this module
+ * cannot read back: `IMAGE_PATTERN` stops a URL at the first parenthesis, and
+ * a blank line inside the alt splits the literal across two blocks. In either
+ * case the next save turns the editor's image into plain text -- exactly the
+ * silent content loss this module exists to prevent.
+ */
 export function editorialImageMarkdown(url: string, altText: string): string {
-  return `![${altText.replace(/[[\]]/gu, "").trim()}](${url.trim()})`;
+  const alt = altText.replace(/[[\]]/gu, "").replace(/\s+/gu, " ").trim();
+  const href = url.trim().replace(/\(/gu, "%28").replace(/\)/gu, "%29");
+  return `![${alt}](${href})`;
 }
 
 function figureHtml(url: string, altText: string): string {
@@ -118,13 +129,32 @@ function readAttribute(tag: string, name: string): string | undefined {
   return decodeHtml(match[2] ?? match[3] ?? "");
 }
 
+const FIGCAPTION_PATTERN = /<figcaption\b[^>]*>([\s\S]*?)<\/figcaption\s*>/iu;
+
 function imageBlockToMarkdown(html: string): string {
   const tag = IMG_PATTERN.exec(html);
   IMG_PATTERN.lastIndex = 0;
   const src = tag ? readAttribute(tag[0], "src") : undefined;
-  if (!src || !isAllowedEditorialImageUrl(src)) return "";
   const alt = (tag ? readAttribute(tag[0], "alt") : undefined) ?? "";
-  return `\n\n${editorialImageMarkdown(src, alt)}\n\n`;
+
+  // Legacy content can carry a caption that says more than the alt text --
+  // this module generates the two identically, but an ingested article need
+  // not. Reading only `alt` silently deleted that sentence on the next save,
+  // so prefer whatever the reader actually sees.
+  const captionMatch = FIGCAPTION_PATTERN.exec(html);
+  const caption = captionMatch ? decodeHtml(stripTags(captionMatch[1])).trim() : "";
+  const text = caption || alt;
+
+  if (!src || !isAllowedEditorialImageUrl(src)) {
+    // The image cannot be represented, but its caption is still the author's
+    // prose. Keep it as text rather than dropping the block entirely.
+    return text ? `\n\n${text}\n\n` : "";
+  }
+  return `\n\n${editorialImageMarkdown(src, text)}\n\n`;
+}
+
+function stripTags(value: string): string {
+  return value.replace(/<[^>]*>/gu, "");
 }
 
 /**

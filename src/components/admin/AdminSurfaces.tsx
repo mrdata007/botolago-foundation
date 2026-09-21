@@ -18,8 +18,10 @@ import type { ReactNode } from "react";
  *     forces direction on the *value only*. The surrounding label keeps the
  *     ambient direction. An Arabic string is never hand-mirrored: that renders
  *     right and reads backwards to a screen reader.
- *  2. Letterforms. Uppercase micro-labels use `tracking-wide`, never
- *     `tracking-wider` -- Arabic letters join and must not be pulled apart.
+ *  2. Letterforms. Letter-spacing is applied under `ltr:` only. Arabic
+ *     letters join, so pulling them apart (`tracking-wide`) or pushing them
+ *     together (`tracking-tight`) both break the script -- the rule is no
+ *     letter-spacing on Arabic in either direction, not merely a smaller one.
  */
 
 /** Shared card surface, so every Admin panel reads as one set. */
@@ -29,9 +31,10 @@ export const ADMIN_CARD_CLASS =
 /** Inner surface, for cards nested inside an already-raised Admin panel. */
 export const ADMIN_PANEL_CLASS = "rounded-2xl border border-slate-800 bg-slate-950/40";
 
-/** Small uppercase label above a value; `tracking-wide` only, since Arabic
+/** Small uppercase label above a value. Letter-spacing is LTR-only: Arabic
  *  letterforms join and must not be spaced apart. */
-export const ADMIN_LABEL_CLASS = "text-[11px] font-semibold uppercase tracking-wide text-slate-400";
+export const ADMIN_LABEL_CLASS =
+  "text-[11px] font-semibold uppercase ltr:tracking-wide text-slate-400";
 
 /** Emerald badge tile carrying a section icon. */
 export function AdminIconTile({ icon: Icon }: { icon: LucideIcon }) {

@@ -69,7 +69,7 @@ function AdminStatePanel({
     >
       <section className={`w-full max-w-xl ${ADMIN_CARD_CLASS} p-6 sm:p-8`}>
         <AdminIconTile icon={ShieldCheck} />
-        <h1 className="mt-5 text-2xl font-semibold tracking-tight">{content.title}</h1>
+        <h1 className="mt-5 text-2xl font-semibold ltr:tracking-tight">{content.title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
         {showSignIn && (
           <Link
@@ -136,7 +136,7 @@ function AdminRoute() {
         <header className={`${ADMIN_CARD_CLASS} p-5 sm:p-6`}>
           <div className="flex items-center gap-3">
             <AdminIconTile icon={ShieldCheck} />
-            <h1 className="min-w-0 text-xl font-semibold tracking-tight sm:text-2xl">
+            <h1 className="min-w-0 text-xl font-semibold ltr:tracking-tight sm:text-2xl">
               {copy.title}
             </h1>
           </div>
@@ -231,11 +231,12 @@ function AdminRoute() {
                       >
                         <Icon className="h-4 w-4" />
                       </span>
+                      {/* No "coming soon" badge: every module listed here is
+                          shipped and linked in the nav directly above, so the
+                          badge told an admin their own working tools were
+                          unavailable. */}
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-semibold text-slate-100">{section}</h3>
-                        <span className="mt-2 inline-flex items-center rounded-full border border-slate-700 px-2 py-0.5 text-[11px] font-medium text-slate-400">
-                          {copy.labels.soon}
-                        </span>
                       </div>
                     </article>
                   );

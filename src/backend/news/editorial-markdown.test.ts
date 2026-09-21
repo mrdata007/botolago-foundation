@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { sanitizeEditorialHtml } from "./sanitizer";
 import {
   editorialHtmlToMarkdown,
   editorialImageMarkdown,
@@ -112,10 +113,17 @@ describe("editorialHtmlToMarkdown", () => {
     expect(editorialHtmlToMarkdown(html)).toBe(markdown);
   });
 
-  test("drops an image whose src is not https rather than emitting it", () => {
-    expect(
-      editorialHtmlToMarkdown('<p>Texte.</p><img src="http://evil.test/a.png" alt="x" />'),
-    ).toBe("Texte.");
+  test("never emits an image whose src is not https", () => {
+    // The alt survives as prose -- it is the author's words, and dropping the
+    // whole block silently deleted content. What must not survive is the
+    // image itself, or its rejected URL.
+    const markdown = editorialHtmlToMarkdown(
+      '<p>Texte.</p><img src="http://evil.test/a.png" alt="x" />',
+    );
+    expect(markdown).not.toContain("evil.test");
+    expect(markdown).not.toContain("](");
+    expect(markdown).toContain("Texte.");
+    expect(markdownToEditorialHtml(markdown).toLowerCase()).not.toContain("<img");
   });
 });
 
@@ -201,5 +209,56 @@ describe("attribute reading is not fooled by a prefixed attribute name", () => {
     expect(editorialHtmlToMarkdown(`<figure><img src="${REAL}" alt="Le derby" /></figure>`)).toBe(
       `![Le derby](${REAL})`,
     );
+  });
+});
+
+describe("legacy content survives a save", () => {
+  const U = "https://cdn.test/a.webp";
+
+  test("a figcaption saying more than the alt is not deleted", () => {
+    // Regression vs main: reading only `alt` dropped the caption sentence the
+    // reader actually sees. On main the figure survived verbatim, so this
+    // would have been a new way to lose an editor's prose.
+    const html = `<figure><img src="${U}" alt="Raja" /><figcaption>Le Raja celebre son but a Casablanca.</figcaption></figure>`;
+    expect(editorialHtmlToMarkdown(html)).toBe(`![Le Raja celebre son but a Casablanca.](${U})`);
+  });
+
+  test("a caption is kept as prose when the image itself cannot be represented", () => {
+    const html = `<figure><img src="http://insecure.test/a.png" alt="" /><figcaption>Une legende importante.</figcaption></figure>`;
+    expect(editorialHtmlToMarkdown(html)).toBe("Une legende importante.");
+  });
+
+  test("alt is still used when there is no figcaption", () => {
+    expect(editorialHtmlToMarkdown(`<figure><img src="${U}" alt="Le derby" /></figure>`)).toBe(
+      `![Le derby](${U})`,
+    );
+  });
+});
+
+describe("generated markdown can always be read back", () => {
+  test("a URL containing parentheses round-trips instead of becoming text", () => {
+    // The URL pattern stops at the first parenthesis, so an un-encoded paren
+    // made the image un-parseable and the next save turned it into literal
+    // text -- the exact loss this module exists to prevent.
+    const url = "https://cdn.test/File_(2024).webp";
+    const md = editorialImageMarkdown(url, "Affiche");
+    const html = markdownToEditorialHtml(md);
+    expect(html).toContain("<img");
+    expect(html).toContain("<figure>");
+    expect(editorialHtmlToMarkdown(html)).toBe(md);
+  });
+
+  test("alt text spanning a blank line is flattened, not split into two blocks", () => {
+    const md = editorialImageMarkdown("https://cdn.test/a.webp", "ligne1\n\nligne2");
+    expect(md).toBe("![ligne1 ligne2](https://cdn.test/a.webp)");
+    expect(markdownToEditorialHtml(md)).toContain("<img");
+  });
+
+  test("percent-encoded parentheses survive sanitization", () => {
+    const md = editorialImageMarkdown("https://cdn.test/File_(2024).webp", "a");
+    const clean = sanitizeEditorialHtml(markdownToEditorialHtml(md));
+    expect(clean).toContain("%28");
+    expect(clean).toContain("%29");
+    expect(clean).toContain("<img");
   });
 });
