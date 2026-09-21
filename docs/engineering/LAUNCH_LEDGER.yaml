@@ -383,6 +383,29 @@ tasks:
     state: QUEUED
     depends_on: []
 
+  BG-0071:
+    title: Player statistics (total points, form, ownership) are hardcoded to 0 on every picking screen; selected_by_count has no writer
+    area: fantasy
+    severity: P1
+    user_impact: >
+      After GW1 closes, every player list, the squad-builder picker, and the player detail
+      page still show 0 points / 0.0 form / 0.0% selected for all 539 players, all season.
+      The points exist in app.fantasy_player_gameweek_points; the UI never reads them, and
+      the ownership counter is never written. Picking is the game; the picking screens carry
+      no information.
+    owner: Chief
+    state: READY
+    depends_on: []
+    deadline: before GW2 opens (first close of GW1 ≈ 2026-09-25)
+    evidence:
+      - docs/engineering/tasks/BG-0071/engineering-brief.yaml
+      - src/services/fantasy-runtime.ts:47-49 (totalPoints/form/ownership = 0)
+      - grep selected_by_count over supabase/migrations → declared, read, never written
+    note: >
+      Not a GW1 blocker (no data exists before the first close). Lane is distinct from the
+      closed BG-0056 Fantasy regression mandate: adds two read RPCs and a mapper fix, touches
+      no lifecycle, scoring, or pricing code.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
