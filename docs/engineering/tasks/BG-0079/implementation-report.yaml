@@ -1,0 +1,199 @@
+task_id: BG-0079
+attempt: 1
+builder_type: Builder-Backend
+branch: bg-0079-pgtap-fixes
+base: origin/chief/launch-fixes-3
+commits:
+  - "BG-0079: fix four pgTAP failures from Backend quality run 468"
+
+source_of_failures:
+  ci_run: Backend quality run 468
+  run_id: "35617302393"
+  job: database-quality
+  note: >
+    All four failures below were observed, not predicted. Each was first REPRODUCED byte-for-byte
+    on a local PostgreSQL 16 cluster (see verification-report.yaml), then fixed, then re-run.
+
+objective: >
+  Make the pgTAP database suite pass without weakening any test. Two files died before emitting a
+  plan (fatal SQL errors in their fixtures), one file declared the wrong plan count although every
+  assertion passed, and one file carried an assertion that was itself wrong and flagged correct,
+  pre-existing production code.
+
+hard_rules_observed:
+  migrations_untouched: >
+    No file under supabase/migrations/ was edited, added or removed. `git diff --stat` covers
+    exactly four files, all under supabase/tests/database/. backend:migrations:check still
+    validates 72 migration(s) — the same 72 that were on the branch when this lane started.
+  no_test_weakened: >
+    No assertion was deleted, skipped or loosened. The assertion count ROSE in no file and FELL in
+    no file: 39, 38, 20 and 31 assertions run before and after, except that before the fix two of
+    those files ran ZERO assertions because they aborted. The one assertion that was rewritten
+    (team_translations #5) was proven still to catch the defect it guards — see the mutation test
+    in verification-report.yaml.
+  untouched_fenced_files: >
+    src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts, every api.service_* function,
+    scripts/backend/fantasy-season-orchestrator.ts, scripts/backend/fantasy-lifecycle-runner.ts,
+    src/backend/generated/database.types.ts and docs/engineering/LAUNCH_LEDGER.yaml were not
+    modified. The signatures and column ordering of api.fantasy_player_pool and
+    api.fantasy_league_standings were not touched.
+  production: >
+    No write was issued to the production Supabase project (tkewgajrljbwgwedqsxn). The privilege
+    facts in finding 4 were re-derived independently on the local cluster from the same migration
+    set, and they match the production values stated in the task assignment exactly.
+
+findings:
+  - id: 1
+    file: supabase/tests/database/fantasy_overall_standings.test.sql
+    ci_symptom: 'exits 3, "No plan found in TAP output"'
+    root_cause_observed: >
+      THREE stacked fatal fixture errors, each of which aborted the transaction before
+      extensions.finish() could emit a plan. Found by running the file, not by inference:
+        (a) `ERROR: invalid input value for enum app.season_status: "scheduled"` on the
+            app.seasons insert. app.season_status is (planned, active, completed, cancelled);
+            there is no 'scheduled' member.
+        (b) `ERROR: invalid input value for enum app.fantasy_season_status: "draft"` on the
+            app.fantasy_seasons insert. app.fantasy_season_status is (planned, registration_open,
+            active, completed, cancelled); there is no 'draft' member.
+        (c) `ERROR: new row for relation "fantasy_gameweeks" violates check constraint
+            "fantasy_gameweeks_finalized_check"`. That check requires a 'finalized' (or
+            'corrected') gameweek to carry a non-null finalized_at AND points_state = 'final';
+            the insert supplied neither.
+      Nobody had ever executed this file, so all three were latent together.
+    change: >
+      Fixture only. 'scheduled' -> 'planned' on the football season; 'draft' -> 'planned' on the
+      second fantasy season (which also keeps fantasy_seasons_one_active_idx satisfied); and
+      finalized_at + points_state = 'final' spelled out explicitly for both finalized gameweeks.
+      Each edit carries a comment naming the enum or constraint that forced it.
+    code_under_test_changed: false
+    result: 39 assertions, 39 ok, 0 not ok. Every assertion passed on the first run once the
+      fixture loaded, which is the evidence that api.fantasy_overall_standings itself was correct
+      all along and only its fixture was broken.
+
+  - id: 2
+    file: supabase/tests/database/fantasy_player_season_stats.test.sql
+    ci_symptom: 'exits 3, "No plan found in TAP output"'
+    root_cause_observed: >
+      TWO stacked fatal fixture errors:
+        (a) the same `invalid input value for enum app.season_status: "scheduled"` as finding 1 —
+            this is the statement CI's log pointed at ('2090/91', '2090-08-01', ...).
+        (b) `ERROR: duplicate key value violates unique constraint
+            "fantasy_gameweeks_one_current_idx"`. That index is UNIQUE on (fantasy_season_id)
+            WHERE status IN (open, locked, live, provisional, finalizing). The fixture gave
+            season A seven gameweeks with sequence 6 = 'provisional' AND sequence 7 = 'open' —
+            two rows in that set for one season, which the schema forbids.
+    change: >
+      Fixture only. 'scheduled' -> 'planned' on the football season. For the index collision,
+      sequence 7 becomes 'scheduled' instead of 'open'. Sequence 6 must stay 'provisional'
+      (assertions depend on it being reported as provisional and on six gameweeks having scored),
+      so sequence 7 is the row that has to move, and 'scheduled' is the correct status for a
+      gameweek that has not opened.
+    why_this_is_not_a_weakening: >
+      The assertion in question guards "a points row in a gameweek that has not scored is excluded
+      from the season total". api.fantasy_player_season_stats treats a gameweek as SCORED only
+      when its status is one of (provisional, finalizing, finalized, corrected) — verified by
+      reading pg_get_functiondef on the local cluster. 'open' and 'scheduled' are both outside
+      that set, so the fixture exercises the identical code path and the assertion guards the
+      identical invariant. The assertion's wording and the file's header comment were updated to
+      say "has not scored" rather than "open" so the prose matches what is actually asserted.
+    code_under_test_changed: false
+    result: 38 assertions, 38 ok, 0 not ok.
+
+  - id: 3
+    file: supabase/tests/database/football_deactivate_non_current_teams.test.sql
+    ci_symptom: '"Bad plan. You planned 10 tests but ran 20" — Tests: 20 Failed: 0'
+    root_cause_observed: >
+      The file declares extensions.no_plan(), which defers the plan line to extensions.finish().
+      pgTAP keeps its "tests run so far" counter in a TEMPORARY TABLE, and this file rolls back to
+      a savepoint five times (bg0043_happy, bg0043_count_guard, bg0043_fantasy_guard,
+      bg0043_no_current_season, bg0043_catalog) to isolate its scenarios. Each `rollback to
+      savepoint` reverts that counter along with the fixture, so by finish() pgTAP believed only
+      10 of the 20 assertions had run and emitted `1..10`. Assertion NUMBERING stayed correct
+      (ok 1 .. ok 20) because numbering comes from a sequence, which a rollback does not rewind —
+      which is exactly why the file could report 20 passing assertions under a plan of 10.
+      Confirmed by reading the raw TAP: twenty `ok` lines followed by the literal line `1..10`.
+    change: >
+      extensions.no_plan() -> extensions.plan(20), which emits `1..20` up front, before the first
+      savepoint, where no rollback can reach it. The trailing extensions.finish() was removed: with
+      an explicit plan it has no plan left to emit, and all it would still do is compare its
+      savepoint-reverted counter against the plan and print a misleading "Looks like you planned 20
+      tests but ran 10" diagnostic on a fully passing run. Both edits carry comments explaining the
+      mechanism so the next reader does not revert them.
+    assertions_deleted: 0
+    result: 20 assertions, 20 ok, 0 not ok — the same 20 assertions as before, now under a correct
+      plan.
+
+  - id: 4
+    file: supabase/tests/database/team_translations.test.sql
+    ci_symptom: '"Failed test 5: no api function names app.language_code in its argument list"'
+    root_cause_observed: >
+      TWO independent defects in one file.
+        (a) The assertion was wrong, and the code it flagged is correct. It asserted that NO api
+            function may NAME app.language_code in its argument list. Three do, and all three
+            pre-date this branch: api.complete_onboarding, api.update_my_preferences,
+            api.register_my_notification_device. Re-derived on the local cluster from the same
+            migration set: has_function_privilege('anon', f, 'execute') is FALSE for all three and
+            TRUE for 'authenticated'; has_schema_privilege('authenticated','app','usage') is TRUE
+            and has_schema_privilege('anon','app','usage') is FALSE. These match the production
+            values in the task assignment exactly.
+        (b) SEPARATELY, the file called extensions.no_plan() but never called
+            extensions.finish(), so it emitted no `1..N` line at all. Even after (a) was fixed and
+            all 31 assertions passed, pg_prove still failed the file with "No plan found in TAP
+            output". This second defect was only visible once the first was fixed.
+    trap_mechanism_verified_empirically: >
+      Rather than assume the BG-0063 trap, it was reproduced on the local cluster with a throwaway
+      api function taking an app.language_code argument, granted to all three roles, inside a
+      rolled-back transaction. A bare literal coerces fine for anon; the EXPLICIT cast that
+      PostgREST emits when it names the parameter type does not:
+        anon,          select api.probe('fr'::app.language_code)  ->  ERROR: permission denied for schema app
+        authenticated, select api.probe('fr'::app.language_code)  ->  ok
+        service_role,  select api.probe('fr'::app.language_code)  ->  ERROR: permission denied for schema app
+      So the trap is a PRIVILEGE question, not a naming question, and 'authenticated' is genuinely
+      exempt because it holds USAGE on app.
+    change: >
+      (a) The assertion now checks the privilege rather than the name: no api function that
+          'anon' may EXECUTE may name an app-schema type in its argument list. It was also
+          generalised from app.language_code alone to ANY app-schema type, which is strictly
+          stronger. A long comment above it records the three exempt functions, the four privilege
+          facts, the coercion mechanism, and an explicit request not to "re-fix" it back into a
+          name check.
+      (b) extensions.finish() added before the closing rollback, with a comment saying why
+          no_plan() makes it mandatory.
+    assertions_deleted: 0
+    result: 31 assertions, 31 ok, 0 not ok.
+
+observation_not_acted_on:
+  service_role_has_the_same_exposure: >
+    While verifying finding 4 it emerged that has_schema_privilege('service_role','app','usage')
+    is ALSO false, and the probe above shows service_role hitting the identical "permission denied
+    for schema app" on an explicit app-typed cast. Five api.service_* functions name app-schema
+    types in their argument lists (service_complete_fantasy_job, service_create_user_notification,
+    service_ingest_notification_event, service_upsert_fantasy_player_points,
+    service_upsert_notification_schedule), as do several authenticated-only functions.
+    This lane did NOT widen the assertion to cover service_role and did NOT change anything about
+    it, for two reasons: api.service_* functions are explicitly fenced off from this task, and any
+    real fix would require a new migration, which is outside this task's scope. It is recorded
+    here so the Chief can decide whether it warrants its own ticket. It is an observation about
+    privileges, not a reproduced production incident — no service_role call was made against
+    production.
+
+changes:
+  - file: supabase/tests/database/fantasy_overall_standings.test.sql
+    status: modified
+    description: Fixture corrected (two enum members, one check constraint). No assertion changed.
+  - file: supabase/tests/database/fantasy_player_season_stats.test.sql
+    status: modified
+    description: >
+      Fixture corrected (one enum member, one partial unique index). One assertion's WORDING and
+      the file header updated to say "has not scored" instead of "open"; the assertion's predicate
+      and expected value are unchanged.
+  - file: supabase/tests/database/football_deactivate_non_current_teams.test.sql
+    status: modified
+    description: no_plan() -> plan(20); trailing finish() removed. No assertion changed.
+  - file: supabase/tests/database/team_translations.test.sql
+    status: modified
+    description: >
+      Assertion 5 rewritten from a name check to an anon-executability check, and generalised to
+      any app-schema type. finish() added so the file emits a plan.
+
+migration_needed: false
