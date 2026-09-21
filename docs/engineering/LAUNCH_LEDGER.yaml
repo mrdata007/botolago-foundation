@@ -332,7 +332,7 @@ tasks:
       Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
       build the routes, link them from the consent line, and add them to the footer.
 
-  BG-0072:
+  BG-0090:
     title: LAUNCH CHIEF — PR 152 merged and verified live on botolago.com
     area: release
     severity: P0
@@ -463,6 +463,168 @@ tasks:
       Not a GW1 blocker (no data exists before the first close). Lane is distinct from the
       closed BG-0056 Fantasy regression mandate: adds two read RPCs and a mapper fix, touches
       no lifecycle, scoring, or pricing code.
+
+  BG-0072:
+    title: Lovable sync commit left one prettier/prettier error on main, so `bun run lint` fails
+    area: ci
+    severity: P1
+    owner: Chief
+    state: DONE
+    depends_on: []
+    evidence:
+      - docs/engineering/tasks/BG-0072/engineering-brief.yaml
+      - re-verified on main@f0782d6 before building -- 1 error, 15 pre-existing warnings
+    note: >
+      Lovable edits reach main without passing the repo's formatter, so formatting drift
+      arrives directly on the default branch. This entry records the fix, not a guard
+      against a recurrence.
+
+  BG-0073:
+    title: Global ranking is empty for every user all season -- /fantasy/rankings reads the largest public league and there are none
+    area: fantasy
+    severity: P0
+    owner: Builder
+    state: IN_PROGRESS
+    depends_on: []
+    branch: bg-0073-overall-standings
+    evidence:
+      - src/services/fantasy-runtime.ts:283-296 (getGlobalRankings takes the largest public league)
+      - production 2026-09-21 -- 3 fantasy leagues, 0 of them public
+      - app.fantasy_rankings already carries league_id IS NULL rows; nothing reads them
+    note: >
+      Chief re-verification added one fact the sweep finding omits: app.fantasy_rankings is
+      entirely empty today, 0 overall and 0 league rows, because GW1 has not finalized. The
+      empty state is therefore the primary path, not an edge case.
+
+  BG-0074:
+    title: Manager names render blank in league tables, rankings and the podium
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0073]
+    note: >
+      Sequenced behind BG-0073: both extend standings payloads and both edit
+      fantasy-runtime.ts.
+
+  BG-0075:
+    title: Points page shows no average, no highest, no per-player breakdown and no auto-subs
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0073]
+
+  BG-0076:
+    title: Black rectangles where article hero images should be -- every French article has no hero
+    area: news
+    severity: P1
+    owner: Builder
+    state: IN_PROGRESS
+    branch: bg-0076-article-image-fallback
+    depends_on: []
+    evidence:
+      - production 2026-09-21 -- FR 10 published editions, 10 with no hero_asset_id; AR 98, 37 with none
+
+  BG-0077:
+    title: Fantasy fields that can only ever read zero (pendingTransfers, mock-only rules payload)
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0073]
+
+  BG-0091:
+    title: News stand-down -- unpublish the ingested link-out editions and stop ingestion publishing
+    area: news
+    severity: P1
+    owner: Builder
+    state: IN_PROGRESS
+    branch: bg-0073-news-standdown
+    depends_on: []
+    evidence:
+      - owner decision 2026-09-21 -- unpublish the link-out articles and hide News for launch
+      - production -- 108 published editions, all created_by null, body_html 214-535 chars
+      - api.news_ingest_provider_article hardcodes 'published','public' on insert and re-forces it on update
+    note: >
+      The branch is named bg-0073-news-standdown because it was cut before the 2026-09-21
+      sweep reassigned BG-0073 to the global ranking defect. Same work, different id.
+    conflicts_with: >
+      Sweep task K asks the owner to enable ELBOTOLA_SCHEDULE_ENABLED and
+      GNEWS_SCHEDULE_ENABLED. That contradicts this decision. Raised to the owner;
+      HUMAN_ACTIONS marks both variables DO-NOT-ENABLE pending confirmation.
+
+  BG-0092:
+    title: Signup cannot be completed on botolago.com -- the verify screen asks for a 6-digit code that is never sent
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - live QA 2026-09-21 on https://botolago.com with two real new accounts
+      - /auth/verify renders a 6-box code input; the only mail Supabase sends is a magic link containing no digits
+      - any entered code -> 403 POST /auth/v1/verify, UI shows "Code expire"
+      - logging in instead -> 400 /auth/v1/token, UI shows "E-mail non confirme"
+    question: >
+      The product asks for an emailed OTP but the Supabase project is configured to send a
+      confirmation link. Which is intended? Switching the email template to carry
+      {{ .Token }} makes the existing UI correct; switching the UI to a link flow makes the
+      existing template correct. Both are one change; only the owner can pick.
+
+  BG-0093:
+    title: The confirmation link lands on www.botolago.app, a second deployment, so the session is created on the wrong origin
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - signup POST requests redirect_to=https://botolago.com/auth/callback, Supabase overrides it with its configured Site URL
+      - emailed link resolves 303 to https://www.botolago.app#access_token=...
+      - www.botolago.app serves a separate deployment of the same app; botolago.com stays logged out
+      - reproduced on both QA accounts
+    question: >
+      Supabase Auth Site URL must become https://botolago.com with botolago.com/** in the
+      redirect allow-list. Owner-only (Supabase dashboard). Also: should www.botolago.app
+      keep serving a second copy of the app at all?
+
+  BG-0094:
+    title: An in-progress 15-player squad lives only in localStorage and is lost on any new session or device
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - live QA -- draft persisted at localStorage['botolago.fantasy.drafts'] under "<user>::create-team"
+      - no server RPC fires while drafting; two full 15-player builds lost across sessions, reproduced twice
+
+  BG-0095:
+    title: Formation can never be changed -- substitution is locked to identical positions, contradicting the published rules
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - live QA -- cross-position sub rejected with "Ces joueurs occupent des postes differents"
+      - no formation selector exists on /fantasy/team
+      - /fantasy/rules states "Alignez 11 joueurs dans une formation valide chaque journee"
+
+  BG-0096:
+    title: /news main grid and club filter show an empty state while ten articles render directly beneath
+    area: news
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0091]
+    evidence:
+      - live QA -- both tabs and the club grid show "Aucun contenu disponible" above a populated "Les dernieres" list
+      - no 4xx/5xx and no console errors; the two regions read different sources
+    note: >
+      Largely mooted if News ships hidden (BG-0091), but the split-source defect is real and
+      returns the moment News is switched back on.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
