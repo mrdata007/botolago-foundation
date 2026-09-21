@@ -13,11 +13,13 @@
 
 import {
   emptyCounters,
+  type ExtractedFacts,
   type ItemStatus,
   type NewsEngineLanguage,
   NewsEngineError,
   type PendingItem,
   type PipelineStage,
+  type ResolvedEntities,
   type RunCounters,
   type RunStatus,
   safeFailureMessage,
@@ -89,7 +91,24 @@ export interface PipelineReport {
 
 const noopLog: PipelineLogger = () => undefined;
 
-/** Everything a stage needs, assembled once per run. */
+/**
+ * A dry run's work queue.
+ *
+ * A dry run writes nothing, so it cannot read its own queue back from the
+ * database the way a real run does. Without somewhere to hold the work, every
+ * stage after discovery would find an empty queue and a dry run would exercise
+ * only the crawler — which is exactly the part that needs verifying least.
+ * Holding the batch here lets a dry run run the whole pipeline, model calls
+ * and quality gates included, and still touch nothing.
+ */
+type QueuedItem = PendingItem & { readonly status: ItemStatus };
+
+interface DryRunState {
+  items: QueuedItem[];
+  facts: Map<string, { facts: ExtractedFacts; entities: ResolvedEntities }>;
+  clusters: Map<string, string[]>;
+}
+
 interface StageContext {
   readonly gateway: NewsEngineGateway;
   readonly model: NewsLanguageModel;
@@ -101,6 +120,35 @@ interface StageContext {
   readonly log: PipelineLogger;
   readonly failures: Array<{ stage: PipelineStage; code: string }>;
   readonly now: () => Date;
+  readonly dry: DryRunState;
+}
+
+/** Reads the queue for a stage: from the database, or from memory in a dry run. */
+async function loadItems(
+  context: StageContext,
+  status: ItemStatus,
+  claim: SourceClaim,
+  includeText = false,
+): Promise<PendingItem[]> {
+  if (context.options.dryRun) {
+    return context.dry.items
+      .filter((item) => item.status === status)
+      .slice(0, context.options.limit);
+  }
+  return context.gateway.pendingItems({
+    status,
+    limit: context.options.limit,
+    sourceSlug: claim.source.slug,
+    includeText,
+    since: context.options.since ?? null,
+    until: context.options.until ?? null,
+  });
+}
+
+function setDryStatus(context: StageContext, itemId: string, patch: Partial<QueuedItem>): void {
+  const index = context.dry.items.findIndex((item) => item.id === itemId);
+  if (index === -1) return;
+  context.dry.items[index] = { ...(context.dry.items[index] as QueuedItem), ...patch };
 }
 
 async function recordFailure(
@@ -204,6 +252,33 @@ async function runDiscovery(context: StageContext, claim: SourceClaim): Promise<
       );
 
       if (context.options.dryRun) {
+        // Queue the batch in memory so the rest of the pipeline still runs.
+        context.dry.items = result.items.slice(0, context.options.limit).map((item) => ({
+          id: `dry:${item.urlHash.slice(0, 16)}`,
+          sourceId: claim.source.id,
+          sourceSlug: claim.source.slug,
+          sourceName: claim.source.name,
+          sourceArticleId: item.sourceArticleId,
+          sourceUrl: item.sourceUrl,
+          sourceLanguage: item.sourceLanguage,
+          sourceTitle: item.sourceTitle,
+          sourcePublishedAt: item.sourcePublishedAt,
+          sourceUpdatedAt: item.sourceUpdatedAt,
+          contentHash: null,
+          etag: null,
+          lastModified: null,
+          metadata: item.metadata,
+          attemptCount: 0,
+          clusterId: null,
+          articleFetchApproved: claim.source.articleFetchApproved,
+          parserVersion: claim.source.parserVersion,
+          requestTimeoutMs: claim.source.requestTimeoutMs,
+          maxRetries: claim.source.maxRetries,
+          rateLimitPerMinute: claim.source.rateLimitPerMinute,
+          allowedMediaHosts: claim.source.allowedMediaHosts,
+          text: null,
+          status: "discovered",
+        }));
         context.counters.discovered += result.items.length;
         return { output: result.items.length, failed: 0, value: undefined };
       }
@@ -233,13 +308,7 @@ async function runDiscovery(context: StageContext, claim: SourceClaim): Promise<
 }
 
 async function runFetchAndParse(context: StageContext, claim: SourceClaim): Promise<void> {
-  const items = await context.gateway.pendingItems({
-    status: "discovered",
-    limit: context.options.limit,
-    sourceSlug: claim.source.slug,
-    since: context.options.since ?? null,
-    until: context.options.until ?? null,
-  });
+  const items = await loadItems(context, "discovered", claim);
   if (items.length === 0) return;
 
   // Reading an article page needs both the stored approval and the runtime
@@ -291,6 +360,13 @@ async function runFetchAndParse(context: StageContext, claim: SourceClaim): Prom
         const hash = contentHash({ title: parsed.title, text: parsed.text });
 
         if (context.options.dryRun) {
+          setDryStatus(context, item.id, {
+            status: "fetched",
+            text: parsed.text,
+            contentHash: hash,
+            sourceTitle: parsed.title ?? item.sourceTitle,
+            sourcePublishedAt: parsed.publishedAt ?? item.sourcePublishedAt,
+          });
           output += 1;
           context.counters.fetched += 1;
           continue;
@@ -340,12 +416,7 @@ async function runFetchAndParse(context: StageContext, claim: SourceClaim): Prom
 }
 
 async function runRelevance(context: StageContext, claim: SourceClaim): Promise<void> {
-  const items = await context.gateway.pendingItems({
-    status: "fetched",
-    limit: context.options.limit,
-    sourceSlug: claim.source.slug,
-    includeText: true,
-  });
+  const items = await loadItems(context, "fetched", claim, true);
   if (items.length === 0) return;
 
   await withStage(context, "relevance", items.length, async () => {
@@ -359,7 +430,11 @@ async function runRelevance(context: StageContext, claim: SourceClaim): Promise<
           section: (item.metadata.section as string | undefined) ?? null,
           language: item.sourceLanguage,
         });
-        if (!context.options.dryRun) {
+        if (context.options.dryRun) {
+          setDryStatus(context, item.id, {
+            status: decision.relevant ? "parsed" : "irrelevant",
+          });
+        } else {
           await context.gateway.recordRelevance({
             itemId: item.id,
             relevant: decision.relevant,
@@ -387,12 +462,7 @@ async function runExtractionAndClustering(
   claim: SourceClaim,
 ): Promise<Set<string>> {
   const clusterIds = new Set<string>();
-  const items = await context.gateway.pendingItems({
-    status: "parsed",
-    limit: context.options.limit,
-    sourceSlug: claim.source.slug,
-    includeText: true,
-  });
+  const items = await loadItems(context, "parsed", claim, true);
   if (items.length === 0) return clusterIds;
 
   await withStage(context, "extraction", items.length, async () => {
@@ -443,16 +513,26 @@ async function extractAndCluster(
   });
 
   if (context.options.dryRun) {
+    const decision = await decideCluster(context.gateway, facts, entities, [
+      ...facts.teamMentions,
+      ...facts.playerMentions,
+    ]);
+    context.dry.facts.set(item.id, { facts, entities });
+    const members = context.dry.clusters.get(decision.clusterKey) ?? [];
+    members.push(item.id);
+    context.dry.clusters.set(decision.clusterKey, members);
+    context.counters.clustered += 1;
     context.log("news_engine_dry_run_extract", {
       itemId: item.id,
       eventType: facts.eventType,
+      clusterKey: decision.clusterKey,
       teams: entities.teamIds.length,
       players: entities.playerIds.length,
       unresolved: entities.unresolved.length,
       claims: facts.claims.length,
       bestClaimStatus: facts.bestClaimStatus,
     });
-    return null;
+    return decision.clusterKey;
   }
 
   await context.gateway.recordFacts({
@@ -533,11 +613,109 @@ async function runGenerationAndPublication(
   return published;
 }
 
+/**
+ * Assembles the generation input for a dry run from what the stages held in
+ * memory, so composition and both gates run without the cluster ever existing
+ * in the database.
+ *
+ * Entity names fall back to the source's own mentions: a dry run resolves ids
+ * but does not read the catalog's display names, and the generator only needs
+ * a name to write.
+ */
+function buildDryBundle(context: StageContext, clusterKey: string): ClusterBundle {
+  const memberIds = context.dry.clusters.get(clusterKey) ?? [];
+  const members = memberIds
+    .map((id) => ({ id, entry: context.dry.facts.get(id) }))
+    .filter((member): member is { id: string; entry: NonNullable<typeof member.entry> } =>
+      Boolean(member.entry),
+    );
+  const first = members[0]?.entry;
+  const teams = new Map<string, string>();
+  const players = new Map<string, string>();
+  for (const member of members) {
+    member.entry.facts.teamMentions.forEach((mention, index) => {
+      const id = member.entry.entities.teamIds[index];
+      if (id) teams.set(id, mention);
+    });
+    member.entry.facts.playerMentions.forEach((mention, index) => {
+      const id = member.entry.entities.playerIds[index];
+      if (id) players.set(id, mention);
+    });
+  }
+
+  return {
+    cluster: {
+      id: clusterKey,
+      clusterKey,
+      eventType: first?.facts.eventType ?? "other",
+      eventDate: first?.facts.eventDate ?? null,
+      status: "clustered",
+      storyId: null,
+      bestClaimStatus: clusterClaimStatus(
+        members.map((member) => ({
+          facts: { bestClaimStatus: member.entry.facts.bestClaimStatus },
+        })),
+      ),
+      itemCount: members.length,
+      sourceCount: 1,
+      hasConflict: false,
+      conflictSummary: null,
+    },
+    competition: null,
+    teams: [...teams.entries()].map(([id, name]) => ({
+      id,
+      slug: id,
+      name,
+      shortName: name,
+      code: null,
+      aliases: [],
+    })),
+    players: [...players.entries()].map(([id, name]) => ({
+      id,
+      slug: id,
+      fullName: name,
+      displayName: name,
+      position: "unknown",
+    })),
+    items: members.map((member) => {
+      const item = context.dry.items.find((candidate) => candidate.id === member.id);
+      return {
+        itemId: member.id,
+        sourceSlug: item?.sourceSlug ?? context.options.sourceSlug,
+        sourceName: item?.sourceName ?? context.options.sourceSlug,
+        sourceKind: "publisher",
+        sourceUrl: item?.sourceUrl ?? "",
+        sourceTitle: item?.sourceTitle ?? null,
+        sourceLanguage: item?.sourceLanguage ?? "ar",
+        sourcePublishedAt: item?.sourcePublishedAt ?? null,
+        sourceText: item?.text ?? null,
+        facts: {
+          eventType: member.entry.facts.eventType,
+          eventDate: member.entry.facts.eventDate,
+          score: member.entry.facts.score,
+          claims: member.entry.facts.claims,
+          quotes: member.entry.facts.quotes,
+          unresolved: member.entry.entities.unresolved.map((mention) => ({
+            kind: mention.kind,
+            mention: mention.mention,
+          })),
+          bestClaimStatus: member.entry.facts.bestClaimStatus,
+          confidence: member.entry.facts.confidence,
+        },
+      };
+    }),
+    policy: null,
+    attempts: [],
+  };
+}
+
 async function generateCluster(
   context: StageContext,
   clusterId: string,
 ): Promise<PublishedRecord[]> {
-  const bundle = await context.gateway.clusterBundle(clusterId);
+  const bundle = context.options.dryRun
+    ? buildDryBundle(context, clusterId)
+    : await context.gateway.clusterBundle(clusterId);
   const results: PublishedRecord[] = [];
 
   const conflict = detectConflict(
@@ -751,6 +929,7 @@ export async function runPipeline(
     log,
     failures,
     now: dependencies.now ?? (() => new Date()),
+    dry: { items: [], facts: new Map(), clusters: new Map() },
   };
 
   let status: RunStatus = "succeeded";

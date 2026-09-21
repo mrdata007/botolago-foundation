@@ -141,26 +141,7 @@ select api.news_engine_resolve_entities('team', array['الوداد الرياض
 All three spellings must return the same `entityId`. If any returns null, stop:
 entity resolution is what keeps News from inventing duplicate clubs.
 
-### Step 5 — Dry run (no writes)
-
-Actions → **BotolaGO News Engine** → Run workflow:
-
-| Input        | Value             |
-| ------------ | ----------------- |
-| job          | `incremental`     |
-| confirmation | `RUN_NEWS_ENGINE` |
-| limit        | `10`              |
-| source       | `elbotola`        |
-| language     | `ar,fr`           |
-| mode         | `dry-run`         |
-
-A dry run performs every read, every fetch and every model call, and writes
-nothing. It fails with `news_engine_article_fetch_not_approved` until Step 6,
-which is the expected outcome at this point — discovery still reports what it
-found. Read the log's `news_engine_dry_run_extract` lines to see what the
-engine would have done.
-
-### Step 6 — Approve article-page reading
+### Step 5 — Approve article-page reading
 
 Reading an article page needs two independent switches. Turn on the database
 one:
@@ -196,6 +177,38 @@ What the engine does and does not do at the source, for that conversation:
   text is never returned by any public API and never becomes published copy.
 - It never mirrors or hotlinks ElBotola's photography. A declared hero URL is
   recorded in provenance metadata and goes no further.
+
+Note that the approval gate applies in a dry run too. Reading someone's pages
+without permission is not made acceptable by discarding the result, so the
+fetch stage refuses with `news_engine_article_fetch_not_approved` until this
+step is done — which is why it comes before the dry run rather than after it.
+
+### Step 6 — Dry run (no writes)
+
+Actions → **BotolaGO News Engine** → Run workflow:
+
+| Input        | Value             |
+| ------------ | ----------------- |
+| job          | `incremental`     |
+| confirmation | `RUN_NEWS_ENGINE` |
+| limit        | `10`              |
+| source       | `elbotola`        |
+| language     | `ar,fr`           |
+| mode         | `dry-run`         |
+
+A dry run performs every read, every fetch, every model call and both quality
+gates, and writes nothing — not a source item, not a cluster, not an article,
+not even a run row. It holds its batch in memory precisely so the model path
+and the gates are exercised rather than skipped.
+
+**This is the step that verifies the Anthropic integration**, which could not
+be verified during development (see
+[What was verified](#5-what-was-verified-and-how)). Do not skip it.
+
+Read the log's `news_engine_dry_run_extract` and `news_engine_dry_run_generate`
+lines: they report the event type, the resolved entity counts, the claim
+status, the similarity score and the verdict each article would have received.
+If those look right, the pipeline is behaving.
 
 ### Step 7 — First controlled batch (25 articles, review only)
 

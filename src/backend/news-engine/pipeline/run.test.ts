@@ -558,9 +558,46 @@ describe("news engine pipeline", () => {
     });
     expect(gateway.items.size).toBe(0);
     expect(gateway.publishedByKey.size).toBe(0);
+    expect(gateway.clustersByKey.size).toBe(0);
     expect(gateway.failures).toHaveLength(0);
     expect(report.runId).toBeNull();
+  });
+
+  test("a dry run still runs the whole pipeline, model calls included", async () => {
+    // A dry run that stopped after discovery would exercise only the crawler,
+    // which is the part that needs verifying least. This is what makes the
+    // pre-activation dry run a real check of the model path and the gates.
+    const gateway = new FakeGateway();
+    const model = new StubModel();
+    const report = await runPipeline(dependencies(gateway, model, stubFetch()), {
+      ...baseOptions,
+      dryRun: true,
+    });
     expect(report.counters.discovered).toBe(1);
+    expect(report.counters.fetched).toBe(1);
+    expect(report.counters.relevant).toBe(1);
+    expect(report.counters.extracted).toBe(1);
+    expect(report.counters.clustered).toBe(1);
+    expect(report.counters.generated).toBe(1);
+    // One extraction call plus one composition call.
+    expect(model.calls).toBe(2);
+    // And still nothing persisted.
+    expect(report.counters.published).toBe(0);
+    expect(gateway.publishedByKey.size).toBe(0);
+  });
+
+  test("a dry run drops an irrelevant article before spending a model call", async () => {
+    const gateway = new FakeGateway();
+    const model = new StubModel();
+    const irrelevant =
+      "The Premier League champions completed the signing of a midfielder in a record deal. ".repeat(
+        6,
+      );
+    await runPipeline(dependencies(gateway, model, stubFetch({ body: irrelevant })), {
+      ...baseOptions,
+      dryRun: true,
+    });
+    expect(model.calls).toBe(0);
   });
 
   test("refuses to read article pages when the source is not approved for it", async () => {
