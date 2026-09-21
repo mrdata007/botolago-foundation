@@ -158,6 +158,46 @@ describe("buildArticleJsonLd", () => {
   });
 });
 
+describe("the tag the router actually renders", () => {
+  /**
+   * The exact mapping @tanstack/react-router applies to a head script
+   * (headContentUtils.js): everything except `children` becomes an attribute,
+   * and the router supplies the tag name itself.
+   *
+   * Replicated here because that step is what the previous shape got wrong,
+   * and asserting on our own object could never have caught it -- the old test
+   * checked that {tag, attrs, children} contained a `tag` of "script", which it
+   * did, while the browser received `<script tag="script" attrs="[object
+   * Object]">` and ran the JSON as JavaScript.
+   */
+  const render = (script: Record<string, unknown>) => {
+    const { children, ...attrs } = script;
+    return { tag: "script", attrs, children };
+  };
+
+  it("produces a real application/ld+json script", () => {
+    const head = buildArticleHead(detail(), "article-1");
+    const tag = render(head.scripts![0] as unknown as Record<string, unknown>);
+
+    expect(tag.tag).toBe("script");
+    expect(tag.attrs).toEqual({ type: "application/ld+json" });
+    expect(JSON.stringify(tag.attrs)).not.toContain("[object Object]");
+    const parsed = JSON.parse(tag.children as string) as { "@type": string };
+    expect(parsed["@type"]).toBe("NewsArticle");
+  });
+
+  it("would have failed on the shape that shipped", () => {
+    // The regression, spelled out: the old declaration rendered these attrs.
+    const shipped = render({
+      tag: "script",
+      attrs: { type: "application/ld+json" },
+      children: "{}",
+    });
+    expect(shipped.attrs).not.toEqual({ type: "application/ld+json" });
+    expect(String((shipped.attrs as { attrs: unknown }).attrs)).toBe("[object Object]");
+  });
+});
+
 describe("serializeJsonLd", () => {
   // The router writes head-script children with dangerouslySetInnerHTML, so an
   // editor-supplied `</script>` in a headline would close the element early and
