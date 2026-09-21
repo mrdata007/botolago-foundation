@@ -157,7 +157,7 @@ rolled-back transaction (`docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §2`).
 Edit exactly one value — the parameter block near the top:
 
 ```sql
-p_gameweek_id   uuid        := '3cc19aaa-ea33-4909-845b-db33314b4071';  -- GW1 2026/27, already correct
+p_gameweek_id   uuid        := '3cc19aaa-ea33-4909-845b-db33314b4071';  -- WRONG, see 0.5
 p_first_kickoff timestamptz := '<LNFP_KICKOFF_UTC>';                    -- official first kickoff, UTC
 ```
 
@@ -180,7 +180,7 @@ roll back rather than half-applying:
 -- 1. the gameweek itself
 select sequence_number, status, deadline_at, starts_at, ends_at
 from app.fantasy_gameweeks
-where id = '3cc19aaa-ea33-4909-845b-db33314b4071';
+where id = '7fcb28c5-9b69-4591-bcda-437c6c961c5c';
 -- expect: deadline_at = your kickoff minus 90 minutes, starts_at = your kickoff
 
 -- 2. the assignments, which are what the lifecycle worker actually reads
@@ -188,7 +188,7 @@ select f.id, f.kickoff_at, a.assigned_kickoff_at,
        app_private.fantasy_kickoff_confirmed(f.kickoff_at) as confirmed
 from app.fantasy_fixture_assignments a
 join app.fixtures f on f.id = a.fixture_id
-where a.gameweek_id = '3cc19aaa-ea33-4909-845b-db33314b4071'
+where a.gameweek_id = '7fcb28c5-9b69-4591-bcda-437c6c961c5c'
   and a.superseded_at is null
 order by a.assigned_kickoff_at;
 -- expect: 8 rows, every `confirmed` true, kickoff_at = assigned_kickoff_at
@@ -316,6 +316,30 @@ provider ingest and nothing ever reconciles the complement, so a historical back
 re-activate these five, and the next relegation will recreate the problem. The durable rule is
 tracked separately (engineering brief BG-0043, option (b), to be folded into BG-0036). Re-running
 this script is the interim remedy.
+
+---
+
+### 0.5 Superseded: do NOT run fantasy-realign-gameweek-calendar.sql
+
+The manual dispatch on 2026-09-21 16:05Z changed the facts. Seven of the eight
+GW1 fixtures now carry real kickoffs (24-27 September); only FAR Rabat v Raja
+Casablanca is left, and it is `postponed` on the 00:00:00Z placeholder.
+
+`scripts/backend/fantasy-realign-gameweek-calendar.sql` must not be run now:
+
+1. Its hardcoded `p_gameweek_id` is `3cc19aaa-ea33-4909-845b-db33314b4071`.
+   **No such gameweek exists** -- GW1 is `7fcb28c5-9b69-4591-bcda-437c6c961c5c`.
+   I quoted that wrong id into 0.2 above from the script without checking it
+   against the database. It would have raised `gameweek_not_found`.
+2. Its guard rejects any live assignment whose fixture is not
+   `scheduled`/`not_started`, so the postponed fixture trips it anyway.
+3. If either guard were relaxed, its first UPDATE would rewrite **every**
+   fixture in the gameweek to the single first kickoff -- correct when all
+   eight were identical placeholders, destructive now that seven are real.
+
+Use `scripts/backend/fantasy-gw1-defer-postponed-and-realign.sql` instead. It
+touches no fixture row, defers the postponed assignment, then derives the
+window and deadline from the seven that remain.
 
 ---
 

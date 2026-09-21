@@ -703,6 +703,58 @@ tasks:
       scaffolding: it comes out when the Backend quality database job's uploaded artifact
       replaces the generated file, or backend:types:check fails for an unrelated reason.
 
+  BG-0083:
+    title: --ui-ink is used as a text colour and fails contrast in dark mode
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    blocks: [BG-0081]
+    evidence:
+      - measured in Chromium against rasterised sRGB, not parsed strings
+      - Profile h1 1.42:1; BottomNav active label 1.25:1; UiButton outline/ghost 1.25:1; UiSegmented active segment 1.25:1
+    note: >
+      --ui-ink is a dark navy in BOTH themes, so it is a fill and border token, not a
+      foreground. Fixing it means changing ui.tone.ink and two kit primitives, which
+      restyles every screen -- which is why it is its own task rather than a rider.
+
+  BG-0084:
+    title: Fantasy has no dark counterpart -- --fpl-* is light-only and the screens use literal bg-white
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    blocks: [BG-0081]
+    evidence:
+      - styles.css documents --fpl-* as a light-only reconstruction with no .dark block
+      - themed --ui-* foregrounds over un-themed light surfaces measured 1.01:1 on three Profile-adjacent Fantasy labels, and 1.09:1 on tabs
+      - docs/engineering/tasks/BG-0081/evidence/dark-fantasy-390.png
+    note: >
+      Two Fantasy labels (--fpl-cyan on white, 1.38:1) also fail in LIGHT mode, so this
+      is not purely a dark-mode defect.
+
+  BG-0085:
+    title: api.service_sync_fantasy_calendar does not supersede assignments for postponed fixtures
+    area: fantasy
+    severity: P1
+    owner: Builder-Backend
+    state: QUEUED # post-GW1 -- owner decision 2026-09-21, do not change the function now
+    depends_on: []
+    evidence:
+      - the supersede rule matches only f.status in ('cancelled','abandoned')
+      - FAR Rabat v Raja Casablanca went postponed and kept counts_points true on the 00:00:00Z placeholder
+      - that single row held unconfirmed_active at 1, so the sync took its deadline_unconfirmed branch and left GW1's deadline 22 hours early
+    note: >
+      The lifecycle lane is closed until after GW1, so this is deliberately not being
+      fixed now; GW1 is handled by a one-off operator script instead
+      (scripts/backend/fantasy-gw1-defer-postponed-and-realign.sql). The fix is to add
+      'postponed' to that rule, or better, to stop deriving a deadline from any fixture
+      that is not playable. Needs pgTAP covering: a postponed fixture is superseded, the
+      deadline recomputes from the remainder, and a fixture that un-postpones is
+      re-assigned rather than silently lost.
+
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy

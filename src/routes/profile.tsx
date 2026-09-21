@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/shell/ThemeSwitcher";
+import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
 import {
   Dialog,
   DialogContent,
@@ -488,7 +489,7 @@ function ThemeRow({ ruled = false }: { ruled?: boolean }) {
         </RowGlyph>
         <span className="[font-weight:var(--ui-weight-heavy)]">{t("theme.switch")}</span>
       </div>
-      <ThemeSwitcher className="mt-3" />
+      {DARK_MODE_ENABLED ? <ThemeSwitcher className="mt-3" /> : null}
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
+import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
 import { RotateCcw, Home } from "lucide-react";
 
 function NotFoundComponent() {
@@ -143,7 +144,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // turns every key except `children` into an attribute, and writes
     // `children` with dangerouslySetInnerHTML. A `{ tag, attrs, children }`
     // object is not what it reads and renders nothing.
-    scripts: [{ children: THEME_INIT_SCRIPT }],
+    // Gated on DARK_MODE_ENABLED: the default choice is "system", so leaving
+    // this in with the control hidden would still serve dark mode to every
+    // visitor whose OS prefers it.
+    scripts: DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : [],
   }),
   shellComponent: RootShell,
   component: RootComponent,

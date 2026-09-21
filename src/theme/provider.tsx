@@ -26,6 +26,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+
 import {
   DARK_MEDIA_QUERY,
   DEFAULT_THEME_CHOICE,
@@ -61,6 +63,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Mount: adopt the stored choice, and take the resolved theme from what the
   // inline script already wrote onto <html> rather than recomputing it.
   useEffect(() => {
+    // While dark mode is off the provider stays inert: no stored choice is
+    // adopted and nothing is written to <html>, so a browser carrying a
+    // "dark" value from a preview build still renders light.
+    if (!DARK_MODE_ENABLED) return;
     const stored = readStoredTheme();
     if (stored) setChoiceState(stored);
     setResolved(readAppliedTheme());
@@ -71,7 +77,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // disturb hydration; on the very first pass it re-asserts exactly what the
   // inline script already set, which is a no-op.
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!DARK_MODE_ENABLED || !isHydrated) return;
     const next = resolveTheme(choice, systemPrefersDark());
     applyResolvedTheme(next);
     setResolved(next);
@@ -79,7 +85,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // "System" stays live: a change to the OS theme is followed without a reload.
   useEffect(() => {
-    if (!isHydrated || choice !== "system") return;
+    if (!DARK_MODE_ENABLED || !isHydrated || choice !== "system") return;
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
     let query: MediaQueryList;
     try {
