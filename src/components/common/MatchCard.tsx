@@ -4,11 +4,12 @@ import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
 import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { cn } from "@/lib/utils";
+import { ui } from "@/components/ui-kit";
 import { MapPin } from "lucide-react";
 import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 
 /**
- * Design System V2 — Match card.
+ * Match card.
  *
  * A single, reusable match card that renders every supported match state
  * with a shared score-first structure but distinct visual identity:
@@ -22,19 +23,21 @@ import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
  *                              data — the card renders these states cleanly
  *                              when the domain expands
  *
+ * Converted to the shared UI kit (`@/components/ui-kit`): the Fantasy type
+ * scale, radii, surface and focus ring replace the glass surfaces, the ad-hoc
+ * pixel type and the hardcoded status colours. The public API is unchanged:
+ * `match / home / away / glass? / showVenue? / variant? / extras?`.
+ *
  * Behaviour:
- *   - The whole card is a router `<Link>` to `/matches/$matchId`; no data
- *     invention beyond fields already on `Match`.
- *   - RTL-safe: text alignment is logical (start / end); the physical
- *     layout stays consistent (home left, away right) which matches how
- *     match centers ship in both LTR and RTL products.
+ *   - The whole card is a router `<Link>` to `/matches/$matchId`.
+ *   - RTL-safe: logical properties only; the physical layout stays consistent
+ *     (home first, away last) which matches how match centers ship in both
+ *     LTR and RTL products.
  *   - `aria-label` composes a screen-reader-friendly announcement so
  *     adjacent numeric scores are never ambiguous.
- *   - Score uses `tabular-nums` and monospace so 0–0 and 10–2 align.
- *
- * The public API is backwards compatible with all existing callers
- * (Home + Matches routes): `match / home / away / glass? / showVenue?`.
- * New optional `variant` allows a denser presentation on Home.
+ *   - Scores use the kit's tabular figures so 0–0 and 10–2 align.
+ *   - Every `tracking-*` is `ltr:`-prefixed — Arabic letterforms join and
+ *     must never be letter-spaced (BG-0069).
  */
 
 type ExtendedStatus =
@@ -55,6 +58,9 @@ export interface MatchCardExtras {
   /** Optional penalty shootout result rendered next to the main score. */
   penaltiesScore?: { home: number; away: number };
 }
+
+/** Shared chip shell — the kit badge shape, tone supplied by the caller. */
+const chip = "inline-flex items-center px-2 py-0.5 rounded-full";
 
 export function MatchCard({
   match,
@@ -116,88 +122,83 @@ export function MatchCard({
   })();
 
   // Status chip is intentionally minimal on scheduled/finished; only "live"
-  // gets an emphatic treatment. Postponed/cancelled/delayed use a soft warn tone.
+  // gets an emphatic treatment. Postponed/cancelled/delayed use the caution
+  // token so they read the same in light and dark.
+  const cautionChip = (label: string) => (
+    <span
+      className={cn(chip, ui.text.label)}
+      style={{
+        background: "color-mix(in oklab, var(--ui-caution) 20%, transparent)",
+        color: "color-mix(in oklab, var(--ui-caution) 70%, var(--ui-on-surface))",
+      }}
+    >
+      {label}
+    </span>
+  );
+
   const statusChip = (() => {
     if (isLive) {
       return <LiveIndicator minute={match.minute} />;
     }
     if (status === "finished") {
       return (
-        <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-secondary)]">
+        <span className={cn(chip, ui.surface.sunken, ui.tone.muted, ui.text.label)}>
           {t("matches.status.ft")}
         </span>
       );
     }
     if (status === "penalties") {
       return (
-        <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--brand-primary)]">
+        <span className={cn(chip, ui.surface.sunken, ui.tone.ink, ui.text.label)}>
           {t("matches.status.penalties")}
         </span>
       );
     }
     if (isPostponed) {
-      return (
-        <span
-          className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em]"
-          style={{
-            background: "color-mix(in oklab, var(--color-warning) 14%, transparent)",
-            color: "color-mix(in oklab, var(--color-warning) 60%, black)",
-          }}
-        >
-          {status === "cancelled" ? t("matches.status.cancelled") : t("matches.status.postponed")}
-        </span>
+      return cautionChip(
+        status === "cancelled" ? t("matches.status.cancelled") : t("matches.status.postponed"),
       );
     }
     if (status === "delayed") {
-      return (
-        <span
-          className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em]"
-          style={{
-            background: "color-mix(in oklab, var(--color-warning) 14%, transparent)",
-            color: "color-mix(in oklab, var(--color-warning) 60%, black)",
-          }}
-        >
-          {t("matches.status.delayed")}
-        </span>
-      );
+      return cautionChip(t("matches.status.delayed"));
     }
     // scheduled → subtle day chip
     return (
-      <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+      <span className={cn(chip, ui.surface.sunken, ui.tone.muted, ui.text.label)}>
         {weekdayFmt}
       </span>
     );
   })();
 
-  // Center column: score or kickoff time. Score always uses tabular numerics.
+  // Center column: score or kickoff time. Score always uses tabular figures.
   const centerContent = (() => {
     if (isLive || isFinished) {
       return (
         <div className="flex flex-col items-center">
           <div
             className={cn(
-              "flex items-baseline gap-1.5 font-mono font-black tabular-nums tracking-tight text-foreground",
-              variant === "compact" ? "text-lg" : "text-[22px] sm:text-2xl",
+              "flex items-baseline gap-1.5",
+              ui.text.tabular,
+              ui.tone.default,
+              "[font-weight:var(--ui-weight-hero)]",
+              variant === "compact" ? ui.text.subtitle : ui.text.title,
             )}
           >
             <span aria-hidden>{hs}</span>
-            <span aria-hidden className="text-[color:var(--text-muted)]">
+            <span aria-hidden className={ui.tone.muted}>
               –
             </span>
             <span aria-hidden>{as}</span>
           </div>
           {status === "penalties" && extras?.penaltiesScore && (
-            <div
-              className="mt-0.5 text-[10px] font-black uppercase tabular-nums tracking-wider text-[color:var(--brand-primary)]"
-              aria-hidden
-            >
+            <div className={cn("mt-0.5", ui.text.label, ui.text.tabular, ui.tone.ink)} aria-hidden>
               {t("matches.penalty_shootout")} {extras.penaltiesScore.home}–
               {extras.penaltiesScore.away}
             </div>
           )}
           {status === "extra_time" && (
             <div
-              className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-[color:var(--color-live)]"
+              className={cn("mt-0.5", ui.text.label, "text-[color:var(--ui-negative)]")}
               aria-hidden
             >
               {t("matches.status.extra_time")}
@@ -211,7 +212,10 @@ export function MatchCard({
         <div className="flex flex-col items-center">
           <div
             className={cn(
-              "font-mono text-sm font-semibold tabular-nums text-[color:var(--text-muted)] line-through decoration-[color:var(--text-muted)]/60",
+              ui.text.meta,
+              ui.text.tabular,
+              ui.tone.muted,
+              "line-through decoration-[color:var(--ui-on-surface-muted)]",
             )}
             aria-hidden
           >
@@ -222,10 +226,7 @@ export function MatchCard({
     }
     if (unconfirmedTime) {
       return (
-        <div
-          className="max-w-24 text-center text-xs font-bold text-[color:var(--text-secondary)]"
-          aria-hidden
-        >
+        <div className={cn("max-w-24 text-center", ui.text.micro, ui.tone.muted)} aria-hidden>
           {t("matches.kickoff_unconfirmed")}
         </div>
       );
@@ -235,26 +236,30 @@ export function MatchCard({
       <div className="flex flex-col items-center">
         <div
           className={cn(
-            "font-mono font-black tabular-nums text-foreground",
-            variant === "compact" ? "text-lg" : "text-xl sm:text-[22px]",
+            ui.text.tabular,
+            ui.tone.default,
+            "[font-weight:var(--ui-weight-hero)]",
+            variant === "compact" ? ui.text.body : ui.text.subtitle,
           )}
           aria-hidden
         >
           {timeFmt}
         </div>
-        <div
-          className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]"
-          aria-hidden
-        >
+        <div className={cn(ui.text.label, ui.tone.muted)} aria-hidden>
           {t("matches.kickoff")}
         </div>
       </div>
     );
   })();
 
-  const surfaceClass = glass
-    ? "surface-2-interactive"
-    : "rounded-[var(--radius-card)] bg-card ring-1 ring-black/5";
+  // `glass` is kept in the public API for callers; both settings now resolve
+  // to the kit's opaque card. `glass` only decides whether the card carries
+  // the press feedback of a tappable tile.
+  const surfaceClass = cn(
+    ui.surface.card,
+    glass &&
+      "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  );
 
   return (
     <Link
@@ -275,20 +280,20 @@ export function MatchCard({
         // clipped away by `html, body { overflow-x: clip }` with no scroll to
         // reach it. `min-width: 0` is inert in normal flow, so it changes
         // nothing except the grid/flex track this card is allowed to demand.
-        "group block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        "group block min-w-0",
+        ui.focus,
         surfaceClass,
-        // Live cards get a very soft ambient tint on the trailing edge.
+        // Live cards get a very soft ambient tint. It is a flat wash rather
+        // than a directional gradient: CSS gradients take physical angles
+        // only, and a physical angle would sit on the wrong edge in Arabic.
         isLive && "relative overflow-hidden",
       )}
     >
       {isLive && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent 60%, color-mix(in oklab, var(--color-live) 8%, transparent) 100%)",
-          }}
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "color-mix(in oklab, var(--ui-negative) 6%, transparent)" }}
         />
       )}
 
@@ -301,7 +306,7 @@ export function MatchCard({
         {/* Top row: status chip + gameweek */}
         <div className="flex items-center justify-between gap-2">
           {statusChip}
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)] tabular-nums">
+          <span className={cn(ui.text.label, ui.text.tabular, ui.tone.muted)}>
             {t("matches.gameweek")} {match.gameweek}
           </span>
         </div>
@@ -312,8 +317,10 @@ export function MatchCard({
             <ClubCrest club={home} size="sm" />
             <span
               className={cn(
-                "truncate font-bold text-foreground",
-                variant === "compact" ? "text-[13px]" : "text-sm",
+                "truncate",
+                ui.tone.default,
+                variant === "compact" ? ui.text.meta : ui.text.body,
+                "[font-weight:var(--ui-weight-heavy)]",
               )}
             >
               {home_s}
@@ -325,8 +332,10 @@ export function MatchCard({
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <span
               className={cn(
-                "truncate text-end font-bold text-foreground",
-                variant === "compact" ? "text-[13px]" : "text-sm",
+                "truncate text-end",
+                ui.tone.default,
+                variant === "compact" ? ui.text.meta : ui.text.body,
+                "[font-weight:var(--ui-weight-heavy)]",
               )}
             >
               {away_s}
@@ -336,7 +345,7 @@ export function MatchCard({
         </div>
 
         {showVenue && (
-          <div className="flex items-center gap-1 truncate text-[10px] text-[color:var(--text-muted)]">
+          <div className={cn("flex items-center gap-1 truncate", ui.text.micro, ui.tone.muted)}>
             <MapPin className="h-3 w-3 shrink-0" aria-hidden />
             <span className="truncate">{tr(match.venue)}</span>
           </div>
