@@ -379,11 +379,19 @@ begin
   end if;
 
   -- --- edition ------------------------------------------------------------
+  -- Not-published output lands in `in_review`, never `draft`.
+  --
+  -- `api.editorial_transition_article` allows in_review -> published but NOT
+  -- draft -> published, so a generated article parked in `draft` would cost an
+  -- editor two clicks (submit, then publish) instead of one. `in_review` is
+  -- also the honest description of the state: both quality gates passed and a
+  -- human has not yet signed it off. Only a passing verdict reaches this
+  -- function, so nothing half-checked is ever presented for approval.
   if coalesce(p_publish, false) then
     target_status := 'published';
     target_visibility := 'public';
   else
-    target_status := 'draft';
+    target_status := 'in_review';
     target_visibility := 'private';
   end if;
 
@@ -434,10 +442,12 @@ begin
     where id = target_edition_id;
   end if;
 
-  -- A draft must not keep a stale `unpublished_at`-free published state; the
-  -- table's own checks cover the rest.
-  if target_status = 'draft' then
-    update app.article_editions set unpublished_at = null where id = target_edition_id and status = 'draft';
+  -- An article moved back for review must not keep a stale unpublished marker
+  -- from an earlier withdrawal; the table's own checks cover the rest.
+  if target_status = 'in_review' then
+    update app.article_editions
+    set unpublished_at = null
+    where id = target_edition_id and status = 'in_review';
   end if;
 
   -- --- football relations -------------------------------------------------

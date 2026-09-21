@@ -383,6 +383,64 @@ select extensions.throws_ok(
   'publishing with no related club, player or competition is refused'
 );
 
+-- Launch mode: the publication contract parks output for a human, and the
+-- existing editorial state machine turns that into ONE click to publish.
+reset role;
+insert into app_private.news_story_clusters (cluster_key, event_type, primary_event_date)
+values ('official_signing:pgtap-one-click-approval', 'official_signing', current_date);
+
+set local role service_role;
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+select extensions.is(
+  api.news_engine_publish_article(
+    (select id from app_private.news_story_clusters
+     where cluster_key = 'official_signing:pgtap-one-click-approval'),
+    'ar', 'pgtap-one-click-approval-ar', 'عنوان اختباري صالح للنشر',
+    null, 'ملخص اختباري صالح لهذه المقالة.',
+    '<p>' || repeat('نص المقال الاختباري. ', 40) || '</p>',
+    2, 'sanitize-html@2.17.5', null, null, 'botola-pro',
+    array['official-announcement']::text[],
+    array[(select id from app.teams where slug = 'news-engine-test-club')]::uuid[],
+    '{}'::uuid[], '{}'::uuid[], null, false, null
+  ) ->> 'status',
+  'in_review',
+  'engine output lands in in_review, never published, whatever the runner asked for'
+);
+
+reset role;
+
+select extensions.ok(
+  (select status from app.article_editions where slug = 'pgtap-one-click-approval-ar')
+    = 'in_review'::app.publication_status
+  and (select visibility from app.article_editions where slug = 'pgtap-one-click-approval-ar')
+    = 'private'::app.article_visibility,
+  'the awaiting-approval edition is not publicly visible'
+);
+
+-- The one-click property. api.editorial_transition_article permits
+-- in_review -> published but NOT draft -> published, so parking output in
+-- `draft` would cost an editor two clicks instead of one.
+select extensions.ok(
+  (select count(*)::integer from pg_proc p
+   join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'api' and p.proname = 'editorial_transition_article'
+     and p.prosrc like '%edition.status = ''in_review'' and p_target_status in (''draft'', ''scheduled'', ''published''%') = 1,
+  'in_review -> published is a single legal editorial transition'
+);
+select extensions.ok(
+  (select p.prosrc from pg_proc p
+   join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'api' and p.proname = 'editorial_transition_article')
+  not like '%edition.status = ''draft'' and p_target_status in (''in_review'', ''rejected'', ''published''%',
+  'draft -> published remains disallowed, which is why the engine does not use draft'
+);
+
+set local role service_role;
+select set_config('request.jwt.claim.role', 'service_role', true);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
 -- Generation verdicts cannot contradict their gates.
 select extensions.throws_ok(
   $$ select api.news_engine_record_generation(
@@ -496,13 +554,20 @@ select extensions.ok(
   ),
   'injury claims never auto-publish'
 );
+-- Launch mode is data, and this is the assertion that holds it in place: the
+-- engine cannot publish anything on its own until the owner deliberately
+-- flips a row.
+select extensions.is(
+  (select count(*)::integer from app_private.news_publication_policies where auto_publish),
+  0,
+  'no event type auto-publishes at launch'
+);
 select extensions.ok(
   exists (
     select 1 from app_private.news_publication_policies
-    where event_type = 'official_signing' and auto_publish
-      and minimum_claim_status = 'official'
+    where event_type = 'official_signing' and minimum_claim_status = 'official'
   ),
-  'an officially announced signing may auto-publish'
+  'the reviewed per-event policy survives launch mode for when it is turned on'
 );
 select extensions.ok(
   exists (

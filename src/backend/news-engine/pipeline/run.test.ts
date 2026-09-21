@@ -332,7 +332,9 @@ class FakeGateway implements NewsEngineGateway {
       articleId: existing?.articleId ?? this.nextId("article"),
       slug: input.slug,
       language: input.language,
-      status: input.publish ? "published" : "draft",
+      // Mirrors the contract: non-published output parks in in_review, so an
+      // editor can publish it in one transition.
+      status: input.publish ? "published" : "in_review",
       published: input.publish,
     };
     this.publishedByKey.set(key, result);
@@ -538,12 +540,31 @@ describe("news engine pipeline", () => {
     );
   });
 
-  test("review-only holds the article as a draft", async () => {
+  test("review-only parks the article for one-click approval", async () => {
     const gateway = new FakeGateway();
     const report = await runPipeline(dependencies(gateway, new StubModel(), stubFetch()), {
       ...baseOptions,
       reviewOnly: true,
       allowPublish: false,
+    });
+    expect(report.counters.published).toBe(0);
+    expect(report.counters.review).toBe(1);
+    expect(report.publishedArticles[0]?.published).toBe(false);
+  });
+
+  test("launch mode: a passing article is never auto-published", async () => {
+    // The policy row decides, not the runner. With auto_publish off — which is
+    // how every event type ships — even --publish leaves the article for a
+    // human.
+    const gateway = new FakeGateway();
+    const original = gateway.clusterBundle.bind(gateway);
+    gateway.clusterBundle = async (clusterId: string) => {
+      const bundle = await original(clusterId);
+      return { ...bundle, policy: { ...bundle.policy!, autoPublish: false } };
+    };
+    const report = await runPipeline(dependencies(gateway, new StubModel(), stubFetch()), {
+      ...baseOptions,
+      allowPublish: true,
     });
     expect(report.counters.published).toBe(0);
     expect(report.counters.review).toBe(1);

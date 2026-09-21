@@ -90,24 +90,31 @@ on conflict (taxonomy_id, language) do nothing;
 -- Publication policy
 -- ---------------------------------------------------------------------------
 --
--- Conservative on purpose. Only officially announced, unambiguous events can
--- auto-publish; everything speculative waits for a human. Volume is not the
--- objective.
+-- LAUNCH MODE: every event type ships with auto_publish = false.
+--
+-- Every generated article therefore lands in `in_review` and waits for a human
+-- to approve it in Admin. Nothing the engine produces reaches the public site
+-- on its own, whatever mode the runner is invoked in.
+--
+-- `minimum_claim_status` and `minimum_source_count` still carry the reviewed
+-- policy for each event type, and the notes say which ones are candidates for
+-- auto-publish later. Turning one on is a deliberate one-row UPDATE by the
+-- owner, recorded in docs/production/NEWS_ENGINE_GO_LIVE.md -- not a default.
 
 insert into app_private.news_publication_policies (
   event_type, minimum_claim_status, minimum_source_count, auto_publish,
   require_resolved_entities, notes
 ) values
-  ('match_result', 'official', 1, true, true,
-   'A finished match with a confirmed scoreline is a matter of record.'),
-  ('fixture_announcement', 'official', 1, true, true,
-   'Official scheduling from the competition organiser or club.'),
-  ('official_signing', 'official', 1, true, true,
-   'Club or federation has formally announced the transfer.'),
-  ('suspension', 'official', 1, true, true,
-   'Published disciplinary decision.'),
-  ('competition_announcement', 'official', 1, true, true,
-   'Official communication from FRMF, CAF or the league.'),
+  ('match_result', 'official', 1, false, true,
+   'Auto-publish candidate: a finished match with a confirmed scoreline is a matter of record.'),
+  ('fixture_announcement', 'official', 1, false, true,
+   'Auto-publish candidate: official scheduling from the competition organiser or club.'),
+  ('official_signing', 'official', 1, false, true,
+   'Auto-publish candidate: club or federation has formally announced the transfer.'),
+  ('suspension', 'official', 1, false, true,
+   'Auto-publish candidate: published disciplinary decision.'),
+  ('competition_announcement', 'official', 1, false, true,
+   'Auto-publish candidate: official communication from FRMF, CAF or the league.'),
   ('transfer_rumour', 'confirmed', 2, false, true,
    'Always reviewed. Two independent sources before it is even offered for review.'),
   ('injury', 'confirmed', 1, false, true,
