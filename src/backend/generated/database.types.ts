@@ -678,6 +678,16 @@ export type Database = {
         Args: { p_limit?: number; p_season_id: string; p_visibility?: string }
         Returns: Json
       }
+      fantasy_overall_standings: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_limit?: number
+          p_season_id: string
+        }
+        Returns: Json
+      }
       fantasy_player_pool: {
         Args: {
           p_after_id?: string

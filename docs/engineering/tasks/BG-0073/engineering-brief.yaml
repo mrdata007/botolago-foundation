@@ -1,0 +1,137 @@
+task_id: BG-0073
+title: /fantasy/rankings shows an empty board because the season-wide standings are never read
+area: fantasy
+severity: P0
+branch: bg-0073-overall-standings
+base_commit: 18474e6882aee93d442bc86b1b1986d88db34f82
+base_branch: chief/launch-fixes-3
+status: VERIFIED_AS_GIVEN
+
+finding: >
+  Re-verified against production project tkewgajrljbwgwedqsxn (read-only) before
+  building. src/services/fantasy-runtime.ts getGlobalRankings resolved the
+  "season-wide" board in cloud mode by taking the largest PUBLIC league and
+  showing its standings. Production has 3 fantasy leagues and 0 of them are
+  public, so the lookup returned undefined and the function short-circuited to
+  `{ rows: [], total: 0, podium: [], myRank: undefined }` for every caller.
+  /fantasy/rankings is a highlighted hub tile, so every user saw an empty board.
+
+  The data exists. api.service_recalculate_fantasy_rankings (migration
+  20260720163222_fantasy_ruleset_v1.sql) writes app.fantasy_rankings rows with
+  `league_id is null` for the overall scope, and scripts/backend/fantasy-lifecycle-runner.ts
+  calls `rank(null)` -- once with p_gameweek_id = <gw> and once with null --
+  before ranking any league. api.fantasy_league_standings (20260720191839)
+  reads only `league_id = <id>`. Nothing in `api` read the null-league rows.
+
+production_counts_at_build_time:
+  fantasy_seasons: 1
+  fantasy_teams: 7
+  fantasy_leagues: 3
+  public_fantasy_leagues: 0
+  fantasy_rankings_rows_total: 0
+  fantasy_rankings_rows_league_id_is_null: 0
+
+what_the_sweep_did_not_say:
+  - >
+    app.fantasy_rankings is entirely empty (0 rows of any kind) because gameweek 1
+    has not finalized. The empty page is therefore the PRIMARY case, not an edge
+    case: it is what every user gets until the first gameweek scores. The RPC
+    returns HTTP 200 with items: [], total: 0, nextCursor: null, myRank: null for
+    an existing season with no ranking rows, and never raises.
+
+display_name_finding:
+  question: is app.profiles.display_name already a public profile field?
+  answer: NO.
+  evidence:
+    - >
+      pg_policies on app.profiles in production returns exactly two rows:
+      profiles_select_own_authenticated (SELECT, {authenticated}, id = auth.uid())
+      and profiles_update_own_authenticated (UPDATE, {authenticated}, id = auth.uid()).
+      There is no anon policy and no cross-user select policy.
+    - >
+      has_table_privilege('anon','app.profiles','select') is false and
+      has_schema_privilege('anon','app','usage') is false in production.
+    - >
+      The only views in schema `api` are my_profile, my_followed_teams,
+      my_followed_competitions and my_account_deletion_requests -- all
+      owner-scoped. No public-profile view exists.
+    - >
+      GREENFIELD_MASTER_PLAN.md section 5 ("RLS model") lists "Public profile
+      fields" as "explicit filtered view only" for anon; that view has not been
+      built. "Profile private fields" for authenticated is "owner only".
+    - >
+      api.fantasy_leagues' `leaderName` is `leader.name` -- the fantasy TEAM
+      name, not a profile field. No leaderboard in this codebase has ever
+      exposed display_name.
+  decision: >
+    managerName resolves to app.profiles.display_name ONLY when auth.uid() is
+    present. Anonymous callers always get the fantasy team name. The team-name
+    fallback also covers a missing profile row, a soft-deleted profile
+    (deleted_at is not null) and a blank display_name. An anonymous caller can
+    never read a profile field through this RPC.
+  open_question_for_the_reviewer: >
+    Exposing another manager's display_name to any AUTHENTICATED caller is still
+    broader than the section 5 matrix strictly allows ("owner only" for profile
+    private fields; the public-profile view that would authorise it does not
+    exist yet). This was directed by the task brief and is implemented as
+    directed, but it is the one policy judgement in this change. If the owner
+    prefers zero profile exposure until a public-profile view exists, the change
+    is a one-line edit: drop the `caller is null` branch and always use
+    team.name.
+
+deviations_from_the_task_brief:
+  - id: default_gameweek_resolution
+    brief_said: >
+      "When p_gameweek_id is null, resolve the latest gameweek that actually has
+      overall rows (and when none does, return an empty page, not an error)."
+    built: >
+      When p_gameweek_id is null the function prefers the SEASON CUMULATIVE rows
+      (gameweek_id is null, league_id is null) and only falls back to the latest
+      gameweek that has overall rows when no cumulative row exists; when neither
+      exists it returns an empty page.
+    why: >
+      The brief also said to mirror api.fantasy_league_standings rather than
+      invent a second dialect, and that function treats a null p_gameweek_id as
+      "the cumulative board" (`ranking.gameweek_id is null`). The cumulative rows
+      are also the correct answer for a season leaderboard: they carry
+      total_points for the whole season plus gameweek_points for the gameweek the
+      ranking service last ran on. The per-gameweek fallback preserves the
+      brief's behaviour for the partially-written state where the lifecycle
+      runner has written the per-gameweek overall rows but not yet the cumulative
+      ones. Both instructions are satisfied; neither is contradicted.
+  - id: fantasy_v2_placement
+    brief_said: "src/services/fantasy-v2.ts (getOverallStandings)"
+    built: >
+      src/services/fantasy-v2.ts is only a data-mode selector and a factory that
+      hands out a FantasyRepository; it holds no per-read methods at all. The
+      read was therefore added to the FantasyRepository contract in
+      src/backend/fantasy/contracts.ts and implemented in
+      src/backend/fantasy/supabase-repository.ts, which is exactly the object
+      fantasy-v2.ts returns. No file was invented and no layer was skipped.
+  - id: rankings_route_untouched
+    brief_said: "src/routes/fantasy.rankings.tsx is untouched except for where myRank comes from"
+    built: >
+      The route is byte-for-byte untouched. myRank now comes from the server
+      because the cloud branch of getGlobalRankings drops the client-supplied
+      `me` before calling selectRankingsPage and overrides myRank with the RPC's
+      answer. Dropping `me` matters: mergeMe() would otherwise inject a synthetic
+      rank-1 row for the signed-in manager into an empty board, which would hide
+      the "rankings available after the first gameweek" empty state that this
+      task exists to restore.
+  - id: error_status_idiom
+    brief_said: "follow 20260921140000_news_article_detail_not_found_status.sql for the raise sqlstate 'PGRST' idiom"
+    built: >
+      PT400 / PT404 via `raise exception using errcode = ...`, as
+      api.fantasy_league_standings and every other fantasy RPC already do.
+      PostgREST maps a SQLSTATE beginning with 'PT' to the HTTP status in its
+      last three characters, so PT404 is already a 404 and PT400 already a 400.
+      The PGRST idiom exists for codes PostgREST has no mapping for (BG-0058 was
+      P0002 -> 500). Using PT here keeps one dialect across the fantasy surface.
+
+acceptance:
+  - api.fantasy_overall_standings exists, is stable + security definer + search_path = ''
+  - its signature names only pg_catalog types, so anon needs no USAGE on schema app
+  - "anon gets HTTP 200 with an empty item list while no gameweek has finalized"
+  - the board never contains a league row or another season's row
+  - myRank resolves for the owner of an active team and is null for anon
+  - api.fantasy_league_standings and api.fantasy_player_pool are untouched

@@ -10,6 +10,7 @@ import {
 } from "./fantasy-rankings";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  FantasyOverallStandingDto,
   FantasyPlayerDto,
   FantasyPointsDto,
   FantasyTeamDto,
@@ -100,6 +101,24 @@ function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | un
   };
 }
 
+/**
+ * The rankings board keys rows by `managerId`, which for the authoritative
+ * board is the fantasy team id — the only stable public identifier a standing
+ * carries. `managerName` is already resolved server-side (profile display name
+ * for signed-in callers, team name otherwise).
+ */
+function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
+  return {
+    managerId: dto.teamId,
+    managerName: dto.managerName,
+    teamName: dto.teamName,
+    rank: dto.rank,
+    previousRank: dto.previousRank ?? dto.rank,
+    gameweekScore: dto.gameweekPoints ?? 0,
+    totalScore: dto.totalPoints,
+  };
+}
+
 async function hub() {
   return cloud.getHub("fr", context());
 }
@@ -118,6 +137,31 @@ async function allPlayers(): Promise<FantasyPlayer[]> {
     cursor = result.nextCursor;
   }
   throw new Error("Fantasy player pool exceeded the bounded route read limit.");
+}
+
+/**
+ * BG-0073 — the season-wide board as `LeagueStanding[]`, so the existing pure
+ * `selectRankingsPage` keeps owning sort, search and paging and the rankings
+ * route needs no change.
+ *
+ * The board is read through the RPC's keyset cursor and bounded the same way
+ * the player pool is: 20 pages of 100. A season larger than that is a product
+ * decision (server-side paging on the route) rather than an unbounded read.
+ */
+async function overallBoard(
+  seasonId: string,
+): Promise<{ rows: LeagueStanding[]; myRank?: LeagueStanding }> {
+  const rows: LeagueStanding[] = [];
+  let cursor: { rank: number; teamId: string } | null = null;
+  let myRank: LeagueStanding | undefined;
+  for (let page = 0; page < 20; page += 1) {
+    const result = await cloud.getOverallStandings({ seasonId, cursor, limit: 100 }, context());
+    rows.push(...result.items.map(overallStandingDto));
+    if (result.myRank) myRank = overallStandingDto(result.myRank);
+    if (!result.nextCursor) return { rows, myRank };
+    cursor = result.nextCursor;
+  }
+  return { rows, myRank };
 }
 
 async function cloudTeam() {
@@ -280,21 +324,37 @@ export const fantasyService = {
   /**
    * Season-wide leaderboard across every fantasy team.
    *
-   * Mock mode builds a deterministic 500-manager board. Cloud mode reads the
-   * largest public league (the global board) and maps its standings; no
-   * schema change is required.
+   * Mock mode builds a deterministic 500-manager board.
+   *
+   * BG-0073: cloud mode used to take the largest PUBLIC league and show its
+   * standings. Production has no public league at all, so a highlighted hub
+   * tile rendered an empty board for every user for the whole season. It now
+   * reads api.fantasy_overall_standings, the `league_id is null` rows the
+   * ranking service already writes for exactly this board.
+   *
+   * `myRank` comes from the server, not from the client-side merge: the merge
+   * would otherwise inject a synthetic rank-1 row for the signed-in manager
+   * before any gameweek is scored, which would hide the "rankings available
+   * after the first gameweek" empty state that BG-0073 exists to restore.
    */
   async getGlobalRankings(query: RankingsQuery): Promise<RankingsPage> {
     if (mode() === "mock") {
       return selectRankingsPage(buildGlobalRankings(), query);
     }
-    const publicLeagues = await this.getLeagues("public");
-    const global = [...publicLeagues].sort((a, b) => b.members - a.members)[0];
-    if (!global) {
-      return { rows: [], total: 0, podium: [], myRank: undefined };
-    }
-    const standings = await this.getLeagueStandings(global.id);
-    return selectRankingsPage(standings, query);
+    const current = await hub();
+    const { rows, myRank } = await overallBoard(current.season.id);
+    // `me` is deliberately dropped: the authoritative board already contains
+    // the signed-in manager's row once they are ranked.
+    const page = selectRankingsPage(rows, {
+      ...query,
+      me: undefined,
+      meId: myRank?.managerId ?? query.meId,
+    });
+    // Prefer the board's own copy of the row: under the "gameweek" sort
+    // selectRankingsPage re-ranks, and `jumpToMe` pages by myRank.rank, so the
+    // two must agree. Fall back to the server answer when the row is not on the
+    // fetched board at all.
+    return { ...page, myRank: page.myRank ?? myRank };
   },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);

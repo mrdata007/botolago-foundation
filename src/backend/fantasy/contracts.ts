@@ -170,6 +170,50 @@ export const fantasyLeagueStandingPageSchema = z.object({
 });
 export type FantasyLeagueStandingPageDto = z.infer<typeof fantasyLeagueStandingPageSchema>;
 
+/**
+ * BG-0073 — one row of the season-wide (league-independent) leaderboard.
+ *
+ * `managerName` is the profile display name only for signed-in callers; the
+ * RPC falls back to the fantasy team name for anonymous callers and for teams
+ * with no readable profile, because `app.profiles.display_name` is not a
+ * public profile field. Treat it as "a name to show", never as identity.
+ */
+export const fantasyOverallStandingSchema = z.object({
+  teamId: postgresUuidSchema,
+  teamName: z.string(),
+  managerName: z.string(),
+  rank: z.coerce.number().int().positive(),
+  previousRank: z.coerce.number().int().positive().nullable(),
+  totalPoints: z.number().int(),
+  gameweekPoints: z.number().int().nullable(),
+  calculatedAt: z.string(),
+});
+export type FantasyOverallStandingDto = z.infer<typeof fantasyOverallStandingSchema>;
+
+/**
+ * Before the first gameweek finalizes there are no ranking rows at all, so the
+ * empty page (`items: []`, `total: 0`, `myRank: null`) is the normal answer and
+ * not an error — including for anonymous callers, who must get HTTP 200.
+ */
+export const fantasyOverallStandingPageSchema = z.object({
+  seasonId: postgresUuidSchema,
+  gameweekId: postgresUuidSchema.nullable(),
+  items: z.array(fantasyOverallStandingSchema),
+  nextCursor: z
+    .object({ rank: z.coerce.number().int().positive(), teamId: postgresUuidSchema })
+    .nullable(),
+  total: z.coerce.number().int().nonnegative(),
+  myRank: fantasyOverallStandingSchema.nullable(),
+});
+export type FantasyOverallStandingPageDto = z.infer<typeof fantasyOverallStandingPageSchema>;
+
+export interface FantasyOverallStandingsInput {
+  readonly seasonId: string;
+  readonly gameweekId?: string | null;
+  readonly cursor?: { readonly rank: number; readonly teamId: string } | null;
+  readonly limit?: number;
+}
+
 export const fantasyPointsSchema = z.object({
   teamId: postgresUuidSchema,
   gameweekId: postgresUuidSchema,
@@ -410,6 +454,10 @@ export interface FantasyRepository {
     gameweekId: string | null,
     context: RepositoryContext,
   ): Promise<FantasyLeagueStandingPageDto>;
+  getOverallStandings(
+    input: FantasyOverallStandingsInput,
+    context: RepositoryContext,
+  ): Promise<FantasyOverallStandingPageDto>;
   createLeague(
     seasonId: string,
     teamId: string,

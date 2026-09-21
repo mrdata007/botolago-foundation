@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   fantasyFixtureDifficultySchema,
+  fantasyOverallStandingPageSchema,
   fantasyPlayerSchema,
   fantasyTeamSchema,
   fantasyTransferPreviewSchema,
@@ -109,5 +110,73 @@ describe("Fantasy pre-activation contracts", () => {
     expect(fantasyTransferPreviewSchema.safeParse({ ...preview, transferCount: 0 }).success).toBe(
       false,
     );
+  });
+});
+
+describe("BG-0073 overall standings contract", () => {
+  const teamUuid = "c9000000-0000-4000-8000-000000000001";
+  const seasonUuid = "c6300000-0000-4000-8000-000000000001";
+
+  it("accepts the empty page every caller gets before the first gameweek scores", () => {
+    const page = fantasyOverallStandingPageSchema.parse({
+      seasonId: seasonUuid,
+      gameweekId: null,
+      items: [],
+      nextCursor: null,
+      total: 0,
+      myRank: null,
+    });
+    expect(page.items).toEqual([]);
+    expect(page.total).toBe(0);
+    expect(page.myRank).toBeNull();
+  });
+
+  it("coerces the bigint rank columns PostgREST serialises as strings", () => {
+    const page = fantasyOverallStandingPageSchema.parse({
+      seasonId: seasonUuid,
+      gameweekId: null,
+      items: [
+        {
+          teamId: teamUuid,
+          teamName: "Atlas Eleven",
+          managerName: "Atlas Eleven",
+          rank: "1",
+          previousRank: "2",
+          totalPoints: 120,
+          gameweekPoints: 60,
+          calculatedAt: "2090-01-15T13:00:00Z",
+        },
+      ],
+      nextCursor: { rank: "1", teamId: teamUuid },
+      total: "4",
+      myRank: null,
+    });
+    expect(page.items[0]?.rank).toBe(1);
+    expect(page.items[0]?.previousRank).toBe(2);
+    expect(page.nextCursor).toEqual({ rank: 1, teamId: teamUuid });
+    expect(page.total).toBe(4);
+  });
+
+  it("requires a managerName, because the RPC always falls back to the team name", () => {
+    expect(
+      fantasyOverallStandingPageSchema.safeParse({
+        seasonId: seasonUuid,
+        gameweekId: null,
+        items: [
+          {
+            teamId: teamUuid,
+            teamName: "Atlas Eleven",
+            rank: 1,
+            previousRank: null,
+            totalPoints: 120,
+            gameweekPoints: null,
+            calculatedAt: "2090-01-15T13:00:00Z",
+          },
+        ],
+        nextCursor: null,
+        total: 1,
+        myRank: null,
+      }).success,
+    ).toBe(false);
   });
 });
