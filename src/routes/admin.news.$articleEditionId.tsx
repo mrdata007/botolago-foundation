@@ -841,10 +841,16 @@ function AdminNewsEditRoute() {
                 <h1 className="text-xl font-bold text-slate-50 sm:text-2xl">{title}</h1>
                 {subtitle && <p className="mt-1 text-slate-300">{subtitle}</p>}
                 <div
-                  className="prose prose-invert mt-4 max-w-none prose-img:rounded-xl"
-                  // Preview-only render of already server-sanitized content, gated
-                  // behind editorial access (this whole route requires
+                  className="editorial-body mt-4 max-w-none"
+                  // Preview-only render of already server-sanitized content,
+                  // gated behind editorial access (this route loads on
+                  // editorial.read so a publisher can review without holding
                   // editorial.write); never reachable from a public URL.
+                  //
+                  // `editorial-body` is the same class the public article page
+                  // uses, so this preview shows what a reader will actually
+                  // get. The previous `prose` classes generated nothing --
+                  // @tailwindcss/typography is not a dependency.
                   dangerouslySetInnerHTML={{
                     __html: sanitizeEditorialHtml(markdownToEditorialHtml(bodyMarkdown)),
                   }}
