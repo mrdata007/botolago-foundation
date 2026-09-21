@@ -21,6 +21,7 @@ import {
   Bookmark,
   Trophy,
   Languages,
+  Palette,
   ChevronRight,
   KeyRound,
   ShieldCheck,
@@ -32,6 +33,7 @@ import {
   FileText,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
+import { ThemeSwitcher } from "@/components/shell/ThemeSwitcher";
 import {
   Dialog,
   DialogContent,
@@ -337,15 +339,8 @@ function AuthenticatedProfile({
             </UiBadge>
           </div>
         ))}
-        <div className={cn(ROW, ROW_RULE)}>
-          <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
-            <RowGlyph tone="ink">
-              <Languages className="h-4 w-4" />
-            </RowGlyph>
-            <span className="[font-weight:var(--ui-weight-heavy)]">{t("language.switch")}</span>
-          </div>
-          <LanguageSwitcher />
-        </div>
+        <LanguageRow ruled />
+        <ThemeRow ruled />
       </Group>
 
       {/* Account security */}
@@ -453,6 +448,59 @@ function NavRow({
       </span>
       <ChevronRight className={cn("h-4 w-4 shrink-0 rtl:rotate-180", ui.tone.muted)} aria-hidden />
     </button>
+  );
+}
+
+/**
+ * The two device preferences, as rows. They are device-scoped rather than
+ * account-scoped — they live in this browser's `localStorage` — so they belong
+ * to every visitor, signed in or not, and are rendered by all three profile
+ * states rather than only the authenticated one. A preference nobody who is
+ * signed out can reach is the defect BG-0081 was opened for.
+ */
+function LanguageRow({ ruled = false }: { ruled?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <div className={cn(ROW, ruled && ROW_RULE)}>
+      <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
+        <RowGlyph tone="ink">
+          <Languages className="h-4 w-4" />
+        </RowGlyph>
+        <span className="[font-weight:var(--ui-weight-heavy)]">{t("language.switch")}</span>
+      </div>
+      <LanguageSwitcher />
+    </div>
+  );
+}
+
+/**
+ * Appearance sits on its own stacked row rather than inline like the language
+ * row: three labelled segments ("Système" / "النظام" being the longest) do not
+ * fit beside a label at 390px in either language.
+ */
+function ThemeRow({ ruled = false }: { ruled?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <div className={cn("px-4 py-3", ui.space.row, ruled && ROW_RULE)}>
+      <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
+        <RowGlyph tone="ink">
+          <Palette className="h-4 w-4" />
+        </RowGlyph>
+        <span className="[font-weight:var(--ui-weight-heavy)]">{t("theme.switch")}</span>
+      </div>
+      <ThemeSwitcher className="mt-3" />
+    </div>
+  );
+}
+
+/** The preferences a signed-out visitor still has: language and appearance. */
+function DevicePreferences() {
+  const { t } = useI18n();
+  return (
+    <Group title={t("profile.section.preferences")}>
+      <LanguageRow />
+      <ThemeRow ruled />
+    </Group>
   );
 }
 
@@ -745,15 +793,55 @@ function GuestProfile() {
   const { t } = useI18n();
   const navigate = useNavigate();
   return (
-    <div className="mt-4 grid gap-3">
-      <UiCard padding="lg">
-        <UiBadge tone="action" className="mb-2">
-          {t("profile.guest_badge")}
-        </UiBadge>
-        <h2 className={cn(ui.text.section, ui.tone.default)}>
-          <Trans text={t("profile.guest_title")} />
+    <>
+      <div className="mt-4 grid gap-3">
+        <UiCard padding="lg">
+          <UiBadge tone="action" className="mb-2">
+            {t("profile.guest_badge")}
+          </UiBadge>
+          <h2 className={cn(ui.text.section, ui.tone.default)}>
+            <Trans text={t("profile.guest_title")} />
+          </h2>
+          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.guest_body")}</p>
+          <div className="mt-4 grid gap-2">
+            <UiButton onClick={() => navigate({ to: "/auth/register" })}>
+              <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
+            </UiButton>
+            <UiButton
+              variant="outline"
+              onClick={() => navigate({ to: "/auth/login" })}
+              className="text-[color:var(--ui-on-surface)]"
+            >
+              <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
+            </UiButton>
+          </div>
+        </UiCard>
+      </div>
+      <DevicePreferences />
+    </>
+  );
+}
+
+function AnonymousProfile() {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  return (
+    <>
+      <UiCard padding="lg" className="mt-4 text-center">
+        <div
+          className={cn(
+            "mx-auto grid h-16 w-16 place-items-center p-2",
+            ui.radius.control,
+            "text-[color:var(--ui-ink-deep)]",
+          )}
+          style={{ backgroundImage: "var(--ui-grad-action)" }}
+        >
+          <Logo variant="icon" className="!h-12 !w-12" />
+        </div>
+        <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
+          <Trans text={t("profile.anon_title")} />
         </h2>
-        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.guest_body")}</p>
+        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.anon_body")}</p>
         <div className="mt-4 grid gap-2">
           <UiButton onClick={() => navigate({ to: "/auth/register" })}>
             <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
@@ -767,41 +855,7 @@ function GuestProfile() {
           </UiButton>
         </div>
       </UiCard>
-    </div>
-  );
-}
-
-function AnonymousProfile() {
-  const { t } = useI18n();
-  const navigate = useNavigate();
-  return (
-    <UiCard padding="lg" className="mt-4 text-center">
-      <div
-        className={cn(
-          "mx-auto grid h-16 w-16 place-items-center p-2",
-          ui.radius.control,
-          "text-[color:var(--ui-ink-deep)]",
-        )}
-        style={{ backgroundImage: "var(--ui-grad-action)" }}
-      >
-        <Logo variant="icon" className="!h-12 !w-12" />
-      </div>
-      <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
-        <Trans text={t("profile.anon_title")} />
-      </h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.anon_body")}</p>
-      <div className="mt-4 grid gap-2">
-        <UiButton onClick={() => navigate({ to: "/auth/register" })}>
-          <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
-        </UiButton>
-        <UiButton
-          variant="outline"
-          onClick={() => navigate({ to: "/auth/login" })}
-          className="text-[color:var(--ui-on-surface)]"
-        >
-          <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
-        </UiButton>
-      </div>
-    </UiCard>
+      <DevicePreferences />
+    </>
   );
 }

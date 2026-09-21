@@ -19,6 +19,8 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
+import { ThemeProvider } from "@/theme/provider";
+import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { RotateCcw, Home } from "lucide-react";
 
 function NotFoundComponent() {
@@ -132,6 +134,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
     ],
+    // BG-0081. The dark palette is keyed on a `.dark` class on <html>, and the
+    // class has to be there BEFORE the first paint or the page flashes light
+    // and then swaps. An effect runs after paint, so this is a tiny synchronous
+    // inline script in the head instead.
+    //
+    // Head scripts are declared FLAT: the router builds the <script> element,
+    // turns every key except `children` into an attribute, and writes
+    // `children` with dangerouslySetInnerHTML. A `{ tag, attrs, children }`
+    // object is not what it reads and renders nothing.
+    scripts: [{ children: THEME_INIT_SCRIPT }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -140,8 +152,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // `suppressHydrationWarning` on <html>: the inline theme script (BG-0081)
+  // adds the `.dark` class and a `color-scheme` style to this element before
+  // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`.
+  // Both are deliberate out-of-band writes to the document element, not drift.
   return (
-    <html lang="fr" dir="ltr">
+    <html lang="fr" dir="ltr" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -158,14 +174,16 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <AuthProvider>
-          <FantasyOwnedProvider>
-            <LaunchGate />
-            <AuthPromptDialog />
-            <AuthModeBadge />
-            <Toaster />
-          </FantasyOwnedProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <FantasyOwnedProvider>
+              <LaunchGate />
+              <AuthPromptDialog />
+              <AuthModeBadge />
+              <Toaster />
+            </FantasyOwnedProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   );

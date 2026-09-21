@@ -14,6 +14,12 @@ export const dictionaries = {
     "language.continue": "Continuer",
     "language.switch": "Langue",
 
+    /* BG-0081 — appearance (Light / Dark / System). */
+    "theme.switch": "Apparence",
+    "theme.light": "Clair",
+    "theme.dark": "Sombre",
+    "theme.system": "Système",
+
     "nav.home": "Accueil",
     "nav.primary": "Navigation principale",
     "nav.news": "Actualités",
@@ -1219,6 +1225,12 @@ export const dictionaries = {
     "language.arabic": "العربية",
     "language.continue": "متابعة",
     "language.switch": "اللغة",
+
+    /* BG-0081 — appearance (Light / Dark / System). */
+    "theme.switch": "المظهر",
+    "theme.light": "فاتح",
+    "theme.dark": "داكن",
+    "theme.system": "النظام",
 
     "nav.home": "الرئيسية",
     "nav.primary": "التنقل الرئيسي",
