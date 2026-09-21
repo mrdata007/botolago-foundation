@@ -43,38 +43,6 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.data;
 }
 
-/**
- * BG-0071 — `src/backend/generated/database.types.ts` carries a "do not edit by
- * hand" header and CI compares it byte-for-byte against `supabase gen types`
- * run over a live local database. Regenerating it needs Docker, which this
- * lane does not have, so the two statistics RPCs shipped by
- * `20260921160000_fantasy_player_statistics.sql` are not yet in the generated
- * `Functions` union and `getFantasyApi().rpc("fantasy_player_season_stats", …)`
- * would not compile.
- *
- * Rather than hand-write into a generated file — which would be a byte-for-byte
- * CI failure of its own, and a lie about the file's provenance — these two
- * calls go through one narrowly-scoped structural view of `rpc`. The payloads
- * are still validated by zod exactly like every other read on this class, so
- * nothing untyped escapes this function. It can be deleted, and the two callers
- * switched back to `getFantasyApi().rpc(…)`, in the commit that lands CI's
- * regenerated types.
- */
-async function rpcAwaitingGeneratedTypes(
-  name: string,
-  args: Record<string, unknown>,
-): Promise<unknown> {
-  const client = getFantasyApi() as unknown as {
-    rpc(
-      fn: string,
-      params: Record<string, unknown>,
-    ): PromiseLike<{ data: unknown; error: PostgrestError | null }>;
-  };
-  const { data, error } = await client.rpc(name, args);
-  check(error);
-  return data;
-}
-
 export class SupabaseFantasyRepository implements FantasyRepository {
   async getHub(language: "fr" | "ar", _context: RepositoryContext) {
     const { data, error } = await getFantasyApi().rpc("fantasy_hub", { p_language: language });
@@ -408,18 +376,20 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     throughGameweekId: string | null,
     _context: RepositoryContext,
   ) {
-    const data = await rpcAwaitingGeneratedTypes("fantasy_player_season_stats", {
+    const { data, error } = await getFantasyApi().rpc("fantasy_player_season_stats", {
       p_season_id: seasonId,
       p_through_gameweek_id: throughGameweekId ?? undefined,
     });
+    check(error);
     return parse(fantasyPlayerSeasonStatsSchema, data);
   }
 
   /** BG-0071 — one entry per gameweek this player has a points row for. */
   async getPlayerGameweekHistory(fantasyPlayerId: string, _context: RepositoryContext) {
-    const data = await rpcAwaitingGeneratedTypes("fantasy_player_gameweek_history", {
+    const { data, error } = await getFantasyApi().rpc("fantasy_player_gameweek_history", {
       p_fantasy_player_id: fantasyPlayerId,
     });
+    check(error);
     return parse(fantasyPlayerGameweekHistorySchema, data);
   }
 }
