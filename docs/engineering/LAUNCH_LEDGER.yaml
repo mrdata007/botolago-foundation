@@ -1089,8 +1089,10 @@ tasks:
     area: design
     severity: P1
     owner: Chief
-    state: BLOCKED # on BG-0092, BG-0093, BG-0095, BG-0111 landing
-    depends_on: [BG-0092, BG-0093, BG-0095, BG-0111]
+    # Was "BLOCKED on BG-0092, BG-0093, BG-0095, BG-0111" -- those are branch names, and
+    # every one of them collides with an unrelated entry in this ledger. See BG-0117.
+    state: BLOCKED # on the two lanes still running, BG-0121 and BG-0122
+    depends_on: [BG-0118, BG-0119, BG-0120, BG-0121, BG-0122]
     evidence:
       - docs/engineering/POLISH_PASS_PLAN.md
     note: >
@@ -1107,13 +1109,186 @@ tasks:
       - six radii where the standard allows two, the largest single visual change in the pass
       - four shadow tokens where the standard allows one, and --ui-shadow-raised is 0 -1px 0, a top hairline misnamed as a shadow
       - the third surface is "sunken", not "raised", so the page/card/raised hierarchy is not expressible today
-      - prefers-reduced-motion appears exactly once in the stylesheet; no duration tokens exist
       - no Arabic-specific size or line-height adjustment, so equal px does not mean equal visual weight between the two scripts
       - tabular figures set in two places, one of which is a comment
     already_satisfied:
       - the three-level ink ramp exists and all 46 kit colour pairs measured >=4.5:1 in BG-0091
       - physical-direction utilities are at zero across src/, and Arabic letter-spacing was neutralised in BG-0069
       - UiStatePanel, UiEmptyState, UiErrorState and UiSkeleton already exist -- the state work is adoption, not construction
+      - >
+        motion is already tokenised and already governed. Five durations
+        (--duration-tap 120ms, -quick 180ms, -route 260ms, -sheet 320ms, -hero
+        420ms) and three easings exist at styles.css:188-196, and the single
+        prefers-reduced-motion block at styles.css:724 is a blanket
+        `*, *::before, *::after` rule with !important on animation-duration,
+        transition-duration, iteration-count and scroll-behavior, plus explicit
+        kills for .mesh-drift and .shimmer. Corrects an earlier finding in this
+        entry that read the ONE occurrence as thin coverage; one blanket rule
+        covering every element is the strongest form, not the weakest. The
+        remaining motion work is auditing which components honour the tokens
+        rather than hardcoding a duration, not building the layer.
+
+  BG-0114:
+    title: UiBadge tinted tones fail AA on their own fill
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - BG-0093 measured negative 4.07:1 and positive 3.96:1 from rasterised sRGB, not computed from oklch
+      - BG-0091 verified 46 kit colour pairs at >=4.5:1, but measured each tone against --ui-surface, not against its own tinted fill
+    note: >
+      `--ui-negative` and `--ui-positive` clear 4.5:1 as TEXT on `--ui-surface`, which is
+      what the BG-0091 contract test asserts and what the token comment claims. UiBadge
+      does something the contract never covered: it paints a tint of the same token as the
+      badge's background and then puts the full-strength token on top of it. Foreground and
+      background are now two points on one hue ramp, and the pair lands at 4.07:1 and
+      3.96:1. The squad lane worked around it locally rather than changing the kit
+      mid-flight. Fix belongs in the polish pass at kit level, and the contract test needs
+      a second assertion: every tone measured against the fill it is actually drawn on, not
+      only against the page surface.
+
+  BG-0115:
+    title: Three kit gaps the squad lane hit and worked around
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - no type-ramp step fits a 56px numeric column head at 390px; --ui-text-label (12px) overflows, --ui-text-micro (11px) is the nav-label step and reads as a different register
+      - UiSelect does not fit three abreast at 390px, which is what a position/price/club filter row needs
+      - the picker had to cut three numeric columns to one to fit full Botola club names at 390px
+    note: >
+      Each of these is the same shape: 390px is the design width, and the kit has no step
+      that fits it, so the screen either truncates or drops information. The squad lane
+      solved all three by removing content, which is right for that lane and wrong as a
+      permanent answer. The polish pass owns the real fix -- a label step sized for dense
+      column heads, and a compact UiSelect variant -- because both are type-scale and
+      component decisions, not screen decisions.
+
+  BG-0116:
+    title: Four Fantasy components still render wrong in dark mode
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - BG-0093 reported FplStatBar, FplPlayerCard, FplPitch and primitives.tsx as still wrong in dark while rendering its own screens
+      - DARK_MODE_ENABLED is false in src/lib/feature-flags.ts, so none of this is reachable by a user at launch
+    note: >
+      Not a launch blocker and deliberately not treated as one: the dark theme is behind
+      DARK_MODE_ENABLED=false, which stays false until BG-0083 and BG-0084 are resolved, so
+      no user can reach these four components in dark. Recorded now because the lane that
+      found them does not own them and the finding would otherwise be lost. These four are
+      the remaining `--fpl-*` holdouts that BG-0091 converted to an alias layer but did not
+      convert call site by call site -- they draw colours that have no dark counterpart.
+      Clearing them is part of what makes the flag flippable.
+
+  BG-0117:
+    title: "V2 design migration: id collision between the lane branches and this ledger"
+    area: process
+    severity: P2
+    owner: Chief
+    state: DONE # recorded 2026-09-21; the six lanes now have real ids, BG-0118..BG-0122
+    depends_on: []
+    evidence:
+      - "branch bg-0091-foundation, commit 81b7759 \"BG-0091: one design system\" -- BG-0091 here is the News stand-down"
+      - "branch bg-0093-squad-picker, commit 85cc87d \"BG-0093: rebuild the player picker\" -- BG-0093 here is an auth P0 the owner resolved"
+      - "branch bg-0094-pitch-team-points, commit 2d0dc0e \"BG-0094: one pitch, a readable Points screen\" -- BG-0094 here is the localStorage squad defect"
+      - bg-0092-fantasy-shell and bg-0095-leagues-players collide the same way; bg-0111-launch-polish names an id that never existed
+    note: >
+      The six design-migration lanes were branched with ids BG-0091..BG-0095 and BG-0111,
+      every one of which was either already taken by an unrelated entry or never allocated.
+      A reader grepping BG-0093 finds an auth P0 and a player-picker rebuild and cannot tell
+      which the commit meant. The commits are pushed and this repository syncs to Lovable,
+      so rewriting those messages is not available and would not be worth it if it were.
+      Resolved forward instead: the six lanes get BG-0118..BG-0122 below, each recording the
+      branch and commit that actually carries it, and this entry stands as the map between
+      the two numbering schemes. Allocate from this ledger before naming a branch, not after.
+
+  BG-0118:
+    title: "V2 design migration lane: foundation -- one token layer, themed ink, --fpl-* as an alias layer"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 81b7759, merged into chief/launch-fixes-3 at 38d9430
+    depends_on: []
+    branch: bg-0091-foundation # NOT ledger BG-0091, which is the News stand-down; see BG-0117
+    evidence:
+      - 46 kit colour pairs measured >=4.5:1
+      - "--fpl-* reduced to aliases of --ui-*; ui-kit.contract.test.ts fails if one carries a literal colour again"
+      - UiStatePanel, UiEmptyState, UiErrorState, UiSkeleton added
+    note: >
+      Fixed BG-0083 (--ui-ink used as a foreground, 1.25:1 in dark) by splitting the fill
+      colour from --ui-ink-fg. Left one known gap: UiSegmented tone="onGradient" idle tabs
+      measure 4.28:1 and 4.38:1 in dark, and BG-0114 records a second the contract test did
+      not cover at all.
+
+  BG-0119:
+    title: "V2 design migration lane: squad builder, player picker, transfers"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 85cc87d, merged into chief/launch-fixes-3 at 141f5ee
+    depends_on: [BG-0118]
+    branch: bg-0093-squad-picker # NOT ledger BG-0093, which is an auth P0; see BG-0117
+    evidence:
+      - divergence across the eight owned files 19/18/17/14/11/10/7/0 -> 0 each
+      - "club limit: after three Wydad picks all 8 WAC rows render disabled before any interaction; the rule still lives in the route, the picker only reads it"
+      - "position filter: an imposed position renders a locked pill, not a select the screen is overruling"
+      - PlayerPickerDrawer deleted as a second, worse picker -- no bank, no club limit, an untranslated shadcn Close, and a physical side computed by the caller
+      - 390/430/768/1440 x fr/ar x light/dark on real player data, contrast measured from rasterised sRGB
+      - 1437 pass / 0 fail -- 1438 minus the loop iteration for the deleted file
+    note: >
+      The reported position-filter symptom did not reproduce on this base and the lane said
+      so rather than claiming the fix. What reproduced was the same contradiction one step
+      out, and that is what was fixed. Raised BG-0114, BG-0115 and BG-0116.
+
+  BG-0120:
+    title: "V2 design migration lane: pitch, My Team, Points"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 2d0dc0e, merged into chief/launch-fixes-3 at 7bbbc5a
+    depends_on: [BG-0118]
+    branch: bg-0094-pitch-team-points # NOT ledger BG-0094, the localStorage squad defect; see BG-0117
+    evidence:
+      - one pitch component where there were two
+      - /fantasy/points states scoring settledness, the effective captain and multiplier, bench total, transfer hit and active chip
+      - nine written-but-uncalled keys gained their first call site, W3 262 -> 253
+    note: >
+      Also removed the zeros that meant "unknown" -- a points screen that renders 0 for a
+      gameweek it has no data for is stating a score that was never computed.
+
+  BG-0121:
+    title: "V2 design migration lane: leagues, rankings, fixtures, players"
+    area: design
+    severity: P1
+    owner: Chief
+    state: IN_PROGRESS
+    depends_on: [BG-0118]
+    branch: bg-0095-leagues-players # NOT ledger BG-0095, the formation-lock defect; see BG-0117
+    evidence: []
+    note: Running at the time of writing.
+
+  BG-0122:
+    title: "Launch polish batch: the ten UI defects raised against the live site"
+    area: design
+    severity: P1
+    owner: Chief
+    state: IN_PROGRESS
+    depends_on: []
+    branch: bg-0111-launch-polish # BG-0111 was never allocated in this ledger; see BG-0117
+    evidence: []
+    note: >
+      Desktop centring, dir="auto" on Latin names in Arabic tables, Home stat-tile clipping
+      at 390px, /matches tab overflow, fr "Deadline" -> "Date limite" and "Wildcard" ->
+      "Joker", rendering only OAuth providers actually enabled, removing the Apparence row
+      while DARK_MODE_ENABLED is false, the Triple Capitaine chip, and the pitch fixture
+      plate's missing opponent code. Running at the time of writing.
 
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6

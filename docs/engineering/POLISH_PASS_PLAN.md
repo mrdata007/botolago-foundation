@@ -101,11 +101,40 @@ No token-level gap identified yet. Needs a sweep for Lucide stroke width,
 optical sizing against the type scale, and the four states (default, hover,
 pressed, focus-visible, disabled) on every interactive primitive.
 
-### 8. Motion — thin
+### 8. Motion — already built (corrects an earlier reading of this audit)
 
-`prefers-reduced-motion` appears **once** in the entire stylesheet. The standard
-requires it to govern every entrance, press and page-mount animation. Duration
-tokens (120ms press, 150–250ms entrance) do not exist.
+An earlier draft of this document counted `prefers-reduced-motion` **once** in
+the stylesheet and read that as thin coverage. That was the wrong inference. The
+single occurrence, at `src/styles.css:724`, is a blanket rule:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .mesh-drift { animation: none !important; }
+  .shimmer { animation: none !important; background-image: none !important; }
+}
+```
+
+One rule matching every element and both pseudo-elements, with `!important`, is
+the strongest form of this, not the weakest — it governs every entrance, press
+and page-mount animation in the product including ones not yet written, and the
+two named kills handle the decorative loops `!important` alone would only speed
+up. Counting occurrences was the wrong measure.
+
+Duration tokens exist too, at `src/styles.css:188-196`: `--duration-tap` 120ms,
+`--duration-quick` 180ms, `--duration-route` 260ms, `--duration-sheet` 320ms,
+`--duration-hero` 420ms, with `--ease-standard`, `--ease-emphasized` and
+`--ease-decelerate`. The press timing the standard asks for (120ms) is exactly
+`--duration-tap`, and entrance (150–250ms) is `--duration-quick`.
+
+The remaining work here is adoption, not construction: sweep for components that
+hardcode a duration or easing instead of drawing from these, which is a screen
+pass, not a token one.
 
 ### 9. Designed states — already built
 
@@ -129,8 +158,9 @@ points, price and rank column in the product needs it.
 ## Order of work, once unblocked
 
 1. **Tokens** — the type scale (line-height, tracking, a normal weight), the
-   radius consolidation, one shadow, the raised surface, motion durations, the
-   Arabic size/line-height pair, tabular figures as a token.
+   radius consolidation, one shadow, the raised surface, the Arabic
+   size/line-height pair, tabular figures as a token. Motion is not on this
+   list; see §8.
 2. **Kit primitives** — adopt the new tokens; add whatever the screen work
    reveals as missing rather than letting route files grow class lists.
 3. **Screens** — only what tokens and primitives cannot reach.
