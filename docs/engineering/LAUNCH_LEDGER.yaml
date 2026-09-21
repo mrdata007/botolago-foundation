@@ -18,8 +18,6 @@ human_actions_open:
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
   - id: BG-0065
     action: Decide the French content plan — the newest French article is ~8 weeks old while Arabic is current. Enable a French ingestion source, publish French editions, or accept a lagging French rail.
-  - id: BG-0066
-    action: "Upgrade the Lovable workspace plan (Ali's Lovable, currently free) so the attribution badge is dropped at source. Owner-only: no billing, plan or badge control exists in the Lovable MCP surface. The Vercel cutover in docs/engineering/VERCEL_CUTOVER.md is kept as the fallback route, not the plan of record.
   - id: BG-0067
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
 
@@ -286,8 +284,8 @@ tasks:
       lower ~47% of the Matches and Profil bottom-nav tabs at 390px and hides both labels, and
       overlays the register CTA on /auth/login and /auth/register. Centre taps still navigate, so
       the nav is degraded rather than blocked.
-    owner: Human (plan)
-    state: HALTED_FOR_INPUT
+    owner: Human (plan) + Chief (republish)
+    state: DONE
     depends_on: []
     detail: >
       The badge is not in this repository. It is injected by Lovable's hosting, and workspace
@@ -300,6 +298,16 @@ tasks:
     human_action_required: >
       Either upgrade the Lovable workspace plan so the badge is removed at source, or accept it
       and say so, in which case the Chief will reposition the bottom nav to sit clear of it.
+    resolution: >
+      Owner upgraded the workspace to pro at 2026-09-21T12:38Z. That alone did NOT remove the
+      badge -- it was baked into the published output rather than decided per request, so it
+      survived the upgrade until a republish. Chief redeployed as
+      1f964e3e-7f86-4fa9-8026-fb878aa30f01 and it cleared about 160 seconds later. Upgrade, then
+      republish; the second half is not optional.
+    verification: >
+      botolago.com fetched with a cache-busting query and no-cache -- badge element, CSS block,
+      link and "Made with" text all absent, zero occurrences of the string "lovable" anywhere in
+      the HTML, page down from 48680 to 39214 bytes, application still rendering.
 
   BG-0067:
     title: OWNER BLOCKER — Terms of Service and Privacy Policy do not exist
