@@ -277,10 +277,29 @@ comment on function api.news_ingest_provider_article(
 --
 -- Kept as a function so that the stand-down can be exercised by the database
 -- tests and re-run deliberately, and so that its idempotence is a property of
--- one piece of code rather than of a copied statement. The created_by is null
--- guard is what makes it safe: applied to a database where a human has since
--- published real editorial work, it cannot touch that work, and re-running it
--- finds nothing and writes no audit rows.
+-- one piece of code rather than of a copied statement.
+--
+-- The guard is two predicates, and the second one is not redundant.
+-- `created_by is null` alone says "no person created this row", which was
+-- sufficient when the only machine editions in existence were the legacy
+-- provider link-stubs. It stops being sufficient the moment anything else
+-- writes editions the same way: app.article_editions.created_by is a foreign
+-- key to auth.users, so any automated producer leaves it null, and its output
+-- would match this sweep exactly -- including after a human editor had read it
+-- and clicked publish. Re-running the sweep once would then silently unpublish
+-- the whole newsroom, which is precisely the failure this function's own
+-- comment promises it cannot cause.
+--
+-- What actually distinguishes the two cases is not who created the row but
+-- whether a person has since acted on it. api.editorial_transition_article
+-- stamps `updated_by = auth.uid()` on every transition, so an edition an editor
+-- approved carries their id and a never-reviewed machine stub does not. Adding
+-- `and updated_by is null` narrows the sweep to exactly that.
+--
+-- This is not a behaviour change for the rows the sweep was built for: on
+-- production all 108 published editions with `created_by is null` also have
+-- `updated_by is null` (verified 2026-09-21, and no edition in the database has
+-- a non-null updated_by at all), so the sweep still catches every one of them.
 --
 -- app_private.write_editorial_audit records auth.uid() as the actor. Here that
 -- is null, and actor_user_id is nullable, so this records honestly as a system
@@ -304,6 +323,7 @@ begin
           unpublished_at = statement_timestamp()
       where status = 'published'
         and created_by is null
+        and updated_by is null
       returning id, story_id
     )
     select moved.id, moved.story_id from moved
@@ -331,6 +351,6 @@ revoke all on function app_private.news_stand_down_machine_editions()
   from public, anon, authenticated, service_role;
 
 comment on function app_private.news_stand_down_machine_editions() is
-  'BG-0073 operator stand-down: moves machine-ingested (created_by is null) published editions to unpublished/private and writes one editorial audit row each. Idempotent, never touches human-authored editions, deletes nothing.';
+  'BG-0073 operator stand-down: moves never-reviewed machine editions (created_by and updated_by both null) from published to unpublished/private and writes one editorial audit row each. Idempotent, never touches human-authored or editor-approved editions, deletes nothing.';
 
 select app_private.news_stand_down_machine_editions();

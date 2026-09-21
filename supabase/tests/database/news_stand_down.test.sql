@@ -128,10 +128,12 @@ values ('64000000-0000-4000-8000-000000000001', 'stand-down-house', 'Stand Down 
 insert into app.stories (id, origin, original_language, publisher_id)
 values
   ('74000000-0000-4000-8000-000000000001', 'manual', 'fr', '64000000-0000-4000-8000-000000000001'),
-  ('74000000-0000-4000-8000-000000000002', 'manual', 'fr', '64000000-0000-4000-8000-000000000001');
+  ('74000000-0000-4000-8000-000000000002', 'manual', 'fr', '64000000-0000-4000-8000-000000000001'),
+  ('74000000-0000-4000-8000-000000000003', 'manual', 'fr', '64000000-0000-4000-8000-000000000001');
 insert into app.article_editions (
   id, story_id, language, slug, title, summary, body_source, body_html,
-  status, visibility, published_at, reading_time_minutes, sanitizer_version, created_by
+  status, visibility, published_at, reading_time_minutes, sanitizer_version, created_by,
+  updated_by
 ) values
   (
     '84000000-0000-4000-8000-000000000001', '74000000-0000-4000-8000-000000000001',
@@ -139,7 +141,7 @@ insert into app.article_editions (
     'Ce lien sortant a été ingéré sans auteur humain et doit être retiré.',
     repeat('Contenu ingéré automatiquement. ', 3),
     '<p>Contenu ingéré automatiquement pour le test.</p>',
-    'published', 'public', '2026-01-01T00:00:00Z', 2, 'test', null
+    'published', 'public', '2026-01-01T00:00:00Z', 2, 'test', null, null
   ),
   (
     '84000000-0000-4000-8000-000000000002', '74000000-0000-4000-8000-000000000002',
@@ -148,7 +150,24 @@ insert into app.article_editions (
     repeat('Contenu éditorial humain. ', 3),
     '<p>Contenu éditorial humain pour le test.</p>',
     'published', 'public', '2026-01-01T00:00:00Z', 2, 'test',
-    '54000000-0000-4000-8000-000000000001'
+    '54000000-0000-4000-8000-000000000001', null
+  ),
+  -- The case the created_by guard alone cannot see, and the reason this test
+  -- exists: an edition NO person created, which a person has since reviewed and
+  -- published. Any automated producer leaves created_by null, because that
+  -- column is a foreign key to auth.users. What separates a newsroom article an
+  -- editor approved from a never-reviewed stub is updated_by, which
+  -- api.editorial_transition_article stamps on every transition. Without the
+  -- updated_by guard this row is swept, and re-running the stand-down once
+  -- silently unpublishes everything an editor ever approved.
+  (
+    '84000000-0000-4000-8000-000000000003', '74000000-0000-4000-8000-000000000003',
+    'fr', 'stand-down-editor-approved', 'Article machine approuvé par une éditrice',
+    'Cet article a été produit sans auteur humain puis publié par une éditrice.',
+    repeat('Contenu produit automatiquement puis relu. ', 3),
+    '<p>Contenu produit automatiquement puis approuvé pour publication.</p>',
+    'published', 'public', '2026-01-01T00:00:00Z', 2, 'test',
+    null, '54000000-0000-4000-8000-000000000001'
   );
 
 select extensions.is(
@@ -160,6 +179,20 @@ select extensions.is(
   (select status::text from app.article_editions where slug = 'stand-down-machine'),
   'unpublished',
   'the machine-ingested edition is unpublished'
+);
+select extensions.is(
+  (select status::text from app.article_editions where slug = 'stand-down-editor-approved'),
+  'published',
+  'an edition an editor approved survives, even though no person created it'
+);
+select extensions.is(
+  (select visibility::text from app.article_editions where slug = 'stand-down-editor-approved'),
+  'public',
+  'the editor-approved edition keeps its public visibility'
+);
+select extensions.ok(
+  (select unpublished_at is null from app.article_editions where slug = 'stand-down-editor-approved'),
+  'the editor-approved edition is never stamped as stood down'
 );
 select extensions.is(
   (select visibility::text from app.article_editions where slug = 'stand-down-machine'),
