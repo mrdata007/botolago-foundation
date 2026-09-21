@@ -50,20 +50,20 @@ function Block({ block, tableScrollHint }: { block: LegalBlock; tableScrollHint:
       // level under the document's <h1> is the whole outline.
       return <h2 className={cn("mt-7", ui.text.section, ui.tone.default)}>{block.text}</h2>;
 
+    // `prose` rather than `secondary` + `leading-relaxed`. Terms and Privacy
+    // are by some distance the longest copy in the product -- a weight tally
+    // put /terms at 7,882 characters against 692 on the next-longest route --
+    // so they are what the prose step exists for. The literal `leading-relaxed`
+    // sat beside `ui.text.secondary`'s own leading as a second source of truth,
+    // resolved by class order rather than by intent, and it carried no Arabic
+    // adjustment: the Arabic face needs a taller line box than the Latin one at
+    // the same px, which the token handles and a literal cannot (BG-0124).
     case "paragraph":
-      return (
-        <p className={cn("mt-3 leading-relaxed", ui.text.secondary, ui.tone.muted)}>{block.text}</p>
-      );
+      return <p className={cn("mt-3", ui.text.prose, ui.tone.muted)}>{block.text}</p>;
 
     case "list":
       return (
-        <ul
-          className={cn(
-            "mt-3 list-disc space-y-2 ps-5 leading-relaxed",
-            ui.text.secondary,
-            ui.tone.muted,
-          )}
-        >
+        <ul className={cn("mt-3 list-disc space-y-2 ps-5", ui.text.prose, ui.tone.muted)}>
           {block.items.map((item, index) => (
             <li key={index} className="ps-1">
               {item}
@@ -141,7 +141,11 @@ function Table({
               {row.map((cell, cellIndex) => (
                 <td
                   key={cellIndex}
-                  className="px-3 py-2 text-start align-top leading-relaxed text-muted-foreground"
+                  // `meta`, not `prose`: the table sets `ui.text.meta` (13px)
+                  // and these cells inherit it. `prose` is 15px and would
+                  // silently widen every column. The literal `leading-relaxed`
+                  // is what comes off here; `meta` brings its own, per script.
+                  className={cn("px-3 py-2 text-start align-top", ui.text.meta, ui.tone.muted)}
                 >
                   {cell}
                 </td>

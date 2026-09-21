@@ -842,7 +842,19 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-stat-sm: 13px; /* dense table cells */
   --ui-stat-tracking: -0.01em;
 
-  /* ---- Weights: Fantasy never uses 400 for structural text ------- */
+  /* ---- Weights: Fantasy never uses 400 for STRUCTURAL text -------
+     `--ui-weight-normal` is the exception the rule always implied, and it
+     exists for exactly one step: `ui.text.prose`. Long-form copy is not
+     structural text -- it is the thing a reader reads continuously, and
+     Terms alone is 7,882 characters, an order of magnitude more than any
+     other route in the product. Setting it 600 like a button label is how a
+     page of copy comes to read as a page of emphasis.
+
+     Measured, and the reason this token exists: converting the legal renderer
+     onto `prose` moved /terms from 400 to 600 in a weight tally, because
+     `prose` inherited `--ui-weight-body`. That was a regression the
+     conversion introduced, not a defect it found. */
+  --ui-weight-normal: 400;
   --ui-weight-body: 600;
   --ui-weight-strong: 700;
   --ui-weight-heavy: 800;

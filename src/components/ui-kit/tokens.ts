@@ -50,6 +50,7 @@ export const UI_TOKENS = [
   "--ui-stat-sm",
   "--ui-stat-tracking",
   // weights
+  "--ui-weight-normal",
   "--ui-weight-body",
   "--ui-weight-strong",
   "--ui-weight-heavy",
@@ -208,6 +209,7 @@ const SIZE_CLASS = {
 } as const satisfies Partial<Record<UiToken, string>>;
 
 const WEIGHT_CLASS = {
+  "--ui-weight-normal": "[font-weight:var(--ui-weight-normal)]",
   "--ui-weight-body": "[font-weight:var(--ui-weight-body)]",
   "--ui-weight-strong": "[font-weight:var(--ui-weight-strong)]",
   "--ui-weight-heavy": "[font-weight:var(--ui-weight-heavy)]",
@@ -248,8 +250,12 @@ export const ui = {
     meta: `${size("--ui-text-meta")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-copy)]`,
     label: `${size("--ui-text-label")} ${weight("--ui-weight-heavy")} uppercase ltr:tracking-wide leading-[var(--ui-leading-flat)]`,
     micro: `${size("--ui-text-micro")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-flat)]`,
-    /** Long-form paragraphs: the rules page, help, legal. */
-    prose: `${size("--ui-text-body")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-prose)]`,
+    /**
+     * Long-form paragraphs: the rules page, help answers, Terms and Privacy.
+     * The only step at `normal` weight — continuous copy set at 600 reads as a
+     * page of emphasis, and Terms alone is 7,882 characters.
+     */
+    prose: `${size("--ui-text-body")} ${weight("--ui-weight-normal")} leading-[var(--ui-leading-prose)]`,
     /** Numbers that must line up column to column. */
     tabular: "fpl-tabular",
   },

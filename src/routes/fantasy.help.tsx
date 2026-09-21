@@ -105,10 +105,26 @@ function HelpPage() {
                         <ChevronDown className="h-5 w-5" aria-hidden />
                       )}
                     </span>
+                    {/* A collapsed question is a list-row label, not a
+                        heading. This was `ui.text.subtitle` — 16px at weight
+                        800 — and because the page renders as nothing but
+                        collapsed questions, every one of its 671 visible
+                        characters was extra-bold. Measured rather than
+                        guessed: a weight tally across seven routes put
+                        /fantasy/help at 100% weight 800, the only route in
+                        the product with no normal-weight text at all. Body
+                        size at `strong` keeps it plainly the tappable label
+                        without the whole page shouting.
+
+                        `leading-snug` went with it. The ramp now carries
+                        leading per step and per script (BG-0124), and a
+                        Tailwind literal beside it is a second source of truth
+                        that wins or loses on class order. */}
                     <span
                       className={cn(
-                        "px-3 py-3 leading-snug",
-                        ui.text.subtitle,
+                        "px-3 py-3",
+                        ui.text.body,
+                        "[font-weight:var(--ui-weight-strong)]",
                         "min-h-[var(--ui-tap-min)]",
                       )}
                     >
@@ -116,12 +132,12 @@ function HelpPage() {
                     </span>
                   </button>
                   {expanded ? (
+                    /* `prose` rather than `body` + `leading-relaxed`: an answer
+                       is the longest continuous copy on any Fantasy screen, and
+                       it is the step built for that — with an Arabic line box
+                       that does not have to be remembered at the call site. */
                     <div
-                      className={cn(
-                        "whitespace-pre-line px-4 py-3 leading-relaxed",
-                        ui.surface.bar,
-                        ui.text.body,
-                      )}
+                      className={cn("whitespace-pre-line px-4 py-3", ui.surface.bar, ui.text.prose)}
                     >
                       {t(item.a)}
                     </div>
