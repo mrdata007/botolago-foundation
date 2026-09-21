@@ -2,41 +2,67 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FplHeader, FplSegmented } from "@/components/fpl/primitives";
-import { fantasyService } from "@/services/fantasy-runtime";
-import { footballService } from "@/services/football";
-import { LoadingState, EmptyState } from "@/components/common/States";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
-import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
-import { getKitForClub } from "@/lib/kits";
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import {
+  ui,
+  UiBadge,
+  UiCard,
+  UiEmptyState,
+  UiHeader,
+  UiStatBlock,
+  UiStatePanel,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { getKitForClub } from "@/lib/kits";
+import { cn } from "@/lib/utils";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { footballService } from "@/services/football";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
-  // Named metadata for shared player links; the component's own query reuses
-  // this cache entry. Any failure degrades to generic Fantasy copy.
+  /**
+   * Named metadata for shared player links.
+   *
+   * The loader returns the whole player, not just its name, and the component
+   * seeds its query with it. That is what fixes the hydration failure this
+   * route used to throw on every single load (React #418, the only erroring
+   * route in the product):
+   *
+   * `src/router.tsx` builds a fresh `QueryClient` on each side and wires no
+   * SSR dehydrate/hydrate bridge, so the cache this loader warms exists ONLY
+   * on the server. The server therefore rendered a fully populated player
+   * page, while the browser's very first render — same component, empty cache
+   * — rendered the loading state. Two different trees for the same HTML, so
+   * React threw away the server tree and re-rendered from scratch, losing
+   * exactly the server-rendered markup this route's metadata exists to serve.
+   *
+   * Router loader data, unlike query state, IS serialized to the client. Using
+   * it as `initialData` makes both first renders identical, which is the
+   * actual requirement; it also means the page paints from the server payload
+   * instead of re-fetching what it already has.
+   */
   loader: async ({ params, context }) => {
     try {
       const player = await context.queryClient.ensureQueryData({
         queryKey: ["fantasy-player", params.playerId],
         queryFn: () => fantasyService.getPlayer(params.playerId),
       });
-      return player ? { name: player.name.fr } : null;
+      return player ? { player } : null;
     } catch {
       return null;
     }
   },
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/fantasy/players/${encodeURIComponent(params.playerId)}`;
-    const title = loaderData
-      ? `${loaderData.name} — BotolaGO Fantasy`
-      : "Joueur — BotolaGO Fantasy";
-    const description = loaderData
-      ? `Statistiques, forme, prix et prochains matchs de ${loaderData.name} pour votre équipe BotolaGO Fantasy.`
+    const playerName = loaderData?.player.name.fr;
+    const title = playerName ? `${playerName} — BotolaGO Fantasy` : "Joueur — BotolaGO Fantasy";
+    const description = playerName
+      ? `Statistiques, forme, prix et prochains matchs de ${playerName} pour votre équipe BotolaGO Fantasy.`
       : "Statistiques, forme, prix et prochains matchs du joueur pour votre équipe BotolaGO Fantasy.";
     return {
       meta: [
@@ -65,16 +91,11 @@ const tabs: { key: Tab; label: TranslationKey }[] = [
   { key: "news", label: "fantasy.players.tab.news" },
 ];
 
-/**
- * FPL "Player info" reconstructed on the Fantasy design system: the shared
- * Back header (`FplHeader`), a jersey/ink hero plate and the same
- * `FplSegmented` tab control the rest of Fantasy uses for Squad/List.
- */
 function PlayerDetailFramed() {
   const { t } = useI18n();
   return (
     <FantasyFrame>
-      <FplHeader title={t("fpl.player_info")} backTo="/fantasy/players" />
+      <UiHeader title={t("fpl.player_info")} tone="gradient" backTo="/fantasy/players" />
       <PlayerDetailPage />
     </FantasyFrame>
   );
@@ -82,11 +103,16 @@ function PlayerDetailFramed() {
 
 function PlayerDetailPage() {
   const { playerId } = Route.useParams();
+  const loaderData = Route.useLoaderData();
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+
   const playerQ = useQuery({
     queryKey: ["fantasy-player", playerId],
     queryFn: () => fantasyService.getPlayer(playerId),
+    // Identical on the server and on the client's first render — see the
+    // loader comment. Without this the two trees disagree and React #418.
+    initialData: loaderData?.player,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -107,201 +133,246 @@ function PlayerDetailPage() {
     enabled: tab === "history",
   });
 
-  if (playerQ.isLoading) {
-    return (
-      <div className="bg-white px-4 pb-6 pt-3">
-        <LoadingState />
-      </div>
-    );
-  }
   const p = playerQ.data;
-  if (!p || !clubsQ.data) {
+
+  if (!p) {
     return (
-      <div className="bg-white px-4 pb-6 pt-3">
-        <EmptyState />
+      <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+        {playerQ.isLoading ? (
+          <UiStatePanel kind="loading" />
+        ) : (
+          <UiEmptyState
+            title={t("fantasy.players.not_found")}
+            body={t("fantasy.players.not_found_desc")}
+          />
+        )}
       </div>
     );
   }
-  const clubs = clubsQ.data;
+
+  // The club list is decoration on this screen, not a precondition: blocking
+  // the whole player behind it meant the server-rendered markup for a shared
+  // link was an empty state.
+  const clubs = clubsQ.data ?? [];
   const club = clubs.find((c) => c.id === p.clubId);
   const kit = getKitForClub(club, p.kitPattern);
+  // Whatever the service returns for this club, unfiltered: a gameweek's
+  // fixture set is the backend's answer, and a postponed match that has been
+  // deferred out of a gameweek must not be re-added by a frontend assumption.
   const playerFixtures = (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId).slice(0, 5);
 
+  /** An unknown figure is an en dash. A real zero is a zero. */
+  const orNone = (value: number | null | undefined) =>
+    value === null || value === undefined ? t("fantasy.stat.none") : nf.format(value);
+
   return (
-    <div className="bg-white px-4 pb-6 pt-3">
-      <div className="flex items-center gap-3 rounded-[10px] border border-[color:var(--fpl-grey)] p-4">
+    <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+      <UiCard className="flex items-center gap-3">
         <JerseyVisual kit={kit} size={48} imageUrl={p.jerseyImageUrl} ariaLabel={tr(p.name)} />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-lg font-black text-[color:var(--fpl-ink-deep)]">
+          <h2 dir="auto" className={cn("truncate", ui.text.section, ui.tone.default)}>
             {tr(p.name)}
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-[color:var(--fpl-grey-text)]">
-              {t(`player.pos.${p.position}` as TranslationKey)}
-            </span>
-            {club && <span className="text-[color:var(--fpl-grey-text)]">· {tr(club.name)}</span>}
-            {p.status !== "available" && <PlayerStatusBadge status={p.status} />}
-          </div>
-        </div>
-        <div className="text-end">
-          <div className="fpl-tabular text-lg font-black text-[color:var(--fpl-ink)]">
-            {nf.format(p.price)}
-          </div>
-          <div className="text-[10px] uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
-            {t("fantasy.price")}
+          </h2>
+          <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5", ui.text.meta)}>
+            <span className={ui.tone.muted}>{t(`player.pos.${p.position}` as TranslationKey)}</span>
+            {club ? (
+              <span className={cn("truncate", ui.tone.muted)}>
+                ·{" "}
+                <span dir="auto" className="truncate">
+                  {tr(club.name)}
+                </span>
+              </span>
+            ) : null}
+            {p.status !== "available" ? <PlayerStatusBadge status={p.status} /> : null}
           </div>
         </div>
+        <UiStatBlock align="end" tone="ink" value={nf.format(p.price)} sub={t("fantasy.price")} />
+      </UiCard>
+
+      {/* Five labels do not fit a segmented control at 390px in French, so the
+          tablist scrolls instead of shrinking under the tap floor. */}
+      <div
+        role="tablist"
+        aria-label={t("fpl.player_info")}
+        className={cn(
+          "mt-3 flex gap-1 overflow-x-auto p-[3px]",
+          ui.radius.track,
+          ui.surface.sunken,
+        )}
+      >
+        {tabs.map((it) => {
+          const active = it.key === tab;
+          return (
+            <button
+              key={it.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(it.key)}
+              className={cn(
+                "shrink-0 whitespace-nowrap px-3 transition-colors",
+                "min-h-[var(--ui-tap-min)]",
+                ui.radius.segment,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-strong)]",
+                ui.focus,
+                active ? cn(ui.surface.card, "text-[color:var(--ui-ink-fg)]") : ui.tone.muted,
+              )}
+            >
+              {t(it.label)}
+            </button>
+          );
+        })}
       </div>
 
-      <FplSegmented
-        className="mt-3"
-        tone="onLight"
-        value={tab}
-        onChange={setTab}
-        options={tabs.map((it) => ({ value: it.key, label: t(it.label) }))}
-      />
-
       <div className="mt-3">
-        {tab === "overview" && (
+        {tab === "overview" ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label={t("fantasy.total_points")} value={String(p.totalPoints)} />
-            <Stat
-              label={t("fantasy.form")}
-              value={p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
-            />
-            <Stat label={t("fantasy.ownership")} value={`${nf.format(p.ownership)}%`} />
-            <Stat label={t("fantasy.expected_points")} value={String(p.expectedPoints ?? "—")} />
+            <StatTile label={t("fantasy.total_points")} value={nf.format(p.totalPoints)} />
+            <StatTile label={t("fantasy.form")} value={orNone(p.form)} />
+            <StatTile label={t("fantasy.ownership")} value={`${nf.format(p.ownership)}%`} />
+            <StatTile label={t("fantasy.expected_points")} value={orNone(p.expectedPoints)} />
           </div>
-        )}
+        ) : null}
 
-        {tab === "history" && (
+        {tab === "history" ? (
           <div className="grid gap-1.5">
-            {historyQ.isLoading && <LoadingState />}
+            {historyQ.isLoading ? <UiStatePanel kind="loading" /> : null}
             {/* A player with no scored gameweek has no rows at all — which is
                 every player until GW1 closes. That is an empty state, not an
                 error, and not a row of zeros. */}
-            {!historyQ.isLoading && (historyQ.data ?? []).length === 0 && <EmptyState />}
+            {!historyQ.isLoading && (historyQ.data ?? []).length === 0 ? (
+              <UiEmptyState
+                title={t("fantasy.players.no_history")}
+                body={t("fantasy.players.no_history_desc")}
+              />
+            ) : null}
             {(historyQ.data ?? []).map((entry) => (
               <div
                 key={entry.gameweekId}
-                className="flex items-center gap-2 border-b border-[color:var(--fpl-grey)] py-2"
+                className={cn("flex items-center gap-2 py-2", ui.rule.block)}
               >
-                <div className="w-14 shrink-0 text-[11px] font-bold text-[color:var(--fpl-grey-text)]">
+                <div className={cn("w-14 shrink-0", ui.text.micro, ui.tone.muted)}>
                   {entry.gameweekName}
                 </div>
-                <div className="min-w-0 flex-1 text-sm font-semibold text-[color:var(--fpl-ink-deep)]">
+                <div className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.default)}>
                   {/* `opponents` is an array: a club can play twice in one
                       gameweek after a fixture reassignment. */}
                   {entry.opponents.map((opponent) => (
                     <span key={opponent.teamId} className="me-1.5">
-                      {opponent.shortName}{" "}
-                      <span className="text-[color:var(--fpl-grey-text)]">
+                      <bdi>{opponent.shortName}</bdi>{" "}
+                      <span className={ui.tone.muted}>
                         ({opponent.home ? t("common.home") : t("common.away")})
                       </span>
                     </span>
                   ))}
-                  {entry.state === "provisional" && (
-                    <span className="ms-1 rounded bg-[color:var(--fpl-grey)] px-1 text-[9px] font-black text-[color:var(--fpl-grey-text)]">
-                      {t("fantasy.points.status.provisional")}
-                    </span>
-                  )}
+                  {entry.state === "provisional" ? (
+                    <UiBadge className="ms-1">{t("fantasy.points.status.provisional")}</UiBadge>
+                  ) : null}
                 </div>
-                <div className="fpl-tabular w-14 shrink-0 text-end text-[11px] text-[color:var(--fpl-grey-text)]">
-                  {entry.minutesPlayed} {t("home.minutes")}
+                <div className={cn("w-14 shrink-0 text-end", ui.stat.sm, ui.tone.muted)}>
+                  {nf.format(entry.minutesPlayed)} {t("home.minutes")}
                 </div>
-                <div className="fpl-tabular w-14 shrink-0 text-end text-sm font-black text-[color:var(--fpl-ink-deep)]">
-                  {entry.points} {t("fantasy.points.abbr")}
+                <div className={cn("w-14 shrink-0 text-end", ui.stat.sm, ui.tone.default)}>
+                  {nf.format(entry.points)} {t("fantasy.points.abbr")}
                 </div>
               </div>
             ))}
           </div>
-        )}
+        ) : null}
 
-        {tab === "fixtures" && (
+        {tab === "fixtures" ? (
           <div className="grid gap-1.5">
-            {playerFixtures.length === 0 && <EmptyState />}
+            {playerFixtures.length === 0 ? (
+              <UiEmptyState
+                title={t("fantasy.players.no_fixtures")}
+                body={t("fantasy.players.no_fixtures_desc")}
+              />
+            ) : null}
             {playerFixtures.map((f) => {
               const opp = clubs.find((c) => c.id === f.opponentClubId);
               return (
                 <div
-                  key={f.gameweek}
-                  className="flex items-center gap-2 border-b border-[color:var(--fpl-grey)] py-2"
+                  key={`${f.gameweek}-${f.opponentClubId}-${f.isHome ? "h" : "a"}`}
+                  className={cn("flex items-center gap-2 py-2", ui.rule.block)}
                 >
-                  <div className="w-14 shrink-0 text-[11px] font-bold text-[color:var(--fpl-grey-text)]">
+                  <div className={cn("w-14 shrink-0", ui.text.micro, ui.tone.muted)}>
                     GW {f.gameweek}
                   </div>
-                  {opp && <ClubCrest club={opp} size="sm" />}
-                  <div className="flex-1 text-sm font-semibold text-[color:var(--fpl-ink-deep)]">
-                    {opp && tr(opp.shortName)}{" "}
-                    <span className="text-[color:var(--fpl-grey-text)]">
+                  {opp ? <ClubCrest club={opp} size="sm" /> : null}
+                  <div className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.default)}>
+                    <bdi>{opp ? tr(opp.shortName) : ""}</bdi>{" "}
+                    <span className={ui.tone.muted}>
                       ({f.isHome ? t("common.home") : t("common.away")})
                     </span>
-                    {f.isDouble && (
-                      <span className="ms-1 rounded bg-[color:var(--fpl-green)] px-1 text-[9px] font-black text-[color:var(--fpl-ink-deep)]">
-                        DGW
-                      </span>
-                    )}
-                    {f.isBlank && (
-                      <span className="ms-1 rounded bg-[color:var(--fpl-grey)] px-1 text-[9px] font-black text-[color:var(--fpl-grey-text)]">
-                        BGW
-                      </span>
-                    )}
+                    {f.isDouble ? (
+                      <UiBadge tone="positive" className="ms-1">
+                        {t("fantasy.fixtures.double")}
+                      </UiBadge>
+                    ) : null}
+                    {f.isBlank ? (
+                      <UiBadge className="ms-1">{t("fantasy.fixtures.blank")}</UiBadge>
+                    ) : null}
                   </div>
                   <DifficultyBadge
                     difficulty={f.difficulty}
                     label={String(f.difficulty)}
-                    className="w-8"
+                    className="w-11 shrink-0"
                   />
                 </div>
               );
             })}
           </div>
-        )}
+        ) : null}
 
-        {tab === "stats" && (
+        {tab === "stats" ? (
           <dl className="grid grid-cols-2 gap-2">
-            <StatDl
-              k={t("fantasy.form")}
-              v={p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
-            />
-            <StatDl k={t("fantasy.total_points")} v={String(p.totalPoints)} />
-            <StatDl k={t("fantasy.expected_points")} v={String(p.expectedPoints ?? "—")} />
-            <StatDl k={t("fantasy.ownership")} v={`${nf.format(p.ownership)}%`} />
-            <StatDl k={t("fantasy.price")} v={nf.format(p.price)} />
-            <StatDl
+            <StatRow k={t("fantasy.form")} v={orNone(p.form)} />
+            <StatRow k={t("fantasy.total_points")} v={nf.format(p.totalPoints)} />
+            <StatRow k={t("fantasy.expected_points")} v={orNone(p.expectedPoints)} />
+            <StatRow k={t("fantasy.ownership")} v={`${nf.format(p.ownership)}%`} />
+            <StatRow k={t("fantasy.price")} v={nf.format(p.price)} />
+            <StatRow
               k={t("fantasy.picker.filter_status")}
               v={t(`player.status.${p.status}` as TranslationKey)}
             />
           </dl>
-        )}
+        ) : null}
 
-        {tab === "news" && (
-          <div className="rounded-[10px] border border-[color:var(--fpl-grey)] p-4 text-sm text-[color:var(--fpl-grey-text)]">
-            {p.news ? tr(p.news) : t("state.empty")}
-          </div>
-        )}
+        {tab === "news" ? (
+          p.news ? (
+            <UiCard>
+              <p className={cn(ui.text.secondary, ui.tone.default)}>{tr(p.news)}</p>
+            </UiCard>
+          ) : (
+            <UiEmptyState
+              title={t("fantasy.players.no_news")}
+              body={t("fantasy.players.no_news_desc")}
+            />
+          )
+        ) : null}
       </div>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[10px] border border-[color:var(--fpl-grey)] px-2 py-3 text-center">
-      <div className="fpl-tabular text-lg font-black text-[color:var(--fpl-ink)]">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
-        {label}
-      </div>
-    </div>
+    <UiStatBlock
+      align="center"
+      tone="ink"
+      label={label}
+      value={value}
+      className={cn("px-2 py-3", ui.radius.control, ui.rule.all)}
+    />
   );
 }
-function StatDl({ k, v }: { k: string; v: string }) {
+
+function StatRow({ k, v }: { k: string; v: string }) {
   return (
-    <div className="rounded-[8px] bg-[color:var(--fpl-grey)] px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wide text-[color:var(--fpl-grey-text)]">
-        {k}
-      </div>
-      <div className="fpl-tabular text-sm font-black text-[color:var(--fpl-ink-deep)]">{v}</div>
+    <div className={cn("px-3 py-2", ui.radius.control, ui.surface.sunken)}>
+      <dt className={cn(ui.text.label, ui.tone.muted)}>{k}</dt>
+      <dd className={cn(ui.stat.sm, ui.tone.default)}>{v}</dd>
     </div>
   );
 }

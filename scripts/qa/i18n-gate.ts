@@ -216,7 +216,22 @@ export const BASELINES: Baselines = {
   // deliberately left in place -- the Fantasy screens are mid-migration and the
   // strings will be wanted again; delete them in the same pass that settles the
   // Fantasy copy, not before.
-  W3: 262,
+  //
+  // BG-0095 leagues/players migration, 2026-09-21: exactly two of those
+  // "wanted again" keys were wanted again. `/fantasy/players/$playerId` used
+  // to mark a double or blank gameweek with the literal English strings "DGW"
+  // and "BGW" hardcoded in the JSX; the Calendrier tab now renders
+  // `fantasy.fixtures.double` and `fantasy.fixtures.blank`, which were already
+  // translated in both languages and referenced by nothing. W3 262 -> 260.
+  //
+  // Every other key this migration added is referenced by the screen that
+  // added it, so it does not move the count; W1, W2 and W4 are unchanged. W4
+  // in particular is deliberate: the new copy is written as
+  // `cond ? t("a") : t("b")`, never `t(cond ? "a" : "b")`, and the eight
+  // dynamic call sites these files already had (`player.pos.`,
+  // `player.status.`, and the two label-from-a-table lookups) are all still
+  // there.
+  W3: 260,
   W4: 88,
 };
 
