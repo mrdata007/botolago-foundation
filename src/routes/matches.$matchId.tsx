@@ -21,6 +21,7 @@ import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -152,7 +153,10 @@ function MatchDetailPage() {
   const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  // Pinned to the competition zone so this heading names the same day the
+  // card, the strip and the fixture list name (BG-0100).
   const dateFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",

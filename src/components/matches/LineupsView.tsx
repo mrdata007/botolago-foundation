@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { ui } from "@/components/ui-kit";
 
 const POSITION_ORDER: Record<string, number> = {
   goalkeeper: 0,
@@ -92,31 +93,44 @@ function TeamLineup({ club, lineup }: { club: Club; lineup: MatchLineupDto }) {
       <div className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3">
         <div className="flex min-w-0 items-center gap-2">
           <ClubCrest club={club} size="sm" />
-          <span className="truncate text-sm font-black tracking-tight text-foreground">
+          <span className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>
             {tr(club.shortName)}
           </span>
           {!lineup.confirmed && (
-            <span className="shrink-0 rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-[color:var(--text-muted)]">
+            <span className="shrink-0 rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[9px] font-black uppercase ltr:tracking-[0.12em] text-[color:var(--text-muted)]">
               {t("matches.detail.lineup_provisional")}
             </span>
           )}
         </div>
         {lineup.formation && (
-          <span className="shrink-0 font-mono text-xs font-black tabular-nums text-[color:var(--brand-accent)]">
+          <span
+            className={cn(
+              "shrink-0 font-mono",
+              ui.text.meta,
+              ui.text.tabular,
+              ui.tone.ink,
+              "[font-weight:var(--ui-weight-hero)]",
+            )}
+          >
             {lineup.formation}
           </span>
         )}
       </div>
 
       <div className="mt-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+        <div className="text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
           {t("matches.detail.starting_xi")}
         </div>
         <ul className="mt-2 grid gap-1.5">
           {starting.map((player) => (
             <li
               key={player.id}
-              className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm hover:bg-[color:var(--surface-hover)]"
+              className={cn(
+                "flex items-center gap-2 px-1.5 py-1",
+                ui.radius.control,
+                ui.text.secondary,
+                "hover:bg-[color:var(--ui-surface-sunken)]",
+              )}
             >
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[color:var(--surface-hover)] font-mono text-[11px] font-black tabular-nums text-[color:var(--text-secondary)]">
                 {player.shirtNumber ?? "—"}
@@ -125,7 +139,7 @@ function TeamLineup({ club, lineup }: { club: Club; lineup: MatchLineupDto }) {
                 {player.displayName}
               </span>
               {positionAbbreviation(t, player.position) && (
-                <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-muted)]">
+                <span className="shrink-0 text-[10px] font-bold uppercase ltr:tracking-[0.1em] text-[color:var(--text-muted)]">
                   {positionAbbreviation(t, player.position)}
                 </span>
               )}
@@ -133,8 +147,8 @@ function TeamLineup({ club, lineup }: { club: Club; lineup: MatchLineupDto }) {
                 <span
                   aria-label={t("matches.detail.captain")}
                   title={t("matches.detail.captain")}
-                  className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-black text-[color:var(--fpl-ink-deep)]"
-                  style={{ background: "var(--fpl-amber)" }}
+                  className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] [font-weight:var(--ui-weight-hero)] text-[color:var(--ui-ink-deep)]"
+                  style={{ background: "var(--ui-caution)" }}
                 >
                   C
                 </span>
@@ -146,7 +160,7 @@ function TeamLineup({ club, lineup }: { club: Club; lineup: MatchLineupDto }) {
 
       {bench.length > 0 && (
         <div className="mt-4 border-t border-[var(--border-subtle)] pt-3">
-          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+          <div className="text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
             {t("matches.detail.substitutes")}
           </div>
           <ul className="mt-2 flex flex-wrap gap-1.5">

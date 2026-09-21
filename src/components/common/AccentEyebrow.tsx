@@ -13,7 +13,7 @@ export function AccentEyebrow({
 }) {
   return (
     <div
-      className={`text-[11px] font-black uppercase tracking-[0.14em] text-brand ${className}`.trim()}
+      className={`text-[11px] font-black uppercase ltr:tracking-[0.14em] text-brand ${className}`.trim()}
     >
       {children}
     </div>

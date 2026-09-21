@@ -1,5 +1,6 @@
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { useSavedArticles } from "@/lib/saved-articles";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +24,7 @@ export function SavedButton({
   const label = saved ? t("news.bookmarked") : t("news.bookmark");
   const Icon = saved ? BookmarkCheck : Bookmark;
 
-  const common =
-    "inline-flex items-center justify-center gap-1 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] focus-visible:ring-offset-2";
+  const common = cn("inline-flex items-center justify-center gap-1 transition-colors", ui.focus);
 
   if (variant === "icon") {
     return (
@@ -39,8 +39,11 @@ export function SavedButton({
         aria-label={label}
         className={cn(
           common,
-          "h-11 w-11 rounded-full text-foreground hover:bg-[color:var(--surface-hover)]",
-          saved && "text-[color:var(--brand-accent)]",
+          ui.space.tap,
+          ui.radius.full,
+          ui.tone.default,
+          "hover:bg-[color:var(--ui-surface-sunken)]",
+          saved && ui.tone.ink,
           className,
         )}
       >
@@ -62,8 +65,12 @@ export function SavedButton({
         aria-label={label}
         className={cn(
           common,
-          "h-11 w-11 rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/60",
-          saved && "bg-white/95 text-[color:var(--brand-primary)]",
+          // An overlay sits on photography, so it needs its own scrim rather
+          // than a surface token; the ink pair is the kit's on-image pairing.
+          ui.space.tap,
+          ui.radius.full,
+          "bg-[color:color-mix(in_oklab,var(--ui-ink-deep)_70%,transparent)] text-[color:var(--ui-on-ink-plain)] backdrop-blur-md",
+          saved && cn(ui.surface.card, ui.tone.ink),
           className,
         )}
       >
@@ -83,11 +90,16 @@ export function SavedButton({
       aria-pressed={saved}
       className={cn(
         common,
-        "min-h-9 rounded-lg px-2 py-1 text-xs text-foreground hover:bg-[color:var(--surface-hover)]",
+        "px-2 py-1 hover:bg-[color:var(--ui-surface-sunken)]",
+        ui.space.tap,
+        ui.radius.control,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-strong)]",
+        ui.tone.default,
         className,
       )}
     >
-      <Icon className={cn("h-4 w-4", saved && "text-[color:var(--brand-accent)]")} aria-hidden />
+      <Icon className={cn("h-4 w-4", saved && ui.tone.ink)} aria-hidden />
       <span>{label}</span>
     </button>
   );
