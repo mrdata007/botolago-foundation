@@ -278,7 +278,30 @@ export const BASELINES: Baselines = {
   // Lane A moved no key on or off the unreferenced list, because the three it
   // added each have a literal call site and the four it converted still reach
   // the same keys. W4 81 - 4 = 77.
-  W3: 255,
+  //
+  // BG-0095 leagues/players migration, 2026-09-21: exactly two of those
+  // "wanted again" keys were wanted again. `/fantasy/players/$playerId` used
+  // to mark a double or blank gameweek with the literal English strings "DGW"
+  // and "BGW" hardcoded in the JSX; the Calendrier tab now renders
+  // `fantasy.fixtures.double` and `fantasy.fixtures.blank`, which were already
+  // translated in both languages and referenced by nothing. W3 262 -> 260.
+  //
+  // Every other key this migration added is referenced by the screen that
+  // added it, so it does not move the count; W1, W2 and W4 are unchanged. W4
+  // in particular is deliberate: the new copy is written as
+  // `cond ? t("a") : t("b")`, never `t(cond ? "a" : "b")`, and the eight
+  // dynamic call sites these files already had (`player.pos.`,
+  // `player.status.`, and the two label-from-a-table lookups) are all still
+  // there.
+  //
+  // Integration, third pass — and the last, all four lanes are in. Each lane
+  // measured against W3 262 / W4 88 and each moved it, so no lane's pair is
+  // the merged tree's. Measured once on the merge: W3 253, W4 77. That is
+  // 255 - 2, BG-0095's two keys (fantasy.fixtures.double/.blank, which
+  // replaced hardcoded English "DGW"/"BGW" in the Calendrier tab) coming off
+  // the unreferenced list, and W4 unchanged because BG-0095 added no dynamic
+  // call site — its new copy is `cond ? t("a") : t("b")` throughout.
+  W3: 253,
   W4: 77,
 };
 
