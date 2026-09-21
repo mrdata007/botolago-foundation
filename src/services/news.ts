@@ -141,7 +141,17 @@ export function selectNewsLead(
   return editorialLead;
 }
 
-/** Select content independently of the interface locale, without hiding request failures. */
+/**
+ * Select an edition for the reader, without hiding request failures.
+ *
+ * "auto" reads the requested locale and the other language so the rail is never
+ * empty while the other edition has stories, but the reader's own locale always
+ * wins when it has articles of its own: French readers get French headlines and
+ * Arabic readers Arabic ones, by the same rule in both directions. Freshness
+ * alone never overrides the locale — a fresher Arabic feed must not replace a
+ * populated French one, nor the reverse. An explicit selection reads only that
+ * language and is never substituted, including when it comes back empty.
+ */
 export async function getNewsEdition(
   repository: Pick<NewsRepository, "getFeed" | "getHomeModules">,
   preferredLanguage: NewsLanguage,
@@ -159,13 +169,10 @@ export async function getNewsEdition(
       page: await repository.getFeed({ language, limit: 50 }, requestContext),
     })),
   );
-  const latestPublication = (items: readonly ArticleCardDto[]) =>
-    items.reduce((latest, article) => Math.max(latest, Date.parse(article.publishedAt)), -Infinity);
-  const selected = feeds.reduce((current, candidate) =>
-    latestPublication(candidate.page.items) > latestPublication(current.page.items)
-      ? candidate
-      : current,
-  );
+  // `languages[0]` is the requested locale; later entries are fallbacks in order.
+  // With every feed empty the requested locale still owns the empty state, so it
+  // keeps the reader's own language and direction.
+  const selected = feeds.find((feed) => feed.page.items.length > 0) ?? feeds[0];
   const modules = await repository.getHomeModules(selected.language, 8, requestContext);
   const lead = selectNewsLead(modules.lead, selected.page.items, now);
   return {
