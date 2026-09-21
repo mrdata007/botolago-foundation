@@ -17,6 +17,62 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 // So this file blocks publication rather than describing the problem. It is
 // expected to FAIL until the owner supplies the values, and that is the point.
 
+// ---------------------------------------------------------------------------
+// TODO — swap these interim values for the real ones, in BOTH languages, the
+// moment the company exists. Each pair below is what is on the page today and
+// what has to replace it. `bun run legal:gate` passes now because no bracketed
+// blank remains; it will NOT catch a stale interim value, so this list is the
+// only record of what is still provisional.
+//
+//   src/content/legal/documents.ts
+//
+//   1. Raison sociale
+//        now  fr "BotolaGO (société en cours de constitution)"
+//             ar "BotolaGO (شركة في طور التأسيس)"
+//        then the registered company name exactly as it appears on the RC.
+//
+//   2. RC number
+//        now  fr "RC : en cours d'immatriculation"
+//             ar "السجل التجاري: في طور التسجيل"
+//        then "RC n° <number>" / "السجل التجاري رقم <number>".
+//
+//   3. ICE number
+//        now  fr "ICE : en cours d'immatriculation"
+//             ar "التعريف الموحد للمقاولة: في طور التسجيل"
+//        then "ICE n° <number>" / "التعريف الموحد للمقاولة رقم <number>".
+//
+//   4. Registered address
+//        now  "Agadir, Maroc" / "أكادير، المغرب"
+//        then the full registered address as filed.
+//
+//   5. CNDP declaration
+//        now  fr "Déclaration CNDP : déclaration en cours"
+//             ar "التصريح لدى اللجنة الوطنية ... (CNDP): التصريح جارٍ"
+//        then the receipt number, and restore the assertion that the
+//        processing IS declared -- the sentence was deliberately rewritten so
+//        it no longer claims a registration that has not been issued.
+//
+//   6. Contact address
+//        now  contact@botolago.com
+//        then confirm this mailbox actually exists and is monitored; a privacy
+//        contact that bounces is worse than none.
+//
+// Two rows in the subprocessor table describe the absence of a thing, and must
+// be revisited when that changes rather than when the company registers:
+//
+//   7. "Aucun outil de mesure d'audience" / "لا تُستعمل أي أداة لقياس الجمهور"
+//        True today: nothing in src/ loads an analytics script. The moment one
+//        is added, name it here, say what it collects, and say where it stores
+//        it -- and restore the cookie clause, which currently states that no
+//        audience-measurement cookie is set.
+//
+//   8. "Supabase Auth" as the mail sender, "selon la politique de Supabase"
+//        True today: confirmation mail is sent by Supabase's own service from
+//        noreply@mail.app.supabase.io. If a dedicated sender is configured,
+//        name it and state its region. There is no marketing mail system at
+//        all, which is why the row no longer mentions marketing.
+// ---------------------------------------------------------------------------
+
 const LANGS = ["fr", "ar"] as const;
 
 function textOf(block: LegalBlock): string[] {

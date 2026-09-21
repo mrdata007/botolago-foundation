@@ -11,7 +11,7 @@
 //
 // Every remaining [bracketed] value is the owner's to supply, and
 // legal-content.test.ts fails while any of them survive -- these pages must not
-// reach production carrying "[Raison sociale]" or an unissued CNDP number.
+// reach production carrying "BotolaGO (société en cours de constitution)" or an unissued CNDP number.
 
 import type { Language } from "@/types/domain";
 
@@ -41,7 +41,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "1. Éditeur et objet" },
       {
         type: "paragraph",
-        text: "L'application BotolaGO (ci-après « l'Application ») est éditée par [Raison sociale], société de droit marocain, RC n° [numéro RC], ICE n° [numéro ICE], siège social : [adresse], Agadir, Maroc (ci-après « BotolaGO » ou « nous »). Contact : [email de contact].",
+        text: "L'application BotolaGO (ci-après « l'Application ») est éditée par BotolaGO (société en cours de constitution), société de droit marocain, RC : en cours d'immatriculation, ICE : en cours d'immatriculation, siège social : Agadir, Maroc (ci-après « BotolaGO » ou « nous »). Contact : contact@botolago.com.",
       },
       {
         type: "paragraph",
@@ -65,7 +65,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "4. Compte utilisateur" },
       {
         type: "paragraph",
-        text: "Vous vous engagez à fournir des informations exactes et à les maintenir à jour. Vous êtes seul responsable de la confidentialité de vos identifiants et de toute activité effectuée depuis votre compte. Informez-nous sans délai de tout accès non autorisé à [email de contact].",
+        text: "Vous vous engagez à fournir des informations exactes et à les maintenir à jour. Vous êtes seul responsable de la confidentialité de vos identifiants et de toute activité effectuée depuis votre compte. Informez-nous sans délai de tout accès non autorisé à contact@botolago.com.",
       },
       {
         type: "paragraph",
@@ -158,12 +158,12 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "14. Résiliation" },
       {
         type: "paragraph",
-        text: "Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l'Application ou en écrivant à [email de contact]. BotolaGO peut suspendre ou résilier votre accès, avec ou sans préavis selon la gravité, en cas de violation des CGU. La suppression du compte entraîne la perte des points, classements et lots non réclamés.",
+        text: "Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l'Application ou en écrivant à contact@botolago.com. BotolaGO peut suspendre ou résilier votre accès, avec ou sans préavis selon la gravité, en cas de violation des CGU. La suppression du compte entraîne la perte des points, classements et lots non réclamés.",
       },
       { type: "heading", text: "15. Droit applicable et litiges" },
       {
         type: "paragraph",
-        text: "Les CGU sont soumises au droit marocain. Toute réclamation doit d'abord être adressée à [email de contact] ; nous répondons sous 30 jours. À défaut de règlement amiable, les tribunaux compétents d'Agadir sont seuls compétents, sous réserve des dispositions impératives protectrices du consommateur (loi n° 31-08).",
+        text: "Les CGU sont soumises au droit marocain. Toute réclamation doit d'abord être adressée à contact@botolago.com ; nous répondons sous 30 jours. À défaut de règlement amiable, les tribunaux compétents d'Agadir sont seuls compétents, sous réserve des dispositions impératives protectrices du consommateur (loi n° 31-08).",
       },
       { type: "heading", text: "16. Dispositions diverses" },
       {
@@ -182,7 +182,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "1. الناشر والموضوع" },
       {
         type: "paragraph",
-        text: "تطبيق BotolaGO (المشار إليه فيما بعد بـ«التطبيق») تنشره [الاسم التجاري للشركة]، شركة خاضعة للقانون المغربي، السجل التجاري رقم [رقم السجل التجاري]، التعريف الموحد للمقاولة رقم [رقم ICE]، المقر الاجتماعي: [العنوان]، أكادير، المغرب (المشار إليها فيما بعد بـ«BotolaGO» أو «نحن»). للتواصل: [البريد الإلكتروني].",
+        text: "تطبيق BotolaGO (المشار إليه فيما بعد بـ«التطبيق») تنشره BotolaGO (شركة في طور التأسيس)، شركة خاضعة للقانون المغربي، السجل التجاري: في طور التسجيل، التعريف الموحد للمقاولة: في طور التسجيل، المقر الاجتماعي: أكادير، المغرب (المشار إليها فيما بعد بـ«BotolaGO» أو «نحن»). للتواصل: contact@botolago.com.",
       },
       {
         type: "paragraph",
@@ -206,7 +206,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "4. حساب المستخدم" },
       {
         type: "paragraph",
-        text: "تلتزم بتقديم معلومات صحيحة وتحديثها. أنت وحدك المسؤول عن سرية بيانات دخولك وعن كل نشاط يتم من حسابك. أخبرنا فوراً بأي ولوج غير مرخص عبر [البريد الإلكتروني].",
+        text: "تلتزم بتقديم معلومات صحيحة وتحديثها. أنت وحدك المسؤول عن سرية بيانات دخولك وعن كل نشاط يتم من حسابك. أخبرنا فوراً بأي ولوج غير مرخص عبر contact@botolago.com.",
       },
       {
         type: "paragraph",
@@ -299,12 +299,12 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "14. إنهاء الحساب" },
       {
         type: "paragraph",
-        text: "يمكنك حذف حسابك في أي وقت من إعدادات التطبيق أو بمراسلة [البريد الإلكتروني]. يجوز لـ BotolaGO تعليق أو إنهاء ولوجك، بإشعار أو بدونه حسب الخطورة، في حال مخالفة الشروط. يترتب على حذف الحساب فقدان النقاط والترتيبات والجوائز غير المُطالب بها.",
+        text: "يمكنك حذف حسابك في أي وقت من إعدادات التطبيق أو بمراسلة contact@botolago.com. يجوز لـ BotolaGO تعليق أو إنهاء ولوجك، بإشعار أو بدونه حسب الخطورة، في حال مخالفة الشروط. يترتب على حذف الحساب فقدان النقاط والترتيبات والجوائز غير المُطالب بها.",
       },
       { type: "heading", text: "15. القانون الواجب التطبيق والنزاعات" },
       {
         type: "paragraph",
-        text: "تخضع هذه الشروط للقانون المغربي. توجَّه كل شكاية أولاً إلى [البريد الإلكتروني]، ونرد عليها خلال 30 يوماً. وفي غياب تسوية ودية، تختص محاكم أكادير وحدها بالنظر في النزاع، مع مراعاة المقتضيات الآمرة لحماية المستهلك (القانون رقم 31-08).",
+        text: "تخضع هذه الشروط للقانون المغربي. توجَّه كل شكاية أولاً إلى contact@botolago.com، ونرد عليها خلال 30 يوماً. وفي غياب تسوية ودية، تختص محاكم أكادير وحدها بالنظر في النزاع، مع مراعاة المقتضيات الآمرة لحماية المستهلك (القانون رقم 31-08).",
       },
       { type: "heading", text: "16. أحكام متفرقة" },
       {
@@ -326,7 +326,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "1. Responsable du traitement" },
       {
         type: "paragraph",
-        text: "[Raison sociale], RC n° [numéro RC], ICE n° [numéro ICE], [adresse], Agadir, Maroc. Contact données personnelles : [email de contact]. Déclaration CNDP : déclaration en cours.",
+        text: "BotolaGO (société en cours de constitution), RC : en cours d'immatriculation, ICE : en cours d'immatriculation, Agadir, Maroc. Contact données personnelles : contact@botolago.com. Déclaration CNDP : déclaration en cours.",
       },
       { type: "heading", text: "2. Données collectées" },
       {
@@ -424,12 +424,12 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "distribution de l'Application, notifications push, connexion sociale",
             "selon leurs politiques",
           ],
+          ["Aucun outil de mesure d'audience", "non utilisé à ce jour", "—"],
           [
-            "[Outil d'analyse d'audience]",
-            "mesure d'usage et rapports de plantage",
-            "[à préciser]",
+            "Supabase Auth",
+            "e-mails transactionnels (confirmation de compte, réinitialisation)",
+            "selon la politique de Supabase",
           ],
-          ["[Service d'envoi d'emails]", "emails transactionnels et marketing", "[à préciser]"],
         ],
       },
       {
@@ -466,7 +466,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "8. Vos droits" },
       {
         type: "paragraph",
-        text: "Conformément à la loi 09-08, vous disposez des droits d'accès, de rectification, d'opposition et de suppression de vos données, ainsi que du droit de retirer votre consentement au marketing. Exercez-les depuis les paramètres de l'Application ou en écrivant à [email de contact] avec une copie de votre pièce d'identité. Nous répondons sous 30 jours. Vous pouvez également saisir la CNDP (www.cndp.ma).",
+        text: "Conformément à la loi 09-08, vous disposez des droits d'accès, de rectification, d'opposition et de suppression de vos données, ainsi que du droit de retirer votre consentement au marketing. Exercez-les depuis les paramètres de l'Application ou en écrivant à contact@botolago.com avec une copie de votre pièce d'identité. Nous répondons sous 30 jours. Vous pouvez également saisir la CNDP (www.cndp.ma).",
       },
       { type: "heading", text: "9. Sécurité" },
       {
@@ -481,7 +481,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. Cookies et traceurs" },
       {
         type: "paragraph",
-        text: "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push, identifiant d'analyse) nécessaires à son fonctionnement et à la mesure d'audience. Le site web botolago.ma [à confirmer] utilise des cookies strictement nécessaires et, avec votre consentement, des cookies de mesure d'audience.",
+        text: "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.",
       },
       { type: "heading", text: "12. Modifications" },
       {
@@ -491,7 +491,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "13. Contact" },
       {
         type: "paragraph",
-        text: "[Raison sociale] — [adresse], Agadir, Maroc — [email de contact].",
+        text: "BotolaGO (société en cours de constitution) — Agadir, Maroc — contact@botolago.com.",
       },
     ],
   },
@@ -505,7 +505,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
         type: "paragraph",
-        text: "[الاسم التجاري للشركة]، السجل التجاري رقم [رقم السجل التجاري]، التعريف الموحد للمقاولة رقم [رقم ICE]، [العنوان]، أكادير، المغرب. للتواصل بخصوص المعطيات الشخصية: [البريد الإلكتروني]. التصريح لدى اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (CNDP): التصريح جارٍ.",
+        text: "BotolaGO (شركة في طور التأسيس)، السجل التجاري: في طور التسجيل، التعريف الموحد للمقاولة: في طور التسجيل، أكادير، المغرب. للتواصل بخصوص المعطيات الشخصية: contact@botolago.com. التصريح لدى اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (CNDP): التصريح جارٍ.",
       },
       { type: "heading", text: "2. البيانات التي نجمعها" },
       {
@@ -589,8 +589,12 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ],
           ["مزوّد البيانات الرياضية", "إحصائيات المباريات (لا تُنقل إليه أي بيانات شخصية)", "—"],
           ["Apple / Google", "توزيع التطبيق، الإشعارات، تسجيل الدخول الاجتماعي", "وفق سياساتهما"],
-          ["[أداة تحليل الجمهور]", "قياس الاستعمال وتقارير الأعطال", "[يُحدد لاحقاً]"],
-          ["[خدمة إرسال البريد الإلكتروني]", "الرسائل المعاملاتية والتسويقية", "[يُحدد لاحقاً]"],
+          ["لا تُستعمل أي أداة لقياس الجمهور", "غير مستعملة إلى حدّ الآن", "—"],
+          [
+            "Supabase Auth",
+            "الرسائل المعاملاتية (تأكيد الحساب، إعادة تعيين كلمة المرور)",
+            "وفق سياسة Supabase",
+          ],
         ],
       },
       { type: "paragraph", text: "قد تُبلَّغ بياناتك إلى السلطات المغربية بناءً على طلب قانوني." },
@@ -624,7 +628,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "8. حقوقك" },
       {
         type: "paragraph",
-        text: "طبقاً للقانون 09-08، لك الحق في الولوج إلى بياناتك وتصحيحها والاعتراض على معالجتها وحذفها، وكذا الحق في سحب موافقتك على التسويق. يمكنك ممارسة هذه الحقوق من إعدادات التطبيق أو بمراسلة [البريد الإلكتروني] مرفقاً بنسخة من بطاقة تعريفك. نرد خلال 30 يوماً. كما يمكنك اللجوء إلى اللجنة الوطنية (www.cndp.ma).",
+        text: "طبقاً للقانون 09-08، لك الحق في الولوج إلى بياناتك وتصحيحها والاعتراض على معالجتها وحذفها، وكذا الحق في سحب موافقتك على التسويق. يمكنك ممارسة هذه الحقوق من إعدادات التطبيق أو بمراسلة contact@botolago.com مرفقاً بنسخة من بطاقة تعريفك. نرد خلال 30 يوماً. كما يمكنك اللجوء إلى اللجنة الوطنية (www.cndp.ma).",
       },
       { type: "heading", text: "9. الأمن" },
       {
@@ -639,7 +643,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. ملفات تعريف الارتباط وأدوات التتبع" },
       {
         type: "paragraph",
-        text: "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات، معرّف التحليل) ضرورية لاشتغاله ولقياس الجمهور. يستعمل الموقع الإلكتروني botolago.ma [يُؤكد لاحقاً] ملفات تعريف ارتباط ضرورية فقط، وبموافقتك، ملفات لقياس الجمهور.",
+        text: "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات) ضرورية لاشتغاله. يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.",
       },
       { type: "heading", text: "12. التعديلات" },
       {
@@ -649,7 +653,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "13. للتواصل" },
       {
         type: "paragraph",
-        text: "[الاسم التجاري للشركة] — [العنوان]، أكادير، المغرب — [البريد الإلكتروني].",
+        text: "BotolaGO (شركة في طور التأسيس) — أكادير، المغرب — contact@botolago.com.",
       },
     ],
   },
