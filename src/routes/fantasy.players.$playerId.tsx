@@ -32,7 +32,9 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
   },
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/fantasy/players/${encodeURIComponent(params.playerId)}`;
-    const title = loaderData ? `${loaderData.name} — BotolaGO Fantasy` : "Joueur — BotolaGO Fantasy";
+    const title = loaderData
+      ? `${loaderData.name} — BotolaGO Fantasy`
+      : "Joueur — BotolaGO Fantasy";
     const description = loaderData
       ? `Statistiques, forme, prix et prochains matchs de ${loaderData.name} pour votre équipe BotolaGO Fantasy.`
       : "Statistiques, forme, prix et prochains matchs du joueur pour votre équipe BotolaGO Fantasy.";
