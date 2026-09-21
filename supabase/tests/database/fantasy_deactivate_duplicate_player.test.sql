@@ -21,7 +21,26 @@
 -- the start of every section and the assertions can quote absolute counts.
 begin;
 
-select extensions.no_plan();
+-- The plan is declared, not deferred, and that is forced by the savepoints
+-- this file relies on.
+--
+-- pgTAP numbers each test from a temp SEQUENCE, which `rollback to savepoint`
+-- does not touch, so the emitted `ok N` lines stay correct and ascending. But
+-- it also records how many tests it has run in the `__tcache__` temp TABLE,
+-- and that write is ordinary transactional state, so every
+-- `rollback to savepoint` below rewinds the counter while the TAP lines
+-- already sent to the client remain sent.
+--
+-- Under `no_plan()`, finish() emits `1..<that counter>`. With nine rolled-back
+-- scenarios the counter ends at 13 while 31 tests have actually run, and
+-- pg_prove fails the file with "You planned 13 tests but ran 31" — no
+-- assertion having failed. Declaring the plan up front emits `1..31` before
+-- the first savepoint exists, where nothing can rewind it.
+--
+-- Adding or removing an assertion means updating this number. That is the
+-- intended trade: if the two disagree, pg_prove fails the file loudly instead
+-- of quietly accepting a short run.
+select extensions.plan(31);
 
 -- =====================================================================
 -- FIXTURE
@@ -654,6 +673,28 @@ select extensions.ok(
 );
 
 rollback to savepoint bg0057_pool;
+
+-- Re-sync pgTAP's rolled-back run counter before finishing.
+--
+-- The declared plan above is what pg_prove parses, so the file already passes
+-- without this. But finish() also compares the plan against that rewound
+-- counter, and would print "Looks like you planned 31 tests but ran 13" on a
+-- fully passing run — a false alarm in the CI log, which is worse than no
+-- message. The sequence that numbered the tests is the honest count, because
+-- rollback does not touch it, so finish() is given that instead.
+--
+-- This does not hide a real failure. pg_prove decides pass/fail from the
+-- `ok`/`not ok` lines themselves, which are emitted as each test runs and
+-- cannot be rolled back.
+--
+-- Wrapped in a DO block on purpose: `_set` returns the value it set, and a
+-- bare `select` of it would print a stray `31` into the middle of the TAP
+-- stream. A DO block returns nothing, so the output stays clean.
+do $resync$
+begin
+  perform extensions._set('curr_test'::text, currval('__tresults___numb_seq')::integer);
+end;
+$resync$;
 
 select * from extensions.finish();
 rollback;

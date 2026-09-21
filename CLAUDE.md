@@ -1,55 +1,29 @@
 # CLAUDE.md
 
-Repository instructions for Claude Code. `AGENTS.md` sits beside this file and
-also applies — in particular its rule against rewriting published git history,
-because this repository syncs to Lovable and a force-push destroys the owner's
-project history.
+Repository instructions for Claude Code. **[`AGENTS.md`](AGENTS.md) sits beside
+this file and also applies in full** — it holds the rules that bind every
+coding agent, not just this one. Read it first. In particular:
+
+- **[One writer at a time, per database](AGENTS.md#one-writer-at-a-time-per-database)**
+  — never run two agents or workflows that write to the same database at once.
+- **Never rewrite published git history**, because this repository syncs to
+  Lovable and a force-push destroys the owner's project history.
+
+What follows here is the Claude-specific remainder.
 
 ## One writer at a time, per database
 
-**Never run two agents or workflows that write to the same database at the same
-time. Before any database write, check that nothing else is writing.**
+**This rule lives in [`AGENTS.md`](AGENTS.md#one-writer-at-a-time-per-database).**
+Read it there. It is not repeated here, because two copies of a normative rule
+drift apart and the reader cannot tell which one is current.
 
-This is not a style preference. Concurrent writers to one database produce
-failures that are expensive in a way ordinary bugs are not: the damage lands in
-production data rather than in code, a rollback does not exist for what the
-other writer already committed, and the symptom usually surfaces somewhere far
-from the cause — a migration that half-applied, a guard that tripped on a row
-another lane had just changed, an "idempotent" script that was idempotent only
-against the state it expected.
+In short: never run two agents or workflows that write to the same database at
+the same time, and check what is already running before any write. `AGENTS.md`
+has what counts as a write, what to check first, and what happened here when
+that was not done.
 
-### What counts as a write
-
-Any `insert`, `update`, `delete`, `alter`, `create`, `drop`, `grant`, `revoke`,
-a migration promotion, an RPC that mutates, a seed or backfill script, a
-workflow or GitHub Action that touches the database, and `supabase db reset` or
-`db push` against anything shared. Reads are free — `select`, `execute_sql`
-inspection, `pg_get_functiondef`, `EXPLAIN` — and most verification should be
-built out of them.
-
-### Before writing
-
-1. **List what is running.** Check for in-flight agents, subagents, workflows
-   and scheduled jobs. An agent you launched twenty minutes ago and forgot is
-   the usual culprit.
-2. **Read what they touch.** A lane's brief says which files it owns; a lane
-   confined to `src/` cannot write to the database, and a lane owning
-   `supabase/migrations/` or `scripts/backend/` can. Frontend lanes are safe to
-   run alongside a write; backend lanes are not.
-3. **Check the scheduled jobs too.** Cron-triggered workflows write without
-   anyone starting them. In this repository that means the fantasy season
-   orchestrator and the football recovery run on their own schedules, and the
-   news ingestion schedules are stood down but still dispatchable by hand.
-4. **Serialise, do not overlap.** If something else is writing, wait for it.
-   Splitting a write into "small enough to be safe" is not a mitigation.
-
-### When you are the writer
-
-Say so plainly in your report — which database, what changed, and what you
-checked before starting. Take a baseline read immediately before the write and
-compare immediately after, so "nothing else changed underneath me" is a
-measurement rather than an assumption. Production writes additionally follow
-the rules below.
+It is in `AGENTS.md` rather than this file so it binds every coding agent that
+works in this repository, not only Claude Code.
 
 ## Production database writes
 
