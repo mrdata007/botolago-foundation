@@ -70,10 +70,14 @@ select extensions.is(
 set local role anon;
 select set_config('request.jwt.claim.role', 'anon', true);
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
+-- BG-0073: ingestion persists the canonical GNews excerpt but no longer
+-- publishes it. The excerpt exists as an unpublished draft and only
+-- api.editorial_transition_article, which requires a publisher editorial role,
+-- can put it in front of a reader.
 select extensions.is(
   jsonb_array_length(api.news_feed('fr') -> 'items'),
-  1,
-  'the public French News feed exposes the canonical GNews excerpt'
+  0,
+  'the public French News feed does not expose an unpublished GNews excerpt'
 );
 select extensions.throws_ok(
   $$select api.news_ingest_provider_article(
