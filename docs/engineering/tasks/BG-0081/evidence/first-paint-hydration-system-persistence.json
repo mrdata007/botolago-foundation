@@ -1,0 +1,3994 @@
+{
+  "flash": [
+    {
+      "id": "light/fr/390/home",
+      "expectDark": false,
+      "frames": 68,
+      "paintedFrames": 68,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/fr/390/fantasy",
+      "expectDark": false,
+      "frames": 69,
+      "paintedFrames": 69,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/fr/390/profile",
+      "expectDark": false,
+      "frames": 69,
+      "paintedFrames": 69,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/fr/1440/home",
+      "expectDark": false,
+      "frames": 65,
+      "paintedFrames": 65,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/fr/1440/fantasy",
+      "expectDark": false,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/fr/1440/profile",
+      "expectDark": false,
+      "frames": 69,
+      "paintedFrames": 69,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/ar/390/home",
+      "expectDark": false,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/ar/390/fantasy",
+      "expectDark": false,
+      "frames": 61,
+      "paintedFrames": 61,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/ar/390/profile",
+      "expectDark": false,
+      "frames": 61,
+      "paintedFrames": 61,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/ar/1440/home",
+      "expectDark": false,
+      "frames": 65,
+      "paintedFrames": 65,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/ar/1440/fantasy",
+      "expectDark": false,
+      "frames": 57,
+      "paintedFrames": 57,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "light/ar/1440/profile",
+      "expectDark": false,
+      "frames": 65,
+      "paintedFrames": 65,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "dark/fr/390/home",
+      "expectDark": true,
+      "frames": 67,
+      "paintedFrames": 67,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/fr/390/fantasy",
+      "expectDark": true,
+      "frames": 68,
+      "paintedFrames": 68,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/fr/390/profile",
+      "expectDark": true,
+      "frames": 68,
+      "paintedFrames": 68,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/fr/1440/home",
+      "expectDark": true,
+      "frames": 73,
+      "paintedFrames": 73,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/fr/1440/fantasy",
+      "expectDark": true,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/fr/1440/profile",
+      "expectDark": true,
+      "frames": 67,
+      "paintedFrames": 67,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/ar/390/home",
+      "expectDark": true,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/ar/390/fantasy",
+      "expectDark": true,
+      "frames": 61,
+      "paintedFrames": 61,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/ar/390/profile",
+      "expectDark": true,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/ar/1440/home",
+      "expectDark": true,
+      "frames": 63,
+      "paintedFrames": 63,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/ar/1440/fantasy",
+      "expectDark": true,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "dark/ar/1440/profile",
+      "expectDark": true,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/fr/390/home",
+      "expectDark": true,
+      "frames": 69,
+      "paintedFrames": 69,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/fr/390/fantasy",
+      "expectDark": true,
+      "frames": 65,
+      "paintedFrames": 65,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/fr/390/profile",
+      "expectDark": true,
+      "frames": 67,
+      "paintedFrames": 67,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/fr/1440/home",
+      "expectDark": true,
+      "frames": 63,
+      "paintedFrames": 63,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/fr/1440/fantasy",
+      "expectDark": true,
+      "frames": 68,
+      "paintedFrames": 68,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/fr/1440/profile",
+      "expectDark": true,
+      "frames": 70,
+      "paintedFrames": 70,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/ar/390/home",
+      "expectDark": true,
+      "frames": 63,
+      "paintedFrames": 63,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/ar/390/fantasy",
+      "expectDark": true,
+      "frames": 60,
+      "paintedFrames": 60,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/ar/390/profile",
+      "expectDark": true,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/ar/1440/home",
+      "expectDark": true,
+      "frames": 65,
+      "paintedFrames": 65,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/ar/1440/fantasy",
+      "expectDark": true,
+      "frames": 62,
+      "paintedFrames": 62,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-dark/ar/1440/profile",
+      "expectDark": true,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "dark",
+      "classAtFirstPaintedFrame": "dark",
+      "distinctBodyBg": ["oklch(0.15 0.03 260)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.15 0.03 260)",
+      "colorScheme": "dark"
+    },
+    {
+      "id": "system-light/fr/390/home",
+      "expectDark": false,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/fr/390/fantasy",
+      "expectDark": false,
+      "frames": 67,
+      "paintedFrames": 67,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/fr/390/profile",
+      "expectDark": false,
+      "frames": 68,
+      "paintedFrames": 68,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/fr/1440/home",
+      "expectDark": false,
+      "frames": 67,
+      "paintedFrames": 67,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/fr/1440/fantasy",
+      "expectDark": false,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/fr/1440/profile",
+      "expectDark": false,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/ar/390/home",
+      "expectDark": false,
+      "frames": 64,
+      "paintedFrames": 64,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/ar/390/fantasy",
+      "expectDark": false,
+      "frames": 62,
+      "paintedFrames": 62,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/ar/390/profile",
+      "expectDark": false,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/ar/1440/home",
+      "expectDark": false,
+      "frames": 62,
+      "paintedFrames": 62,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/ar/1440/fantasy",
+      "expectDark": false,
+      "frames": 61,
+      "paintedFrames": 61,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    },
+    {
+      "id": "system-light/ar/1440/profile",
+      "expectDark": false,
+      "frames": 66,
+      "paintedFrames": 66,
+      "classAtFirstFrame": "",
+      "classAtFirstPaintedFrame": "",
+      "distinctBodyBg": ["oklch(0.985 0.005 250)"],
+      "anyWrongClassFrame": false,
+      "firstPaintedBodyBg": "oklch(0.985 0.005 250)",
+      "colorScheme": "light"
+    }
+  ],
+  "hydration": [
+    {
+      "id": "light/fr/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/fr/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/fr/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/fr/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/fr/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/fr/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/ar/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/ar/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/ar/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/ar/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/ar/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "light/ar/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/ar/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/ar/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/ar/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/ar/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/ar/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/ar/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/fr/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/fr/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/fr/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/fr/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/fr/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/fr/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/ar/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/ar/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/ar/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/ar/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/ar/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-dark/ar/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/fr/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/fr/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/fr/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/fr/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/fr/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/fr/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/ar/390/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/ar/390/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/ar/390/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/ar/1440/home",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/ar/1440/fantasy",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "system-light/ar/1440/profile",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    },
+    {
+      "id": "dark/fr/390/auth-login",
+      "hydrationMessages": [],
+      "otherConsole": ["error: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID"]
+    }
+  ],
+  "system": [
+    {
+      "lang": "fr",
+      "before": {
+        "cls": "",
+        "bg": "oklch(0.985 0.005 250)",
+        "nav": 1
+      },
+      "afterDark": {
+        "cls": "dark",
+        "bg": "oklch(0.15 0.03 260)",
+        "nav": 1
+      },
+      "afterLight": {
+        "cls": "",
+        "bg": "oklch(0.985 0.005 250)",
+        "nav": 1
+      }
+    },
+    {
+      "lang": "ar",
+      "before": {
+        "cls": "",
+        "bg": "oklch(0.985 0.005 250)",
+        "nav": 1
+      },
+      "afterDark": {
+        "cls": "dark",
+        "bg": "oklch(0.15 0.03 260)",
+        "nav": 1
+      },
+      "afterLight": {
+        "cls": "",
+        "bg": "oklch(0.985 0.005 250)",
+        "nav": 1
+      }
+    }
+  ],
+  "persistence": [
+    {
+      "lang": "fr",
+      "controlVisible": true,
+      "afterClick": {
+        "cls": "dark",
+        "stored": "dark",
+        "bg": "oklch(0.15 0.03 260)",
+        "checked": "true"
+      },
+      "afterReload": {
+        "cls": "dark",
+        "stored": "dark",
+        "bg": "oklch(0.15 0.03 260)",
+        "firstFrameCls": "dark",
+        "checked": "true"
+      },
+      "afterNav": {
+        "cls": "dark",
+        "bg": "oklch(0.15 0.03 260)"
+      },
+      "hydrationMessages": []
+    },
+    {
+      "lang": "ar",
+      "controlVisible": true,
+      "afterClick": {
+        "cls": "dark",
+        "stored": "dark",
+        "bg": "oklch(0.15 0.03 260)",
+        "checked": "true"
+      },
+      "afterReload": {
+        "cls": "dark",
+        "stored": "dark",
+        "bg": "oklch(0.15 0.03 260)",
+        "firstFrameCls": "dark",
+        "checked": "true"
+      },
+      "afterNav": {
+        "cls": "dark",
+        "bg": "oklch(0.15 0.03 260)"
+      },
+      "hydrationMessages": []
+    }
+  ],
+  "contrast": [
+    {
+      "id": "dark/fr/390/home",
+      "width": "390",
+      "rows": []
+    },
+    {
+      "id": "dark/fr/390/fantasy",
+      "width": "390",
+      "rows": [
+        {
+          "sel": "main h1",
+          "text": "Fantasy",
+          "ratio": null,
+          "note": "image:section"
+        },
+        {
+          "sel": "main h2",
+          "text": "Ligues & Coupes",
+          "fg": "oklch(0.24 0.09 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 22,
+          "weight": "800",
+          "ratio": 8.46,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main h2",
+          "text": "Notifications",
+          "fg": "oklch(0.24 0.09 258)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 22,
+          "weight": "800",
+          "ratio": 1.04,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main h2",
+          "text": "Suivre BotolaGO",
+          "fg": "oklch(0.24 0.09 258)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 22,
+          "weight": "800",
+          "ratio": 1.04,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main h2",
+          "text": "En savoir plus sur BotolaGO Fant",
+          "ratio": null,
+          "note": "image:section"
+        },
+        {
+          "sel": "main p",
+          "text": "Journée 14 Deadline: mercredi 23",
+          "ratio": null,
+          "note": "image:section"
+        },
+        {
+          "sel": "main p",
+          "text": "Aucune ligue pour le moment.",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 13,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main p",
+          "text": "Recevez les bilans hebdomadaires",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 14,
+          "weight": "400",
+          "ratio": 1,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main span",
+          "text": "Journée 14",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "800",
+          "ratio": 1.32,
+          "note": "span.inline-flex.items-center"
+        },
+        {
+          "sel": "main span",
+          "text": "BotolaGO Fantasy",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 12,
+          "weight": "700",
+          "ratio": 1.32,
+          "note": "a.relative.block"
+        },
+        {
+          "sel": "main span",
+          "text": "Classement général",
+          "fg": "rgb(255, 255, 255)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 28,
+          "weight": "900",
+          "ratio": 8.45,
+          "note": "a.relative.block"
+        },
+        {
+          "sel": "main span",
+          "text": "Tout voir",
+          "fg": "rgb(255, 255, 255)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "700",
+          "ratio": 8.45,
+          "note": "a.relative.block"
+        },
+        {
+          "sel": "main span",
+          "text": "Ligues générales",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "800",
+          "ratio": 1.32,
+          "note": "span.inline-flex.items-center"
+        },
+        {
+          "sel": "main span",
+          "text": "—",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "-",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "—",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "-",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "Ligues privées",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "800",
+          "ratio": 1.32,
+          "note": "span.inline-flex.items-center"
+        },
+        {
+          "sel": "main span",
+          "text": "Notifications push",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 1,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main span",
+          "text": "Notifications push",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 1,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main button",
+          "text": "Ligues",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 8.45,
+          "note": "button.min-h-10.rounded-[8px]"
+        },
+        {
+          "sel": "main button",
+          "text": "Coupes",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 1.04,
+          "note": "div.grid.rounded-[10px]"
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/390/profile",
+      "width": "390",
+      "rows": [
+        {
+          "sel": "main h1",
+          "text": "Profil",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 34,
+          "weight": "900",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main h2",
+          "text": "Connectez-vous à BotolaGO",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 17,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main h2",
+          "text": "Préférences",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main p",
+          "text": "Créez un compte pour sauvegarder",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 14,
+          "weight": "400",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Profil",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 34,
+          "weight": "900",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Connectez-vous à BotolaGO",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 17,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "BotolaGO",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 17,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Langue",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "FR",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "600",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Apparence",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Clair",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        },
+        {
+          "sel": "main span",
+          "text": "Sombre",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.33,
+          "note": "button.flex.min-h-10"
+        },
+        {
+          "sel": "main span",
+          "text": "Système",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        },
+        {
+          "sel": "main button",
+          "text": "Créer un compte",
+          "ratio": null,
+          "note": "image:button"
+        },
+        {
+          "sel": "main button",
+          "text": "Se connecter",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main button",
+          "text": "FR",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "600",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main button",
+          "text": "Clair",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        },
+        {
+          "sel": "main button",
+          "text": "Sombre",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.33,
+          "note": "button.flex.min-h-10"
+        },
+        {
+          "sel": "main button",
+          "text": "Système",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/1440/home",
+      "width": "1440",
+      "rows": [
+        {
+          "sel": "main h1",
+          "text": "BotolaGO — Actualité, matchs et ",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 16,
+          "weight": "400",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main h2",
+          "text": "En direct & à venir",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main h2",
+          "text": "Votre Fantasy",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main h2",
+          "text": "Classement",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main h2",
+          "text": "Explorer BotolaGO",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main p",
+          "text": "lundi 21 septembre",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "600",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Bon après-midi",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "800",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "lundi 21 septembre",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "600",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Matches",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 10,
+          "weight": "900",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "En direct & à venir",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "En direct",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Fantasy",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 10,
+          "weight": "900",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Votre Fantasy",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Fantasy",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Botola Pro Inwi",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 10,
+          "weight": "900",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Classement",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Explorer BotolaGO",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "BotolaGO",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 18,
+          "weight": "900",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main a",
+          "text": "Tout voir",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main a",
+          "text": "Tout voir",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main a",
+          "text": "Tout voir",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main a",
+          "text": "Matches",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 16,
+          "weight": "400",
+          "ratio": 1.05,
+          "note": "a.flex.items-center"
+        },
+        {
+          "sel": "main a",
+          "text": "Fantasy",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 16,
+          "weight": "400",
+          "ratio": 1.05,
+          "note": "a.flex.items-center"
+        },
+        {
+          "sel": "main a",
+          "text": "Profil",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 16,
+          "weight": "400",
+          "ratio": 1.05,
+          "note": "a.flex.items-center"
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/1440/fantasy",
+      "width": "1440",
+      "rows": [
+        {
+          "sel": "main h1",
+          "text": "Fantasy",
+          "ratio": null,
+          "note": "image:section"
+        },
+        {
+          "sel": "main h2",
+          "text": "Ligues & Coupes",
+          "fg": "oklch(0.24 0.09 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 22,
+          "weight": "800",
+          "ratio": 8.46,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main h2",
+          "text": "Notifications",
+          "fg": "oklch(0.24 0.09 258)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 22,
+          "weight": "800",
+          "ratio": 1.04,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main h2",
+          "text": "Suivre BotolaGO",
+          "fg": "oklch(0.24 0.09 258)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 22,
+          "weight": "800",
+          "ratio": 1.04,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main h2",
+          "text": "En savoir plus sur BotolaGO Fant",
+          "ratio": null,
+          "note": "image:section"
+        },
+        {
+          "sel": "main p",
+          "text": "Journée 14 Deadline: mercredi 23",
+          "ratio": null,
+          "note": "image:section"
+        },
+        {
+          "sel": "main p",
+          "text": "Aucune ligue pour le moment.",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 13,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main p",
+          "text": "Recevez les bilans hebdomadaires",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 14,
+          "weight": "400",
+          "ratio": 1,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main span",
+          "text": "Journée 14",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "800",
+          "ratio": 1.32,
+          "note": "span.inline-flex.items-center"
+        },
+        {
+          "sel": "main span",
+          "text": "BotolaGO Fantasy",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 12,
+          "weight": "700",
+          "ratio": 1.32,
+          "note": "a.relative.block"
+        },
+        {
+          "sel": "main span",
+          "text": "Classement général",
+          "fg": "rgb(255, 255, 255)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 28,
+          "weight": "900",
+          "ratio": 8.45,
+          "note": "a.relative.block"
+        },
+        {
+          "sel": "main span",
+          "text": "Tout voir",
+          "fg": "rgb(255, 255, 255)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "700",
+          "ratio": 8.45,
+          "note": "a.relative.block"
+        },
+        {
+          "sel": "main span",
+          "text": "Ligues générales",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "800",
+          "ratio": 1.32,
+          "note": "span.inline-flex.items-center"
+        },
+        {
+          "sel": "main span",
+          "text": "—",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "-",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "—",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "-",
+          "fg": "oklch(0.55 0.02 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "400",
+          "ratio": 8.45,
+          "note": "section.mx-4.mt-6"
+        },
+        {
+          "sel": "main span",
+          "text": "Ligues privées",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,258)",
+          "fontPx": 14,
+          "weight": "800",
+          "ratio": 1.32,
+          "note": "span.inline-flex.items-center"
+        },
+        {
+          "sel": "main span",
+          "text": "Notifications push",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 1,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main span",
+          "text": "Notifications push",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 1,
+          "note": "main.fpl-column.relative"
+        },
+        {
+          "sel": "main button",
+          "text": "Ligues",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(255,255,255)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 8.45,
+          "note": "button.min-h-10.rounded-[8px]"
+        },
+        {
+          "sel": "main button",
+          "text": "Coupes",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(1,0,250)",
+          "fontPx": 15,
+          "weight": "700",
+          "ratio": 1.04,
+          "note": "div.grid.rounded-[10px]"
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/1440/profile",
+      "width": "1440",
+      "rows": [
+        {
+          "sel": "main h1",
+          "text": "Profil",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 34,
+          "weight": "900",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main h2",
+          "text": "Connectez-vous à BotolaGO",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 17,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main h2",
+          "text": "Préférences",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "body"
+        },
+        {
+          "sel": "main p",
+          "text": "Créez un compte pour sauvegarder",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 14,
+          "weight": "400",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Profil",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 34,
+          "weight": "900",
+          "ratio": 1,
+          "note": "body"
+        },
+        {
+          "sel": "main span",
+          "text": "Connectez-vous à BotolaGO",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 17,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "BotolaGO",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 17,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Langue",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "FR",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "600",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Apparence",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main span",
+          "text": "Clair",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        },
+        {
+          "sel": "main span",
+          "text": "Sombre",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.33,
+          "note": "button.flex.min-h-10"
+        },
+        {
+          "sel": "main span",
+          "text": "Système",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        },
+        {
+          "sel": "main button",
+          "text": "Créer un compte",
+          "ratio": null,
+          "note": "image:button"
+        },
+        {
+          "sel": "main button",
+          "text": "Se connecter",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "main button",
+          "text": "FR",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "600",
+          "ratio": 1.05,
+          "note": "div.overflow-hidden.bg-[color:var(--ui-surface)]"
+        },
+        {
+          "sel": "main button",
+          "text": "Clair",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        },
+        {
+          "sel": "main button",
+          "text": "Sombre",
+          "fg": "oklch(0.88 0.11 205)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.33,
+          "note": "button.flex.min-h-10"
+        },
+        {
+          "sel": "main button",
+          "text": "Système",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.grid.grid-cols-3"
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/390/auth-login(mesh)",
+      "width": "390",
+      "rows": [
+        {
+          "sel": "h1",
+          "text": "Bon retour",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 34,
+          "weight": "900",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "p",
+          "text": "Connectez-vous pour retrouver vo",
+          "fg": "oklab(0.97 -0.0034202 -0.00939693 / 0.78)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "600",
+          "ratio": 2.51,
+          "note": "body"
+        },
+        {
+          "sel": "p",
+          "text": "Démo : demo@botolago.ma / demo12",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 11,
+          "weight": "600",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "p",
+          "text": "En continuant, vous acceptez nos",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 11,
+          "weight": "600",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "label",
+          "text": "Adresse e-mail",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "label",
+          "text": "Mot de passe",
+          "fg": "oklch(0.7 0.02 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "800",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "button",
+          "text": "Retour",
+          "fg": "oklab(0.97 -0.0034202 -0.00939693 / 0.78)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "600",
+          "ratio": 2.51,
+          "note": "body"
+        },
+        {
+          "sel": "button",
+          "text": "FR",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 12,
+          "weight": "600",
+          "ratio": 1.05,
+          "note": "body"
+        },
+        {
+          "sel": "button",
+          "text": "Se connecter",
+          "ratio": null,
+          "note": "image:button"
+        },
+        {
+          "sel": "button",
+          "text": "Continuer avec Google",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "button",
+          "text": "Continuer avec Apple",
+          "fg": "oklch(0.3 0.08 260)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "a",
+          "text": "Mot de passe oublié ?",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 13,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "a",
+          "text": "Conditions d'utilisation",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 11,
+          "weight": "600",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "a",
+          "text": "Politique de confidentialité",
+          "fg": "oklch(0.32 0.1 258)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 11,
+          "weight": "600",
+          "ratio": 1.01,
+          "note": "div.bg-[color:var(--ui-surface)].text-[color:var(--ui-on-surface)]"
+        },
+        {
+          "sel": "a",
+          "text": "Créer un compte",
+          "fg": "oklch(0.97 0.01 250)",
+          "bg": "rgb(0,0,260)",
+          "fontPx": 15,
+          "weight": "800",
+          "ratio": 1.05,
+          "note": "body"
+        }
+      ]
+    }
+  ],
+  "overflow": [
+    {
+      "id": "light/fr/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        }
+      ]
+    },
+    {
+      "id": "light/fr/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -18,
+          "right": 408
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -36,
+          "right": 426
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -78,
+          "right": 46
+        }
+      ]
+    },
+    {
+      "id": "light/fr/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -18,
+          "right": 408
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -36,
+          "right": 426
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -78,
+          "right": 46
+        }
+      ]
+    },
+    {
+      "id": "light/fr/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "light/fr/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "light/fr/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "light/ar/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        }
+      ]
+    },
+    {
+      "id": "light/ar/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -2,
+          "right": 392
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -18,
+          "right": 408
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -114,
+          "right": 504
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -36,
+          "right": 426
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -78,
+          "right": 46
+        }
+      ]
+    },
+    {
+      "id": "light/ar/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "light/ar/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "light/ar/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "light/ar/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": []
+    },
+    {
+      "id": "dark/fr/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "dark/fr/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "dark/ar/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        }
+      ]
+    },
+    {
+      "id": "dark/ar/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "dark/ar/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "dark/ar/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "dark/ar/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "dark/ar/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-dark/fr/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        }
+      ]
+    },
+    {
+      "id": "system-dark/fr/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-dark/fr/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-dark/fr/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-dark/fr/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "system-dark/fr/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": []
+    },
+    {
+      "id": "system-dark/ar/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        }
+      ]
+    },
+    {
+      "id": "system-dark/ar/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-dark/ar/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-dark/ar/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-dark/ar/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "system-dark/ar/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-light/fr/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        }
+      ]
+    },
+    {
+      "id": "system-light/fr/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-light/fr/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-light/fr/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "system-light/fr/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    },
+    {
+      "id": "system-light/fr/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-light/ar/390/home",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -206,
+          "right": 301
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -311,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 68,
+          "right": 659
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -37,
+          "right": 427
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        }
+      ]
+    },
+    {
+      "id": "system-light/ar/390/fantasy",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-light/ar/390/profile",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -16,
+          "right": 406
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -111,
+          "right": 501
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl",
+          "left": -34,
+          "right": 424
+        },
+        {
+          "tag": "span",
+          "cls": "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate",
+          "left": -76,
+          "right": 47
+        }
+      ]
+    },
+    {
+      "id": "system-light/ar/1440/home",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -648,
+          "right": 1080
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -1008,
+          "right": 1440
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": 288,
+          "right": 2304
+        },
+        {
+          "tag": "path",
+          "cls": "",
+          "left": -72,
+          "right": 1512
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-light/ar/1440/fantasy",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -324,
+          "right": 1764
+        }
+      ]
+    },
+    {
+      "id": "system-light/ar/1440/profile",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "offenders": [
+        {
+          "tag": "div",
+          "cls": "fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all dur",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "div",
+          "cls": "pointer-events-none absolute inset-0",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "svg",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "g",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -7,
+          "right": 1447
+        },
+        {
+          "tag": "circle",
+          "cls": "",
+          "left": -334,
+          "right": 1774
+        }
+      ]
+    }
+  ]
+}

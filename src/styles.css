@@ -642,6 +642,15 @@ html[dir="rtl"] .lucide-arrow-left {
   }
   html {
     text-rendering: optimizeLegibility;
+    /* BG-0081. Native chrome — scrollbars, date pickers, checkboxes — follows
+       `color-scheme`, not our tokens, so without this the dark page keeps a
+       white scrollbar. The inline head script sets this inline on <html> too,
+       before first paint; this is the stylesheet-side default for the case
+       where the script could not run. */
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
     background-color: var(--color-background);
