@@ -6,6 +6,20 @@ import { Logo } from "@/components/brand/Logo";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { ui } from "@/components/ui-kit";
+
+/**
+ * The very first screen a new visitor sees, and until now the loudest
+ * surviving piece of Design System V2: a 24px-radius frosted panel
+ * (`glass-surface glass-strong`, `border-white/20`, `shadow-2xl`) over a
+ * blurred brand scrim, with `bg-white/40` option tiles and a `cta-brand`
+ * pill. Every one of those is light-only and none of it exists anywhere
+ * else in the product any more.
+ *
+ * It now uses the kit: an opaque card on `--ui-surface`, the kit radii, the
+ * kit type scale and the kit's ink/gradient pairings, so the first thing a
+ * visitor sees is the same product as the second thing.
+ */
 
 export function FirstLaunchLanguage() {
   const { isHydrated, hasChosen, setLanguage } = useI18n();
@@ -21,9 +35,13 @@ export function FirstLaunchLanguage() {
   return (
     <DialogPrimitive.Root open modal>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[color:var(--brand-primary)]/70 backdrop-blur-md motion-safe:animate-in motion-safe:fade-in-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[color:color-mix(in_oklab,var(--ui-ink-deep)_70%,transparent)] backdrop-blur-md motion-safe:animate-in motion-safe:fade-in-0" />
         <DialogPrimitive.Content
-          className="glass-surface glass-strong fixed start-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/20 p-6 shadow-2xl shadow-black/30 rtl:translate-x-1/2"
+          className={cn(
+            "fixed start-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 p-6 rtl:translate-x-1/2",
+            ui.surface.card,
+            "shadow-[var(--ui-shadow-raised)]",
+          )}
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
@@ -31,11 +49,11 @@ export function FirstLaunchLanguage() {
           <div className="flex items-center justify-center pb-4">
             <Logo />
           </div>
-          <DialogPrimitive.Title className="text-center text-2xl font-black tracking-tight text-foreground">
+          <DialogPrimitive.Title className={cn("text-center", ui.text.hero, ui.tone.default)}>
             {dictionaries.fr["language.choose_title"]}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description
-            className="mt-1 text-center text-sm text-muted-foreground"
+            className={cn("mt-1 text-center", ui.text.secondary, ui.tone.muted)}
             dir="rtl"
           >
             {dictionaries.ar["language.choose_title"]}
@@ -51,22 +69,34 @@ export function FirstLaunchLanguage() {
                   dir={o.dir}
                   onClick={() => setSelected(o.code)}
                   className={cn(
-                    "flex items-center justify-between rounded-2xl border px-4 py-3 text-start transition-all",
+                    "flex items-center justify-between px-4 py-3 text-start transition-colors",
+                    ui.space.tap,
+                    ui.radius.control,
+                    ui.focus,
                     active
-                      ? "border-[color:var(--brand-accent)] bg-white/80 shadow-md"
-                      : "border-[var(--glass-border)] bg-white/40 hover:bg-white/60",
+                      ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]")
+                      : cn(ui.surface.sunken, ui.rule.all),
                   )}
                 >
                   <div className="min-w-0">
-                    <div className="text-base font-bold text-foreground">{o.native}</div>
-                    <div className="truncate text-xs text-muted-foreground">{o.sub}</div>
+                    <div className={ui.text.bodyStrong}>{o.native}</div>
+                    <div
+                      className={cn(
+                        "truncate",
+                        ui.text.meta,
+                        active ? "opacity-80" : ui.tone.muted,
+                      )}
+                    >
+                      {o.sub}
+                    </div>
                   </div>
                   <span
                     className={cn(
-                      "grid h-6 w-6 shrink-0 place-items-center rounded-full border transition-colors",
+                      "grid h-6 w-6 shrink-0 place-items-center transition-colors",
+                      ui.radius.full,
                       active
-                        ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
-                        : "border-[var(--glass-border)] bg-white/60",
+                        ? "bg-[color:var(--ui-on-ink)] text-[color:var(--ui-ink)]"
+                        : cn(ui.surface.card, ui.rule.all),
                     )}
                     aria-hidden
                   >
@@ -80,7 +110,15 @@ export function FirstLaunchLanguage() {
           <button
             type="button"
             onClick={() => setLanguage(selected)}
-            className="mt-6 w-full rounded-2xl cta-brand px-4 py-3 text-base font-bold shadow-lg shadow-[color:var(--brand-primary)]/30 transition-transform hover:-translate-y-0.5"
+            className={cn(
+              "mt-6 w-full px-4 text-[color:var(--ui-ink-deep)]",
+              "min-h-[var(--ui-row-min)]",
+              ui.radius.control,
+              ui.text.bodyStrong,
+              ui.focus,
+              "transition-[filter] hover:brightness-105",
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
           >
             {selected === "ar"
               ? dictionaries.ar["language.continue"]

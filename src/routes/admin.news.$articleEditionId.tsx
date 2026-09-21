@@ -491,7 +491,7 @@ function AdminNewsEditRoute() {
           >
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${STATUS_TONES[article.status]}`}
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase ltr:tracking-wide ${STATUS_TONES[article.status]}`}
                 data-status={article.status}
               >
                 {STATUS_LABELS[article.status][lang]}
@@ -810,7 +810,7 @@ function AdminNewsEditRoute() {
                 >
                   <AdminDatum className="text-slate-300">#{revision.revisionNumber}</AdminDatum>
                   <span
-                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${STATUS_TONES[revision.status]}`}
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase ltr:tracking-wide ${STATUS_TONES[revision.status]}`}
                   >
                     {STATUS_LABELS[revision.status][lang]}
                   </span>

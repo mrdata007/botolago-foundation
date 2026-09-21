@@ -4,6 +4,7 @@ import { getNewsRepository } from "@/services/news";
 import { encodeNewsCursor } from "@/backend/news/supabase-repository";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ArticleCard } from "@/components/common/ArticleCard";
+import { ui } from "@/components/ui-kit";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
 import { useI18n } from "@/i18n/provider";
@@ -82,10 +83,15 @@ export function LatestFeed({
           onClick={() => void query.fetchNextPage()}
           disabled={query.isFetchingNextPage}
           className={cn(
-            "mt-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--glass-border)]",
-            "bg-white/60 px-4 text-sm font-semibold text-foreground hover:bg-white/80",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-            "disabled:opacity-60",
+            // Kit vocabulary: the sunken surface, the kit radius, the kit
+            // focus ring and the kit type scale replace the V2 glass pill.
+            "mt-1 inline-flex items-center justify-center gap-2 px-4",
+            ui.space.tap,
+            ui.radius.full,
+            ui.surface.sunken,
+            ui.text.bodyStrong,
+            ui.focus,
+            "transition-colors hover:opacity-90 disabled:opacity-60",
           )}
         >
           {query.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

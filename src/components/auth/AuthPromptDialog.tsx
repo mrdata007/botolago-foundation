@@ -9,6 +9,8 @@ import {
 import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
 import { LogIn, UserPlus } from "lucide-react";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 export function AuthPromptDialog() {
   const { prompt, closePrompt } = useAuth();
@@ -40,7 +42,13 @@ export function AuthPromptDialog() {
           <button
             type="button"
             onClick={() => go("/auth/login")}
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl cta-brand px-4 text-sm font-bold hover:opacity-95"
+            className={cn(
+              "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-2 px-4 text-[color:var(--ui-ink-deep)] hover:opacity-95",
+              ui.radius.control,
+              ui.text.bodyStrong,
+              ui.focus,
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
           >
             <LogIn className="h-4 w-4" aria-hidden />
             {t("auth.prompt.login")}
@@ -48,7 +56,14 @@ export function AuthPromptDialog() {
           <button
             type="button"
             onClick={() => go("/auth/register")}
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border border-input bg-background px-4 text-sm font-semibold hover:bg-muted"
+            className={cn(
+              "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-2 px-4 hover:bg-[color:var(--ui-surface-sunken)]",
+              ui.radius.control,
+              ui.rule.all,
+              ui.text.bodyStrong,
+              ui.tone.default,
+              ui.focus,
+            )}
           >
             <UserPlus className="h-4 w-4" aria-hidden />
             {t("auth.prompt.register")}
@@ -59,7 +74,12 @@ export function AuthPromptDialog() {
               prompt.onCancel?.();
               closePrompt();
             }}
-            className="mt-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            className={cn(
+              "mt-1 hover:text-[color:var(--ui-on-surface)]",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-strong)]",
+              ui.tone.muted,
+            )}
           >
             {t("auth.prompt.cancel")}
           </button>

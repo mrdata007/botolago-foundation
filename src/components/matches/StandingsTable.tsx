@@ -4,6 +4,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club, TableRow } from "@/types/domain";
+import { ui } from "@/components/ui-kit";
 
 export type SortKey =
   | "position"
@@ -70,8 +71,17 @@ export function StandingsTable({
         onClick={() => toggleSort(key)}
         aria-label={t("matches.table.sort_by").replace("{column}", fullLabel)}
         className={cn(
-          "inline-flex items-center gap-0.5 font-black tabular-nums transition-colors",
-          active ? "text-[color:var(--brand-primary)]" : "text-[color:var(--text-muted)]",
+          // These were 6–24px wide by 15px tall: the column headers are the
+          // only way to sort the table and they were far under the 44px tap
+          // floor the rest of the product holds to. The table already lives
+          // in an `overflow-x-auto` scroller, so widening the hit areas costs
+          // nothing at 390px.
+          "inline-flex items-center justify-center gap-0.5 tabular-nums transition-colors",
+          ui.space.tap,
+          ui.radius.control,
+          ui.focus,
+          "[font-weight:var(--ui-weight-hero)]",
+          active ? ui.tone.ink : ui.tone.muted,
         )}
       >
         <span aria-hidden>{short}</span>
@@ -89,8 +99,8 @@ export function StandingsTable({
   return (
     <div className="overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] shadow-card">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[26rem] text-sm">
-          <thead className="bg-[color:var(--surface-hover)] text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+        <table className={cn("w-full min-w-[26rem]", ui.text.secondary)}>
+          <thead className="bg-[color:var(--surface-hover)] text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
             <tr>
               <th scope="col" aria-label={t("matches.table.rank")} className="px-3 py-2 text-start">
                 {headerButton("position", "#", t("matches.table.rank"))}
@@ -132,7 +142,14 @@ export function StandingsTable({
               if (!club) return null;
               return (
                 <tr key={row.clubId} className="border-t border-[var(--border-subtle)]">
-                  <td className="px-3 py-2 font-mono text-xs tabular-nums text-[color:var(--text-muted)]">
+                  <td
+                    className={cn(
+                      "px-3 py-2 font-mono",
+                      ui.text.meta,
+                      ui.text.tabular,
+                      ui.tone.muted,
+                    )}
+                  >
                     {row.position}
                   </td>
                   <td className="px-3 py-2">
@@ -178,7 +195,7 @@ export function StandingsTable({
 function FormBadges({ form }: { form: readonly ("W" | "D" | "L")[] }) {
   const { t } = useI18n();
   if (form.length === 0) {
-    return <span className="text-xs text-[color:var(--text-muted)]">—</span>;
+    return <span className={cn(ui.text.meta, ui.tone.muted)}>—</span>;
   }
   const recent = form.slice(-5);
   return (
@@ -195,15 +212,19 @@ function FormBadges({ form }: { form: readonly ("W" | "D" | "L")[] }) {
             key={index}
             title={label}
             aria-label={label}
-            className="grid h-4 w-4 shrink-0 place-items-center rounded-[3px] text-[8px] font-black text-[color:var(--fpl-ink-deep)]"
+            // The form pills used to be painted straight out of the Fantasy
+            // `--fpl-*` palette, which is a light-only reconstruction with no
+            // dark counterpart (BG-0084) and has no business leaking into the
+            // standings table. They now use the kit's own status tokens.
+            className="grid h-4 w-4 shrink-0 place-items-center rounded-[3px] text-[8px] [font-weight:var(--ui-weight-hero)]"
             style={{
               background:
                 result === "W"
-                  ? "var(--fpl-green)"
+                  ? "var(--ui-positive)"
                   : result === "D"
-                    ? "var(--fpl-grey)"
-                    : "var(--fpl-pink)",
-              color: result === "L" ? "white" : "var(--fpl-ink-deep)",
+                    ? "var(--ui-surface-sunken)"
+                    : "var(--ui-negative)",
+              color: result === "D" ? "var(--ui-on-surface)" : "var(--ui-on-ink-plain)",
             }}
           >
             {result}

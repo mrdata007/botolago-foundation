@@ -46,6 +46,7 @@ import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -190,7 +191,10 @@ function HomeContent() {
 
   // Localized full date used in the greeting meta line.
   const dateLine = useMemo(() => {
+    // The greeting dates the football day, so it follows the competition
+    // calendar rather than the viewer's browser (BG-0100).
     const fmt = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      timeZone: MATCH_TIME_ZONE,
       weekday: "long",
       day: "numeric",
       month: "long",

@@ -95,7 +95,9 @@ function Consent() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Connect {clientName} to BotolaGO</h1>
+        <h1 className="text-xl font-semibold ltr:tracking-tight">
+          Connect {clientName} to BotolaGO
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           This lets {clientName} use BotolaGO as you — reading your profile, fantasy team, and
           fixtures through the app's MCP tools. Your data still follows BotolaGO's access rules.

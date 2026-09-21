@@ -44,7 +44,7 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
             <Logo variant="icon" className="!h-16 !w-16 !rounded-2xl" />
           </div>
 
-          <h1 className="mt-8 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+          <h1 className="mt-8 text-3xl font-black leading-tight ltr:tracking-tight sm:text-4xl">
             {t("welcome.title")}
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-white/80">
@@ -85,7 +85,12 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
           <button
             type="button"
             onClick={onGuest}
-            className="mt-4 w-full text-center text-sm font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            // `min-h-[var(--ui-tap-min)]` — this was a 20px-tall hit area, the
+            // only way past the sign-up wall, and the first control a new
+            // visitor ever taps. The rest of this screen is still on the
+            // Design System V2 dark hero (see the note at the top of the
+            // file); raising the tap target does not depend on that.
+            className="mt-4 inline-flex min-h-[var(--ui-tap-min)] w-full items-center justify-center text-center text-sm font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             {t("welcome.cta_guest")}
           </button>

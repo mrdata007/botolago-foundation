@@ -759,22 +759,27 @@ function LegalRow({
     <Link
       to={to}
       className={`flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none${
-        divided ? " border-t border-[var(--border-subtle,rgba(0,0,0,0.06))]" : ""
+        divided ? ` ${ui.rule.blockStart}` : ""
       }`}
     >
-      <div className="flex items-center gap-3 text-sm text-foreground">
+      <div className={cn("flex items-center gap-3", ui.text.secondary, ui.tone.default)}>
         <span
-          className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-foreground/80"
+          className={cn(
+            "grid h-8 w-8 place-items-center",
+            ui.radius.control,
+            ui.surface.sunken,
+            ui.tone.muted,
+          )}
           aria-hidden
         >
           <FileText className="h-4 w-4" />
         </span>
         <span className="text-start">
-          <span className="block font-semibold">{label}</span>
-          <span className="block text-xs font-normal text-muted-foreground">{description}</span>
+          <span className="block [font-weight:var(--ui-weight-heavy)]">{label}</span>
+          <span className={cn("block", ui.text.meta, ui.tone.muted)}>{description}</span>
         </span>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      <ChevronRight className={cn("h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
     </Link>
   );
 }
