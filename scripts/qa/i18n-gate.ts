@@ -194,8 +194,18 @@ export const BASELINES: Baselines = {
   // orphaned in exchange (`fpl.gameweek`, dropped from that sentence, is still
   // used on five other screens). W3 248 -> 247; W4 unchanged, because the new
   // branches are `cond ? t("a") : t("b")`, two literal calls, not `t(cond ? …)`.
+  //
+  // BG-0075 points breakdown: /fantasy/points now renders the scoring lines
+  // behind each player's total and the auto-substitutions finalization applied.
+  // Both are server-supplied codes -- `category` from
+  // app.fantasy_player_point_events and `reason` from
+  // app.fantasy_auto_substitutions -- so the two new call sites are template
+  // prefixes (`fantasy.points.event.`, `fantasy.points.autosub_reason.`), the
+  // same shape as `player.pos.` and `fantasy.chip.state.`. Every one of the 21
+  // new keys is reachable through those prefixes, so W3 is unchanged; W4
+  // 97 -> 99.
   W3: 247,
-  W4: 97,
+  W4: 99,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

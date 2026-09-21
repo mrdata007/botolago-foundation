@@ -31,6 +31,7 @@ export function SquadListTable({
   columns,
   onRowClick,
   onInfo,
+  renderDetail,
   className,
 }: {
   squad: SquadPlayer[];
@@ -39,6 +40,12 @@ export function SquadListTable({
   columns: SquadListColumn[];
   onRowClick?: (playerId: string) => void;
   onInfo?: (playerId: string) => void;
+  /**
+   * BG-0075 — optional lines rendered under a player's row, spanning the full
+   * width. The points screen uses it for the scoring events behind the total.
+   * Return null for a player with nothing to add and no extra row is emitted.
+   */
+  renderDetail?: (player: FantasyPlayer, squadPlayer: SquadPlayer) => ReactNode;
   className?: string;
 }) {
   const { t, tr } = useI18n();
@@ -86,58 +93,64 @@ export function SquadListTable({
               if (!player) return null;
               const club = clubOf(player.clubId);
               const kit = getKitForClub(club, player.kitPattern);
+              const detail = renderDetail?.(player, squadPlayer) ?? null;
               return (
                 <li
                   key={squadPlayer.playerId}
-                  className="grid items-center gap-1 border-b border-[color:var(--fpl-grey)] px-3"
-                  style={{ gridTemplateColumns: gridTemplate }}
+                  className="border-b border-[color:var(--fpl-grey)] px-3"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onInfo?.(player.id)}
-                      aria-label={`${t("fpl.player_info")} ${tr(player.name)}`}
-                      className="grid h-6 w-6 shrink-0 place-items-center text-[color:var(--fpl-grey-text)]"
-                    >
-                      <Info className="h-4 w-4" aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRowClick?.(player.id)}
-                      className="flex min-h-14 min-w-0 flex-1 items-center gap-2 py-2 text-start"
-                    >
-                      <JerseyVisual kit={kit} size={28} imageUrl={player.jerseyImageUrl} />
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1 truncate text-[14px] font-extrabold text-foreground">
-                          {tr(player.name)}
-                          {squadPlayer.isCaptain ? (
-                            <span className="grid h-4 w-4 place-items-center rounded-full bg-black text-[9px] text-white">
-                              C
-                            </span>
-                          ) : squadPlayer.isViceCaptain ? (
-                            <span className="grid h-4 w-4 place-items-center rounded-full bg-black text-[9px] text-white">
-                              V
-                            </span>
-                          ) : null}
+                  <div
+                    className="grid items-center gap-1"
+                    style={{ gridTemplateColumns: gridTemplate }}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onInfo?.(player.id)}
+                        aria-label={`${t("fpl.player_info")} ${tr(player.name)}`}
+                        className="grid h-6 w-6 shrink-0 place-items-center text-[color:var(--fpl-grey-text)]"
+                      >
+                        <Info className="h-4 w-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRowClick?.(player.id)}
+                        className="flex min-h-14 min-w-0 flex-1 items-center gap-2 py-2 text-start"
+                      >
+                        <JerseyVisual kit={kit} size={28} imageUrl={player.jerseyImageUrl} />
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-1 truncate text-[14px] font-extrabold text-foreground">
+                            {tr(player.name)}
+                            {squadPlayer.isCaptain ? (
+                              <span className="grid h-4 w-4 place-items-center rounded-full bg-black text-[9px] text-white">
+                                C
+                              </span>
+                            ) : squadPlayer.isViceCaptain ? (
+                              <span className="grid h-4 w-4 place-items-center rounded-full bg-black text-[9px] text-white">
+                                V
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="block truncate text-[11px] text-[color:var(--fpl-grey-text)]">
+                            {club ? tr(club.shortName) : ""}
+                          </span>
                         </span>
-                        <span className="block truncate text-[11px] text-[color:var(--fpl-grey-text)]">
-                          {club ? tr(club.shortName) : ""}
-                        </span>
+                      </button>
+                    </div>
+                    {columns.map((column) => (
+                      <span
+                        key={column.key}
+                        className={cn(
+                          "fpl-tabular text-end text-foreground",
+                          columns.length > 3 ? "text-[12px]" : "text-[13px]",
+                          column.className,
+                        )}
+                      >
+                        {column.render(player, squadPlayer)}
                       </span>
-                    </button>
+                    ))}
                   </div>
-                  {columns.map((column) => (
-                    <span
-                      key={column.key}
-                      className={cn(
-                        "fpl-tabular text-end text-foreground",
-                        columns.length > 3 ? "text-[12px]" : "text-[13px]",
-                        column.className,
-                      )}
-                    >
-                      {column.render(player, squadPlayer)}
-                    </span>
-                  ))}
+                  {detail}
                 </li>
               );
             })}

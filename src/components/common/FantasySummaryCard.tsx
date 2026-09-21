@@ -69,7 +69,13 @@ export function FantasySummaryCard({
             <div className={cn("mt-1 truncate", ui.text.subtitle, ui.tone.default)}>
               {summary.teamName}
             </div>
-            <div className={cn("truncate", ui.text.meta, ui.tone.muted)}>{summary.managerName}</div>
+            {/* BG-0074: the manager name falls back to the team name when no
+                profile can be resolved, so printing both would repeat it. */}
+            {summary.managerName && summary.managerName !== summary.teamName ? (
+              <div className={cn("truncate", ui.text.meta, ui.tone.muted)}>
+                {summary.managerName}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="text-end">

@@ -17,6 +17,8 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildPointsViewModel, type PointsViewModel } from "@/services/points-service";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
@@ -36,7 +38,7 @@ function PointsPage() {
 }
 
 function PointsBody() {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
   const { key } = useFantasyDataSource();
@@ -177,6 +179,14 @@ function PointsBody() {
   const total = vm?.totalPoints ?? null;
   const average = vm?.averagePoints ?? resultQ.data?.averagePoints ?? null;
   const highest = vm?.highestPoints ?? resultQ.data?.highestPoints ?? null;
+  // BG-0075: the server's record of what finalization actually did, which the
+  // client-side engine can only guess at for a gameweek it did not compute.
+  // `vm.autoSubs` stays the fallback for mock mode, where there is no server.
+  const autoSubs = resultQ.data?.autoSubs.length ? resultQ.data.autoSubs : (vm?.autoSubs ?? []);
+  const nameOf = (id: string) => {
+    const player = playerOf(id);
+    return player ? tr(player.name) : id;
+  };
 
   return (
     <>
@@ -254,6 +264,27 @@ function PointsBody() {
           squad={squadForList}
           players={players}
           clubs={clubs}
+          renderDetail={(player) => {
+            const events = breakdown.get(player.id)?.events ?? [];
+            if (events.length === 0) return null;
+            return (
+              <ul className={cn("pb-2", ui.text.meta, ui.tone.muted)}>
+                {events.map((event, index) => (
+                  <li
+                    key={`${event.category}-${event.fixtureId ?? index}`}
+                    className="flex items-baseline justify-between gap-2"
+                  >
+                    <span className="min-w-0 truncate">
+                      {t(`fantasy.points.event.${event.category}` as never)}
+                    </span>
+                    <span className={cn("shrink-0", ui.text.tabular)}>
+                      {event.points > 0 ? `+${event.points}` : event.points}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            );
+          }}
           columns={[
             {
               key: "form",
@@ -272,6 +303,28 @@ function PointsBody() {
           ]}
         />
       )}
+      {autoSubs.length > 0 ? (
+        <section className={cn("px-4 py-3", ui.surface.sunken)}>
+          <h2 className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.points.autosubs")}</h2>
+          <ul className="mt-2 grid gap-1">
+            {autoSubs.map((sub) => (
+              <li
+                key={`${sub.outId}-${sub.inId}`}
+                className={cn("flex items-baseline gap-2", ui.text.secondary, ui.tone.default)}
+              >
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 rtl:-scale-x-100" aria-hidden />
+                <span className="min-w-0 truncate">
+                  {nameOf(sub.outId)} → {nameOf(sub.inId)}
+                </span>
+                <span className={cn("ms-auto shrink-0", ui.text.meta, ui.tone.muted)}>
+                  {t(`fantasy.points.autosub_reason.${sub.reasonKey}` as never)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {resultQ.isError ? (
         <div className="flex flex-col items-center gap-2 px-4 py-3 text-center text-[13px] text-[color:var(--fpl-grey-text)]">
           <span>{t("fpl.error.body")}</span>

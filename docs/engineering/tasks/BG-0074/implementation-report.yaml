@@ -1,0 +1,63 @@
+task_id: BG-0074
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+status: IMPLEMENTED
+
+migration:
+  path: supabase/migrations/20260921200000_fantasy_points_read_surfaces.sql
+  timestamp: "20260921200000"
+  shared_with: [BG-0075]
+  objects_changed:
+    - name: api.fantasy_league_standings(uuid, uuid, bigint, uuid, integer)
+      operation: create or replace
+      signature_change: none
+      row_order_change: none
+      keys_removed: none
+      keys_added: [managerName]
+      body_change: >
+        One `declare caller uuid := (select auth.uid())` at the top, reused for
+        the existing private-league membership check (previously an inline
+        `(select auth.uid())`), plus per branch one
+        `left join app.profiles profile on profile.id = team.user_id and
+        profile.deleted_at is null` and one managerName key:
+          case when caller is null then team.name
+               else coalesce(nullif(btrim(profile.display_name), ''), team.name) end
+      grants: >
+        Unchanged. `create or replace` preserves the ACL; verified after apply
+        that anon, authenticated and service_role all still hold EXECUTE.
+
+frontend_changes:
+  - file: src/backend/fantasy/contracts.ts
+    change: >
+      `managerName: z.string()` added to the fantasyLeagueStandingPageSchema item,
+      with the same "a name to show, never identity" note the overall-standings
+      DTO carries.
+  - file: src/services/fantasy-runtime.ts
+    change: >
+      getLeagueStandings maps `standing.managerName` instead of "". getSummary
+      returns `current.team.name` instead of "".
+  - file: src/components/common/FantasySummaryCard.tsx
+    change: >
+      The manager line is skipped when it is empty or equal to the team name,
+      the same guard LeagueTable.tsx:118 already applied.
+
+deliberately_not_changed:
+  - file: 'src/services/fantasy-runtime.ts teamDto (managerName: "" at :67)'
+    reason: >
+      FantasyTeam.managerName is a squad-builder field, not a leaderboard field.
+      Its consumers -- src/routes/fantasy.team.tsx:240 and
+      src/routes/fantasy.create.tsx:220 -- already resolve it as
+      `user?.displayName?.trim() || team.managerName || null` from the signed-in
+      session, which is exactly the client-side resolution the task blesses. The
+      squad builder never renders another manager's name, so there is nothing
+      for the server to supply here and adding a profile read to
+      api.get_my_fantasy_team would widen an owner-scoped RPC for no surface.
+  - file: api.fantasy_overall_standings
+    reason: already returns managerName under this rule; explicitly out of scope.
+
+parallel_lane_note: >
+  Edits in src/services/fantasy-runtime.ts are confined to the imports block,
+  pointsDto, the new gameweekSummary helper, getCurrentGameweek, getSummary,
+  getLeagueStandings, getGameweekResult and getGameweekHistory. playerDto, the
+  top-players mapper and the player-detail path are untouched, and the file was
+  not reformatted.

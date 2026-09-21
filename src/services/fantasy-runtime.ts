@@ -10,6 +10,7 @@ import {
 } from "./fantasy-rankings";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  FantasyGameweekSummaryDto,
   FantasyOverallStandingDto,
   FantasyPlayerDto,
   FantasyPlayerGameweekHistoryEntryDto,
@@ -94,7 +95,23 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
   };
 }
 
-function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | undefined {
+/**
+ * BG-0075 — one gameweek's owned result.
+ *
+ * `autoSubs` and every player's `events` used to be hard-coded empty arrays
+ * because `api.get_my_fantasy_points` returned neither, so the points page had
+ * no way to explain a total. Both now come from the RPC:
+ * `app.fantasy_player_point_events` (live rows only) and
+ * `app.fantasy_auto_substitutions`.
+ *
+ * `summary` carries the gameweek-wide Average / Highest figures, which are
+ * `null` — not 0 — until some team has been scored.
+ */
+function pointsDto(
+  sequence: number,
+  dto: FantasyPointsDto,
+  summary: FantasyGameweekSummaryDto | null,
+): GameweekResult | undefined {
   if (!dto.result) return undefined;
   const captain = dto.players.find((player) => player.captain);
   return {
@@ -102,7 +119,13 @@ function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | un
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
     benchPoints: dto.result.benchPoints,
     captainId: captain?.fantasyPlayerId,
-    autoSubs: [],
+    averagePoints: summary?.averagePoints ?? null,
+    highestPoints: summary?.highestPoints ?? null,
+    autoSubs: dto.autoSubstitutions.map((substitution) => ({
+      outId: substitution.playerOutId,
+      inId: substitution.playerInId,
+      reasonKey: substitution.reason,
+    })),
     breakdown: dto.players.map((player) => ({
       playerId: player.fantasyPlayerId,
       totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
@@ -111,9 +134,26 @@ function pointsDto(sequence: number, dto: FantasyPointsDto): GameweekResult | un
       isViceCaptain: player.viceCaptain || undefined,
       isBench: player.slot === "bench" || undefined,
       status: dto.pointsState === "final" ? "final" : "provisional",
-      events: [],
+      events: player.events.map((event) => ({
+        category: event.category,
+        points: event.points,
+        fixtureId: event.fixtureId,
+      })),
     })),
   };
+}
+
+/**
+ * The Average / Highest strip must never take a page down: a gameweek that has
+ * no summary yet is the normal case, and so is a transient RPC failure. Either
+ * way the caller gets nulls and the UI renders an em dash.
+ */
+async function gameweekSummary(gameweekId: string): Promise<FantasyGameweekSummaryDto | null> {
+  try {
+    return await cloud.getGameweekSummary(gameweekId, context());
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -214,6 +254,9 @@ export const fantasyService = {
     }
     const current = await hub();
     if (!current.gameweek) throw new Error("fantasy_gameweek_not_found");
+    // BG-0075: these were hard-coded zeros. Before any team is scored the
+    // honest answer is null, and the UI renders an em dash for it.
+    const summary = await gameweekSummary(current.gameweek.id);
     return {
       number: current.gameweek.sequence,
       deadline: current.gameweek.deadlineAt,
@@ -222,8 +265,8 @@ export const fantasyService = {
       status: current.gameweek.status,
       pointsState: current.gameweek.pointsState,
       rankingAvailable: current.rankingAvailable,
-      averagePoints: 0,
-      highestPoints: 0,
+      averagePoints: summary?.averagePoints ?? null,
+      highestPoints: summary?.highestPoints ?? null,
     };
   },
 
@@ -249,7 +292,15 @@ export const fantasyService = {
     const currentResult =
       history.items.find((item) => item.gameweekId === current.gameweek?.id) ?? latest;
     return {
-      managerName: "",
+      // BG-0074: this was the empty string. `api.fantasy_hub` carries no
+      // profile field, and `app.profiles.display_name` is not readable outside
+      // the owner's own row, so the honest server-side answer here is the same
+      // fallback api.fantasy_league_standings uses when a profile cannot be
+      // resolved: the fantasy team name. Every caller already prefers the
+      // signed-in user's own `user.displayName` over this (index.tsx,
+      // fantasy.rankings.tsx), and FantasySummaryCard drops the manager line
+      // when the two are identical rather than printing the name twice.
+      managerName: current.team.name,
       teamName: current.team.name,
       totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
       gameweekPoints: currentResult?.score ?? 0,
@@ -344,7 +395,10 @@ export const fantasyService = {
     const page = await cloud.getLeagueStandings(leagueId, null, context());
     return page.items.map((standing) => ({
       managerId: standing.teamId,
-      managerName: "",
+      // BG-0074: was the empty string, so every league row rendered a blank
+      // manager line. Resolved server-side: the profile display name for
+      // signed-in callers, the team name for anonymous ones.
+      managerName: standing.managerName,
       teamName: standing.teamName,
       rank: standing.rank,
       previousRank: standing.previousRank ?? standing.rank,
@@ -393,8 +447,26 @@ export const fantasyService = {
     const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
     const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
     if (!gameweek) return undefined;
-    return pointsDto(sequence, await cloud.getPoints(current.team.id, gameweek.id, context()));
+    const [points, summary] = await Promise.all([
+      cloud.getPoints(current.team.id, gameweek.id, context()),
+      gameweekSummary(gameweek.id),
+    ]);
+    return pointsDto(sequence, points, summary);
   },
+  /**
+   * The season-to-date list of finished gameweeks.
+   *
+   * BG-0075: `benchPoints` stays 0 here, and that is not a placeholder —
+   * `api.get_my_fantasy_history` genuinely does not return it. Its rows carry
+   * gameweekId, sequence, name, score, state, transferHit, chipType, rank,
+   * overallRank, teamValue and bank, and nothing else; the bench figure lives
+   * in `app.fantasy_team_gameweek_results.bench_points`, which only
+   * `api.get_my_fantasy_points` projects, one gameweek at a time. Widening the
+   * history RPC is a separate change and no surface reads this field today.
+   * `averagePoints`/`highestPoints` are left undefined rather than zeroed for
+   * the same reason: the history RPC cannot answer them, and a zero would
+   * claim it had.
+   */
   async getGameweekHistory(): Promise<GameweekResult[]> {
     if (mode() === "mock") return mockFantasyService.getGameweekHistory();
     const current = await cloudTeam();
@@ -403,6 +475,8 @@ export const fantasyService = {
       gameweek: item.sequence,
       totalPoints: item.score,
       benchPoints: 0,
+      averagePoints: null,
+      highestPoints: null,
       autoSubs: [],
       breakdown: [],
     }));

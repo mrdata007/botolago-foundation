@@ -1,0 +1,38 @@
+task_id: BG-0077
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+status: NOT_IMPLEMENTED
+reason: >
+  The finding does not reproduce. Per the lane instruction -- "if a finding
+  fails to reproduce, stop that task and report it with evidence rather than
+  building against it" -- no code was written for BG-0077. The evidence is in
+  this task's engineering-brief.yaml and verification-report.yaml.
+
+files_changed: []
+migrations_added: []
+
+what_was_deliberately_not_done:
+  - change: deleting FantasyTeam.pendingTransfers under the BG-0062 precedent
+    reason: >
+      It is a browser-side draft counter that src/routes/fantasy.transfers.tsx
+      writes and src/routes/fantasy.team.tsx reads. Deleting it would break the
+      transfers flow. `teamDto` returning 0 for a server-read team is correct:
+      a persisted team has no unconfirmed transfers.
+  - change: adding a cloud source for rules positions/scoring/chips
+    reason: >
+      api.fantasy_rules already returns all three, populated, in production
+      (4 positions, 12 scoring rules, 5 chips for the live season). Only the
+      mock branch returns empty arrays, and no screen reads the fields.
+  - change: deleting positions/scoring/chips from FantasyRulesDto
+    reason: >
+      The server supplies them, so the BG-0062 precedent does not apply. They
+      are unrendered, not unsuppliable, and removing them would throw away data
+      a future Help & Rules screen should use.
+
+adjacent_change_made_in_this_lane_for_a_different_ticket: >
+  The one genuinely unsuppliable field this lane found was
+  GameweekResult.autoSubs' `reason: LocalizedString` -- app.fantasy_auto_
+  substitutions.reason is a slug, and no backend has ever been able to produce a
+  localized string for it. It was narrowed to `reasonKey: string` under BG-0075,
+  which is the BG-0062 precedent applied where it actually fits. Recorded here
+  so the two are not confused.
