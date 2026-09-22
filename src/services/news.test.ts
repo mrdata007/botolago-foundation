@@ -200,6 +200,41 @@ describe("third-party attribution is stripped at the data layer", () => {
     });
   });
 
+  describe("links: kept in original stories, removed from third-party ones", () => {
+    const body =
+      '<p>Voir <a href="/matches">les matchs</a> et <a href="https://www.frmf.ma/a" target="_blank" rel="nofollow noopener noreferrer">la FRMF</a>.</p>';
+
+    test("an original story keeps internal and external https links", () => {
+      const safe = sanitizeArticleAttribution(detailFixture({ publisher: null, bodyHtml: body }));
+      expect(safe.bodyHtml).toBe(body);
+    });
+
+    test("an external link gets its safety attributes back even if they were lost", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({ publisher: null, bodyHtml: '<p><a href="https://x.test/a">x</a></p>' }),
+      );
+      expect(safe.bodyHtml).toBe(
+        '<p><a href="https://x.test/a" target="_blank" rel="nofollow noopener noreferrer">x</a></p>',
+      );
+    });
+
+    test("an unsafe or href-less anchor in an original story is reduced to its text", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({
+          publisher: null,
+          bodyHtml:
+            '<p><a href="javascript:alert(1)">a</a> <a href="//evil.test">b</a> <a href="http://x.test">c</a> <a>d</a></p>',
+        }),
+      );
+      expect(safe.bodyHtml).toBe("<p>a b c d</p>");
+    });
+
+    test("a third-party story still loses its outbound links with their text", () => {
+      const safe = sanitizeArticleAttribution(detailFixture({ bodyHtml: body }));
+      expect(safe.bodyHtml).toBe("<p>Voir les matchs et .</p>");
+    });
+  });
+
   test("works on a card DTO too, and does not mutate its input", () => {
     const { bodyHtml: _body, ...card } = detailFixture();
     const input = card as ArticleCardDto;

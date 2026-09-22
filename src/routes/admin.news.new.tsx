@@ -260,8 +260,8 @@ function AdminNewsNewRoute() {
                 label={rtl ? "المحتوى (Markdown مبسّط)" : "Contenu (Markdown simplifié)"}
                 hint={
                   rtl
-                    ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، ‎- لقائمة، ‎> لاقتباس، وسطر فارغ بين الفقرات."
-                    : "## pour un intertitre, **texte** pour l’emphase, - pour une liste, > pour une citation, une ligne vide entre les paragraphes."
+                    ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، ‎- لقائمة، ‎> لاقتباس، ‎[نص](https://…) لرابط، وسطر فارغ بين الفقرات."
+                    : "## pour un intertitre, **texte** pour l’emphase, - pour une liste, > pour une citation, [texte](https://…) pour un lien, une ligne vide entre les paragraphes."
                 }
                 value={body}
                 onChange={(event) => setBody(event.target.value)}

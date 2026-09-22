@@ -10,8 +10,9 @@
 // become paragraphs (unchanged from the original behaviour),
 // `![alt](https://...)` becomes a `<figure><img><figcaption>`, and a small
 // set of line markers (`##` intertitles, `-`/`1.` lists, `>` quotes) plus
-// `**bold**` / `*italic*` become their tags. Links are deliberately not
-// converted: the public read path removes every anchor (BG-0091). Everything
+// `**bold**` / `*italic*` and `[text](https://... or /path)` links become
+// their tags. Links in original BotolaGO stories are kept on the public page;
+// imported third-party stories still lose theirs (BG-0091). Everything
 // produced here is still run through `sanitizeEditorialHtml` before it ever
 // leaves the browser, and re-sanitized server-side by the Edge Function that
 // owns the actual trust boundary -- the https-only check below is a second
@@ -117,12 +118,65 @@ function lineKind(line: string): LineKind {
   return "text";
 }
 
-/** `**bold**` then `*italic*`. A `*` between two word characters (`5*3`) is
- *  left alone, as is a marker with whitespace just inside it. */
-function inlineToHtml(text: string): string {
+/** Hosts that are BotolaGO itself: a link there is internal. */
+const OWN_HOSTS = new Set(["botolago.com", "www.botolago.com"]);
+
+/**
+ * Whether `url` may become a link: an absolute https URL without credentials,
+ * or a path on this site (`/news/...`, not the protocol-relative `//host`).
+ * Everything else -- `javascript:`, `data:`, `http:`, `mailto:`, bare words --
+ * is left as the literal text the editor typed. The sanitizer (client and the
+ * trusted server pass) enforces the same schemes and remains the authority.
+ */
+export function isAllowedEditorialLinkUrl(url: string): boolean {
+  const value = url.trim();
+  if (/^\/(?!\/)/u.test(value)) return !/[\s\\]/u.test(value);
+  return isAllowedEditorialImageUrl(value);
+}
+
+/** An https link to another site (not a path, not botolago.com). */
+export function isExternalEditorialLink(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" && !OWN_HOSTS.has(parsed.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/** Matches `[text](url)` that is not an image (`![...]`). */
+const LINK_PATTERN = /(?<!!)\[([^\]\n]+)\]\(([^()\s]+)\)/gu;
+
+function emphasisToHtml(text: string): string {
   return text
     .replace(/\*\*(?=\S)([^*\n]+?)(?<=\S)\*\*/gu, "<strong>$1</strong>")
     .replace(/(^|[^\p{L}\p{N}*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\p{L}\p{N}*])/gu, "$1<em>$2</em>");
+}
+
+/**
+ * `[text](url)` links, then `**bold**` and `*italic*`. A `*` between two word
+ * characters (`5*3`) is left alone, as is a marker with whitespace just
+ * inside it. Emphasis runs on the text around and inside links, never on the
+ * URL itself.
+ */
+function inlineToHtml(text: string): string {
+  let result = "";
+  let cursor = 0;
+  LINK_PATTERN.lastIndex = 0;
+  for (const match of text.matchAll(LINK_PATTERN)) {
+    const [literal, label, url] = match;
+    const index = match.index ?? 0;
+    result += emphasisToHtml(text.slice(cursor, index));
+    cursor = index + literal.length;
+    if (!isAllowedEditorialLinkUrl(url)) {
+      result += emphasisToHtml(literal);
+      continue;
+    }
+    const external = isExternalEditorialLink(url);
+    const attributes = external ? ' target="_blank" rel="nofollow noopener noreferrer"' : "";
+    result += `<a href="${escapeHtml(url.trim())}"${attributes}>${emphasisToHtml(label)}</a>`;
+  }
+  return result + emphasisToHtml(text.slice(cursor));
 }
 
 function structuredBlockToHtml(block: string): string {
@@ -281,6 +335,11 @@ export function editorialHtmlToMarkdown(html: string): string {
 /** `<strong>`/`<b>` and `<em>`/`<i>` back to the markers {@link inlineToHtml} reads. */
 function inlineToMarkdown(html: string): string {
   return html
+    .replace(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/giu, (anchor, attributes: string, label: string) => {
+      const href = readAttribute(`<a${attributes}>`, "href");
+      if (!href || !isAllowedEditorialLinkUrl(href)) return label;
+      return `[${label.replace(/[[\]]/gu, "")}](${href.replace(/\(/gu, "%28").replace(/\)/gu, "%29")})`;
+    })
     .replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1\s*>/giu, "**$2**")
     .replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1\s*>/giu, "*$2*");
 }

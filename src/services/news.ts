@@ -12,6 +12,10 @@ import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { authService } from "@/services/auth";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
 import { resolveMediaUrl } from "@/lib/media";
+import {
+  isAllowedEditorialLinkUrl,
+  isExternalEditorialLink,
+} from "@/backend/news/editorial-markdown";
 
 export type NewsDataMode = "mock" | "supabase";
 export type NewsLanguageSelection = NewsLanguage | "auto";
@@ -104,7 +108,8 @@ function fallbackGradient(id: string): string {
  *     third-party source (it has a publisher) and kept for CMS stories.
  *   - a body image not served from our own `news-media` bucket is removed
  *     with its figure, for the same no-hotlinking reason.
- *   - an anchor in `bodyHtml` pointing off-site is removed *with its text*,
+ *   - for a third-party story, an anchor in `bodyHtml` pointing off-site is
+ *     removed *with its text*,
  *     not merely unwrapped. Measuring the rendered DOM is what showed why:
  *     unwrapping left the words "read the original on <source>" behind, which
  *     is attribution in its own right. Anchors that are not absolute URLs
@@ -132,6 +137,30 @@ function removeOutboundLinks(html: string): string {
     .replace(/<a\b[^>]*>/gi, "")
     .replace(/<\/a\s*>/gi, "")
     .replace(/<p>\s*<\/p>/gi, "");
+}
+
+/**
+ * Links in an original BotolaGO story (no third-party publisher): each anchor
+ * is rebuilt from its href alone. An https link to another site gets
+ * target="_blank" and rel="nofollow noopener noreferrer"; a path or a
+ * botolago.com URL is a plain internal link; anything else (no href,
+ * javascript:, data:, http:, //host) is unwrapped to its text. The server-side
+ * sanitizer already enforces this; this pass is the read-side second line.
+ */
+function keepSafeLinks(html: string): string {
+  return html.replace(
+    /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi,
+    (_anchor, attributes: string, text: string) => {
+      const match = /\shref\s*=\s*"([^"]*)"|\shref\s*=\s*'([^']*)'/i.exec(attributes);
+      const raw = match?.[1] ?? match?.[2] ?? "";
+      const href = raw.replace(/&amp;/g, "&");
+      if (!raw || !isAllowedEditorialLinkUrl(href)) return text;
+      const external = isExternalEditorialLink(href);
+      return external
+        ? `<a href="${raw}" target="_blank" rel="nofollow noopener noreferrer">${text}</a>`
+        : `<a href="${raw}">${text}</a>`;
+    },
+  );
 }
 
 /**
@@ -187,8 +216,12 @@ export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDet
   };
 
   if ("bodyHtml" in sanitized && typeof sanitized.bodyHtml === "string") {
+    // Third-party stories lose every link (their "read the original"
+    // attribution); original BotolaGO stories keep their safe links.
     (sanitized as ArticleDetailDto).bodyHtml = removeOffsiteImages(
-      removeOutboundLinks(sanitized.bodyHtml),
+      thirdPartySource
+        ? removeOutboundLinks(sanitized.bodyHtml)
+        : keepSafeLinks(sanitized.bodyHtml),
       supabaseUrl,
     );
   }

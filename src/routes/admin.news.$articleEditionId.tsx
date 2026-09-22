@@ -843,8 +843,8 @@ function AdminNewsEditRoute() {
             heading={rtl ? "المحتوى" : "Contenu"}
             hint={
               rtl
-                ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، ‎- لقائمة، ‎> لاقتباس، وسطر فارغ بين الفقرات."
-                : "## pour un intertitre, **texte** pour l’emphase, - pour une liste, > pour une citation, une ligne vide entre les paragraphes."
+                ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، ‎- لقائمة، ‎> لاقتباس، ‎[نص](https://…) لرابط، وسطر فارغ بين الفقرات."
+                : "## pour un intertitre, **texte** pour l’emphase, - pour une liste, > pour une citation, [texte](https://…) pour un lien, une ligne vide entre les paragraphes."
             }
             testId="admin-news-section-body"
           >

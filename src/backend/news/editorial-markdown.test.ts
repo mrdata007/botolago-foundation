@@ -341,3 +341,55 @@ describe("structure an editor can actually write (headings, emphasis, lists, quo
     expect(sanitizeEditorialHtml(markdownToEditorialHtml(back))).toBe(html);
   });
 });
+
+describe("links in original articles", () => {
+  test("a path is an internal link, an https URL an external one", () => {
+    expect(
+      markdownToEditorialHtml(
+        "Voir [le calendrier](/matches) et [la FRMF](https://www.frmf.ma/a).",
+      ),
+    ).toBe(
+      '<p>Voir <a href="/matches">le calendrier</a> et <a href="https://www.frmf.ma/a" target="_blank" rel="nofollow noopener noreferrer">la FRMF</a>.</p>',
+    );
+  });
+
+  test("botolago.com is internal", () => {
+    expect(markdownToEditorialHtml("[ici](https://botolago.com/news/x)")).toBe(
+      '<p><a href="https://botolago.com/news/x">ici</a></p>',
+    );
+  });
+
+  test("unsafe or unsupported targets stay as the literal text", () => {
+    for (const url of [
+      "javascript:alert",
+      "data:text/html,x",
+      "http://a.test",
+      "//evil.test",
+      "mailto:a@b.c",
+    ]) {
+      expect(markdownToEditorialHtml(`[x](${url})`)).toBe(`<p>[x](${url})</p>`);
+    }
+  });
+
+  test("emphasis inside a link label works; the URL is never touched by it", () => {
+    expect(markdownToEditorialHtml("[**Raja** *CA*](https://x.test/a*b*c)")).toBe(
+      '<p><a href="https://x.test/a*b*c" target="_blank" rel="nofollow noopener noreferrer"><strong>Raja</strong> <em>CA</em></a></p>',
+    );
+  });
+
+  test("an image is still an image, not a link", () => {
+    expect(markdownToEditorialHtml(`![Le stade](${IMAGE_URL})`)).toContain("<figure>");
+  });
+
+  test("a quote attribute in a URL cannot break out of href", () => {
+    const html = markdownToEditorialHtml('[x](https://a.test/"onmouseover="alert)');
+    expect(html).toContain('href="https://a.test/&quot;onmouseover=&quot;alert"');
+    expect(sanitizeEditorialHtml(html)).not.toMatch(/\sonmouseover=/);
+  });
+
+  test("links survive the sanitizer and round-trip back to Markdown", () => {
+    const source = "Voir [le calendrier](/matches) et [la FRMF](https://www.frmf.ma/a).";
+    const html = sanitizeEditorialHtml(markdownToEditorialHtml(source));
+    expect(editorialHtmlToMarkdown(html)).toBe(source);
+  });
+});
