@@ -253,7 +253,20 @@ export function UiCard({
 /* Buttons                                                             */
 /* ------------------------------------------------------------------ */
 
-export type UiButtonVariant = "gradient" | "ink" | "light" | "outline" | "ghost";
+export type UiButtonVariant =
+  | "gradient"
+  | "ink"
+  | "light"
+  | "outline"
+  | "ghost"
+  /**
+   * The confirm action of a destructive dialog — delete this account, sign
+   * out and erase my data. A filled negative, not an outline: the point of
+   * the fill is that the control cannot be mistaken for the safe one beside
+   * it. Three screens were composing this by hand from `--ui-negative`
+   * mixes, each slightly differently.
+   */
+  | "destructive";
 export type UiButtonSize = "sm" | "md";
 /**
  * Which surface the button is sitting on.
@@ -1949,5 +1962,71 @@ export function UiMenuItem({
       <span className="min-w-0 flex-1 truncate">{children}</span>
       {selected ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
     </Menu.Item>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Checkbox                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * An independent boolean, on the kit.
+ *
+ * A native `<input type="checkbox">` on purpose, for the same reasons
+ * `UiSelect` stays a native `<select>`: it is already keyboard- and
+ * screen-reader-correct, it works inside a wrapping `<label>`, and a wrapping
+ * label is what lets the consent row put links in its own text without
+ * stealing the click.
+ *
+ * What was NOT free, and is what this primitive is for. Three screens drew a
+ * 16px box — a quarter of the 44px floor. The label around it rescues the
+ * click, but the box is still the target a reader aims at, so the hit area
+ * grows behind it while the ink stays 16px. The checked plate painted in the
+ * browser's own accent, which is not a colour this product chose; it is
+ * `--ui-ink` now. And one of the three carried no focus ring at all — on the
+ * acknowledgement that unlocks deleting an account.
+ */
+export function UiCheckbox({
+  label,
+  hint,
+  className,
+  ref,
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+  /** The row's text. Pass a node when it carries links. */
+  label: ReactNode;
+  hint?: ReactNode;
+  className?: string;
+  ref?: Ref<HTMLInputElement>;
+}) {
+  const generated = useId();
+  const id = props.id ?? generated;
+  return (
+    <label
+      htmlFor={id}
+      className={cn("flex cursor-pointer items-start gap-3 py-1", ui.text.secondary, className)}
+    >
+      <input
+        {...props}
+        id={id}
+        ref={ref}
+        type="checkbox"
+        aria-describedby={describedBy(props["aria-describedby"], [hint && `${id}-hint`])}
+        className={cn(
+          "mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--ui-ink)]",
+          ui.radius.tight,
+          ui.hitArea,
+          ui.focus,
+        )}
+      />
+      <span className="min-w-0">
+        <span className={ui.tone.default}>{label}</span>
+        {hint ? (
+          <span id={`${id}-hint`} className={cn("mt-0.5 block", ui.text.meta, ui.tone.muted)}>
+            {hint}
+          </span>
+        ) : null}
+      </span>
+    </label>
   );
 }

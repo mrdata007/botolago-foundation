@@ -108,6 +108,10 @@ export const UI_TOKENS = [
   "--ui-caution",
   "--ui-live",
   "--ui-live-fg",
+  // the foreground each status fill carries
+  "--ui-on-positive",
+  "--ui-on-negative",
+  "--ui-on-caution",
   // gradients
   "--ui-grad-action",
   "--ui-grad-header",
@@ -164,6 +168,9 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-caution",
   "--ui-live",
   "--ui-live-fg",
+  "--ui-on-positive",
+  "--ui-on-negative",
+  "--ui-on-caution",
   "--ui-grad-header",
   "--ui-grad-hero",
   "--ui-shadow-card",
@@ -315,6 +322,15 @@ export const ui = {
     negative: "text-[color:var(--ui-negative)]",
     /** A match in progress. The FOREGROUND step, never the fill (BG-0104). */
     live: "text-[color:var(--ui-live-fg)]",
+    /**
+     * The foreground each status FILL carries. Never pick one yourself:
+     * `--ui-positive` and `--ui-negative` invert across the themes — a
+     * mid-tone in light, a light tint in dark — so the answer flips with
+     * them. Same rule, and the same reason, as `--ui-on-fdr-N`.
+     */
+    onPositive: "text-[color:var(--ui-on-positive)]",
+    onNegative: "text-[color:var(--ui-on-negative)]",
+    onCaution: "text-[color:var(--ui-on-caution)]",
   },
 
   /** Surfaces. */
@@ -380,6 +396,22 @@ export const ui = {
    * `--ui-ink-fg`: the ring has to be visible against the page in BOTH
    * themes, which a fill colour is not.
    */
+  /**
+   * A transparent 44px target centred on a control that is PAINTED smaller —
+   * a checkbox, a remove badge on a thumbnail, a dense icon button.
+   *
+   * Rule 5 has no exception for a small control, and growing the painted box
+   * is usually not the answer: a 44px remove button covers half the avatar it
+   * annotates. So the ink stays its designed size and the target grows behind
+   * it. `inset-0` plus `m-auto` centres the pseudo-element without naming a
+   * physical edge, so it needs no RTL counterpart.
+   *
+   * The element it sits on must be `relative`, and anything overlapping it
+   * needs to sit above — this is a real 44px box, not a hint.
+   */
+  hitArea:
+    "relative after:absolute after:inset-0 after:m-auto after:h-[var(--ui-tap-min)] after:w-[var(--ui-tap-min)] after:content-['']",
+
   focus:
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink-fg)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
   /**

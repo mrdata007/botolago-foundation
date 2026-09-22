@@ -137,7 +137,10 @@ are the class tokens; prefer them over spelling `text-[color:var(…)]`.
 | `--ui-accent-sky`    | `oklch(0.88 0.11 205)`                         | `oklch(0.82 0.11 205)` | action-gradient end stop                        |
 | `--ui-positive`      | `oklch(0.52 0.14 150)`                         | `oklch(0.78 0.17 150)` | gains, up movement — legible as text            |
 | `--ui-negative`      | `oklch(0.55 0.22 355)`                         | `oklch(0.75 0.19 355)` | losses, down movement, errors — legible as text |
-| `--ui-caution`       | `oklch(0.82 0.17 80)`                          | `oklch(0.85 0.16 80)`  | amber FILL; pair with `--ui-ink-deep`           |
+| `--ui-caution`       | `oklch(0.82 0.17 80)`                          | `oklch(0.85 0.16 80)`  | amber FILL; its foreground is `--ui-on-caution` |
+| `--ui-on-positive`   | = `--ui-on-ink-plain`                          | = `--ui-ink-deep`      | text ON a positive fill (`ui.tone.onPositive`)  |
+| `--ui-on-negative`   | = `--ui-on-ink-plain`                          | = `--ui-ink-deep`      | text ON a negative fill (`ui.tone.onNegative`)  |
+| `--ui-on-caution`    | = `--ui-ink-deep`                              | = `--ui-ink-deep`      | text ON an amber fill (`ui.tone.onCaution`)     |
 | `--ui-live`          | `oklch(0.62 0.22 27)`                          | `oklch(0.68 0.22 27)`  | a match in progress: the dot, the minute bar    |
 | `--ui-live-fg`       | `oklch(0.5 0.22 27)`                           | `oklch(0.78 0.18 27)`  | the same state as TEXT (`ui.tone.live`)         |
 | `--ui-mesh-glass`    | `--ui-on-ink-plain` at 10%                     | follows it             | the glass tile on the mesh (`ui.surface.mesh`)  |
@@ -188,6 +191,18 @@ counterparts.
 
 Never pick an FDR foreground yourself — use `--ui-on-fdr-N`, or
 `UiDifficultyCell`, which does it for you.
+
+**The same rule applies to the status fills.** `--ui-positive` and
+`--ui-negative` invert across the themes — a mid-tone in light, a light tint
+in dark — so one foreground cannot serve both, and a filled control that
+picks its own gets it wrong in exactly one theme. Measured against the fills:
+positive 5.17 / 9.28, negative 5.49 / 6.93, caution 9.34 / 10.65. A filled
+destructive button written as white-on-negative measured **2.31:1** in dark
+before `--ui-on-negative` existed.
+
+`--ui-live` is the exception, and only because nothing draws text on it: it
+is the pulsing dot and the minute bar. Text about a live match sits on a 14%
+tint and uses `--ui-live-fg`.
 
 ### 2.4 Spacing, density, radius
 

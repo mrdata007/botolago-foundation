@@ -23,6 +23,7 @@ export {
   UiBanner,
   UiButton,
   UiCard,
+  UiCheckbox,
   UiChip,
   UiDifficultyCell,
   UiDivider,

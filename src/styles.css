@@ -1037,6 +1037,17 @@ html[dir="rtl"] .lucide-arrow-left {
      badge. */
   --ui-live: oklch(0.62 0.22 27);
   --ui-live-fg: oklch(0.5 0.22 27);
+  /* The foreground each status FILL carries, the way `--ui-fdr-N` carries
+     `--ui-on-fdr-N`. Not a convenience: `--ui-positive` and `--ui-negative`
+     invert across the themes — a mid-tone in light, a light tint in dark — so
+     one foreground cannot serve both. Measured against the fills:
+     positive 5.17 / 9.28, negative 5.49 / 6.93, caution 9.34 / 10.65.
+     Without these, a filled destructive button was white on the dark
+     negative at 2.31:1. */
+  --ui-on-positive: var(--ui-on-ink-plain);
+  --ui-on-negative: var(--ui-on-ink-plain);
+  /* Caution is a light amber in BOTH themes, so its foreground never flips. */
+  --ui-on-caution: var(--ui-ink-deep);
 
   /* ---- Gradients -------------------------------------------------
      `to bottom` on purpose: a `deg` angle is physical and mirrors
@@ -1154,6 +1165,9 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-caution: oklch(0.85 0.16 80);
   --ui-live: oklch(0.68 0.22 27);
   --ui-live-fg: oklch(0.78 0.18 27);
+  --ui-on-positive: var(--ui-ink-deep);
+  --ui-on-negative: var(--ui-ink-deep);
+  --ui-on-caution: var(--ui-ink-deep);
 
   --ui-grad-header: linear-gradient(
     to bottom,
