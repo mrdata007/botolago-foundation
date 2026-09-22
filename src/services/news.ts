@@ -64,10 +64,15 @@ function localized(value: string): { fr: string; ar: string } {
 
 function fallbackGradient(id: string): string {
   const variant = Number.parseInt(id.slice(-2), 16) % 3;
+  // `to bottom`, not `135deg`: a gradient angle is physical (rule 3) and does
+  // not follow `dir`, so every article hero lit from the opposite corner in
+  // Arabic. The colours stay literal on purpose — they are artwork standing in
+  // for a missing photograph, not design tokens, and there is no editorial
+  // palette in the system for them to draw from.
   return [
-    "linear-gradient(135deg, #082f49 0%, #0f766e 100%)",
-    "linear-gradient(135deg, #172554 0%, #7c2d12 100%)",
-    "linear-gradient(135deg, #3f1d2e 0%, #075985 100%)",
+    "linear-gradient(to bottom, #082f49 0%, #0f766e 100%)",
+    "linear-gradient(to bottom, #172554 0%, #7c2d12 100%)",
+    "linear-gradient(to bottom, #3f1d2e 0%, #075985 100%)",
   ][Number.isNaN(variant) ? 0 : variant]!;
 }
 

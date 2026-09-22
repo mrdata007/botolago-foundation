@@ -48,43 +48,43 @@
      News finally follows the theme. Still News-only: Fantasy and the
      shell draw from `--ui-*`. */
   --news-gradient-hero: linear-gradient(
-    125deg,
+    to bottom,
     oklch(0.251 0.12 262) 0%,
     oklch(0.524 0.26 263) 55%,
     oklch(0.802 0.132 226) 100%
   );
   --news-gradient-ocean: linear-gradient(
-    135deg,
+    to bottom,
     oklch(0.169 0.071 260) 0%,
     oklch(0.4 0.199 263) 55%,
     oklch(0.524 0.26 263) 100%
   );
   --news-gradient-matchday: linear-gradient(
-    110deg,
+    to bottom,
     oklch(0.329 0.164 263) 0%,
     oklch(0.524 0.26 263) 55%,
     oklch(0.752 0.127 264) 100%
   );
   --news-gradient-aqua: linear-gradient(
-    90deg,
+    to bottom,
     oklch(0.524 0.26 263) 0%,
     oklch(0.644 0.194 254) 55%,
     oklch(0.802 0.132 226) 100%
   );
   --news-gradient-dark: linear-gradient(
-    145deg,
+    to bottom,
     oklch(0.169 0.071 260) 0%,
     oklch(0.251 0.12 262) 55%,
     oklch(0.4 0.199 263) 100%
   );
   --news-gradient-light: linear-gradient(
-    115deg,
+    to bottom,
     oklch(1 0 0) 0%,
     oklch(0.948 0.024 266) 55%,
     oklch(0.875 0.061 265) 100%
   );
   --news-gradient-promo: linear-gradient(
-    130deg,
+    to bottom,
     oklch(0.4 0.199 263) 0%,
     oklch(0.524 0.26 263) 55%,
     oklch(0.802 0.132 226) 100%
@@ -191,8 +191,11 @@
   --glass-shadow: var(--shadow-card);
 
   /* ---- Brand gradient ------------------------------------------ */
+  /* `to bottom`, not an angle: a gradient angle is physical (rule 3) and does
+     not follow `dir`. Its one live consumer is the generated Lovable consent
+     page, which renders in both languages like everything else. */
   --bg-brand-gradient: linear-gradient(
-    135deg,
+    to bottom,
     var(--brand-primary) 0%,
     var(--brand-primary-2) 55%,
     var(--brand-accent) 100%
@@ -1240,43 +1243,43 @@ html[dir="rtl"] .lucide-arrow-left {
   /* News placeholders, one step deeper so an image-less card sits on a
      dark page instead of burning a hole in it. Same hues, lower L. */
   --news-gradient-hero: linear-gradient(
-    125deg,
+    to bottom,
     oklch(0.18 0.09 262) 0%,
     oklch(0.38 0.19 263) 55%,
     oklch(0.6 0.11 226) 100%
   );
   --news-gradient-ocean: linear-gradient(
-    135deg,
+    to bottom,
     oklch(0.14 0.06 260) 0%,
     oklch(0.3 0.15 263) 55%,
     oklch(0.4 0.19 263) 100%
   );
   --news-gradient-matchday: linear-gradient(
-    110deg,
+    to bottom,
     oklch(0.24 0.12 263) 0%,
     oklch(0.38 0.19 263) 55%,
     oklch(0.56 0.1 264) 100%
   );
   --news-gradient-aqua: linear-gradient(
-    90deg,
+    to bottom,
     oklch(0.38 0.19 263) 0%,
     oklch(0.48 0.15 254) 55%,
     oklch(0.6 0.11 226) 100%
   );
   --news-gradient-dark: linear-gradient(
-    145deg,
+    to bottom,
     oklch(0.13 0.05 260) 0%,
     oklch(0.19 0.09 262) 55%,
     oklch(0.3 0.15 263) 100%
   );
   --news-gradient-light: linear-gradient(
-    115deg,
+    to bottom,
     oklch(0.42 0.04 265) 0%,
     oklch(0.34 0.05 266) 55%,
     oklch(0.28 0.06 265) 100%
   );
   --news-gradient-promo: linear-gradient(
-    130deg,
+    to bottom,
     oklch(0.3 0.15 263) 0%,
     oklch(0.38 0.19 263) 55%,
     oklch(0.6 0.11 226) 100%

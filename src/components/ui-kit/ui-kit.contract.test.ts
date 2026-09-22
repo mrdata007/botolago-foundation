@@ -490,6 +490,25 @@ describe("ui-kit: the primitives keep their promises", () => {
   });
 });
 
+describe("ui-kit: no gradient TOKEN states a physical angle", () => {
+  /**
+   * The suite already forbids a `deg` angle inside the kit's own files and
+   * inside `--ui-grad-*`. Everything else in the stylesheet was free to state
+   * one, and did: seven `--news-gradient-*` (declared twice, light and dark)
+   * and `--bg-brand-gradient` all ran at 110-145deg, so every article hero and
+   * the consent page's call to action lit from the opposite corner in Arabic.
+   *
+   * The rule is about direction, not about which prefix a token happens to
+   * carry, so the check is too.
+   */
+  it("every gradient-valued custom property runs a keyword direction", () => {
+    const offenders = [...css.matchAll(/(--[\w-]*grad[\w-]*):\s*([^;]+);/g)]
+      .filter(([, , value]) => /(linear|conic)-gradient\([^)]*\d+deg/.test(value))
+      .map(([, token]) => token);
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+});
+
 describe("ui-kit: the shared background mesh is direction-neutral", () => {
   /**
    * Rule 3 says a gradient angle is physical too, and the kit's own gradient
