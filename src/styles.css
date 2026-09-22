@@ -922,6 +922,36 @@ html[dir="rtl"] .lucide-arrow-left {
      the action gradient, light in both themes) this one flips. */
   --ui-on-grad-header: oklch(0.24 0.09 258);
 
+  /* ---- On the dark mesh ------------------------------------------
+     The product has a second register: a deep mesh that the welcome
+     screen, the auth screens and the first-launch language chooser
+     all sit on. It is deliberate — a focused room with one job — and
+     the page tokens above are built for the light app surface, so
+     they do not serve it.
+
+     Three surfaces each invented the same answer privately. Auth got
+     it right (`color-mix` of a themed token); WelcomeScreen, the
+     language chooser, the logo, CloudSyncBanner and RankingsPodium
+     reached for literal `text-white/80`, `bg-white/10`,
+     `ring-white/20` — an un-themed colour that says "light theme" in
+     a file that has no idea which theme it is in.
+
+     So the register becomes tokens. Each one is `--ui-on-ink-plain`
+     at an opacity, and that token flips with the theme, which is why
+     these are derived rather than redeclared: a second copy under
+     `.dark` would be the drift the manifest exists to stop.
+
+     `in srgb` rather than `in oklab` is not a taste call: the derived
+     token contract forbids a colour space name that reads as a
+     literal colour, and mixing one colour with `transparent` is a
+     premultiplied alpha ramp that resolves identically either way. */
+  --ui-on-mesh: var(--ui-on-ink-plain);
+  --ui-on-mesh-muted: color-mix(in srgb, var(--ui-on-ink-plain) 78%, transparent);
+  --ui-on-mesh-faint: color-mix(in srgb, var(--ui-on-ink-plain) 62%, transparent);
+  /* The glass tile on the mesh: a fill and its hairline. */
+  --ui-mesh-glass: color-mix(in srgb, var(--ui-on-ink-plain) 10%, transparent);
+  --ui-mesh-rule: color-mix(in srgb, var(--ui-on-ink-plain) 20%, transparent);
+
   /* ---- Accents: the two stops of the Fantasy CTA gradient -------- */
   --ui-accent-spring: oklch(0.88 0.19 152);
   --ui-accent-sky: oklch(0.88 0.11 205);

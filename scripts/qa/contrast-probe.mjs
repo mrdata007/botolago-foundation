@@ -210,6 +210,40 @@ const VERIFY = async (src) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
+/**
+ * PROBE_THEME=dark measures the DARK token set.
+ *
+ * The class has to go on AFTER hydration, not in an init script. An init
+ * script that adds `dark` to <html> looks like it works and does not: the
+ * server sends `<html class="">`, hydration replaces the attribute, and the
+ * class is gone by the time anything is painted. Measured that way the dark
+ * theme came back "27 measurements, 0 below AA" — a clean bill of health for a
+ * theme that was never applied. `applyTheme` therefore sets it after the page
+ * has settled and ASSERTS that a token actually changed value; a run that
+ * cannot prove the theme is on exits rather than reporting a false pass.
+ *
+ * This measures the token set. It does not claim the feature is on for users:
+ * the theme provider stays inert while DARK_MODE_ENABLED is false.
+ */
+const THEME = process.env.PROBE_THEME === "dark" ? "dark" : "light";
+
+const applyTheme = async (page) => {
+  if (THEME !== "dark") return;
+  const changed = await page.evaluate(() => {
+    const read = () => getComputedStyle(document.documentElement).getPropertyValue("--ui-page").trim();
+    const before = read();
+    document.documentElement.classList.add("dark");
+    return { before, after: read() };
+  });
+  if (changed.before === changed.after) {
+    console.error(
+      `contrast-probe: PROBE_THEME=dark did not change --ui-page (${changed.before}).\n` +
+        "The dark class is not taking effect, so any result would be the light theme wearing a dark label.",
+    );
+    process.exit(2);
+  }
+};
+
 const browser = await chromium.launch();
 let checked = 0;
 const failures = [];
@@ -230,6 +264,7 @@ for (const lang of LANGS) {
   for (const route of ROUTES) {
     await page.goto(BASE + route, { waitUntil: "domcontentloaded" }).catch(() => {});
     await page.waitForTimeout(Number(process.env.PROBE_SETTLE ?? 1300));
+    await applyTheme(page);
     // Wait for entrance animations to FINISH rather than guessing a delay.
     // The welcome screen fades its content in over 700ms after hydration, and
     // a screenshot taken mid-fade contains no glyph pixels at all — the box is
@@ -283,7 +318,7 @@ for (const lang of LANGS) {
 }
 await browser.close();
 
-console.log(`\n${checked} pixel measurements, ${failures.length} below AA`);
+console.log(`\n${THEME} theme: ${checked} pixel measurements, ${failures.length} below AA`);
 for (const f of failures) {
   console.log(
     `  ${f.measured}:1 (floor ${f.floor}) ${f.lang} ${f.route} "${f.text}" — ${f.reason}`,

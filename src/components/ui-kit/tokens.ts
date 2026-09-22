@@ -92,6 +92,12 @@ export const UI_TOKENS = [
   "--ui-on-ink",
   "--ui-on-ink-plain",
   "--ui-on-grad-header",
+  // the dark-mesh register (welcome, auth, first-launch chooser)
+  "--ui-on-mesh",
+  "--ui-on-mesh-muted",
+  "--ui-on-mesh-faint",
+  "--ui-mesh-glass",
+  "--ui-mesh-rule",
   // accents
   "--ui-accent-spring",
   "--ui-accent-sky",
@@ -182,7 +188,17 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
  * exists to prevent. The contract test checks that each one's light value
  * only references themed tokens.
  */
-export const UI_DERIVED_TOKENS: readonly UiToken[] = ["--ui-grad-action"];
+export const UI_DERIVED_TOKENS: readonly UiToken[] = [
+  "--ui-grad-action",
+  // The mesh register is `--ui-on-ink-plain` at five opacities. That token
+  // flips with the theme, so these follow it; redeclaring them under `.dark`
+  // would be a second copy of the same values.
+  "--ui-on-mesh",
+  "--ui-on-mesh-muted",
+  "--ui-on-mesh-faint",
+  "--ui-mesh-glass",
+  "--ui-mesh-rule",
+];
 
 /**
  * Tailwind scans source files for *literal* class strings. A class built by
@@ -282,6 +298,14 @@ export const ui = {
     /** The foreground for the header/hero gradient band. */
     onGradHeader: "text-[color:var(--ui-on-grad-header)]",
     onInkPlain: "text-[color:var(--ui-on-ink-plain)]",
+    /**
+     * The dark-mesh register: welcome, auth, the first-launch chooser.
+     * Use these instead of `text-white/80` — a literal white is un-themed and
+     * says "light theme" in a file that does not know which theme it is in.
+     */
+    onMesh: "text-[color:var(--ui-on-mesh)]",
+    onMeshMuted: "text-[color:var(--ui-on-mesh-muted)]",
+    onMeshFaint: "text-[color:var(--ui-on-mesh-faint)]",
     positive: "text-[color:var(--ui-positive)]",
     negative: "text-[color:var(--ui-negative)]",
   },
@@ -296,6 +320,11 @@ export const ui = {
     inkPlain: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)]",
     /** Full-bleed bar: an opaque surface with a hairline rule, no glass. */
     bar: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
+    /**
+     * The glass tile on the dark mesh — the logo plate, the language chip.
+     * A fill and a hairline, both themed; no literal `bg-white/10`.
+     */
+    mesh: "bg-[color:var(--ui-mesh-glass)] text-[color:var(--ui-on-mesh)] ring-1 ring-[color:var(--ui-mesh-rule)]",
     /** Sheets, modals and popovers: the raised surface above the scrim. */
     overlay:
       "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] shadow-[var(--ui-shadow-overlay)]",
@@ -339,4 +368,13 @@ export const ui = {
    */
   focus:
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink-fg)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
+  /**
+   * The same ring for a control sitting on the dark mesh rather than on the
+   * page. `ui.focus` is drawn in `--ui-ink-fg`, a deep navy in the light
+   * theme, which on the mesh is a ring you cannot see — so the mesh needs its
+   * own, and the offset is transparent because there is no page colour behind
+   * the control to punch through.
+   */
+  focusOnMesh:
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-mesh)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
 } as const;
