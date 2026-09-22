@@ -73,34 +73,16 @@ on conflict (team_id, language) do update
       short_name = excluded.short_name,
       updated_at = statement_timestamp();
 
--- Guard: exactly the 16 current clubs, no more and no fewer. If the current
--- season's membership set has moved since this file was drafted, this aborts
--- rather than seeding a stale list.
-do $$
-declare
-  seeded integer;
-  current_clubs integer;
-begin
-  select count(*) into seeded
-  from app.team_translations
-  where language = 'ar';
-
-  select count(distinct team_membership.team_id) into current_clubs
-  from app.team_memberships team_membership
-  join app.seasons season on season.id = team_membership.season_id
-  where season.is_current;
-
-  if seeded <> current_clubs then
-    raise exception
-      'BG-0068 seed covers % clubs but the current season has %', seeded, current_clubs;
-  end if;
-end;
-$$;
-
-commit;
 
 -- ---------------------------------------------------------------------------
 -- Addendum, 2026-09-22: the Zemamra LATIN record.
+-- ---------------------------------------------------------------------------
+-- Inside the transaction, ahead of the guard, deliberately. Appended after
+-- `commit;` on the first pass, which meant a failure here would have left the
+-- sixteen Arabic rows committed and this one absent -- a half-applied seed
+-- from a file whose whole purpose is to be re-runnable -- and put this row
+-- outside the club-count guard. The guard counts `language = 'ar'` only, so
+-- a French row ahead of it does not perturb the count it checks.
 -- ---------------------------------------------------------------------------
 -- The owner's ruling was that app.teams.name "CR Khemis Zemamra" is the
 -- inconsistent field and the code RCAZ is correct: RCAZ expands to Renaissance
@@ -133,3 +115,29 @@ on conflict (team_id, language) do update
   set name = excluded.name,
       short_name = excluded.short_name,
       updated_at = statement_timestamp();
+
+-- Guard: exactly the 16 current clubs, no more and no fewer. If the current
+-- season's membership set has moved since this file was drafted, this aborts
+-- rather than seeding a stale list.
+do $$
+declare
+  seeded integer;
+  current_clubs integer;
+begin
+  select count(*) into seeded
+  from app.team_translations
+  where language = 'ar';
+
+  select count(distinct team_membership.team_id) into current_clubs
+  from app.team_memberships team_membership
+  join app.seasons season on season.id = team_membership.season_id
+  where season.is_current;
+
+  if seeded <> current_clubs then
+    raise exception
+      'BG-0068 seed covers % clubs but the current season has %', seeded, current_clubs;
+  end if;
+end;
+$$;
+
+commit;
