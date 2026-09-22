@@ -152,6 +152,54 @@ describe("third-party attribution is stripped at the data layer", () => {
     expect(safe.hero).toBeNull();
   });
 
+  describe("body images: only our own news-media bucket is shown", () => {
+    const origin = "https://project.supabase.test";
+    const own = `${origin}/storage/v1/object/public/news-media/news/0a1b2c3d.webp`;
+    const body = (img: string) =>
+      `<p>Avant.</p><figure><img src="${img}" alt="Photo" loading="lazy" /><figcaption>Photo</figcaption></figure><p>Après.</p>`;
+
+    test("an image we host is kept with its caption", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({ publisher: null, bodyHtml: body(own) }),
+        origin,
+      );
+      expect(safe.bodyHtml).toBe(body(own));
+    });
+
+    test("a hotlinked image typed into the body is removed with its figure", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({
+          publisher: null,
+          bodyHtml: body("https://images.other-site.test/photo.jpg"),
+        }),
+        origin,
+      );
+      expect(safe.bodyHtml).toBe("<p>Avant.</p><p>Après.</p>");
+    });
+
+    test("another project's bucket, another bucket, or a traversal is not ours", () => {
+      for (const src of [
+        "https://evil.supabase.test/storage/v1/object/public/news-media/news/x.webp",
+        `${origin}/storage/v1/object/public/football-media/x.webp`,
+        `${origin}/storage/v1/object/public/news-media/news/../../x.webp`,
+      ]) {
+        const safe = sanitizeArticleAttribution(
+          detailFixture({ publisher: null, bodyHtml: `<p>Texte.</p><img src="${src}" alt="" />` }),
+          origin,
+        );
+        expect(safe.bodyHtml).toBe("<p>Texte.</p>");
+      }
+    });
+
+    test("with no configured Supabase URL every image is removed (fail closed)", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({ publisher: null, bodyHtml: body(own) }),
+        null,
+      );
+      expect(safe.bodyHtml).toBe("<p>Avant.</p><p>Après.</p>");
+    });
+  });
+
   test("works on a card DTO too, and does not mutate its input", () => {
     const { bodyHtml: _body, ...card } = detailFixture();
     const input = card as ArticleCardDto;

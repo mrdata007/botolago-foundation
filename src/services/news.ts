@@ -99,8 +99,11 @@ function fallbackGradient(id: string): string {
  *   - a hero that exists only as an off-site `sourceUrl`, with no
  *     `storagePath` of our own, is dropped: we do not hotlink somebody
  *     else's image host, and the card/article falls back to the brand
- *     gradient. A hero we actually hold in storage is kept, and its
- *     third-party `credit`/`caption` text is cleared with the same reason.
+ *     gradient. A hero we actually hold in storage is kept; its
+ *     `credit`/`caption` text is cleared when the story came from a
+ *     third-party source (it has a publisher) and kept for CMS stories.
+ *   - a body image not served from our own `news-media` bucket is removed
+ *     with its figure, for the same no-hotlinking reason.
  *   - an anchor in `bodyHtml` pointing off-site is removed *with its text*,
  *     not merely unwrapped. Measuring the rendered DOM is what showed why:
  *     unwrapping left the words "read the original on <source>" behind, which
@@ -131,7 +134,36 @@ function removeOutboundLinks(html: string): string {
     .replace(/<p>\s*<\/p>/gi, "");
 }
 
-export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDetailDto>(dto: T): T {
+/**
+ * Removes every body image that is not served from our own `news-media`
+ * bucket, with its `<figure>` and caption.
+ *
+ * The sanitizer allows any https image, and an editor can type
+ * `![alt](https://somebody-elses-site/photo.jpg)` into the body; that would be
+ * published as a hotlinked photo nobody licensed. Same rule as the hero above:
+ * we show images we hold, nothing else. With no configured Supabase URL there
+ * is no "ours" to compare against, so every image is removed (fail closed).
+ */
+function removeOffsiteImages(html: string, supabaseUrl?: string | null): string {
+  const probe = resolveMediaUrl({ storagePath: "news/probe" }, supabaseUrl);
+  const ownPrefix = probe ? probe.slice(0, -"probe".length) : null;
+  const isOwn = (tag: string) => {
+    const src = /\ssrc\s*=\s*"([^"]*)"|\ssrc\s*=\s*'([^']*)'/i.exec(tag);
+    const value = (src?.[1] ?? src?.[2] ?? "").replace(/&amp;/g, "&");
+    return ownPrefix !== null && value.startsWith(ownPrefix) && !value.includes("..");
+  };
+  return html
+    .replace(/<figure\b[^>]*>[\s\S]*?<\/figure\s*>/gi, (figure) => {
+      const img = /<img\b[^>]*>/i.exec(figure);
+      return img && isOwn(img[0]) ? figure : "";
+    })
+    .replace(/<img\b[^>]*>/gi, (img) => (isOwn(img) ? img : ""));
+}
+
+export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDetailDto>(
+  dto: T,
+  supabaseUrl?: string | null,
+): T {
   const publisherName = dto.publisher?.name;
   const hero = dto.hero;
   // A story with a publisher came from a third-party source; a story written in
@@ -155,7 +187,10 @@ export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDet
   };
 
   if ("bodyHtml" in sanitized && typeof sanitized.bodyHtml === "string") {
-    (sanitized as ArticleDetailDto).bodyHtml = removeOutboundLinks(sanitized.bodyHtml);
+    (sanitized as ArticleDetailDto).bodyHtml = removeOffsiteImages(
+      removeOutboundLinks(sanitized.bodyHtml),
+      supabaseUrl,
+    );
   }
 
   return sanitized;
@@ -165,7 +200,7 @@ export function presentArticle(
   dto: ArticleCardDto | ArticleDetailDto,
   supabaseUrl?: string | null,
 ): Article {
-  const safe = sanitizeArticleAttribution(dto);
+  const safe = sanitizeArticleAttribution(dto, supabaseUrl);
   return {
     id: safe.id,
     language: safe.language,
