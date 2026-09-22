@@ -76,6 +76,7 @@ export const UI_TOKENS = [
   "--ui-tap-min",
   "--ui-row-min",
   "--ui-column-max",
+  "--ui-content-max",
   // surfaces
   "--ui-page",
   "--ui-surface",
@@ -350,6 +351,13 @@ export const ui = {
     row: "min-h-[var(--ui-row-min)]",
     tap: "min-h-[var(--ui-tap-min)] min-w-[var(--ui-tap-min)]",
     column: "mx-auto w-full max-w-[var(--ui-column-max)]",
+    /**
+     * The READING column, 672px — wider than the 480px phone canvas and a
+     * different thing from it. Three places had reached for a literal
+     * `max-w-2xl` because `column` was the only width token and it meant the
+     * other one.
+     */
+    content: "mx-auto w-full max-w-[var(--ui-content-max)]",
   },
 
   radius: {

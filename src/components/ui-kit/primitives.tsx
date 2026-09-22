@@ -22,8 +22,9 @@
  */
 
 import * as Dialog from "@radix-ui/react-dialog";
+import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Link, useRouter } from "@tanstack/react-router";
-import { AlertTriangle, ChevronDown, ChevronLeft, Info, Loader2, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronLeft, Info, Loader2, X } from "lucide-react";
 import type {
   AnchorHTMLAttributes,
   AriaAttributes,
@@ -254,8 +255,25 @@ export function UiCard({
 
 export type UiButtonVariant = "gradient" | "ink" | "light" | "outline" | "ghost";
 export type UiButtonSize = "sm" | "md";
+/**
+ * Which surface the button is sitting on.
+ *
+ * `outline` and `ghost` paint their text in `--ui-ink-fg`, a deep navy in the
+ * light theme. On the page that is correct; on the dark mesh behind the
+ * welcome and auth screens it is a button you cannot read, and its focus ring
+ * — drawn in the same colour, over a `--ui-page` offset — is a ring you
+ * cannot see. So the welcome screen hand-rolled its own buttons instead.
+ * `tone="onMesh"` is that screen's answer, stated once.
+ */
+export type UiButtonTone = "onSurface" | "onMesh";
 
-function buttonClass(variant: UiButtonVariant, size: UiButtonSize, className?: string) {
+function buttonClass(
+  variant: UiButtonVariant,
+  size: UiButtonSize,
+  tone: UiButtonTone,
+  className?: string,
+) {
+  const onMesh = tone === "onMesh";
   return cn(
     "inline-flex items-center justify-center gap-2",
     // A flex item shrinks by default, and an SVG is a flex item like any
@@ -268,7 +286,7 @@ function buttonClass(variant: UiButtonVariant, size: UiButtonSize, className?: s
     // where icon and label compete for width.
     "[&_svg]:shrink-0",
     ui.radius.control,
-    ui.focus,
+    onMesh ? ui.focusOnMesh : ui.focus,
     size === "md"
       ? cn("min-h-[var(--ui-row-min)] w-full px-4", ui.text.bodyStrong)
       : cn("min-h-[var(--ui-tap-min)] px-3", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]"),
@@ -281,8 +299,22 @@ function buttonClass(variant: UiButtonVariant, size: UiButtonSize, className?: s
     variant === "light" &&
       "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)] shadow-[var(--ui-shadow-card)] disabled:opacity-50",
     variant === "outline" &&
+      !onMesh &&
       "border border-current bg-transparent text-[color:var(--ui-ink-fg)] disabled:opacity-50",
-    variant === "ghost" && "bg-transparent text-[color:var(--ui-ink-fg)] disabled:opacity-50",
+    variant === "ghost" &&
+      !onMesh &&
+      "bg-transparent text-[color:var(--ui-ink-fg)] disabled:opacity-50",
+    // On the mesh the same two variants keep their shape and change only the
+    // colours they read from: the plain on-dark foreground, and a fill/rule
+    // mixed from it so the control sits ON the mesh rather than beside it.
+    onMesh &&
+      variant === "outline" &&
+      cn(
+        "border bg-[color:var(--ui-mesh-glass)] border-[color:var(--ui-mesh-rule)]",
+        ui.tone.onMesh,
+        "disabled:opacity-50",
+      ),
+    onMesh && variant === "ghost" && cn("bg-transparent", ui.tone.onMesh, "disabled:opacity-50"),
     className,
   );
 }
@@ -290,18 +322,20 @@ function buttonClass(variant: UiButtonVariant, size: UiButtonSize, className?: s
 export function UiButton({
   variant = "gradient",
   size = "md",
+  tone = "onSurface",
   className,
   children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: UiButtonVariant;
   size?: UiButtonSize;
+  tone?: UiButtonTone;
 }) {
   return (
     <button
       type="button"
       {...props}
-      className={buttonClass(variant, size, className)}
+      className={buttonClass(variant, size, tone, className)}
       style={variant === "gradient" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >
       {children}
@@ -315,6 +349,7 @@ export function UiLinkButton({
   search,
   variant = "gradient",
   size = "md",
+  tone = "onSurface",
   className,
   children,
   ...props
@@ -324,6 +359,7 @@ export function UiLinkButton({
   search?: Record<string, unknown>;
   variant?: UiButtonVariant;
   size?: UiButtonSize;
+  tone?: UiButtonTone;
 }) {
   return (
     <Link
@@ -331,7 +367,7 @@ export function UiLinkButton({
       params={params}
       search={search}
       {...props}
-      className={buttonClass(variant, size, className)}
+      className={buttonClass(variant, size, tone, className)}
       style={variant === "gradient" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >
       {children}
@@ -507,7 +543,12 @@ export function UiBadge({
   className,
 }: {
   children: ReactNode;
-  tone?: "neutral" | "action" | "positive" | "negative";
+  /**
+   * `outline` is for a state that must not read as spent. `neutral` sits on
+   * the sunken surface, which is how this product draws "used up"; an
+   * available-but-inactive state needs the page surface and a rule instead.
+   */
+  tone?: "neutral" | "outline" | "action" | "positive" | "negative";
   className?: string;
 }) {
   return (
@@ -518,6 +559,7 @@ export function UiBadge({
         // `ltr:` — Arabic letterforms join and must never be letter-spaced.
         ui.text.label,
         tone === "neutral" && cn(ui.surface.sunken, ui.tone.muted),
+        tone === "outline" && cn("bg-[color:var(--ui-surface)]", ui.rule.all, ui.tone.ink),
         tone === "action" && "text-[color:var(--ui-ink-deep)]",
         tone === "positive" &&
           "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive)]",
@@ -671,6 +713,7 @@ export function UiAlert({
   children,
   icon,
   action,
+  live,
   className,
 }: {
   tone?: UiAlertTone;
@@ -679,6 +722,16 @@ export function UiAlert({
   /** Replaces the default glyph. Pass `null` for no glyph. */
   icon?: ReactNode;
   action?: ReactNode;
+  /**
+   * `false` renders the alert with no live region.
+   *
+   * One alert announcing itself is the point. A LIST of them is not: five
+   * alerts is five simultaneous live regions, and a screen reader is handed
+   * five interruptions for one screen. A list wants exactly one region on the
+   * container — or none, if the list is part of the page rather than news
+   * about it — so the items have to be able to opt out.
+   */
+  live?: boolean;
   className?: string;
 }) {
   const accent =
@@ -692,7 +745,7 @@ export function UiAlert({
 
   return (
     <div
-      role={tone === "negative" ? "alert" : "status"}
+      role={live === false ? undefined : tone === "negative" ? "alert" : "status"}
       className={cn("flex items-start gap-3 p-3", ui.radius.control, className)}
       style={{
         backgroundColor: `color-mix(in oklab, ${accent} 14%, var(--ui-surface))`,
@@ -1046,6 +1099,7 @@ export function UiInput({
   error,
   reserveError,
   trailing,
+  leading,
   id,
   className,
   fieldClassName,
@@ -1069,6 +1123,12 @@ export function UiInput({
    * right edge in French and the left in Arabic.
    */
   trailing?: ReactNode;
+  /**
+   * The same slot on the inline-START edge — a magnifier on a search field, a
+   * currency mark. Unlike `trailing` this one is decorative far more often
+   * than it is a control, so give it `aria-hidden` unless it does something.
+   */
+  leading?: ReactNode;
   /** Class for the wrapper, so a field can size itself in a grid. */
   className?: string;
   /** Class for the input box itself. */
@@ -1094,6 +1154,7 @@ export function UiInput({
         ui.focus,
         error && "border-[color:var(--ui-negative)]",
         trailing && "pe-11",
+        leading && "ps-10",
         fieldClassName,
       )}
     />
@@ -1107,10 +1168,17 @@ export function UiInput({
       reserveError={reserveError}
       className={className}
     >
-      {trailing ? (
+      {trailing || leading ? (
         <span className="relative flex w-full">
+          {leading ? (
+            <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center">
+              {leading}
+            </span>
+          ) : null}
           {field}
-          <span className="absolute inset-y-0 end-1 flex items-center">{trailing}</span>
+          {trailing ? (
+            <span className="absolute inset-y-0 end-1 flex items-center">{trailing}</span>
+          ) : null}
         </span>
       ) : (
         field
@@ -1508,7 +1576,10 @@ export function UiPlayerPlate({
         className={cn(
           "flex w-full flex-col items-center",
           ui.radius.tight,
-          onClick && cn("cursor-pointer", ui.focus),
+          // The plate clears 44px through its content today (the smallest
+          // case, a 40px jersey over two micro bands, measures ~79px), but
+          // inherited is not guaranteed. When it IS a control, state it.
+          onClick && cn("cursor-pointer", ui.space.tap, ui.focus),
           state === "out" && "opacity-45",
         )}
       >
@@ -1767,6 +1838,12 @@ export function UiDifficultyCell({
         "grid min-h-[var(--ui-tap-min)] place-items-center px-1.5 text-center",
         ui.radius.tight,
         ui.text.micro,
+        // An FDR square usually holds a number. `ui.text.micro` carries no
+        // tabular figures, so a column of them did not line up — the one
+        // figure left in Fantasy that was not on the tabular rail. Harmless
+        // for the club-token labels beside them: tabular-nums touches digits
+        // only.
+        ui.text.tabular,
         "[font-weight:var(--ui-weight-hero)]",
         className,
       )}
@@ -1774,5 +1851,103 @@ export function UiDifficultyCell({
     >
       {children}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Menu                                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A dropdown menu, on the kit.
+ *
+ * Three surfaces reached for `@/components/ui/dropdown-menu` because the
+ * barrel had nothing: the language switcher and both Fantasy navs. That
+ * component is the V1 palette (`bg-popover`, `border`, `shadow-md`), an
+ * off-scale `rounded-md`, and — the part that matters — `py-1.5 text-sm`
+ * items, which is roughly a 32px row against a 44px floor. Rule 5 has no
+ * exception for a menu.
+ *
+ * Radix directly rather than through that component, so the item height is a
+ * token rather than something a call site has to remember to override.
+ * `dir` is passed through because a menu that opens from an `end`-aligned
+ * trigger has to know which edge that is.
+ */
+export function UiMenu({
+  trigger,
+  children,
+  align = "end",
+  label,
+  className,
+}: {
+  trigger: ReactNode;
+  children: ReactNode;
+  align?: "start" | "center" | "end";
+  /** Accessible name for the menu itself, when the trigger's is not enough. */
+  label?: string;
+  className?: string;
+}) {
+  const { dir } = useI18n();
+  return (
+    <Menu.Root dir={dir}>
+      <Menu.Trigger asChild>{trigger}</Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content
+          align={align}
+          sideOffset={6}
+          aria-label={label}
+          className={cn(
+            "z-50 min-w-[9rem] overflow-hidden p-1",
+            ui.surface.overlay,
+            ui.radius.track,
+            "shadow-[var(--ui-shadow-overlay)]",
+            ui.rule.all,
+            className,
+          )}
+        >
+          {children}
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+/**
+ * One row of a `UiMenu`. `selected` marks the current choice and is announced
+ * — a bullet glyph alone says nothing to a screen reader.
+ */
+export function UiMenuItem({
+  children,
+  onSelect,
+  selected,
+  disabled,
+  className,
+}: {
+  children: ReactNode;
+  onSelect?: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <Menu.Item
+      disabled={disabled}
+      onSelect={onSelect}
+      aria-current={selected ? "true" : undefined}
+      className={cn(
+        "flex w-full cursor-pointer select-none items-center justify-between gap-3 px-3 outline-none",
+        ui.space.row,
+        ui.radius.control,
+        ui.text.body,
+        ui.tone.default,
+        "data-[highlighted]:bg-[color:var(--ui-surface-sunken)]",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        selected && ui.tone.ink,
+        className,
+      )}
+    >
+      <span className="min-w-0 flex-1 truncate">{children}</span>
+      {selected ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
+    </Menu.Item>
   );
 }

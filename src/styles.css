@@ -962,7 +962,8 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-gap-lg: var(--ui-space-3);
   --ui-tap-min: 2.75rem; /* 44px minimum tap target — a floor, not a size */
   --ui-row-min: 3rem; /* list row / full-width control height */
-  --ui-column-max: 480px; /* mobile-first single column */
+  --ui-column-max: 480px; /* the phone canvas, mobile-first single column */
+  --ui-content-max: 672px; /* the reading column: long-form copy, a wide table */
 
   /* ---- Surfaces (light) ------------------------------------------ */
   --ui-page: oklch(0.975 0.004 250);
