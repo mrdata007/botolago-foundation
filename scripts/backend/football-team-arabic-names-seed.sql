@@ -1,6 +1,8 @@
 -- BotolaGO — BG-0068: Arabic club names for the 16 current Botola clubs.
 --
--- STATUS: DRAFT, NOT APPROVED, NOT APPLIED.
+-- STATUS: OWNER-APPROVED 2026-09-22. The two rows this file halted on
+-- (Widad Temara, Zemamra) were settled by the owner with sources, and the
+-- Fes/Tetouan pair was upgraded to the clubs' own official forms.
 --
 -- This file has never been executed against any database. It is the artefact
 -- of a deliberate halt: Moroccan club names are not transliterations of their
@@ -38,11 +40,11 @@ values
   -- FUS Rabat.
   ('c499006b-2af3-4013-862c-854ab74b59cf', 'ar', 'الفتح الرياضي', 'الفتح'),
   -- Maghreb Association Sportive de Fès.
-  ('0257feb3-4c16-431d-a58b-5faf060576ad', 'ar', 'المغرب الفاسي', 'المغرب الفاسي'),
+  ('0257feb3-4c16-431d-a58b-5faf060576ad', 'ar', 'نادي المغرب الرياضي الفاسي', 'المغرب الفاسي'),
   -- Moghreb Athletic Tétouan. Distinct club from the one above; the two
   -- Arabic names differ only in the final adjective, which is exactly why
   -- they must be reviewed side by side.
-  ('e3beb52d-fbfb-4180-a39d-7e3d8f965b62', 'ar', 'المغرب التطواني', 'المغرب التطواني'),
+  ('e3beb52d-fbfb-4180-a39d-7e3d8f965b62', 'ar', 'نادي المغرب أتلتيك تطوان', 'المغرب التطواني'),
   -- Renaissance Sportive de Berkane.
   ('7b2e23bc-450f-4eb2-9926-4add1a5386e7', 'ar', 'نهضة بركان', 'نهضة بركان'),
   -- Difaâ Hassani El Jadidi.
@@ -61,11 +63,11 @@ values
   ('1ebd788b-9f71-4a78-bfa8-68359d7f3a3f', 'ar', 'أمل تيزنيت', 'أمل تيزنيت'),
   -- Wydad de Témara. NOT the Casablanca Wydad; the two share the first word.
   -- LOW CONFIDENCE on the full form.
-  ('7d508334-d7a9-4a74-b057-7030c21a0eda', 'ar', 'وداد تمارة', 'وداد تمارة'),
+  ('7d508334-d7a9-4a74-b057-7030c21a0eda', 'ar', 'نادي الوداد الرياضي لتمارة', 'وداد تمارة'),
   -- Zemamra. LOW CONFIDENCE: app.teams carries the name "CR Khemis Zemamra"
   -- but the code "RCAZ", and those two point at different Arabic first words.
   -- Do not run this file until the owner has settled this row.
-  ('dc6fb819-6f3e-4584-ad73-7d567e80d32c', 'ar', 'الشباب الرياضي لخميس الزمامرة', 'شباب الزمامرة')
+  ('dc6fb819-6f3e-4584-ad73-7d567e80d32c', 'ar', 'نادي النهضة أتلتيك الزمامرة', 'نهضة الزمامرة')
 on conflict (team_id, language) do update
   set name = excluded.name,
       short_name = excluded.short_name,
