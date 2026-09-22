@@ -377,7 +377,13 @@ function RankingRow({
           <span className="min-w-0">
             <span
               dir="auto"
-              className={cn("block truncate", ui.text.body, "[font-weight:var(--ui-weight-heavy)]")}
+              // Two lines, then an ellipsis: at 360px the column leaves 88px,
+              // which `truncate` cut every team name in the board down to.
+              className={cn(
+                "line-clamp-2 break-words",
+                ui.text.secondary,
+                "[font-weight:var(--ui-weight-heavy)]",
+              )}
             >
               {row.teamName}
             </span>
