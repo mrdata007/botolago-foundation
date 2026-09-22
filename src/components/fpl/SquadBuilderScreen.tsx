@@ -40,15 +40,18 @@ function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso
   const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: MATCH_TIME_ZONE,
   }).format(new Date(deadlineIso));
   return (
     <p className={cn("mt-1 text-center", ui.text.secondary)}>
-      {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
-      <strong className="[font-weight:var(--ui-weight-heavy)]">{formatted}</strong>
+      {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}
+      {/* French sets a narrow no-break space before a colon. */}
+      {lang === "fr" ? "\u202F:" : ":"}{" "}
+      <strong className="whitespace-nowrap [font-weight:var(--ui-weight-heavy)]">
+        {formatted}
+      </strong>
     </p>
   );
 }
