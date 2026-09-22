@@ -1700,6 +1700,195 @@ tasks:
       The fallback is working as designed; the gap is the asset. Same owner action and same
       image-rights question as BG-0135. Cosmetic, and below the crests in priority: the
       trophy reads as an icon, whereas a placeholder shield reads as a club's badge.
+  BG-0137:
+    title: The design system had no register for a dark surface, so three files invented one each
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "6 files used literal white-alpha (text-white/80, bg-white/10, ring-white/20) and every one of them was on a dark mesh"
+      - "AuthShell had already solved it correctly, as four module-PRIVATE constants that no other file could import"
+      - "ui.focus draws its ring in --ui-ink-fg over a --ui-page offset: on the mesh, a ring you cannot see"
+      - "after: --ui-on-mesh + muted/faint, --ui-mesh-glass, --ui-mesh-rule, ui.focusOnMesh, UiButton tone=onMesh"
+    note: >
+      The product has a second visual register -- a deep mesh behind the welcome screen, the
+      auth screens and the first-launch language chooser. It is deliberate, and the page
+      tokens are built for the light app surface, so they do not serve it.
+
+      Each surface answered that privately and differently. The tokens are derived rather
+      than redeclared under `.dark`, because each is `--ui-on-ink-plain` at an opacity and
+      that token already flips; a second copy would be the drift the manifest exists to stop.
+      `in srgb` rather than `in oklab` is not taste: the derived-token contract forbids a
+      colour space name that reads as a literal colour, and mixing one colour with
+      `transparent` is a premultiplied alpha ramp that resolves identically -- measured at
+      `oklab(1 0 0 / 0.78)` against `color(srgb 0.999871 1.00005 1.00007 / 0.78)`.
+  BG-0138:
+    title: The dark theme had never been measured, and the first measurement of it was a false pass
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "adding the `dark` class in a Playwright init script reported 27 measurements, 0 below AA -- for a theme that was never applied"
+      - "the server sends <html class=\"\"> and hydration replaces the attribute, so the class is gone before anything paints"
+      - "applied after settle instead: 100 measurements, 4 below AA"
+      - "live badge 2.28:1 on /matches; club monogram 3.93:1 on /fantasy/rankings"
+      - "after both fixes: 0 below AA in light and dark on every route measured"
+    note: >
+      `--color-live` and `--color-live-fg` were declared on `:root` and never under `.dark`,
+      so the dark theme kept a foreground chosen for a light tint and put it on a dark one.
+      Nothing caught it because the contract test only demands a dark counterpart for
+      `--ui-*`, and these were `--color-*`. They are `--ui-live` / `--ui-live-fg` now, which
+      puts them inside the enforcement rather than beside it.
+
+      The probe grew a PROBE_THEME switch, and it now ASSERTS that a token actually changed
+      value before measuring -- a run that cannot prove the theme is on exits rather than
+      reporting a clean bill of health for a theme it never applied.
+  BG-0139:
+    title: Every status FILL picked its own foreground, and the negative inverts across themes
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "white on --ui-negative: 5.49:1 light, 2.31:1 dark"
+      - "measured across all four status fills: positive 5.17/9.28, negative 5.49/6.93, caution 9.34/10.65 against the right foreground"
+      - "--ui-live needs no partner: nothing draws text on it"
+    note: >
+      Found while adding a filled `destructive` button variant, which forced the question
+      "what colour is the label". `--ui-positive` and `--ui-negative` are a mid-tone in light
+      and a light tint in dark, so one foreground cannot serve both and a filled control that
+      picks its own is wrong in exactly one theme -- the theme nobody looks at.
+
+      The system already knew this: it is why `--ui-fdr-N` has `--ui-on-fdr-N` and why the
+      doc says never to pick an FDR foreground yourself. The rule was written for one scale
+      and the status fills were left to guess. `--ui-on-positive`, `--ui-on-negative` and
+      `--ui-on-caution` close that.
+  BG-0140:
+    title: A gradient angle is physical, and 22 of them were outside the kit where nothing checked
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "mesh-auth ran linear-gradient(160deg) -- the one screen family that is white-on-dark"
+      - "all nine mesh-* utilities anchored their glows to a physical x origin; the contract test found six more than the survey did"
+      - "7 --news-gradient-* tokens (declared twice, light and dark), --bg-brand-gradient, 3 hero fallbacks and 5 in the demo dataset, all 110-145deg"
+      - "ClubCrest painted linear-gradient(135deg, ...) with a literal `black`, so every crest in the product lit from the wrong corner in Arabic"
+      - "the splash shine started outside the LEFT edge, translated +X and skewed one way"
+    note: >
+      Rule 3 was enforced inside the kit's own files and inside `--ui-grad-*`. Everything
+      else in the stylesheet was free to state an angle, and did.
+
+      The meshes keep their asymmetry -- a glow entering top-trailing IS the composition --
+      so the three x positions they use are named once and flipped once, rather than centred
+      into something duller. The contract test now reads every gradient-valued custom
+      property rather than one prefix, and it checks that a named origin is actually
+      mirrored: a token that looks direction-aware and is not is worse than a literal.
+  BG-0141:
+    title: UiInput replaced the caller's aria-describedby instead of composing it
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "`{...props}` then `aria-describedby={...}` overwrote whatever the screen passed"
+      - "it also set the attribute to `undefined` when a field had no error and no hint, actively unlinking a description"
+      - "the register form describes its password by BOTH its error and its strength meter; the meter was dropped"
+      - "the drop was hardest exactly when the password was rejected"
+    note: >
+      A live accessibility bug, not only a migration blocker -- it was found because the
+      auth survey asked why those forms could not move onto the kit's field.
+
+      Two more of the same shape went with it. The error line was not announced and its
+      space was not reserved, so a form that validates on submit said nothing and pushed its
+      own submit button ~16px down out from under the thumb; `reserveError` mounts a polite
+      live region BEFORE the message exists, because a region created at the same moment as
+      its content is not reliably announced, and it reserves one line box of the field's own
+      type rather than a literal, because the Arabic leading is 1.95 against 1.4.
+
+      And the composition order was caller-first, which read the strength meter to someone
+      who had not yet been told the password was rejected. The field's own ids come first now.
+  BG-0142:
+    title: A button variant was declared but never painted, and every test passed
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "`destructive` was in the UiButtonVariant union; buttonClass had no branch for it"
+      - "it type-checked, rendered, and passed 1477 tests while painting nothing"
+      - "two conversion lanes asked for a filled red button and got a transparent one with body-coloured text, and lost the disabled affordance"
+      - "found by two independent reviewers, not by any gate"
+    note: >
+      The edit that added the branch failed silently: the anchor it replaced had been
+      reformatted across three lines by prettier, and the script printed "ok" without
+      asserting the replacement had happened. The same class of failure as the clipH guard
+      earlier in this project, and the same lesson -- assert every textual replacement.
+
+      The contract test now reads the union and the painter and fails when they disagree,
+      and separately requires every variant to carry a disabled affordance. Both were
+      verified by removing the branch and watching them go red, rather than assumed.
+  BG-0143:
+    title: Three checkboxes were 16px, one with no focus ring, on the control that deletes an account
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "auth.register consent, auth.profile-setup x3, profile delete-acknowledgement -- all `h-4 w-4`"
+      - "profile's carried no ui.focus at all"
+      - "all three painted the checked plate in the browser/OS accent, which is not a colour this product chose"
+    note: >
+      `UiCheckbox` keeps the ink at 16px and grows a transparent 44px target behind it,
+      which is `ui.hitArea` -- the general form, because growing the painted box is usually
+      not the answer (a 44px remove button covers half the avatar it annotates).
+
+      Its first version put the hint in the accessible NAME and in `aria-describedby`, so a
+      screen reader read the same sentence twice per row. Caught by a reviewer. Name from
+      the label, description from the hint, each said once.
+  BG-0144:
+    title: The admin console was a second design system, and stays dark on tokens
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "~190 legacy palette classes across 8 routes and 2 shared components, with almost no ui-kit usage"
+      - "internally consistent and already direction-correct -- a parallel palette, not sloppiness"
+      - "src/backend/admin/functional-route.tsx wraps seven of the nine routes in a slate-900 section and is off limits"
+    note: >
+      Ruled by the owner: the console keeps its dark register and joins the system, by
+      scoping itself in the kit's existing `.dark` class and drawing `--ui-*` tokens.
+
+      That is also the only reading consistent with the file this work cannot touch. Under
+      the dark ruling the untouchable slate-900 wrapper still reads correctly; under a light
+      one it would be a dark slab in a light console. Moving that component out of
+      `src/backend` is its own ticket.
+    follow_up: >
+      Move AdminFunctionalRoute / AdminFunctionalLoading out of src/backend/admin/ into
+      src/components/admin/ -- a file move, not a rewrite -- so the last amber/slate section
+      frame can join the console.
+  BG-0145:
+    title: Two Fantasy navs and a glass card that no route can reach
+    area: frontend
+    severity: P3
+    owner: Chief
+    state: DONE
+    depends_on: [BG-0132]
+    evidence:
+      - "grep across every .ts and .tsx: the only references to FantasyMobileNav, FantasySubNav and GlassCard are their own files and each other's comments"
+      - "deleting them moved the i18n gate: W3 +1 (fantasy.tab.more), W4 -6 (two navs x three t(item.labelKey) call sites)"
+    note: >
+      BG-0132 recorded two of the three and deferred the deletion precisely because it moves
+      those baselines. It does, and that is the gate working: both moved with the reason
+      written in.
+
+      The conversion pass had already moved FantasySubNav's dropdown onto `UiMenu` to lift
+      its items over the 44px floor -- the right fix for a file that turned out to be dead.
+      Deleting it is better than shipping a converted corpse, and it takes the last two
+      shadcn dropdown imports with it.
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
