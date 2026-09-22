@@ -73,7 +73,7 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     await login(page);
     await gotoHydrated(page, "/fantasy", "fr");
     await expectSettled(page);
-    await expect(page.getByText(/Journée \d+ Deadline/)).toBeVisible();
+    await expect(page.getByText(/^Journée \d+ · Date limite$/)).toBeVisible();
 
     await gotoHydrated(page, "/fantasy/create", "fr");
     await expectSettled(page);

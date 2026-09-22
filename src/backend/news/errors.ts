@@ -20,6 +20,11 @@ export const NEWS_ERROR_CODES = [
   "provider_rate_limited",
   "invalid_provider_payload",
   "unsafe_content",
+  "imported_story_requires_conversion",
+  "schedule_must_be_future",
+  "conversion_reason_required",
+  "story_not_imported",
+  "invalid_list_scope",
   "data_unavailable",
 ] as const;
 export type NewsErrorCode = (typeof NEWS_ERROR_CODES)[number];
@@ -56,9 +61,19 @@ const mappings: ReadonlyArray<readonly [string, NewsErrorCode]> = [
   ["news_invalid_media_attribution_url", "invalid_media_payload"],
   ["news_mapping_collision", "mapping_collision"],
   ["news_stale_update", "stale_update"],
+  ["news_imported_story_requires_conversion", "imported_story_requires_conversion"],
+  ["news_schedule_must_be_future", "schedule_must_be_future"],
+  ["news_conversion_reason_required", "conversion_reason_required"],
+  ["news_story_not_imported", "story_not_imported"],
+  ["news_invalid_list_scope", "invalid_list_scope"],
 ];
 
 export function mapNewsError(error: PostgrestError | Error): NewsError {
+  // Already mapped (the repository maps every RPC error once, and the CMS
+  // routes map again in their catch blocks). Re-mapping read only the generic
+  // message, so every CMS error -- "forbidden", the save conflict, all of
+  // them -- was shown as data_unavailable.
+  if (error instanceof NewsError) return error;
   const raw = `${error.message} ${"details" in error ? (error.details ?? "") : ""}`.toLowerCase();
   const mapping = mappings.find(([needle]) => raw.includes(needle));
   if (mapping)

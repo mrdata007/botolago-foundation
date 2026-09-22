@@ -158,6 +158,7 @@ describe("protected SportsMonks fixture function", () => {
       homeScore: 2,
       awayScore: 1,
       venueId: null,
+      finalizedAt: "2026-07-31T18:00:00.000Z",
     });
     expect(calls.at(-1)).toMatchObject({
       name: "complete_football_ingestion",
@@ -201,5 +202,102 @@ describe("protected SportsMonks fixture function", () => {
       name: "complete_football_ingestion",
       args: { p_status: "partial", p_records_rejected: 1 },
     });
+  });
+});
+
+describe("fixture finalization", () => {
+  const observedAt = "2026-04-01T22:05:00.000Z";
+
+  /** Ingests one fixture in the given provider state and returns what was sent. */
+  async function ingested(
+    state: Record<string, unknown>,
+    overrides: Record<string, unknown> = {},
+  ): Promise<Record<string, unknown> | undefined> {
+    const calls: RpcCall[] = [];
+    const response = await handleSportsMonksFixtureRequest(
+      new Request("https://example.test/football-ingest", {
+        method: "POST",
+        headers: {
+          "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET,
+        },
+        body: JSON.stringify({ job: "fixtures", pageSize: 50, maxPages: 1 }),
+      }),
+      {
+        environment,
+        client: rpcClient(calls),
+        now: () => new Date(observedAt),
+        fetch: async () =>
+          Response.json({
+            data: [finishedFixture({ state, ...overrides })],
+            pagination: { has_more: false },
+          }),
+      },
+    );
+    expect(response.status).toBe(200);
+    return calls.find((call) => call.name === "ingest_football_fixture")?.args.p_fixture as
+      | Record<string, unknown>
+      | undefined;
+  }
+
+  // Full time, after extra time, after penalties, matched on every field the
+  // provider may carry the state in.
+  test.each([
+    [{ developer_name: "FT" }],
+    [{ developer_name: "AET" }],
+    [{ developer_name: "FT_PEN" }],
+    [{ state: "FT" }],
+    [{ name: "ft pen" }],
+  ])("finalizes a match played to its end: %o", async (state) => {
+    const fixture = await ingested(state);
+    expect(fixture).toMatchObject({ status: "finished", finalizedAt: observedAt });
+  });
+
+  test.each([
+    [{ developer_name: "NS" }],
+    [{ developer_name: "INPLAY_1ST_HALF" }],
+    [{ developer_name: "HT" }],
+    [{ developer_name: "INPLAY_2ND_HALF" }],
+    [{ developer_name: "INPLAY_ET" }],
+    [{ developer_name: "INPLAY_PENALTIES" }],
+    [{ developer_name: "POSTPONED" }],
+    [{ developer_name: "SUSPENDED" }],
+    [{ developer_name: "CANCELLED" }],
+    [{ developer_name: "ABANDONED" }],
+  ])("never finalizes a match that is not over: %o", async (state) => {
+    const fixture = await ingested(state, { scores: [] });
+    expect(fixture?.status).not.toBe("finished");
+    expect(fixture?.finalizedAt).toBeNull();
+  });
+
+  // Recorded as finished, but either nobody played the match out (walkover,
+  // awarded) or the statistics ingester would refuse it (legacy `FTP`), so
+  // whether it counts for Fantasy is an operator decision.
+  test.each([
+    [{ developer_name: "WO" }],
+    [{ developer_name: "AWARDED" }],
+    [{ developer_name: "FTP" }],
+  ])(
+    "does not finalize a finished state the statistics ingester cannot score: %o",
+    async (state) => {
+      const fixture = await ingested(state);
+      expect(fixture).toMatchObject({ status: "finished", finalizedAt: null });
+    },
+  );
+
+  test("does not finalize a final state reported before its own kickoff", async () => {
+    const fixture = await ingested(
+      { developer_name: "FT" },
+      { starting_at: "2026-04-02 20:00:00", last_processed_at: "2026-04-01 22:00:00" },
+    );
+    expect(fixture).toMatchObject({ status: "finished", finalizedAt: null });
+  });
+
+  // The adapter sends the observation time on every pass; the database keeps
+  // the first one (tested in supabase/tests/database/fixture_finalization).
+  test("sends a finalization time on every observation of a finished match", async () => {
+    const first = await ingested({ developer_name: "FT" });
+    const again = await ingested({ developer_name: "FT" });
+    expect(first?.finalizedAt).toBe(observedAt);
+    expect(again?.finalizedAt).toBe(observedAt);
   });
 });

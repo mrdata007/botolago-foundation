@@ -13,14 +13,17 @@ import {
 } from "@/backend/news/sanitizer";
 import { markdownToEditorialHtml } from "@/backend/news/editorial-markdown";
 import { mapNewsError } from "@/backend/news/errors";
+import { parseTranslationSearch } from "@/backend/news/editorial-session";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ADMIN_CARD_CLASS, ADMIN_LABEL_CLASS, AdminNotice } from "@/components/admin/AdminSurfaces";
 import { ui, UiButton, UiInput, UiLinkButton, UiSelect, UiTextarea } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/news/new")({
   ssr: false,
+  validateSearch: parseTranslationSearch,
   loader: () => loadAdminNewsWriteRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsNewRoute,
@@ -73,13 +76,21 @@ function AdminNewsNewRoute() {
   const { lang } = useI18n();
   const rtl = lang === "ar";
   const repository = useMemo(() => new SupabaseNewsRepository(), []);
-  const [language, setLanguage] = useState<NewsLanguage>("fr");
+  const translation = Route.useSearch();
+  const [language, setLanguage] = useState<NewsLanguage>(translation.language ?? "fr");
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [body, setBody] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dirty = Boolean(slug || title || summary || body);
+  const guard = useUnsavedChangesGuard(
+    dirty,
+    rtl
+      ? "المسودة لم تُنشأ بعد وستضيع. مغادرة الصفحة؟"
+      : "Le brouillon n’est pas encore créé et sera perdu. Quitter la page ?",
+  );
 
   // The prose fields follow the ARTICLE's language, not the console's: an
   // Arabic article must be typed RTL even while the UI is in French.
@@ -103,9 +114,12 @@ function AdminNewsNewRoute() {
           bodyHtml,
           readingTimeMinutes: calculateReadingTime(bodyHtml),
           sanitizerVersion: NEWS_SANITIZER_VERSION,
+          storyId: translation.storyId ?? null,
         },
         adminRepositoryContext(access),
       );
+      // The draft now exists server-side: moving to its editor is not a loss.
+      guard.allowNextNavigation();
       void navigate({
         to: "/admin/news/$articleEditionId",
         params: { articleEditionId: created.articleId },
@@ -143,7 +157,7 @@ function AdminNewsNewRoute() {
             data-testid="admin-news-back-to-list"
           >
             {/* The arrow is flipped by the ambient direction, never by hand. */}
-            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+            <ArrowLeft className="h-4 w-4" aria-hidden />
             {rtl ? "كل المقالات" : "Tous les articles"}
           </UiLinkButton>
 
@@ -161,6 +175,15 @@ function AdminNewsNewRoute() {
                 label={rtl ? "اللغة" : "Langue"}
                 value={language}
                 onChange={(event) => setLanguage(event.target.value as NewsLanguage)}
+                // A translation's language is fixed by the link that opened it.
+                disabled={!!translation.storyId}
+                hint={
+                  translation.storyId
+                    ? rtl
+                      ? "نسخة لغوية مرتبطة بخبر موجود."
+                      : "Édition liée à un article existant (autre langue)."
+                    : undefined
+                }
                 data-testid="admin-news-new-language"
               >
                 <option value="fr">Français</option>
@@ -237,8 +260,8 @@ function AdminNewsNewRoute() {
                 label={rtl ? "المحتوى (Markdown مبسّط)" : "Contenu (Markdown simplifié)"}
                 hint={
                   rtl
-                    ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، وسطر فارغ بين الفقرات."
-                    : "## pour un intertitre, **texte** pour l’emphase, une ligne vide entre les paragraphes."
+                    ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، ‎- لقائمة، ‎> لاقتباس، ‎[نص](https://…) لرابط، وسطر فارغ بين الفقرات."
+                    : "## pour un intertitre, **texte** pour l’emphase, - pour une liste, > pour une citation, [texte](https://…) pour un lien, une ligne vide entre les paragraphes."
                 }
                 value={body}
                 onChange={(event) => setBody(event.target.value)}

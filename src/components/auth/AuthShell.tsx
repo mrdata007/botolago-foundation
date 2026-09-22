@@ -138,25 +138,13 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
           <LanguageSwitcher tone="onMesh" />
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <div
-            className={cn(
-              "grid h-12 w-12 shrink-0 place-items-center p-1.5",
-              ui.radius.control,
-              // The glass tile, from the kit: a themed fill and a themed
-              // hairline. It was a pair of `color-mix` literals here.
-              ui.surface.mesh,
-            )}
-          >
-            <Logo variant="icon" className="!h-9 !w-9 !rounded-[var(--ui-radius-control)]" />
-          </div>
-          <div className="min-w-0">
-            {/* `ui.text.label` letter-spaces Latin only — Arabic joins (BG-0069). */}
-            <div className={cn(ui.text.label, ui.tone.onMeshFaint)}>BotolaGO</div>
-            <div className={cn("truncate", ui.text.meta, ui.tone.onMeshMuted)}>
-              {t("auth.brand_tagline")}
-            </div>
-          </div>
+        {/* The wordmark, not an icon tile beside "BotolaGO" typed in the label
+            style: this is the product naming itself. */}
+        <div className="mt-4">
+          <Logo tone="light" />
+          <p className={cn("mt-2 truncate", ui.text.meta, ui.tone.onMeshMuted)}>
+            {t("auth.brand_tagline")}
+          </p>
         </div>
 
         <div className="mt-6">

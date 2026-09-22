@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   handleNewsMediaUploadRequest,
   MAX_MEDIA_UPLOAD_BYTES,
+  sniffImageMimeType,
   type NewsMediaUploadDependencies,
   type RpcResult,
   type StorageClient,
@@ -113,7 +114,10 @@ function deps(
   };
 }
 
-const validImage = new Blob([new Uint8Array([1, 2, 3, 4])], { type: "image/jpeg" });
+/** A JPEG signature (SOI + APP0) -- the handler checks the bytes, not only the label. */
+const validImage = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46])], {
+  type: "image/jpeg",
+});
 
 describe("handleNewsMediaUploadRequest", () => {
   it("answers a CORS preflight without ever requiring a bearer token", async () => {
@@ -277,5 +281,68 @@ describe("handleNewsMediaUploadRequest", () => {
     );
     expect(response.status).toBe(502);
     expect(registerCalls(calls)).toHaveLength(0);
+  });
+});
+
+describe("the file's bytes must match its declared image type", () => {
+  const ascii = (text: string) => [...text].map((char) => char.charCodeAt(0));
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+  const webp = new Uint8Array([...ascii("RIFF"), 0, 0, 0, 0, ...ascii("WEBPVP8 ")]);
+  const avif = new Uint8Array([0, 0, 0, 0x1c, ...ascii("ftypavif"), 0, 0, 0, 0]);
+  const html = new Uint8Array(ascii("<!doctype html><script>alert(1)</script>"));
+  const svg = new Uint8Array(ascii('<svg xmlns="http://www.w3.org/2000/svg" onload="x()"/>'));
+
+  it("recognises each accepted format from its signature", () => {
+    expect(sniffImageMimeType(new Uint8Array([0xff, 0xd8, 0xff, 0xdb]))).toBe("image/jpeg");
+    expect(sniffImageMimeType(png)).toBe("image/png");
+    expect(sniffImageMimeType(webp)).toBe("image/webp");
+    expect(sniffImageMimeType(avif)).toBe("image/avif");
+  });
+
+  it("recognises nothing else, including truncated signatures", () => {
+    expect(sniffImageMimeType(html)).toBeNull();
+    expect(sniffImageMimeType(svg)).toBeNull();
+    expect(sniffImageMimeType(new Uint8Array([0xff, 0xd8]))).toBeNull();
+    expect(sniffImageMimeType(new Uint8Array([]))).toBeNull();
+  });
+
+  for (const [label, bytes, declared] of [
+    ["an HTML page labelled image/png", html, "image/png"],
+    ["an SVG labelled image/webp", svg, "image/webp"],
+    ["a PNG labelled image/jpeg", png, "image/jpeg"],
+  ] as const) {
+    it(`refuses ${label} before anything is stored or registered`, async () => {
+      const storage = storageClient();
+      const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const user = userClient({ userId: "22222222-2222-4222-8222-222222222222", calls });
+      const response = await handleNewsMediaUploadRequest(
+        multipartRequest({
+          file: new Blob([bytes], { type: declared }),
+          altText: "Alt",
+          width: "800",
+          height: "600",
+        }),
+        deps({}, storage, user),
+      );
+      expect(response.status).toBe(415);
+      expect(await response.json()).toEqual({ error: "content_type_mismatch" });
+      expect(storage.uploaded).toHaveLength(0);
+      expect(registerCalls(calls)).toHaveLength(0);
+    });
+  }
+
+  it("accepts a real PNG labelled image/png", async () => {
+    const storage = storageClient();
+    const response = await handleNewsMediaUploadRequest(
+      multipartRequest({
+        file: new Blob([png], { type: "image/png" }),
+        altText: "Alt",
+        width: "800",
+        height: "600",
+      }),
+      deps({}, storage),
+    );
+    expect(response.status).toBe(201);
+    expect(storage.uploaded[0]?.contentType).toBe("image/png");
   });
 });

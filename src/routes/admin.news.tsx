@@ -14,6 +14,11 @@ import type {
 } from "@/backend/news/contracts";
 import { mapNewsError } from "@/backend/news/errors";
 import {
+  describeScheduledAt,
+  scheduleHealthProblem,
+  type ScheduleHealthProblem,
+} from "@/backend/news/editorial-session";
+import {
   ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
   AdminDatum,
@@ -123,18 +128,41 @@ const NEWS_STATUS_TONES: Record<EditorialStatus, { tone: NewsBadgeTone; classNam
  *     more" that a re-filter overtook) is discarded instead of appended to a
  *     list it does not belong to.
  */
+const SCHEDULE_PROBLEM_MESSAGES: Record<ScheduleHealthProblem, { fr: string; ar: string }> = {
+  job_inactive: {
+    fr: "La publication programmée est désactivée : les articles « Programmé » ne partiront pas.",
+    ar: "النشر المجدول معطّل: المقالات المجدولة لن تُنشر.",
+  },
+  job_stalled: {
+    fr: "La publication programmée ne tourne plus depuis plus de 5 minutes.",
+    ar: "لم يعمل النشر المجدول منذ أكثر من 5 دقائق.",
+  },
+  overdue: {
+    fr: "Au moins un article programmé a dépassé son heure de plus de 5 minutes sans être publié.",
+    ar: "مقال مجدول واحد على الأقل تجاوز موعده بأكثر من 5 دقائق دون نشر.",
+  },
+  run_failed: {
+    fr: "Une publication programmée a échoué au cours des dernières 24 heures. Vérifiez l’article concerné.",
+    ar: "فشل نشر مجدول خلال الـ24 ساعة الأخيرة. تحقّق من المقال المعني.",
+  },
+};
+
 export type AdminNewsListPhase = "loading" | "loading-more" | "ready" | "error";
 
 export interface AdminNewsFilters {
   readonly language: NewsLanguage | "";
   readonly status: EditorialStatus | "";
   readonly query: string;
+  /** "editorial" (default) or "imported": legacy third-party stubs are
+   *  listed apart from BotolaGO's own work. */
+  readonly scope: "editorial" | "imported";
 }
 
 export const ADMIN_NEWS_EMPTY_FILTERS: AdminNewsFilters = {
   language: "",
   status: "",
   query: "",
+  scope: "editorial",
 };
 
 /** `api.editorial_list_stories` clamps `p_limit` to [1, 50]. */
@@ -256,6 +284,8 @@ function AdminNewsListRoute() {
   const [language, setLanguage] = useState<NewsLanguage | "">("");
   const [status, setStatus] = useState<EditorialStatus | "">("");
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<AdminNewsFilters["scope"]>("editorial");
+  const [scheduleProblem, setScheduleProblem] = useState<ScheduleHealthProblem | null>(null);
   const generation = useRef(ADMIN_NEWS_INITIAL_STATE.generation);
 
   const authorized = access.state === "authorized" ? access : null;
@@ -269,6 +299,7 @@ function AdminNewsListRoute() {
             language: filters.language || null,
             status: filters.status || null,
             query: filters.query.trim() || null,
+            scope: filters.scope,
             limit: ADMIN_NEWS_PAGE_SIZE,
             cursor,
           },
@@ -308,6 +339,12 @@ function AdminNewsListRoute() {
   useEffect(() => {
     if (access.state !== "authorized") return;
     search(ADMIN_NEWS_EMPTY_FILTERS);
+    // The scheduler runs in the database every minute; if it is not, every
+    // "Programmé" article silently stays private, so say so here.
+    repository
+      .getScheduleHealth(adminRepositoryContext(access))
+      .then((health) => setScheduleProblem(scheduleHealthProblem(health)))
+      .catch(() => setScheduleProblem(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.state]);
 
@@ -338,7 +375,7 @@ function AdminNewsListRoute() {
             className={cn("mt-5", ADMIN_CARD_CLASS, "p-4 sm:p-5")}
             onSubmit={(event) => {
               event.preventDefault();
-              search({ language, status, query });
+              search({ language, status, query, scope });
             }}
           >
             <h3 className={ADMIN_LABEL_CLASS}>{rtl ? "تصفية" : "Filtres"}</h3>
@@ -372,9 +409,21 @@ function AdminNewsListRoute() {
                   </option>
                 ))}
               </UiSelect>
+              <UiSelect
+                label={rtl ? "النوع" : "Type"}
+                value={scope}
+                onChange={(event) => setScope(event.target.value as AdminNewsFilters["scope"])}
+                data-testid="admin-news-filter-scope"
+              >
+                <option value="editorial">{rtl ? "مقالات BotolaGO" : "Articles BotolaGO"}</option>
+                <option value="imported">
+                  {rtl
+                    ? "محتوى مستورد (أرشيف، غير قابل للنشر)"
+                    : "Contenu importé (archive, non publiable)"}
+                </option>
+              </UiSelect>
               <UiInput
                 label={rtl ? "بحث في العنوان" : "Recherche dans le titre"}
-                className="sm:col-span-2"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 data-testid="admin-news-filter-query"
@@ -390,6 +439,14 @@ function AdminNewsListRoute() {
               {rtl ? "تصفية" : "Filtrer"}
             </UiButton>
           </form>
+
+          {scheduleProblem && (
+            <div className="mt-4" data-testid="admin-news-schedule-warning">
+              <AdminNotice tone="alert" role="alert">
+                {SCHEDULE_PROBLEM_MESSAGES[scheduleProblem][lang]}
+              </AdminNotice>
+            </div>
+          )}
 
           {state.error !== null && (
             <div className="mt-4">
@@ -456,6 +513,11 @@ function AdminNewsListRoute() {
                     <UiBadge tone="neutral" className="shrink-0">
                       {item.language === "ar" ? "العربية" : "Français"}
                     </UiBadge>
+                    {item.imported && (
+                      <UiBadge tone="negative" className="shrink-0">
+                        {rtl ? "مستورد · غير قابل للنشر" : "Importé · non publiable"}
+                      </UiBadge>
+                    )}
                     {item.visibility !== "public" && (
                       <UiBadge tone="neutral" className={cn("shrink-0", ui.tone.faint)}>
                         {item.visibility === "private"
@@ -490,6 +552,16 @@ function AdminNewsListRoute() {
                       <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       <dd>{item.authorName ?? "—"}</dd>
                     </div>
+                    {item.status === "scheduled" && item.scheduledAt && (
+                      <div data-testid="admin-news-item-scheduled-at">
+                        <dt className="inline">{rtl ? "موعد النشر: " : "Publication : "}</dt>
+                        <dd className="inline">
+                          <AdminDatum mono={false}>
+                            {describeScheduledAt(item.scheduledAt, lang).local}
+                          </AdminDatum>
+                        </dd>
+                      </div>
+                    )}
                     <div>
                       <dt className="sr-only">{rtl ? "آخر تحديث" : "Mise à jour"}</dt>
                       <dd>

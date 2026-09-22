@@ -16,6 +16,7 @@ import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { FantasyBrand } from "@/components/brand/FantasyBrand";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
@@ -123,8 +124,7 @@ function FantasyHub() {
     if (authStatus !== "authenticated" || source === "guest") {
       return (
         <Link to="/auth/login" search={{ next: "/fantasy" }} className={teamCardClass}>
-          {t("auth.prompt.login")}{" "}
-          <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+          {t("auth.prompt.login")} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       );
     }
@@ -132,14 +132,13 @@ function FantasyHub() {
       return (
         <Link to="/fantasy/profile" className={teamCardClass}>
           <span className="truncate">{team.teamName}</span>
-          <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       );
     }
     return (
       <Link to="/fantasy/create" className={teamCardClass}>
-        {t("fpl.create_team")}{" "}
-        <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+        {t("fpl.create_team")} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
       </Link>
     );
   })();
@@ -155,29 +154,24 @@ function FantasyHub() {
         )}
         style={{ backgroundImage: "var(--ui-grad-hero)" }}
       >
-        <div className="flex items-center gap-2 pt-6">
-          <img
-            src="/favicon.png"
-            alt=""
-            width={40}
-            height={40}
-            className={cn("h-10 w-10", ui.radius.control)}
-          />
-          <h1 className={cn("min-w-0 truncate", ui.text.hero)}>{t("fantasy.title")}</h1>
-        </div>
+        <h1 className="pt-6">
+          <FantasyBrand endorser="mobile" />
+        </h1>
         <div className="mt-4">{teamCard}</div>
 
         <UiCard className="mt-3 text-center" padding="md">
           {screen.phase === "ready" || screen.phase === "guest" || screen.phase === "no_team" ? (
             <>
               {gameweek ? (
-                <>
-                  <UiPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</UiPill>
-                  <p className={cn("mt-2", ui.text.secondary, ui.tone.default)}>
-                    {t("fpl.gameweek")} {gameweek.number} {t("fpl.deadline")}:{" "}
-                    <strong className="[font-weight:var(--ui-weight-heavy)]">{deadlineText}</strong>
-                  </p>
-                </>
+                // The deadline is the one thing on this card with a clock on
+                // it, so it is the figure; gameweek and "deadline" are its
+                // caption. It used to be a pill over a line of body text.
+                <p className="flex flex-col items-center gap-1">
+                  <span className={cn(ui.text.label, ui.tone.muted)}>
+                    {`${t("fpl.gameweek")} ${gameweek.number} · ${t("fpl.deadline")}`}
+                  </span>
+                  <span className={cn(ui.text.title, ui.tone.ink)}>{deadlineText}</span>
+                </p>
               ) : null}
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <HubButton
@@ -229,9 +223,6 @@ function FantasyHub() {
                 "radial-gradient(70% 140% at 50% 0%, var(--ui-accent-sky) 0%, transparent 62%), radial-gradient(80% 140% at 50% 100%, var(--ui-ink-deep) 0%, transparent 68%)",
             }}
           />
-          <span className={cn("relative block", ui.text.label, ui.tone.onInk)}>
-            BotolaGO Fantasy
-          </span>
           {/* Prose, not a figure — the stat ramp is numerals only. */}
           <span className={cn("relative block", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}
@@ -244,8 +235,7 @@ function FantasyHub() {
               ui.tone.onInkPlain,
             )}
           >
-            {t("fpl.view_all")}{" "}
-            <ArrowRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
+            {t("fpl.view_all")} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
           </span>
         </Link>
       </div>
@@ -268,8 +258,7 @@ function FantasyHub() {
                 ui.radius.control,
               )}
             >
-              {t("fpl.view_all")}{" "}
-              <ArrowRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
+              {t("fpl.view_all")} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
           </div>
           <div
@@ -423,19 +412,23 @@ function HubButton({
         // `leading-tight` dropped: the ramp step below sets the line box, per
         // script (BG-0124), and this button's label truncates — the one place
         // a too-flat leading cuts glyph ink instead of just looking tight.
-        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 text-center",
+        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 py-1 text-center",
+        "[&_svg]:shrink-0",
         ui.radius.control,
         ui.text.meta,
         "[font-weight:var(--ui-weight-heavy)]",
         ui.focus,
         gradient
           ? "text-[color:var(--ui-ink-deep)]"
-          : cn(ui.surface.card, ui.tone.ink, "shadow-[var(--ui-shadow-card)]"),
+          : // Flat on the card rather than raised cards on a card.
+            cn(ui.surface.sunken, ui.tone.ink),
       )}
       style={gradient ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >
       {icon}
-      <span className="min-w-0 truncate">{children}</span>
+      {/* Two lines, not an ellipsis: at 390px French labels such as
+          "Statistiques joueurs" lost their second word to `truncate`. */}
+      <span className="min-w-0 line-clamp-2 text-balance">{children}</span>
     </Link>
   );
 }
@@ -582,7 +575,7 @@ function LeagueAction({
     <Link
       to={to}
       className={cn(
-        "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2",
+        "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2 py-1",
         // An SVG is a flex item and shrinks like any other, so a long label
         // beside it takes the width out of the icon instead of wrapping.
         // Measured here: a `lucide-plus` sized `h-4 w-4` rendering 14.0 × 16.0,
@@ -598,7 +591,7 @@ function LeagueAction({
       )}
     >
       {icon}
-      <span className="min-w-0 truncate">{children}</span>
+      <span className="min-w-0 line-clamp-2 text-balance text-center">{children}</span>
     </Link>
   );
 }
