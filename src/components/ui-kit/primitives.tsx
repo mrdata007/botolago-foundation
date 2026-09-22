@@ -941,6 +941,7 @@ function UiFieldFrame({
   label,
   hint,
   error,
+  reserveError,
   children,
   className,
 }: {
@@ -948,6 +949,22 @@ function UiFieldFrame({
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  /**
+   * Keep the error line's height whether or not there is an error, and
+   * announce it politely when one appears.
+   *
+   * Without this, a field that validates on submit does two things a restyle
+   * is not allowed to do. It says nothing: the message appears silently, so a
+   * screen-reader user is told the form failed only by the focus moving. And
+   * it jumps: the line is inserted rather than filled, which on a phone
+   * pushes the submit button roughly 16px down, out from under the thumb
+   * already travelling toward it.
+   *
+   * The auth forms already do both by hand. Opt-in rather than default so an
+   * inline filter field, where a permanently reserved line is dead space,
+   * does not pay for a form's behaviour.
+   */
+  reserveError?: boolean;
   children: ReactNode;
   className?: string;
 }) {
@@ -959,16 +976,54 @@ function UiFieldFrame({
         </label>
       ) : null}
       {children}
-      {error ? (
-        <p id={`${id}-error`} className={cn(ui.text.meta, ui.tone.negative)}>
+      {reserveError ? (
+        // Always mounted, so the live region exists BEFORE the message does —
+        // a region created at the same moment as its content is not reliably
+        // announced.
+        <p
+          id={`${id}-error`}
+          role="alert"
+          aria-live="polite"
+          // One line box of THIS text, not a guessed 16px. The auth forms
+          // reserve `min-h-4`, which under-reserves in Arabic: the same 13px
+          // runs on a 1.95 leading there against 1.4 in French, so the jump
+          // the reservation exists to prevent comes back for Arabic readers.
+          className={cn(
+            "min-h-[calc(var(--ui-text-meta)*var(--ui-leading-flat))]",
+            ui.text.meta,
+            ui.tone.negative,
+          )}
+        >
           {error}
         </p>
-      ) : hint ? (
+      ) : error ? (
+        <p id={`${id}-error`} role="alert" className={cn(ui.text.meta, ui.tone.negative)}>
+          {error}
+        </p>
+      ) : null}
+      {!error && hint ? (
         <p id={`${id}-hint`} className={cn(ui.text.meta, ui.tone.muted)}>
           {hint}
         </p>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Compose `aria-describedby` rather than replace it.
+ *
+ * `{...props}` followed by `aria-describedby={...}` reads like a default and
+ * is the opposite: it overwrites whatever the caller passed, and sets it to
+ * `undefined` when the field has no error and no hint — actively unlinking a
+ * description the screen deliberately attached. The register form describes
+ * its password field by BOTH its error and its strength meter; the meter was
+ * being dropped, and dropped hardest exactly when the password was rejected.
+ */
+function describedBy(own: string | undefined, ids: unknown[]): string | undefined {
+  return (
+    [own, ...ids].filter((v): v is string => typeof v === "string" && v.length > 0).join(" ") ||
+    undefined
   );
 }
 
@@ -989,6 +1044,8 @@ export function UiInput({
   label,
   hint,
   error,
+  reserveError,
+  trailing,
   id,
   className,
   fieldClassName,
@@ -998,6 +1055,20 @@ export function UiInput({
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  /** Reserve the error line and announce it politely. See `UiFieldFrame`. */
+  reserveError?: boolean;
+  /**
+   * A control that lives INSIDE the field box, on its inline-end edge — the
+   * show/hide-password eye, a clear button, a unit.
+   *
+   * It has to be here rather than composed at the call site: the frame is one
+   * flex column holding label, box and error, so an absolutely-positioned
+   * child anchored to the frame stretches across all three. Only the input
+   * gets the positioning context, and the input takes the padding, so the
+   * caret never runs under the control. `end-1` is logical, so it is the
+   * right edge in French and the left in Arabic.
+   */
+  trailing?: ReactNode;
   /** Class for the wrapper, so a field can size itself in a grid. */
   className?: string;
   /** Class for the input box itself. */
@@ -1006,23 +1077,44 @@ export function UiInput({
 }) {
   const generated = useId();
   const fieldId = id ?? generated;
+  const field = (
+    <input
+      {...props}
+      id={fieldId}
+      ref={ref}
+      aria-invalid={error ? true : props["aria-invalid"]}
+      aria-describedby={describedBy(props["aria-describedby"], [
+        (error || reserveError) && `${fieldId}-error`,
+        !error && hint && `${fieldId}-hint`,
+      ])}
+      className={cn(
+        FIELD_BOX,
+        ui.radius.track,
+        ui.text.body,
+        ui.focus,
+        error && "border-[color:var(--ui-negative)]",
+        trailing && "pe-11",
+        fieldClassName,
+      )}
+    />
+  );
   return (
-    <UiFieldFrame id={fieldId} label={label} hint={hint} error={error} className={className}>
-      <input
-        {...props}
-        id={fieldId}
-        ref={ref}
-        aria-invalid={error ? true : props["aria-invalid"]}
-        aria-describedby={error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined}
-        className={cn(
-          FIELD_BOX,
-          ui.radius.track,
-          ui.text.body,
-          ui.focus,
-          error && "border-[color:var(--ui-negative)]",
-          fieldClassName,
-        )}
-      />
+    <UiFieldFrame
+      id={fieldId}
+      label={label}
+      hint={hint}
+      error={error}
+      reserveError={reserveError}
+      className={className}
+    >
+      {trailing ? (
+        <span className="relative flex w-full">
+          {field}
+          <span className="absolute inset-y-0 end-1 flex items-center">{trailing}</span>
+        </span>
+      ) : (
+        field
+      )}
     </UiFieldFrame>
   );
 }
@@ -1037,6 +1129,7 @@ export function UiSelect({
   label,
   hint,
   error,
+  reserveError,
   id,
   options,
   placeholder,
@@ -1049,6 +1142,8 @@ export function UiSelect({
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  /** Reserve the error line and announce it politely. See `UiFieldFrame`. */
+  reserveError?: boolean;
   /** Convenience for the common case; `children` wins if both are given. */
   options?: ReadonlyArray<{ value: string; label: string; disabled?: boolean }>;
   placeholder?: string;
@@ -1059,14 +1154,24 @@ export function UiSelect({
   const generated = useId();
   const fieldId = id ?? generated;
   return (
-    <UiFieldFrame id={fieldId} label={label} hint={hint} error={error} className={className}>
+    <UiFieldFrame
+      id={fieldId}
+      label={label}
+      hint={hint}
+      error={error}
+      reserveError={reserveError}
+      className={className}
+    >
       <div className="relative">
         <select
           {...props}
           id={fieldId}
           ref={ref}
           aria-invalid={error ? true : props["aria-invalid"]}
-          aria-describedby={error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined}
+          aria-describedby={describedBy(props["aria-describedby"], [
+            (error || reserveError) && `${fieldId}-error`,
+            !error && hint && `${fieldId}-hint`,
+          ])}
           className={cn(
             FIELD_BOX,
             ui.radius.track,

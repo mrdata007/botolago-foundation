@@ -493,6 +493,35 @@
 /* All meshes are subtle, CSS-only, non-animated by default. Motion   */
 /* is opt-in through .mesh-drift and is disabled under reduced-motion.*/
 
+/* ---------------------------------------------------------------------------
+   MESH ORIGINS
+   ---------------------------------------------------------------------------
+   Every mesh in the product puts one glow at the trailing-top corner and
+   another at the leading-bottom one. Those are x origins, and an x origin is
+   physical in exactly the way rule 3 says a gradient angle is: it does not
+   follow `dir`, so the whole product's lighting stayed anchored to the left
+   of the screen while Arabic content mirrored to the right.
+
+   Centring them would fix the direction and lose the design — the asymmetry
+   is the composition. So the three x positions the meshes actually use are
+   named once here and flipped once below. `lead` is the edge a reader starts
+   from, `trail` the edge they end at, and `lead-out` sits just outside the
+   leading edge so the glow bleeds in from off-screen.
+
+   `mesh-matches` previously placed its leading glow at -6% rather than -8%;
+   it now shares `--mesh-x-lead-out`, a 2% move on a 900px radial. */
+:root {
+  --mesh-x-lead: 0%;
+  --mesh-x-trail: 100%;
+  --mesh-x-lead-out: -8%;
+}
+
+[dir="rtl"] {
+  --mesh-x-lead: 100%;
+  --mesh-x-trail: 0%;
+  --mesh-x-lead-out: 108%;
+}
+
 @utility mesh-base {
   position: fixed;
   inset: 0;
@@ -506,12 +535,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1000px 520px at 100% -8%,
+      1000px 520px at var(--mesh-x-trail) -8%,
       color-mix(in oklab, var(--brand-accent) 14%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      900px 480px at -8% 100%,
+      900px 480px at var(--mesh-x-lead-out) 100%,
       color-mix(in oklab, var(--brand-primary) 16%, transparent) 0%,
       transparent 60%
     ),
@@ -525,12 +554,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1100px 520px at 100% 0%,
+      1100px 520px at var(--mesh-x-trail) 0%,
       color-mix(in oklab, var(--accent-indigo) 12%, transparent) 0%,
       transparent 55%
     ),
     radial-gradient(
-      900px 480px at 0% 100%,
+      900px 480px at var(--mesh-x-lead) 100%,
       color-mix(in oklab, var(--brand-primary) 14%, transparent) 0%,
       transparent 60%
     );
@@ -539,12 +568,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1000px 520px at 100% -8%,
+      1000px 520px at var(--mesh-x-trail) -8%,
       color-mix(in oklab, var(--brand-primary) 18%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      800px 480px at -6% 100%,
+      800px 480px at var(--mesh-x-lead-out) 100%,
       color-mix(in oklab, var(--accent-emerald) 10%, transparent) 0%,
       transparent 60%
     );
@@ -553,12 +582,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1000px 520px at 100% -8%,
+      1000px 520px at var(--mesh-x-trail) -8%,
       color-mix(in oklab, var(--accent-cyan) 16%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      900px 480px at -8% 100%,
+      900px 480px at var(--mesh-x-lead-out) 100%,
       color-mix(in oklab, var(--brand-accent) 14%, transparent) 0%,
       transparent 60%
     ),
@@ -572,41 +601,62 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1100px 520px at 100% 0%,
+      1100px 520px at var(--mesh-x-trail) 0%,
       color-mix(in oklab, var(--accent-indigo) 14%, transparent) 0%,
       transparent 55%
     ),
     radial-gradient(
-      900px 500px at 0% 110%,
+      900px 500px at var(--mesh-x-lead) 110%,
       color-mix(in oklab, var(--brand-primary) 14%, transparent) 0%,
       transparent 55%
     );
 }
+/* The auth/welcome mesh: the one screen family that is white-on-dark, and
+   the one that was anchored hardest to physical space.
+
+   `linear-gradient(160deg, …)` is a physical angle (rule 3). It does not
+   follow `dir`, so while the content mirrored in Arabic the light kept
+   coming from the same corner and the composition came apart. 160deg is
+   twenty degrees off vertical, so `to bottom` costs nothing to look at and
+   reads identically in both directions.
+
+   The two radial glows are the part worth keeping asymmetric: the design is
+   a glow entering top-trailing and another leaving bottom-leading, and
+   flattening them to centred origins would make the screen symmetrical and
+   duller. So their x origins come from custom properties, and only those two
+   values flip under `dir="rtl"` — an exact mirror of the intended
+   composition rather than a second copy of the whole background. */
 @utility mesh-auth {
   color-scheme: dark;
   background-color: oklch(0.18 0.06 262);
   background-image:
     radial-gradient(
-      1100px 540px at 100% -6%,
+      1100px 540px at var(--mesh-x-trail) -6%,
       color-mix(in oklab, var(--brand-accent) 55%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      900px 500px at 0% 110%,
+      900px 500px at var(--mesh-x-lead) 110%,
       color-mix(in oklab, var(--accent-indigo) 55%, transparent) 0%,
       transparent 55%
     ),
     linear-gradient(
-      160deg,
+      to bottom,
       oklch(0.2 0.08 262) 0%,
       oklch(0.28 0.1 258) 55%,
       oklch(0.36 0.14 256) 100%
     );
 }
+
+/* The mirror. Two numbers, not a duplicated background-image. */
+[dir="rtl"] .mesh-auth {
+  --mesh-auth-x-top: 0%;
+  --mesh-auth-x-bottom: 100%;
+}
 @utility mesh-neutral {
   background-color: var(--background);
   background-image: radial-gradient(
-    1000px 500px at 100% 0%,
+    1000px 500px at var(--mesh-x-trail) 0%,
     color-mix(in oklab, var(--brand-primary) 8%, transparent) 0%,
     transparent 60%
   );
@@ -728,10 +778,14 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
+/* A loading sweep travels WITH the reading direction, so `to right` is wrong
+   in Arabic for the same reason `90deg` is: neither follows `dir`. The
+   direction is a custom property and the RTL rule below flips it. */
 @utility shimmer {
+  --shimmer-to: right;
   background-color: var(--border-subtle);
   background-image: linear-gradient(
-    90deg,
+    to var(--shimmer-to),
     transparent 0%,
     color-mix(in oklab, var(--surface) 60%, transparent) 50%,
     transparent 100%
@@ -739,6 +793,10 @@ html[dir="rtl"] .lucide-arrow-left {
   background-size: 200% 100%;
   background-repeat: no-repeat;
   animation: shimmer-sweep 1.6s var(--ease-standard) infinite;
+}
+
+[dir="rtl"] .shimmer {
+  --shimmer-to: left;
 }
 
 /* Unified press-feedback for interactive tiles/cards. */

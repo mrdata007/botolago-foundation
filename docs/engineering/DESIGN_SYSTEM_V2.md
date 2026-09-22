@@ -122,6 +122,9 @@ are the class tokens; prefer them over spelling `text-[color:var(…)]`.
 | `--ui-on-ink`           | `oklch(0.88 0.11 205)`  | same                   | cyan text on an ink fill (`ui.tone.onInk`)            |
 | `--ui-on-ink-plain`     | `oklch(1 0 0)`          | `oklch(0.97 0.01 250)` | plain text on an ink fill (`ui.tone.onInkPlain`)      |
 | `--ui-on-grad-header`   | `oklch(0.24 0.09 258)`  | `oklch(0.97 0.01 250)` | text on the header/hero band (`ui.tone.onGradHeader`) |
+| `--ui-on-mesh`          | = `--ui-on-ink-plain`   | follows it             | text on the dark mesh (`ui.tone.onMesh`)              |
+| `--ui-on-mesh-muted`    | it at 78%               | follows it             | its quieter step (`ui.tone.onMeshMuted`)              |
+| `--ui-on-mesh-faint`    | it at 62%               | follows it             | its quietest step (`ui.tone.onMeshFaint`)             |
 | `--ui-ink-deep`         | `oklch(0.24 0.09 258)`  | `oklch(0.22 0.07 260)` | text on the **action gradient**; dark scrim fills     |
 | `--ui-on-pitch`         | `oklch(0.18 0.04 260)`  | `oklch(0.97 0.01 250)` | labels on the turf                                    |
 
@@ -135,6 +138,27 @@ are the class tokens; prefer them over spelling `text-[color:var(…)]`.
 | `--ui-positive`      | `oklch(0.52 0.14 150)`                         | `oklch(0.78 0.17 150)` | gains, up movement — legible as text            |
 | `--ui-negative`      | `oklch(0.55 0.22 355)`                         | `oklch(0.75 0.19 355)` | losses, down movement, errors — legible as text |
 | `--ui-caution`       | `oklch(0.82 0.17 80)`                          | `oklch(0.85 0.16 80)`  | amber FILL; pair with `--ui-ink-deep`           |
+| `--ui-live`          | `oklch(0.62 0.22 27)`                          | `oklch(0.68 0.22 27)`  | a match in progress: the dot, the minute bar    |
+| `--ui-live-fg`       | `oklch(0.5 0.22 27)`                           | `oklch(0.78 0.18 27)`  | the same state as TEXT (`ui.tone.live`)         |
+| `--ui-mesh-glass`    | `--ui-on-ink-plain` at 10%                     | follows it             | the glass tile on the mesh (`ui.surface.mesh`)  |
+| `--ui-mesh-rule`     | `--ui-on-ink-plain` at 20%                     | follows it             | its hairline                                    |
+
+**The dark mesh.** The welcome screen, the auth screens and the first-launch
+language chooser sit on a deep mesh rather than on `--ui-page`. It is a
+deliberate second register — a focused room with one job — and the page
+tokens do not serve it, so it has its own: `ui.tone.onMesh*`,
+`ui.surface.mesh` and `ui.focusOnMesh`. Never write `text-white/80` or
+`bg-white/10` there; a literal white is un-themed and says "light theme" in a
+file that does not know which theme it is in.
+
+`ui.focusOnMesh` is not a convenience. `ui.focus` draws its ring in
+`--ui-ink-fg`, a deep navy in the light theme, which on the mesh is a ring
+you cannot see.
+
+**Third-party brand marks are exempt from the colour rule.** Google's
+sign-in mark has a fixed brand colour that this design system is not entitled
+to change, and no token matches it. Leave the hex, and say in a comment that
+it is a brand mark.
 
 **Gradients** (all direction-neutral)
 
@@ -257,14 +281,29 @@ All exported from `@/components/ui-kit`. Props marked \* are required.
 
 ### Controls
 
-| Primitive        | Props                                                                                                                                             | Notes                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `UiButton`       | all `<button>` props + `variant?: "gradient" \| "ink" \| "light" \| "outline" \| "ghost"`, `size?: "sm" \| "md"`                                  | `md` is full-width at `--ui-row-min`; `sm` is inline at `--ui-tap-min`                                     |
-| `UiLinkButton`   | same + `to*`, `params?`, `search?`                                                                                                                | router `Link` in button clothing                                                                           |
-| `UiSegmented<T>` | `value*`, `onChange*`, `options*: {value,label,disabled?}[]`, `tone?: "onSurface" \| "onGradient"`, `size?: "md" \| "lg"`, `label?`, `className?` | `md` (default) = 44px at the meta size and fits four French labels at 390px; `lg` = 48px at body size      |
-| `UiChip`         | all `<button>` props + `children*`, `selected?`, `ref?`, `aria-current?`                                                                          | interactive filter/day chip; give `aria-current` for "this is the current one" and it drops `aria-pressed` |
-| `UiInput`        | all `<input>` props + `label?`, `hint?`, `error?`, `fieldClassName?`, `ref?`                                                                      | renders and wires its own `<label>`; `error` sets `aria-invalid` + `aria-describedby`                      |
-| `UiSelect`       | all `<select>` props + `label?`, `hint?`, `error?`, `options?: {value,label,disabled?}[]`, `placeholder?`, `ref?`                                 | native `<select>` — already localised, already keyboard-correct, opens the platform picker                 |
+| Primitive        | Props                                                                                                                                             | Notes                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UiButton`       | all `<button>` props + `variant?: "gradient" \| "ink" \| "light" \| "outline" \| "ghost"`, `size?: "sm" \| "md"`                                  | `md` is full-width at `--ui-row-min`; `sm` is inline at `--ui-tap-min`                                                                                                  |
+| `UiLinkButton`   | same + `to*`, `params?`, `search?`                                                                                                                | router `Link` in button clothing                                                                                                                                        |
+| `UiSegmented<T>` | `value*`, `onChange*`, `options*: {value,label,disabled?}[]`, `tone?: "onSurface" \| "onGradient"`, `size?: "md" \| "lg"`, `label?`, `className?` | `md` (default) = 44px at the meta size and fits four French labels at 390px; `lg` = 48px at body size                                                                   |
+| `UiChip`         | all `<button>` props + `children*`, `selected?`, `ref?`, `aria-current?`                                                                          | interactive filter/day chip; give `aria-current` for "this is the current one" and it drops `aria-pressed`                                                              |
+| `UiInput`        | all `<input>` props + `label?`, `hint?`, `error?`, `reserveError?`, `trailing?`, `fieldClassName?`, `ref?`                                        | renders and wires its own `<label>`; `error` sets `aria-invalid`, announces as `role="alert"`, and is ADDED to any `aria-describedby` you pass rather than replacing it |
+| `UiSelect`       | all `<select>` props + `label?`, `hint?`, `error?`, `reserveError?`, `options?: {value,label,disabled?}[]`, `placeholder?`, `ref?`                | native `<select>` — already localised, already keyboard-correct, opens the platform picker                                                                              |
+
+`trailing` is the slot for a control that lives INSIDE the field box on its
+inline-end edge — the show/hide-password eye, a clear button, a unit. It has
+to be a prop rather than something you compose at the call site: the field
+frame is one flex column holding label, box and error, so an absolutely
+positioned child anchored to the frame stretches across all three.
+
+`reserveError` keeps the error line's height whether or not there is an
+error, and announces it politely. Use it on a form that validates on submit.
+Without it the message appears silently, and the line is inserted rather than
+filled — which on a phone pushes the submit button down, out from under the
+thumb already travelling toward it. The reserved height is one line box of
+the field's own type (`calc(var(--ui-text-meta)*var(--ui-leading-flat))`),
+not a literal, because the Arabic leading is 1.95 against 1.4 and a fixed
+16px under-reserves it.
 
 ### Overlays
 

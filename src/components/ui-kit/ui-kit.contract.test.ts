@@ -370,6 +370,29 @@ describe("ui-kit: the primitives keep their promises", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("composes aria-describedby instead of replacing the caller's", () => {
+    // `{...props}` then `aria-describedby={...}` reads like a default and is
+    // the opposite: it overwrote whatever the screen passed, and set it to
+    // `undefined` when there was no error and no hint — actively unlinking a
+    // description. The register form describes its password field by both its
+    // error and its strength meter; the meter was being dropped.
+    const offenders = [
+      ...primitives.matchAll(/aria-describedby=\{(?!describedBy\()([^}]*)\}/g),
+    ].map((m) => m[0].slice(0, 80));
+    expect(offenders).toEqual([]);
+  });
+
+  it("gives a field's error message a role, so it is announced", () => {
+    // A validation message that appears silently tells a screen-reader user
+    // nothing; they learn the form failed only from the focus moving.
+    const errorLines = [...primitives.matchAll(/id=\{`\$\{id\}-error`\}/g)];
+    expect(errorLines.length).toBeGreaterThan(0);
+    const withoutRole = [...primitives.matchAll(/<p\s+id=\{`\$\{id\}-error`\}([\s\S]{0,120}?)>/g)]
+      .filter((m) => !m[1].includes('role="alert"'))
+      .map((m) => m[0].replace(/\s+/g, " "));
+    expect(withoutRole).toEqual([]);
+  });
+
   it("never spells a Close control in English", () => {
     // Every sheet in the product used to close with a hardcoded "Close".
     expect(primitives).not.toMatch(/["'>]\s*Close\s*[<"']/);
@@ -429,6 +452,67 @@ describe("ui-kit: the primitives keep their promises", () => {
     for (const token of ["--ui-leading-flat", "--ui-leading-copy", "--ui-leading-prose"]) {
       expect(css).toContain(`${token}:`);
       expect(block).toContain(`${token}:`);
+    }
+  });
+});
+
+describe("ui-kit: the shared background mesh is direction-neutral", () => {
+  /**
+   * Rule 3 says a gradient angle is physical too, and the kit's own gradient
+   * tokens are checked for it. The `mesh-*` utilities were not — and they are
+   * what actually paints behind every screen, including the one family that
+   * is white-on-dark. `mesh-auth` carried `linear-gradient(160deg, …)`, so
+   * the light kept entering from the same physical corner while the content
+   * mirrored, and nothing failed.
+   *
+   * A radial origin is physical in the same way, but unlike an angle it has a
+   * legitimate asymmetric use: the design wants a glow entering top-trailing.
+   * The rule below is therefore not "no x offset" but "an off-centre x offset
+   * must be a custom property", which is what makes it flippable — and the
+   * `[dir="rtl"]` rule that flips it has to exist.
+   */
+  const meshBlocks = [...css.matchAll(/@utility (mesh-[\w-]+) \{([^}]*(?:\}[^@]*?)*?)\n\}/g)].map(
+    (m) => ({ name: m[1], body: m[2] }),
+  );
+
+  it("finds the mesh utilities at all", () => {
+    expect(meshBlocks.map((b) => b.name)).toContain("mesh-auth");
+    expect(meshBlocks.length).toBeGreaterThan(4);
+  });
+
+  for (const { name, body } of meshBlocks) {
+    it(`${name} states no gradient angle in degrees`, () => {
+      const offenders = [...body.matchAll(/-?[\d.]+deg/g)].map((m) => m[0]);
+      expect(offenders).toEqual([]);
+    });
+
+    it(`${name} keeps any off-centre origin in a flippable custom property`, () => {
+      // `at <x> <y>` — only the x half is direction-sensitive.
+      const origins = [...body.matchAll(/\bat\s+([^\s,]+)\s+([^\s,)]+)/g)].map((m) => m[1]);
+      const fixed = origins.filter((x) => !x.startsWith("var(") && x !== "50%");
+      expect(fixed).toEqual([]);
+    });
+  }
+
+  it("mirrors every mesh origin the utilities read", () => {
+    // A named origin that is never flipped is worse than a literal: it looks
+    // direction-aware and is not.
+    const used = new Set(
+      meshBlocks.flatMap(({ body }) =>
+        [...body.matchAll(/var\((--mesh-x-[\w-]+)\)/g)].map((m) => m[1]),
+      ),
+    );
+    expect(used.size).toBeGreaterThan(0);
+    const rtl = [...css.matchAll(/\[dir="rtl"\][^{]*\{([^}]*)\}/g)].map((m) => m[1]).join("\n");
+    const unmirrored = [...used].filter((token) => !rtl.includes(`${token}:`));
+    expect(unmirrored).toEqual([]);
+  });
+
+  it("declares every mesh origin it mirrors", () => {
+    const rtl = [...css.matchAll(/\[dir="rtl"\][^{]*\{([^}]*)\}/g)].map((m) => m[1]).join("\n");
+    const mirrored = [...rtl.matchAll(/(--mesh-x-[\w-]+):/g)].map((m) => m[1]);
+    for (const token of mirrored) {
+      expect(rootDeclarations.has(token) || css.includes(`${token}:`)).toBe(true);
     }
   });
 });
