@@ -239,5 +239,56 @@ select is(
   'the edition becomes public only through the explicit transition to published'
 );
 
+-- Linked language editions: the CMS's "Créer l'édition arabe" sends the
+-- French edition's story id. The Arabic draft joins that story, and a second
+-- edition in a language the story already has is refused.
+reset role;
+select set_config(
+  'test.schedule_story_id',
+  (select story_id::text from app.article_editions
+   where id = current_setting('test.schedule_article_id')::uuid),
+  true
+);
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"93000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}', true
+);
+select is(
+  api.editorial_create_draft(
+    'ar', 'qa-barmaja-wa-taarud', 'اختبار الجدولة والتعارض',
+    'ملخص اختبار كافٍ لقيد الطول الأدنى.',
+    'markdown', repeat('محتوى اختبار الجدولة. ', 4),
+    '<p>Contenu QA pour vérifier la programmation et les conflits.</p>',
+    1::smallint, 'sanitize-html@2.17.5',
+    p_body_html_mac := current_setting('test.schedule_body_mac'),
+    p_story_id := current_setting('test.schedule_story_id')::uuid
+  ) ->> 'storyId',
+  current_setting('test.schedule_story_id'),
+  'an Arabic draft created with the French edition''s story id joins that story'
+);
+select throws_ok(
+  format(
+    $sql$select api.editorial_create_draft(
+      'fr', 'qa-deuxieme-edition-fr', 'Deuxième édition française',
+      'Résumé QA suffisant pour la contrainte de longueur.', 'markdown', %L,
+      '<p>Contenu QA pour vérifier la programmation et les conflits.</p>',
+      1::smallint, 'sanitize-html@2.17.5', p_body_html_mac := %L, p_story_id := %L::uuid)$sql$,
+    repeat('Contenu QA pour la programmation. ', 4),
+    current_setting('test.schedule_body_mac'),
+    current_setting('test.schedule_story_id')
+  ),
+  '23505',
+  'news_slug_or_translation_conflict',
+  'a story cannot hold two editions in the same language'
+);
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+select throws_ok(
+  $$select api.news_article_detail('ar', 'qa-barmaja-wa-taarud')$$,
+  'PGRST', null,
+  'publishing the French edition does not publish the linked Arabic draft'
+);
+
 select * from finish();
 rollback;

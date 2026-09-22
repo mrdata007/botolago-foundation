@@ -673,6 +673,25 @@ function AdminNewsEditRoute() {
                 </span>
               )}
             </div>
+            <UiLinkButton
+              to="/admin/news/new"
+              search={{
+                storyId: article.storyId,
+                language: article.language === "fr" ? "ar" : "fr",
+              }}
+              variant="ghost"
+              size="sm"
+              className="-ms-3 mt-1"
+              data-testid="admin-news-create-translation"
+            >
+              {article.language === "fr"
+                ? rtl
+                  ? "إنشاء النسخة العربية"
+                  : "Créer l’édition arabe"
+                : rtl
+                  ? "إنشاء النسخة الفرنسية"
+                  : "Créer l’édition française"}
+            </UiLinkButton>
             {/* A slug is LTR data whatever the console's direction. */}
             <span className="mt-2 block">
               <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>{article.slug}</AdminDatum>

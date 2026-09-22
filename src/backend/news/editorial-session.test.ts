@@ -9,6 +9,7 @@ import { NewsError } from "./errors";
 import { markdownToEditorialHtml } from "./editorial-markdown";
 import {
   EDITOR_REVISION_LIMIT,
+  parseTranslationSearch,
   revisionDifferences,
   revisionToEditorFields,
   transitionAndReload,
@@ -181,5 +182,48 @@ describe("restoring a revision into the editor", () => {
     expect(source).toContain("revisionToEditorFields(revision)");
     expect(source).toContain("admin-news-revision-restore-${revision.revisionNumber}");
     expect(source).toContain("disabled={busy || !isEditable || differs.length === 0}");
+  });
+});
+
+describe("creating the other-language edition of a story", () => {
+  const storyId = "3f6c2a10-5b7e-4c1d-9a2b-8e4f6d0c1a2b";
+
+  test("a valid story id and language open the form as a linked edition", () => {
+    expect(parseTranslationSearch({ storyId, language: "ar" })).toEqual({
+      storyId,
+      language: "ar",
+    });
+  });
+
+  test("anything invalid falls back to an ordinary new story, never half-linked", () => {
+    for (const search of [
+      {},
+      { storyId },
+      { language: "ar" },
+      { storyId, language: "en" },
+      { storyId: "not-a-uuid", language: "fr" },
+      { storyId: `${storyId}' or 1=1`, language: "fr" },
+      { storyId: 42, language: "fr" },
+    ]) {
+      expect(parseTranslationSearch(search)).toEqual({});
+    }
+  });
+
+  test("the new-draft form sends the story id and locks the language", async () => {
+    const source = await Bun.file(
+      new URL("../../routes/admin.news.new.tsx", import.meta.url),
+    ).text();
+    expect(source).toContain("validateSearch: parseTranslationSearch");
+    expect(source).toContain("storyId: translation.storyId ?? null");
+    expect(source).toContain("disabled={!!translation.storyId}");
+  });
+
+  test("the editor links to it with its own story id and the other language", async () => {
+    const source = await Bun.file(
+      new URL("../../routes/admin.news.$articleEditionId.tsx", import.meta.url),
+    ).text();
+    expect(source).toContain('data-testid="admin-news-create-translation"');
+    expect(source).toContain("storyId: article.storyId");
+    expect(source).toContain('language: article.language === "fr" ? "ar" : "fr"');
   });
 });

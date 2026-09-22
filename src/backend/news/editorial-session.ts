@@ -2,6 +2,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   ArticleEditorialDetailDto,
   EditorialRevisionDto,
+  NewsLanguage,
   NewsRepository,
   TransitionArticleInput,
   TransitionArticleResult,
@@ -89,4 +90,24 @@ export function revisionDifferences(
   const restored = revisionToEditorFields(revision);
   const order: readonly ProseField[] = ["title", "subtitle", "summary", "bodyMarkdown"];
   return order.filter((field) => restored[field].trim() !== current[field].trim());
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * `?storyId=<uuid>&language=fr|ar` opens the form as the other-language
+ * edition of an existing story. `editorial_create_draft` has always taken a
+ * story id, and a story holds at most one edition per language, but this form
+ * never sent one: every Arabic version was created as a separate, unrelated
+ * story, so a French and an Arabic edition could never be paired. Both values
+ * must be valid or neither is used.
+ */
+export function parseTranslationSearch(search: Record<string, unknown>): {
+  storyId?: string;
+  language?: NewsLanguage;
+} {
+  const storyId = typeof search.storyId === "string" ? search.storyId : "";
+  const language = search.language;
+  if (!UUID_PATTERN.test(storyId) || (language !== "fr" && language !== "ar")) return {};
+  return { storyId, language };
 }

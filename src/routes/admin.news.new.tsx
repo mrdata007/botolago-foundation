@@ -13,6 +13,7 @@ import {
 } from "@/backend/news/sanitizer";
 import { markdownToEditorialHtml } from "@/backend/news/editorial-markdown";
 import { mapNewsError } from "@/backend/news/errors";
+import { parseTranslationSearch } from "@/backend/news/editorial-session";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ADMIN_CARD_CLASS, ADMIN_LABEL_CLASS, AdminNotice } from "@/components/admin/AdminSurfaces";
 import { ui, UiButton, UiInput, UiLinkButton, UiSelect, UiTextarea } from "@/components/ui-kit";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/news/new")({
   ssr: false,
+  validateSearch: parseTranslationSearch,
   loader: () => loadAdminNewsWriteRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsNewRoute,
@@ -73,7 +75,8 @@ function AdminNewsNewRoute() {
   const { lang } = useI18n();
   const rtl = lang === "ar";
   const repository = useMemo(() => new SupabaseNewsRepository(), []);
-  const [language, setLanguage] = useState<NewsLanguage>("fr");
+  const translation = Route.useSearch();
+  const [language, setLanguage] = useState<NewsLanguage>(translation.language ?? "fr");
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -103,6 +106,7 @@ function AdminNewsNewRoute() {
           bodyHtml,
           readingTimeMinutes: calculateReadingTime(bodyHtml),
           sanitizerVersion: NEWS_SANITIZER_VERSION,
+          storyId: translation.storyId ?? null,
         },
         adminRepositoryContext(access),
       );
@@ -161,6 +165,15 @@ function AdminNewsNewRoute() {
                 label={rtl ? "اللغة" : "Langue"}
                 value={language}
                 onChange={(event) => setLanguage(event.target.value as NewsLanguage)}
+                // A translation's language is fixed by the link that opened it.
+                disabled={!!translation.storyId}
+                hint={
+                  translation.storyId
+                    ? rtl
+                      ? "نسخة لغوية مرتبطة بخبر موجود."
+                      : "Édition liée à un article existant (autre langue)."
+                    : undefined
+                }
                 data-testid="admin-news-new-language"
               >
                 <option value="fr">Français</option>
