@@ -40,15 +40,18 @@ function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso
   const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: MATCH_TIME_ZONE,
   }).format(new Date(deadlineIso));
   return (
     <p className={cn("mt-1 text-center", ui.text.secondary)}>
-      {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
-      <strong className="[font-weight:var(--ui-weight-heavy)]">{formatted}</strong>
+      {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}
+      {/* French sets a narrow no-break space before a colon. */}
+      {lang === "fr" ? "\u202F:" : ":"}{" "}
+      <strong className="whitespace-nowrap [font-weight:var(--ui-weight-heavy)]">
+        {formatted}
+      </strong>
     </p>
   );
 }
@@ -267,9 +270,11 @@ export function SquadBuilderScreen({
             {t("fpl.select_replacement")}
           </p>
         ) : null}
-        {/* px-2: at 390px the kit button's 16px gutters push "Ajouter un joueur"
-            onto a second line next to a one-word sibling. */}
-        <div className="grid grid-cols-2 gap-2 px-3 pt-2">
+        {/* px-2 alone was not enough: "Ajouter un joueur" needs ~173px with
+            its icon and a half row gives it 163px at 390, so it wrapped to two
+            cramped lines. The primary action takes 3/5 of the row; its
+            one-word sibling does not need half. */}
+        <div className="grid grid-cols-[3fr_2fr] gap-2 px-3 pt-2">
           <UiButton
             className="px-2"
             variant="gradient"

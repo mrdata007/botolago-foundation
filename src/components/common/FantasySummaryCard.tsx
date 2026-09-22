@@ -102,7 +102,6 @@ export function FantasySummaryCard({
         <Metric
           label={t("fantasy.overall_rank")}
           value={summary.overallRank === null ? "—" : nf.format(summary.overallRank)}
-          small
         />
         <Metric label={t("fantasy.transfers")} value={String(summary.transfersLeft)} />
       </div>
@@ -116,29 +115,13 @@ export function FantasySummaryCard({
   );
 }
 
-function Metric({
-  label,
-  value,
-  accent,
-  small,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  small?: boolean;
-}) {
+function Metric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className={cn("min-w-0 px-1.5 py-2", ui.radius.control, ui.surface.sunken)}>
-      <div
-        className={cn(
-          ui.text.tabular,
-          "[font-weight:var(--ui-weight-hero)]",
-          accent ? ui.tone.ink : ui.tone.default,
-          small ? ui.text.meta : ui.text.body,
-        )}
-      >
-        {value}
-      </div>
+      {/* The kit's summary-tile figure. These were set at body size (and
+          the rank at meta), smaller than the card's own team name — the
+          numbers a manager opens the card for read as footnotes. */}
+      <div className={cn(ui.stat.lg, accent ? ui.tone.ink : ui.tone.default)}>{value}</div>
       {/* `micro` rather than `label`: the captions stay dense next to the
           figure. No clamp and no truncation — the caption wraps at word
           boundaries if a narrower viewport ever needs it, and the grid

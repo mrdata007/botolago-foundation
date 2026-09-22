@@ -442,7 +442,7 @@ function NavRow({
           ) : null}
         </span>
       </span>
-      <ChevronRight className={cn("h-4 w-4 shrink-0 rtl:rotate-180", ui.tone.muted)} aria-hidden />
+      <ChevronRight className={cn("h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
     </button>
   );
 }
@@ -630,7 +630,7 @@ function DeleteAccountSection() {
                 </span>
               </span>
               <ChevronRight
-                className="h-4 w-4 shrink-0 text-[color:var(--ui-negative)] rtl:rotate-180"
+                className="h-4 w-4 shrink-0 text-[color:var(--ui-negative)]"
                 aria-hidden
               />
             </button>
@@ -828,16 +828,7 @@ function AnonymousProfile() {
   return (
     <>
       <UiCard padding="lg" className="mt-4 text-center">
-        <div
-          className={cn(
-            "mx-auto grid h-16 w-16 place-items-center p-2",
-            ui.radius.control,
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-        >
-          <Logo variant="icon" className="!h-12 !w-12" />
-        </div>
+        <Logo variant="icon" className="!h-14 !w-14" />
         <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
           <Trans text={t("profile.anon_title")} />
         </h2>

@@ -74,16 +74,13 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
         </div>
 
         <div className="mt-10 flex flex-col items-center text-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-700">
-          <div
+          <Logo
+            variant="icon"
             className={cn(
-              "grid h-24 w-24 place-items-center p-3",
-              ui.radius.sheet,
-              ui.surface.mesh,
+              "!h-20 !w-20 !rounded-[var(--ui-radius-sheet)] shadow-[var(--ui-shadow-raised)]",
               "motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-500",
             )}
-          >
-            <Logo variant="icon" className="!h-16 !w-16 !rounded-[var(--ui-radius-sheet)]" />
-          </div>
+          />
 
           <h1 className={cn("mt-8", ui.text.hero, "ltr:tracking-tight")}>{t("welcome.title")}</h1>
           <p className={cn("mx-auto mt-4 max-w-[36ch]", ui.text.prose, ui.tone.onMeshMuted)}>

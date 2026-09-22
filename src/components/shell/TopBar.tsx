@@ -32,7 +32,7 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
     >
       <div
         className={cn(
-          "mx-auto flex items-center gap-3 md:max-w-5xl",
+          "mx-auto flex items-center gap-3 md:max-w-[var(--ui-content-max)]",
           ui.space.gutter,
           "min-h-[var(--ui-tap-min)]",
         )}

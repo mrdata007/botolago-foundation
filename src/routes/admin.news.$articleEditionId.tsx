@@ -644,7 +644,7 @@ function AdminNewsEditRoute() {
             data-testid="admin-news-back-to-list"
           >
             {/* The arrow is flipped by the ambient direction, never by hand. */}
-            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+            <ArrowLeft className="h-4 w-4" aria-hidden />
             {rtl ? "كل المقالات" : "Tous les articles"}
           </UiLinkButton>
 
