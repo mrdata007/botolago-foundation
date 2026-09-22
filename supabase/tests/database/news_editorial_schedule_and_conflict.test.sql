@@ -6,11 +6,10 @@
 --      expected_updated_at. A client that keeps its pre-transition token gets
 --      news_editorial_conflict on its next save -- the CMS editor did exactly
 --      that until it started re-reading the edition after a transition.
---   2. A scheduled edition is private before its time.
---   3. A scheduled edition is STILL private after its scheduled_at has passed:
---      publication only ever happens through editorial_transition_article to
---      'published'. Nothing in the database promotes a due edition on its own,
---      so "Programmé" stores an intent; it does not publish.
+--   2. A scheduled edition is private before its time, and cancelling a
+--      schedule clears it. (Automatic publication of due editions:
+--      news_scheduled_publication.test.sql.)
+--   3. Linked language editions stay independent.
 begin;
 
 select extensions.no_plan();
@@ -177,10 +176,7 @@ select is(
   'a scheduled edition is not in the public feed before its time'
 );
 
--- Move the schedule into the past. There is no scheduled -> scheduled
--- transition, so rescheduling means scheduled -> draft -> in_review ->
--- scheduled. The RPC accepts a past scheduled_at (only the editor UI checks
--- that it is in the future).
+-- Cancel the schedule: scheduled -> draft -> in_review.
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -197,34 +193,8 @@ select is(
   'leaving scheduled clears scheduled_at, so a cancelled schedule cannot fire later'
 );
 
-set local role authenticated;
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"93000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}', true
-);
-select is(
-  api.editorial_transition_article(
-    current_setting('test.schedule_article_id')::uuid, 'scheduled',
-    statement_timestamp() - interval '1 hour'
-  ) ->> 'status',
-  'scheduled',
-  'the RPC accepts a scheduled_at that is already in the past'
-);
-
-set local role anon;
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
-select throws_ok(
-  $$select api.news_article_detail('fr', 'qa-programmation-conflit')$$,
-  'PGRST', null,
-  'a scheduled edition whose time has passed is still not public: nothing promotes it'
-);
-select is(
-  jsonb_array_length(api.news_feed('fr', 50) -> 'items'),
-  0,
-  'a scheduled edition whose time has passed is still not in the public feed'
-);
-
--- Only the explicit transition publishes it.
+-- Publish explicitly. (Automatic publication of due editions is covered by
+-- news_scheduled_publication.test.sql.)
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -236,7 +206,7 @@ select set_config('request.jwt.claims', '{"role":"anon"}', true);
 select is(
   api.news_article_detail('fr', 'qa-programmation-conflit') ->> 'slug',
   'qa-programmation-conflit',
-  'the edition becomes public only through the explicit transition to published'
+  'the edition is public once published'
 );
 
 -- Linked language editions: the CMS's "Créer l'édition arabe" sends the
