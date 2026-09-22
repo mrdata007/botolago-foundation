@@ -13,6 +13,7 @@ import {
 } from "@/backend/news/sanitizer";
 import { mapNewsError } from "@/backend/news/errors";
 import {
+  describeEditorialError,
   describeScheduledAt,
   EDITOR_REVISION_LIMIT,
   revisionDifferences,
@@ -349,7 +350,7 @@ function AdminNewsEditRoute() {
           ? rtl
             ? "تم تعديل المقال في مكان آخر. أعد التحميل قبل الحفظ."
             : "L’article a été modifié ailleurs. Rechargez avant d’enregistrer."
-          : `${rtl ? "تعذّر الحفظ" : "Enregistrement impossible"}: ${mapped.code}`,
+          : `${rtl ? "تعذّر الحفظ" : "Enregistrement impossible"} : ${describeEditorialError(mapped.code, lang)} (${mapped.code})`,
       );
     } finally {
       setBusy(false);
@@ -416,7 +417,10 @@ function AdminNewsEditRoute() {
       );
     } catch (error) {
       setMessage(
-        `${rtl ? "تعذّر تغيير الحالة" : "Changement de statut impossible"}: ${mapNewsError(error as Error).code}`,
+        `${rtl ? "تعذّر تغيير الحالة" : "Changement de statut impossible"} : ${describeEditorialError(
+          mapNewsError(error as Error).code,
+          lang,
+        )} (${mapNewsError(error as Error).code})`,
       );
     } finally {
       setBusy(false);

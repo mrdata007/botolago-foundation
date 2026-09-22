@@ -8,6 +8,7 @@ import type {
 import { NewsError } from "./errors";
 import { markdownToEditorialHtml } from "./editorial-markdown";
 import {
+  describeEditorialError,
   describeScheduledAt,
   EDITOR_REVISION_LIMIT,
   parseTranslationSearch,
@@ -319,5 +320,15 @@ describe("editor wiring for activation", () => {
     const list = await read("../../routes/admin.news.tsx");
     expect(list).toContain('data-testid="admin-news-filter-scope"');
     expect(list).toContain('data-testid="admin-news-schedule-warning"');
+  });
+});
+
+describe("CMS error messages in plain language", () => {
+  test("known codes are explained in the editor's language; unknown ones fall back to the code", () => {
+    expect(describeEditorialError("schedule_must_be_future", "fr")).toBe(
+      "la date programmée doit être dans le futur",
+    );
+    expect(describeEditorialError("editorial_forbidden", "ar")).toContain("الناشر");
+    expect(describeEditorialError("data_unavailable", "fr")).toBe("data_unavailable");
   });
 });

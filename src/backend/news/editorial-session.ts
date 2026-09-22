@@ -8,6 +8,7 @@ import type {
   TransitionArticleResult,
 } from "./contracts";
 import { editorialHtmlToMarkdown } from "./editorial-markdown";
+import type { NewsErrorCode } from "./errors";
 
 export const EDITOR_REVISION_LIMIT = 20;
 
@@ -160,4 +161,40 @@ export function scheduleHealthProblem(
     return "run_failed";
   }
   return null;
+}
+
+const EDITORIAL_ERROR_TEXT: Partial<Record<NewsErrorCode, { fr: string; ar: string }>> = {
+  editorial_forbidden: {
+    fr: "votre rôle ne permet pas cette action (la publication et la programmation sont réservées aux éditeurs-publicateurs)",
+    ar: "دورك لا يسمح بهذا الإجراء (النشر والجدولة من صلاحيات الناشر)",
+  },
+  schedule_must_be_future: {
+    fr: "la date programmée doit être dans le futur",
+    ar: "يجب أن يكون موعد النشر في المستقبل",
+  },
+  imported_story_requires_conversion: {
+    fr: "contenu importé : il doit d’abord être converti par un administrateur éditorial",
+    ar: "محتوى مستورد: يجب أن يحوّله مسؤول التحرير أولاً",
+  },
+  invalid_status_transition: {
+    fr: "ce changement de statut n’est pas possible depuis le statut actuel",
+    ar: "لا يمكن الانتقال إلى هذه الحالة من الحالة الحالية",
+  },
+  slug_or_translation_conflict: {
+    fr: "cet identifiant (slug) ou cette édition linguistique existe déjà",
+    ar: "هذا المعرّف أو هذه النسخة اللغوية موجودة مسبقاً",
+  },
+  article_not_editable: {
+    fr: "le contenu n’est pas modifiable dans ce statut",
+    ar: "لا يمكن تعديل المحتوى في هذه الحالة",
+  },
+  unauthorized: {
+    fr: "session expirée : reconnectez-vous",
+    ar: "انتهت الجلسة: سجّل الدخول من جديد",
+  },
+};
+
+/** A CMS error in the editor's language, falling back to the code itself. */
+export function describeEditorialError(code: NewsErrorCode, lang: NewsLanguage): string {
+  return EDITORIAL_ERROR_TEXT[code]?.[lang] ?? code;
 }
