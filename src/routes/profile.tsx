@@ -35,17 +35,10 @@ import {
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/shell/ThemeSwitcher";
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
-import { ui, UiBadge, UiButton, UiCard } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiCard, UiCheckbox, UiModal } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
@@ -101,8 +94,11 @@ function RowGlyph({
         "grid h-8 w-8 shrink-0 place-items-center",
         ui.radius.control,
         tone === "sunken" && cn(ui.surface.sunken, ui.tone.muted),
+        // BG-0083: the 12% mix is a FILL and is correct; the text beside it
+        // was the same token, which is a dark navy in both themes. The brand
+        // foreground is `--ui-ink-fg`.
         tone === "ink" &&
-          "bg-[color:color-mix(in_oklab,var(--ui-ink)_12%,transparent)] text-[color:var(--ui-ink)]",
+          cn("bg-[color:color-mix(in_oklab,var(--ui-ink)_12%,transparent)]", ui.tone.ink),
         tone === "negative" &&
           "bg-[color:color-mix(in_oklab,var(--ui-negative)_16%,transparent)] text-[color:var(--ui-negative)]",
       )}
@@ -163,26 +159,25 @@ function ProfilePage() {
         <AnonymousProfile />
       )}
 
-      <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t("profile.sign_out_title")}</DialogTitle>
-            <DialogDescription>{t("profile.sign_out_body")}</DialogDescription>
-          </DialogHeader>
-          <div className="mt-2 grid gap-2">
+      <UiModal
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title={t("profile.sign_out_title")}
+        description={t("profile.sign_out_body")}
+        footer={
+          <>
             <UiButton onClick={() => onSignOut(false)}>
               <Check className="h-4 w-4" aria-hidden /> {t("profile.sign_out_keep")}
             </UiButton>
-            <UiButton
-              variant="outline"
-              onClick={() => onSignOut(true)}
-              className="text-[color:var(--ui-negative)]"
-            >
+            {/* "Sign out AND erase what is stored on this device" is the
+                destructive branch, so it takes the variant rather than an
+                outline wearing a red label. */}
+            <UiButton variant="destructive" onClick={() => onSignOut(true)}>
               <X className="h-4 w-4" aria-hidden /> {t("profile.sign_out_reset")}
             </UiButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
     </AppShell>
   );
 }
@@ -643,54 +638,44 @@ function DeleteAccountSection() {
         </div>
       </section>
 
-      <Dialog
+      <UiModal
         open={dialogOpen}
         onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t("profile.delete_confirm_title")}</DialogTitle>
-            <DialogDescription>{t("profile.delete_confirm_body")}</DialogDescription>
-          </DialogHeader>
-          <label
-            className={cn(
-              "mt-2 flex items-start gap-2 border p-3",
-              ui.radius.control,
-              "border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
-              "bg-[color:color-mix(in_oklab,var(--ui-negative)_7%,transparent)]",
-              ui.text.meta,
-              "[font-weight:var(--ui-weight-body)]",
-              ui.tone.default,
-            )}
-          >
-            <input
-              type="checkbox"
-              checked={acknowledged}
-              onChange={(e) => setAcknowledged(e.target.checked)}
-              className={cn("mt-0.5 h-4 w-4", ui.radius.control)}
-            />
-            <span>{t("profile.delete_confirm_checkbox")}</span>
-          </label>
-          <div className="mt-3 grid gap-2">
+        title={t("profile.delete_confirm_title")}
+        description={t("profile.delete_confirm_body")}
+        footer={
+          <>
             <UiButton
-              variant="ink"
+              variant="destructive"
               onClick={confirmDelete}
               disabled={!acknowledged || submitting}
-              className="bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)]"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {t("profile.delete_confirm_cta")}
             </UiButton>
-            <UiButton
-              variant="outline"
-              onClick={closeDialog}
-              className="text-[color:var(--ui-on-surface)]"
-            >
+            <UiButton variant="ghost" onClick={closeDialog}>
               {t("profile.delete_cancel_cta")}
             </UiButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {/* The acknowledgement keeps its warning plate — it is the thing the
+            reader has to read, not a field. What it gains is a focus ring and
+            a real tap target: it had neither, on the control that unlocks
+            deleting an account. */}
+        <UiCheckbox
+          checked={acknowledged}
+          onChange={(e) => setAcknowledged(e.target.checked)}
+          label={t("profile.delete_confirm_checkbox")}
+          className={cn(
+            "border p-3",
+            ui.radius.control,
+            "border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
+            "bg-[color:color-mix(in_oklab,var(--ui-negative)_7%,transparent)]",
+            ui.text.meta,
+          )}
+        />
+      </UiModal>
     </>
   );
 }
@@ -767,9 +752,9 @@ function LegalRow({
   return (
     <Link
       to={to}
-      className={`flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none${
-        divided ? ` ${ui.rule.blockStart}` : ""
-      }`}
+      // Was the one row in this file still on the V1 palette (`bg-muted/50`,
+      // `bg-muted/60`) and the one not built from the shared row idioms.
+      className={cn(ROW, ROW_INTERACTIVE, divided && ROW_RULE)}
     >
       <div className={cn("flex items-center gap-3", ui.text.secondary, ui.tone.default)}>
         <span
