@@ -1,4 +1,4 @@
-import { ui } from "@/components/ui-kit";
+import { ui, UiButton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { Logo } from "@/components/brand/Logo";
@@ -13,62 +13,80 @@ interface Props {
 
 /**
  * The onboarding splash: a full-bleed dark hero, deliberately a different
- * visual register from the app surface behind it. That register stays — white
- * on a mesh gradient is correct here and the kit's colour tokens are built for
- * the light app page, not for a hero.
+ * visual register from the app surface behind it.
  *
- * What did NOT need to be different is the type. This screen carried six sizes
- * on no scale (`text-3xl`, `text-4xl`, `text-base`, `text-sm`, `text-[15px]`,
- * `text-[11px]`) and two literal leadings. Four of the six map to ramp steps at
- * the IDENTICAL pixel value — 16, 14, 15 and 11 — so they are now drawn from
- * the ramp and nothing moves in French. The leadings matter more: a literal
- * carries no Arabic adjustment, and this screen is the first thing an Arabic
- * visitor sees (BG-0124).
+ * That register stays. What changed is that it is no longer this file's
+ * private invention. An earlier version of this comment argued that "the kit's
+ * colour tokens are built for the light app page, not for a hero", and that
+ * was true when it was written — so this screen reached for `text-white/80`,
+ * `bg-white/10`, `ring-white/20` and three `rgba()` literals, and AuthShell
+ * separately reached for the same thing in `color-mix` form. Two files, one
+ * decision, two spellings.
  *
- * `text-3xl`/`sm:text-4xl` on the title stay as they are: the nearest ramp step
- * is `--ui-text-hero` at 34px, which is a real 4px change to the one piece of
- * type this screen is built around. Not worth taking unasked.
+ * The mesh register is now tokens: `ui.tone.onMesh` and its muted and faint
+ * steps, `ui.surface.mesh` for the glass tile, `ui.focusOnMesh` for a ring
+ * that is visible on a dark surface, and `tone="onMesh"` on the kit's buttons.
+ * Every colour here is one of those, and they all follow the theme.
+ *
+ * The type moved too. This screen carried six sizes on no scale; the title's
+ * `text-3xl`/`sm:text-4xl` is now `ui.text.hero` (34px), which is a 4px change
+ * at phone width and puts the one piece of type this screen is built around on
+ * the same ramp as the rest of the product.
  */
 
 export function WelcomeScreen({ onSignIn, onGuest }: Props) {
   const { t, dir } = useI18n();
+  // A transform has no logical form, so the arrow is chosen rather than
+  // mirrored — and the `rtl:` pair on its hover travel goes with it.
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-hidden text-white motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500">
+    <div
+      className={cn(
+        "relative min-h-[100dvh] w-full overflow-hidden",
+        ui.tone.onMesh,
+        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500",
+      )}
+    >
+      {/* `variant="auth"` is explicit because this renders at `/`, where the
+          resolver would otherwise paint the light page and every foreground
+          on this screen would vanish. */}
       <PageBackground variant="auth" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(60% 40% at 50% 15%, rgba(255,255,255,0.18), transparent 70%)",
+            "radial-gradient(60% 40% at 50% 15%, color-mix(in oklab, var(--ui-on-ink-plain) 18%, transparent), transparent 70%)",
         }}
       />
 
       <div
-        className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6"
-        style={{
-          paddingTop: "max(env(safe-area-inset-top), 1.5rem)",
-          paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)",
-        }}
+        className={cn(
+          "relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-[var(--ui-column-max)] flex-col",
+          ui.space.gutter,
+          ui.safe.top,
+          ui.safe.bottom,
+        )}
       >
         <div className="flex items-center justify-end">
-          <LanguageSwitcher />
+          <LanguageSwitcher tone="onMesh" />
         </div>
 
         <div className="mt-10 flex flex-col items-center text-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-700">
           <div
-            className="grid h-24 w-24 place-items-center rounded-3xl bg-white/10 p-3 ring-1 ring-white/20 backdrop-blur-md motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-500"
-            style={{ boxShadow: "0 20px 60px -20px rgba(0,0,0,0.6)" }}
+            className={cn(
+              "grid h-24 w-24 place-items-center p-3",
+              ui.radius.sheet,
+              ui.surface.mesh,
+              "motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-500",
+            )}
           >
-            <Logo variant="icon" className="!h-16 !w-16 !rounded-2xl" />
+            <Logo variant="icon" className="!h-16 !w-16 !rounded-[var(--ui-radius-sheet)]" />
           </div>
 
-          <h1 className="mt-8 text-3xl font-black leading-[var(--ui-leading-flat)] ltr:tracking-tight sm:text-4xl">
-            {t("welcome.title")}
-          </h1>
-          <p className={cn("mx-auto mt-4 max-w-sm text-white/80", ui.text.prose)}>
+          <h1 className={cn("mt-8", ui.text.hero, "ltr:tracking-tight")}>{t("welcome.title")}</h1>
+          <p className={cn("mx-auto mt-4 max-w-[36ch]", ui.text.prose, ui.tone.onMeshMuted)}>
             {t("welcome.description")}
           </p>
         </div>
@@ -76,48 +94,57 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
         <div className="flex-1" />
 
         <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-4 motion-safe:duration-700">
-          <button
-            type="button"
+          <UiButton
+            variant="light"
+            tone="onMesh"
             onClick={onGuest}
-            className="group flex min-h-[54px] w-full items-center justify-center gap-2 rounded-[var(--ui-radius-sheet)] bg-white px-6 text-[length:var(--ui-text-subtitle)] font-bold text-[color:var(--brand-primary)] shadow-lg shadow-black/30 transition-transform hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:translate-y-0"
+            className="group transition-transform hover:-translate-y-px active:translate-y-0"
           >
             <span>{t("welcome.cta_primary")}</span>
             <Arrow
               className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
               aria-hidden
             />
-          </button>
+          </UiButton>
 
-          <p className="mt-5 text-center text-[length:var(--ui-text-secondary)] text-white/70">
+          <p className={cn("mt-5 text-center", ui.text.secondary, ui.tone.onMeshMuted)}>
             {t("welcome.secondary_prompt")}
           </p>
 
-          <button
-            type="button"
+          <UiButton
+            variant="outline"
+            tone="onMesh"
             onClick={onSignIn}
-            className="group mt-3 flex min-h-[54px] w-full items-center justify-center gap-2 rounded-[var(--ui-radius-sheet)] border border-white/20 bg-white/10 px-6 text-[length:var(--ui-text-subtitle)] font-bold text-white backdrop-blur-md transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-            style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)" }}
+            className="group mt-3 transition-colors"
           >
             <span>{t("welcome.cta_secondary")}</span>
             <Arrow
               className="h-5 w-5 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
               aria-hidden
             />
-          </button>
+          </UiButton>
 
+          {/*
+            A text link in button clothing, not a kit button — and the only way
+            past the sign-up wall, which is why it carries a real tap floor
+            rather than the 20px hit area it once had. It calls `onGuest` like
+            the primary CTA above: not a duplicate, the documented bypass.
+          */}
           <button
             type="button"
             onClick={onGuest}
-            // `min-h-[var(--ui-tap-min)]` — this was a 20px-tall hit area, the
-            // only way past the sign-up wall, and the first control a new
-            // visitor ever taps. The rest of this screen is still on the
-            // Design System V2 dark hero (see the note at the top of the
-            // file); raising the tap target does not depend on that.
-            className="mt-4 inline-flex min-h-[var(--ui-tap-min)] w-full items-center justify-center text-center text-[length:var(--ui-text-secondary)] font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            className={cn(
+              "mt-4 inline-flex w-full items-center justify-center text-center underline-offset-4",
+              ui.space.tap,
+              ui.text.secondary,
+              ui.tone.onMeshMuted,
+              "hover:text-[color:var(--ui-on-mesh)] hover:underline",
+              ui.focusOnMesh,
+            )}
           >
             {t("welcome.cta_guest")}
           </button>
-          <p className={cn("mt-1 text-center text-white/55", ui.text.micro)}>
+          <p className={cn("mt-1 text-center", ui.text.micro, ui.tone.onMeshFaint)}>
             {t("welcome.guest_hint")}
           </p>
         </div>

@@ -110,7 +110,7 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
           ) : (
             <span aria-hidden />
           )}
-          <LanguageSwitcher />
+          <LanguageSwitcher tone="onMesh" />
         </div>
 
         <div className="mt-4 flex items-center gap-3">
