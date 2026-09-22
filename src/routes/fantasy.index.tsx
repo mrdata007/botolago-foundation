@@ -155,7 +155,7 @@ function FantasyHub() {
         style={{ backgroundImage: "var(--ui-grad-hero)" }}
       >
         <h1 className="pt-6">
-          <FantasyBrand />
+          <FantasyBrand endorser="mobile" />
         </h1>
         <div className="mt-4">{teamCard}</div>
 
@@ -163,13 +163,15 @@ function FantasyHub() {
           {screen.phase === "ready" || screen.phase === "guest" || screen.phase === "no_team" ? (
             <>
               {gameweek ? (
-                <>
-                  <UiPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</UiPill>
-                  <p className={cn("mt-2", ui.text.secondary, ui.tone.default)}>
-                    {t("fpl.deadline")}:{" "}
-                    <strong className="[font-weight:var(--ui-weight-heavy)]">{deadlineText}</strong>
-                  </p>
-                </>
+                // The deadline is the one thing on this card with a clock on
+                // it, so it is the figure; gameweek and "deadline" are its
+                // caption. It used to be a pill over a line of body text.
+                <p className="flex flex-col items-center gap-1">
+                  <span className={cn(ui.text.label, ui.tone.muted)}>
+                    {`${t("fpl.gameweek")} ${gameweek.number} · ${t("fpl.deadline")}`}
+                  </span>
+                  <span className={cn(ui.text.title, ui.tone.ink)}>{deadlineText}</span>
+                </p>
               ) : null}
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <HubButton
@@ -221,7 +223,6 @@ function FantasyHub() {
                 "radial-gradient(70% 140% at 50% 0%, var(--ui-accent-sky) 0%, transparent 62%), radial-gradient(80% 140% at 50% 100%, var(--ui-ink-deep) 0%, transparent 68%)",
             }}
           />
-          <FantasyBrand size="sm" tone="light" className="relative" />
           {/* Prose, not a figure — the stat ramp is numerals only. */}
           <span className={cn("relative block", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}
@@ -419,7 +420,8 @@ function HubButton({
         ui.focus,
         gradient
           ? "text-[color:var(--ui-ink-deep)]"
-          : cn(ui.surface.card, ui.tone.ink, "shadow-[var(--ui-shadow-card)]"),
+          : // Flat on the card rather than raised cards on a card.
+            cn(ui.surface.sunken, ui.tone.ink),
       )}
       style={gradient ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >

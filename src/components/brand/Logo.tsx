@@ -12,12 +12,12 @@ interface LogoProps {
    * app-icon tile in every context, like `public/favicon.png`.
    */
   tone?: "color" | "light";
-  /** Wordmark height. `md` is the top bar; `sm` is an eyebrow; `lg` a hero. */
+  /** Wordmark height. `md` is the top bar; `sm` endorses a sub-brand; `lg` a hero. */
   size?: "sm" | "md" | "lg";
   className?: string;
 }
 
-const WORDMARK_HEIGHT = { sm: "h-4", md: "h-8", lg: "h-10" } as const;
+const WORDMARK_HEIGHT = { sm: "h-5", md: "h-8", lg: "h-10" } as const;
 
 /**
  * The brand mark, in the three contexts the product uses: the wordmark in
