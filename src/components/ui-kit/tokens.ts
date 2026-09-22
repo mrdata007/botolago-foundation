@@ -105,6 +105,8 @@ export const UI_TOKENS = [
   "--ui-positive",
   "--ui-negative",
   "--ui-caution",
+  "--ui-live",
+  "--ui-live-fg",
   // gradients
   "--ui-grad-action",
   "--ui-grad-header",
@@ -159,6 +161,8 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-positive",
   "--ui-negative",
   "--ui-caution",
+  "--ui-live",
+  "--ui-live-fg",
   "--ui-grad-header",
   "--ui-grad-hero",
   "--ui-shadow-card",
@@ -308,6 +312,8 @@ export const ui = {
     onMeshFaint: "text-[color:var(--ui-on-mesh-faint)]",
     positive: "text-[color:var(--ui-positive)]",
     negative: "text-[color:var(--ui-negative)]",
+    /** A match in progress. The FOREGROUND step, never the fill (BG-0104). */
+    live: "text-[color:var(--ui-live-fg)]",
   },
 
   /** Surfaces. */

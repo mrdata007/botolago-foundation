@@ -114,7 +114,11 @@
   --accent-cyan: oklch(0.75 0.13 220);
   --accent-indigo: oklch(0.55 0.16 275);
   --accent-emerald: oklch(0.66 0.14 155);
-  --color-live: oklch(0.62 0.22 27);
+  /* Aliases. The values live on `--ui-live*` below, where the kit's contract
+     test can see them and demand a dark counterpart; these two names stay
+     because `@theme` maps them to the `text-live` / `bg-live` utilities and
+     three match components already read them. */
+  --color-live: var(--ui-live);
   /* BG-0104. `--color-live` is a FILL — the pulsing dot, the minute bar — and
      at that job its vividness is the point. As TEXT it is not: `LiveIndicator`
      paints a 14% tint of it and then sets the same colour on top, so
@@ -127,7 +131,7 @@
      Only the lightness moves — 0.62 to 0.50 at identical chroma and hue — so
      it reads as the same red, one step deeper. On the tint it measures
      5.21:1; on plain white, 6.38:1. */
-  --color-live-fg: oklch(0.5 0.22 27);
+  --color-live-fg: var(--ui-live-fg);
   --color-success: oklch(0.6 0.15 155);
   --color-warning: oklch(0.75 0.16 75);
   --color-danger: oklch(0.6 0.22 27);
@@ -963,6 +967,13 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-positive: oklch(0.52 0.14 150);
   --ui-negative: oklch(0.55 0.22 355);
   --ui-caution: oklch(0.82 0.17 80);
+  /* Live. Split into a fill and a foreground for the reason BG-0104 records
+     above, and moved under `--ui-*` because as `--color-*` nothing required
+     it to have a dark value — and it did not have one. The dark theme kept
+     the light foreground over a dark tint and measured 2.28:1 on the /matches
+     badge. */
+  --ui-live: oklch(0.62 0.22 27);
+  --ui-live-fg: oklch(0.5 0.22 27);
 
   /* ---- Gradients -------------------------------------------------
      `to bottom` on purpose: a `deg` angle is physical and mirrors
@@ -1078,6 +1089,8 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-positive: oklch(0.78 0.17 150);
   --ui-negative: oklch(0.75 0.19 355);
   --ui-caution: oklch(0.85 0.16 80);
+  --ui-live: oklch(0.68 0.22 27);
+  --ui-live-fg: oklch(0.78 0.18 27);
 
   --ui-grad-header: linear-gradient(
     to bottom,

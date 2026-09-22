@@ -75,7 +75,13 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
     name: { fr: team.name, ar: team.name },
     shortName: { fr: team.shortName, ar: team.shortName },
     city: { fr: team.city ?? "", ar: team.city ?? "" },
-    primaryColor: team.primaryColor ?? "#0a2540",
+    // Every one of the 21 production clubs has a null `primary_color`
+    // (BG-0112), so this fallback is what the whole league renders as today.
+    // It was a hardcoded navy: a literal colour, light-only, one shade away
+    // from the token that means exactly this. `--ui-ink` is the brand FILL,
+    // which is the job here — a crest plate is a fill, and the monogram on it
+    // is `--ui-on-ink-plain`.
+    primaryColor: team.primaryColor ?? "var(--ui-ink)",
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: placeholder,
     crestUrl: resolveMediaUrl(
