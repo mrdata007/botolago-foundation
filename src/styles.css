@@ -514,12 +514,16 @@
   --mesh-x-lead: 0%;
   --mesh-x-trail: 100%;
   --mesh-x-lead-out: -8%;
+
+  /* The splash shine's travel and skew. +1 with the reading direction. */
+  --splash-dir: 1;
 }
 
 [dir="rtl"] {
   --mesh-x-lead: 100%;
   --mesh-x-trail: 0%;
   --mesh-x-lead-out: 108%;
+  --splash-dir: -1;
 }
 
 @utility mesh-base {
