@@ -125,6 +125,40 @@ in `.env.production`. `NEWS_ENGINE_MODEL` is optional — unset means
   ship an empty `/news` to real users. Admin is **not** gated on `NEWS_ENABLED`
   — no `admin.*` route references it — so editors can approve before the flag
   moves. Verified by `git grep NEWS_ENABLED -- src`.
+- **But do not approve between 6 and 7 without checking this first.** The bullet
+  above holds while an article sits in `in_review`. It stops holding the moment
+  an editor approves it, and that distinction is the one thing in this ordering
+  that can put broken UI in front of a reader. `NEWS_ENABLED` gates News _entry
+  points_, not the public feed itself, so a **published** article is readable by
+  any surface that queries the feed — gated or not. At the time of writing one
+  such surface is not gated: `src/routes/matches.$matchId.tsx` queries
+  `["news", "feed", lang]` unconditionally and renders up to three related
+  `ArticleCard`s, each linking to `/news/$articleId`, whose `beforeLoad`
+  redirects to Home while the flag is false. Approving one article would
+  therefore place a card that goes nowhere on the match page of every fixture
+  involving either club. It is invisible today only because the stand-down left
+  the feed empty — approval is exactly what makes it non-empty.
+  (Reported by the automated review on PR #154, 2026-09-22. It is that PR's file
+  and that PR's call; it is recorded here because it changes this order, not
+  because this branch touches it.)
+
+  Before flipping anything, confirm the current state:
+
+  ```sh
+  git grep -n "newsService\|getArticles" -- src/routes src/components
+  ```
+
+  Every hit must either sit behind `NEWS_ENABLED` or be an `admin.*` surface. If
+  the match route still appears unguarded, take one of these two paths — either
+  is correct, they differ only in who does the work:
+  - **Approve nothing until 7 is live.** Run step 6, leave every article in
+    `in_review`, flip `NEWS_ENABLED`, deploy, _then_ approve. The cost is that
+    `/news` is empty for the minutes between the deploy and the first approval.
+  - **Gate the match block first.** Wrap that query and its section in
+    `NEWS_ENABLED`, add the file to the "Gated surfaces" list in
+    `src/lib/feature-flags.ts` and to the table in `src/lib/feature-flags.test.ts`
+    so a future edit cannot silently ungate it, then run 6 and 7 as written.
+
 - **7 is a deploy, not a toggle.** `NEWS_ENABLED` is a hardcoded boolean literal
   so the bundler can tree-shake the disabled branches. Changing it means a
   commit and a Lovable publish; there is no runtime override, and no environment
