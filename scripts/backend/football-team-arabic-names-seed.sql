@@ -98,3 +98,38 @@ end;
 $$;
 
 commit;
+
+-- ---------------------------------------------------------------------------
+-- Addendum, 2026-09-22: the Zemamra LATIN record.
+-- ---------------------------------------------------------------------------
+-- The owner's ruling was that app.teams.name "CR Khemis Zemamra" is the
+-- inconsistent field and the code RCAZ is correct: RCAZ expands to Renaissance
+-- Club Athletic Zemamra.
+--
+-- That correction deliberately does NOT go into app.teams. The catalog
+-- ingestion overwrites name, short_name and code from the provider payload on
+-- every sync, unconditionally:
+--
+--   update app.teams set name = v_name, short_name = v_short_name, code = v_code
+--
+-- (20260918160000_season_bounds_guard.sql). Editing app.teams would therefore
+-- revert on the next SportsMonks run, silently, with nothing to show it had
+-- ever been right.
+--
+-- app.team_translations is never written by ingestion -- which is the whole
+-- reason the Arabic names above are durable -- and football_team_json resolves
+-- `fr` through it exactly as it resolves `ar`. So the French correction is a
+-- translation row, and it survives every sync by construction.
+--
+-- short_name 'RCA Zemamra' is MINE, not the owner's: they specified the full
+-- name and the code but not a French short form, and "CR Khemis Zemamra" could
+-- not stay -- short_name is the string every match card and score header
+-- actually renders. Flagged for confirmation.
+
+insert into app.team_translations (team_id, language, name, short_name)
+values ('dc6fb819-6f3e-4584-ad73-7d567e80d32c', 'fr',
+        'Renaissance Club Athletic Zemamra', 'RCA Zemamra')
+on conflict (team_id, language) do update
+  set name = excluded.name,
+      short_name = excluded.short_name,
+      updated_at = statement_timestamp();
