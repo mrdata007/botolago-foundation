@@ -36,7 +36,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 21 septembre 2026. Les champs entre crochets sont à compléter avant publication.",
+        text: "Version 1.0 — en vigueur au 21 septembre 2026. Ces conditions régissent l'accès à l'application BotolaGO et son utilisation, y compris le jeu Fantasy et les classements.",
       },
       { type: "heading", text: "1. Éditeur et objet" },
       {
@@ -177,7 +177,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 21 سبتمبر 2026. الحقول بين معقوفتين تُستكمل قبل النشر.",
+        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 21 سبتمبر 2026. تحكم هذه الشروط الولوج إلى تطبيق BotolaGO واستعماله، بما في ذلك لعبة فانتازي والترتيبات.",
       },
       { type: "heading", text: "1. الناشر والموضوع" },
       {
