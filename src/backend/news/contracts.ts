@@ -71,7 +71,11 @@ export const articleDetailSchema = articleCardSchema.extend({
    *  Optional so older API builds (and fixtures) without it still parse. */
   translations: z
     .array(
-      z.object({ id: z.string().uuid(), language: z.enum(NEWS_LANGUAGES), slug: z.string().min(1) }),
+      z.object({
+        id: z.string().uuid(),
+        language: z.enum(NEWS_LANGUAGES),
+        slug: z.string().min(1),
+      }),
     )
     .optional(),
 });
