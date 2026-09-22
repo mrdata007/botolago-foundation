@@ -266,8 +266,12 @@ function PlayersPage() {
           ))}
         </div>
 
+        {/* One swipeable row, not a wrapping block: with the full league (16
+            clubs) a wrap ran to eight rows of chips at 360px and pushed the
+            player list below the fold. `-mx-4 px-4` lets the row bleed to the
+            screen edge so a half-visible chip signals that it scrolls. */}
         <div
-          className="mt-1.5 flex flex-wrap gap-1"
+          className="-mx-4 mt-1.5 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none]"
           role="group"
           aria-label={t("fantasy.players.filter_club")}
         >
@@ -281,8 +285,10 @@ function PlayersPage() {
               selected={clubId === c.id}
               onClick={() => setClubId((current) => (current === c.id ? "" : c.id))}
             >
-              <ClubCrest club={c} size="sm" className="me-1.5 h-5 w-5" />
-              <span className="truncate">{clubLabel(c, tr)}</span>
+              {/* The kit's small crest, not squeezed to 20px: at 20px a
+                  three-letter fallback ("WAC", "RCA") was cropped mid-letter. */}
+              <ClubCrest club={c} size="sm" className="me-1.5" />
+              <span className="whitespace-nowrap">{clubLabel(c, tr)}</span>
             </UiChip>
           ))}
         </div>
