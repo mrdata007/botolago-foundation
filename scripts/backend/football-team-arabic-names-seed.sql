@@ -121,10 +121,10 @@ commit;
 -- `fr` through it exactly as it resolves `ar`. So the French correction is a
 -- translation row, and it survives every sync by construction.
 --
--- short_name 'RCA Zemamra' is MINE, not the owner's: they specified the full
--- name and the code but not a French short form, and "CR Khemis Zemamra" could
--- not stay -- short_name is the string every match card and score header
--- actually renders. Flagged for confirmation.
+-- short_name 'RCA Zemamra' was proposed by the agent rather than supplied: the
+-- owner specified the full name and the code but not a French short form, and
+-- "CR Khemis Zemamra" could not stay -- short_name is the string every match
+-- card and score header actually renders. CONFIRMED by the owner 2026-09-22.
 
 insert into app.team_translations (team_id, language, name, short_name)
 values ('dc6fb819-6f3e-4584-ad73-7d567e80d32c', 'fr',
