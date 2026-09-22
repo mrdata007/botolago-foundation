@@ -49,6 +49,19 @@
  *    overflow AND does not end in an ellipsis. With an ellipsis it is designed
  *    truncation; without one it is a sliced word.
  *
+ * 4b. `starved` — the ellipsis that excuse let through. A truncation is only a
+ *    design while enough of the word survives to be read, and "Sélectionné
+ *    par" in a 40px box is "SÉLE…": four characters of fifteen, reported by a
+ *    reader, invisible to every assertion here. Reported when less than
+ *    `PROBE_STARVED` (0.6) of the text's own width is shown.
+ *
+ * 4c. `spill` — the inverse, and the one they all miss: a text leaf that
+ *    outgrows its PARENT while nothing clips it. In a `flex-col` box a child
+ *    with `white-space: nowrap` and no `max-width` sizes to its own content,
+ *    so `scrollWidth === clientWidth`, a `truncate` on it never fires, and the
+ *    text simply lies across its neighbours. Found on /fantasy/rankings only
+ *    because a reader looked: a 103px tile carrying a 140px label.
+ *
  * 5. `clipH` — a text leaf taller than its own box, where the box hides the
  *    overflow. This is the one that found the real defect: `leading-none` on
  *    `ui.text.micro` and on the whole stat ramp gives the line box exactly the
@@ -110,7 +123,16 @@ const ROUTES = (
 const WIDTHS = (process.env.PROBE_WIDTHS ?? "390,430,768,1440").split(",").map(Number);
 const LANGS = (process.env.PROBE_LANGS ?? "fr,ar").split(",");
 
-const PROBE = () => {
+/**
+ * How much of a string has to survive its ellipsis before the truncation
+ * counts as designed rather than broken. 0.6 keeps "Sélectionné par" at 40px
+ * of 112 (36%) on the report list and lets an ordinary tail-trim pass.
+ */
+const STARVED = Number(process.env.PROBE_STARVED ?? 0.6);
+
+// `PROBE` is serialised into the page, so it closes over nothing on this side:
+// every value it needs arrives as its argument.
+const PROBE = ({ starved }) => {
   const vw = document.documentElement.clientWidth;
   const out = {
     scroll: document.documentElement.scrollWidth - vw,
@@ -120,6 +142,7 @@ const PROBE = () => {
     clipH: [],
     clipHFontBox: [],
     spill: [],
+    starved: [],
   };
   const hides = (v) => v === "hidden" || v === "clip";
 
@@ -238,14 +261,26 @@ const PROBE = () => {
     const isTextLeaf = el.children.length === 0 && (el.textContent || "").trim().length > 0;
     if (isTextLeaf && !srOnly(el) && !inSvg(el)) {
       const label = (el.textContent || "").trim().slice(0, 30);
-      if (
-        hides(cs.overflowX) &&
-        el.scrollWidth > el.clientWidth + 1 &&
-        cs.textOverflow !== "ellipsis"
-      ) {
-        out.clipW.push(
-          `<${el.tagName.toLowerCase()}> "${label}" ${el.scrollWidth}>${el.clientWidth}`,
-        );
+      if (hides(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) {
+        const line = `<${el.tagName.toLowerCase()}> "${label}" ${el.scrollWidth}>${el.clientWidth}`;
+        if (cs.textOverflow !== "ellipsis") {
+          out.clipW.push(line);
+        } else if (el.clientWidth / el.scrollWidth < starved) {
+          /**
+           * An ellipsis is a designed truncation, so `clipW` excuses it — and
+           * that excuse hid "Sélectionné par" rendering as "SÉLE…" in a 40px
+           * box, four characters of fifteen, until a reader reported it. An
+           * ellipsis is only a design while enough of the word survives to be
+           * read; past that it is a defect wearing a "…".
+           *
+           * The threshold is a fraction of the text's own width, not a pixel
+           * count, so it means the same thing at every font size and in both
+           * languages.
+           */
+          out.starved.push(
+            `${line} (${Math.round((el.clientWidth / el.scrollWidth) * 100)}% shown)`,
+          );
+        }
       }
       if (hides(cs.overflowY) && el.scrollHeight > el.clientHeight + 1) {
         const line =
@@ -255,7 +290,7 @@ const PROBE = () => {
       }
     }
   }
-  for (const k of ["past", "decorative", "clipW", "clipH", "clipHFontBox", "spill"])
+  for (const k of ["past", "decorative", "clipW", "clipH", "clipHFontBox", "spill", "starved"])
     out[k] = [...new Set(out[k])];
   return out;
 };
@@ -279,7 +314,7 @@ for (const lang of LANGS) {
       await page.goto(BASE + route, { waitUntil: "domcontentloaded" }).catch(() => {});
       await page.waitForTimeout(Number(process.env.PROBE_SETTLE ?? 900));
       checks++;
-      const r = await page.evaluate(PROBE);
+      const r = await page.evaluate(PROBE, { starved: STARVED });
       if (
         r.scroll > 1 ||
         r.past.length ||
@@ -287,7 +322,8 @@ for (const lang of LANGS) {
         r.clipW.length ||
         r.clipH.length ||
         r.clipHFontBox.length ||
-        r.spill.length
+        r.spill.length ||
+        r.starved.length
       ) {
         rows.push({ lang, width, route, ...r });
       }
@@ -306,10 +342,19 @@ console.log(
   `scroll ${rows.filter((r) => r.scroll > 1).length} · past ${total("past")} · clipW ${total("clipW")} · clipH ${total("clipH")}` +
     ` · decorative ${total("decorative")}` +
     ` · clipH-fontbox ${total("clipHFontBox")} (neither a defect)` +
-    ` · spill ${total("spill")}\n`,
+    ` · spill ${total("spill")} · starved ${total("starved")}\n`,
 );
 
-for (const kind of ["scroll", "past", "clipW", "clipH", "spill", "decorative", "clipHFontBox"]) {
+for (const kind of [
+  "scroll",
+  "past",
+  "clipW",
+  "clipH",
+  "spill",
+  "starved",
+  "decorative",
+  "clipHFontBox",
+]) {
   const hit = rows.filter((r) => (kind === "scroll" ? r.scroll > 1 : r[kind].length));
   if (!hit.length) {
     console.log(`### ${kind}: none`);

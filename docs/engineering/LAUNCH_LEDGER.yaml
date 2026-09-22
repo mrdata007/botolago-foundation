@@ -1604,6 +1604,102 @@ tasks:
       Not deleted in this pass for the same reason as BG-0123: removing components moves the
       i18n gate's W3/W4 baselines and the test count, which has already had to be reconciled
       three times in one day, and neither file is reachable by a user in the meantime.
+  BG-0133:
+    title: UiStatBlock labels were wider than their tiles, and `truncate` could not fire
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "/fantasy/rankings at 390px, fr: tile 103.3px, label \"Classement general\" 140.4px, scrollWidth === clientWidth (140>140) -- the ellipsis never fires"
+      - "label 1 started 2.5px outside the card (x=13.5 against a card at x=16), label 3 ended 3.3px past it, labels 1 and 2 overlapped by 8.4px"
+      - "8 instances, all UiStatBlock labels, fr and ar: Classement general +18.5, Points de la journee +19.3, Passes decisives +20.7, Clean sheets +7.6"
+      - "after: layout-probe reports spill 0 over 128 checks (16 routes x 4 widths x 2 languages)"
+    note: >
+      Reported four times by a reader looking at screenshots, and invisible to every
+      assertion the layout probe had. In a `flex-col` box with `items-center`, a child with
+      `white-space: nowrap` and no `max-width` sizes to its own content, so `scrollWidth`
+      equals `clientWidth`: the element fits the text it was asked to clip, `truncate` is
+      inert, and the label simply lies across its neighbours. Nothing scrolls, nothing
+      crosses the viewport, nothing is clipped.
+
+      `max-w-full` supplies the bound the flex child never had. The label wraps
+      (`text-balance`) rather than truncates, because these strings are fixed product
+      vocabulary and a clipped one reads as a different word; the sub band keeps `truncate`,
+      since it carries variable data.
+
+      The probe gained a `spill` assertion for this class -- a text leaf that outgrows its
+      own parent while nothing clips it -- and it names the inert-truncate case explicitly.
+  BG-0134:
+    title: An ellipsis excused any truncation, however little survived it
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "/fantasy/top-players at 390px, fr: MetaChip label \"Selectionne par\" rendered in 40px of 112px -- \"SELE...\", four characters of fifteen"
+      - "layout-probe's clipW assertion skipped it by design: `cs.textOverflow !== \"ellipsis\"`"
+      - "same card: the #2-#5 comparison rows clipped 4 of 5 names in a fixed 3.5rem column (\"#4 Lamlaoui\" is 67px)"
+      - "after: starved 0 and clipW 0 over 128 checks; production-length club names measured at 65-80% shown, correctly quiet"
+    note: >
+      An ellipsis is a designed truncation, so the probe excused it -- and that excuse hid a
+      label showing four of its fifteen characters, on the same screen a reader had just
+      reported. A truncation is only a design while enough of the word survives to be read.
+
+      The probe gained `starved`, which reports an ellipsis showing less than
+      `PROBE_STARVED` (0.6) of the text's own width. The threshold is a fraction rather than
+      a pixel count so it means the same thing at every font size and in both languages; it
+      fired on the 36% case and stayed quiet on the 65% club names on /matches, which are an
+      ordinary tail-trim.
+
+      MetaChip now wraps instead of truncating: without `truncate` its label's min-content
+      width is its longest word, so a label that cannot sit beside its value pushes the value
+      to a second line and reads in full, while the short chips are unchanged. The comparison
+      column went 3.5rem -> 5.25rem, which clears the league's surnames and still leaves the
+      bar 186px at 390px.
+  BG-0135:
+    title: Two Botola Pro clubs carry the provider's placeholder shield as their crest
+    area: data
+    severity: P2
+    owner: Owner
+    state: OPEN
+    evidence:
+      - "21 of 21 active clubs have a crest_asset_id, a storage_path, mime_type image/png, validation_status validated, and a URL that returns 200"
+      - "football/teams/228516/crest.png (Amal Tiznit) and football/teams/274759/crest.png (Yacoub El Mansour) are byte-identical: the same 2,555-byte generic grey shield"
+      - "the other 19 crests are all distinct"
+      - "scripts/qa/crest-coverage.mjs reports: own crest 19 - shared image 2 - no crest 0"
+    note: >
+      Every check the product had said the crests were complete, on four separate measures.
+      A placeholder is a perfectly valid PNG: it passes validation, it fetches, it decodes,
+      it draws. `ClubCrest` paints it over the club's initials plate exactly as it would a
+      real badge, so the monogram fallback that would have shown the club's letters never
+      gets a chance and the screen looks finished.
+
+      The detectable signature is two clubs sharing byte-identical crest data, which is what
+      `scripts/qa/crest-coverage.mjs` tests. It cannot catch a unique-but-wrong badge; that
+      needs eyes.
+
+      Fixing it needs two real club badges sourced and uploaded through
+      `api.attach_football_team_crest` -- an owner action, both because it is a production
+      write and because it is a third-party image-rights decision. No frontend change can
+      substitute: the data says these are validated crests.
+
+      Related: 13 of the 21 clubs have a null `code`, so their monogram fallback is derived
+      from `shortName` rather than an official abbreviation. Harmless while crests load,
+      and the reason the fallback is worth keeping honest.
+  BG-0136:
+    title: The Botola Pro competition has no logo asset, so its header shows a generic trophy
+    area: data
+    severity: P3
+    owner: Owner
+    state: OPEN
+    evidence:
+      - "app.competitions has one row (botola-pro-3e579087e5ad) and its logo_asset_id is null"
+      - "/matches renders the designed fallback -- a trophy glyph -- above every competition group"
+    note: >
+      The fallback is working as designed; the gap is the asset. Same owner action and same
+      image-rights question as BG-0135. Cosmetic, and below the crests in priority: the
+      trophy reads as an icon, whereas a placeholder shield reads as a club's badge.
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy

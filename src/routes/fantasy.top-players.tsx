@@ -367,16 +367,29 @@ function HeroStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * Three of these share a 326px row at 390px, so each is ~103px wide. Minus the
+ * padding, the gap and a `shrink-0` value, the label was left with 40px — and
+ * `truncate` spent it on four characters: "Sélectionné par" rendered "SÉLE…".
+ * A four-of-fifteen-character label is not a designed truncation, and the
+ * layout probe could not see it, because it skips anything with a real
+ * ellipsis.
+ *
+ * `flex-wrap` gives the label somewhere to go. Without `truncate` its
+ * min-content width is its longest word, so a label that cannot sit beside its
+ * value pushes the value onto a second line and reads in full; the short chips
+ * ("Prix 9,5", "Forme 8,6") never wrap and are unchanged.
+ */
 function MetaChip({ label, value }: { label: string; value: string }) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2 px-2 py-1.5",
+        "flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 px-2 py-1.5",
         ui.radius.control,
         ui.surface.sunken,
       )}
     >
-      <span className={cn("truncate", ui.text.label, ui.tone.muted)}>{label}</span>
+      <span className={cn("min-w-0", ui.text.label, ui.tone.muted)}>{label}</span>
       <span className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>{value}</span>
     </div>
   );
@@ -512,9 +525,14 @@ function WeeklyTopPlayersComparison({
           const pct = Math.max(6, Math.round((e.top.weeklyPoints / Math.max(1, maxPoints)) * 100));
           const shortName = tr(e.player.name).split(" ").slice(-1)[0];
           return (
+            // The name column is fixed, not `auto`, because every bar has to
+            // start at the same x for the comparison to mean anything. 3.5rem
+            // was too mean for the league's surnames — "#4 Lamlaoui" is 67px —
+            // so it clipped four of the five rows. 5.25rem clears them and
+            // still leaves the bar 186px at 390px.
             <div
               key={e.player.id}
-              className="grid grid-cols-[3.5rem_1fr_2.5rem] items-center gap-2"
+              className="grid grid-cols-[5.25rem_1fr_2.5rem] items-center gap-2"
             >
               <div dir="auto" className={cn("truncate", ui.text.micro, ui.tone.default)}>
                 #{nf.format(e.top.rank)} {shortName}
