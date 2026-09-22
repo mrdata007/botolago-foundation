@@ -9,12 +9,12 @@ import { mapAdminError } from "@/backend/admin/errors";
 import {
   ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
-  AdminBadge,
   AdminDatum,
   AdminEmptyState,
   AdminNotice,
   AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
+import { ui, UiBadge } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/audit")({
@@ -24,12 +24,20 @@ export const Route = createFileRoute("/admin/audit")({
   component: AdminAuditRoute,
 });
 
-/** Outcome colour, so a refusal or a failure is visible before the row is
- *  read. Colour is never the only carrier: the outcome word is on screen. */
+/**
+ * Outcome colour, so a refusal or a failure is visible before the row is
+ * read. Colour is never the only carrier: the outcome word is on screen.
+ *
+ * `denied` is the amber one and maps onto the kit's `caution`, which paints
+ * `--ui-caution` as a FILL and puts `--ui-on-caution` on it. Amber can never
+ * be a foreground here: it measured 1.78:1 as text. The distinction the two
+ * remaining tones would lose also matters in an audit log -- a refused
+ * operation is not a failed one, so `denied` must not borrow `negative`.
+ */
 function outcomeTone(outcome: AdminAuditPageDto["items"][number]["outcome"]) {
   if (outcome === "succeeded") return "positive" as const;
-  if (outcome === "denied") return "warning" as const;
-  return "danger" as const;
+  if (outcome === "denied") return "caution" as const;
+  return "negative" as const;
 }
 
 function AdminAuditRoute() {
@@ -65,6 +73,18 @@ function AdminAuditRoute() {
     >
       {access.state === "authorized" && (
         <div className="grid gap-4">
+          {/* Kept on `AdminNotice` rather than moved onto `UiAlert`. The kit's
+              alert would serve this (it takes `role` now, so the explicit
+              `role="alert"` below would survive the swap), but `AdminNotice` is
+              also the editorial console's notice -- admin.news, admin.news.new
+              and admin.news.$articleEditionId all render it -- and converting
+              it in these five routes alone would leave the console with two
+              differently shaped notices. It converts centrally, in
+              AdminSurfaces, and this call site does not have to change for
+              that. `role="alert"` is passed here for the same reason the kit
+              added the prop: a failed audit read is urgent whatever colour the
+              tone picks, and a role derived from the colour would downgrade
+              it to a polite status. */}
           {message && (
             <AdminNotice tone="alert" role="alert" testId="admin-audit-message">
               {message}
@@ -91,18 +111,18 @@ function AdminAuditRoute() {
                       label around them keeps the ambient direction, only the
                       data is forced LTR. */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <AdminDatum className="text-sm font-semibold text-slate-100">
+                    <AdminDatum className={`${ui.text.bodyStrong} ${ui.tone.default}`}>
                       {event.action}
                     </AdminDatum>
-                    <AdminBadge tone={outcomeTone(event.outcome)}>
+                    <UiBadge tone={outcomeTone(event.outcome)}>
                       <AdminDatum mono={false}>{event.outcome}</AdminDatum>
-                    </AdminBadge>
+                    </UiBadge>
                   </div>
 
                   <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div className="min-w-0">
                       <dt className={ADMIN_LABEL_CLASS}>{rtl ? "التاريخ" : "Horodatage"}</dt>
-                      <dd className="mt-1 text-xs text-slate-300">
+                      <dd className={`mt-1 ${ui.text.meta} ${ui.tone.muted}`}>
                         <AdminDatum>{event.occurredAt}</AdminDatum>
                       </dd>
                     </div>
@@ -110,14 +130,16 @@ function AdminAuditRoute() {
                       <dt className={ADMIN_LABEL_CLASS}>
                         {rtl ? "معرّف الارتباط" : "Corrélation"}
                       </dt>
-                      <dd className="mt-1 text-xs text-slate-300">
+                      <dd className={`mt-1 ${ui.text.meta} ${ui.tone.muted}`}>
                         <AdminDatum>{event.correlationId}</AdminDatum>
                       </dd>
                     </div>
                   </dl>
 
                   {event.reason && (
-                    <p className="mt-3 border-t border-slate-800 pt-3 text-sm leading-6 text-slate-300">
+                    <p
+                      className={`mt-3 ${ui.rule.blockStart} pt-3 ${ui.text.secondary} ${ui.tone.muted}`}
+                    >
                       {event.reason}
                     </p>
                   )}

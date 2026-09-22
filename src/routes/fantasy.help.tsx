@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FplHeader, FplPill } from "@/components/fpl/primitives";
+import { ui, UiHeader, UiPill } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -45,30 +45,46 @@ const SECTIONS: Array<{
 
 /**
  * FPL-024/025 "Help and Rules": "How can we help?" intro, ink section pills
- * and an accordion whose expanded row carries the gradient header.
+ * and an accordion whose expanded row carries the action gradient.
+ *
+ * Converted to the kit (BG-0092). The accordion rows used to sit on literal
+ * `bg-white` with a hand-rolled `rgba()` shadow, and the collapsed chevron
+ * cell took `text-white` on an ink fill — both un-themed, so the expanded
+ * and collapsed states read at ~1.1:1 against a dark card.
+ *
+ * The header and the section pills now come straight from the kit rather than
+ * through `components/fpl/primitives`. `FplHeader title backTo` was
+ * `UiHeader` with `tone="gradient"` and its history fallback suppressed by
+ * the explicit `backTo`, and `FplPill` on its default tone was `UiPill` —
+ * same elements, same classes, one indirection fewer. That adapter is a
+ * migration seam, not a layer this screen needs.
  */
 function HelpPage() {
   const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   return (
     <FantasyFrame background="white">
-      <FplHeader title={t("fpl.help_title")} backTo="/fantasy" />
-      <p className="px-4 pt-4 text-[17px] text-foreground">{t("fpl.how_can_we_help")}</p>
+      <UiHeader title={t("fpl.help_title")} tone="gradient" backTo="/fantasy" />
+      <p className={cn("pt-4", ui.space.gutter, ui.text.section, ui.tone.default)}>
+        {t("fpl.how_can_we_help")}
+      </p>
       {SECTIONS.map((section) => (
         <section key={section.title} className="mt-4">
-          <div className="px-4">
-            <FplPill className="rounded-t-[6px] rounded-b-none px-4 py-2">
-              {t(section.title)}
-            </FplPill>
-            <div className="h-px bg-[color:var(--fpl-grey)]" />
+          <div className={ui.space.gutter}>
+            <UiPill className="rounded-b-none px-4 py-2">{t(section.title)}</UiPill>
+            <div className={ui.rule.block} />
           </div>
-          <ul className="mt-2 space-y-2 px-4">
+          <ul className={cn("mt-2 space-y-2", ui.space.gutter)}>
             {section.items.map((item) => {
               const expanded = open === item.q;
               return (
                 <li
                   key={item.q}
-                  className="overflow-hidden rounded-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.10)]"
+                  className={cn(
+                    "overflow-hidden",
+                    ui.radius.control,
+                    "shadow-[var(--ui-shadow-card)]",
+                  )}
                 >
                   <button
                     type="button"
@@ -76,18 +92,17 @@ function HelpPage() {
                     onClick={() => setOpen(expanded ? null : item.q)}
                     className={cn(
                       "grid w-full grid-cols-[52px_1fr] items-stretch text-start",
+                      ui.focus,
                       expanded
-                        ? "text-[color:var(--fpl-ink-deep)]"
-                        : "bg-[color:var(--fpl-bg)] text-foreground",
+                        ? "text-[color:var(--ui-ink-deep)]"
+                        : cn(ui.surface.sunken, ui.tone.default),
                     )}
-                    style={expanded ? { backgroundImage: "var(--fpl-grad)" } : undefined}
+                    style={expanded ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
                   >
                     <span
                       className={cn(
                         "grid place-items-center",
-                        expanded
-                          ? "bg-[color:var(--fpl-ink)] text-white"
-                          : "bg-[color:var(--fpl-grey)] text-foreground",
+                        expanded ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.default),
                       )}
                     >
                       {expanded ? (
@@ -96,12 +111,40 @@ function HelpPage() {
                         <ChevronDown className="h-5 w-5" aria-hidden />
                       )}
                     </span>
-                    <span className="px-3 py-3 text-[16px] font-extrabold leading-snug">
+                    {/* A collapsed question is a list-row label, not a
+                        heading. This was `ui.text.subtitle` — 16px at weight
+                        800 — and because the page renders as nothing but
+                        collapsed questions, every one of its 671 visible
+                        characters was extra-bold. Measured rather than
+                        guessed: a weight tally across seven routes put
+                        /fantasy/help at 100% weight 800, the only route in
+                        the product with no normal-weight text at all. Body
+                        size at `strong` keeps it plainly the tappable label
+                        without the whole page shouting.
+
+                        `leading-snug` went with it. The ramp now carries
+                        leading per step and per script (BG-0124), and a
+                        Tailwind literal beside it is a second source of truth
+                        that wins or loses on class order. */}
+                    <span
+                      className={cn(
+                        "px-3 py-3",
+                        ui.text.body,
+                        "[font-weight:var(--ui-weight-strong)]",
+                        "min-h-[var(--ui-tap-min)]",
+                      )}
+                    >
                       {t(item.q)}
                     </span>
                   </button>
                   {expanded ? (
-                    <div className="whitespace-pre-line bg-white px-4 py-3 text-[15px] leading-relaxed text-foreground">
+                    /* `prose` rather than `body` + `leading-relaxed`: an answer
+                       is the longest continuous copy on any Fantasy screen, and
+                       it is the step built for that — with an Arabic line box
+                       that does not have to be remembered at the call site. */
+                    <div
+                      className={cn("whitespace-pre-line px-4 py-3", ui.surface.bar, ui.text.prose)}
+                    >
                       {t(item.a)}
                     </div>
                   ) : null}

@@ -1,0 +1,191 @@
+task_id: BG-0092
+lane: "Lane A — shared Fantasy chrome and the hub"
+branch: bg-0092-fantasy-shell
+
+harness:
+  server: >
+    This lane started its OWN vite dev server and never used port 4173. playwright.config
+    reuses an existing server on 4173 outside CI and other worktrees hold that port, so a
+    measurement against it would be worthless. Runs were driven with E2E_BASE_URL against
+    127.0.0.1:4295 (normal build) and 127.0.0.1:4301 (VITE_AUTH_MODE=mock, for the
+    signed-in state). Chromium came from /opt/pw-browsers via PLAYWRIGHT_BROWSERS_PATH;
+    `playwright install` was never run.
+  chromium_flags: "--disable-lcd-text --force-color-profile=srgb"
+  why_those_flags: >
+    Chromium's default LCD subpixel antialiasing puts coloured fringes around every glyph.
+    A first pass that picked the "most extreme pixel in the crop" as the foreground
+    reported things like amber text on a white table cell (1.78:1) and bright green links
+    (1.34:1) — those were fringe pixels, not text. Greyscale AA plus a pinned sRGB profile
+    removes that class of false positive.
+  contrast_method: >
+    Rasterised sRGB, never a naive parse — the tokens are oklch and parsing
+    `oklch(0.86 0.08 232)` by hand gives the wrong luminance. FOREGROUND: the element's
+    computed `color` pushed through a 1x1 canvas inside the page, so Chromium itself does
+    the oklch -> sRGB conversion and the value read back is what it painted. BACKGROUND:
+    the real pixels of a screenshot of the element's own box. The background is taken as
+    the plurality of the pixels that are NOT near the foreground, quantised to 8-step
+    buckets and then averaged — because on a GRADIENT the glyph colour is a single flat
+    value while the background is hundreds of near-identical ones, so a naive plurality
+    picks the glyph and reports 1.00:1. Ratio is WCAG relative luminance.
+  overflow_method: >
+    Both halves, because `overflow-x: clip` hides overflow from scrollWidth entirely:
+    (a) documentElement.scrollWidth - clientWidth, and (b) every element box inside
+    main.fpl-column tested against the viewport, skipping SVG internals (no meaningful
+    layout box) and anything inside a deliberate overflow-x auto/scroll/hidden ancestor.
+  splash_note: >
+    An early pass reported phantom overflow from `pointer-events-none absolute -inset-x-10
+    -inset-y-14 blur-2xl` — that is src/components/splash/SplashScreen.tsx, the boot
+    overlay, not a Lane A file. All measurements now wait for main.fpl-column to exist and
+    for fonts to settle before reading anything.
+
+matrix:
+  widths: [390, 430, 768, 1440]
+  languages: [fr, ar]
+  themes: [light, dark]
+  dark_mode: >
+    DARK_MODE_ENABLED was NOT changed. `.dark` is applied by hand to documentElement and
+    re-applied if the theme provider rewrites the class list on hydration — which is how a
+    reviewer inspects the dark theme today. Every run asserts the class actually stuck
+    (and that a light run did not come up dark); 0 failures on that assertion.
+  routes: ["/fantasy", "/fantasy/help", "/fantasy/rules", "/fantasy/profile"]
+  states:
+    - "signed-out (the guest branch on /fantasy/profile, the hub's guest phase)"
+    - "signed-in (mock session seeded the way LocalMockAuthService.signInWithEmail seeds it;
+      exercises the authenticated hub, the team card, and FantasyScreenGate's ready path)"
+    - "error (rest/v1 and functions/v1 aborted at the network layer, so the hub and
+      /fantasy/profile render FantasyPhaseBody's real error branch, not a mock)"
+  combos_run:
+    main_pass: 80
+    signed_in_pass: 32
+    contrast_samples: "722 (main) + 256 (signed-in)"
+
+results:
+  horizontal_page_scroll: "0 findings across all 80 + 32 combos"
+  element_past_viewport: "0 findings (checked independently of scrollWidth)"
+  clipping_or_truncation: "0 findings"
+  long_name_resilience: >
+    Re-checked after injecting an over-long club name into the first truncating element of
+    each page — FR \"Association Sportive des Forces Armées Royales de Rabat\" and AR
+    \"الجمعية الرياضية للقوات المسلحة الملكية بالرباط\". 0 overflow findings.
+  tap_targets: "0 controls under 44px in any Lane A surface"
+  rtl: "0 findings"
+  page_errors: "0"
+
+contrast:
+  light:
+    samples: 361
+    min: 4.85
+    p05: 6.04
+    median: 12.08
+    max: 19.44
+    under_4_5: 0
+  dark:
+    samples: 361
+    min: 4.44
+    p05: 4.48
+    median: 11.21
+    max: 15.89
+    under_4_5: "24 samples, all the same single defect — see below"
+  the_one_failure:
+    what: 'UiSegmented tone="onGradient" idle tab label, dark theme'
+    measured: "4.44:1 and 4.48:1 (fg rgb(240,246,252) on rgb(84,115,155))"
+    where: "/fantasy/profile at 390, 430, 768 and 1440, in fr and ar"
+    owner: >
+      src/components/ui-kit/primitives.tsx — the foundation/kit lane, which this lane must
+      not edit. The kit lane has confirmed it independently (4.28:1 / 4.38:1) and is fixing
+      it at source. A local workaround was written, measured at 6.9:1, and then DELIBERATELY
+      REVERTED on the coordinator's instruction not to paper over it with a one-off colour.
+      Filed as KIT-1 in the implementation report.
+  fixed_during_verification:
+    - "League-table row links on the hub measured 21px tall in French and 32px in Arabic —
+      a bare inline <a> in a table cell. They now carry the 44px floor. (Found by the
+      harness, not by reading the code.)"
+
+desktop_column:
+  before:
+    1440: "/fantasy 480px wide, 480 left / 480 right — centred, but 2/3 of the viewport was gutter"
+    768: "/fantasy 480px wide, 144 left / 144 right"
+    public_routes: "/matches, /profile 672px (max-w-2xl) at every width"
+  after:
+    1440_fr: "/fantasy, /fantasy/rules, /fantasy/help, /fantasy/profile — 672px, 384 left / 384 right"
+    1440_ar: "identical to fr"
+    768_fr: "672px, 48 left / 48 right"
+    768_ar: "identical to fr"
+    1024: "672px, 176 / 176"
+    public_routes: "identical — /matches and /profile report the same numbers at every width"
+  note: >
+    The column was never left-aligned; left offset 480 in a 1440 viewport with a 480px
+    column is centred. The divergence was width, and Fantasy now uses the same rule as
+    every migrated public route.
+
+must_not_regress:
+  gw1_seven_fixtures:
+    status: "not at risk"
+    evidence: >
+      This lane changed presentation only and touched no fixture, gameweek or availability
+      code. No file in the lane reads, filters or counts fixtures; grep for a hardcoded
+      fixture count or a FAR Rabat / postponed special case across src/ finds nothing in
+      any Lane A file. The postponed-fixture handling lives in
+      src/backend/fantasy/fixture-assignment.ts, which this lane did not open.
+  deadline_pinned_to_casablanca:
+    status: "verified, and strengthened"
+    method: >
+      /fantasy rendered in three browser time zones — Africa/Casablanca, America/Sao_Paulo
+      and Australia/Sydney — and the deadline line read byte-identically in all three
+      ("Journée 14 Deadline: mercredi 23 sept., 10:30" on the dev dataset).
+    change: >
+      Both formatters this lane touched now pass timeZone: MATCH_TIME_ZONE from
+      src/lib/match-kickoff.ts. fantasy.index.tsx and FplDeadlineLine previously passed the
+      literal string "Africa/Casablanca", which is correct today but is exactly the kind of
+      duplicate that drifts; they now reference the one constant.
+  rankings_empty_state:
+    status: "not regressed"
+    evidence: >
+      /fantasy/rankings rendered signed-out at 390px in fr and ar: no spinner
+      (.animate-spin absent) and no error (role="alert" absent). The route belongs to a
+      sibling lane; it renders through this lane's FplHeader and FplSegmented and was
+      checked to confirm the chrome change did not break it. The dev dataset has scored
+      gameweeks, so the "before anything has scored" branch is not reachable on this
+      server — that specific branch remains the owning lane's to verify.
+
+what_i_could_not_do:
+  - item: "Fix UiSegmented's onGradient contrast"
+    why: >
+      src/components/ui-kit/** is the foundation lane's and is explicitly out of bounds.
+      Worked around locally, then reverted on the coordinator's instruction so the kit lane
+      fixes it once at source. It is the only sub-AA measurement left in this lane's surface.
+  - item: "Mirror the UiHeader back chevron under RTL"
+    why: "Same ownership boundary. Filed as KIT-2. The control's POSITION mirrors correctly
+      (verified); only the glyph's direction does not."
+  - item: "Route the remaining 6 text-brand / --brand-primary-as-text call sites"
+    why: >
+      They live in src/components/common/Trans.tsx, SectionHeader.tsx, AccentEyebrow.tsx and
+      in welcome/, matches/, legal/ and a sibling lane's PlayerShirt.tsx — none of which this
+      lane owns, and which render on 30+ non-Fantasy call sites this lane did not verify.
+      The two instances inside Lane A files are fixed. Full list in the implementation report.
+  - item: "Exercise the season_closed / awaiting_gameweek / no_team phase bodies against a real backend"
+    why: >
+      They need backend state this environment cannot produce. The loading, error and guest
+      branches of the same component were exercised for real (error by aborting rest/v1 and
+      functions/v1 at the network layer), and all four branches are now the same kit state
+      primitives, so they share the tokens, the surfaces and the 44px floor that were
+      verified. The remaining risk is copy length, not colour or layout.
+  - item: "Verify /fantasy/rankings' pre-scoring empty state"
+    why: "The dev dataset has scored gameweeks. Confirmed only that it is neither a spinner
+      nor an error. That route is a sibling lane's."
+  - item: "Re-verify sibling lanes' screens at the new 672px column"
+    why: >
+      Out of ownership, and they were still being built in parallel. This is the one
+      consequence of the column change that someone must pick up — flagged prominently in
+      the implementation report.
+  - item: "Rebase or merge onto the advanced base"
+    why: >
+      origin/chief/launch-fixes-3 moved from 38d9430 to e56f56b during the task. History
+      must not be rewritten (Lovable sync), and pulling in sibling lanes' unverified changes
+      would invalidate the numbers above. Left for the coordinator's merge.
+
+flakiness_note: >
+  The background dev server was killed twice mid-run by the environment (exit 143), which
+  produced one batch of ERR_CONNECTION_REFUSED results. Those runs were discarded and the
+  full matrix re-run end to end against a healthy server; every number in this report comes
+  from a complete pass. Server health is asserted before each pass.

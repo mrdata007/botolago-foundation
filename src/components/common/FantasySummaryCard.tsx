@@ -3,12 +3,21 @@ import { useI18n } from "@/i18n/provider";
 import { DeadlineCountdown } from "./DeadlineCountdown";
 import { ClubCrest } from "./ClubCrest";
 import { Trophy, Shirt, ChevronRight } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
-// Design System V2 — Fantasy CTA hero card.
-// Level-4 glass surface with a brand-gradient inner glow and a premium
-// primary CTA. Preserves layout, i18n, and RTL behaviour.
-
+/**
+ * Fantasy CTA hero card.
+ *
+ * Converted from the Design System V2 level-4 glass surface to the shared UI
+ * kit: an opaque `UiCard`, the Fantasy type scale and radii, and the kit's
+ * gradient action button for the CTA. Layout, i18n and RTL behaviour are
+ * unchanged, as is the public props API.
+ *
+ * Every `tracking-*` reaches this file through `ui.text.label`, which is
+ * `ltr:`-prefixed — Arabic letterforms join and must never be letter-spaced
+ * (BG-0069).
+ */
 export function FantasySummaryCard({
   summary,
   gw,
@@ -28,57 +37,66 @@ export function FantasySummaryCard({
       .map((w) => w[0])
       .join("")
       .toUpperCase() || "BG";
+
   return (
-    <div className="surface-4 relative overflow-hidden p-4">
-      {/* Subtle brand glow overlay — decorative. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -end-16 h-56 w-56 rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 30%, transparent), transparent 70%)",
-          filter: "blur(8px)",
-        }}
-      />
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+    <UiCard className="relative min-w-0 overflow-hidden">
+      <div className="relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="flex min-w-0 items-start gap-2.5">
           {club ? (
             <ClubCrest club={club} size="md" className="mt-0.5 rounded-full" />
           ) : (
             <div
               aria-hidden
-              className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-black text-white shadow-inner ring-1 ring-white/20"
-              style={{ backgroundImage: "var(--bg-brand-gradient)" }}
+              className={cn(
+                "mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full",
+                ui.text.label,
+                "text-[color:var(--ui-ink-deep)]",
+              )}
+              style={{ backgroundImage: "var(--ui-grad-action)" }}
             >
               {initials}
             </div>
           )}
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[color:var(--brand-accent)]">
+            <div
+              className={cn("inline-flex min-w-0 items-center gap-1.5", ui.text.label, ui.tone.ink)}
+            >
               <Trophy className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span className="truncate">
                 {t("home.gameweek")} {gw.number}
               </span>
             </div>
-            <div className="mt-1 truncate text-lg font-black text-foreground">
+            <div className={cn("mt-1 truncate", ui.text.subtitle, ui.tone.default)}>
               {summary.teamName}
             </div>
-            <div className="truncate text-xs text-[color:var(--text-secondary)]">
-              {summary.managerName}
-            </div>
+            {/* BG-0074: the manager name falls back to the team name when no
+                profile can be resolved, so printing both would repeat it. */}
+            {summary.managerName && summary.managerName !== summary.teamName ? (
+              <div className={cn("truncate", ui.text.meta, ui.tone.muted)}>
+                {summary.managerName}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="text-end">
-          <div className="text-[10px] uppercase tracking-wide text-[color:var(--text-muted)]">
-            {t("home.deadline")}
-          </div>
+          <div className={cn(ui.text.label, ui.tone.muted)}>{t("home.deadline")}</div>
           <div className="mt-1">
             <DeadlineCountdown iso={gw.deadline} />
           </div>
         </div>
       </div>
 
-      <div className="relative mt-4 grid grid-cols-4 gap-2 text-center">
+      {/* BG-0111 — two-up at phone width, four-up from `sm`.
+          The captions are fixed product vocabulary ("Classement général",
+          "Points de la journée"), and at 390px a four-column row leaves each
+          tile 64px of caption width. The longest single WORD, "Classement",
+          measures ~70px there, so no amount of wrapping fits it: the previous
+          `[overflow-wrap:anywhere]` bought a fit by breaking the word itself
+          ("Classemen / t général"), which is the same meaning-destroying
+          clipping the launch check forbids, one layer down. Two columns give
+          each caption ~151px, which fits every French and Arabic caption on a
+          single line with no break, no clamp and no ellipsis. */}
+      <div className="relative mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
         <Metric label={t("fantasy.gw_points")} value={nf.format(summary.gameweekPoints)} accent />
         <Metric label={t("fantasy.total_points")} value={nf.format(summary.totalPoints)} />
         <Metric
@@ -89,24 +107,12 @@ export function FantasySummaryCard({
         <Metric label={t("fantasy.transfers")} value={String(summary.transfersLeft)} />
       </div>
 
-      <Link
-        to="/fantasy/team"
-        aria-label={t("home.view_fantasy_team")}
-        className={[
-          "relative mt-4 flex w-full min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5",
-          "text-sm font-black text-primary-foreground",
-          "shadow-card hover:shadow-floating",
-          "transition-[box-shadow,transform] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-          "active:translate-y-px",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
-        ].join(" ")}
-        style={{ backgroundImage: "var(--bg-brand-gradient)" }}
-      >
+      <UiLinkButton to="/fantasy/team" aria-label={t("home.view_fantasy_team")} className="mt-4">
         <Shirt className="h-4 w-4 shrink-0" aria-hidden />
         <span className="truncate">{t("home.view_fantasy_team")}</span>
         <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-      </Link>
-    </div>
+      </UiLinkButton>
+    </UiCard>
   );
 }
 
@@ -122,25 +128,29 @@ function Metric({
   small?: boolean;
 }) {
   return (
-    <div
-      className="rounded-xl px-1.5 py-2"
-      style={{
-        background: "color-mix(in oklab, var(--surface) 70%, transparent)",
-        border: "1px solid var(--border-subtle)",
-      }}
-    >
+    <div className={cn("min-w-0 px-1.5 py-2", ui.radius.control, ui.surface.sunken)}>
       <div
-        className={[
-          "tabular-nums font-black leading-none",
-          accent ? "text-[color:var(--brand-accent)]" : "text-foreground",
-          small ? "text-sm" : "text-base",
-        ].join(" ")}
+        className={cn(
+          ui.text.tabular,
+          "[font-weight:var(--ui-weight-hero)]",
+          accent ? ui.tone.ink : ui.tone.default,
+          small ? ui.text.meta : ui.text.body,
+        )}
       >
         {value}
       </div>
-      <div className="mt-1 truncate text-[9px] uppercase tracking-wide text-[color:var(--text-muted)]">
-        {label}
-      </div>
+      {/* `micro` rather than `label`: the captions stay dense next to the
+          figure. No clamp and no truncation — the caption wraps at word
+          boundaries if a narrower viewport ever needs it, and the grid
+          stretches the tiles so the row stays aligned either way.
+
+          This used to carry a local `[line-height:1.35]`, because
+          `ui.text.micro` then carried `leading-none` and an 11px line box for
+          an 11px font shaved the descenders off "journée" and "général". The
+          ramp now carries `--ui-leading-flat`, so the override is gone — and
+          it was below the floor anyway: 1.35 is under the 1.36 that Latin ink
+          needs and well under Arabic's 1.73 (BG-0124). */}
+      <div className={cn("mt-1 break-words", ui.text.micro, ui.tone.muted)}>{label}</div>
     </div>
   );
 }

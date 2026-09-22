@@ -1,14 +1,73 @@
-import { Link, useRouter } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+/**
+ * Fantasy chrome — the shrinking remainder of a second primitive set.
+ *
+ * The previous note here said "fifteen Fantasy routes and four Fantasy
+ * components import these names", which is why the API was frozen. That is no
+ * longer true: after the screen conversions the importers are down to four
+ * files, and the adapter earns its keep only for the ones a lane has not
+ * reached yet. It is not a component library; it is a migration seam, and the
+ * end state is an empty file.
+ *
+ * WHAT IS LEFT, AND WHY. Every export below is a thin rename of a kit
+ * primitive whose remaining callers live outside the fpl-primitives lane
+ * (`src/routes/fantasy.profile.tsx`, and `LegacyFantasyPage.tsx` for
+ * `FplHeader`). Each carries the kit call it is equal to, so whoever converts
+ * `fantasy.profile.tsx` can inline it and delete the export in the same edit
+ * rather than re-deriving the mapping. Nothing here does a job the kit has no
+ * equivalent for — if it did, that would be the thing to say instead.
+ *
+ * WHAT WENT, AND WHERE ITS RECORD LIVES. Four exports had no caller at all,
+ * so they were carrying decision records for code nobody ran:
+ *
+ *   - `FplDeadlineLine` — formatted the deadline in `MATCH_TIME_ZONE` rather
+ *     than a literal zone string, so it could not drift from the fixture
+ *     cards (BG-0100). The hub renders that line itself and keeps the same
+ *     rule; see `fantasy.index.tsx`, which comments it at the call site.
+ *   - `FplRankMovement` — existed because the glyph used to announce a
+ *     hardcoded English "up" / "down", and colour alone is not a difference a
+ *     reader can rely on. Both live standings surfaces (`LeagueTable.tsx`,
+ *     `fantasy.leagues.$leagueId.tsx`) now pass translated `labels` to
+ *     `UiRankMovement` themselves, which is where the fix belongs. They use
+ *     `fantasy.rank.up/down/same`; this used a duplicate `fpl.rank.*` set, so
+ *     removing it leaves those three keys referenced by nothing and the i18n
+ *     gate's W3 count rises by exactly three. That is the gate working: the
+ *     keys are a second copy of vocabulary the product already has.
+ *   - `FplButton` — `UiButton` with the `secondary → outline` mapping below.
+ *   - `FplBanner` — `UiBanner`, verbatim.
+ *
+ * The older defect notes are kept where the code they describe still is:
+ * BG-0083 (`--fpl-ink`, a FILL, used as a text colour) and the literal
+ * `bg-white` / `text-white` that rendered 1.09:1 on a dark card are both
+ * fixed at the token layer now, and `ui.tone.ink` / `ui.surface.card` are
+ * what the kit primitives below paint with.
+ */
 
+import type { ReactNode } from "react";
+
+import {
+  UiBadge,
+  UiHeader,
+  UiKeyValueRow,
+  UiLinkButton,
+  UiPill,
+  UiSegmented,
+  type UiButtonVariant,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /* Header: "‹ Back   Title   [right]" on the cyan→blue gradient.       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * `UiHeader` with the Fantasy prop names and one behaviour: Back is offered
+ * even with no explicit destination, falling through to router history.
+ *
+ * Callers left: `LegacyFantasyPage.tsx` and `fantasy.profile.tsx`. Both pass
+ * an explicit `backTo`, so both are `<UiHeader title backTo tone="gradient">`
+ * — which is what `fantasy.help.tsx` and `fantasy.players.$playerId.tsx`
+ * already write directly.
+ */
 export function FplHeader({
   title,
   backTo,
@@ -31,87 +90,22 @@ export function FplHeader({
   className?: string;
   variant?: "gradient" | "ink";
 }) {
-  const { t } = useI18n();
-  const router = useRouter();
-  const back = (
-    <span className="inline-flex items-center gap-0.5 text-[15px] font-semibold">
-      <ChevronLeft className="h-5 w-5" aria-hidden />
-      {t("fpl.back")}
-    </span>
-  );
   return (
-    <header
-      className={cn(
-        "relative px-4 pb-3 pt-[max(env(safe-area-inset-top),0.75rem)] text-[color:var(--fpl-ink)]",
-        variant === "gradient" ? "fpl-header-gradient" : "bg-[color:var(--fpl-ink)] text-white",
-        className,
-      )}
-      style={variant === "gradient" ? { backgroundImage: "var(--fpl-header)" } : undefined}
+    <UiHeader
+      title={title}
+      backTo={backTo}
+      onBack={onBack}
+      // The Fantasy header has always offered Back even with no explicit
+      // destination, falling through to router history. `UiHeader` does the
+      // same when asked, so only an explicit `left` suppresses it.
+      showBack={!left && !backTo && !onBack}
+      leading={left}
+      trailing={right}
+      tone={variant}
+      className={className}
     >
-      <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center">
-        <div className="justify-self-start">
-          {left ? (
-            left
-          ) : backTo ? (
-            <Link to={backTo} className="inline-flex min-h-11 items-center -ms-1 pe-2">
-              {back}
-            </Link>
-          ) : onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex min-h-11 items-center -ms-1 pe-2"
-            >
-              {back}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.history.back()}
-              className="inline-flex min-h-11 items-center -ms-1 pe-2"
-            >
-              {back}
-            </button>
-          )}
-        </div>
-        <h1
-          className={cn(
-            "truncate px-2 text-center font-extrabold tracking-tight",
-            left && right ? "text-[16px]" : "text-[19px]",
-          )}
-        >
-          {title}
-        </h1>
-        <div className="justify-self-end">{right}</div>
-      </div>
       {children}
-    </header>
-  );
-}
-
-/** "Gameweek 21 Deadline: 13 Jan 2024 at 19:00" line under the header title. */
-export function FplDeadlineLine({
-  gameweek,
-  deadlineIso,
-}: {
-  gameweek: number;
-  deadlineIso: string;
-}) {
-  const { t, lang } = useI18n();
-  const date = new Date(deadlineIso);
-  const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Africa/Casablanca",
-  }).format(date);
-  return (
-    <p className="mt-1 text-center text-[14px] text-[color:var(--fpl-ink)]">
-      {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
-      <strong className="font-extrabold">{formatted}</strong>
-    </p>
+    </UiHeader>
   );
 }
 
@@ -119,6 +113,19 @@ export function FplDeadlineLine({
 /* Segmented control ("Squad | List", "League | Cup").                 */
 /* ------------------------------------------------------------------ */
 
+/**
+ * `UiSegmented` with the Fantasy tone names (`onLight` is `onSurface`).
+ * Caller left: `fantasy.profile.tsx`, on the default `onGradient`.
+ *
+ * `tone="onGradient"` has a known idle-tab contrast failure in dark: the
+ * track is a fixed `color-mix` that cannot serve a foreground which flips
+ * between near-black and near-white, so the idle label measured 4.44:1 here
+ * (4.28/4.38:1 as measured by the pitch lane). That is a kit defect and the
+ * kit lane is fixing it at source in `UiSegmented`; deliberately NOT worked
+ * around locally, because a one-off colour here would only move the problem
+ * and would diverge from the other `UiSegmented` call sites. See the kit
+ * request in the BG-0092 implementation report.
+ */
 export function FplSegmented<T extends string>({
   value,
   onChange,
@@ -133,44 +140,24 @@ export function FplSegmented<T extends string>({
   tone?: "onGradient" | "onLight";
 }) {
   return (
-    <div
-      role="tablist"
-      className={cn(
-        "grid rounded-[10px] p-[3px]",
-        tone === "onGradient" ? "bg-white/35" : "bg-[color:var(--fpl-grey)]",
-        className,
-      )}
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            role="tab"
-            type="button"
-            aria-selected={active}
-            disabled={option.disabled}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "min-h-10 rounded-[8px] px-3 text-[15px] font-bold transition-colors disabled:opacity-50",
-              active
-                ? "bg-white text-[color:var(--fpl-ink)] shadow-sm"
-                : "text-[color:var(--fpl-ink)]",
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
+    <UiSegmented
+      value={value}
+      onChange={onChange}
+      options={options}
+      tone={tone === "onGradient" ? "onGradient" : "onSurface"}
+      className={className}
+    />
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Purple pill label ("Gameweek 21", "General Leagues", "Goalkeepers"). */
+/* Ink pill label ("Gameweek 21", "General Leagues", "Goalkeepers").    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * `UiPill` with the Fantasy tone names (`cyan` is the action gradient).
+ * Caller left: `fantasy.profile.tsx`, twice, both on the default `ink`.
+ */
 export function FplPill({
   children,
   className,
@@ -181,55 +168,31 @@ export function FplPill({
   tone?: "ink" | "cyan";
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-[6px] px-3 py-1 text-[14px] font-extrabold",
-        tone === "ink"
-          ? "bg-[color:var(--fpl-ink)] text-[color:var(--fpl-cyan)]"
-          : "text-[color:var(--fpl-ink)]",
-        className,
-      )}
-      style={tone === "cyan" ? { backgroundImage: "var(--fpl-grad)" } : undefined}
-    >
+    <UiPill tone={tone === "ink" ? "ink" : "action"} className={className}>
       {children}
-    </span>
+    </UiPill>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Buttons: gradient primary, ink (dark), light (white).               */
+/* Buttons: gradient primary, ink (dark), light (surface).             */
 /* ------------------------------------------------------------------ */
 
 type ButtonVariant = "gradient" | "ink" | "light" | "outline" | "secondary";
 
-export function FplButton({
-  variant = "gradient",
-  className,
-  children,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
-  return (
-    <button
-      type="button"
-      {...props}
-      className={cn(
-        "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[6px] px-4 text-[15px] font-extrabold transition-[filter,opacity] disabled:cursor-not-allowed",
-        variant === "gradient" && "text-[color:var(--fpl-ink)] disabled:opacity-45",
-        variant === "ink" &&
-          "bg-[color:var(--fpl-ink)] text-white disabled:bg-[color:var(--fpl-grey)] disabled:text-[color:var(--fpl-grey-text)]",
-        variant === "light" && "bg-white text-[color:var(--fpl-ink)] shadow-sm disabled:opacity-50",
-        variant === "outline" &&
-          "border border-[color:var(--fpl-ink)] bg-transparent text-[color:var(--fpl-ink)] disabled:opacity-50",
-        variant === "secondary" && "bg-[oklch(0.5_0.17_262)] text-white disabled:opacity-50",
-        className,
-      )}
-      style={variant === "gradient" ? { backgroundImage: "var(--fpl-grad)" } : undefined}
-    >
-      {children}
-    </button>
-  );
+/**
+ * The kit has no "secondary" fill — it was a one-off indigo used by a single
+ * screen for the quieter of two side-by-side actions, which is exactly what
+ * `outline` is for.
+ */
+function kitVariant(variant: ButtonVariant): UiButtonVariant {
+  return variant === "secondary" ? "outline" : variant;
 }
 
+/**
+ * `UiLinkButton` with the mapping above. Caller left: `fantasy.profile.tsx`,
+ * once, on the default `gradient` — i.e. `<UiLinkButton to=…>`.
+ */
 export function FplLinkButton({
   to,
   variant = "gradient",
@@ -244,38 +207,9 @@ export function FplLinkButton({
   children: ReactNode;
 }) {
   return (
-    <Link
-      to={to}
-      params={params}
-      className={cn(
-        "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[6px] px-4 text-[15px] font-extrabold",
-        variant === "gradient" && "text-[color:var(--fpl-ink)]",
-        variant === "ink" && "bg-[color:var(--fpl-ink)] text-white",
-        variant === "light" && "bg-white text-[color:var(--fpl-ink)] shadow-sm",
-        variant === "outline" && "border border-[color:var(--fpl-ink)] text-[color:var(--fpl-ink)]",
-        className,
-      )}
-      style={variant === "gradient" ? { backgroundImage: "var(--fpl-grad)" } : undefined}
-    >
+    <UiLinkButton to={to} params={params} variant={kitVariant(variant)} className={className}>
       {children}
-    </Link>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Ink banner ("Bank £6.1m", "You are about to transfer 1 player!").   */
-/* ------------------------------------------------------------------ */
-
-export function FplBanner({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn(
-        "bg-[color:var(--fpl-ink)] px-4 py-2 text-center text-[15px] font-extrabold text-[color:var(--fpl-cyan)]",
-        className,
-      )}
-    >
-      {children}
-    </div>
+    </UiLinkButton>
   );
 }
 
@@ -283,6 +217,10 @@ export function FplBanner({ children, className }: { children: ReactNode; classN
 /* Key/value list rows used by profile, points overview…               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * `UiKeyValueRow`, verbatim — same three props, same order. Callers left:
+ * `fantasy.profile.tsx`, seven of them.
+ */
 export function FplKeyValueRow({
   label,
   value,
@@ -292,20 +230,31 @@ export function FplKeyValueRow({
   value: ReactNode;
   className?: string;
 }) {
-  return (
-    <div
-      className={cn(
-        "flex min-h-12 items-center justify-between gap-3 border-b border-[color:var(--fpl-grey)] px-1 text-[15px]",
-        className,
-      )}
-    >
-      <span className="text-foreground">{label}</span>
-      <span className="font-extrabold text-foreground">{value}</span>
-    </div>
-  );
+  return <UiKeyValueRow label={label} value={value} className={className} />;
 }
 
-/** Small state badge: ACTIVE (gradient), UNAVAILABLE / USED (grey), AVAILABLE (light). */
+/**
+ * Small state badge: ACTIVE (gradient), UNAVAILABLE / USED (sunken),
+ * AVAILABLE (outlined). Caller left: `fantasy.profile.tsx`, once, for the
+ * chip rows.
+ *
+ * This is the last export that was doing something the kit could not, and it
+ * no longer is. "Available" must not read as spent — `neutral`'s sunken fill
+ * is how this product draws "used up" — so the badge composed the outline by
+ * hand: `ui.surface.card` for the fill, `ui.rule.all` for the hairline,
+ * `ui.tone.ink` for the label, and `shadow-none` to undo the card shadow that
+ * came with the fill. `UiBadge tone="outline"` is exactly that composition,
+ * stated once in the kit, so the hand-rolled version is gone and this export
+ * is now a four-way `tone` switch — i.e. nothing but a name.
+ *
+ * ONE VISIBLE CHANGE, and it is a fix. `ui.surface.card` also carries
+ * `rounded-[var(--ui-radius-control)]`, which `cn()` merged over the badge's
+ * own `ui.radius.full`: "available" rendered as a 6px rounded rectangle while
+ * ACTIVE, USED and UNAVAILABLE — the three states stacked directly above and
+ * below it in the same column — rendered as pills. That was a side effect of
+ * borrowing a surface for its colour, not a decision. The tone keeps the pill,
+ * so the four states are one shape again.
+ */
 export function FplStateBadge({
   state,
 }: {
@@ -321,45 +270,11 @@ export function FplStateBadge({
           ? t("fpl.state.used")
           : t("fpl.state.play");
   return (
-    <span
-      className={cn(
-        "inline-flex min-w-28 items-center justify-center rounded-full px-3 py-1 text-[12px] font-extrabold uppercase tracking-wide",
-        state === "active" && "text-[color:var(--fpl-ink)]",
-        (state === "unavailable" || state === "used") &&
-          "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]",
-        state === "available" &&
-          "bg-white text-[color:var(--fpl-ink)] ring-1 ring-[color:var(--fpl-grey)]",
-      )}
-      style={state === "active" ? { backgroundImage: "var(--fpl-grad)" } : undefined}
+    <UiBadge
+      tone={state === "active" ? "action" : state === "available" ? "outline" : "neutral"}
+      className="min-w-28"
     >
       {label}
-    </span>
-  );
-}
-
-/** Rank movement glyph: green up, pink down, grey dash. */
-export function FplRankMovement({
-  rank,
-  previousRank,
-}: {
-  rank: number;
-  previousRank: number | null;
-}) {
-  if (previousRank === null || previousRank === rank) {
-    return (
-      <span className="inline-block w-5 text-center text-[color:var(--fpl-grey-text)]">—</span>
-    );
-  }
-  const up = rank < previousRank;
-  return (
-    <span
-      aria-label={up ? "up" : "down"}
-      className={cn(
-        "inline-grid h-5 w-5 place-items-center rounded-full text-[10px] font-black text-white",
-        up ? "bg-[oklch(0.72_0.19_150)]" : "bg-[color:var(--fpl-pink)]",
-      )}
-    >
-      {up ? "▲" : "▼"}
-    </span>
+    </UiBadge>
   );
 }

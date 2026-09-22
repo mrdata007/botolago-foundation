@@ -1,0 +1,230 @@
+task_id: BG-0057
+verified_at: 2026-09-21
+branch: bg-0057-roster-hygiene (from origin/chief/launch-fixes-3)
+
+production_reverification:
+  project: tkewgajrljbwgwedqsxn (BotolaGO Production V2)
+  access: read-only SELECT via the Supabase MCP execute_sql tool. NO production write was executed.
+  cluster_count:
+    reported: "4 clusters, 8 rows (Boukhanfer x2, Coulibaly x3, El Ghazouani x2, Errahouli x2)"
+    found: "3 clusters, 7 rows"
+    method: >
+      Exhaustive, not targeted: group every app.fantasy_players row by
+      (football_team_id, lower(unaccent(display_name))) and keep the groups with count > 1. The same
+      scan was repeated over lower(unaccent(full_name)) and over display_name without the club key.
+    result: >
+      'abdallah boukhanfer' 2 rows @ Hassania Agadir; 'abdoulaye coulibaly' 3 rows @ Wydad
+      Casablanca; 'yassine el ghazouani' 2 rows @ Moghreb Tetouan. No fourth group under any
+      spelling.
+  errahouli_discrepancy:
+    finding: >
+      Real, but not a fantasy duplicate. Salaheddine Errahouli has TWO app.players rows —
+      01c3fd34-3499-4bed-8734-d4e28b3724a4 (full_name 'Salaheddine Errahouli', dob 2002-01-01,
+      sportsmonks:37714023, 24 player_fixture_performances) and
+      123a6829-1c40-4c43-8edf-d64d71a7c827 (full_name 'S. Errahouli', dob 2002-10-12,
+      sportsmonks:37551821, 1 player_fixture_performance) — both at Olympic Safi, and BOTH with
+      zero app.fantasy_players rows.
+    why: >
+      Olympic Safi is one of the five relegated clubs BG-0043 deactivates, so the fantasy pricing
+      pass never priced either row.
+    action_taken: >
+      Reported to the owner with the evidence above and explicitly scoped OUT of this script, which
+      can only deactivate app.fantasy_players rows. The unrelated 'Imad El Rahouli' / full_name
+      'Imad Errahouli' at Moghreb Tetouan is a single non-duplicated row and needs nothing.
+  ownership_claim:
+    reported: "zero squads own any of them"
+    holds: true
+    detail: >
+      Verified stronger than reported. Across all seven rows: 0 active squad memberships, 0 squad
+      memberships of ANY kind, 0 transfers, 0 free-hit snapshot rows, 0 auto-substitutions,
+      0 point events, 0 gameweek point rows, and selected_by_count = 0 on every row.
+  candidate_rows:
+    - id: 7feca8ea-be74-4184-b90f-676679d3b87b
+      name: Abdallah Boukhanfer
+      dob: 2000-01-01
+      provider: sportsmonks:37629773
+      club: Hassania Agadir
+      price: 7.20
+      position: MID
+    - id: b1e72287-5808-4ab6-b584-960a4d6ab000
+      name: Abdallah Boukhanfer
+      dob: 1998-01-01
+      provider: sportsmonks:37596162
+      club: Hassania Agadir
+      price: 7.20
+      position: MID
+    - id: 085c8d71-bd39-47cc-b2b7-84a33fb3fb95
+      name: Abdoulaye Coulibaly
+      dob: 2008-01-01
+      provider: sportsmonks:38213591
+      club: Wydad Casablanca
+      price: 7.50
+      position: FWD
+    - id: 9dd668bc-5212-4d91-83b3-0335aece3534
+      name: Abdoulaye Coulibaly
+      dob: null
+      provider: sportsmonks:37789277
+      club: Wydad Casablanca
+      price: 7.20
+      position: MID
+    - id: ac64b701-1d84-4527-805f-28fe0926203a
+      name: Abdoulaye Coulibaly
+      dob: 1991-04-06
+      provider: sportsmonks:101165
+      club: Wydad Casablanca
+      price: 7.20
+      position: MID
+    - id: 069d4a1f-378f-440f-b84e-a76c810b20be
+      name: Yassine El Ghazouani (full_name 'Yacine Ghazouani')
+      dob: null
+      provider: sportsmonks:37594384
+      club: Moghreb Tétouan
+      price: 5.00
+      position: DEF
+    - id: f7b424d6-4032-47c8-b624-c47c0605ad80
+      name: Yassine El Ghazouani (full_name 'Yassine El Ghazouani')
+      dob: 1996-04-10
+      provider: sportsmonks:37596176
+      club: Moghreb Tétouan
+      price: 5.00
+      position: DEF
+
+read_only_guard_rehearsal: >
+  The SELECT half of EVERY guard was run against production as one query over the seven-row
+  candidate set. Real numbers: candidate_rows = 7, player_not_found = 0, guard_owned_by_squad = 0,
+  guard_squad_history_memberships = 0, guard_squad_history_transfers = 0,
+  guard_squad_history_freehit = 0, guard_squad_history_autosubs = 0, guard_point_events = 0,
+  guard_gameweek_points = 0, guard_still_selected = 0, already_applied = 0. Pool totals before any
+  run: 539 fantasy players, 539 active, 539 eligible. Every guard in the script would pass today for
+  every one of the seven rows.
+
+pgtap:
+  docker_available: true
+  supabase_cli_usable: false
+  detail: >
+    The docker binary exists and `docker info` returns a client block, but the Supabase CLI is not
+    installed on this machine (`which supabase` is empty), so `supabase test db` / `supabase db
+    reset` could not be run and the suite was NOT executed through the repository's own harness.
+  substitute: >
+    Rather than claim the suite ran when it could not, a real PostgreSQL 16.13 cluster
+    (Ubuntu 16.13-0ubuntu0.24.04.1) was initdb'd locally under /var/lib/postgresql/bg0057, the
+    system postgresql-16-pgtap extension was installed into it, and all 72 files under
+    supabase/migrations were applied in order to a fresh database — plus minimal local stand-ins for
+    the Supabase-managed roles and objects a bare cluster does not provide (anon / authenticated /
+    service_role / supabase_auth_admin / supabase_storage_admin / authenticator roles;
+    auth.users + sessions/refresh_tokens/mfa_factors/identities/audit_log_entries;
+    storage.buckets/objects and storage.foldername/filename/extension; auth.uid()/role()/email()/jwt()).
+    This is NOT `supabase db reset`; it is the same migration set on the same major version, and it
+    is stated here as such.
+  migrations_applied: 72
+  result: 31 assertions, 31 ok, 0 not ok
+  assertions:
+    - ok 1 - fixture: all 20 synthetic fantasy players start active and eligible
+    - ok 2 - fixture: no squad owns anything yet — the production precondition this script relies on
+    - ok 3 - happy path: the body reports the named row as updated
+    - ok 4 - happy path: the named row is now active = false AND eligible = false
+    - ok 5 - happy path: the other two rows of the same cluster are left alone
+    - ok 6 - happy path: exactly one row left the pool — 19 of 20 remain active and eligible
+    - ok 7 - happy path: exactly one audit row is written, naming the retired player
+    - ok 8 - happy path: the audit row records the before and after state of `active`
+    - ok 9 - second run: the already-deactivated row reports was_updated = false instead of erroring
+    - ok 10 - second run: no audit row is written for a no-op
+    - ok 11 - second run: the audit table still holds exactly the one row from the first run
+    - ok 12 - second run: the active/eligible count is unchanged
+    - ok 13 - rollback to savepoint restores all 20 players to active and eligible
+    - ok 14 - half-applied: a row that is already ineligible but still active is completed, not skipped
+    - ok 15 - half-applied: both flags end false
+    - ok 16 - not found: the all-zero placeholder in the shipped file refuses and names the id
+    - ok 17 - not found: nothing was written
+    - ok 18 - ownership guard: an owned player refuses and names the squad that holds it
+    - ok 19 - ownership guard: the refusal rolled the write back — the player is still active and eligible
+    - ok 20 - ownership guard: no audit row is written for a refusal
+    - ok 21 - history guard: a sold membership still refuses and reports every attachment count
+    - ok 22 - history guard: nothing was written
+    - ok 23 - points guard: a player with point events refuses and names the count
+    - ok 24 - points guard: nothing was written
+    - ok 25 - gameweek-points guard: the aggregated table refuses on its own
+    - ok 26 - selected-by-count guard: a non-zero counter with no membership refuses
+    - ok 27 - selected-by-count guard: nothing was written
+    - ok 28 - pool: all 20 players are offered before the retirement
+    - ok 29 - pool: the retirement runs
+    - ok 30 - pool: api.fantasy_player_pool offers 19 players afterwards — the retired row is gone
+    - ok 31 - pool: the retired id is specifically absent from the pool payload
+  plan_line_caveat: >
+    finish() prints `1..13` rather than `1..31`, because `rollback to savepoint` also rolls back
+    pgTAP's own internal test counter. This is a property of the repository's existing savepoint
+    idiom, not of this suite — the BG-0043 suite behaves identically on the same cluster. The
+    authoritative count is the 31 `ok` lines and 0 `not ok` lines above, which is what pg_prove
+    counts.
+  harness_sanity_check: >
+    Three of the repository's existing suites were run unchanged on the same local cluster:
+    football_deactivate_non_current_teams.test.sql -> 20 ok / 0 not ok (exactly the 20 assertions
+    the BG-0043 verification report claims, reproduced independently), fantasy_domain.test.sql ->
+    28 ok / 0 not ok, fantasy_rls.test.sql -> 16 ok / 0 not ok. The harness executes the
+    repository's existing suites faithfully.
+  script_file_rehearsal: >
+    scripts/backend/fantasy-deactivate-duplicate-player.sql was executed as a WHOLE FILE against
+    the same local cluster, twice. (1) Completely unchanged: it refused with
+    `bg0057 refused: player_not_found — … id 00000000-0000-0000-0000-000000000000 …` and wrote
+    nothing, proving the shipped file is inert. (2) With only the one call argument changed to a
+    seeded synthetic id: it ran end to end — the NOTICE listed the target before the write, the
+    returned row showed was_updated = t with an audit_event_id, the cluster review SELECT showed
+    exactly one row at active=f/eligible=f with its siblings untouched, the pool totals printed
+    19/19/1, and the audit SELECT printed the single
+    'fantasy_catalog.deactivate_duplicate_player' row with safe_before/safe_after. The session then
+    ended with an implicit ROLLBACK and a follow-up query confirmed 20 players active again. This
+    proves the file itself — not just the body — parses and runs.
+  body_sync_check: >
+    The pg_temp body in the script and the copy in the pgTAP test were compared programmatically
+    and are byte-for-byte identical (203 lines).
+
+gates:
+  - command: bun run typecheck
+    result: pass
+    detail: tsc --noEmit, no output.
+  - command: bun test
+    result: "1324 pass, 4 fail, 14783 expect() calls, 1328 tests across 152 files"
+    detail: >
+      The 4 failures are the pre-existing, deliberate ones in
+      src/content/legal/legal-content.test.ts (terms.ar, terms.fr, privacy.ar, privacy.fr unfilled
+      placeholders awaiting owner values). No other test fails. Exactly 4, as the task states.
+  - command: bun run lint
+    result: "17 problems (0 errors, 17 warnings)"
+    detail: All 17 are pre-existing react-refresh/only-export-components warnings. 0 errors.
+  - command: bun run format:check
+    result: "error in 9 files — all pre-existing"
+    detail: >
+      The offender list is identical to the branch baseline (9 files). Neither new .sql file is
+      checked by prettier. The new .md files under docs/engineering/tasks/BG-0057 and BG-0023 were
+      initially offenders and were run through prettier, so they are clean; the new .yaml files were
+      clean from the start.
+  - command: bun run backend:migrations:check
+    result: pass
+    detail: "Validated 72 migration(s). No migration was added, so timestamp 20260921210000 remains unconsumed."
+  - command: bun run backend:secrets:check
+    result: pass
+    detail: No high-confidence secrets found in tracked files.
+  - command: bun run config:integrity:check
+    result: pass
+    detail: "no violations in 36 executed configuration file(s)"
+  - command: bun scripts/qa/i18n-gate.ts
+    result: pass
+    detail: "RESULT: pass (pre-existing opaque-expression advisories only)"
+  - command: bun run build
+    result: pass
+    detail: "vite build + nitro output generated; no errors."
+
+remains_unproven:
+  - >
+    The suite has NOT been run through `supabase test db` against a real Supabase local stack. The
+    local cluster carries hand-written stand-ins for auth.* and storage.*, so anything that depends
+    on GoTrue or Storage behaviour beyond the table shapes and the four auth helper functions is
+    untested here. The parts this suite actually exercises (app.*, api.*, app_private.*) come from
+    the repository's own migrations, unmodified.
+  - >
+    Nothing in this lane has been executed against production. The script's WRITE half has only
+    ever run against the local cluster and inside rolled-back transactions. The read-only half of
+    every guard has been rehearsed against production and is reported above.
+  - >
+    Which row of each cluster is the real footballer is a data question the database cannot settle
+    for the Boukhanfer cluster. That remains an owner decision.

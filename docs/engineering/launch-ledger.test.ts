@@ -15,9 +15,17 @@ import { join } from "node:path";
 //     before the colon as a mapping key, and a key may not span lines, so the
 //     whole document failed to load.
 //
-// This file pins both. It deliberately does not import a YAML library: the repo
-// has none as a direct dependency, and the two failure modes above are what
-// actually happened and are cheap to detect on the raw text.
+// A third way followed: an edit lost the closing quote of a quoted scalar, and
+// the pattern checks below sailed past it because they inspect shapes, not
+// syntax. So the first test now simply parses the file. Bun ships a YAML parser
+// (Bun.YAML.parse), which means the real check costs no dependency -- the
+// earlier reasoning that avoiding a YAML library justified pattern-matching was
+// just wrong.
+//
+// The pattern checks are kept below it, because a document can parse perfectly
+// and still be wrong in the ways that actually bit: a duplicate key silently
+// resolves last-wins, and a lost entry key silently merges two entries. Parsing
+// catches syntax; those catch meaning.
 
 const LEDGER = join(import.meta.dir, "LAUNCH_LEDGER.yaml");
 const lines = readFileSync(LEDGER, "utf8").split("\n");
@@ -29,6 +37,21 @@ function indentOf(line: string): number | null {
 }
 
 describe("launch ledger", () => {
+  it("is valid YAML", () => {
+    // The check that would have caught a lost closing quote, an unbalanced
+    // block scalar, or a bad indent -- none of which the shape checks below can
+    // see. Every lane reads this file; if it does not load, it tells them
+    // nothing at all.
+    const raw = readFileSync(LEDGER, "utf8");
+    const parsed = Bun.YAML.parse(raw) as {
+      tasks?: Record<string, unknown>;
+      human_actions_open?: unknown[];
+    };
+    expect(parsed).toBeTruthy();
+    expect(Object.keys(parsed.tasks ?? {}).length).toBeGreaterThan(0);
+    expect(Array.isArray(parsed.human_actions_open)).toBe(true);
+  });
+
   it("gives every task a unique id", () => {
     const seen = new Map<string, number[]>();
     lines.forEach((line, index) => {

@@ -5,9 +5,13 @@ import { getFantasyApi } from "@/integrations/supabase/v2-client";
 import {
   fantasyHubSchema,
   fantasyGameweekPageSchema,
+  fantasyGameweekSummarySchema,
   fantasyHistoryPageSchema,
   fantasyLeaguePageSchema,
   fantasyLeagueStandingPageSchema,
+  fantasyOverallStandingPageSchema,
+  fantasyPlayerGameweekHistorySchema,
+  fantasyPlayerSeasonStatsSchema,
   fantasyPointsSchema,
   fantasyTeamSchema,
   fantasyTopPlayerSchema,
@@ -18,6 +22,7 @@ import {
   type CreateFantasyTeamInput,
   type FantasyChip,
   type FantasyPlayerPoolInput,
+  type FantasyOverallStandingsInput,
   type FantasyRepository,
   type LineupSelection,
   type TransferInput,
@@ -231,6 +236,29 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     return parse(fantasyHistoryPageSchema, data);
   }
 
+  /**
+   * BG-0075 — the gameweek-wide Average / Highest strip. Anon-callable on
+   * purpose: /fantasy/points is reachable signed out. Both figures come back
+   * null while `teamCount` is 0, which is production today.
+   */
+  async getGameweekSummary(gameweekId: string, _context: RepositoryContext) {
+    // `src/backend/generated/database.types.ts` is a CI artifact regenerated
+    // from the applied schema, so it does not name this RPC until the migration
+    // that creates it has run. The call is otherwise identical to its
+    // neighbours; the response is validated by the schema below, exactly as a
+    // generated-typed response would be.
+    const { data, error } = await (
+      getFantasyApi() as unknown as {
+        rpc: (
+          name: string,
+          args: Record<string, unknown>,
+        ) => PromiseLike<{ data: unknown; error: PostgrestError | null }>;
+      }
+    ).rpc("fantasy_gameweek_summary", { p_gameweek_id: gameweekId });
+    check(error);
+    return parse(fantasyGameweekSummarySchema, data);
+  }
+
   async getLeagues(
     seasonId: string,
     visibility: "public" | "private" | null,
@@ -257,6 +285,23 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return parse(fantasyLeagueStandingPageSchema, data);
+  }
+
+  /**
+   * BG-0073 — the season-wide board, read from the `league_id is null` rows
+   * that the ranking service already writes. Anonymous callers are supported
+   * and get an empty page (never a 401/404) while no gameweek has finalized.
+   */
+  async getOverallStandings(input: FantasyOverallStandingsInput, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_overall_standings", {
+      p_season_id: input.seasonId,
+      p_gameweek_id: input.gameweekId ?? undefined,
+      p_after_rank: input.cursor?.rank,
+      p_after_team_id: input.cursor?.teamId,
+      p_limit: input.limit ?? 100,
+    });
+    check(error);
+    return parse(fantasyOverallStandingPageSchema, data);
   }
 
   async createLeague(
@@ -316,5 +361,35 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return parse(z.array(fantasyTopPlayerSchema), data);
+  }
+
+  /**
+   * BG-0071 — season totals, form and live ownership for every active+eligible
+   * player of the season, in one bounded read.
+   *
+   * `p_through_gameweek_id` is optional ("as of GW n"); passing `null` means
+   * the whole season so far. Both parameters are uuid-only, so the BG-0063
+   * `app`-schema coercion trap does not apply and anonymous callers succeed.
+   */
+  async getPlayerSeasonStats(
+    seasonId: string,
+    throughGameweekId: string | null,
+    _context: RepositoryContext,
+  ) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_player_season_stats", {
+      p_season_id: seasonId,
+      p_through_gameweek_id: throughGameweekId ?? undefined,
+    });
+    check(error);
+    return parse(fantasyPlayerSeasonStatsSchema, data);
+  }
+
+  /** BG-0071 — one entry per gameweek this player has a points row for. */
+  async getPlayerGameweekHistory(fantasyPlayerId: string, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("fantasy_player_gameweek_history", {
+      p_fantasy_player_id: fantasyPlayerId,
+    });
+    check(error);
+    return parse(fantasyPlayerGameweekHistorySchema, data);
   }
 }

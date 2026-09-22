@@ -1,0 +1,157 @@
+task_id: BG-0043
+attempt: 1
+role: Builder-Backend (self-verification)
+branch: bg-0043-deactivate-relegated
+base: origin/chief/launch-fixes-3
+verified_at: 2026-09-21
+
+production_state:
+  project: tkewgajrljbwgwedqsxn
+  access: read-only SELECT / pg_get_functiondef via the Supabase MCP tools. No write was executed.
+  current_seasons: 1
+  active_teams_before: 21
+  inactive_teams_before: 0
+  affected_count: 5
+  remaining_active_after: 16
+  affected_clubs:
+    - name: Chabab Mohammédia
+      id: 7ff33380-1236-45e5-9c3e-97e753961cc9
+      current_season_memberships: 0
+      current_season_fixtures: 0
+      fantasy_players: 0
+      all_time_memberships: 39
+      all_time_fixtures: 30
+    - name: JS Soualem
+      id: 318655a9-db9f-4706-abb2-df0fa4b13baf
+      current_season_memberships: 0
+      current_season_fixtures: 0
+      fantasy_players: 0
+      all_time_memberships: 39
+      all_time_fixtures: 30
+    - name: Olympic Safi
+      id: 32fb7b61-9af4-4667-8978-b739b5e3f170
+      current_season_memberships: 0
+      current_season_fixtures: 0
+      fantasy_players: 0
+      all_time_memberships: 78
+      all_time_fixtures: 60
+    - name: Olympique Dcheïra
+      id: f2715f02-38ed-4feb-a4e5-72444ad39529
+      current_season_memberships: 0
+      current_season_fixtures: 0
+      fantasy_players: 0
+      all_time_memberships: 36
+      all_time_fixtures: 30
+    - name: Yacoub El Mansour
+      id: e595b91e-4d8f-4f3d-92d7-c23d7e332544
+      current_season_memberships: 0
+      current_season_fixtures: 0
+      fantasy_players: 0
+      all_time_memberships: 28
+      all_time_fixtures: 30
+  every_other_active_club: >
+    The other 16 active clubs each have between 21 and 47 current-season squad rows, exactly one
+    current-season fixture, and a matching number of fantasy players. None is near the boundary,
+    so the candidate set is unambiguous.
+  read_only_guard_rehearsal: >
+    The SELECT half of every guard was run against production as one query: current_season_count
+    = 1, affected_count = 5, candidate_fantasy_players = 0, candidate_current_fixtures = 0,
+    candidate_current_memberships = 0, remaining_active_after = 16. Every guard in the script
+    would pass, and the script's parameters (5, 16) are the values production actually reports.
+
+pgtap:
+  docker_available: false
+  supabase_cli_usable: false
+  substitute: >
+    Rather than claim the suite ran when it could not, a real PostgreSQL 16.13 cluster was
+    initdb'd locally, postgresql-16-pgtap was installed into it, and all 69 files under
+    supabase/migrations were applied in order to a fresh database (plus minimal local stand-ins
+    for the Supabase-managed roles and the auth/storage objects the migrations reference —
+    auth.users/sessions/mfa_factors, storage.buckets/objects, auth.uid()/jwt(), which Supabase
+    provides and a bare cluster does not). This is not `supabase db reset`; it is the same
+    migration set on the same major version, and it is stated here as such.
+  migrations_applied: 69
+  result: 20 assertions, 20 ok, 0 not ok
+  assertions:
+    - ok 1 - fixture: all 8 synthetic clubs start active
+    - ok 2 - happy path: the maintenance body reports exactly 3 deactivated clubs
+    - ok 3 - happy path: exactly the three unreferenced clubs are now inactive
+    - ok 4 - happy path: the five participating clubs stay active
+    - ok 5 - happy path: a club with a current-season fixture but no squad row is left alone
+    - ok 6 - happy path: a club with a current-season squad row but no fixture is left alone
+    - ok 7 - second run: no club is deactivated a second time
+    - ok 8 - second run: the active count is unchanged
+    - ok 9 - second run: no updated_at is bumped again
+    - ok 10 - rollback to savepoint restores all 8 clubs to active
+    - ok 11 - count guard: the wrong expected count refuses and names every affected club
+    - ok 12 - count guard: the refusal rolled the write back — every club is still active
+    - ok 13 - fantasy guard: the fantasy club joins the 8 base clubs as active
+    - ok 14 - fantasy guard: a candidate with a fantasy player refuses and names the club
+    - ok 15 - fantasy guard: a club with a fantasy player is left alone
+    - ok 16 - no current season: the body refuses instead of deactivating every club
+    - ok 17 - no current season: nothing was written
+    - ok 18 - catalog: all 8 clubs are offered before the deactivation
+    - ok 19 - catalog: the deactivation runs
+    - ok 20 - catalog: api.football_team_catalog offers only the five participating clubs afterwards
+  harness_sanity_check: >
+    supabase/tests/database/football_domain.test.sql was run unchanged on the same local cluster:
+    11 ok, 0 not ok. The harness executes the repository's existing suites faithfully.
+  script_file_rehearsal: >
+    scripts/backend/football-deactivate-non-current-teams.sql was additionally executed as a whole
+    file (only the two call parameters changed from (5, 16) to (3, 5) to match the synthetic
+    fixture) against the same local cluster, seeded and then rolled back. It ran end to end:
+    the notice listed the three clubs before the write, the review SELECTs printed 5 active /
+    3 inactive and catalog_entries = 5, and the session ended with an implicit ROLLBACK. This
+    proves the file itself — not just the body — parses and runs.
+  body_sync_check: >
+    The pg_temp body in the script and the copy in the pgTAP test were compared programmatically
+    and are byte-for-byte identical.
+
+gates:
+  - command: bun run typecheck
+    result: pass
+    detail: tsc --noEmit, no output.
+  - command: bun test
+    result: "1321 pass, 4 fail, 14777 expect() calls, 1325 tests across 152 files"
+    detail: >
+      The 4 failures are the pre-existing, deliberate ones in
+      src/content/legal/legal-content.test.ts (the publication gate awaiting owner values:
+      terms.ar, terms.fr, privacy.ar, privacy.fr unfilled placeholders). No other test fails.
+  - command: bun run lint
+    result: "17 problems (0 errors, 17 warnings)"
+    detail: All 17 are pre-existing react-refresh/only-export-components warnings. 0 errors.
+  - command: bun run format:check
+    result: "40 warnings, error in 9 files — all pre-existing"
+    detail: >
+      The offender list is identical to the branch baseline. Neither new .sql file is checked by
+      prettier, and the new .yaml/.md files under docs/engineering/tasks/BG-0043 are clean.
+  - command: bun run backend:migrations:check
+    result: pass
+    detail: "Validated 69 migration(s). No migration was added, so no timestamp was consumed."
+  - command: bun run backend:secrets:check
+    result: pass
+    detail: No high-confidence secrets found in tracked files.
+  - command: bun run config:integrity:check
+    result: pass
+    detail: "no violations in 36 executed configuration file(s)"
+  - command: bun scripts/qa/i18n-gate.ts
+    result: pass
+    detail: "RESULT: pass (pre-existing opaque-expression advisories only)"
+  - command: bun run build
+    result: pass
+    detail: Vite + Nitro build completed; .output generated.
+
+read_surfaces:
+  api.football_team_catalog: filters on app.teams.active — verified from pg_get_functiondef.
+  api.news_team_filters: filters on app.teams.active — verified from pg_get_functiondef.
+  api.fantasy_fixture_difficulty: >
+    does not read app.teams at all; its clubs come from app.fantasy_fixture_assignments joined to
+    app.fixtures, so a club with no current-season fixture cannot appear. Confirmed empirically:
+    16 entries, 16 distinct clubIds, zero of the five relegated clubs.
+  migration_needed: false
+
+conclusion: >
+  The script would deactivate exactly the five clubs named above and leave 16 active, and every
+  guard it carries passes against today's production state. It has not been run against
+  production — that is the owner's step, documented in
+  docs/engineering/tasks/BG-0043/human-actions-section.md.

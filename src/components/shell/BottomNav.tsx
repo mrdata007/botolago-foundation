@@ -1,12 +1,17 @@
-// Design System V2 — Bottom navigation.
+// BotolaGO shell — Bottom navigation, on the UI kit.
 //
-// Premium glass pill with a per-item pressed/active indicator, ≥44×44 tap
-// targets, safe-area padding, RTL-safe. Uses CSS-only transitions to keep
-// bundle size unchanged. Respects prefers-reduced-motion via the global
-// media query in styles.css.
+// Converted from the Design System V2 floating glass pill to the Fantasy
+// language: a full-bleed opaque bar seated on the viewport edge, a hairline
+// rule at the block start, ≥44×44 tap targets, and the kit's micro type
+// scale. The active item is marked with the brand ink rather than a
+// gradient wash, so it reads the same in light and dark.
+//
+// RTL-safe (no physical utilities) and reduced-motion-safe (the global
+// media query in styles.css neutralises the transition).
 
 import { Link, useRouterState } from "@tanstack/react-router";
 
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
@@ -18,12 +23,15 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("nav.primary")}
-      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:hidden"
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-40 md:hidden",
+        ui.surface.bar,
+        ui.rule.blockStart,
+        ui.safe.bottom,
+        "pt-1 shadow-[var(--ui-shadow-raised)]",
+      )}
     >
-      <div
-        className="surface-4 mx-auto flex max-w-2xl items-stretch justify-between px-2 py-1.5"
-        style={{ boxShadow: "var(--shadow-navigation)" }}
-      >
+      <div className="mx-auto flex max-w-2xl items-stretch justify-between px-2">
         {primaryNavItems.map((item) => {
           const active = isPrimaryRouteActive(pathname, item.to);
           const Icon = item.icon;
@@ -34,30 +42,37 @@ export function BottomNav() {
               aria-current={active ? "page" : undefined}
               aria-label={t(item.labelKey)}
               className={cn(
-                "relative flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[11px] font-semibold",
+                "relative flex flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1.5",
+                ui.space.tap,
+                ui.radius.control,
+                ui.text.micro,
+                ui.focus,
                 "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
                 active
-                  ? "text-[color:var(--brand-accent)]"
-                  : "text-[color:var(--text-muted)] hover:text-foreground",
+                  ? cn(ui.tone.ink, "[font-weight:var(--ui-weight-heavy)]")
+                  : cn(ui.tone.muted, "hover:text-[color:var(--ui-ink)]"),
               )}
             >
+              {/* Active indicator: a short bar at the block start of the item,
+                  logical so it mirrors, and tinted from the ink token so it
+                  survives a theme switch. */}
               <span
                 aria-hidden
                 className={cn(
-                  "pointer-events-none absolute inset-1 -z-[1] rounded-xl",
-                  "transition-[opacity,transform] duration-[var(--duration-quick)] ease-[var(--ease-emphasized)]",
-                  active ? "scale-100 opacity-100" : "scale-95 opacity-0",
+                  "pointer-events-none absolute inset-x-3 top-0 h-0.5 rounded-full",
+                  "transition-opacity duration-[var(--duration-quick)] ease-[var(--ease-emphasized)]",
+                  active ? "bg-[color:var(--ui-ink)] opacity-100" : "bg-transparent opacity-0",
                 )}
-                style={{
-                  background:
-                    "linear-gradient(180deg, color-mix(in oklab, var(--brand-accent) 18%, transparent), color-mix(in oklab, var(--brand-primary) 12%, transparent))",
-                  boxShadow:
-                    "inset 0 0 0 1px color-mix(in oklab, var(--brand-accent) 34%, transparent)",
-                }}
               />
-              <Icon className={cn("h-5 w-5 shrink-0", active && "drop-shadow-sm")} aria-hidden />
-              <span className="max-w-full truncate leading-none">{t(item.labelKey)}</span>
+              <Icon className="h-5 w-5 shrink-0" aria-hidden />
+              {/* BG-0124 — this span carried a local `leading-none` that
+                  overrode `ui.text.micro`'s leading on the most-seen element
+                  in the product. Combined with `truncate`, whose
+                  `overflow: hidden` exists for a horizontal ellipsis, it cut
+                  2px off the Latin descender in "Fantasy" and 5px of ink —
+                  about a third — off the Arabic. The ramp already sets the
+                  right leading for both scripts, so this sets none. */}
+              <span className="max-w-full truncate">{t(item.labelKey)}</span>
             </Link>
           );
         })}

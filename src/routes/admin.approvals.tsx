@@ -9,7 +9,6 @@ import type { ApprovalQueueItemDto } from "@/backend/admin/control-plane-contrac
 import { mapAdminError } from "@/backend/admin/errors";
 import {
   ADMIN_PANEL_CLASS,
-  AdminBadge,
   AdminDatum,
   AdminEmptyState,
   AdminField,
@@ -21,6 +20,7 @@ import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
+import { ui, UiBadge } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/approvals")({
@@ -34,10 +34,21 @@ export const Route = createFileRoute("/admin/approvals")({
  *  caller can see why a button is still disabled. The server re-validates. */
 const MINIMUM_REASON_LENGTH = 8;
 
+/**
+ * The badge tone a queue status carries.
+ *
+ * `pending` is the amber one, and amber is the reason this maps onto the kit's
+ * `caution` rather than onto a colour picked here. `--ui-caution` measured
+ * 1.78:1 as a foreground, so it can only ever be a FILL -- `UiBadge` paints it
+ * and puts `--ui-on-caution` on top. The two tones it was tempting to reuse
+ * instead both say the wrong thing about a request still waiting for a second
+ * administrator: `negative` reads as a refusal, `neutral` sits on the sunken
+ * surface, which is how this product draws "already dealt with".
+ */
 function statusTone(status: ApprovalQueueItemDto["status"]) {
   if (status === "approved") return "positive" as const;
-  if (status === "pending") return "warning" as const;
-  if (status === "rejected" || status === "cancelled") return "danger" as const;
+  if (status === "pending") return "caution" as const;
+  if (status === "rejected" || status === "cancelled") return "negative" as const;
   return "neutral" as const;
 }
 
@@ -126,7 +137,7 @@ function AdminApprovalsRoute() {
           {/* The motive is asked for inside each decision's own confirm step.
               A single page-level field was the defect: it armed every row. */}
           <p
-            className={`${ADMIN_PANEL_CLASS} p-4 text-xs leading-6 text-slate-400`}
+            className={`${ADMIN_PANEL_CLASS} p-4 ${ui.text.meta} ${ui.tone.muted}`}
             data-testid="admin-approval-reason-hint"
           >
             {rtl
@@ -166,29 +177,29 @@ function AdminApprovalsRoute() {
                       {/* Operation type and status are machine values: only the
                           value is forced LTR, the card keeps its direction. */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <AdminDatum className="text-sm font-semibold text-slate-100">
+                        <AdminDatum className={`${ui.text.bodyStrong} ${ui.tone.default}`}>
                           {item.operationType}
                         </AdminDatum>
-                        <AdminBadge tone={statusTone(item.status)}>
+                        <UiBadge tone={statusTone(item.status)}>
                           <AdminDatum mono={false}>{item.status}</AdminDatum>
-                        </AdminBadge>
+                        </UiBadge>
                       </div>
 
                       <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                         <AdminField label={rtl ? "معرّف الطلب" : "Identifiant"}>
-                          <AdminDatum className="text-xs text-slate-300">
+                          <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
                             {item.approvalId}
                           </AdminDatum>
                         </AdminField>
                         <AdminField label={rtl ? "حالة التنفيذ" : "Exécution"}>
-                          <AdminDatum mono={false} className="text-xs text-slate-300">
+                          <AdminDatum mono={false} className={`${ui.text.meta} ${ui.tone.muted}`}>
                             {item.executionStatus}
                           </AdminDatum>
                         </AdminField>
                       </dl>
 
                       <div
-                        className={`mt-4 flex-col gap-2 border-t border-slate-800 pt-4 sm:flex-row sm:flex-wrap ${
+                        className={`mt-4 flex-col gap-2 ${ui.rule.blockStart} pt-4 sm:flex-row sm:flex-wrap ${
                           hasActions ? "flex" : "hidden"
                         }`}
                       >
@@ -208,7 +219,13 @@ function AdminApprovalsRoute() {
                               confirmPrompt={
                                 <>
                                   {rtl ? "الموافقة على الطلب " : "Approuver la demande "}
-                                  <AdminDatum className="font-semibold">
+                                  {/* The emphasis inside every confirm prompt
+                                      below is the same 600 it always was --
+                                      `--ui-weight-body` IS `font-semibold`.
+                                      Only its source moves onto the ramp; the
+                                      weight that marks the object of a
+                                      destructive sentence does not change. */}
+                                  <AdminDatum className="[font-weight:var(--ui-weight-body)]">
                                     {item.operationType}
                                   </AdminDatum>
                                   {rtl
@@ -231,7 +248,7 @@ function AdminApprovalsRoute() {
                               confirmPrompt={
                                 <>
                                   {rtl ? "رفض الطلب " : "Rejeter la demande "}
-                                  <AdminDatum className="font-semibold">
+                                  <AdminDatum className="[font-weight:var(--ui-weight-body)]">
                                     {item.operationType}
                                   </AdminDatum>
                                   {rtl
@@ -255,7 +272,7 @@ function AdminApprovalsRoute() {
                                 confirmPrompt={
                                   <>
                                     {rtl ? "إلغاء طلبك " : "Annuler votre demande "}
-                                    <AdminDatum className="font-semibold">
+                                    <AdminDatum className="[font-weight:var(--ui-weight-body)]">
                                       {item.operationType}
                                     </AdminDatum>
                                     {rtl
@@ -283,7 +300,7 @@ function AdminApprovalsRoute() {
                             confirmPrompt={
                               <>
                                 {rtl ? "تنفيذ الطلب " : "Exécuter la demande "}
-                                <AdminDatum className="font-semibold">
+                                <AdminDatum className="[font-weight:var(--ui-weight-body)]">
                                   {item.operationType}
                                 </AdminDatum>
                                 {rtl

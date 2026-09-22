@@ -1,5 +1,13 @@
+// BotolaGO shell — built on the UI kit (`@/components/ui-kit`).
+//
+// The shell is what makes Home → News → Fixtures → Fantasy → Profile feel
+// like one product, so it is the first surface converted to the Fantasy
+// design language: the page surface, gutter, column widths and bottom-nav
+// clearance all come from `--ui-*` rather than from ad-hoc Tailwind.
+
 import type { ReactNode } from "react";
 
+import { UiScreen } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
@@ -10,24 +18,21 @@ export function AppShell({
   backgroundVariant,
   contentWidth = "compact",
   bottomNav,
+  className,
 }: {
   children: ReactNode;
   backgroundVariant?: BackgroundVariant;
   contentWidth?: "compact" | "wide";
   bottomNav?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="relative min-h-dvh text-foreground">
+    <div className={cn("relative min-h-dvh text-[color:var(--ui-on-surface)]", className)}>
       <PageBackground variant={backgroundVariant} />
       <TopBar />
-      <main
-        className={cn(
-          "mx-auto px-3 pb-28 pt-4 sm:px-5 md:pb-12 md:pt-6",
-          contentWidth === "wide" ? "max-w-5xl" : "max-w-2xl",
-        )}
-      >
+      <UiScreen width={contentWidth === "wide" ? "wide" : "content"} bottomNav>
         {children}
-      </main>
+      </UiScreen>
       {bottomNav ?? <BottomNav />}
     </div>
   );

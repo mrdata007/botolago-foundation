@@ -5,15 +5,28 @@ import { toast } from "sonner";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
-import {
-  FplButton,
-  FplHeader,
-  FplPill,
-  FplRankMovement,
-  FplSegmented,
-} from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import {
+  ui,
+  UiButton,
+  UiCard,
+  UiEmptyState,
+  UiErrorState,
+  UiHeader,
+  UiPill,
+  UiRankMovement,
+  UiSegmented,
+  UiSkeleton,
+  UiTable,
+  UiTBody,
+  UiTD,
+  UiTH,
+  UiTHead,
+  UiTR,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 
@@ -22,8 +35,13 @@ export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
 });
 
 /**
- * FPL-016/017 league detail: Back header with the league name, League / Cup
- * control, "Last Updated" line and the Pos / Team / GW / Total standings.
+ * League detail: the league name in the header, a League / Cup control, the
+ * "last updated" line and the Pos / Team / GW / Total standings.
+ *
+ * The standings are a `UiTable`: rank, team, gameweek score, total and
+ * movement are scanned one column at a time, the numeric columns carry
+ * tabular figures aligned to the inline-end edge, and the column order
+ * mirrors with the document direction rather than being mirrored by hand.
  */
 function LeagueDetailPage() {
   return (
@@ -53,6 +71,7 @@ function LeagueDetailBody() {
     enabled: screen.phase === "ready",
   });
   const gw = screen.gameweek?.number ?? null;
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
 
   const leave = async () => {
     if (!leagueQ.data || busy) return;
@@ -69,119 +88,170 @@ function LeagueDetailBody() {
     }
   };
 
+  // BG-0100: pinned to the competition calendar, never the viewer's. A
+  // formatter without `timeZone` disagrees with every other time on the page.
   const updated = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "Africa/Casablanca",
+    timeZone: MATCH_TIME_ZONE,
   }).format(new Date());
+
+  const movementLabels = {
+    up: t("fantasy.rank.up"),
+    down: t("fantasy.rank.down"),
+    same: t("fantasy.rank.same"),
+  };
+  const rows = standingsQ.data ?? [];
 
   return (
     <>
-      <FplHeader title={leagueQ.data?.name ?? t("fpl.league")} backTo="/fantasy/leagues">
-        <FplSegmented
+      <UiHeader
+        title={leagueQ.data?.name ?? t("fpl.league")}
+        tone="gradient"
+        backTo="/fantasy/leagues"
+      >
+        <UiSegmented
           className="mt-3"
+          tone="onGradient"
           value={tab}
           onChange={setTab}
+          label={t("fpl.league")}
           options={[
             { value: "league", label: t("fpl.league") },
             { value: "cup", label: t("fpl.cups") },
           ]}
         />
-      </FplHeader>
+      </UiHeader>
       <FantasyScreenGate state={screen} next={`/fantasy/leagues/${leagueId}`}>
         {tab === "league" ? (
-          <div className="bg-white">
-            <p className="border-b border-[color:var(--fpl-grey)] px-4 py-3 text-center text-[14px] text-foreground">
-              {t("fpl.last_updated")}: <strong className="font-extrabold">{updated}</strong>
+          <div className={ui.surface.page}>
+            <p className={cn("px-4 py-3 text-center", ui.rule.block, ui.text.meta, ui.tone.muted)}>
+              {t("fpl.last_updated")}:{" "}
+              <strong className={cn(ui.tone.default, "[font-weight:var(--ui-weight-heavy)]")}>
+                {updated}
+              </strong>
             </p>
+
             {standingsQ.isPending ? (
-              <div
-                role="status"
-                className="m-4 h-40 animate-pulse rounded bg-[color:var(--fpl-grey)] motion-reduce:animate-none"
-              />
+              <div role="status" aria-label={t("state.loading")} className="m-4 space-y-2">
+                <UiSkeleton className="h-10" />
+                <UiSkeleton className="h-10" />
+                <UiSkeleton className="h-10" />
+                <UiSkeleton className="h-10" />
+              </div>
             ) : standingsQ.isError ? (
               <div className="p-4">
-                <FplButton variant="ink" onClick={() => void standingsQ.refetch()}>
-                  {t("state.retry")}
-                </FplButton>
+                <UiErrorState onRetry={() => void standingsQ.refetch()} />
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="p-4">
+                <UiEmptyState
+                  title={t("fpl.no_data_yet")}
+                  body={t("fantasy.leagues.no_standings")}
+                />
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="text-[12px] text-[color:var(--fpl-grey-text)]">
-                    <th className="w-16 py-2 ps-4 text-start font-semibold">{t("fpl.pos")}</th>
-                    <th className="py-2 text-start font-semibold">{t("fpl.team")}</th>
-                    <th className="w-16 py-2 text-end font-semibold">
-                      {gw ? `GW${gw}` : t("fpl.gameweek")}
-                    </th>
-                    <th className="w-20 py-2 pe-4 text-end font-semibold">{t("fpl.total")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(standingsQ.data ?? []).map((row) => (
-                    <tr key={row.managerId} className="border-t border-[color:var(--fpl-grey)]">
-                      <td className="py-3 ps-4">
-                        <span className="inline-flex items-center gap-2">
-                          <FplRankMovement rank={row.rank} previousRank={row.previousRank} />
-                          <span className="fpl-tabular text-[15px] font-bold">{row.rank}</span>
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <div className="text-[16px] font-extrabold text-foreground">
+              // `table-fixed`: header-sized columns, so a long team name
+              // truncates in its own cell instead of pushing Total off a
+              // 390px screen.
+              <UiTable caption={t("fantasy.leagues.standings")} tableClassName="table-fixed">
+                <UiTHead>
+                  <UiTR>
+                    <UiTH numeric className="w-10">
+                      {t("fpl.pos")}
+                    </UiTH>
+                    <UiTH>{t("fpl.team")}</UiTH>
+                    <UiTH numeric className="w-12" title={t("fpl.gameweek")}>
+                      {gw ? `GW${gw}` : t("fantasy.leagues.gw")}
+                    </UiTH>
+                    <UiTH numeric className="w-14">
+                      {t("fpl.total")}
+                    </UiTH>
+                    <UiTH numeric className="w-9">
+                      <span className="sr-only">{t("fantasy.leagues.movement")}</span>
+                    </UiTH>
+                  </UiTR>
+                </UiTHead>
+                <UiTBody>
+                  {rows.map((row) => (
+                    <UiTR key={row.managerId}>
+                      <UiTD numeric strong>
+                        {nf.format(row.rank)}
+                      </UiTD>
+                      <UiTD>
+                        <span
+                          dir="auto"
+                          className={cn(
+                            "block truncate",
+                            ui.text.body,
+                            "[font-weight:var(--ui-weight-heavy)]",
+                          )}
+                        >
                           {row.teamName}
-                        </div>
-                        <div className="text-[13px] text-[color:var(--fpl-grey-text)]">
-                          {row.managerName || " "}
-                        </div>
-                      </td>
-                      <td className="fpl-tabular py-3 text-end text-[15px]">{row.gameweekScore}</td>
-                      <td className="fpl-tabular py-3 pe-4 text-end text-[15px] font-extrabold">
-                        {row.totalScore}
-                      </td>
-                    </tr>
+                        </span>
+                        {row.managerName && row.managerName !== row.teamName ? (
+                          <span
+                            dir="auto"
+                            className={cn("block truncate", ui.text.micro, ui.tone.muted)}
+                          >
+                            {row.managerName}
+                          </span>
+                        ) : null}
+                      </UiTD>
+                      <UiTD numeric className={ui.tone.muted}>
+                        {nf.format(row.gameweekScore)}
+                      </UiTD>
+                      <UiTD numeric strong>
+                        {nf.format(row.totalScore)}
+                      </UiTD>
+                      <UiTD numeric>
+                        <UiRankMovement
+                          rank={row.rank}
+                          previousRank={row.previousRank}
+                          labels={movementLabels}
+                        />
+                      </UiTD>
+                    </UiTR>
                   ))}
-                  {(standingsQ.data ?? []).length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="px-4 py-6 text-center text-[13px] text-[color:var(--fpl-grey-text)]"
-                      >
-                        {t("fpl.no_data_yet")}
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+                </UiTBody>
+              </UiTable>
             )}
+
             {leagueQ.data?.type === "private" ? (
               <div className="p-4">
-                <FplButton variant="outline" onClick={() => void leave()} disabled={busy}>
+                <UiButton variant="outline" onClick={() => void leave()} disabled={busy}>
                   {t("fpl.leave_league")}
-                </FplButton>
+                </UiButton>
               </div>
             ) : null}
           </div>
         ) : (
-          <section className="mx-3 mt-3 rounded-[6px] bg-white p-4 shadow-sm">
-            <div className="text-center">
-              <FplPill>{t("fpl.cup_not_started").replace("{n}", String((gw ?? 1) + 1))}</FplPill>
-            </div>
-            <p className="mt-3 text-[15px] text-foreground">{t("fpl.cup_not_qualified")}</p>
-            <h3 className="mt-3 text-[20px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-              {t("fpl.cup_how_title")}
-            </h3>
-            <p className="mt-2 text-[14px] leading-relaxed text-foreground">
-              {t("fpl.cup_how_body")}
-            </p>
-            <p className="mt-2 text-[14px] text-foreground">{t("fpl.cup_tiebreak")}</p>
-            <ul className="mt-1 text-[14px] text-foreground">
-              <li>{t("fpl.cup_tb1")}</li>
-              <li>{t("fpl.cup_tb2")}</li>
-              <li>{t("fpl.cup_tb3")}</li>
-            </ul>
+          <section className="mx-3 mt-3">
+            <UiCard>
+              <div className="text-center">
+                <UiPill>{t("fpl.cup_not_started").replace("{n}", String((gw ?? 1) + 1))}</UiPill>
+              </div>
+              <p className={cn("mt-3", ui.text.body, ui.tone.default)}>
+                {t("fpl.cup_not_qualified")}
+              </p>
+              <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
+                {t("fpl.cup_how_title")}
+              </h2>
+              <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+                {t("fpl.cup_how_body")}
+              </p>
+              <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+                {t("fpl.cup_tiebreak")}
+              </p>
+              <ul className={cn("mt-1 space-y-0.5", ui.text.secondary, ui.tone.muted)}>
+                <li>{t("fpl.cup_tb1")}</li>
+                <li>{t("fpl.cup_tb2")}</li>
+                <li>{t("fpl.cup_tb3")}</li>
+              </ul>
+            </UiCard>
           </section>
         )}
       </FantasyScreenGate>

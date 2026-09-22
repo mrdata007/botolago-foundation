@@ -1,0 +1,27 @@
+task_id: BG-0072
+title: Lovable commit broke lint on main
+area: ci
+severity: P1
+researched_commit: f0782d6fff713da6d66d8555925eef753c4f14e0
+status: VERIFIED_AS_GIVEN
+
+finding: >
+  Re-verified on main@f0782d6 before building. `bunx eslint .` exits non-zero with
+  exactly one error and fifteen warnings:
+  src/routes/fantasy.players.$playerId.tsx:35:29 prettier/prettier -- the `title`
+  ternary is on one line and Prettier wants it wrapped across three. The fifteen
+  warnings are all react-refresh/only-export-components on files that export a
+  constant beside a component; they pre-date this commit and are accepted.
+
+root_cause: >
+  Commit 8089642 by gpt-engineer-app[bot] (the Lovable sync) added the ternary
+  without running the repo's formatter. Lovable edits do not pass through the
+  pre-commit hook, so formatting drift arrives on main directly.
+
+change: >
+  `prettier --write` on that one file. Three lines added, one removed. No logic
+  change: the emitted `title` string is identical for both branches of the ternary.
+
+acceptance:
+  - bunx eslint . exits 0 with 0 errors (15 warnings remain, unchanged)
+  - the diff touches exactly one file

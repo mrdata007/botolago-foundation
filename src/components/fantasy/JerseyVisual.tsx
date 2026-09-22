@@ -1,6 +1,18 @@
+import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import type { KitConfig } from "@/lib/kits";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
+
+/**
+ * The shadow the garment casts on whatever is behind it — the turf, a list
+ * row, a sheet. Spelled once rather than twice because it is one decision, and
+ * kept as a literal for the same reason as the `rgba(...)` stops below: it is
+ * lighting, not palette. There is no `--ui-shadow-*` step that means "an
+ * object casting on an unknown surface" — the four elevation tokens are card,
+ * raised bar, overlay and desktop column — and a shadow that changed colour
+ * with the theme is not how a shadow on an object works.
+ */
+const GARMENT_DROP_SHADOW = "drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]";
 
 interface JerseyVisualProps {
   kit: KitConfig;
@@ -19,6 +31,14 @@ interface JerseyVisualProps {
  * shadow so the shirt reads as a garment rather than a flat icon. Supports
  * several deterministic kit patterns and an optional pixel image with
  * graceful fallback.
+ *
+ * The black/white `rgba(...)` stops below are deliberately literal and are
+ * NOT a palette: they are the lighting on a garment — a highlight, a side
+ * shade, a cuff, an outline — applied over whatever club colours
+ * `getKitForClub` returns. Tokenising them would mean a "shadow colour" that
+ * changes with the theme, which is not how a shadow on an object works, and
+ * would make a light kit and a dark kit shade differently. The club colours
+ * themselves live in `src/lib/kits.ts`.
  */
 export function JerseyVisual({
   kit,
@@ -37,10 +57,12 @@ export function JerseyVisual({
       {selected && (
         <span
           aria-hidden
-          className="absolute inset-0 -m-1 rounded-full"
+          className={cn("absolute inset-0 -m-1", ui.radius.full)}
           style={{
+            // A centred radial, so it does not mirror under `dir="rtl"`, in a
+            // kit accent rather than the legacy `--brand-accent`.
             background:
-              "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 55%, transparent), transparent 70%)",
+              "radial-gradient(closest-side at 50% 50%, color-mix(in oklab, var(--ui-accent-sky) 55%, transparent), transparent 70%)",
             filter: "blur(2px)",
           }}
         />
@@ -51,7 +73,7 @@ export function JerseyVisual({
         viewBox={`0 0 ${w} ${h}`}
         width={size}
         height={size * (h / w)}
-        className="relative select-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+        className={cn("relative select-none", GARMENT_DROP_SHADOW)}
       >
         <defs>
           <linearGradient id={`${gid}-hi`} x1="0" y1="0" x2="0" y2="1">
@@ -139,7 +161,10 @@ export function JerseyVisual({
         alt={ariaLabel ?? ""}
         width={size}
         height={size * (h / w)}
-        className="absolute inset-0 z-10 h-full w-full select-none object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+        className={cn(
+          "absolute inset-0 z-10 h-full w-full select-none object-contain",
+          GARMENT_DROP_SHADOW,
+        )}
         draggable={false}
       />
     </div>

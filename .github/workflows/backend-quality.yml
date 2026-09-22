@@ -37,7 +37,12 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
       - run: bun run lint
+      # The production bundle is built here as a smoke test, not published, so
+      # the legal placeholder guard is exempted by name. A real publish does not
+      # set this and will refuse while any bracketed blank remains.
       - run: bun run build
+        env:
+          LEGAL_GATE_ALLOW_PLACEHOLDERS: "1"
       - run: bunx playwright install --with-deps chromium
       - run: bunx playwright test tests/e2e/anonymous.acceptance.e2e.ts
       - name: Upload sanitized browser evidence on failure

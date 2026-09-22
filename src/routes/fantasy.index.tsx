@@ -19,9 +19,23 @@ import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
-import { FplPill, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import {
+  ui,
+  UiCard,
+  UiPill,
+  UiSegmented,
+  UiSkeleton,
+  UiTable,
+  UiTBody,
+  UiTD,
+  UiTH,
+  UiTHead,
+  UiTR,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -36,6 +50,20 @@ export const Route = createFileRoute("/fantasy/")({
 /**
  * FPL-001 Fantasy hub + FPL-015 "Leagues & Cups" section, reconstructed
  * screen-for-screen with BotolaGO identity and Botola Pro data.
+ *
+ * Converted to the UI kit (BG-0092). The hub carried the largest single
+ * cluster of the section's debt: 33 `--fpl-*` references, a `<style>` block
+ * with a hand-written `rgba()` team card, three translucent `bg-white/NN`
+ * panels that left themed copy on a permanently white pane, a literal
+ * `linear-gradient(180deg, …)` that mirrors the wrong way under `dir="rtl"`,
+ * and `--fpl-ink-deep` used as a text colour on nine headings. The layout,
+ * the data flow and every query are unchanged — only the presentation is.
+ *
+ * The pills and the Leagues/Cups tabs now come straight from the kit rather
+ * than through `components/fpl/primitives`. `FplPill` on its default tone was
+ * `UiPill`, and `FplSegmented tone="onLight"` was `UiSegmented
+ * tone="onSurface"` — the adapter's whole contribution was renaming the tone.
+ * It is a migration seam for screens not yet converted, and this one is.
  */
 function FantasyHub() {
   const { t, lang } = useI18n();
@@ -46,10 +74,13 @@ function FantasyHub() {
   const team = screen.team;
   const gameweek = screen.gameweek;
 
+  // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
+  // the hub's "News & Video" rail is not rendered and its feed is not fetched.
   const articles = useQuery({
     queryKey: ["fantasy-articles", lang],
     queryFn: () => newsService.getArticles(lang, { category: "for_you" }),
     staleTime: 5 * 60_000,
+    enabled: NEWS_ENABLED,
   });
   // The reference "News & Video" cards always carry a photo: prefer articles
   // with a real hero image and only fall back to the gradient-backed ones
@@ -69,34 +100,46 @@ function FantasyHub() {
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
-        timeZone: "Africa/Casablanca",
+        // Pinned to the competition calendar, not the viewer's browser: the
+        // deadline is 2026-09-24T18:30Z and must read 19:30 Casablanca for
+        // everyone (BG-0100).
+        timeZone: MATCH_TIME_ZONE,
       }).format(new Date(gameweek.deadline))
     : null;
 
+  const teamCardClass = cn(
+    "flex min-h-[var(--ui-row-min)] items-center justify-center gap-2 px-4 text-center",
+    ui.radius.control,
+    ui.surface.card,
+    ui.text.subtitle,
+    ui.tone.ink,
+    ui.focus,
+  );
+
   const teamCard = (() => {
     if (screen.phase === "loading") {
-      return (
-        <div className="h-14 animate-pulse rounded-[6px] bg-white/60 motion-reduce:animate-none" />
-      );
+      return <UiSkeleton className="h-14" />;
     }
     if (authStatus !== "authenticated" || source === "guest") {
       return (
-        <Link to="/auth/login" search={{ next: "/fantasy" }} className="fpl-team-card">
-          {t("auth.prompt.login")} <ArrowRight className="h-5 w-5" aria-hidden />
+        <Link to="/auth/login" search={{ next: "/fantasy" }} className={teamCardClass}>
+          {t("auth.prompt.login")}{" "}
+          <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
         </Link>
       );
     }
     if (team) {
       return (
-        <Link to="/fantasy/profile" className="fpl-team-card">
+        <Link to="/fantasy/profile" className={teamCardClass}>
           <span className="truncate">{team.teamName}</span>
-          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
+          <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
         </Link>
       );
     }
     return (
-      <Link to="/fantasy/create" className="fpl-team-card">
-        {t("fpl.create_team")} <ArrowRight className="h-5 w-5" aria-hidden />
+      <Link to="/fantasy/create" className={teamCardClass}>
+        {t("fpl.create_team")}{" "}
+        <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
       </Link>
     );
   })();
@@ -105,26 +148,34 @@ function FantasyHub() {
     <FantasyFrame bottomNav>
       {/* Hero */}
       <section
-        className="relative overflow-hidden px-4 pb-4 pt-[max(env(safe-area-inset-top),1rem)]"
-        style={{ backgroundImage: "var(--fpl-hero)" }}
+        className={cn(
+          "relative overflow-hidden pb-4 pt-[max(env(safe-area-inset-top),1rem)]",
+          ui.space.gutter,
+          ui.tone.onGradHeader,
+        )}
+        style={{ backgroundImage: "var(--ui-grad-hero)" }}
       >
         <div className="flex items-center gap-2 pt-6">
-          <img src="/favicon.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg" />
-          <h1 className="text-[34px] font-black tracking-tight text-[color:var(--fpl-ink-deep)]">
-            {t("fantasy.title")}
-          </h1>
+          <img
+            src="/favicon.png"
+            alt=""
+            width={40}
+            height={40}
+            className={cn("h-10 w-10", ui.radius.control)}
+          />
+          <h1 className={cn("min-w-0 truncate", ui.text.hero)}>{t("fantasy.title")}</h1>
         </div>
         <div className="mt-4">{teamCard}</div>
 
-        <div className="mt-3 rounded-[6px] bg-white/85 px-4 pb-4 pt-3 text-center backdrop-blur">
+        <UiCard className="mt-3 text-center" padding="md">
           {screen.phase === "ready" || screen.phase === "guest" || screen.phase === "no_team" ? (
             <>
               {gameweek ? (
                 <>
-                  <FplPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</FplPill>
-                  <p className="mt-2 text-[14px] text-[color:var(--fpl-ink-deep)]">
+                  <UiPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</UiPill>
+                  <p className={cn("mt-2", ui.text.secondary, ui.tone.default)}>
                     {t("fpl.gameweek")} {gameweek.number} {t("fpl.deadline")}:{" "}
-                    <strong className="font-extrabold">{deadlineText}</strong>
+                    <strong className="[font-weight:var(--ui-weight-heavy)]">{deadlineText}</strong>
                   </p>
                 </>
               ) : null}
@@ -132,14 +183,14 @@ function FantasyHub() {
                 <HubButton
                   to="/fantasy/team"
                   gradient
-                  icon={<Shirt className="h-4 w-4" aria-hidden />}
+                  icon={<Shirt className="h-4 w-4 shrink-0" aria-hidden />}
                 >
                   {t("fpl.pick_team")}
                 </HubButton>
                 <HubButton
                   to="/fantasy/transfers"
                   gradient
-                  icon={<ArrowRightLeft className="h-4 w-4" aria-hidden />}
+                  icon={<ArrowRightLeft className="h-4 w-4 shrink-0" aria-hidden />}
                 >
                   {t("fpl.transfers")}
                 </HubButton>
@@ -154,79 +205,124 @@ function FantasyHub() {
               <FantasyPhaseBody phase={screen.phase} next="/fantasy" retry={screen.retry} />
             </div>
           )}
-        </div>
+        </UiCard>
       </section>
 
       {/* Promotional banner slot (Draft banner in the reference → BotolaGO overall rankings) */}
-      <div className="px-4 pt-4">
+      <div className={cn("pt-4", ui.space.gutter)}>
         <Link
           to="/fantasy/rankings"
-          className="relative block overflow-hidden rounded-[6px] bg-[color:var(--fpl-ink)] px-4 py-4 text-center text-white"
+          className={cn(
+            "relative block overflow-hidden px-4 py-4 text-center",
+            ui.radius.control,
+            ui.surface.ink,
+            ui.focus,
+          )}
         >
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-60"
             style={{
+              // Centred radial origins, so the highlight does not land on the
+              // opposite edge under `dir="rtl"`.
               background:
-                "radial-gradient(60% 120% at 0% 50%, oklch(0.62 0.18 262) 0%, transparent 60%), radial-gradient(50% 120% at 100% 50%, oklch(0.86 0.11 205) 0%, transparent 60%)",
+                "radial-gradient(70% 140% at 50% 0%, var(--ui-accent-sky) 0%, transparent 62%), radial-gradient(80% 140% at 50% 100%, var(--ui-ink-deep) 0%, transparent 68%)",
             }}
           />
-          <span className="relative block text-[12px] font-bold uppercase tracking-[0.2em] text-[color:var(--fpl-cyan)]">
+          <span className={cn("relative block", ui.text.label, ui.tone.onInk)}>
             BotolaGO Fantasy
           </span>
-          <span className="relative block text-[28px] font-black leading-tight">
+          {/* Prose, not a figure — the stat ramp is numerals only. */}
+          <span className={cn("relative block", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}
           </span>
-          <span className="relative mt-1 inline-flex items-center gap-1 text-[14px] font-bold">
-            {t("fpl.view_all")} <ArrowRight className="h-4 w-4" aria-hidden />
+          <span
+            className={cn(
+              "relative mt-1 inline-flex items-center gap-1",
+              ui.text.secondary,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.onInkPlain,
+            )}
+          >
+            {t("fpl.view_all")}{" "}
+            <ArrowRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
           </span>
         </Link>
       </div>
 
-      {/* News & Video */}
-      <section className="pt-5">
-        <div className="flex items-center justify-between px-4">
-          <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-            {t("fpl.news_video")}
-          </h2>
-          <Link
-            to="/news"
-            className="inline-flex items-center gap-1 text-[14px] font-bold text-[color:var(--fpl-ink)]"
-          >
-            {t("fpl.view_all")} <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
-        <div className="mt-2 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
-          {hubArticles.map((article) => (
+      {/* News & Video — hidden at launch (NEWS_ENABLED). */}
+      {NEWS_ENABLED && (
+        <section className="pt-5">
+          <div className={cn("flex items-center justify-between gap-2", ui.space.gutter)}>
+            <h2 className={cn("min-w-0 truncate", ui.text.section, ui.tone.default)}>
+              {t("fpl.news_video")}
+            </h2>
             <Link
-              key={article.id}
-              to="/news/$articleId"
-              params={{ articleId: article.id }}
-              className="w-[190px] shrink-0 snap-start overflow-hidden rounded-[4px] bg-[color:var(--fpl-cyan)]/40"
+              to="/news"
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1",
+                ui.text.secondary,
+                "[font-weight:var(--ui-weight-heavy)]",
+                ui.tone.ink,
+                ui.focus,
+                ui.radius.control,
+              )}
             >
-              {article.heroUrl ? (
-                <MediaImage
-                  src={article.heroUrl}
-                  alt={article.heroAlt ?? ""}
-                  fallback={article.heroGradient}
-                  className="aspect-[16/10] w-full"
-                />
-              ) : null}
-              <p className="line-clamp-3 px-2 py-2 text-[13px] font-bold leading-snug text-[color:var(--fpl-ink-deep)]">
-                {article.title[lang] ?? article.title.fr}
-              </p>
+              {t("fpl.view_all")}{" "}
+              <ArrowRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
             </Link>
-          ))}
-          {articles.isPending
-            ? [0, 1, 2].map((index) => (
-                <div
-                  key={index}
-                  className="h-[170px] w-[190px] shrink-0 animate-pulse rounded-[4px] bg-white motion-reduce:animate-none"
-                />
-              ))
-            : null}
-        </div>
-      </section>
+          </div>
+          <div
+            className={cn(
+              "mt-2 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none]",
+              ui.space.gutter,
+            )}
+          >
+            {hubArticles.map((article) => (
+              <Link
+                key={article.id}
+                to="/news/$articleId"
+                params={{ articleId: article.id }}
+                className={cn(
+                  "w-[190px] shrink-0 snap-start overflow-hidden",
+                  ui.radius.tight,
+                  ui.surface.sunken,
+                  ui.focus,
+                )}
+              >
+                {article.heroUrl ? (
+                  <MediaImage
+                    src={article.heroUrl}
+                    alt={article.heroAlt ?? ""}
+                    fallback={article.heroGradient}
+                    className="aspect-[16/10] w-full"
+                  />
+                ) : null}
+                <p
+                  className={cn(
+                    // No `leading-*` literal beside the ramp step: the step
+                    // carries its own leading, per script (BG-0124). This one
+                    // was `leading-snug` and never applied — `ui.text.meta`
+                    // sets the same property after it — so it was a second
+                    // source of truth that happened to be losing.
+                    "line-clamp-3 px-2 py-2",
+                    ui.text.meta,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.tone.default,
+                  )}
+                >
+                  {article.title[lang] ?? article.title.fr}
+                </p>
+              </Link>
+            ))}
+            {articles.isPending
+              ? [0, 1, 2].map((index) => (
+                  <UiSkeleton key={index} className="h-[170px] w-[190px] shrink-0" />
+                ))
+              : null}
+          </div>
+        </section>
+      )}
 
       {/* Leagues & Cups */}
       <LeaguesAndCups
@@ -241,16 +337,18 @@ function FantasyHub() {
       <NotificationsSection />
 
       {/* Follow BotolaGO */}
-      <section className="px-4 pt-6">
-        <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-          {t("fpl.follow")}
-        </h2>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <FollowCard
-            to="/news"
-            label={t("nav.news")}
-            icon={<Newspaper className="h-7 w-7" aria-hidden />}
-          />
+      <section className={cn("pt-6", ui.space.gutter)}>
+        <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.follow")}</h2>
+        {/* Three tiles with News, two without it — the row stays balanced
+            instead of leaving a gap where the News tile was. */}
+        <div className={cn("mt-3 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
+          {NEWS_ENABLED && (
+            <FollowCard
+              to="/news"
+              label={t("nav.news")}
+              icon={<Newspaper className="h-7 w-7" aria-hidden />}
+            />
+          )}
           <FollowCard
             to="/matches"
             label={t("nav.matches")}
@@ -266,36 +364,44 @@ function FantasyHub() {
 
       {/* More about */}
       <section
-        className="mt-6 px-4 py-6"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, oklch(0.84 0.11 205) 0%, oklch(0.68 0.16 238) 100%)",
-        }}
+        className={cn("mt-6 py-6", ui.space.gutter, ui.tone.onGradHeader)}
+        // `to bottom`, not `180deg`: a degree angle lands on the opposite
+        // edge under `dir="rtl"`.
+        style={{ backgroundImage: "var(--ui-grad-header)" }}
       >
-        <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-          {t("fpl.more_about")}
-        </h2>
+        <h2 className={ui.text.section}>{t("fpl.more_about")}</h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <Link
-            to="/fantasy/rules"
-            className="grid min-h-16 place-items-center rounded-[4px] bg-white/40 px-3 text-center text-[15px] font-extrabold text-[color:var(--fpl-ink-deep)]"
-          >
-            {t("fpl.rules")}
-          </Link>
-          <Link
-            to="/fantasy/help"
-            className="grid min-h-16 place-items-center rounded-[4px] bg-white/40 px-3 text-center text-[15px] font-extrabold text-[color:var(--fpl-ink-deep)]"
-          >
-            {t("fpl.help_rules")}
-          </Link>
+          <MoreAboutLink to="/fantasy/rules">{t("fpl.rules")}</MoreAboutLink>
+          <MoreAboutLink to="/fantasy/help">{t("fpl.help_rules")}</MoreAboutLink>
         </div>
       </section>
 
-      <style>{`
-        .fpl-team-card{display:flex;min-height:56px;align-items:center;justify-content:center;gap:.5rem;border-radius:6px;background:rgba(255,255,255,.55);padding:0 1rem;text-align:center;font-size:22px;font-weight:800;color:var(--fpl-ink-deep);backdrop-filter:blur(6px)}
-      `}</style>
       {owned.mutationStatus === "error" ? null : null}
     </FantasyFrame>
+  );
+}
+
+function MoreAboutLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        // `min-h-16` (64px) stays a literal deliberately. It is not a control
+        // height — it clears `--ui-row-min` with 16px to spare — it is the
+        // height of a two-up tile, and the ramp has no step for that. Rule 5
+        // exists to stop a control being sized under the tap floor by a
+        // literal; shrinking this to `--ui-row-min` to satisfy the letter of
+        // it would make the tile smaller for no reason.
+        "grid min-h-16 place-items-center px-3 text-center",
+        ui.radius.control,
+        ui.surface.card,
+        ui.text.bodyStrong,
+        ui.tone.ink,
+        ui.focus,
+      )}
+    >
+      {children}
+    </Link>
   );
 }
 
@@ -314,13 +420,22 @@ function HubButton({
     <Link
       to={to}
       className={cn(
-        "inline-flex min-h-[52px] items-center justify-center gap-1.5 whitespace-nowrap rounded-[4px] px-2 text-center text-[13px] font-extrabold leading-tight text-[color:var(--fpl-ink-deep)]",
-        gradient ? "" : "bg-white shadow-sm",
+        // `leading-tight` dropped: the ramp step below sets the line box, per
+        // script (BG-0124), and this button's label truncates — the one place
+        // a too-flat leading cuts glyph ink instead of just looking tight.
+        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 text-center",
+        ui.radius.control,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+        ui.focus,
+        gradient
+          ? "text-[color:var(--ui-ink-deep)]"
+          : cn(ui.surface.card, ui.tone.ink, "shadow-[var(--ui-shadow-card)]"),
       )}
-      style={gradient ? { backgroundImage: "var(--fpl-grad)" } : undefined}
+      style={gradient ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >
       {icon}
-      {children}
+      <span className="min-w-0 truncate">{children}</span>
     </Link>
   );
 }
@@ -329,15 +444,33 @@ function FollowCard({ to, label, icon }: { to: string; label: string; icon: Reac
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-2 rounded-[4px] bg-white px-2 py-3 text-center shadow-sm"
+      className={cn(
+        "flex flex-col items-center gap-2 px-2 py-3 text-center",
+        ui.radius.control,
+        ui.surface.card,
+        ui.focus,
+      )}
     >
       <span
-        className="grid h-16 w-16 place-items-center rounded-full text-[color:var(--fpl-ink-deep)]"
-        style={{ backgroundImage: "var(--fpl-grad)" }}
+        className={cn(
+          "grid h-16 w-16 shrink-0 place-items-center",
+          ui.radius.full,
+          "text-[color:var(--ui-ink-deep)]",
+        )}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
       >
         {icon}
       </span>
-      <span className="text-[13px] font-extrabold text-[color:var(--fpl-ink-deep)]">{label}</span>
+      <span
+        className={cn(
+          "min-w-0 truncate",
+          ui.text.meta,
+          ui.tone.default,
+          "[font-weight:var(--ui-weight-heavy)]",
+        )}
+      >
+        {label}
+      </span>
     </Link>
   );
 }
@@ -370,13 +503,11 @@ function LeaguesAndCups({
       : []),
   ];
   return (
-    <section className="mx-4 mt-6 rounded-[6px] bg-white p-4 shadow-sm">
-      <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-        {t("fpl.leagues_cups")}
-      </h2>
-      <FplSegmented
+    <UiCard as="section" className="mx-4 mt-6" padding="md">
+      <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.leagues_cups")}</h2>
+      <UiSegmented
         className="mt-3"
-        tone="onLight"
+        tone="onSurface"
         value={tab}
         onChange={setTab}
         options={[
@@ -387,38 +518,32 @@ function LeaguesAndCups({
       {tab === "leagues" ? (
         <>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <Link
+            <LeagueAction
               to="/fantasy/leagues/join"
-              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-[4px] bg-white px-2 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
+              icon={<Plus className="h-4 w-4" aria-hidden />}
             >
-              <Plus className="h-4 w-4" aria-hidden /> {t("fpl.join_leagues")}
-            </Link>
-            <Link
-              to="/fantasy/leagues"
-              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-[4px] bg-white px-2 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
-            >
-              <Settings className="h-4 w-4" aria-hidden /> {t("fpl.configure_leagues")}
-            </Link>
+              {t("fpl.join_leagues")}
+            </LeagueAction>
+            <LeagueAction to="/fantasy/leagues" icon={<Settings className="h-4 w-4" aria-hidden />}>
+              {t("fpl.configure_leagues")}
+            </LeagueAction>
           </div>
 
           <div className="mt-4">
-            <FplPill>{t("fpl.general_leagues")}</FplPill>
-            <LeagueTable rows={generalRows} />
+            <UiPill>{t("fpl.general_leagues")}</UiPill>
+            <LeagueTable rows={generalRows} caption={t("fpl.general_leagues")} />
           </div>
           <div className="mt-4">
-            <FplPill>{t("fpl.private_leagues")}</FplPill>
+            <UiPill>{t("fpl.private_leagues")}</UiPill>
             {phase !== "ready" || !hasTeam ? (
-              <p className="px-1 py-3 text-[13px] text-[color:var(--fpl-grey-text)]">
-                {t("fpl.no_leagues")}
-              </p>
+              <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
             ) : leaguesLoading ? (
-              <div className="my-3 h-10 animate-pulse rounded bg-[color:var(--fpl-grey)] motion-reduce:animate-none" />
+              <UiSkeleton className="my-3 h-10" />
             ) : leagues.length === 0 ? (
-              <p className="px-1 py-3 text-[13px] text-[color:var(--fpl-grey-text)]">
-                {t("fpl.no_leagues")}
-              </p>
+              <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
             ) : (
               <LeagueTable
+                caption={t("fpl.private_leagues")}
                 rows={leagues.map((l) => ({
                   name: l.name,
                   to: `/fantasy/leagues/${l.id}`,
@@ -430,46 +555,98 @@ function LeaguesAndCups({
         </>
       ) : (
         <div className="mt-4">
-          <FplPill>{t("fpl.cups")}</FplPill>
-          <p className="mt-3 text-[15px] text-foreground">{t("fpl.cup_not_qualified")}</p>
-          <h3 className="mt-3 text-[20px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-            {t("fpl.cup_how_title")}
-          </h3>
-          <p className="mt-2 text-[14px] leading-relaxed text-foreground">
-            {t("fpl.cup_how_body")}
-          </p>
+          <UiPill>{t("fpl.cups")}</UiPill>
+          <p className={cn("mt-3", ui.text.body, ui.tone.default)}>{t("fpl.cup_not_qualified")}</p>
+          <h3 className={cn("mt-3", ui.text.section, ui.tone.default)}>{t("fpl.cup_how_title")}</h3>
+          {/* `leading-relaxed` dropped for the same reason as the other two on
+              this screen: `ui.text.secondary` already sets the line box and
+              sets it per script, and a Tailwind literal beside it is a second
+              source of truth that wins or loses on class order (BG-0124). */}
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
         </div>
       )}
-    </section>
+    </UiCard>
   );
 }
 
-function LeagueTable({ rows }: { rows: Array<{ name: string; to: string; rank: number | null }> }) {
+function LeagueAction({
+  to,
+  icon,
+  children,
+}: {
+  to: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2",
+        // An SVG is a flex item and shrinks like any other, so a long label
+        // beside it takes the width out of the icon instead of wrapping.
+        // Measured here: a `lucide-plus` sized `h-4 w-4` rendering 14.0 × 16.0,
+        // the only distorted glyph in the product across six routes. Lucide
+        // draws square, so a squeezed one reads as a drawing mistake.
+        "[&_svg]:shrink-0",
+        ui.radius.control,
+        ui.surface.sunken,
+        ui.text.secondary,
+        "[font-weight:var(--ui-weight-heavy)]",
+        ui.tone.ink,
+        ui.focus,
+      )}
+    >
+      {icon}
+      <span className="min-w-0 truncate">{children}</span>
+    </Link>
+  );
+}
+
+function LeagueTable({
+  rows,
+  caption,
+}: {
+  rows: Array<{ name: string; to: string; rank: number | null }>;
+  caption: string;
+}) {
   const { t } = useI18n();
   return (
-    <table className="mt-2 w-full text-[15px]">
-      <thead>
-        <tr className="text-start text-[12px] font-semibold text-[color:var(--fpl-grey-text)]">
-          <th className="w-24 py-1 text-start font-semibold">{t("fpl.rank")}</th>
-          <th className="py-1 text-start font-semibold">{t("fpl.league")}</th>
-        </tr>
-      </thead>
-      <tbody>
+    <UiTable caption={caption} className="mt-2">
+      <UiTHead>
+        <UiTR>
+          <UiTH numeric className="w-24">
+            {t("fpl.rank")}
+          </UiTH>
+          <UiTH>{t("fpl.league")}</UiTH>
+        </UiTR>
+      </UiTHead>
+      <UiTBody>
         {rows.map((row) => (
-          <tr key={row.to + row.name} className="border-t border-[color:var(--fpl-grey)]">
-            <td className="py-3 text-[color:var(--fpl-grey-text)]">
-              <span className="me-3">—</span>
-              <span className="fpl-tabular">{row.rank ?? "-"}</span>
-            </td>
-            <td className="py-3">
-              <Link to={row.to} className="font-bold text-foreground">
+          <UiTR key={row.to + row.name}>
+            <UiTD numeric>{row.rank ?? "-"}</UiTD>
+            <UiTD>
+              {/* The row link is the tap target for the whole row, so it
+                  carries the 44px floor itself: as a bare inline `<a>` it
+                  measured 21px tall in French and 32px in Arabic. */}
+              <Link
+                to={row.to}
+                className={cn(
+                  "inline-flex min-h-[var(--ui-tap-min)] w-full items-center",
+                  ui.text.body,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.tone.default,
+                  ui.focus,
+                  ui.radius.control,
+                )}
+              >
                 {row.name}
               </Link>
-            </td>
-          </tr>
+            </UiTD>
+          </UiTR>
         ))}
-      </tbody>
-    </table>
+      </UiTBody>
+    </UiTable>
   );
 }
 
@@ -495,21 +672,19 @@ function NotificationsSection() {
   };
 
   return (
-    <section className="px-4 pt-6">
-      <h2 className="text-[22px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-        {t("fpl.notifications")}
-      </h2>
-      <p className="mt-1 text-[14px] text-foreground">{t("fpl.notifications_body")}</p>
+    <section className={cn("pt-6", ui.space.gutter)}>
+      <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.notifications")}</h2>
+      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fpl.notifications_body")}</p>
       <div className="mt-3">
         <ToggleRow
-          icon={<Bell className="h-5 w-5" aria-hidden />}
+          icon={<Bell className="h-5 w-5 shrink-0" aria-hidden />}
           label={t("fpl.push")}
           checked={push}
           disabled={!enabled || busy}
           onChange={togglePush}
         />
         <ToggleRow
-          icon={<Mail className="h-5 w-5" aria-hidden />}
+          icon={<Mail className="h-5 w-5 shrink-0" aria-hidden />}
           label={t("fpl.emails")}
           checked={false}
           disabled
@@ -537,16 +712,24 @@ function ToggleRow({
   hint?: string;
 }) {
   return (
-    <div className="flex min-h-14 items-center justify-between border-b border-[color:var(--fpl-grey)] py-2">
-      <span className="flex items-center gap-3 text-[15px] font-bold text-foreground">
+    <div
+      className={cn(
+        "flex min-h-[var(--ui-row-min)] items-center justify-between gap-3 py-2",
+        ui.rule.block,
+      )}
+    >
+      <span
+        className={cn(
+          "flex min-w-0 items-center gap-3",
+          ui.text.body,
+          "[font-weight:var(--ui-weight-heavy)]",
+          ui.tone.default,
+        )}
+      >
         {icon}
-        <span>
+        <span className="min-w-0">
           {label}
-          {hint ? (
-            <span className="ms-2 text-[11px] font-semibold text-[color:var(--fpl-grey-text)]">
-              {hint}
-            </span>
-          ) : null}
+          {hint ? <span className={cn("ms-2", ui.text.micro, ui.tone.muted)}>{hint}</span> : null}
         </span>
       </span>
       <button
@@ -557,16 +740,30 @@ function ToggleRow({
         disabled={disabled}
         onClick={onChange}
         className={cn(
-          "relative h-8 w-14 rounded-full transition-colors disabled:opacity-50",
-          checked ? "bg-[oklch(0.72_0.19_150)]" : "bg-[color:var(--fpl-grey)]",
+          // The 32px track is the visual; the control itself clears the 44px
+          // tap floor, which the bare track did not.
+          "grid shrink-0 place-items-center disabled:opacity-50",
+          ui.space.tap,
+          ui.radius.full,
+          ui.focus,
         )}
       >
         <span
-          className={cn(
-            "absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-[inset-inline-start]",
-            checked ? "start-7" : "start-1",
-          )}
-        />
+          aria-hidden
+          className={cn("relative block h-8 w-14 transition-colors", ui.radius.full)}
+          style={{
+            backgroundColor: checked ? "var(--ui-positive)" : "var(--ui-surface-sunken)",
+          }}
+        >
+          <span
+            className={cn(
+              "absolute top-1 h-6 w-6 transition-[inset-inline-start]",
+              ui.radius.full,
+              checked ? "start-7" : "start-1",
+            )}
+            style={{ backgroundColor: "var(--ui-surface)" }}
+          />
+        </span>
       </button>
     </div>
   );

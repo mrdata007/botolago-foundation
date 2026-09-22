@@ -30,10 +30,23 @@ function storageClient(uploadError: { message?: string } | null = null): {
   return { client, uploaded, removed };
 }
 
+/** A staff context that satisfies the pre-upload editorial gate. */
+const EDITOR_STAFF_CONTEXT: RpcResult = {
+  data: { accessAllowed: true, permissions: ["editorial.read", "editorial.write"] },
+  error: null,
+};
+
+/** What `api.get_my_staff_context()` does for an account with no staff principal. */
+const NON_STAFF_CONTEXT: RpcResult = {
+  data: null,
+  error: { message: "staff_access_denied", code: "PT403" },
+};
+
 function userClient(options: {
   userId?: string | null;
   role?: string;
   rpcResult?: RpcResult;
+  staffContext?: RpcResult;
   calls?: Array<{ name: string; args: Record<string, unknown> }>;
 }): UserScopedClient {
   return {
@@ -49,6 +62,9 @@ function userClient(options: {
     schema: () => ({
       rpc: async (name, args) => {
         options.calls?.push({ name, args });
+        if (name === "get_my_staff_context") {
+          return options.staffContext ?? EDITOR_STAFF_CONTEXT;
+        }
         return (
           options.rpcResult ?? {
             data: { mediaAssetId: "11111111-1111-4111-8111-111111111111" },
@@ -58,6 +74,10 @@ function userClient(options: {
       },
     }),
   };
+}
+
+function registerCalls(calls: Array<{ name: string; args: Record<string, unknown> }>) {
+  return calls.filter((call) => call.name === "editorial_register_media");
 }
 
 function multipartRequest(fields: Record<string, string | Blob>): Request {
@@ -177,9 +197,61 @@ describe("handleNewsMediaUploadRequest", () => {
     expect(storage.uploaded).toEqual([
       { path: "news/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg", contentType: "image/jpeg" },
     ]);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.name).toBe("editorial_register_media");
-    expect(calls[0]?.args.p_alt_text).toBe("Une photo du derby");
+    expect(registerCalls(calls)).toHaveLength(1);
+    expect(registerCalls(calls)[0]?.args.p_alt_text).toBe("Une photo du derby");
+  });
+
+  it("refuses a signed-in caller with no staff principal before any byte is stored", async () => {
+    const storage = storageClient();
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const response = await handleNewsMediaUploadRequest(
+      multipartRequest({ file: validImage, altText: "Alt", width: "800", height: "600" }),
+      deps({}, storage, userClient({ userId: "user-1", staffContext: NON_STAFF_CONTEXT, calls })),
+    );
+    expect(response.status).toBe(403);
+    expect(storage.uploaded).toHaveLength(0);
+    expect(storage.removed).toHaveLength(0);
+    expect(registerCalls(calls)).toHaveLength(0);
+  });
+
+  it("refuses staff who hold no editorial write permission", async () => {
+    const storage = storageClient();
+    const response = await handleNewsMediaUploadRequest(
+      multipartRequest({ file: validImage, altText: "Alt", width: "800", height: "600" }),
+      deps(
+        {},
+        storage,
+        userClient({
+          userId: "user-1",
+          staffContext: {
+            data: { accessAllowed: true, permissions: ["security.read_audit"] },
+            error: null,
+          },
+        }),
+      ),
+    );
+    expect(response.status).toBe(403);
+    expect(storage.uploaded).toHaveLength(0);
+  });
+
+  it("refuses an editor whose session has not reached aal2", async () => {
+    const storage = storageClient();
+    const response = await handleNewsMediaUploadRequest(
+      multipartRequest({ file: validImage, altText: "Alt", width: "800", height: "600" }),
+      deps(
+        {},
+        storage,
+        userClient({
+          userId: "user-1",
+          staffContext: {
+            data: { accessAllowed: false, permissions: ["editorial.write"] },
+            error: null,
+          },
+        }),
+      ),
+    );
+    expect(response.status).toBe(403);
+    expect(storage.uploaded).toHaveLength(0);
   });
 
   it("deletes the uploaded object and surfaces the forbidden error when registration is refused", async () => {
@@ -204,6 +276,6 @@ describe("handleNewsMediaUploadRequest", () => {
       deps({}, storage, userClient({ userId: "user-1", calls })),
     );
     expect(response.status).toBe(502);
-    expect(calls).toHaveLength(0);
+    expect(registerCalls(calls)).toHaveLength(0);
   });
 });

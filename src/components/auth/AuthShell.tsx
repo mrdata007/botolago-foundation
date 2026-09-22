@@ -1,11 +1,88 @@
+// BotolaGO auth — the sign-in surface, on the UI kit.
+//
+// DECISION: auth keeps a deliberate dark identity, but stops being a third
+// design language.
+//
+// Sign-in, sign-up, verification and password reset are the one place in the
+// product where the job is a single focused task and every other affordance
+// is noise. A dark, quiet surface is a legitimate, widely used pattern for
+// that, and `PageBackground`'s `auth` mesh is what these screens read their
+// contrast from — converting them to the light page would flatten that intent
+// for no gain.
+//
+// What was NOT legitimate was everything else that came with it: 12/16/20/24px
+// radii, a type scale (`text-[13.5px]`, `text-[26px]`) that exists nowhere
+// else, `bg-white/10` + `ring-white/20` + `backdrop-blur-md` glass, and
+// `tracking-widest` with no `ltr:` prefix — which letter-spaced Arabic and
+// broke the word (BG-0069). None of that is "a dark theme"; it is drift.
+//
+// So: the mesh stays, the chrome moves onto `--ui-*`. Radii are the kit's
+// 6px control radius, type and weights come from the kit's scale, buttons are
+// `UiButton`, spacing is the kit's gutter/tap/row tokens, and every colour is
+// a token or a `color-mix` of one, including the on-dark text, which is
+// `--ui-on-ink-plain` rather than a literal white. Same product, one focused
+// room inside it.
+//
+// House rules, as everywhere: logical properties only, and every `tracking-*`
+// is `ltr:`-prefixed (the kit's `ui.text.label` already is).
+//
+// SECOND PASS. The mesh register this file invented locally — an on-dark
+// foreground and its two quieter steps, a glass tile, a focus ring that is not
+// `ui.focus` because `--ui-ink-fg` is a navy ring on a navy mesh — is now IN
+// the kit: `ui.tone.onMesh*`, `ui.surface.mesh`, `ui.focusOnMesh`, and
+// `UiButton tone="onMesh"`. The four local constants that used to live here
+// were the same `color-mix` recipes under private names, which is how two
+// surfaces drift apart while both looking correct. They are gone; this file
+// reads the tokens like every other screen.
+//
+// Gone with them: `authFieldClass` and `AuthFieldLabel`. Three things blocked
+// these forms from `UiInput` and all three are fixed in the kit — the
+// `trailing` slot holds the show/hide-password eye, `reserveError` reserves
+// AND politely announces the error line (in one line box of the field's own
+// type, which `AuthFieldError`'s `min-h-4` did not: the same 13px runs on a
+// 1.95 leading in Arabic against 1.4 in French, so 16px under-reserved it by
+// ~9px and the jump came back for Arabic readers), and `aria-describedby` is
+// composed rather than replaced, so register's password field keeps pointing
+// at both its error and its strength meter. Every form here is on `UiInput`
+// now, all-or-nothing per form: a 13px sentence-case kit label beside a 12px
+// uppercase one inside a single form looks worse than either alone.
+
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
+import { ui, UiButton, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { useBackTo } from "@/lib/back-navigation";
+
+/**
+ * The six-digit code slots, restyled from the call site.
+ *
+ * `auth.verify` and `auth.mfa-challenge` keep the V1 `input-otp` component:
+ * it owns the keyboard model (paste, per-slot focus, backspace across slots)
+ * and rewriting that is a behaviour change, not a restyle. What it also owned
+ * was a V1 slot — `h-9 w-9` (36px, under the 44px floor of rule 5), `text-sm`,
+ * `border-input`, `shadow-sm`, `rounded-md` and a `ring-ring` focus ring —
+ * and every one of those is a class the component appends OUR string after,
+ * so each is overridable from here. The digits take the stat ramp, because six
+ * boxed figures are exactly the column rule 4 is about.
+ *
+ * The one V1 token with no prop path is the fake caret (`bg-foreground`),
+ * drawn inside the slot by the component itself. It stays.
+ */
+export const authOtpSlotClass = cn(
+  "h-[var(--ui-tap-min)] w-[var(--ui-tap-min)]",
+  ui.stat.md,
+  "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
+  "border-[color:var(--ui-rule)] shadow-none",
+  "first:rounded-s-[var(--ui-radius-track)] last:rounded-e-[var(--ui-radius-track)]",
+  // The component draws `ring-1` only on the active slot, so this recolours
+  // that ring and paints nothing on the others.
+  "ring-[color:var(--ui-ink-fg)]",
+);
 
 interface Props {
   title: string;
@@ -23,66 +100,81 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
   const Arrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-x-hidden text-white">
+    <div className={cn("relative min-h-[100dvh] w-full overflow-x-hidden", ui.tone.onMesh)}>
       <PageBackground variant="auth" />
       <div
-        className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5"
-        style={{
-          paddingTop: "max(env(safe-area-inset-top), 1rem)",
-          paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)",
-        }}
+        className={cn(
+          "relative z-10 flex min-h-[100dvh] flex-col",
+          ui.space.column,
+          ui.space.gutter,
+          ui.safe.top,
+          ui.safe.bottom,
+        )}
       >
         <div className="flex items-center justify-between">
           {showBack ? (
-            <button
-              type="button"
+            // `tone="onMesh"` is not decoration: a ghost button paints its text
+            // in `--ui-ink-fg`, a deep navy, and draws its focus ring in the
+            // same colour over a `--ui-page` offset — on this mesh that is a
+            // control you cannot read with a ring you cannot see. That is why
+            // this button used to be hand-rolled.
+            <UiButton
+              size="sm"
+              variant="ghost"
+              tone="onMesh"
               onClick={goBack}
-              className="inline-flex items-center gap-1 rounded-xl px-2 py-1.5 text-sm font-semibold text-white/85 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className={cn(
+                "-ms-2 gap-1",
+                "transition-colors hover:bg-[color:var(--ui-mesh-glass)]",
+              )}
               aria-label={t("auth.back")}
             >
               <Arrow className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">{t("auth.back")}</span>
-            </button>
+            </UiButton>
           ) : (
             <span aria-hidden />
           )}
-          <LanguageSwitcher />
+          <LanguageSwitcher tone="onMesh" />
         </div>
 
         <div className="mt-4 flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 p-1.5 ring-1 ring-white/20 backdrop-blur-md">
-            <Logo variant="icon" className="!h-9 !w-9 !rounded-xl" />
+          <div
+            className={cn(
+              "grid h-12 w-12 shrink-0 place-items-center p-1.5",
+              ui.radius.control,
+              // The glass tile, from the kit: a themed fill and a themed
+              // hairline. It was a pair of `color-mix` literals here.
+              ui.surface.mesh,
+            )}
+          >
+            <Logo variant="icon" className="!h-9 !w-9 !rounded-[var(--ui-radius-control)]" />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-bold uppercase tracking-widest text-white/60">
-              BotolaGO
+            {/* `ui.text.label` letter-spaces Latin only — Arabic joins (BG-0069). */}
+            <div className={cn(ui.text.label, ui.tone.onMeshFaint)}>BotolaGO</div>
+            <div className={cn("truncate", ui.text.meta, ui.tone.onMeshMuted)}>
+              {t("auth.brand_tagline")}
             </div>
-            <div className="truncate text-[13px] text-white/70">{t("auth.brand_tagline")}</div>
           </div>
         </div>
 
         <div className="mt-6">
-          <h1 className="text-2xl font-black tracking-tight sm:text-[26px]">{title}</h1>
+          <h1 className={cn(ui.text.hero, ui.tone.onMesh)}>{title}</h1>
           {subtitle && (
-            <p className="mt-2 max-w-[36ch] text-[13.5px] leading-relaxed text-white/80">
+            <p className={cn("mt-2 max-w-[36ch]", ui.text.prose, ui.tone.onMeshMuted)}>
               {subtitle}
             </p>
           )}
         </div>
 
         <div className="mt-6 flex-1">
-          <div
-            className="rounded-[24px] bg-white/97 p-5 text-foreground ring-1 ring-white/40 sm:p-6"
-            style={{
-              boxShadow:
-                "0 24px 60px -24px rgba(3, 12, 40, 0.55), 0 2px 8px -2px rgba(3, 12, 40, 0.18)",
-            }}
-          >
-            {children}
-          </div>
+          <UiCard className={cn(ui.rule.all, "sm:p-5")}>{children}</UiCard>
         </div>
 
-        {footer && <div className="mt-5 text-center text-sm text-white/85">{footer}</div>}
+        {footer && (
+          <div className={cn("mt-5 text-center", ui.text.body, ui.tone.onMeshMuted)}>{footer}</div>
+        )}
       </div>
     </div>
   );
@@ -90,78 +182,142 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
 
 export function AuthDivider({ label }: { label: string }) {
   return (
-    <div className="my-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-      <span className="h-px flex-1 bg-border" />
+    <div className={cn("my-4 flex items-center gap-3", ui.text.label, ui.tone.muted)}>
+      <span className="h-px flex-1 bg-[color:var(--ui-rule)]" />
       <span>{label}</span>
-      <span className="h-px flex-1 bg-border" />
+      <span className="h-px flex-1 bg-[color:var(--ui-rule)]" />
     </div>
   );
 }
 
 export function AuthPrimaryButton({
   children,
+  className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...props}
-      className={
-        "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl cta-brand px-5 text-sm font-bold shadow-lg shadow-blue-950/20 transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/50 disabled:cursor-not-allowed disabled:opacity-60"
-      }
-    >
+    <UiButton variant="gradient" {...props} className={className}>
       {children}
-    </button>
+    </UiButton>
   );
 }
 
 export function AuthSecondaryButton({
   children,
+  className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...props}
-      className={
-        "flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-input bg-white px-5 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
-      }
-    >
+    <UiButton variant="outline" {...props} className={className}>
       {children}
-    </button>
+    </UiButton>
   );
 }
 
-export function AuthFieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
-    >
-      {children}
-    </label>
-  );
-}
-
+/**
+ * The reserved, politely-announced error line — for the surfaces that have no
+ * `UiInput` to put it inside.
+ *
+ * Every text field in this family now gets this behaviour from the kit
+ * (`UiInput reserveError`). What is left is the two OTP screens, whose control
+ * is the V1 `input-otp` component, and the callback page, whose message is
+ * about the exchange rather than about a field. Both still need a region that
+ * is mounted BEFORE the message exists — a live region created at the same
+ * moment as its content is not reliably announced.
+ *
+ * The reservation is one line box of THIS text rather than the `min-h-4` it
+ * used to be. 16px is the Latin line box; the Arabic face runs the same 13px
+ * on a 1.95 leading against 1.4, so the old literal under-reserved by ~9px and
+ * the layout jump the reservation exists to prevent came back for Arabic
+ * readers. Same calc the kit's `reserveError` uses.
+ */
 export function AuthFieldError({ id, children }: { id: string; children?: ReactNode }) {
   return (
     <p
       id={id}
       role="alert"
       aria-live="polite"
-      className="mt-1 min-h-[16px] text-xs font-semibold text-destructive"
+      className={cn(
+        "mt-1 min-h-[calc(var(--ui-text-meta)*var(--ui-leading-flat))]",
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+        ui.tone.negative,
+      )}
     >
       {children ?? ""}
     </p>
   );
 }
 
+/** A form-level error, inside the card. */
+export function AuthFormError({ children }: { children: ReactNode }) {
+  return (
+    <p
+      role="alert"
+      aria-live="assertive"
+      className={cn(
+        "px-3 py-2",
+        ui.radius.control,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+        "bg-[color:color-mix(in_oklab,var(--ui-negative)_14%,transparent)]",
+        ui.tone.negative,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
 export function AuthLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link to={to} className="font-bold text-white underline-offset-4 hover:underline">
+    <Link
+      to={to}
+      className={cn(
+        "[font-weight:var(--ui-weight-heavy)] underline-offset-4 hover:underline",
+        ui.tone.onMesh,
+      )}
+    >
       {children}
     </Link>
   );
 }
 
+/**
+ * The two link treatments this family composes inline, in one object because
+ * a link on the mesh and a link inside the card are the same decision made
+ * twice — which register makes both of, six lines apart.
+ *
+ * `consent` exists because of what it replaces. `ConsentLine`'s default
+ * `linkClassName` is `text-[color:var(--brand-primary)]`, and
+ * `--brand-primary` is `--ui-ink`: a FILL colour used as a foreground, a deep
+ * navy in both themes, measured 1.25:1 on dark. That is BG-0083 arriving
+ * through a default argument rather than through a class written at the call
+ * site, which is how it survived the first pass over these screens — nothing
+ * in the file said `--brand-primary`. Every `ConsentLine` here now passes
+ * this instead: `ui.tone.ink` is the theme-correct brand foreground
+ * (`--ui-ink-fg`). The default itself lives in `src/components/legal`, which
+ * is not this lane's to edit; other callers still inherit it.
+ */
+export const authLinkClass = {
+  /** A footer link on the dark mesh. */
+  onMesh: cn(
+    "[font-weight:var(--ui-weight-heavy)] underline-offset-4 hover:underline",
+    ui.tone.onMesh,
+  ),
+  /** A legal link inside the auth card. */
+  consent: cn(
+    "[font-weight:var(--ui-weight-heavy)] underline underline-offset-2 hover:opacity-80",
+    ui.tone.ink,
+  ),
+};
+
+/**
+ * KEPT as a literal hex. `#EA4335` is Google's own sign-in mark: a
+ * third-party brand colour this design system is not entitled to change, and
+ * no `--ui-*` token matches it. The colour rule exempts brand marks
+ * (DESIGN_SYSTEM_V2 §2.3) — this is the exemption, not an oversight.
+ */
 export function GoogleGlyph() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>

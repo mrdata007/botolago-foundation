@@ -1,0 +1,182 @@
+task_id: BG-0081
+role: Builder
+attempt: 1
+branch: bg-0081-dark-mode
+base: origin/chief/launch-fixes-3
+status: complete
+
+summary: >
+  Light / Dark / System is now a real control in Profile > Préférences, for
+  signed-in, guest and signed-out visitors alike. The choice is stored under
+  `botolago.theme`, applied to <html> by an inline head script before the first
+  paint, and defaults to the operating system. No React component reads storage
+  or a media query during its first render, so hydration is untouched.
+
+how_it_works:
+  order_of_events:
+    - '1. SSR renders <html lang="fr" dir="ltr" suppressHydrationWarning>
+      with no theme class.'
+    - "2. The inline head script runs synchronously, before the first paint:
+      reads `botolago.theme`; `dark`/`light` pin the theme, anything else
+      (including nothing stored) falls back to
+      matchMedia('(prefers-color-scheme: dark)'); toggles the `dark` class and
+      sets `style.colorScheme` on <html>."
+    - "3. React hydrates. ThemeProvider's first render returns the SSR default
+      and touches neither storage nor matchMedia, so the client tree matches
+      the server tree exactly."
+    - "4. After mount ThemeProvider reads the stored choice and reads the
+      RESOLVED theme back off <html>'s class (`readAppliedTheme`) rather than
+      recomputing it — the DOM is the single source of truth for what the user
+      is looking at."
+    - '5. While the choice is "system", a `change` listener on the media query
+      re-applies without a reload. Detached when the choice is not "system".'
+
+inline_script:
+  declared_in: src/routes/__root.tsx
+  source_of_truth: src/theme/theme.ts -> THEME_INIT_SCRIPT
+  shape: "head().scripts = [{ children: THEME_INIT_SCRIPT }]"
+  why_flat: >
+    @tanstack/react-router's headContentUtils destructures head scripts as
+    `({ children, ...script })` — every other key becomes an ATTRIBUTE on the
+    element and `children` is written with dangerouslySetInnerHTML (Asset.js,
+    `case "script"`). A `{ tag, attrs, children }` object would be turned into
+    three attributes and no script body.
+  rendered_output_verified: >
+    curl of the SSR HTML for /profile contains the script body verbatim inside
+    <head>; see verification-report.yaml.
+  safety_properties:
+    - "three separate try/catch blocks: one around the whole body, one around
+      localStorage.getItem, one around matchMedia. A storage throw must not
+      also skip the system fallback."
+    - "contains no `</` sequence, so it cannot terminate its own <script>
+      element. Pinned by a test."
+    - "length 342 characters; synchronous; no imports; no network."
+    - "re-executing it is a no-op (classList.toggle with an explicit boolean)."
+
+hydration_safety:
+  rule_followed: >
+    The inline script may touch <html> directly; no React component may read
+    the stored preference or matchMedia during its first render.
+  mechanisms:
+    - 'ThemeProvider useState initialisers are constants (`"system"`,
+      `"light"`, `false`) — no function that reads the environment.'
+    - "The stored choice and the applied theme are adopted in a mount effect."
+    - "`readAppliedTheme()` reads the class off <html> instead of recomputing
+      from matchMedia, so React and the script can never disagree."
+    - "<html> carries suppressHydrationWarning, because the script writes a
+      class and an inline style onto it before hydration. <body> already
+      carried it; I18nProvider performs the equivalent out-of-band write for
+      lang/dir."
+  precedent_honoured: >
+    The AuthProvider comment block in src/auth/AuthProvider.tsx records the same
+    defect (React error #418 on /profile in guest state) and the same fix shape.
+
+control:
+  file: src/components/shell/ThemeSwitcher.tsx
+  markup: 'role="radiogroup" with three role="radio" buttons, aria-checked, aria-label from t("theme.switch")'
+  placement: >
+    Profile > Préférences, on its own stacked row beneath the label. Inline
+    beside the label does not fit at 390px: the longest option is "Système" /
+    "النظام".
+  kit_compliance:
+    - "colours only from `--ui-*` via the `ui.*` class map; no hex, no rgb(),
+      no bg-white, no Tailwind type ramp, no rounded-lg/xl/2xl/3xl."
+    - "no `tracking-*` at all, so the ltr: rule is satisfied vacuously."
+    - "logical utilities only; no ms-/me- needed (grid + gap)."
+    - "each segment is min-h-10 inside a 3rem row; the row meets --ui-row-min."
+  why_not_UiSegmented:
+    finding: >
+      UiSegmented paints its ACTIVE segment `text-[color:var(--ui-ink)]` on
+      `var(--ui-surface)`. `--ui-ink` is a dark navy in BOTH themes, so in dark
+      the active label computes to 1.25:1 — unreadable.
+    decision: >
+      The new control paints the active segment as an ink SURFACE
+      (`ui.surface.ink`) and takes its label colour from `--ui-on-ink`, the
+      token that exists for that pairing. Measured 9.29:1 in light and 10.01:1
+      in dark. The UiSegmented defect itself is REPORTED, not patched — see
+      verification-report.yaml, `contrast_problems_found_not_mine`.
+  contrast_correction_during_build: >
+    The unselected labels first used `ui.tone.muted`. Measured on the sunken
+    track that is 3.95:1 at 13px in light — under AA. They now use
+    `ui.tone.default`; selection is already carried by the ink fill. Re-measured
+    15.82:1 (light) and 14.33:1 (dark).
+
+reachability:
+  before: >
+    Profile's preferences group was rendered only inside AuthenticatedProfile.
+  after:
+    authenticated: notifications rows + Langue + Apparence (unchanged shape, two rows extracted)
+    guest: new DevicePreferences group — Langue + Apparence
+    signed_out: new DevicePreferences group — Langue + Apparence
+  rationale: >
+    Language and appearance are DEVICE preferences kept in this browser's
+    localStorage, not account settings. Gating them behind sign-in would leave
+    dark mode unreachable for exactly the visitors BG-0081 is about.
+
+i18n:
+  keys_added: 4
+  entries: 8 # identical key set in fr and ar
+  fr:
+    theme.switch: Apparence
+    theme.light: Clair
+    theme.dark: Sombre
+    theme.system: Système
+  ar:
+    theme.switch: المظهر
+    theme.light: فاتح
+    theme.dark: داكن
+    theme.system: النظام
+  call_sites: >
+    One literal t() call per option. No `t(cond ? "a" : "b")` anywhere in the
+    change.
+  baseline_changes: NONE
+  baselines_measured:
+    W1: { before: 7, after: 7 }
+    W2: { before: 7, after: 7 }
+    W3: { before: 247, after: 247 }
+    W4: { before: 97, after: 97 }
+  why_w3_did_not_move: >
+    All four keys are referenced by literal t() calls, so none of them lands on
+    the unreferenced list.
+  incident_worth_recording: >
+    A first draft moved W4 from 97 to 99 with no code change to any call site.
+    The gate's scanner is `source.matchAll(/\bt\(/g)` over raw file text — it
+    does not strip comments — and a code COMMENT in ThemeSwitcher.tsx contained
+    the literal text "t()" twice. Rewording the comment restored 97. Worth
+    knowing before anyone spends time hunting a phantom call site.
+
+storage:
+  key: botolago.theme
+  values: light | dark | system
+  absent_or_invalid: treated as "system"
+  pinned_by: src/theme/theme.test.ts
+  failure_mode: >
+    Every access is individually try/catch-ed. With storage unavailable the app
+    renders normally, follows the OS, and simply does not remember the choice.
+
+styles_css_change:
+  what: "`color-scheme: light` on html, `color-scheme: dark` on html.dark."
+  why: >
+    Native chrome — scrollbars, checkboxes, date inputs — follows `color-scheme`
+    and not our tokens; without it a dark page keeps a white scrollbar. The
+    inline script also sets it inline on <html> before first paint, so it is
+    correct even in the frame before the stylesheet applies. No `--ui-*` token
+    was added, so `UI_TOKENS` and the contract test are untouched.
+
+files:
+  new:
+    - src/theme/theme.ts
+    - src/theme/theme.test.ts
+    - src/theme/provider.tsx
+    - src/components/shell/ThemeSwitcher.tsx
+  modified:
+    - src/routes/__root.tsx
+    - src/routes/profile.tsx
+    - src/i18n/dictionaries.ts
+    - src/styles.css
+  untouched_as_required:
+    - supabase/
+    - scripts/backend/
+    - .github/workflows/
+    - src/backend/
+    - docs/engineering/LAUNCH_LEDGER.yaml

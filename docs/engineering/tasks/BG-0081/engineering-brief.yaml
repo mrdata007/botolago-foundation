@@ -1,0 +1,145 @@
+task_id: BG-0081
+role: Builder
+attempt: 1
+branch: bg-0081-dark-mode
+base: origin/chief/launch-fixes-3
+area: shell / theming / profile
+scope: frontend-only
+severity: P2
+
+objective: >
+  Make the dark palette this codebase already ships user-reachable. Add a
+  Light / Dark / System control to the Profile preferences group, persist the
+  choice per browser, apply it to <html> before the first paint, and default to
+  the operating system's preference.
+
+confirmed_finding:
+  statement: >
+    src/styles.css declares a complete dark palette — a `.dark` block that
+    redefines every colour-bearing `--ui-*` token, the seven News gradients and
+    the five category plates — and `ui-kit.contract.test.ts` has a test that
+    fails if a themed token is missing its dark counterpart. Nothing in src/
+    ever added the `.dark` class to any element, so none of it was reachable.
+  evidence:
+    - "grep over src/: `.dark` appears only as a CSS selector in styles.css and
+       as the `@custom-variant dark (&:is(.dark *))` declaration; no TS/TSX file
+       writes it."
+    - "styles.css has no `@media (prefers-color-scheme: dark)` block at all, so
+       the class is the ONLY mechanism — the OS preference on its own did
+       nothing before this change."
+  implication: >
+    "System" cannot be implemented by leaving the class off and letting a media
+    query take over; it has to be resolved to a concrete class.
+
+constraints:
+  no_flash:
+    requirement: >
+      The class must be on <html> before the first paint. An effect runs after
+      paint and would show one light frame.
+    approach: >
+      A small synchronous inline script in the document head, declared from the
+      root route's `head().scripts`.
+    router_note: >
+      TanStack Start head scripts are declared FLAT. `headContentUtils`
+      destructures `({ children, ...script })`: every other key becomes an
+      attribute and `children` is written with `dangerouslySetInnerHTML`. A
+      `{ tag, attrs, children }` object is not read and renders nothing.
+  no_hydration_mismatch:
+    requirement: >
+      No React component may read localStorage or matchMedia during its first
+      render. React discards the whole server-rendered tree (minified error
+      #418) when the client's first render sees something the server could not.
+    precedent: >
+      AuthProvider hit exactly this defect on /profile in guest state and had to
+      stop seeding its state from storage; its comment block records it.
+    approach: >
+      The inline script writes the DOM directly. ThemeProvider's first render —
+      server and client alike — returns the SSR-safe default ("system", resolved
+      "light"), and only after mount reads the stored choice and reads the
+      RESOLVED theme back off <html>'s class rather than recomputing it.
+  system_stays_live: >
+    While "system" is selected, a `change` listener on the
+    `(prefers-color-scheme: dark)` media query re-resolves without a reload.
+    Attached in an effect, after mount.
+  storage:
+    key: botolago.theme
+    convention: >
+      Matches `botolago.language` (src/i18n/provider.tsx). The near-miss
+      `botolago.lang` has produced an invalid measurement before; the key is
+      pinned by a unit test so it cannot drift.
+    robustness: >
+      Every read and write is individually wrapped in try/catch — localStorage
+      throws outright in some privacy modes — and the page renders correctly
+      when it is unavailable (it simply falls back to the system preference and
+      does not remember the session).
+  house_rules:
+    - ui-kit only — `--ui-*` tokens and the `ui.*` class map. No hex, no rgb(),
+      no bg-white, no Tailwind type ramp, no rounded-lg/xl/2xl/3xl.
+    - every tracking-* ltr:-prefixed (the new control sets none at all).
+    - logical properties only (ms-/me-/start-/end-), never physical.
+    - new strings get identical fr and ar entries in src/i18n/dictionaries.ts,
+      and each option calls t() with a literal key so the W4 baseline does not
+      move.
+
+surfaces_touched:
+  - path: src/theme/theme.ts
+    kind: new
+    role: >
+      Storage key, choice/resolved types, pure resolver, DOM appliers and the
+      inline head script as source text.
+  - path: src/theme/theme.test.ts
+    kind: new
+    role: >
+      Pins the storage key and the default, and EXECUTES the inline script
+      against a stubbed document/window to prove it makes the same decision as
+      the pure resolver for all 10 (stored value x OS state) combinations.
+  - path: src/theme/provider.tsx
+    kind: new
+    role: ThemeProvider / useTheme — hydration-safe state and the live system listener.
+  - path: src/components/shell/ThemeSwitcher.tsx
+    kind: new
+    role: the Light / Dark / System control, built from the kit.
+  - path: src/routes/__root.tsx
+    kind: modified
+    role: >
+      Declares the inline head script, wraps the tree in ThemeProvider, and
+      marks <html> suppressHydrationWarning (the script writes to it before
+      React hydrates, as I18nProvider later does for lang/dir).
+  - path: src/routes/profile.tsx
+    kind: modified
+    role: >
+      Language and Appearance extracted into LanguageRow / ThemeRow, rendered in
+      the authenticated preferences group AND — as a new DevicePreferences group
+      — in the guest and signed-out states.
+  - path: src/i18n/dictionaries.ts
+    kind: modified
+    role: four new keys in fr and ar.
+  - path: src/styles.css
+    kind: modified
+    role: >
+      `color-scheme: light` on html and `dark` on html.dark, so native chrome
+      (scrollbars, form widgets) follows the theme. No `--ui-*` token added, so
+      the token manifest is untouched.
+
+deliberate_scope_decision:
+  what: The preferences group is rendered for signed-out and guest visitors too.
+  why: >
+    Before this change the Profile preferences group existed only in the
+    authenticated branch. A theme control placed only there would have been
+    unreachable for every visitor who has not signed in — which is the same
+    class of defect BG-0081 was opened for. The group a signed-out visitor sees
+    carries only the two DEVICE preferences (language, appearance); notifications
+    and the account rows remain authenticated-only.
+
+out_of_scope:
+  - Renaming or dark-theming the `--fpl-*` Fantasy tokens. They are a
+    light-only reconstruction, which styles.css itself documents; the Fantasy
+    screens therefore stay light under dark mode. Measured and reported in
+    verification-report.yaml, not papered over.
+  - Repairing `--ui-ink` used as a text colour. It is a dark navy in BOTH
+    themes — a fill/border token — and several existing surfaces use it for
+    text, which computes to 1.25–1.42:1 on a dark surface. Reported, not patched:
+    changing `ui.tone.ink` or the UiButton outline/ghost variants would restyle
+    every screen in the product.
+  - supabase/, scripts/backend/, .github/workflows/, src/backend/,
+    docs/engineering/LAUNCH_LEDGER.yaml.

@@ -1,0 +1,106 @@
+task_id: BG-0057
+branch: bg-0057-roster-hygiene (from origin/chief/launch-fixes-3)
+implemented_at: 2026-09-21
+summary: >
+  Preparation only. Delivers a guarded, single-player maintenance script plus its pgTAP suite. No
+  production write was executed by this lane, and no migration was added.
+
+files_added:
+  - path: scripts/backend/fantasy-deactivate-duplicate-player.sql
+    role: >
+      The maintenance transaction. begin; -> set_config('request.jwt.claims', …) -> a session-local
+      pg_temp body -> one call with the target id -> three review SELECTs -> a commented-out
+      `-- commit;`. Modelled directly on scripts/backend/football-deactivate-non-current-teams.sql.
+  - path: supabase/tests/database/fantasy_deactivate_duplicate_player.test.sql
+    role: >
+      pgTAP suite, 31 assertions. Carries a byte-for-byte SYNCED COPY of the pg_temp body (203
+      lines) because `supabase test db` runs from supabase/tests/database and cannot \i a path
+      under scripts/backend — the same constraint and remedy as the BG-0043 suite.
+  - path: docs/engineering/tasks/BG-0057/engineering-brief.yaml
+  - path: docs/engineering/tasks/BG-0057/implementation-report.yaml
+  - path: docs/engineering/tasks/BG-0057/verification-report.yaml
+  - path: docs/engineering/tasks/BG-0057/human-actions-section.md
+
+files_modified: []
+migrations_added: []
+migrations_modified: []
+
+design:
+  parameterisation: >
+    pg_temp.bg0057_deactivate_duplicate_player(p_fantasy_player_id uuid, p_reason text default …).
+    ONE player per run, as explicitly requested. The shipped call passes the all-zero uuid, which
+    matches nothing, so running the file unchanged refuses with player_not_found and writes nothing.
+    A pgTAP scenario asserts exactly that, so the "safe by default" property is tested, not claimed.
+  locking: >
+    The target row is selected FOR UPDATE before any guard is evaluated, so a squad save committing
+    between the read and the UPDATE cannot sneak an owned player through.
+  writes:
+    - "app.fantasy_players: active = false, eligible = false, on exactly one id."
+    - >
+      app_private.admin_audit_events: one row via the existing app_private.write_admin_audit helper
+      (action 'fantasy_catalog.deactivate_duplicate_player', target_domain 'fantasy',
+      target_entity_id = the retired id, outcome 'succeeded', actor_principal_id null because this
+      is an owner-run maintenance transaction and not a staff-principal console action).
+      safe_before/safe_after record active, eligible, status and selectedByCount.
+  no_deletes: true
+  untouched:
+    - price, price_version, status, selected_by_count, position_id, football_player_id, football_team_id
+    - app.fantasy_player_price_history, app.players, app.teams, app_private.football_provider_mappings
+    - api.fantasy_player_pool and api.fantasy_league_standings (signature and ordering unchanged)
+  guards:
+    - name: player_not_found
+      fires_when: no app.fantasy_players row carries that id.
+    - name: player_owned_by_squad
+      fires_when: >
+        at least one app.fantasy_squad_memberships row with sold_at is null. Message names every
+        holding squad by name and id.
+    - name: player_has_squad_history
+      fires_when: >
+        any squad membership (including sold), transfer, free-hit snapshot row or auto-substitution
+        references the id. Message reports all four counts.
+    - name: player_has_point_events
+      fires_when: any app.fantasy_player_point_events row references the id.
+    - name: player_has_gameweek_points
+      fires_when: >
+        any app.fantasy_player_gameweek_points row references the id. Checked independently of the
+        event table so a finalized-then-compacted player is still protected.
+    - name: player_still_selected
+      fires_when: >
+        selected_by_count <> 0 although no membership was found — the denormalised counter and
+        app.fantasy_squad_memberships disagree, so neither is trusted.
+    - name: write_count_mismatch
+      fires_when: the single UPDATE affected other than exactly one row.
+  idempotency: >
+    A row already active=false AND eligible=false prints already_applied, writes nothing at all (no
+    fantasy_players write, no audit row, no updated_at bump) and returns was_updated = false. A
+    HALF-applied row — exactly one of the two flags already false — is COMPLETED rather than
+    skipped, so the pair never ends inconsistent. Both behaviours are asserted.
+
+bugs_found_and_fixed_during_testing: []
+
+deviations_from_task:
+  - item: "The task describes eight candidate rows in four clusters; seven in three were found."
+    detail: >
+      The Errahouli cluster is a football-catalog duplicate (two app.players rows for Salaheddine
+      Errahouli at Olympic Safi) with ZERO app.fantasy_players rows, so a fantasy-player
+      deactivation script has nothing to act on. Evidence is in the engineering brief and the
+      human-actions section; the owner is told plainly rather than the discrepancy being papered
+      over. The script was built against the seven rows that do exist.
+  - item: "No keep-vs-drop is recommended for the Boukhanfer cluster."
+    detail: >
+      As instructed, a recommendation is only made where the data supports it. Every one of the
+      seven rows has a provider external id, so the suggested tie-break ("one has a provider id and
+      the other does not") is not available anywhere. Recommendations are made for Coulibaly and
+      El Ghazouani on date-of-birth and full-name evidence, with that evidence shown; Boukhanfer is
+      presented as genuinely undecidable from the data.
+
+constraints_honoured:
+  - No production write was executed. Every production query was a read-only SELECT.
+  - No file under supabase/migrations/ was added or edited; migration count stays 72.
+  - >
+    src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts, every api.service_* function,
+    scripts/backend/fantasy-season-orchestrator.ts and
+    scripts/backend/fantasy-lifecycle-runner.ts are untouched.
+  - api.fantasy_player_pool and api.fantasy_league_standings keep their signature and ordering.
+  - src/backend/generated/database.types.ts is untouched.
+  - docs/engineering/LAUNCH_LEDGER.yaml is untouched.

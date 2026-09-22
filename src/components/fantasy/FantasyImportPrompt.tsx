@@ -15,7 +15,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
+import { ui, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
 import { fantasyService as localFantasyService } from "@/services/fantasy-mock";
@@ -172,14 +174,17 @@ export function FantasyImportPrompt() {
       aria-modal="false"
       aria-labelledby="botolago-import-title"
       dir={dir}
-      className="glass-surface glass-regular mx-3 my-3 rounded-2xl border border-[var(--glass-border)] p-4"
+      className={cn("mx-3 my-3 p-4", ui.surface.card)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="botolago-import-title" className="text-sm font-black text-brand">
+          {/* `text-brand` is `--brand-primary`, a fill that does not move with
+              the theme and measured 1.35:1 on a dark card. `ui.tone.ink` is
+              the theme-correct brand foreground (BG-0083). */}
+          <h2 id="botolago-import-title" className={cn(ui.text.bodyStrong, ui.tone.ink)}>
             {t("fantasy.import.title")}
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground break-words whitespace-normal">
+          <p className={cn("mt-1 whitespace-normal break-words", ui.text.meta, ui.tone.muted)}>
             {t("fantasy.import.subtitle")}
           </p>
         </div>
@@ -187,55 +192,59 @@ export function FantasyImportPrompt() {
           type="button"
           aria-label={t("fantasy.import.cta_later")}
           onClick={later}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-white/40"
+          className={cn(
+            "grid shrink-0 place-items-center",
+            ui.space.tap,
+            ui.radius.full,
+            ui.tone.muted,
+            ui.focus,
+            "disabled:opacity-40",
+          )}
           disabled={phase === "saving"}
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
 
-      <div role="status" aria-live="polite" className="mt-2 min-h-[1.25rem] text-[11px]">
-        {phase === "saving" && (
-          <span className="text-muted-foreground">{t("fantasy.status.saving")}</span>
-        )}
+      <div role="status" aria-live="polite" className={cn("mt-2 min-h-[1.25rem]", ui.text.micro)}>
+        {phase === "saving" && <span className={ui.tone.muted}>{t("fantasy.status.saving")}</span>}
         {phase === "success" && (
-          <span className="text-emerald-700">{t("fantasy.import.success")}</span>
+          <span className={ui.tone.positive}>{t("fantasy.import.success")}</span>
         )}
         {phase === "error" && errorMessage && (
-          <span className="text-red-700 break-words whitespace-normal">{errorMessage}</span>
+          <span className={cn("whitespace-normal break-words", ui.tone.negative)}>
+            {errorMessage}
+          </span>
         )}
         {phase === "error" && missingIds && missingIds.length > 0 && (
-          <span className="text-red-700 break-words whitespace-normal">
+          <span className={cn("whitespace-normal break-words", ui.tone.negative)}>
             {t("fantasy.import.mapping_gaps").replace("{ids}", missingIds.join(", "))}
           </span>
         )}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
+        <UiButton
+          size="sm"
+          variant="gradient"
           onClick={importNow}
           disabled={phase === "saving" || phase === "success"}
-          className="min-h-11 flex-1 rounded-xl cta-brand px-3 py-2 text-xs font-bold disabled:opacity-40"
+          className="flex-1"
         >
           {t("fantasy.import.cta_save")}
-        </button>
-        <button
-          type="button"
+        </UiButton>
+        <UiButton
+          size="sm"
+          variant="outline"
           onClick={startNew}
           disabled={phase === "saving"}
-          className="min-h-11 flex-1 rounded-xl border border-input bg-white/60 px-3 py-2 text-xs font-bold text-foreground hover:bg-white disabled:opacity-40"
+          className="flex-1"
         >
           {t("fantasy.import.cta_start_new")}
-        </button>
-        <button
-          type="button"
-          onClick={later}
-          disabled={phase === "saving"}
-          className="min-h-11 rounded-xl px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-white/40 disabled:opacity-40"
-        >
+        </UiButton>
+        <UiButton size="sm" variant="ghost" onClick={later} disabled={phase === "saving"}>
           {t("fantasy.import.cta_later")}
-        </button>
+        </UiButton>
       </div>
     </div>
   );

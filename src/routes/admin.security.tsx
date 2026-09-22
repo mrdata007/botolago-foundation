@@ -3,11 +3,7 @@ import { ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { loadAdminSecurityRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
-import {
-  adminButtonClass,
-  adminFieldClass,
-  adminRepositoryContext,
-} from "@/backend/admin/functional-route-helpers";
+import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
 import { SupabaseAdminControlPlaneRepository } from "@/backend/admin/supabase-control-plane-repository";
 import type {
   RevocationStatusDto,
@@ -23,6 +19,7 @@ import {
   AdminNotice,
   AdminSectionHeading,
 } from "@/components/admin/AdminSurfaces";
+import { ui, UiBadge, UiButton, UiInput } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/security")({
@@ -49,9 +46,14 @@ function QueueStat({
       <dt className={ADMIN_LABEL_CLASS}>
         <AdminDatum mono={false}>{label}</AdminDatum>
       </dt>
+      {/* A queue depth is a figure a reader scans down a row of four cells, so
+          it belongs on the stat ramp: `ui.stat.lg` carries the size, the
+          weight AND the tabular figures, which were hand-rolled here as a bare
+          `tabular-nums`. The alarm step is `--ui-negative`, which is legible as
+          text in both themes -- unlike `--ui-caution`, which is a fill only. */}
       <dd
-        className={`mt-1 text-2xl font-semibold tabular-nums ${
-          alarming && value > 0 ? "text-rose-300" : "text-slate-100"
+        className={`mt-1 ${ui.stat.lg} ${
+          alarming && value > 0 ? ui.tone.negative : ui.tone.default
         }`}
       >
         {value}
@@ -143,25 +145,23 @@ function AdminSecurityRoute() {
               onSubmit={loadRevocation}
               data-testid="admin-revocation-status"
             >
-              <label className="grid gap-2 text-sm">
-                <span className="text-slate-300">
-                  {rtl ? "معرّف عضو الطاقم" : "Identifiant du principal"}
-                </span>
-                {/* A UUID is typed and read left-to-right even in Arabic. */}
-                <input
-                  value={principalId}
-                  onChange={(event) => setPrincipalId(event.target.value)}
-                  className={`${adminFieldClass} font-mono`}
-                  dir="ltr"
-                  inputMode="text"
-                  autoComplete="off"
-                  spellCheck={false}
-                  required
-                />
-              </label>
-              <button className={`${adminButtonClass} w-full sm:w-auto`} type="submit">
+              {/* A UUID is typed and read left-to-right even in Arabic, so
+                  `dir` is forced on the field; `UiInput` renders and wires the
+                  label itself, so the hand-built label/span/input trio goes. */}
+              <UiInput
+                label={rtl ? "معرّف عضو الطاقم" : "Identifiant du principal"}
+                value={principalId}
+                onChange={(event) => setPrincipalId(event.target.value)}
+                fieldClassName="font-mono"
+                dir="ltr"
+                inputMode="text"
+                autoComplete="off"
+                spellCheck={false}
+                required
+              />
+              <UiButton className="sm:w-auto" type="submit">
                 {rtl ? "فحص الحالة" : "Vérifier l’état"}
-              </button>
+              </UiButton>
             </form>
 
             {revocation && (
@@ -174,9 +174,15 @@ function AdminSecurityRoute() {
                       "Aucune action en attente"
                     )
                   ) : (
-                    <span className="text-amber-200">
+                    // Was `text-amber-200`: the amber as a FOREGROUND, which is
+                    // the one thing this colour can never be -- `--ui-caution`
+                    // measured 1.78:1 as text. `UiBadge tone="caution"` paints
+                    // the amber as the fill and puts `--ui-on-caution` on it,
+                    // and a pending count is a state token rather than a
+                    // sentence, which is what the badge is for.
+                    <UiBadge tone="caution">
                       <AdminDatum mono={false}>{`${revocation.pendingCount} pending`}</AdminDatum>
-                    </span>
+                    </UiBadge>
                   )}
                 </AdminField>
                 <AdminField label={rtl ? "إجراء المزوّد" : "Action fournisseur"}>
@@ -192,13 +198,23 @@ function AdminSecurityRoute() {
 
           <section className={`${ADMIN_PANEL_CLASS} flex items-start gap-3 p-4`}>
             <AdminIconTile icon={ShieldAlert} />
-            <p className="min-w-0 flex-1 text-sm leading-6 text-slate-300">
+            <p className={`min-w-0 flex-1 ${ui.text.secondary} ${ui.tone.muted}`}>
               {rtl
                 ? "لا يوجد زر متصفح لتشغيل عامل service-role. الاستدعاء اليدوي محمي وخارج واجهة المستخدم."
                 : "Aucun bouton navigateur ne peut lancer le worker service-role. L’invocation manuelle reste protégée et hors UI."}
             </p>
           </section>
 
+          {/* Kept on `AdminNotice` rather than moved onto `UiAlert`, for the
+              same reason as admin.audit: this component is also the editorial
+              console's notice (admin.news and its two editor routes render
+              it), so swapping it here alone would leave the console with two
+              differently shaped notices. It converts centrally, in
+              AdminSurfaces, and forwards `role` exactly as `UiAlert` now does.
+              `role="alert"` is stated explicitly because this message is the
+              revocation queue's alarm: "the worker health could not be read"
+              is urgent whatever tone the colour picks, and a role derived from
+              the tone would announce it as a polite status. */}
           {message && (
             <AdminNotice tone="alert" role="alert" testId="admin-security-message">
               {message}

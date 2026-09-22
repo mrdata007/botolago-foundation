@@ -9,8 +9,8 @@ import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { TransferConfirmScreen } from "@/components/fpl/TransferConfirmScreen";
-import { FplHeader } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { UiHeader } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -165,7 +165,7 @@ function TransfersBody() {
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
       <>
-        <FplHeader title={t("fpl.transfers")} backTo="/fantasy" />
+        <UiHeader title={t("fpl.transfers")} tone="gradient" backTo="/fantasy" />
         <FantasyScreenGate state={screen} next="/fantasy/transfers">
           <div />
         </FantasyScreenGate>
@@ -531,6 +531,7 @@ function TransfersBody() {
         pairs={completePairs.map((p) => ({ out: playerOf(p.outId)!, in: playerOf(p.inId)! }))}
         clubs={clubs}
         gameweek={gameweek.number}
+        deadlineIso={gameweek.deadline}
         freeUsed={preview.free}
         paidUsed={preview.paid}
         hitPoints={preview.hitPoints}
@@ -565,6 +566,31 @@ function TransfersBody() {
         (pickerCurrentIn ? (playerOf(pickerCurrentIn)?.price ?? 0) : 0)) *
         10,
     ) / 10;
+
+  /**
+   * The three-per-club rule, answered for the picker BEFORE the tap — the same
+   * count `onPick` runs when the tap arrives, not a second implementation of
+   * the rule. Replacing a named player: the squad minus that player (and minus
+   * whoever is already pencilled in for him) must hold fewer than three from
+   * the incoming player's club.
+   */
+  const clubLimitForReplacement = (player: FantasyPlayer) => {
+    if (!pickerFor) return false;
+    const others = squadIdsAfter.filter((id) => id !== pickerFor && id !== pickerCurrentIn);
+    return others.filter((id) => playerOf(id)?.clubId === player.clubId).length >= 3;
+  };
+
+  /**
+   * Incoming-first ("Add Player"): nobody has been named to leave yet, so the
+   * pick is legal as long as SOME same-position squad member could make room.
+   * With three from a club already and none of them in this player's position,
+   * no legal swap exists and the row is blocked up front.
+   */
+  const clubLimitForIncoming = (player: FantasyPlayer) => {
+    const sameClub = squadIdsAfter.filter((id) => playerOf(id)?.clubId === player.clubId);
+    if (sameClub.length < 3) return false;
+    return !sameClub.some((id) => playerOf(id)?.position === player.position);
+  };
 
   return (
     <>
@@ -625,7 +651,12 @@ function TransfersBody() {
         onReset={reset}
         resetDisabled={outIds.length === 0 && !incoming}
         listColumns={[
-          { key: "form", label: t("fpl.form"), render: (p) => p.form.toFixed(1) },
+          {
+            key: "form",
+            label: t("fpl.form"),
+            // BG-0071: a dash, not 0.0, while no gameweek has scored.
+            render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+          },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
           { key: "sell", label: t("fpl.selling_price"), render: (p) => nf.format(p.price) },
           {
@@ -643,7 +674,9 @@ function TransfersBody() {
           bank={pickerBudget}
           position={pickerOut.position}
           lockPosition
+          clubLimitReached={clubLimitForReplacement}
           disabledIds={[...squadIdsAfter.filter((id) => id !== pickerCurrentIn), pickerFor]}
+          currentPlayerId={pickerCurrentIn}
           onPick={onPick}
           onClose={() => setPickerFor(null)}
         />
@@ -652,6 +685,7 @@ function TransfersBody() {
           players={players}
           clubs={clubs}
           bank={Math.round((pickerBank + maxSquadPrice) * 10) / 10}
+          clubLimitReached={clubLimitForIncoming}
           disabledIds={squadIdsAfter}
           onPick={onPickIncoming}
           onClose={() => setPickerAny(false)}

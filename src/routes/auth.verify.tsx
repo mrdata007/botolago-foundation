@@ -2,8 +2,15 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
+import {
+  AuthShell,
+  AuthPrimaryButton,
+  AuthFieldError,
+  authOtpSlotClass,
+} from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { ui, UiButton } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { markWelcomeDone } from "@/lib/welcome";
@@ -84,20 +91,24 @@ function VerifyPage() {
             inputMode="numeric"
             pattern="[0-9]*"
           >
+            {/* The V1 component keeps the keyboard model; the slots take kit
+                classes so no V1 token survives and each one clears 44px —
+                they were `h-9 w-9` (36px) against the floor in rule 5.
+                Six of them measure 264px inside a 326px card at 390px. */}
             <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
+              <InputOTPSlot index={0} className={authOtpSlotClass} />
+              <InputOTPSlot index={1} className={authOtpSlotClass} />
+              <InputOTPSlot index={2} className={authOtpSlotClass} />
+              <InputOTPSlot index={3} className={authOtpSlotClass} />
+              <InputOTPSlot index={4} className={authOtpSlotClass} />
+              <InputOTPSlot index={5} className={authOtpSlotClass} />
             </InputOTPGroup>
           </InputOTP>
           <AuthFieldError id="otp-err">{error && t(error)}</AuthFieldError>
         </div>
 
         {IS_MOCK_AUTH && (
-          <p className="text-center text-[11px] text-muted-foreground">
+          <p className={cn("text-center", ui.text.micro, ui.tone.muted)}>
             {t("auth.verify.demo_hint")}
           </p>
         )}
@@ -107,22 +118,30 @@ function VerifyPage() {
           {submitting ? t("auth.submitting") : t("auth.verify.cta")}
         </AuthPrimaryButton>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <button
-            type="button"
+        {/* Both were the ghost recipe written out by hand — 44px, control
+            radius, meta at the heavy weight, focus ring — one of them in the
+            muted tone of body copy rather than a control's. `UiButton` states
+            it once. The cooldown countdown is a figure a reader watches tick,
+            so it is tabular: without it the label re-flows a pixel or two
+            every second as the digits change width. */}
+        <div className="flex items-center justify-between gap-2">
+          <UiButton
+            variant="ghost"
+            size="sm"
+            className="-ms-2"
             onClick={() => navigate({ to: "/auth/register", search: { next } })}
-            className="font-semibold hover:text-foreground"
           >
             {t("auth.verify.change_email")}
-          </button>
-          <button
-            type="button"
+          </UiButton>
+          <UiButton
+            variant="ghost"
+            size="sm"
+            className={cn("-me-2", cooldown > 0 && ui.text.tabular)}
             onClick={resend}
             disabled={cooldown > 0}
-            className="font-semibold text-[color:var(--brand-primary)] disabled:text-muted-foreground"
           >
             {cooldown > 0 ? `${t("auth.verify.resend_in")} ${cooldown}s` : t("auth.verify.resend")}
-          </button>
+          </UiButton>
         </div>
       </form>
     </AuthShell>

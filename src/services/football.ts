@@ -12,7 +12,9 @@ import type {
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
+import { clubShortCode } from "@/lib/club-identity";
 import { resolveMediaUrl } from "@/lib/media";
+import { matchDayKey } from "@/lib/match-kickoff";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
 
 export type FootballDataMode = "mock" | "supabase";
@@ -60,13 +62,26 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
 }
 
 export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
-  const placeholder = team.code ?? team.shortName.slice(0, 3).toUpperCase();
+  // BG-0111 — `team.code` is blank (not null) for 13 of the 21 active clubs on
+  // production, and `??` does not fall back on `""`. That shipped an empty
+  // crest placeholder for most of the league: blank initials in `ClubCrest`
+  // and a bare "(D)" on the pitch fixture plate. `clubShortCode` treats a
+  // whitespace-only code as absent and derives the letters from `short_name`,
+  // which is populated for all 21.
+  const placeholder = clubShortCode(team.code, team.shortName);
   return {
     id: team.id,
+    slug: team.slug,
     name: { fr: team.name, ar: team.name },
     shortName: { fr: team.shortName, ar: team.shortName },
     city: { fr: team.city ?? "", ar: team.city ?? "" },
-    primaryColor: team.primaryColor ?? "#0a2540",
+    // Every one of the 21 production clubs has a null `primary_color`
+    // (BG-0112), so this fallback is what the whole league renders as today.
+    // It was a hardcoded navy: a literal colour, light-only, one shade away
+    // from the token that means exactly this. `--ui-ink` is the brand FILL,
+    // which is the job here — a crest plate is a fill, and the monogram on it
+    // is `--ui-on-ink-plain`.
+    primaryColor: team.primaryColor ?? "var(--ui-ink)",
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: placeholder,
     crestUrl: resolveMediaUrl(
@@ -148,9 +163,13 @@ function uniqueClubs(
   return [...teams.values()].map((team) => presentFootballClub(team));
 }
 
-function dateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
+/**
+ * The day key sent to the backend, which resolves it against
+ * `Africa/Casablanca`. Reading the browser's calendar fields here asked for a
+ * different day than the page then filtered on, for every viewer outside
+ * UTC+1 (BG-0100).
+ */
+const dateKey = matchDayKey;
 
 export interface FootballMatchCollection {
   readonly matches: readonly Match[];

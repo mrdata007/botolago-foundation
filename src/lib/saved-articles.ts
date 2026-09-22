@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthProvider";
 import { getNewsDataMode, newsService } from "@/services/news";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 
 // Device-local persistence exists only in explicit preview/mock mode. Supabase
 // mode is server-authoritative and never falls back to these values.
@@ -51,10 +52,14 @@ export function useSavedArticles() {
     return () => void listeners.delete(listener);
   }, [mode]);
 
+  // The hook itself must keep being callable unconditionally (rules of
+  // hooks), but while News is hidden (owner decision — see
+  // `@/lib/feature-flags`) nothing renders a saved count, so the saved-ids
+  // RPC must not be issued from /profile either.
   const cloud = useQuery({
     queryKey,
     queryFn: () => newsService.getSavedIds(),
-    enabled: mode === "supabase" && status === "authenticated",
+    enabled: NEWS_ENABLED && mode === "supabase" && status === "authenticated",
     staleTime: 30_000,
   });
 

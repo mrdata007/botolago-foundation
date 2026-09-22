@@ -6,11 +6,21 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { Users, Coins, LayoutGrid, Star, ArrowRightLeft, Timer, Trophy, Medal } from "lucide-react";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { ErrorState, LoadingState } from "@/components/common/States";
+import { ui, UiCard } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/fantasy/rules")({
   component: RulesFramed,
 });
 
+/**
+ * Fantasy "Rules" — inside the Fantasy frame and the Fantasy language.
+ *
+ * The page used to render glass cards (`glass-surface`/`glass-regular`),
+ * 16px radii and the Tailwind type ramp, so a *Fantasy* route read in the
+ * old product identity. It now uses the UI kit: opaque surfaces, the 6px
+ * control radius, the kit's type scale, and `ltr:`-only letter-spacing.
+ */
 function RulesFramed() {
   const { t } = useI18n();
   return (
@@ -58,10 +68,8 @@ function RulesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-black text-foreground">
-        <span className="text-brand">{t("fantasy.rules.title")}</span>
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t("fantasy.rules.intro")}</p>
+      <h1 className={cn(ui.text.title, ui.tone.ink)}>{t("fantasy.rules.title")}</h1>
+      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 
       <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <RuleValue label={t("fantasy.rules.squad")} value={String(rules.squadSize)} />
@@ -78,18 +86,23 @@ function RulesPage() {
 
       <div className="mt-4 grid gap-2">
         {sections.map((s) => (
-          <section
-            key={s.titleKey}
-            className="glass-surface glass-regular rounded-2xl border border-[var(--glass-border)] p-4"
-          >
+          <UiCard as="section" key={s.titleKey}>
             <div className="flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--bg-brand-gradient)] text-white">
-                <s.icon className="h-4 w-4" aria-hidden />
-              </div>
-              <h2 className="text-sm font-black text-foreground">{t(s.titleKey)}</h2>
+              <span
+                className={cn(
+                  "grid h-9 w-9 shrink-0 place-items-center",
+                  ui.radius.control,
+                  "text-[color:var(--ui-ink-deep)]",
+                )}
+                style={{ backgroundImage: "var(--ui-grad-action)" }}
+                aria-hidden
+              >
+                <s.icon className="h-4 w-4" />
+              </span>
+              <h2 className={cn(ui.text.bodyStrong, ui.tone.default)}>{t(s.titleKey)}</h2>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(s.descKey)}</p>
-          </section>
+            <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t(s.descKey)}</p>
+          </UiCard>
         ))}
       </div>
     </div>
@@ -98,11 +111,19 @@ function RulesPage() {
 
 function RuleValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-white/60 p-3 text-center ring-1 ring-black/5">
-      <dt className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-1 text-lg font-black tabular-nums text-foreground">{value}</dd>
+    <div className={cn("p-3 text-center", ui.radius.control, ui.surface.sunken)}>
+      <dt className={cn(ui.text.label, ui.tone.muted)}>{label}</dt>
+      <dd
+        className={cn(
+          "mt-1",
+          ui.text.section,
+          ui.text.tabular,
+          "[font-weight:var(--ui-weight-hero)]",
+          ui.tone.default,
+        )}
+      >
+        {value}
+      </dd>
     </div>
   );
 }

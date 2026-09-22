@@ -7,9 +7,14 @@ name: ElBotola news recovery and refresh (RETIRED)
 # replaces that entirely — it extracts facts and composes original BotolaGO
 # articles, and it owns the ElBotola source from now on.
 #
-# Its schedule has been removed, so it no longer runs on a timer. The manual
-# trigger is kept only as a break-glass path while the engine proves itself in
-# production, and `vars.ELBOTOLA_SCHEDULE_ENABLED` no longer has any effect.
+# Its schedule has been removed, so it no longer runs on a timer. BG-0073 took
+# it off the timer first, for the News stand-down; this retires it for good, so
+# the restore note that removal left behind is gone rather than stale. The
+# manual trigger is kept only as a break-glass path while the engine proves
+# itself in production, and `vars.ELBOTOLA_SCHEDULE_ENABLED` no longer has any
+# effect: the job's `if` no longer reads it, and the one runtime guard that
+# still names it sits behind `GITHUB_EVENT_NAME == "schedule"`, which this
+# workflow can no longer produce.
 #
 # Deleting this file is the last step of
 # `docs/production/NEWS_ENGINE_GO_LIVE.md`, after the engine has completed a
@@ -38,6 +43,7 @@ on:
         options:
           - canary
           - refresh
+
 concurrency:
   group: botolago-production-v2-mutation
   cancel-in-progress: false

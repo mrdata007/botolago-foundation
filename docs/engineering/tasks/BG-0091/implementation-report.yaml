@@ -1,0 +1,216 @@
+task_id: BG-0091
+title: Hide the News surface at launch (frontend half)
+branch: bg-0091-hide-news
+base_commit: a4843e3473d9dd053c214de9b0400369e8b80168
+files_changed: 12
+lines: "+426 / -100 (excluding this docs directory)"
+
+the_flag:
+  file: src/lib/feature-flags.ts
+  symbol: NEWS_ENABLED
+  value: false
+  kind: >
+    A build-time boolean literal, not runtime configuration, so the bundler can
+    drop the disabled branches and a reader can see the shipped state without
+    tracing config. The file's doc comment names the owner decision and its date
+    (2026-09-21, BG-0091) and carries the list of gated surfaces; a test asserts
+    that both the attribution line and the single `export const NEWS_ENABLED`
+    are present, so a second copy of the decision cannot appear unnoticed.
+  to_re_enable: >
+    Set NEWS_ENABLED = true. Nothing else. The routes, components, services and
+    their tests are all still in the tree, and the test suite is written to pass
+    in both flag states.
+
+gated_surfaces:
+  - surface: primary nav (bottom nav, top bar, Fantasy mobile nav)
+    file: src/components/shell/primary-nav.ts
+    change: >
+      The five items moved to a private `allPrimaryNavItems`; the exported
+      `primaryNavItems` is that list filtered by
+      `NEWS_ENABLED || item.to !== "/news"`. All three consumers (BottomNav,
+      TopBar, FantasyMobileNav) read the exported list, so one filter covers
+      them. `PrimaryRoute` deliberately still includes "/news": the route still
+      exists (it redirects), the unfiltered list is still typed against it, and
+      keeping it means re-enabling needs no type surgery.
+
+  - surface: /news route
+    file: src/routes/news.tsx
+    change: >
+      `beforeLoad: redirectWhileNewsIsHidden`, which throws
+      `redirect({ to: "/", replace: true })` while the flag is off. The existing
+      component, head metadata and data queries are untouched below it.
+
+  - surface: /news/$articleId route
+    file: src/routes/news.$articleId.tsx
+    change: >
+      The same guard repeated inline in its own `beforeLoad`. The parent's guard
+      already covers this route by router ordering; the repeat keeps the child
+      honest if the route tree is ever reshaped, and being in `beforeLoad` it
+      runs before the loader, so no News RPC is issued and `buildArticleHead`
+      (and with it the JSON-LD block) is never built.
+
+  - surface: Home news rail, its "view all" link, and the Home discovery tile
+    file: src/routes/index.tsx
+    change: >
+      Section 4 wrapped in `{NEWS_ENABLED && (...)}`; the `/news` DiscoveryLink
+      wrapped likewise; the `newsService.getEdition` query given
+      `enabled: NEWS_ENABLED` so no News data is fetched at all. The discovery
+      grid stays `grid-cols-2` and simply holds three tiles instead of four.
+
+  - surface: Fantasy hub "News & Video" rail and the "Follow BotolaGO" news tile
+    file: src/routes/fantasy.index.tsx
+    change: >
+      The whole `News & Video` section wrapped in `{NEWS_ENABLED && (...)}`; the
+      `newsService.getArticles` query given `enabled: NEWS_ENABLED`; the news
+      FollowCard wrapped, and its row switched from a fixed `grid-cols-3` to
+      `NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2"` so the remaining two tiles
+      fill the row rather than leaving a gap.
+
+  - surface: /profile saved-articles stat tile
+    file: src/routes/profile.tsx
+    change: >
+      The bookmark StatTile wrapped in `{NEWS_ENABLED && (...)}`, and the stats
+      strip switched from a fixed `grid-cols-3` to
+      `NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2"` for the same reason.
+
+  - surface: saved-articles data fetch
+    file: src/lib/saved-articles.ts
+    change: >
+      `useSavedArticles` must still be callable unconditionally (rules of
+      hooks), but its saved-ids query gained `NEWS_ENABLED &&` in front of its
+      existing `enabled` condition, so /profile issues no News RPC while News is
+      hidden.
+
+sitemap_meta_prerender: >
+  Nothing to change. This repo has no sitemap, no robots.txt, no prerender list
+  and no static route manifest advertising /news (public/ contains only
+  favicon.png and apple-touch-icon.png; vite.config.ts declares no prerender
+  routes). The only /news metadata is the `head()` on the /news route itself and
+  `buildArticleHead` on the article route, and both are now unreachable because
+  `beforeLoad` redirects before head resolution.
+
+attribution_strip:
+  file: src/services/news.ts
+  symbol: sanitizeArticleAttribution
+  independent_of_the_flag: true
+  rationale: >
+    Hiding News removes all seven QA findings by construction, but the product
+    rule ("no third-party source labels, attribution UI, source URLs or
+    branding, anywhere in the end-user product") must hold whenever News renders
+    at all — including the day the flag flips back on. The data layer is also
+    the correct home for it: the alternative is every current and future News
+    component rediscovering the rule. ArticleCard.tsx and FeaturedGrid.tsx were
+    explicitly out of bounds and were not touched.
+  rules:
+    - publisher is dropped outright. It is the source label; BotolaGO never
+      renders one. Our own publisher identity is the literal "BotolaGO",
+      applied downstream in presentArticle / buildArticleJsonLd.
+    - author is dropped when its name equals the publisher's — the signature of
+      a machine-ingested stub, where the byline IS the source. A genuine
+      editorial author survives, so licensed content keeps its byline later.
+    - a hero that exists only as an off-site `sourceUrl`, with no `storagePath`
+      of our own, is dropped; the card/article falls back to the brand gradient.
+      A hero we actually hold in storage is kept, with its third-party
+      `credit`/`caption` cleared.
+    - an anchor in `bodyHtml` with an absolute http(s) href is removed WITH ITS
+      TEXT. Anchors that are not absolute (our own relative links) are unwrapped
+      to their text instead, so internal prose keeps its words.
+  note_on_the_link_text: >
+    The first implementation only unwrapped anchors. The browser measurement
+    then still reported 1 occurrence of "elbotola" per article page (run R2 in
+    verification-report.yaml), because the unwrapped words were
+    "Lire l'original sur ElBotola" — the link text is attribution in its own
+    right. Removing the off-site anchor with its text took that to zero. This is
+    the concrete reason the task's instruction to assert by measuring rather
+    than by looking mattered; the defect was invisible to inspection.
+  named_no_provider: >
+    The rule is written generically and hardcodes no provider name anywhere in
+    src/. That is deliberate on two counts: an implementation reference to
+    Elbotola in the product source would itself breach the rule, and the correct
+    policy is "we do not republish other people's attribution", not "hide one
+    name".
+  applied_at:
+    - presentArticle (every card, preview and rail path)
+    - getArticleWithLanguageFallback, both the primary read and the
+      cross-language fallback read — the single seam through which the route
+      loader, the client query and newsService.getArticle all pass, and
+      therefore the seam that also governs the article's meta tags and its
+      JSON-LD NewsArticle block
+
+tests:
+  added:
+    - file: src/lib/feature-flags.test.ts
+      what: >
+        New. Asserts the decision is recorded once with owner and date; that
+        primaryNavItems offers /news if and only if NEWS_ENABLED; that each of
+        the six gated files imports the flag and contains its gate; that both
+        News routes use beforeLoad + redirect to "/"; and that the News
+        components, routes and services are still present in the tree. It
+        deliberately does NOT assert that the flag is false — these tests must
+        keep passing when News is switched back on.
+    - file: src/services/news.test.ts
+      what: >
+        Five new cases for sanitizeArticleAttribution: the source label, source
+        byline, hotlinked hero and off-site link-out all removed; presentArticle
+        never surfacing a source name as the byline; a genuine editorial byline
+        and a self-hosted hero surviving (with the third-party credit cleared);
+        an internal relative link keeping its words; and the card-DTO path not
+        mutating its input.
+    - file: src/routes/index.home-structure.test.ts
+      what: >
+        A new "News is gated on NEWS_ENABLED" block: Home imports the flag, the
+        news section and the discovery tile are behind it, and the news edition
+        query carries `enabled: NEWS_ENABLED`.
+  changed:
+    - file: src/services/news.test.ts
+      test: "opens an Arabic-only edition UUID for a French viewer without relabeling its content"
+      what: >
+        Its `expect(result).toBe(arabicEdition)` identity assertion is now
+        obsolete: article detail is returned as an attribution-sanitized copy,
+        not the repository's own object. Replaced with `not.toBe` plus
+        field-level equality on id/language/title — which is what the test is
+        actually about — and an added assertion that the source label does not
+        survive the seam. Nothing was dropped.
+  nothing_deleted: >
+    No test was removed. The existing News tests, route tests and the home
+    structure test all still run and still assert their original intent; the
+    home structure test keeps its original order and link assertions (the source
+    strings are still present, inside the flag guards) and gained the gating
+    assertions alongside them.
+
+i18n:
+  keys_gone_unused: none
+  baseline_movement: "W3 unchanged at 248 (all four baselines unchanged: W1 6, W2 6, W3 248, W4 97)"
+  why: >
+    The i18n gate's W3 is static analysis over source text. Every News surface
+    was wrapped in a `{NEWS_ENABLED && ...}` guard rather than deleted, so every
+    `t("...")` call site — nav.news, home.news_preview, home.view_all,
+    news.bookmark, fpl.news_video, news.title and the rest — is still literally
+    present in src/ and still counts as referenced. No key became unused and the
+    baseline did not have to move. This is a further argument for the
+    hide-don't-delete shape: deleting the JSX would have moved W3 by roughly the
+    number of News-only keys and required a baseline edit that would have to be
+    reverted when News returns.
+  w4: >
+    No `t(cond ? "a" : "b")` was introduced. The two conditionals added around
+    translated content are `cond ? t("a") : t("b")`-free entirely — they gate
+    whole elements, and the two class-name ternaries
+    (`NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2"`) contain no t() at all.
+
+known_gaps:
+  - item: "profile.notif.news (the 'Breaking news' notification toggle on /profile)"
+    status: left in place, deliberately
+    reasoning: >
+      It is a notification preference backed by the notifications fanout, not a
+      News entry point: it links nowhere, renders no article content and carries
+      no third-party string. It was not in the task's surface list and the
+      notifications worker is outside this lane. Flagged here so the Reviewer can
+      rule on it rather than discover it. If the owner wants it gone too, it is a
+      one-line addition to the same flag.
+  - item: "admin console News routes (/admin/news*)"
+    status: untouched, deliberately
+    reasoning: >
+      Staff-only surfaces behind an admin role gate, not the end-user product.
+      They are also the tool the owner would use to manage content if News is
+      licensed later. They do render article data, but that data now passes
+      through the same sanitizer wherever it goes through presentArticle.

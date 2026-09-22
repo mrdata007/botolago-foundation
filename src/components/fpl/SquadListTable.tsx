@@ -2,12 +2,12 @@ import { Info } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
+import { ui, UiPill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
-import { FplPill } from "./primitives";
 
 const ORDER: Position[] = ["GK", "DEF", "MID", "FWD"];
 
@@ -21,8 +21,11 @@ export interface SquadListColumn {
 /**
  * "List" view reconstructed from the reference: an ink position pill per
  * group ("Goalkeepers", "Defenders"…) and one row per player with the info
- * glyph, kit, name + club and right-aligned numeric columns. The bench is
- * listed last under "Substitutes".
+ * glyph, kit, name + club and numeric columns on the inline-end edge. The
+ * bench is listed last under "Substitutes".
+ *
+ * The figures use the stat ramp, so the columns line up digit for digit in
+ * French and Arabic alike.
  */
 export function SquadListTable({
   squad,
@@ -31,6 +34,7 @@ export function SquadListTable({
   columns,
   onRowClick,
   onInfo,
+  renderDetail,
   className,
 }: {
   squad: SquadPlayer[];
@@ -39,6 +43,12 @@ export function SquadListTable({
   columns: SquadListColumn[];
   onRowClick?: (playerId: string) => void;
   onInfo?: (playerId: string) => void;
+  /**
+   * BG-0075 — optional lines rendered under a player's row, spanning the full
+   * width. The points screen uses it for the scoring events behind the total.
+   * Return null for a player with nothing to add and no extra row is emitted.
+   */
+  renderDetail?: (player: FantasyPlayer, squadPlayer: SquadPlayer) => ReactNode;
   className?: string;
 }) {
   const { t, tr } = useI18n();
@@ -46,30 +56,62 @@ export function SquadListTable({
   const clubOf = (id: string) => clubs.find((c) => c.id === id);
   const starters = squad.filter((s) => s.slot < 12);
   const bench = squad.filter((s) => s.slot >= 12).sort((a, b) => a.slot - b.slot);
+  const groupLabel = (position: Position) =>
+    position === "GK"
+      ? t("fpl.group.GK")
+      : position === "DEF"
+        ? t("fpl.group.DEF")
+        : position === "MID"
+          ? t("fpl.group.MID")
+          : t("fpl.group.FWD");
 
   const groups: Array<{ label: string; rows: SquadPlayer[] }> = ORDER.map((position) => ({
-    label: t(`fpl.group.${position}` as never),
+    label: groupLabel(position),
     rows: starters
       .filter((s) => playerOf(s.playerId)?.position === position)
       .sort((a, b) => a.slot - b.slot),
   })).filter((group) => group.rows.length > 0);
   if (bench.length > 0) groups.push({ label: t("fpl.substitutes"), rows: bench });
 
-  const gridTemplate = `minmax(0,1fr) ${columns.map(() => (columns.length > 3 ? "46px" : "56px")).join(" ")}`;
+  /**
+   * Numeric tracks have a floor, not a fixed width: a fixed 56px track sliced
+   * "Sélectionné" (66px) off at the viewport edge, and a column head that
+   * cannot be read is not a column head. `auto` lets a long single-word head
+   * widen its track — the name column is the `1fr` that gives the space back.
+   */
+  const numericTrack = columns.length > 3 ? "minmax(46px,auto)" : "minmax(56px,auto)";
+  const gridTemplate = `minmax(0,1fr) ${columns.map(() => numericTrack).join(" ")}`;
+  const marker = cn(
+    "grid h-4 w-4 shrink-0 place-items-center",
+    ui.radius.full,
+    ui.surface.inkPlain,
+    ui.text.micro,
+    "[font-weight:var(--ui-weight-hero)]",
+  );
 
   return (
-    <div className={cn("bg-white", className)}>
+    <div className={cn(ui.surface.bar, className)}>
       <div
-        className="grid items-center gap-1 border-b border-[color:var(--fpl-grey)] px-3 py-2"
+        className={cn("grid items-center gap-1 px-3 py-2", ui.rule.block)}
         style={{ gridTemplateColumns: gridTemplate }}
       >
-        <span className="text-[12px] font-bold text-[color:var(--fpl-grey-text)]">
-          {t("fpl.player")}
-        </span>
+        <span className={cn(ui.text.label, ui.tone.muted)}>{t("fpl.player")}</span>
+        {/*
+          The numeric heads step down to `ui.text.micro` rather than
+          `ui.text.label`. Uppercase plus `tracking-wide` makes "SÉLECTION"
+          about 78px wide, and the column it names is 56px at 390px — the head
+          was being clipped by the viewport edge. Micro is a ramp step, not a
+          new number; see the kit request in the BG-0093 report.
+        */}
         {columns.map((column) => (
           <span
             key={column.key}
-            className="text-end text-[11px] font-bold leading-tight text-[color:var(--fpl-grey-text)]"
+            className={cn(
+              "text-end",
+              ui.text.micro,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.muted,
+            )}
           >
             {column.label}
           </span>
@@ -78,7 +120,7 @@ export function SquadListTable({
       {groups.map((group) => (
         <section key={group.label}>
           <div className="px-3 pt-3">
-            <FplPill>{group.label}</FplPill>
+            <UiPill>{group.label}</UiPill>
           </div>
           <ul className="mt-1">
             {group.rows.map((squadPlayer) => {
@@ -86,58 +128,72 @@ export function SquadListTable({
               if (!player) return null;
               const club = clubOf(player.clubId);
               const kit = getKitForClub(club, player.kitPattern);
+              const detail = renderDetail?.(player, squadPlayer) ?? null;
               return (
-                <li
-                  key={squadPlayer.playerId}
-                  className="grid items-center gap-1 border-b border-[color:var(--fpl-grey)] px-3"
-                  style={{ gridTemplateColumns: gridTemplate }}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onInfo?.(player.id)}
-                      aria-label={`${t("fpl.player_info")} ${tr(player.name)}`}
-                      className="grid h-6 w-6 shrink-0 place-items-center text-[color:var(--fpl-grey-text)]"
-                    >
-                      <Info className="h-4 w-4" aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRowClick?.(player.id)}
-                      className="flex min-h-14 min-w-0 flex-1 items-center gap-2 py-2 text-start"
-                    >
-                      <JerseyVisual kit={kit} size={28} imageUrl={player.jerseyImageUrl} />
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1 truncate text-[14px] font-extrabold text-foreground">
-                          {tr(player.name)}
-                          {squadPlayer.isCaptain ? (
-                            <span className="grid h-4 w-4 place-items-center rounded-full bg-black text-[9px] text-white">
-                              C
+                <li key={squadPlayer.playerId} className={cn("px-3", ui.rule.block)}>
+                  <div
+                    className="grid items-center gap-1"
+                    style={{ gridTemplateColumns: gridTemplate }}
+                  >
+                    <div className="flex min-w-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onInfo?.(player.id)}
+                        aria-label={`${t("fpl.player_info")} ${tr(player.name)}`}
+                        className={cn(
+                          "grid shrink-0 place-items-center",
+                          ui.space.tap,
+                          ui.radius.full,
+                          ui.focus,
+                          ui.tone.muted,
+                        )}
+                      >
+                        <Info className="h-4 w-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRowClick?.(player.id)}
+                        className={cn(
+                          "flex min-w-0 flex-1 items-center gap-2 py-2 text-start",
+                          ui.space.row,
+                          ui.focus,
+                        )}
+                      >
+                        <JerseyVisual kit={kit} size={28} imageUrl={player.jerseyImageUrl} />
+                        <span className="min-w-0">
+                          <span className="flex min-w-0 items-center gap-1">
+                            <span
+                              className={cn(
+                                "min-w-0 truncate",
+                                ui.text.secondary,
+                                "[font-weight:var(--ui-weight-heavy)]",
+                                ui.tone.default,
+                              )}
+                            >
+                              {tr(player.name)}
                             </span>
-                          ) : squadPlayer.isViceCaptain ? (
-                            <span className="grid h-4 w-4 place-items-center rounded-full bg-black text-[9px] text-white">
-                              V
-                            </span>
-                          ) : null}
+                            {squadPlayer.isCaptain ? (
+                              <span className={marker}>{t("fpl.captain_short")}</span>
+                            ) : squadPlayer.isViceCaptain ? (
+                              <span className={marker}>{t("fpl.vice_short")}</span>
+                            ) : null}
+                          </span>
+                          <span className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
+                            {club ? tr(club.shortName) : ""}
+                          </span>
                         </span>
-                        <span className="block truncate text-[11px] text-[color:var(--fpl-grey-text)]">
-                          {club ? tr(club.shortName) : ""}
-                        </span>
+                      </button>
+                    </div>
+                    {columns.map((column) => (
+                      <span
+                        key={column.key}
+                        className={cn("text-end", ui.stat.sm, ui.tone.default, column.className)}
+                      >
+                        {column.render(player, squadPlayer)}
                       </span>
-                    </button>
+                    ))}
                   </div>
-                  {columns.map((column) => (
-                    <span
-                      key={column.key}
-                      className={cn(
-                        "fpl-tabular text-end text-foreground",
-                        columns.length > 3 ? "text-[12px]" : "text-[13px]",
-                        column.className,
-                      )}
-                    >
-                      {column.render(player, squadPlayer)}
-                    </span>
-                  ))}
+                  {detail}
                 </li>
               );
             })}

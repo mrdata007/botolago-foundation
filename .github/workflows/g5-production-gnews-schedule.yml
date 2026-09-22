@@ -1,8 +1,19 @@
 name: G5 Production scheduled GNews ingestion
 
 on:
-  schedule:
-    - cron: "23 */2 * * *"
+  # BG-0073 News stand-down: the schedule is removed while News is hidden for
+  # launch. api.news_ingest_provider_article no longer publishes anything, so a
+  # stray run is harmless - but there is no reason to spend the GNews API quota
+  # collecting content nobody can read.
+  #
+  # To restore scheduled ingestion, re-add below and set the repository variable
+  # GNEWS_SCHEDULE_ENABLED to 'true' (the job's `if` still gates on it):
+  #
+  #   schedule:
+  #     - cron: "23 */2 * * *"
+  #
+  # workflow_dispatch is deliberately left intact so the owner can still run a
+  # bounded collection by hand.
   workflow_dispatch:
     inputs:
       expected_commit:

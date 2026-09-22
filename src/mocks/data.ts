@@ -163,7 +163,7 @@ export const articles: Article[] = [
     authorName: { fr: "Youssef Amrani", ar: "يوسف العمراني" },
     publishedAt: new Date(Date.now() - 3 * 3600e3).toISOString(),
     readMinutes: 5,
-    heroGradient: "linear-gradient(135deg,#0a2540 0%,#1e4d8f 55%,#c8102e 100%)",
+    heroGradient: "linear-gradient(to bottom,#0a2540 0%,#1e4d8f 55%,#c8102e 100%)",
     isLead: true,
     tag: { fr: "À la Une", ar: "الأبرز" },
   },
@@ -182,7 +182,7 @@ export const articles: Article[] = [
     authorName: { fr: "Salma Bennani", ar: "سلمى البناني" },
     publishedAt: new Date(Date.now() - 8 * 3600e3).toISOString(),
     readMinutes: 3,
-    heroGradient: "linear-gradient(135deg,#111827 0%,#e63946 100%)",
+    heroGradient: "linear-gradient(to bottom,#111827 0%,#e63946 100%)",
     tag: { fr: "Mercato", ar: "انتقالات" },
   },
   {
@@ -200,7 +200,7 @@ export const articles: Article[] = [
     authorName: { fr: "Karim Fassi", ar: "كريم الفاسي" },
     publishedAt: new Date(Date.now() - 26 * 3600e3).toISOString(),
     readMinutes: 8,
-    heroGradient: "linear-gradient(135deg,#0f172a 0%,#1a3a7a 100%)",
+    heroGradient: "linear-gradient(to bottom,#0f172a 0%,#1a3a7a 100%)",
     tag: { fr: "Analyse", ar: "تحليل" },
   },
   {
@@ -218,7 +218,7 @@ export const articles: Article[] = [
     authorName: { fr: "Nadia El Ouafi", ar: "نادية الوافي" },
     publishedAt: new Date(Date.now() - 2 * 86400e3).toISOString(),
     readMinutes: 6,
-    heroGradient: "linear-gradient(135deg,#052e16 0%,#0a8f3a 100%)",
+    heroGradient: "linear-gradient(to bottom,#052e16 0%,#0a8f3a 100%)",
     tag: { fr: "Interview", ar: "مقابلة" },
   },
   {
@@ -236,7 +236,7 @@ export const articles: Article[] = [
     authorName: { fr: "Redaction BotolaGO", ar: "تحرير BotolaGO" },
     publishedAt: new Date(Date.now() - 5 * 3600e3).toISOString(),
     readMinutes: 4,
-    heroGradient: "linear-gradient(135deg,#0a2540 0%,#0ea5e9 100%)",
+    heroGradient: "linear-gradient(to bottom,#0a2540 0%,#0ea5e9 100%)",
     tag: { fr: "Fantasy", ar: "فانتازي" },
   },
 ];

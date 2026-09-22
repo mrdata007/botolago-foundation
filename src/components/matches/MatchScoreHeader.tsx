@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
 import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { ui } from "@/components/ui-kit";
 
 /**
  * Live-first scoreboard header.
@@ -71,23 +72,23 @@ export function MatchScoreHeader({
       />
 
       <div className="relative flex items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--brand-accent)]">
+        <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase ltr:tracking-[0.16em] text-[color:var(--brand-accent)]">
           <Trophy className="h-3.5 w-3.5" aria-hidden />
           {t("matches.competition.botola")} · {t("matches.gameweek")} {match.gameweek}
         </div>
         {isLive ? (
           <LiveIndicator minute={match.minute} size="md" />
         ) : isFinished ? (
-          <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-[color:var(--text-secondary)]">
+          <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[11px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-secondary)]">
             {t("matches.status.ft")}
           </span>
         ) : isScheduled ? (
-          <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+          <span className="inline-flex items-center rounded-full bg-[color:var(--surface-hover)] px-2 py-0.5 text-[11px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
             {t("matches.status.scheduled")}
           </span>
         ) : isPostponed ? (
           <span
-            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em]"
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-black uppercase ltr:tracking-[0.14em]"
             style={{
               background: "color-mix(in oklab, var(--color-warning) 14%, transparent)",
               color: "color-mix(in oklab, var(--color-warning) 60%, black)",
@@ -111,7 +112,7 @@ export function MatchScoreHeader({
         <div className="flex flex-col items-center px-1">
           {isLive || isFinished ? (
             <div
-              className="flex items-baseline gap-2 font-mono text-5xl font-black tabular-nums tracking-tight text-foreground sm:text-6xl"
+              className="flex items-baseline gap-2 font-mono text-5xl font-black tabular-nums ltr:tracking-tight text-foreground sm:text-6xl"
               aria-live={isLive ? "polite" : "off"}
             >
               <span>{hs}</span>
@@ -122,15 +123,16 @@ export function MatchScoreHeader({
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  "font-black text-foreground",
+                  ui.tone.default,
+                  "[font-weight:var(--ui-weight-hero)]",
                   unconfirmedTime
-                    ? "max-w-28 text-center text-sm"
-                    : "font-mono text-3xl tabular-nums sm:text-4xl",
+                    ? cn("max-w-28 text-center", ui.text.secondary)
+                    : cn("font-mono", ui.text.tabular, "text-[calc(var(--ui-text-hero)*1.2)]"),
                 )}
               >
                 {displayedTime}
               </div>
-              <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
+              <div className="mt-0.5 text-[10px] font-black uppercase ltr:tracking-[0.16em] text-[color:var(--text-muted)]">
                 {t("matches.kickoff")}
               </div>
             </div>
@@ -141,7 +143,7 @@ export function MatchScoreHeader({
 
       {isLive && (
         <div className="relative mt-5">
-          <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+          <div className="flex items-center justify-between text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
             <span>{t("matches.detail.elapsed")}</span>
             <span className="tabular-nums">{elapsed}′ / 90′</span>
           </div>
@@ -155,7 +157,15 @@ export function MatchScoreHeader({
       )}
 
       {isPostponed && (
-        <p className="relative mt-4 rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[color:var(--surface)]/50 px-3 py-2 text-xs text-[color:var(--text-secondary)]">
+        <p
+          className={cn(
+            "relative mt-4 px-3 py-2",
+            ui.radius.control,
+            ui.surface.sunken,
+            ui.text.meta,
+            ui.tone.muted,
+          )}
+        >
           {t("matches.detail.postponed_notice")}
         </p>
       )}
@@ -186,9 +196,9 @@ function TeamColumn({ club }: { club: Club }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2">
       <ClubCrest club={club} size="lg" />
-      <div className="min-w-0 text-center text-sm font-black tracking-tight text-foreground">
+      <div className={cn("min-w-0 text-center", ui.text.bodyStrong, ui.tone.default)}>
         <div className="truncate">{tr(club.shortName)}</div>
-        <div className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+        <div className="mt-0.5 truncate text-[10px] font-semibold uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
           {tr(club.city)}
         </div>
       </div>
@@ -199,7 +209,7 @@ function TeamColumn({ club }: { club: Club }) {
 function MetaCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+      <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
         {icon}
         <span>{label}</span>
       </div>

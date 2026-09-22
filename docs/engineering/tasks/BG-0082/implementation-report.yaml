@@ -1,0 +1,95 @@
+task_id: BG-0082
+role: Builder-Backend
+branch: bg-0082-story-teams
+base: origin/chief/launch-fixes-3
+date: 2026-09-21
+
+files_added:
+  - path: supabase/migrations/20260921220000_story_teams_seed.sql
+    what: >
+      A single INSERT ... SELECT into app.story_teams, with on conflict
+      (story_id, team_id) do nothing. No DDL, no function, no grant, no policy.
+      It changes no signature and touches no existing object.
+  - path: supabase/tests/database/story_teams_seed.test.sql
+    what: >
+      pgTAP, 12 assertions. Carries a SYNCED COPY of the migration's insert in a
+      pg_temp procedure so the seed can be run twice inside one transaction
+      (`supabase test db` runs from supabase/tests/database, from which a \i of
+      supabase/migrations is not reachable — the same constraint and remedy as
+      football_deactivate_non_current_teams.test.sql). The copy was made and
+      re-verified programmatically byte-for-byte against the migration, from
+      `insert into app.story_teams` through `on conflict ... do nothing;`.
+  - path: docs/engineering/tasks/BG-0082/engineering-brief.yaml
+  - path: docs/engineering/tasks/BG-0082/implementation-report.yaml
+  - path: docs/engineering/tasks/BG-0082/verification-report.yaml
+
+files_modified: []
+
+how_it_matches:
+  eligible_clubs: >
+    select distinct team.id, team.name from app.teams join app.team_memberships
+    on team_id join app.seasons on season_id where season.is_current. In
+    production that is exactly 16 clubs (squad sizes 21–47); the five clubs
+    BG-0043 identified as relegated have no current-season membership and are
+    excluded by construction.
+  text_read: app.article_editions.title only. Not the summary, not body_html.
+  normalisation: >
+    Applied identically to haystack and needle:
+    regexp_replace(translate(lower(x), 'أإآٱىةًٌٍَُِّْـ', 'اااايه'), '\s+', ' ', 'g').
+    That folds the hamza carriers أ إ آ ٱ onto ا, ى onto ي and ة onto ه, deletes
+    the short-vowel marks and the tatweel, collapses whitespace and lowercases.
+    Without it "حسنية أكادير" and "حسنية اكادير" are different strings.
+  two_match_rules:
+    latin: >
+      Matched with a non-alphanumeric boundary on each side, so "Raja" cannot
+      match inside a longer word. Regex metacharacters in the alias are escaped.
+    arabic: >
+      Plain containment. Arabic attaches prefixes (و / ل / ب / ك) to the
+      following word, which a leading boundary would reject; every Arabic alias
+      is a specific multi-word or definite form, so containment is safe. The
+      cost of this choice is a known false NEGATIVE, documented in the
+      verification report.
+  alias_count: 50 aliases across the 16 current-season clubs.
+
+deliberately_not_used:
+  - app.teams.code
+  - app.teams.short_name
+  - app.team_translations (exists on this branch, ships empty, absent in production)
+  - app.article_editions.summary / body_html
+
+rls_and_privileges: >
+  app.story_teams has force row level security and no INSERT policy. The
+  migration runs as `postgres`, which carries rolbypassrls = true in this
+  project (verified read-only against production), so the insert is permitted
+  without adding a policy — the same posture as the direct UPDATE in
+  20260921170000_news_stand_down.sql. No grant, policy or RLS setting is added
+  or removed by this migration.
+
+side_effects:
+  search_documents: >
+    app.story_teams carries the trigger story_teams_refresh_search_after_write,
+    so each inserted row refreshes that story's search document to include the
+    club name. That is the intended behaviour of the existing pipeline and is
+    why recording both clubs on an ambiguous story is worth more than recording
+    neither. A re-run inserts nothing, so the trigger does not fire again.
+  no_ui_change: >
+    No TypeScript, CSS or route file is touched. NEWS_ENABLED is unchanged at
+    false; src/backend/generated/database.types.ts is unchanged (no schema
+    change to regenerate from).
+
+hard_rules_observed:
+  forward_only: No file under supabase/migrations/ was edited; one was added.
+  production_writes: None. Production was read with SELECT only.
+  frozen_files: >
+    src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts, every
+    api.service_* function, scripts/backend/fantasy-season-orchestrator.ts and
+    scripts/backend/fantasy-lifecycle-runner.ts are untouched.
+  frozen_signatures: >
+    api.fantasy_player_pool and api.fantasy_league_standings are not named
+    anywhere in this change.
+  generated_types: not hand-edited.
+  launch_ledger: not edited.
+  news_enabled: >
+    Flipped to true in the working tree ONLY to drive the browser check, then
+    reverted before the commit. `git status` was confirmed clean of it.
+  git_history: Nothing force-pushed, rebased or squashed.

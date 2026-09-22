@@ -1,0 +1,139 @@
+task_id: BG-0089
+role: Builder
+attempt: 1
+branch: bg-0089-design-consistency
+base: origin/chief/launch-fixes-3
+area: global design consistency (public application surface)
+scope: frontend-only
+severity: P1
+
+objective: >
+  Finish global design consistency on the public application — Home, Matches
+  (fixtures / results / standings), match pages, Profile, auth, navigation and
+  the loading / empty / error / 404 states — by extending the Fantasy-derived
+  UI kit (`src/components/ui-kit/`) to the screens still speaking Design
+  System V2, and to measure honestly how much of "global design consistency"
+  is actually left across the whole of `src/`.
+
+standing_requirement: >
+  The Fantasy section's visual language is the design source of truth for the
+  entire product, and BotolaGO must not look like two different applications.
+  The language is extended; Fantasy's own pitch and Fantasy-specific
+  components are never copied onto unrelated pages.
+
+method:
+  measurement_first: >
+    Nothing was changed before the divergence from the kit was counted, per
+    file, across all of `src/`. That table — not the diff — is the primary
+    deliverable, because it is what tells the owner whether the standing
+    requirement can be called PASS.
+  instrument: scripts/qa/design-divergence.ts
+  instrument_notes:
+    - >
+      Counts eight families of divergence: V2 radii (`rounded-lg|xl|2xl|3xl`),
+      legacy surfaces (`glass-*`, `surface-N`, `--glass-border`, `cta-brand`,
+      `press-tile`), the Tailwind type ramp (`text-xs`…`text-4xl`),
+      `shadow-sm|md`, `tracking-*` without an `ltr:` prefix, hardcoded colours
+      (hex, `rgb(`, `bg-white`, `text-white`, named Tailwind palettes),
+      physical direction utilities (`ml-/mr-/pl-/pr-/left-/right-/text-left/
+      text-right/border-l|r/rounded-tl|tr|bl|br`), and `--fpl-*` usage.
+    - >
+      Comments (block, line and JSX) and import specifiers are stripped before
+      counting. A previous lane inflated its own numbers by counting the
+      explanatory prose that documents the very patterns it was removing; this
+      instrument cannot do that.
+    - >
+      `src/components/ui-kit/`, `*.test.ts(x)`, `src/backend/`,
+      `src/services/`, `src/mocks/` and `src/types/` are exempt — the kit is
+      the definition of the vocabulary, and the rest render nothing.
+    - Re-runnable at any time; `--json` for machine diffing, `--top N` to widen the table.
+
+scope_boundaries:
+  owned:
+    - Home, Matches (fixtures/results/standings), match detail, Profile, auth
+    - navigation and mobile navigation, the app shell, the first-launch and welcome chrome
+    - the loading, empty, error and 404 states for the above
+    - "News components (cheap, and hidden behind NEWS_ENABLED=false)"
+    - BG-0100 (competition-timezone defect in the date formatters listed below)
+  not_owned_by_this_lane:
+    - reason: >
+        Mid-task the coordinator reassigned the UI kit and the stylesheet to a
+        dedicated foundation lane, and the Fantasy screens to dedicated Fantasy
+        lanes. Everything below is measured and reported here, and changed
+        nowhere.
+    - "src/components/ui-kit/** and src/styles.css — foundation lane (BG-0083, --fpl-* mapping, missing primitives)"
+    - "src/routes/fantasy.* and src/components/fpl/** — Fantasy lanes"
+    - "src/components/fantasy/** — Fantasy lanes"
+    - "supabase/, scripts/backend/, .github/workflows/, src/backend/"
+    - "docs/engineering/LAUNCH_LEDGER.yaml — the Chief owns it"
+    - "NEWS_ENABLED and DARK_MODE_ENABLED flag values"
+    - "src/backend/generated/database.types.ts"
+
+invariants_held:
+  - Every `tracking-*` added or moved is `ltr:`-prefixed. Arabic letterforms join and letter-spacing damages them in either direction.
+  - Logical properties only. No physical direction utility was introduced.
+  - No Arabic string was hand-mirrored.
+  - No force-push, rebase or squash of anything already on origin (this repo syncs to Lovable).
+
+confirmed_findings:
+  - id: F1
+    statement: >
+      "Converted" did not mean converted. The lanes before this one recorded
+      `components/matches/*` as done, but `MatchScoreHeader.tsx` still carried
+      ten unprefixed `tracking-*` declarations, `LineupsView.tsx` five, and
+      both still painted from `--brand-accent` / `--surface-hover` /
+      `text-foreground`. `StandingsTable.tsx` was painting its form pills
+      straight out of the Fantasy `--fpl-*` palette.
+    evidence: "scripts/qa/design-divergence.ts baseline — 15 in MatchScoreHeader, 11 in LineupsView, 9 in StandingsTable."
+    implication: >
+      Per-lane self-reports are not evidence. The measurement instrument is,
+      and it is now committed so any lane can be checked rather than believed.
+
+  - id: F2
+    statement: >
+      Just under half of the remaining divergence on the public surface is in
+      vendored shadcn components that nothing in the application imports.
+    evidence: >
+      40 of the 46 files in `src/components/ui/` are unreachable from any app
+      code; only dialog, dropdown-menu, input-otp, select, sheet and sonner
+      (plus their transitive imports) are ever rendered. Unreachable files
+      account for 170 divergences, reachable ones for 39.
+    implication: >
+      Converting the dead 170 would change nothing a user can see. Deleting
+      them would remove a third of the product's apparent inconsistency at
+      zero visual risk — but deletion is a decision, not a conversion, so it
+      is reported rather than done.
+
+  - id: F3
+    statement: >
+      Five components under `src/components/fantasy/` are imported by nothing:
+      SquadListView, PlayerPickerDrawer, TransferReviewPanel,
+      GameweekStatusStrip and FantasyChipCard.
+    evidence: "grep for each identifier across src/ returns only its own definition file."
+    implication: >
+      They contribute ~105 divergences to the Fantasy lanes' backlog for
+      screens that do not exist. Worth confirming before those lanes spend
+      time converting them.
+
+  - id: F4
+    statement: >
+      BG-0100 is real and wider than the six formatters named. The backend was
+      already being asked for a `Africa/Casablanca` match day, but the client
+      then re-filtered and re-grouped the answer through the *browser's*
+      calendar, so for any viewer outside UTC+1 the day strip, the day
+      heading, the fetch key and the match cards could disagree with each
+      other on the same page.
+    evidence:
+      - "src/routes/matches.index.tsx: `sameDay()` compared `getFullYear/getMonth/getDate` — browser-local."
+      - "src/services/football.ts: `dateKey()` built the day sent to the backend from browser-local fields."
+      - "src/components/matches/DateStrip.tsx: `setHours(0,0,0,0)` day boundaries and `d.setDate(d.getDate()+i)` stepping, plus four unpinned formatters."
+    implication: >
+      Pinning only the formatters would have left the grouping broken. The day
+      *boundary* arithmetic had to move to the competition calendar too.
+
+deliverables:
+  - docs/engineering/tasks/BG-0089/engineering-brief.yaml
+  - docs/engineering/tasks/BG-0089/implementation-report.yaml
+  - docs/engineering/tasks/BG-0089/verification-report.yaml
+  - scripts/qa/design-divergence.ts
+  - scripts/qa/design-consistency-audit.mjs

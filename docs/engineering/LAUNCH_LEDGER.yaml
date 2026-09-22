@@ -18,8 +18,6 @@ human_actions_open:
     action: Product decision — delete or keep the three synthetic accounts (e2e.fantasy.recovery/newcomer/launch@botolago.com).
   - id: BG-0065
     action: Decide the French content plan — the newest French article is ~8 weeks old while Arabic is current. Enable a French ingestion source, publish French editions, or accept a lagging French rail.
-  - id: BG-0066
-    action: Upgrade the Lovable workspace plan to remove the attribution badge overlaying the bottom nav, or say to keep it and the Chief will move the nav clear of it.
   - id: BG-0067
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
 
@@ -286,8 +284,8 @@ tasks:
       lower ~47% of the Matches and Profil bottom-nav tabs at 390px and hides both labels, and
       overlays the register CTA on /auth/login and /auth/register. Centre taps still navigate, so
       the nav is degraded rather than blocked.
-    owner: Human (plan)
-    state: HALTED_FOR_INPUT
+    owner: Human (plan) + Chief (republish)
+    state: DONE
     depends_on: []
     detail: >
       The badge is not in this repository. It is injected by Lovable's hosting, and workspace
@@ -300,6 +298,16 @@ tasks:
     human_action_required: >
       Either upgrade the Lovable workspace plan so the badge is removed at source, or accept it
       and say so, in which case the Chief will reposition the bottom nav to sit clear of it.
+    resolution: >
+      Owner upgraded the workspace to pro at 2026-09-21T12:38Z. That alone did NOT remove the
+      badge -- it was baked into the published output rather than decided per request, so it
+      survived the upgrade until a republish. Chief redeployed as
+      1f964e3e-7f86-4fa9-8026-fb878aa30f01 and it cleared about 160 seconds later. Upgrade, then
+      republish; the second half is not optional.
+    verification: >
+      botolago.com fetched with a cache-busting query and no-cache -- badge element, CSS block,
+      link and "Made with" text all absent, zero occurrences of the string "lovable" anywhere in
+      the HTML, page down from 48680 to 39214 bytes, application still rendering.
 
   BG-0067:
     title: OWNER BLOCKER — Terms of Service and Privacy Policy do not exist
@@ -323,6 +331,56 @@ tasks:
     human_action_required: >
       Supply the Terms of Service and Privacy Policy text (French and Arabic). The Chief will then
       build the routes, link them from the consent line, and add them to the footer.
+
+  BG-0090:
+    title: LAUNCH CHIEF — PR 152 merged and verified live on botolago.com
+    area: release
+    severity: P0
+    owner: Chief
+    state: DONE
+    depends_on: [BG-0063, BG-0064]
+    release:
+      merge_commit: b1ecd3bf1a7dd048b77309feafe54860fa01bcbe
+      pull_request: 152
+      lovable_deployment_id: 9e6c6187-1dc6-44ed-9fc2-6acf7f101331
+      ci: Backend quality run 466 on 1b441d4 — database-quality and application-quality both success
+    bundle_proof: >
+      A merge is not a deployment and a changed HTML hash is not a changed bundle. The first read
+      after publishing showed a different html sha256 while the asset set, the byte length (48673)
+      and MatchCard-B9pYSySp.js were all identical -- only a volatile value in the head had moved.
+      The real signal was the content-hashed chunk: MatchCard-B9pYSySp.js -> MatchCard-CbpLzh5e.js.
+    behaviour_verified_on_production:
+      - >-
+        Article JSON-LD — one real <script type="application/ld+json">, parses as NewsArticle, no
+        tag=/attrs= attributes, no raw < in the payload
+      - >-
+        api.fantasy_leagues anonymous with p_visibility=public — HTTP 200 (was 401 / 42501), the
+        exact call the rankings page makes
+      - >-
+        Match cards at 390px on /matches — L12 R378 W366 with zero clipped descendants, in FR
+        (dir=ltr) and AR (dir=rtl) alike; scrollWidth 390 in both
+    behaviour_verified_second_pass:
+      - >-
+        Back control from a COLD article context (the P1-01 scenario) — lands on
+        https://botolago.com/news with h1 "Actualités" and 1231 chars of content, where it
+        previously landed on about:blank with an empty body
+      - >-
+        French home rail — htmlLang fr, 0 Arabic characters and 224 Latin in <main>, against the
+        215 Arabic characters the crawl measured
+      - >-
+        /profile in guest state — 0 hydration errors and no console errors at all, against the
+        React #418 the crawl recorded
+    not_verified_and_why: >
+      The home page could not be checked for card clipping: it currently renders zero
+      /matches/ links, so there are no cards on it to measure. The defect is verified on /matches,
+      where it was measured and is reproducible. A first Arabic run was discarded as invalid --
+      it reported dir=ltr because the language was seeded under the wrong localStorage key
+      (botolago.language, not botolago.lang); the result above is the corrected run.
+    all_six_p1_closed: >
+      Every P1 the anonymous crawl raised is fixed, deployed and confirmed against production
+      rather than inferred from the merge: P1-01 back control, P1-02 match-card clipping,
+      P1-06 anonymous rankings, plus the JSON-LD, news-locale and hydration defects. P1-03
+      (Lovable badge) and P1-05 (legal pages) are BG-0066 and BG-0067, both owner decisions.
 
   BG-0068:
     title: Club names are never Arabic, because no team translation exists
@@ -383,6 +441,1454 @@ tasks:
     state: QUEUED
     depends_on: []
 
+  BG-0071:
+    title: Player statistics (total points, form, ownership) are hardcoded to 0 on every picking screen; selected_by_count has no writer
+    area: fantasy
+    severity: P1
+    user_impact: >
+      After GW1 closes, every player list, the squad-builder picker, and the player detail
+      page still show 0 points / 0.0 form / 0.0% selected for all 539 players, all season.
+      The points exist in app.fantasy_player_gameweek_points; the UI never reads them, and
+      the ownership counter is never written. Picking is the game; the picking screens carry
+      no information.
+    owner: Chief
+    state: READY
+    depends_on: []
+    deadline: before GW2 opens (first close of GW1 ≈ 2026-09-25)
+    evidence:
+      - docs/engineering/tasks/BG-0071/engineering-brief.yaml
+      - src/services/fantasy-runtime.ts:47-49 (totalPoints/form/ownership = 0)
+      - grep selected_by_count over supabase/migrations → declared, read, never written
+    note: >
+      Not a GW1 blocker (no data exists before the first close). Lane is distinct from the
+      closed BG-0056 Fantasy regression mandate: adds two read RPCs and a mapper fix, touches
+      no lifecycle, scoring, or pricing code.
+
+  BG-0072:
+    title: Lovable sync commit left one prettier/prettier error on main, so `bun run lint` fails
+    area: ci
+    severity: P1
+    owner: Chief
+    state: DONE
+    depends_on: []
+    evidence:
+      - docs/engineering/tasks/BG-0072/engineering-brief.yaml
+      - re-verified on main@f0782d6 before building -- 1 error, 15 pre-existing warnings
+    note: >
+      Lovable edits reach main without passing the repo's formatter, so formatting drift
+      arrives directly on the default branch. This entry records the fix, not a guard
+      against a recurrence.
+
+  BG-0073:
+    title: Global ranking is empty for every user all season -- /fantasy/rankings reads the largest public league and there are none
+    area: fantasy
+    severity: P0
+    owner: Builder
+    state: IN_PROGRESS
+    depends_on: []
+    branch: bg-0073-overall-standings
+    evidence:
+      - src/services/fantasy-runtime.ts:283-296 (getGlobalRankings takes the largest public league)
+      - production 2026-09-21 -- 3 fantasy leagues, 0 of them public
+      - app.fantasy_rankings already carries league_id IS NULL rows; nothing reads them
+    note: >
+      Chief re-verification added one fact the sweep finding omits: app.fantasy_rankings is
+      entirely empty today, 0 overall and 0 league rows, because GW1 has not finalized. The
+      empty state is therefore the primary path, not an edge case.
+
+  BG-0074:
+    title: Manager names render blank in league tables, rankings and the podium
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0073]
+    note: >
+      Sequenced behind BG-0073: both extend standings payloads and both edit
+      fantasy-runtime.ts.
+
+  BG-0075:
+    title: Points page shows no average, no highest, no per-player breakdown and no auto-subs
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0073]
+
+  BG-0076:
+    title: Black rectangles where article hero images should be -- every French article has no hero
+    area: news
+    severity: P1
+    owner: Builder
+    state: IN_PROGRESS
+    branch: bg-0076-article-image-fallback
+    depends_on: []
+    evidence:
+      - production 2026-09-21 -- FR 10 published editions, 10 with no hero_asset_id; AR 98, 37 with none
+
+  BG-0077:
+    title: Fantasy fields that can only ever read zero (pendingTransfers, mock-only rules payload)
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0073]
+
+  BG-0091:
+    title: News stand-down -- unpublish the ingested link-out editions and stop ingestion publishing
+    area: news
+    severity: P1
+    owner: Builder
+    state: IN_PROGRESS
+    branch: bg-0073-news-standdown
+    depends_on: []
+    evidence:
+      - owner decision 2026-09-21 -- unpublish the link-out articles and hide News for launch
+      - production -- 108 published editions, all created_by null, body_html 214-535 chars
+      - api.news_ingest_provider_article hardcodes 'published','public' on insert and re-forces it on update
+    note: >
+      The branch is named bg-0073-news-standdown because it was cut before the 2026-09-21
+      sweep reassigned BG-0073 to the global ranking defect. Same work, different id.
+    conflicts_with: >
+      Sweep task K asks the owner to enable ELBOTOLA_SCHEDULE_ENABLED and
+      GNEWS_SCHEDULE_ENABLED. That contradicts this decision. Raised to the owner;
+      HUMAN_ACTIONS marks both variables DO-NOT-ENABLE pending confirmation.
+
+  BG-0092:
+    title: Signup cannot be completed on botolago.com -- the verify screen asks for a 6-digit code that is never sent
+    area: auth
+    severity: P0
+    owner: Owner
+    state: RESOLVED_BY_OWNER # 2026-09-21 -- adding {{ .Token }} to the Supabase confirm-signup template; the six-digit UI stays
+    depends_on: []
+    evidence:
+      - live QA 2026-09-21 on https://botolago.com with two real new accounts
+      - /auth/verify renders a 6-box code input; the only mail Supabase sends is a magic link containing no digits
+      - any entered code -> 403 POST /auth/v1/verify, UI shows "Code expire"
+      - logging in instead -> 400 /auth/v1/token, UI shows "E-mail non confirme"
+    question: >
+      The product asks for an emailed OTP but the Supabase project is configured to send a
+      confirmation link. Which is intended? Switching the email template to carry
+      {{ .Token }} makes the existing UI correct; switching the UI to a link flow makes the
+      existing template correct. Both are one change; only the owner can pick.
+
+  BG-0093:
+    title: The confirmation link lands on www.botolago.app, a second deployment, so the session is created on the wrong origin
+    area: auth
+    severity: P0
+    owner: Owner
+    state: RESOLVED_BY_OWNER # 2026-09-21 -- Site URL and redirect allow-list now set to botolago.com; www.botolago.app stays, do not touch
+    depends_on: []
+    evidence:
+      - signup POST requests redirect_to=https://botolago.com/auth/callback, Supabase overrides it with its configured Site URL
+      - emailed link resolves 303 to https://www.botolago.app#access_token=...
+      - www.botolago.app serves a separate deployment of the same app; botolago.com stays logged out
+      - reproduced on both QA accounts
+    question: >
+      Supabase Auth Site URL must become https://botolago.com with botolago.com/** in the
+      redirect allow-list. Owner-only (Supabase dashboard). Also: should www.botolago.app
+      keep serving a second copy of the app at all?
+
+  BG-0094:
+    title: An in-progress 15-player squad lives only in localStorage and is lost on any new session or device
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - live QA -- draft persisted at localStorage['botolago.fantasy.drafts'] under "<user>::create-team"
+      - no server RPC fires while drafting; two full 15-player builds lost across sessions, reproduced twice
+
+  BG-0095:
+    title: Formation can never be changed -- substitution is locked to identical positions, contradicting the published rules
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - live QA -- cross-position sub rejected with "Ces joueurs occupent des postes differents"
+      - no formation selector exists on /fantasy/team
+      - /fantasy/rules states "Alignez 11 joueurs dans une formation valide chaque journee"
+
+  BG-0096:
+    title: /news main grid and club filter show an empty state while ten articles render directly beneath
+    area: news
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0091]
+    evidence:
+      - live QA -- both tabs and the club grid show "Aucun contenu disponible" above a populated "Les dernieres" list
+      - no 4xx/5xx and no console errors; the two regions read different sources
+    note: >
+      Largely mooted if News ships hidden (BG-0091), but the split-source defect is real and
+      returns the moment News is switched back on.
+
+  BG-0097:
+    title: Rotate the credentials recorded in FANTASY_LAUNCH_HARDENING_2026_09_18 section 1
+    area: security
+    severity: P2
+    owner: Owner
+    state: DEFERRED # owner decision 2026-09-21 -- post-launch, explicitly not blocking
+    depends_on: []
+    note: >
+      They were written into a document in the repository, so treat them as disclosed
+      regardless of who has read it. Deferred, not dismissed.
+
+  BG-0098:
+    title: Set SUPABASE_URL and the matching service-role key in the Lovable hosting environment
+    area: config
+    severity: P2
+    owner: Owner
+    state: DEFERRED # owner decision 2026-09-21 -- post-launch, explicitly not blocking
+    depends_on: []
+
+  BG-0099:
+    title: GW1 deadline stays as stored; automation is on, so the deadline may realign itself before 2026-09-23 22:30Z
+    area: fantasy
+    severity: P2
+    owner: Owner
+    state: DECIDED # 2026-09-21 -- leave as stored, no manual realign, no users expected this week
+    depends_on: []
+    evidence:
+      - app_private.fantasy_guard_deadline_change raises PT409 once statement_timestamp() >= old.deadline_at
+      - so from 2026-09-23T22:30:00Z the GW1 deadline is immutable to the orchestrator, the realign script and any manual UPDATE alike
+      - FOOTBALL_CURRENT_SCHEDULE_ENABLED and FANTASY_AUTOMATION_ENABLED are now both set
+    note: >
+      The two decisions interact. If SportsMonks publishes all eight real kickoffs before
+      that instant, the hourly orchestrator will rewrite deadline_at/starts_at/ends_at by
+      itself -- a realign, just an automatic one, and strictly later rather than earlier.
+      If they publish after it, assignment kickoffs realign while the deadline and window
+      stay stale, and nothing short of a migration altering the trigger can correct them.
+      Recorded as the owner's call.
+
+  BG-0079:
+    title: Four new pgTAP files fail in CI; the team_translations anon-coercion assertion is itself wrong
+    area: ci
+    severity: P1
+    owner: Builder
+    state: IN_PROGRESS
+    branch: bg-0079-pgtap-fixes
+    depends_on: []
+    evidence:
+      - Backend quality run 468 (35617302393), job database-quality, step backend:db:test
+      - fantasy_overall_standings.test.sql and fantasy_player_season_stats.test.sql exit 3, "No plan found in TAP output" -- fatal error before the plan
+      - football_deactivate_non_current_teams.test.sql ran 20 assertions, 0 failed, but declares plan(10)
+      - team_translations.test.sql test 5 fails -- and the three api functions it flags are correct
+    note: >
+      Test 5 asserted that no api function names app.language_code in its argument list.
+      Three do -- complete_onboarding, update_my_preferences, register_my_notification_device --
+      and all three pre-date this branch. Production says authenticated holds USAGE on app
+      and anon does not, and anon cannot execute any of the three. The BG-0063 coercion trap
+      only bites a caller without that usage, so the real invariant is narrower: no api
+      function EXECUTABLE BY ANON may name an app-schema type in its arguments. The
+      assertion is being rewritten to check the privilege rather than the name.
+
+  BG-0080:
+    title: Remove the temporary rpcAwaitingGeneratedTypes helper once CI's regenerated database.types.ts lands
+    area: ci
+    severity: P2
+    owner: Chief
+    state: DONE # helper and its cast deleted 2026-09-21, commit 85b863b
+    depends_on: [BG-0079]
+    evidence:
+      - 9335897 committed CI run 35643110537's regenerated database.types.ts verbatim
+      - fantasy_player_season_stats and fantasy_player_gameweek_history are both in the api Functions union
+      - 85b863b deletes the helper; both callers use getFantasyApi().rpc(...) with check(error)
+      - typecheck clean, bun run test 1438 pass / 0 fail, lint 0 errors, build succeeds
+    note: >
+      Two lanes left src/backend/generated/database.types.ts in conflicting states -- one
+      hand-edited it against its own do-not-edit header, one refused and left it stale.
+      Neither shipped. The frontend lane routed its two new RPCs through a local zod-validated
+      helper instead of hand-editing the file, which was the right call, but the helper was
+      scaffolding: it reached the client through `as unknown as { rpc(fn: string, ...) }`, a
+      hole in the one place this codebase checks RPC names and argument shapes against the
+      database. BG-0079 landed CI's artifact, so the hole had nothing left to cover and came
+      out. A misspelled RPC name in either call is now a compile error, not a runtime PGRST202.
+
+  BG-0083:
+    title: --ui-ink is used as a text colour and fails contrast in dark mode
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # fixed by the foundation lane 2026-09-21, commit 81b7759
+    depends_on: []
+    blocks: [BG-0081]
+    evidence:
+      - measured in Chromium against rasterised sRGB, not parsed strings
+      - Profile h1 1.42:1; BottomNav active label 1.25:1; UiButton outline/ghost 1.25:1; UiSegmented active segment 1.25:1
+    note: >
+      --ui-ink is a dark navy in BOTH themes, so it is a fill and border token, not a
+      foreground. Fixing it means changing ui.tone.ink and two kit primitives, which
+      restyles every screen -- which is why it is its own task rather than a rider.
+    resolution: >
+      Added --ui-ink-fg, a theme-correct brand foreground, and --ui-on-grad-header for the
+      header/hero band, which carried the same defect one layer down. --ui-ink is unchanged
+      and still fills and borders. Measured in rasterised sRGB, dark mode: Profile h1
+      1.42 -> 13.06, BottomNav active label 1.25 -> 11.48, UiButton outline 1.25 -> 11.48,
+      ghost 1.42 -> 13.06, UiSegmented active segment 1.25 -> 11.48. Light is unchanged by
+      construction, since --ui-ink and --ui-ink-fg hold the same value there. The "before"
+      numbers reproduce BG-0081's exactly, which is how we know the two harnesses measure
+      the same thing.
+    beyond_scope_found: >
+      An audit of all 23 kit colour pairs across both themes found four more palette
+      defects, now fixed: light --ui-positive at 2.6:1 as text, light --ui-negative at
+      4.0:1, light --ui-on-surface-faint at 4.28, light FDR-4 at 3.98 and dark FDR-1 at
+      4.40. All 46 pairs now clear 4.5:1, worst 4.73.
+
+  BG-0084:
+    title: Fantasy has no dark counterpart -- --fpl-* is light-only and the screens use literal bg-white
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    blocks: [BG-0081]
+    evidence:
+      - styles.css documents --fpl-* as a light-only reconstruction with no .dark block
+      - themed --ui-* foregrounds over un-themed light surfaces measured 1.01:1 on three Profile-adjacent Fantasy labels, and 1.09:1 on tabs
+      - docs/engineering/tasks/BG-0081/evidence/dark-fantasy-390.png
+    note: >
+      Two Fantasy labels (--fpl-cyan on white, 1.38:1) also fail in LIGHT mode, so this
+      is not purely a dark-mode defect.
+
+  BG-0085:
+    title: api.service_sync_fantasy_calendar does not supersede assignments for postponed fixtures
+    area: fantasy
+    severity: P1
+    owner: Builder-Backend
+    state: QUEUED # post-GW1 -- owner decision 2026-09-21, do not change the function now
+    depends_on: []
+    evidence:
+      - the supersede rule matches only f.status in ('cancelled','abandoned')
+      - FAR Rabat v Raja Casablanca went postponed and kept counts_points true on the 00:00:00Z placeholder
+      - that single row held unconfirmed_active at 1, so the sync took its deadline_unconfirmed branch and left GW1's deadline 22 hours early
+    note: >
+      The lifecycle lane is closed until after GW1, so this is deliberately not being
+      fixed now; GW1 is handled by a one-off operator script instead
+      (scripts/backend/fantasy-gw1-defer-postponed-and-realign.sql). The fix is to add
+      'postponed' to that rule, or better, to stop deriving a deadline from any fixture
+      that is not playable. Needs pgTAP covering: a postponed fixture is superseded, the
+      deadline recomputes from the remainder, and a fixture that un-postpones is
+      re-assigned rather than silently lost.
+
+  BG-0086:
+    title: GW1 deadline realigned to the real kickoff; the postponed FAR v Raja assignment deferred
+    area: fantasy
+    severity: P0
+    owner: Chief
+    state: DONE
+    depends_on: []
+    executed_at: 2026-09-21T16:4xZ against production tkewgajrljbwgwedqsxn, owner-authorized
+    before:
+      deadline_at: 2026-09-23T22:30:00Z
+      starts_at: 2026-09-24T00:00:00Z
+      ends_at: 2026-09-24T06:00:00Z
+      counting_assignments: 8
+      unconfirmed_kickoffs: 1
+    after:
+      deadline_at: 2026-09-24T18:30:00Z
+      starts_at: 2026-09-24T20:00:00Z
+      ends_at: 2026-09-28T00:00:00Z
+      counting_assignments: 7
+      unconfirmed_kickoffs: 0
+    evidence:
+      - dry run executed the identical code path and aborted deliberately, carrying the computed state out in the error message; rollback re-verified before executing for real
+      - all eight fixture updated_at values byte-identical to the baseline taken immediately before execution -- zero fixture rows modified
+      - anon REST -- fantasy_hub 200 deadlineAt 18:30Z, fantasy_gameweeks 200 endsAt 2026-09-28T00:00Z, fantasy_player_pool 200, fantasy_rules 200
+      - live botolago.com/fantasy reads "Journee 1 Deadline: jeudi 24 sept., 19:30" (19:30 Morocco = 18:30Z), zero console errors
+    note: >
+      scripts/backend/fantasy-realign-gameweek-calendar.sql was NOT used and must not be:
+      its hardcoded gameweek id does not exist, its guard rejects the postponed fixture,
+      and its first UPDATE would have flattened all seven real kickoffs to the first one.
+      scripts/backend/fantasy-gw1-defer-postponed-and-realign.sql is the script that ran.
+
+  BG-0087:
+    title: The 2026/27 fixture list stops after matchday 1 -- the season cannot advance past GW1
+    area: data
+    severity: P0
+    owner: Chief
+    state: ACCEPTED # owner checked other outlets 2026-09-21 -- they publish only matchday 1 too, so this is the league's own schedule release, not a provider or ingestion defect
+    depends_on: []
+    evidence:
+      - app.rounds for the current season -- 2 rows; app.fixtures -- 8 rows, all round 1
+      - round 2 exists but has 0 fixtures, so api.service_sync_fantasy_calendar notes no_fixtures_published and creates no GW2
+      - a 16-club double round robin is 30 rounds / 240 fixtures; the database holds 8
+      - the football recovery workflow completed 2026-09-21T16:06:24Z and still produced only round 1, so this is provider coverage, not a missed run
+    resolution: >
+      Answered by the owner: other outlets publish the same, so the LNFP has released
+      matchday 1 only. Nothing is broken; the season advances one matchday at a time and
+      the recovery script's scope is correct as written.
+    residual_risk: >
+      The chain is now automatic -- provider publishes round 2, the daily football
+      recovery ingests it, the hourly sync creates GW2 -- but there is one timing edge
+      worth watching. api.service_sync_fantasy_calendar refuses to create a gameweek
+      whose computed deadline has already passed (its `deadline_already_passed` note).
+      So if round 2's fixtures land less than 90 minutes before that round's first
+      kickoff, or after it, GW2 is never created at all rather than created late. The
+      scheduled orchestrator is also throttled well below its hourly cron on this repo
+      (observed gaps of 3-8 hours), which widens that window. Worth a check after GW1
+      closes rather than a fix now.
+    note: >
+      Not a GW1 blocker. GW1 is complete and correct.
+
+  BG-0088:
+    title: The branch calls four RPCs production does not have, so the frontend must not be published before the migrations
+    area: release
+    severity: P0
+    owner: Chief
+    state: OPEN
+    depends_on: []
+    evidence:
+      - branch build against production -- 404 fantasy_player_season_stats, 404 fantasy_gameweek_summary, /fantasy renders its error state
+      - the same run returned 200 for football_team_catalog and fantasy_hub, so this is not connectivity
+      - >
+        2026-09-21 re-measured directly against pg_proc on tkewgajrljbwgwedqsxn rather than
+        by HTTP, and the count is four, not two. Every RPC name this branch's src/ calls was
+        checked against api.*: MISSING are fantasy_gameweek_summary,
+        fantasy_overall_standings, fantasy_player_gameweek_history and
+        fantasy_player_season_stats. All 31 others are present.
+      - >
+        production's supabase_migrations.schema_migrations stops at 20260921135655. None of
+        this branch's seven migrations (20260921140000, 160000, 170000, 180000, 190000,
+        200000, 220000) is applied.
+      - the four map to three migrations -- 160000 ships two, 180000 and 200000 one each
+    note: >
+      Deployment ordering is therefore hard: promote the migrations, THEN publish the
+      frontend. Publishing first breaks /fantasy, the player detail and the overall
+      standings for every visitor with PGRST202. Live production is unaffected today
+      because main calls none of the four.
+
+      A fifth name also came back missing and is NOT part of this -- save_fantasy_team,
+      which exists in no schema in production at all. It is called only from
+      src/services/fantasy-cloud-repo.ts, whose exported `fantasyCloudRepo` object has zero
+      references anywhere outside its own file and test; only its FantasyCloudError class
+      is still used, by fantasy-errors.ts as a compatibility shim. So it is dead code
+      calling RPCs that were never deployed, not a live defect. Recorded as BG-0123.
+
+  BG-0100:
+    title: Match and fixture times are formatted in the browser's timezone in six places, while match cards pin Africa/Casablanca
+    area: frontend
+    severity: P1
+    owner: Builder
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - pinned to MATCH_TIME_ZONE ("Africa/Casablanca", src/lib/match-kickoff.ts:3) -- MatchCard.tsx:93,98; MatchScoreHeader.tsx:29,34; fantasy.fixtures.tsx:95; fantasy.index.tsx:70; fantasy.leagues.$leagueId.tsx:72; fpl/primitives.tsx:102
+      - NOT pinned, so browser-local -- DateStrip.tsx:71,72,73,117; matches.index.tsx:209; matches.$matchId.tsx:155; index.tsx:193
+    user_impact: >
+      Inside one page the two disagree. A match kicking off 2026-09-24 20:00Z renders as
+      21:00 on a pinned card, while the unpinned day strip groups and labels it by the
+      viewer's own timezone -- so for anyone outside UTC+1 the strip can file a match
+      under the wrong day while the card beside it shows the right time. It is an
+      internal contradiction, not merely a display preference.
+    note: >
+      The Fantasy DEADLINE is already correct and browser-independent: every surface that
+      renders it pins Africa/Casablanca, which is why the live site shows "jeudi 24 sept.,
+      19:30" for 2026-09-24T18:30Z regardless of viewer. That requirement is satisfied;
+      this entry is the neighbouring defect found while verifying it.
+      src/lib/format-time.ts is also unpinned but serves only News, which is hidden, so it
+      is low priority rather than launch-blocking.
+
+  BG-0101:
+    title: Release-branch audit -- chief/launch-fixes-3 as the pre-launch release candidate
+    area: release
+    severity: P1
+    owner: Chief
+    state: IN_PROGRESS # audit started early as preparation; finalise only after the migration and E2E are green
+    depends_on: [BG-0084, BG-0089, BG-0090]
+    findings:
+      commits_ahead_of_main: 68
+      diff_vs_main: 274 files, +37888 / -4621
+      unrelated_experiments_found: >
+        Exactly one, and it is documentation only: docs/engineering/VERCEL_CUTOVER.md,
+        from the abandoned host cutover. There is no vercel.json and no code artefact.
+        Keeping it: the owner's own decision was "switch back to the Lovable upgrade,
+        keep Vercel as fallback", so it is an endorsed fallback plan rather than a
+        stranded experiment, and it carries a banner saying it is not the plan of record.
+      evidence_weight: >
+        3.2 MB of verification screenshots and JSON across the BG-0071, BG-0074, BG-0076
+        and BG-0081 task folders. Permanent repo weight for one-off artefacts, and this
+        repo syncs to Lovable. Keeping it anyway: it is the proof behind the claims those
+        lanes made, and deleting evidence after the fact to save 3 MB would hollow out
+        the verification record. Revisit as a housekeeping pass after launch, not now.
+    note: >
+      Scope is NOT frozen yet. The Fantasy migration (BG-0084) is the critical path and
+      the foundation lane it depends on is still running.
+
+  BG-0102:
+    title: The admin console carries 320 design divergences and is not being migrated for launch
+    area: design
+    severity: P2
+    owner: Chief
+    state: DEFERRED # deliberate scope decision, not an oversight
+    depends_on: []
+    evidence:
+      - scripts/qa/design-divergence.ts, by-owner breakdown -- admin 322 before, 320 after the public-application lane
+    note: >
+      The owner's instruction scopes the migration to the ENTIRE PUBLIC application, and
+      the admin console is staff-only -- it is not a surface a normal user navigating
+      BotolaGO will ever perceive. Recording the number so the GLOBAL DESIGN CONSISTENCY
+      verdict can be stated precisely: PASS covers the public product, and admin is a
+      known, decided exclusion rather than something that was missed.
+
+  BG-0103:
+    title: --brand-primary rendered as text via text-brand fails contrast in dark
+    area: design
+    severity: P1
+    owner: Builder # routed to the Fantasy shell lane, BG-0092
+    state: IN_PROGRESS
+    depends_on: []
+    evidence:
+      - 16 instances, measured 1.35-1.54:1 in dark mode, rasterised sRGB
+    note: >
+      Same class of defect as BG-0083 one layer out: a brand fill token used as a
+      foreground. Routed to the shell lane because the instances are chrome-wide.
+
+  BG-0104:
+    title: --color-live fails contrast in LIGHT mode, measured 3.30:1 on the tint it is painted over
+    area: design
+    severity: P2
+    owner: Chief
+    state: DONE # --color-live-fg added 2026-09-21; LiveIndicator text now 5.21:1
+    depends_on: []
+    evidence:
+      - >
+        the recorded 4.04:1 was against white. LiveIndicator does not paint it on white: it
+        paints `color-mix(in oklab, var(--color-live) 14%, transparent)` and puts the same
+        token on top, so foreground and background are two points on one hue ramp. Measured
+        from rasterised sRGB against the tint it actually renders (rgb(253,226,226)) the pair
+        is 3.30:1, at 10px, on /matches.
+      - "--color-live stays as the FILL (the pulsing dot, the minute bar), where vividness is the point and no ratio applies"
+      - "--color-live-fg: oklch(0.5 0.22 27) -- only the lightness moves, 0.62 -> 0.50 at identical chroma and hue, so it reads as the same red one step deeper. 5.21:1 on the tint, 6.38:1 on white"
+      - after: scripts/qa/contrast-probe.mjs over 7 routes x 2 languages, 168 pixel measurements, 0 below AA
+    note: >
+      Same split this codebase already made for --ui-ink / --ui-ink-fg (BG-0083), for the
+      same reason: one token cannot be both a fill and a foreground. The recorded ratio was
+      optimistic because it measured against the wrong background -- worth noting, since the
+      component painting a tint of the token it then writes on is the same shape as BG-0114.
+
+  BG-0105:
+    title: MatchCard's glass prop is inert and reads as live API
+    area: design
+    severity: P3
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - src/components/common/MatchCard.tsx -- both settings now resolve to the same kit card; the prop only toggles press feedback
+    note: >
+      Deprecate once the routes stop passing it. Deliberately not removed mid-migration:
+      it is load-bearing in call sites three lanes are editing right now.
+
+  BG-0106:
+    title: Signup still cannot be completed -- the confirm-signup template is still Supabase's stock default
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - live E2E 2026-09-21 -- registered a real address; the delivered mail body is "<h2>Confirm your email address</h2>" plus one verify link, ZERO digits anywhere
+      - sender noreply@mail.app.supabase.io; confirmation_sent_at set, email_confirmed_at null
+      - the UI still reads "Nous avons envoye un code a 6 chiffres"
+    question: >
+      The {{ .Token }} template edit has not taken effect -- the template being sent is
+      still the stock default. Was it saved on the "Confirm signup" template specifically,
+      and in the production project (tkewgajrljbwgwedqsxn)? Until it is, no new user can
+      reach the product except by clicking the link, and the six-digit screen is dead UI.
+    note: >
+      The link itself DOES work and does establish a session, so the account path is not
+      broken -- only the flow the product advertises.
+
+  BG-0107:
+    title: /auth/callback is not in the Supabase redirect allowlist, so profile setup and deep links are skipped
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - the client sends emailRedirectTo getCallbackUrl(next) at src/services/auth-supabase.ts:210
+      - the delivered link carries redirect_to=https://www.botolago.com -- the site ROOT, not /auth/callback
+      - Supabase falls back to the Site URL when the requested redirect is not allowlisted
+    question: >
+      Add https://botolago.com/auth/callback (and the /** wildcard) to Authentication ->
+      URL Configuration -> Redirect URLs. Until then the app's callback route never runs:
+      /auth/profile-setup is skipped for every confirmed user and the `next` deep link is
+      discarded, so everyone lands on the homepage.
+    note: >
+      The www -> apex redirect itself is fixed and working (303 -> www.botolago.com ->
+      302 -> botolago.com). BG-0093's original complaint is refuted; this is what replaced it.
+
+  BG-0108:
+    title: Production sends auth mail through Supabase's built-in service and is already rate-limited
+    area: auth
+    severity: P0
+    owner: HALTED_FOR_INPUT
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    evidence:
+      - sender is noreply@mail.app.supabase.io, which Supabase documents as not for production use
+      - after 2 signup emails and 1 password-reset request, POST /auth/v1/recover returned 429
+    question: >
+      A custom SMTP provider needs configuring before launch. The built-in service caps
+      signups at a handful per hour, so a launch day with real traffic locks new users out
+      of the product entirely.
+    note: >
+      The UI degrades correctly ("Trop de tentatives. Patientez un moment...") -- this is a
+      capacity and configuration problem, not a frontend one.
+
+  BG-0109:
+    title: FAR Rabat and Raja players are fully purchasable with no GW1 fixture and no warning
+    area: fantasy
+    severity: P1
+    owner: Chief
+    state: DECIDED # Chief decision 2026-09-21; implement as a focused pass after the four Fantasy lanes land
+    depends_on: [BG-0086]
+    evidence:
+      - 64 players (FAR 31, Raja 33), priced up to 11.70, active and eligible and selectable
+      - three were added to a draft with no blocker, no warning and no toast
+      - their player-detail Calendrier tab reads "Aucun contenu disponible" and both clubs are absent from the difficulty grid
+    note: >
+      A direct consequence of deferring the postponed fixture, and the right trade -- but
+      the player pool does not reflect it. A manager can spend a third of the budget on
+      players who cannot score in GW1 and gets no signal at all. The deferral is correct;
+      the pool failing to surface it is the defect. Needs a product decision as much as a
+      fix: warn, mark unavailable, or exclude.
+    decision: >
+      Mark unavailable with a reason; do NOT exclude and do NOT block selection.
+      Excluding them silently is its own surprise -- a manager who knows Raja exists and
+      cannot find a single Raja player learns nothing except that the app is broken. And
+      blocking selection would be domain logic, which this migration is explicitly not
+      allowed to change. A badge plus a line on the player detail is presentation of data
+      the frontend already holds: the player's club has no counting fixture in the current
+      gameweek.
+    sequencing: >
+      Deliberately NOT routed into the four in-flight Fantasy lanes. The signal has to
+      appear in the pool list, the picker and the player detail -- three files owned by
+      three different lanes -- so injecting it now would create exactly the cross-lane
+      conflict the ownership split exists to prevent. It lands as one coherent pass once
+      they merge, which also means one reviewer sees the whole behaviour rather than three
+      partial versions of it.
+    open_question_for_owner: >
+      Whether to also surface it at squad-confirmation time ("3 of your 15 players have no
+      fixture this gameweek"). That is a nudge with product weight rather than a defect
+      fix, so it is not being built unasked.
+
+  BG-0110:
+    title: Wydad Casablanca renders as "WCA" because its short_name is a code, not a name
+    area: data
+    severity: P2
+    owner: Owner
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - app.teams.short_name = 'WCA' for Wydad Casablanca; every other club's short_name is its full name
+      - the difficulty grid reads "WCA | WCA" where peers read "AMA | Amal Tiznit"
+    note: >
+      One-row data fix, not a code change. Deliberately not patched in the UI -- a special
+      case for one club hides the inconsistency instead of removing it.
+
+  BG-0112:
+    title: Club colours do not exist in production data, so kit-coloured shirts and crest chips cannot be rendered from it
+    area: data
+    severity: P2
+    owner: Owner
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - app.teams across 21 active clubs -- primary_color null 21/21, secondary_color null 21/21
+      - code null 13/21, so a short-code fallback fails for most of the league
+      - crest_asset_id populated 21/21, and api.fantasy_player_pool already returns crestAssetId per player
+      - short_name equals name for 20/21; the exception is Wydad Casablanca, whose short_name is the literal string "WCA" (BG-0110)
+    note: >
+      Raised by the polish standard, which asks for kit-coloured shirts and crest chips
+      with a 1px ring. The crest half is buildable today; the colour half is not, and no
+      amount of frontend work creates it. getKitForClub falls through to the default navy
+      on production exactly as it does in mock, which is why every shirt on the pitch
+      looks the same. Populating primary_color and secondary_color for the 16 current
+      clubs would do more for the pitch than any styling change in the polish pass.
+
+  BG-0113:
+    title: Premium polish pass -- token audit complete, execution staged behind the in-flight lanes
+    area: design
+    severity: P1
+    owner: Chief
+    # Was "BLOCKED on BG-0092, BG-0093, BG-0095, BG-0111" -- those are branch names, and
+    # every one of them collides with an unrelated entry in this ledger. See BG-0117.
+    state: READY # unblocked 2026-09-21: all four lanes merged into chief/launch-fixes-3
+    depends_on: [BG-0118, BG-0119, BG-0120, BG-0121, BG-0122]
+    evidence:
+      - docs/engineering/POLISH_PASS_PLAN.md
+    note: >
+      The pass is specified token -> component -> screen, and most of it lands in tokens
+      and the kit. Four lanes are converting the kit's consumers right now, so
+      consolidating six radii into two or changing the body weight would re-render every
+      screen they are mid-way through and conflict with all four diffs. Staged rather
+      than started. The screenshot baseline is deferred for the same reason: a before/
+      captured now would be stale by the time polish begins and would misattribute the
+      lanes' work to this pass.
+    audit_findings:
+      - no line-height or letter-spacing tokens exist at all, so the scale carries size and a per-component weight only
+      - the weight ramp starts at 600, so body copy is semibold everywhere and headings have no contrast to gain
+      - six radii where the standard allows two, the largest single visual change in the pass
+      - four shadow tokens where the standard allows one, and --ui-shadow-raised is 0 -1px 0, a top hairline misnamed as a shadow
+      - the third surface is "sunken", not "raised", so the page/card/raised hierarchy is not expressible today
+      - no Arabic-specific size or line-height adjustment, so equal px does not mean equal visual weight between the two scripts
+      - tabular figures set in two places, one of which is a comment
+    already_satisfied:
+      - the three-level ink ramp exists and all 46 kit colour pairs measured >=4.5:1 in BG-0091
+      - physical-direction utilities are at zero across src/, and Arabic letter-spacing was neutralised in BG-0069
+      - UiStatePanel, UiEmptyState, UiErrorState and UiSkeleton already exist -- the state work is adoption, not construction
+      - >
+        motion is already tokenised and already governed. Five durations
+        (--duration-tap 120ms, -quick 180ms, -route 260ms, -sheet 320ms, -hero
+        420ms) and three easings exist at styles.css:188-196, and the single
+        prefers-reduced-motion block at styles.css:724 is a blanket
+        `*, *::before, *::after` rule with !important on animation-duration,
+        transition-duration, iteration-count and scroll-behavior, plus explicit
+        kills for .mesh-drift and .shimmer. Corrects an earlier finding in this
+        entry that read the ONE occurrence as thin coverage; one blanket rule
+        covering every element is the strongest form, not the weakest. The
+        remaining motion work is auditing which components honour the tokens
+        rather than hardcoding a duration, not building the layer.
+
+  BG-0114:
+    title: UiBadge tinted tones fail AA on their own fill
+    area: design
+    severity: P1
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - BG-0093 measured negative 4.07:1 and positive 3.96:1 from rasterised sRGB, not computed from oklch
+      - BG-0091 verified 46 kit colour pairs at >=4.5:1, but measured each tone against --ui-surface, not against its own tinted fill
+    note: >
+      `--ui-negative` and `--ui-positive` clear 4.5:1 as TEXT on `--ui-surface`, which is
+      what the BG-0091 contract test asserts and what the token comment claims. UiBadge
+      does something the contract never covered: it paints a tint of the same token as the
+      badge's background and then puts the full-strength token on top of it. Foreground and
+      background are now two points on one hue ramp, and the pair lands at 4.07:1 and
+      3.96:1. The squad lane worked around it locally rather than changing the kit
+      mid-flight. Fix belongs in the polish pass at kit level, and the contract test needs
+      a second assertion: every tone measured against the fill it is actually drawn on, not
+      only against the page surface.
+
+  BG-0115:
+    title: Three kit gaps the squad lane hit and worked around
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - no type-ramp step fits a 56px numeric column head at 390px; --ui-text-label (12px) overflows, --ui-text-micro (11px) is the nav-label step and reads as a different register
+      - UiSelect does not fit three abreast at 390px, which is what a position/price/club filter row needs
+      - the picker had to cut three numeric columns to one to fit full Botola club names at 390px
+    note: >
+      Each of these is the same shape: 390px is the design width, and the kit has no step
+      that fits it, so the screen either truncates or drops information. The squad lane
+      solved all three by removing content, which is right for that lane and wrong as a
+      permanent answer. The polish pass owns the real fix -- a label step sized for dense
+      column heads, and a compact UiSelect variant -- because both are type-scale and
+      component decisions, not screen decisions.
+
+  BG-0116:
+    title: Four Fantasy components still render wrong in dark mode
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - BG-0093 reported FplStatBar, FplPlayerCard, FplPitch and primitives.tsx as still wrong in dark while rendering its own screens
+      - DARK_MODE_ENABLED is false in src/lib/feature-flags.ts, so none of this is reachable by a user at launch
+    note: >
+      Not a launch blocker and deliberately not treated as one: the dark theme is behind
+      DARK_MODE_ENABLED=false, which stays false until BG-0083 and BG-0084 are resolved, so
+      no user can reach these four components in dark. Recorded now because the lane that
+      found them does not own them and the finding would otherwise be lost. These four are
+      the remaining `--fpl-*` holdouts that BG-0091 converted to an alias layer but did not
+      convert call site by call site -- they draw colours that have no dark counterpart.
+      Clearing them is part of what makes the flag flippable.
+
+  BG-0117:
+    title: "V2 design migration: id collision between the lane branches and this ledger"
+    area: process
+    severity: P2
+    owner: Chief
+    state: DONE # recorded 2026-09-21; the six lanes now have real ids, BG-0118..BG-0122
+    depends_on: []
+    evidence:
+      - "branch bg-0091-foundation, commit 81b7759 \"BG-0091: one design system\" -- BG-0091 here is the News stand-down"
+      - "branch bg-0093-squad-picker, commit 85cc87d \"BG-0093: rebuild the player picker\" -- BG-0093 here is an auth P0 the owner resolved"
+      - "branch bg-0094-pitch-team-points, commit 2d0dc0e \"BG-0094: one pitch, a readable Points screen\" -- BG-0094 here is the localStorage squad defect"
+      - bg-0092-fantasy-shell and bg-0095-leagues-players collide the same way; bg-0111-launch-polish names an id that never existed
+    note: >
+      The six design-migration lanes were branched with ids BG-0091..BG-0095 and BG-0111,
+      every one of which was either already taken by an unrelated entry or never allocated.
+      A reader grepping BG-0093 finds an auth P0 and a player-picker rebuild and cannot tell
+      which the commit meant. The commits are pushed and this repository syncs to Lovable,
+      so rewriting those messages is not available and would not be worth it if it were.
+      Resolved forward instead: the six lanes get BG-0118..BG-0122 below, each recording the
+      branch and commit that actually carries it, and this entry stands as the map between
+      the two numbering schemes. Allocate from this ledger before naming a branch, not after.
+
+  BG-0118:
+    title: "V2 design migration lane: foundation -- one token layer, themed ink, --fpl-* as an alias layer"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 81b7759, merged into chief/launch-fixes-3 at 38d9430
+    depends_on: []
+    branch: bg-0091-foundation # NOT ledger BG-0091, which is the News stand-down; see BG-0117
+    evidence:
+      - 46 kit colour pairs measured >=4.5:1
+      - "--fpl-* reduced to aliases of --ui-*; ui-kit.contract.test.ts fails if one carries a literal colour again"
+      - UiStatePanel, UiEmptyState, UiErrorState, UiSkeleton added
+    note: >
+      Fixed BG-0083 (--ui-ink used as a foreground, 1.25:1 in dark) by splitting the fill
+      colour from --ui-ink-fg. Left one known gap: UiSegmented tone="onGradient" idle tabs
+      measure 4.28:1 and 4.38:1 in dark, and BG-0114 records a second the contract test did
+      not cover at all.
+
+  BG-0119:
+    title: "V2 design migration lane: squad builder, player picker, transfers"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 85cc87d, merged into chief/launch-fixes-3 at 141f5ee
+    depends_on: [BG-0118]
+    branch: bg-0093-squad-picker # NOT ledger BG-0093, which is an auth P0; see BG-0117
+    evidence:
+      - divergence across the eight owned files 19/18/17/14/11/10/7/0 -> 0 each
+      - "club limit: after three Wydad picks all 8 WAC rows render disabled before any interaction; the rule still lives in the route, the picker only reads it"
+      - "position filter: an imposed position renders a locked pill, not a select the screen is overruling"
+      - PlayerPickerDrawer deleted as a second, worse picker -- no bank, no club limit, an untranslated shadcn Close, and a physical side computed by the caller
+      - 390/430/768/1440 x fr/ar x light/dark on real player data, contrast measured from rasterised sRGB
+      - 1437 pass / 0 fail -- 1438 minus the loop iteration for the deleted file
+    note: >
+      The reported position-filter symptom did not reproduce on this base and the lane said
+      so rather than claiming the fix. What reproduced was the same contradiction one step
+      out, and that is what was fixed. Raised BG-0114, BG-0115 and BG-0116.
+
+  BG-0120:
+    title: "V2 design migration lane: pitch, My Team, Points"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 2d0dc0e, merged into chief/launch-fixes-3 at 7bbbc5a
+    depends_on: [BG-0118]
+    branch: bg-0094-pitch-team-points # NOT ledger BG-0094, the localStorage squad defect; see BG-0117
+    evidence:
+      - one pitch component where there were two
+      - /fantasy/points states scoring settledness, the effective captain and multiplier, bench total, transfer hit and active chip
+      - nine written-but-uncalled keys gained their first call site, W3 262 -> 253
+    note: >
+      Also removed the zeros that meant "unknown" -- a points screen that renders 0 for a
+      gameweek it has no data for is stating a score that was never computed.
+
+  BG-0121:
+    title: "V2 design migration lane: leagues, rankings, fixtures, players"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 3be6338, merged into chief/launch-fixes-3 at 433b50a
+    depends_on: [BG-0118]
+    branch: bg-0095-leagues-players # NOT ledger BG-0095, the formation-lock defect; see BG-0117
+    evidence:
+      - divergence across the 13 owned files 387 -> 0; repo 1534 -> 1147, a delta of exactly -387, so nothing outside the lane moved
+      - "/fantasy/players put all 539 players in the document: 37,191px -> 3,562px at 390px via a 25-row window and a pager, with api.fantasy_player_pool's keyset contract untouched"
+      - "/fantasy/top-players said \"Aucun contenu disponible\" for GW1; fantasy_top_players genuinely returns [] for an unplayed gameweek, so the empty state now names the gameweek. The hardcoded ?? 14 fallback is gone"
+      - club filter offered 21 clubs where 16 have players; chips now derive from the pool
+      - "FDR header named a 24-27 Sept gameweek \"27 sept.\"; now 24-27 sept. / 24-27 شتنبر via Intl.formatRange with MATCH_TIME_ZONE"
+      - "React #418 on /fantasy/players/$playerId: the loader warmed a server-only cache with no SSR query bridge in src/router.tsx, so the server rendered a full page and the client's first render rendered the loading state. Fixed by carrying the player through router loader data as initialData"
+      - "Latin names truncated from the wrong end in Arabic tables: dir=\"auto\" on the truncating cell, not the row or table"
+      - rankings table was 421px in a 358px wrapper at 390px, hiding Total behind a sideways scroll; table-fixed, now 358px
+      - "seven-fixture assertion PASS: 14 [data-fdr-fixture] cells across 14 team rows in all 16 combinations, FAR Rabat and Raja absent, cross-checked against the RPC"
+      - 128 combinations, 0 horizontal scroll and 0 overflow; contrast by glyph-pixel diff of two rasterised passes, 586 elements, 1 failing control
+    note: >
+      Verified against pinned real production payloads served at the browser edge, because
+      this branch calls RPCs production does not have (BG-0088) and the sandbox relay drops
+      Supabase tunnels under browser load. The harness reproduced the brief's 37,191px to the
+      pixel before any change, which is what licenses the after-numbers. Raised BG-0126 and
+      BG-0127.
+
+  BG-0122:
+    title: "Launch polish batch: the ten UI defects raised against the live site"
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # commit 09f53ee, merged into chief/launch-fixes-3 at 38327fa
+    depends_on: []
+    branch: bg-0111-launch-polish # BG-0111 was never allocated in this ledger; see BG-0117
+    evidence:
+      - "Home tiles were not truncating, they were breaking the word: [overflow-wrap:anywhere] rendered \"Classemen / t général\". grid-cols-2 sm:grid-cols-4 takes the caption box 64px -> 147px against a 108px longest caption. No label shortened"
+      - "/matches filter tabs: 411px of content in a 358px track, \"Résultats\" spanning 329-424px in a 390px viewport, scrollbar suppressed in all three engines. Now a four-column grid with no scroller"
+      - 24 French value strings, with article agreement ("La deadline est dépassée" -> "La date limite est dépassée", "le Wildcard" -> "le Joker"); Arabic block byte-identical
+      - OAUTH_PROVIDERS_ENABLED false, divider gated with the buttons; no provider is enabled in Supabase
+      - ThemeRow returns null, gating both call sites; asserted absent from body.innerText in fr/ar x signed-in/anonymous
+      - "\"Triple Capitaine\" did NOT visibly truncate at exactly 390px: 103px of text in a 108.7px box, 5.7px of margin with truncate waiting to collect it. The failure mode was removed rather than the margin"
+      - "fixture plate had two causes: club `code` is blank rather than null for most of the league so ?? never fired, and the opponent was resolved by an id that only matches in cloud mode. Now renders FUS (D), RCA (D), FAR (E)"
+      - "MatchTabs had its own truncation, \"Statistique…\"/\"Composition…\" at 390px FR, fixed at the call site"
+      - 60 screenshots and assertions-before/after.json in docs/engineering/tasks/BG-0111/evidence/, measured on its own server at 4293
+    note: >
+      Test count moved 1438 -> 1453 deliberately: 15 added, none changed or removed -- 9 for
+      the club short-code derivation (blank code, a short_name that IS the code, particle
+      names like "Renaissance Sportive de Berkane" -> RSB) and 6 source-shape guards for the
+      two flags. None asserts a flag is false, so they survive a flip.
+
+      On the crest question the owner raised: the crest fits at 14px in the 18px plate band,
+      but at that size it reads as a colour signature rather than a legible badge, so the
+      letters are the legible identity and it ships as crest AND code. Crest alone needs
+      about 20px, i.e. a taller band. Raised BG-0128.
+
+  BG-0123:
+    title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - "`fantasyCloudRepo` (fantasy-cloud-repo.ts:363) has zero references in src/ outside its own file and test"
+      - "`mapSupabaseError` and `validateSquadShape` are referenced only by fantasy-cloud-repo.test.ts"
+      - "only FantasyCloudError escapes, into fantasy-errors.ts, which maps its codes onto the current error type"
+      - it calls save_fantasy_team and save_fantasy_lifecycle; neither exists in ANY schema on tkewgajrljbwgwedqsxn, nor does save_fantasy_team_v or finalize_fantasy_gameweek_v
+      - the live path is src/backend/fantasy/supabase-repository.ts against the api schema via getFantasyApi()
+    note: >
+      Found while measuring BG-0088. Worth recording precisely because of how it reads: a
+      grep for save_fantasy_team against production returns "missing", which looks like a
+      broken squad-save until you trace the caller and find nothing reaches it. 620 lines
+      of a second, older repository against the public schema, superseded by the api-schema
+      one, kept alive only by an error class.
+
+      Not deleted now, for two reasons. Deleting it moves the i18n gate's W3/W4 baselines
+      and the test count while two lanes are mid-flight and a third has already had to
+      reconcile those numbers once today. And FantasyCloudError has to be rehomed into
+      fantasy-errors.ts first, which is a real edit to the live error path rather than a
+      deletion. Sequenced with the polish pass, which is already the pass that settles the
+      remaining Fantasy debt.
+
+  BG-0124:
+    title: leading-none on the micro and stat ramps clips glyph ink in both languages, and a third of it in Arabic
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # fixed 2026-09-21; --ui-leading-* shipped, clipH 1200 -> 0
+    depends_on: []
+    resolution:
+      - "--ui-leading-flat / -copy / -prose on :root, applied through every step of ui.text.* and STAT_BASE, redeclared under :lang(ar) and [dir=rtl]"
+      - "Latin 1.4 / 1.55 / 1.7; Arabic 1.95 / 1.9 / 2.0. Only `flat` is raised that far -- copy and prose wrap, so their overflow is visible and their ink is free"
+      - "after: fr nav label box 0..15 with ink 4.2..15.2; ar box 0..21 with ink 4.2..20.2. Both fit. Nav height 64px (fr) / 70px (ar), inside --bottomnav-h, scrollHeight <= clientHeight"
+      - "three call sites: BottomNav's local leading-none override, FantasySummaryCard's [line-height:1.35] workaround (itself below the 1.36 Latin floor), CompetitionHeader's three literal sizes"
+      - two contract tests added -- the ramp may never use leading-none/tight/normal, and every leading token must have an Arabic counterpart
+    evidence:
+      - "src/components/ui-kit/tokens.ts:236 -- ui.text.micro is `leading-none`, i.e. line-height equals font-size"
+      - "src/components/ui-kit/tokens.ts:219 -- STAT_BASE is `leading-none`, so every stat step inherits it"
+      - >
+        measured from the font's own metrics via canvas TextMetrics on the live bottom nav at
+        390px, 11px/11px with overflow-y hidden and a content box of 0..11:
+        fr "Fantasy" (Manrope) ink spans y=2..13, so 2px of descender is cut;
+        ar "فانتازي" (Noto Sans Arabic) ink spans y=-1..15, so 1px is cut at the top and 4px at
+        the bottom -- 5px of 16px, about a third of the glyph ink.
+      - >
+        scripts/qa/layout-probe.mjs over 13 Fantasy routes x 4 widths x 2 languages: 0 document
+        overflow, 0 horizontal text clipping, 13 elements past a viewport edge, and 632 vertically
+        clipped text leaves. Also present on / and /matches, so this is the whole public app, not Fantasy.
+      - "leading-tight (1.25) is not enough either: h1 at fs=19px lh=23.75px measures scrollHeight 31 > clientHeight 24 in Arabic"
+      - >
+        independently confirmed by BG-0122, which hit the same thing on the Home Fantasy
+        tiles from the other direction: ui.text.micro's leading-none "shaved the descenders
+        off journée/général", scrollHeight 24 against clientHeight 22, and 4 of 4 Arabic
+        captions clipped with 17px glyphs in an 11px box.
+      - >
+        on the fully integrated tree (all four lanes merged), scripts/qa/layout-probe.mjs
+        over 16 routes x 4 widths x 2 languages measures scroll 0, past 0, clipW 0,
+        decorative 0 and clipH 1200. This is the ONLY layout defect class left in the public
+        app, and it is on 82 of 128 route/viewport pairs.
+    note: >
+      The clipping needs three things at once and has all three: a line box no taller than the
+      font size, text whose ink exceeds its own em (which is every font), and an ancestor
+      utility that hides the overflow -- `truncate` sets overflow:hidden for a HORIZONTAL
+      ellipsis and clips vertically as a side effect. CSS cannot hide one axis and show the
+      other; setting overflow-x hidden computes overflow-y to auto. So the fix has to be
+      vertical room, not a change of overflow.
+
+      Arithmetic for the fix, from the measured metrics at 11px. Latin: font ascent 12 +
+      descent 3, ink ascent 8 + descent 3, so the ink fits only once line-height >= 15px, a
+      ratio of 1.36. Arabic: font ascent 15 + descent 8, ink ascent 10 + descent 6, needing
+      line-height >= 19px, a ratio of 1.73. Those are font-metric properties and hold across
+      the scale, which is exactly why one leading value cannot serve both scripts and why the
+      polish standard asks for an Arabic-specific adjustment.
+
+      This is BG-0113's Gap A arriving as a visible defect rather than a missing token. The
+      fix is the --ui-leading-* family with a :lang(ar) override, applied through the ramp, so
+      it is sequenced into the polish pass rather than patched at the two call sites -- every
+      other `leading-none` and `leading-tight` in the kit has the same problem waiting.
+
+      NOT fixed ahead of the pass because it changes vertical rhythm on every screen in the
+      product while BG-0121 is still verifying its own, and the bottom nav has a fixed
+      --bottomnav-h that a taller label has to be re-checked against.
+
+  BG-0125:
+    title: "Thirteen elements crossing a viewport edge: triaged, all artifacts, probe corrected"
+    area: design
+    severity: P2
+    owner: Chief
+    state: DONE # triaged 2026-09-21; no defect, the probe was wrong
+    depends_on: []
+    evidence:
+      - "the two shapes behind all thirteen: a blurred glow (pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl) and a shimmer sweep (pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg])"
+      - the sweep's parent carries overflow-hidden, so it is masked and never visible off-screen, but its own border box sits far outside the viewport
+      - the glow is a decorative bleed with no text and no pointer events
+      - "after correcting the probe, the fully integrated tree measures 0 past and 0 decorative across 128 checks (16 routes x 4 widths x 2 languages)"
+    note: >
+      Opened each one rather than reasoning about it, which is what this entry said to do,
+      and none was a defect. The probe's ancestor check only looked for overflow-x auto or
+      scroll, so it treated a MASKING ancestor (hidden/clip) as no constraint at all -- the
+      shimmer sweep is deliberately parked outside its parent and swept across. Fixed at
+      source in scripts/qa/layout-probe.mjs, which now also reports decorative bleeds in
+      their own bucket rather than dropping them, so a real element that has quietly become
+      pointer-events-none stays visible in the output.
+
+      Recorded as DONE rather than deleted: this is the third wrong answer this probe gave
+      before it gave a right one (82 findings, then 62, then 13, now 0), and that history is
+      the reason to open an element before believing a count.
+
+  BG-0126:
+    title: GameweekSelector renders its value at 1.12:1 in dark and its controls at 36px
+    area: design
+    severity: P1
+    owner: Chief
+    state: DONE # already fixed by the merge; verified by measurement 2026-09-21, not by reading
+    depends_on: []
+    evidence:
+      - "src/components/fantasy/GameweekSelector.tsx uses --fpl-ink-deep as a FOREGROUND, which is the BG-0083 defect verbatim"
+      - measured at 1.12:1 in dark by BG-0121 while verifying its own routes
+      - the increment/decrement controls are 36x36px against a 44px floor (--ui-tap-min)
+      - >
+        RE-MEASURED on the integrated tree: both steppers are 44x44 on /fantasy/points and
+        /fantasy/top-players, in fr and ar. The value renders oklch(0.24 0.09 258)
+        (--ui-on-grad-header) on the Points header and oklch(0.16 0.03 260)
+        (--ui-on-surface) on a page surface -- both themed tokens, neither --fpl-ink-deep.
+        The aria-labels name the gameweek they navigate to ("Journée 13" / "Journée 14")
+        rather than "Journée -1" / "Journée +1".
+    note: >
+      Raised by BG-0121 as KIT-1 against a component it does not own, and real when it was
+      raised: BG-0121 branched before the sibling lanes converted this component, so it
+      measured its own base. The conversion landed in BG-0118/BG-0120 and the merge carried
+      it. Closed on measurement rather than on the component's own doc comment, which
+      claimed the fix -- a comment asserting a fix is not evidence of one.
+
+  BG-0127:
+    title: A 32-hex-character invite code cannot be shared by voice
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - BG-0121 did the presentation work -- grouped in fours, monospaced, tabular, selectable, a copy control, and an unbroken string to the clipboard and to assistive tech
+      - the underlying value is still 32 hexadecimal characters
+    note: >
+      Presentation has gone as far as presentation can. The remaining problem is the value:
+      a league invite is a thing one person reads to another, and 32 hex characters is not
+      readable aloud in any language. The fix is a shorter, unambiguous, case-insensitive
+      code at the point it is generated, which is a backend change and therefore explicitly
+      out of the design migration's scope. Recorded so the recommendation is not lost with
+      the lane that made it.
+
+  BG-0128:
+    title: The pitch fixture plate is too short for a crest to carry club identity on its own
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - the crest fits at 14px inside the 18px plate band, with composed content 58px (fr) / 55px (ar) in a 68px box
+      - at 14px a crest reads as a colour signature, not a legible badge
+      - carrying identity on the crest alone needs about 20px, i.e. a taller band
+    note: >
+      Answers the owner's question directly rather than leaving it implied: the plate ships
+      as crest AND code, because the letters are the legible identity at this size. Making
+      the crest sufficient on its own is a geometry change to the plate, which belongs with
+      the rest of the pitch work in the polish pass.
+
+      Compounding it, BG-0112 records that primary_color and secondary_color are null for
+      all 21 clubs in production, so even a larger crest slot has no club colour behind it.
+      Two independent reasons the crest cannot yet carry identity alone.
+
+  BG-0129:
+    title: Kit gaps found by the shell lane -- the RTL back chevron does not mirror, UiCard drops ARIA
+    area: design
+    severity: P2
+    owner: Chief
+    state: DONE # chevron refuted, UiCard fixed, text-brand fixed at the utility 2026-09-21
+    depends_on: [BG-0113]
+    evidence:
+      - "chevron: REFUTED on the integrated tree. Under dir=rtl every .lucide-chevron-* carries matrix(-1,0,0,1,0,0) -- scaleX(-1) -- from the rules at styles.css:626-637, and the position flips too (x 12 -> 358 at 390px). Both halves mirror."
+      - "UiCard: CONFIRMED and fixed. It destructured a fixed prop set and forwarded nothing, so role, id and every aria-* were dropped. Now passed through, deliberately narrow -- ARIA plus role and id, not arbitrary DOM props, because spreading everything would let a caller put onClick on a plain div, which is what `interactive` and `as` exist to prevent."
+      - "six --brand-primary-as-text instances: one closed. SectionHeader's eyebrow went to ui.tone.ink in the BG-0124 pass. Five remain -- Trans.tsx (19 call sites), AccentEyebrow, WelcomeScreen, StatComparison, ConsentLine, PlayerShirt."
+    note: >
+      The chevron was the one item claimed to be visible to a user today, and it is not:
+      measured rather than read, it mirrors correctly in both position and glyph. Recorded
+      as refuted rather than deleted, because "the RTL chevron is broken" is a claim that
+      will be made again and this is the measurement that answers it.
+
+      The five remaining --brand-primary call sites are a light-mode no-op -- --brand-primary
+      and light --ui-ink-fg are the same colour -- so the substitution is safe and invisible
+      now, and is what makes those files theme-correct when DARK_MODE_ENABLED flips.
+
+  BG-0130:
+    title: MatchTabs clips "Compositions" below about 370px
+    area: design
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - BG-0122 fixed the 390px case at the call site; below ~370px the label still clips
+      - needs either shorter vocabulary or a UiSegmented change, both outside a call-site fix
+    note: >
+      390px is the design floor, so this is below spec rather than at it -- but 360px phones
+      are common enough in Morocco that it is worth closing. Same shape as BG-0115: the kit
+      has no step that fits, so the screen removes content. UiSegmented owns the fix.
+
+  BG-0131:
+    title: The mock football and fantasy repositories do not share a club id space
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: []
+    evidence:
+      - reported independently by BG-0119 and BG-0122; src/backend/football/mock-repository.ts
+      - BG-0119 could not verify its club column against real club names without patching it locally, which it did, measured, and reverted
+      - it is also why every shirt in mock mode renders the default navy kit -- getKitForClub never matches
+    note: >
+      Only affects mock mode, so no user sees it. It does affect every agent and contributor
+      who verifies a Fantasy screen without production credentials, which is most of them:
+      the screens render, the club names and kits are silently wrong, and nothing says so.
+      Two separate lanes lost time to it and neither could fix it, because src/backend was
+      out of scope for both. It is in scope for nobody at the moment, which is why it is here.
+
+  BG-0132:
+    title: GlassCard and FantasyMobileNav are unreachable, and they are why --ui-shadow-raised is misnamed
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: QUEUED
+    depends_on: [BG-0113]
+    evidence:
+      - "src/components/ui-glass/GlassCard.tsx has zero references outside its own file -- and is the only file in src/components/ui-glass/"
+      - src/components/fantasy/FantasyMobileNav.tsx has zero references outside its own file
+      - "--ui-shadow-raised is `0 -1px 0 0 <ink 8%>`: a top hairline, not a shadow. Its only two call sites are those two dead files"
+      - "FantasyMobileNav uses it correctly, as the top edge of a bottom-docked bar; GlassCard uses it as a card shadow at intensity=\"strong\", where a top hairline does nothing"
+    note: >
+      A token named "shadow-raised" that is actually a top edge rule will keep being reached
+      for as a shadow -- GlassCard already did. The name is the defect. Renaming it to
+      something that says what it is (--ui-edge-top) is cheap, but both its call sites are
+      dead code, so the honest sequence is to delete the two components first and then decide
+      whether the token has a live use at all.
+
+      GlassCard is also a direct contradiction of the design system: UiCard's own
+      documentation says the Fantasy card is "an opaque surface ... no border and no glass",
+      and the kit contract test forbids hardcoded colours precisely to stop this class of
+      component coming back.
+
+      Not deleted in this pass for the same reason as BG-0123: removing components moves the
+      i18n gate's W3/W4 baselines and the test count, which has already had to be reconciled
+      three times in one day, and neither file is reachable by a user in the meantime.
+  BG-0133:
+    title: UiStatBlock labels were wider than their tiles, and `truncate` could not fire
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "/fantasy/rankings at 390px, fr: tile 103.3px, label \"Classement general\" 140.4px, scrollWidth === clientWidth (140>140) -- the ellipsis never fires"
+      - "label 1 started 2.5px outside the card (x=13.5 against a card at x=16), label 3 ended 3.3px past it, labels 1 and 2 overlapped by 8.4px"
+      - "8 instances, all UiStatBlock labels, fr and ar: Classement general +18.5, Points de la journee +19.3, Passes decisives +20.7, Clean sheets +7.6"
+      - "after: layout-probe reports spill 0 over 128 checks (16 routes x 4 widths x 2 languages)"
+    note: >
+      Reported four times by a reader looking at screenshots, and invisible to every
+      assertion the layout probe had. In a `flex-col` box with `items-center`, a child with
+      `white-space: nowrap` and no `max-width` sizes to its own content, so `scrollWidth`
+      equals `clientWidth`: the element fits the text it was asked to clip, `truncate` is
+      inert, and the label simply lies across its neighbours. Nothing scrolls, nothing
+      crosses the viewport, nothing is clipped.
+
+      `max-w-full` supplies the bound the flex child never had. The label wraps
+      (`text-balance`) rather than truncates, because these strings are fixed product
+      vocabulary and a clipped one reads as a different word; the sub band keeps `truncate`,
+      since it carries variable data.
+
+      The probe gained a `spill` assertion for this class -- a text leaf that outgrows its
+      own parent while nothing clips it -- and it names the inert-truncate case explicitly.
+  BG-0134:
+    title: An ellipsis excused any truncation, however little survived it
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "/fantasy/top-players at 390px, fr: MetaChip label \"Selectionne par\" rendered in 40px of 112px -- \"SELE...\", four characters of fifteen"
+      - "layout-probe's clipW assertion skipped it by design: `cs.textOverflow !== \"ellipsis\"`"
+      - "same card: the #2-#5 comparison rows clipped 4 of 5 names in a fixed 3.5rem column (\"#4 Lamlaoui\" is 67px)"
+      - "after: starved 0 and clipW 0 over 128 checks; production-length club names measured at 65-80% shown, correctly quiet"
+    note: >
+      An ellipsis is a designed truncation, so the probe excused it -- and that excuse hid a
+      label showing four of its fifteen characters, on the same screen a reader had just
+      reported. A truncation is only a design while enough of the word survives to be read.
+
+      The probe gained `starved`, which reports an ellipsis showing less than
+      `PROBE_STARVED` (0.6) of the text's own width. The threshold is a fraction rather than
+      a pixel count so it means the same thing at every font size and in both languages; it
+      fired on the 36% case and stayed quiet on the 65% club names on /matches, which are an
+      ordinary tail-trim.
+
+      MetaChip now wraps instead of truncating: without `truncate` its label's min-content
+      width is its longest word, so a label that cannot sit beside its value pushes the value
+      to a second line and reads in full, while the short chips are unchanged. The comparison
+      column went 3.5rem -> 5.25rem, which clears the league's surnames and still leaves the
+      bar 186px at 390px.
+  BG-0135:
+    title: Two Botola Pro clubs carry the provider's placeholder shield as their crest
+    area: data
+    severity: P2
+    owner: Owner
+    state: OPEN
+    evidence:
+      - "21 of 21 active clubs have a crest_asset_id, a storage_path, mime_type image/png, validation_status validated, and a URL that returns 200"
+      - "football/teams/228516/crest.png (Amal Tiznit) and football/teams/274759/crest.png (Yacoub El Mansour) are byte-identical: the same 2,555-byte generic grey shield"
+      - "the other 19 crests are all distinct"
+      - "scripts/qa/crest-coverage.mjs reports: own crest 19 - shared image 2 - no crest 0"
+    note: >
+      Every check the product had said the crests were complete, on four separate measures.
+      A placeholder is a perfectly valid PNG: it passes validation, it fetches, it decodes,
+      it draws. `ClubCrest` paints it over the club's initials plate exactly as it would a
+      real badge, so the monogram fallback that would have shown the club's letters never
+      gets a chance and the screen looks finished.
+
+      The detectable signature is two clubs sharing byte-identical crest data, which is what
+      `scripts/qa/crest-coverage.mjs` tests. It cannot catch a unique-but-wrong badge; that
+      needs eyes.
+
+      Fixing it needs two real club badges sourced and uploaded through
+      `api.attach_football_team_crest` -- an owner action, both because it is a production
+      write and because it is a third-party image-rights decision. No frontend change can
+      substitute: the data says these are validated crests.
+
+      Related: 13 of the 21 clubs have a null `code`, so their monogram fallback is derived
+      from `shortName` rather than an official abbreviation. Harmless while crests load,
+      and the reason the fallback is worth keeping honest.
+  BG-0136:
+    title: The Botola Pro competition has no logo asset, so its header shows a generic trophy
+    area: data
+    severity: P3
+    owner: Owner
+    state: OPEN
+    evidence:
+      - "app.competitions has one row (botola-pro-3e579087e5ad) and its logo_asset_id is null"
+      - "/matches renders the designed fallback -- a trophy glyph -- above every competition group"
+    note: >
+      The fallback is working as designed; the gap is the asset. Same owner action and same
+      image-rights question as BG-0135. Cosmetic, and below the crests in priority: the
+      trophy reads as an icon, whereas a placeholder shield reads as a club's badge.
+  BG-0137:
+    title: The design system had no register for a dark surface, so three files invented one each
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "6 files used literal white-alpha (text-white/80, bg-white/10, ring-white/20) and every one of them was on a dark mesh"
+      - "AuthShell had already solved it correctly, as four module-PRIVATE constants that no other file could import"
+      - "ui.focus draws its ring in --ui-ink-fg over a --ui-page offset: on the mesh, a ring you cannot see"
+      - "after: --ui-on-mesh + muted/faint, --ui-mesh-glass, --ui-mesh-rule, ui.focusOnMesh, UiButton tone=onMesh"
+    note: >
+      The product has a second visual register -- a deep mesh behind the welcome screen, the
+      auth screens and the first-launch language chooser. It is deliberate, and the page
+      tokens are built for the light app surface, so they do not serve it.
+
+      Each surface answered that privately and differently. The tokens are derived rather
+      than redeclared under `.dark`, because each is `--ui-on-ink-plain` at an opacity and
+      that token already flips; a second copy would be the drift the manifest exists to stop.
+      `in srgb` rather than `in oklab` is not taste: the derived-token contract forbids a
+      colour space name that reads as a literal colour, and mixing one colour with
+      `transparent` is a premultiplied alpha ramp that resolves identically -- measured at
+      `oklab(1 0 0 / 0.78)` against `color(srgb 0.999871 1.00005 1.00007 / 0.78)`.
+  BG-0138:
+    title: The dark theme had never been measured, and the first measurement of it was a false pass
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "adding the `dark` class in a Playwright init script reported 27 measurements, 0 below AA -- for a theme that was never applied"
+      - "the server sends <html class=\"\"> and hydration replaces the attribute, so the class is gone before anything paints"
+      - "applied after settle instead: 100 measurements, 4 below AA"
+      - "live badge 2.28:1 on /matches; club monogram 3.93:1 on /fantasy/rankings"
+      - "after both fixes: 0 below AA in light and dark on every route measured"
+    note: >
+      `--color-live` and `--color-live-fg` were declared on `:root` and never under `.dark`,
+      so the dark theme kept a foreground chosen for a light tint and put it on a dark one.
+      Nothing caught it because the contract test only demands a dark counterpart for
+      `--ui-*`, and these were `--color-*`. They are `--ui-live` / `--ui-live-fg` now, which
+      puts them inside the enforcement rather than beside it.
+
+      The probe grew a PROBE_THEME switch, and it now ASSERTS that a token actually changed
+      value before measuring -- a run that cannot prove the theme is on exits rather than
+      reporting a clean bill of health for a theme it never applied.
+  BG-0139:
+    title: Every status FILL picked its own foreground, and the negative inverts across themes
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "white on --ui-negative: 5.49:1 light, 2.31:1 dark"
+      - "measured across all four status fills: positive 5.17/9.28, negative 5.49/6.93, caution 9.34/10.65 against the right foreground"
+      - "--ui-live needs no partner: nothing draws text on it"
+    note: >
+      Found while adding a filled `destructive` button variant, which forced the question
+      "what colour is the label". `--ui-positive` and `--ui-negative` are a mid-tone in light
+      and a light tint in dark, so one foreground cannot serve both and a filled control that
+      picks its own is wrong in exactly one theme -- the theme nobody looks at.
+
+      The system already knew this: it is why `--ui-fdr-N` has `--ui-on-fdr-N` and why the
+      doc says never to pick an FDR foreground yourself. The rule was written for one scale
+      and the status fills were left to guess. `--ui-on-positive`, `--ui-on-negative` and
+      `--ui-on-caution` close that.
+  BG-0140:
+    title: A gradient angle is physical, and 22 of them were outside the kit where nothing checked
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "mesh-auth ran linear-gradient(160deg) -- the one screen family that is white-on-dark"
+      - "all nine mesh-* utilities anchored their glows to a physical x origin; the contract test found six more than the survey did"
+      - "7 --news-gradient-* tokens (declared twice, light and dark), --bg-brand-gradient, 3 hero fallbacks and 5 in the demo dataset, all 110-145deg"
+      - "ClubCrest painted linear-gradient(135deg, ...) with a literal `black`, so every crest in the product lit from the wrong corner in Arabic"
+      - "the splash shine started outside the LEFT edge, translated +X and skewed one way"
+    note: >
+      Rule 3 was enforced inside the kit's own files and inside `--ui-grad-*`. Everything
+      else in the stylesheet was free to state an angle, and did.
+
+      The meshes keep their asymmetry -- a glow entering top-trailing IS the composition --
+      so the three x positions they use are named once and flipped once, rather than centred
+      into something duller. The contract test now reads every gradient-valued custom
+      property rather than one prefix, and it checks that a named origin is actually
+      mirrored: a token that looks direction-aware and is not is worse than a literal.
+  BG-0141:
+    title: UiInput replaced the caller's aria-describedby instead of composing it
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "`{...props}` then `aria-describedby={...}` overwrote whatever the screen passed"
+      - "it also set the attribute to `undefined` when a field had no error and no hint, actively unlinking a description"
+      - "the register form describes its password by BOTH its error and its strength meter; the meter was dropped"
+      - "the drop was hardest exactly when the password was rejected"
+    note: >
+      A live accessibility bug, not only a migration blocker -- it was found because the
+      auth survey asked why those forms could not move onto the kit's field.
+
+      Two more of the same shape went with it. The error line was not announced and its
+      space was not reserved, so a form that validates on submit said nothing and pushed its
+      own submit button ~16px down out from under the thumb; `reserveError` mounts a polite
+      live region BEFORE the message exists, because a region created at the same moment as
+      its content is not reliably announced, and it reserves one line box of the field's own
+      type rather than a literal, because the Arabic leading is 1.95 against 1.4.
+
+      And the composition order was caller-first, which read the strength meter to someone
+      who had not yet been told the password was rejected. The field's own ids come first now.
+  BG-0142:
+    title: A button variant was declared but never painted, and every test passed
+    area: frontend
+    severity: P1
+    owner: Chief
+    state: DONE
+    evidence:
+      - "`destructive` was in the UiButtonVariant union; buttonClass had no branch for it"
+      - "it type-checked, rendered, and passed 1477 tests while painting nothing"
+      - "two conversion lanes asked for a filled red button and got a transparent one with body-coloured text, and lost the disabled affordance"
+      - "found by two independent reviewers, not by any gate"
+    note: >
+      The edit that added the branch failed silently: the anchor it replaced had been
+      reformatted across three lines by prettier, and the script printed "ok" without
+      asserting the replacement had happened. The same class of failure as the clipH guard
+      earlier in this project, and the same lesson -- assert every textual replacement.
+
+      The contract test now reads the union and the painter and fails when they disagree,
+      and separately requires every variant to carry a disabled affordance. Both were
+      verified by removing the branch and watching them go red, rather than assumed.
+  BG-0143:
+    title: Three checkboxes were 16px, one with no focus ring, on the control that deletes an account
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "auth.register consent, auth.profile-setup x3, profile delete-acknowledgement -- all `h-4 w-4`"
+      - "profile's carried no ui.focus at all"
+      - "all three painted the checked plate in the browser/OS accent, which is not a colour this product chose"
+    note: >
+      `UiCheckbox` keeps the ink at 16px and grows a transparent 44px target behind it,
+      which is `ui.hitArea` -- the general form, because growing the painted box is usually
+      not the answer (a 44px remove button covers half the avatar it annotates).
+
+      Its first version put the hint in the accessible NAME and in `aria-describedby`, so a
+      screen reader read the same sentence twice per row. Caught by a reviewer. Name from
+      the label, description from the hint, each said once.
+  BG-0144:
+    title: The admin console was a second design system, and stays dark on tokens
+    area: frontend
+    severity: P2
+    owner: Chief
+    state: DONE
+    evidence:
+      - "~190 legacy palette classes across 8 routes and 2 shared components, with almost no ui-kit usage"
+      - "internally consistent and already direction-correct -- a parallel palette, not sloppiness"
+      - "src/backend/admin/functional-route.tsx wraps seven of the nine routes in a slate-900 section and is off limits"
+    note: >
+      Ruled by the owner: the console keeps its dark register and joins the system, by
+      scoping itself in the kit's existing `.dark` class and drawing `--ui-*` tokens.
+
+      That is also the only reading consistent with the file this work cannot touch. Under
+      the dark ruling the untouchable slate-900 wrapper still reads correctly; under a light
+      one it would be a dark slab in a light console. Moving that component out of
+      `src/backend` is its own ticket.
+    follow_up: >
+      Move AdminFunctionalRoute / AdminFunctionalLoading out of src/backend/admin/ into
+      src/components/admin/ -- a file move, not a rewrite -- so the last amber/slate section
+      frame can join the console.
+  BG-0145:
+    title: Two Fantasy navs and a glass card that no route can reach
+    area: frontend
+    severity: P3
+    owner: Chief
+    state: DONE
+    depends_on: [BG-0132]
+    evidence:
+      - "grep across every .ts and .tsx: the only references to FantasyMobileNav, FantasySubNav and GlassCard are their own files and each other's comments"
+      - "deleting them moved the i18n gate: W3 +1 (fantasy.tab.more), W4 -6 (two navs x three t(item.labelKey) call sites)"
+    note: >
+      BG-0132 recorded two of the three and deferred the deletion precisely because it moves
+      those baselines. It does, and that is the gate working: both moved with the reason
+      written in.
+
+      The conversion pass had already moved FantasySubNav's dropdown onto `UiMenu` to lift
+      its items over the 44px floor -- the right fix for a file that turned out to be dead.
+      Deleting it is better than shipping a converted corpse, and it takes the last two
+      shadcn dropdown imports with it.
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy

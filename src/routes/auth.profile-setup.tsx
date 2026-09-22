@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import { ui, UiButton, UiCheckbox, UiInput } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
@@ -120,19 +122,28 @@ function ProfileSetupPage() {
   return (
     <AuthShell title={t("auth.setup.title")} subtitle={t("auth.setup.subtitle")} showBack={false}>
       <div className="mb-4">
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-          <span>
+        <div className="flex items-center justify-between">
+          {/* The label type stays on the counter, which is what it is for —
+              it used to sit on the whole row, so `uppercase` inherited into
+              Skip and made a control look like a column head. Skip is a
+              control and is drawn as one now. `ui.text.label` letter-spaces
+              Latin only (BG-0069). */}
+          <span className={cn(ui.text.label, ui.tone.muted)}>
             {t("auth.setup.step")} {step} {t("auth.setup.of")} {STEPS}
           </span>
-          <button onClick={finish} className="hover:text-foreground">
+          <UiButton variant="ghost" size="sm" className="-me-2" onClick={finish}>
             {t("auth.setup.skip")}
-          </button>
+          </UiButton>
         </div>
         <div className="mt-2 flex gap-1">
           {Array.from({ length: STEPS }).map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 flex-1 rounded-full ${i < step ? "bg-[color:var(--brand-primary)]" : "bg-muted"}`}
+              className={cn(
+                "h-1.5 flex-1",
+                ui.radius.full,
+                i < step ? "bg-[color:var(--ui-ink)]" : "bg-[color:var(--ui-rule)]",
+              )}
             />
           ))}
         </div>
@@ -142,35 +153,65 @@ function ProfileSetupPage() {
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-muted ring-1 ring-border">
+              <div
+                className={cn(
+                  "grid h-20 w-20 place-items-center overflow-hidden",
+                  ui.radius.control,
+                  ui.surface.sunken,
+                  ui.rule.all,
+                )}
+              >
                 {avatar ? (
                   <img src={avatar} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <Camera className="h-7 w-7 text-muted-foreground" aria-hidden />
+                  <Camera className={cn("h-7 w-7", ui.tone.muted)} aria-hidden />
                 )}
               </div>
               {avatar && (
+                // Painted 24px and targeted 24px — 20px under the floor in
+                // rule 5, on the control that undoes an upload. Growing the
+                // ink is not the fix: a 44px badge covers half the 80px
+                // thumbnail it annotates. `ui.hitArea` grows a transparent
+                // 44px target behind a control drawn its designed size; it
+                // comes FIRST here because it carries `relative`, and this
+                // badge has to stay `absolute` on the thumbnail's corner.
+                //
+                // The foreground was `--ui-on-ink-plain` on a `--ui-negative`
+                // fill — a foreground picked by hand for a status fill that
+                // inverts across the themes. `ui.tone.onNegative` is the one
+                // the fill carries: white in light, `--ui-ink-deep` in dark,
+                // where white-on-negative measured 2.31:1.
                 <button
                   type="button"
                   onClick={() => setAvatar(undefined)}
                   aria-label={t("auth.setup.remove")}
-                  className="absolute -end-1 -top-1 grid h-6 w-6 place-items-center rounded-full bg-destructive text-white"
+                  className={cn(
+                    ui.hitArea,
+                    "absolute -end-1 -top-1 z-10 grid h-6 w-6 place-items-center",
+                    ui.radius.full,
+                    "bg-[color:var(--ui-negative)]",
+                    ui.tone.onNegative,
+                    ui.focus,
+                  )}
                 >
                   <X className="h-3 w-3" aria-hidden />
                 </button>
               )}
             </div>
             <div className="flex-1">
-              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t("auth.setup.avatar")}
-              </div>
-              <button
-                type="button"
+              <div className={cn(ui.text.label, ui.tone.muted)}>{t("auth.setup.avatar")}</div>
+              {/* The outline recipe spelled out by hand — 44px, control
+                  radius, a hairline, meta at the heavy weight, focus ring.
+                  That is `UiButton variant="outline" size="sm"`; `w-auto` is
+                  not needed because `sm` is already inline. */}
+              <UiButton
+                variant="outline"
+                size="sm"
+                className="mt-2"
                 onClick={() => fileInput.current?.click()}
-                className="mt-2 rounded-xl border border-input bg-background px-3 py-2 text-xs font-semibold hover:bg-muted"
               >
                 {t("auth.setup.upload")}
-              </button>
+              </UiButton>
               <input
                 ref={fileInput}
                 type="file"
@@ -181,46 +222,46 @@ function ProfileSetupPage() {
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="displayName"
-              className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              {t("auth.setup.display_name")}
-            </label>
-            <input
-              id="displayName"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
-            />
-          </div>
+          {/* Both fields move to `UiInput` together — the step has exactly
+              these two, and a form that converts half its fields ends up
+              showing two different label treatments at once. Neither field
+              validates on submit (the wizard gates Next on `canNext`
+              instead), so neither reserves an error line: `reserveError`
+              would be dead space on a form that has no message to put in it. */}
+          <UiInput
+            id="displayName"
+            label={t("auth.setup.display_name")}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
 
-          <div>
-            <label
-              htmlFor="setupUsername"
-              className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              {t("auth.register.username")}
-            </label>
-            <input
-              id="setupUsername"
-              autoComplete="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40"
-            />
-          </div>
+          <UiInput
+            id="setupUsername"
+            label={t("auth.register.username")}
+            autoComplete="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
         </div>
       )}
 
       {step === 2 && (
         <div className="grid gap-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Trophy className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />{" "}
+          <div className={cn("flex items-center gap-2", ui.text.bodyStrong, ui.tone.default)}>
+            <Trophy className={cn("h-4 w-4", ui.tone.muted)} aria-hidden />{" "}
             {t("auth.setup.fav_club")}
           </div>
-          <p className="-mt-1 text-xs text-muted-foreground">{t("auth.setup.fav_club_hint")}</p>
+          <p className={cn("-mt-1", ui.text.meta, ui.tone.muted)}>
+            {t("auth.setup.fav_club_hint")}
+          </p>
+          {/* KEPT as buttons. `UiChip` and `UiSegmented` are the kit's
+              selection controls and neither fits: a chip is a filter that
+              paints selection as an ink FILL, and a crest over a club name
+              over a city is a row, not a pill; a segmented
+              control announces `role="tab"` — this is a radio-like choice, not
+              a tab set, and this lane does not change what a control
+              announces. Every colour, radius, height and focus ring here is
+              already a token, and `aria-pressed` stays as it was. */}
           <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
             {clubsQ.data?.map((c) => {
               const active = favoriteClubId === c.id;
@@ -229,18 +270,24 @@ function ProfileSetupPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setFavoriteClubId(c.id)}
-                  className={`flex items-center gap-3 rounded-2xl border px-3 py-2 text-start transition-colors ${active ? "border-[color:var(--brand-primary)] bg-[color:var(--brand-primary)]/5" : "border-input bg-background hover:bg-muted"}`}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex items-center gap-3 border px-3 py-2 text-start transition-colors",
+                    "min-h-[var(--ui-row-min)]",
+                    ui.radius.control,
+                    ui.focus,
+                    active
+                      ? "border-[color:var(--ui-ink)] bg-[color:color-mix(in_oklab,var(--ui-ink)_8%,transparent)]"
+                      : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)]",
+                  )}
                 >
                   <ClubCrest club={c} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-bold">{tr(c.name)}</div>
-                    <div className="truncate text-[11px] text-muted-foreground">{tr(c.city)}</div>
+                    <div className={cn("truncate", ui.text.bodyStrong)}>{tr(c.name)}</div>
+                    <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>{tr(c.city)}</div>
                   </div>
                   {active && (
-                    <CheckCircle2
-                      className="h-5 w-5 text-[color:var(--brand-primary)]"
-                      aria-hidden
-                    />
+                    <CheckCircle2 className={cn("h-5 w-5", ui.tone.positive)} aria-hidden />
                   )}
                 </button>
               );
@@ -251,8 +298,8 @@ function ProfileSetupPage() {
 
       {step === 3 && (
         <div className="grid gap-4">
-          <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Bell className="h-4 w-4 text-[color:var(--brand-accent)]" aria-hidden />{" "}
+          <div className={cn("flex items-center gap-2", ui.text.bodyStrong, ui.tone.default)}>
+            <Bell className={cn("h-4 w-4", ui.tone.muted)} aria-hidden />{" "}
             {t("auth.setup.notifications")}
           </div>
           {(
@@ -262,34 +309,47 @@ function ProfileSetupPage() {
               ["fantasyDeadlines", "auth.setup.notif_deadline", "auth.setup.notif_deadline_desc"],
             ] as const
           ).map(([key, label, desc]) => (
-            <label
+            // Three 16px boxes with a 16px target. The wrapping label already
+            // rescued the click, but the box is what a reader aims at, so
+            // `UiCheckbox` keeps the ink at 16px and grows a transparent 44px
+            // target behind it, and paints the checked plate in `--ui-ink`
+            // rather than the browser's own accent, which is not a colour this
+            // product chose. The bordered row stays — it is what separates
+            // three stacked toggles from each other.
+            <UiCheckbox
               key={key}
-              className="flex items-start gap-3 rounded-2xl border border-input bg-background px-3 py-3"
-            >
-              <input
-                type="checkbox"
-                checked={prefs[key]}
-                onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
-                className="mt-1 h-4 w-4 rounded border-input"
-              />
-              <div className="flex-1">
-                <div className="text-sm font-bold">{t(label)}</div>
-                <div className="text-xs text-muted-foreground">{t(desc)}</div>
-              </div>
-            </label>
+              checked={prefs[key]}
+              onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
+              label={t(label)}
+              hint={t(desc)}
+              className={cn("px-3 py-3", ui.space.row, ui.radius.control, ui.rule.all)}
+            />
           ))}
 
           <div>
-            <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <div className={cn("mb-1", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.language_confirm")}
             </div>
+            {/* KEPT for the same reason as the club list: `UiSegmented` would
+                turn a two-way language choice into a `role="tablist"`, and the
+                pair already sits on the tokens at the 44px floor. */}
             <div className="grid grid-cols-2 gap-2">
               {(["fr", "ar"] as const).map((l) => (
                 <button
                   key={l}
                   type="button"
                   onClick={() => setChosenLang(l)}
-                  className={`rounded-xl border px-3 py-2 text-sm font-bold ${chosenLang === l ? "border-[color:var(--brand-primary)] bg-[color:var(--brand-primary)]/5" : "border-input bg-background"}`}
+                  aria-pressed={chosenLang === l}
+                  className={cn(
+                    "inline-flex items-center justify-center border px-3",
+                    ui.space.tap,
+                    ui.radius.control,
+                    ui.text.bodyStrong,
+                    ui.focus,
+                    chosenLang === l
+                      ? "border-[color:var(--ui-ink)] bg-[color:color-mix(in_oklab,var(--ui-ink)_8%,transparent)]"
+                      : "border-[color:var(--ui-rule)]",
+                  )}
                 >
                   {l === "fr" ? "Français" : "العربية"}
                 </button>
@@ -300,20 +360,21 @@ function ProfileSetupPage() {
       )}
 
       <div className="mt-6 flex items-center justify-between gap-2">
-        <button
-          type="button"
+        <UiButton
+          variant="ghost"
+          size="sm"
+          className="gap-1"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
-          className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground disabled:opacity-40"
         >
           <Back className="h-4 w-4" aria-hidden /> {t("auth.setup.previous")}
-        </button>
+        </UiButton>
         {step < STEPS ? (
           <AuthPrimaryButton
             type="button"
             onClick={() => setStep((s) => s + 1)}
             disabled={!canNext}
-            style={{ maxWidth: 200 }}
+            className="max-w-[200px]"
           >
             {t("auth.setup.next")} <Arrow className="h-4 w-4" aria-hidden />
           </AuthPrimaryButton>
@@ -322,7 +383,7 @@ function ProfileSetupPage() {
             type="button"
             onClick={finish}
             disabled={submitting}
-            style={{ maxWidth: 200 }}
+            className="max-w-[200px]"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {t("auth.setup.finish")}

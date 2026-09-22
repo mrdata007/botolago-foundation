@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Sparkles, Flame, Clock } from "lucide-react";
@@ -12,6 +12,8 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
@@ -21,8 +23,33 @@ import {
   presentArticleForDisplay,
   publicNewsContext,
 } from "@/components/news/news-data";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
+
+/**
+ * While News is hidden (owner decision — see `@/lib/feature-flags`), `/news`
+ * and every article URL under it redirect to Home.
+ *
+ * Redirect, not not-found, because:
+ *   - `/news` and article permalinks were live and shared; a 404 turns every
+ *     existing bookmark and outbound link into a dead end, where a redirect
+ *     lands the reader on a working product and keeps working unchanged when
+ *     the flag flips back on;
+ *   - the pages are not *missing* — they are deliberately withheld — so a
+ *     "not found" would be a lie to both readers and crawlers.
+ *
+ * It lives in `beforeLoad`, which TanStack Router runs before the loader and
+ * before any component renders, on the server render and on client navigation
+ * alike. That is what guarantees no flash of News content and no News RPC
+ * call: the redirect is thrown before `loader` ever runs. `beforeLoad` on this
+ * parent route also covers the `/news/$articleId` child, which is gated again
+ * in its own file so the two can never drift apart.
+ */
+function redirectWhileNewsIsHidden(): void {
+  if (!NEWS_ENABLED) throw redirect({ to: "/", replace: true });
+}
 
 export const Route = createFileRoute("/news")({
+  beforeLoad: redirectWhileNewsIsHidden,
   head: () => ({
     meta: [
       { title: "Actualités — BotolaGO" },
@@ -92,9 +119,7 @@ function NewsPage() {
 
   return (
     <AppShell backgroundVariant="news">
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-foreground">
-        <span className="text-brand">{t("news.title")}</span>
-      </h1>
+      <h1 className={cn("pt-2", ui.text.hero, ui.tone.default)}>{t("news.title")}</h1>
 
       {/* Content discovery — real taxonomy-driven category chips */}
       <Section index={0} className="mt-4">
@@ -103,9 +128,9 @@ function NewsPage() {
 
       {/* Club discovery */}
       <Section index={0} className="mt-3">
-        <h2 className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--text-muted)]">
-          {t("news.filter_clubs")}
-        </h2>
+        {/* `ui.text.label` carries the `ltr:`-prefixed tracking: Arabic
+            letterforms join and must never be letter-spaced (BG-0069). */}
+        <h2 className={cn("mb-2", ui.text.label, ui.tone.muted)}>{t("news.filter_clubs")}</h2>
         <ClubFilterRow
           clubs={clubs}
           selected={clubId}

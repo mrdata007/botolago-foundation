@@ -19,8 +19,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import {
+  isSameMatchDay,
+  matchDayFromKey,
+  matchDayKey,
+  MATCH_TIME_ZONE,
+  startOfMatchDay,
+} from "@/lib/match-kickoff";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
@@ -66,24 +74,16 @@ function bucketOf(m: Match): "live" | "upcoming" | "finished" | "other" {
   return "other"; // postponed etc. — rendered under upcoming for the selected date
 }
 
-function sameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function dateFromKey(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year!, month! - 1, day!);
-}
-
-function startOfDay(value: Date): Date {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
+/**
+ * Day identity on this page is the competition's, not the viewer's
+ * (BG-0100). The backend is already asked for a Casablanca day; filtering
+ * the answer back through the browser's calendar is what made a 20:00
+ * kickoff vanish from, or land on the wrong side of, the day the strip above
+ * it was highlighting.
+ */
+const sameDay = isSameMatchDay;
+const dateFromKey = matchDayFromKey;
+const startOfDay = startOfMatchDay;
 
 function dateForSeason(season: FootballSeason): Date {
   const today = startOfDay(new Date());
@@ -131,7 +131,7 @@ function MatchesPage() {
     queryKey: [
       "football",
       "matches",
-      `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`,
+      matchDayKey(selectedDate),
       selectedSeason?.id ?? "default",
       lang,
     ],
@@ -206,6 +206,7 @@ function MatchesPage() {
   }, [dayMatches]);
 
   const dateFmt = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -216,13 +217,15 @@ function MatchesPage() {
   return (
     <AppShell backgroundVariant="matches">
       <header className="flex items-end gap-3 pt-2">
-        <h1 className="min-w-0 text-2xl font-black tracking-tight text-foreground">
-          <span className="text-brand">{t("matches.title")}</span>
-        </h1>
+        <h1 className={cn("min-w-0", ui.text.hero, ui.tone.default)}>{t("matches.title")}</h1>
 
         <div className="ms-auto w-[10.5rem] shrink-0">
-          <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-            <CalendarRange className="h-3.5 w-3.5 text-[color:var(--brand-accent)]" aria-hidden />
+          {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+          <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label, ui.tone.muted)}>
+            <CalendarRange
+              className="h-3.5 w-3.5 text-[color:var(--ui-on-surface-muted)]"
+              aria-hidden
+            />
             <span>{t("matches.season.label")}</span>
           </div>
           <Select
@@ -234,23 +237,57 @@ function MatchesPage() {
             <SelectTrigger
               aria-label={t("matches.season.label")}
               className={cn(
-                "surface-3 h-11 rounded-xl border-[var(--glass-border)] px-3 font-bold shadow-none",
-                "focus:ring-2 focus:ring-[color:var(--brand-accent)]",
+                "h-[var(--ui-tap-min)] px-3 shadow-none",
+                ui.radius.control,
+                ui.surface.card,
+                ui.rule.all,
+                ui.text.body,
+                "[font-weight:var(--ui-weight-heavy)]",
+                ui.focus,
               )}
             >
+              {/* The trigger renders the season label itself. Left to Radix it
+                  clones the whole selected item — label *and* "current" badge —
+                  into a 10.5rem control, where the badge was clipped at 390px. */}
               <SelectValue
                 placeholder={
                   seasonsQ.isLoading ? t("matches.season.loading") : t("matches.season.unavailable")
                 }
-              />
+              >
+                {selectedSeason ? (
+                  <span className={cn("truncate", ui.text.tabular)}>{selectedSeason.label}</span>
+                ) : undefined}
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-[var(--border-subtle)] bg-[color:var(--background-elevated)]">
+            <SelectContent
+              className={cn(ui.radius.control, ui.rule.all, "bg-[color:var(--ui-surface)]")}
+            >
               {seasons.map((season) => (
-                <SelectItem key={season.id} value={season.id} className="min-h-11 rounded-lg">
+                <SelectItem
+                  key={season.id}
+                  value={season.id}
+                  className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
+                >
                   <span className="flex items-center gap-2">
-                    <span className="font-bold tabular-nums">{season.label}</span>
+                    <span
+                      className={cn(
+                        ui.text.body,
+                        "[font-weight:var(--ui-weight-heavy)]",
+                        ui.text.tabular,
+                      )}
+                    >
+                      {season.label}
+                    </span>
                     {season.isCurrent && (
-                      <span className="rounded-full bg-[color:var(--surface-selected)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-[color:var(--brand-primary)]">
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-1.5 py-0.5",
+                          ui.radius.control,
+                          ui.text.label,
+                          ui.surface.sunken,
+                          ui.tone.default,
+                        )}
+                      >
                         {t("matches.season.current")}
                       </span>
                     )}
@@ -272,14 +309,34 @@ function MatchesPage() {
         />
       </div>
 
-      {/* Sticky status filters */}
-      <div className={cn("sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1")}>
+      {/* Sticky status filters — the Fantasy segmented track: an opaque sunken
+          strip, 10px track / 8px segment, no glass and no blur. */}
+      <div
+        className={cn(
+          "sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1",
+          "bg-[color:var(--ui-page)]",
+        )}
+      >
+        {/* BG-0111 — the four filters are a grid, not a scroller.
+            At 390px this row measured 411px of content inside a 358px track,
+            so "Résultats" ran from 329px to 424px: cut off at the viewport
+            edge. It was reachable only by scrolling a row with the scrollbar
+            suppressed (`[scrollbar-width:none]` + `::-webkit-scrollbar:hidden`)
+            and no other affordance, so nothing on screen said it scrolled.
+
+            Four equal columns give each filter 85px. The label drops from the
+            body step to the meta step and the count moves onto its own line
+            underneath, which fits the longest French label ("Résultats",
+            62px) inside the 69px content box with room to spare and keeps the
+            fit independent of how many digits a count grows to. The row no
+            longer scrolls at all. */}
         <div
           role="tablist"
           aria-label={t("matches.a11y.status_filters")}
           className={cn(
-            "glass-surface glass-strong flex items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--glass-border)] p-1",
-            "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+            "grid grid-cols-4 items-stretch gap-1 p-[3px]",
+            ui.radius.track,
+            ui.surface.sunken,
           )}
         >
           {filterTabs.map((it) => {
@@ -300,27 +357,42 @@ function MatchesPage() {
                 aria-selected={active}
                 onClick={() => setFilter(it.key)}
                 className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+                  "flex min-w-0 flex-col items-center justify-center gap-0.5 px-1.5 py-1",
+                  "transition-colors",
+                  "min-h-[var(--ui-tap-min)]",
+                  ui.radius.segment,
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.focus,
                   active
-                    ? "bg-[color:var(--brand-primary)] text-white shadow"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? // The kit's segmented pattern, with the selected label on
+                      // `--ui-on-surface`: `--ui-ink` is a dark navy in both
+                      // themes and disappears against the dark surface.
+                      "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] shadow-[var(--ui-shadow-card)]"
+                    : cn(ui.tone.muted, "hover:text-[color:var(--ui-on-surface)]"),
                 )}
               >
-                <span>{t(it.label)}</span>
-                {count > 0 && (
-                  <span
-                    className={cn(
-                      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black tabular-nums",
-                      active
-                        ? "bg-white/25 text-white"
-                        : "bg-[color:var(--surface-hover)] text-[color:var(--text-secondary)]",
-                    )}
-                    aria-hidden
-                  >
-                    {count}
-                  </span>
-                )}
+                <span className="max-w-full [line-height:1.2]">{t(it.label)}</span>
+                {/* Always rendered, zero included: it keeps the four segments
+                    the same height and it answers "why is this filter empty?"
+                    before the tap rather than after. Still `aria-hidden` — the
+                    tab's accessible name stays the label alone. */}
+                <span
+                  className={cn(
+                    "inline-flex min-w-5 items-center justify-center px-1.5",
+                    ui.radius.control,
+                    ui.text.micro,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.text.tabular,
+                    active
+                      ? "bg-[color:color-mix(in_oklab,var(--ui-on-surface)_10%,transparent)] text-[color:var(--ui-on-surface)]"
+                      : cn(ui.surface.page, ui.tone.muted),
+                    count === 0 && "opacity-60",
+                  )}
+                  aria-hidden
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
@@ -328,17 +400,15 @@ function MatchesPage() {
       </div>
 
       {/* Selected-date subhead */}
-      <div className="mt-2 flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+      <div className={cn("mt-2 flex items-center gap-2 px-1", ui.text.label, ui.tone.muted)}>
         <span className="truncate">{dateFmt}</span>
         {totalDay > 0 && (
           <span
             aria-hidden
-            className="inline-flex h-1 w-1 rounded-full bg-[color:var(--text-muted)]/60"
+            className="inline-flex h-1 w-1 rounded-full bg-[color:var(--ui-on-surface-muted)] opacity-60"
           />
         )}
-        {totalDay > 0 && (
-          <span className="tabular-nums text-[color:var(--text-secondary)]">{totalDay}</span>
-        )}
+        {totalDay > 0 && <span className={cn(ui.text.tabular, ui.tone.default)}>{totalDay}</span>}
       </div>
 
       {/* Loading / error / empty */}

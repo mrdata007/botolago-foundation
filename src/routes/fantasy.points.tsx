@@ -1,15 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { FplPitch } from "@/components/fpl/FplPitch";
 import { FplPlayerCard } from "@/components/fpl/FplPlayerCard";
 import { SquadListTable } from "@/components/fpl/SquadListTable";
-import { FplHeader, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import {
+  ui,
+  UiEmptyState,
+  UiErrorState,
+  UiHeader,
+  UiKeyValueRow,
+  UiSegmented,
+  UiSkeleton,
+  UiStatBlock,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -17,15 +27,23 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildPointsViewModel, type PointsViewModel } from "@/services/points-service";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/fantasy/points")({
   component: PointsPage,
 });
 
 /**
- * FPL-018/019 "Team detail" (points) reconstructed: Back header with the team
- * name, the "‹ Gameweek N ›" selector, Squad/List control, the
- * Average / Points / Highest strip and the pitch with points plates.
+ * "Points" — what a gameweek actually scored.
+ *
+ * Every figure on this screen is either a real number or an en dash. A 0
+ * where the answer is "not known yet" reads as "your captain blanked", and
+ * removing that confusion is the whole reason `fantasy.stat.none` exists
+ * (BG-0071/BG-0075); it is never a fallback for a missing value here.
+ *
+ * The screen is deliberately plain: the numbers carry the meaning, so they
+ * get the stat ramp (tabular, aligned, one weight per step) and almost no
+ * chrome — no badges around totals, no gradients behind them.
  */
 function PointsPage() {
   return (
@@ -36,7 +54,7 @@ function PointsPage() {
 }
 
 function PointsBody() {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
   const { key } = useFantasyDataSource();
@@ -45,6 +63,8 @@ function PointsBody() {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
+  /** The one answer for "this value is not known", everywhere on the screen. */
+  const none = t("fantasy.stat.none");
 
   const team = screen.team;
   const players = screen.players;
@@ -66,7 +86,7 @@ function PointsBody() {
     queryKey: key("gw-result", gw),
     // React Query treats `undefined` as a failed fetch, so a gameweek without
     // a computed result (the normal case before the first deadline) resolves
-    // to `null` and the squad still renders with "—" plates.
+    // to `null` and the squad still renders with en-dash plates.
     queryFn: async () => (await fantasyService.getGameweekResult(gw!)) ?? null,
     enabled: screen.phase === "ready" && gw !== null && !!team,
     retry: 1,
@@ -97,7 +117,7 @@ function PointsBody() {
   if (screen.phase !== "ready" || !team || gw === null) {
     return (
       <>
-        <FplHeader title={t("fpl.points")} backTo="/fantasy" />
+        <UiHeader title={t("fpl.points")} backTo="/fantasy" tone="gradient" />
         <FantasyScreenGate state={screen} next="/fantasy/points">
           <div />
         </FantasyScreenGate>
@@ -150,7 +170,7 @@ function PointsBody() {
         key={id}
         player={p}
         club={clubOf(p.clubId)}
-        sub={pts === null ? "—" : String(pts)}
+        sub={pts === null ? none : String(pts)}
         captain={id === captainId}
         vice={id === viceId && id !== captainId}
       />
@@ -178,71 +198,97 @@ function PointsBody() {
   const average = vm?.averagePoints ?? resultQ.data?.averagePoints ?? null;
   const highest = vm?.highestPoints ?? resultQ.data?.highestPoints ?? null;
 
+  /**
+   * How settled the gameweek's scoring is, read off the rows themselves: a
+   * gameweek is only "final" once every line in it is. The per-player states
+   * come from the server (`PlayerPointsBreakdown.status`), so this is a
+   * summary of the data, not a second opinion about it.
+   */
+  const rowStates = new Set((vm?.breakdown ?? []).map((b) => b.status));
+  const gwStatus = rowStates.has("live")
+    ? "live"
+    : rowStates.has("provisional")
+      ? "provisional"
+      : rowStates.has("final")
+        ? "final"
+        : null;
+  const statusLabel =
+    gwStatus === "live"
+      ? t("fantasy.points.status.live")
+      : gwStatus === "provisional"
+        ? t("fantasy.points.status.provisional")
+        : gwStatus === "final"
+          ? t("fantasy.points.status.final")
+          : undefined;
+
+  // The chip label is spelled out branch by branch rather than interpolated
+  // from the chip key: a template argument is a non-literal translation call
+  // site, and the i18n gate counts those against a fixed baseline.
+  const activeChipLabel =
+    vm?.activeChip === "bench_boost"
+      ? t("fantasy.chip.bench_boost")
+      : vm?.activeChip === "triple_captain"
+        ? t("fantasy.chip.triple_captain")
+        : vm?.activeChip === "free_hit"
+          ? t("fantasy.chip.free_hit")
+          : vm?.activeChip === "wildcard"
+            ? t("fantasy.chip.wildcard")
+            : t("fantasy.points.no_active_chip");
+
+  // BG-0075: the server's record of what finalization actually did, which the
+  // client-side engine can only guess at for a gameweek it did not compute.
+  // `vm.autoSubs` stays the fallback for mock mode, where there is no server.
+  const autoSubs = resultQ.data?.autoSubs.length ? resultQ.data.autoSubs : (vm?.autoSubs ?? []);
+  const nameOf = (id: string) => {
+    const player = playerOf(id);
+    return player ? tr(player.name) : id;
+  };
+  const captainName = captainId ? nameOf(captainId) : none;
+
   return (
     <>
-      <FplHeader title={team.teamName} backTo="/fantasy">
-        <div className="mt-2 flex items-center justify-between rounded-[10px] bg-white/35 px-1 py-1">
-          <button
-            type="button"
-            onClick={() => setGw(Math.max(min, gw - 1))}
-            disabled={gw <= min}
-            aria-label={`${t("fpl.gameweek")} ${gw - 1}`}
-            className="grid h-9 w-9 place-items-center rounded-[8px] bg-white/60 text-[color:var(--fpl-ink)] disabled:opacity-40"
-          >
-            <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
-          <span className="text-[17px] font-extrabold text-[color:var(--fpl-ink)]">
-            {t("fpl.gameweek")} {gw}
-          </span>
-          <button
-            type="button"
-            onClick={() => setGw(Math.min(max, gw + 1))}
-            disabled={gw >= max}
-            aria-label={`${t("fpl.gameweek")} ${gw + 1}`}
-            className="grid h-9 w-9 place-items-center rounded-[8px] bg-white/60 text-[color:var(--fpl-ink)] disabled:opacity-40"
-          >
-            <ChevronRight className="h-5 w-5" aria-hidden />
-          </button>
-        </div>
-        <FplSegmented
+      <UiHeader title={team.teamName} backTo="/fantasy" tone="gradient">
+        <GameweekSelector
+          className="mt-2 flex w-full"
+          tone="onGradient"
+          showLabel
+          value={gw}
+          min={min}
+          max={max}
+          onChange={setGw}
+        />
+        <UiSegmented
           className="mt-2"
+          tone="onGradient"
           value={view}
           onChange={setView}
+          label={t("fantasy.view.toggle_label")}
           options={[
             { value: "squad", label: t("fpl.squad") },
             { value: "list", label: t("fpl.list") },
           ]}
         />
-      </FplHeader>
+      </UiHeader>
 
-      <div className="grid grid-cols-3 items-end bg-white px-4 py-3 text-center">
-        <div>
-          <div className="fpl-tabular text-[22px] font-bold text-[color:var(--fpl-ink-deep)]">
-            {average ?? "—"}
-          </div>
-          <div className="text-[12px] text-[color:var(--fpl-grey-text)]">{t("fpl.average")}</div>
-        </div>
-        <div>
-          <div className="fpl-tabular text-[38px] font-black leading-none text-[color:var(--fpl-ink)]">
-            {total ?? "—"}
-          </div>
-          <div className="text-[12px] font-bold text-[color:var(--fpl-ink-deep)]">
-            {t("fpl.points")}
-          </div>
-        </div>
-        <div>
-          <div className="fpl-tabular inline-flex items-center gap-1 text-[22px] font-bold text-[color:var(--fpl-ink-deep)]">
-            {highest ?? "—"} <ArrowRight className="h-4 w-4" aria-hidden />
-          </div>
-          <div className="text-[12px] text-[color:var(--fpl-grey-text)]">{t("fpl.highest")}</div>
-        </div>
+      <div
+        className={cn("grid grid-cols-3 items-end gap-2 px-4 py-3", ui.surface.bar, ui.rule.block)}
+      >
+        <UiStatBlock align="center" size="lg" label={t("fpl.average")} value={average ?? none} />
+        <UiStatBlock
+          align="center"
+          size="hero"
+          tone="ink"
+          label={t("fpl.points")}
+          value={total ?? none}
+          sub={statusLabel}
+        />
+        <UiStatBlock align="center" size="lg" label={t("fpl.highest")} value={highest ?? none} />
       </div>
 
       {resultQ.isPending ? (
-        <div
-          role="status"
-          className="h-[420px] animate-pulse bg-[color:var(--fpl-pitch-a)]/40 motion-reduce:animate-none"
-        />
+        <div role="status" aria-label={t("state.loading")} className="px-4 py-3">
+          <UiSkeleton className="h-[420px] w-full" />
+        </div>
       ) : view === "squad" ? (
         <FplPitch
           rows={[row("GK", 1), row("DEF", cfg.DEF), row("MID", cfg.MID), row("FWD", cfg.FWD)]}
@@ -254,34 +300,128 @@ function PointsBody() {
           squad={squadForList}
           players={players}
           clubs={clubs}
+          renderDetail={(player) => {
+            const events = breakdown.get(player.id)?.events ?? [];
+            if (events.length === 0) return null;
+            return (
+              <ul className={cn("pb-2", ui.text.meta, ui.tone.muted)}>
+                {events.map((event, index) => (
+                  <li
+                    key={`${event.category}-${event.fixtureId ?? index}`}
+                    className="flex items-baseline justify-between gap-2"
+                  >
+                    <span className="min-w-0 truncate">
+                      {t(`fantasy.points.event.${event.category}` as never)}
+                    </span>
+                    <span dir="ltr" className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>
+                      {event.points > 0 ? `+${event.points}` : event.points}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            );
+          }}
           columns={[
-            { key: "form", label: t("fpl.form"), render: (p) => p.form.toFixed(1) },
+            {
+              key: "form",
+              label: t("fpl.form"),
+              // BG-0071: a dash, not 0.0, while no gameweek has scored. The
+              // key is named inline, not through `none`, because the guard in
+              // fantasy-runtime.test.ts reads the source line.
+              render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+            },
             { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
             { key: "sel", label: t("fpl.selected"), render: (p) => `${p.ownership.toFixed(1)}%` },
             {
               key: "pts",
               label: `GW${gw}`,
-              render: (p) => (pointsFor(p.id) === null ? "—" : `${pointsFor(p.id)}pts`),
+              render: (p) => {
+                const pts = pointsFor(p.id);
+                return pts === null ? none : `${pts}${t("fantasy.points.abbr")}`;
+              },
               className: "font-extrabold",
             },
           ]}
         />
       )}
+
+      {vm ? (
+        <section className="px-4 py-3">
+          <h2 className={cn(ui.text.label, ui.tone.muted)}>{t("fpl.points_overview")}</h2>
+          <div className="mt-1">
+            <UiKeyValueRow
+              label={t("fantasy.points.effective_captain")}
+              value={
+                <span className="flex items-baseline gap-2">
+                  <span className="min-w-0 truncate">{captainName}</span>
+                  {vm.captainTookOver ? (
+                    <span className={cn("shrink-0", ui.text.meta, ui.tone.muted)}>
+                      {t("fantasy.points.vice_takeover")}
+                    </span>
+                  ) : null}
+                </span>
+              }
+            />
+            <UiKeyValueRow
+              label={t("fantasy.points.multiplier")}
+              value={
+                // `dir="ltr"` isolates the sign from the paragraph: without
+                // it "×2" reorders to "2×" inside an Arabic line, and "−4"
+                // to "4−". The sign belongs to the number, not the sentence.
+                <span dir="ltr" className={ui.stat.sm}>
+                  {`×${vm.captainMultiplier}`}
+                </span>
+              }
+            />
+            <UiKeyValueRow
+              label={t("fantasy.points.bench")}
+              value={<span className={ui.stat.sm}>{vm.originalBenchPoints}</span>}
+            />
+            {vm.transferHitPoints !== 0 ? (
+              <UiKeyValueRow
+                label={t("fantasy.points.hit")}
+                value={
+                  <span dir="ltr" className={cn(ui.stat.sm, ui.tone.negative)}>
+                    {`−${vm.transferHitPoints}`}
+                  </span>
+                }
+              />
+            ) : null}
+            <UiKeyValueRow label={t("fantasy.points.active_chip")} value={activeChipLabel} />
+          </div>
+        </section>
+      ) : null}
+
+      {autoSubs.length > 0 ? (
+        <section className={cn("px-4 py-3", ui.surface.sunken)}>
+          <h2 className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.points.autosubs")}</h2>
+          <ul className="mt-2 grid gap-1">
+            {autoSubs.map((sub) => (
+              <li
+                key={`${sub.outId}-${sub.inId}`}
+                className={cn("flex items-baseline gap-2", ui.text.secondary, ui.tone.default)}
+              >
+                <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="min-w-0 truncate">
+                  {nameOf(sub.outId)} → {nameOf(sub.inId)}
+                </span>
+                <span className={cn("ms-auto shrink-0", ui.text.meta, ui.tone.muted)}>
+                  {t(`fantasy.points.autosub_reason.${sub.reasonKey}` as never)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {resultQ.isError ? (
-        <div className="flex flex-col items-center gap-2 px-4 py-3 text-center text-[13px] text-[color:var(--fpl-grey-text)]">
-          <span>{t("fpl.error.body")}</span>
-          <button
-            type="button"
-            onClick={() => void resultQ.refetch()}
-            className="rounded-[4px] bg-[color:var(--fpl-ink)] px-3 py-1.5 text-[13px] font-bold text-white"
-          >
-            {t("state.retry")}
-          </button>
+        <div className="px-4 py-3">
+          <UiErrorState body={t("fpl.error.body")} onRetry={() => void resultQ.refetch()} />
         </div>
       ) : !resultQ.isPending && !vm ? (
-        <p className="px-4 py-3 text-center text-[13px] text-[color:var(--fpl-grey-text)]">
-          {t("fpl.points_not_available")}
-        </p>
+        <div className="px-4 py-3">
+          <UiEmptyState title={t("fpl.points_not_available")} />
+        </div>
       ) : null}
     </>
   );
