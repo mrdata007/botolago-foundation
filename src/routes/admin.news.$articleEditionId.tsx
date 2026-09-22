@@ -213,6 +213,18 @@ function AdminNewsEditRoute() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [heroAssetId, setHeroAssetId] = useState<string | null>(null);
+  // The cover's own metadata, typed before the file is picked: the upload
+  // registers it with the asset, and the public page renders caption/credit
+  // under the photo. Alt text used to be the article title, silently.
+  const [heroAlt, setHeroAlt] = useState("");
+  const [heroCaption, setHeroCaption] = useState("");
+  const [heroCredit, setHeroCredit] = useState("");
+  const [heroPreview, setHeroPreview] = useState<{
+    url: string;
+    alt: string;
+    caption: string | null;
+    credit: string | null;
+  } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -244,6 +256,17 @@ function AdminNewsEditRoute() {
       setSeoTitle(detail.seoTitle ?? "");
       setSeoDescription(detail.seoDescription ?? "");
       setHeroAssetId(detail.heroAssetId);
+      const heroUrl = resolveMediaUrl(detail.hero);
+      setHeroPreview(
+        heroUrl && detail.hero
+          ? {
+              url: heroUrl,
+              alt: detail.hero.alt ?? "",
+              caption: detail.hero.caption ?? null,
+              credit: detail.hero.credit ?? null,
+            }
+          : null,
+      );
       setDirty(false);
     } catch (error) {
       setMessage(
@@ -408,7 +431,11 @@ function AdminNewsEditRoute() {
   // Function, same multipart contract (`news-media-upload` requires alt text
   // and real pixel dimensions and rejects anything that is not an allowed
   // image type).
-  const uploadNewsMedia = async (file: File, altText: string): Promise<NewsMediaUploadResult> => {
+  const uploadNewsMedia = async (
+    file: File,
+    altText: string,
+    extra: { caption?: string; credit?: string } = {},
+  ): Promise<NewsMediaUploadResult> => {
     const { data: session } = await supabaseV2.auth.getSession();
     const token = session.session?.access_token;
     if (!token) throw new Error("no_session");
@@ -421,6 +448,8 @@ function AdminNewsEditRoute() {
     const form = new FormData();
     form.set("file", file, file.name);
     form.set("altText", altText);
+    if (extra.caption?.trim()) form.set("caption", extra.caption.trim());
+    if (extra.credit?.trim()) form.set("credit", extra.credit.trim());
     form.set("width", String(dimensions.width));
     form.set("height", String(dimensions.height));
     const { data, error } = await supabaseV2.functions.invoke("news-media-upload", {
@@ -435,11 +464,36 @@ function AdminNewsEditRoute() {
 
   const uploadHero = async (file: File) => {
     if (access.state !== "authorized") return;
+    if (!heroAlt.trim()) {
+      setMessage(
+        rtl
+          ? "اكتب النص البديل للصورة قبل رفعها."
+          : "Saisissez le texte alternatif de l’image avant de la téléverser.",
+      );
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
-      const uploadResult = await uploadNewsMedia(file, title || "Article hero image");
+      const altText = heroAlt.trim();
+      const uploadResult = await uploadNewsMedia(file, altText, {
+        caption: heroCaption,
+        credit: heroCredit,
+      });
       setHeroAssetId(uploadResult.mediaAssetId);
+      const url =
+        resolveMediaUrl({ storagePath: uploadResult.storagePath ?? null }) ??
+        resolveMediaUrl({ sourceUrl: uploadResult.publicUrl ?? null });
+      setHeroPreview(
+        url
+          ? {
+              url,
+              alt: altText,
+              caption: heroCaption.trim() || null,
+              credit: heroCredit.trim() || null,
+            }
+          : null,
+      );
       setDirty(true);
       setMessage(
         rtl ? "تم رفع الصورة. احفظ لتطبيقها." : "Image téléversée. Enregistrez pour l’appliquer.",
@@ -750,8 +804,57 @@ function AdminNewsEditRoute() {
 
           <EditorSection
             heading={rtl ? "الصورة الرئيسية" : "Image à la une"}
+            hint={
+              rtl
+                ? "اكتب النص البديل (إلزامي) والتعليق والمصدر، ثم اختر الملف. لتغييرها، ارفع صورة جديدة."
+                : "Renseignez le texte alternatif (obligatoire), la légende et le crédit, puis choisissez le fichier. Pour les modifier, téléversez une nouvelle image."
+            }
             testId="admin-news-section-hero"
           >
+            {heroPreview && (
+              <figure className="grid gap-1" data-testid="admin-news-hero-preview">
+                {/* Fixed ratio so the form does not jump while the file loads. */}
+                <img
+                  src={heroPreview.url}
+                  alt={heroPreview.alt}
+                  className={cn("aspect-[16/10] w-full max-w-sm object-cover", ui.radius.control)}
+                />
+                {(heroPreview.caption || heroPreview.credit) && (
+                  <figcaption dir={articleDir} className={cn(ui.text.meta, ui.tone.muted)}>
+                    {heroPreview.caption}
+                    {heroPreview.caption && heroPreview.credit ? " — " : ""}
+                    {heroPreview.credit}
+                  </figcaption>
+                )}
+              </figure>
+            )}
+            <div className="grid gap-4 sm:grid-cols-3">
+              <UiInput
+                label={rtl ? "النص البديل (إلزامي)" : "Texte alternatif (obligatoire)"}
+                value={heroAlt}
+                onChange={(event) => setHeroAlt(event.target.value)}
+                disabled={!isEditable}
+                maxLength={300}
+                dir={articleDir}
+                data-testid="admin-news-hero-alt"
+              />
+              <UiInput
+                label={rtl ? "التعليق" : "Légende"}
+                value={heroCaption}
+                onChange={(event) => setHeroCaption(event.target.value)}
+                disabled={!isEditable}
+                dir={articleDir}
+                data-testid="admin-news-hero-caption"
+              />
+              <UiInput
+                label={rtl ? "المصدر / الحقوق" : "Crédit"}
+                value={heroCredit}
+                onChange={(event) => setHeroCredit(event.target.value)}
+                disabled={!isEditable}
+                dir={articleDir}
+                data-testid="admin-news-hero-credit"
+              />
+            </div>
             {/* The `file:` pseudo-element is the button the browser draws
                 inside the control, so it is styled here rather than through a
                 primitive — the kit has no file field. Its colours are tokens
@@ -767,9 +870,15 @@ function AdminNewsEditRoute() {
               ref={fileInputRef}
               type="file"
               accept={ACCEPTED_IMAGE_TYPES}
-              disabled={!isEditable}
+              disabled={!isEditable || busy || !heroAlt.trim()}
+              aria-label={
+                rtl ? "اختيار ملف الصورة الرئيسية" : "Choisir le fichier de l’image à la une"
+              }
+              data-testid="admin-news-hero-input"
               onChange={(event) => {
                 const file = event.target.files?.[0];
+                // Reset so re-picking the same file after a failure fires again.
+                event.target.value = "";
                 if (file) void uploadHero(file);
               }}
               className={cn(

@@ -122,6 +122,36 @@ describe("third-party attribution is stripped at the data layer", () => {
     expect(safe.hero?.caption).toBeNull();
   });
 
+  test("an original CMS story (no publisher) keeps its own cover caption and credit", () => {
+    // Regression: the credit/caption were cleared for every hero, so the
+    // article page's figcaption could never show BotolaGO's own photo credit.
+    const safe = sanitizeArticleAttribution(
+      detailFixture({
+        publisher: null,
+        author: null,
+        hero: {
+          id: "33333333-3333-4333-8333-333333333333",
+          sourceUrl: null,
+          storagePath: "news/9f0c6a1e-0000-4000-8000-000000000000.webp",
+          alt: "Le stade Mohammed-V avant le match",
+          caption: "Le stade avant le coup d’envoi.",
+          credit: "BotolaGO",
+          width: 1600,
+          height: 1000,
+          mimeType: "image/webp",
+        },
+      }),
+    );
+    expect(safe.hero?.caption).toBe("Le stade avant le coup d’envoi.");
+    expect(safe.hero?.credit).toBe("BotolaGO");
+    expect(safe.hero?.alt).toBe("Le stade Mohammed-V avant le match");
+  });
+
+  test("an original CMS story still never hotlinks an off-site hero", () => {
+    const safe = sanitizeArticleAttribution(detailFixture({ publisher: null, author: null }));
+    expect(safe.hero).toBeNull();
+  });
+
   test("works on a card DTO too, and does not mutate its input", () => {
     const { bodyHtml: _body, ...card } = detailFixture();
     const input = card as ArticleCardDto;

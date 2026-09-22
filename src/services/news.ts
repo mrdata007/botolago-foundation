@@ -134,7 +134,18 @@ function removeOutboundLinks(html: string): string {
 export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDetailDto>(dto: T): T {
   const publisherName = dto.publisher?.name;
   const hero = dto.hero;
-  const ownHero = hero && hero.storagePath ? { ...hero, credit: null, caption: null } : null;
+  // A story with a publisher came from a third-party source; a story written in
+  // the CMS has none (`editorial_create_draft` is never given one by the
+  // editor). Only the former's caption/credit is somebody else's attribution.
+  // Clearing it unconditionally also erased BotolaGO's own photo credits, so
+  // the article page's figcaption could never render for original work.
+  const thirdPartySource = dto.publisher !== null && dto.publisher !== undefined;
+  const ownHero =
+    hero && hero.storagePath
+      ? thirdPartySource
+        ? { ...hero, credit: null, caption: null }
+        : hero
+      : null;
 
   const sanitized: T = {
     ...dto,
