@@ -312,8 +312,23 @@ export const BASELINES: Baselines = {
   // migration and does not change i18n, and a provably dead key is cheaper to
   // carry than a dictionary edit smuggled into a restyle. Deleting them is a
   // clean follow-up that lands W3 back at 253.
-  W3: 256,
-  W4: 77,
+  // Design migration, dead-code pass. `FantasyMobileNav`, `FantasySubNav` and
+  // `GlassCard` were deleted: a grep across the whole tree found no reference
+  // to any of them outside their own files and each other's comments, so no
+  // route could render them. BG-0132 had already recorded two of the three and
+  // deferred the deletion precisely because it moves these two numbers.
+  //
+  // W3 rises by one: `fantasy.tab.more` labelled the "More" menu in both navs
+  // and nothing else uses it. (`nav.fantasy` was in both too and still has
+  // three live call sites.) The key is left in the dictionary for the same
+  // reason as the `fpl.rank.*` set below — a design migration does not edit
+  // i18n — and comes off the list in the follow-up that removes both.
+  W3: 257,
+  // Down six with the same deletion: both dead navs mapped over their item
+  // tables with `t(item.labelKey)`, three call sites each. Every one of those
+  // was a real dynamic key — the gate was right about them — and they are gone
+  // with the components rather than fixed.
+  W4: 71,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
