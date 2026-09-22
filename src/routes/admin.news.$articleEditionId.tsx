@@ -12,6 +12,7 @@ import {
   calculateReadingTime,
 } from "@/backend/news/sanitizer";
 import { mapNewsError } from "@/backend/news/errors";
+import { EDITOR_REVISION_LIMIT, transitionAndReload } from "@/backend/news/editorial-session";
 import type {
   ArticleEditorialDetailDto,
   EditorialRevisionDto,
@@ -228,7 +229,11 @@ function AdminNewsEditRoute() {
     try {
       const [detail, revisionList] = await Promise.all([
         repository.getEditorialArticle(articleEditionId, adminRepositoryContext(access)),
-        repository.listRevisions(articleEditionId, 20, adminRepositoryContext(access)),
+        repository.listRevisions(
+          articleEditionId,
+          EDITOR_REVISION_LIMIT,
+          adminRepositoryContext(access),
+        ),
       ]);
       setArticle(detail);
       setRevisions(revisionList);
@@ -348,13 +353,29 @@ function AdminNewsEditRoute() {
     setBusy(true);
     setMessage(null);
     try {
-      const result = await repository.transitionArticle(
+      // Re-reads the edition afterwards: the transition bumped `updatedAt`,
+      // which is the token the next save is checked against.
+      const outcome = await transitionAndReload(
+        repository,
         { articleEditionId: article.id, targetStatus, scheduledAt: scheduledAtIso },
         adminRepositoryContext(access),
       );
-      setArticle({ ...article, status: result.status, visibility: result.visibility });
+      const { result } = outcome;
+      setArticle(
+        outcome.article ?? { ...article, status: result.status, visibility: result.visibility },
+      );
+      if (outcome.revisions) setRevisions(outcome.revisions);
       setScheduledAtLocal("");
-      setMessage(rtl ? `الحالة الجديدة: ${result.status}` : `Nouveau statut : ${result.status}`);
+      const statusLabel = STATUS_LABELS[result.status]?.[lang] ?? result.status;
+      setMessage(
+        outcome.article
+          ? rtl
+            ? `الحالة الجديدة: ${statusLabel}`
+            : `Nouveau statut : ${statusLabel}`
+          : rtl
+            ? `الحالة الجديدة: ${statusLabel}. أعد تحميل الصفحة قبل الحفظ.`
+            : `Nouveau statut : ${statusLabel}. Rechargez la page avant d’enregistrer.`,
+      );
     } catch (error) {
       setMessage(
         `${rtl ? "تعذّر تغيير الحالة" : "Changement de statut impossible"}: ${mapNewsError(error as Error).code}`,
