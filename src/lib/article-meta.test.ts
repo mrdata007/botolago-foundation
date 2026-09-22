@@ -60,9 +60,9 @@ describe("article metadata", () => {
     const article = detail();
     const head = buildArticleHead(article, "article 1");
 
-    expect(head.links).toEqual([
-      { rel: "canonical", href: "https://botolago.com/news/article%201" },
-    ]);
+    // The loaded edition's id, not the identifier in the address bar.
+    expect(head.links).toEqual([{ rel: "canonical", href: "https://botolago.com/news/article-1" }]);
+    expect(head.meta).not.toContainEqual({ name: "robots", content: "noindex" });
     expect(head.meta).toContainEqual({ title: "Titre officiel — BotolaGO" });
     expect(head.meta).toContainEqual({ property: "og:type", content: "article" });
     expect(head.meta).toContainEqual({
@@ -110,8 +110,21 @@ describe("article metadata", () => {
 
   it("falls back to a generic BotolaGO head when no article loaded, and adds no JSON-LD", () => {
     const head = buildArticleHead(null, "missing");
-    expect(head.meta).toContainEqual({ title: "Actualités — BotolaGO — BotolaGO" });
+    expect(head.meta).toContainEqual({ title: "Actualités — BotolaGO" });
     expect(head).not.toHaveProperty("scripts");
+  });
+
+  it("keeps a missing, unpublished or withdrawn article out of the index", () => {
+    const head = buildArticleHead(null, "withdrawn-slug");
+    expect(head.meta).toContainEqual({ name: "robots", content: "noindex" });
+  });
+
+  it("the slug URL and the id URL of one edition declare the same canonical", () => {
+    const article = detail({ id: "9b2f0c1e-0000-4000-8000-000000000001", slug: "titre" });
+    const bySlug = buildArticleHead(article, "titre");
+    const byId = buildArticleHead(article, article.id);
+    expect(bySlug.links).toEqual(byId.links);
+    expect(bySlug.links[0].href).toBe(`https://botolago.com/news/${article.id}`);
   });
 
   it("declares the JSON-LD script in the flat shape the router renders", () => {

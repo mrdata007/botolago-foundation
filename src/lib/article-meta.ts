@@ -75,18 +75,25 @@ export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
  * falling back to French copy.
  */
 export function buildArticleHead(article: ArticleDetailDto | null | undefined, articleId: string) {
-  const title = article?.seo.title ?? article?.title ?? "Actualités — BotolaGO";
+  const title = article?.seo.title ?? article?.title ?? "Actualités";
   const description =
     article?.seo.description ??
     article?.summary ??
     "Toute l'actualité premium du football marocain sur BotolaGO.";
-  const canonical = buildCanonicalArticleUrl(articleId);
+  // One canonical per edition, whichever URL it was reached by. The page is
+  // routable by slug and by edition id, and the canonical used to echo the
+  // address bar, so the same article declared two different canonical URLs;
+  // the share button in the page body already used `article.id`.
+  const canonical = buildCanonicalArticleUrl(article?.id ?? articleId);
   const heroUrl = article ? resolveMediaUrl(article.hero) : undefined;
   const jsonLd = article ? buildArticleJsonLd(article, canonical) : null;
 
   return {
     meta: [
       { title: `${title} — BotolaGO` },
+      // Nothing loaded (unknown, unpublished or withdrawn): the page renders a
+      // "not found" card with HTTP 200, so at least keep it out of the index.
+      ...(article ? [] : [{ name: "robots", content: "noindex" }]),
       { name: "description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:title", content: title },
