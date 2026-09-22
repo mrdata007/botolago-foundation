@@ -42,7 +42,6 @@ export interface FantasyPlayer extends Player {
   nextIsHome?: boolean;
   nextFixtureDifficulty?: 1 | 2 | 3 | 4 | 5;
   expectedPoints?: number;
-  news?: LocalizedString;
   chanceOfPlaying?: number; // 0-100
   /** Optional pre-rendered jersey image. When present, PlayerShirt uses it with graceful fallback to CSS jersey. */
   jerseyImageUrl?: string;
