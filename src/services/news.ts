@@ -119,6 +119,11 @@ function fallbackGradient(id: string): string {
  * Nothing here fetches, rehosts or otherwise works around a third party's
  * access controls — it only removes our own display of their attribution.
  */
+/** BotolaGO's own publisher identities, as opposed to a third-party source. */
+export function isOwnPublisher(slug: string | null | undefined): boolean {
+  return slug === "botolago" || (typeof slug === "string" && slug.startsWith("botolago-"));
+}
+
 function sameName(a: string | null | undefined, b: string | null | undefined): boolean {
   if (!a || !b) return false;
   return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
@@ -195,12 +200,15 @@ export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDet
 ): T {
   const publisherName = dto.publisher?.name;
   const hero = dto.hero;
-  // A story with a publisher came from a third-party source; a story written in
-  // the CMS has none (`editorial_create_draft` is never given one by the
-  // editor). Only the former's caption/credit is somebody else's attribution.
+  // A story with a third-party publisher came from an outside source; a story
+  // written in the CMS has none (`editorial_create_draft` is never given one by
+  // the editor). Only the former's caption/credit is somebody else's attribution.
   // Clearing it unconditionally also erased BotolaGO's own photo credits, so
   // the article page's figcaption could never render for original work.
-  const thirdPartySource = dto.publisher !== null && dto.publisher !== undefined;
+  // BotolaGO's own publisher records ("botolago", "botolago-newsroom" for the
+  // News engine) are not a third party.
+  const thirdPartySource =
+    dto.publisher !== null && dto.publisher !== undefined && !isOwnPublisher(dto.publisher.slug);
   const ownHero =
     hero && hero.storagePath
       ? thirdPartySource

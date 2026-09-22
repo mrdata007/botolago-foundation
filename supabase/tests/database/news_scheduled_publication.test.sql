@@ -273,7 +273,7 @@ insert into app.article_editions (
   '96300000-0000-4000-8000-000000000001', '96200000-0000-4000-8000-000000000001', 'fr',
   'qa-sched-import-force', 'Import forcé en programmé', 'Résumé QA suffisant pour la contrainte.',
   'markdown', repeat('Texte importé. ', 4), '<p>Texte importé suffisamment long.</p>',
-  'scheduled', 'public', statement_timestamp() - interval '1 minute', 1, 'test'
+  'scheduled', 'public', statement_timestamp() - interval '1 minute', 1, 'elbotola-link-v1'
 );
 select set_config('test.run3', app_private.news_publish_due_editions()::text, true);
 select is(current_setting('test.run3')::jsonb ->> 'outcome', 'failed',

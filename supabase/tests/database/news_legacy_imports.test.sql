@@ -207,6 +207,25 @@ select throws_ok(
 );
 reset role;
 
+-- origin alone is not the marker: a 'provider'-origin story written by
+-- BotolaGO's own News engine (sanitize-html output, no link-stub version) is
+-- ordinary content and stays publishable.
+insert into app.stories (id, origin, original_language) values
+  ('97200000-0000-4000-8000-000000000003', 'provider', 'fr');
+insert into app.article_editions (
+  id, story_id, language, slug, title, summary, body_format, body_source, body_html,
+  status, visibility, published_at, reading_time_minutes, sanitizer_version
+) values (
+  '97300000-0000-4000-8000-000000000003', '97200000-0000-4000-8000-000000000003', 'fr',
+  'qa-engine-like', 'Article rédigé par BotolaGO', 'Résumé suffisamment long pour le test.',
+  'rich_text', null, '<p>Texte original BotolaGO suffisamment long.</p>',
+  'published', 'public', statement_timestamp() - interval '1 minute', 1, 'sanitize-html@2.17.5'
+);
+select ok(
+  app_private.news_is_public(e) and not app_private.news_story_is_legacy_import(e.story_id),
+  'a provider-origin story that is not a link stub is not treated as a legacy import'
+) from app.article_editions e where e.id = '97300000-0000-4000-8000-000000000003';
+
 select ok(
   has_function_privilege('authenticated', 'api.editorial_convert_imported_story(uuid, text)', 'execute')
   and not has_function_privilege('anon', 'api.editorial_convert_imported_story(uuid, text)', 'execute'),

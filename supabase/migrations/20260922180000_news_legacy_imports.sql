@@ -1,10 +1,18 @@
 -- BotolaGO Production V2
--- News activation: imported (third-party) stories become legacy records.
+-- News activation: imported third-party link stubs become legacy records.
 --
--- Production holds 108 editions ingested from GNews/ElBotola (stories.origin =
--- 'provider'). The stand-down (20260921170000) moved them to 'unpublished', but
--- 'unpublished' -> 'published' is an ordinary one-click transition for any
--- publisher, they filled the CMS list, and they looked like BotolaGO articles.
+-- Production holds 108 editions ingested from GNews/ElBotola. The stand-down
+-- (20260921170000) moved them to 'unpublished', but 'unpublished' ->
+-- 'published' is an ordinary one-click transition for any publisher, they
+-- filled the CMS list, and they looked like BotolaGO articles.
+--
+-- What makes a story a legacy import: it has an edition whose
+-- sanitizer_version is one of the two values only the link-stub ingestion RPC
+-- (api.news_ingest_provider_article) ever writes -- 'gnews-excerpt-v1' or
+-- 'elbotola-link-v1'. All 108 production stubs carry one (97 + 11, measured
+-- 2026-09-22). stories.origin alone is NOT the marker: the News engine
+-- (PR #155) creates BotolaGO-authored stories with origin 'provider' too, and
+-- those must stay publishable.
 --
 -- This migration:
 --   1. archives every unconverted imported edition that is not already
@@ -34,10 +42,10 @@ alter table app.stories
   );
 
 comment on column app.stories.import_converted_at is
-  'Set only by api.editorial_convert_imported_story. An imported (origin <> manual) story is never publishable or public while this is null.';
+  'Set only by api.editorial_convert_imported_story. A legacy link-stub story is never publishable or public while this is null.';
 
--- 1. The single rule every other function uses.
-create or replace function app_private.news_story_is_publishable(p_story_id uuid)
+-- 1. The rules every other function uses.
+create or replace function app_private.news_story_is_legacy_import(p_story_id uuid)
 returns boolean
 language sql
 stable
@@ -47,14 +55,33 @@ as $$
   select exists (
     select 1 from app.stories story
     where story.id = p_story_id
-      and story.deleted_at is null
-      and (story.origin = 'manual' or story.import_converted_at is not null)
+      and story.import_converted_at is null
+      and exists (
+        select 1 from app.article_editions edition
+        where edition.story_id = story.id
+          and edition.sanitizer_version in ('gnews-excerpt-v1', 'elbotola-link-v1')
+      )
   )
 $$;
 
-revoke all on function app_private.news_story_is_publishable(uuid)
+create or replace function app_private.news_story_is_publishable(p_story_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from app.stories story
+    where story.id = p_story_id and story.deleted_at is null
+  ) and not app_private.news_story_is_legacy_import(p_story_id)
+$$;
+
+revoke all on function app_private.news_story_is_legacy_import(uuid),
+  app_private.news_story_is_publishable(uuid)
 from public, anon, authenticated, service_role;
-grant execute on function app_private.news_story_is_publishable(uuid) to postgres;
+grant execute on function app_private.news_story_is_legacy_import(uuid),
+  app_private.news_story_is_publishable(uuid) to postgres;
 
 -- 2. Public visibility: the previous definition plus the publishable-story
 --    rule (which already includes "story not deleted").
@@ -156,11 +183,11 @@ begin
   if not found then
     raise exception using errcode = 'P0002', message = 'news_story_not_found';
   end if;
-  if story.origin = 'manual' then
-    raise exception using errcode = '22023', message = 'news_story_not_imported';
-  end if;
   if story.import_converted_at is not null then
     return jsonb_build_object('storyId', story.id, 'convertedAt', story.import_converted_at, 'changed', false);
+  end if;
+  if not app_private.news_story_is_legacy_import(story.id) then
+    raise exception using errcode = '22023', message = 'news_story_not_imported';
   end if;
   if char_length(normalized_reason) not between 10 and 500 then
     raise exception using errcode = '22023', message = 'news_conversion_reason_required';
@@ -182,9 +209,9 @@ revoke all on function api.editorial_convert_imported_story(uuid, text)
 from public, anon, authenticated, service_role;
 grant execute on function api.editorial_convert_imported_story(uuid, text) to authenticated;
 
--- 5. CMS list: imports are listed separately. p_scope = 'editorial' (default:
---    manual stories and converted imports), 'imported' (unconverted imports,
---    still searchable), or 'all'.
+-- 5. CMS list: legacy imports are listed separately. p_scope = 'editorial'
+--    (default: everything else, converted imports included), 'imported'
+--    (unconverted legacy imports, still searchable), or 'all'.
 drop function api.editorial_list_stories(text, app.publication_status, text, integer, timestamptz, uuid);
 
 create function api.editorial_list_stories(
@@ -225,7 +252,7 @@ begin
   with base as (
     select edition.*, story.author_id, story.publisher_id, story.deleted_at as story_deleted_at,
       story.origin as story_origin,
-      (story.origin <> 'manual' and story.import_converted_at is null) as is_unconverted_import
+      app_private.news_story_is_legacy_import(story.id) as is_unconverted_import
     from app.article_editions edition
     join app.stories story on story.id = edition.story_id
   ), selected as (
@@ -341,7 +368,7 @@ begin
     'sanitizerVersion', edition.sanitizer_version,
     'updatedAt', edition.updated_at,
     'origin', story.origin,
-    'imported', story.origin <> 'manual' and story.import_converted_at is null,
+    'imported', app_private.news_story_is_legacy_import(story.id),
     'translations', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', sibling.id, 'language', sibling.language, 'status', sibling.status
@@ -365,19 +392,14 @@ begin
       visibility = 'private',
       scheduled_at = null,
       unpublished_at = coalesce(edition.unpublished_at, statement_timestamp())
-  from app.stories story
-  where story.id = edition.story_id
-    and story.origin <> 'manual'
-    and story.import_converted_at is null
+  where app_private.news_story_is_legacy_import(edition.story_id)
     and edition.status <> 'archived';
   get diagnostics archived_count = row_count;
 
   delete from app.editorial_placements placement
-  using app.article_editions edition, app.stories story
+  using app.article_editions edition
   where placement.article_edition_id = edition.id
-    and story.id = edition.story_id
-    and story.origin <> 'manual'
-    and story.import_converted_at is null;
+    and app_private.news_story_is_legacy_import(edition.story_id);
 
   if archived_count > 0 then
     perform app_private.write_editorial_audit(

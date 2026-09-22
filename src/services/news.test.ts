@@ -5,6 +5,7 @@ import { NewsError } from "@/backend/news/errors";
 import {
   getArticleWithLanguageFallback,
   getNewsEdition,
+  isOwnPublisher,
   newsArticlesForCategory,
   presentArticle,
   sanitizeArticleAttribution,
@@ -233,6 +234,44 @@ describe("third-party attribution is stripped at the data layer", () => {
       const safe = sanitizeArticleAttribution(detailFixture({ bodyHtml: body }));
       expect(safe.bodyHtml).toBe("<p>Voir les matchs et .</p>");
     });
+  });
+
+  test("BotolaGO's own publisher (e.g. the News engine newsroom) is not third-party", () => {
+    const body = '<p>Voir <a href="https://www.frmf.ma/a">la FRMF</a>.</p>';
+    const safe = sanitizeArticleAttribution(
+      detailFixture({
+        author: null,
+        publisher: {
+          id: "66666666-6666-4666-8666-666666666666",
+          slug: "botolago-newsroom",
+          name: "BotolaGO",
+        },
+        bodyHtml: body,
+        hero: {
+          id: "33333333-3333-4333-8333-333333333333",
+          sourceUrl: null,
+          storagePath: "news/own.webp",
+          alt: "alt",
+          caption: "Légende BotolaGO",
+          credit: "BotolaGO",
+          width: 1600,
+          height: 1000,
+          mimeType: "image/webp",
+        },
+      }),
+    );
+    expect(safe.hero?.caption).toBe("Légende BotolaGO");
+    expect(safe.bodyHtml).toContain('href="https://www.frmf.ma/a"');
+    // The publisher field itself is still never exposed.
+    expect(safe.publisher).toBeNull();
+  });
+
+  test("a look-alike slug is still third-party", () => {
+    expect(isOwnPublisher("botolago")).toBe(true);
+    expect(isOwnPublisher("botolago-newsroom")).toBe(true);
+    expect(isOwnPublisher("notbotolago")).toBe(false);
+    expect(isOwnPublisher("botolagox")).toBe(false);
+    expect(isOwnPublisher(null)).toBe(false);
   });
 
   test("works on a card DTO too, and does not mutate its input", () => {
