@@ -11,6 +11,7 @@ import {
   editorialStoryPageSchema,
   homeModulesSchema,
   newsTeamFilterSchema,
+  scheduleHealthSchema,
   type ArticlePageDto,
   type CreateDraftInput,
   type CreateDraftResult,
@@ -23,6 +24,7 @@ import {
   type NewsSearchInput,
   type RegisterMediaInput,
   type RegisterMediaResult,
+  type ScheduleHealthDto,
   type SetPlacementInput,
   type SetPlacementResult,
   type TransitionArticleInput,
@@ -31,6 +33,7 @@ import {
   type UpdateArticleResult,
 } from "./contracts";
 import { mapNewsError, NewsError } from "./errors";
+import type { SitemapNewsEntry } from "@/lib/sitemap";
 
 function throwIfError(error: PostgrestError | null): void {
   if (error) throw mapNewsError(error);
@@ -322,9 +325,37 @@ export class SupabaseNewsRepository implements NewsRepository {
       p_limit: input.limit ?? 20,
       p_after_updated_at: cursor?.updatedAt,
       p_after_id: cursor?.id,
+      p_scope: input.scope ?? undefined,
     });
     throwIfError(error);
     return parse(editorialStoryPageSchema, data);
+  }
+
+  /** Public, listed editions for /sitemap.xml (api.news_sitemap_entries). */
+  async getSitemapEntries(limit = 5000): Promise<readonly SitemapNewsEntry[]> {
+    const { data, error } = await getNewsApi().rpc("news_sitemap_entries", { p_limit: limit });
+    throwIfError(error);
+    return parse(
+      z.array(
+        z.object({
+          id: z.string().uuid(),
+          language: z.enum(["fr", "ar"]),
+          updatedAt: z.string(),
+          translations: z.array(
+            z.object({ id: z.string().uuid(), language: z.enum(["fr", "ar"]) }),
+          ),
+        }),
+      ),
+      data,
+    );
+  }
+
+  /** Health of the pg_cron job that publishes scheduled editions. Not part of
+   *  `NewsRepository`: only the CMS list reads it, through this class. */
+  async getScheduleHealth(_context: RepositoryContext): Promise<ScheduleHealthDto> {
+    const { data, error } = await getNewsApi().rpc("editorial_schedule_health");
+    throwIfError(error);
+    return parse(scheduleHealthSchema, data);
   }
 
   async listRevisions(

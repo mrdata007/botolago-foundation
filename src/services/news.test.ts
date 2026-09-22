@@ -5,6 +5,7 @@ import { NewsError } from "@/backend/news/errors";
 import {
   getArticleWithLanguageFallback,
   getNewsEdition,
+  isOwnPublisher,
   newsArticlesForCategory,
   presentArticle,
   sanitizeArticleAttribution,
@@ -120,6 +121,157 @@ describe("third-party attribution is stripped at the data layer", () => {
     // The third-party credit line goes with the rest of the attribution.
     expect(safe.hero?.credit).toBeNull();
     expect(safe.hero?.caption).toBeNull();
+  });
+
+  test("an original CMS story (no publisher) keeps its own cover caption and credit", () => {
+    // Regression: the credit/caption were cleared for every hero, so the
+    // article page's figcaption could never show BotolaGO's own photo credit.
+    const safe = sanitizeArticleAttribution(
+      detailFixture({
+        publisher: null,
+        author: null,
+        hero: {
+          id: "33333333-3333-4333-8333-333333333333",
+          sourceUrl: null,
+          storagePath: "news/9f0c6a1e-0000-4000-8000-000000000000.webp",
+          alt: "Le stade Mohammed-V avant le match",
+          caption: "Le stade avant le coup d’envoi.",
+          credit: "BotolaGO",
+          width: 1600,
+          height: 1000,
+          mimeType: "image/webp",
+        },
+      }),
+    );
+    expect(safe.hero?.caption).toBe("Le stade avant le coup d’envoi.");
+    expect(safe.hero?.credit).toBe("BotolaGO");
+    expect(safe.hero?.alt).toBe("Le stade Mohammed-V avant le match");
+  });
+
+  test("an original CMS story still never hotlinks an off-site hero", () => {
+    const safe = sanitizeArticleAttribution(detailFixture({ publisher: null, author: null }));
+    expect(safe.hero).toBeNull();
+  });
+
+  describe("body images: only our own news-media bucket is shown", () => {
+    const origin = "https://project.supabase.test";
+    const own = `${origin}/storage/v1/object/public/news-media/news/0a1b2c3d.webp`;
+    const body = (img: string) =>
+      `<p>Avant.</p><figure><img src="${img}" alt="Photo" loading="lazy" /><figcaption>Photo</figcaption></figure><p>Après.</p>`;
+
+    test("an image we host is kept with its caption", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({ publisher: null, bodyHtml: body(own) }),
+        origin,
+      );
+      expect(safe.bodyHtml).toBe(body(own));
+    });
+
+    test("a hotlinked image typed into the body is removed with its figure", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({
+          publisher: null,
+          bodyHtml: body("https://images.other-site.test/photo.jpg"),
+        }),
+        origin,
+      );
+      expect(safe.bodyHtml).toBe("<p>Avant.</p><p>Après.</p>");
+    });
+
+    test("another project's bucket, another bucket, or a traversal is not ours", () => {
+      for (const src of [
+        "https://evil.supabase.test/storage/v1/object/public/news-media/news/x.webp",
+        `${origin}/storage/v1/object/public/football-media/x.webp`,
+        `${origin}/storage/v1/object/public/news-media/news/../../x.webp`,
+      ]) {
+        const safe = sanitizeArticleAttribution(
+          detailFixture({ publisher: null, bodyHtml: `<p>Texte.</p><img src="${src}" alt="" />` }),
+          origin,
+        );
+        expect(safe.bodyHtml).toBe("<p>Texte.</p>");
+      }
+    });
+
+    test("with no configured Supabase URL every image is removed (fail closed)", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({ publisher: null, bodyHtml: body(own) }),
+        null,
+      );
+      expect(safe.bodyHtml).toBe("<p>Avant.</p><p>Après.</p>");
+    });
+  });
+
+  describe("links: kept in original stories, removed from third-party ones", () => {
+    const body =
+      '<p>Voir <a href="/matches">les matchs</a> et <a href="https://www.frmf.ma/a" target="_blank" rel="nofollow noopener noreferrer">la FRMF</a>.</p>';
+
+    test("an original story keeps internal and external https links", () => {
+      const safe = sanitizeArticleAttribution(detailFixture({ publisher: null, bodyHtml: body }));
+      expect(safe.bodyHtml).toBe(body);
+    });
+
+    test("an external link gets its safety attributes back even if they were lost", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({ publisher: null, bodyHtml: '<p><a href="https://x.test/a">x</a></p>' }),
+      );
+      expect(safe.bodyHtml).toBe(
+        '<p><a href="https://x.test/a" target="_blank" rel="nofollow noopener noreferrer">x</a></p>',
+      );
+    });
+
+    test("an unsafe or href-less anchor in an original story is reduced to its text", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({
+          publisher: null,
+          bodyHtml:
+            '<p><a href="javascript:alert(1)">a</a> <a href="//evil.test">b</a> <a href="http://x.test">c</a> <a>d</a></p>',
+        }),
+      );
+      expect(safe.bodyHtml).toBe("<p>a b c d</p>");
+    });
+
+    test("a third-party story still loses its outbound links with their text", () => {
+      const safe = sanitizeArticleAttribution(detailFixture({ bodyHtml: body }));
+      expect(safe.bodyHtml).toBe("<p>Voir les matchs et .</p>");
+    });
+  });
+
+  test("BotolaGO's own publisher (e.g. the News engine newsroom) is not third-party", () => {
+    const body = '<p>Voir <a href="https://www.frmf.ma/a">la FRMF</a>.</p>';
+    const safe = sanitizeArticleAttribution(
+      detailFixture({
+        author: null,
+        publisher: {
+          id: "66666666-6666-4666-8666-666666666666",
+          slug: "botolago-newsroom",
+          name: "BotolaGO",
+        },
+        bodyHtml: body,
+        hero: {
+          id: "33333333-3333-4333-8333-333333333333",
+          sourceUrl: null,
+          storagePath: "news/own.webp",
+          alt: "alt",
+          caption: "Légende BotolaGO",
+          credit: "BotolaGO",
+          width: 1600,
+          height: 1000,
+          mimeType: "image/webp",
+        },
+      }),
+    );
+    expect(safe.hero?.caption).toBe("Légende BotolaGO");
+    expect(safe.bodyHtml).toContain('href="https://www.frmf.ma/a"');
+    // The publisher field itself is still never exposed.
+    expect(safe.publisher).toBeNull();
+  });
+
+  test("a look-alike slug is still third-party", () => {
+    expect(isOwnPublisher("botolago")).toBe(true);
+    expect(isOwnPublisher("botolago-newsroom")).toBe(true);
+    expect(isOwnPublisher("notbotolago")).toBe(false);
+    expect(isOwnPublisher("botolagox")).toBe(false);
+    expect(isOwnPublisher(null)).toBe(false);
   });
 
   test("works on a card DTO too, and does not mutate its input", () => {

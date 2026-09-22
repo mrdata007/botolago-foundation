@@ -67,6 +67,17 @@ export const articleDetailSchema = articleCardSchema.extend({
   competitions: z.array(entitySchema),
   teams: z.array(entitySchema),
   players: z.array(entitySchema),
+  /** Other-language editions of the same story that are public right now.
+   *  Optional so older API builds (and fixtures) without it still parse. */
+  translations: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        language: z.enum(NEWS_LANGUAGES),
+        slug: z.string().min(1),
+      }),
+    )
+    .optional(),
 });
 export type ArticleDetailDto = z.infer<typeof articleDetailSchema>;
 
@@ -159,6 +170,10 @@ export const editorialStorySummarySchema = z.object({
   authorName: z.string().nullable(),
   publisherName: z.string().nullable(),
   primaryCategory: taxonomySchema.omit({ type: true }).nullable(),
+  /** `imported` = a third-party story not converted for editorial use; it can
+   *  only be archived (see 20260922180000_news_legacy_imports). */
+  origin: z.enum(["manual", "provider", "partner"]).optional(),
+  imported: z.boolean().optional(),
 });
 export type EditorialStorySummaryDto = z.infer<typeof editorialStorySummarySchema>;
 
@@ -196,6 +211,17 @@ export const articleEditorialDetailSchema = z.object({
   seoDescription: z.string().nullable(),
   sanitizerVersion: z.string().min(1),
   updatedAt: z.string().datetime({ offset: true }),
+  origin: z.enum(["manual", "provider", "partner"]).optional(),
+  imported: z.boolean().optional(),
+  translations: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        language: z.enum(NEWS_LANGUAGES),
+        status: z.enum(EDITORIAL_STATUSES),
+      }),
+    )
+    .optional(),
 });
 export type ArticleEditorialDetailDto = z.infer<typeof articleEditorialDetailSchema>;
 
@@ -281,11 +307,31 @@ export interface SetPlacementResult {
   readonly articleId: string;
 }
 
+export type EditorialListScope = "editorial" | "imported" | "all";
+
 export interface ListStoriesInput extends CursorPageRequest {
   readonly language?: NewsLanguage | null;
   readonly status?: EditorialStatus | null;
   readonly query?: string | null;
+  /** Defaults server-side to "editorial" (imports listed separately). */
+  readonly scope?: EditorialListScope | null;
 }
+
+export const scheduleHealthSchema = z.object({
+  jobActive: z.boolean(),
+  lastRunAt: z.string().datetime({ offset: true }).nullable(),
+  lastOutcome: z.enum(["idle", "succeeded", "partial", "failed"]).nullable(),
+  scheduledCount: z.number().int().nonnegative(),
+  overdueCount: z.number().int().nonnegative(),
+  lastFailure: z
+    .object({
+      at: z.string().datetime({ offset: true }),
+      failedCount: z.number().int().positive(),
+      error: z.string().nullable(),
+    })
+    .nullable(),
+});
+export type ScheduleHealthDto = z.infer<typeof scheduleHealthSchema>;
 
 export interface RegisterMediaInput {
   readonly storagePath: string;

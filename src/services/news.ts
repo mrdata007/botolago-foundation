@@ -12,6 +12,10 @@ import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { authService } from "@/services/auth";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
 import { resolveMediaUrl } from "@/lib/media";
+import {
+  isAllowedEditorialLinkUrl,
+  isExternalEditorialLink,
+} from "@/backend/news/editorial-markdown";
 
 export type NewsDataMode = "mock" | "supabase";
 export type NewsLanguageSelection = NewsLanguage | "auto";
@@ -99,9 +103,13 @@ function fallbackGradient(id: string): string {
  *   - a hero that exists only as an off-site `sourceUrl`, with no
  *     `storagePath` of our own, is dropped: we do not hotlink somebody
  *     else's image host, and the card/article falls back to the brand
- *     gradient. A hero we actually hold in storage is kept, and its
- *     third-party `credit`/`caption` text is cleared with the same reason.
- *   - an anchor in `bodyHtml` pointing off-site is removed *with its text*,
+ *     gradient. A hero we actually hold in storage is kept; its
+ *     `credit`/`caption` text is cleared when the story came from a
+ *     third-party source (it has a publisher) and kept for CMS stories.
+ *   - a body image not served from our own `news-media` bucket is removed
+ *     with its figure, for the same no-hotlinking reason.
+ *   - for a third-party story, an anchor in `bodyHtml` pointing off-site is
+ *     removed *with its text*,
  *     not merely unwrapped. Measuring the rendered DOM is what showed why:
  *     unwrapping left the words "read the original on <source>" behind, which
  *     is attribution in its own right. Anchors that are not absolute URLs
@@ -111,6 +119,11 @@ function fallbackGradient(id: string): string {
  * Nothing here fetches, rehosts or otherwise works around a third party's
  * access controls — it only removes our own display of their attribution.
  */
+/** BotolaGO's own publisher identities, as opposed to a third-party source. */
+export function isOwnPublisher(slug: string | null | undefined): boolean {
+  return slug === "botolago" || (typeof slug === "string" && slug.startsWith("botolago-"));
+}
+
 function sameName(a: string | null | undefined, b: string | null | undefined): boolean {
   if (!a || !b) return false;
   return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
@@ -131,10 +144,77 @@ function removeOutboundLinks(html: string): string {
     .replace(/<p>\s*<\/p>/gi, "");
 }
 
-export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDetailDto>(dto: T): T {
+/**
+ * Links in an original BotolaGO story (no third-party publisher): each anchor
+ * is rebuilt from its href alone. An https link to another site gets
+ * target="_blank" and rel="nofollow noopener noreferrer"; a path or a
+ * botolago.com URL is a plain internal link; anything else (no href,
+ * javascript:, data:, http:, //host) is unwrapped to its text. The server-side
+ * sanitizer already enforces this; this pass is the read-side second line.
+ */
+function keepSafeLinks(html: string): string {
+  return html.replace(
+    /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi,
+    (_anchor, attributes: string, text: string) => {
+      const match = /\shref\s*=\s*"([^"]*)"|\shref\s*=\s*'([^']*)'/i.exec(attributes);
+      const raw = match?.[1] ?? match?.[2] ?? "";
+      const href = raw.replace(/&amp;/g, "&");
+      if (!raw || !isAllowedEditorialLinkUrl(href)) return text;
+      const external = isExternalEditorialLink(href);
+      return external
+        ? `<a href="${raw}" target="_blank" rel="nofollow noopener noreferrer">${text}</a>`
+        : `<a href="${raw}">${text}</a>`;
+    },
+  );
+}
+
+/**
+ * Removes every body image that is not served from our own `news-media`
+ * bucket, with its `<figure>` and caption.
+ *
+ * The sanitizer allows any https image, and an editor can type
+ * `![alt](https://somebody-elses-site/photo.jpg)` into the body; that would be
+ * published as a hotlinked photo nobody licensed. Same rule as the hero above:
+ * we show images we hold, nothing else. With no configured Supabase URL there
+ * is no "ours" to compare against, so every image is removed (fail closed).
+ */
+function removeOffsiteImages(html: string, supabaseUrl?: string | null): string {
+  const probe = resolveMediaUrl({ storagePath: "news/probe" }, supabaseUrl);
+  const ownPrefix = probe ? probe.slice(0, -"probe".length) : null;
+  const isOwn = (tag: string) => {
+    const src = /\ssrc\s*=\s*"([^"]*)"|\ssrc\s*=\s*'([^']*)'/i.exec(tag);
+    const value = (src?.[1] ?? src?.[2] ?? "").replace(/&amp;/g, "&");
+    return ownPrefix !== null && value.startsWith(ownPrefix) && !value.includes("..");
+  };
+  return html
+    .replace(/<figure\b[^>]*>[\s\S]*?<\/figure\s*>/gi, (figure) => {
+      const img = /<img\b[^>]*>/i.exec(figure);
+      return img && isOwn(img[0]) ? figure : "";
+    })
+    .replace(/<img\b[^>]*>/gi, (img) => (isOwn(img) ? img : ""));
+}
+
+export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDetailDto>(
+  dto: T,
+  supabaseUrl?: string | null,
+): T {
   const publisherName = dto.publisher?.name;
   const hero = dto.hero;
-  const ownHero = hero && hero.storagePath ? { ...hero, credit: null, caption: null } : null;
+  // A story with a third-party publisher came from an outside source; a story
+  // written in the CMS has none (`editorial_create_draft` is never given one by
+  // the editor). Only the former's caption/credit is somebody else's attribution.
+  // Clearing it unconditionally also erased BotolaGO's own photo credits, so
+  // the article page's figcaption could never render for original work.
+  // BotolaGO's own publisher records ("botolago", "botolago-newsroom" for the
+  // News engine) are not a third party.
+  const thirdPartySource =
+    dto.publisher !== null && dto.publisher !== undefined && !isOwnPublisher(dto.publisher.slug);
+  const ownHero =
+    hero && hero.storagePath
+      ? thirdPartySource
+        ? { ...hero, credit: null, caption: null }
+        : hero
+      : null;
 
   const sanitized: T = {
     ...dto,
@@ -144,7 +224,14 @@ export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDet
   };
 
   if ("bodyHtml" in sanitized && typeof sanitized.bodyHtml === "string") {
-    (sanitized as ArticleDetailDto).bodyHtml = removeOutboundLinks(sanitized.bodyHtml);
+    // Third-party stories lose every link (their "read the original"
+    // attribution); original BotolaGO stories keep their safe links.
+    (sanitized as ArticleDetailDto).bodyHtml = removeOffsiteImages(
+      thirdPartySource
+        ? removeOutboundLinks(sanitized.bodyHtml)
+        : keepSafeLinks(sanitized.bodyHtml),
+      supabaseUrl,
+    );
   }
 
   return sanitized;
@@ -154,7 +241,7 @@ export function presentArticle(
   dto: ArticleCardDto | ArticleDetailDto,
   supabaseUrl?: string | null,
 ): Article {
-  const safe = sanitizeArticleAttribution(dto);
+  const safe = sanitizeArticleAttribution(dto, supabaseUrl);
   return {
     id: safe.id,
     language: safe.language,
