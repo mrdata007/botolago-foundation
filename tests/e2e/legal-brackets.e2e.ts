@@ -19,7 +19,7 @@ for (const lang of ["fr", "ar"] as const) {
       expect(brackets, `visible brackets on ${path} (${lang})`).toEqual([]);
       expect(await page.getAttribute("html", "dir")).toBe(lang === "ar" ? "rtl" : "ltr");
       expect(body).not.toContain("botolago.ma");
-      expect(body).toContain("contact@botolago.com");
+      expect(body).toContain("support@botolago.com");
     });
   }
 }

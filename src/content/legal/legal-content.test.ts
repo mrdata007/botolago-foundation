@@ -24,6 +24,11 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 // blank remains; it will NOT catch a stale interim value, so this list is the
 // only record of what is still provisional.
 //
+// 2026-09-22: the owner reviewed all six and kept 1-5 as they stand — the
+// company does not exist yet, so an interim value is the honest one. Only the
+// contact address was decided. Items 1-5 below are therefore live decisions,
+// not oversights: they change when the RC issues, and not before.
+//
 //   src/content/legal/documents.ts
 //
 //   1. Raison sociale
@@ -52,10 +57,13 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 //        processing IS declared -- the sentence was deliberately rewritten so
 //        it no longer claims a registration that has not been issued.
 //
-//   6. Contact address
-//        now  contact@botolago.com
-//        then confirm this mailbox actually exists and is monitored; a privacy
-//        contact that bounces is worse than none.
+//   6. Contact address — DECIDED 2026-09-22
+//        now  support@botolago.com, chosen by the owner over contact@.
+//        The address appears seven times in each language and is the only
+//        route a reader has to exercise a right under loi 09-08, so it is
+//        also the only interim value that must NOT stay interim: a privacy
+//        contact that bounces is worse than none. Confirm the mailbox
+//        receives and is monitored before the pages go live.
 //
 // Two rows in the subprocessor table describe the absence of a thing, and must
 // be revisited when that changes rather than when the company registers:
