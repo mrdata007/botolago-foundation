@@ -84,6 +84,18 @@ export interface Match {
   homeScore?: number;
   awayScore?: number;
   venue: LocalizedString;
+  /**
+   * Whether `kickoff` has stopped describing a real date.
+   *
+   * Four provider statuses collapse into the single domain `postponed` --
+   * postponed, cancelled, suspended and abandoned -- and only the first two
+   * mean "this has not happened and nobody knows when". A suspended or
+   * abandoned fixture DID kick off, at the stored instant, so its date is
+   * history and has to survive. Set by the presenter that still holds the
+   * provider status; where it is absent (the mock fixtures)
+   * `isKickoffDateUnconfirmed` falls back to the domain status.
+   */
+  dateUnconfirmed?: boolean;
 }
 
 export interface TableRow {

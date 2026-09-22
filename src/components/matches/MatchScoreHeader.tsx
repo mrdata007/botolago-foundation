@@ -137,7 +137,12 @@ export function MatchScoreHeader({
                 className={cn(
                   ui.tone.default,
                   "[font-weight:var(--ui-weight-hero)]",
-                  unconfirmedTime
+                  // Both labels take the compact branch. The hero monospace
+                  // size is for a four-character clock; "Date à confirmer" in
+                  // that slot swells the centre track of a three-column grid
+                  // and pushes the team columns under the header's
+                  // overflow-hidden on a phone.
+                  unconfirmedDate || unconfirmedTime
                     ? cn("max-w-28 text-center", ui.text.secondary)
                     : cn("font-mono", ui.text.tabular, "text-[calc(var(--ui-text-hero)*1.2)]"),
                 )}

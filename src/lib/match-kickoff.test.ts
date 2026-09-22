@@ -48,6 +48,15 @@ describe("postponed fixtures have no confirmed date", () => {
     expect(isKickoffDateUnconfirmed({ status: "postponed" })).toBe(true);
   });
 
+  it("keeps the date of a fixture that already kicked off", () => {
+    // Suspended and abandoned collapse into the same domain `postponed` as
+    // postponed and cancelled, but those two matches were played: their stored
+    // kickoff is history, and offering "Date à confirmer" for it would be a
+    // lie. The presenter says so with the flag; the flag wins over the status.
+    expect(isKickoffDateUnconfirmed({ status: "postponed", dateUnconfirmed: false })).toBe(false);
+    expect(isKickoffDateUnconfirmed({ status: "postponed", dateUnconfirmed: true })).toBe(true);
+  });
+
   it("leaves every other status alone", () => {
     for (const status of ["scheduled", "live", "finished"] as const) {
       expect(isKickoffDateUnconfirmed({ status })).toBe(false);

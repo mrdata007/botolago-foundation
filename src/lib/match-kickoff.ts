@@ -21,8 +21,19 @@ export const MATCH_TIME_ZONE = "Africa/Casablanca";
  * Widening the time predicate would not have been enough: for these matches
  * the DAY is unknown too, so the whole date/time slot is replaced rather than
  * just its hour.
+ *
+ * Status alone cannot answer the question, which is why `dateUnconfirmed`
+ * exists and wins wherever it is set. Four provider statuses collapse into
+ * the domain `postponed` -- postponed, cancelled, suspended, abandoned -- and
+ * a suspended or abandoned fixture already kicked off at the stored instant.
+ * Going by status alone would erase a real historical date and offer "Date à
+ * confirmer" for a match that has already been played.
  */
-export function isKickoffDateUnconfirmed(match: Pick<Match, "status">): boolean {
+export function isKickoffDateUnconfirmed(
+  match: Pick<Match, "status" | "dateUnconfirmed">,
+): boolean {
+  if (match.dateUnconfirmed !== undefined) return match.dateUnconfirmed;
+  // The fallback, for fixtures built without provider context (the mocks).
   // The domain MatchStatus has no "cancelled" -- that is a presentation-only
   // upgrade MatchCard layers on top via ExtendedStatus, so the card ORs it in
   // rather than this predicate widening a type it does not own.
