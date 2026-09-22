@@ -1,25 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Trophy } from "lucide-react";
-import { fantasyService } from "@/services/fantasy-runtime";
-import { useAuth } from "@/auth/AuthProvider";
-import { footballService } from "@/services/football";
-import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
-import { useFantasyDataSource } from "@/services/fantasy-data-source";
-import { useOwnedTeam } from "@/services/use-owned-team";
-import { RankingsPodium } from "@/components/fantasy/RankingsPodium";
+import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+
+import { ClubCrest } from "@/components/common/ClubCrest";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
 import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
 import { RankChangeIndicator } from "@/components/fantasy/RankChangeIndicator";
-import { ClubCrest } from "@/components/common/ClubCrest";
-import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
+import { RankingsPodium } from "@/components/fantasy/RankingsPodium";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FplHeader, FplSegmented } from "@/components/fpl/primitives";
+import {
+  ui,
+  UiCard,
+  UiEmptyState,
+  UiErrorState,
+  UiHeader,
+  UiInput,
+  UiSegmented,
+  UiStatePanel,
+  UiTable,
+  UiTBody,
+  UiTD,
+  UiTH,
+  UiTHead,
+  UiTR,
+} from "@/components/ui-kit";
+import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { LeagueStanding } from "@/types/fantasy";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { footballService } from "@/services/football";
+import { useOwnedTeam } from "@/services/use-owned-team";
 import type { Club } from "@/types/domain";
+import type { LeagueStanding } from "@/types/fantasy";
 
 const PAGE_SIZE = 25;
 
@@ -45,17 +60,23 @@ export const Route = createFileRoute("/fantasy/rankings")({
 });
 
 /**
- * FPL "Rankings" reconstructed on the Fantasy design system: the shared
- * Back header (`FplHeader`) and phone-width column (`FantasyFrame`), with the
- * podium/table content on white background underneath, restyled onto the
- * `--fpl-*` tokens rather than the generic glass/brand surfaces it used to
- * lean on while wrapped in `LegacyFantasyPage`.
+ * Rankings, on the kit.
+ *
+ * The one behaviour this screen must never lose: before any gameweek has
+ * scored there are no ranking rows, and that is an EMPTY STATE — not a
+ * spinner and not an error. The board legitimately returns an empty page
+ * (contract: `items: []`, `total: 0`, `myRank: null`, HTTP 200, anonymous
+ * callers included), so the branch below distinguishes three things that used
+ * to be collapsed: a failed fetch (error), a fetch still in flight (loading),
+ * and a successful fetch with nothing in it (empty). The empty copy also still
+ * distinguishes "nothing matches your search" from "nobody is ranked yet" —
+ * blaming a visitor for a query they never typed was the original defect.
  */
 function RankingsFramed() {
   const { t } = useI18n();
   return (
     <FantasyFrame>
-      <FplHeader title={t("fpl.rankings")} backTo="/fantasy" />
+      <UiHeader title={t("fpl.rankings")} tone="gradient" backTo="/fantasy" />
       <RankingsPage />
     </FantasyFrame>
   );
@@ -139,16 +160,16 @@ function RankingsPage() {
   };
 
   return (
-    <div className="space-y-4 bg-white px-4 pb-8 pt-3">
+    <div className={cn("space-y-4 px-4 pb-8 pt-3", ui.surface.page)}>
       {rankingsQ.isError ? (
-        <ErrorState onRetry={() => rankingsQ.refetch()} />
+        <UiErrorState onRetry={() => void rankingsQ.refetch()} />
       ) : !data ? (
-        <LoadingState />
+        <UiStatePanel kind="loading" />
       ) : (
         <>
-          {data.podium.length === 3 && (
+          {data.podium.length === 3 ? (
             <RankingsPodium podium={data.podium} clubs={clubs} meId={data.myRank?.managerId} />
-          )}
+          ) : null}
 
           <MyRankCard
             standing={data.myRank}
@@ -157,80 +178,103 @@ function RankingsPage() {
           />
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <FplSegmented
-              tone="onLight"
+            <UiSegmented
               value={sort}
               onChange={setSort}
+              label={t("fantasy.rankings.title")}
+              className="sm:min-w-56"
               options={[
                 { value: "overall", label: t("fantasy.rankings.sort_overall") },
                 { value: "gameweek", label: t("fantasy.rankings.sort_gameweek") },
               ]}
             />
-
-            <label className="relative flex-1 sm:max-w-xs">
-              <span className="sr-only">{t("fantasy.rankings.search")}</span>
-              <Search
-                className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--fpl-grey-text)]"
-                aria-hidden
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("fantasy.rankings.search")}
-                className="min-h-11 w-full rounded-[10px] border border-[color:var(--fpl-grey)] ps-9 pe-3 text-sm text-[color:var(--fpl-ink-deep)] outline-none transition-shadow placeholder:text-[color:var(--fpl-grey-text)] focus:ring-2 focus:ring-[color:var(--fpl-cyan)]"
-              />
-            </label>
+            <UiInput
+              type="search"
+              className="flex-1 sm:max-w-xs"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t("fantasy.rankings.search")}
+              aria-label={t("fantasy.rankings.search")}
+            />
           </div>
 
-          <div
-            ref={tableRef}
-            className="overflow-hidden rounded-[10px] border border-[color:var(--fpl-grey)]"
-          >
-            <div className="flex items-center gap-2 border-b border-[color:var(--fpl-grey)] px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--fpl-grey-text)]">
-              <span className="w-9">#</span>
-              <span className="flex-1">{t("fantasy.rankings.manager")}</span>
-              <span className="w-12 text-end">{t("fantasy.points.abbr")}</span>
-              <span className="w-14 text-end">
-                {sort === "gameweek" ? t("fantasy.gw_points") : t("fantasy.total_points")}
-              </span>
-            </div>
-
+          <div ref={tableRef}>
             {data.rows.length === 0 ? (
               // "No manager matches your search" is only true if one was typed.
               // With no public league ranked yet it was shown to every visitor,
               // beside an empty search box, blaming them for a query they
               // never made.
-              <EmptyState>
-                {search.trim() ? t("fantasy.rankings.empty") : t("fantasy.rankings.empty_yet")}
-              </EmptyState>
+              // Never the generic "Aucun contenu disponible.": before the
+              // first gameweek is scored this is the expected state of the
+              // whole board, and it has to say so. A typed search gets the
+              // other sentence, because only then is the reader's query the
+              // reason the list is empty.
+              <UiEmptyState
+                title={
+                  search.trim() ? t("fantasy.players.no_match") : t("fantasy.rankings.no_rank_yet")
+                }
+                body={search.trim() ? t("fantasy.rankings.empty") : t("fantasy.rankings.empty_yet")}
+              />
             ) : (
-              <ul>
-                {data.rows.map((row) => (
-                  <RankingRow
-                    key={row.managerId}
-                    row={row}
-                    clubs={clubs}
-                    isMe={row.managerId === data.myRank?.managerId}
-                    nf={nf}
-                  />
-                ))}
-              </ul>
+              <UiCard padding="none" className="overflow-hidden">
+                {/* `table-fixed`, so the columns are sized by their headers
+                    rather than by the longest manager name in the board.
+                    Without it the name column takes whatever it wants, the
+                    `truncate` on the cell never engages, and the table grows
+                    past a 390px viewport (measured: 421px) — which means the
+                    total column, the one people came for, sits off-screen
+                    behind a sideways scroll. */}
+                <UiTable caption={t("fantasy.rankings.title")} tableClassName="table-fixed">
+                  <UiTHead>
+                    <UiTR>
+                      <UiTH numeric className="w-10">
+                        #
+                      </UiTH>
+                      <UiTH>{t("fantasy.rankings.manager")}</UiTH>
+                      {/* Both figures are always shown; the sort changes the
+                          ORDER, not which column is which. Labelling the total
+                          column "Points de la journée" under the gameweek sort
+                          named it after the wrong number. */}
+                      <UiTH numeric className="w-11" title={t("fantasy.gw_points")}>
+                        {t("fantasy.leagues.gw")}
+                      </UiTH>
+                      <UiTH numeric className="w-14" title={t("fantasy.total_points")}>
+                        {t("fantasy.leagues.total")}
+                      </UiTH>
+                      <UiTH numeric className="w-9">
+                        <span className="sr-only">{t("fantasy.leagues.movement")}</span>
+                      </UiTH>
+                    </UiTR>
+                  </UiTHead>
+                  <UiTBody>
+                    {data.rows.map((row) => (
+                      <RankingRow
+                        key={row.managerId}
+                        row={row}
+                        clubs={clubs}
+                        isMe={row.managerId === data.myRank?.managerId}
+                        nf={nf}
+                      />
+                    ))}
+                  </UiTBody>
+                </UiTable>
+              </UiCard>
             )}
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold text-[color:var(--fpl-grey-text)]">
+            <p className={cn("min-w-0", ui.text.meta, ui.tone.muted)}>
               {nf.format(data.total)} {t("fantasy.rankings.count")}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <PagerButton
                 label={t("fantasy.rankings.prev")}
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
-                <ChevronLeft className="h-4 w-4" aria-hidden />
+                <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
               </PagerButton>
-              <span className="fpl-tabular text-xs font-black text-[color:var(--fpl-ink-deep)]">
+              <span className={cn(ui.stat.sm, ui.tone.default)}>
                 {t("fantasy.rankings.page")} {nf.format(page)} / {nf.format(pageCount)}
               </span>
               <PagerButton
@@ -238,7 +282,7 @@ function RankingsPage() {
                 disabled={page >= pageCount}
                 onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
               >
-                <ChevronRight className="h-4 w-4" aria-hidden />
+                <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
               </PagerButton>
             </div>
           </div>
@@ -265,7 +309,14 @@ function PagerButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid h-11 w-11 place-items-center rounded-[10px] border border-[color:var(--fpl-grey)] text-[color:var(--fpl-ink-deep)] transition-colors hover:bg-[color:var(--fpl-grey)] disabled:opacity-40"
+      className={cn(
+        "grid place-items-center transition-colors disabled:opacity-40",
+        ui.space.tap,
+        ui.radius.control,
+        ui.rule.all,
+        ui.tone.default,
+        ui.focus,
+      )}
     >
       {children}
     </button>
@@ -293,50 +344,60 @@ function RankingRow({
 }) {
   const club = crestFor(row, clubs);
   return (
-    <li
-      className={cn(
-        "flex min-h-14 items-center gap-2 border-b border-[color:var(--fpl-grey)] px-4 py-2 last:border-0",
-        isMe && "bg-[color:var(--fpl-cyan)]/15",
-      )}
-    >
-      <span className="flex w-9 items-center gap-1 text-sm font-black tabular-nums text-[color:var(--fpl-ink-deep)]">
-        {row.rank <= 3 ? (
-          <Trophy
-            className={cn(
-              "h-3.5 w-3.5",
-              row.rank === 1 && "text-[color:var(--fpl-amber)]",
-              row.rank === 2 && "text-[color:var(--fpl-grey-text)]",
-              row.rank === 3 && "text-[color:var(--fpl-amber)]",
-            )}
-            aria-hidden
-          />
-        ) : null}
-        {nf.format(row.rank)}
-      </span>
-      {club ? (
-        <ClubCrest club={club} size="sm" />
-      ) : (
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-[color:var(--fpl-grey)] text-[10px] font-black text-[color:var(--fpl-grey-text)]">
-          {row.teamName.slice(0, 2).toUpperCase()}
+    <UiTR highlighted={isMe}>
+      <UiTD numeric strong>
+        <span className="inline-flex items-center gap-1">
+          {row.rank <= 3 ? (
+            <Trophy
+              className={cn("h-3.5 w-3.5 shrink-0", row.rank === 1 ? ui.tone.ink : ui.tone.muted)}
+              aria-hidden
+            />
+          ) : null}
+          {nf.format(row.rank)}
         </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold text-[color:var(--fpl-ink-deep)]">
-          {row.teamName}
-        </div>
-        {row.managerName && row.managerName !== row.teamName && (
-          <div className="truncate text-[11px] text-[color:var(--fpl-grey-text)]">
-            {row.managerName}
-          </div>
-        )}
-      </div>
-      <RankChangeIndicator rank={row.rank} previousRank={row.previousRank} />
-      <span className="fpl-tabular w-12 text-end text-xs font-bold text-[color:var(--fpl-grey-text)]">
+      </UiTD>
+      <UiTD>
+        <span className="flex items-center gap-2">
+          {club ? (
+            <ClubCrest club={club} size="sm" />
+          ) : (
+            <span
+              className={cn(
+                "grid h-7 w-7 shrink-0 place-items-center",
+                ui.radius.control,
+                ui.surface.sunken,
+                ui.text.micro,
+                "[font-weight:var(--ui-weight-hero)]",
+              )}
+              aria-hidden
+            >
+              {row.teamName.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+          <span className="min-w-0">
+            <span
+              dir="auto"
+              className={cn("block truncate", ui.text.body, "[font-weight:var(--ui-weight-heavy)]")}
+            >
+              {row.teamName}
+            </span>
+            {row.managerName && row.managerName !== row.teamName ? (
+              <span dir="auto" className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
+                {row.managerName}
+              </span>
+            ) : null}
+          </span>
+        </span>
+      </UiTD>
+      <UiTD numeric className={ui.tone.muted}>
         {nf.format(row.gameweekScore)}
-      </span>
-      <span className="fpl-tabular w-14 text-end text-sm font-black text-[color:var(--fpl-ink-deep)]">
+      </UiTD>
+      <UiTD numeric strong>
         {nf.format(row.totalScore)}
-      </span>
-    </li>
+      </UiTD>
+      <UiTD numeric>
+        <RankChangeIndicator rank={row.rank} previousRank={row.previousRank} />
+      </UiTD>
+    </UiTR>
   );
 }

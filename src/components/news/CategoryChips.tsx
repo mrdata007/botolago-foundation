@@ -1,3 +1,4 @@
+import { ui, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { CategoryOption } from "./news-data";
@@ -18,7 +19,7 @@ export function CategoryChips({
   const { t } = useI18n();
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label={t("news.filter_clubs")}
       className="flex flex-wrap gap-2 [scrollbar-width:none]"
     >
@@ -38,6 +39,15 @@ export function CategoryChips({
   );
 }
 
+/**
+ * One chip.
+ *
+ * The chrome is the kit's `UiChip`, so a selected category here and a
+ * selected filter anywhere else in the product are the same control. The row
+ * was previously announced as a `tablist`, which it is not — selecting a
+ * category filters a feed in place, it does not switch panels — so it is now
+ * a labelled group of `aria-pressed` toggles, which is what `UiChip` models.
+ */
 function CategoryChip({
   active,
   onClick,
@@ -48,20 +58,12 @@ function CategoryChip({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
+    <UiChip
+      selected={active}
       onClick={onClick}
-      className={cn(
-        "min-h-11 shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.08em]",
-        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-        active
-          ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)] text-white"
-          : "border-[var(--glass-border)] bg-white/50 text-foreground hover:bg-white/70",
-      )}
+      className={cn(ui.space.tap, "justify-center px-3.5 uppercase", ui.text.label)}
     >
       {children}
-    </button>
+    </UiChip>
   );
 }

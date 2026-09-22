@@ -6,9 +6,27 @@ import { toast } from "sonner";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
-import { FplButton, FplHeader, FplPill, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import {
+  ui,
+  UiButton,
+  UiCard,
+  UiEmptyState,
+  UiHeader,
+  UiInput,
+  UiLinkButton,
+  UiPill,
+  UiSegmented,
+  UiSkeleton,
+  UiTable,
+  UiTBody,
+  UiTD,
+  UiTH,
+  UiTHead,
+  UiTR,
+} from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 
@@ -29,16 +47,80 @@ function LeaguesRoute() {
 }
 
 /**
- * FPL-015 "Leagues & Cups" as its own screen ("Configure Leagues" target):
- * Leagues / Cups control, Join + Configure actions, the ink section pills
- * with rank / league rows, plus the create-a-league form that "Configure
- * Leagues" leads to in the reference flow.
+ * "Leagues & Cups": the Leagues / Cups control, Join + Configure actions, the
+ * general and private league tables, and the create-a-league form.
+ *
+ * Converted to the kit. The league lists stay tables — rank and name are read
+ * one column at a time — and the create form's result is the one place on this
+ * screen that needed real design work; see `InviteCode`.
  */
 function LeaguesPage() {
   return (
     <FantasyFrame>
       <LeaguesBody />
     </FantasyFrame>
+  );
+}
+
+/**
+ * The invite code, made shareable.
+ *
+ * The backend mints a 32-character hex string (`0035D6D8995B37EA0F05E2331C21FC0F`).
+ * Nobody can read that down a phone line, and as one unbroken run it also wraps
+ * mid-token on a 390px screen. This does the three things presentation can do
+ * about it: group it into fours so the eye can chunk it, set it in a monospaced
+ * face at tabular width so `0`/`O` and `1`/`I` are distinguishable, and put a
+ * copy control next to it — because copying is what anyone sharing this will
+ * actually do.
+ *
+ * `dir="ltr"` is deliberate even in Arabic: the code is a hex literal, not
+ * prose, and must be read and transcribed left to right in both languages.
+ * The grouping is visual only — `aria-label` and the clipboard both carry the
+ * original unbroken string, so a screen reader and a paste get the real code.
+ */
+function InviteCode({ code }: { code: string }) {
+  const { t } = useI18n();
+  const groups = code.match(/.{1,4}/g) ?? [code];
+  return (
+    <div className={cn("mt-3 p-3", ui.radius.control, ui.surface.sunken)}>
+      <p className={cn(ui.text.label, ui.tone.muted)}>{t("fpl.invite_code")}</p>
+      <div className="mt-1 flex items-start gap-2">
+        <code
+          dir="ltr"
+          aria-label={code}
+          className={cn(
+            "min-w-0 flex-1 select-all break-words font-mono",
+            ui.text.meta,
+            // An invite code is a figure a reader copies character by
+            // character, so it is on the tabular rail like every other figure
+            // — via the token rather than a hand-rolled declaration.
+            "[font-weight:var(--ui-weight-heavy)]",
+            ui.text.tabular,
+            ui.tone.default,
+          )}
+        >
+          {groups.map((group, index) => (
+            <span key={`${group}-${index}`} className="me-1.5 inline-block" aria-hidden>
+              {group}
+            </span>
+          ))}
+        </code>
+        <UiButton
+          size="sm"
+          variant="outline"
+          aria-label={t("fantasy.leagues.copy_code")}
+          className="shrink-0"
+          onClick={() => {
+            void navigator.clipboard?.writeText(code);
+            toast.success(t("fpl.copied"));
+          }}
+        >
+          <Copy className="h-4 w-4" aria-hidden />
+          {t("fpl.copy")}
+        </UiButton>
+      </div>
+      <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>{t("fantasy.leagues.invite_help")}</p>
+    </div>
   );
 }
 
@@ -82,171 +164,198 @@ function LeaguesBody() {
 
   return (
     <>
-      <FplHeader title={t("fpl.leagues_cups")} backTo="/fantasy" />
+      <UiHeader title={t("fpl.leagues_cups")} tone="gradient" backTo="/fantasy" />
       <FantasyScreenGate state={screen} next="/fantasy/leagues">
-        <section className="mx-3 mt-3 rounded-[6px] bg-white p-4 shadow-sm">
-          <FplSegmented
-            tone="onLight"
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: "leagues", label: t("fpl.leagues") },
-              { value: "cups", label: t("fpl.cups") },
-            ]}
-          />
-          {tab === "leagues" ? (
-            <>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Link
-                  to="/fantasy/leagues/join"
-                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-[4px] bg-white px-2 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
-                >
-                  <Plus className="h-4 w-4" aria-hidden /> {t("fpl.join_leagues")}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen((v) => !v)}
-                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-[4px] bg-white px-2 text-[14px] font-extrabold text-[color:var(--fpl-ink-deep)] shadow-[0_1px_4px_rgba(0,0,0,0.15)]"
-                >
-                  <Settings className="h-4 w-4" aria-hidden /> {t("fpl.configure_leagues")}
-                </button>
-              </div>
+        <section className="mx-3 mt-3">
+          <UiCard>
+            <UiSegmented
+              value={tab}
+              onChange={setTab}
+              label={t("fpl.leagues_cups")}
+              options={[
+                { value: "leagues", label: t("fpl.leagues") },
+                { value: "cups", label: t("fpl.cups") },
+              ]}
+            />
 
-              {createOpen ? (
-                <form
-                  className="mt-3 rounded-[4px] bg-[color:var(--fpl-bg)] p-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void createLeague();
-                  }}
-                >
-                  <label className="block text-[13px] font-bold text-foreground">
-                    {t("fpl.league_name")}
-                    <input
+            {tab === "leagues" ? (
+              <>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {/* Was a Link hand-dressed as a button, sitting in the same
+                      two-column grid as a real UiButton — two spellings of one
+                      control, side by side. */}
+                  <UiLinkButton to="/fantasy/leagues/join" size="sm" variant="outline">
+                    <Plus className="h-4 w-4" aria-hidden />
+                    <span className="truncate">{t("fpl.join_leagues")}</span>
+                  </UiLinkButton>
+                  <UiButton
+                    size="sm"
+                    variant="outline"
+                    aria-expanded={createOpen}
+                    onClick={() => setCreateOpen((v) => !v)}
+                  >
+                    <Settings className="h-4 w-4 shrink-0" aria-hidden />
+                    <span className="truncate">{t("fpl.configure_leagues")}</span>
+                  </UiButton>
+                </div>
+
+                {createOpen ? (
+                  <form
+                    className={cn("mt-3 p-3", ui.radius.control, ui.surface.sunken)}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void createLeague();
+                    }}
+                  >
+                    <UiInput
+                      label={t("fpl.league_name")}
                       value={createName}
                       onChange={(e) => setCreateName(e.target.value)}
                       maxLength={40}
-                      className="mt-1 h-11 w-full rounded-[4px] border-b-2 border-[color:var(--fpl-ink)] bg-white px-3 text-[15px] outline-none"
                     />
-                  </label>
-                  <FplButton
-                    type="submit"
-                    className="mt-3"
-                    disabled={createName.trim().length < 3 || busy}
-                  >
-                    {busy ? t("fpl.saving") : t("fpl.create_league")}
-                  </FplButton>
-                  {created ? (
-                    <div className="mt-3 flex items-center justify-between rounded-[4px] bg-white px-3 py-2 text-[13px]">
-                      <span>
-                        <strong>{created.name}</strong> · {t("fpl.invite_code")}:{" "}
-                        <span className="font-mono font-bold">{created.code ?? "—"}</span>
-                      </span>
-                      {created.code ? (
-                        <button
-                          type="button"
-                          aria-label={t("fpl.copy")}
-                          onClick={() => {
-                            void navigator.clipboard?.writeText(created.code!);
-                            toast.success(t("fpl.copied"));
-                          }}
-                          className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--fpl-grey)]"
+                    <UiButton
+                      type="submit"
+                      className="mt-3"
+                      disabled={createName.trim().length < 3 || busy}
+                    >
+                      {busy ? t("fpl.saving") : t("fpl.create_league")}
+                    </UiButton>
+                    {created ? (
+                      <>
+                        <p
+                          dir="auto"
+                          className={cn("mt-3 truncate", ui.text.bodyStrong, ui.tone.default)}
                         >
-                          <Copy className="h-4 w-4" aria-hidden />
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </form>
-              ) : null}
+                          {created.name}
+                        </p>
+                        {created.code ? (
+                          <InviteCode code={created.code} />
+                        ) : (
+                          <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
+                            {t("fpl.invite_code")}: {t("fantasy.stat.none")}
+                          </p>
+                        )}
+                      </>
+                    ) : null}
+                  </form>
+                ) : null}
 
-              <div className="mt-4">
-                <FplPill>{t("fpl.general_leagues")}</FplPill>
-                <Table
-                  rows={[
-                    { key: "overall", name: t("fpl.overall"), to: "/fantasy/rankings", rank: null },
-                    ...(publicQ.data ?? []).map((l) => ({
-                      key: l.id,
-                      name: l.name,
-                      to: `/fantasy/leagues/${l.id}`,
-                      rank: l.rank,
-                    })),
-                  ]}
-                />
-              </div>
-              <div className="mt-4">
-                <FplPill>{t("fpl.private_leagues")}</FplPill>
-                {privateQ.isPending ? (
-                  <div className="my-3 h-10 animate-pulse rounded bg-[color:var(--fpl-grey)] motion-reduce:animate-none" />
-                ) : (privateQ.data ?? []).length === 0 ? (
-                  <p className="px-1 py-3 text-[13px] text-[color:var(--fpl-grey-text)]">
-                    {t("fpl.no_leagues")}
-                  </p>
-                ) : (
-                  <Table
-                    rows={(privateQ.data ?? []).map((l) => ({
-                      key: l.id,
-                      name: l.name,
-                      to: `/fantasy/leagues/${l.id}`,
-                      rank: l.rank,
-                    }))}
+                <div className="mt-4">
+                  <UiPill>{t("fpl.general_leagues")}</UiPill>
+                  <LeagueRows
+                    rows={[
+                      {
+                        key: "overall",
+                        name: t("fpl.overall"),
+                        to: "/fantasy/rankings",
+                        rank: null,
+                      },
+                      ...(publicQ.data ?? []).map((l) => ({
+                        key: l.id,
+                        name: l.name,
+                        to: `/fantasy/leagues/${l.id}`,
+                        rank: l.rank,
+                      })),
+                    ]}
                   />
-                )}
+                </div>
+
+                <div className="mt-4">
+                  <UiPill>{t("fpl.private_leagues")}</UiPill>
+                  {privateQ.isPending ? (
+                    <UiSkeleton className="my-3 h-10" />
+                  ) : (privateQ.data ?? []).length === 0 ? (
+                    <UiEmptyState
+                      className="mt-2 shadow-none"
+                      title={t("fantasy.leagues.empty_title")}
+                      body={t("fpl.no_leagues")}
+                    />
+                  ) : (
+                    <LeagueRows
+                      rows={(privateQ.data ?? []).map((l) => ({
+                        key: l.id,
+                        name: l.name,
+                        to: `/fantasy/leagues/${l.id}`,
+                        rank: l.rank,
+                      }))}
+                    />
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="mt-4">
+                <UiPill>{t("fpl.cups")}</UiPill>
+                <p className={cn("mt-3", ui.text.body, ui.tone.default)}>
+                  {t("fpl.cup_not_qualified")}
+                </p>
+                <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
+                  {t("fpl.cup_how_title")}
+                </h2>
+                <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+                  {t("fpl.cup_how_body")}
+                </p>
+                <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+                  {t("fpl.cup_tiebreak")}
+                </p>
+                <ul className={cn("mt-1 space-y-0.5", ui.text.secondary, ui.tone.muted)}>
+                  <li>{t("fpl.cup_tb1")}</li>
+                  <li>{t("fpl.cup_tb2")}</li>
+                  <li>{t("fpl.cup_tb3")}</li>
+                </ul>
               </div>
-            </>
-          ) : (
-            <div className="mt-4">
-              <FplPill>{t("fpl.cups")}</FplPill>
-              <p className="mt-3 text-[15px] text-foreground">{t("fpl.cup_not_qualified")}</p>
-              <h3 className="mt-3 text-[20px] font-extrabold text-[color:var(--fpl-ink-deep)]">
-                {t("fpl.cup_how_title")}
-              </h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-foreground">
-                {t("fpl.cup_how_body")}
-              </p>
-              <p className="mt-2 text-[14px] text-foreground">{t("fpl.cup_tiebreak")}</p>
-              <ul className="mt-1 text-[14px] text-foreground">
-                <li>{t("fpl.cup_tb1")}</li>
-                <li>{t("fpl.cup_tb2")}</li>
-                <li>{t("fpl.cup_tb3")}</li>
-              </ul>
-            </div>
-          )}
+            )}
+          </UiCard>
         </section>
       </FantasyScreenGate>
     </>
   );
 }
 
-function Table({
+/** Rank + league name. A table, because that is what two aligned columns are. */
+function LeagueRows({
   rows,
 }: {
   rows: Array<{ key: string; name: string; to: string; rank: number | null }>;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   return (
-    <table className="mt-2 w-full text-[15px]">
-      <thead>
-        <tr className="text-[12px] font-semibold text-[color:var(--fpl-grey-text)]">
-          <th className="w-24 py-1 text-start font-semibold">{t("fpl.rank")}</th>
-          <th className="py-1 text-start font-semibold">{t("fpl.league")}</th>
-        </tr>
-      </thead>
-      <tbody>
+    <UiTable caption={t("fpl.league")} className="mt-2">
+      <UiTHead>
+        <UiTR>
+          <UiTH numeric className="w-20">
+            {t("fpl.rank")}
+          </UiTH>
+          <UiTH>{t("fpl.league")}</UiTH>
+        </UiTR>
+      </UiTHead>
+      <UiTBody>
         {rows.map((row) => (
-          <tr key={row.key} className="border-t border-[color:var(--fpl-grey)]">
-            <td className="py-3 text-[color:var(--fpl-grey-text)]">
-              <span className="me-3">—</span>
-              <span className="fpl-tabular">{row.rank ?? "-"}</span>
-            </td>
-            <td className="py-3">
-              <Link to={row.to} className="font-bold text-foreground">
-                {row.name}
+          <UiTR key={row.key}>
+            <UiTD numeric className={ui.tone.muted}>
+              {/* An unranked league is "no rank yet", not a zero. */}
+              {row.rank === null ? t("fantasy.stat.none") : nf.format(row.rank)}
+            </UiTD>
+            <UiTD>
+              <Link
+                to={row.to}
+                className={cn(
+                  "flex items-center min-h-[var(--ui-tap-min)]",
+                  ui.text.body,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.tone.default,
+                  ui.radius.control,
+                  ui.focus,
+                )}
+              >
+                <span dir="auto" className="truncate">
+                  {row.name}
+                </span>
               </Link>
-            </td>
-          </tr>
+            </UiTD>
+          </UiTR>
         ))}
-      </tbody>
-    </table>
+      </UiTBody>
+    </UiTable>
   );
 }

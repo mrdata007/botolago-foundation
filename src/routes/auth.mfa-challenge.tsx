@@ -2,8 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
+import {
+  AuthShell,
+  AuthPrimaryButton,
+  AuthFieldError,
+  authOtpSlotClass,
+} from "@/components/auth/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,13 +144,16 @@ function MfaChallengePage() {
             pattern="[0-9]*"
             aria-describedby="mfa-challenge-err"
           >
+            {/* Same slot treatment as `auth.verify`: the V1 component keeps
+                the keyboard model, the slots take kit classes so no V1 token
+                survives and each clears the 44px floor (they were 36px). */}
             <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
+              <InputOTPSlot index={0} className={authOtpSlotClass} />
+              <InputOTPSlot index={1} className={authOtpSlotClass} />
+              <InputOTPSlot index={2} className={authOtpSlotClass} />
+              <InputOTPSlot index={3} className={authOtpSlotClass} />
+              <InputOTPSlot index={4} className={authOtpSlotClass} />
+              <InputOTPSlot index={5} className={authOtpSlotClass} />
             </InputOTPGroup>
           </InputOTP>
           <AuthFieldError id="mfa-challenge-err">{error && t(error)}</AuthFieldError>
@@ -158,13 +167,14 @@ function MfaChallengePage() {
         {/* Without a usable factor the form above is inert, so always leave a
             way out rather than stranding the user on a dead-end screen. */}
         {!loadingFactor && !factorId && (
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/" })}
-            className="text-center text-xs font-semibold text-muted-foreground hover:text-foreground"
-          >
+          // Was a hand-rolled control with the ghost recipe spelled out —
+          // 44px, control radius, meta at the heavy weight, focus ring. That
+          // is `UiButton variant="ghost" size="sm"`, which also gives it the
+          // brand foreground a control is supposed to read in rather than the
+          // muted tone of body copy.
+          <UiButton variant="ghost" size="sm" onClick={() => navigate({ to: "/" })}>
             {t("auth.mfa_challenge.continue_without")}
-          </button>
+          </UiButton>
         )}
       </form>
     </AuthShell>

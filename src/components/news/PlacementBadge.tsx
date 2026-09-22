@@ -1,4 +1,5 @@
 import { Zap } from "lucide-react";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +21,12 @@ export function PlacementBadge({
   return (
     <span
       className={cn(
-        "absolute top-3 z-20 inline-flex items-center gap-1 rounded-full px-2.5 py-1",
-        "bg-[color:var(--color-danger)] text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-subtle",
+        "absolute top-3 z-20 inline-flex items-center gap-1 px-2.5 py-1",
+        ui.radius.full,
+        // The kit's label token already carries the size, weight, casing and
+        // an `ltr:`-only tracking; the colour is the kit's negative status.
+        ui.text.label,
+        "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)] shadow-[var(--ui-shadow-card)]",
         corner === "start" ? "start-3" : "end-3",
         className,
       )}

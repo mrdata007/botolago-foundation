@@ -1,5 +1,6 @@
 import type { FantasyPlayer } from "@/types/fantasy";
 import type { Club } from "@/types/domain";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -21,6 +22,24 @@ interface Props {
   compact?: boolean;
 }
 
+/**
+ * A shirt with its nameplate, plus the armband and availability markers.
+ *
+ * The three status dots were `bg-red-500` / `bg-amber-500` / `bg-neutral-800`
+ * — a palette of their own, invisible to the theme. They now use the same
+ * negative / caution / ink tokens the rest of Fantasy states with, each
+ * paired with the foreground the design system guarantees on it.
+ *
+ * That last clause was still being done by hand, and by hand it can only be
+ * right in one theme. The injured dot read `--ui-on-ink-plain` (near-white) on
+ * a `--ui-negative` fill; `--ui-negative` inverts across the themes — a
+ * mid-tone in light, a light tint in dark — so one foreground cannot serve
+ * both, and white-on-negative is the exact pairing DESIGN_SYSTEM_V2 §2.3
+ * records at 2.31:1 in dark. The doubtful dot picked `--ui-ink-deep` on
+ * `--ui-caution` the same way. Both now take `ui.tone.onNegative` /
+ * `ui.tone.onCaution` — the foregrounds the kit guarantees ON those fills,
+ * which flip with them. Never pick one of these yourself.
+ */
 export function PlayerShirt({
   player,
   club,
@@ -53,12 +72,21 @@ export function PlayerShirt({
       : "";
   const fullAria = `${tr(player.name)}${club ? `, ${tr(club.shortName)}` : ""}${roleLabel}${statusLabel ? `, ${statusLabel}` : ""}`;
 
+  const markerBase = cn(
+    "absolute grid h-5 w-5 place-items-center",
+    ui.radius.full,
+    ui.text.micro,
+    "[font-weight:var(--ui-weight-hero)] ring-2 ring-[color:var(--ui-on-ink-plain)]",
+  );
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative flex w-full flex-col items-center gap-1 rounded-xl px-1 py-1 text-center transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] motion-safe:hover:-translate-y-0.5",
+        "group relative flex w-full flex-col items-center gap-1 px-1 py-1 text-center transition-transform motion-safe:hover:-translate-y-0.5",
+        ui.radius.control,
+        ui.focus,
         onClick && "cursor-pointer",
         className,
       )}
@@ -74,11 +102,7 @@ export function PlayerShirt({
         />
         {captain && (
           <span
-            className="absolute -top-1 -end-1 grid h-5 w-5 place-items-center rounded-full text-[10px] font-black text-white ring-2 ring-white shadow-md"
-            style={{
-              background:
-                "linear-gradient(135deg, color-mix(in oklab, var(--brand-accent) 90%, black) 0%, color-mix(in oklab, var(--brand-accent) 65%, black) 100%)",
-            }}
+            className={cn(markerBase, "-top-1 -end-1", ui.surface.ink)}
             aria-hidden
             title={t("fantasy.captain_full")}
           >
@@ -87,7 +111,7 @@ export function PlayerShirt({
         )}
         {!captain && vice && (
           <span
-            className="absolute -top-1 -end-1 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px] font-black text-[color:var(--brand-primary)] ring-2 ring-[color:var(--brand-primary)] shadow-md"
+            className={cn(markerBase, "-top-1 -end-1", ui.surface.inkPlain)}
             aria-hidden
             title={t("fantasy.vice_full")}
           >
@@ -97,10 +121,11 @@ export function PlayerShirt({
         {status !== "available" && (
           <span
             className={cn(
-              "absolute -bottom-0.5 -start-1 grid h-5 w-5 place-items-center rounded-full text-[10px] font-black text-white ring-2 ring-white shadow",
-              status === "injured" && "bg-red-500",
-              status === "doubtful" && "bg-amber-500",
-              status === "suspended" && "bg-neutral-800",
+              markerBase,
+              "-bottom-0.5 -start-1",
+              status === "injured" && cn("bg-[color:var(--ui-negative)]", ui.tone.onNegative),
+              status === "doubtful" && cn("bg-[color:var(--ui-caution)]", ui.tone.onCaution),
+              status === "suspended" && ui.surface.inkPlain,
             )}
             aria-hidden
             title={statusLabel}

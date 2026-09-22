@@ -39,22 +39,99 @@
   --brand-charcoal: oklch(0.2 0.015 260);
 
   /* ---- News editorial gradients (BG-0012) -----------------------
-     Exact hex brand spec for the /news redesign. These are additive
-     tokens for News surfaces only — never used by Fantasy, and never
-     replacing the oklch --brand-* scale used elsewhere in the app. */
-  --news-gradient-hero: linear-gradient(125deg, #00195a 0%, #0151fc 55%, #49cfff 100%);
-  --news-gradient-ocean: linear-gradient(135deg, #000c2d 0%, #0036b0 55%, #0151fc 100%);
-  --news-gradient-matchday: linear-gradient(110deg, #002787 0%, #0151fc 55%, #85adff 100%);
-  --news-gradient-aqua: linear-gradient(90deg, #0151fc 0%, #1f8cff 55%, #49cfff 100%);
-  --news-gradient-dark: linear-gradient(145deg, #000c2d 0%, #00195a 55%, #0036b0 100%);
-  --news-gradient-light: linear-gradient(115deg, #ffffff 0%, #e6eeff 55%, #c2d6ff 100%);
-  --news-gradient-promo: linear-gradient(130deg, #0036b0 0%, #0151fc 55%, #49cfff 100%);
+     The image-less card placeholders for News. They were authored as
+     literal hex, which pinned them to one theme: on a dark page the
+     light ramp glared and the dark ramp vanished into the surface, and
+     nothing about them could follow `.dark`. They are now stated in
+     oklch like the rest of the system (same perceived hues as the
+     original spec) and redeclared under `.dark` one step deeper, so
+     News finally follows the theme. Still News-only: Fantasy and the
+     shell draw from `--ui-*`. */
+  --news-gradient-hero: linear-gradient(
+    to bottom,
+    oklch(0.251 0.12 262) 0%,
+    oklch(0.524 0.26 263) 55%,
+    oklch(0.802 0.132 226) 100%
+  );
+  --news-gradient-ocean: linear-gradient(
+    to bottom,
+    oklch(0.169 0.071 260) 0%,
+    oklch(0.4 0.199 263) 55%,
+    oklch(0.524 0.26 263) 100%
+  );
+  --news-gradient-matchday: linear-gradient(
+    to bottom,
+    oklch(0.329 0.164 263) 0%,
+    oklch(0.524 0.26 263) 55%,
+    oklch(0.752 0.127 264) 100%
+  );
+  --news-gradient-aqua: linear-gradient(
+    to bottom,
+    oklch(0.524 0.26 263) 0%,
+    oklch(0.644 0.194 254) 55%,
+    oklch(0.802 0.132 226) 100%
+  );
+  --news-gradient-dark: linear-gradient(
+    to bottom,
+    oklch(0.169 0.071 260) 0%,
+    oklch(0.251 0.12 262) 55%,
+    oklch(0.4 0.199 263) 100%
+  );
+  --news-gradient-light: linear-gradient(
+    to bottom,
+    oklch(1 0 0) 0%,
+    oklch(0.948 0.024 266) 55%,
+    oklch(0.875 0.061 265) 100%
+  );
+  --news-gradient-promo: linear-gradient(
+    to bottom,
+    oklch(0.4 0.199 263) 0%,
+    oklch(0.524 0.26 263) 55%,
+    oklch(0.802 0.132 226) 100%
+  );
+
+  /* ---- News category plates (BG-0076) ---------------------------
+     The base colour of the branded placeholder a News card paints when
+     an edition has no hero, or when its hero fails to load. One colour
+     per `ArticleCategory`, so the absence of a photo still carries the
+     section's identity instead of reading as a broken image.
+
+     Stated as a flat colour rather than a gradient on purpose: the
+     component builds the gradient itself with `to bottom`, which is
+     direction-neutral. A `deg` angle is physical and would land on the
+     opposite edge in Arabic.
+
+     Each is dark enough for the white wordmark to sit on it at AA in
+     both themes; the `.dark` overrides drop L a step so the plate does
+     not glare against the dark page. */
+  --news-plate-latest: oklch(0.36 0.13 262);
+  --news-plate-transfers: oklch(0.38 0.1 205);
+  --news-plate-analysis: oklch(0.36 0.11 295);
+  --news-plate-interviews: oklch(0.37 0.1 165);
+  --news-plate-for-you: oklch(0.37 0.14 245);
 
   /* ---- Extra semantic accents ---------------------------------- */
   --accent-cyan: oklch(0.75 0.13 220);
   --accent-indigo: oklch(0.55 0.16 275);
   --accent-emerald: oklch(0.66 0.14 155);
-  --color-live: oklch(0.62 0.22 27);
+  /* Aliases. The values live on `--ui-live*` below, where the kit's contract
+     test can see them and demand a dark counterpart; these two names stay
+     because `@theme` maps them to the `text-live` / `bg-live` utilities and
+     three match components already read them. */
+  --color-live: var(--ui-live);
+  /* BG-0104. `--color-live` is a FILL — the pulsing dot, the minute bar — and
+     at that job its vividness is the point. As TEXT it is not: `LiveIndicator`
+     paints a 14% tint of it and then sets the same colour on top, so
+     foreground and background are two points on one hue ramp. Measured from
+     rasterised sRGB, that pair is 3.30:1 at 10px. Below AA, on the live site,
+     for every visitor watching a match.
+
+     Same split this codebase already uses for `--ui-ink` / `--ui-ink-fg`, and
+     for the same reason: one token cannot be both a fill and a foreground.
+     Only the lightness moves — 0.62 to 0.50 at identical chroma and hue — so
+     it reads as the same red, one step deeper. On the tint it measures
+     5.21:1; on plain white, 6.38:1. */
+  --color-live-fg: var(--ui-live-fg);
   --color-success: oklch(0.6 0.15 155);
   --color-warning: oklch(0.75 0.16 75);
   --color-danger: oklch(0.6 0.22 27);
@@ -114,8 +191,11 @@
   --glass-shadow: var(--shadow-card);
 
   /* ---- Brand gradient ------------------------------------------ */
+  /* `to bottom`, not an angle: a gradient angle is physical (rule 3) and does
+     not follow `dir`. Its one live consumer is the generated Lovable consent
+     page, which renders in both languages like everything else. */
   --bg-brand-gradient: linear-gradient(
-    135deg,
+    to bottom,
     var(--brand-primary) 0%,
     var(--brand-primary-2) 55%,
     var(--brand-accent) 100%
@@ -256,12 +336,27 @@
 /* Utilities                                                          */
 /* ================================================================== */
 
-/* --- Typographic brand accents ------------------------------------ */
+/* --- Typographic brand accent ------------------------------------ */
+
+/* BG-0129. This was `var(--brand-primary)`, which is a FILL colour: it is
+   declared once on `:root` and never redeclared under `.dark`, so every piece
+   of text wearing it stayed a deep navy on a dark page. That is the BG-0083
+   defect, and `text-brand` is the highest-volume instance of it — the default
+   `accentClassName` of `Trans`, so it reaches every accented title in the
+   product, plus `AccentEyebrow` and the rest.
+
+   `--ui-ink-fg` is the themed foreground counterpart and resolves to exactly
+   the same value in light: both compute to `oklch(32% .1 258)`, verified from
+   the live document rather than read off the source. So this changes nothing
+   anyone can see today, and is what makes those call sites correct the moment
+   DARK_MODE_ENABLED is flipped.
+
+   `text-brand-accent` was removed with it: `--brand-accent` has the same
+   fill-as-foreground problem and the utility had zero call sites in `src/`. A
+   dead utility that would reintroduce the defect the first time someone
+   reached for it is worse than no utility. */
 @utility text-brand {
-  color: var(--brand-primary);
-}
-@utility text-brand-accent {
-  color: var(--brand-accent);
+  color: var(--ui-ink-fg);
 }
 
 /* --- Primary call-to-action (brand gradient) ---------------------- */
@@ -401,6 +496,39 @@
 /* All meshes are subtle, CSS-only, non-animated by default. Motion   */
 /* is opt-in through .mesh-drift and is disabled under reduced-motion.*/
 
+/* ---------------------------------------------------------------------------
+   MESH ORIGINS
+   ---------------------------------------------------------------------------
+   Every mesh in the product puts one glow at the trailing-top corner and
+   another at the leading-bottom one. Those are x origins, and an x origin is
+   physical in exactly the way rule 3 says a gradient angle is: it does not
+   follow `dir`, so the whole product's lighting stayed anchored to the left
+   of the screen while Arabic content mirrored to the right.
+
+   Centring them would fix the direction and lose the design — the asymmetry
+   is the composition. So the three x positions the meshes actually use are
+   named once here and flipped once below. `lead` is the edge a reader starts
+   from, `trail` the edge they end at, and `lead-out` sits just outside the
+   leading edge so the glow bleeds in from off-screen.
+
+   `mesh-matches` previously placed its leading glow at -6% rather than -8%;
+   it now shares `--mesh-x-lead-out`, a 2% move on a 900px radial. */
+:root {
+  --mesh-x-lead: 0%;
+  --mesh-x-trail: 100%;
+  --mesh-x-lead-out: -8%;
+
+  /* The splash shine's travel and skew. +1 with the reading direction. */
+  --splash-dir: 1;
+}
+
+[dir="rtl"] {
+  --mesh-x-lead: 100%;
+  --mesh-x-trail: 0%;
+  --mesh-x-lead-out: 108%;
+  --splash-dir: -1;
+}
+
 @utility mesh-base {
   position: fixed;
   inset: 0;
@@ -414,12 +542,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1000px 520px at 100% -8%,
+      1000px 520px at var(--mesh-x-trail) -8%,
       color-mix(in oklab, var(--brand-accent) 14%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      900px 480px at -8% 100%,
+      900px 480px at var(--mesh-x-lead-out) 100%,
       color-mix(in oklab, var(--brand-primary) 16%, transparent) 0%,
       transparent 60%
     ),
@@ -433,12 +561,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1100px 520px at 100% 0%,
+      1100px 520px at var(--mesh-x-trail) 0%,
       color-mix(in oklab, var(--accent-indigo) 12%, transparent) 0%,
       transparent 55%
     ),
     radial-gradient(
-      900px 480px at 0% 100%,
+      900px 480px at var(--mesh-x-lead) 100%,
       color-mix(in oklab, var(--brand-primary) 14%, transparent) 0%,
       transparent 60%
     );
@@ -447,12 +575,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1000px 520px at 100% -8%,
+      1000px 520px at var(--mesh-x-trail) -8%,
       color-mix(in oklab, var(--brand-primary) 18%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      800px 480px at -6% 100%,
+      800px 480px at var(--mesh-x-lead-out) 100%,
       color-mix(in oklab, var(--accent-emerald) 10%, transparent) 0%,
       transparent 60%
     );
@@ -461,12 +589,12 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1000px 520px at 100% -8%,
+      1000px 520px at var(--mesh-x-trail) -8%,
       color-mix(in oklab, var(--accent-cyan) 16%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      900px 480px at -8% 100%,
+      900px 480px at var(--mesh-x-lead-out) 100%,
       color-mix(in oklab, var(--brand-accent) 14%, transparent) 0%,
       transparent 60%
     ),
@@ -480,41 +608,62 @@
   background-color: var(--background);
   background-image:
     radial-gradient(
-      1100px 520px at 100% 0%,
+      1100px 520px at var(--mesh-x-trail) 0%,
       color-mix(in oklab, var(--accent-indigo) 14%, transparent) 0%,
       transparent 55%
     ),
     radial-gradient(
-      900px 500px at 0% 110%,
+      900px 500px at var(--mesh-x-lead) 110%,
       color-mix(in oklab, var(--brand-primary) 14%, transparent) 0%,
       transparent 55%
     );
 }
+/* The auth/welcome mesh: the one screen family that is white-on-dark, and
+   the one that was anchored hardest to physical space.
+
+   `linear-gradient(160deg, …)` is a physical angle (rule 3). It does not
+   follow `dir`, so while the content mirrored in Arabic the light kept
+   coming from the same corner and the composition came apart. 160deg is
+   twenty degrees off vertical, so `to bottom` costs nothing to look at and
+   reads identically in both directions.
+
+   The two radial glows are the part worth keeping asymmetric: the design is
+   a glow entering top-trailing and another leaving bottom-leading, and
+   flattening them to centred origins would make the screen symmetrical and
+   duller. So their x origins come from custom properties, and only those two
+   values flip under `dir="rtl"` — an exact mirror of the intended
+   composition rather than a second copy of the whole background. */
 @utility mesh-auth {
   color-scheme: dark;
   background-color: oklch(0.18 0.06 262);
   background-image:
     radial-gradient(
-      1100px 540px at 100% -6%,
+      1100px 540px at var(--mesh-x-trail) -6%,
       color-mix(in oklab, var(--brand-accent) 55%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
-      900px 500px at 0% 110%,
+      900px 500px at var(--mesh-x-lead) 110%,
       color-mix(in oklab, var(--accent-indigo) 55%, transparent) 0%,
       transparent 55%
     ),
     linear-gradient(
-      160deg,
+      to bottom,
       oklch(0.2 0.08 262) 0%,
       oklch(0.28 0.1 258) 55%,
       oklch(0.36 0.14 256) 100%
     );
 }
+
+/* The mirror. Two numbers, not a duplicated background-image. */
+[dir="rtl"] .mesh-auth {
+  --mesh-auth-x-top: 0%;
+  --mesh-auth-x-bottom: 100%;
+}
 @utility mesh-neutral {
   background-color: var(--background);
   background-image: radial-gradient(
-    1000px 500px at 100% 0%,
+    1000px 500px at var(--mesh-x-trail) 0%,
     color-mix(in oklab, var(--brand-primary) 8%, transparent) 0%,
     transparent 60%
   );
@@ -540,6 +689,29 @@ html[dir="rtl"] body {
   font-family: var(--font-arabic);
   line-height: 1.75;
 }
+/* BG-0069 — Arabic letterforms join. Any letter-spacing, positive or
+   negative, pulls the joins apart and renders a word as loose disconnected
+   glyphs; there is no "small enough" amount, so the rule is none at all.
+   `ltr:tracking-*` is the house rule and the ui-kit follows it, but at the
+   time of writing only 9 call sites in src/ carry the prefix against ~96 that
+   do not, spread over 65 files. This is the one rule that closes the gap for
+   all of them, including any added tomorrow, and it stays correct after the
+   remaining components are converted -- a prefixed `ltr:tracking-*` never
+   applies under `dir="rtl"` anyway, so this neutralises nothing twice and
+   nothing in French.
+
+   Unlayered on purpose: Tailwind's utilities live in `@layer utilities`, and
+   unlayered declarations beat any layered one regardless of specificity, so
+   this does not need `!important` and does not need to enumerate class names.
+   The `*` reaches the element that actually carries the utility, since
+   `letter-spacing` is inherited and an inherited value never beats one
+   declared on the element itself. */
+html[dir="rtl"] *,
+html[dir="rtl"] *::before,
+html[dir="rtl"] *::after {
+  letter-spacing: normal;
+}
+
 html[dir="rtl"] .lucide-chevron-right {
   transform: scaleX(-1);
 }
@@ -559,6 +731,15 @@ html[dir="rtl"] .lucide-arrow-left {
   }
   html {
     text-rendering: optimizeLegibility;
+    /* BG-0081. Native chrome — scrollbars, date pickers, checkboxes — follows
+       `color-scheme`, not our tokens, so without this the dark page keeps a
+       white scrollbar. The inline head script sets this inline on <html> too,
+       before first paint; this is the stylesheet-side default for the case
+       where the script could not run. */
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
     background-color: var(--color-background);
@@ -604,10 +785,14 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
+/* A loading sweep travels WITH the reading direction, so `to right` is wrong
+   in Arabic for the same reason `90deg` is: neither follows `dir`. The
+   direction is a custom property and the RTL rule below flips it. */
 @utility shimmer {
+  --shimmer-to: right;
   background-color: var(--border-subtle);
   background-image: linear-gradient(
-    90deg,
+    to var(--shimmer-to),
     transparent 0%,
     color-mix(in oklab, var(--surface) 60%, transparent) 50%,
     transparent 100%
@@ -615,6 +800,10 @@ html[dir="rtl"] .lucide-arrow-left {
   background-size: 200% 100%;
   background-repeat: no-repeat;
   animation: shimmer-sweep 1.6s var(--ease-standard) infinite;
+}
+
+[dir="rtl"] .shimmer {
+  --shimmer-to: left;
 }
 
 /* Unified press-feedback for interactive tiles/cards. */
@@ -647,48 +836,496 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
-/* ================================================================== */
-/* Fantasy — FPL reference reconstruction tokens (BotolaGO identity)   */
-/* The FPL purple family maps to BotolaGO deep blue; the FPL green→cyan */
-/* CTA gradient maps to BotolaGO's cyan accent family.                  */
-/* ================================================================== */
+/* ==================================================================
+   BotolaGO Design System V2 — the one token layer (`--ui-*`)
+   ------------------------------------------------------------------
+   BG-0091. There used to be two palettes: the extracted kit (`--ui-*`,
+   themed, contract-tested) and the Fantasy inner screens' own
+   reconstruction (`--fpl-*`, light-only, untested). Fantasy is the
+   product's visual source of truth, so the values below ARE the
+   Fantasy values — but they now live in one system, with one dark
+   counterpart each, one spacing scale, one radius set, one shadow set
+   and one type ramp.
+
+   `--fpl-*` still exists, further down, as a pure ALIAS layer: every
+   Fantasy token is `var(--ui-…)` and carries no colour of its own, so
+   the inner screens follow the theme today and can be converted call
+   site by call site without a flag day. `ui-kit.contract.test.ts`
+   fails if an `--fpl-*` token ever carries a literal colour again.
+
+   Rules that hold for everything in here:
+     - every colour-bearing token is redeclared under `.dark`, or is
+       composed purely from tokens that are;
+     - `--ui-ink` is a FILL/BORDER colour (a dark navy in both themes).
+       Text and icons use `--ui-ink-fg`, which is theme-correct. This
+       is the BG-0083 defect: `--ui-ink` as a foreground measured
+       1.25:1 in dark;
+     - gradients run `to bottom` or from a direction-neutral origin. A
+       `deg` angle is physical and lands on the wrong edge in Arabic.
+
+   `src/components/ui-kit/tokens.ts` mirrors every name below as a
+   typed manifest; the contract test fails if the two drift apart.
+   ================================================================== */
 :root {
-  --fpl-bg: oklch(0.975 0.004 250);
-  --fpl-ink: var(--brand-primary);
-  --fpl-ink-deep: oklch(0.24 0.09 258);
-  --fpl-cyan: oklch(0.88 0.11 205);
-  --fpl-green: oklch(0.88 0.19 152);
-  --fpl-pink: oklch(0.63 0.24 355);
-  --fpl-amber: oklch(0.82 0.17 80);
-  --fpl-grey: oklch(0.93 0.006 250);
-  --fpl-grey-text: oklch(0.55 0.02 258);
-  --fpl-grad: linear-gradient(90deg, var(--fpl-green) 0%, var(--fpl-cyan) 100%);
-  --fpl-header: linear-gradient(
-    180deg,
+  /* ---- Type ramp -------------------------------------------------
+     Fantasy sizes are px literals, not the Tailwind ramp. Kept as
+     lengths so `text-[length:var(--ui-text-body)]` reads one scale. */
+  --ui-text-hero: 34px; /* hub title */
+  --ui-text-title: 19px; /* screen header title */
+  --ui-text-section: 17px; /* state-panel / section heading */
+  --ui-text-subtitle: 16px; /* header title when flanked both sides */
+  --ui-text-body: 15px; /* body, buttons, rows */
+  --ui-text-secondary: 14px; /* supporting copy, pills */
+  --ui-text-meta: 13px; /* meta, table cells */
+  --ui-text-label: 12px; /* badges, column heads */
+  --ui-text-micro: 11px; /* nav labels, micro captions */
+
+  /* ---- Leading ---------------------------------------------------
+     BG-0124. The ramp used to carry size and weight only, and each
+     component picked its own `leading-*`. Nine different values were
+     in use across `src/`, three of which cut glyphs.
+
+     A font's ink does not fit inside its own em, so `leading-none`
+     (line-height = font-size) guarantees the line box is too short.
+     That is invisible until something hides the overflow — and
+     `truncate` does, because it sets `overflow: hidden` to get a
+     HORIZONTAL ellipsis and clips the vertical axis as a side effect.
+     CSS offers no way out of that: set `overflow-x: hidden` and
+     `overflow-y` computes to `auto`, never `visible`. The only fix is
+     vertical room.
+
+     The floors below are derived, not chosen. For a line box of L and
+     a font of ascent A, descent D and ink descent d, the baseline sits
+     at (L − A − D)/2 + A, so the ink clears the bottom edge only once
+        L ≥ A − D + 2d.
+     Measured at 11px via canvas TextMetrics on the live page:
+       Manrope            A 12, D 3, d 3  ->  L ≥ 15px  -> ratio 1.36
+       Noto Sans Arabic   A 15, D 8, d 6  ->  L ≥ 19px  -> ratio 1.73
+     Those are font properties, so they hold at every step — which is
+     exactly why ONE leading value cannot serve both scripts, and why
+     the Arabic override below is arithmetic rather than taste.
+
+     Three steps, because anything under the Latin floor is unusable
+     and "tight" therefore IS the floor. Verified by re-running
+     `scripts/qa/layout-probe.mjs`, not by eye. */
+  --ui-leading-flat: 1.4; /* single-line labels, headings, stats */
+  --ui-leading-copy: 1.55; /* body copy, rows, buttons */
+  --ui-leading-prose: 1.7; /* long-form paragraphs: rules, help, legal */
+
+  /* ---- Stat ramp -------------------------------------------------
+     Numerals only: scores, points, prices, ranks. Its own scale
+     because a stat is read as a figure, not as a word — always with
+     `font-variant-numeric: tabular-nums` (`.fpl-tabular`) so columns
+     line up, and always a step tighter than prose. The tracking is
+     applied `ltr:`-only; Arabic-Indic digits must never be spaced. */
+  --ui-stat-hero: 30px; /* the one number a screen is about */
+  --ui-stat-lg: 22px; /* summary tiles */
+  --ui-stat-md: 17px; /* table totals, row emphasis */
+  --ui-stat-sm: 13px; /* dense table cells */
+  --ui-stat-tracking: -0.01em;
+
+  /* ---- Weights: Fantasy never uses 400 for STRUCTURAL text -------
+     `--ui-weight-normal` is the exception the rule always implied, and it
+     exists for exactly one step: `ui.text.prose`. Long-form copy is not
+     structural text -- it is the thing a reader reads continuously, and
+     Terms alone is 7,882 characters, an order of magnitude more than any
+     other route in the product. Setting it 600 like a button label is how a
+     page of copy comes to read as a page of emphasis.
+
+     Measured, and the reason this token exists: converting the legal renderer
+     onto `prose` moved /terms from 400 to 600 in a weight tally, because
+     `prose` inherited `--ui-weight-body`. That was a regression the
+     conversion introduced, not a defect it found. */
+  --ui-weight-normal: 400;
+  --ui-weight-body: 600;
+  --ui-weight-strong: 700;
+  --ui-weight-heavy: 800;
+  --ui-weight-hero: 900;
+
+  /* ---- Radius set: Fantasy is square-ish, not the pill-shaped V2 -- */
+  --ui-radius-tight: 4px; /* difficulty squares, micro tags */
+  --ui-radius-control: 6px; /* buttons, cards, pills, banners */
+  --ui-radius-segment: 8px; /* selected tab */
+  --ui-radius-track: 10px; /* segmented-control track, inputs */
+  --ui-radius-sheet: 16px; /* bottom sheet, modal */
+  --ui-radius-column: 28px; /* desktop phone column */
+
+  /* ---- Spacing scale ---------------------------------------------
+     One 4px-based step scale. The named tokens under it are aliases,
+     not extra values, so there is exactly one set of numbers. */
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-5: 1.5rem;
+  --ui-space-6: 2rem;
+
+  --ui-gutter: var(--ui-space-4); /* the px-4 screen gutter */
+  --ui-gap: var(--ui-space-2);
+  --ui-gap-lg: var(--ui-space-3);
+  --ui-tap-min: 2.75rem; /* 44px minimum tap target — a floor, not a size */
+  --ui-row-min: 3rem; /* list row / full-width control height */
+  --ui-column-max: 480px; /* the phone canvas, mobile-first single column */
+  --ui-content-max: 672px; /* the reading column: long-form copy, a wide table */
+
+  /* ---- Surfaces (light) ------------------------------------------ */
+  --ui-page: oklch(0.975 0.004 250);
+  --ui-surface: oklch(1 0 0); /* the white Fantasy card */
+  --ui-surface-sunken: oklch(0.93 0.006 250);
+  --ui-on-surface: oklch(0.16 0.03 260);
+  --ui-on-surface-muted: oklch(0.45 0.02 258);
+  --ui-on-surface-faint: oklch(0.555 0.02 258); /* placeholders, disabled copy */
+  --ui-rule: oklch(0.93 0.006 250); /* 1px divider */
+  --ui-scrim: color-mix(in oklab, oklch(0.16 0.03 260) 45%, transparent);
+
+  /* ---- Brand ink -------------------------------------------------
+     `--ui-ink` fills and borders. `--ui-ink-fg` is the foreground you
+     put ON page/surface; `--ui-on-ink*` are the foregrounds that go
+     ON an ink fill. Never use `--ui-ink` as a text colour. */
+  --ui-ink: var(--brand-primary);
+  --ui-ink-deep: oklch(0.24 0.09 258);
+  --ui-ink-fg: oklch(0.32 0.1 258);
+  --ui-on-ink: oklch(0.88 0.11 205); /* cyan text on ink */
+  --ui-on-ink-plain: oklch(1 0 0);
+  /* The foreground for the header/hero BAND. The band is light in the light
+     theme and deep in the dark one, so unlike `--ui-ink-deep` (which sits on
+     the action gradient, light in both themes) this one flips. */
+  --ui-on-grad-header: oklch(0.24 0.09 258);
+
+  /* ---- On the dark mesh ------------------------------------------
+     The product has a second register: a deep mesh that the welcome
+     screen, the auth screens and the first-launch language chooser
+     all sit on. It is deliberate — a focused room with one job — and
+     the page tokens above are built for the light app surface, so
+     they do not serve it.
+
+     Three surfaces each invented the same answer privately. Auth got
+     it right (`color-mix` of a themed token); WelcomeScreen, the
+     language chooser, the logo, CloudSyncBanner and RankingsPodium
+     reached for literal `text-white/80`, `bg-white/10`,
+     `ring-white/20` — an un-themed colour that says "light theme" in
+     a file that has no idea which theme it is in.
+
+     So the register becomes tokens. Each one is `--ui-on-ink-plain`
+     at an opacity, and that token flips with the theme, which is why
+     these are derived rather than redeclared: a second copy under
+     `.dark` would be the drift the manifest exists to stop.
+
+     `in srgb` rather than `in oklab` is not a taste call: the derived
+     token contract forbids a colour space name that reads as a
+     literal colour, and mixing one colour with `transparent` is a
+     premultiplied alpha ramp that resolves identically either way. */
+  --ui-on-mesh: var(--ui-on-ink-plain);
+  --ui-on-mesh-muted: color-mix(in srgb, var(--ui-on-ink-plain) 78%, transparent);
+  --ui-on-mesh-faint: color-mix(in srgb, var(--ui-on-ink-plain) 62%, transparent);
+  /* The glass tile on the mesh: a fill and its hairline. */
+  --ui-mesh-glass: color-mix(in srgb, var(--ui-on-ink-plain) 10%, transparent);
+  --ui-mesh-rule: color-mix(in srgb, var(--ui-on-ink-plain) 20%, transparent);
+
+  /* ---- The per-route wash -----------------------------------------
+     `PageBackground` washes a 14% tint of one colour into the block
+     start of the page, and the tint is how a reader knows at a glance
+     which part of the product they are in.
+
+     It used to read `--brand-accent`, `--accent-indigo`,
+     `--accent-emerald` and `--accent-cyan` under a comment claiming
+     "all five are existing semantic tokens, so a theme switch carries
+     them". They are tokens; the claim was wrong. All four are declared
+     once on `:root` and never under `.dark`, so the wash kept its
+     light-theme tint behind a dark page.
+
+     Folding them onto the three accents the kit already had would have
+     made four of the six families identical — the distinction itself
+     is the feature. So the wash gets its own themed ramp: the same six
+     hues, now with dark counterparts, each one a step lighter and less
+     saturated there because a tint on a dark page reads heavier at the
+     same chroma. */
+  --ui-wash-home: oklch(0.62 0.19 256);
+  --ui-wash-news: oklch(0.55 0.16 275);
+  --ui-wash-matches: oklch(0.66 0.14 155);
+  --ui-wash-fantasy: oklch(0.75 0.13 220);
+  --ui-wash-profile: oklch(0.55 0.16 275);
+  --ui-wash-neutral: var(--ui-ink);
+
+  /* ---- Accents: the two stops of the Fantasy CTA gradient -------- */
+  --ui-accent-spring: oklch(0.88 0.19 152);
+  --ui-accent-sky: oklch(0.88 0.11 205);
+
+  /* ---- Status ----------------------------------------------------
+     `positive` and `negative` are read as TEXT as well as painted as
+     fills, so both clear 4.5:1 on `--ui-surface` in their own theme.
+     `caution` is amber and is fill-only: pair it with `--ui-ink-deep`. */
+  --ui-positive: oklch(0.52 0.14 150);
+  --ui-negative: oklch(0.55 0.22 355);
+  --ui-caution: oklch(0.82 0.17 80);
+  /* Live. Split into a fill and a foreground for the reason BG-0104 records
+     above, and moved under `--ui-*` because as `--color-*` nothing required
+     it to have a dark value — and it did not have one. The dark theme kept
+     the light foreground over a dark tint and measured 2.28:1 on the /matches
+     badge. */
+  --ui-live: oklch(0.62 0.22 27);
+  --ui-live-fg: oklch(0.5 0.22 27);
+  /* The foreground each status FILL carries, the way `--ui-fdr-N` carries
+     `--ui-on-fdr-N`. Not a convenience: `--ui-positive` and `--ui-negative`
+     invert across the themes — a mid-tone in light, a light tint in dark — so
+     one foreground cannot serve both. Measured against the fills:
+     positive 5.17 / 9.28, negative 5.49 / 6.93, caution 9.34 / 10.65.
+     Without these, a filled destructive button was white on the dark
+     negative at 2.31:1. */
+  --ui-on-positive: var(--ui-on-ink-plain);
+  --ui-on-negative: var(--ui-on-ink-plain);
+  /* Caution is a light amber in BOTH themes, so its foreground never flips. */
+  --ui-on-caution: var(--ui-ink-deep);
+
+  /* ---- Gradients -------------------------------------------------
+     `to bottom` on purpose: a `deg` angle is physical and mirrors
+     wrong under `dir="rtl"`. The radial origins are centred for the
+     same reason. */
+  --ui-grad-action: linear-gradient(
+    to bottom,
+    var(--ui-accent-spring) 0%,
+    var(--ui-accent-sky) 100%
+  );
+  --ui-grad-header: linear-gradient(
+    to bottom,
     oklch(0.84 0.11 205) 0%,
     oklch(0.68 0.16 238) 48%,
     oklch(0.6 0.18 262) 100%
   );
-  --fpl-hero:
-    radial-gradient(120% 80% at 85% 10%, oklch(0.9 0.16 150) 0%, transparent 42%),
-    radial-gradient(90% 70% at 15% 90%, oklch(0.62 0.18 262) 0%, transparent 55%),
+  --ui-grad-hero:
+    radial-gradient(120% 80% at 50% 0%, oklch(0.9 0.16 150) 0%, transparent 45%),
     linear-gradient(
-      115deg,
+      to bottom,
       oklch(0.86 0.11 205) 0%,
       oklch(0.7 0.16 240) 45%,
       oklch(0.46 0.16 270) 100%
     );
-  --fpl-pitch-a: oklch(0.71 0.17 146);
-  --fpl-pitch-b: oklch(0.67 0.17 146);
-  --fpl-pitch-bench: oklch(0.8 0.12 146);
-  --fpl-fdr-1: oklch(0.86 0.19 152);
-  --fpl-fdr-2: oklch(0.86 0.19 152);
-  --fpl-fdr-3: oklch(0.9 0.006 250);
-  --fpl-fdr-4: oklch(0.63 0.24 355);
-  --fpl-fdr-5: oklch(0.42 0.16 345);
+
+  /* ---- Elevation: one shadow set, four steps -------------------- */
+  --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 12%, transparent);
+  --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
+  --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent);
+  --ui-shadow-column: var(--shadow-floating);
+
+  /* ---- Fantasy domain --------------------------------------------
+     Promoted from `--fpl-*`: these have no kit equivalent (a pitch is
+     a pitch) but they now live under the kit's naming and contract,
+     and each has a dark counterpart. */
+  --ui-pitch-turf-a: oklch(0.71 0.17 146);
+  --ui-pitch-turf-b: oklch(0.67 0.17 146);
+  --ui-pitch-bench: oklch(0.8 0.12 146);
+  --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 92%, transparent);
+  --ui-on-pitch: oklch(0.18 0.04 260);
+
+  /* Fixture Difficulty Rating, 1 easiest → 5 hardest, each with the
+     foreground that clears AA on it. */
+  --ui-fdr-1: oklch(0.86 0.19 152);
+  --ui-fdr-2: oklch(0.91 0.13 152);
+  --ui-fdr-3: oklch(0.9 0.006 250);
+  --ui-fdr-4: oklch(0.56 0.22 355);
+  --ui-fdr-5: oklch(0.42 0.16 345);
+  --ui-on-fdr-1: oklch(0.2 0.05 150);
+  --ui-on-fdr-2: oklch(0.2 0.05 150);
+  --ui-on-fdr-3: oklch(0.2 0.02 260);
+  --ui-on-fdr-4: oklch(1 0 0);
+  --ui-on-fdr-5: oklch(1 0 0);
 }
-.fpl-root .lucide-chevron-left {
+
+/* ---- The Arabic leading adjustment (BG-0124) ----------------------
+   Noto Sans Arabic needs a taller line box than Manrope at the same
+   `px`. The ratios are derived in the `--ui-leading-*` block above:
+   Latin ink clears its box at 1.36, Arabic at 1.73. Setting one value
+   for both either cuts Arabic glyphs or leaves French looking airy.
+
+   This is the "Arabic x-height adjustment" the design standard asks
+   for, expressed as leading rather than as size: changing the Arabic
+   FONT SIZE would break the shared spacing grid and make every mixed
+   string (a Latin club name in an Arabic table, which this product is
+   full of) shift mid-sentence. Leading moves the box, not the glyph.
+
+   Both selectors, because the two signals are written independently:
+   `I18nProvider` sets `lang` and `dir` on the document element, and a
+   subtree can carry `dir` alone. Either one alone must be enough. */
+:root:lang(ar),
+:root[dir="rtl"],
+[lang="ar"],
+[dir="rtl"] {
+  /* 1.95, not the 1.73 the derivation gives, and the gap is the point. 1.73
+     is what "فانتازي" needs; strings with fuller diacritics need more, and
+     the floor has to hold for the string nobody measured. Measured across the
+     product, the deepest Arabic ink wanted 66/34, 37/19 and 25/13 — 1.94,
+     1.95 and 1.92 — so 1.95 is the observed ceiling, not a guess.
+
+     Only `flat` is raised that far. It is the step single-line `truncate`d
+     text uses, where hidden overflow turns ink into a cut glyph. `copy` and
+     `prose` wrap, so their overflow is visible and their ink is free to
+     extend; inflating them would only make Arabic paragraphs airy next to
+     French ones, which is the opposite of the parity being aimed at. */
+  --ui-leading-flat: 1.95;
+  --ui-leading-copy: 1.9;
+  --ui-leading-prose: 2;
 }
+
+.dark {
+  --ui-page: oklch(0.15 0.03 260);
+  --ui-surface: oklch(0.22 0.03 260);
+  --ui-surface-sunken: oklch(0.26 0.03 260);
+  --ui-on-surface: oklch(0.97 0.01 250);
+  --ui-on-surface-muted: oklch(0.76 0.02 258);
+  --ui-on-surface-faint: oklch(0.64 0.02 258);
+  --ui-rule: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
+  --ui-scrim: color-mix(in oklab, oklch(0.08 0.02 260) 68%, transparent);
+
+  --ui-ink: oklch(0.3 0.08 260);
+  --ui-ink-deep: oklch(0.22 0.07 260);
+  /* The BG-0083 fix: on a dark page the brand foreground has to be a
+     light tint of the brand, not the brand fill. */
+  --ui-ink-fg: oklch(0.86 0.08 232);
+  --ui-on-ink: oklch(0.88 0.11 205);
+  --ui-on-ink-plain: oklch(0.97 0.01 250);
+  --ui-on-grad-header: oklch(0.97 0.01 250);
+
+  --ui-wash-home: oklch(0.7 0.14 256);
+  --ui-wash-news: oklch(0.66 0.12 275);
+  --ui-wash-matches: oklch(0.72 0.11 155);
+  --ui-wash-fantasy: oklch(0.78 0.1 220);
+  --ui-wash-profile: oklch(0.66 0.12 275);
+  --ui-wash-neutral: var(--ui-ink);
+
+  --ui-accent-spring: oklch(0.82 0.18 152);
+  --ui-accent-sky: oklch(0.82 0.11 205);
+
+  --ui-positive: oklch(0.78 0.17 150);
+  --ui-negative: oklch(0.75 0.19 355);
+  --ui-caution: oklch(0.85 0.16 80);
+  --ui-live: oklch(0.68 0.22 27);
+  --ui-live-fg: oklch(0.78 0.18 27);
+  --ui-on-positive: var(--ui-ink-deep);
+  --ui-on-negative: var(--ui-ink-deep);
+  --ui-on-caution: var(--ui-ink-deep);
+
+  --ui-grad-header: linear-gradient(
+    to bottom,
+    oklch(0.42 0.1 210) 0%,
+    oklch(0.34 0.12 240) 48%,
+    oklch(0.28 0.12 262) 100%
+  );
+  --ui-grad-hero:
+    radial-gradient(120% 80% at 50% 0%, oklch(0.46 0.14 150) 0%, transparent 45%),
+    linear-gradient(
+      to bottom,
+      oklch(0.42 0.1 205) 0%,
+      oklch(0.34 0.12 240) 45%,
+      oklch(0.24 0.1 270) 100%
+    );
+
+  --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, oklch(0 0 0) 55%, transparent);
+  --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, oklch(1 0 0) 8%, transparent);
+  --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
+
+  --ui-pitch-turf-a: oklch(0.45 0.11 146);
+  --ui-pitch-turf-b: oklch(0.42 0.11 146);
+  --ui-pitch-bench: oklch(0.36 0.08 146);
+  --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 72%, transparent);
+  --ui-on-pitch: oklch(0.97 0.01 250);
+
+  --ui-fdr-1: oklch(0.42 0.12 152);
+  --ui-fdr-2: oklch(0.63 0.13 152);
+  --ui-fdr-3: oklch(0.36 0.01 250);
+  --ui-fdr-4: oklch(0.5 0.19 355);
+  --ui-fdr-5: oklch(0.35 0.14 345);
+  --ui-on-fdr-1: oklch(0.99 0.01 150);
+  --ui-on-fdr-2: oklch(0.15 0.04 150);
+  --ui-on-fdr-3: oklch(0.97 0.01 250);
+  --ui-on-fdr-4: oklch(0.99 0.01 355);
+  --ui-on-fdr-5: oklch(0.97 0.01 250);
+
+  /* News placeholders, one step deeper so an image-less card sits on a
+     dark page instead of burning a hole in it. Same hues, lower L. */
+  --news-gradient-hero: linear-gradient(
+    to bottom,
+    oklch(0.18 0.09 262) 0%,
+    oklch(0.38 0.19 263) 55%,
+    oklch(0.6 0.11 226) 100%
+  );
+  --news-gradient-ocean: linear-gradient(
+    to bottom,
+    oklch(0.14 0.06 260) 0%,
+    oklch(0.3 0.15 263) 55%,
+    oklch(0.4 0.19 263) 100%
+  );
+  --news-gradient-matchday: linear-gradient(
+    to bottom,
+    oklch(0.24 0.12 263) 0%,
+    oklch(0.38 0.19 263) 55%,
+    oklch(0.56 0.1 264) 100%
+  );
+  --news-gradient-aqua: linear-gradient(
+    to bottom,
+    oklch(0.38 0.19 263) 0%,
+    oklch(0.48 0.15 254) 55%,
+    oklch(0.6 0.11 226) 100%
+  );
+  --news-gradient-dark: linear-gradient(
+    to bottom,
+    oklch(0.13 0.05 260) 0%,
+    oklch(0.19 0.09 262) 55%,
+    oklch(0.3 0.15 263) 100%
+  );
+  --news-gradient-light: linear-gradient(
+    to bottom,
+    oklch(0.42 0.04 265) 0%,
+    oklch(0.34 0.05 266) 55%,
+    oklch(0.28 0.06 265) 100%
+  );
+  --news-gradient-promo: linear-gradient(
+    to bottom,
+    oklch(0.3 0.15 263) 0%,
+    oklch(0.38 0.19 263) 55%,
+    oklch(0.6 0.11 226) 100%
+  );
+
+  /* Category plates, one step deeper on a dark page (BG-0076). */
+  --news-plate-latest: oklch(0.28 0.1 262);
+  --news-plate-transfers: oklch(0.29 0.08 205);
+  --news-plate-analysis: oklch(0.28 0.09 295);
+  --news-plate-interviews: oklch(0.29 0.08 165);
+  --news-plate-for-you: oklch(0.29 0.11 245);
+}
+
+/* ==================================================================
+   Fantasy alias layer (`--fpl-*`)
+   ------------------------------------------------------------------
+   Kept so the ~450 existing Fantasy call sites keep working while the
+   screen lanes convert them, but every entry is now a pointer into
+   the kit above — no `--fpl-*` token carries a colour of its own, so
+   Fantasy follows light/dark for the first time. New code uses the
+   `--ui-*` name; the mapping table is in
+   `docs/engineering/DESIGN_SYSTEM_V2.md`.
+   ================================================================== */
+:root {
+  --fpl-bg: var(--ui-page);
+  --fpl-ink: var(--ui-ink); /* FILL. For text use --ui-ink-fg. */
+  --fpl-ink-deep: var(--ui-ink-deep);
+  --fpl-cyan: var(--ui-on-ink);
+  --fpl-green: var(--ui-accent-spring);
+  --fpl-pink: var(--ui-negative);
+  --fpl-amber: var(--ui-caution);
+  --fpl-grey: var(--ui-surface-sunken);
+  --fpl-grey-text: var(--ui-on-surface-muted);
+  --fpl-grad: var(--ui-grad-action);
+  --fpl-header: var(--ui-grad-header);
+  --fpl-hero: var(--ui-grad-hero);
+  --fpl-pitch-a: var(--ui-pitch-turf-a);
+  --fpl-pitch-b: var(--ui-pitch-turf-b);
+  --fpl-pitch-bench: var(--ui-pitch-bench);
+  --fpl-fdr-1: var(--ui-fdr-1);
+  --fpl-fdr-2: var(--ui-fdr-2);
+  --fpl-fdr-3: var(--ui-fdr-3);
+  --fpl-fdr-4: var(--ui-fdr-4);
+  --fpl-fdr-5: var(--ui-fdr-5);
+}
+
 .fpl-tabular {
   font-variant-numeric: tabular-nums;
 }

@@ -1,12 +1,8 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMemo, useReducer, useState } from "react";
 import { loadAdminStaffRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
-import {
-  adminButtonClass,
-  adminFieldClass,
-  adminRepositoryContext,
-} from "@/backend/admin/functional-route-helpers";
+import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
 import { SupabaseAdminSecurityOperationsRepository } from "@/backend/admin/supabase-security-operations-repository";
 import type {
   DirectlyAssignableAdminRole,
@@ -15,7 +11,6 @@ import type {
 import { mapAdminError } from "@/backend/admin/errors";
 import {
   ADMIN_PANEL_CLASS,
-  AdminBadge,
   AdminDatum,
   AdminField,
   AdminNotice,
@@ -27,6 +22,7 @@ import {
   isBusy,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
+import { ui, UiBadge, UiButton, UiInput, UiLinkButton, UiSelect } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/staff")({
@@ -212,33 +208,26 @@ function AdminStaffRoute() {
               onSubmit={lookup}
               data-testid="admin-user-eligibility"
             >
-              <label className="grid gap-2 text-sm">
-                <span className="text-slate-300">
-                  {rtl ? "البريد الإلكتروني المطابق" : "E-mail exact"}
-                </span>
-                {/* An address is typed and read left-to-right in both
-                    languages; the label above keeps the ambient direction. */}
-                <input
-                  type="email"
-                  autoComplete="off"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className={adminFieldClass}
-                  dir="ltr"
-                  spellCheck={false}
-                  required
-                />
-              </label>
+              {/* An address is typed and read left-to-right in both languages,
+                  so `dir` is forced on the field itself; the label `UiInput`
+                  renders keeps the ambient direction. The label/span/input
+                  trio this replaces spelled out the field recipe by hand. */}
+              <UiInput
+                label={rtl ? "البريد الإلكتروني المطابق" : "E-mail exact"}
+                type="email"
+                autoComplete="off"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                dir="ltr"
+                spellCheck={false}
+                required
+              />
               {/* Also held while a mutation runs: resolving a second account
                   under an armed confirm step would leave that step naming one
                   person and acting on another. */}
-              <button
-                className={`${adminButtonClass} w-full sm:w-auto`}
-                disabled={busy || isBusy(action)}
-                type="submit"
-              >
+              <UiButton className="sm:w-auto" disabled={busy || isBusy(action)} type="submit">
                 {rtl ? "بحث آمن" : "Résoudre"}
-              </button>
+              </UiButton>
             </form>
           </section>
 
@@ -251,7 +240,7 @@ function AdminStaffRoute() {
             <AdminNotice testId="admin-staff-unresolved">
               {rtl ? "لا نتيجة قابلة للاستخدام" : "Aucun résultat exploitable"}
               {" : "}
-              <AdminDatum mono className="text-xs">
+              <AdminDatum mono className={ui.text.meta}>
                 {result.errorCode}
               </AdminDatum>
             </AdminNotice>
@@ -265,29 +254,39 @@ function AdminStaffRoute() {
               <article className={`mt-3 ${ADMIN_PANEL_CLASS} p-4`} data-testid="admin-staff-result">
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <AdminField label={rtl ? "البريد الإلكتروني" : "E-mail"}>
-                    <AdminDatum className="text-slate-100">{result.maskedEmail}</AdminDatum>
+                    <AdminDatum className={ui.tone.default}>{result.maskedEmail}</AdminDatum>
                   </AdminField>
                   <AdminField label="MFA">
-                    <AdminBadge tone={result.mfaVerified ? "positive" : "warning"}>
+                    {/* "MFA required" is the amber state, and amber is a FILL
+                        here, never a foreground: `--ui-caution` measured
+                        1.78:1 as text, so `UiBadge tone="caution"` paints it
+                        and puts `--ui-on-caution` on top. It must also not
+                        borrow `negative`: an account without MFA is not a
+                        refused one, it is one that cannot be granted anything
+                        yet -- which is exactly what the disabled "Créer le
+                        principal" below depends on. */}
+                    <UiBadge tone={result.mfaVerified ? "positive" : "caution"}>
                       <AdminDatum mono={false}>
                         {result.mfaVerified ? "AAL2 eligible" : "required"}
                       </AdminDatum>
-                    </AdminBadge>
+                    </UiBadge>
                   </AdminField>
                   <AdminField label={rtl ? "معرّف المصادقة" : "UUID Auth"}>
-                    <AdminDatum className="text-xs text-slate-300">{result.authUserId}</AdminDatum>
+                    <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
+                      {result.authUserId}
+                    </AdminDatum>
                   </AdminField>
                   <AdminField label={rtl ? "هوية الطاقم" : "Principal"}>
-                    <AdminBadge tone={result.staffPrincipal ? "positive" : "neutral"}>
+                    <UiBadge tone={result.staffPrincipal ? "positive" : "neutral"}>
                       <AdminDatum mono={false}>
                         {result.staffPrincipal?.status ?? "none"}
                       </AdminDatum>
-                    </AdminBadge>
+                    </UiBadge>
                   </AdminField>
                 </dl>
 
                 {!result.staffPrincipal && (
-                  <div className="mt-5 border-t border-slate-800 pt-5">
+                  <div className={`mt-5 ${ui.rule.blockStart} pt-5`}>
                     {/* The motive is asked for inside this action's own confirm
                         step, keyed by the resolved account: it can arm nothing
                         else on the page. */}
@@ -306,7 +305,12 @@ function AdminStaffRoute() {
                       confirmPrompt={
                         <>
                           {rtl ? "إنشاء هوية الطاقم لـ " : "Créer l’identité staff de "}
-                          <AdminDatum mono={false} className="font-semibold">
+                          {/* The emphasis inside every confirm prompt on this
+                              page is the same 600 it always was --
+                              `--ui-weight-body` IS `font-semibold`. Only its
+                              source moves onto the ramp; the weight that marks
+                              the account a grant is about does not change. */}
+                          <AdminDatum mono={false} className="[font-weight:var(--ui-weight-body)]">
                             {result.maskedEmail}
                           </AdminDatum>
                           {rtl
@@ -316,7 +320,7 @@ function AdminStaffRoute() {
                       }
                       onConfirm={(reason) => createPrincipal(reason)}
                     />
-                    <p className="mt-2 text-xs text-slate-400">
+                    <p className={`mt-2 ${ui.text.meta} ${ui.tone.muted}`}>
                       {rtl
                         ? "يتطلب بريداً مؤكداً ومصادقة ثنائية مفعّلة، وثمانية أحرف على الأقل للسبب."
                         : "Exige une adresse vérifiée, une MFA active et un motif d’au moins 8 caractères."}
@@ -325,42 +329,36 @@ function AdminStaffRoute() {
                 )}
 
                 {result.staffPrincipal && (
-                  <div className="mt-5 border-t border-slate-800 pt-5">
+                  <div className={`mt-5 ${ui.rule.blockStart} pt-5`}>
                     <div className="grid gap-3 sm:grid-cols-2" data-testid="admin-role-assignment">
-                      <label className="grid gap-2 text-sm">
-                        <span className="text-slate-300">
-                          {rtl ? "الدور القياسي" : "Rôle standard"}
-                        </span>
-                        {/* Role slugs are LTR machine values. */}
-                        <select
-                          value={role}
-                          onChange={(event) =>
-                            setRole(event.target.value as DirectlyAssignableAdminRole)
-                          }
-                          className={adminFieldClass}
-                          dir="ltr"
-                        >
-                          {ASSIGNABLE_ROLES.map((value) => (
-                            <option key={value} value={value}>
-                              {value}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="grid gap-2 text-sm">
-                        <span className="text-slate-300">
-                          {rtl ? "انتهاء اختياري" : "Expiration optionnelle"}
-                        </span>
-                        <input
-                          type="datetime-local"
-                          value={expiresAt}
-                          onChange={(event) => setExpiresAt(event.target.value)}
-                          className={adminFieldClass}
-                          dir="ltr"
-                        />
-                      </label>
+                      {/* Role slugs are LTR machine values, so `dir` is forced
+                          on the control; the label keeps the ambient
+                          direction. Still a native <select>, which is what the
+                          kit's field is -- already localised, already
+                          keyboard- and screen-reader-correct, and it opens the
+                          platform picker on a phone. */}
+                      <UiSelect
+                        label={rtl ? "الدور القياسي" : "Rôle standard"}
+                        value={role}
+                        onChange={(event) =>
+                          setRole(event.target.value as DirectlyAssignableAdminRole)
+                        }
+                      >
+                        {ASSIGNABLE_ROLES.map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </UiSelect>
+                      <UiInput
+                        label={rtl ? "انتهاء اختياري" : "Expiration optionnelle"}
+                        type="datetime-local"
+                        value={expiresAt}
+                        onChange={(event) => setExpiresAt(event.target.value)}
+                        dir="ltr"
+                      />
                     </div>
-                    <p className="mt-2 text-xs text-slate-400">
+                    <p className={`mt-2 ${ui.text.meta} ${ui.tone.muted}`}>
                       {rtl
                         ? "لكل عملية تأكيد صريح وسبب خاص بها من ثمانية أحرف على الأقل، ويُسجَّل كلاهما في التدقيق."
                         : "Chaque opération exige une confirmation explicite et un motif qui lui est propre, d’au moins 8 caractères; les deux sont consignés dans l’audit."}
@@ -383,11 +381,17 @@ function AdminStaffRoute() {
                         confirmPrompt={
                           <>
                             {rtl ? "منح الدور " : "Affecter le rôle "}
-                            <AdminDatum mono={false} className="font-semibold">
+                            <AdminDatum
+                              mono={false}
+                              className="[font-weight:var(--ui-weight-body)]"
+                            >
                               {role}
                             </AdminDatum>
                             {rtl ? " إلى " : " à "}
-                            <AdminDatum mono={false} className="font-semibold">
+                            <AdminDatum
+                              mono={false}
+                              className="[font-weight:var(--ui-weight-body)]"
+                            >
                               {result.maskedEmail}
                             </AdminDatum>
                             {rtl
@@ -417,11 +421,17 @@ function AdminStaffRoute() {
                           confirmPrompt={
                             <>
                               {rtl ? "طلب دور " : "Demander le rôle "}
-                              <AdminDatum mono={false} className="font-semibold">
+                              <AdminDatum
+                                mono={false}
+                                className="[font-weight:var(--ui-weight-body)]"
+                              >
                                 platform_admin
                               </AdminDatum>
                               {rtl ? " لـ " : " pour "}
-                              <AdminDatum mono={false} className="font-semibold">
+                              <AdminDatum
+                                mono={false}
+                                className="[font-weight:var(--ui-weight-body)]"
+                              >
                                 {result.maskedEmail}
                               </AdminDatum>
                               {rtl
@@ -431,19 +441,21 @@ function AdminStaffRoute() {
                           }
                           onConfirm={(reason) => requestPlatformAdmin(reason)}
                         />
-                        <p className="text-xs text-slate-400">
+                        <p className={`${ui.text.meta} ${ui.tone.muted}`}>
                           {rtl
                             ? "ينشئ طلب تحكم مزدوج ولا يمنح الدور مباشرة."
                             : "Crée une demande à double contrôle sans affecter directement le rôle."}
                         </p>
                       </div>
-                      <Link
+                      <UiLinkButton
                         to="/admin/staff/$principalId"
                         params={{ principalId: result.staffPrincipal.staffPrincipalId }}
-                        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-200 outline-none transition-colors hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400 sm:w-auto"
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto"
                       >
                         {rtl ? "فتح سجل الطاقم" : "Ouvrir le dossier staff"}
-                      </Link>
+                      </UiLinkButton>
                     </div>
                   </div>
                 )}

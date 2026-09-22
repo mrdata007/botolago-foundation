@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Share2 } from "lucide-react";
@@ -10,16 +10,19 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { ErrorState, LoadingState } from "@/components/common/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import { MatchTabs, type MatchTabKey } from "@/components/matches/MatchTabs";
 import { EventTimeline } from "@/components/matches/EventTimeline";
 import { StatComparison } from "@/components/matches/StatComparison";
 import { LineupsView } from "@/components/matches/LineupsView";
+import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -89,9 +92,14 @@ function MatchDetailPage() {
     refetchInterval: (query) => (query.state.data?.match.status === "live" ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
+  // Related news is a News surface, so it is gated on the same flag as every
+  // other one. `enabled` rather than a conditional hook: the query still has to
+  // be declared unconditionally, and with the flag off it never runs, so a
+  // match page makes no News request at all.
   const articlesQ = useQuery({
     queryKey: ["news", "feed", lang],
     queryFn: () => newsService.getArticles(lang),
+    enabled: NEWS_ENABLED,
   });
 
   const match = detailQ.data?.match;
@@ -132,20 +140,17 @@ function MatchDetailPage() {
   if (!match || !home || !away || !live) {
     return (
       <AppShell backgroundVariant="matches">
-        <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--background-elevated)] p-6 text-center shadow-card">
-          <h1 className="text-lg font-black text-foreground">
+        <UiCard padding="lg" className="mt-8 text-center">
+          <h1 className={cn(ui.text.section, ui.tone.default)}>
             {t("matches.detail.not_found_title")}
           </h1>
-          <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
             {t("matches.detail.not_found_desc")}
           </p>
-          <Link
-            to="/matches"
-            className="mt-4 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg cta-brand px-4 text-sm font-semibold"
-          >
+          <UiLinkButton to="/matches" variant="ink" className="mt-4">
             {t("article.back")}
-          </Link>
-        </div>
+          </UiLinkButton>
+        </UiCard>
       </AppShell>
     );
   }
@@ -154,7 +159,10 @@ function MatchDetailPage() {
   const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  // Pinned to the competition zone so this heading names the same day the
+  // card, the strip and the fixture list name (BG-0100).
   const dateFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -195,10 +203,13 @@ function MatchDetailPage() {
           onClick={goBack}
           aria-label={t("article.back")}
           className={cn(
-            "inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground",
-            "bg-[color:var(--surface-glass-strong)] backdrop-blur-md",
-            "border border-[var(--glass-border)] shadow-subtle",
-            "hover:bg-[color:var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+            "inline-flex items-center gap-1.5 px-3",
+            ui.space.tap,
+            ui.radius.control,
+            ui.surface.card,
+            ui.text.bodyStrong,
+            ui.focus,
+            "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
           )}
         >
           <BackArrow className="h-4 w-4" aria-hidden />
@@ -208,7 +219,14 @@ function MatchDetailPage() {
           type="button"
           onClick={share}
           aria-label={t("article.share")}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-[color:var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]"
+          className={cn(
+            "inline-flex items-center justify-center",
+            ui.space.tap,
+            ui.radius.control,
+            ui.tone.default,
+            ui.focus,
+            "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+          )}
         >
           <Share2 className="h-5 w-5" aria-hidden />
         </button>
@@ -218,7 +236,14 @@ function MatchDetailPage() {
         <div
           role="status"
           aria-live="polite"
-          className="mt-2 rounded-full bg-[color:var(--brand-accent)]/10 px-3 py-1 text-center text-xs font-semibold text-[color:var(--brand-accent)]"
+          className={cn(
+            "mt-2 px-3 py-1 text-center",
+            ui.radius.control,
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-heavy)]",
+            "bg-[color:color-mix(in_oklab,var(--ui-ink)_12%,transparent)]",
+            ui.tone.default,
+          )}
         >
           {t("article.share_copied")}
         </div>
@@ -227,7 +252,8 @@ function MatchDetailPage() {
       <MatchScoreHeader match={match} home={home} away={away} elapsed={live.elapsed} />
 
       {isLive && (
-        <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+        /* `ui.text.label` letter-spaces Latin only (BG-0069). */
+        <p className={cn("mt-2 text-center", ui.text.label, ui.tone.muted)}>
           {t("matches.detail.live_updating")}
         </p>
       )}
@@ -278,9 +304,9 @@ function MatchDetailPage() {
             <Section index={0}>
               <SectionHeader title={t("matches.detail.head_to_head")} eyebrow="H2H" />
               {h2h.length === 0 ? (
-                <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-6 text-center text-sm text-[color:var(--text-secondary)]">
-                  {t("matches.detail.no_h2h")}
-                </div>
+                // Was a hand-rolled copy of `EmptyState compact` — the same
+                // dashed rule, sunken fill, padding and type, spelled out.
+                <EmptyState compact>{t("matches.detail.no_h2h")}</EmptyState>
               ) : (
                 <div className="grid gap-2">
                   {h2h.map((m) => {
@@ -296,8 +322,11 @@ function MatchDetailPage() {
         )}
       </div>
 
-      {/* Related news */}
-      {related.length > 0 && (
+      {/* Related news — hidden at launch (NEWS_ENABLED). The cards link to
+          /news/$articleId, whose beforeLoad redirects Home while the flag is
+          false, so without this gate an approved article puts a dead card on
+          the match page of every fixture involving either club. */}
+      {NEWS_ENABLED && related.length > 0 && (
         <Section index={1}>
           <SectionHeader title={t("matches.detail.related_news")} eyebrow={t("news.title")} />
           <div className="grid gap-2.5">
@@ -328,34 +357,40 @@ function StandingsCard({
   row?: import("@/types/domain").TableRow;
 }) {
   const { t } = useI18n();
+  const name = <div className={cn("truncate", ui.text.bodyStrong)}>{clubName}</div>;
+
   if (!row) {
     return (
-      <div className="surface-2 flex items-center gap-2 p-3">
+      <UiCard padding="sm" className="flex items-center gap-2">
         <ClubCrest club={club} size="sm" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-bold text-foreground">{clubName}</div>
-          <div className="truncate text-[10px] text-[color:var(--text-muted)]">
+          {name}
+          <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>
             {t("matches.detail.table_context")}
           </div>
         </div>
-      </div>
+      </UiCard>
     );
   }
   return (
-    <div className="surface-2 flex items-center gap-2 p-3">
+    <UiCard padding="sm" className="flex items-center gap-2">
       <ClubCrest club={club} size="sm" />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold text-foreground">{clubName}</div>
-        <div className="mt-0.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--text-muted)]">
-          <span className="tabular-nums text-[color:var(--brand-primary)]">#{row.position}</span>
+        {name}
+        {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+        <div className={cn("mt-0.5 flex items-center gap-2", ui.text.label, ui.tone.muted)}>
+          {/* Position, points and goal difference are figures a reader scans
+              down a table, so they take the stat ramp rather than prose that
+              happens to be tabular. */}
+          <span className={cn(ui.stat.sm, ui.tone.default)}>#{row.position}</span>
           <span aria-hidden>·</span>
-          <span className="tabular-nums">{row.points} pts</span>
+          <span className={ui.stat.sm}>{row.points} pts</span>
           <span aria-hidden>·</span>
-          <span className="tabular-nums">
+          <span className={ui.stat.sm}>
             {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
           </span>
         </div>
       </div>
-    </div>
+    </UiCard>
   );
 }

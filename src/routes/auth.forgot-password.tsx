@@ -1,13 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import {
-  AuthShell,
-  AuthPrimaryButton,
-  AuthSecondaryButton,
-  AuthFieldError,
-  AuthFieldLabel,
-} from "@/components/auth/AuthShell";
+import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import { ui, UiInput } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
 import { validateEmail } from "@/lib/validation";
@@ -58,7 +54,14 @@ function ForgotPage() {
     return (
       <AuthShell title={t("auth.forgot.success_title")} subtitle={t("auth.forgot.success_body")}>
         <div className="flex flex-col items-center gap-4 py-2 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600">
+          <div
+            className={cn(
+              "grid h-14 w-14 place-items-center",
+              ui.radius.control,
+              "bg-[color:color-mix(in_oklab,var(--ui-positive)_18%,transparent)]",
+              ui.tone.positive,
+            )}
+          >
             <CheckCircle2 className="h-8 w-8" aria-hidden />
           </div>
           <AuthSecondaryButton onClick={() => navigate({ to: "/auth/login" })}>
@@ -72,23 +75,24 @@ function ForgotPage() {
   return (
     <AuthShell title={t("auth.forgot.title")} subtitle={t("auth.forgot.subtitle")}>
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
-        <div>
-          <AuthFieldLabel htmlFor={emailId}>{t("auth.email")}</AuthFieldLabel>
-          <input
-            id={emailId}
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError(null);
-            }}
-            aria-invalid={!!error}
-            className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm focus:border-[color:var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/40 outline-none"
-          />
-          <AuthFieldError id={`${emailId}-err`}>{error && t(error)}</AuthFieldError>
-        </div>
+        {/* The hand-rolled field used to render an error line the input was
+            never described by: `aria-describedby` was missing here, so the
+            message was visible and announced but not attached to the field.
+            `UiInput` wires it from the same `error` prop that paints it. */}
+        <UiInput
+          id={emailId}
+          label={t("auth.email")}
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setError(null);
+          }}
+          error={error ? t(error) : undefined}
+          reserveError
+        />
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {submitting ? t("auth.submitting") : t("auth.forgot.cta")}

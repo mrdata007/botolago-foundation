@@ -12,7 +12,6 @@ import { mapAdminError } from "@/backend/admin/errors";
 import {
   ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
-  AdminBadge,
   AdminDatum,
   AdminEmptyState,
   AdminField,
@@ -25,6 +24,7 @@ import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
+import { ui, UiBadge } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/staff/$principalId")({
@@ -38,10 +38,20 @@ export const Route = createFileRoute("/admin/staff/$principalId")({
  *  see why an action stays disabled; the server re-validates every call. */
 const MINIMUM_REASON_LENGTH = 8;
 
+/**
+ * The badge tone a principal's status carries.
+ *
+ * `suspended` is the amber one and maps onto the kit's `caution`, which is a
+ * FILL with `--ui-on-caution` on it: the amber measured 1.78:1 as a
+ * foreground. It also has to stay distinct from `negative` -- an account held
+ * back pending a decision is not a revoked one, and this badge is what an
+ * operator reads before choosing between "Restaurer" and the emergency
+ * revocation below.
+ */
 function statusTone(status: StaffPrincipalSummaryDto["status"]) {
   if (status === "active") return "positive" as const;
-  if (status === "suspended") return "warning" as const;
-  return "danger" as const;
+  if (status === "suspended") return "caution" as const;
+  return "negative" as const;
 }
 
 function AdminStaffDetailRoute() {
@@ -152,7 +162,7 @@ function AdminStaffDetailRoute() {
                 bare `tracking-wide`: unprefixed letter-spacing pulls joined
                 Arabic letterforms apart. The shared primitive spaces LTR only. */}
             <span className={ADMIN_LABEL_CLASS}>{rtl ? "معرّف الهوية" : "Identifiant"}</span>
-            <AdminDatum className="text-xs text-slate-300">{principalId}</AdminDatum>
+            <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>{principalId}</AdminDatum>
           </p>
 
           {!principal && !message && <AdminSkeletonList rows={2} testId="admin-staff-loading" />}
@@ -165,30 +175,32 @@ function AdminStaffDetailRoute() {
                 </AdminSectionHeading>
                 <dl className={`mt-3 grid gap-4 sm:grid-cols-2 ${ADMIN_PANEL_CLASS} p-4`}>
                   <AdminField label={rtl ? "الحالة" : "Statut"}>
-                    <AdminBadge tone={statusTone(principal.status)}>
+                    <UiBadge tone={statusTone(principal.status)}>
                       <AdminDatum mono={false}>{principal.status}</AdminDatum>
-                    </AdminBadge>
+                    </UiBadge>
                   </AdminField>
                   <AdminField label={rtl ? "سياسة المصادقة" : "Politique AAL"}>
-                    <AdminBadge tone={principal.mfaRequired ? "positive" : "danger"}>
+                    <UiBadge tone={principal.mfaRequired ? "positive" : "negative"}>
                       <AdminDatum mono={false}>
                         {principal.mfaRequired ? "MFA required" : "invalid policy"}
                       </AdminDatum>
-                    </AdminBadge>
+                    </UiBadge>
                   </AdminField>
                   <AdminField label={rtl ? "الأدوار" : "Rôles"}>
                     {principal.roles.length > 0 ? (
-                      <AdminDatum mono={false} className="text-slate-100">
+                      <AdminDatum mono={false} className={ui.tone.default}>
                         {principal.roles.map((role) => role.name).join(", ")}
                       </AdminDatum>
                     ) : (
-                      <span className="text-slate-400">{rtl ? "لا شيء" : "Aucun"}</span>
+                      // An absence, not a value: `--ui-on-surface-faint` is the
+                      // step this system reserves for one.
+                      <span className={ui.tone.faint}>{rtl ? "لا شيء" : "Aucun"}</span>
                     )}
                   </AdminField>
                   <AdminField label={rtl ? "طابور الإبطال" : "File d’invalidation"}>
-                    <span className="text-lg font-semibold tabular-nums">
-                      {principal.pendingSessionRevocationCount}
-                    </span>
+                    {/* A figure, so it goes on the stat ramp rather than on the
+                        type ramp with a hand-rolled `tabular-nums` beside it. */}
+                    <span className={ui.stat.md}>{principal.pendingSessionRevocationCount}</span>
                   </AdminField>
                 </dl>
               </section>
@@ -217,17 +229,25 @@ function AdminStaffDetailRoute() {
                       >
                         <dl className="grid gap-3 sm:grid-cols-2">
                           <AdminField label={rtl ? "الدور" : "Rôle"}>
-                            <AdminDatum mono={false} className="font-semibold text-slate-100">
+                            <AdminDatum
+                              mono={false}
+                              className={`[font-weight:var(--ui-weight-heavy)] ${ui.tone.default}`}
+                            >
                               {assignment.role}
                             </AdminDatum>
                           </AdminField>
                           <AdminField label={rtl ? "الانتهاء" : "Expiration"}>
                             {assignment.expiresAt ? (
-                              <AdminDatum className="text-xs text-slate-300">
+                              <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
                                 {assignment.expiresAt}
                               </AdminDatum>
                             ) : (
-                              <AdminDatum mono={false} className="text-xs text-slate-400">
+                              // Again an absence rather than a value, so it
+                              // takes the faint step, not the muted one.
+                              <AdminDatum
+                                mono={false}
+                                className={`${ui.text.meta} ${ui.tone.faint}`}
+                              >
                                 no expiry
                               </AdminDatum>
                             )}
@@ -251,7 +271,10 @@ function AdminStaffDetailRoute() {
                           confirmPrompt={
                             <>
                               {rtl ? "إلغاء الدور " : "Révoquer le rôle "}
-                              <AdminDatum mono={false} className="font-semibold">
+                              <AdminDatum
+                                mono={false}
+                                className="[font-weight:var(--ui-weight-body)]"
+                              >
                                 {assignment.role}
                               </AdminDatum>
                               {rtl
@@ -288,13 +311,13 @@ function AdminStaffDetailRoute() {
                         className={`${ADMIN_PANEL_CLASS} flex flex-wrap items-center gap-x-3 gap-y-1 p-3`}
                         data-testid="admin-assignment-history-item"
                       >
-                        <AdminDatum mono={false} className="text-sm font-medium text-slate-100">
+                        <AdminDatum mono={false} className={`${ui.text.body} ${ui.tone.default}`}>
                           {assignment.role}
                         </AdminDatum>
-                        <AdminBadge>
+                        <UiBadge>
                           <AdminDatum mono={false}>{assignment.status}</AdminDatum>
-                        </AdminBadge>
-                        <AdminDatum className="text-xs text-slate-400">
+                        </UiBadge>
+                        <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
                           {assignment.grantedAt ?? assignment.startsAt ?? "—"}
                         </AdminDatum>
                       </li>
@@ -368,7 +391,7 @@ function AdminStaffDetailRoute() {
                       confirmPrompt={
                         <>
                           {rtl ? "إلغاء طارئ للهوية " : "Révocation d’urgence du principal "}
-                          <AdminDatum className="text-xs">{principalId}</AdminDatum>
+                          <AdminDatum className={ui.text.meta}>{principalId}</AdminDatum>
                           {rtl
                             ? "؟ تُسحب كل الأدوار ويُرفض الوصول الإداري فوراً. لا يمكن التراجع عن هذه العملية."
                             : " ? Tous les rôles sont retirés et l’accès Admin est refusé immédiatement. L’opération est irréversible."}
@@ -377,7 +400,7 @@ function AdminStaffDetailRoute() {
                       onConfirm={(reason) => mutate("emergency", reason)}
                     />
                   )}
-                  <p className="text-xs text-slate-400">
+                  <p className={`${ui.text.meta} ${ui.tone.muted}`}>
                     {rtl
                       ? "تتطلب كل عملية تأكيداً صريحاً وسبباً خاصاً بها، ويُسجَّل كلاهما في التدقيق."
                       : "Chaque opération exige une confirmation explicite et un motif qui lui est propre; les deux sont consignés dans l’audit."}

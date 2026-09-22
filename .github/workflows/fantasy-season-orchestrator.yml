@@ -44,9 +44,20 @@ permissions:
 
 jobs:
   orchestrate:
-    # The hourly schedule needs the repository variable; an owner dispatch with
-    # the typed confirmation is its own authorization (one reviewed pass, used
-    # before the schedule is enabled).
+    # Two entry points, two authorizations. The schedule needs the repository
+    # variable, so automation cannot start itself while it is switched off. A
+    # manual dispatch is its own authorization -- owner actor plus the typed
+    # confirmation -- and runs even when the variable is off, so a reviewed
+    # manual pass is always possible. Owner decision, 2026-09-21.
+    #
+    # One consequence to know when reading a skipped run: because the dispatch
+    # path does not consult the variable, a dispatch running tells you nothing
+    # about whether the variable is set correctly. Only a scheduled run does.
+    # And `vars` in a job-level `if:` resolves repository and organization
+    # variables only -- environment-scoped ones are not available here, since
+    # the environment below is not applied until after this is evaluated. So a
+    # scheduled run that skips means the variable is missing, or is set on the
+    # production-admin-activation environment rather than at repository level.
     if: >-
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&

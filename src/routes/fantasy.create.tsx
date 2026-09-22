@@ -9,8 +9,16 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
-import { FplBanner, FplButton, FplHeader, FplKeyValueRow } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import {
+  UiAlert,
+  UiBanner,
+  UiButton,
+  UiCard,
+  UiHeader,
+  UiInput,
+  UiKeyValueRow,
+} from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -145,7 +153,7 @@ function CreateTeamBody() {
   if (screen.phase !== "ready" || !gameweek) {
     return (
       <>
-        <FplHeader title={t("fpl.squad_selection")} backTo="/fantasy" />
+        <UiHeader title={t("fpl.squad_selection")} tone="gradient" backTo="/fantasy" />
         <FantasyScreenGate state={screen} next="/fantasy/create" redirectNoTeam={false}>
           <div />
         </FantasyScreenGate>
@@ -165,6 +173,19 @@ function CreateTeamBody() {
   const activeSlotPlayer = playerOf(activeSlot?.playerId ?? null);
   const pickerBank = round1(summary.bankRemaining + (activeSlotPlayer?.price ?? 0));
   const takenIds = draft.slots.map((s) => s.playerId).filter(Boolean) as string[];
+
+  /**
+   * The three-per-club count `placeInto` runs, exposed so the picker can show
+   * the answer before the tap instead of after the toast. One rule, one
+   * implementation, two readers.
+   */
+  const clubLimitFor = (player: FantasyPlayer, targetSlot: number) =>
+    draft.slots.filter(
+      (s) => s.slot !== targetSlot && playerOf(s.playerId)?.clubId === player.clubId,
+    ).length >= 3;
+
+  /** Positions that still have an empty slot — what "Add Player" can honour. */
+  const openPositions = [...new Set(draft.slots.filter((s) => !s.playerId).map((s) => s.position))];
 
   const placeInto = (targetSlot: number, player: FantasyPlayer, budget: number) => {
     const clubCount = draft.slots.filter(
@@ -262,73 +283,77 @@ function CreateTeamBody() {
     const blocking = validation.errors.filter((e) => e !== "team_name");
     return (
       <>
-        <FplHeader title={t("fpl.squad_selection")} onBack={() => setStep("squad")} />
-        <FplBanner>{t("fpl.players_selected").replace("{n}", String(summary.filled))}</FplBanner>
+        <UiHeader
+          title={t("fpl.squad_selection")}
+          tone="gradient"
+          onBack={() => setStep("squad")}
+        />
+        <UiBanner>{t("fpl.players_selected").replace("{n}", String(summary.filled))}</UiBanner>
         <form
-          className="mx-3 mt-3 rounded-[6px] bg-white p-4 shadow-sm"
+          className="mx-3 mt-3"
           onSubmit={(e) => {
             e.preventDefault();
             void save();
           }}
         >
-          <label className="block">
-            <span className="text-[15px] font-extrabold text-foreground">{t("fpl.team_name")}</span>
-            <input
+          <UiCard>
+            <UiInput
+              label={t("fpl.team_name")}
+              hint={t("fpl.team_name_help")}
               value={draft.teamName}
               maxLength={TEAM_NAME_MAX_LENGTH}
               onChange={(e) => setDraft(setTeamNameOp(draft, e.target.value))}
               placeholder={t("fpl.team_name")}
-              className="mt-2 h-12 w-full rounded-[4px] border-b-2 border-[color:var(--fpl-ink)] bg-[color:var(--fpl-grey)] px-3 text-[15px] text-foreground outline-none"
               autoFocus
             />
-          </label>
-          <p className="mt-2 text-[13px] text-[color:var(--fpl-grey-text)]">
-            {t("fpl.team_name_help")}
-          </p>
-          <div className="mt-4">
-            <FplKeyValueRow
-              label={t("fpl.players_selected").replace("{n}", String(summary.filled))}
-              value={`${summary.filled}/15`}
-            />
-            <FplKeyValueRow
-              label={t("fpl.left_in_bank")}
-              value={nf.format(summary.bankRemaining)}
-            />
-            <FplKeyValueRow
-              label={t("fpl.captain")}
-              value={
-                playerOf(draft.slots.find((s) => s.isCaptain)?.playerId ?? null)?.name[lang] ?? "—"
-              }
-            />
-            <FplKeyValueRow
-              label={t("fpl.vice_captain")}
-              value={
-                playerOf(draft.slots.find((s) => s.isViceCaptain)?.playerId ?? null)?.name[lang] ??
-                "—"
-              }
-              className="border-b-0"
-            />
-          </div>
-          {blocking.length > 0 ? (
-            <ul className="mt-2 text-[13px] font-semibold text-[color:var(--fpl-pink)]">
-              {blocking.map((code) => (
-                <li key={code}>{t(VALIDATION_KEYS[code])}</li>
-              ))}
-            </ul>
-          ) : null}
-          {saveError ? (
-            <p className="mt-2 text-[13px] font-semibold text-[color:var(--fpl-pink)]">
-              {t(saveError)}
-            </p>
-          ) : null}
-          <FplButton
-            type="submit"
-            variant="gradient"
-            className="mt-4"
-            disabled={!nameCheck.ok || !validation.ok || saving}
-          >
-            {saving ? t("fpl.saving") : t("fpl.enter_squad")}
-          </FplButton>
+            <div className="mt-4">
+              {/* The banner above already says "{n}/15 joueurs"; the row says
+                  which total it is, not the same sentence twice. */}
+              <UiKeyValueRow label={t("fpl.squad")} value={`${summary.filled}/15`} />
+              <UiKeyValueRow
+                label={t("fpl.left_in_bank")}
+                value={nf.format(summary.bankRemaining)}
+              />
+              <UiKeyValueRow
+                label={t("fpl.captain")}
+                value={
+                  playerOf(draft.slots.find((s) => s.isCaptain)?.playerId ?? null)?.name[lang] ??
+                  t("fantasy.stat.none")
+                }
+              />
+              <UiKeyValueRow
+                label={t("fpl.vice_captain")}
+                value={
+                  playerOf(draft.slots.find((s) => s.isViceCaptain)?.playerId ?? null)?.name[
+                    lang
+                  ] ?? t("fantasy.stat.none")
+                }
+                className="border-b-0"
+              />
+            </div>
+            {blocking.length > 0 ? (
+              <UiAlert tone="negative" className="mt-3">
+                <ul>
+                  {blocking.map((code) => (
+                    <li key={code}>{t(VALIDATION_KEYS[code])}</li>
+                  ))}
+                </ul>
+              </UiAlert>
+            ) : null}
+            {saveError ? (
+              <UiAlert tone="negative" className="mt-3">
+                {t(saveError)}
+              </UiAlert>
+            ) : null}
+            <UiButton
+              type="submit"
+              variant="gradient"
+              className="mt-4"
+              disabled={!nameCheck.ok || !validation.ok || saving}
+            >
+              {saving ? t("fpl.saving") : t("fpl.enter_squad")}
+            </UiButton>
+          </UiCard>
         </form>
       </>
     );
@@ -368,9 +393,18 @@ function CreateTeamBody() {
         onReset={() => setDraft(initCreateDraft(draft.teamName))}
         resetDisabled={summary.filled === 0}
         listColumns={[
-          { key: "form", label: t("fpl.form"), render: (p) => p.form.toFixed(1) },
+          {
+            key: "form",
+            label: t("fpl.form"),
+            // BG-0071: a dash, not 0.0, while no gameweek has scored.
+            render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+          },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
-          { key: "sel", label: t("fpl.selected"), render: (p) => `${p.ownership.toFixed(1)}%` },
+          {
+            key: "sel",
+            label: t("fantasy.picker.sort.ownership"),
+            render: (p) => `${p.ownership.toFixed(1)}%`,
+          },
         ]}
       />
 
@@ -381,8 +415,18 @@ function CreateTeamBody() {
           bank={pickerBank}
           position={activeSlot.position}
           lockPosition
+          clubLimitReached={(player) => clubLimitFor(player, activeSlot.slot)}
           disabledIds={takenIds.filter((id) => id !== activeSlot.playerId)}
+          currentPlayerId={activeSlot.playerId}
           onPick={onPick}
+          onRemove={
+            activeSlot.playerId
+              ? () => {
+                  setDraft(removePlayer(draft, activeSlot.slot));
+                  setPickerSlot(null);
+                }
+              : undefined
+          }
           onClose={() => setPickerSlot(null)}
         />
       ) : pickerAny ? (
@@ -390,6 +434,11 @@ function CreateTeamBody() {
           players={players}
           clubs={clubs}
           bank={round1(summary.bankRemaining)}
+          allowedPositions={openPositions}
+          clubLimitReached={(player) => {
+            const target = draft.slots.find((s) => !s.playerId && s.position === player.position);
+            return target ? clubLimitFor(player, target.slot) : false;
+          }}
           disabledIds={takenIds}
           onPick={onPickAny}
           onClose={() => setPickerAny(false)}

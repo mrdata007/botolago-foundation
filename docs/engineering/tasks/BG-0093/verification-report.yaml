@@ -1,0 +1,532 @@
+task_id: BG-0093
+lane: B — squad building, the player picker, transfers
+role: Verifier
+branch: bg-0093-squad-picker
+verdict: >
+  PASS for the surfaces this lane owns. Every picker checklist item is verified
+  item by item below against real Botola player data in French and Arabic. Three
+  things are NOT verified and are listed under `not_verified` rather than
+  quietly omitted: the club column against the production backend, the Supabase
+  (cloud) transfer path, and the appearance of four sibling-owned components
+  that this lane's screens render but does not own.
+
+# ---------------------------------------------------------------------------
+# HOW IT WAS MEASURED
+# ---------------------------------------------------------------------------
+
+method:
+  server: >
+    A dedicated Vite dev server on 127.0.0.1:4433 — NOT playwright.config's
+    reused 4173, which sibling lanes hold. Every measurement below was taken
+    against 4433 by a Playwright script driving the bundled Chromium from
+    /opt/pw-browsers. `playwright install` was never run.
+  data: >
+    `VITE_*_DATA_MODE=mock` with the real Botola mock pool: 47 players across 8
+    clubs with their real French and Arabic names — "Ahmed Reda Tagnaouti" /
+    "أحمد رضا تكناوتي", "Zouhair El Moutaraji", "زهير العروبي", "Cassius Mailula".
+    No placeholders. The long real names are the whole point: they are what
+    truncated in the old 4-column picker.
+  auth: "mock auth, demo@botolago.ma."
+  viewports: [390, 430, 768, 1440]
+  languages: [fr, ar]
+  themes: >
+    light, and dark by adding `.dark` to <html> by hand. DARK_MODE_ENABLED is
+    still false and was not changed.
+  overflow_assertions:
+    - "`document.documentElement.scrollWidth <= innerWidth` — necessary but not sufficient."
+    - >
+      every element box against the viewport (`left < -1 || right > vw + 1`),
+      because `overflow-x: clip` hides overflow from `scrollWidth`.
+    - >
+      every leaf text node against ITS OWN box (`scrollWidth > clientWidth`
+      without `text-overflow: ellipsis`), which is what actually caught the one
+      clipping defect found — a column head sliced by its own grid track while
+      the viewport test stayed green. `sr-only` nodes are excluded.
+  tap_targets: "every enabled button / select / a / input / [role=tab]: height >= 44px."
+  contrast: >
+    rasterised sRGB, not computed styles. The element is screenshotted, the PNG
+    is decoded back inside Chromium, the pixels are histogrammed, and the ratio
+    is taken between the dominant colour and the furthest-luminance colour
+    covering >= 0.5% of the box. This sees opacity compositing and gradients,
+    which a `getComputedStyle` read does not — and it is what caught the
+    3.13:1 blocked row.
+
+# ---------------------------------------------------------------------------
+# THE METER
+# ---------------------------------------------------------------------------
+
+divergence_meter:
+  before: { total: 1534, files: 91 }
+  after: { total: 1438, files: 84 }
+  owned_files_after: "all 8 at 0"
+
+# ---------------------------------------------------------------------------
+# THE PICKER CHECKLIST, ITEM BY ITEM
+# ---------------------------------------------------------------------------
+
+picker_checklist:
+  - item: search
+    verified: PASS
+    how: >
+      Always visible in the header band instead of behind a toggle, as a kit
+      `UiInput` (44px) with `aria-label` and placeholder `fpl.search_player`. A
+      clear button appears only when the field has content. Matches both
+      `name.fr` (case-insensitive) and `name.ar`, unchanged from before.
+    at: "390/430/768/1440, fr + ar, light + dark"
+
+  - item: club filter
+    verified: PASS
+    how: >
+      Third select, labelled `fantasy.picker.filter_club` — "Club" / "النادي".
+      It was labelled "Vue" ("View") before. Options observed in fr:
+      [Tous, WAC, RCA, FAR, FUS, RSB, MAT, HUSA, MCO]; in ar:
+      [الكل, الوداد, الرجاء, الجيش, الفتح, بركان, التطواني, الحسنية, المولودية].
+      Selecting WAC narrows 47 rows to 8.
+    note: >
+      Its empty option is `fpl.all` ("Tous"), not `fpl.all_clubs`
+      ("Tous les clubs"), which does not fit a three-abreast column at 390px.
+      The field's own label already says Club.
+
+  - item: position filter
+    verified: PASS
+    how: >
+      Three observed states, all consistent with the list by construction —
+      one expression feeds both.
+        * slot imposes it: no select at all; a locked pill "GB" (fr) / "حم" (ar)
+          plus "Poste imposé par l’emplacement choisi." List: 8 goalkeepers.
+        * only one position still open: same locked pill. Proven by filling 13
+          of 15 slots and pressing "Ajouter un joueur" — 2 selects, pill "GB",
+          lock line present, 8 GK rows.
+        * manager chooses: select offering exactly the open positions.
+          On an empty draft: [Tous, GB, DEF, MIL, ATT] / [الكل, حم, مد, وس, هج].
+    see_also: "position_filter_investigation below"
+
+  - item: price
+    verified: PASS
+    how: >
+      One figure per row, `ui.stat.sm` (tabular, `ltr:`-only tightening) on the
+      inline-end edge, localized ("5,2" in fr-FR). It is now the only numeric
+      column, which is what gives the name ~230px instead of ~160px. The max
+      price filter is `fantasy.picker.filter_price` ("Prix max" /
+      "السعر الأقصى") listing every distinct price in the pool.
+    contrast: "19.11:1 light, 16.1:1 dark (enabled); 7.46:1 / 8.11:1 muted on a blocked row."
+
+  - item: availability
+    verified: PASS
+    how: >
+      A `UiBadge` beside the name whenever `status !== "available"`, on the
+      localized `player.status.*` copy. Observed on Mohamed Nahiri (WAC, DEF):
+      "INCERTAIN" in fr. Neutral tone for doubtful, negative for injured and
+      suspended.
+    note: "the previous picker showed availability nowhere at all — this is new, not restored."
+
+  - item: add
+    verified: PASS
+    how: >
+      The whole row is the control (a 48px `--ui-row-min` button, well over the
+      floor), carrying a `+` glyph on the inline-end edge. Picking closes the
+      sheet and fills the slot: verified on both routes —
+      `dialogAfterPick: 0` with the player on the pitch.
+
+  - item: remove
+    verified: PASS
+    how: >
+      New. When the picker is opened on a slot that already holds a player
+      (create's action sheet → "Remplacer"), the sheet's pinned footer reads
+      "Retirer · Zouhir Laâroubi" / "إزالة · زهير العروبي". Tapping it clears
+      the slot and closes the sheet (`dialogAfterRemove: 0`). Before, a slot
+      could be replaced from the picker but never cleared from it.
+      The footer is absent when the slot is empty, and in transfers, where
+      "remove" is not a legal operation.
+
+  - item: disabled state
+    verified: PASS
+    how: >
+      Four pre-computed reasons, precedence taken > no_slot > club_limit >
+      budget, each rendered on the row as a `disabled` button with the reason in
+      words next to the club and position.
+    readability: >
+      The first attempt used `opacity-45` on the whole row and measured 3.13:1 —
+      the reason was the least readable thing on the screen. Only the shirt is
+      dimmed now. Measured after the fix: blocked name 7.46:1 light / 8.11:1
+      dark, blocked reason 7.46:1 / 8.11:1.
+
+  - item: budget state
+    verified: PASS
+    how: >
+      `UiBanner` at the top reads "Banque 6,6" / "الرصيد 6,6" (9.27:1 light,
+      9.91:1 dark). Any player above it is blocked with "Au-dessus du budget".
+      The bank shown is the slot-aware figure the route computes — for a filled
+      slot it already includes the outgoing player's price, so a like-for-like
+      swap is not falsely blocked.
+
+  - item: max-club state (three per club)
+    verified: PASS
+    how: "see club_limit_proof below — this is the headline defect and it is proven end to end."
+
+  - item: scroll behaviour
+    verified: PASS
+    how: >
+      The sheet is a flex column at 94dvh: header, bank banner, filters and sort
+      are fixed, only the `<ul>` scrolls. Filters stay reachable 40 rows down,
+      which they were not before (the old picker scrolled the whole page as one
+      block). No horizontal scroll at any width, fr or ar.
+
+  - item: sheet / modal behaviour
+    verified: PASS
+    how: >
+      Both overlays are kit `UiSheet`s: focus-trapped Radix dialogs, Escape
+      closes, scrim over the pitch behind, `Dialog.Title` present (so
+      `getByRole("dialog", { name: /Ajouter un joueur/ })` still resolves — the
+      existing e2e selector keeps working), and exactly one close control,
+      labelled `t("fpl.close")`. No English "Close" remains in either sheet.
+
+  - item: tap targets
+    verified: PASS
+    how: >
+      Automated across every enabled control on the builder, the action sheet
+      and the picker, at 390/430/768/1440 in fr and ar, light and dark:
+      `smallTaps: []` in every run. The two controls that were under the floor
+      before — the 24px info glyph and the 36px header search toggle — are gone,
+      not shrunk around.
+
+# ---------------------------------------------------------------------------
+# THE CLUB LIMIT, PROVEN
+# ---------------------------------------------------------------------------
+
+club_limit_proof:
+  route: /fantasy/create
+  script: "open Add Player, filter to WAC, pick the top row; three times; then reopen and read every WAC row."
+  observed:
+    - { step: 1, wac_rows_pickable: 8 }
+    - { step: 2, wac_rows_pickable: 7 }
+    - { step: 3, wac_rows_pickable: 6 }
+    - step: 4
+      wac_rows_total: 8
+      wac_rows_pickable: 0
+      wac_rows_disabled: 8
+      rows_saying_club_limit: 5
+      rows_saying_already_in_squad: 3
+  rendered_rows:
+    - "Bouly Sambou — WAC · ATT · Déjà dans l’effectif — 8,0 — padlock"
+    - "Cassius Mailula — WAC · ATT · Déjà dans l’effectif — 7,6 — padlock"
+    - "Zouhair El Moutaraji — WAC · MIL · Déjà dans l’effectif — 7,4 — padlock"
+    - "Reda Jaadi — WAC · MIL · Limite du club atteinte — 6,8 — padlock"
+    - "Yahya Attiat-Allah — WAC · DEF · Limite du club atteinte — 6,2 — padlock"
+    - "Mohamed Nahiri [INCERTAIN] — WAC · DEF · Limite du club atteinte — 5,5 — padlock"
+    - "Ahmed Reda Tagnaouti — WAC · GB · Limite du club atteinte — 5,0 — padlock"
+    - "Adam Aznou — WAC · DEF · Limite du club atteinte — 4,9 — padlock"
+  conclusion: >
+    Zero taps produce a toast, and a manager can read the rule off the list
+    without attempting anything. The transfers route shows the same on its own
+    predicate: "Anas Zniti — RCA · GB · Limite du club atteinte", disabled,
+    before any interaction.
+  the_rule_itself: >
+    unchanged. The routes still run their own check on the tap; the picker reads
+    the same count a second time so it can answer earlier.
+
+# ---------------------------------------------------------------------------
+# THE POSITION FILTER: WHAT ACTUALLY REPRODUCED
+# ---------------------------------------------------------------------------
+
+position_filter_investigation:
+  claim_in_brief: >
+    "opening a GK slot shows the Poste select reading 'Tous' while the list is
+    filtered to goalkeepers."
+  measured_on_base_tree:
+    method: "read `select.value` and the selected option's text directly from the DOM on both routes and both entry points."
+    results:
+      - {
+          route: /fantasy/transfers,
+          entry: "card → action sheet → Transférer ce joueur",
+          select_value: "GK",
+          select_label: "GB",
+          disabled: true,
+          rows: 8,
+        }
+      - {
+          route: /fantasy/transfers,
+          entry: "Ajouter un joueur with a pending out",
+          select_value: "GK",
+          select_label: "GB",
+          disabled: true,
+          rows: 8,
+        }
+      - {
+          route: /fantasy/transfers,
+          entry: "Ajouter un joueur, nothing pending",
+          select_value: "",
+          select_label: "Tous",
+          disabled: false,
+          rows: 47,
+        }
+      - {
+          route: /fantasy/create,
+          entry: "empty GK slot",
+          select_value: "GK",
+          select_label: "GB",
+          disabled: true,
+          rows: 8,
+        }
+      - {
+          route: /fantasy/create,
+          entry: "Ajouter un joueur",
+          select_value: "",
+          select_label: "Tous",
+          disabled: false,
+          rows: 47,
+        }
+  finding: >
+    The literal symptom does not reproduce: where the list is filtered to
+    goalkeepers, the select reads "GB". Reported honestly rather than
+    silently "fixed".
+  what_does_reproduce:
+    - >
+      The locked select is only `opacity-70` and still enumerates "Tous" plus
+      all four positions. It opens as a live control offering choices the screen
+      will ignore — the same contradiction, one tap later.
+    - >
+      "Ajouter un joueur" always said "Tous" and always listed all 47 players,
+      including every player whose position has no empty slot. With only the two
+      GK slots left, the control says "Tous", the list shows 47, and 39 of them
+      answer a tap with "Aucun emplacement libre pour ce poste" — the same
+      trial-and-error defect as the club limit, wearing the position filter's
+      clothes.
+    - >
+      The third filter was labelled "Vue" over a control that filters by club.
+  fixed_by: >
+    making one expression decide both, and not drawing a control where there is
+    no choice. Verified after: with only GK slots open, "Ajouter un joueur"
+    renders 2 selects (not 3), a locked pill "GB", the lock line, and 8 GK rows.
+
+# ---------------------------------------------------------------------------
+# LAYOUT
+# ---------------------------------------------------------------------------
+
+layout:
+  result: "no horizontal page scroll, no element past the viewport, nothing meaningful clipped, in every combination run."
+  runs:
+    columns:
+      [
+        surface,
+        width,
+        lang,
+        theme,
+        doc_scroll_vs_viewport,
+        elements_past_viewport,
+        clipped_text,
+        taps_under_44px,
+      ]
+    rows:
+      - [builder + sheet + picker, 390, fr, light, "390 = 390", 0, 0, 0]
+      - [builder + sheet + picker, 390, fr, dark, "390 = 390", 0, 0, 0]
+      - [builder + sheet + picker, 390, ar, light, "390 = 390", 0, 0, 0]
+      - [builder + sheet + picker, 390, ar, dark, "390 = 390", 0, 0, 0]
+      - [builder + sheet + picker, 430, fr, light, "430 = 430", 0, 0, 0]
+      - [builder + sheet + picker, 430, ar, dark, "430 = 430", 0, 0, 0]
+      - [builder + sheet + picker, 768, ar, light, "768 = 768", 0, 0, 0]
+      - [builder + sheet + picker, 768, fr, dark, "768 = 768", 0, 0, 0]
+      - [builder + sheet + picker, 1440, fr, light, "1440 = 1440", 0, 0, 0]
+      - [builder + sheet + picker, 1440, ar, light, "1440 = 1440", 0, 0, 0]
+      - [transfer confirmation, 390, fr, light, "390 = 390", 0, 0, 0]
+      - [transfer confirmation, 390, ar, dark, "390 = 390", 0, 0, 0]
+      - [create builder + list + name step, 390, fr, light, "390 = 390", 0, 0, 0]
+      - [create builder + picker + remove, 390, ar, dark, "390 = 390", 0, 0, 0]
+  one_clipping_defect_found_and_fixed:
+    where: "SquadListTable's numeric column heads, /fantasy/create → Liste, 390px fr"
+    symptom: >
+      "Sélectionné" needs 66px at `ui.text.label` (12px, uppercase,
+      `tracking-wide`); the track is 56px. The head was sliced by the viewport
+      edge. The document-scrollWidth test stayed green throughout — this is
+      exactly the case that test cannot see.
+    fixed_by: >
+      numeric heads step to `ui.text.micro` at heavy weight, and the numeric
+      tracks became `minmax(56px,auto)` so a long head widens its track instead
+      of being cut. The create route also passes the more precise
+      `fantasy.picker.sort.ownership` ("Sélection") for that column.
+    re_measured: "clipped: [] at 390 fr."
+
+rtl:
+  result: "Arabic genuinely mirrors — measured, not eyeballed."
+  evidence:
+    - { width: 390, dir: ltr, shirt_left_px: 12, price_left_px: 322 }
+    - { width: 390, dir: rtl, shirt_left_px: 350, price_left_px: 48 }
+    - { width: 430, dir: rtl, shirt_left_px: 390, price_left_px: 48 }
+    - { width: 768, dir: rtl, shirt_left_px: 584, price_left_px: 192 }
+    - { width: 1440, dir: rtl, shirt_left_px: 920, price_left_px: 528 }
+  also_checked:
+    - "filter labels, the segmented control's option order and the sheet header all mirror."
+    - "Arabic letterforms stay joined — no `tracking-*` reaches Arabic text (the kit's steps are all `ltr:`-prefixed)."
+    - >
+      the confirmation screen's out/in rules sit on the inline-start edge, which
+      is the right edge under rtl. The `ArrowLeft`/`ArrowRight` pair that used to
+      point the wrong way is gone.
+
+# ---------------------------------------------------------------------------
+# CONTRAST (rasterised sRGB, AA floor 4.5:1)
+# ---------------------------------------------------------------------------
+
+contrast:
+  result: "every measured foreground clears 4.5:1 in both themes."
+  light:
+    columns: [element, foreground, background, ratio]
+    rows:
+      - [picker row name (enabled), "rgb(4,12,24)", "rgb(252,252,252)", 19.11]
+      - [picker row meta (club · position), "rgb(76,84,96)", "rgb(252,252,252)", 7.46]
+      - [picker row price, "rgb(4,12,24)", "rgb(252,252,252)", 19.11]
+      - [blocked row name, "rgb(76,84,96)", "rgb(252,252,252)", 7.46]
+      - [blocked row reason, "rgb(76,84,96)", "rgb(252,252,252)", 7.46]
+      - [bank banner, "rgb(112,236,248)", "rgb(12,48,100)", 9.27]
+      - [filter label, "rgb(4,12,24)", "rgb(252,252,252)", 19.11]
+      - [position lock hint, "rgb(76,84,96)", "rgb(252,252,252)", 7.46]
+      - [sort tab (selected), "rgb(12,48,100)", "rgb(252,252,252)", 12.62]
+      - [sort tab (idle), "rgb(76,84,96)", "rgb(228,232,236)", 6.21]
+      - [confirm "SORTANT" caption, "rgb(200,12,120)", "rgb(252,252,252)", 5.42]
+      - [confirm "ENTRANT" caption, "rgb(8,124,56)", "rgb(252,252,252)", 5.18]
+      - [confirm pair name, "rgb(4,12,24)", "rgb(252,252,252)", 19.11]
+      - [chip button, "rgb(252,252,252)", "rgb(12,48,100)", 12.62]
+      - [squad list name, "rgb(4,12,24)", "rgb(252,252,252)", 19.11]
+      - [squad list group pill, "rgb(252,252,252)", "rgb(12,48,100)", 12.62]
+      - [team name placeholder, "rgb(108,116,124)", "rgb(252,252,252)", 4.62]
+      - [team name hint, "rgb(76,84,96)", "rgb(252,252,252)", 7.46]
+  dark:
+    columns: [element, foreground, background, ratio]
+    rows:
+      - [picker row name (enabled), "rgb(240,244,252)", "rgb(16,24,40)", 16.1]
+      - [picker row meta, "rgb(168,176,188)", "rgb(16,24,40)", 8.11]
+      - [picker row price, "rgb(240,244,252)", "rgb(16,24,40)", 16.1]
+      - [blocked row name, "rgb(168,176,188)", "rgb(16,24,40)", 8.11]
+      - [blocked row reason, "rgb(168,176,188)", "rgb(16,24,40)", 8.11]
+      - [bank banner, "rgb(112,236,248)", "rgb(20,44,84)", 9.91]
+      - [filter label, "rgb(240,244,252)", "rgb(16,24,40)", 16.1]
+      - [position lock hint, "rgb(168,176,188)", "rgb(16,24,40)", 8.11]
+      - [sort tab (selected), "rgb(152,216,252)", "rgb(16,24,40)", 11.46]
+      - [sort tab (idle), "rgb(168,176,188)", "rgb(24,36,48)", 7.2]
+      - [confirm "SORTANT" caption, "rgb(252,112,180)", "rgb(16,24,40)", 6.86]
+      - [confirm "ENTRANT" caption, "rgb(84,212,120)", "rgb(16,24,40)", 9.35]
+      - [confirm pair name, "rgb(240,244,252)", "rgb(16,24,40)", 16.1]
+      - [chip button, "rgb(240,244,252)", "rgb(20,44,84)", 12.55]
+  two_failures_found_and_fixed:
+    - element: "blocked picker row (first attempt, `opacity-45` on the row)"
+      measured: "3.13:1 light"
+      why_it_mattered: "the reason a row is blocked is the one thing the manager must read"
+      fixed: "dim the shirt only; name `ui.tone.muted`, reason `ui.tone.negative`. Re-measured 7.46:1."
+    - element: '`UiBadge tone="negative"` / `tone="positive"` on the confirmation screen'
+      measured: "4.07:1 and 3.96:1 light"
+      cause: "a kit defect — the tone's own 18–20% tint is too light for the tone as a foreground"
+      fixed: "not used. Replaced by a coloured inline-start rule plus the tone as text on the card surface: 5.42:1 / 5.18:1."
+      raised_as: "kit request `badge-tones-fail-AA-on-their-own-fill` in the implementation report"
+
+dark_mode:
+  result: PASS
+  flag: "DARK_MODE_ENABLED is still `false` and was not touched. `.dark` was applied by hand for measurement, as instructed."
+  checked: >
+    No white card, no invisible text, no un-themed surface in any owned file: the
+    picker sheet, its banner, filters, segmented control and rows; the action
+    sheet; the squad list; the confirmation cards, chips and bottom bar; the
+    team-name form; both gradient headers.
+  still_wrong_in_dark_and_not_this_lane:
+    - "`FplStatBar` — white band across the top of both owned routes"
+    - "`FplPlayerCard` — white sub plates on every pitch card"
+    - "`FplPitch` — `rgba(255,255,255,…)` markings instead of `--ui-pitch-line`"
+
+# ---------------------------------------------------------------------------
+# NON-REGRESSION
+# ---------------------------------------------------------------------------
+
+must_not_regress:
+  gw1_seven_fixtures:
+    status: "cannot be reached from this lane"
+    evidence: >
+      `grep -n "fixture|nextOpponent|upcoming"` across all seven owned files
+      returns nothing. No owned file renders a fixture list, a difficulty grid
+      or a player's upcoming fixtures, so the deferred FAR Rabat v Raja cannot
+      reappear through it.
+  match_time_zone:
+    status: PASS
+    evidence: >
+      The two date formatters this lane touched both pass
+      `timeZone: MATCH_TIME_ZONE` imported from `src/lib/match-kickoff.ts`:
+      `SquadBuilderScreen.DeadlineLine` and the new deadline line on
+      `TransferConfirmScreen`. Rendered identically on both screens —
+      "Journée 14 Deadline: 23 sept. 2026, 10:03" /
+      "الجولة 14 الموعد النهائي: 23 شتنبر 2026، 10:03".
+    note: >
+      The line replaces `FplDeadlineLine`, which hardcoded the literal
+      "Africa/Casablanca". Same zone, now from the shared constant, so a future
+      change to the competition calendar moves both.
+  squad_architecture: "2 GK / 5 DEF / 5 MID / 3 FWD — the empty create board renders 2/5/5/3 and `validateDraft` is unchanged."
+  proven_logic: "no service, RPC, store or engine file is in the diff."
+
+# ---------------------------------------------------------------------------
+# GATES
+# ---------------------------------------------------------------------------
+
+gates:
+  typecheck: pass
+  test:
+    result: "1437 pass / 0 fail"
+    brief_expected: 1438
+    delta_explained: >
+      -1 is the `SURFACES` loop iteration for the deleted
+      `PlayerPickerDrawer.tsx`. No test regressed and none was weakened; the
+      guard still runs over the nine remaining player-stat surfaces.
+  lint: "0 errors, 17 pre-existing react-refresh warnings"
+  format_check: "40 failures, all pre-existing, none in an owned file — byte-identical set to the base tree"
+  i18n_gate: "pass; W1 7, W2 7, W3 264, W4 81, all at baseline after the documented move"
+  build: pass
+  design_divergence: "1534 → 1438; all owned files 0"
+
+# ---------------------------------------------------------------------------
+# WHAT IS NOT VERIFIED
+# ---------------------------------------------------------------------------
+
+not_verified:
+  - id: the club column against the production backend
+    detail: >
+      In `VITE_FOOTBALL_DATA_MODE=mock`, `MockFootballRepository.getTeams` maps
+      each club to a generated UUID while the Fantasy mock pool keys players by
+      the slug ("war", "rca"), so `clubs.find(c => c.id === player.clubId)`
+      misses and the club segment of the picker's meta line renders empty. It is
+      a mock-only id mismatch in `src/backend/football/mock-repository.ts` — a
+      file this lane must not touch — and it does not exist in Supabase mode,
+      where both sides come from the same backend.
+    what_was_done: >
+      That one line was patched locally to return the slug, the picker was
+      measured with real club names and real club kits present (screenshots in
+      the report's evidence set show "FAR · GB", "WAC · GB", "RCA · GB",
+      "الوداد · حم"), and the patch was reverted before commit. `git status`
+      is clean of it and the meter/gates were all re-run afterwards.
+    residual_risk: >
+      low — the club segment is one truncating span in a `·`-joined line. The
+      worst case is a longer production short name, and the line truncates
+      rather than overflowing (verified with the Arabic club names, which are
+      the longer set).
+    suggested_owner: "whoever owns `src/backend/football/mock-repository.ts` — aligning the mock ids would make every Fantasy screen verifiable locally."
+  - id: the cloud (Supabase) transfer path
+    detail: >
+      `previewTransfers` / `confirmTransfers` / `activateChip` run only when
+      `owned.source === "cloud"`. The local harness is mock-mode, so the local
+      branch was exercised end to end and the cloud branch was not.
+    mitigation: >
+      Neither branch was modified — the diff touches no service, no repository
+      and no `owned.repo.*` call. The confirmation screen reads the same
+      `preview` object it read before, plus one new `deadlineIso` prop.
+  - id: four sibling-owned components rendered inside these screens
+    detail: >
+      `FplStatBar`, `FplPlayerCard`/`FplEmptySlot`, `FplPitch` and
+      `JerseyVisual`/`kits.ts` appear in every screenshot in this report and are
+      not converted. They are listed as cross-lane dependencies in the
+      implementation report. This lane's verdict covers its own files only.
+  - id: e2e suite
+    detail: >
+      `tests/e2e/fantasy.journey.e2e.ts` is skipped without
+      E2E_FANTASY_EMAIL / E2E_FANTASY_PASSWORD, which this environment does not
+      have, so it was not run.
+    checked_by_reading: >
+      Its two picker selectors still resolve against the new markup:
+      `getByRole("dialog", { name: /Ajouter un joueur/ })` (the `UiSheet`'s
+      `Dialog.Title` carries the name) and
+      `dialog.locator("li button:not([disabled])")` filtered to exclude
+      `svg.lucide-info` (the rows are still `li > button`, and the info glyph
+      the filter excluded no longer exists, which does not change the result).

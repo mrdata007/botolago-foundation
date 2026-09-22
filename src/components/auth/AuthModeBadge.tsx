@@ -2,6 +2,8 @@
 // Silent in production Supabase mode.
 import { IS_MOCK_AUTH } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 export function AuthModeBadge() {
   const { t } = useI18n();
@@ -9,7 +11,14 @@ export function AuthModeBadge() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed bottom-2 start-2 z-[100] rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-black shadow-lg"
+      className={cn(
+        "pointer-events-none fixed bottom-2 start-2 z-[100] px-2 py-0.5",
+        ui.radius.full,
+        ui.text.label,
+        // The kit's caution token rather than a raw amber, so the badge stays
+        // legible in dark mode too.
+        "bg-[color:var(--ui-caution)] text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-card)]",
+      )}
     >
       {t("auth.mode.mock")}
     </div>

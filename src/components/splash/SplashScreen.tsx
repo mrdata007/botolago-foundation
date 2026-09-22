@@ -81,11 +81,24 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             draggable={false}
           />
           {/* light sweep */}
+          {/*
+            A shine travelling across the wordmark. Everything about it was
+            physical: it started outside the LEFT edge, translated +X, and
+            skewed one way — so in Arabic it entered from the wrong side and
+            leaned against the letterforms instead of with them.
+
+            `-start-1/3` puts it outside the leading edge in both scripts, and
+            `--splash-dir` carries the sign so the travel and the skew follow.
+            The gradient itself is symmetric (transparent to white to
+            transparent), so `to right` is `90deg` to the pixel — but stating
+            an angle at all is the thing rule 3 forbids.
+          */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-18deg] motion-safe:animate-[splash-sweep_1100ms_cubic-bezier(0.4,0,0.2,1)_220ms_both]"
+            className="pointer-events-none absolute inset-y-0 -start-1/3 w-1/3 [transform:skewX(calc(-18deg*var(--splash-dir)))] motion-safe:animate-[splash-sweep_1100ms_cubic-bezier(0.4,0,0.2,1)_220ms_both]"
             style={{
-              background: "linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.55), transparent)",
+              background:
+                "linear-gradient(to right, transparent, hsl(0 0% 100% / 0.55), transparent)",
             }}
           />
         </div>
@@ -95,8 +108,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           aria-hidden="true"
           className="h-[3px] w-24 origin-center rounded-full motion-safe:animate-[splash-bar_760ms_cubic-bezier(0.22,1,0.36,1)_180ms_both]"
           style={{
+            // Symmetric, so `to right` is identical to the `90deg` it
+            // replaces — but an angle is a physical direction and this file
+            // renders in both.
             background:
-              "linear-gradient(90deg, transparent, hsl(214 100% 66%), hsl(224 92% 58%), transparent)",
+              "linear-gradient(to right, transparent, hsl(214 100% 66%), hsl(224 92% 58%), transparent)",
           }}
         />
       </div>
@@ -106,10 +122,14 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           0% { opacity: 0; transform: scale(0.97) translateY(6px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
+        /* --splash-dir is +1 in a left-to-right document and -1 in a
+           right-to-left one, so the shine leaves the leading edge and
+           travels with the reading direction in both. A backtick cannot
+           appear in this block: it is inside a JSX template literal. */
         @keyframes splash-sweep {
-          0% { transform: translateX(0) skewX(-18deg); opacity: 0; }
+          0% { transform: translateX(0) skewX(calc(-18deg * var(--splash-dir))); opacity: 0; }
           25% { opacity: 1; }
-          100% { transform: translateX(420%) skewX(-18deg); opacity: 0; }
+          100% { transform: translateX(calc(420% * var(--splash-dir))) skewX(calc(-18deg * var(--splash-dir))); opacity: 0; }
         }
         @keyframes splash-bar {
           0% { opacity: 0; transform: scaleX(0.1); }

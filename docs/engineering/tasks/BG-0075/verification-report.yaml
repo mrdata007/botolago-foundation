@@ -1,0 +1,125 @@
+task_id: BG-0075
+branch: bg-0074-fantasy-read-surfaces
+base_commit: 48e2213c5edcb310868f7e4556e36f038bbf13fa
+status: VERIFIED
+
+rehearsal_data_premise_confirmed:
+  project: tkewgajrljbwgwedqsxn
+  read_only: true
+  counts:
+    fantasy_rankings: 0
+    fantasy_team_gameweek_results: 0
+    fantasy_player_point_events: 0
+    fantasy_auto_substitutions: 0
+    fantasy_teams: 7
+    fantasy_seasons: 1
+  conclusion: >
+    Exactly as the task said: nothing in production can exercise this code. No
+    gameweek has scored, so every production caller gets
+    `{averagePoints: null, highestPoints: null, teamCount: 0}` and an empty
+    events/autoSubstitutions pair. That empty answer is the primary case and is
+    itself pinned by the tests below.
+
+staging_seed_finding:
+  file: scripts/backend/fantasy-staging-seed.sql
+  finding: >
+    It CANNOT prove the acceptance case as written. The seed builds 50 000 teams
+    with a captain on a x2 multiplier (player_number = 9) and a transfer_hit of
+    4 for every seventh team, but it writes ZERO rows into
+    app.fantasy_player_point_events and ZERO into
+    app.fantasy_auto_substitutions. Two of the three things the acceptance asks
+    to see -- the itemised scoring lines and the auto-substitution -- have no
+    source in it. It also requires the `botolago.capacity_environment` =
+    staging-v2 guard and a staging project, neither of which exists here.
+  what_was_done_instead: >
+    The pgTAP file builds its own 3-team fixture expressing all three conditions
+    at once and asserts them on a single api.get_my_fantasy_points read. A
+    pgTAP file has to be self-contained and roll back anyway, so this is also
+    the correct shape for CI.
+
+database_tests:
+  docker: NOT AVAILABLE
+  substitute_environment: >
+    A real PostgreSQL 16.13 cluster (initdb + pg_ctl at
+    /var/lib/postgresql/bg0074, port 55432) with the image's
+    postgresql-16-pgtap. A Supabase-shaped bootstrap supplied the
+    anon/authenticated/service_role/authenticator roles, `extensions` with
+    pgcrypto + pgtap, an `auth` schema with users/sessions/mfa_factors and the
+    real auth.uid()/auth.role()/auth.jwt() bodies, and a `storage` shim. All 73
+    committed migrations applied in order, then 20260921200000.
+  new_file: supabase/tests/database/fantasy_points_read_surfaces.test.sql
+  result: 31 ok, 0 not ok, 0 psql errors
+  regression_diff: >
+    Two databases were built -- `botolago_base` (73 committed migrations) and
+    `botolago` (plus this lane's) -- and every file in supabase/tests/database/
+    was run against each. The result tables are byte-identical except the new
+    file: 5 ok / 4 not ok / 1 error on the baseline, 31 ok / 0 not ok with the
+    migration. No existing database test changed.
+  honest_limits:
+    - >
+      Suites that depend on the real GoTrue schema (identity_domain, news_rls,
+      admin_authorization and others) abort on this cluster. That is the
+      substitute environment, not this change: the before/after diff shows them
+      aborting identically with and without the migration. CI's Backend quality
+      database job is still the authoritative run.
+    - >
+      `bun run backend:types:generate` was NOT run and
+      src/backend/generated/database.types.ts is unchanged. `supabase gen types`
+      shells out to Docker even when handed --db-url, and there is no daemon
+      here; the file was not hand-edited. It therefore does not yet name
+      api.fantasy_gameweek_summary -- see the implementation report for the one
+      narrow cast that keeps typecheck honest meanwhile. CI's artifact is
+      authoritative.
+
+pgtap_assertions_for_this_task:
+  gameweek_summary:
+    - anon can execute api.fantasy_gameweek_summary -- /fantasy/points is public
+    - a null gameweek id is a client bug, not a 500 (PT400)
+    - an unknown gameweek is a 404 (PT404)
+    - an unscored gameweek returns a null average, not 0
+    - an unscored gameweek returns a null highest, not 0
+    - teamCount tells an unscored gameweek apart from an average that is really 0
+    - the average is the mean of coalesce(final_score, provisional_score)
+    - the highest is the best score in the gameweek
+    - teamCount counts every scored team, provisional ones included
+    - the summary reports the gameweek points state
+    - an anonymous caller can read the gameweek summary without USAGE on app
+  acceptance_case:
+    - "acceptance: the -4 transfer hit reaches the page"
+    - "acceptance: the captain double reaches the page (multiplier 2 on the captain)"
+    - "acceptance: the auto-substitution reaches the page (reason outfield_did_not_play)"
+    - the substitution names the player who came out
+    - only this team's substitutions are returned
+  breakdown:
+    - the breakdown shows the live scoring lines and drops the superseded one
+    - the live lines sum to the pre-multiplier total the ledger recorded
+    - a player with no ledger rows gets an empty array, never null
+    - another manager still cannot read this team's points (PT404, ownership unchanged)
+
+null_not_zero_audit:
+  - api.fantasy_gameweek_summary returns JSON null for both figures when teamCount = 0 (pinned twice).
+  - fantasy-runtime.ts maps `summary?.averagePoints ?? null`, never `?? 0`, in getCurrentGameweek and pointsDto.
+  - a failed summary RPC is swallowed to null, not 0, so a transient error renders an em dash.
+  - getGameweekHistory returns null for average/highest; only benchPoints stays 0, because api.get_my_fantasy_history genuinely does not carry it (evidence in the engineering brief).
+  - fantasy.points.tsx:178-179 already resolved null to "—"; unchanged.
+
+screenshots:
+  status: NOT CAPTURED FOR THIS TASK
+  reason: >
+    BG-0074's stated acceptance is the league detail and rankings screens, which
+    are captured under docs/engineering/tasks/BG-0074/screenshots/. The points
+    breakdown cannot be captured meaningfully here: mock mode renders the mock
+    breakdown, and the cloud path has no scored gameweek anywhere in production,
+    so a capture would show the em-dash empty state that already existed. The
+    rendered output is instead pinned by the payload assertions above.
+
+gates:
+  typecheck: pass (tsc --noEmit, no output)
+  test: "1324 pass / 4 fail -- the 4 are the pre-existing deliberate legal-content.test.ts failures"
+  lint: "0 errors, 17 warnings (all pre-existing react-refresh/only-export-components)"
+  format:check: "40 pre-existing offenders; prettier --check over the changed set is clean"
+  backend:migrations:check: "Validated 73 migration(s)"
+  backend:secrets:check: pass
+  config:integrity:check: "36 configuration files, no violations"
+  i18n-gate: "pass -- W3 248 unchanged, W4 97 -> 99 with the reason recorded in the file"
+  build: pass

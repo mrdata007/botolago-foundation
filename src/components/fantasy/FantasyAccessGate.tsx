@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { LogIn, ShieldCheck, UserPlus, Users } from "lucide-react";
 
+import { ui, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,16 @@ type ProtectedFantasyRoute =
   | "/fantasy/transfers"
   | "/fantasy/leagues";
 
+/**
+ * Signed-out gate for a protected Fantasy surface.
+ *
+ * Converted to the kit (BG-0092). It used to be a `surface-4` glass panel
+ * with a `cta-brand` button, a `rounded-2xl` glyph tile, the Tailwind type
+ * ramp and `--brand-primary` as a text colour on the "browse players"
+ * escape hatch — the last of which measured 1.35:1 in dark. The blurred
+ * accent blob is gone with the glass: it was drawn from `--brand-accent`,
+ * which has no dark counterpart.
+ */
 export function FantasyAccessGate({
   next,
   compact,
@@ -23,65 +33,46 @@ export function FantasyAccessGate({
   return (
     <section
       aria-labelledby="fantasy-access-title"
-      className={cn(
-        "surface-4 relative overflow-hidden text-center",
-        compact ? "p-4" : "px-5 py-8 sm:px-8 sm:py-10",
-      )}
+      className={cn("text-center", ui.surface.card, compact ? "p-4" : "p-5")}
     >
-      <div
+      <span
+        className={cn(
+          "mx-auto grid h-12 w-12 place-items-center",
+          ui.radius.control,
+          "text-[color:var(--ui-ink-deep)]",
+        )}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
         aria-hidden
-        className="pointer-events-none absolute -end-16 -top-24 h-52 w-52 rounded-full"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--brand-accent) 30%, transparent), transparent 72%)",
-          filter: "blur(8px)",
-        }}
-      />
-      <div
-        className="relative mx-auto grid h-12 w-12 place-items-center rounded-2xl text-white"
-        style={{ backgroundImage: "var(--bg-brand-gradient)" }}
       >
-        <ShieldCheck className="h-6 w-6" aria-hidden />
-      </div>
+        <ShieldCheck className="h-6 w-6" />
+      </span>
       <h1
         id="fantasy-access-title"
-        className={cn(
-          "relative font-black text-foreground",
-          compact ? "mt-3 text-lg" : "mt-4 text-2xl",
-        )}
+        className={cn("mt-3", compact ? ui.text.section : ui.text.title, ui.tone.default)}
       >
         {t("auth.prompt.title")}
       </h1>
-      <p className="relative mx-auto mt-2 max-w-md text-sm leading-relaxed text-[color:var(--text-secondary)]">
+      <p className={cn("mx-auto mt-2 max-w-md", ui.text.prose, ui.tone.muted)}>
         {t("auth.prompt.body")}
       </p>
 
-      <div className="relative mx-auto mt-5 grid max-w-md gap-2 sm:grid-cols-2">
-        <Link
-          to="/auth/login"
-          search={{ next }}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl cta-brand px-4 text-sm font-black"
-        >
-          <LogIn className="h-4 w-4" aria-hidden />
+      <div className="mx-auto mt-5 grid max-w-md gap-2 sm:grid-cols-2">
+        <UiLinkButton to="/auth/login" search={{ next }} variant="gradient">
+          <LogIn className="h-4 w-4 shrink-0" aria-hidden />
           {t("auth.prompt.login")}
-        </Link>
-        <Link
-          to="/auth/register"
-          search={{ next }}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[color:var(--surface)] px-4 text-sm font-bold text-foreground hover:bg-white"
-        >
-          <UserPlus className="h-4 w-4" aria-hidden />
+        </UiLinkButton>
+        <UiLinkButton to="/auth/register" search={{ next }} variant="outline">
+          <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
           {t("auth.prompt.register")}
-        </Link>
+        </UiLinkButton>
       </div>
 
-      <Link
-        to="/fantasy/players"
-        className="relative mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold text-[color:var(--brand-primary)] hover:bg-white/60"
-      >
-        <Users className="h-4 w-4" aria-hidden />
-        {t("fantasy.tab.players")}
-      </Link>
+      <div className="mt-4 flex justify-center">
+        <UiLinkButton to="/fantasy/players" variant="ghost" size="sm">
+          <Users className="h-4 w-4 shrink-0" aria-hidden />
+          {t("fantasy.tab.players")}
+        </UiLinkButton>
+      </div>
     </section>
   );
 }

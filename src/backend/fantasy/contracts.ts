@@ -43,7 +43,20 @@ export const fantasyPlayerSchema = z.object({
   teamShortName: z.string().min(1),
   photoAssetId: postgresUuidSchema.nullable(),
   crestAssetId: postgresUuidSchema.nullable(),
-  selectedByCount: z.coerce.number().int().nonnegative(),
+  /**
+   * DEPRECATED (BG-0071). `app.fantasy_players.selected_by_count` is declared,
+   * returned here by `api.fantasy_player_pool`, and written by nothing — all
+   * 539 rows are 0 while live squad memberships exist. Ownership now comes
+   * from `api.fantasy_player_season_stats`, derived at read time from
+   * `app.fantasy_squad_memberships`, and no runtime code reads this field any
+   * more.
+   *
+   * It is `optional()` rather than removed so that the follow-up migration can
+   * DROP the column without a second frontend change: `api.fantasy_player_pool`
+   * keeps its exact current shape today, and a payload that later arrives
+   * without the key still parses. Nothing new should ever read it.
+   */
+  selectedByCount: z.coerce.number().int().nonnegative().optional(),
 });
 export type FantasyPlayerDto = z.infer<typeof fantasyPlayerSchema>;
 
@@ -160,6 +173,13 @@ export const fantasyLeagueStandingPageSchema = z.object({
     z.object({
       teamId: postgresUuidSchema,
       teamName: z.string(),
+      /**
+       * BG-0074 — the profile display name for signed-in callers only; the RPC
+       * falls back to the fantasy team name for anonymous callers and for teams
+       * with no readable profile, because `app.profiles.display_name` is not a
+       * public profile field. Treat it as "a name to show", never as identity.
+       */
+      managerName: z.string(),
       rank: z.coerce.number().int().positive(),
       previousRank: z.coerce.number().int().positive().nullable(),
       totalPoints: z.number().int(),
@@ -169,6 +189,50 @@ export const fantasyLeagueStandingPageSchema = z.object({
   ),
 });
 export type FantasyLeagueStandingPageDto = z.infer<typeof fantasyLeagueStandingPageSchema>;
+
+/**
+ * BG-0073 — one row of the season-wide (league-independent) leaderboard.
+ *
+ * `managerName` is the profile display name only for signed-in callers; the
+ * RPC falls back to the fantasy team name for anonymous callers and for teams
+ * with no readable profile, because `app.profiles.display_name` is not a
+ * public profile field. Treat it as "a name to show", never as identity.
+ */
+export const fantasyOverallStandingSchema = z.object({
+  teamId: postgresUuidSchema,
+  teamName: z.string(),
+  managerName: z.string(),
+  rank: z.coerce.number().int().positive(),
+  previousRank: z.coerce.number().int().positive().nullable(),
+  totalPoints: z.number().int(),
+  gameweekPoints: z.number().int().nullable(),
+  calculatedAt: z.string(),
+});
+export type FantasyOverallStandingDto = z.infer<typeof fantasyOverallStandingSchema>;
+
+/**
+ * Before the first gameweek finalizes there are no ranking rows at all, so the
+ * empty page (`items: []`, `total: 0`, `myRank: null`) is the normal answer and
+ * not an error — including for anonymous callers, who must get HTTP 200.
+ */
+export const fantasyOverallStandingPageSchema = z.object({
+  seasonId: postgresUuidSchema,
+  gameweekId: postgresUuidSchema.nullable(),
+  items: z.array(fantasyOverallStandingSchema),
+  nextCursor: z
+    .object({ rank: z.coerce.number().int().positive(), teamId: postgresUuidSchema })
+    .nullable(),
+  total: z.coerce.number().int().nonnegative(),
+  myRank: fantasyOverallStandingSchema.nullable(),
+});
+export type FantasyOverallStandingPageDto = z.infer<typeof fantasyOverallStandingPageSchema>;
+
+export interface FantasyOverallStandingsInput {
+  readonly seasonId: string;
+  readonly gameweekId?: string | null;
+  readonly cursor?: { readonly rank: number; readonly teamId: string } | null;
+  readonly limit?: number;
+}
 
 export const fantasyPointsSchema = z.object({
   teamId: postgresUuidSchema,
@@ -206,10 +270,51 @@ export const fantasyPointsSchema = z.object({
       finalPoints: z.number().int().nullable(),
       didPlay: z.boolean().nullable(),
       minutesPlayed: z.number().int().nonnegative().nullable(),
+      /**
+       * BG-0075 — the per-category lines behind this player's total, live
+       * ledger rows only (`superseded_at is null`). `category` is free text in
+       * `app.fantasy_player_point_events`, so it stays a string here and the UI
+       * falls back to the raw code when a category has no translation yet.
+       */
+      events: z.array(
+        z.object({
+          category: z.string(),
+          points: z.number().int(),
+          fixtureId: postgresUuidSchema,
+        }),
+      ),
+    }),
+  ),
+  /**
+   * BG-0075 — the substitutions finalization applied to this team in this
+   * gameweek, in the order it applied them. Empty until the gameweek finalizes.
+   */
+  autoSubstitutions: z.array(
+    z.object({
+      playerOutId: postgresUuidSchema,
+      playerInId: postgresUuidSchema,
+      sequence: z.number().int().positive(),
+      reason: z.string(),
     }),
   ),
 });
 export type FantasyPointsDto = z.infer<typeof fantasyPointsSchema>;
+
+/**
+ * BG-0075 — the gameweek-wide Average / Highest strip on /fantasy/points.
+ *
+ * Both figures are null, never zero, while no team has been scored: a zero
+ * would read as "every manager scored nothing", which is the defect this
+ * contract exists to remove. `teamCount` lets a caller tell the two apart.
+ */
+export const fantasyGameweekSummarySchema = z.object({
+  gameweekId: postgresUuidSchema,
+  averagePoints: z.coerce.number().nullable(),
+  highestPoints: z.number().int().nullable(),
+  teamCount: z.coerce.number().int().nonnegative(),
+  pointsState: z.enum(["provisional", "final"]),
+});
+export type FantasyGameweekSummaryDto = z.infer<typeof fantasyGameweekSummarySchema>;
 
 export const fantasyHistoryPageSchema = z.object({
   items: z.array(
@@ -238,6 +343,81 @@ export const fantasyTopPlayerSchema = z.object({
   state: z.enum(["provisional", "final"]),
 });
 export type FantasyTopPlayerDto = z.infer<typeof fantasyTopPlayerSchema>;
+
+/**
+ * BG-0071 — one player's season aggregate, from
+ * `api.fantasy_player_season_stats`.
+ *
+ * `form` is the mean points over the last 5 SCORED gameweeks of the season, to
+ * one decimal, and is `null` — never 0 — when no gameweek has scored yet. That
+ * is the only null case and it is exactly the state production is in today. A
+ * player whose only score falls outside the window legitimately reads a real
+ * `0`, so the two must stay distinguishable all the way to the screen: the UI
+ * renders `fantasy.stat.none` ("–") for null and the number otherwise.
+ *
+ * Every numeric field arrives from `jsonb_build_object` over Postgres `bigint`
+ * and `numeric`, which PostgREST may serialize as a JSON number or as a string
+ * depending on magnitude; `z.coerce` accepts both, as the rest of this file
+ * already does for `price` and `rank`. `.nullable()` is applied OUTSIDE the
+ * coercion on purpose — `z.coerce.number()` would turn `null` into `0` and
+ * reintroduce the exact confusion this field exists to prevent.
+ */
+export const fantasyPlayerSeasonStatSchema = z.object({
+  fantasyPlayerId: postgresUuidSchema,
+  totalPoints: z.coerce.number().int(),
+  form: z.coerce.number().nullable(),
+  gameweeksPlayed: z.coerce.number().int().nonnegative(),
+  minutes: z.coerce.number().int().nonnegative(),
+  ownershipCount: z.coerce.number().int().nonnegative(),
+  ownershipPercent: z.coerce.number().nonnegative(),
+});
+export type FantasyPlayerSeasonStatDto = z.infer<typeof fantasyPlayerSeasonStatSchema>;
+
+/**
+ * The RPC returns an OBJECT, not a bare array: the window metadata is needed to
+ * tell "no gameweek has scored" from "this player scored nothing", and
+ * `activeTeamCount` is the ownership denominator the server already applied.
+ * `items` is ordered by `fantasyPlayerId` and carries one entry per
+ * active+eligible fantasy player in the season.
+ */
+export const fantasyPlayerSeasonStatsSchema = z.object({
+  activeTeamCount: z.coerce.number().int().nonnegative(),
+  formWindow: z.coerce.number().int().positive(),
+  scoredGameweeksInWindow: z.coerce.number().int().nonnegative(),
+  throughGameweekSequence: z.coerce.number().int().positive().nullable(),
+  items: z.array(fantasyPlayerSeasonStatSchema),
+});
+export type FantasyPlayerSeasonStatsDto = z.infer<typeof fantasyPlayerSeasonStatsSchema>;
+
+/**
+ * BG-0071 — one gameweek of a player's history, from
+ * `api.fantasy_player_gameweek_history` (a bare array, oldest gameweek first).
+ *
+ * `opponents` is an array because a gameweek can legitimately carry more than
+ * one fixture for a club (a double gameweek). The RPC returns `[]`, never null.
+ */
+export const fantasyPlayerGameweekHistoryEntrySchema = z.object({
+  gameweekId: postgresUuidSchema,
+  gameweekSequence: z.coerce.number().int().positive(),
+  gameweekName: z.string().min(1),
+  points: z.coerce.number().int(),
+  minutesPlayed: z.coerce.number().int().nonnegative(),
+  didPlay: z.boolean(),
+  state: z.enum(["provisional", "final"]),
+  opponents: z.array(
+    z.object({
+      teamId: postgresUuidSchema,
+      shortName: z.string().min(1),
+      name: z.string().min(1),
+      home: z.boolean(),
+    }),
+  ),
+});
+export type FantasyPlayerGameweekHistoryEntryDto = z.infer<
+  typeof fantasyPlayerGameweekHistoryEntrySchema
+>;
+
+export const fantasyPlayerGameweekHistorySchema = z.array(fantasyPlayerGameweekHistoryEntrySchema);
 
 export const fantasyTransferPreviewSchema = z.object({
   transferCount: z.number().int().positive(),
@@ -400,6 +580,10 @@ export interface FantasyRepository {
     beforeSequence: number | null,
     context: RepositoryContext,
   ): Promise<FantasyHistoryPageDto>;
+  getGameweekSummary(
+    gameweekId: string,
+    context: RepositoryContext,
+  ): Promise<FantasyGameweekSummaryDto>;
   getLeagues(
     seasonId: string,
     visibility: "public" | "private" | null,
@@ -410,6 +594,10 @@ export interface FantasyRepository {
     gameweekId: string | null,
     context: RepositoryContext,
   ): Promise<FantasyLeagueStandingPageDto>;
+  getOverallStandings(
+    input: FantasyOverallStandingsInput,
+    context: RepositoryContext,
+  ): Promise<FantasyOverallStandingPageDto>;
   createLeague(
     seasonId: string,
     teamId: string,
@@ -430,6 +618,22 @@ export interface FantasyRepository {
     gameweekId: string,
     context: RepositoryContext,
   ): Promise<readonly FantasyTopPlayerDto[]>;
+  /**
+   * BG-0071 — the season aggregate behind every picking screen. Kept out of
+   * `getPlayerPool` deliberately: that RPC's signature, column order and keyset
+   * cursor are load-bearing for the squad builder and the Playwright journeys
+   * and must not move.
+   */
+  getPlayerSeasonStats(
+    seasonId: string,
+    throughGameweekId: string | null,
+    context: RepositoryContext,
+  ): Promise<FantasyPlayerSeasonStatsDto>;
+  /** BG-0071 — per-gameweek history for one player, oldest gameweek first. */
+  getPlayerGameweekHistory(
+    fantasyPlayerId: string,
+    context: RepositoryContext,
+  ): Promise<readonly FantasyPlayerGameweekHistoryEntryDto[]>;
 }
 
 export interface PositionRule {

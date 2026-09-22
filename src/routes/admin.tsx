@@ -23,10 +23,13 @@ import {
 import {
   ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
+  AdminDatum,
   AdminIconTile,
   AdminSummaryCard,
 } from "@/components/admin/AdminSurfaces";
+import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -38,6 +41,33 @@ export const Route = createFileRoute("/admin")({
 // The card surface, micro-label, icon tile and summary card now live in
 // `@/components/admin/AdminSurfaces`, shared with the five security
 // sub-pages that render inside this shell's <Outlet />. One definition only.
+
+/**
+ * The Admin console stays dark, and it stays dark on tokens.
+ *
+ * It is not a page of the product: it is an operator's console, read beside a
+ * terminal, and the ruling is that it keeps its dark register while the
+ * product's screens follow the theme. That register is expressed as SCOPE
+ * rather than as hardcoded greys. `src/styles.css` redeclares every
+ * colour-bearing `--ui-*` token inside a plain `.dark { … }` block, and custom
+ * properties inherit, so putting `dark` on the console's outermost element
+ * hands the dark values to everything underneath it -- the shared surfaces in
+ * `AdminSurfaces`, the nine sub-routes rendered through <Outlet />, and every
+ * kit primitive any of them use.
+ *
+ * Both states need it, because they are two different roots: the refusal /
+ * loading panel is its own <main>, and a `dark` on the authorized shell alone
+ * would leave an unauthenticated operator looking at a light card. Verified by
+ * rendering both and reading `--ui-page` inside the scope (oklch(0.15 0.03
+ * 260), the dark value) against outside it (oklch(0.975 0.004 250)).
+ *
+ * The one thing `dark` cannot reach is `AdminFunctionalRoute` /
+ * `AdminFunctionalLoading` in `src/backend/admin/functional-route.tsx`, which
+ * wraps seven admin routes in a literal slate-900/amber section. `src/backend`
+ * is owned elsewhere. Those tones still read correctly under a dark console,
+ * which is part of why the ruling went this way.
+ */
+const ADMIN_DARK_SCOPE = "dark";
 
 function AdminLoadingShell() {
   const { lang } = useI18n();
@@ -63,27 +93,46 @@ function AdminStatePanel({
   return (
     <main
       dir={copy.dir}
-      className="grid min-h-dvh place-items-center bg-slate-950 px-4 py-12 text-slate-100"
+      className={cn(
+        ADMIN_DARK_SCOPE,
+        "grid min-h-dvh place-items-center py-12",
+        ui.surface.page,
+        ui.space.gutter,
+      )}
       data-admin-state={state}
       data-testid={ADMIN_STATE_TEST_IDS[state]}
     >
       <section className={`w-full max-w-xl ${ADMIN_CARD_CLASS} p-6 sm:p-8`}>
         <AdminIconTile icon={ShieldCheck} />
-        <h1 className="mt-5 text-2xl font-semibold ltr:tracking-tight">{content.title}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-300">{content.description}</p>
+        {/* `ui.text.title` is the ramp's screen-header step. The `text-2xl` it
+            replaces (24px) is between two steps and was not one of them; the
+            `ltr:tracking-tight` goes with it, because the type ramp owns
+            tracking now and only the stat ramp tightens. */}
+        <h1 className={cn("mt-5", ui.text.title)}>{content.title}</h1>
+        <p className={cn("mt-3", ui.text.secondary, ui.tone.muted)}>{content.description}</p>
         {showSignIn && (
-          <Link
+          // The one action on a refusal panel, so it takes the action
+          // gradient. `size="sm"` is the inline control at `--ui-tap-min`,
+          // which is the same 44px the literal `min-h-11` was asking for;
+          // `w-full sm:w-auto` keeps it thumb-width on a phone.
+          <UiLinkButton
             to="/auth/login"
             search={{ next: "/admin" }}
-            className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 outline-none transition-colors hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300 sm:w-auto"
+            size="sm"
+            className="mt-6 w-full sm:w-auto"
             data-testid="admin-reauthenticate"
           >
             {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
-          </Link>
+          </UiLinkButton>
         )}
         {state !== "loading" && state !== "authorized" && (
           <p
-            className="mt-7 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-slate-800 pt-4 text-xs text-slate-500"
+            className={cn(
+              "mt-7 flex flex-wrap items-center gap-x-2 gap-y-1 pt-4",
+              ui.rule.blockStart,
+              ui.text.meta,
+              ui.tone.faint,
+            )}
             data-testid="admin-state-reference"
           >
             <span>
@@ -92,13 +141,12 @@ function AdminStatePanel({
             </span>
             {/* Only the value is forced LTR, so the label keeps its logical
                 position for a screen reader and survives copy/paste. Mirroring
-                the whole string by hand renders correctly and reads backwards. */}
-            <bdi
-              dir="ltr"
-              className="rounded-md bg-slate-800/70 px-2 py-0.5 font-mono text-slate-300"
-            >
+                the whole string by hand renders correctly and reads backwards.
+                That rule is <AdminDatum>'s whole job, so the hand-written
+                <bdi> is now one: same element, same `dir`, same mono face. */}
+            <AdminDatum className={cn(ui.surface.sunken, ui.radius.tight, "px-2 py-0.5")}>
               {reference}
-            </bdi>
+            </AdminDatum>
           </p>
         )}
       </section>
@@ -128,7 +176,7 @@ function AdminRoute() {
   return (
     <main
       dir={copy.dir}
-      className="min-h-dvh bg-slate-950 px-4 py-8 text-slate-100 sm:py-10"
+      className={cn(ADMIN_DARK_SCOPE, "min-h-dvh py-8 sm:py-10", ui.surface.page, ui.space.gutter)}
       data-admin-state="authorized"
       data-testid="admin-shell"
     >
@@ -136,12 +184,14 @@ function AdminRoute() {
         <header className={`${ADMIN_CARD_CLASS} p-5 sm:p-6`}>
           <div className="flex items-center gap-3">
             <AdminIconTile icon={ShieldCheck} />
-            <h1 className="min-w-0 text-xl font-semibold ltr:tracking-tight sm:text-2xl">
-              {copy.title}
-            </h1>
+            {/* One ramp step, not `text-xl sm:text-2xl`. The ramp is the
+                responsive answer: `--ui-text-title` is the screen-header size
+                at every width, and a breakpoint bump is a second size the
+                system does not declare. */}
+            <h1 className={cn("min-w-0", ui.text.title)}>{copy.title}</h1>
           </div>
           <nav
-            className="mt-5 flex flex-wrap gap-2 border-t border-slate-800 pt-5"
+            className={cn("mt-5 flex flex-wrap gap-2 pt-5", ui.rule.blockStart)}
             aria-label={copy.dir === "rtl" ? "أقسام الإدارة" : "Sections administratives"}
             data-testid="admin-navigation"
           >
@@ -153,10 +203,30 @@ function AdminRoute() {
               <Link
                 key={item.route}
                 to={item.route}
-                className="inline-flex min-h-11 items-center rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-200 outline-none transition-colors hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400"
-                activeProps={{
-                  className: "border-emerald-500 bg-emerald-500/10 text-emerald-200",
-                }}
+                // The current section used to be styled through `activeProps`,
+                // and it did not work: `activeProps.className` is APPENDED to
+                // `className`, so both sets land on the element and Tailwind's
+                // emission order decides the winner. Measured in this project's
+                // own build, `.text-emerald-200` and `.bg-emerald-500/10` are
+                // both emitted BEFORE `.text-slate-200` and `.bg-slate-900/60`,
+                // so the resting colours won and the active entry rendered
+                // identically to its neighbours. `data-[status=active]:` is the
+                // same state -- TanStack's Link sets `data-status="active"` and
+                // `aria-current="page"` itself, independently of activeProps --
+                // but as an attribute selector it outranks the resting utility
+                // on specificity rather than on emission order. The accessible
+                // state is unchanged; only the paint now follows it.
+                className={cn(
+                  "inline-flex items-center px-4 transition-colors",
+                  ui.space.tap,
+                  ui.radius.control,
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.surface.sunken,
+                  ui.tone.muted,
+                  "data-[status=active]:bg-[color:var(--ui-ink)] data-[status=active]:text-[color:var(--ui-on-ink)]",
+                  ui.focus,
+                )}
                 data-testid={item.testId}
               >
                 {item.labels[lang]}
@@ -174,38 +244,53 @@ function AdminRoute() {
               <div className="mt-3 grid gap-3 sm:grid-cols-2" data-testid="admin-home">
                 <AdminSummaryCard title={copy.labels.identity}>
                   {/* A masked address and a UUID are both LTR data: only the
-                      value is forced, the label keeps the ambient direction. */}
-                  <bdi dir="ltr" className="block break-all font-mono text-sm">
-                    {result.identity.emailSummary ?? result.identity.userId}
-                  </bdi>
+                      value is forced, the label keeps the ambient direction.
+                      That is <AdminDatum>, so the hand-written <bdi> is one --
+                      it already carries `dir="ltr"`, the mono face and the
+                      break-all these values need. */}
+                  <AdminDatum>{result.identity.emailSummary ?? result.identity.userId}</AdminDatum>
                 </AdminSummaryCard>
                 <AdminSummaryCard title={copy.labels.roles}>
                   <p className="break-words">
                     {roleNames.length > 0 ? (
-                      <bdi dir="ltr">{roleNames.join(", ")}</bdi>
+                      <AdminDatum mono={false}>{roleNames.join(", ")}</AdminDatum>
                     ) : (
                       copy.labels.none
                     )}
                   </p>
                 </AdminSummaryCard>
                 <AdminSummaryCard title={copy.labels.permissions}>
-                  <p className="text-2xl font-semibold tabular-nums">
-                    {result.context.permissions.length}
-                  </p>
+                  {/* A figure a reader scans, so it is on the stat ramp
+                      (rule 4) rather than on `text-2xl` + a hand-rolled
+                      `tabular-nums`. */}
+                  <p className={ui.stat.lg}>{result.context.permissions.length}</p>
                 </AdminSummaryCard>
                 <AdminSummaryCard title={copy.labels.security}>
                   <p className="flex flex-wrap items-center gap-2">
-                    <bdi
-                      dir="ltr"
-                      className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-sm font-semibold text-emerald-300"
+                    {/* Not a `UiBadge`: the badge tone is the label type,
+                        which is uppercase, and this is a VALUE rather than a
+                        status word -- "AAL2 · 30 min" would be rendered
+                        "AAL2 · 30 MIN". So it stays a datum on the sunken
+                        surface, and only the emerald foreground becomes the
+                        token that means the same thing, `--ui-positive`. */}
+                    <AdminDatum
+                      mono={false}
+                      className={cn(
+                        ui.surface.sunken,
+                        ui.radius.tight,
+                        "px-2 py-0.5",
+                        ui.text.secondary,
+                        "[font-weight:var(--ui-weight-heavy)]",
+                        ui.tone.positive,
+                      )}
                     >
                       {`AAL2 · ${result.context.recentAuthWindowSeconds / 60} min`}
-                    </bdi>
+                    </AdminDatum>
                   </p>
-                  <p className="mt-2 text-xs text-slate-400">
+                  <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
                     {copy.labels.pendingRevocation}
                     {" : "}
-                    <span className="font-semibold text-slate-200 tabular-nums">
+                    <span className={cn(ui.stat.sm, ui.tone.default)}>
                       {result.context.pendingSessionRevocationCount}
                     </span>
                   </p>
@@ -221,12 +306,22 @@ function AdminRoute() {
                 {copy.sections.map((section, index) => {
                   const Icon = SECTION_ICONS[index % SECTION_ICONS.length];
                   return (
-                    <article
+                    <UiCard
                       key={section}
-                      className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4"
+                      as="article"
+                      padding="md"
+                      className="flex items-start gap-3"
                     >
                       <span
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-800/80 text-slate-300"
+                        className={cn(
+                          // Decorative and `aria-hidden`, so it is not a
+                          // control and rule 5's 44px floor does not apply:
+                          // this stays the 36px glyph plate it was drawn as.
+                          "grid h-9 w-9 shrink-0 place-items-center",
+                          ui.radius.control,
+                          ui.surface.sunken,
+                          ui.tone.muted,
+                        )}
                         aria-hidden
                       >
                         <Icon className="h-4 w-4" />
@@ -236,9 +331,17 @@ function AdminRoute() {
                           badge told an admin their own working tools were
                           unavailable. */}
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold text-slate-100">{section}</h3>
+                        <h3
+                          className={cn(
+                            ui.text.secondary,
+                            "[font-weight:var(--ui-weight-heavy)]",
+                            ui.tone.default,
+                          )}
+                        >
+                          {section}
+                        </h3>
                       </div>
-                    </article>
+                    </UiCard>
                   );
                 })}
               </div>

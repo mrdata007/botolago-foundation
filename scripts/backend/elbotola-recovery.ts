@@ -196,7 +196,21 @@ export interface ObservedArticle {
   canonicalUrl: string;
   publishedAt: string;
 }
-export function validatePublicFeed(value: unknown, articles: ObservedArticle[], now: Date): Row {
+/**
+ * BG-0073 News stand-down.
+ *
+ * Ingestion no longer publishes: api.news_ingest_provider_article lands every
+ * edition as draft/private, so an ingested article is deliberately NOT reachable
+ * through the public feed. This check is therefore the inverse of what it used
+ * to be - it proves the stand-down holds, that a scheduled or dispatched run
+ * still cannot put third-party link-outs in front of a reader.
+ *
+ * The freshness gate is kept, but it is now measured against the provider
+ * publication timestamps we actually observed being persisted rather than
+ * against the public feed, which is empty by design. That is the check's real
+ * purpose: proving the provider is handing us current content.
+ */
+export function validateStandDownFeed(value: unknown, articles: ObservedArticle[], now: Date): Row {
   const feed = row(value);
   if (
     !Array.isArray(feed.items) ||
@@ -205,30 +219,14 @@ export function validatePublicFeed(value: unknown, articles: ObservedArticle[], 
   )
     fail("public_feed_reconciliation_failed");
   const items = feed.items.map(row);
-  let heroes = 0;
+  const ingested = new Set(articles.map((article) => article.id));
+  if (items.some((item) => typeof item.id === "string" && ingested.has(item.id)))
+    fail("ingested_article_public_after_stand_down");
   let latest = 0;
   for (const article of articles) {
-    const matches = items.filter((item) => item.id === article.id);
-    if (matches.length !== 1) fail("ingested_article_missing_from_public_feed");
-    const item = matches[0];
-    if (
-      item.language !== "ar" ||
-      row(item.publisher ?? {}).slug !== "elbotola" ||
-      Date.parse(String(item.publishedAt)) !== Date.parse(article.publishedAt)
-    )
-      fail("public_article_metadata_mismatch");
-    latest = Math.max(latest, Date.parse(String(item.publishedAt)));
-    if (item.hero !== null && item.hero !== undefined) {
-      const source = row(item.hero).sourceUrl;
-      if (
-        typeof source !== "string" ||
-        !/^https:\/\/images2?\.elbotola\.com\/article\/[a-z0-9/_-]+\.(?:avif|jpe?g|png|webp)$/i.test(
-          source,
-        )
-      )
-        fail("public_hero_url_invalid");
-      heroes += 1;
-    }
+    const published = Date.parse(article.publishedAt);
+    if (!Number.isFinite(published)) fail("public_feed_reconciliation_failed");
+    latest = Math.max(latest, published);
   }
   if (
     !Number.isFinite(latest) ||
@@ -237,9 +235,10 @@ export function validatePublicFeed(value: unknown, articles: ObservedArticle[], 
   )
     fail("news_still_stale");
   return {
-    matchedArticles: articles.length,
-    withHero: heroes,
-    latestPublication: new Date(latest).toISOString(),
+    ingestedArticles: articles.length,
+    publicFeedItems: items.length,
+    reachableAfterStandDown: 0,
+    latestIngestedPublication: new Date(latest).toISOString(),
   };
 }
 
@@ -394,16 +393,15 @@ async function main(): Promise<void> {
       .schema("api")
       .rpc("news_feed", { p_language: "ar", p_limit: 50 });
     if (feed.error) fail("public_feed_unavailable");
-    evidence.publicFeed = validatePublicFeed(feed.data, articles, new Date());
+    evidence.publicFeed = validateStandDownFeed(feed.data, articles, new Date());
+    // BG-0073: an ingested article is draft/private, so api.news_article_detail
+    // deliberately refuses to serve it. Confirm that refusal rather than the
+    // outbound link, which no public route can show while News is stood down.
     const detail = await publicDatabase
       .schema("api")
       .rpc("news_article_detail", { p_language: "ar", p_identifier: articles[0].id });
-    if (
-      detail.error ||
-      typeof row(detail.data).bodyHtml !== "string" ||
-      !(row(detail.data).bodyHtml as string).includes(`href="${articles[0].canonicalUrl}"`)
-    )
-      fail("public_article_source_link_missing");
+    if (!detail.error && row(detail.data ?? {}).id === articles[0].id)
+      fail("ingested_article_readable_after_stand_down");
     evidence.verdict = "pass";
     await save();
     console.log("ELBOTOLA_RECOVERY_PASS");

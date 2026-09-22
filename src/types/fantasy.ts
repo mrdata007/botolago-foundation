@@ -97,25 +97,43 @@ export interface LeagueStanding {
   totalScore: number;
 }
 
-export type PointsEventKind =
-  | "appearance"
-  | "60min"
-  | "goal"
-  | "assist"
-  | "clean_sheet"
-  | "yellow"
-  | "red"
-  | "penalty_save"
-  | "penalty_miss"
-  | "own_goal"
-  | "conceded"
-  | "saves"
-  | "bonus";
+/**
+ * BG-0075 — the scoring categories the ledger actually writes.
+ *
+ * These are the exact strings `scorePlayerFixture` emits into
+ * `app.fantasy_player_point_events.category`
+ * (src/backend/fantasy/scoring.ts). The old union here was invented
+ * independently of the engine — it had `"60min"`, `"yellow"`, `"red"` and
+ * `"conceded"`, none of which the backend has ever written — so nothing could
+ * have matched it. The column is free text constrained only by a regex, so
+ * `PointsEvent.category` stays a plain string and the UI falls back to the raw
+ * code for a category minted after this list.
+ */
+export const POINTS_EVENT_CATEGORIES = [
+  "appearance",
+  "goal",
+  "assist",
+  "clean_sheet",
+  "goals_conceded",
+  "saves",
+  "penalty_save",
+  "penalty_miss",
+  "yellow_card",
+  "red_card",
+  "second_yellow_dismissal",
+  "own_goal",
+  "bonus",
+  "player_of_match",
+] as const;
+
+export type PointsEventCategory = (typeof POINTS_EVENT_CATEGORIES)[number];
 
 export interface PointsEvent {
-  kind: PointsEventKind;
+  /** A `POINTS_EVENT_CATEGORIES` member, or a newer server-minted code. */
+  category: string;
   points: number;
-  count?: number;
+  /** The fixture the line was scored in; a double gameweek has two. */
+  fixtureId?: string;
 }
 
 export interface PlayerPointsBreakdown {
@@ -134,9 +152,21 @@ export interface GameweekResult {
   totalPoints: number; // includes captain multiplier
   benchPoints: number;
   captainId?: string;
-  averagePoints?: number;
-  highestPoints?: number;
-  autoSubs: { outId: string; inId: string; reason: LocalizedString }[];
+  /**
+   * BG-0075 — the gameweek-wide figures behind the Average / Highest strip.
+   * `null` means "nobody has been scored yet", which the points page renders as
+   * an em dash. It is never 0: a 0 would read as "every manager scored
+   * nothing".
+   */
+  averagePoints?: number | null;
+  highestPoints?: number | null;
+  /**
+   * BG-0075 — `reasonKey` is the server's reason code
+   * (`app.fantasy_auto_substitutions.reason`, a `[a-z][a-z0-9_]*` slug), not
+   * prose. The UI translates it; it was previously typed as a `LocalizedString`
+   * that no backend has ever been able to supply.
+   */
+  autoSubs: { outId: string; inId: string; reasonKey: string }[];
   breakdown: PlayerPointsBreakdown[];
 }
 
@@ -164,5 +194,6 @@ export interface TopPlayerOfWeek {
   minutes: number;
   price: number;
   ownershipPercent: number;
-  form: number;
+  /** BG-0071 — see `Player.form`: `null` when no gameweek has scored yet. */
+  form: number | null;
 }

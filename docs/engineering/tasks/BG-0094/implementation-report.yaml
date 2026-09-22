@@ -1,0 +1,431 @@
+task_id: BG-0094
+title: The pitch, My Team and Points — V2 conversion
+lane: C
+branch: bg-0094-pitch-team-points
+base_branch: chief/launch-fixes-3
+base_commit: d5c59ee6c11c25d5d99e2d57b61df25e2e2e2673
+files_changed: 14
+lines: "+626 / -546 (excluding this docs directory)"
+
+# ---------------------------------------------------------------- headline
+
+read_this_first:
+  - id: FPL_PITCH_PROPS_UNCHANGED
+    severity: coordination
+    summary: >
+      `FplPitch`'s props are UNCHANGED — `{ rows, bench, benchLabels,
+      benchHighlighted, className }`, same names, same types, same meaning.
+      Nothing in `/fantasy/transfers` or `/fantasy/create` needs touching.
+      What changed is the inside: `FplPitch` is now a thin adapter over the
+      kit's `UiPitchSurface` instead of a second implementation of the same
+      turf. `SquadBuilderScreen` (which is what those two routes render) picks
+      up the themed pitch for free — verified at 390px in FR and AR, no
+      overflow, no console errors, screenshot in
+      `evidence/after-transfers-390-ar-light.png`.
+
+  - id: GAMEWEEK_SELECTOR_LABEL_NOW_OPT_IN
+    severity: coordination
+    summary: >
+      `GameweekSelector` gained two optional props, `tone` and `showLabel`.
+      `tone` defaults to the previous appearance. `showLabel` defaults to
+      FALSE, which is a deliberate change for its other caller: on
+      /fantasy/top-players the route already prints "JOURNÉE" immediately
+      beside the control, and the control printed it again. It now reads
+      "JOURNÉE  ‹ 14 ›" instead of "JOURNÉE  ‹ JOURNÉE 14 ›". If the
+      top-players lane wants the label back, pass `showLabel`.
+
+  - id: I18N_BASELINE_MOVED
+    severity: coordination
+    summary: >
+      W3 moved 262 -> 253 in `scripts/qa/i18n-gate.ts`. Nine dictionary keys
+      that existed for this screen and had no call site anywhere now have
+      one. W1, W2 and W4 are all unchanged. Detail under `i18n` below. This
+      is a shared file; if a sibling lane also moves a baseline, the merge is
+      a two-line reconcile of BASELINES plus both comment blocks.
+
+  - id: KIT_REQUEST_SEGMENTED_ON_GRADIENT_DARK
+    severity: kit-request
+    summary: >
+      `UiSegmented tone="onGradient"` fails AA in dark: the idle tab measured
+      4.28:1 (/fantasy/team) and 4.38:1 (/fantasy/points), identical at 390,
+      430, 768 and 1440 in both languages. Foundation owns it; details and the
+      measurement under `kit_requests`.
+
+# ---------------------------------------------------------------- the pitch
+
+the_pitch:
+  reported_defect_did_not_reproduce:
+    claim: >
+      "the goalkeeper's shirt is clipped by the pitch container at every
+      viewport and language, leaving a severed rectangle in the six-yard box".
+    measured_before_any_change: >
+      Measured on the unmodified tree at 390/430/768/1440 in FR and AR, by
+      walking from the GK's shirt `<svg>` up to the ancestor that actually
+      clips (`overflow: hidden`): the GK shirt is 53.66px tall, the same as
+      all fifteen shirts, and its top sits exactly 12px BELOW the clipping
+      box's top edge in every combination. No shirt crosses the turf boundary
+      in any direction. The coordinator's own production E2E reached the same
+      numbers independently. See `evidence/before-points-390-fr-light.png`:
+      the goalkeeper is whole.
+    what_is_actually_clipped: >
+      The pitch's painted goal area. In the marking SVG the goal net is
+      `<rect x="41" y="-1" width="18" height="4">`, three quarters of it above
+      the viewBox, and the outer touchline and six-yard box are drawn with a
+      0.6-unit stroke centred on `y="0"`, so each loses half its weight to the
+      container edge. What is left reads as a severed white rectangle sitting
+      on the top edge — which is almost certainly what the original report
+      saw. It is unchanged by this work and visible in the before AND after
+      screenshots alike.
+    what_i_did_about_it: >
+      Nothing, deliberately. Those markings now live in `UiPitchSurface`
+      inside `src/components/ui-kit/**`, which this lane does not edit, and
+      forking the pitch back out to move a cosmetic line would undo the one
+      real structural win here (one pitch instead of two). It is filed under
+      `kit_requests` with the exact geometry change, for foundation to take or
+      leave on its merits.
+
+  one_pitch_instead_of_two:
+    before: >
+      Two independent pitches. `fpl/FplPitch.tsx` drew turf from
+      `--fpl-pitch-a/-b/-bench` with markings in a literal
+      `rgba(255,255,255,0.92)`; `fantasy/Pitch.tsx` drew a completely
+      different one — a trapezoidal `clipPath`, `#0e5a3a`/`#0f6a44`
+      gradients, `rgba` mow bands, a blurred bench enclosure, rows running
+      FWD-first — 24 hardcoded colours, rendered by no screen.
+    after: >
+      Both are adapters over `UiPitchSurface`. The turf, bench, markings and
+      on-turf label colour come from `--ui-pitch-turf-a/-b`,
+      `--ui-pitch-bench`, `--ui-pitch-line` and `--ui-on-pitch`, each with a
+      dark counterpart, and the mowing bands run `to bottom` so nothing
+      mirrors wrong under `dir="rtl"`.
+    squad_architecture: >
+      Untouched. 2 GK / 5 DEF / 5 MID / 3 FWD, `formationOf` derived from the
+      starting XI, `reslotForFormation`, `swapSquadMembers`, `validateTeam`,
+      captain/vice assignment, bench order, chips and every RPC call are
+      byte-identical. This lane changed presentation only.
+
+  player_plate:
+    built_on: UiPlayerPlate
+    fixed:
+      - "`bg-[color:var(--fpl-ink)] … text-white` name plate -> `ui.surface.inkPlain`."
+      - "`bg-white text-[color:var(--fpl-ink-deep)]` sub plate -> the kit's card surface."
+      - "`bg-black … text-white ring-white` armband -> ink fill, on-ink ring."
+      - >
+        The armband letters were the hardcoded Latin "C" and "V" in Arabic
+        too. They now use `fantasy.captain` / `fantasy.vice`, which are "ق"
+        and "ن" in Arabic — keys that already existed and already had a call
+        site, so no i18n count moved.
+    captain_is_now_legible_at_a_glance: >
+      Production assigns the armband to the first two squad entries, which
+      currently makes a goalkeeper the captain for a new manager. That is
+      domain logic and not this lane's to change — so the affordance is built
+      NOT to assume a sensible default is already there. Captain and vice no
+      longer differ only by a letter inside an identical black disc: captain
+      is cyan-on-ink (`ui.surface.ink`), vice is plain-on-ink
+      (`ui.surface.inkPlain`), both ringed in the plain on-ink foreground so
+      they hold up against turf in either theme. Measured 12.68–12.81:1. A
+      manager scanning the pitch sees which shirt carries the armband before
+      reading the letter.
+    long_names: >
+      "Salah-Eddine" was truncated to "Salah-Eddi…" at 390px in French — a
+      76px plate against a 79px name. The plate name is now wrapped in
+      `ltr:tracking-tight`, which is Latin-only (letter-spacing in either
+      direction pulls joined Arabic letterforms apart — BG-0069), and carries
+      a `title` with the full name. Zero truncated elements across all 32
+      viewport × language × theme combinations, down from one.
+    empty_slot: >
+      `FplEmptySlot` keeps its props and is also a `UiPlayerPlate` now. Its
+      shirt silhouette used `rgba(255,255,255,0.35)` / `0.9`; it draws from
+      `--ui-pitch-line` instead, so the silhouette tracks the turf's own
+      marking colour in both themes.
+    remove_control: >
+      `onRemove` (no caller today) drew a 20px control. The glyph stays 20px
+      so it does not cover the shirt, but the control itself is now
+      `--ui-tap-min`, growing inwards from the corner it is drawn in.
+
+# ---------------------------------------------------------------- points
+
+points:
+  principle: >
+    The brief asked for restraint, so the numbers carry the screen: the stat
+    ramp (tabular, aligned, one weight per step) and almost no chrome. The
+    only decoration removed outright is the `ArrowRight` that sat beside
+    "Meilleur" pointing at nothing.
+
+  never_a_zero_that_means_unknown:
+    - >
+      Every unknown renders `t("fantasy.stat.none")`. The screen previously
+      hardcoded an em dash "—" in three places (the plate sub, the points
+      column, and via `?? "—"`); they are now the key, which is an EN dash
+      "–" in both languages. Asserted across all 32 combinations: zero em
+      dashes in the rendered text.
+    - >
+      The form column keeps naming `t("fantasy.stat.none")` inline rather
+      than through the hoisted `none` constant, because the guard in
+      `src/services/fantasy-runtime.test.ts` reads the source line. Hoisting
+      it broke that test; the comment in the file says why it is spelled out.
+    - >
+      A 0 that is genuinely 0 stays 0. `pointsFor` returns null only when the
+      player is absent from the breakdown; a bench player who is in the
+      breakdown with no minutes really did score nothing.
+
+  now_stated_instead_of_computed_and_discarded:
+    - name: match status
+      source: "`PlayerPointsBreakdown.status` per row, summarised"
+      shape: >
+        A gameweek is "final" only once every row in it is; any "live" row
+        makes it live, otherwise provisional. Rendered as the `sub` line of
+        the total's `UiStatBlock` — a word under the number, not a badge
+        beside it.
+    - name: effective captain
+      source: vm.effectiveCaptainId
+      shape: "a key/value row; `fantasy.points.vice_takeover` rides beside the name when the vice stepped in"
+    - name: captain multiplier
+      source: vm.captainMultiplier
+      shape: '"×2" / "×3", isolated with `dir="ltr"`'
+    - name: bench points
+      source: vm.originalBenchPoints
+    - name: transfer hit
+      source: vm.transferHitPoints
+      shape: 'only rendered when non-zero, in `ui.tone.negative`, sign isolated with `dir="ltr"`'
+    - name: active chip
+      source: vm.activeChip
+      shape: "the chip's own name, or `fantasy.points.no_active_chip`"
+    - name: per-player scoring breakdown
+      source: "breakdown[].events"
+      shape: "kept in the list view under each row; the figures moved from `ui.text.tabular` to `ui.stat.sm` so they line up as a column"
+    - name: auto-substitutions
+      source: "resultQ.data.autoSubs, falling back to vm.autoSubs in mock mode"
+      shape: "unchanged logic; the arrow lost a redundant `rtl:-scale-x-100` (styles.css already mirrors `.lucide-arrow-right`, so it was flipping twice in intent and once in fact)"
+
+  bidi:
+    problem: >
+      A sign belongs to its number, not to the sentence around it. In an
+      Arabic line "×2" reorders to "2×" and "−4" to "4−".
+    fix: '`dir="ltr"` on the multiplier, the transfer hit and each event''s signed points.'
+
+  frame:
+    - '`FplHeader` -> `UiHeader tone="gradient"`, `FplSegmented` -> `UiSegmented tone="onGradient"`, `FplButton` -> `UiButton`.'
+    - >
+      Both routes now sit on kit primitives rather than `fpl/primitives.tsx`,
+      which a sibling lane owns. That was a deliberate choice: it is step 1 of
+      the conversion checklist, it takes my two screens off `--fpl-ink` as a
+      TEXT colour (the BG-0083 defect, which `FplHeader` still carries), and
+      it means whatever that lane does to `primitives.tsx` — including
+      deleting `FplHeader` in favour of `UiHeader` — cannot break these two
+      routes.
+    - >
+      The deadline line moved into `fantasy.team.tsx` as a local
+      `DeadlineLine` rather than keeping `FplDeadlineLine`. Same text shape,
+      same French wording ("Journée 14 Deadline: …"), so the existing E2E
+      regex still matches — and it passes `timeZone: MATCH_TIME_ZONE` from
+      `src/lib/match-kickoff.ts` explicitly (BG-0100), where the old one
+      repeated the literal "Africa/Casablanca".
+    - >
+      Loading is `UiSkeleton` in the pitch's shape instead of an
+      `animate-pulse` block tinted `--fpl-pitch-a/40`; the error and empty
+      branches are `UiErrorState` / `UiEmptyState`.
+
+  gameweek_selector: >
+    The stepper was duplicated: an inline one in `fantasy.points.tsx`'s header
+    (36px buttons, `bg-white/35`, `bg-white/60`, `--fpl-ink` as text) and
+    `fantasy/GameweekSelector.tsx` (36px buttons, `--fpl-grey`, a bare
+    `tracking-[0.16em]`, and aria-labels reading "Journée -1" / "Journée +1").
+    There is now one, used by both callers: 44px steppers, the stat ramp for
+    the number, `role="group"`, and aria-labels that name the gameweek the
+    button actually goes to.
+
+# ---------------------------------------------------------------- the rest
+
+other_components:
+  FplChipsRow.tsx: >
+    `bg-white` name and state bands -> kit surfaces; the bare `tracking-wide`
+    is gone (`ui.text.label` carries the `ltr:`-only version); the card now
+    clears `--ui-tap-min` and carries `ui.focus`; the active state keeps the
+    action gradient but pairs it with `--ui-ink-deep` as the system says.
+  FplStatBar.tsx: >
+    `bg-white` strip -> `ui.surface.bar` + hairline; values moved to
+    `ui.stat.sm` (they are figures); the value pill's `--fpl-green` text on
+    ink became `ui.tone.onInk`, the designed pairing. The captions were
+    `whitespace-nowrap` at an off-ramp 10.5px, which pushed a long French or
+    Arabic caption out of its column — they wrap inside the column now.
+  PlayerStatusBadge.tsx: >
+    Four hardcoded pairings replaced with ones the system guarantees clear AA:
+    injured is the negative FOREGROUND on an 18% tint of itself rather than
+    literal white on a mid-lightness pink; doubtful is the caution fill with
+    `--ui-ink-deep`; suspended is the ink fill with the plain on-ink
+    foreground. The bare `tracking-wide` is gone.
+  Pitch.tsx / PlayerShirt.tsx / PlayerNameplate.tsx / SquadListToggle.tsx: >
+    All four are dead — nothing in src/ renders them. They were NOT deleted:
+    deleting `PlayerShirt` would drop a W4 call site and deleting
+    `SquadListToggle` would orphan three dictionary keys, both of which move
+    shared i18n baselines for no user-visible gain. They were converted
+    instead, which takes 47 divergences off the meter and costs nothing: the
+    pitch delegates to `UiPitchSurface`, the toggle to `UiSegmented`, and the
+    shirt's `bg-red-500` / `bg-amber-500` / `bg-neutral-800` status dots to
+    the same negative / caution / ink tokens the badge uses.
+  JerseyVisual.tsx: >
+    Only the `selected` ring changed (`--brand-accent` -> `--ui-accent-sky`,
+    and the radial given an explicit `at 50% 50%` so it cannot mirror). Its
+    twelve `rgba(...)` stops are LEFT IN PLACE on purpose and are the 12
+    divergences this lane did not close — see `deliberately_not_closed`.
+
+deliberately_not_closed:
+  - what: "twelve `rgba(...)` colour stops in `JerseyVisual.tsx`"
+    why: >
+      They are not a palette. They are the lighting on a garment — a top
+      highlight, a side shade, a cuff, an outline — composited over whatever
+      club colours `getKitForClub` returns. Tokenising them would mean a
+      "shadow colour" that changes with the theme, which is not how a shadow
+      on an object behaves, and would make a light kit and a dark kit shade
+      differently. The meter's `rgba(` rule is the only thing flagging them.
+      I could have rewritten them as `stop-color="black" stop-opacity="…"`
+      and scored 0, but that is moving the number without moving the
+      product, so the number stays honest at 12.
+
+observations_not_mine_to_fix:
+  - id: CLUB_KIT_AND_FIXTURE_LABELS_BLANK_IN_MOCK_MODE
+    where: "src/components/fpl/useNextFixtures.ts, src/lib/kits.ts"
+    what: >
+      Every shirt on the pitch renders in the default navy kit, and the
+      fixture sub plate reads "(D)" / "(E)" with no opponent code where the
+      reference shows "WAC (D)". Both come from the same root: in mock mode
+      the club ids on `FixtureDifficulty.opponentClubId` / `FantasyPlayer.clubId`
+      do not resolve against the clubs `footballService.getClubs()` returns,
+      so `codeOf()` and `getKitForClub()` both fall through to their defaults.
+      Neither file is in this lane. I could not confirm whether the same
+      mismatch exists against Supabase; worth one check before launch,
+      because club identity on the pitch is most of what a manager recognises.
+
+# ---------------------------------------------------------------- requests
+
+kit_requests:
+  - id: SEGMENTED_ON_GRADIENT_TRACK_HAS_NO_DARK_COUNTERPART
+    file: src/components/ui-kit/primitives.tsx (UiSegmented)
+    measured: >
+      Idle tab, dark theme, rasterised sRGB: 4.28:1 on /fantasy/team and
+      4.38:1 on /fantasy/points — `--ui-on-grad-header` (#f0f6fc) on the
+      track (#54779d / #54759c). Identical at 390, 430, 768 and 1440 in both
+      FR and AR. Light is fine (7.3–7.4:1).
+    cause: >
+      The track is `color-mix(in oklab, var(--ui-on-ink-plain) 35%,
+      transparent)` — a fixed white wash. Over the light header gradient it
+      lifts the band away from near-black text; over the DEEPENED dark header
+      gradient it lands in the middle, close to the near-white foreground.
+      The wash needs a dark counterpart, i.e. a real token
+      (`--ui-track-on-grad`?) rather than a literal mix, because no single
+      value can serve a foreground that flips from near-black to near-white.
+    why_i_did_not_patch_it: >
+      A `dark:` override written into my two screens would be exactly the
+      local invention the contract forbids ("if you need a colour that is not
+      in here, that is a gap in the system — say so, do not invent one"), and
+      it would leave every other Fantasy header wrong.
+    precedent_in_this_lane: >
+      `GameweekSelector` hit the same wall and could solve it, because it owns
+      its own container: on a header band it now renders with NO track at all,
+      so the label and number sit directly on the gradient with
+      `--ui-on-grad-header`, the pairing the system does guarantee. That
+      measured 4.01:1 with the wash and 8.9–9.3:1 without it.
+
+  - id: PITCH_GOAL_AREA_IS_PAINTED_HALF_OUTSIDE_ITS_OWN_VIEWBOX
+    file: src/components/ui-kit/primitives.tsx (UiPitchSurface)
+    what: >
+      `<rect x="41" y="-1" width="18" height="4">` (the goal net) is
+      three-quarters above the viewBox, and the touchline `rect y="0"` and
+      six-yard box `rect y="0"` are stroked 0.6 units centred on the edge, so
+      each shows half its weight. The result is a severed white rectangle
+      lying on the top edge of the turf.
+    suggested_fix: >
+      Shift the goal furniture down by about 2 viewBox units — goal net to
+      `y="0" height="3"`, six-yard box to `y="1.5"`, touchline rect to
+      `y="0.3"` — so every line is painted inside the box it belongs to. It
+      is purely cosmetic and may well be intentional cropping; treat it as a
+      design call, not a defect.
+    note: >
+      This is what the "severed rectangle in the six-yard box" report was
+      looking at. The goalkeeper's shirt is not and was not clipped.
+
+i18n:
+  errors: "none (E1–E6 clean)"
+  w1: "7 -> 7"
+  w2: "7 -> 7"
+  w4: "88 -> 88"
+  w3:
+    move: "262 -> 253"
+    keys_that_gained_their_first_call_site:
+      - fantasy.points.status.live
+      - fantasy.points.status.final
+      - fantasy.points.effective_captain
+      - fantasy.points.multiplier
+      - fantasy.points.vice_takeover
+      - fantasy.points.hit
+      - fantasy.points.active_chip
+      - fantasy.points.no_active_chip
+      - fantasy.points.bench
+    why: >
+      All nine were written for this screen and left in place by the
+      dead-code pass with the note "the Fantasy screens are mid-migration and
+      the strings will be wanted again". This is that arriving. Nothing was
+      orphaned in exchange.
+    how_w4_was_held_flat: >
+      Every new branch is `cond ? t("a") : t("b")`, never `t(cond ? "a" :
+      "b")` and never a template key. The active chip's name in particular is
+      spelled out chip by chip rather than interpolated from the chip key,
+      which would have added a `fantasy.chip.` prefix site. One accidental
+      +1 was traced and removed: a prose comment containing the literal
+      characters `t()` is indexed as an opaque call site by the gate, which
+      scans raw source.
+  new_strings: "none — every key used already existed in both fr and ar"
+
+rules_observed:
+  presentation_only: >
+    No change to formation validity, captain/vice logic, bench order,
+    auto-substitution, chips, scoring or persistence. No RPC was replaced.
+    `buildPointsViewModel`, `fantasy-engine`, `reslot`, `team-validation` and
+    `fantasy-owned-repository` are untouched.
+  logical_properties: "still zero physical-direction utilities in src/ (meter rule `physicalDir`: 0 in both the before and after runs)"
+  tracking: "every `tracking-*` this lane wrote is `ltr:`-prefixed; three bare ones were removed (FplChipsRow, PlayerStatusBadge, GameweekSelector)"
+  gradient_angles: "no `deg` introduced; the one radial touched was given an explicit centred origin"
+  dark_mode_flag: "DARK_MODE_ENABLED untouched; dark was verified by adding `.dark` manually"
+  gw1_fixtures: "no fixture list, difficulty grid or gameweek query was touched; the seven counting GW1 fixtures and the deferred FAR Rabat v Raja are unaffected"
+  timezone: "the one date formatter in this lane passes `timeZone: MATCH_TIME_ZONE`"
+  force_push: "none — a single fast-forward push to a new branch"
+
+meter:
+  command: bun scripts/qa/design-divergence.ts
+  before: { files: 91, total: 1534 }
+  after: { files: 79, total: 1392 }
+  this_lane_s_files:
+    before: 154
+    after: 12
+    remaining: "all 12 are the JerseyVisual garment shading described above"
+    per_file:
+      - { file: src/components/fpl/FplPlayerCard.tsx, before: 27, after: 0 }
+      - { file: src/components/fantasy/Pitch.tsx, before: 24, after: 0 }
+      - { file: src/routes/fantasy.points.tsx, before: 18, after: 0 }
+      - { file: src/components/fantasy/JerseyVisual.tsx, before: 12, after: 12 }
+      - { file: src/components/fpl/FplChipsRow.tsx, before: 12, after: 0 }
+      - { file: src/components/fantasy/PlayerShirt.tsx, before: 11, after: 0 }
+      - { file: src/components/fantasy/GameweekSelector.tsx, before: 9, after: 0 }
+      - { file: src/components/fantasy/PlayerStatusBadge.tsx, before: 9, after: 0 }
+      - { file: src/components/fpl/FplPitch.tsx, before: 8, after: 0 }
+      - { file: src/components/fantasy/PlayerNameplate.tsx, before: 7, after: 0 }
+      - { file: src/components/fpl/FplStatBar.tsx, before: 7, after: 0 }
+      - { file: src/components/fantasy/SquadListToggle.tsx, before: 5, after: 0 }
+      - { file: src/routes/fantasy.team.tsx, before: 5, after: 0 }
+
+files:
+  - src/routes/fantasy.team.tsx
+  - src/routes/fantasy.points.tsx
+  - src/components/fpl/FplPitch.tsx
+  - src/components/fpl/FplPlayerCard.tsx
+  - src/components/fpl/FplChipsRow.tsx
+  - src/components/fpl/FplStatBar.tsx
+  - src/components/fantasy/Pitch.tsx
+  - src/components/fantasy/PlayerNameplate.tsx
+  - src/components/fantasy/PlayerShirt.tsx
+  - src/components/fantasy/JerseyVisual.tsx
+  - src/components/fantasy/PlayerStatusBadge.tsx
+  - src/components/fantasy/SquadListToggle.tsx
+  - src/components/fantasy/GameweekSelector.tsx
+  - scripts/qa/i18n-gate.ts # BASELINES.W3 only, with its reason recorded in place

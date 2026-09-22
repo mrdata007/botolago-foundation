@@ -62,8 +62,8 @@ export interface CloudFinalizationPlanInput {
   gw: number;
   players: FantasyPlayer[];
   breakdown: PointsViewModel["breakdown"];
-  averagePoints?: number;
-  highestPoints?: number;
+  averagePoints?: number | null;
+  highestPoints?: number | null;
   /** Optional deterministic clock for tests. */
   now?: () => string;
 }

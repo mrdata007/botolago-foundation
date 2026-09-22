@@ -110,8 +110,36 @@ export interface AuditResult {
  * reviewed act: state in the commit message why the count moved.
  */
 export const BASELINES: Baselines = {
-  W1: 4,
-  W2: 4,
+  // Legal pages (/terms, /privacy): the two consent sentences on
+  // /auth/register and /auth/login were split into five ordered segments each
+  // so that "Conditions d'utilisation" and "Politique de confidentialité" can
+  // be real links in both languages without slicing a finished string in JS —
+  // impossible to do safely for Arabic. Four of each sentence's five segments
+  // differ between fr and ar. The fifth, `tail`, is the sentence-final full
+  // stop, which is "." in both languages and in Latin script in both.
+  //
+  // That is two new W1 findings and the same two new W2 findings —
+  // `auth.register.accept_terms.tail` and `auth.terms_notice.tail` — and they
+  // are counted, not suppressed: the allow-lists annotate a finding, they
+  // never remove it. The alternative shapes were all worse. Folding the stop
+  // into the privacy link label would underline it and put punctuation inside
+  // the link text; dropping it would silently change the copy; inventing
+  // trailing words for both languages so the segment differs would be editing
+  // a consent sentence to satisfy a lint baseline. Moving the number and
+  // saying why is what this baseline is for. W1 4 -> 6, W2 4 -> 6.
+  //
+  // BG-0071: `fantasy.stat.none` is the placeholder a stat cell renders when
+  // there is no value yet — a player's form before any gameweek has scored.
+  // Its value is an en dash, identical in fr and ar and in neither script,
+  // which is one new W1 finding and one new W2 finding. It is punctuation
+  // standing in for an absent number, not copy: translating it would mean
+  // putting an Arabic letter where a manager expects a missing figure, and
+  // any letter-shaped substitute would read as data. Both findings are
+  // annotated in `src/i18n/i18n-allowlist.ts`, and — as the header above
+  // says — an allow-list entry annotates a count, it never removes it, so
+  // the two baselines move with it. W1 6 -> 7, W2 6 -> 7.
+  W1: 7,
+  W2: 7,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and
@@ -158,8 +186,149 @@ export const BASELINES: Baselines = {
   // in the new /profile/security enrollment page and /auth/mfa-challenge
   // login step-up page. W3 unchanged (every new key is referenced); W4
   // 94 -> 97.
-  W3: 248,
-  W4: 97,
+  // BG-0071: the player-detail History tab stopped restating the Overview
+  // numbers in a sentence and now renders the real per-gameweek rows from
+  // api.fantasy_player_gameweek_history. Those rows carry a state, so
+  // `fantasy.points.status.provisional` — dictionary copy that until now was
+  // referenced nowhere in src/ — has its first literal call site. Nothing was
+  // orphaned in exchange (`fpl.gameweek`, dropped from that sentence, is still
+  // used on five other screens). W3 248 -> 247; W4 unchanged, because the new
+  // branches are `cond ? t("a") : t("b")`, two literal calls, not `t(cond ? …)`.
+  //
+  // BG-0075 points breakdown: /fantasy/points now renders the scoring lines
+  // behind each player's total and the auto-substitutions finalization applied.
+  // Both are server-supplied codes -- `category` from
+  // app.fantasy_player_point_events and `reason` from
+  // app.fantasy_auto_substitutions -- so the two new call sites are template
+  // prefixes (`fantasy.points.event.`, `fantasy.points.autosub_reason.`), the
+  // same shape as `player.pos.` and `fantasy.chip.state.`. Every one of the 21
+  // new keys is reachable through those prefixes, so W3 is unchanged; W4
+  // 97 -> 99.
+  // Dead-code removal, 2026-09-21: eighteen files with no reference anywhere in
+  // src/, tests/ or scripts/ were deleted -- fourteen vendored shadcn components
+  // nothing imports (carousel, chart, sidebar, menubar, navigation-menu and
+  // friends) and four Fantasy components no screen renders (SquadListView,
+  // TransferReviewPanel, GameweekStatusStrip, FantasyChipCard). Their keys are
+  // still in the dictionaries, so W3 rises 247 -> 262: fifteen keys that were
+  // only ever referenced by components the product never mounted. W4 falls
+  // 99 -> 88 because those files carried eleven dynamic t() call sites. Both
+  // moves are the deletion showing up in the meter, not new drift. The keys are
+  // deliberately left in place -- the Fantasy screens are mid-migration and the
+  // strings will be wanted again; delete them in the same pass that settles the
+  // Fantasy copy, not before.
+  //
+  // BG-0094 (pitch / My Team / Points): /fantasy/points now states the things
+  // it was computing but never showing -- how settled the gameweek's scoring
+  // is, who the armband actually landed on and at what multiplier, what the
+  // bench scored, what a transfer hit cost and which chip was live. Nine keys
+  // that were written for exactly this and had no call site anywhere get
+  // their first one: fantasy.points.status.live, .status.final,
+  // .effective_captain, .multiplier, .vice_takeover, .hit, .active_chip,
+  // .no_active_chip and .bench. That is the "strings will be wanted again"
+  // case above arriving, so W3 falls 262 -> 253. Nothing was orphaned in
+  // exchange. W4 is unchanged on purpose: every new branch is
+  // `cond ? t("a") : t("b")`, a chain of literal calls, including the active
+  // chip's name, which is spelled out per chip rather than interpolated from
+  // the chip key.
+  //
+  // BG-0093 (squad building, player picker, transfers). Two moves, both the
+  // consequence of named decisions rather than drift:
+  //
+  // W3 262 -> 264. Three keys gained their first call site: the picker's
+  // filters now use `fantasy.picker.filter_position` / `.filter_price` /
+  // `.filter_club`, the copy that was written for them, instead of
+  // `fpl.position` / `fpl.price` / `fpl.view`. "Prix max" is what that control
+  // actually does, and `fpl.view` ("Vue") labelled a filter that has always
+  // filtered by club. Those three go the other way, and two more join them:
+  // `fantasy.picker.title`, whose only caller was the deleted second picker
+  // `PlayerPickerDrawer`, and `fpl.all_clubs` ("Tous les clubs"), which does
+  // not fit a three-abreast filter column at 390px -- the field's own label
+  // already says Club, so its empty option is `fpl.all` ("Tous"). Net +5/-3.
+  //
+  // W4 88 -> 81. Seven fewer call sites assemble their key at runtime. Three
+  // left with `PlayerPickerDrawer`. The other four are conversions:
+  // PlayerActionSheet, SquadBuilderScreen, SquadListTable and
+  // TransferConfirmScreen each replaced a `t(`prefix.${expr}`)` with explicit
+  // literal branches, so the position, group and chip labels are now keys the
+  // gate and the TranslationKey type can both see.
+  //
+  // Integration, 2026-09-21: BG-0094 and BG-0093 were measured independently
+  // against the same base (W3 262, W4 88) and each moved it, so neither lane's
+  // number survives the merge. The figures below are the merged tree measured
+  // once, and they are the sum of the two moves rather than a third
+  // adjustment: W3 262 - 9 (BG-0094 gave nine written-but-uncalled keys their
+  // first call site) + 2 (BG-0093 net +5 orphaned / -3 adopted) = 255. W4 88
+  // - 0 (BG-0094 wrote every branch as `cond ? t("a") : t("b")`) - 7 (BG-0093
+  // converted four call sites and deleted three with PlayerPickerDrawer) = 81.
+  //
+  // BG-0092 (Fantasy V2, Lane A — shared chrome and the hub): converting
+  // `FantasyScreenGate` and `FantasyUnavailableState` onto the kit's state
+  // primitives replaced four computed-key call sites —
+  // ``t(`fantasy.availability.${phase}.title`)`` and its `.body` twin in each
+  // file — with explicit `cond ? t("a") : t("b")` branches, i.e. literal keys
+  // the gate can actually check. That is the shape the gate asks for, so the
+  // four findings are gone rather than suppressed: W4 88 -> 84. W3 is
+  // unchanged: the same keys are still reached, now literally, and the three
+  // keys added in this pass (`fpl.rank.up`/`.down`/`.same`, the accessible
+  // names for the rank-movement glyph, which used to announce a hardcoded
+  // English "up"/"down") each have a literal call site.
+  //
+  // Integration, second pass: Lane A measured against the same base again
+  // (W3 262, W4 88), so its numbers do not survive either. W3 stays 255 --
+  // Lane A moved no key on or off the unreferenced list, because the three it
+  // added each have a literal call site and the four it converted still reach
+  // the same keys. W4 81 - 4 = 77.
+  //
+  // BG-0095 leagues/players migration, 2026-09-21: exactly two of those
+  // "wanted again" keys were wanted again. `/fantasy/players/$playerId` used
+  // to mark a double or blank gameweek with the literal English strings "DGW"
+  // and "BGW" hardcoded in the JSX; the Calendrier tab now renders
+  // `fantasy.fixtures.double` and `fantasy.fixtures.blank`, which were already
+  // translated in both languages and referenced by nothing. W3 262 -> 260.
+  //
+  // Every other key this migration added is referenced by the screen that
+  // added it, so it does not move the count; W1, W2 and W4 are unchanged. W4
+  // in particular is deliberate: the new copy is written as
+  // `cond ? t("a") : t("b")`, never `t(cond ? "a" : "b")`, and the eight
+  // dynamic call sites these files already had (`player.pos.`,
+  // `player.status.`, and the two label-from-a-table lookups) are all still
+  // there.
+  //
+  // Integration, third pass — and the last, all four lanes are in. Each lane
+  // measured against W3 262 / W4 88 and each moved it, so no lane's pair is
+  // the merged tree's. Measured once on the merge: W3 253, W4 77. That is
+  // 255 - 2, BG-0095's two keys (fantasy.fixtures.double/.blank, which
+  // replaced hardcoded English "DGW"/"BGW" in the Calendrier tab) coming off
+  // the unreferenced list, and W4 unchanged because BG-0095 added no dynamic
+  // call site — its new copy is `cond ? t("a") : t("b")` throughout.
+  // Design migration, `fpl-primitives` lane. `FplRankMovement` was retired in
+  // favour of the kit's `UiRankMovement`, and it was the only consumer of
+  // `fpl.rank.up/.down/.same` — a DUPLICATE set. The live standings tables
+  // (fantasy.leagues.$leagueId, LeagueTable) pass `fantasy.rank.*`, which is
+  // the set the product actually renders and which is unaffected.
+  //
+  // So three keys come onto the unreferenced list and the count rises to 256.
+  // The duplicates are deliberately NOT deleted here: this pass is a design
+  // migration and does not change i18n, and a provably dead key is cheaper to
+  // carry than a dictionary edit smuggled into a restyle. Deleting them is a
+  // clean follow-up that lands W3 back at 253.
+  // Design migration, dead-code pass. `FantasyMobileNav`, `FantasySubNav` and
+  // `GlassCard` were deleted: a grep across the whole tree found no reference
+  // to any of them outside their own files and each other's comments, so no
+  // route could render them. BG-0132 had already recorded two of the three and
+  // deferred the deletion precisely because it moves these two numbers.
+  //
+  // W3 rises by one: `fantasy.tab.more` labelled the "More" menu in both navs
+  // and nothing else uses it. (`nav.fantasy` was in both too and still has
+  // three live call sites.) The key is left in the dictionary for the same
+  // reason as the `fpl.rank.*` set below — a design migration does not edit
+  // i18n — and comes off the list in the follow-up that removes both.
+  W3: 257,
+  // Down six with the same deletion: both dead navs mapped over their item
+  // tables with `t(item.labelKey)`, three call sites each. Every one of those
+  // was a real dynamic key — the gate was right about them — and they are gone
+  // with the components rather than fixed.
+  W4: 71,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

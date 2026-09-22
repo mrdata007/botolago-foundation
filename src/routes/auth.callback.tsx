@@ -6,6 +6,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AuthShell, AuthFieldError, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { supabase } from "@/integrations/supabase/client";
 import { authService, IS_MOCK_AUTH } from "@/services/auth";
@@ -114,12 +116,21 @@ function CallbackPage() {
   return (
     <AuthShell title={t("auth.callback.title")} subtitle={t("auth.callback.subtitle")}>
       {busy && !error ? (
-        <div className="flex items-center justify-center py-6 text-muted-foreground">
+        // Was `text-muted-foreground` — the V1 palette, which this screen is
+        // the last place in the auth family to reference. `ui.tone.muted` is
+        // the same role on `--ui-on-surface-muted`, and unlike the V1 token it
+        // is declared for both themes.
+        <div className={cn("flex items-center justify-center py-6", ui.tone.muted)}>
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
         </div>
       ) : null}
       {error && (
         <div className="grid gap-3">
+          {/* Kept on `AuthFieldError` rather than moved to `UiAlert`: this
+              message announces politely (`role="alert" aria-live="polite"`),
+              and `UiAlert tone="negative"` announces as a bare `role="alert"`
+              — a different interruption for the same event. This lane changes
+              styling, not announcements. */}
           <AuthFieldError id="cb-err">{t("auth.callback.error")}</AuthFieldError>
           <AuthSecondaryButton onClick={() => navigate({ to: "/auth/login" })}>
             {t("auth.forgot.back_to_login")}

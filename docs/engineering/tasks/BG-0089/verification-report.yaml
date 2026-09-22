@@ -1,0 +1,206 @@
+task_id: BG-0089
+role: Builder
+attempt: 1
+branch: bg-0089-design-consistency
+base: origin/chief/launch-fixes-3
+
+gates:
+  - name: bun run typecheck
+    result: pass
+    detail: "tsc --noEmit, no output."
+  - name: bun run test
+    result: pass
+    detail: "1408 pass / 0 fail / 15070 expect() calls, 157 files. Baseline on this branch was 1394/0; the 14 added are src/lib/match-day.timezone.test.ts (BG-0100)."
+  - name: bun run lint
+    result: pass
+    detail: "0 errors, 19 warnings — all 19 are pre-existing react-refresh/only-export-components warnings in provider files this lane did not touch."
+  - name: bun run format:check
+    result: "pass (no regression)"
+    detail: >
+      51 offender paths, byte-identical to the 51 on the untouched base — the
+      list was captured on a clean tree and diffed against the list with this
+      lane's changes applied, and they match exactly. They are docs/*.yaml,
+      docs/*.md, .github/workflows/*.yml, infra/*.json, AGENTS.md,
+      src/backend/generated/database.types.ts, src/integrations/supabase/
+      types.ts and the src/routes/[.mcp] and [.well-known] route files. The
+      task brief said "~9"; the real number on this base is 51. Prettier
+      reformatted several of them as a side effect of a directory-wide
+      `--write` and each one was restored with `git checkout --`.
+  - name: bun scripts/qa/i18n-gate.ts
+    result: pass
+    detail: "RESULT: pass."
+  - name: bun run build
+    result: pass
+    detail: "legal-placeholder-gate + vite build + nitro output, no errors."
+
+# ---------------------------------------------------------------------------
+# Browser verification
+# ---------------------------------------------------------------------------
+
+browser_verification:
+  tool: "Playwright (chromium from /opt/pw-browsers, PLAYWRIGHT_BROWSERS_PATH; playwright install never run)"
+  script: scripts/qa/design-consistency-audit.mjs
+  server:
+    port: 4407
+    why: >
+      `playwright.config.ts` sets `reuseExistingServer: !CI` on port 4173 and
+      other worktrees on this machine hold that port — a measurement against
+      another lane's server is worthless and has already produced one false
+      result in this project. This lane started its own `vite dev` on 4407,
+      confirmed from its log that it was serving THIS worktree's path, and
+      passed the URL explicitly. A second cross-contamination was caught during
+      setup: a log file appeared containing another worktree's path
+      (agent-ae5ba7f747223f066), which is why the server identity was checked
+      rather than assumed.
+  matrix:
+    pages: ["/", "/matches", "/profile", "/fantasy", "/fantasy/rules"]
+    viewports: ["390x844", "1440x900"]
+    languages: [fr, ar]
+    runs: 20
+  preconditions_set: >
+    localStorage seeded with botolago.language, botolago.theme=light and
+    botolago.welcomed=1. Without the last one every "/" run silently measured
+    the WelcomeScreen instead of Home — an early run did exactly that, and the
+    results below are from after it was corrected.
+
+  results:
+    horizontal_scroll:
+      result: pass
+      detail: >
+        `document.documentElement.scrollWidth === clientWidth` on all 20 runs.
+        Because `html, body { overflow-x: clip }` produces no scrollbar and so
+        cannot be trusted alone, every rendered element's bounding box was also
+        checked against the viewport, excluding deliberate `overflow-x-auto`
+        scrollers and their descendants, and `position: fixed` chrome. 0
+        offenders on all 20 runs.
+      note: >
+        The first run reported 4 overflowing elements on "/" — decorative
+        <circle>/<path> nodes inside the WelcomeScreen's aria-hidden SVG mesh,
+        which sits in a `fixed` `overflow-hidden` container. They were an
+        artifact of measuring the wrong screen (see preconditions) and are not
+        reachable on Home.
+
+    arabic_mirroring:
+      result: pass
+      detail: >
+        `dir="rtl"` on <html> for all 10 Arabic runs. Mirroring was checked
+        rather than assumed: the first heading inside <main> was measured
+        against <main>'s own box, and its INLINE-START gap in Arabic matches
+        its inline-start gap in French (15px on Home, 16px on Matches and
+        Profile, 64px on the Fantasy hub) while the inline-end gap is large.
+        The layout genuinely flips; it is not centred.
+      exception: >
+        Both /fantasy/rules headings compute `text-align: center` with equal
+        gaps — but they do so in French too, so that is a deliberately centred
+        screen header, not an accidentally centred Arabic one.
+
+    arabic_letter_spacing:
+      result: pass
+      detail: >
+        Computed `letter-spacing` is `normal` on every element whose own text
+        node contains Arabic, across all 10 Arabic runs — 57 such elements on
+        Home, 66–72 on Matches, 15 on Profile, 41–42 on the Fantasy hub, 25–30
+        on Fantasy rules. 0 offenders.
+      source_level_note: >
+        Statically, 44 unprefixed `tracking-*` were fixed and 35 remain, all in
+        Fantasy / FPL files owned by other lanes. None of those 35 is reachable
+        from the five verified pages, which is why the live check is clean
+        while the static count is not zero.
+
+    clipping_and_truncation:
+      result: pass
+      detail: "0 elements with meaning-carrying text clipped by `text-overflow: ellipsis` or `overflow: hidden` on all 20 runs."
+      found_and_fixed:
+        - 'Home, 390px, FR: three of the four Fantasy summary captions were truncated mid-word — "Points de la journée" needed 106px in a 64px tile, "Classement général" 108px, "Points totaux" 73px. Now wrapped to two clamped lines. Arabic was unaffected (shorter strings), which is exactly why a French-only run would have been needed to see it.'
+      excluded:
+        - "`.sr-only` spans report scrollWidth > clientWidth by construction (1px box, overflow hidden). Not clipping; excluded from the check."
+
+    tap_targets:
+      result: "pass on this lane's surface; 4 remain on the Fantasy hub, owned elsewhere"
+      floor: 44px
+      fixed_here:
+        - ["TopBar desktop nav links", "36px tall", "now 44px"]
+        - [
+            "StandingsTable column sort buttons",
+            "6–24px wide by 15px tall",
+            "now 44px; the table already scrolls horizontally at 390px so nothing was cost",
+          ]
+        - [
+            'WelcomeScreen "Continuer en invité" / "المتابعة كضيف"',
+            "342x20 at 390px, 400x20 at 1440px — the only way past the sign-up wall",
+            "now 44px tall",
+          ]
+      still_failing:
+        - element: 'UiSegmented segments on /fantasy ("Ligues" / "Coupes", "الدوريات" / "الكؤوس")'
+          measured: "160x40 at 390px, 205x40 at 1440px"
+          owner: "foundation lane — see kit_change_request K1"
+        - element: 'Two links on /fantasy ("Général" / "Journée 14", "العام" / "الجولة 14")'
+          measured: "57x21 and 78x21 in FR; 29x32 and 60x32 in AR"
+          owner: "Fantasy lane"
+      note: >
+        The 44px rule was applied to `a[href]`, `button`, `[role=button]`,
+        `[role=tab]`, `input`, `select` and `textarea` that are enabled and not
+        inside an `aria-hidden` subtree. Decorative 32px glyph tiles inside a
+        larger tappable row are not controls and were not counted.
+
+# ---------------------------------------------------------------------------
+# BG-0100 verification
+# ---------------------------------------------------------------------------
+
+bg_0100_verification:
+  test: src/lib/match-day.timezone.test.ts
+  result: "14 pass / 0 fail"
+  method: >
+    The assertions run in child `bun` processes launched under TZ=UTC,
+    America/Los_Angeles, America/Sao_Paulo, Asia/Tokyo and Pacific/Auckland.
+    This is not decoration: `TZ` is read once at process start, so setting
+    `process.env.TZ` inside a test does not move the local calendar, and a
+    suite that only ever ran in UTC would pass identically against the broken
+    code.
+  assertions:
+    - "A guard test asserts the browser-local answer and the competition answer really differ — in Auckland a 2026-09-24 20:00 Casablanca kickoff is locally 2026-09-25. If that ever stops being true the rest of the file has stopped testing anything, and it fails."
+    - "The same kickoff files on 2026-09-24, matches the selected 2026-09-24, does not match 2026-09-25, and its previous/next days are 09-23 and 09-25 — identically in all five zones."
+    - "The provider's UTC-midnight unconfirmed-hour placeholder (00:00Z = 01:00 Casablanca) files on the 24th in all five zones, where a browser-local reading puts it on the 23rd for every viewer west of Greenwich."
+    - "A five-fixture list spanning a midnight boundary groups into the same two days in all five zones."
+    - "Walking 40 consecutive days from 2026-02-13 through the Ramadan offset change yields 40 distinct days ending on 2026-03-24, and each one round-trips through its own competition-zone midnight — proving the stepping is calendar arithmetic, not 86_400_000 ms."
+  not_covered: >
+    No browser-level assertion that the rendered day strip and the rendered
+    match cards agree for a non-UTC+1 viewer. The unit coverage pins the
+    shared primitives all five call sites now use, which is where the defect
+    lived; an end-to-end version would need a seeded fixture at a known
+    boundary hour.
+
+# ---------------------------------------------------------------------------
+# Verdict
+# ---------------------------------------------------------------------------
+
+verdict:
+  public_application_surface: PASS
+  global_design_consistency: NOT PASS
+  statement: >
+    Everything this lane owns and could verify is clean: no horizontal scroll,
+    no clipped meaning, correct Arabic mirroring, `letter-spacing: normal` on
+    every Arabic string on the verified pages, and 44px tap targets throughout
+    — at 390px and 1440px, in French and Arabic. Divergence on the public
+    application fell from 207 to 47, and 42 of the 47 that remain are one
+    design decision (the dark welcome screen) plus the Lovable OAuth consent
+    page.
+
+    Product-wide the answer is no, and it would be dishonest to say otherwise.
+    1728 divergences remain across src/. 964 are Fantasy and FPL, 320 are
+    admin, 170 are vendored shadcn files nothing imports, 188 are the
+    stylesheet and colour data, 39 are the vendored components that are
+    rendered. 35 unprefixed `tracking-*` remain and every one is on a Fantasy
+    screen, which means the Arabic letter-spacing defect BG-0069 is still live
+    there. Two tap targets on the Fantasy hub are still 40px because the kit
+    primitive has no size prop and this lane was asked not to add one.
+
+    The full list, with owners and rough sizes, is in
+    implementation-report.yaml under `remaining_work`.
+
+reproduction:
+  - "bun install --frozen-lockfile"
+  - "bun scripts/qa/design-divergence.ts --top 45"
+  - "bun scripts/qa/design-divergence.ts --json > before.json   # baseline for the next lane"
+  - "bunx vite dev --host 127.0.0.1 --port <a port no other worktree holds> --strictPort"
+  - "E2E_BASE_URL=http://127.0.0.1:<that port> node scripts/qa/design-consistency-audit.mjs"

@@ -162,8 +162,26 @@ describe("the confirm step is bilingual and direction-neutral", () => {
       const declaration = helpers.slice(start, helpers.indexOf(";", start));
       expect({ name, floor: declaration.includes("min-h-11") }).toEqual({ name, floor: true });
     }
-    // The one control the confirm step styles for itself: "Abandonner".
-    expect(classNames(read(COMPONENT))).toContain("min-h-11");
+    // The 44px floor used to be a literal `min-h-11` written into this
+    // component's own class strings. It is not any more, and the floor is not
+    // weaker for it: every control here is a kit primitive, and the ui-kit
+    // contract test asserts each button size states its height from
+    // `--ui-tap-min` or `--ui-row-min`.
+    //
+    // So this checks the property that now carries the floor — the controls
+    // come from the kit — rather than a literal that would have to be kept
+    // alive purely to keep one assertion green. It fails if someone hand-rolls
+    // a bare `<button>` or bare `<a>`, which is the only way to get a control
+    // in here that no floor applies to.
+    const source = read(COMPONENT);
+    const handRolled = [
+      ...[...source.matchAll(/<button\b[\s\S]*?>/g)].map((m) => m[0]),
+      ...[...source.matchAll(/<a\s[\s\S]*?>/g)].map((m) => m[0]),
+    ].filter(
+      (tag) => !/min-h-11|min-h-\[var\(--ui-(tap|row)-min\)\]|ui\.space\.(tap|row)/.test(tag),
+    );
+    const usesKitControls = /\bUi(Link)?Button\b/.test(source);
+    expect({ handRolled, usesKitControls }).toEqual({ handRolled: [], usesKitControls: true });
   });
 });
 

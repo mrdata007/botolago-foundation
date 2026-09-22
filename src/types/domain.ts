@@ -7,6 +7,17 @@ export type LocalizedString = Record<Language, string>;
 
 export interface Club {
   id: string;
+  /**
+   * The provider-stable slug (`app.clubs.slug`), when the presenter has one.
+   *
+   * BG-0111 — Fantasy fixture rows and the football club list are produced by
+   * two repositories. In cloud mode both key on the same club UUID; the mock
+   * football repository mints synthetic UUIDs while the Fantasy mocks key on
+   * the source slug ("war", "rca"), so an id-only join silently resolves to
+   * nothing and the pitch renders a fixture with no opponent. Carrying the
+   * slug lets a presenter match on either key without guessing.
+   */
+  slug?: string;
   name: LocalizedString;
   shortName: LocalizedString;
   city: LocalizedString;
@@ -25,7 +36,13 @@ export interface Player {
   position: "GK" | "DEF" | "MID" | "FWD";
   price: number; // millions
   totalPoints: number;
-  form: number;
+  /**
+   * BG-0071 — mean points over the last 5 scored gameweeks of the season, to
+   * one decimal. `null` means NO gameweek has scored yet and is rendered as a
+   * dash (`fantasy.stat.none`), never as `0.0`: a player who genuinely scored
+   * 0 in the window reads a real `0` and the two must not look alike.
+   */
+  form: number | null;
   ownership: number; // %
   status: "available" | "injured" | "doubtful" | "suspended";
 }
@@ -102,8 +119,13 @@ export interface Gameweek {
   status?: FantasyGameweekStatus;
   pointsState?: FantasyPointsState;
   rankingAvailable?: boolean;
-  averagePoints: number;
-  highestPoints: number;
+  /**
+   * BG-0075 — the gameweek-wide average and highest team score. `null` while no
+   * team has been scored; never 0, which would read as "everybody scored
+   * nothing". Populated from `api.fantasy_gameweek_summary`.
+   */
+  averagePoints: number | null;
+  highestPoints: number | null;
   chipActive?: LocalizedString;
 }
 

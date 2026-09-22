@@ -1,9 +1,15 @@
-// Design System V2 — Top bar.
-// Glass surface with soft elevation and safe-area padding.
+// BotolaGO shell — Top bar, on the UI kit.
+//
+// Converted from the Design System V2 glass pill (`surface-4`, 22px blur,
+// floating with a 12px inset) to the Fantasy language: a full-bleed opaque
+// bar on the surface token, a hairline rule at the block end, the Fantasy
+// radii, and the Fantasy type scale for the desktop nav. Nothing here is
+// Fantasy *layout* — only the language.
 
 import { Link, useRouterState } from "@tanstack/react-router";
 
 import { Logo } from "@/components/brand/Logo";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -14,10 +20,22 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
-    <header className="sticky top-0 z-30 pt-[max(env(safe-area-inset-top),0.25rem)]">
+    <header
+      className={cn(
+        "sticky top-0 z-30",
+        ui.surface.bar,
+        ui.rule.block,
+        ui.safe.top,
+        "pb-2",
+        "shadow-[var(--ui-shadow-card)]",
+      )}
+    >
       <div
-        className="surface-4 mx-3 mt-2 flex items-center gap-3 px-3 py-2 md:mx-auto md:max-w-5xl md:px-4"
-        style={{ boxShadow: "var(--shadow-navigation)" }}
+        className={cn(
+          "mx-auto flex items-center gap-3 md:max-w-5xl",
+          ui.space.gutter,
+          "min-h-[var(--ui-tap-min)]",
+        )}
       >
         <Logo />
 
@@ -33,11 +51,21 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-xl px-3 py-2 text-xs font-bold transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)]",
+                  // `inline-flex` + the kit's tap minimum: these links were
+                  // 36px tall (meta type + `py-2`), under the 44px floor the
+                  // rest of the product holds to.
+                  "inline-flex items-center justify-center px-3 transition-colors",
+                  ui.space.tap,
+                  ui.radius.control,
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.focus,
                   active
-                    ? "bg-[color:var(--brand-primary)] text-white shadow-sm"
-                    : "text-[color:var(--text-secondary)] hover:bg-white/70 hover:text-foreground",
+                    ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]")
+                    : cn(
+                        ui.tone.muted,
+                        "hover:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-ink)]",
+                      ),
                 )}
               >
                 {t(item.labelKey)}

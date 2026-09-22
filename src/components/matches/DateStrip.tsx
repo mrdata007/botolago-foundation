@@ -2,21 +2,39 @@ import { useMemo, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { ui, UiButton, UiCard, UiChip } from "@/components/ui-kit";
+import {
+  addMatchDays,
+  isSameMatchDay,
+  MATCH_TIME_ZONE,
+  startOfMatchDay,
+} from "@/lib/match-kickoff";
 
 /**
- * Design System V2 — Compact date strip.
+ * Compact date strip.
  *
  * A horizontal strip of ±7 days around a pivot date, with previous / next
- * buttons and a "Today" shortcut. Selected date renders as a premium
- * brand-primary pill (not oversized). Fully RTL-safe: the strip's scroll
- * behaviour still centers the selected day; the chevron icons are auto
- * mirrored by global styles.
+ * buttons and a "Today" shortcut.
  *
- * Requirements met:
- *  - ≥44 px touch targets on nav buttons and each day cell
- *  - keyboard/focus support via native <button>
+ * Converted to the shared UI kit: the strip is now a thin arrangement of kit
+ * primitives rather than a second implementation of a chip row. Each day is a
+ * `UiChip` (so a selected day here and a selected filter anywhere else in the
+ * product are literally the same control), the nav buttons and the Today
+ * shortcut are `UiButton`s, and the shell is a `UiCard`.
+ *
+ * Public props are unchanged.
+ *
+ * Days are competition-calendar days (`Africa/Casablanca`), not the
+ * viewer's: the strip highlights, groups and labels the same day as the
+ * match cards below it for a viewer in any zone (BG-0100).
+ *
+ * Still true after the conversion:
+ *  - ≥44 px touch targets on nav buttons and each day cell (`--ui-tap-min`)
+ *  - keyboard/focus support via native <button> and the kit focus ring
  *  - no horizontal clipping (overflow-x-auto + hidden scrollbar)
- *  - no layout shift (fixed row height, tabular numerics)
+ *  - no layout shift (fixed row height, tabular figures)
+ *  - RTL-safe: no physical direction utilities; the chevrons are swapped on
+ *    `dir` so they always mean "earlier / later".
  */
 export function DateStrip({
   selected,
@@ -35,23 +53,22 @@ export function DateStrip({
 }) {
   const { t, lang, dir } = useI18n();
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef<HTMLButtonElement>(null);
+  const activeRef = useRef<HTMLDivElement>(null);
 
-  const startOfDay = (d: Date) => {
-    const c = new Date(d);
-    c.setHours(0, 0, 0, 0);
-    return c;
-  };
-  const today = useMemo(() => startOfDay(new Date()), []);
-  const selectedDay = useMemo(() => startOfDay(selected), [selected]);
-  const minimumDay = useMemo(() => (minDate ? startOfDay(minDate) : null), [minDate]);
-  const maximumDay = useMemo(() => (maxDate ? startOfDay(maxDate) : null), [maxDate]);
+  // Every boundary below is competition-zone midnight. Using the browser's
+  // midnight instead is what filed a 20:00 Casablanca kickoff under the wrong
+  // day for anyone outside UTC+1 (BG-0100).
+  const today = useMemo(() => startOfMatchDay(new Date()), []);
+  const selectedDay = useMemo(() => startOfMatchDay(selected), [selected]);
+  const minimumDay = useMemo(() => (minDate ? startOfMatchDay(minDate) : null), [minDate]);
+  const maximumDay = useMemo(() => (maxDate ? startOfMatchDay(maxDate) : null), [maxDate]);
 
   const days = useMemo(() => {
     const list: Date[] = [];
     for (let i = -rangeDays; i <= rangeDays; i++) {
-      const d = new Date(selectedDay);
-      d.setDate(d.getDate() + i);
+      // Calendar-day steps, not `+ i * 86_400_000`: Morocco's offset moves
+      // for Ramadan, so some days are not 24 hours long.
+      const d = addMatchDays(selectedDay, i);
       if (minimumDay && d < minimumDay) continue;
       if (maximumDay && d > maximumDay) continue;
       list.push(d);
@@ -60,102 +77,104 @@ export function DateStrip({
   }, [selectedDay, rangeDays, minimumDay, maximumDay]);
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
-  const dayFmt = new Intl.DateTimeFormat(locale, { day: "numeric" });
-  const monthFmt = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" });
+  const weekdayFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
+    weekday: "short",
+  });
+  const dayFmt = new Intl.DateTimeFormat(locale, { timeZone: MATCH_TIME_ZONE, day: "numeric" });
+  const monthFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
+    month: "short",
+    year: "numeric",
+  });
 
   // Center the active day when it changes.
+  //
+  // This measures the active cell against the scroller's own box rather than
+  // using `offsetLeft`: `offsetLeft` is relative to the nearest positioned
+  // ancestor, which is not the scroller, so it lands the selected day short by
+  // the scroller's own page offset (it was sitting clipped at the inline-start
+  // edge). Deriving the delta from the two rects and adding the current
+  // `scrollLeft` is correct in both directions — Chromium reports a negative
+  // `scrollLeft` under RTL and this arithmetic carries that through.
   useEffect(() => {
     const scroller = scrollerRef.current;
     const active = activeRef.current;
     if (!scroller || !active) return;
-    const target = active.offsetLeft - scroller.clientWidth / 2 + active.clientWidth / 2;
-    scroller.scrollTo({ left: target, behavior: "smooth" });
+    const scrollerBox = scroller.getBoundingClientRect();
+    const activeBox = active.getBoundingClientRect();
+    const delta = activeBox.left - scrollerBox.left + activeBox.width / 2 - scrollerBox.width / 2;
+    scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: "smooth" });
   }, [selectedDay]);
 
   const shiftBy = (delta: number) => {
-    const d = new Date(selectedDay);
-    d.setDate(d.getDate() + delta);
+    const d = addMatchDays(selectedDay, delta);
     if (minimumDay && d < minimumDay) return;
     if (maximumDay && d > maximumDay) return;
     onSelect(d);
   };
 
-  const isSameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+  const isSameDay = isSameMatchDay;
 
   const isToday = isSameDay(selectedDay, today);
   const todayInRange = (!minimumDay || today >= minimumDay) && (!maximumDay || today <= maximumDay);
   const canGoPrevious = !minimumDay || selectedDay > minimumDay;
   const canGoNext = !maximumDay || selectedDay < maximumDay;
 
-  // Chevron flipping: chevrons should always look like "go earlier / later"
-  // regardless of RTL, which is what users expect. `dir` tells us runtime.
+  // Chevrons should always look like "go earlier / later" regardless of RTL,
+  // which is what users expect. `dir` tells us the runtime direction.
   const PrevIcon = dir === "rtl" ? ChevronRight : ChevronLeft;
   const NextIcon = dir === "rtl" ? ChevronLeft : ChevronRight;
 
   const heading = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
   }).format(selectedDay);
 
+  /** A square ≥44px nav button on the kit's ghost tone. */
+  const navButtonClass = "w-[var(--ui-tap-min)] shrink-0 px-0";
+
   return (
-    <div className={cn("surface-3 flex flex-col gap-2 p-2", "border border-[var(--glass-border)]")}>
+    <UiCard padding="sm" className="flex min-w-0 flex-col gap-2">
       {/* Header row: month + Today shortcut */}
       <div className="flex items-center gap-2 px-1">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--brand-accent)]">
+          <div className={cn("truncate", ui.text.label, ui.tone.ink)}>
             {monthFmt.format(selectedDay)}
           </div>
-          <div className="truncate text-sm font-black tracking-tight text-foreground">
-            {heading}
-          </div>
+          <div className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>{heading}</div>
         </div>
         {!isToday && todayInRange && (
-          <button
-            type="button"
-            onClick={() => onSelect(today)}
-            className={cn(
-              "inline-flex h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold",
-              "bg-[color:var(--surface-hover)] text-foreground",
-              "hover:bg-[color:var(--surface-selected)]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-            )}
-          >
-            <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+          <UiButton variant="light" size="sm" onClick={() => onSelect(today)}>
+            <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {t("matches.date.jump_today")}
-          </button>
+          </UiButton>
         )}
       </div>
 
       {/* Navigation + strip */}
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
+      <div className="flex min-w-0 items-center gap-1">
+        <UiButton
+          variant="ghost"
+          size="sm"
           onClick={() => shiftBy(-1)}
           aria-label={t("matches.date.prev")}
           disabled={!canGoPrevious}
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-xl text-foreground",
-            "hover:bg-[color:var(--surface-hover)]",
-            "disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-          )}
+          className={cn(navButtonClass, "disabled:opacity-35")}
         >
           <PrevIcon className="h-5 w-5" aria-hidden />
-        </button>
+        </UiButton>
 
         <div
           ref={scrollerRef}
           className={cn(
-            "flex flex-1 items-center gap-1 overflow-x-auto scroll-smooth",
+            "flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scroll-smooth",
             "[scrollbar-width:none] [-ms-overflow-style:none]",
             "[&::-webkit-scrollbar]:hidden",
           )}
-          role="tablist"
+          role="group"
           aria-label={t("matches.a11y.date_navigation")}
         >
           {days.map((d) => {
@@ -163,54 +182,48 @@ export function DateStrip({
             const isDayToday = isSameDay(d, today);
             const dayLabel = isDayToday ? t("matches.date.today") : weekdayFmt.format(d);
             return (
-              <button
-                key={d.toISOString()}
-                type="button"
-                ref={active ? activeRef : undefined}
-                onClick={() => onSelect(d)}
-                role="tab"
-                aria-selected={active}
-                aria-current={active ? "date" : undefined}
-                className={cn(
-                  "flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-xl px-2.5 py-1.5",
-                  "text-[10px] font-semibold uppercase tracking-wide leading-tight transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-                  active
-                    ? "bg-[color:var(--brand-primary)] text-white shadow-card"
-                    : isDayToday
-                      ? "bg-[color:var(--surface-selected)] text-[color:var(--brand-primary)]"
-                      : "text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-hover)] hover:text-foreground",
-                )}
-              >
-                <span className="truncate">{dayLabel}</span>
-                <span
+              <div key={d.toISOString()} ref={active ? activeRef : undefined} className="shrink-0">
+                <UiChip
+                  selected={active}
+                  onClick={() => onSelect(d)}
                   className={cn(
-                    "mt-0.5 text-base font-black tabular-nums leading-none",
-                    active ? "text-white" : "text-foreground",
+                    "flex-col justify-center px-2.5 py-1.5",
+                    ui.space.tap,
+                    // An unselected "today" is hinted with the ink tone so it
+                    // stays findable in a long strip.
+                    !active && isDayToday && ui.tone.ink,
                   )}
                 >
-                  {dayFmt.format(d)}
-                </span>
-              </button>
+                  <span className={cn("max-w-full truncate uppercase", ui.text.micro)}>
+                    {dayLabel}
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-0.5",
+                      ui.text.body,
+                      ui.text.tabular,
+                      "[font-weight:var(--ui-weight-hero)]",
+                    )}
+                  >
+                    {dayFmt.format(d)}
+                  </span>
+                </UiChip>
+              </div>
             );
           })}
         </div>
 
-        <button
-          type="button"
+        <UiButton
+          variant="ghost"
+          size="sm"
           onClick={() => shiftBy(1)}
           aria-label={t("matches.date.next")}
           disabled={!canGoNext}
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-xl text-foreground",
-            "hover:bg-[color:var(--surface-hover)]",
-            "disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
-          )}
+          className={cn(navButtonClass, "disabled:opacity-35")}
         >
           <NextIcon className="h-5 w-5" aria-hidden />
-        </button>
+        </UiButton>
       </div>
-    </div>
+    </UiCard>
   );
 }

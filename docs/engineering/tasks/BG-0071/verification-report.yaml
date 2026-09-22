@@ -1,0 +1,191 @@
+task_id: BG-0071
+role: Builder-Frontend
+attempt: 1
+branch: bg-0071-frontend
+base: origin/chief/launch-fixes-3
+verdict: PASS (with two gates not executable in this environment — see not_executed)
+
+# --------------------------------------------------------------------------
+gates:
+  - command: bun run typecheck
+    result: PASS
+    detail: "tsc --noEmit, no output."
+  - command: bun test
+    result: PASS (4 known pre-existing failures)
+    detail: >
+      1345 pass / 4 fail / 14835 expect() calls across 153 files. All 4 failures
+      are in src/content/legal/legal-content.test.ts ("legal documents are
+      publishable"), the publication gate awaiting owner-supplied values, and
+      are exactly the 4 known pre-existing failures on this branch. Nothing
+      else fails. The 21 new tests in src/services/fantasy-runtime.test.ts pass.
+  - command: bun run lint
+    result: PASS
+    detail: "17 problems, 0 errors, 17 warnings — all react-refresh/only-export-components, all pre-existing."
+  - command: bun run format:check
+    result: PASS (pre-existing offenders only)
+    detail: >
+      40 [warn] files, none of them touched by this branch (docs/*, infra/*,
+      .github/workflows/*, AGENTS.md, src/backend/generated/database.types.ts,
+      src/integrations/supabase/types.ts, src/routes/[.mcp]/*, src/routes/mcp.ts,
+      src/routes/README.md). Every file this branch changed was run through
+      prettier and is clean.
+  - command: bun run backend:migrations:check
+    result: PASS
+    detail: "Validated 72 migration(s). This branch adds and edits none."
+  - command: bun run backend:secrets:check
+    result: PASS
+    detail: "No high-confidence secrets found in tracked files."
+  - command: bun run config:integrity:check
+    result: PASS
+    detail: "No violations in 36 executed configuration file(s)."
+  - command: bun scripts/qa/i18n-gate.ts
+    result: PASS
+    detail: >
+      RESULT: pass, with three baselines deliberately moved in this commit and
+      justified in the BASELINES comment block — see i18n_baselines below.
+  - command: bun run build
+    result: PASS
+    detail: "vite build + nitro output generated, no errors."
+
+# --------------------------------------------------------------------------
+not_executed:
+  - command: bun run backend:db:test  (pgTAP)
+    reason: >
+      Requires the Supabase CLI against a local database, which requires Docker.
+      `docker info` fails in this environment (the binary exists, the daemon is
+      unreachable). NO DATABASE TEST WAS RUN AND NONE IS CLAIMED. Per the
+      owner's direction, the Backend quality database job in CI runs these; the
+      Chief collects the run id.
+  - command: bun run backend:types:check / bun run backend:types:generate
+    reason: >
+      Same Docker dependency — both shell out to `supabase status` /
+      `supabase gen types` against a live local database. src/backend/generated/
+      database.types.ts was therefore left untouched, as instructed; CI's
+      regenerated artifact is the one to take. Consequence and the local
+      workaround are documented in implementation-report.yaml §generated_types.
+  - command: playwright fantasy.journey.e2e.ts
+    reason: >
+      The 22 journeys run against a real backend (E2E_FANTASY_EMAIL /
+      E2E_BASE_URL credentials), which this lane does not hold. This branch
+      changes no RPC signature and no row ordering, so nothing they assert on
+      moved; they remain CI's to run.
+
+# --------------------------------------------------------------------------
+i18n_baselines:
+  - code: W1
+    from: 6
+    to: 7
+    why: >
+      fantasy.stat.none has identical fr and ar values ("–"). It is punctuation
+      standing in for an absent number, not copy. Annotated in
+      IDENTICAL_ALLOWED — and an allow-list entry annotates a count, it never
+      removes it, which is why the baseline moves with it.
+  - code: W2
+    from: 6
+    to: 7
+    why: "Same key: an en dash contains no Arabic script. Annotated in NO_ARABIC_SCRIPT_ALLOWED."
+  - code: W3
+    from: 248
+    to: 247
+    why: >
+      The rebuilt History tab renders a provisional/final state, giving
+      fantasy.points.status.provisional its first literal call site in src/.
+      Nothing was orphaned in exchange: fpl.gameweek, dropped from the sentence
+      the tab used to render, is still used on five other screens.
+  - code: W4
+    from: 97
+    to: 97
+    why: >
+      Unchanged on purpose. Every new conditional is written
+      `cond ? t("a") : t("b")` (two literal call sites), never
+      `t(cond ? "a" : "b")`, which would have tripped this baseline.
+
+# --------------------------------------------------------------------------
+unit_coverage:
+  file: src/services/fantasy-runtime.test.ts
+  tests: 21
+  covers:
+    - "playerDto maps totalPoints / form / ownership from the season aggregate instead of zeros."
+    - "identity, position and price still come from the pool row."
+    - "ownership comes from the server-derived ownershipPercent and never from selectedByCount (the fixture carries a deliberately non-zero 42)."
+    - "ownership is 0, not NaN, when the season has no active team."
+    - "a player absent from the aggregate reads totalPoints 0, ownership 0 and form null — unknown, not zero."
+    - "form null survives the mapper (no `?? 0` anywhere on the path) and a genuine form 0 survives as 0."
+    - "THE NULL-FORM CASE RENDERS A DASH, NOT 0.0: render(null) === '–' and render(0) === '0.0', asserted through the dictionary value the surfaces use."
+    - "fantasy.stat.none is '–' in both fr and ar and contains no digit."
+    - "seasonStatsById indexes by id and tolerates an empty aggregate."
+    - >
+      A source-text guard over all 10 surfaces that format a form
+      (fantasy.players.tsx, fantasy.players.$playerId.tsx, AddPlayerScreen.tsx,
+      PlayerPickerDrawer.tsx, PlayerRow.tsx, fantasy.top-players.tsx,
+      fantasy.create.tsx, fantasy.points.tsx, fantasy.team.tsx,
+      fantasy.transfers.tsx): each must name t("fantasy.stat.none"), and no line
+      may format a form without the dash branch on it. This repository has no
+      DOM test runner; the technique is the one
+      src/components/ui-kit/ui-kit.contract.test.ts already uses.
+
+# --------------------------------------------------------------------------
+browser_evidence:
+  location: docs/engineering/tasks/BG-0071/evidence/
+  how: >
+    The app was served by `bun run dev` with VITE_FANTASY_DATA_MODE=supabase, so
+    the REAL cloud path runs end to end (SupabaseFantasyRepository -> zod ->
+    playerDto -> route). The PostgREST RPC endpoints were intercepted in
+    Playwright (page.route on **/rest/v1/rpc/*) and answered from fixtures.
+    Chromium came from PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers;
+    `playwright install` was never run.
+  why_a_fixture: >
+    Production today has ZERO scored gameweeks, so the only thing production can
+    honestly show is a dash. That is variant `empty` and it is the real live
+    answer. The populated numbers are a FIXTURE, deliberately labelled as such —
+    no screenshot here claims production shows numbers.
+  matrix: "2 variants x {fr, ar} x {390x844, 1440x900} x {player list, player detail Overview, player detail History} = 24 screenshots + observations.json."
+  observed:
+    empty_variant:
+      - "Player list, fr and ar, 390 and 1440: every row reads `Forme –` / `الحالة –`. Three players, three dashes, no `0.0` anywhere in the page text."
+      - "Player detail Overview: the Forme tile reads `–`; Total points reads 0 (a real zero — nothing has been scored) and Sélection reads 0%."
+      - "Player detail History: EmptyState. No fabricated rows."
+    populated_variant:
+      - "Player list: `Forme 7,4 · 50%`, `Forme 3,2 · 25%`, and — the case that matters — `Forme 0 · 0%` for the player whose real form in the window is 0. A genuine 0 and an unknown value now look different."
+      - "Player detail History, fr: `Journée 4 / WAC (Domicile) / 90 min / 9 pts` and `Journée 5 / FAR (Extérieur) / Provisoire / 61 min / 2 pts`."
+      - "Player detail History, ar: the same rows mirrored RTL, with `(أرضه)` / `(خارج أرضه)` and the `مبدئية` badge. Layout holds at 390 and 1440 in both directions."
+  note: >
+    Gameweek names in the History tab ("Journée 4") come from the database row
+    (gameweekName) and are not translated client-side, in both languages. That
+    matches how gameweek names are treated everywhere else in the product and is
+    the server's data, not a rendering defect.
+
+# --------------------------------------------------------------------------
+risks_for_the_reviewer:
+  - id: R1
+    risk: >
+      allPlayers() now issues one extra RPC per player-list load. The RPC is
+      `stable` and the routes already hold the result in React Query
+      (queryKey ["fantasy-players"]), so paging the pool does not re-read it,
+      but the brief's explicit staleTime >= 60s is NOT set here — the runtime
+      service is not a React layer and the existing queries in
+      fantasy.players.tsx / fantasy.create.tsx / fantasy.team.tsx use the
+      project's default staleTime. If the Chief wants the 60s floor it belongs
+      on those useQuery call sites, not in the service.
+  - id: R2
+    risk: >
+      A comparator subtlety worth a reviewer's eye: form sorting uses explicit
+      branches, not a `-Infinity` sentinel subtraction. Today EVERY player's
+      form is null, and `-Infinity - -Infinity` is NaN — a comparator returning
+      NaN for every pair leaves the list in an unspecified order. The same
+      three-line comparator is duplicated in fantasy.players.tsx,
+      AddPlayerScreen.tsx and PlayerPickerDrawer.tsx rather than extracted to a
+      new shared module outside the brief's allowed_paths.
+  - id: R3
+    risk: >
+      src/backend/generated/database.types.ts is stale with respect to the two
+      new RPCs and CI owns the regenerated artifact. Until it lands, the two
+      repository methods route through `rpcAwaitingGeneratedTypes`. If CI's
+      regeneration is not taken in the same PR, backend:types:check will fail
+      for a reason unrelated to this code.
+  - id: R4
+    risk: >
+      No pgTAP ran here. The RPC semantics this frontend depends on — form null
+      at zero scored gameweeks, ownership over active teams only, PT404 on an
+      unknown season — are asserted by the backend lane's database tests, which
+      only CI has executed.

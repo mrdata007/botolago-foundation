@@ -19,8 +19,20 @@ on:
         options:
           - canary
           - refresh
-  schedule:
-    - cron: "17 */6 * * *"
+  # BG-0073 News stand-down: the schedule is removed while News is hidden for
+  # launch. api.news_ingest_provider_article no longer publishes anything, so a
+  # stray run is harmless - but there is no reason to keep crawling ElBotola for
+  # content nobody can read.
+  #
+  # To restore scheduled recovery, re-add below and set the repository variable
+  # ELBOTOLA_SCHEDULE_ENABLED to 'true' (the job's `if` and runtimeGuard in
+  # scripts/backend/elbotola-recovery.ts both still gate on it):
+  #
+  #   schedule:
+  #     - cron: "17 */6 * * *"
+  #
+  # workflow_dispatch is deliberately left intact so the owner can still run the
+  # canary or a manual refresh by hand.
 
 concurrency:
   group: botolago-production-v2-mutation

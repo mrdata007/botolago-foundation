@@ -1,11 +1,17 @@
 import type { ReactNode } from "react";
 
+import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
- * Transfers header strip from the reference: four columns with a small grey
- * caption above an ink value pill ("Free Transfers → Unlimited", "Wildcard →
- * Unavailable", "Cost → 0", "Bank → £6.1m").
+ * The squad-builder / transfers header strip: a small caption above a value
+ * pill, repeated across four columns ("Transferts gratuits → Illimité",
+ * "Wildcard → Indisponible", "Coût → 0", "Banque → 6.1").
+ *
+ * The values are figures a reader scans, so they use the stat ramp (tabular).
+ * The captions used to be `whitespace-nowrap` at an off-ramp 10.5px, which
+ * pushed a long French or Arabic caption straight out of its column; they now
+ * wrap inside the column instead.
  */
 export function FplStatBar({
   items,
@@ -16,23 +22,23 @@ export function FplStatBar({
 }) {
   return (
     <div
-      className={cn(
-        "grid gap-2 border-b border-[color:var(--fpl-grey)] bg-white px-3 py-2",
-        className,
-      )}
+      className={cn("grid gap-2 px-3 py-2", ui.surface.bar, ui.rule.block, className)}
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
       {items.map((item, index) => (
-        <div key={index} className="flex flex-col items-center justify-end gap-1 text-center">
-          <span className="whitespace-nowrap text-[10.5px] font-semibold leading-tight text-[color:var(--fpl-grey-text)]">
-            {item.label}
-          </span>
+        <div
+          key={index}
+          className="flex min-w-0 flex-col items-center justify-end gap-1 text-center"
+        >
+          <span className={cn(ui.text.micro, ui.tone.muted)}>{item.label}</span>
           <span
             className={cn(
-              "inline-flex min-h-6 w-full items-center justify-center whitespace-nowrap rounded-[4px] px-1 text-[12px] font-extrabold",
+              "inline-flex min-h-6 w-full items-center justify-center truncate px-1",
+              ui.radius.tight,
+              ui.stat.sm,
               item.tone === "grey"
-                ? "bg-[color:var(--fpl-grey)] text-[color:var(--fpl-grey-text)]"
-                : "bg-[color:var(--fpl-ink)] text-[color:var(--fpl-green)]",
+                ? cn(ui.surface.sunken, ui.tone.muted)
+                : cn(ui.surface.ink, ui.tone.onInk),
             )}
           >
             {item.value}

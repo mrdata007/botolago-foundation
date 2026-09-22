@@ -655,6 +655,10 @@ export type Database = {
         }
         Returns: Json
       }
+      fantasy_gameweek_summary: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       fantasy_gameweeks: {
         Args: {
           p_before_sequence?: number
@@ -678,6 +682,20 @@ export type Database = {
         Args: { p_limit?: number; p_season_id: string; p_visibility?: string }
         Returns: Json
       }
+      fantasy_overall_standings: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_limit?: number
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      fantasy_player_gameweek_history: {
+        Args: { p_fantasy_player_id: string }
+        Returns: Json
+      }
       fantasy_player_pool: {
         Args: {
           p_after_id?: string
@@ -689,6 +707,10 @@ export type Database = {
           p_season_id: string
           p_team_id?: string
         }
+        Returns: Json
+      }
+      fantasy_player_season_stats: {
+        Args: { p_season_id: string; p_through_gameweek_id?: string }
         Returns: Json
       }
       fantasy_rules: { Args: { p_season_id: string }; Returns: Json }
@@ -5970,6 +5992,41 @@ export type Database = {
           },
           {
             foreignKeyName: "team_memberships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_translations: {
+        Row: {
+          created_at: string
+          language: Database["app"]["Enums"]["language_code"]
+          name: string
+          short_name: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          language: Database["app"]["Enums"]["language_code"]
+          name: string
+          short_name?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          language?: Database["app"]["Enums"]["language_code"]
+          name?: string
+          short_name?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_translations_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"

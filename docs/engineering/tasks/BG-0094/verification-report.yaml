@@ -1,0 +1,264 @@
+task_id: BG-0094
+title: Verification — the pitch, My Team and Points
+branch: bg-0094-pitch-team-points
+base_commit: d5c59ee6c11c25d5d99e2d57b61df25e2e2e2673
+verdict: pass, with one open finding that belongs to the kit
+
+# ---------------------------------------------------------------- how
+
+method:
+  rendering: >
+    A real browser against the real screens, signed in as a real manager, with
+    the repository's own deterministic Fantasy data (VITE_*_DATA_MODE=mock,
+    the demo account) — so every name, price, club, captain, bench slot and
+    points figure below came out of the app, not out of a fixture invented for
+    the test. Names include the long French-Latin cases ("Attiat-Allah",
+    "Salah-Eddine", "Ben Malango") and their Arabic counterparts ("الله",
+    "الدين", "بن مالانغو").
+  server: >
+    A dedicated dev server on 127.0.0.1:4319 with E2E_BASE_URL pointed at it.
+    playwright.config reuses 4173 outside CI and sibling lanes hold it, so
+    nothing here shares a port with another lane. `playwright install` was
+    never run; Chromium came from PLAYWRIGHT_BROWSERS_PATH.
+  matrix: >
+    4 widths (390, 430, 768, 1440) x 2 languages (fr, ar) x 2 themes
+    (light, dark) x 2 routes (/fantasy/team, /fantasy/points) = 32
+    combinations, every one measured and screenshotted. Dark was produced by
+    adding `.dark` to <html> by hand; DARK_MODE_ENABLED was not touched.
+  contrast: >
+    Measured from rasterised sRGB, not from computed CSS: each probed element
+    is screenshotted at deviceScaleFactor 2, decoded into a canvas, and the
+    ratio computed between the modal colour of the box and the colour
+    furthest from it in luminance that still covers >=0.3% of the pixels (so
+    an antialiasing fringe cannot be mistaken for the text). That is the only
+    way to get a true number out of `oklch()` tokens, alpha fills and
+    gradients.
+  raw: evidence/viewport-contrast-and-geometry.json
+
+# ---------------------------------------------------------------- results
+
+assertions:
+  - id: no_horizontal_page_scroll
+    result: pass
+    detail: "`documentElement.scrollWidth` equals the viewport width in all 32 combinations (390/390, 430/430, 768/768, 1440/1440)."
+
+  - id: no_element_past_the_viewport
+    result: pass
+    detail: >
+      `html, body { overflow-x: clip }` hides overflow from `scrollWidth`, so
+      scroll width alone proves nothing. Every element box inside `main` was
+      also walked and compared against the viewport, skipping only boxes
+      inside a deliberate horizontal scroller. 0 offscreen boxes in all 32
+      combinations, both languages.
+
+  - id: goalkeeper_shirt_not_clipped
+    result: "pass — and it was already passing before the change"
+    measured_before: >
+      On the unmodified tree: GK shirt 53.66px tall, identical to all fifteen
+      shirts; its top 12px below the clipping container's top edge; no shirt
+      crossing the turf boundary. True at 390/fr, 390/fr(points), 430/ar,
+      768/fr, 1440/ar.
+    measured_after: >
+      Identical across all 32 combinations: `shirtCount: 15`,
+      `shirtHeights: [53.66]` (one distinct value — the GK is not scaled
+      differently), `gkTopMinusTurfTop: 12`, `anyShirtAboveTurf: false`,
+      `anyShirtBelowTurf: false`.
+    evidence:
+      before: evidence/before-points-390-fr-light.png
+      after: evidence/after-points-390-fr-light.png
+    note: >
+      The reported defect does not reproduce and never did on this tree. What
+      IS clipped, in the before and after screenshots alike, is the painted
+      goal area: the goal-net rect is drawn three-quarters above the viewBox
+      and the touchline and six-yard box are stroked centred on the container
+      edge, leaving a severed white rectangle on the top edge. That geometry
+      now lives in `UiPitchSurface`, which this lane does not edit; it is
+      filed as a kit request with the exact fix and explicitly treated as a
+      design call rather than a defect.
+
+  - id: every_plate_readable_with_a_long_name
+    result: pass
+    before: >
+      One truncated plate at 390px in French: "Salah-Eddine" rendered
+      "Salah-Eddi…" — a 76px bench plate against a 79px name. Visible in
+      evidence/before-points-390-fr-light.png.
+    after: >
+      0 truncated elements in all 32 combinations. The plate name carries
+      `ltr:tracking-tight` (Latin-only, so joined Arabic letterforms are never
+      spaced — BG-0069) plus a `title` with the full name, and the aria-label
+      already carried it.
+    longest_cases_checked:
+      - "Attiat-Allah (fr, 12 chars, DEF row, 390px) — fits"
+      - "Salah-Eddine (fr, 12 chars, bench, 390px) — fits"
+      - "Ben Malango (fr, captain row of the points summary) — fits"
+      - "بن مالانغو / المتراجي / تكناوتي (ar, 390px) — fit"
+
+  - id: tap_targets_at_least_44px
+    result: pass
+    detail: >
+      Every button, link and tab inside `main` and `header` measured on both
+      axes: 0 controls below 43.5px in all 32 combinations. This closed three
+      real misses — the two gameweek steppers (36x36) and the chip cards.
+
+  - id: arabic_genuinely_mirrors
+    result: pass
+    detail: >
+      `dir="rtl"`, back control on the inline-end edge, pitch rows reordering
+      their peers (the turf itself correctly does not mirror — mow bands run
+      `to bottom`), bench position labels reading حم / 1. مد / 2. وس / 3. هج
+      right-to-left, stat strip reading المعدل / النقاط / الأعلى mirrored,
+      key/value rows right-aligned, chevrons flipped by the existing
+      `html[dir="rtl"] .lucide-chevron-*` rule. Armband letters are ق / ن,
+      not a Latin C / V.
+    bidi: >
+      Signed numbers are isolated with `dir="ltr"` so "×2" does not reorder to
+      "2×" and "−4" does not reorder to "4−" inside an Arabic line.
+    evidence: evidence/after-points-390-ar-light.png, evidence/after-team-430-ar-light.png
+
+  - id: contrast_at_least_4_5_to_1
+    result: "pass on everything this lane owns; one kit-owned failure"
+    passing_measurements:
+      player_plate_name: "12.81:1 light / 12.68:1 dark"
+      header_title: "9.01:1 light / 8.66–8.98:1 dark"
+      deadline_line: "5.81:1 light / 10.42:1 dark"
+      gameweek_selector_label: "6.71–6.77:1 light / 9.63:1 dark"
+      total_points_value: "12.81:1 light / 11.48:1 dark"
+      section_heading: "6.92:1 light / 9.18:1 dark"
+      chip_name_band: "12.81:1 light / 12.68:1 dark"
+      segmented_active_tab: "12.81:1 light / 11.48:1 dark"
+      segmented_idle_tab_light: "7.31–7.41:1"
+    open_finding:
+      id: SEGMENTED_ON_GRADIENT_TRACK_HAS_NO_DARK_COUNTERPART
+      owner: foundation (src/components/ui-kit/primitives.tsx)
+      measured: >
+        Idle tab, dark: 4.28:1 on /fantasy/team, 4.38:1 on /fantasy/points —
+        `--ui-on-grad-header` #f0f6fc on the track #54779d / #54759c.
+        Identical at 390, 430, 768 and 1440 in both FR and AR. Light passes at
+        7.3–7.4:1.
+      cause: >
+        `UiSegmented tone="onGradient"` tints its track with a fixed
+        `color-mix(in oklab, var(--ui-on-ink-plain) 35%, transparent)`. Over
+        the light header gradient that lifts the band away from near-black
+        text; over the deepened dark gradient it lands mid-tone, close to the
+        near-white foreground. No single value can serve a foreground that
+        flips from near-black to near-white — the wash needs a real token with
+        a dark counterpart.
+      not_worked_around_because: >
+        Overriding it from a screen would be inventing a colour the system
+        does not have, and would leave every other Fantasy header wrong.
+      same_problem_solved_where_this_lane_owned_it: >
+        `GameweekSelector` used the same wash and measured 4.01:1. It now
+        renders with no track on a header band, so its label and number sit
+        directly on the gradient with `--ui-on-grad-header`: 8.9–9.3:1.
+      dark_mode_ships_off: >
+        DARK_MODE_ENABLED is false, so this is not a launch blocker; it is a
+        correctness blocker for whenever dark is turned on.
+
+  - id: no_zero_where_the_answer_is_unknown
+    result: pass
+    detail: >
+      0 em dashes in the rendered text of all 32 combinations — the three
+      hardcoded "—" are gone and every unknown resolves through
+      `t("fantasy.stat.none")`, the en dash "–", in both languages. A 0 that
+      is genuinely 0 (a bench player present in the breakdown with no
+      minutes) still reads 0, which is correct.
+
+  - id: no_console_errors
+    result: pass
+    detail: "0 console errors and 0 page errors across all 32 combinations, and across the four sibling routes below."
+
+# ---------------------------------------------------------------- siblings
+
+sibling_surfaces_fed_by_this_lane_s_shared_components:
+  why: >
+    `FplPitch`, `FplPlayerCard`, `FplEmptySlot` and `FplStatBar` are rendered
+    by `SquadBuilderScreen`, which a sibling lane owns and which
+    /fantasy/transfers and /fantasy/create mount; `PlayerStatusBadge` and
+    `GameweekSelector` are rendered by sibling-owned routes. All were checked
+    at 390px in FR and AR so this lane cannot have broken them.
+  results:
+    - route: /fantasy/transfers
+      result: "pass — no horizontal scroll, 0 offscreen boxes, 0 console errors"
+      note: >
+        Renders the shared pitch and the reworked stat bar. The stat bar's
+        captions now wrap inside their columns instead of running out of them.
+        The two 176x40 segmented buttons are `FplSegmented` in the
+        sibling-owned `fpl/primitives.tsx` — pre-existing, not this lane's.
+      evidence: evidence/after-transfers-390-ar-light.png
+    - route: /fantasy/create
+      result: "pass — no horizontal scroll, 0 offscreen boxes, 0 sub-44px controls, 0 console errors"
+    - route: /fantasy/players
+      result: "pass for this lane's part"
+      note: >
+        156–159 sub-44px controls, all pre-existing in the sibling-owned route
+        (filter and sort chips). `PlayerStatusBadge` renders correctly at its
+        new 12px label size with no overflow.
+    - route: /fantasy/top-players
+      result: "pass for this lane's part"
+      note: >
+        `GameweekSelector` fits with room to spare and no longer repeats the
+        label the route prints beside it. The one offscreen box reported is a
+        decorative `blur-3xl` glow inside its own `overflow-hidden` card in
+        the sibling-owned route — pre-existing, visually clipped, not
+        reachable.
+
+# ---------------------------------------------------------------- gates
+
+gates:
+  - { command: bun run typecheck, result: pass }
+  - {
+      command: bun run test,
+      result: "1438 pass / 0 fail (15244 expect() calls, 157 files) — matches the stated baseline exactly",
+    }
+  - {
+      command: bun run lint,
+      result: "pass — 0 errors, 17 warnings, all pre-existing react-refresh/only-export-components",
+    }
+  - {
+      command: bun run format:check,
+      result: "40 pre-existing warnings, none in any file this lane touched",
+    }
+  - {
+      command: bun scripts/qa/i18n-gate.ts,
+      result: "pass — E1-E6 clean; W1 7/7, W2 7/7, W4 88/88 at baseline; W3 253/253 after the documented move",
+    }
+  - { command: bun run build, result: "pass" }
+
+meter:
+  command: bun scripts/qa/design-divergence.ts
+  before: { files_with_divergences: 91, total: 1534 }
+  after: { files_with_divergences: 79, total: 1392 }
+  this_lane: { before: 154, after: 12 }
+  remaining_12: >
+    All in `JerseyVisual.tsx`, and left there on purpose: they are the
+    lighting layers on the shirt artwork (a highlight, a side shade, a cuff,
+    an outline) composited over club colours, not a palette. Rewriting them as
+    named SVG paint would have scored 0 without changing a pixel, which is
+    moving the number rather than the product.
+  raw: evidence/design-divergence-before.json, evidence/design-divergence-after.json
+
+must_not_regress:
+  gw1_seven_fixtures: >
+    Not at risk and not touched. This lane changed no fixture list, difficulty
+    grid, gameweek query or player-fixture lookup; `useNextFixtures` and every
+    fantasy service are unmodified. The deferred FAR Rabat v Raja cannot
+    reappear through anything here.
+  match_time_zone: >
+    The one date formatter this lane owns — the deadline line in
+    `fantasy.team.tsx` — passes `timeZone: MATCH_TIME_ZONE` imported from
+    `src/lib/match-kickoff.ts`, rather than repeating the literal zone as the
+    component it replaced did. Rendered output checked in both languages
+    ("Journée 14 Deadline: 23 sept. 2026, 09:50" / "الجولة 14 الموعد النهائي:
+    23 شتنبر 2026، 09:50" against the same instant).
+  proven_logic: >
+    Formation validity, captain and vice logic, bench order,
+    auto-substitution, chips, scoring and persistence were wrapped, not
+    reimplemented. No RPC was replaced. The full suite, including
+    `fantasy-engine`, `reslot`, `team-validation`, `points-service` and the
+    owned-repository tests, passes unchanged.
+
+what_a_reviewer_should_look_at_first:
+  - "evidence/before-points-390-fr-light.png vs evidence/after-points-390-fr-light.png — the goalkeeper is whole in both; the goal-area marking is severed in both; everything else changed."
+  - "evidence/after-points-390-ar-light.png — Arabic, including the new scoring summary and the ق / ن armbands."
+  - "evidence/after-points-390-fr-dark.png — dark, which is where the old `bg-white` plates used to strand themed text."
+  - 'The one open contrast finding, which is the kit''s `UiSegmented tone="onGradient"` and is visible in that dark screenshot as the lighter idle tab.'

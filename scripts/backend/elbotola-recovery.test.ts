@@ -6,7 +6,7 @@ import {
   runtimeGuard,
   validateCanaryRun,
   validateCounters,
-  validatePublicFeed,
+  validateStandDownFeed,
   type ObservedArticle,
 } from "./elbotola-recovery";
 import type { ElbotolaRpcClient } from "../../supabase/functions/_shared/elbotola";
@@ -144,30 +144,33 @@ describe("ElBotola protected runner", () => {
     ])
       expect(() => validateCounters(result(change))).toThrow();
   });
-  test("all observed article IDs must be in fresh Arabic feed with correct attribution", () => {
-    expect(validatePublicFeed({ items: [item()] }, [ARTICLE], NOW)).toMatchObject({
-      matchedArticles: 1,
-      withHero: 1,
+  // BG-0073 News stand-down: ingestion lands editions as draft/private, so no
+  // observed article ID may appear in the public Arabic feed. This is the
+  // inverse of the pre-stand-down contract, and it is what proves a scheduled
+  // or dispatched run cannot put third-party link-outs back in front of readers.
+  test("no observed article ID may be reachable in the public Arabic feed", () => {
+    expect(validateStandDownFeed({ items: [] }, [ARTICLE], NOW)).toMatchObject({
+      ingestedArticles: 1,
+      publicFeedItems: 0,
+      reachableAfterStandDown: 0,
     });
-    for (const change of [
-      { id: "missing" },
-      { language: "fr" },
-      { publisher: { slug: "another" } },
-      { publishedAt: "2026-07-28T10:00:00Z" },
-      { hero: { sourceUrl: "https://wrong.example/photo.jpg" } },
-    ])
-      expect(() =>
-        validatePublicFeed({ items: [{ ...item(), ...change }] }, [ARTICLE], NOW),
-      ).toThrow();
-    expect(() => validatePublicFeed({ items: [item(), item()] }, [ARTICLE], NOW)).toThrow();
-    expect(() => validatePublicFeed({ items: [item()] }, [ARTICLE, ARTICLE], NOW)).toThrow();
+    // An unrelated, already-public article does not fail the check.
+    expect(
+      validateStandDownFeed({ items: [{ ...item(), id: "other-id" }] }, [ARTICLE], NOW),
+    ).toMatchObject({ ingestedArticles: 1, publicFeedItems: 1 });
+    // The ingested article surfacing publicly is exactly the regression to catch.
+    expect(() => validateStandDownFeed({ items: [item()] }, [ARTICLE], NOW)).toThrow(
+      "ingested_article_public_after_stand_down",
+    );
+    expect(() => validateStandDownFeed({ items: [] }, [], NOW)).toThrow();
+    expect(() => validateStandDownFeed({ items: [] }, [ARTICLE, ARTICLE], NOW)).toThrow();
+    expect(() => validateStandDownFeed({}, [ARTICLE], NOW)).toThrow();
   });
-  test("stale content cannot pass just because it matches persisted metadata", () => {
-    const date = "2026-07-28T10:00:00Z";
+  test("stale provider content cannot pass just because it was persisted", () => {
     expect(() =>
-      validatePublicFeed(
-        { items: [{ ...item(), publishedAt: date }] },
-        [{ ...ARTICLE, publishedAt: date }],
+      validateStandDownFeed(
+        { items: [] },
+        [{ ...ARTICLE, publishedAt: "2026-07-28T10:00:00Z" }],
         NOW,
       ),
     ).toThrow("news_still_stale");

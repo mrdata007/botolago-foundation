@@ -1,0 +1,200 @@
+task_id: BG-0073
+branch: bg-0073-overall-standings
+base: chief/launch-fixes-3 @ 18474e6882aee93d442bc86b1b1986d88db34f82
+environment_note: >
+  No Docker daemon is available in this worktree
+  ("Cannot connect to the Docker daemon at unix:///var/run/docker.sock").
+  `supabase start`, `supabase db reset`, `supabase test db` and
+  `bun run backend:types:generate` / `backend:types:check` all require it.
+
+pgtap:
+  file: supabase/tests/database/fantasy_overall_standings.test.sql
+  executed: false
+  reason: >
+    NOT RUN. No Docker, so no local Postgres with pgTAP. This is stated plainly
+    rather than implied: nobody has seen these assertions pass. The Verifier
+    should run `bun run backend:db:reset && bun run backend:db:test` on a machine
+    with Docker before this is treated as covered.
+  what_it_asserts:
+    - an unranked season returns items [], total 0, myRank null, nextCursor null to anon
+    - the board counts only league_id is null rows of the requested season (4 of 11 seeded rows)
+    - the default page is the season cumulative board ordered by rank, gameweekId null
+    - every managerName equals the team name for an anonymous caller
+    - "'Manager One' never appears in an anonymous caller's payload"
+    - anon has no myRank
+    - p_limit bounds the page and nextCursor carries the last (rank, teamId)
+    - the second page continues after the cursor without repeating a row, and has no nextCursor
+    - an explicit gameweek reads only that gameweek's overall rows, in that gameweek's order
+    - an unknown season id raises PT404 fantasy_season_not_found
+    - a gameweek from another season raises PT404 fantasy_gameweek_not_found
+    - p_limit 999 and p_limit 0 raise PT400 validation_failed
+    - half a cursor raises PT400 validation_failed
+    - myRank resolves for the signed-in owner of an active team, with their display_name
+    - a blank display_name falls back to the fantasy team name
+    - an archived team yields no myRank
+    - the function is stable, security definer, and pins search_path=""
+    - anon and authenticated hold execute; PUBLIC does not
+    - no parameter names a non-pg_catalog type (the BG-0063 coercion trap)
+    - anon still holds no USAGE on schema app
+    - app.fantasy_rankings still enforces RLS; anon has no direct select on it or on app.profiles
+
+how_the_sql_was_convinced_of_instead:
+  method: >
+    Read-only SELECTs against production project tkewgajrljbwgwedqsxn through the
+    Supabase MCP execute_sql tool. No write of any kind was issued; the function
+    was never created in production. The function's query bodies were run as
+    plain SELECTs with the same predicates and the same parameter values.
+  checks:
+    - id: finding-reproduced
+      query: counts of fantasy_rankings, fantasy_teams, fantasy_leagues, public leagues, seasons
+      result: >
+        rankings_total 0, overall_rows 0, teams 7, leagues 3, public_leagues 0,
+        seasons 1. The sweep's finding reproduces exactly, and the overall rows
+        it assumed exist do not yet.
+    - id: empty-state-payload
+      query: >
+        The full items/total/myRank/nextCursor assembly of the function body, with
+        p_season_id = the live season id (5ada3e98-2929-405a-a3f1-a26de8e51933),
+        target_gameweek null, no cursor, p_limit 50.
+      result: >
+        {"items": [], "total": 0, "myRank": null, "seasonId": "5ada3e98-...",
+        "gameweekId": null, "nextCursor": null} -- the exact 200-shaped empty page,
+        produced without raising.
+    - id: scope-and-keyset
+      query: >
+        The same scope predicate and keyset walk over a VALUES-based fixture of
+        11 ranking rows (4 season-cumulative overall, 2 gameweek-1 overall,
+        2 gameweek-2 overall, 2 league rows, 1 row from another season), paged at
+        p_limit 2.
+      result: >
+        total 4 (league rows and the foreign season excluded); page 1 ranks [1,2],
+        page 2 ranks [3,4], page 3 empty. Scope filtering and (rank, team_id)
+        keyset pagination both behave as specified.
+    - id: profiles-rls
+      query: pg_policies on app.profiles; has_table_privilege; has_schema_privilege
+      result: >
+        Only profiles_select_own_authenticated and profiles_update_own_authenticated,
+        both {authenticated} and both id = auth.uid(). anon has no select on
+        app.profiles and no USAGE on schema app. display_name is not public.
+    - id: rpc-conventions
+      query: provolatile, prosecdef, proconfig and ACL of api.fantasy_league_standings
+      result: >
+        's', true, 'search_path=""', anon execute true. The new function is written
+        to match, and the pgTAP assertion was corrected from 'search_path=' to
+        'search_path=""' on the strength of this.
+    - id: index-cover
+      query: pg_indexes on app.fantasy_rankings
+      result: >
+        fantasy_rankings_scope_idx (fantasy_season_id, league_id, gameweek_id, rank,
+        fantasy_team_id) already covers the new read; the added partial covering
+        index fantasy_rankings_overall_page_idx is the overall mirror of the
+        existing fantasy_rankings_league_overall_page_idx and makes the page a
+        pure index scan.
+    - id: schema-shapes
+      query: information_schema.columns and pg_constraint for the seeded tables
+      result: >
+        Used to make the pgTAP fixture legal: fantasy_leagues_invite_check forces a
+        'private' league to carry invite_code_digest/hint (the fixture league was
+        changed to 'public'), profiles_display_name_check allows '' but not '   '
+        (the blank-name fixture uses ''), and app.fantasy_team_status is
+        (active, suspended, archived).
+  not_verified_this_way:
+    - >
+      The function has never been created or executed anywhere. Parse errors,
+      plpgsql variable-shadowing mistakes and grant syntax are unproven.
+    - >
+      PT400 / PT404 -> HTTP 400 / 404 at the PostgREST edge is inferred from
+      PostgREST's documented PTnnn mapping and from the fact that
+      api.fantasy_league_standings already relies on it. Not observed here.
+    - >
+      The anon HTTP 200 claim is verified at the SQL level (no raise, empty page),
+      not at the HTTP level. No request was made to the production PostgREST edge.
+
+frontend_verification:
+  method: >
+    Static -- typecheck, lint, unit tests and a production build. The rankings
+    route was not exercised in a browser and no Playwright test was added.
+  empty_state_trace: >
+    cloud getGlobalRankings -> overallBoard -> one RPC call returning items [] and
+    myRank null -> rows [] -> selectRankingsPage([], {..., me: undefined}) ->
+    { rows: [], total: 0, podium: [], myRank: undefined }. In fantasy.rankings.tsx
+    `data` is defined (so no LoadingState), rankingsQ.isError is false (so no
+    ErrorState), data.podium.length !== 3 (so no podium), data.rows.length === 0
+    and search is empty, so EmptyState renders t("fantasy.rankings.empty_yet").
+  playwright:
+    added: false
+    reason: >
+      tests/e2e/fantasy.journey.e2e.ts was left alone. The behaviour that matters
+      before GW1 -- an empty board with the "after the first gameweek" copy -- is
+      what the page already rendered before this change (for the wrong reason),
+      so an e2e assertion would pass on both the broken and the fixed build and
+      would prove nothing. The behaviour that distinguishes them only appears
+      once ranking rows exist, which needs a seeded database this environment
+      cannot start.
+
+gates:
+  - command: bun run typecheck
+    result: PASS
+    detail: tsc --noEmit, no output, exit 0
+  - command: bun test
+    result: PASS_WITH_KNOWN_FAILURES
+    detail: >
+      1324 pass, 4 fail, 14785 expect() calls, 1328 tests across 152 files.
+      The 4 failures are all src/content/legal/legal-content.test.ts, the
+      documented pre-existing publication gate awaiting owner-supplied values.
+      Baseline before this change was 1321 pass / 4 fail; the 3 new passes are
+      the BG-0073 contract assertions added to
+      src/backend/fantasy/contracts.test.ts.
+  - command: bun run lint
+    result: PASS
+    detail: 17 problems, 0 errors, 17 warnings (all react-refresh/only-export-components, pre-existing)
+  - command: bun run format:check
+    result: PASS_WITH_KNOWN_FAILURES
+    detail: >
+      9 pre-existing YAML parse errors and ~40 pre-existing warn-level offenders.
+      The three files added by this task under docs/engineering/tasks/BG-0073/
+      and all five changed source files pass `bunx prettier --check` cleanly.
+      Pre-existing error files: LAUNCH_LEDGER.yaml and the engineering docs of
+      BG-0003, BG-0011 (x2), BG-0012 (x2), BG-0014, BG-0020, BG-0032.
+  - command: bun run backend:migrations:check
+    result: PASS
+    detail: "Validated 70 migration(s)."
+  - command: bun run backend:secrets:check
+    result: PASS
+    detail: "No high-confidence secrets found in tracked files."
+  - command: bun run config:integrity:check
+    result: PASS
+    detail: "Config integrity guard: no violations in 36 executed configuration file(s)."
+  - command: bun scripts/qa/i18n-gate.ts
+    result: PASS
+    detail: "RESULT: pass (no new key added by this task; the route was not edited)"
+  - command: bun run build
+    result: PASS
+    detail: vite + nitro build completed, output written to .output/
+  - command: bun run backend:db:test
+    result: NOT_RUN
+    detail: requires Docker
+  - command: bun run backend:types:check
+    result: NOT_RUN
+    detail: >
+      requires Docker. src/backend/generated/database.types.ts was hand-edited to
+      add the new RPC's Functions entry; this gate is the one that would prove the
+      hand edit matches the generator, and it could not be run.
+
+residual_risk:
+  - >
+    HIGHEST: the migration has never been executed. It needs at minimum a
+    `supabase db reset` on a Docker-capable machine before promotion.
+  - >
+    src/backend/generated/database.types.ts was edited by hand against its own
+    "do not edit" header. Regenerate and diff.
+  - >
+    The decision to expose another manager's display_name to authenticated
+    callers is a policy judgement, not a verified fact. See the
+    open_question_for_the_reviewer block in engineering-brief.yaml.
+  - >
+    overallBoard() fetches the whole board client-side, bounded at 20 pages of
+    100 (2000 teams), matching the existing player-pool bound. Beyond that the
+    board silently truncates. With 7 teams in production this is not a launch
+    risk, but it is the natural follow-up once the season grows: move sort,
+    search and paging server-side and stop walking the cursor in the browser.

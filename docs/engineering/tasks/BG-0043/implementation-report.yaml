@@ -1,0 +1,159 @@
+task_id: BG-0043
+attempt: 1
+builder_type: Builder-Backend
+branch: bg-0043-deactivate-relegated
+base: origin/chief/launch-fixes-3
+commits:
+  - "BG-0043: guarded, idempotent deactivation of non-current football clubs"
+objective: >
+  app.teams holds 21 active rows while the Botola Pro 2026/27 season has 16 participants. Five
+  clubs left over from the 2024/25 backfill (Chabab Mohammédia, JS Soualem, Olympic Safi,
+  Olympique Dcheïra, Yacoub El Mansour) are still active=true, so api.football_team_catalog —
+  which does filter on `active` — offers 21 clubs to the news filters, the club pages and the FDR
+  grid. Deliver a guarded, idempotent, owner-run SQL script that deactivates exactly the clubs
+  with no current-season participation, a pgTAP test that proves its behaviour and its refusals,
+  and an audit of whether the three public read surfaces filter on `active`.
+
+scope_decisions:
+  - >
+    Option (a) of the engineering brief only: a data-only correction. The durable ingestion rule
+    (option (b) — a reconciliation RPC or a season-scoped `team` ingest branch) is explicitly NOT
+    attempted here; the brief ranks it second and ties it to BG-0036, which rewrites the same
+    lines of api.ingest_football_catalog_entity.
+  - >
+    The script is named scripts/backend/football-deactivate-non-current-teams.sql, not the
+    football-team-deactivate-non-current.sql the brief sketched, per the task assignment.
+  - >
+    No migration was added. All three read surfaces were audited against production and hide
+    inactive teams already (see read_surface_audit below), so adding a predicate would have been
+    a change with no effect — and, for api.fantasy_fixture_difficulty, an incorrect one.
+
+changes:
+  - file: scripts/backend/football-deactivate-non-current-teams.sql
+    status: new
+    description: >
+      One administrative transaction, in the idiom of
+      scripts/backend/fantasy-catalog-restage-maintenance.sql and
+      scripts/backend/fantasy-realign-gameweek-calendar.sql: `begin;` ->
+      set_config('request.jwt.claims', '{"role":"service_role"}', true) -> a SESSION-LOCAL
+      pg_temp function holding the body -> one call -> review SELECTs -> a commented-out
+      `-- commit;`. The body takes two explicit typed parameters
+      (p_expected_affected_count, p_expected_remaining_active_count), called in the script as
+      (5, 16), so the same body can be pointed at synthetic data by the pgTAP suite without
+      discovering or hardcoding anything.
+
+      Candidate set: every app.teams row with active = true that has NO app.team_memberships row
+      for any season with is_current AND no app.fixtures appearance (home or away) in any such
+      season. The membership predicate deliberately ignores app.team_memberships.active — "no row
+      at all" is the narrower, safer test and, verified against production, agrees exactly with
+      the active-only test.
+
+      The single write is `update app.teams set active = false` joined to the materialised
+      candidate list, never a broad predicate. No DELETE anywhere; no name, slug, code, colour,
+      crest, membership, fixture, standing or provider mapping is written. The
+      teams_set_updated_at trigger bumps updated_at on the changed rows only.
+  - file: supabase/tests/database/football_deactivate_non_current_teams.test.sql
+    status: new
+    description: >
+      pgTAP suite, 20 assertions, carrying a byte-for-byte copy of the script's pg_temp body
+      (a \i of a path under scripts/backend is not reachable from supabase/tests/database —
+      the same constraint and the same remedy as
+      supabase/tests/database/fantasy_catalog_restage_maintenance.test.sql). Fixture: one
+      competition, one current season (2026/27) and one prior season (2025/26), eight clubs —
+      three with a current-season squad row and a current-season fixture, one with a squad row
+      only, one with a fixture only, three with prior-season history only. Because the candidate
+      set is global by construction, each scenario runs inside its own SAVEPOINT and rolls back
+      to it.
+
+guards:
+  - name: no_current_season
+    trips_when: app.seasons holds no row with is_current = true.
+    why: >
+      Without a current season every club looks unreferenced. Refusing is the only safe answer;
+      deactivating the whole catalogue is not.
+  - name: unexpected_affected_count
+    trips_when: the candidate count is neither p_expected_affected_count nor zero.
+    why: >
+      This is the guard the task is really about. A squad or fixture import committing halfway
+      would make participating clubs look unreferenced; the script must refuse and ask rather
+      than deactivate eleven clubs quietly. The message names every candidate by name and id and
+      says explicitly not to loosen the guard.
+  - name: affected_club_has_fantasy_player
+    trips_when: any candidate owns app.fantasy_players rows (any fantasy season, any status).
+    why: A club priced into a fantasy season must never go inactive underneath its players.
+  - name: affected_club_has_current_season_fixture
+    trips_when: any candidate appears in a current-season fixture.
+  - name: affected_club_has_current_season_membership
+    trips_when: any candidate has a current-season squad row.
+  - name: write_count_mismatch
+    trips_when: the UPDATE touched a different number of rows than there were candidates.
+  - name: unexpected_remaining_active_count
+    trips_when: the surviving active count is not p_expected_remaining_active_count (16).
+notes_on_guards: >
+  The two participation guards cannot fire given how the candidate set is built. They are
+  re-evaluated anyway, per row, AFTER the candidate rows have been locked FOR UPDATE and
+  immediately before the write, so that an import committing between the candidate SELECT and
+  the UPDATE cannot slip a participating club through. Every guard raises, which rolls the whole
+  transaction back — the script is never partially applied.
+
+idempotency: >
+  The candidate set only ever contains rows that are still active. After a committed run there
+  are none, so a second run takes the `already_applied` branch: it prints a notice, re-checks the
+  remaining active count against the expected value, writes nothing (not even an updated_at bump,
+  because no row is touched) and returns cleanly. Proved by assertions 7-9 of the pgTAP suite,
+  including that all three deactivated rows still share the first run's updated_at.
+
+read_surface_audit:
+  method: pg_get_functiondef read from production (tkewgajrljbwgwedqsxn), read-only.
+  migration_added: false
+  surfaces:
+    - name: api.football_team_catalog(text, integer)
+      filters_on_active: true
+      evidence: >
+        Its only source of clubs is `from app.teams candidate where candidate.active order by
+        candidate.name, candidate.id limit p_limit`. The predicate is present and correct.
+    - name: api.news_team_filters(text)
+      filters_on_active: true
+      evidence: >
+        `from app.teams team where team.active and exists (select 1 from app.story_teams ... )`.
+        The predicate is present and correct.
+    - name: api.fantasy_fixture_difficulty(uuid, integer, integer)
+      filters_on_active: not_applicable
+      evidence: >
+        The function never reads app.teams at all. Its club set comes from
+        app.fantasy_fixture_assignments (superseded_at is null, counts_points) joined to
+        app.fixtures, so it can only ever emit clubs that have a fixture assigned to a gameweek of
+        the fantasy season. A club with no current-season fixture is structurally absent. Verified
+        empirically read-only against production: the FDR RPC for the current fantasy season,
+        gameweeks 1-6, returns 16 entries over 16 distinct clubIds, none of which is one of the
+        five. Adding a `where team.active` predicate would have required introducing a join to
+        app.teams that the function does not have, which is a larger change than the brief
+        allows and would risk the row ordering the task forbids changing.
+  conclusion: >
+    All three surfaces already hide inactive teams, two by an explicit predicate and one
+    structurally. No migration was added — including none at the reserved timestamp
+    20260921200000, which remains free for another lane.
+
+files_not_touched:
+  - supabase/migrations/** (no migration needed)
+  - src/backend/fantasy/{scoring,finalization,pricing,ranking}.ts
+  - any api.service_* function
+  - scripts/backend/fantasy-season-orchestrator.ts
+  - scripts/backend/fantasy-lifecycle-runner.ts
+  - api.fantasy_player_pool / api.fantasy_league_standings (signature and ordering untouched)
+  - docs/engineering/LAUNCH_LEDGER.yaml (owned by the Chief)
+
+production_writes_executed: none
+production_reads_executed: >
+  Read-only SELECTs and pg_get_functiondef only, via the Supabase MCP execute_sql tool. The
+  script itself was never executed against production; it is the owner's to run.
+
+follow_ups:
+  - >
+    The durable rule (brief option (b)). Without it, a historical backfill re-run with a fresh
+    provider timestamp re-activates the five, and the next relegation recreates BG-0043. The
+    brief recommends folding it into BG-0036, which already rewrites
+    api.ingest_football_catalog_entity lines 277-302.
+  - >
+    If option (b) lands, this script becomes a one-off; the pgTAP suite should stay, because it
+    also pins api.football_team_catalog's `active` predicate as a regression.
