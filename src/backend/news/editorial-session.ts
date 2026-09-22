@@ -111,3 +111,53 @@ export function parseTranslationSearch(search: Record<string, unknown>): {
   if (!UUID_PATTERN.test(storyId) || (language !== "fr" && language !== "ar")) return {};
   return { storyId, language };
 }
+
+/**
+ * A scheduled time as the editor should read it: in their own time zone, with
+ * the zone named, and the UTC instant the server actually stores beside it.
+ * `timeZone` is only passed by tests; the browser's own zone is the default.
+ */
+export function describeScheduledAt(
+  iso: string,
+  lang: NewsLanguage,
+  timeZone?: string,
+): { readonly local: string; readonly utc: string } {
+  const instant = new Date(iso);
+  const locale = lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR";
+  const local = new Intl.DateTimeFormat(locale, {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone,
+  }).format(instant);
+  const zone =
+    new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" })
+      .formatToParts(instant)
+      .find((part) => part.type === "timeZoneName")?.value ?? "";
+  const utc = `${instant.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  return { local: zone ? `${local} (${zone})` : local, utc };
+}
+
+export type ScheduleHealthProblem = "job_inactive" | "job_stalled" | "run_failed" | "overdue";
+
+/**
+ * Whether the CMS should warn that scheduled articles may not be going out.
+ * The job runs every minute; five silent minutes, an inactive job, a failed
+ * run within the last day, or any edition overdue by five minutes all warn.
+ */
+export function scheduleHealthProblem(
+  health: {
+    readonly jobActive: boolean;
+    readonly lastRunAt: string | null;
+    readonly overdueCount: number;
+    readonly lastFailure: { readonly at: string } | null;
+  },
+  now: number = Date.now(),
+): ScheduleHealthProblem | null {
+  if (!health.jobActive) return "job_inactive";
+  if (!health.lastRunAt || now - Date.parse(health.lastRunAt) > 5 * 60_000) return "job_stalled";
+  if (health.overdueCount > 0) return "overdue";
+  if (health.lastFailure && now - Date.parse(health.lastFailure.at) < 24 * 60 * 60_000) {
+    return "run_failed";
+  }
+  return null;
+}

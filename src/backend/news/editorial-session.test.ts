@@ -8,8 +8,10 @@ import type {
 import { NewsError } from "./errors";
 import { markdownToEditorialHtml } from "./editorial-markdown";
 import {
+  describeScheduledAt,
   EDITOR_REVISION_LIMIT,
   parseTranslationSearch,
+  scheduleHealthProblem,
   revisionDifferences,
   revisionToEditorFields,
   transitionAndReload,
@@ -223,7 +225,99 @@ describe("creating the other-language edition of a story", () => {
       new URL("../../routes/admin.news.$articleEditionId.tsx", import.meta.url),
     ).text();
     expect(source).toContain('data-testid="admin-news-create-translation"');
-    expect(source).toContain("storyId: article.storyId");
-    expect(source).toContain('language: article.language === "fr" ? "ar" : "fr"');
+    expect(source).toContain('const otherLanguage = article.language === "fr" ? "ar" : "fr"');
+    expect(source).toContain("search={{ storyId: article.storyId, language: otherLanguage }}");
+    // An existing counterpart is opened, not created a second time.
+    expect(source).toContain('data-testid="admin-news-open-translation"');
+  });
+});
+
+describe("the scheduled time as the editor reads it", () => {
+  test("local time with the zone named, plus the stored UTC instant", () => {
+    expect(describeScheduledAt("2026-09-22T18:10:04.000Z", "fr", "Africa/Casablanca")).toEqual({
+      local: "mardi 22 septembre 2026 à 19:10 (GMT+1)",
+      utc: "2026-09-22 18:10 UTC",
+    });
+  });
+
+  test("Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027)", () => {
+    expect(describeScheduledAt("2027-02-20T18:10:00.000Z", "fr", "Africa/Casablanca").local).toBe(
+      "samedi 20 février 2027 à 18:10 (GMT)",
+    );
+  });
+
+  test("Arabic uses Latin digits and the same instant", () => {
+    const shown = describeScheduledAt("2026-09-22T18:10:04.000Z", "ar", "Africa/Casablanca");
+    expect(shown.local).toContain("19:10");
+    expect(shown.local).toContain("2026");
+    expect(shown.utc).toBe("2026-09-22 18:10 UTC");
+  });
+});
+
+describe("scheduler health warning in the CMS", () => {
+  const now = Date.parse("2026-09-22T18:00:00.000Z");
+  const healthy = {
+    jobActive: true,
+    lastRunAt: "2026-09-22T17:59:00.000Z",
+    overdueCount: 0,
+    lastFailure: null,
+  };
+
+  test("a job that ran in the last minute with nothing overdue is fine", () => {
+    expect(scheduleHealthProblem(healthy, now)).toBeNull();
+  });
+
+  test("warns for an inactive, silent, overdue or recently failing job", () => {
+    expect(scheduleHealthProblem({ ...healthy, jobActive: false }, now)).toBe("job_inactive");
+    expect(scheduleHealthProblem({ ...healthy, lastRunAt: null }, now)).toBe("job_stalled");
+    expect(scheduleHealthProblem({ ...healthy, lastRunAt: "2026-09-22T17:54:00.000Z" }, now)).toBe(
+      "job_stalled",
+    );
+    expect(scheduleHealthProblem({ ...healthy, overdueCount: 1 }, now)).toBe("overdue");
+    expect(
+      scheduleHealthProblem({ ...healthy, lastFailure: { at: "2026-09-22T12:00:00.000Z" } }, now),
+    ).toBe("run_failed");
+  });
+
+  test("an old failure no longer warns", () => {
+    expect(
+      scheduleHealthProblem({ ...healthy, lastFailure: { at: "2026-09-20T12:00:00.000Z" } }, now),
+    ).toBeNull();
+  });
+});
+
+describe("editor wiring for activation", () => {
+  const read = (path: string) => Bun.file(new URL(path, import.meta.url)).text();
+
+  test("both CMS forms guard unsaved work on in-app navigation, not just on reload", async () => {
+    const editor = await read("../../routes/admin.news.$articleEditionId.tsx");
+    const creator = await read("../../routes/admin.news.new.tsx");
+    for (const source of [editor, creator]) expect(source).toContain("useUnsavedChangesGuard(");
+    expect(editor).not.toContain('addEventListener("beforeunload"');
+    // Creating the draft is not a loss: the move to its editor is let through.
+    expect(creator.indexOf("guard.allowNextNavigation()")).toBeLessThan(
+      creator.indexOf("void navigate({"),
+    );
+  });
+
+  test("the guard uses the router blocker and the browser prompt", async () => {
+    const guard = await read("../../lib/use-unsaved-changes-guard.ts");
+    expect(guard).toContain("useBlocker({");
+    expect(guard).toContain("enableBeforeUnload");
+  });
+
+  test("the editor shows the scheduled time and offers rescheduling", async () => {
+    const editor = await read("../../routes/admin.news.$articleEditionId.tsx");
+    expect(editor).toContain('data-testid="admin-news-scheduled-for"');
+    expect(editor).toContain('scheduled: ["draft", "scheduled", "published", "unpublished"]');
+  });
+
+  test("an imported edition is flagged and offered only the archive transition", async () => {
+    const editor = await read("../../routes/admin.news.$articleEditionId.tsx");
+    expect(editor).toContain('data-testid="admin-news-imported-banner"');
+    expect(editor).toContain('.filter((next) => next === "archived")');
+    const list = await read("../../routes/admin.news.tsx");
+    expect(list).toContain('data-testid="admin-news-filter-scope"');
+    expect(list).toContain('data-testid="admin-news-schedule-warning"');
   });
 });

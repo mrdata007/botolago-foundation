@@ -13,6 +13,7 @@ import {
 } from "@/backend/news/sanitizer";
 import { mapNewsError } from "@/backend/news/errors";
 import {
+  describeScheduledAt,
   EDITOR_REVISION_LIMIT,
   revisionDifferences,
   revisionToEditorFields,
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/media";
 import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { useI18n } from "@/i18n/provider";
+import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 
 export const Route = createFileRoute("/admin/news/$articleEditionId")({
   ssr: false,
@@ -68,7 +70,8 @@ export const Route = createFileRoute("/admin/news/$articleEditionId")({
 const NEXT_STATUSES: Record<EditorialStatus, readonly EditorialStatus[]> = {
   draft: ["in_review", "rejected"],
   in_review: ["draft", "scheduled", "published", "rejected"],
-  scheduled: ["draft", "published", "unpublished"],
+  // `scheduled` again = reschedule to a new time.
+  scheduled: ["draft", "scheduled", "published", "unpublished"],
   published: ["unpublished", "archived"],
   unpublished: ["draft", "published", "archived"],
   rejected: ["draft"],
@@ -295,15 +298,14 @@ function AdminNewsEditRoute() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.state, articleEditionId]);
 
-  useEffect(() => {
-    const handler = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  // In-app navigation as well as reload/close: `beforeunload` alone never
+  // fired for "Tous les articles" or the Admin menu.
+  useUnsavedChangesGuard(
+    dirty,
+    rtl
+      ? "توجد تغييرات غير محفوظة ستضيع. مغادرة الصفحة؟"
+      : "Des modifications non enregistrées seront perdues. Quitter la page ?",
+  );
 
   const markDirty =
     <T,>(setter: (value: T) => void) =>
@@ -574,7 +576,15 @@ function AdminNewsEditRoute() {
     }
   };
 
-  const isEditable = article ? EDITABLE_STATUSES.includes(article.status) : false;
+  // An unconverted third-party import can only be archived (the server
+  // enforces it; this only avoids offering buttons that would be refused).
+  const imported = article?.imported === true;
+  const isEditable = article ? !imported && EDITABLE_STATUSES.includes(article.status) : false;
+  const nextStatuses: readonly EditorialStatus[] = article
+    ? imported
+      ? NEXT_STATUSES[article.status].filter((next) => next === "archived")
+      : NEXT_STATUSES[article.status]
+    : [];
   const currentProse = { title, subtitle, summary, bodyMarkdown };
 
   // Fills the form from a revision; nothing is written until Enregistrer, and
@@ -673,25 +683,51 @@ function AdminNewsEditRoute() {
                 </span>
               )}
             </div>
-            <UiLinkButton
-              to="/admin/news/new"
-              search={{
-                storyId: article.storyId,
-                language: article.language === "fr" ? "ar" : "fr",
-              }}
-              variant="ghost"
-              size="sm"
-              className="-ms-3 mt-1"
-              data-testid="admin-news-create-translation"
-            >
-              {article.language === "fr"
-                ? rtl
-                  ? "إنشاء النسخة العربية"
-                  : "Créer l’édition arabe"
-                : rtl
-                  ? "إنشاء النسخة الفرنسية"
-                  : "Créer l’édition française"}
-            </UiLinkButton>
+            {(() => {
+              const otherLanguage = article.language === "fr" ? "ar" : "fr";
+              const existing = article.translations?.find((t) => t.language === otherLanguage);
+              if (existing) {
+                return (
+                  <UiLinkButton
+                    to="/admin/news/$articleEditionId"
+                    params={{ articleEditionId: existing.id }}
+                    variant="ghost"
+                    size="sm"
+                    className="-ms-3 mt-1"
+                    data-testid="admin-news-open-translation"
+                  >
+                    {otherLanguage === "ar"
+                      ? rtl
+                        ? "فتح النسخة العربية"
+                        : "Ouvrir l’édition arabe"
+                      : rtl
+                        ? "فتح النسخة الفرنسية"
+                        : "Ouvrir l’édition française"}
+                    {" · "}
+                    {STATUS_LABELS[existing.status][lang]}
+                  </UiLinkButton>
+                );
+              }
+              if (imported) return null;
+              return (
+                <UiLinkButton
+                  to="/admin/news/new"
+                  search={{ storyId: article.storyId, language: otherLanguage }}
+                  variant="ghost"
+                  size="sm"
+                  className="-ms-3 mt-1"
+                  data-testid="admin-news-create-translation"
+                >
+                  {otherLanguage === "ar"
+                    ? rtl
+                      ? "إنشاء النسخة العربية"
+                      : "Créer l’édition arabe"
+                    : rtl
+                      ? "إنشاء النسخة الفرنسية"
+                      : "Créer l’édition française"}
+                </UiLinkButton>
+              );
+            })()}
             {/* A slug is LTR data whatever the console's direction. */}
             <span className="mt-2 block">
               <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>{article.slug}</AdminDatum>
@@ -739,6 +775,16 @@ function AdminNewsEditRoute() {
           </div>
 
           {message && <AdminNotice tone="alert">{message}</AdminNotice>}
+
+          {imported && (
+            <AdminNotice tone="alert">
+              <span data-testid="admin-news-imported-banner">
+                {rtl
+                  ? "محتوى مستورد من مصدر خارجي (أرشيف). لا يمكن نشره أو تعديله. لإعادة استخدامه يلزم تحويل صريح يقوم به مسؤول التحرير، ثم مراجعة عادية."
+                  : "Contenu importé d’une source externe (archive). Il ne peut être ni publié ni modifié. Pour le réutiliser, un administrateur éditorial doit d’abord le convertir explicitement, puis il suit la relecture normale."}
+              </span>
+            </AdminNotice>
+          )}
 
           {!isEditable && (
             <p
@@ -1014,7 +1060,29 @@ function AdminNewsEditRoute() {
             }
             testId="admin-news-section-status"
           >
-            {NEXT_STATUSES[article.status].includes("scheduled") && (
+            {article.status === "scheduled" && article.scheduledAt && (
+              <p
+                className={cn(ADMIN_PANEL_CLASS, "px-3 py-2", ui.text.body, ui.tone.default)}
+                data-testid="admin-news-scheduled-for"
+              >
+                {rtl ? "سيُنشر تلقائياً في: " : "Publication automatique prévue le "}
+                <AdminDatum mono={false}>
+                  {
+                    describeScheduledAt(
+                      article.scheduledAt,
+                      article.language === "ar" ? "ar" : lang,
+                    ).local
+                  }
+                </AdminDatum>
+                <span className={cn("block", ui.text.meta, ui.tone.muted)}>
+                  <AdminDatum>{describeScheduledAt(article.scheduledAt, lang).utc}</AdminDatum>
+                  {rtl
+                    ? " · يبقى المقال خاصاً حتى هذا الموعد، ويُنشر في غضون دقيقة بعده."
+                    : " · L’article reste privé jusque-là et part dans la minute qui suit."}
+                </span>
+              </p>
+            )}
+            {nextStatuses.includes("scheduled") && (
               <UiInput
                 label={rtl ? "تاريخ ووقت النشر المجدول" : "Date et heure de publication programmée"}
                 className="max-w-xs"
@@ -1025,7 +1093,7 @@ function AdminNewsEditRoute() {
               />
             )}
             <div className="flex flex-wrap gap-2">
-              {NEXT_STATUSES[article.status].map((next) => (
+              {nextStatuses.map((next) => (
                 // `destructive` is the kit's filled negative, and it replaces
                 // `adminDangerButtonClass` — a rose fill under a literal
                 // `text-white`. That pairing measured 2.31:1 in the dark
@@ -1040,7 +1108,11 @@ function AdminNewsEditRoute() {
                   onClick={() => void transition(next)}
                   data-testid={`admin-news-transition-${next}`}
                 >
-                  {STATUS_LABELS[next][lang]}
+                  {next === "scheduled" && article.status === "scheduled"
+                    ? rtl
+                      ? "إعادة الجدولة"
+                      : "Reprogrammer"
+                    : STATUS_LABELS[next][lang]}
                 </UiButton>
               ))}
             </div>

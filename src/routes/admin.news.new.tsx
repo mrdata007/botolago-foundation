@@ -18,6 +18,7 @@ import type { NewsLanguage } from "@/backend/news/contracts";
 import { ADMIN_CARD_CLASS, ADMIN_LABEL_CLASS, AdminNotice } from "@/components/admin/AdminSurfaces";
 import { ui, UiButton, UiInput, UiLinkButton, UiSelect, UiTextarea } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/news/new")({
@@ -83,6 +84,13 @@ function AdminNewsNewRoute() {
   const [body, setBody] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dirty = Boolean(slug || title || summary || body);
+  const guard = useUnsavedChangesGuard(
+    dirty,
+    rtl
+      ? "المسودة لم تُنشأ بعد وستضيع. مغادرة الصفحة؟"
+      : "Le brouillon n’est pas encore créé et sera perdu. Quitter la page ?",
+  );
 
   // The prose fields follow the ARTICLE's language, not the console's: an
   // Arabic article must be typed RTL even while the UI is in French.
@@ -110,6 +118,8 @@ function AdminNewsNewRoute() {
         },
         adminRepositoryContext(access),
       );
+      // The draft now exists server-side: moving to its editor is not a loss.
+      guard.allowNextNavigation();
       void navigate({
         to: "/admin/news/$articleEditionId",
         params: { articleEditionId: created.articleId },

@@ -11,6 +11,7 @@ import {
   editorialStoryPageSchema,
   homeModulesSchema,
   newsTeamFilterSchema,
+  scheduleHealthSchema,
   type ArticlePageDto,
   type CreateDraftInput,
   type CreateDraftResult,
@@ -23,6 +24,7 @@ import {
   type NewsSearchInput,
   type RegisterMediaInput,
   type RegisterMediaResult,
+  type ScheduleHealthDto,
   type SetPlacementInput,
   type SetPlacementResult,
   type TransitionArticleInput,
@@ -322,9 +324,18 @@ export class SupabaseNewsRepository implements NewsRepository {
       p_limit: input.limit ?? 20,
       p_after_updated_at: cursor?.updatedAt,
       p_after_id: cursor?.id,
+      p_scope: input.scope ?? undefined,
     });
     throwIfError(error);
     return parse(editorialStoryPageSchema, data);
+  }
+
+  /** Health of the pg_cron job that publishes scheduled editions. Not part of
+   *  `NewsRepository`: only the CMS list reads it, through this class. */
+  async getScheduleHealth(_context: RepositoryContext): Promise<ScheduleHealthDto> {
+    const { data, error } = await getNewsApi().rpc("editorial_schedule_health");
+    throwIfError(error);
+    return parse(scheduleHealthSchema, data);
   }
 
   async listRevisions(
