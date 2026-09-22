@@ -235,14 +235,17 @@ function HomeContent() {
               Arabic is never letter-spaced (BG-0069). */}
           <span className={cn(ui.text.label, ui.tone.ink)}>{greeting}</span>
         </div>
-        {/* The visible line is the manager's name, which says nothing about the
-            page. Crawlers and screen-reader users get a descriptive H1 instead,
-            and the name keeps its exact visual treatment below it. */}
+        {/* The page's only H1, and deliberately sr-only: nothing in this block
+            is a heading a reader needs read aloud, but the document still owes
+            crawlers and screen-reader users a descriptive title.
+
+            The manager's name used to render here at `ui.text.hero` (34px),
+            between the greeting and the date. Removed by owner decision: it
+            told a signed-in reader something they already know, and a
+            signed-out one the literal word "Manager", which is the placeholder
+            showing through. The greeting now runs straight into the date. */}
         <h1 className="sr-only">{HOME_TITLE}</h1>
-        <div className={cn("mt-1.5 truncate", ui.text.hero, ui.tone.default)}>
-          {user?.displayName?.trim() || summaryQ.data?.managerName || "Manager"}
-        </div>
-        <p className={cn("mt-1 truncate", ui.text.meta, ui.tone.muted)}>
+        <p className={cn("mt-2 truncate", ui.text.meta, ui.tone.muted)}>
           {gwQ.data ? `${t("home.gameweek")} ${gwQ.data.number}` : ""}
           {gwQ.data ? " · " : ""}
           <span className="capitalize">{dateLine}</span>
@@ -252,7 +255,13 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       {/* 2. Matches                                                */}
       {/* -------------------------------------------------------- */}
-      <Section index={1}>
+      {/* Tighter than the shared rhythm, and only here. `Section` sets
+          `mt-7 sm:mt-9`, which was measured against a greeting block that
+          ended in a 34px name line; with that line gone the same gap reads as
+          a hole. Overridden on this one section rather than in `Section`
+          itself, whose spacing every other section on this page and the
+          Fantasy hub still depend on. */}
+      <Section index={1} className="mt-5 sm:mt-7">
         <SectionHeader
           eyebrow={t("nav.matches")}
           icon={CircleDot}

@@ -68,7 +68,11 @@ function RulesPage() {
 
   return (
     <div>
-      <h1 className={cn(ui.text.title, ui.tone.ink)}>{t("fantasy.rules.title")}</h1>
+      {/* An h2, not an h1: `LegacyFantasyPage` above already renders the page's
+          h1 through UiHeader, so this was the document's second one and a
+          screen reader announced two page titles. The class is unchanged, so
+          nothing moves by a pixel — only the level is corrected. */}
+      <h2 className={cn(ui.text.title, ui.tone.ink)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 
       <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">

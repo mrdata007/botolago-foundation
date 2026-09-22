@@ -82,13 +82,12 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
   component: PlayerDetailFramed,
 });
 
-type Tab = "overview" | "history" | "fixtures" | "stats" | "news";
+type Tab = "overview" | "history" | "fixtures" | "stats";
 const tabs: { key: Tab; label: TranslationKey }[] = [
   { key: "overview", label: "fantasy.players.tab.overview" },
   { key: "history", label: "fantasy.players.tab.history" },
   { key: "fixtures", label: "fantasy.players.tab.fixtures" },
   { key: "stats", label: "fantasy.players.tab.stats" },
-  { key: "news", label: "fantasy.players.tab.news" },
 ];
 
 function PlayerDetailFramed() {
@@ -189,16 +188,17 @@ function PlayerDetailPage() {
         <UiStatBlock align="end" tone="ink" value={nf.format(p.price)} sub={t("fantasy.price")} />
       </UiCard>
 
-      {/* Five labels do not fit a segmented control at 390px in French, so the
-          tablist scrolls instead of shrinking under the tap floor. */}
+      {/* Four labels, so this is a real segmented control again rather than a
+          scrolling strip. The strip existed for the fifth tab: "Aperçu ·
+          Historique · Calendrier · Statistiques · Actualités" does not fit
+          390px in French, so it scrolled rather than shrink under the tap
+          floor. Without "Actualités" the four share the width evenly —
+          `grid-cols-4` with `min-w-0` children, which is what makes the
+          truncation below able to fire at all. */}
       <div
         role="tablist"
         aria-label={t("fpl.player_info")}
-        className={cn(
-          "mt-3 flex gap-1 overflow-x-auto p-[3px]",
-          ui.radius.track,
-          ui.surface.sunken,
-        )}
+        className={cn("mt-3 grid grid-cols-4 gap-1 p-[3px]", ui.radius.track, ui.surface.sunken)}
       >
         {tabs.map((it) => {
           const active = it.key === tab;
@@ -210,7 +210,10 @@ function PlayerDetailPage() {
               aria-selected={active}
               onClick={() => setTab(it.key)}
               className={cn(
-                "shrink-0 whitespace-nowrap px-3 transition-colors",
+                // `min-w-0` so a grid track may be narrower than its content,
+                // which is what lets `truncate` do anything; without it the
+                // track sizes to the longest label and the row overflows.
+                "min-w-0 truncate px-1.5 transition-colors",
                 "min-h-[var(--ui-tap-min)]",
                 ui.radius.segment,
                 ui.text.meta,
@@ -347,19 +350,6 @@ function PlayerDetailPage() {
               v={t(`player.status.${p.status}` as TranslationKey)}
             />
           </dl>
-        ) : null}
-
-        {tab === "news" ? (
-          p.news ? (
-            <UiCard>
-              <p className={cn(ui.text.secondary, ui.tone.default)}>{tr(p.news)}</p>
-            </UiCard>
-          ) : (
-            <UiEmptyState
-              title={t("fantasy.players.no_news")}
-              body={t("fantasy.players.no_news_desc")}
-            />
-          )
         ) : null}
       </div>
     </div>

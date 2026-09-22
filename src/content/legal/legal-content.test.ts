@@ -177,4 +177,45 @@ describe("content integrity", () => {
     expect(fr).toContain("eu-west-3");
     expect(fr).not.toContain("confirmer la région");
   });
+
+  /**
+   * Terms shipped to production carrying "Les champs entre crochets sont à
+   * compléter avant publication" / "الحقول بين معقوفتين تُستكمل قبل النشر" —
+   * a note from the drafter to the owner, rendered to every reader of a
+   * binding document, on a page that had already been published.
+   *
+   * `legal:gate` did not catch it and could not: it looks for bracketed
+   * blanks, and by then there were none left. The sentence was not a blank,
+   * it was PROSE ABOUT blanks — and having outlived the blanks it described,
+   * it was also simply false.
+   *
+   * So this asserts the absence of the editorial register itself. A legal
+   * page may state what it governs and when it takes effect; it may not
+   * discuss its own drafting status, in either language.
+   */
+  it("contains no note about its own drafting status", () => {
+    const editorial = [
+      /à compléter/i,
+      /avant publication/i,
+      /entre crochets/i,
+      /تُستكمل/,
+      /قبل النشر/,
+      /بين معقوفتين/,
+      /\bbrouillon\b/i,
+      /\bdraft\b/i,
+      /\bTODO\b/,
+      /\[[^\]\n]{2,60}\]/,
+    ];
+    const offenders: string[] = [];
+    for (const [name, byLang] of Object.entries(LEGAL_DOCUMENTS)) {
+      for (const lang of LANGS) {
+        for (const text of allText(byLang[lang])) {
+          for (const rx of editorial) {
+            if (rx.test(text)) offenders.push(`${name}.${lang}: ${rx} → ${text.slice(0, 80)}`);
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
