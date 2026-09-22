@@ -119,6 +119,7 @@ const PROBE = () => {
     clipW: [],
     clipH: [],
     clipHFontBox: [],
+    spill: [],
   };
   const hides = (v) => v === "hidden" || v === "clip";
 
@@ -197,6 +198,43 @@ const PROBE = () => {
       out[decorative(el, cs) ? "decorative" : "past"].push(`${where} ${cls}`);
     }
 
+    /**
+     * Text that outgrows its own PARENT while nothing clips it.
+     *
+     * The inverse of every assertion above, and the one they all miss. In a
+     * `flex-col` box a child with `white-space: nowrap` and no `max-width`
+     * sizes itself to its text, so `scrollWidth === clientWidth` — the element
+     * fits the content it was asked to clip — and a `truncate` on it is inert.
+     * `clipW` cannot fire, the page does not scroll, nothing crosses the
+     * viewport, and the label simply lies across its neighbours. Found on
+     * /fantasy/rankings only because a reader looked: a 103.3px tile carrying
+     * a 140.4px label, overlapping the next tile by 8.4px.
+     *
+     * A parent that DOES clip is excluded — that is `clipW`'s business, and
+     * being clipped is a different defect from spilling.
+     */
+    const parent = el.parentElement;
+    if (
+      el.children.length === 0 &&
+      (el.textContent || "").trim().length > 0 &&
+      parent &&
+      cs.position !== "absolute" &&
+      cs.position !== "fixed" &&
+      !srOnly(el) &&
+      !inSvg(el)
+    ) {
+      const pb = parent.getBoundingClientRect();
+      const ps = getComputedStyle(parent);
+      const over = Math.max(r.right - pb.right, pb.left - r.left);
+      if (over > 1 && pb.width > 1 && !hides(ps.overflowX)) {
+        out.spill.push(
+          `<${el.tagName.toLowerCase()}> "${(el.textContent || "").trim().slice(0, 30)}"` +
+            ` ${Math.round(r.width)}px in a ${Math.round(pb.width)}px parent (+${over.toFixed(1)}px)` +
+            `${hides(cs.overflowX) && el.scrollWidth <= el.clientWidth + 1 ? " — truncate is inert here" : ""}`,
+        );
+      }
+    }
+
     const isTextLeaf = el.children.length === 0 && (el.textContent || "").trim().length > 0;
     if (isTextLeaf && !srOnly(el) && !inSvg(el)) {
       const label = (el.textContent || "").trim().slice(0, 30);
@@ -217,7 +255,7 @@ const PROBE = () => {
       }
     }
   }
-  for (const k of ["past", "decorative", "clipW", "clipH", "clipHFontBox"])
+  for (const k of ["past", "decorative", "clipW", "clipH", "clipHFontBox", "spill"])
     out[k] = [...new Set(out[k])];
   return out;
 };
@@ -248,7 +286,8 @@ for (const lang of LANGS) {
         r.decorative.length ||
         r.clipW.length ||
         r.clipH.length ||
-        r.clipHFontBox.length
+        r.clipHFontBox.length ||
+        r.spill.length
       ) {
         rows.push({ lang, width, route, ...r });
       }
@@ -266,10 +305,11 @@ console.log(`${rows.length} route/viewport pairs with findings`);
 console.log(
   `scroll ${rows.filter((r) => r.scroll > 1).length} · past ${total("past")} · clipW ${total("clipW")} · clipH ${total("clipH")}` +
     ` · decorative ${total("decorative")}` +
-    ` · clipH-fontbox ${total("clipHFontBox")} (both reported, neither a defect)\n`,
+    ` · clipH-fontbox ${total("clipHFontBox")} (neither a defect)` +
+    ` · spill ${total("spill")}\n`,
 );
 
-for (const kind of ["scroll", "past", "clipW", "clipH", "decorative", "clipHFontBox"]) {
+for (const kind of ["scroll", "past", "clipW", "clipH", "spill", "decorative", "clipHFontBox"]) {
   const hit = rows.filter((r) => (kind === "scroll" ? r.scroll > 1 : r[kind].length));
   if (!hit.length) {
     console.log(`### ${kind}: none`);

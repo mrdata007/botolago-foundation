@@ -1283,6 +1283,27 @@ export type UiStatSize = "sm" | "md" | "lg" | "hero";
  * A number and what it means. The number uses the stat ramp — tabular
  * figures, its own weight and an `ltr:`-only tightening — so a row of
  * StatBlocks lines up and a column of them reads as a table of figures.
+ *
+ * THE LABEL WRAPS, AND IT IS BOUNDED. Both halves of that matter, and the
+ * second was the bug. This is a `flex-col` box, usually `items-center`, so a
+ * child with `white-space: nowrap` and no `max-width` sizes itself to its own
+ * text and simply grows past the tile. `truncate` on such a child is INERT —
+ * `scrollWidth === clientWidth`, because the box already fits the content it
+ * was asked to clip — so the ellipsis never appears and the label spills over
+ * its neighbours instead. Measured on /fantasy/rankings at 390px: a 103.3px
+ * tile carrying a 140.4px label, "Classement général" starting 2.5px outside
+ * the card and overlapping "Points totaux" by 8.4px.
+ *
+ * `max-w-full` supplies the bound. With it the label could truncate — but
+ * these labels are fixed product vocabulary ("Classement général", "Points de
+ * la journée", "Passes décisives"), and an ellipsis on those destroys the
+ * meaning the figure depends on. So it wraps instead, which the grid absorbs:
+ * rows stretch, so a two-line label just makes every tile in the row taller
+ * together. Same call BG-0111 made on the Home tiles — accommodate the longest
+ * label rather than shorten it.
+ *
+ * `sub` keeps `truncate`, now also bounded so it actually fires: it is a
+ * supplementary line, where an ellipsis loses nothing the reader needs.
  */
 export function UiStatBlock({
   value,
@@ -1311,7 +1332,9 @@ export function UiStatBlock({
         className,
       )}
     >
-      {label ? <span className={cn("truncate", ui.text.label, ui.tone.muted)}>{label}</span> : null}
+      {label ? (
+        <span className={cn("max-w-full text-balance", ui.text.label, ui.tone.muted)}>{label}</span>
+      ) : null}
       <span
         className={cn(
           ui.stat[size],
@@ -1324,7 +1347,9 @@ export function UiStatBlock({
       >
         {value}
       </span>
-      {sub ? <span className={cn("truncate", ui.text.micro, ui.tone.muted)}>{sub}</span> : null}
+      {sub ? (
+        <span className={cn("max-w-full truncate", ui.text.micro, ui.tone.muted)}>{sub}</span>
+      ) : null}
     </div>
   );
 }
