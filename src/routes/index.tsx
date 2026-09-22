@@ -528,7 +528,7 @@ function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
       )}
     >
       {t("home.view_all")}
-      <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
+      <ChevronRight className="h-3.5 w-3.5" aria-hidden />
     </Link>
   );
 }
@@ -570,10 +570,7 @@ function DiscoveryLink({
       <span className={cn("min-w-0 flex-1 leading-tight", ui.text.bodyStrong, ui.tone.default)}>
         {label}
       </span>
-      <ChevronRight
-        className={cn("ms-auto h-4 w-4 shrink-0 rtl:rotate-180", ui.tone.muted)}
-        aria-hidden
-      />
+      <ChevronRight className={cn("ms-auto h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
     </Link>
   );
 }

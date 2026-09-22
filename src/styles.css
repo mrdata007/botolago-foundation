@@ -712,6 +712,10 @@ html[dir="rtl"] *::after {
   letter-spacing: normal;
 }
 
+/* Directional icons mirror here, once, for every screen. Do not add
+   `rtl:rotate-180` or `rtl:-scale-x-100` on top: those set the separate
+   `rotate`/`scale` properties, which compose with this `transform` and flip
+   the icon back — an Arabic "next" arrow that points backwards. */
 html[dir="rtl"] .lucide-chevron-right {
   transform: scaleX(-1);
 }

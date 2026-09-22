@@ -440,14 +440,14 @@ function PlayersPage() {
                     disabled={currentPage <= 1}
                     onClick={() => setPage((c) => Math.max(1, c - 1))}
                   >
-                    <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
                   </PagerButton>
                   <PagerButton
                     label={t("fantasy.rankings.next")}
                     disabled={currentPage >= pageCount}
                     onClick={() => setPage((c) => Math.min(pageCount, c + 1))}
                   >
-                    <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                    <ChevronRight className="h-4 w-4" aria-hidden />
                   </PagerButton>
                 </div>
               </div>

@@ -241,7 +241,7 @@ function RankingsPage() {
                       <UiTH numeric className="w-14" title={t("fantasy.total_points")}>
                         {t("fantasy.leagues.total")}
                       </UiTH>
-                      <UiTH numeric className="w-9">
+                      <UiTH numeric className="w-12">
                         <span className="sr-only">{t("fantasy.leagues.movement")}</span>
                       </UiTH>
                     </UiTR>
@@ -272,7 +272,7 @@ function RankingsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
-                <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                <ChevronLeft className="h-4 w-4" aria-hidden />
               </PagerButton>
               <span className={cn(ui.stat.sm, ui.tone.default)}>
                 {t("fantasy.rankings.page")} {nf.format(page)} / {nf.format(pageCount)}
@@ -282,7 +282,7 @@ function RankingsPage() {
                 disabled={page >= pageCount}
                 onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
               >
-                <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+                <ChevronRight className="h-4 w-4" aria-hidden />
               </PagerButton>
             </div>
           </div>

@@ -124,8 +124,7 @@ function FantasyHub() {
     if (authStatus !== "authenticated" || source === "guest") {
       return (
         <Link to="/auth/login" search={{ next: "/fantasy" }} className={teamCardClass}>
-          {t("auth.prompt.login")}{" "}
-          <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+          {t("auth.prompt.login")} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       );
     }
@@ -133,14 +132,13 @@ function FantasyHub() {
       return (
         <Link to="/fantasy/profile" className={teamCardClass}>
           <span className="truncate">{team.teamName}</span>
-          <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
       );
     }
     return (
       <Link to="/fantasy/create" className={teamCardClass}>
-        {t("fpl.create_team")}{" "}
-        <ArrowRight className="h-5 w-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+        {t("fpl.create_team")} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
       </Link>
     );
   })();
@@ -168,7 +166,7 @@ function FantasyHub() {
                 <>
                   <UiPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</UiPill>
                   <p className={cn("mt-2", ui.text.secondary, ui.tone.default)}>
-                    {t("fpl.gameweek")} {gameweek.number} {t("fpl.deadline")}:{" "}
+                    {t("fpl.deadline")}:{" "}
                     <strong className="[font-weight:var(--ui-weight-heavy)]">{deadlineText}</strong>
                   </p>
                 </>
@@ -236,8 +234,7 @@ function FantasyHub() {
               ui.tone.onInkPlain,
             )}
           >
-            {t("fpl.view_all")}{" "}
-            <ArrowRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
+            {t("fpl.view_all")} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
           </span>
         </Link>
       </div>
@@ -260,8 +257,7 @@ function FantasyHub() {
                 ui.radius.control,
               )}
             >
-              {t("fpl.view_all")}{" "}
-              <ArrowRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
+              {t("fpl.view_all")} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
           </div>
           <div
@@ -415,7 +411,8 @@ function HubButton({
         // `leading-tight` dropped: the ramp step below sets the line box, per
         // script (BG-0124), and this button's label truncates — the one place
         // a too-flat leading cuts glyph ink instead of just looking tight.
-        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 text-center",
+        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 py-1 text-center",
+        "[&_svg]:shrink-0",
         ui.radius.control,
         ui.text.meta,
         "[font-weight:var(--ui-weight-heavy)]",
@@ -427,7 +424,9 @@ function HubButton({
       style={gradient ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >
       {icon}
-      <span className="min-w-0 truncate">{children}</span>
+      {/* Two lines, not an ellipsis: at 390px French labels such as
+          "Statistiques joueurs" lost their second word to `truncate`. */}
+      <span className="min-w-0 line-clamp-2 text-balance">{children}</span>
     </Link>
   );
 }
@@ -574,7 +573,7 @@ function LeagueAction({
     <Link
       to={to}
       className={cn(
-        "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2",
+        "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2 py-1",
         // An SVG is a flex item and shrinks like any other, so a long label
         // beside it takes the width out of the icon instead of wrapping.
         // Measured here: a `lucide-plus` sized `h-4 w-4` rendering 14.0 × 16.0,
@@ -590,7 +589,7 @@ function LeagueAction({
       )}
     >
       {icon}
-      <span className="min-w-0 truncate">{children}</span>
+      <span className="min-w-0 line-clamp-2 text-balance text-center">{children}</span>
     </Link>
   );
 }

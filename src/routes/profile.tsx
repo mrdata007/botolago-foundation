@@ -442,7 +442,7 @@ function NavRow({
           ) : null}
         </span>
       </span>
-      <ChevronRight className={cn("h-4 w-4 shrink-0 rtl:rotate-180", ui.tone.muted)} aria-hidden />
+      <ChevronRight className={cn("h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
     </button>
   );
 }
@@ -630,7 +630,7 @@ function DeleteAccountSection() {
                 </span>
               </span>
               <ChevronRight
-                className="h-4 w-4 shrink-0 text-[color:var(--ui-negative)] rtl:rotate-180"
+                className="h-4 w-4 shrink-0 text-[color:var(--ui-negative)]"
                 aria-hidden
               />
             </button>
