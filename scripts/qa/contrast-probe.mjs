@@ -230,7 +230,8 @@ const THEME = process.env.PROBE_THEME === "dark" ? "dark" : "light";
 const applyTheme = async (page) => {
   if (THEME !== "dark") return;
   const changed = await page.evaluate(() => {
-    const read = () => getComputedStyle(document.documentElement).getPropertyValue("--ui-page").trim();
+    const read = () =>
+      getComputedStyle(document.documentElement).getPropertyValue("--ui-page").trim();
     const before = read();
     document.documentElement.classList.add("dark");
     return { before, after: read() };
