@@ -12,6 +12,10 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    router: {
+      // Keep colocated route tests out of TanStack's file-based route discovery.
+      routeFileIgnorePattern: "\\.test\\.",
+    },
   },
   vite: {
     plugins: [mcpPlugin()],
