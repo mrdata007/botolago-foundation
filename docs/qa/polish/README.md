@@ -252,3 +252,101 @@ pixels, and only pass 2's number is reported.
 **After:** 7 routes × 2 languages, **168 pixel measurements, 0 below AA** — and
 that includes all 78 gradient-backed elements pass 1 cannot judge, which
 independently agrees with BG-0118's own 978-sample sweep.
+
+---
+
+## What four screenshot comments found that the probe could not
+
+Four "fix the spacing" reports arrived against the published gallery, on two
+screens. All four were real, and the layout probe reported zero on both routes
+at the time. Two blind spots, both now closed.
+
+### 1. The label that outgrew its tile, with a `truncate` that could not fire
+
+`/fantasy/rankings` at 390px, French:
+
+```
+{"text":"Classement général","labelW":140.4,"tileW":103.3,"overflowsTile":37.1,
+ "left":13.5,"right":153.9,"whiteSpace":"nowrap","overflow":"hidden",
+ "maxWidth":"none","scrollVsClient":"140>140"}
+```
+
+The card spans x=16→374. Label 1 starts 2.5px outside it, label 3 ends 3.3px
+past it, and labels 1 and 2 overlap by 8.4px.
+
+`scrollVsClient` is the whole story: **140 > 140**. In a `flex-col` box with
+`items-center`, a child with `white-space: nowrap` and no `max-width` sizes
+itself to its own text. `scrollWidth` therefore equals `clientWidth` — the
+element fits the content it was asked to clip — so `text-overflow: ellipsis`
+has nothing to act on. The text spills across its siblings instead.
+
+Every existing assertion is blind here by construction. `scroll` sees no
+document growth. `past` sees nothing crossing the viewport. `clipW` sees
+`scrollWidth === clientWidth`. Nothing is clipped, because nothing is
+constrained.
+
+`max-w-full` supplies the bound. The label wraps (`text-balance`) rather than
+truncating: these strings are fixed product vocabulary, and half of one reads
+as a different word. The sub band keeps `truncate`, since it carries variable
+data.
+
+Eight instances, all `UiStatBlock` labels, both languages — fixed once in the
+kit. New assertion `spill`: a text leaf that outgrows its own parent while
+nothing clips it. **0 over 128 checks.**
+
+### 2. The ellipsis that excused itself
+
+`/fantasy/top-players`, same 390px, same card the fourth report pointed at:
+
+```
+"Sélectionné par"  clientWidth 40  scrollWidth 112  → 36% shown  ("SÉLE…")
+```
+
+`clipW` skipped it deliberately: `cs.textOverflow !== "ellipsis"`. The
+reasoning was sound — an ellipsis is a designed truncation, not a sliced word —
+but it is only a design while enough of the word survives to be read. Four
+characters of fifteen is a defect wearing a "…".
+
+Cause: three chips share a 326px row, so each is ~103px; minus padding, gap and
+a `shrink-0` value, the label had 40px. `flex-wrap` gives it somewhere to go.
+Without `truncate` its min-content width is its longest word, so a label that
+cannot sit beside its value pushes the value to a second line and reads in
+full; the short chips never wrap and are unchanged.
+
+The same card's comparison rows clipped four of five names in a fixed 3.5rem
+column ("#4 Lamlaoui" is 67px). The column stays fixed rather than `auto`,
+because every bar must start at the same x for the comparison to mean anything;
+5.25rem clears the league's surnames and still leaves the bar 186px.
+
+New assertion `starved`: an ellipsis showing less than `PROBE_STARVED` (0.6) of
+the text's own width. A fraction rather than a pixel count, so it means the
+same thing at every font size and in both languages. It fired on the 36% case
+and stayed quiet on the club names on `/matches`, measured at 65–80% against
+production-length data — an ordinary tail-trim.
+
+**After both:** `scroll 0 · past 0 · clipW 0 · clipH 0 · spill 0 · starved 0`
+over 128 checks (16 routes × 4 widths × 2 languages).
+
+### 3. Crests: four measures all said 21 of 21, and two were placeholders
+
+A fifth comment asked to confirm every Botola Pro club has its logo. Every
+check the product had said yes: 21 of 21 active clubs have a `crest_asset_id`,
+each with a `storage_path`, `mime_type = image/png`,
+`validation_status = 'validated'`, and a URL returning 200. All 21 fetched.
+
+Two of the images are the same file. `football/teams/228516/crest.png` (Amal
+Tiznit) and `football/teams/274759/crest.png` (Yacoub El Mansour) are
+byte-identical — 2,555 bytes of the provider's generic grey shield, stored
+twice under two clubs' names.
+
+A placeholder is a perfectly valid PNG. It validates, fetches, decodes and
+draws, and `ClubCrest` paints it over the club's initials plate exactly as it
+would a real badge — so the monogram fallback that would have shown the club's
+letters never gets a chance, and the screen looks complete.
+
+`scripts/qa/crest-coverage.mjs` tests the only signature available without a
+human looking: two clubs sharing byte-identical crest data. It reports
+`own crest 19 · shared image 2 · no crest 0`. It cannot catch a
+unique-but-wrong badge, and does not pretend to. Replacing the two placeholders
+is an owner action — a production write and an image-rights decision — tracked
+as BG-0135.
