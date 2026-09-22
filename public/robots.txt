@@ -1,0 +1,13 @@
+# BotolaGO — https://botolago.com
+# The CMS, sign-in and personal pages are not for search engines. Admin pages
+# also send <meta name="robots" content="noindex, nofollow">.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /profile
+Disallow: /mcp
+Disallow: /.mcp/
+Disallow: /.lovable/
+
+Sitemap: https://botolago.com/sitemap.xml

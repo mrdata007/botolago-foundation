@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mapNewsError } from "./errors";
+import { mapNewsError, NewsError } from "./errors";
 
 function pgError(message: string, code: string): { message: string; code: string } {
   return { message, code };
@@ -49,5 +49,33 @@ describe("mapNewsError (editorial RPC error mapping)", () => {
 
   test("falls back to data_unavailable for an unrecognized error", () => {
     expect(mapNewsError(new Error("boom")).code).toBe("data_unavailable");
+  });
+});
+
+describe("mapping is idempotent", () => {
+  test("an already-mapped error keeps its code (the CMS maps twice)", () => {
+    for (const [message, code] of [
+      ["news_editorial_forbidden", "42501"],
+      ["news_editorial_conflict", "40001"],
+      ["news_schedule_must_be_future", "22023"],
+      ["news_imported_story_requires_conversion", "22023"],
+    ] as const) {
+      const once = mapNewsError(pgError(message, code));
+      expect(once).toBeInstanceOf(NewsError);
+      expect(mapNewsError(once)).toBe(once);
+      expect(mapNewsError(once).code).not.toBe("data_unavailable");
+    }
+  });
+
+  test("the activation errors have their own codes", () => {
+    expect(mapNewsError(pgError("news_schedule_must_be_future", "22023")).code).toBe(
+      "schedule_must_be_future",
+    );
+    expect(mapNewsError(pgError("news_imported_story_requires_conversion", "22023")).code).toBe(
+      "imported_story_requires_conversion",
+    );
+    expect(mapNewsError(pgError("news_conversion_reason_required", "22023")).code).toBe(
+      "conversion_reason_required",
+    );
   });
 });

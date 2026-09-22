@@ -318,3 +318,15 @@ describe("handleNewsEditorialWriteRequest -- malicious payload acceptance tests"
     expect(persisted).toContain("<li>Un</li>");
   });
 });
+
+describe("the Edge Function's sanitizer policy is the frontend's, byte for byte", () => {
+  it("both policy files declare the same allowlist and transforms", async () => {
+    const policy = (path: string) =>
+      Bun.file(new URL(path, import.meta.url))
+        .text()
+        .then((text) => text.slice(text.indexOf("export const NEWS_SANITIZER_VERSION")));
+    expect(await policy("./news-editorial-sanitizer-policy.ts")).toBe(
+      await policy("../../../src/backend/news/sanitizer-policy.ts"),
+    );
+  });
+});

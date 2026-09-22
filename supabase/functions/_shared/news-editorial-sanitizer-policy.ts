@@ -42,14 +42,26 @@ export const NEWS_SANITIZER_OPTIONS = {
   disallowedTagsMode: "discard" as const,
   enforceHtmlBoundary: true,
   transformTags: {
-    a: (_tagName: string, attribs: Record<string, string>) => ({
-      tagName: "a",
-      attribs: {
-        ...attribs,
-        rel: "nofollow noopener noreferrer",
-        ...(attribs.target === "_blank" ? { target: "_blank" } : {}),
-      },
-    }),
+    // External https links open in a new tab and carry
+    // rel="nofollow noopener noreferrer"; links to this site (a path, or
+    // botolago.com) carry neither, so internal links pass link equity and stay
+    // in the tab. Whatever `target`/`rel` the input had is discarded. Unsafe
+    // schemes (javascript:, data:, http:, protocol-relative //) lose their
+    // href in the scheme filter that runs after this transform.
+    a: (_tagName: string, attribs: Record<string, string>) => {
+      const { target: _target, rel: _rel, ...rest } = attribs;
+      const href = (attribs.href ?? "").trim();
+      const external =
+        /^https:\/\//i.test(href) && !/^https:\/\/(?:www\.)?botolago\.com(?:[/?#:]|$)/i.test(href);
+      if (external) {
+        return {
+          tagName: "a",
+          attribs: { ...rest, target: "_blank", rel: "nofollow noopener noreferrer" },
+        };
+      }
+      if (/^mailto:/i.test(href)) return { tagName: "a", attribs: { ...rest, rel: "nofollow" } };
+      return { tagName: "a", attribs: rest };
+    },
     img: (_tagName: string, attribs: Record<string, string>) => ({
       tagName: "img",
       attribs: { ...attribs, loading: "lazy" },

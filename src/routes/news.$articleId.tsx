@@ -340,6 +340,28 @@ function ArticlePage() {
           )}
         </div>
 
+        {/* The same story in the other language, when that edition is public
+            (the API lists no other kind). Its label is written in the target
+            language, so a reader who cannot read this page can still find it. */}
+        {(article.translations ?? []).map((translation) => (
+          <UiLinkButton
+            key={translation.id}
+            to="/news/$articleId"
+            params={{ articleId: translation.id }}
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            lang={translation.language}
+            dir={translation.language === "ar" ? "rtl" : "ltr"}
+            hrefLang={translation.language}
+            data-testid="article-translation-link"
+          >
+            {translation.language === "ar"
+              ? "اقرأ هذا المقال بالعربية"
+              : "Lire cet article en français"}
+          </UiLinkButton>
+        ))}
+
         {/* Body — pre-sanitized server-side HTML */}
         {/* `editorial-body` styles the injected HTML itself. The previous
             `space-y-4` sat on this wrapper while every paragraph went into a

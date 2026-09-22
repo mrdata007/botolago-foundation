@@ -75,18 +75,44 @@ export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
  * falling back to French copy.
  */
 export function buildArticleHead(article: ArticleDetailDto | null | undefined, articleId: string) {
-  const title = article?.seo.title ?? article?.title ?? "Actualités — BotolaGO";
+  const title = article?.seo.title ?? article?.title ?? "Actualités";
   const description =
     article?.seo.description ??
     article?.summary ??
     "Toute l'actualité premium du football marocain sur BotolaGO.";
-  const canonical = buildCanonicalArticleUrl(articleId);
+  // One canonical per edition, whichever URL it was reached by. The page is
+  // routable by slug and by edition id, and the canonical used to echo the
+  // address bar, so the same article declared two different canonical URLs;
+  // the share button in the page body already used `article.id`.
+  const canonical = buildCanonicalArticleUrl(article?.id ?? articleId);
+  // hreflang: only when a counterpart is public (the API lists nothing else),
+  // and then self + every counterpart, each at its own canonical URL. French
+  // is the site's default language, so the French edition is x-default.
+  const editions = article?.translations?.length
+    ? [{ id: article.id, language: article.language }, ...article.translations]
+    : [];
+  const alternates: { rel: string; hrefLang: string; href: string }[] = editions.map((edition) => ({
+    rel: "alternate",
+    hrefLang: edition.language,
+    href: buildCanonicalArticleUrl(edition.id),
+  }));
+  const french = editions.find((edition) => edition.language === "fr");
+  if (french) {
+    alternates.push({
+      rel: "alternate",
+      hrefLang: "x-default",
+      href: buildCanonicalArticleUrl(french.id),
+    });
+  }
   const heroUrl = article ? resolveMediaUrl(article.hero) : undefined;
   const jsonLd = article ? buildArticleJsonLd(article, canonical) : null;
 
   return {
     meta: [
       { title: `${title} — BotolaGO` },
+      // Nothing loaded (unknown, unpublished or withdrawn): the page renders a
+      // "not found" card with HTTP 200, so at least keep it out of the index.
+      ...(article ? [] : [{ name: "robots", content: "noindex" }]),
       { name: "description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:title", content: title },
@@ -95,6 +121,10 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
       ...(article?.language
         ? [{ property: "og:locale", content: article.language === "ar" ? "ar_MA" : "fr_FR" }]
         : []),
+      ...(article?.translations ?? []).map((translation) => ({
+        property: "og:locale:alternate",
+        content: translation.language === "ar" ? "ar_MA" : "fr_FR",
+      })),
       ...(article?.publishedAt
         ? [{ property: "article:published_time", content: article.publishedAt }]
         : []),
@@ -111,7 +141,7 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
           ]
         : []),
     ],
-    links: [{ rel: "canonical", href: canonical }],
+    links: [{ rel: "canonical", href: canonical }, ...alternates],
     // A head script is declared flat: every key other than `children` becomes an
     // attribute, and the router supplies the `script` tag itself. Wrapping it as
     // {tag, attrs, children} -- which reads like the shape the router renders --
