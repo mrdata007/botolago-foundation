@@ -30,6 +30,26 @@
  *   - `src/routes/index.tsx` — Home news rail, "view all", discovery tile
  *   - `src/routes/fantasy.index.tsx` — Fantasy hub news rail + follow tile
  *   - `src/routes/profile.tsx` — saved-articles stat tile
+ *   - `src/routes/matches.$matchId.tsx` — related-news section AND its fetch
+ *
+ * That last one was missed when this list was first written, and the miss is
+ * worth recording. The section renders on `related.length > 0`, and the feed
+ * was empty because the stand-down migration had emptied it. A surface that
+ * renders nothing because its DATA is gone looks exactly like a surface that
+ * is gated — right up until someone publishes one article, which is precisely
+ * what the News engine is being built to do. The cards link to
+ * `/news/$articleId`, which redirects Home while this flag is false, so the
+ * first approved article would have put a dead card on the match page of every
+ * fixture involving either club. Emptiness is not a gate.
+ *
+ * NOT gated, deliberately: the "news" tab on
+ * `src/routes/fantasy.players.$playerId.tsx`. It reads `FantasyPlayer.news`,
+ * an FPL-style availability blurb on the player record — not an article. It
+ * never touches `newsService` and links nowhere; it shares a word with this
+ * flag and nothing else. (It is dead for an unrelated reason: nothing in the
+ * codebase writes that field, so the tab always renders its empty state.
+ * Tracked separately — gating it here would hide a Fantasy feature behind a
+ * News flag.)
  */
 export const NEWS_ENABLED = false;
 
