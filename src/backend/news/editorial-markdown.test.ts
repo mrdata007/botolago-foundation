@@ -262,3 +262,82 @@ describe("generated markdown can always be read back", () => {
     expect(clean).toContain("<img");
   });
 });
+
+describe("structure an editor can actually write (headings, emphasis, lists, quotes)", () => {
+  // The editor's hint promised `##` and `**` from the first release; both were
+  // emitted as literal characters, so a multi-section article rendered with
+  // "##" printed in its paragraphs and no intertitles at all.
+  test("`##` starts an intertitle and `**` is bold", () => {
+    expect(
+      markdownToEditorialHtml("Intro **clé** du match.\n\n## Première période\n\nTexte."),
+    ).toBe("<p>Intro <strong>clé</strong> du match.</p><h2>Première période</h2><p>Texte.</p>");
+  });
+
+  test("an intertitle followed on the next line by prose splits into two blocks", () => {
+    expect(markdownToEditorialHtml("## Analyse\nLe Raja a dominé.")).toBe(
+      "<h2>Analyse</h2><p>Le Raja a dominé.</p>",
+    );
+  });
+
+  test("`#` is never a second h1 and `###` is an h3", () => {
+    expect(markdownToEditorialHtml("# A\n\n### B")).toBe("<h2>A</h2><h3>B</h3>");
+  });
+
+  test("bulleted and numbered lists", () => {
+    expect(markdownToEditorialHtml("- un\n- **deux**\n\n1. premier\n2. second")).toBe(
+      "<ul><li>un</li><li><strong>deux</strong></li></ul><ol><li>premier</li><li>second</li></ol>",
+    );
+  });
+
+  test("a quote", () => {
+    expect(markdownToEditorialHtml("> Nous étions prêts.")).toBe(
+      "<blockquote><p>Nous étions prêts.</p></blockquote>",
+    );
+  });
+
+  test("italic needs real markers; arithmetic and bare asterisks are left alone", () => {
+    expect(markdownToEditorialHtml("Un *but* superbe, score 5*3 et * seul.")).toBe(
+      "<p>Un <em>but</em> superbe, score 5*3 et * seul.</p>",
+    );
+  });
+
+  test("Arabic intertitles and bold work the same way", () => {
+    expect(markdownToEditorialHtml("## الشوط الأول\n\nأداء **قوي** للوداد.")).toBe(
+      "<h2>الشوط الأول</h2><p>أداء <strong>قوي</strong> للوداد.</p>",
+    );
+  });
+
+  test("Windows line endings do not glue blocks together", () => {
+    expect(markdownToEditorialHtml("## A\r\n\r\nTexte.")).toBe("<h2>A</h2><p>Texte.</p>");
+  });
+
+  test("plain prose with no markers is byte-identical to the previous output", () => {
+    expect(markdownToEditorialHtml("Un paragraphe.\n\nUn autre.")).toBe(
+      "<p>Un paragraphe.</p><p>Un autre.</p>",
+    );
+  });
+
+  test("an image inside a structured block is still lifted into a figure", () => {
+    expect(markdownToEditorialHtml(`## Photo\n![Le stade](${IMAGE_URL})`)).toBe(
+      `<h2>Photo</h2><figure><img src="${IMAGE_URL}" alt="Le stade" /><figcaption>Le stade</figcaption></figure>`,
+    );
+  });
+
+  test("every generated tag survives the real sanitizer", () => {
+    const html = sanitizeEditorialHtml(
+      markdownToEditorialHtml("## Titre\n\n**gras** et *italique*\n\n- a\n- b\n\n> citation"),
+    );
+    for (const tag of ["<h2>", "<strong>", "<em>", "<ul>", "<li>", "<blockquote>"]) {
+      expect(html).toContain(tag);
+    }
+  });
+
+  test("markdown -> html -> sanitizer -> markdown round-trips the structure", () => {
+    const source =
+      "Intro **forte** et *nuancée*.\n\n## Section\n\n- un\n- deux\n\n1. a\n2. b\n\n> Une citation.";
+    const html = sanitizeEditorialHtml(markdownToEditorialHtml(source));
+    const back = editorialHtmlToMarkdown(html);
+    expect(back).toBe(source);
+    expect(sanitizeEditorialHtml(markdownToEditorialHtml(back))).toBe(html);
+  });
+});
