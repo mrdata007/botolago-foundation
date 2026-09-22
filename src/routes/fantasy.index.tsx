@@ -16,6 +16,7 @@ import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { FantasyBrand } from "@/components/brand/FantasyBrand";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
@@ -155,16 +156,9 @@ function FantasyHub() {
         )}
         style={{ backgroundImage: "var(--ui-grad-hero)" }}
       >
-        <div className="flex items-center gap-2 pt-6">
-          <img
-            src="/favicon.png"
-            alt=""
-            width={40}
-            height={40}
-            className={cn("h-10 w-10", ui.radius.control)}
-          />
-          <h1 className={cn("min-w-0 truncate", ui.text.hero)}>{t("fantasy.title")}</h1>
-        </div>
+        <h1 className="pt-6">
+          <FantasyBrand />
+        </h1>
         <div className="mt-4">{teamCard}</div>
 
         <UiCard className="mt-3 text-center" padding="md">
@@ -229,9 +223,7 @@ function FantasyHub() {
                 "radial-gradient(70% 140% at 50% 0%, var(--ui-accent-sky) 0%, transparent 62%), radial-gradient(80% 140% at 50% 100%, var(--ui-ink-deep) 0%, transparent 68%)",
             }}
           />
-          <span className={cn("relative block", ui.text.label, ui.tone.onInk)}>
-            BotolaGO Fantasy
-          </span>
+          <FantasyBrand size="sm" tone="light" className="relative" />
           {/* Prose, not a figure — the stat ramp is numerals only. */}
           <span className={cn("relative block", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}

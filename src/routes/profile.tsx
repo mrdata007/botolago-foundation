@@ -828,16 +828,7 @@ function AnonymousProfile() {
   return (
     <>
       <UiCard padding="lg" className="mt-4 text-center">
-        <div
-          className={cn(
-            "mx-auto grid h-16 w-16 place-items-center p-2",
-            ui.radius.control,
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-        >
-          <Logo variant="icon" className="!h-12 !w-12" />
-        </div>
+        <Logo variant="icon" className="!h-14 !w-14" />
         <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
           <Trans text={t("profile.anon_title")} />
         </h2>
