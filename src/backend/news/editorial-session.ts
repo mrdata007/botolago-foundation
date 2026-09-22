@@ -6,6 +6,7 @@ import type {
   TransitionArticleInput,
   TransitionArticleResult,
 } from "./contracts";
+import { editorialHtmlToMarkdown } from "./editorial-markdown";
 
 export const EDITOR_REVISION_LIMIT = 20;
 
@@ -46,4 +47,46 @@ export async function transitionAndReload(
   } catch {
     return { result, article: null, revisions: null };
   }
+}
+
+export interface EditorProseFields {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly summary: string;
+  readonly bodyMarkdown: string;
+}
+
+export type ProseField = keyof EditorProseFields;
+
+/**
+ * The editor's prose fields as they stood in a revision.
+ *
+ * A revision snapshots title, subtitle, summary and body HTML (not SEO fields
+ * or the cover), so those four are what a restore can bring back. The body is
+ * converted back to the editor's Markdown; that direction is lossless for
+ * everything the editor can produce (see `editorial-markdown.test.ts`).
+ *
+ * Restoring only fills the form. Nothing is written until the editor presses
+ * Enregistrer, which goes through the ordinary `editorial_update_article`
+ * path -- and that update itself snapshots the text it replaces as a new
+ * revision, so a restore can always be undone the same way. No second
+ * versioning system is involved.
+ */
+export function revisionToEditorFields(revision: EditorialRevisionDto): EditorProseFields {
+  return {
+    title: revision.title,
+    subtitle: revision.subtitle ?? "",
+    summary: revision.summary,
+    bodyMarkdown: editorialHtmlToMarkdown(revision.bodyHtml),
+  };
+}
+
+/** Which prose fields a revision would change in the current form, in form order. */
+export function revisionDifferences(
+  revision: EditorialRevisionDto,
+  current: EditorProseFields,
+): readonly ProseField[] {
+  const restored = revisionToEditorFields(revision);
+  const order: readonly ProseField[] = ["title", "subtitle", "summary", "bodyMarkdown"];
+  return order.filter((field) => restored[field].trim() !== current[field].trim());
 }

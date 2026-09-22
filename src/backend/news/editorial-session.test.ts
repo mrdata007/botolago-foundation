@@ -6,7 +6,14 @@ import type {
   TransitionArticleInput,
 } from "./contracts";
 import { NewsError } from "./errors";
-import { EDITOR_REVISION_LIMIT, transitionAndReload } from "./editorial-session";
+import { markdownToEditorialHtml } from "./editorial-markdown";
+import {
+  EDITOR_REVISION_LIMIT,
+  revisionDifferences,
+  revisionToEditorFields,
+  transitionAndReload,
+} from "./editorial-session";
+import { sanitizeEditorialHtml } from "./sanitizer";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 const context = { actorId: "editor", requestId: "test" };
@@ -120,5 +127,59 @@ describe("status transition then save (editor concurrency token)", () => {
     ).text();
     expect(source).toContain("transitionAndReload(");
     expect(source).not.toContain("repository.transitionArticle(");
+  });
+});
+
+describe("restoring a revision into the editor", () => {
+  const body = "Intro **forte**.\n\n## Section\n\n- un\n- deux";
+  const revision = (overrides: Partial<EditorialRevisionDto> = {}): EditorialRevisionDto => ({
+    id: "22222222-2222-4222-8222-222222222222",
+    revisionNumber: 3,
+    title: "Ancien titre",
+    subtitle: null,
+    summary: "Ancien résumé suffisamment long.",
+    bodyHtml: sanitizeEditorialHtml(markdownToEditorialHtml(body)),
+    status: "draft",
+    visibility: "private",
+    changedBy: null,
+    createdAt: "2026-09-22T10:00:00.000Z",
+    ...overrides,
+  });
+
+  test("brings back title, subtitle, summary and the body as editable Markdown", () => {
+    expect(revisionToEditorFields(revision({ subtitle: "Sous-titre" }))).toEqual({
+      title: "Ancien titre",
+      subtitle: "Sous-titre",
+      summary: "Ancien résumé suffisamment long.",
+      bodyMarkdown: body,
+    });
+  });
+
+  test("a null subtitle becomes an empty field, not the string 'null'", () => {
+    expect(revisionToEditorFields(revision()).subtitle).toBe("");
+  });
+
+  test("reports which fields the revision would change", () => {
+    const current = {
+      title: "Nouveau titre",
+      subtitle: "",
+      summary: "Ancien résumé suffisamment long.",
+      bodyMarkdown: `${body}\n\nUn paragraphe ajouté.`,
+    };
+    expect(revisionDifferences(revision(), current)).toEqual(["title", "bodyMarkdown"]);
+  });
+
+  test("a status-only snapshot identical to the form reports no difference", () => {
+    const current = revisionToEditorFields(revision());
+    expect(revisionDifferences(revision(), current)).toEqual([]);
+  });
+
+  test("the editor route offers the restore for each revision and confirms over unsaved text", async () => {
+    const source = await Bun.file(
+      new URL("../../routes/admin.news.$articleEditionId.tsx", import.meta.url),
+    ).text();
+    expect(source).toContain("revisionToEditorFields(revision)");
+    expect(source).toContain("admin-news-revision-restore-${revision.revisionNumber}");
+    expect(source).toContain("disabled={busy || !isEditable || differs.length === 0}");
   });
 });

@@ -12,7 +12,13 @@ import {
   calculateReadingTime,
 } from "@/backend/news/sanitizer";
 import { mapNewsError } from "@/backend/news/errors";
-import { EDITOR_REVISION_LIMIT, transitionAndReload } from "@/backend/news/editorial-session";
+import {
+  EDITOR_REVISION_LIMIT,
+  revisionDifferences,
+  revisionToEditorFields,
+  transitionAndReload,
+  type ProseField,
+} from "@/backend/news/editorial-session";
 import type {
   ArticleEditorialDetailDto,
   EditorialRevisionDto,
@@ -143,6 +149,13 @@ const PLACEMENT_LABELS: Record<PlacementType, { fr: string; ar: string }> = {
   featured: { fr: "Mis en avant", ar: "مميّز" },
   breaking: { fr: "Urgent", ar: "عاجل" },
   trending: { fr: "Tendance", ar: "الأكثر تداولاً" },
+};
+
+const PROSE_FIELD_LABELS: Record<ProseField, { fr: string; ar: string }> = {
+  title: { fr: "titre", ar: "العنوان" },
+  subtitle: { fr: "sous-titre", ar: "العنوان الفرعي" },
+  summary: { fr: "résumé", ar: "الملخص" },
+  bodyMarkdown: { fr: "contenu", ar: "المحتوى" },
 };
 
 // Response shape of the `news-media-upload` Edge Function.
@@ -562,6 +575,33 @@ function AdminNewsEditRoute() {
   };
 
   const isEditable = article ? EDITABLE_STATUSES.includes(article.status) : false;
+  const currentProse = { title, subtitle, summary, bodyMarkdown };
+
+  // Fills the form from a revision; nothing is written until Enregistrer, and
+  // that save snapshots the replaced text as a new revision, so it is undoable.
+  const restoreRevision = (revision: EditorialRevisionDto) => {
+    if (!isEditable) return;
+    if (
+      dirty &&
+      !window.confirm(
+        rtl
+          ? "ستُستبدل التغييرات غير المحفوظة بهذه النسخة. المتابعة؟"
+          : "Les modifications non enregistrées seront remplacées par cette version. Continuer ?",
+      )
+    )
+      return;
+    const fields = revisionToEditorFields(revision);
+    setTitle(fields.title);
+    setSubtitle(fields.subtitle);
+    setSummary(fields.summary);
+    setBodyMarkdown(fields.bodyMarkdown);
+    setDirty(true);
+    setMessage(
+      rtl
+        ? `تم تحميل النسخة #${revision.revisionNumber} (العنوان والملخص والمحتوى). راجعها ثم احفظ.`
+        : `Version n°${revision.revisionNumber} chargée (titre, résumé, contenu). Vérifiez-la puis enregistrez.`,
+    );
+  };
   // The prose fields follow the ARTICLE's language, not the console's, so an
   // Arabic article is typed RTL even while the UI is in French.
   const articleDir = article?.language === "ar" ? "rtl" : "ltr";
@@ -1044,6 +1084,31 @@ function AdminNewsEditRoute() {
                   <AdminDatum mono={false}>
                     {new Date(revision.createdAt).toLocaleString(lang)}
                   </AdminDatum>
+                  {(() => {
+                    const differs = revisionDifferences(revision, currentProse);
+                    return (
+                      <>
+                        <span className="min-w-0 flex-1" data-testid="admin-news-revision-diff">
+                          {differs.length === 0
+                            ? rtl
+                              ? "مطابقة للنص الحالي"
+                              : "Identique au texte actuel"
+                            : `${rtl ? "يختلف" : "Diffère"} : ${differs
+                                .map((field) => PROSE_FIELD_LABELS[field][lang])
+                                .join(", ")}`}
+                        </span>
+                        <UiButton
+                          variant="outline"
+                          size="sm"
+                          disabled={busy || !isEditable || differs.length === 0}
+                          onClick={() => restoreRevision(revision)}
+                          data-testid={`admin-news-revision-restore-${revision.revisionNumber}`}
+                        >
+                          {rtl ? "تحميل في المحرر" : "Charger dans l’éditeur"}
+                        </UiButton>
+                      </>
+                    );
+                  })()}
                 </li>
               ))}
               {revisions.length === 0 && (
