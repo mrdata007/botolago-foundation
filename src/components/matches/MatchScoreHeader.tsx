@@ -4,7 +4,11 @@ import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
-import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import {
+  isKickoffDateUnconfirmed,
+  isKickoffTimeUnconfirmed,
+  MATCH_TIME_ZONE,
+} from "@/lib/match-kickoff";
 import { ui } from "@/components/ui-kit";
 
 /**
@@ -43,8 +47,16 @@ export function MatchScoreHeader({
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
+  const unconfirmedDate = isKickoffDateUnconfirmed(match);
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
-  const displayedTime = unconfirmedTime ? t("matches.kickoff_unconfirmed") : timeFmt;
+  const displayedTime = unconfirmedDate
+    ? t("matches.kickoff_date_unconfirmed")
+    : unconfirmedTime
+      ? t("matches.kickoff_unconfirmed")
+      : timeFmt;
+  // A postponed match has no day either, so the meta cell drops the date
+  // rather than pairing a real weekday with "Date à confirmer".
+  const displayedKickoff = unconfirmedDate ? displayedTime : `${dateFmt} · ${displayedTime}`;
 
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
@@ -105,7 +117,7 @@ export function MatchScoreHeader({
         aria-label={
           isLive || isFinished
             ? scoreA11y
-            : `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)} — ${dateFmt} · ${displayedTime}`
+            : `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)} — ${displayedKickoff}`
         }
       >
         <TeamColumn club={home} />
@@ -174,7 +186,7 @@ export function MatchScoreHeader({
         <MetaCell
           icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
           label={t("matches.detail.kickoff")}
-          value={`${dateFmt} · ${displayedTime}`}
+          value={displayedKickoff}
         />
         <MetaCell
           icon={<Trophy className="h-3.5 w-3.5" aria-hidden />}

@@ -3,6 +3,33 @@ import type { Match } from "@/types/domain";
 export const MATCH_TIME_ZONE = "Africa/Casablanca";
 
 /**
+ * A postponed or cancelled match has no confirmed DATE, not merely an
+ * unconfirmed hour.
+ *
+ * Deliberately a separate predicate from `isKickoffTimeUnconfirmed`. That one
+ * answers "is the clock time a placeholder?" and returns false for anything
+ * that is not `scheduled` — so a postponed fixture fell straight through to
+ * the formatted timestamp. On production that rendered FAR Rabat v Raja as
+ *
+ *   REPORTÉ · Ce match a été reporté. Nouvelle date à confirmer.
+ *   COUP D'ENVOI  jeudi 24 septembre · 01:00
+ *
+ * where 01:00 is midnight UTC — the provider's placeholder — presented as a
+ * kickoff a reader could plan around, contradicting the notice two lines
+ * above it.
+ *
+ * Widening the time predicate would not have been enough: for these matches
+ * the DAY is unknown too, so the whole date/time slot is replaced rather than
+ * just its hour.
+ */
+export function isKickoffDateUnconfirmed(match: Pick<Match, "status">): boolean {
+  // The domain MatchStatus has no "cancelled" -- that is a presentation-only
+  // upgrade MatchCard layers on top via ExtendedStatus, so the card ORs it in
+  // rather than this predicate widening a type it does not own.
+  return match.status === "postponed";
+}
+
+/**
  * The current provider calendar uses UTC midnight for dates without a verified
  * kickoff hour. Until the public DTO carries confirmation metadata, show these
  * scheduled dates without presenting the placeholder hour as confirmed.

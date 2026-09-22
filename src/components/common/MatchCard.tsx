@@ -6,7 +6,11 @@ import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
 import { MapPin } from "lucide-react";
-import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import {
+  isKickoffDateUnconfirmed,
+  isKickoffTimeUnconfirmed,
+  MATCH_TIME_ZONE,
+} from "@/lib/match-kickoff";
 
 /**
  * Match card.
@@ -88,6 +92,7 @@ export function MatchCard({
   const isFinished = status === "finished" || status === "penalties";
   const isScheduled = status === "scheduled" || status === "delayed";
   const isPostponed = status === "postponed" || status === "cancelled";
+  const unconfirmedDate = isKickoffDateUnconfirmed(match) || status === "cancelled";
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
 
   const timeFmt = new Intl.DateTimeFormat(locale, {
@@ -208,26 +213,26 @@ export function MatchCard({
       );
     }
     if (isPostponed) {
+      // Was a struck-through `timeFmt`. For every postponed fixture in this
+      // competition that time is the provider's UTC-midnight placeholder, so
+      // the strikethrough was drawing a line through 01:00 -- an hour the
+      // match was never going to kick off at. There is no original time to
+      // cross out, so the slot states what is actually known.
       return (
-        <div className="flex flex-col items-center">
-          <div
-            className={cn(
-              ui.text.meta,
-              ui.text.tabular,
-              ui.tone.muted,
-              "line-through decoration-[color:var(--ui-on-surface-muted)]",
-            )}
-            aria-hidden
-          >
-            {timeFmt}
-          </div>
+        <div className={cn("max-w-24 text-center", ui.text.micro, ui.tone.muted)} aria-hidden>
+          {t("matches.kickoff_date_unconfirmed")}
         </div>
       );
     }
-    if (unconfirmedTime) {
+    if (unconfirmedDate || unconfirmedTime) {
+      // Resolved before the JSX so both keys stay literal: the i18n gate reads
+      // translation arguments statically and counts any expression in that
+      // position -- even a ternary of two literals -- as opaque.
+      let label = t("matches.kickoff_unconfirmed");
+      if (unconfirmedDate) label = t("matches.kickoff_date_unconfirmed");
       return (
         <div className={cn("max-w-24 text-center", ui.text.micro, ui.tone.muted)} aria-hidden>
-          {t("matches.kickoff_unconfirmed")}
+          {label}
         </div>
       );
     }
