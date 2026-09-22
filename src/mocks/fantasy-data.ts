@@ -375,20 +375,6 @@ Object.entries(clubPlayers).forEach(([clubId, seeds], ci) => {
             : s.status === "suspended"
               ? 0
               : 100,
-      news:
-        s.status === "injured"
-          ? {
-              fr: "Blessure musculaire — indisponible cette journée.",
-              ar: "إصابة عضلية — غائب هذه الجولة.",
-            }
-          : s.status === "doubtful"
-            ? {
-                fr: "Incertain — test décisif à l'entraînement.",
-                ar: "مشكوك في مشاركته — التداريب الأخيرة حاسمة.",
-              }
-            : s.status === "suspended"
-              ? { fr: "Suspendu (cumul de cartons).", ar: "موقوف بسبب تراكم البطاقات." }
-              : undefined,
     });
   });
 });

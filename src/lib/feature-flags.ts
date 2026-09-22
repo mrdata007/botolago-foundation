@@ -42,14 +42,22 @@
  * first approved article would have put a dead card on the match page of every
  * fixture involving either club. Emptiness is not a gate.
  *
- * NOT gated, deliberately: the "news" tab on
- * `src/routes/fantasy.players.$playerId.tsx`. It reads `FantasyPlayer.news`,
- * an FPL-style availability blurb on the player record — not an article. It
- * never touches `newsService` and links nowhere; it shares a word with this
- * flag and nothing else. (It is dead for an unrelated reason: nothing in the
- * codebase writes that field, so the tab always renders its empty state.
- * Tracked separately — gating it here would hide a Fantasy feature behind a
- * News flag.)
+ * There used to be a note here about a second surface the same review flagged:
+ * the "news" tab on `src/routes/fantasy.players.$playerId.tsx`. It was never
+ * gated on this flag and should not have been — it read `FantasyPlayer.news`,
+ * an FPL-style availability blurb on the player record, which is not an
+ * article, never touches `newsService` and links nowhere. It shared a word
+ * with this flag and nothing else.
+ *
+ * The note also claimed nothing wrote that field. That was wrong: the mock
+ * dataset populated it for injured, doubtful and suspended players, which is
+ * exactly the "mock player news" the review described. Only the Supabase
+ * repository never wrote it, so the tab was permanently empty against the real
+ * backend and populated in mock mode — which is a worse defect than either
+ * alone, because it looked fine wherever anyone was likely to check.
+ *
+ * The owner chose removal, so the tab, its three dictionary keys, the type
+ * field and the mock blurbs are all gone. Nothing about it is gated here.
  */
 export const NEWS_ENABLED = false;
 
