@@ -12,6 +12,18 @@ import { UiDifficultyCell, type UiDifficulty } from "@/components/ui-kit";
  *
  * The public props are unchanged, and the badge now clears the 44px tap floor
  * because `UiDifficultyCell` sizes from `--ui-tap-min` instead of `min-h-9`.
+ *
+ * WHY THIS WRAPPER STILL EXISTS, now that it is a delegation. It is not a
+ * second FDR square; it is the accessible-name pairing the primitive does not
+ * do. `UiDifficultyCell` takes only `title`, which is a native tooltip — never
+ * surfaced on touch, and not a reliable accessible name on a non-interactive
+ * element. Both call sites draw an abbreviation: `/fantasy/players` renders a
+ * club token plus a venue letter ("FUS (D)") and the player detail's fixture
+ * strip renders the bare difficulty digit. Neither carries club identity on
+ * its own, and `code` is null for most of the league. So the abbreviation is
+ * hidden from assistive tech and the unabbreviated meaning — the opponent's
+ * real name and venue — is read instead. Delete this file and both call sites
+ * announce "1" or "FUS (D)". Keep it.
  */
 export function DifficultyBadge({
   difficulty,

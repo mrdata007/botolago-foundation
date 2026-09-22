@@ -393,6 +393,40 @@ describe("ui-kit: the primitives keep their promises", () => {
     expect(withoutRole).toEqual([]);
   });
 
+  it("paints every button variant it declares", () => {
+    /**
+     * A variant added to `UiButtonVariant` but never given a branch in
+     * `buttonClass` is a button that type-checks, renders, passes every test
+     * — and paints nothing. `destructive` shipped that way for exactly one
+     * afternoon: two screens asked for it, got a transparent control with
+     * body-coloured text where a filled red one belonged, and lost the
+     * disabled affordance that the branch would have carried.
+     *
+     * The union and the painter have to agree, so the test reads both.
+     */
+    const union = primitives.match(/export type UiButtonVariant =([\s\S]*?);/)?.[1] ?? "";
+    const declared = [...union.matchAll(/"([a-z]+)"/g)].map((m) => m[1]);
+    expect(declared.length).toBeGreaterThan(3);
+
+    const painter = primitives.match(/function buttonClass\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    const unpainted = declared.filter((v) => !painter.includes(`variant === "${v}"`));
+    expect(unpainted).toEqual([]);
+  });
+
+  it("gives every button variant a disabled affordance", () => {
+    // `disabled` on its own only stops the click. A control that still looks
+    // armed while it cannot fire is the version a reader argues with.
+    const painter = primitives.match(/function buttonClass\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    const union = primitives.match(/export type UiButtonVariant =([\s\S]*?);/)?.[1] ?? "";
+    const declared = [...union.matchAll(/"([a-z]+)"/g)].map((m) => m[1]);
+    const missing = declared.filter((v) => {
+      const from = painter.indexOf(`variant === "${v}"`);
+      if (from < 0) return false; // the test above owns that failure
+      return !painter.slice(from, from + 400).includes("disabled:");
+    });
+    expect(missing).toEqual([]);
+  });
+
   it("never spells a Close control in English", () => {
     // Every sheet in the product used to close with a hardcoded "Close".
     expect(primitives).not.toMatch(/["'>]\s*Close\s*[<"']/);

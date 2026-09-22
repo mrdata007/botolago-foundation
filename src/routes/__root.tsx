@@ -46,6 +46,16 @@ function NotFoundComponent() {
  * `UiButton`/`UiLinkButton`: the error boundary renders when the router may
  * itself be the thing that failed, so nothing here should need router
  * context to paint.
+ *
+ * Staying off the primitives is not licence to paint something else, though,
+ * so the two actions below now carry exactly what the variants they stand in
+ * for carry: `variant="ink"` is an ink fill under `--ui-on-ink-plain` (which
+ * is also what `UiStatePanel` puts its retry button in), and `variant="outline"`
+ * is a `border-current` box in the brand foreground. The ink action was
+ * `ui.surface.ink`, whose foreground is the cyan `--ui-on-ink` — a legal
+ * pairing, but not the one every other button-shaped thing in the product
+ * uses, which on the two screens that exist to look like the product was the
+ * wrong one to differ on.
  */
 const stateActionClass = cn(
   "inline-flex items-center justify-center gap-2 px-4",
@@ -64,11 +74,27 @@ function NotFoundBody() {
       className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
     >
       <div className="max-w-md text-center">
+        {/* The one oversized figure on the screen, so it comes off the STAT
+            ramp (rule 4) rather than the prose ramp with `fpl-tabular` bolted
+            on: `ui.stat.hero` already carries tabular figures, the hero
+            weight, the `ltr:`-only stat tightening and the flat leading, and
+            `calc()` over `--ui-stat-hero` is the sanctioned way to draw the
+            one number a screen is about at twice its step. The `leading-none`
+            it replaces is the thing the ramp's own comment forbids: a font's
+            ink does not fit inside its own em, and a clipped "404" is the
+            whole screen.
+
+            The leading is restated after the size and not by accident:
+            `text-*` and `leading-*` are one group to tailwind-merge (a Tailwind
+            v4 `text-base/7` sets both), so the size override silently drops
+            `ui.stat.hero`'s own `leading-[var(--ui-leading-flat)]` and the
+            numeral falls back to the inherited line box. Verified against
+            tailwind-merge 3.5. */}
         <h1
           className={cn(
-            ui.text.tabular,
+            ui.stat.hero,
             ui.tone.ink,
-            "text-[calc(var(--ui-text-hero)*2)] [font-weight:var(--ui-weight-hero)] leading-none",
+            "text-[length:calc(var(--ui-stat-hero)*2)] leading-[var(--ui-leading-flat)]",
           )}
         >
           {t("notfound.code")}
@@ -79,7 +105,7 @@ function NotFoundBody() {
           <Link
             to="/"
             aria-label={t("state.go_home")}
-            className={cn(stateActionClass, ui.surface.ink)}
+            className={cn(stateActionClass, ui.surface.inkPlain)}
           >
             <Home className="h-4 w-4" aria-hidden />
             <span>{t("state.go_home")}</span>
@@ -121,7 +147,7 @@ function ErrorBody({ reset }: { reset: () => void }) {
               reset();
             }}
             aria-label={t("state.retry")}
-            className={cn(stateActionClass, ui.surface.ink)}
+            className={cn(stateActionClass, ui.surface.inkPlain)}
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             <span>{t("state.retry")}</span>
@@ -131,8 +157,8 @@ function ErrorBody({ reset }: { reset: () => void }) {
             aria-label={t("state.go_home")}
             className={cn(
               stateActionClass,
-              ui.rule.all,
-              ui.tone.default,
+              "border border-current bg-transparent",
+              ui.tone.ink,
               "hover:bg-[color:var(--ui-surface-sunken)]",
             )}
           >

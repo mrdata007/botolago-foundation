@@ -12,13 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AuthShell,
-  AuthPrimaryButton,
-  AuthSecondaryButton,
-  authFieldClass,
-} from "@/components/auth/AuthShell";
-import { ui } from "@/components/ui-kit";
+import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import { ui, UiButton, UiCheckbox, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
@@ -127,24 +122,18 @@ function ProfileSetupPage() {
   return (
     <AuthShell title={t("auth.setup.title")} subtitle={t("auth.setup.subtitle")} showBack={false}>
       <div className="mb-4">
-        {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-        <div className={cn("flex items-center justify-between", ui.text.label, ui.tone.muted)}>
-          <span>
+        <div className="flex items-center justify-between">
+          {/* The label type stays on the counter, which is what it is for —
+              it used to sit on the whole row, so `uppercase` inherited into
+              Skip and made a control look like a column head. Skip is a
+              control and is drawn as one now. `ui.text.label` letter-spaces
+              Latin only (BG-0069). */}
+          <span className={cn(ui.text.label, ui.tone.muted)}>
             {t("auth.setup.step")} {step} {t("auth.setup.of")} {STEPS}
           </span>
-          <button
-            type="button"
-            onClick={finish}
-            className={cn(
-              "inline-flex items-center px-2 -me-2",
-              ui.space.tap,
-              ui.radius.control,
-              ui.focus,
-              "hover:text-[color:var(--ui-on-surface)]",
-            )}
-          >
+          <UiButton variant="ghost" size="sm" className="-me-2" onClick={finish}>
             {t("auth.setup.skip")}
-          </button>
+          </UiButton>
         </div>
         <div className="mt-2 flex gap-1">
           {Array.from({ length: STEPS }).map((_, i) => (
@@ -179,14 +168,29 @@ function ProfileSetupPage() {
                 )}
               </div>
               {avatar && (
+                // Painted 24px and targeted 24px — 20px under the floor in
+                // rule 5, on the control that undoes an upload. Growing the
+                // ink is not the fix: a 44px badge covers half the 80px
+                // thumbnail it annotates. `ui.hitArea` grows a transparent
+                // 44px target behind a control drawn its designed size; it
+                // comes FIRST here because it carries `relative`, and this
+                // badge has to stay `absolute` on the thumbnail's corner.
+                //
+                // The foreground was `--ui-on-ink-plain` on a `--ui-negative`
+                // fill — a foreground picked by hand for a status fill that
+                // inverts across the themes. `ui.tone.onNegative` is the one
+                // the fill carries: white in light, `--ui-ink-deep` in dark,
+                // where white-on-negative measured 2.31:1.
                 <button
                   type="button"
                   onClick={() => setAvatar(undefined)}
                   aria-label={t("auth.setup.remove")}
                   className={cn(
-                    "absolute -end-1 -top-1 grid h-6 w-6 place-items-center",
+                    ui.hitArea,
+                    "absolute -end-1 -top-1 z-10 grid h-6 w-6 place-items-center",
                     ui.radius.full,
-                    "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)]",
+                    "bg-[color:var(--ui-negative)]",
+                    ui.tone.onNegative,
                     ui.focus,
                   )}
                 >
@@ -196,22 +200,18 @@ function ProfileSetupPage() {
             </div>
             <div className="flex-1">
               <div className={cn(ui.text.label, ui.tone.muted)}>{t("auth.setup.avatar")}</div>
-              <button
-                type="button"
+              {/* The outline recipe spelled out by hand — 44px, control
+                  radius, a hairline, meta at the heavy weight, focus ring.
+                  That is `UiButton variant="outline" size="sm"`; `w-auto` is
+                  not needed because `sm` is already inline. */}
+              <UiButton
+                variant="outline"
+                size="sm"
+                className="mt-2"
                 onClick={() => fileInput.current?.click()}
-                className={cn(
-                  "mt-2 inline-flex items-center px-3",
-                  ui.space.tap,
-                  ui.radius.control,
-                  ui.rule.all,
-                  ui.text.meta,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.focus,
-                  "hover:bg-[color:var(--ui-surface-sunken)]",
-                )}
               >
                 {t("auth.setup.upload")}
-              </button>
+              </UiButton>
               <input
                 ref={fileInput}
                 type="file"
@@ -222,33 +222,26 @@ function ProfileSetupPage() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="displayName" className={cn("mb-1 block", ui.text.label, ui.tone.muted)}>
-              {t("auth.setup.display_name")}
-            </label>
-            <input
-              id="displayName"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className={authFieldClass}
-            />
-          </div>
+          {/* Both fields move to `UiInput` together — the step has exactly
+              these two, and a form that converts half its fields ends up
+              showing two different label treatments at once. Neither field
+              validates on submit (the wizard gates Next on `canNext`
+              instead), so neither reserves an error line: `reserveError`
+              would be dead space on a form that has no message to put in it. */}
+          <UiInput
+            id="displayName"
+            label={t("auth.setup.display_name")}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
 
-          <div>
-            <label
-              htmlFor="setupUsername"
-              className={cn("mb-1 block", ui.text.label, ui.tone.muted)}
-            >
-              {t("auth.register.username")}
-            </label>
-            <input
-              id="setupUsername"
-              autoComplete="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              className={authFieldClass}
-            />
-          </div>
+          <UiInput
+            id="setupUsername"
+            label={t("auth.register.username")}
+            autoComplete="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
         </div>
       )}
 
@@ -261,6 +254,14 @@ function ProfileSetupPage() {
           <p className={cn("-mt-1", ui.text.meta, ui.tone.muted)}>
             {t("auth.setup.fav_club_hint")}
           </p>
+          {/* KEPT as buttons. `UiChip` and `UiSegmented` are the kit's
+              selection controls and neither fits: a chip is a filter that
+              paints selection as an ink FILL, and a crest over a club name
+              over a city is a row, not a pill; a segmented
+              control announces `role="tab"` — this is a radio-like choice, not
+              a tab set, and this lane does not change what a control
+              announces. Every colour, radius, height and focus ring here is
+              already a token, and `aria-pressed` stays as it was. */}
           <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
             {clubsQ.data?.map((c) => {
               const active = favoriteClubId === c.id;
@@ -308,36 +309,30 @@ function ProfileSetupPage() {
               ["fantasyDeadlines", "auth.setup.notif_deadline", "auth.setup.notif_deadline_desc"],
             ] as const
           ).map(([key, label, desc]) => (
-            <label
+            // Three 16px boxes with a 16px target. The wrapping label already
+            // rescued the click, but the box is what a reader aims at, so
+            // `UiCheckbox` keeps the ink at 16px and grows a transparent 44px
+            // target behind it, and paints the checked plate in `--ui-ink`
+            // rather than the browser's own accent, which is not a colour this
+            // product chose. The bordered row stays — it is what separates
+            // three stacked toggles from each other.
+            <UiCheckbox
               key={key}
-              className={cn(
-                "flex items-start gap-3 px-3 py-3",
-                "min-h-[var(--ui-row-min)]",
-                ui.radius.control,
-                ui.rule.all,
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={prefs[key]}
-                onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
-                className={cn(
-                  "mt-1 h-4 w-4 border-[color:var(--ui-rule)]",
-                  ui.radius.control,
-                  ui.focus,
-                )}
-              />
-              <div className="flex-1">
-                <div className={ui.text.bodyStrong}>{t(label)}</div>
-                <div className={cn(ui.text.meta, ui.tone.muted)}>{t(desc)}</div>
-              </div>
-            </label>
+              checked={prefs[key]}
+              onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
+              label={t(label)}
+              hint={t(desc)}
+              className={cn("px-3 py-3", ui.space.row, ui.radius.control, ui.rule.all)}
+            />
           ))}
 
           <div>
             <div className={cn("mb-1", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.language_confirm")}
             </div>
+            {/* KEPT for the same reason as the club list: `UiSegmented` would
+                turn a two-way language choice into a `role="tablist"`, and the
+                pair already sits on the tokens at the 44px floor. */}
             <div className="grid grid-cols-2 gap-2">
               {(["fr", "ar"] as const).map((l) => (
                 <button
@@ -365,22 +360,15 @@ function ProfileSetupPage() {
       )}
 
       <div className="mt-6 flex items-center justify-between gap-2">
-        <button
-          type="button"
+        <UiButton
+          variant="ghost"
+          size="sm"
+          className="gap-1"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
-          className={cn(
-            "inline-flex items-center gap-1 px-3",
-            ui.space.tap,
-            ui.radius.control,
-            ui.text.bodyStrong,
-            ui.tone.muted,
-            ui.focus,
-            "disabled:opacity-40",
-          )}
         >
           <Back className="h-4 w-4" aria-hidden /> {t("auth.setup.previous")}
-        </button>
+        </UiButton>
         {step < STEPS ? (
           <AuthPrimaryButton
             type="button"

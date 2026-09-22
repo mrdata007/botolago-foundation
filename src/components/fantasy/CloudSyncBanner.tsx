@@ -9,6 +9,13 @@
 // `UiAlert`'s tones, which compose their fill from `--ui-positive` /
 // `--ui-caution` / `--ui-ink-fg` over `--ui-surface` and keep
 // `--ui-on-surface` as the foreground in both themes.
+//
+// Re-checked in the V2 pass and left alone. There is no literal white-alpha
+// left here — `bg-white/5 text-white/80` is the state the comment above
+// describes, not the state of the file — and no un-themed colour of any kind:
+// every surface and foreground the banner draws comes from `UiAlert`. Nothing
+// mounts it either; `<CloudSyncBanner />` appears in `src/` only as this
+// export and as a name in the owned-provider's back-compat note.
 
 import { UiAlert, UiButton, type UiAlertTone } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";

@@ -29,6 +29,16 @@ interface Props {
  * — a palette of their own, invisible to the theme. They now use the same
  * negative / caution / ink tokens the rest of Fantasy states with, each
  * paired with the foreground the design system guarantees on it.
+ *
+ * That last clause was still being done by hand, and by hand it can only be
+ * right in one theme. The injured dot read `--ui-on-ink-plain` (near-white) on
+ * a `--ui-negative` fill; `--ui-negative` inverts across the themes — a
+ * mid-tone in light, a light tint in dark — so one foreground cannot serve
+ * both, and white-on-negative is the exact pairing DESIGN_SYSTEM_V2 §2.3
+ * records at 2.31:1 in dark. The doubtful dot picked `--ui-ink-deep` on
+ * `--ui-caution` the same way. Both now take `ui.tone.onNegative` /
+ * `ui.tone.onCaution` — the foregrounds the kit guarantees ON those fills,
+ * which flip with them. Never pick one of these yourself.
  */
 export function PlayerShirt({
   player,
@@ -113,10 +123,8 @@ export function PlayerShirt({
             className={cn(
               markerBase,
               "-bottom-0.5 -start-1",
-              status === "injured" &&
-                "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)]",
-              status === "doubtful" &&
-                "bg-[color:var(--ui-caution)] text-[color:var(--ui-ink-deep)]",
+              status === "injured" && cn("bg-[color:var(--ui-negative)]", ui.tone.onNegative),
+              status === "doubtful" && cn("bg-[color:var(--ui-caution)]", ui.tone.onCaution),
               status === "suspended" && ui.surface.inkPlain,
             )}
             aria-hidden

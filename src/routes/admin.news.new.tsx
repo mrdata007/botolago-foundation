@@ -1,14 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { loadAdminNewsWriteRouteAccess } from "@/backend/admin/route-access.functions";
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
-import {
-  adminButtonClass,
-  adminFieldClass,
-  adminRepositoryContext,
-} from "@/backend/admin/functional-route-helpers";
+import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
 import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import {
   sanitizeEditorialHtml,
@@ -19,7 +15,9 @@ import { markdownToEditorialHtml } from "@/backend/news/editorial-markdown";
 import { mapNewsError } from "@/backend/news/errors";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ADMIN_CARD_CLASS, ADMIN_LABEL_CLASS, AdminNotice } from "@/components/admin/AdminSurfaces";
+import { ui, UiButton, UiInput, UiLinkButton, UiSelect, UiTextarea } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/news/new")({
   ssr: false,
@@ -42,25 +40,32 @@ function EditorSection({
   testId?: string;
 }) {
   return (
-    <section className={`${ADMIN_CARD_CLASS} p-4 sm:p-5`} data-testid={testId}>
+    <section className={cn(ADMIN_CARD_CLASS, "p-4 sm:p-5")} data-testid={testId}>
       <h3 className={ADMIN_LABEL_CLASS}>{heading}</h3>
-      {hint && <p className="mt-1 text-xs leading-5 text-slate-400">{hint}</p>}
+      {/* `leading-5` is gone rather than converted: every step of the type
+          ramp carries its own leading token now (BG-0124), and a literal one
+          under-sets the Arabic face, which runs at 1.95 against the Latin
+          1.4 at the same pixel size. */}
+      {hint && <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{hint}</p>}
       <div className="mt-4 grid gap-4">{children}</div>
     </section>
   );
 }
 
-/** Label text keeps the ambient direction; only the control below may carry
- *  its own `dir` when it holds LTR data or another language's prose. */
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <label className="grid gap-1.5 text-sm">
-      <span className="font-medium text-slate-200">{label}</span>
-      {children}
-      {hint && <span className="text-xs leading-5 text-slate-400">{hint}</span>}
-    </label>
-  );
-}
+/*
+ * The `Field` wrapper that stood here is gone, not converted. It was the
+ * hand-built version of the kit's field frame -- a `<label>` around a caption
+ * span, the control and a hint span -- and `UiInput`/`UiSelect`/`UiTextarea`
+ * render exactly that shape with the border, radius, 44px floor and focus
+ * ring stated once in the kit rather than pasted per field.
+ *
+ * One thing genuinely changes, and it is a fix. Wrapping the hint inside the
+ * `<label>` made it part of the control's accessible NAME: the slug field
+ * announced as "Identifiant (slug) Minuscules, chiffres et tirets uniquement,
+ * par exemple : botola-journee-12". The frame wires the hint through
+ * `aria-describedby` instead, so the name is the label and the guidance is
+ * the description. No word on screen changed.
+ */
 
 function AdminNewsNewRoute() {
   const access = Route.useLoaderData();
@@ -127,15 +132,20 @@ function AdminNewsNewRoute() {
     >
       {access.state === "authorized" && (
         <>
-          <Link
+          {/* `-ms-3` pulls the ghost button's own inline padding back so the
+              link still starts on the section's edge, logically, in both
+              directions. */}
+          <UiLinkButton
             to="/admin/news"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-slate-300 outline-none hover:text-slate-100 focus-visible:ring-2 focus-visible:ring-emerald-400"
+            variant="ghost"
+            size="sm"
+            className="-ms-3"
             data-testid="admin-news-back-to-list"
           >
             {/* The arrow is flipped by the ambient direction, never by hand. */}
             <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
             {rtl ? "كل المقالات" : "Tous les articles"}
-          </Link>
+          </UiLinkButton>
 
           <form className="mt-4 grid gap-4" onSubmit={submit} data-testid="admin-news-new-form">
             <EditorSection
@@ -147,40 +157,35 @@ function AdminNewsNewRoute() {
               }
               testId="admin-news-new-identity"
             >
-              <Field label={rtl ? "اللغة" : "Langue"}>
-                <select
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value as NewsLanguage)}
-                  className={adminFieldClass}
-                  data-testid="admin-news-new-language"
-                >
-                  <option value="fr">Français</option>
-                  <option value="ar">العربية</option>
-                </select>
-              </Field>
-              <Field
+              <UiSelect
+                label={rtl ? "اللغة" : "Langue"}
+                value={language}
+                onChange={(event) => setLanguage(event.target.value as NewsLanguage)}
+                data-testid="admin-news-new-language"
+              >
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+              </UiSelect>
+              {/* A slug is LTR data whatever the console's language. */}
+              <UiInput
                 label={rtl ? "المعرّف (slug)" : "Identifiant (slug)"}
                 hint={
                   rtl
                     ? "حروف لاتينية صغيرة وأرقام وشرطات فقط، مثل: botola-journee-12"
                     : "Minuscules, chiffres et tirets uniquement, par exemple : botola-journee-12"
                 }
-              >
-                {/* A slug is LTR data whatever the console's language. */}
-                <input
-                  value={slug}
-                  onChange={(event) => setSlug(event.target.value)}
-                  pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
-                  required
-                  dir="ltr"
-                  inputMode="url"
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="botola-journee-12"
-                  className={`${adminFieldClass} text-start font-mono`}
-                  data-testid="admin-news-new-slug"
-                />
-              </Field>
+                value={slug}
+                onChange={(event) => setSlug(event.target.value)}
+                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                required
+                dir="ltr"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="botola-journee-12"
+                fieldClassName="text-start font-mono"
+                data-testid="admin-news-new-slug"
+              />
             </EditorSection>
 
             <EditorSection
@@ -192,79 +197,90 @@ function AdminNewsNewRoute() {
                   : "Titre, résumé et contenu s’écrivent dans la langue de l’article choisie ci-dessus."
               }
             >
-              <Field label={rtl ? "العنوان" : "Titre"}>
-                <input
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  minLength={5}
-                  maxLength={220}
-                  required
-                  dir={articleDir}
-                  className={`${adminFieldClass} text-base font-semibold`}
-                  data-testid="admin-news-new-title"
-                />
-              </Field>
-              <Field
+              {/* The headline is set a step up from the rest of the form, on
+                  the ramp: `--ui-text-subtitle` (16px/800) is the step the
+                  literal `text-base font-semibold` was approximating. */}
+              <UiInput
+                label={rtl ? "العنوان" : "Titre"}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                minLength={5}
+                maxLength={220}
+                required
+                dir={articleDir}
+                fieldClassName={ui.text.subtitle}
+                data-testid="admin-news-new-title"
+              />
+              {/* `leading-6` and `leading-7` are gone from both writing
+                  surfaces: the ramp step carries the leading, and it is
+                  redeclared for Arabic, which these literals were not. */}
+              <UiTextarea
                 label={rtl ? "الملخص" : "Résumé"}
                 hint={
                   rtl ? `${summary.length} / 1000 حرفاً` : `${summary.length} / 1000 caractères`
                 }
-              >
-                <textarea
-                  value={summary}
-                  onChange={(event) => setSummary(event.target.value)}
-                  minLength={10}
-                  maxLength={1000}
-                  required
-                  rows={3}
-                  dir={articleDir}
-                  className={`${adminFieldClass} leading-6`}
-                  data-testid="admin-news-new-summary"
-                />
-              </Field>
-              <Field
+                value={summary}
+                onChange={(event) => setSummary(event.target.value)}
+                minLength={10}
+                maxLength={1000}
+                required
+                rows={3}
+                dir={articleDir}
+                data-testid="admin-news-new-summary"
+              />
+              {/* A comfortable writing surface: monospace, room to grow,
+                  resizable vertically (the frame supplies `resize-y`), and
+                  typed in the article's own direction. `min-h-64` stays a
+                  literal -- it is the floor of a fourteen-row writing box, not
+                  a control height, and the spacing scale tops out at 2rem. */}
+              <UiTextarea
                 label={rtl ? "المحتوى (Markdown مبسّط)" : "Contenu (Markdown simplifié)"}
                 hint={
                   rtl
                     ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، وسطر فارغ بين الفقرات."
                     : "## pour un intertitre, **texte** pour l’emphase, une ligne vide entre les paragraphes."
                 }
-              >
-                {/* A comfortable writing surface: monospace, generous line
-                    height, resizable vertically, and typed in the article's
-                    own direction. */}
-                <textarea
-                  value={body}
-                  onChange={(event) => setBody(event.target.value)}
-                  minLength={20}
-                  required
-                  rows={14}
-                  dir={articleDir}
-                  className={`${adminFieldClass} min-h-64 resize-y py-3 font-mono text-sm leading-7`}
-                  data-testid="admin-news-new-body"
-                />
-              </Field>
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                minLength={20}
+                required
+                rows={14}
+                dir={articleDir}
+                fieldClassName="min-h-64 font-mono"
+                data-testid="admin-news-new-body"
+              />
             </EditorSection>
 
             {message && <AdminNotice tone="alert">{message}</AdminNotice>}
 
             <div
-              className={`${ADMIN_CARD_CLASS} flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}
+              className={cn(
+                ADMIN_CARD_CLASS,
+                "flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between",
+              )}
             >
-              <p className="text-xs leading-5 text-slate-400">
+              <p className={cn(ui.text.meta, ui.tone.muted)}>
                 {rtl
                   ? "بعد الإنشاء ستُفتح صفحة التحرير الكاملة (صورة رئيسية، معاينة، نشر)."
                   : "Après création, l’éditeur complet s’ouvre (image à la une, aperçu, publication)."}
               </p>
-              <button
-                className={`${adminButtonClass} w-full gap-2 sm:w-auto`}
+              <UiButton
                 type="submit"
+                className="sm:w-auto"
                 disabled={busy}
                 data-testid="admin-news-new-submit"
               >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                {/* `motion-reduce:animate-none` is how the kit spells a
+                    spinner; this one was spinning through a reduced-motion
+                    preference. */}
+                {busy && (
+                  <Loader2
+                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden
+                  />
+                )}
                 {rtl ? "إنشاء المسودة" : "Créer le brouillon"}
-              </button>
+              </UiButton>
             </div>
           </form>
         </>

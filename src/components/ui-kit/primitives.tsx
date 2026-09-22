@@ -322,7 +322,16 @@ function buttonClass(
     onMesh ? ui.focusOnMesh : ui.focus,
     size === "md"
       ? cn("min-h-[var(--ui-row-min)] w-full px-4", ui.text.bodyStrong)
-      : cn("min-h-[var(--ui-tap-min)] px-3", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]"),
+      : cn(
+          // BOTH axes. `md` is full-width so its width is never in question;
+          // `sm` is inline, and a control 44px tall and 30px wide clears no
+          // floor — an icon-only `sm` button is exactly that shape. Found
+          // when a hand-rolled back control that carried `ui.space.tap` (which
+          // sets both) became a `sm` button and silently lost its width.
+          "min-h-[var(--ui-tap-min)] min-w-[var(--ui-tap-min)] px-3",
+          ui.text.meta,
+          "[font-weight:var(--ui-weight-heavy)]",
+        ),
     "transition-[filter,opacity] disabled:cursor-not-allowed",
     variant === "gradient" && "text-[color:var(--ui-ink-deep)] disabled:opacity-45",
     variant === "ink" &&
@@ -348,6 +357,15 @@ function buttonClass(
         "disabled:opacity-50",
       ),
     onMesh && variant === "ghost" && cn("bg-transparent", ui.tone.onMesh, "disabled:opacity-50"),
+    // The fill carries `--ui-on-negative`, not a hand-picked white: the
+    // negative inverts across the themes, so white measured 5.49:1 in light
+    // and 2.31:1 in dark.
+    variant === "destructive" &&
+      cn(
+        "bg-[color:var(--ui-negative)]",
+        ui.tone.onNegative,
+        "disabled:bg-[color:var(--ui-surface-sunken)] disabled:text-[color:var(--ui-on-surface-muted)]",
+      ),
     className,
   );
 }
@@ -1227,7 +1245,12 @@ export function UiInput({
       className={className}
     >
       {trailing || leading ? (
-        <span className="relative flex w-full">
+        // The wrapper inherits the field's own `dir`. Without it a field
+        // forced to `ltr` inside an Arabic page takes its padding from `ltr`
+        // while the adornment, positioned on the WRAPPER, takes its edge from
+        // the ambient `rtl` — so the control is padded on one side and the
+        // eye or the chevron sits on the other.
+        <span dir={props.dir} className="relative flex w-full">
           {leading ? (
             <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center">
               {leading}
@@ -1288,7 +1311,9 @@ export function UiSelect({
       reserveError={reserveError}
       className={className}
     >
-      <div className="relative">
+      {/* Shares the select's `dir` so the chevron and the `pe-9` that makes
+          room for it resolve from the same direction. */}
+      <div dir={props.dir} className="relative">
         <select
           {...props}
           id={fieldId}
@@ -1979,16 +2004,28 @@ export function UiMenuItem({
   onSelect,
   selected,
   disabled,
+  asChild,
   className,
 }: {
   children: ReactNode;
   onSelect?: () => void;
   selected?: boolean;
   disabled?: boolean;
+  /**
+   * Render the child as the item instead of wrapping it.
+   *
+   * A menu of navigation entries has to be a menu of links — a `<button>` that
+   * calls `navigate()` is not a link, and loses the href, the middle-click and
+   * the copy-link. Without this the Fantasy "More" menu could not move off the
+   * V1 dropdown, whose items are `py-1.5 text-sm`: a ~32px row against a 44px
+   * floor.
+   */
+  asChild?: boolean;
   className?: string;
 }) {
   return (
     <Menu.Item
+      asChild={asChild}
       disabled={disabled}
       onSelect={onSelect}
       aria-current={selected ? "true" : undefined}
@@ -2004,8 +2041,14 @@ export function UiMenuItem({
         className,
       )}
     >
-      <span className="min-w-0 flex-1 truncate">{children}</span>
-      {selected ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
+      {asChild ? (
+        children
+      ) : (
+        <>
+          <span className="min-w-0 flex-1 truncate">{children}</span>
+          {selected ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
+        </>
+      )}
     </Menu.Item>
   );
 }
@@ -2047,10 +2090,12 @@ export function UiCheckbox({
   const generated = useId();
   const id = props.id ?? generated;
   return (
-    <label
-      htmlFor={id}
-      className={cn("flex cursor-pointer items-start gap-3 py-1", ui.text.secondary, className)}
-    >
+    // The hint is a SIBLING of the label, not inside it. Wrapping both in one
+    // `<label>` puts the hint in the control's accessible NAME, and the
+    // `aria-describedby` below puts it in the description too — so a screen
+    // reader reads the same sentence twice for every row. Name from the
+    // label, description from the hint, each said once.
+    <div className={cn("flex items-start gap-3 py-1", ui.text.secondary, className)}>
       <input
         {...props}
         id={id}
@@ -2065,14 +2110,16 @@ export function UiCheckbox({
         )}
       />
       <span className="min-w-0">
-        <span className={ui.tone.default}>{label}</span>
+        <label htmlFor={id} className={cn("block cursor-pointer", ui.tone.default)}>
+          {label}
+        </label>
         {hint ? (
           <span id={`${id}-hint`} className={cn("mt-0.5 block", ui.text.meta, ui.tone.muted)}>
             {hint}
           </span>
         ) : null}
       </span>
-    </label>
+    </div>
   );
 }
 

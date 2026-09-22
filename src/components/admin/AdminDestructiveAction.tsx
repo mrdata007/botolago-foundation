@@ -1,11 +1,5 @@
 import { useId, type Dispatch, type ReactNode } from "react";
 import {
-  adminButtonClass,
-  adminDangerButtonClass,
-  adminFieldClass,
-} from "@/backend/admin/functional-route-helpers";
-import { ADMIN_LABEL_CLASS } from "@/components/admin/AdminSurfaces";
-import {
   canConfirm,
   isArmed,
   isBusy,
@@ -14,6 +8,8 @@ import {
   type DestructiveActionEvent,
   type DestructiveActionState,
 } from "@/components/admin/destructive-action";
+import { ui, UiButton, UiInput } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 /**
  * A destructive Admin action that cannot fire on one press.
@@ -27,18 +23,61 @@ import {
  * In-page rather than `window.confirm`: a native dialog cannot be styled, is
  * not translatable, carries no motive field, and cannot be reached by a test.
  *
- * Direction: no physical left/right anywhere, letter-spacing only under `ltr:`
- * (through `ADMIN_LABEL_CLASS`), and the prompt is composed by the caller so
- * LTR data inside it -- a role slug, an operation type -- can be wrapped in
- * <AdminDatum>. Every control is `min-h-11` and full width below `sm`.
+ * Direction: no physical left/right anywhere, and letter-spacing only under
+ * `ltr:` -- which is now a property of the kit's type ramp rather than of a
+ * class string written here. The prompt is composed by the caller so LTR data
+ * inside it -- a role slug, an operation type -- can be wrapped in
+ * <AdminDatum>.
+ *
+ * Every control is full width below `sm` and clears the 44px tap floor. That
+ * floor used to be a literal `min-h-11` on each control; it now comes from
+ * `--ui-tap-min` through `UiButton size="sm"` and `UiInput`, which is the same
+ * 2.75rem stated once.
  */
 
 /**
- * The confirm step's own surface. Rose-toned so an armed action reads as armed,
- * and `w-full` so that when it replaces a trigger inside a wrapping action
- * strip it claims its own line instead of squeezing in beside sibling buttons.
+ * The confirm step's own surface.
+ *
+ * Rose-toned so an armed action reads as armed, and that decision stands --
+ * only the rose moves onto `--ui-negative`, the token that means exactly this
+ * and that inverts correctly across the themes. `w-full` stands too: when this
+ * panel replaces a trigger inside a wrapping action strip it has to claim its
+ * own line instead of squeezing in beside sibling buttons.
+ *
+ * The kit has no negative SURFACE token, and `UiAlert tone="negative"` -- the
+ * nearest thing that does exist -- cannot be this element: this is a
+ * `role="group"` labelled by its own prompt and holding a field and two
+ * controls, where `UiAlert` is a message that takes only `status` or `alert`
+ * and renders a live region. So the tint is composed here, from declared
+ * tokens only, using `UiAlert`'s own recipe: 14% of the accent mixed into
+ * `--ui-surface`.
  */
-const CONFIRM_PANEL_CLASS = "w-full rounded-2xl border border-rose-500/40 bg-rose-950/30 p-4";
+const CONFIRM_PANEL_CLASS = cn(
+  "w-full p-4",
+  ui.radius.control,
+  "border border-[color:var(--ui-negative)]",
+  "bg-[color:color-mix(in_oklab,var(--ui-negative)_14%,var(--ui-surface))]",
+);
+
+/**
+ * The filled danger control: the resting trigger and the confirm commit.
+ *
+ * `variant="destructive"` is the kit's name for exactly this, and it is what
+ * this component must ask for -- `variant="ink"` would paint "Révoquer" and
+ * "Approuver" identically, erasing the one difference this component exists to
+ * keep.
+ *
+ * The fill is added at this call site because the kit declares `destructive`
+ * on `UiButtonVariant` but `buttonClass` has no branch for it: asking for the
+ * variant alone renders a transparent button carrying an inherited
+ * foreground, which on the tinted panel above is a commit control you cannot
+ * see. That is a gap in the kit, not a licence to invent -- so the fill is the
+ * mandated pairing and nothing else. `--ui-negative` inverts across the themes
+ * (a mid-tone in light, a light tint in dark), so the foreground has to be the
+ * one that follows it, `--ui-on-negative`. Written white-on-negative it
+ * measured 2.31:1 in dark.
+ */
+const DANGER_FILL = cn("bg-[color:var(--ui-negative)]", ui.tone.onNegative);
 
 interface AdminDestructiveActionProps {
   /**
@@ -92,19 +131,24 @@ export function AdminDestructiveAction({
   // row's `aria-labelledby` target.
   const generatedId = useId();
   const promptId = `${generatedId}-prompt`;
-  const hintId = `${generatedId}-hint`;
 
   const armed = isArmed(state, actionKey);
   const running = isRunning(state, actionKey);
   const reason = reasonFor(state, actionKey);
   const confirmable = canConfirm(state, actionKey, minimumReasonLength);
-  const triggerClass = tone === "danger" ? adminDangerButtonClass : adminButtonClass;
+  const danger = tone === "danger";
+  // `primary` is consequential but not destructive (restore), so it takes the
+  // action gradient -- the same "this is the affirmative control" the emerald
+  // fill it replaces was saying.
+  const commitVariant = danger ? "destructive" : "gradient";
+  const commitClass = cn("w-full sm:w-auto", danger && DANGER_FILL);
 
   if (!armed) {
     return (
-      <button
-        type="button"
-        className={`${triggerClass} w-full sm:w-auto ${className}`}
+      <UiButton
+        size="sm"
+        variant={commitVariant}
+        className={cn(commitClass, className)}
         // Disabled while any action on this surface is mid-flight, so a second
         // destructive operation cannot be started on top of the first.
         disabled={disabled || isBusy(state)}
@@ -113,7 +157,7 @@ export function AdminDestructiveAction({
         data-admin-action="idle"
       >
         {triggerLabel}
-      </button>
+      </UiButton>
     );
   }
 
@@ -127,54 +171,61 @@ export function AdminDestructiveAction({
 
   return (
     <div
-      className={`${CONFIRM_PANEL_CLASS} grid gap-3 ${className}`}
+      className={cn(CONFIRM_PANEL_CLASS, "grid gap-3", className)}
       role="group"
       aria-labelledby={promptId}
       data-testid={testId ? `${testId}-confirm` : undefined}
       data-admin-action={running ? "running" : "armed"}
     >
-      <p id={promptId} className="text-sm leading-6 text-rose-100">
+      <p id={promptId} className={cn(ui.text.secondary, ui.tone.default)}>
         {confirmPrompt}
       </p>
 
-      <label className="grid gap-2 text-sm">
-        <span className={ADMIN_LABEL_CLASS}>{rtl ? "السبب (مطلوب)" : "Motif (requis)"}</span>
-        <input
-          value={reason}
-          onChange={(event) =>
-            dispatch({ type: "reason", key: actionKey, value: event.target.value })
-          }
-          minLength={minimumReasonLength}
-          maxLength={500}
-          disabled={running}
-          className={adminFieldClass}
-          aria-describedby={hintId}
-          // The trigger that had focus has just been replaced by this panel;
-          // without this, focus falls to <body> and a keyboard or screen-reader
-          // operator is left with no idea a confirm step appeared.
-          autoFocus
-          data-testid={testId ? `${testId}-reason` : undefined}
-        />
-      </label>
-      <p id={hintId} className="text-xs text-rose-200/80">
-        {rtl
-          ? "ثمانية أحرف على الأقل. يخصّ هذا السبب هذا الإجراء وحده، ويُسجَّل في التدقيق."
-          : "8 caractères minimum. Ce motif ne vaut que pour cette action et est consigné dans l’audit."}
-      </p>
+      {/* `UiInput` rather than a hand-wired <label> + <input>: same field, same
+          validation, same autofocus, and it owns the label/hint wiring that was
+          being spelled out here. Its own `aria-describedby` composition points
+          the field at the hint below, which is what the hand-rolled `hintId`
+          did -- so the separate <p> and the id that targeted it are gone rather
+          than duplicated. The visible label moves from the console's 11px
+          micro-label to the kit's field label; nothing it says changes. */}
+      <UiInput
+        label={rtl ? "السبب (مطلوب)" : "Motif (requis)"}
+        hint={
+          rtl
+            ? "ثمانية أحرف على الأقل. يخصّ هذا السبب هذا الإجراء وحده، ويُسجَّل في التدقيق."
+            : "8 caractères minimum. Ce motif ne vaut que pour cette action et est consigné dans l’audit."
+        }
+        value={reason}
+        onChange={(event) =>
+          dispatch({ type: "reason", key: actionKey, value: event.target.value })
+        }
+        minLength={minimumReasonLength}
+        maxLength={500}
+        disabled={running}
+        // The trigger that had focus has just been replaced by this panel;
+        // without this, focus falls to <body> and a keyboard or screen-reader
+        // operator is left with no idea a confirm step appeared.
+        autoFocus
+        data-testid={testId ? `${testId}-reason` : undefined}
+      />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <button
-          type="button"
-          className={`${triggerClass} w-full sm:w-auto`}
+        <UiButton
+          size="sm"
+          variant={commitVariant}
+          className={commitClass}
           disabled={!confirmable}
           onClick={confirm}
           data-testid={testId ? `${testId}-commit` : undefined}
         >
           {running ? (rtl ? "جارٍ التنفيذ…" : "Opération en cours…") : confirmLabel}
-        </button>
-        <button
-          type="button"
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-200 outline-none transition-colors hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+        </UiButton>
+        <UiButton
+          size="sm"
+          variant="outline"
+          // `size="sm"` already puts this control on `--ui-tap-min`, which is
+          // the same 2.75rem/44px the literal below states, and `cn()`
+          className="w-full sm:w-auto"
           disabled={running}
           onClick={() => dispatch({ type: "cancel" })}
           data-testid={testId ? `${testId}-abandon` : undefined}
@@ -182,7 +233,7 @@ export function AdminDestructiveAction({
           {/* Not "Annuler"/"إلغاء": on the approvals queue that is the name of a
               destructive action of its own. Backing out must never read like it. */}
           {rtl ? "تراجع" : "Abandonner"}
-        </button>
+        </UiButton>
       </div>
     </div>
   );

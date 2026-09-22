@@ -138,13 +138,27 @@ export function FplPlayerCard({
             // The visible glyph stays small so it does not cover the shirt,
             // but the control itself clears the 44px floor: the hit area
             // grows inwards from the corner the glyph is drawn in.
+            //
+            // NOT `ui.hitArea`, although that is the kit's token for exactly
+            // "a 44px target on a control painted smaller". It centres the
+            // target on the glyph, and this glyph is already pinned to the
+            // plate's start/top corner by `UiPlayerPlate`, so a centred 44px
+            // box would hang ~12px off the top and inline-start edges of the
+            // pitch slot rather than reaching inwards over the shirt.
             className={cn("grid place-items-start", ui.space.tap, ui.radius.full, ui.focus)}
           >
             <span
               className={cn(
                 "grid h-5 w-5 place-items-center",
                 ui.radius.full,
-                "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-ink-plain)]",
+                // The foreground a negative FILL carries is `--ui-on-negative`,
+                // never one picked here: `--ui-negative` inverts across the
+                // themes — a mid-tone in light, a light tint in dark — so the
+                // plain on-ink white this used measured against the dark fill
+                // is the 2.31:1 case the token was added for. `ui.tone.onNegative`
+                // flips with it.
+                "bg-[color:var(--ui-negative)]",
+                ui.tone.onNegative,
                 "shadow-[var(--ui-shadow-card)]",
               )}
             >
@@ -156,7 +170,13 @@ export function FplPlayerCard({
             className={cn(
               "grid h-5 w-5 place-items-center",
               ui.radius.full,
-              "bg-[color:var(--ui-caution)] text-[color:var(--ui-ink-deep)]",
+              // Same rule as the remove badge above. `--ui-on-caution` does
+              // resolve to `--ui-ink-deep` in both themes today, so this is
+              // not a contrast fix — it is a correctness one: the amber is
+              // the kit's to re-tune, and a foreground spelled here does not
+              // move with it.
+              "bg-[color:var(--ui-caution)]",
+              ui.tone.onCaution,
               "shadow-[var(--ui-shadow-card)]",
             )}
             title={t(`player.status.${player.status}` as never)}

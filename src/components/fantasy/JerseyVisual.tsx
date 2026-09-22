@@ -1,6 +1,18 @@
+import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import type { KitConfig } from "@/lib/kits";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
+
+/**
+ * The shadow the garment casts on whatever is behind it — the turf, a list
+ * row, a sheet. Spelled once rather than twice because it is one decision, and
+ * kept as a literal for the same reason as the `rgba(...)` stops below: it is
+ * lighting, not palette. There is no `--ui-shadow-*` step that means "an
+ * object casting on an unknown surface" — the four elevation tokens are card,
+ * raised bar, overlay and desktop column — and a shadow that changed colour
+ * with the theme is not how a shadow on an object works.
+ */
+const GARMENT_DROP_SHADOW = "drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]";
 
 interface JerseyVisualProps {
   kit: KitConfig;
@@ -45,7 +57,7 @@ export function JerseyVisual({
       {selected && (
         <span
           aria-hidden
-          className="absolute inset-0 -m-1 rounded-full"
+          className={cn("absolute inset-0 -m-1", ui.radius.full)}
           style={{
             // A centred radial, so it does not mirror under `dir="rtl"`, in a
             // kit accent rather than the legacy `--brand-accent`.
@@ -61,7 +73,7 @@ export function JerseyVisual({
         viewBox={`0 0 ${w} ${h}`}
         width={size}
         height={size * (h / w)}
-        className="relative select-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+        className={cn("relative select-none", GARMENT_DROP_SHADOW)}
       >
         <defs>
           <linearGradient id={`${gid}-hi`} x1="0" y1="0" x2="0" y2="1">
@@ -149,7 +161,10 @@ export function JerseyVisual({
         alt={ariaLabel ?? ""}
         width={size}
         height={size * (h / w)}
-        className="absolute inset-0 z-10 h-full w-full select-none object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]"
+        className={cn(
+          "absolute inset-0 z-10 h-full w-full select-none object-contain",
+          GARMENT_DROP_SHADOW,
+        )}
         draggable={false}
       />
     </div>

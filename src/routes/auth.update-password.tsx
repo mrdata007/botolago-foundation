@@ -9,13 +9,10 @@ import { toast } from "sonner";
 import {
   AuthShell,
   AuthPrimaryButton,
-  AuthFieldError,
-  AuthFieldLabel,
   AuthFormError,
   AuthSecondaryButton,
-  authFieldClass,
 } from "@/components/auth/AuthShell";
-import { ui } from "@/components/ui-kit";
+import { ui, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH } from "@/services/auth";
@@ -126,38 +123,42 @@ function UpdatePasswordPage() {
     <AuthShell title={t("auth.update.title")} subtitle={t("auth.update.subtitle")}>
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
         <div>
-          <AuthFieldLabel htmlFor={pwId}>{t("auth.update.new_password")}</AuthFieldLabel>
-          <div className="relative">
-            <input
-              id={pwId}
-              type={showPw ? "text" : "password"}
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-invalid={!!errors.pw}
-              aria-describedby={`${pwId}-err`}
-              className={cn(authFieldClass, "pe-11")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw((s) => !s)}
-              aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-              className={cn(
-                "absolute inset-y-0 end-1 grid place-items-center px-2",
-                "min-w-[var(--ui-tap-min)]",
-                ui.radius.control,
-                ui.tone.muted,
-                ui.focus,
-                "hover:bg-[color:var(--ui-surface-sunken)]",
-              )}
-            >
-              {showPw ? (
-                <EyeOff className="h-4 w-4" aria-hidden />
-              ) : (
-                <Eye className="h-4 w-4" aria-hidden />
-              )}
-            </button>
-          </div>
+          <UiInput
+            id={pwId}
+            label={t("auth.update.new_password")}
+            type={showPw ? "text" : "password"}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={errors.pw ? t(errors.pw) : undefined}
+            reserveError
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
+                className={cn(
+                  "grid place-items-center px-2",
+                  ui.space.tap,
+                  ui.radius.control,
+                  ui.tone.muted,
+                  ui.focus,
+                  "hover:bg-[color:var(--ui-surface-sunken)]",
+                )}
+              >
+                {showPw ? (
+                  <EyeOff className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden />
+                )}
+              </button>
+            }
+          />
+          {/* The meter follows the field frame rather than sitting inside it:
+              the frame owns label / box / error, and the error line is the
+              one thing that must stay put under the box. Unlike register's,
+              this meter has no label and is not described-by, so it stays
+              decorative — matching what it did before. */}
           {password && (
             <div className="mt-1.5 flex items-center gap-2">
               <div className="flex flex-1 gap-1">
@@ -174,23 +175,18 @@ function UpdatePasswordPage() {
               </div>
             </div>
           )}
-          <AuthFieldError id={`${pwId}-err`}>{errors.pw && t(errors.pw)}</AuthFieldError>
         </div>
 
-        <div>
-          <AuthFieldLabel htmlFor={cpwId}>{t("auth.update.confirm_password")}</AuthFieldLabel>
-          <input
-            id={cpwId}
-            type={showPw ? "text" : "password"}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            aria-invalid={!!errors.cpw}
-            aria-describedby={`${cpwId}-err`}
-            className={authFieldClass}
-          />
-          <AuthFieldError id={`${cpwId}-err`}>{errors.cpw && t(errors.cpw)}</AuthFieldError>
-        </div>
+        <UiInput
+          id={cpwId}
+          label={t("auth.update.confirm_password")}
+          type={showPw ? "text" : "password"}
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          error={errors.cpw ? t(errors.cpw) : undefined}
+          reserveError
+        />
 
         {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
 

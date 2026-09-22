@@ -13,6 +13,12 @@
 // those values move with the theme. `UiAlert tone="negative"` composes its
 // fill from `--ui-negative` over `--ui-surface` and keeps `role="alert"`, so
 // the assertive announcement this component exists for is unchanged.
+//
+// The visible branch used to wrap the alert in a bare `<div>` whose only job
+// was to carry `data-testid`. `UiAlert` forwards `testId` itself now, so the
+// hook moves onto the alert and the spare box goes. The hidden branch keeps
+// its own element: that one is not an alert, it is the always-mounted live
+// region that exists so a later transition is announced at all.
 
 import { UiAlert, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -52,30 +58,28 @@ export function ConflictBar({
     );
   }
   return (
-    <div data-testid="conflict-bar">
-      <UiAlert tone="negative" title={t(titleKey)}>
-        <p className="whitespace-normal break-words">{t(explanationKey)}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <UiButton
-            variant="gradient"
-            size="sm"
-            onClick={onReloadLatest}
-            disabled={busy}
-            className="flex-1"
-          >
-            {t("fantasy.conflict.reload_latest")}
-          </UiButton>
-          <UiButton
-            variant="outline"
-            size="sm"
-            onClick={onKeepWorking}
-            disabled={busy}
-            className="flex-1"
-          >
-            {t("fantasy.conflict.keep_working")}
-          </UiButton>
-        </div>
-      </UiAlert>
-    </div>
+    <UiAlert tone="negative" title={t(titleKey)} testId="conflict-bar">
+      <p className="whitespace-normal break-words">{t(explanationKey)}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <UiButton
+          variant="gradient"
+          size="sm"
+          onClick={onReloadLatest}
+          disabled={busy}
+          className="flex-1"
+        >
+          {t("fantasy.conflict.reload_latest")}
+        </UiButton>
+        <UiButton
+          variant="outline"
+          size="sm"
+          onClick={onKeepWorking}
+          disabled={busy}
+          className="flex-1"
+        >
+          {t("fantasy.conflict.keep_working")}
+        </UiButton>
+      </div>
+    </UiAlert>
   );
 }

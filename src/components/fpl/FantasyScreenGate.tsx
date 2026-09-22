@@ -5,10 +5,10 @@ import { useEffect, type ReactNode } from "react";
 import {
   ui,
   UiCard,
+  UiEmptyState,
   UiErrorState,
   UiLinkButton,
   UiSkeleton,
-  UiStatePanel,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -100,8 +100,10 @@ export function FantasyPhaseBody({
 
   if (phase === "season_closed" || phase === "awaiting_gameweek") {
     return (
-      <UiStatePanel
-        kind="empty"
+      // `UiEmptyState`, not `UiStatePanel kind="empty"` — the kit prefers the
+      // named states because they say what they are, and this renders the
+      // identical panel.
+      <UiEmptyState
         className="mx-4 my-6"
         title={
           <span className="flex flex-col items-center gap-3">
@@ -121,7 +123,13 @@ export function FantasyPhaseBody({
     );
   }
 
-  // guest
+  // Guest. Deliberately NOT `UiEmptyState`, although it has the same shape —
+  // a centred card, a heading, a line of body copy, actions. The kit's state
+  // panels wrap their content in `role="status"`, because an empty or failed
+  // fetch is news about the screen. This is not: the screen loaded, and this
+  // is its content — an invitation to sign in. Rendering it as a status would
+  // add a live-region announcement that is not there today, and the brief for
+  // a design migration is that the announcements do not change.
   return (
     <UiCard padding="lg" className="mx-4 my-6 text-center">
       <h2 className={cn(ui.text.section, ui.tone.default)}>{t("auth.prompt.title")}</h2>

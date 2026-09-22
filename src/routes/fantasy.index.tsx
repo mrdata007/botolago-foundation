@@ -19,11 +19,12 @@ import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
-import { FplPill, FplSegmented } from "@/components/fpl/primitives";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
   UiCard,
+  UiPill,
+  UiSegmented,
   UiSkeleton,
   UiTable,
   UiTBody,
@@ -57,6 +58,12 @@ export const Route = createFileRoute("/fantasy/")({
  * `linear-gradient(180deg, …)` that mirrors the wrong way under `dir="rtl"`,
  * and `--fpl-ink-deep` used as a text colour on nine headings. The layout,
  * the data flow and every query are unchanged — only the presentation is.
+ *
+ * The pills and the Leagues/Cups tabs now come straight from the kit rather
+ * than through `components/fpl/primitives`. `FplPill` on its default tone was
+ * `UiPill`, and `FplSegmented tone="onLight"` was `UiSegmented
+ * tone="onSurface"` — the adapter's whole contribution was renaming the tone.
+ * It is a migration seam for screens not yet converted, and this one is.
  */
 function FantasyHub() {
   const { t, lang } = useI18n();
@@ -165,7 +172,7 @@ function FantasyHub() {
             <>
               {gameweek ? (
                 <>
-                  <FplPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</FplPill>
+                  <UiPill>{`${t("fpl.gameweek")} ${gameweek.number}`}</UiPill>
                   <p className={cn("mt-2", ui.text.secondary, ui.tone.default)}>
                     {t("fpl.gameweek")} {gameweek.number} {t("fpl.deadline")}:{" "}
                     <strong className="[font-weight:var(--ui-weight-heavy)]">{deadlineText}</strong>
@@ -293,7 +300,12 @@ function FantasyHub() {
                 ) : null}
                 <p
                   className={cn(
-                    "line-clamp-3 px-2 py-2 leading-snug",
+                    // No `leading-*` literal beside the ramp step: the step
+                    // carries its own leading, per script (BG-0124). This one
+                    // was `leading-snug` and never applied — `ui.text.meta`
+                    // sets the same property after it — so it was a second
+                    // source of truth that happened to be losing.
+                    "line-clamp-3 px-2 py-2",
                     ui.text.meta,
                     "[font-weight:var(--ui-weight-heavy)]",
                     ui.tone.default,
@@ -374,6 +386,12 @@ function MoreAboutLink({ to, children }: { to: string; children: ReactNode }) {
     <Link
       to={to}
       className={cn(
+        // `min-h-16` (64px) stays a literal deliberately. It is not a control
+        // height — it clears `--ui-row-min` with 16px to spare — it is the
+        // height of a two-up tile, and the ramp has no step for that. Rule 5
+        // exists to stop a control being sized under the tap floor by a
+        // literal; shrinking this to `--ui-row-min` to satisfy the letter of
+        // it would make the tile smaller for no reason.
         "grid min-h-16 place-items-center px-3 text-center",
         ui.radius.control,
         ui.surface.card,
@@ -402,7 +420,10 @@ function HubButton({
     <Link
       to={to}
       className={cn(
-        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 text-center leading-tight",
+        // `leading-tight` dropped: the ramp step below sets the line box, per
+        // script (BG-0124), and this button's label truncates — the one place
+        // a too-flat leading cuts glyph ink instead of just looking tight.
+        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 text-center",
         ui.radius.control,
         ui.text.meta,
         "[font-weight:var(--ui-weight-heavy)]",
@@ -484,9 +505,9 @@ function LeaguesAndCups({
   return (
     <UiCard as="section" className="mx-4 mt-6" padding="md">
       <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.leagues_cups")}</h2>
-      <FplSegmented
+      <UiSegmented
         className="mt-3"
-        tone="onLight"
+        tone="onSurface"
         value={tab}
         onChange={setTab}
         options={[
@@ -509,11 +530,11 @@ function LeaguesAndCups({
           </div>
 
           <div className="mt-4">
-            <FplPill>{t("fpl.general_leagues")}</FplPill>
+            <UiPill>{t("fpl.general_leagues")}</UiPill>
             <LeagueTable rows={generalRows} caption={t("fpl.general_leagues")} />
           </div>
           <div className="mt-4">
-            <FplPill>{t("fpl.private_leagues")}</FplPill>
+            <UiPill>{t("fpl.private_leagues")}</UiPill>
             {phase !== "ready" || !hasTeam ? (
               <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
             ) : leaguesLoading ? (
@@ -534,12 +555,14 @@ function LeaguesAndCups({
         </>
       ) : (
         <div className="mt-4">
-          <FplPill>{t("fpl.cups")}</FplPill>
+          <UiPill>{t("fpl.cups")}</UiPill>
           <p className={cn("mt-3", ui.text.body, ui.tone.default)}>{t("fpl.cup_not_qualified")}</p>
           <h3 className={cn("mt-3", ui.text.section, ui.tone.default)}>{t("fpl.cup_how_title")}</h3>
-          <p className={cn("mt-2 leading-relaxed", ui.text.secondary, ui.tone.muted)}>
-            {t("fpl.cup_how_body")}
-          </p>
+          {/* `leading-relaxed` dropped for the same reason as the other two on
+              this screen: `ui.text.secondary` already sets the line box and
+              sets it per script, and a Tailwind literal beside it is a second
+              source of truth that wins or loses on class order (BG-0124). */}
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
         </div>
       )}
     </UiCard>

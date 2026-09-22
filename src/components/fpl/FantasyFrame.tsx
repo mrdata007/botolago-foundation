@@ -14,22 +14,29 @@ import { cn } from "@/lib/utils";
  * stays reachable without changing the screen composition.
  *
  * WIDTH — the column is the same one the rest of the product uses.
- * `AppShell` renders `UiScreen width="content"`, whose rule is `max-w-2xl`
- * (672px), and Home, Matches, Standings and Profile have all been on it
- * since the shell migration. Fantasy was the one section left on the 480px
+ * `AppShell` renders `UiScreen width="content"`, the 672px reading column,
+ * and Home, Matches, Standings and Profile have all been on it since the
+ * shell migration. Fantasy was the one section left on the 480px
  * `--ui-column-max` phone canvas, which at 1440px left two thirds of the
  * viewport as empty gutter and made Fantasy read as a different application.
- * This deliberately reuses `max-w-2xl` — the kit's own rule for a content
- * column — rather than inventing a third width.
+ *
+ * That width is a token now, so this is `ui.space.content` rather than the
+ * literal `max-w-2xl` it used to be. The note here used to argue that
+ * `max-w-2xl` was "the kit's own rule for a content column" — it was the
+ * nearest thing available, but a Tailwind step is not a rule: it said 672px
+ * without saying WHICH 672px, so a reader could not tell the reading column
+ * from any other box that happens to be that wide, and nothing tied the two
+ * to each other. `--ui-content-max` is that statement, and `ui.space.content`
+ * carries the same `mx-auto w-full` this line already spelled out.
  *
  * (`--ui-column-max` is not wrong; it is the phone-canvas token, still
- * offered as `UiScreen width="column"`. It is just not what a page column in
- * this product is. `UiSheet` was pinned to it too, and no longer is: a 480px
- * sheet under a 672px screen only ever showed on desktop, where the
- * "thumb-width" that justified it is not a constraint.)
+ * offered as `UiScreen width="column"` and as `ui.space.column`. It is just
+ * not what a page column in this product is. `UiSheet` was pinned to it too,
+ * and no longer is: a 480px sheet under a 672px screen only ever showed on
+ * desktop, where the "thumb-width" that justified it is not a constraint.)
  *
  * The gutter is NOT applied here, unlike `UiScreen`: Fantasy screens render
- * full-bleed bands of their own — the hero gradient, `FplHeader`, `FplBanner`
+ * full-bleed bands of their own — the hero gradient, `UiHeader`, `UiBanner`
  * — and each inner block brings `ui.space.gutter` itself.
  *
  * SURFACE — the two backgrounds used to be `--fpl-bg` and a literal
@@ -60,9 +67,11 @@ export function FantasyFrame({
       </div>
       <main
         className={cn(
-          // Same column rule as `UiScreen width="content"`, which is what
-          // every migrated public route renders through `AppShell`.
-          "fpl-column relative mx-auto w-full max-w-2xl",
+          // Same column as `UiScreen width="content"`, which is what every
+          // migrated public route renders through `AppShell`. `fpl-column` is
+          // kept: the viewport-containment tooling selects `main.fpl-column`.
+          "fpl-column relative",
+          ui.space.content,
           "md:my-4 md:min-h-[calc(100dvh-7rem)] md:overflow-hidden",
           "md:rounded-[var(--ui-radius-column)] md:shadow-[var(--ui-shadow-column)]",
           bottomNav ? "pb-28 md:pb-12" : "pb-8",

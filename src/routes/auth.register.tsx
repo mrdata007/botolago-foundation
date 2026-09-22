@@ -6,11 +6,8 @@ import {
   AuthPrimaryButton,
   AuthSecondaryButton,
   AuthDivider,
-  AuthFieldError,
-  AuthFieldLabel,
   AuthFormError,
-  authFieldClass,
-  authMeshLinkClass,
+  authLinkClass,
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
@@ -19,7 +16,7 @@ import {
   noticeConsentSegments,
   registerConsentSegments,
 } from "@/components/legal/consent-segments";
-import { ui } from "@/components/ui-kit";
+import { ui, UiCheckbox, UiInput } from "@/components/ui-kit";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -167,99 +164,89 @@ function RegisterPage() {
       footer={
         <span>
           {t("auth.register.have_account")}{" "}
-          <Link to="/auth/login" search={{ next }} className={authMeshLinkClass}>
+          <Link to="/auth/login" search={{ next }} className={authLinkClass.onMesh}>
             {t("auth.register.login_link")}
           </Link>
         </span>
       }
     >
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
-        <div>
-          <AuthFieldLabel htmlFor={ids.name}>{t("auth.register.full_name")}</AuthFieldLabel>
-          <input
-            id={ids.name}
-            type="text"
-            autoComplete="name"
-            placeholder={t("auth.register.full_name_placeholder")}
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            aria-invalid={!!errors.fullName}
-            aria-describedby={`${ids.name}-err`}
-            className={authFieldClass}
-          />
-          <AuthFieldError id={`${ids.name}-err`}>
-            {errors.fullName && t(errors.fullName)}
-          </AuthFieldError>
-        </div>
+        <UiInput
+          id={ids.name}
+          label={t("auth.register.full_name")}
+          type="text"
+          autoComplete="name"
+          placeholder={t("auth.register.full_name_placeholder")}
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          error={errors.fullName ? t(errors.fullName) : undefined}
+          reserveError
+        />
+
+        <UiInput
+          id={ids.username}
+          label={t("auth.register.username")}
+          type="text"
+          autoComplete="username"
+          placeholder={t("auth.register.username_placeholder")}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          error={errors.username ? t(errors.username) : undefined}
+          reserveError
+        />
+
+        <UiInput
+          id={ids.email}
+          label={t("auth.email")}
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder={t("auth.email_placeholder")}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={errors.email ? t(errors.email) : undefined}
+          reserveError
+        />
 
         <div>
-          <AuthFieldLabel htmlFor={ids.username}>{t("auth.register.username")}</AuthFieldLabel>
-          <input
-            id={ids.username}
-            type="text"
-            autoComplete="username"
-            placeholder={t("auth.register.username_placeholder")}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            aria-invalid={!!errors.username}
-            aria-describedby={`${ids.username}-err`}
-            className={authFieldClass}
+          {/* The strength meter's id goes in `aria-describedby` and is KEPT:
+              the kit composes what you pass with the field's own error id
+              rather than replacing it, so this field still announces both.
+              The meter itself sits after the field frame — the frame owns the
+              order label / box / error, and the error line is the one that
+              must not move. */}
+          <UiInput
+            id={ids.pw}
+            label={t("auth.password")}
+            type={showPw ? "text" : "password"}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-describedby={`${ids.pw}-strength`}
+            error={errors.password ? t(errors.password) : undefined}
+            reserveError
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
+                className={cn(
+                  "grid place-items-center px-2",
+                  ui.space.tap,
+                  ui.radius.control,
+                  ui.tone.muted,
+                  ui.focus,
+                  "hover:bg-[color:var(--ui-surface-sunken)]",
+                )}
+              >
+                {showPw ? (
+                  <EyeOff className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden />
+                )}
+              </button>
+            }
           />
-          <AuthFieldError id={`${ids.username}-err`}>
-            {errors.username && t(errors.username)}
-          </AuthFieldError>
-        </div>
-
-        <div>
-          <AuthFieldLabel htmlFor={ids.email}>{t("auth.email")}</AuthFieldLabel>
-          <input
-            id={ids.email}
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder={t("auth.email_placeholder")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            aria-invalid={!!errors.email}
-            aria-describedby={`${ids.email}-err`}
-            className={authFieldClass}
-          />
-          <AuthFieldError id={`${ids.email}-err`}>{errors.email && t(errors.email)}</AuthFieldError>
-        </div>
-
-        <div>
-          <AuthFieldLabel htmlFor={ids.pw}>{t("auth.password")}</AuthFieldLabel>
-          <div className="relative">
-            <input
-              id={ids.pw}
-              type={showPw ? "text" : "password"}
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-invalid={!!errors.password}
-              aria-describedby={`${ids.pw}-err ${ids.pw}-strength`}
-              className={cn(authFieldClass, "pe-11")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw((s) => !s)}
-              aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-              className={cn(
-                "absolute inset-y-0 end-1 grid place-items-center px-2",
-                "min-w-[var(--ui-tap-min)]",
-                ui.radius.control,
-                ui.tone.muted,
-                ui.focus,
-                "hover:bg-[color:var(--ui-surface-sunken)]",
-              )}
-            >
-              {showPw ? (
-                <EyeOff className="h-4 w-4" aria-hidden />
-              ) : (
-                <Eye className="h-4 w-4" aria-hidden />
-              )}
-            </button>
-          </div>
           {password && (
             <div id={`${ids.pw}-strength`} className="mt-1.5 flex items-center gap-2">
               <div className="flex flex-1 gap-1">
@@ -278,49 +265,37 @@ function RegisterPage() {
               <span className={cn(ui.text.label, ui.tone.muted)}>{t(strengthLabelKey)}</span>
             </div>
           )}
-          <AuthFieldError id={`${ids.pw}-err`}>
-            {errors.password && t(errors.password)}
-          </AuthFieldError>
         </div>
 
-        <div>
-          <AuthFieldLabel htmlFor={ids.cpw}>{t("auth.register.confirm_password")}</AuthFieldLabel>
-          <input
-            id={ids.cpw}
-            type={showPw ? "text" : "password"}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            aria-invalid={!!errors.confirmPassword}
-            aria-describedby={`${ids.cpw}-err`}
-            className={authFieldClass}
-          />
-          <AuthFieldError id={`${ids.cpw}-err`}>
-            {errors.confirmPassword && t(errors.confirmPassword)}
-          </AuthFieldError>
-        </div>
+        <UiInput
+          id={ids.cpw}
+          label={t("auth.register.confirm_password")}
+          type={showPw ? "text" : "password"}
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          error={errors.confirmPassword ? t(errors.confirmPassword) : undefined}
+          reserveError
+        />
 
-        <label
-          className={cn(
-            "flex items-start gap-2 py-3 leading-relaxed",
-            "min-h-[var(--ui-tap-min)]",
-            ui.text.meta,
-            ui.tone.muted,
-          )}
-        >
-          <input
-            type="checkbox"
-            checked={terms}
-            onChange={(e) => setTerms(e.target.checked)}
-            className={cn(
-              "mt-0.5 h-4 w-4 border-[color:var(--ui-rule)]",
-              ui.radius.control,
-              ui.focus,
-            )}
-            aria-invalid={!!errors.terms}
-          />
-          <ConsentLine segments={registerConsentSegments(t)} />
-        </label>
+        {/* The consent box was 16px painted and 16px targeted — a quarter of
+            the 44px floor, on the control that gates the whole form.
+            `UiCheckbox` keeps the ink at 16px and grows a transparent 44px
+            target behind it (`ui.hitArea`), paints the checked plate in
+            `--ui-ink` instead of the browser's own accent colour, and keeps
+            the wrapping label, which is what lets this row carry links
+            without the label stealing their clicks. */}
+        <UiCheckbox
+          checked={terms}
+          onChange={(e) => setTerms(e.target.checked)}
+          aria-invalid={!!errors.terms}
+          label={
+            <ConsentLine
+              segments={registerConsentSegments(t)}
+              linkClassName={authLinkClass.consent}
+            />
+          }
+        />
         {errors.terms && (
           <p
             role="alert"
@@ -364,8 +339,20 @@ function RegisterPage() {
           </>
         )}
 
-        <p className={cn("text-center leading-relaxed", ui.text.micro, ui.tone.muted)}>
-          <ConsentLine segments={noticeConsentSegments(t)} />{" "}
+        {/* `linkClassName`: `ConsentLine` defaults to `--brand-primary`
+            (= `--ui-ink`), a fill colour used as a foreground — BG-0083, and
+            1.25:1 on dark. `leading-relaxed` was a Tailwind literal on a line
+            that wraps in both languages, where the leading token is
+            redeclared for Arabic (BG-0124) and a bare 1.625 is not. */}
+        <p
+          className={cn(
+            "text-center",
+            ui.text.micro,
+            "leading-[var(--ui-leading-copy)]",
+            ui.tone.muted,
+          )}
+        >
+          <ConsentLine segments={noticeConsentSegments(t)} linkClassName={authLinkClass.consent} />{" "}
           <Link
             to="/auth/login"
             search={{ next }}

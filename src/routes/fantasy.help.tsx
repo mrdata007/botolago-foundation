@@ -3,8 +3,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FplHeader, FplPill } from "@/components/fpl/primitives";
-import { ui } from "@/components/ui-kit";
+import { ui, UiHeader, UiPill } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -52,20 +51,27 @@ const SECTIONS: Array<{
  * `bg-white` with a hand-rolled `rgba()` shadow, and the collapsed chevron
  * cell took `text-white` on an ink fill — both un-themed, so the expanded
  * and collapsed states read at ~1.1:1 against a dark card.
+ *
+ * The header and the section pills now come straight from the kit rather than
+ * through `components/fpl/primitives`. `FplHeader title backTo` was
+ * `UiHeader` with `tone="gradient"` and its history fallback suppressed by
+ * the explicit `backTo`, and `FplPill` on its default tone was `UiPill` —
+ * same elements, same classes, one indirection fewer. That adapter is a
+ * migration seam, not a layer this screen needs.
  */
 function HelpPage() {
   const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   return (
     <FantasyFrame background="white">
-      <FplHeader title={t("fpl.help_title")} backTo="/fantasy" />
+      <UiHeader title={t("fpl.help_title")} tone="gradient" backTo="/fantasy" />
       <p className={cn("pt-4", ui.space.gutter, ui.text.section, ui.tone.default)}>
         {t("fpl.how_can_we_help")}
       </p>
       {SECTIONS.map((section) => (
         <section key={section.title} className="mt-4">
           <div className={ui.space.gutter}>
-            <FplPill className="rounded-b-none px-4 py-2">{t(section.title)}</FplPill>
+            <UiPill className="rounded-b-none px-4 py-2">{t(section.title)}</UiPill>
             <div className={ui.rule.block} />
           </div>
           <ul className={cn("mt-2 space-y-2", ui.space.gutter)}>

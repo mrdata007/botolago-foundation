@@ -83,11 +83,17 @@ export function RankingsPodium({
                   </span>
                 )}
                 {s.rank === 1 ? (
+                  // Centred with `inset-x-0` + `mx-auto`, not `start-1/2` +
+                  // `-translate-x-1/2`. A translate is physical: `start-1/2`
+                  // mirrors to `right: 50%` under `dir="rtl"`, where centring
+                  // needs `+50%`, so the negative shift ran the wrong way and
+                  // left the crown one full crown-width (16px) off the crest it
+                  // marks — visible on /fantasy/rankings in Arabic. The
+                  // symmetric inset plus auto margins centres in both
+                  // directions with nothing to mirror, which is the same
+                  // recipe `ui.hitArea` uses.
                   <Crown
-                    className={cn(
-                      "absolute -top-3 start-1/2 h-4 w-4 -translate-x-1/2",
-                      ui.tone.ink,
-                    )}
+                    className={cn("absolute inset-x-0 -top-3 mx-auto h-4 w-4", ui.tone.ink)}
                     aria-hidden
                   />
                 ) : null}

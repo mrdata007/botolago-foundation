@@ -1,15 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import {
-  AuthShell,
-  AuthPrimaryButton,
-  AuthSecondaryButton,
-  AuthFieldError,
-  AuthFieldLabel,
-  authFieldClass,
-} from "@/components/auth/AuthShell";
-import { ui } from "@/components/ui-kit";
+import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import { ui, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
@@ -82,23 +75,24 @@ function ForgotPage() {
   return (
     <AuthShell title={t("auth.forgot.title")} subtitle={t("auth.forgot.subtitle")}>
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
-        <div>
-          <AuthFieldLabel htmlFor={emailId}>{t("auth.email")}</AuthFieldLabel>
-          <input
-            id={emailId}
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError(null);
-            }}
-            aria-invalid={!!error}
-            className={authFieldClass}
-          />
-          <AuthFieldError id={`${emailId}-err`}>{error && t(error)}</AuthFieldError>
-        </div>
+        {/* The hand-rolled field used to render an error line the input was
+            never described by: `aria-describedby` was missing here, so the
+            message was visible and announced but not attached to the field.
+            `UiInput` wires it from the same `error` prop that paints it. */}
+        <UiInput
+          id={emailId}
+          label={t("auth.email")}
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setError(null);
+          }}
+          error={error ? t(error) : undefined}
+          reserveError
+        />
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {submitting ? t("auth.submitting") : t("auth.forgot.cta")}

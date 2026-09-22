@@ -301,7 +301,18 @@ export const BASELINES: Baselines = {
   // replaced hardcoded English "DGW"/"BGW" in the Calendrier tab) coming off
   // the unreferenced list, and W4 unchanged because BG-0095 added no dynamic
   // call site — its new copy is `cond ? t("a") : t("b")` throughout.
-  W3: 253,
+  // Design migration, `fpl-primitives` lane. `FplRankMovement` was retired in
+  // favour of the kit's `UiRankMovement`, and it was the only consumer of
+  // `fpl.rank.up/.down/.same` — a DUPLICATE set. The live standings tables
+  // (fantasy.leagues.$leagueId, LeagueTable) pass `fantasy.rank.*`, which is
+  // the set the product actually renders and which is unaffected.
+  //
+  // So three keys come onto the unreferenced list and the count rises to 256.
+  // The duplicates are deliberately NOT deleted here: this pass is a design
+  // migration and does not change i18n, and a provably dead key is cheaper to
+  // carry than a dictionary edit smuggled into a restyle. Deleting them is a
+  // clean follow-up that lands W3 back at 253.
+  W3: 256,
   W4: 77,
 };
 

@@ -35,6 +35,20 @@ const mobileItems = fantasyPrimaryItems.filter((item) => item.to !== "/fantasy/l
  * `ui.surface.bar` on `--ui-shadow-raised`, the active tint is composed from
  * `--ui-ink-fg` rather than the legacy brand pair, and the labels take
  * `ui.text.micro` instead of a hardcoded 10px.
+ *
+ * THE LEDGER'S "zero references" IS CORRECT — verified, not taken on trust.
+ * Searching the whole tree for `FantasyMobileNav` returns this file's own
+ * export, the surface inventory table and a BG-0094 evidence dump, and
+ * nothing that renders it. The phone chrome the app actually mounts is the
+ * shared `BottomNav`.
+ *
+ * ITS MENU IS ALSO BLOCKED ON THE KIT, for the reason written out in
+ * `FantasySubNav`: the items are `<Link>`s and `UiMenuItem` takes `onSelect`
+ * with no `asChild`, so moving them onto `UiMenu` would cost the `href` —
+ * middle-click, open-in-new-tab, the link role — which is a navigation change
+ * rather than a restyle. The V1 dropdown and its ~32px items therefore stay
+ * put here too. Converting a nav nobody mounts, in the one way available, is
+ * churn a reviewer cannot check against a rendered screen.
  */
 export function FantasyMobileNav() {
   const { t, dir } = useI18n();

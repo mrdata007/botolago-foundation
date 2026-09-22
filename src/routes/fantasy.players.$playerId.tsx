@@ -216,7 +216,17 @@ function PlayerDetailPage() {
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-strong)]",
                 ui.focus,
-                active ? cn(ui.surface.card, "text-[color:var(--ui-ink-fg)]") : ui.tone.muted,
+                // The selected tab paints exactly what `UiSegmented`'s does:
+                // the surface fill, the card shadow and the brand foreground.
+                // It used to borrow `ui.surface.card` for that — which also
+                // carries `rounded-[var(--ui-radius-control)]`, and `cn()`
+                // merged it over the `ui.radius.segment` two lines above, so
+                // the selected tab rendered at 6px while the token set says a
+                // selected tab is 8px. Spelling the fill keeps the radius the
+                // one this element asked for.
+                active
+                  ? cn("bg-[color:var(--ui-surface)] shadow-[var(--ui-shadow-card)]", ui.tone.ink)
+                  : ui.tone.muted,
               )}
             >
               {t(it.label)}

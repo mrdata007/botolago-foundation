@@ -1019,6 +1019,31 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-mesh-glass: color-mix(in srgb, var(--ui-on-ink-plain) 10%, transparent);
   --ui-mesh-rule: color-mix(in srgb, var(--ui-on-ink-plain) 20%, transparent);
 
+  /* ---- The per-route wash -----------------------------------------
+     `PageBackground` washes a 14% tint of one colour into the block
+     start of the page, and the tint is how a reader knows at a glance
+     which part of the product they are in.
+
+     It used to read `--brand-accent`, `--accent-indigo`,
+     `--accent-emerald` and `--accent-cyan` under a comment claiming
+     "all five are existing semantic tokens, so a theme switch carries
+     them". They are tokens; the claim was wrong. All four are declared
+     once on `:root` and never under `.dark`, so the wash kept its
+     light-theme tint behind a dark page.
+
+     Folding them onto the three accents the kit already had would have
+     made four of the six families identical — the distinction itself
+     is the feature. So the wash gets its own themed ramp: the same six
+     hues, now with dark counterparts, each one a step lighter and less
+     saturated there because a tint on a dark page reads heavier at the
+     same chroma. */
+  --ui-wash-home: oklch(0.62 0.19 256);
+  --ui-wash-news: oklch(0.55 0.16 275);
+  --ui-wash-matches: oklch(0.66 0.14 155);
+  --ui-wash-fantasy: oklch(0.75 0.13 220);
+  --ui-wash-profile: oklch(0.55 0.16 275);
+  --ui-wash-neutral: var(--ui-ink);
+
   /* ---- Accents: the two stops of the Fantasy CTA gradient -------- */
   --ui-accent-spring: oklch(0.88 0.19 152);
   --ui-accent-sky: oklch(0.88 0.11 205);
@@ -1156,6 +1181,13 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-on-ink: oklch(0.88 0.11 205);
   --ui-on-ink-plain: oklch(0.97 0.01 250);
   --ui-on-grad-header: oklch(0.97 0.01 250);
+
+  --ui-wash-home: oklch(0.7 0.14 256);
+  --ui-wash-news: oklch(0.66 0.12 275);
+  --ui-wash-matches: oklch(0.72 0.11 155);
+  --ui-wash-fantasy: oklch(0.78 0.1 220);
+  --ui-wash-profile: oklch(0.66 0.12 275);
+  --ui-wash-neutral: var(--ui-ink);
 
   --ui-accent-spring: oklch(0.82 0.18 152);
   --ui-accent-sky: oklch(0.82 0.11 205);

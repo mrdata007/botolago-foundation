@@ -15,6 +15,15 @@ import { UiPitchSurface } from "@/components/ui-kit";
  * themed from `--ui-pitch-*`. Rows read GK → DEF → MID → FWD here as they do
  * on every other pitch; the old top-to-bottom FWD-first order was the only
  * place in Fantasy that inverted them.
+ *
+ * NOTHING RENDERS THIS TODAY. Searched the whole tree for `fantasy/Pitch` and
+ * for `<Pitch`: the only hits are this file, `FplPitch`'s comment naming it as
+ * the pitch it replaced, and a BG-0094 evidence dump. Every live pitch —
+ * `/fantasy/team`, `/fantasy/points`, `SquadBuilderScreen` — goes through
+ * `FplPitch`. Kept rather than deleted because it is the by-line address
+ * (`gk` / `def` / `mid` / `fwd`) rather than `FplPitch`'s `rows`, and deleting
+ * a public component is not a design lane's call; it carries no colour of its
+ * own any more, so it costs the theme nothing while it waits.
  */
 export function Pitch({
   gk,
