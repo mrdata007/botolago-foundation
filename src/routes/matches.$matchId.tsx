@@ -19,6 +19,7 @@ import { LineupsView } from "@/components/matches/LineupsView";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
@@ -91,9 +92,14 @@ function MatchDetailPage() {
     refetchInterval: (query) => (query.state.data?.match.status === "live" ? 30_000 : false),
     refetchIntervalInBackground: false,
   });
+  // Related news is a News surface, so it is gated on the same flag as every
+  // other one. `enabled` rather than a conditional hook: the query still has to
+  // be declared unconditionally, and with the flag off it never runs, so a
+  // match page makes no News request at all.
   const articlesQ = useQuery({
     queryKey: ["news", "feed", lang],
     queryFn: () => newsService.getArticles(lang),
+    enabled: NEWS_ENABLED,
   });
 
   const match = detailQ.data?.match;
@@ -316,8 +322,11 @@ function MatchDetailPage() {
         )}
       </div>
 
-      {/* Related news */}
-      {related.length > 0 && (
+      {/* Related news — hidden at launch (NEWS_ENABLED). The cards link to
+          /news/$articleId, whose beforeLoad redirects Home while the flag is
+          false, so without this gate an approved article puts a dead card on
+          the match page of every fixture involving either club. */}
+      {NEWS_ENABLED && related.length > 0 && (
         <Section index={1}>
           <SectionHeader title={t("matches.detail.related_news")} eyebrow={t("news.title")} />
           <div className="grid gap-2.5">

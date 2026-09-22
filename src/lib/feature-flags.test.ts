@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { DARK_MODE_ENABLED, NEWS_ENABLED, OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
@@ -21,6 +21,25 @@ import { primaryNavItems } from "@/components/shell/primary-nav";
  */
 const repoRoot = join(import.meta.dir, "..", "..");
 const read = (relative: string) => readFileSync(join(repoRoot, relative), "utf8");
+
+/**
+ * Block and line comments removed, so an assertion about CODE cannot be
+ * satisfied by prose. Crude on purpose: it does not understand strings or
+ * regex literals, which is acceptable because the only thing read out of the
+ * result is whether an identifier appears.
+ */
+const stripComments = (source: string): string =>
+  source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/[^\n]*/g, " ");
+
+/**
+ * Every shipped `.ts`/`.tsx` under `src/`, repo-relative, tests excluded — a
+ * test that references the News service is describing it, not exposing it.
+ */
+const sourceFiles = (): string[] =>
+  readdirSync(join(repoRoot, "src"), { recursive: true, encoding: "utf8" })
+    .filter((entry) => /\.tsx?$/.test(entry) && !/\.test\.tsx?$/.test(entry))
+    .map((entry) => join("src", entry))
+    .sort();
 
 describe("NEWS_ENABLED", () => {
   test("is a single boolean constant", () => {
@@ -53,10 +72,44 @@ describe("NEWS_ENABLED", () => {
     ["src/routes/profile.tsx", "{NEWS_ENABLED && ("],
     ["src/routes/index.tsx", "{NEWS_ENABLED && ("],
     ["src/lib/saved-articles.ts", "enabled: NEWS_ENABLED &&"],
+    ["src/routes/matches.$matchId.tsx", "{NEWS_ENABLED && related.length > 0 && ("],
   ])("%s gates its News surface on the flag", (file, needle) => {
     const source = read(file);
     expect(source).toContain('from "@/lib/feature-flags"');
     expect(source).toContain(needle);
+  });
+
+  /**
+   * The list above is maintained by hand, and the match page proves a hand-kept
+   * list is not enough: it called `newsService.getArticles` on every fixture and
+   * nobody noticed, because the stand-down had emptied the feed and an empty
+   * section is indistinguishable from a gated one until the first article is
+   * published.
+   *
+   * So this asserts the property instead of the enumeration. Anything that
+   * CALLS the News service is a News surface by definition and must reference
+   * the flag. A new consumer added without a gate fails here on the day it is
+   * written, not on the day an editor clicks publish.
+   */
+  test("every newsService caller references the flag", () => {
+    const callers = sourceFiles().filter((file) => {
+      const source = read(file);
+      // The module that DEFINES the service is not a surface that exposes it,
+      // and it names itself in its own comments. Excluded by identity rather
+      // than by a hardcoded path, so moving the file does not silently widen
+      // this test's blind spot to whatever lands at the old one.
+      if (/^export const newsService\b/m.test(source)) return false;
+      return /\bnewsService\s*\./.test(source);
+    });
+    // If this ever reads 0 the regex has drifted and the test is vacuous.
+    expect(callers.length).toBeGreaterThan(0);
+    // Comments are stripped first. Every gated file explains itself in prose
+    // that names the flag, so matching raw source would let a file satisfy
+    // this test with a comment saying it is gated while the code is not --
+    // which is precisely the failure mode being tested for. Verified by
+    // removing the gate from the match route and watching this go red.
+    const ungated = callers.filter((file) => !/\bNEWS_ENABLED\b/.test(stripComments(read(file))));
+    expect(ungated).toEqual([]);
   });
 
   test("both News routes redirect to Home rather than rendering an empty page", () => {
