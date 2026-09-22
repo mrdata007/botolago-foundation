@@ -33,6 +33,7 @@ import {
   type UpdateArticleResult,
 } from "./contracts";
 import { mapNewsError, NewsError } from "./errors";
+import type { SitemapNewsEntry } from "@/lib/sitemap";
 
 function throwIfError(error: PostgrestError | null): void {
   if (error) throw mapNewsError(error);
@@ -328,6 +329,25 @@ export class SupabaseNewsRepository implements NewsRepository {
     });
     throwIfError(error);
     return parse(editorialStoryPageSchema, data);
+  }
+
+  /** Public, listed editions for /sitemap.xml (api.news_sitemap_entries). */
+  async getSitemapEntries(limit = 5000): Promise<readonly SitemapNewsEntry[]> {
+    const { data, error } = await getNewsApi().rpc("news_sitemap_entries", { p_limit: limit });
+    throwIfError(error);
+    return parse(
+      z.array(
+        z.object({
+          id: z.string().uuid(),
+          language: z.enum(["fr", "ar"]),
+          updatedAt: z.string(),
+          translations: z.array(
+            z.object({ id: z.string().uuid(), language: z.enum(["fr", "ar"]) }),
+          ),
+        }),
+      ),
+      data,
+    );
   }
 
   /** Health of the pg_cron job that publishes scheduled editions. Not part of

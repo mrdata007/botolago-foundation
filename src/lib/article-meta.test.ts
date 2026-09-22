@@ -240,3 +240,77 @@ describe("serializeJsonLd", () => {
     expect(JSON.parse(serializeJsonLd(jsonLd))).toEqual(jsonLd);
   });
 });
+
+describe("French ↔ Arabic alternates (hreflang)", () => {
+  const FR = "9b2f0c1e-0000-4000-8000-0000000000f1";
+  const AR = "9b2f0c1e-0000-4000-8000-0000000000a1";
+
+  it("a French article with a public Arabic counterpart declares both, and French as x-default", () => {
+    const head = buildArticleHead(
+      detail({
+        id: FR,
+        language: "fr",
+        translations: [{ id: AR, language: "ar", slug: "ar-slug" }],
+      }),
+      FR,
+    );
+    expect(head.links).toEqual([
+      { rel: "canonical", href: `https://botolago.com/news/${FR}` },
+      { rel: "alternate", hrefLang: "fr", href: `https://botolago.com/news/${FR}` },
+      { rel: "alternate", hrefLang: "ar", href: `https://botolago.com/news/${AR}` },
+      { rel: "alternate", hrefLang: "x-default", href: `https://botolago.com/news/${FR}` },
+    ]);
+    expect(head.meta).toContainEqual({ property: "og:locale", content: "fr_FR" });
+    expect(head.meta).toContainEqual({ property: "og:locale:alternate", content: "ar_MA" });
+  });
+
+  it("the Arabic edition declares the same set from its own side, with its own canonical", () => {
+    const head = buildArticleHead(
+      detail({
+        id: AR,
+        language: "ar",
+        translations: [{ id: FR, language: "fr", slug: "fr-slug" }],
+      }),
+      "ar-slug",
+    );
+    expect(head.links[0]).toEqual({ rel: "canonical", href: `https://botolago.com/news/${AR}` });
+    expect(head.links).toContainEqual({
+      rel: "alternate",
+      hrefLang: "ar",
+      href: `https://botolago.com/news/${AR}`,
+    });
+    expect(head.links).toContainEqual({
+      rel: "alternate",
+      hrefLang: "x-default",
+      href: `https://botolago.com/news/${FR}`,
+    });
+    expect(head.meta).toContainEqual({ property: "og:locale", content: "ar_MA" });
+  });
+
+  it("no public counterpart (missing or unpublished): no alternates at all", () => {
+    for (const translations of [[], undefined]) {
+      const head = buildArticleHead(detail({ id: FR, translations }), FR);
+      expect(head.links).toEqual([{ rel: "canonical", href: `https://botolago.com/news/${FR}` }]);
+      expect(head.meta).not.toContainEqual(
+        expect.objectContaining({ property: "og:locale:alternate" }),
+      );
+    }
+  });
+
+  it("title, description, OG image and publication date are all present for a real article", () => {
+    const head = buildArticleHead(
+      detail({ seo: { title: "Titre SEO", description: "Description SEO" } }),
+      "x",
+    );
+    for (const expected of [
+      { title: "Titre SEO — BotolaGO" },
+      { name: "description", content: "Description SEO" },
+      { property: "og:title", content: "Titre SEO" },
+      { property: "og:description", content: "Description SEO" },
+      { property: "og:image", content: "https://media.example.test/article.jpg" },
+      { property: "article:published_time", content: "2026-08-02T12:00:00.000Z" },
+    ]) {
+      expect(head.meta).toContainEqual(expected);
+    }
+  });
+});

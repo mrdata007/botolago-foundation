@@ -85,6 +85,25 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
   // address bar, so the same article declared two different canonical URLs;
   // the share button in the page body already used `article.id`.
   const canonical = buildCanonicalArticleUrl(article?.id ?? articleId);
+  // hreflang: only when a counterpart is public (the API lists nothing else),
+  // and then self + every counterpart, each at its own canonical URL. French
+  // is the site's default language, so the French edition is x-default.
+  const editions = article?.translations?.length
+    ? [{ id: article.id, language: article.language }, ...article.translations]
+    : [];
+  const alternates: { rel: string; hrefLang: string; href: string }[] = editions.map((edition) => ({
+    rel: "alternate",
+    hrefLang: edition.language,
+    href: buildCanonicalArticleUrl(edition.id),
+  }));
+  const french = editions.find((edition) => edition.language === "fr");
+  if (french) {
+    alternates.push({
+      rel: "alternate",
+      hrefLang: "x-default",
+      href: buildCanonicalArticleUrl(french.id),
+    });
+  }
   const heroUrl = article ? resolveMediaUrl(article.hero) : undefined;
   const jsonLd = article ? buildArticleJsonLd(article, canonical) : null;
 
@@ -102,6 +121,10 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
       ...(article?.language
         ? [{ property: "og:locale", content: article.language === "ar" ? "ar_MA" : "fr_FR" }]
         : []),
+      ...(article?.translations ?? []).map((translation) => ({
+        property: "og:locale:alternate",
+        content: translation.language === "ar" ? "ar_MA" : "fr_FR",
+      })),
       ...(article?.publishedAt
         ? [{ property: "article:published_time", content: article.publishedAt }]
         : []),
@@ -118,7 +141,7 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
           ]
         : []),
     ],
-    links: [{ rel: "canonical", href: canonical }],
+    links: [{ rel: "canonical", href: canonical }, ...alternates],
     // A head script is declared flat: every key other than `children` becomes an
     // attribute, and the router supplies the `script` tag itself. Wrapping it as
     // {tag, attrs, children} -- which reads like the shape the router renders --
