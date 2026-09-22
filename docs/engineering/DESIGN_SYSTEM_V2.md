@@ -305,6 +305,10 @@ All exported from `@/components/ui-kit`. Props marked \* are required.
 | `UiInput`        | all `<input>` props + `label?`, `hint?`, `error?`, `reserveError?`, `trailing?`, `fieldClassName?`, `ref?`                                        | renders and wires its own `<label>`; `error` sets `aria-invalid`, announces as `role="alert"`, and is ADDED to any `aria-describedby` you pass rather than replacing it |
 | `UiSelect`       | all `<select>` props + `label?`, `hint?`, `error?`, `reserveError?`, `options?: {value,label,disabled?}[]`, `placeholder?`, `ref?`                | native `<select>` — already localised, already keyboard-correct, opens the platform picker                                                                              |
 
+`UiTextarea` is the same frame with a `<textarea>` in the box: same props
+minus `trailing`, since a control pinned to the inline-end edge of a
+fourteen-row writing surface has nothing to align to.
+
 `trailing` is the slot for a control that lives INSIDE the field box on its
 inline-end edge — the show/hide-password eye, a clear button, a unit. It has
 to be a prop rather than something you compose at the call site: the field
@@ -392,23 +396,43 @@ screen: build `UiPlayerPlate`s from your own data and hand them over.
 
 There were five overlapping variants. Reconciled:
 
-| Use                                                | Primitive                                                                                    |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| a static emphatic label ("Journée 14", "Gardiens") | `UiPill` — `tone: "ink" \| "action" \| "sunken"`                                             |
-| a status token in a row or card ("ACTIF", "+3")    | `UiBadge` — `tone: "neutral" \| "action" \| "positive" \| "negative"`, label type, uppercase |
-| something the user taps to filter/select           | `UiChip` — interactive, 44px, `selected` or `aria-current`                                   |
+| Use                                                | Primitive                                                                                                              |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| a static emphatic label ("Journée 14", "Gardiens") | `UiPill` — `tone: "ink" \| "action" \| "sunken"`                                                                       |
+| a status token in a row or card ("ACTIF", "+3")    | `UiBadge` — `tone: "neutral" \| "outline" \| "action" \| "positive" \| "negative" \| "caution"`, label type, uppercase |
+| something the user taps to filter/select           | `UiChip` — interactive, 44px, `selected` or `aria-current`                                                             |
 
 `src/components/ui/badge.tsx` (shadcn) is the legacy V1 badge; do not use it
 in converted screens.
 
+Two tones worth naming, because both were being reached for wrongly.
+`outline` is a state that must NOT read as spent — `neutral` sits on the
+sunken surface, which is how this product draws "used up". And `caution` is
+the one status colour that can only ever be a fill: `--ui-caution` measured
+1.78:1 as text, so the tone paints the amber and puts `--ui-on-caution` on
+it. A pending approval mapped onto `negative` reads as a failure; onto
+`neutral` it reads as already dealt with.
+
 ### States
 
-| Primitive                       | Props                                                                                               | Notes                                                                                 |
-| ------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `UiSkeleton`                    | `className?`                                                                                        | shimmer block on the sunken surface                                                   |
-| `UiStatePanel`                  | `kind*: "loading" \| "empty" \| "error"`, `title?`, `body?`, `action?`, `onRetry?`                  | the three non-ready states in one shape                                               |
-| `UiEmptyState` / `UiErrorState` | same minus `kind`                                                                                   | prefer these — they say what they are                                                 |
-| `UiAlert`                       | `tone?: "info" \| "positive" \| "caution" \| "negative"`, `title?`, `children?`, `icon?`, `action?` | an inline message about the screen you are on; `negative` announces as `role="alert"` |
+| Primitive                       | Props                                                                                                                            | Notes                                                                                 |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `UiSkeleton`                    | `className?`                                                                                                                     | shimmer block on the sunken surface                                                   |
+| `UiStatePanel`                  | `kind*: "loading" \| "empty" \| "error"`, `title?`, `body?`, `action?`, `onRetry?`                                               | the three non-ready states in one shape                                               |
+| `UiEmptyState` / `UiErrorState` | same minus `kind`                                                                                                                | prefer these — they say what they are                                                 |
+| `UiAlert`                       | `tone?: "info" \| "positive" \| "caution" \| "negative"`, `title?`, `children?`, `icon?`, `action?`, `role?`, `live?`, `testId?` | an inline message about the screen you are on; `negative` announces as `role="alert"` |
+
+`UiAlert` derives its role from its tone, which is the right default and the
+wrong answer twice. Pass `role="alert"` when the message is urgent whatever
+colour it is — "the revocation worker has not run" is an alert in amber. And
+pass `live={false}` for an alert inside a LIST: five alerts is five
+simultaneous live regions handing a screen reader five interruptions for one
+screen, so the list carries one region, or none, and the items opt out.
+
+`testId` renders `data-testid`, and `UiCard`, `UiSkeleton`, `UiStatePanel`,
+`UiEmptyState` and `UiErrorState` take it too. Without it, converting a named
+state block meant losing its hook or wrapping it in a spare `div` to carry
+one.
 
 `UiAlert` is not a toast and not a state replacement. If the screen has no
 data, that is `UiEmptyState`; if the fetch failed, `UiErrorState`.

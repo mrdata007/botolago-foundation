@@ -52,6 +52,7 @@ export {
   UiTBody,
   UiTD,
   UiTH,
+  UiTextarea,
   UiTHead,
   UiTR,
   type UiAlertTone,

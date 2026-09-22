@@ -35,6 +35,7 @@ import type {
   Ref,
   SelectHTMLAttributes,
   TdHTMLAttributes,
+  TextareaHTMLAttributes,
   ThHTMLAttributes,
 } from "react";
 import { useId } from "react";
@@ -42,6 +43,22 @@ import { useId } from "react";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { ui } from "./tokens";
+
+/**
+ * The test hook every state block needs and no state primitive forwarded.
+ *
+ * Nine Admin surfaces name their empty, loading and error blocks —
+ * `admin-news-empty`, `admin-audit-loading`, `admin-approvals-empty` — and
+ * the kit's own state components dropped the attribute, so converting a
+ * screen meant either losing its hook or wrapping the block in a spare `div`
+ * to carry one. `UiButton`, `UiInput` and `UiSelect` already forward it by
+ * spreading; this is the same affordance, named, for the ones that do not
+ * spread.
+ */
+interface UiTestable {
+  /** Rendered as `data-testid`. */
+  testId?: string;
+}
 
 /* ------------------------------------------------------------------ */
 /* Screen frame                                                        */
@@ -216,6 +233,7 @@ export function UiCard({
   className,
   role,
   id,
+  testId,
   ...aria
 }: {
   children: ReactNode;
@@ -225,11 +243,13 @@ export function UiCard({
   className?: string;
   role?: string;
   id?: string;
-} & AriaAttributes) {
+} & UiTestable &
+  AriaAttributes) {
   return (
     <Tag
       role={role}
       id={id}
+      data-testid={testId}
       {...aria}
       className={cn(
         ui.surface.card,
@@ -561,7 +581,7 @@ export function UiBadge({
    * the sunken surface, which is how this product draws "used up"; an
    * available-but-inactive state needs the page surface and a rule instead.
    */
-  tone?: "neutral" | "outline" | "action" | "positive" | "negative";
+  tone?: "neutral" | "outline" | "action" | "positive" | "negative" | "caution";
   className?: string;
 }) {
   return (
@@ -578,6 +598,13 @@ export function UiBadge({
           "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive)]",
         tone === "negative" &&
           "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative)]",
+        // Caution is the only status colour that cannot be a foreground: it is
+        // a light amber in both themes and measured 1.78:1 as text. So unlike
+        // its neighbours this tone is a FILL with `--ui-on-caution` on it —
+        // and the thing it marks is neither an error nor spent. A pending
+        // approval mapped onto `negative` reads as a failure; onto `neutral`
+        // it reads as already dealt with.
+        tone === "caution" && "bg-[color:var(--ui-caution)] text-[color:var(--ui-on-caution)]",
         className,
       )}
       style={tone === "action" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
@@ -633,10 +660,11 @@ export function UiBanner({ children, className }: { children: ReactNode; classNa
 /* Loading / empty / error                                             */
 /* ------------------------------------------------------------------ */
 
-export function UiSkeleton({ className }: { className?: string }) {
+export function UiSkeleton({ className, testId }: { className?: string } & UiTestable) {
   return (
     <div
       aria-hidden
+      data-testid={testId}
       className={cn("shimmer", ui.radius.control, className)}
       style={{ backgroundColor: "var(--ui-surface-sunken)" }}
     />
@@ -655,6 +683,7 @@ export function UiStatePanel({
   action,
   onRetry,
   className,
+  testId,
 }: {
   kind: "loading" | "empty" | "error";
   title?: ReactNode;
@@ -662,12 +691,17 @@ export function UiStatePanel({
   action?: ReactNode;
   onRetry?: () => void;
   className?: string;
-}) {
+} & UiTestable) {
   const { t } = useI18n();
 
   if (kind === "loading") {
     return (
-      <div role="status" aria-label={t("state.loading")} className={cn("py-6", className)}>
+      <div
+        role="status"
+        aria-label={t("state.loading")}
+        data-testid={testId}
+        className={cn("py-6", className)}
+      >
         <div
           className={cn(
             "mx-auto mb-4 flex items-center justify-center gap-2",
@@ -689,7 +723,7 @@ export function UiStatePanel({
 
   const isError = kind === "error";
   return (
-    <UiCard padding="lg" className={cn("text-center", className)}>
+    <UiCard padding="lg" testId={testId} className={cn("text-center", className)}>
       <div role={isError ? "alert" : "status"}>
         {isError ? (
           <AlertTriangle className="mx-auto h-7 w-7 text-[color:var(--ui-negative)]" aria-hidden />
@@ -727,7 +761,9 @@ export function UiAlert({
   icon,
   action,
   live,
+  role,
   className,
+  testId,
 }: {
   tone?: UiAlertTone;
   title?: ReactNode;
@@ -745,8 +781,16 @@ export function UiAlert({
    * about it — so the items have to be able to opt out.
    */
   live?: boolean;
+  /**
+   * Overrides the role the tone would pick. `negative` announces as an alert
+   * and everything else as a polite status, which is the right default — but
+   * a caution that says "the revocation worker has not run" is an alert
+   * whatever colour it is, and deriving the role from the colour quietly
+   * downgraded two of them.
+   */
+  role?: "status" | "alert";
   className?: string;
-}) {
+} & UiTestable) {
   const accent =
     tone === "positive"
       ? "var(--ui-positive)"
@@ -758,7 +802,8 @@ export function UiAlert({
 
   return (
     <div
-      role={live === false ? undefined : tone === "negative" ? "alert" : "status"}
+      role={live === false ? undefined : (role ?? (tone === "negative" ? "alert" : "status"))}
+      data-testid={testId}
       className={cn("flex items-start gap-3 p-3", ui.radius.control, className)}
       style={{
         backgroundColor: `color-mix(in oklab, ${accent} 14%, var(--ui-surface))`,
@@ -2028,5 +2073,70 @@ export function UiCheckbox({
         ) : null}
       </span>
     </label>
+  );
+}
+
+/**
+ * Multi-line text field.
+ *
+ * `UiInput`'s frame with a `<textarea>` in the box, because four writing
+ * surfaces in the editorial console were spelling out the field recipe by
+ * hand — a fifth copy of something the kit already owns, and each copy one
+ * more place for the border, the radius or the focus ring to drift.
+ *
+ * No `trailing` slot: a control pinned to the inline-end edge of a fourteen-
+ * row writing surface has nothing sensible to align to.
+ */
+export function UiTextarea({
+  label,
+  hint,
+  error,
+  reserveError,
+  id,
+  className,
+  fieldClassName,
+  ref,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label?: ReactNode;
+  hint?: ReactNode;
+  error?: ReactNode;
+  /** Reserve the error line and announce it politely. See `UiFieldFrame`. */
+  reserveError?: boolean;
+  className?: string;
+  fieldClassName?: string;
+  ref?: Ref<HTMLTextAreaElement>;
+}) {
+  const generated = useId();
+  const fieldId = id ?? generated;
+  return (
+    <UiFieldFrame
+      id={fieldId}
+      label={label}
+      hint={hint}
+      error={error}
+      reserveError={reserveError}
+      className={className}
+    >
+      <textarea
+        {...props}
+        id={fieldId}
+        ref={ref}
+        aria-invalid={error ? true : props["aria-invalid"]}
+        aria-describedby={describedBy(props["aria-describedby"], [
+          (error || reserveError) && `${fieldId}-error`,
+          !error && hint && `${fieldId}-hint`,
+        ])}
+        className={cn(
+          FIELD_BOX,
+          "resize-y py-3",
+          ui.radius.track,
+          ui.text.body,
+          ui.focus,
+          error && "border-[color:var(--ui-negative)]",
+          fieldClassName,
+        )}
+      />
+    </UiFieldFrame>
   );
 }
