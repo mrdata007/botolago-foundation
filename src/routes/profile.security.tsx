@@ -246,7 +246,11 @@ function SecurityPage() {
             <p
               role="status"
               aria-live="polite"
-              className={cn("mt-1 min-h-[14px]", ui.text.micro, "text-[color:var(--ui-positive)]")}
+              className={cn(
+                "mt-1 min-h-[calc(var(--ui-text-micro)*var(--ui-leading-flat))]",
+                ui.text.micro,
+                "text-[color:var(--ui-positive)]",
+              )}
             >
               {copied ? t("auth.mfa.secret_copied") : ""}
             </p>

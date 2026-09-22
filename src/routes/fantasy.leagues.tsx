@@ -14,6 +14,7 @@ import {
   UiEmptyState,
   UiHeader,
   UiInput,
+  UiLinkButton,
   UiPill,
   UiSegmented,
   UiSkeleton,
@@ -90,7 +91,11 @@ function InviteCode({ code }: { code: string }) {
           className={cn(
             "min-w-0 flex-1 select-all break-words font-mono",
             ui.text.meta,
-            "[font-weight:var(--ui-weight-heavy)] [font-variant-numeric:tabular-nums]",
+            // An invite code is a figure a reader copies character by
+            // character, so it is on the tabular rail like every other figure
+            // — via the token rather than a hand-rolled declaration.
+            "[font-weight:var(--ui-weight-heavy)]",
+            ui.text.tabular,
             ui.tone.default,
           )}
         >
@@ -176,22 +181,13 @@ function LeaguesBody() {
             {tab === "leagues" ? (
               <>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Link
-                    to="/fantasy/leagues/join"
-                    className={cn(
-                      "inline-flex items-center justify-center gap-1 px-2",
-                      "min-h-[var(--ui-tap-min)]",
-                      ui.radius.control,
-                      ui.surface.sunken,
-                      ui.tone.ink,
-                      ui.text.meta,
-                      "[font-weight:var(--ui-weight-heavy)]",
-                      ui.focus,
-                    )}
-                  >
-                    <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                  {/* Was a Link hand-dressed as a button, sitting in the same
+                      two-column grid as a real UiButton — two spellings of one
+                      control, side by side. */}
+                  <UiLinkButton to="/fantasy/leagues/join" size="sm" variant="outline">
+                    <Plus className="h-4 w-4" aria-hidden />
                     <span className="truncate">{t("fpl.join_leagues")}</span>
-                  </Link>
+                  </UiLinkButton>
                   <UiButton
                     size="sm"
                     variant="outline"

@@ -7,6 +7,7 @@ import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
+  UiAlert,
   UiButton,
   UiEmptyState,
   UiHeader,
@@ -237,7 +238,7 @@ function JoinLeagueBody() {
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}
-              fieldClassName={cn("text-center font-mono", "[font-variant-numeric:tabular-nums]")}
+              fieldClassName={cn("text-center font-mono", ui.text.tabular)}
             />
             <UiButton type="submit" className="mt-3" disabled={!code.trim() || busy}>
               {busy ? t("fpl.saving") : t("fpl.join_a_league")}
@@ -268,12 +269,9 @@ function JoinLeagueBody() {
               {t("fpl.head_to_head_help")}
             </p>
             {invalid ? (
-              <p
-                role="alert"
-                className={cn("mt-3 text-center", ui.text.secondary, ui.tone.negative)}
-              >
+              <UiAlert tone="negative" className="mt-3">
                 {t("state.error")}
-              </p>
+              </UiAlert>
             ) : null}
             <UiButton
               className="mt-4"

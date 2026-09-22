@@ -10,7 +10,7 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { ErrorState, LoadingState } from "@/components/common/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import { MatchTabs, type MatchTabKey } from "@/components/matches/MatchTabs";
 import { EventTimeline } from "@/components/matches/EventTimeline";
@@ -298,17 +298,9 @@ function MatchDetailPage() {
             <Section index={0}>
               <SectionHeader title={t("matches.detail.head_to_head")} eyebrow="H2H" />
               {h2h.length === 0 ? (
-                <div
-                  className={cn(
-                    "border border-dashed border-[color:var(--ui-rule)] px-4 py-6 text-center",
-                    ui.radius.control,
-                    ui.surface.sunken,
-                    ui.text.secondary,
-                    ui.tone.muted,
-                  )}
-                >
-                  {t("matches.detail.no_h2h")}
-                </div>
+                // Was a hand-rolled copy of `EmptyState compact` — the same
+                // dashed rule, sunken fill, padding and type, spelled out.
+                <EmptyState compact>{t("matches.detail.no_h2h")}</EmptyState>
               ) : (
                 <div className="grid gap-2">
                   {h2h.map((m) => {
@@ -378,11 +370,14 @@ function StandingsCard({
         {name}
         {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
         <div className={cn("mt-0.5 flex items-center gap-2", ui.text.label, ui.tone.muted)}>
-          <span className={cn(ui.text.tabular, ui.tone.default)}>#{row.position}</span>
+          {/* Position, points and goal difference are figures a reader scans
+              down a table, so they take the stat ramp rather than prose that
+              happens to be tabular. */}
+          <span className={cn(ui.stat.sm, ui.tone.default)}>#{row.position}</span>
           <span aria-hidden>·</span>
-          <span className={ui.text.tabular}>{row.points} pts</span>
+          <span className={ui.stat.sm}>{row.points} pts</span>
           <span aria-hidden>·</span>
-          <span className={ui.text.tabular}>
+          <span className={ui.stat.sm}>
             {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
           </span>
         </div>
