@@ -275,7 +275,16 @@ function HomeContent() {
                   const home = clubById(m.homeClubId);
                   const away = clubById(m.awayClubId);
                   if (!home || !away) return null;
-                  return <MatchCard key={m.id} match={m} home={home} away={away} variant="list" />;
+                  return (
+                    <MatchCard
+                      key={m.id}
+                      match={m}
+                      home={home}
+                      away={away}
+                      variant="list"
+                      listGameweek={gwQ.data?.number}
+                    />
+                  );
                 })}
               </div>
             </div>
@@ -588,8 +597,18 @@ function GameweekBand({
   gameweek?: { number: number; deadline: string };
 }) {
   const { t } = useI18n();
-  const deadlineAhead =
-    gameweek !== undefined && new Date(gameweek.deadline).getTime() > Date.now();
+  // The band's own clock, so the deadline row leaves when the deadline passes
+  // rather than sitting at "0j 0h 0min" until something else re-renders Home.
+  // One timer, set for the deadline itself; nothing ticks once it has passed.
+  const deadlineMs = gameweek ? new Date(gameweek.deadline).getTime() : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (deadlineMs === null || deadlineMs <= now) return;
+    // setTimeout holds a 32-bit delay; a longer wait just re-arms on wake.
+    const id = setTimeout(() => setNow(Date.now()), Math.min(deadlineMs - now + 250, 2 ** 31 - 1));
+    return () => clearTimeout(id);
+  }, [deadlineMs, now]);
+  const deadlineAhead = gameweek !== undefined && deadlineMs !== null && deadlineMs > now;
   return (
     <section
       className={cn(

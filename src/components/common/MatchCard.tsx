@@ -78,6 +78,7 @@ export function MatchCard({
   glass = true,
   showVenue = false,
   variant = "row",
+  listGameweek,
   extras,
 }: {
   match: Match;
@@ -86,6 +87,10 @@ export function MatchCard({
   glass?: boolean;
   showVenue?: boolean;
   variant?: "row" | "compact" | "list";
+  /** List only: the gameweek the surrounding page already names. A row from
+   *  any other round keeps its "J. n" tag, so a fixture list that spans two
+   *  rounds never files a match under the wrong one. */
+  listGameweek?: number;
   extras?: MatchCardExtras;
 }) {
   const { t, tr, lang } = useI18n();
@@ -112,8 +117,16 @@ export function MatchCard({
     month: "short",
   }).format(kickoff);
 
-  const home_s = tr(home.shortName);
-  const away_s = tr(away.shortName);
+  // The list has two lines per club, so a short name that is only a code
+  // ("WCA") gives way to the club's name. Short names that are already words
+  // stay: the full Arabic names ("الدفاع الحسني الجديدي") need a third line.
+  const listName = (club: Club) => {
+    const short = tr(club.shortName);
+    return /^[A-Z0-9]{2,6}$/.test(short.trim()) ? tr(club.name) : short;
+  };
+  const home_s = isList ? listName(home) : tr(home.shortName);
+  const away_s = isList ? listName(away) : tr(away.shortName);
+  const showRoundTag = isList && match.gameweek !== listGameweek;
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
 
@@ -360,6 +373,11 @@ export function MatchCard({
             {/* A scheduled row needs nothing under its time; any other state
                 changes how the row is read, so it keeps its chip here. */}
             {isList && status !== "scheduled" ? statusChip : null}
+            {showRoundTag ? (
+              <span className={cn(ui.text.label, ui.text.tabular, ui.tone.muted)}>
+                {t("matches.gameweek")} {match.gameweek}
+              </span>
+            ) : null}
           </div>
 
           <div
