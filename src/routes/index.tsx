@@ -1,3 +1,4 @@
+import createTeamArt from "@/assets/illustrations/create-team.webp";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
@@ -581,11 +582,21 @@ function plain(text: string): string {
 function CreateTeamLink({ canCreate }: { canCreate: boolean }) {
   const { t } = useI18n();
   return (
-    <UiLinkButton to={canCreate ? "/fantasy/create" : "/fantasy"} className="w-full">
-      <Trophy className="h-4 w-4 shrink-0" aria-hidden />
-      <span className="truncate">{t(canCreate ? "fantasy.create.title" : "fantasy.title")}</span>
-      <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-    </UiLinkButton>
+    <UiCard padding="md" className="flex flex-col items-center gap-3">
+      <img
+        src={createTeamArt}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="h-28 w-auto max-w-full object-contain"
+      />
+      <UiLinkButton to={canCreate ? "/fantasy/create" : "/fantasy"} className="w-full">
+        <Trophy className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">{t(canCreate ? "fantasy.create.title" : "fantasy.title")}</span>
+        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+      </UiLinkButton>
+    </UiCard>
   );
 }
 

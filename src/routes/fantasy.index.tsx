@@ -1,3 +1,5 @@
+import fantasyHeroPhoto from "@/assets/photos/fantasy-hero.webp";
+import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import rankingCardPhoto from "@/assets/photos/ranking-card.webp";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -156,12 +158,31 @@ function FantasyHub() {
         )}
         style={{ backgroundImage: "var(--ui-grad-hero)" }}
       >
-        <h1 className="pt-6">
+        {/* A floodlit pitch on the end side of the hero, fading into the
+            gradient before it reaches the title. Decorative. */}
+        <img
+          src={fantasyHeroPhoto}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_45%] rtl:-scale-x-100 sm:h-full sm:w-1/2"
+          style={{
+            // Faded towards the title and at its lower edge, so it has no
+            // hard border inside the gradient.
+            maskImage:
+              "linear-gradient(to left, black 25%, transparent 75%), linear-gradient(to bottom, black 55%, transparent 100%)",
+            maskComposite: "intersect",
+            WebkitMaskImage:
+              "linear-gradient(to left, black 25%, transparent 75%), linear-gradient(to bottom, black 55%, transparent 100%)",
+            WebkitMaskComposite: "source-in",
+          }}
+        />
+        <h1 className="relative pt-6">
           <FantasyBrand endorser="mobile" />
         </h1>
-        <div className="mt-4">{teamCard}</div>
+        <div className="relative mt-4">{teamCard}</div>
 
-        <UiCard className="mt-3 text-center" padding="md">
+        <UiCard className="relative mt-3 text-center" padding="md">
           {screen.phase === "ready" || screen.phase === "guest" || screen.phase === "no_team" ? (
             <>
               {gameweek ? (
@@ -546,11 +567,11 @@ function LeaguesAndCups({
           <div className="mt-4">
             <UiPill>{t("fpl.private_leagues")}</UiPill>
             {phase !== "ready" || !hasTeam ? (
-              <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
+              <NoLeaguesNote text={t("fpl.no_leagues")} />
             ) : leaguesLoading ? (
               <UiSkeleton className="my-3 h-10" />
             ) : leagues.length === 0 ? (
-              <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
+              <NoLeaguesNote text={t("fpl.no_leagues")} />
             ) : (
               <LeagueTable
                 caption={t("fpl.private_leagues")}
@@ -775,6 +796,23 @@ function ToggleRow({
           />
         </span>
       </button>
+    </div>
+  );
+}
+
+/** "No private leagues yet", with the same spot art as the leagues page. */
+function NoLeaguesNote({ text }: { text: string }) {
+  return (
+    <div className="flex items-center gap-3 px-1 py-3">
+      <img
+        src={emptyLeaguesArt}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="h-14 w-auto shrink-0 object-contain"
+      />
+      <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
     </div>
   );
 }
