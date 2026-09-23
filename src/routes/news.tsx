@@ -51,24 +51,31 @@ function redirectWhileNewsIsHidden(): void {
 
 export const Route = createFileRoute("/news")({
   beforeLoad: redirectWhileNewsIsHidden,
-  head: () => ({
-    meta: [
-      { title: "Actualités — BotolaGO" },
-      {
-        name: "description",
-        content:
-          "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
-      },
-      { property: "og:title", content: "Actualités — BotolaGO" },
-      { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/news` },
-      {
-        property: "og:description",
-        content:
-          "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
-      },
-    ],
-    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/news` }],
-  }),
+  head: ({ matches }) => {
+    const isArticlePage = matches.some(
+      (match) => (match as { routeId: string }).routeId === "/news/$articleId",
+    );
+    return {
+      meta: [
+        { title: "Actualités — BotolaGO" },
+        {
+          name: "description",
+          content:
+            "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
+        },
+        { property: "og:title", content: "Actualités — BotolaGO" },
+        { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/news` },
+        {
+          property: "og:description",
+          content:
+            "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
+        },
+      ],
+      // The article child declares its own canonical; parent layout links are
+      // retained alongside child links by TanStack Router.
+      links: isArticlePage ? [] : [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/news` }],
+    };
+  },
   component: NewsRoute,
 });
 

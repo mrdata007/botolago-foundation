@@ -94,7 +94,7 @@ describe("robots.txt and crawlable noindex pages", () => {
     const canonicalByPath: Record<string, string> = {
       "/": "${PUBLIC_SITE_ORIGIN}/",
       "/matches": "${PUBLIC_SITE_ORIGIN}/matches",
-      "/fantasy": "FANTASY_URL",
+      "/fantasy": "FANTASY_HUB_URL",
       "/fantasy/rules": "RULES_URL",
       "/privacy": "PRIVACY_URL",
       "/terms": "TERMS_URL",
@@ -102,7 +102,7 @@ describe("robots.txt and crawlable noindex pages", () => {
     const routeByPath: Record<string, string> = {
       "/": "index.tsx",
       "/matches": "matches.index.tsx",
-      "/fantasy": "fantasy.tsx",
+      "/fantasy": "fantasy.index.tsx",
       "/fantasy/rules": "fantasy.rules.tsx",
       "/privacy": "privacy.tsx",
       "/terms": "terms.tsx",
@@ -112,5 +112,11 @@ describe("robots.txt and crawlable noindex pages", () => {
       const source = readFileSync(join(import.meta.dir, "../routes", routeByPath[path]), "utf8");
       expect(source, `${path} should declare its sitemap canonical`).toContain(canonical);
     }
+
+    const fantasyLayout = readFileSync(join(import.meta.dir, "../routes/fantasy.tsx"), "utf8");
+    expect(fantasyLayout).not.toContain('rel: "canonical"');
+    const newsLayout = readFileSync(join(import.meta.dir, "../routes/news.tsx"), "utf8");
+    expect(newsLayout).toContain('match.routeId === "/news/$articleId"');
+    expect(newsLayout).toContain("links: isArticlePage ? [] :");
   });
 });
