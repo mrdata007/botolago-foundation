@@ -159,7 +159,11 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     await login(page);
     await gotoHydrated(page, "/fantasy/points", "fr");
     await expectSettled(page);
-    await expect(page.getByText(/^Journée \d+$/)).toBeVisible();
+    // The stepper shows its label and number as two stacked lines (BG-0094),
+    // so the gameweek is found through the group it names, not one text run.
+    const gameweek = page.getByRole("group", { name: /^Journée$/ });
+    await expect(gameweek).toBeVisible();
+    await expect(gameweek).toContainText(/Journée\s*\d+/);
     await expect(page.getByText(/^Points$/)).toBeVisible();
     // The squad renders even before the first calculation ("—" plates); the
     // backend-error state must never appear for a normal empty result.
