@@ -46,7 +46,7 @@ export function PhotoPageHeader({
         className="absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 35%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 70%, transparent) 100%)",
+            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 55%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 75%, transparent) 100%)",
         }}
       />
       <h1 className={cn("min-w-0", ui.text.hero)}>{title}</h1>
