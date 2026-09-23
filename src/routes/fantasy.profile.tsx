@@ -1,3 +1,4 @@
+import managerCover from "@/assets/photos/manager-cover.webp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Settings } from "lucide-react";
@@ -91,7 +92,14 @@ function TeamProfileBody() {
       </FplHeader>
       <FantasyScreenGate state={screen} next="/fantasy/profile">
         {tab === "season" && team ? (
-          <UiCard as="section" className="mx-3 mt-3" padding="md">
+          <UiCard as="section" className="mx-3 mt-3 overflow-hidden" padding="md">
+            <img
+              src={managerCover}
+              alt=""
+              aria-hidden
+              decoding="async"
+              className="-mx-4 -mt-4 mb-4 h-24 w-[calc(100%+2rem)] max-w-none object-cover rtl:-scale-x-100"
+            />
             <FplPill>{t("fpl.team_overview")}</FplPill>
             <div className="mt-2">
               <FplKeyValueRow

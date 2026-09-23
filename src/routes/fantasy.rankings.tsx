@@ -1,3 +1,4 @@
+import rankingEmptyArt from "@/assets/illustrations/ranking-empty.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -210,6 +211,7 @@ function RankingsPage() {
               // other sentence, because only then is the reader's query the
               // reason the list is empty.
               <UiEmptyState
+                illustration={search.trim() ? undefined : rankingEmptyArt}
                 title={
                   search.trim() ? t("fantasy.players.no_match") : t("fantasy.rankings.no_rank_yet")
                 }
