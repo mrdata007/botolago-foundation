@@ -9,7 +9,8 @@ interface LogoProps {
   /**
    * `color` is the blue wordmark for light surfaces; `light` is the all-white
    * one for the dark mesh and ink bands. The icon ignores it: it is a white
-   * app-icon tile in every context, like `public/favicon.png`.
+   * app-icon tile in every context. (`public/favicon.png` is the same "GO"
+   * with no tile: a transparent background, so it sits on the browser tab.)
    */
   tone?: "color" | "light";
   /** Wordmark height. `md` is the top bar; `sm` endorses a sub-brand; `lg` a hero. */
