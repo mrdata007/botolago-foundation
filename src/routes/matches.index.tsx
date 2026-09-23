@@ -1,3 +1,5 @@
+import matchesHeaderPhoto from "@/assets/photos/matches-header.webp";
+import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -217,16 +219,38 @@ function MatchesPage() {
 
   return (
     <AppShell backgroundVariant="matches">
-      <header className="flex items-end gap-3 pt-2">
-        <h1 className={cn("min-w-0", ui.text.hero, ui.tone.default)}>{t("matches.title")}</h1>
+      <header
+        className={cn(
+          "relative isolate mt-2 flex items-end gap-3 overflow-hidden px-4 pb-4 pt-8",
+          ui.radius.control,
+          ui.tone.onInkPlain,
+          "bg-[color:var(--ui-ink-deep)]",
+        )}
+      >
+        {/* Floodlit stands behind the title, the same night palette as Home's
+            gameweek band, under a navy scrim so the white title reads
+            wherever the lights land. Mirrored in Arabic. Decorative. */}
+        <img
+          src={matchesHeaderPhoto}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_40%] rtl:-scale-x-100"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 35%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 70%, transparent) 100%)",
+          }}
+        />
+        <h1 className={cn("min-w-0", ui.text.hero)}>{t("matches.title")}</h1>
 
         <div className="ms-auto w-[10.5rem] shrink-0">
           {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-          <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label, ui.tone.muted)}>
-            <CalendarRange
-              className="h-3.5 w-3.5 text-[color:var(--ui-on-surface-muted)]"
-              aria-hidden
-            />
+          <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label)}>
+            <CalendarRange className="h-3.5 w-3.5" aria-hidden />
             <span>{t("matches.season.label")}</span>
           </div>
           <Select
@@ -530,7 +554,9 @@ function MatchesPage() {
           <LoadingState />
         ) : seasonsQ.isError || matchesQ.isError ? null : (matchesQ.data?.standings.length ?? 0) ===
           0 ? (
-          <EmptyState compact>{t("matches.table.empty")}</EmptyState>
+          <EmptyState compact illustration={standingsSoonArt}>
+            {t("matches.table.empty")}
+          </EmptyState>
         ) : (
           <StandingsTable rows={matchesQ.data?.standings ?? []} clubById={clubById} />
         )}
