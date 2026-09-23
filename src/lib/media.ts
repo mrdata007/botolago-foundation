@@ -106,7 +106,21 @@ export const MEDIA_WIDTHS = {
  */
 export type MediaFrame =
   | { readonly kind: "crest"; readonly sizes: string }
-  | { readonly kind: "photo"; readonly sizes: string; readonly ratio: number };
+  | {
+      readonly kind: "photo";
+      readonly sizes: string;
+      readonly ratio: number;
+      /**
+       * The box's width / height from Tailwind's `sm` breakpoint up, when its
+       * aspect class changes there (`aspect-[4/3] sm:aspect-[16/10]`). That
+       * shape gets its own cut: a copy cut for one shape and cropped again to
+       * another shows a zoomed-in part of the photo, not what the box framed.
+       */
+      readonly smRatio?: number;
+    };
+
+/** Tailwind's default `sm` breakpoint, where cards change shape. */
+const SM_MEDIA = "(min-width: 640px)";
 
 /**
  * `sizes` for a picture as wide as the reading column. `UiScreen` caps the
@@ -139,10 +153,18 @@ function ownObjectPath(url: string, origin: string): string | undefined {
   return objectPath;
 }
 
+export interface ResponsiveMediaSource {
+  readonly media: string;
+  readonly srcSet: string;
+  readonly sizes: string;
+}
+
 export interface ResponsiveMedia {
   readonly src?: string;
   readonly srcSet?: string;
   readonly sizes?: string;
+  /** Cuts for wider screens, as `<source>`s ahead of the `<img>` in a `<picture>`. */
+  readonly sources?: readonly ResponsiveMediaSource[];
 }
 
 /**
@@ -167,8 +189,15 @@ export function responsiveMedia(
   const objectPath = origin ? ownObjectPath(url, origin) : undefined;
   if (!origin || !objectPath) return { src: url };
 
-  const srcSet = MEDIA_WIDTHS[frame.kind]
-    .map((width) => `${origin}${RENDER_ROUTE}${objectPath}?${resizeQuery(frame, width)} ${width}w`)
-    .join(", ");
-  return { src: url, srcSet, sizes: frame.sizes };
+  const cuts = (shape: MediaFrame) =>
+    MEDIA_WIDTHS[shape.kind]
+      .map(
+        (width) => `${origin}${RENDER_ROUTE}${objectPath}?${resizeQuery(shape, width)} ${width}w`,
+      )
+      .join(", ");
+  const sources =
+    frame.kind === "photo" && frame.smRatio !== undefined
+      ? [{ media: SM_MEDIA, srcSet: cuts({ ...frame, ratio: frame.smRatio }), sizes: frame.sizes }]
+      : undefined;
+  return { src: url, srcSet: cuts(frame), sizes: frame.sizes, ...(sources && { sources }) };
 }

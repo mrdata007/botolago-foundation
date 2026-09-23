@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
+import { ArrowLeft, Clock, Share2 } from "lucide-react";
 import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -16,9 +16,11 @@ import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
+import { readTimeLabel } from "@/lib/read-time";
+import { dictionaries } from "@/i18n/dictionaries";
 import { READING_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
-import { gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
+import { categoryLabel, gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/news/$articleId")({
@@ -134,7 +136,8 @@ function ArticlePage() {
     article.updatedAt !== article.publishedAt &&
     Math.abs(Date.parse(article.updatedAt) - Date.parse(article.publishedAt)) > 60_000;
 
-  const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const BackArrow = ArrowLeft;
   const canonicalUrl = buildCanonicalArticleUrl(article.id);
   const share = async () => {
     try {
@@ -271,7 +274,14 @@ function ArticlePage() {
             />
             {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
             <span className={cn(ui.text.label, ui.tone.default)}>
-              {article.primaryCategory.name}
+              {/* In the article's own language, like the headline around it:
+                  the eyebrow inherits the article's lang/dir, and an edition
+                  served in the other language must not carry a UI-language
+                  label under the wrong lang tag. */}
+              {categoryLabel(
+                article.primaryCategory,
+                (key) => (dictionaries[contentLanguage] as Record<string, string>)[key] ?? key,
+              )}
             </span>
           </div>
         )}
@@ -331,7 +341,7 @@ function ArticlePage() {
           <Dot />
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            {article.readingTimeMinutes} {t("news.read_min")}
+            {readTimeLabel(article.readingTimeMinutes, lang, t)}
           </span>
           {teamNames.length > 0 && (
             <>

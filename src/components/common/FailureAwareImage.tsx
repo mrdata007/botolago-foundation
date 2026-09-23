@@ -1,9 +1,11 @@
 import { useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from "react";
-import { responsiveMedia } from "@/lib/media";
+import { responsiveMedia, type ResponsiveMediaSource } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src?: string;
+  /** Wider-screen cuts of `src`, tried ahead of `srcSet` (see `responsiveMedia`). */
+  sources?: readonly ResponsiveMediaSource[];
   /**
    * Called once when this attempt's `src` fails to load. The component already
    * removes the broken image from layout on its own; this reports the same
@@ -17,6 +19,7 @@ function ImageAttempt({
   src,
   srcSet,
   sizes,
+  sources,
   decoding = "async",
   loading = "lazy",
   onFailed,
@@ -31,7 +34,7 @@ function ImageAttempt({
   if (!src || failed) return null;
   const useCopies = srcSet !== undefined && !copiesFailed;
 
-  return (
+  const image = (
     <img
       {...props}
       src={src}
@@ -48,6 +51,23 @@ function ImageAttempt({
         onFailed?.(src);
       }}
     />
+  );
+  if (!useCopies || !sources?.length) return image;
+
+  // `contents`: the `<picture>` adds no box, so the image still sizes and
+  // positions itself against the same parent as a bare `<img>` would.
+  return (
+    <picture className="contents">
+      {sources.map((source) => (
+        <source
+          key={source.media}
+          media={source.media}
+          srcSet={source.srcSet}
+          sizes={source.sizes}
+        />
+      ))}
+      {image}
+    </picture>
   );
 }
 
@@ -74,10 +94,11 @@ export function MediaImage({
   /**
    * How the box is drawn: its width as a `sizes` value (`"56px"`,
    * `READING_COLUMN_SIZES`) and its shape, width / height, which must match
-   * the aspect class in `className`. With it the photo is fetched as the
-   * resized WebP copy that fits; without it, as the original file.
+   * the aspect class in `className` -- `smRatio` too when that class changes
+   * at `sm:`. With it the photo is fetched as the resized WebP copy that fits;
+   * without it, as the original file.
    */
-  frame?: { readonly sizes: string; readonly ratio: number };
+  frame?: { readonly sizes: string; readonly ratio: number; readonly smRatio?: number };
   /**
    * Rendered inside this box, behind the photo, whenever there is no `src` or
    * the `src` that was given failed to load. It must position itself
@@ -110,6 +131,7 @@ export function MediaImage({
         src={src}
         srcSet={photo.srcSet}
         sizes={photo.sizes}
+        sources={photo.sources}
         alt={alt}
         loading={loading}
         fetchPriority={fetchPriority}

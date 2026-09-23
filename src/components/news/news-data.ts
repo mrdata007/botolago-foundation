@@ -2,6 +2,7 @@ import type { ArticleCardDto } from "@/backend/news/contracts";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { presentArticle } from "@/services/news";
 import type { Article } from "@/types/domain";
+import type { TranslationKey } from "@/i18n/dictionaries";
 
 /**
  * Pure, dependency-free helpers backing the /news landing page and article
@@ -23,6 +24,33 @@ export function publicNewsContext(): RepositoryContext {
 export interface CategoryOption {
   slug: string;
   name: string;
+}
+
+/**
+ * A category's label in the reader's language. The taxonomy's own `name` can
+ * be the raw slug ("for_you", "latest"), which then showed on the chips and
+ * the article eyebrow as-is, in English, in both languages. The five shipped
+ * slugs take the dictionary's label; anything else keeps the name it came
+ * with. Each key is a literal call so the i18n gate can see it (W4).
+ */
+export function categoryLabel(
+  category: CategoryOption,
+  t: (key: TranslationKey) => string,
+): string {
+  switch (category.slug) {
+    case "for_you":
+      return t("news.tab.for_you");
+    case "latest":
+      return t("news.tab.latest");
+    case "transfers":
+      return t("news.tab.transfers");
+    case "analysis":
+      return t("news.tab.analysis");
+    case "interviews":
+      return t("news.tab.interviews");
+    default:
+      return category.name;
+  }
 }
 
 /**

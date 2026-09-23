@@ -180,8 +180,14 @@ function PlayerDetailPage() {
         <div className="flex items-center gap-3 p-4">
           <JerseyVisual kit={kit} size={48} imageUrl={p.jerseyImageUrl} ariaLabel={tr(p.name)} />
           <div className="min-w-0 flex-1">
-            <h2 dir="auto" className={cn("truncate", ui.text.section, ui.tone.default)}>
-              {tr(p.name)}
+            {/* The heading follows the page direction, so in Arabic the name
+                sits against the jersey like its subtitle does. The name is its
+                own auto-direction block, shrunk to its width, so a long Latin
+                name is cut at its end ("Abdelkarim Benh…"), not its start. */}
+            <h2 className={cn(ui.text.section, ui.tone.default)}>
+              <span dir="auto" className="block w-fit max-w-full truncate">
+                {tr(p.name)}
+              </span>
             </h2>
             <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5", ui.text.meta)}>
               <span className={ui.tone.muted}>

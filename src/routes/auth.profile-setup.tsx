@@ -37,7 +37,7 @@ export const Route = createFileRoute("/auth/profile-setup")({
 const STEPS = 3;
 
 function ProfileSetupPage() {
-  const { t, tr, lang, setLanguage, dir } = useI18n();
+  const { t, tr, lang, setLanguage } = useI18n();
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
   const { next = "/" } = Route.useSearch();
@@ -75,8 +75,9 @@ function ProfileSetupPage() {
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
-  const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
-  const Back = dir === "rtl" ? ArrowRight : ArrowLeft;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const Arrow = ArrowRight;
+  const Back = ArrowLeft;
 
   const onFile = (f: File | null) => {
     if (!f) return;

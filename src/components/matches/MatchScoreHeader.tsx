@@ -58,6 +58,7 @@ export function MatchScoreHeader({
   // A postponed match has no day either, so the meta cell drops the date
   // rather than pairing a real weekday with "Date à confirmer".
   const displayedKickoff = unconfirmedDate ? displayedTime : `${dateFmt} · ${displayedTime}`;
+  const venue = tr(match.venue).trim();
 
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
@@ -81,7 +82,7 @@ export function MatchScoreHeader({
           Decorative. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-12 h-32">
         <img
-          src={stadiumPhotoFor(match.id)}
+          src={stadiumPhotoFor(match.id, "bright")}
           alt=""
           loading="lazy"
           decoding="async"
@@ -137,7 +138,7 @@ export function MatchScoreHeader({
         <div className="flex flex-col items-center px-1">
           {isLive || isFinished ? (
             <div
-              className="flex items-baseline gap-2 font-mono text-5xl font-black tabular-nums ltr:tracking-tight text-foreground sm:text-6xl"
+              className="flex items-baseline gap-2 text-5xl font-black tabular-nums ltr:tracking-tight text-foreground sm:text-6xl"
               aria-live={isLive ? "polite" : "off"}
             >
               <span>{hs}</span>
@@ -157,7 +158,7 @@ export function MatchScoreHeader({
                   // overflow-hidden on a phone.
                   unconfirmedDate || unconfirmedTime
                     ? cn("max-w-28 text-center", ui.text.secondary)
-                    : cn("font-mono", ui.text.tabular, "text-[calc(var(--ui-text-hero)*1.2)]"),
+                    : cn(ui.text.tabular, "text-[calc(var(--ui-text-hero)*1.2)]"),
                 )}
               >
                 {displayedTime}
@@ -200,7 +201,12 @@ export function MatchScoreHeader({
         </p>
       )}
 
-      <div className="relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3 sm:grid-cols-3">
+      <div
+        className={cn(
+          "relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3",
+          venue ? "sm:grid-cols-3" : "sm:grid-cols-2",
+        )}
+      >
         <MetaCell
           icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
           label={t("matches.detail.kickoff")}
@@ -211,11 +217,14 @@ export function MatchScoreHeader({
           label={t("matches.detail.competition")}
           value={t("matches.competition.botola")}
         />
-        <MetaCell
-          icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
-          label={t("matches.detail.venue")}
-          value={tr(match.venue)}
-        />
+        {/* No venue on record: no row, rather than a label over nothing. */}
+        {venue ? (
+          <MetaCell
+            icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
+            label={t("matches.detail.venue")}
+            value={venue}
+          />
+        ) : null}
       </div>
     </header>
   );

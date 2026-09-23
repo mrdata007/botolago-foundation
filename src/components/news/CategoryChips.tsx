@@ -1,7 +1,7 @@
 import { ui, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { CategoryOption } from "./news-data";
+import { categoryLabel, type CategoryOption } from "./news-data";
 
 /**
  * Content-discovery chips driven by real, currently-populated categories
@@ -32,7 +32,7 @@ export function CategoryChips({
           active={selected === category.slug}
           onClick={() => onSelect(selected === category.slug ? null : category.slug)}
         >
-          {category.name}
+          {categoryLabel(category, t)}
         </CategoryChip>
       ))}
     </div>

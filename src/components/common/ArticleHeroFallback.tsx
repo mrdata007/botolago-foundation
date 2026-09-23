@@ -1,7 +1,9 @@
-import wordmark from "@/assets/brand/botolago-wordmark-light.svg";
-import type { ArticleCategory, Club } from "@/types/domain";
-import { cn } from "@/lib/utils";
-import { ClubCrest } from "./ClubCrest";
+import platePhotoAnalysis from "@/assets/news/plate-analysis.webp";
+import platePhotoForYou from "@/assets/news/plate-for-you.webp";
+import platePhotoInterviews from "@/assets/news/plate-interviews.webp";
+import platePhotoLatest from "@/assets/news/plate-latest.webp";
+import platePhotoTransfers from "@/assets/news/plate-transfers.webp";
+import type { ArticleCategory } from "@/types/domain";
 
 /**
  * BG-0076 — the branded plate a News card paints where a hero photo would be.
@@ -13,13 +15,20 @@ import { ClubCrest } from "./ClubCrest";
  * a deliberate brand plate rather than a failed image. The content question
  * (what the French feed should actually contain) is BG-0065 and stays open.
  *
- * Three layers, in the order the task specifies:
+ * Two layers:
  *
  *   1. the category colour (`--news-plate-*`, declared for both themes) as
- *      the ground;
- *   2. the BotolaGO wordmark from `src/assets/brand/` as the base mark;
- *   3. the club crest, on top, only when the edition names exactly one club
- *      — `story_teams` with two or more clubs has no single crest to show.
+ *      the ground, which is also what shows while the photo decodes;
+ *   2. a stock photograph for the category (a stadium for news, a tactics
+ *      board for analysis, a signing desk for transfers, microphones for
+ *      interviews, supporters for "for you"), lightly tinted with the same
+ *      category colour. It used to be the BotolaGO wordmark, which repeated
+ *      on every card and sat under the headline on the lead card.
+ *
+ * There is no club crest on the plate any more. Every card already names its
+ * clubs in the crest row under the headline, so the plate's crest repeated
+ * it, collided with the category tag on the image-led card and covered most
+ * of the 56px thumbnail.
  *
  * Layout notes that matter more than the art direction:
  *
@@ -28,11 +37,11 @@ import { ClubCrest } from "./ClubCrest";
  *     any of `ArticleCard`'s five variants.
  *   - The gradient runs `to bottom`. An angle in `deg` is a physical
  *     direction and would land on the opposite edge under `dir="rtl"`.
- *   - The crest is placed with `start-`/`top-`, so it mirrors to the right
- *     edge in Arabic rather than sitting in a fixed corner.
  *   - `aria-hidden`: the card's `<Link>` already carries the accessible name,
  *     and a decorative plate must not add a second one. Nothing here is
  *     translated copy, so there is no string for the i18n gate to miss.
+ *   - The photos carry no text, logos or faces, so they never pass for the
+ *     article's own picture of a real event.
  */
 
 /** One plate colour per category. Spelled out so the set is exhaustive. */
@@ -46,69 +55,69 @@ const PLATE_TOKEN: Record<ArticleCategory, string> = {
 
 const CATEGORIES = Object.keys(PLATE_TOKEN) as readonly ArticleCategory[];
 
-/** Narrows a free-form slug (the detail DTO carries one) to a known category. */
-export function plateTokenForCategory(category: string | undefined): string {
-  const known = CATEGORIES.find((candidate) => candidate === category);
-  return PLATE_TOKEN[known ?? "latest"];
+/** One stock photograph per category, for the same exhaustive set. */
+const PLATE_PHOTO: Record<ArticleCategory, string> = {
+  for_you: platePhotoForYou,
+  latest: platePhotoLatest,
+  transfers: platePhotoTransfers,
+  analysis: platePhotoAnalysis,
+  interviews: platePhotoInterviews,
+};
+
+/** Where each photo is anchored when a box crops it (the 56px and 120px
+ *  squares, the 4:5 card): the microphones sit left of centre, and a centred
+ *  square cut through them. */
+const PLATE_POSITION: Partial<Record<ArticleCategory, string>> = {
+  interviews: "35% 50%",
+};
+
+function knownCategory(category: string | undefined): ArticleCategory {
+  return CATEGORIES.find((candidate) => candidate === category) ?? "latest";
 }
 
-/**
- * `sm` is for the small media boxes — the 56px `compact` thumbnail and the
- * 120px `horizontal` square — where a crest at `md` size would overflow the
- * plate. Everything else uses `md`.
- */
-export type ArticleHeroFallbackSize = "sm" | "md";
+/** Narrows a free-form slug (the detail DTO carries one) to a known category. */
+export function plateTokenForCategory(category: string | undefined): string {
+  return PLATE_TOKEN[knownCategory(category)];
+}
 
 export function ArticleHeroFallback({
   category,
-  clubIds,
-  clubs,
-  size = "md",
 }: {
   /** The edition's primary category; an unknown slug falls back to `latest`. */
   category?: string;
-  /** `story_teams` ids for this edition. A crest shows only when there is one. */
-  clubIds?: readonly string[];
-  /** Club directory, when the surface has one. Without it there is no crest. */
-  clubs?: readonly Club[];
-  size?: ArticleHeroFallbackSize;
 }) {
-  const token = plateTokenForCategory(category);
-  const soleClub =
-    clubIds?.length === 1 ? (clubs ?? []).find((club) => club.id === clubIds[0]) : undefined;
+  const known = knownCategory(category);
+  const token = PLATE_TOKEN[known];
 
   return (
     <div
       aria-hidden
-      data-article-hero-fallback={soleClub ? "crest" : "wordmark"}
-      className="absolute inset-0 grid place-items-center overflow-hidden"
+      data-article-hero-fallback="photo"
+      className="absolute inset-0 overflow-hidden"
       style={{
         backgroundImage: `linear-gradient(to bottom, var(${token}) 0%, color-mix(in oklab, var(${token}) 45%, var(--ui-ink-deep)) 100%)`,
       }}
     >
       <img
-        src={wordmark}
+        src={PLATE_PHOTO[known]}
         alt=""
-        width={1615}
-        height={288}
+        width={1440}
+        height={810}
+        loading="lazy"
         decoding="async"
         draggable={false}
-        data-article-hero-wordmark
-        className={cn(
-          "select-none object-contain opacity-90",
-          size === "sm" ? "w-[72%] max-w-[10rem]" : "w-[52%] max-w-[17rem]",
-        )}
+        data-article-hero-photo
+        className="absolute inset-0 h-full w-full select-none object-cover"
+        style={{ objectPosition: PLATE_POSITION[known] ?? "50% 50%" }}
       />
-      {soleClub && (
-        <ClubCrest
-          club={soleClub}
-          size={size === "sm" ? "sm" : "md"}
-          className={cn(
-            "absolute start-[7%] top-[7%] rounded-[var(--ui-radius-control)]",
-            size === "sm" ? "h-6 w-6" : "h-10 w-10",
-          )}
-        />
-      )}
+      {/* The category colour over the photo, so a transfers card and an
+          analysis card still read as different sections at a glance. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `linear-gradient(to bottom, color-mix(in oklab, var(${token}) 14%, transparent) 0%, transparent 45%)`,
+        }}
+      />
     </div>
   );
 }

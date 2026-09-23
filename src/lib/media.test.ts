@@ -97,6 +97,32 @@ describe("responsiveMedia", () => {
     expect(heightAt640(1)).toBe("640");
   });
 
+  test("a box that changes shape at sm gets a second set of cuts for wider screens", () => {
+    const heroUrl = resolveMediaUrl({ storagePath: "news/hero.jpg" }, SUPABASE_URL);
+    const lead = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "640px", ratio: 4 / 3, smRatio: 16 / 10 },
+      SUPABASE_URL,
+    );
+    const heightAt640 = (srcSet: string | undefined) =>
+      srcSet
+        ?.split(", ")
+        .find((candidate) => candidate.endsWith(" 640w"))
+        ?.match(/height=(\d+)/)?.[1];
+    // Phones get the 4:3 cut; from 640px up, a 16:10 one.
+    expect(heightAt640(lead.srcSet)).toBe("480");
+    expect(lead.sources).toHaveLength(1);
+    expect(lead.sources?.[0]?.media).toBe("(min-width: 640px)");
+    expect(lead.sources?.[0]?.sizes).toBe("640px");
+    expect(heightAt640(lead.sources?.[0]?.srcSet)).toBe("400");
+
+    // A box with one shape, and every crest, needs no second set.
+    expect(responsiveMedia(heroUrl, square, SUPABASE_URL).sources).toBeUndefined();
+    expect(
+      responsiveMedia(crestUrl, { kind: "crest", sizes: "28px" }, SUPABASE_URL).sources,
+    ).toBeUndefined();
+  });
+
   test("keeps the path encoding resolveMediaUrl applied, so every candidate is one token", () => {
     const encoded = resolveMediaUrl(
       { storagePath: "news/Équipe du jour/hero #1.webp" },
