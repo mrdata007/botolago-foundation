@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
+import { ArrowLeft, Clock, Share2 } from "lucide-react";
 import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -134,7 +134,8 @@ function ArticlePage() {
     article.updatedAt !== article.publishedAt &&
     Math.abs(Date.parse(article.updatedAt) - Date.parse(article.publishedAt)) > 60_000;
 
-  const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const BackArrow = ArrowLeft;
   const canonicalUrl = buildCanonicalArticleUrl(article.id);
   const share = async () => {
     try {
