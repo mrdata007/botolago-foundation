@@ -10,6 +10,19 @@ import {
   MATCH_TIME_ZONE,
 } from "@/lib/match-kickoff";
 import { ui } from "@/components/ui-kit";
+import stadiumNight from "@/assets/photos/stadium-night-800.webp";
+import stadiumGolden from "@/assets/photos/stadium-golden-800.webp";
+import stadiumDay from "@/assets/photos/stadium-day-800.webp";
+import stadiumRain from "@/assets/photos/stadium-rain-800.webp";
+
+/** Generic stadium photographs (no venue has its own yet). A match always
+ *  gets the same one: picked from its id, so it never changes on reload. */
+const STADIUM_PHOTOS = [stadiumNight, stadiumGolden, stadiumDay, stadiumRain] as const;
+function stadiumPhotoFor(matchId: string): string {
+  let hash = 0;
+  for (let i = 0; i < matchId.length; i += 1) hash = (hash * 31 + matchId.charCodeAt(i)) | 0;
+  return STADIUM_PHOTOS[Math.abs(hash) % STADIUM_PHOTOS.length];
+}
 
 /**
  * Live-first scoreboard header.
@@ -74,14 +87,26 @@ export function MatchScoreHeader({
         "animate-in fade-in-0 slide-in-from-bottom-1 duration-500 ease-out",
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-24 h-44 opacity-45"
-        style={{
-          background:
-            "radial-gradient(620px 260px at 50% 100%, color-mix(in oklab, var(--brand-primary) 24%, transparent) 0%, transparent 70%)",
-        }}
-      />
+      {/* A stadium photograph behind the crests and kick-off, starting below
+          the competition line and fading into the card surface at both ends,
+          so every line of text keeps the card's own foreground and contrast.
+          Decorative. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-12 h-32">
+        <img
+          src={stadiumPhotoFor(match.id)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover object-[50%_60%]"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, var(--background-elevated) 0%, color-mix(in oklab, var(--background-elevated) 50%, transparent) 25%, color-mix(in oklab, var(--background-elevated) 85%, transparent) 55%, var(--background-elevated) 72%)",
+          }}
+        />
+      </div>
 
       <div className="relative flex items-center justify-between gap-2">
         <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase ltr:tracking-[0.16em] text-[color:var(--brand-accent)]">

@@ -1,3 +1,5 @@
+import rankingCardPhoto from "@/assets/photos/ranking-card.webp";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -213,14 +215,25 @@ function FantasyHub() {
             ui.focus,
           )}
         >
+          {/* A trophy under stadium lights, the trophy on the far side of
+              the centred title, mirrored in Arabic; the ink scrim over it
+              keeps the white title and link on their contrast. */}
+          <img
+            src={rankingCardPhoto}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[80%_50%] rtl:-scale-x-100"
+          />
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-60"
+            className="pointer-events-none absolute inset-0"
             style={{
-              // Centred radial origins, so the highlight does not land on the
-              // opposite edge under `dir="rtl"`.
+              // A centred pool of ink behind the title (a centred origin reads
+              // the same in both directions) over a lighter scrim everywhere.
               background:
-                "radial-gradient(70% 140% at 50% 0%, var(--ui-accent-sky) 0%, transparent 62%), radial-gradient(80% 140% at 50% 100%, var(--ui-ink-deep) 0%, transparent 68%)",
+                "radial-gradient(55% 75% at 50% 50%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 0%, transparent 100%), color-mix(in oklab, var(--ui-ink-deep) 40%, transparent)",
             }}
           />
           {/* Prose, not a figure — the stat ramp is numerals only. */}
@@ -327,7 +340,9 @@ function FantasyHub() {
 
       {/* Follow BotolaGO */}
       <section className={cn("pt-6", ui.space.gutter)}>
-        <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.follow")}</h2>
+        <h2 className={cn(ui.text.section, ui.tone.default)}>
+          <BrandedText text={t("fpl.follow")} />
+        </h2>
         {/* Three tiles with News, two without it — the row stays balanced
             instead of leaving a gap where the News tile was. */}
         <div className={cn("mt-3 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
@@ -358,7 +373,9 @@ function FantasyHub() {
         // edge under `dir="rtl"`.
         style={{ backgroundImage: "var(--ui-grad-header)" }}
       >
-        <h2 className={ui.text.section}>{t("fpl.more_about")}</h2>
+        <h2 className={ui.text.section}>
+          <BrandedText text={t("fpl.more_about")} tone="light" />
+        </h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <MoreAboutLink to="/fantasy/rules">{t("fpl.rules")}</MoreAboutLink>
           <MoreAboutLink to="/fantasy/help">{t("fpl.help_rules")}</MoreAboutLink>

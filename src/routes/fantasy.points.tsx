@@ -1,3 +1,4 @@
+import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
@@ -420,7 +421,7 @@ function PointsBody() {
         </div>
       ) : !resultQ.isPending && !vm ? (
         <div className="px-4 py-3">
-          <UiEmptyState title={t("fpl.points_not_available")} />
+          <UiEmptyState illustration={pointsPendingArt} title={t("fpl.points_not_available")} />
         </div>
       ) : null}
     </>

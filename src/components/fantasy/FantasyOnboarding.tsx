@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { ui, UiButton, UiModal } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -108,7 +109,7 @@ export function FantasyOnboarding() {
     <UiModal
       open={open}
       onOpenChange={(v) => !v && finish()}
-      title={t("fantasy.onboarding.title")}
+      title={<BrandedText text={t("fantasy.onboarding.title")} />}
       description={t(steps[step].bodyKey)}
       footer={
         <div className="flex items-center justify-between gap-2">

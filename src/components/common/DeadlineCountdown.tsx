@@ -14,8 +14,8 @@ function diff(target: Date) {
 
 /**
  * `tone="onGradient"` is the Home gameweek band's figure: the same countdown
- * set as a stat in the band's own foreground, without the sunken pill, which
- * would read as a grey patch on the gradient.
+ * set as a stat in the band's own foreground colour (inherited), without the
+ * sunken pill, which would read as a grey patch on the band.
  */
 export function DeadlineCountdown({
   iso,
@@ -33,7 +33,7 @@ export function DeadlineCountdown({
 
   if (tone === "onGradient") {
     return (
-      <span className={cn("inline-flex items-center gap-1.5", ui.stat.md, ui.tone.onGradHeader)}>
+      <span className={cn("inline-flex items-center gap-1.5", ui.stat.md)}>
         <Timer className="h-4 w-4 shrink-0" aria-hidden />
         <span className="tabular-nums">
           {now.d}
