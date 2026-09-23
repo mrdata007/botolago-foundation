@@ -1,3 +1,4 @@
+import podiumSoonArt from "@/assets/illustrations/podium-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Award, Bookmark, Crown, Medal, Share2, Star, UserPlus } from "lucide-react";
@@ -209,6 +210,7 @@ function TopPlayersPage() {
           {/* Not "Aucun contenu disponible": a gameweek that has not been
               scored has no top five, and saying so is the whole answer. */}
           <UiEmptyState
+            illustration={podiumSoonArt}
             title={t("fantasy.top.empty_title").replace("{n}", nf.format(currentGw))}
             body={t("fantasy.top.empty_body").replace("{n}", nf.format(currentGw))}
           />
