@@ -43,8 +43,15 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { newsService } from "@/services/news";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+
+const FANTASY_HUB_URL = `${PUBLIC_SITE_ORIGIN}/fantasy`;
 
 export const Route = createFileRoute("/fantasy/")({
+  head: () => ({
+    meta: [{ property: "og:url", content: FANTASY_HUB_URL }],
+    links: [{ rel: "canonical", href: FANTASY_HUB_URL }],
+  }),
   component: FantasyHub,
 });
 

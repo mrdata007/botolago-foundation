@@ -8,8 +8,25 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { ui, UiCard } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+
+const RULES_URL = `${PUBLIC_SITE_ORIGIN}/fantasy/rules`;
+const RULES_TITLE = "Règles Fantasy Botola Pro — BotolaGO";
+const RULES_DESCRIPTION =
+  "Découvrez les règles de BotolaGO Fantasy : composition d’équipe, budget, transferts, points et délais de journée.";
 
 export const Route = createFileRoute("/fantasy/rules")({
+  head: () => ({
+    meta: [
+      { title: RULES_TITLE },
+      { name: "description", content: RULES_DESCRIPTION },
+      { property: "og:type", content: "article" },
+      { property: "og:url", content: RULES_URL },
+      { property: "og:title", content: RULES_TITLE },
+      { property: "og:description", content: RULES_DESCRIPTION },
+    ],
+    links: [{ rel: "canonical", href: RULES_URL }],
+  }),
   component: RulesFramed,
 });
 

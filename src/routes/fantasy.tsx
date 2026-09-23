@@ -9,6 +9,7 @@ export const Route = createFileRoute("/fantasy")({
         content:
           "BotolaGO Fantasy : composez votre équipe Botola Pro, faites vos transferts et suivez vos points chaque journée.",
       },
+      { property: "og:type", content: "website" },
       { property: "og:title", content: "Fantasy — BotolaGO" },
       {
         property: "og:description",

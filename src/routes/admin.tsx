@@ -33,8 +33,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
-  // Every CMS/Admin page, children included: never indexed, never followed.
-  // robots.txt disallows /admin as well; this covers a crawler that ignores it.
+  // Every CMS/Admin page, children included: never indexed. Keep the route
+  // crawlable so search engines can read this directive; authorization is
+  // enforced by the loader and backend, not by robots.txt.
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   loader: () => loadAdminRouteAccess(),
   pendingComponent: AdminLoadingShell,

@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalRoutePage } from "@/components/legal/LegalRoutePage";
 import { dictionaries } from "@/i18n/dictionaries";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+
+const TERMS_URL = `${PUBLIC_SITE_ORIGIN}/terms`;
 
 /**
  * `/terms` — public, no auth gate.
@@ -21,7 +24,9 @@ export const Route = createFileRoute("/terms")({
       { property: "og:title", content: dictionaries.fr["legal.terms.meta_title"] },
       { property: "og:description", content: dictionaries.fr["legal.terms.meta_description"] },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: TERMS_URL },
     ],
+    links: [{ rel: "canonical", href: TERMS_URL }],
   }),
   component: TermsRoute,
 });
