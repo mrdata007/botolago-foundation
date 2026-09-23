@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from "react";
+import { responsiveMedia } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
@@ -14,21 +15,35 @@ type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
 
 function ImageAttempt({
   src,
+  srcSet,
+  sizes,
   decoding = "async",
   loading = "lazy",
   onFailed,
   ...props
 }: ImageProps) {
   const [failed, setFailed] = useState(false);
+  // `srcSet` holds resized copies of `src` (see `responsiveMedia`). If they
+  // fail -- the image service is off in this environment -- the next try drops
+  // them and loads `src` itself, and only that failing removes the picture.
+  const [copiesFailed, setCopiesFailed] = useState(false);
+
   if (!src || failed) return null;
+  const useCopies = srcSet !== undefined && !copiesFailed;
 
   return (
     <img
       {...props}
       src={src}
+      srcSet={useCopies ? srcSet : undefined}
+      sizes={useCopies ? sizes : undefined}
       decoding={decoding}
       loading={loading}
       onError={() => {
+        if (useCopies) {
+          setCopiesFailed(true);
+          return;
+        }
         setFailed(true);
         onFailed?.(src);
       }}
@@ -51,10 +66,17 @@ export function MediaImage({
   style,
   loading,
   fetchPriority,
+  sizes,
 }: {
   src?: string;
   alt: string;
   fallback: string;
+  /**
+   * How wide the box is drawn, as a `sizes` value (`"56px"`,
+   * `READING_COLUMN_SIZES`). With it the photo is fetched as the resized WebP
+   * copy that fits; without it, as the original file.
+   */
+  sizes?: string;
   /**
    * Rendered inside this box, behind the photo, whenever there is no `src` or
    * the `src` that was given failed to load. It must position itself
@@ -74,6 +96,7 @@ export function MediaImage({
   // would hide a hero that is in fact loading.
   const [failedSrc, setFailedSrc] = useState<string>();
   const showPlaceholder = !src || failedSrc === src;
+  const photo = sizes ? responsiveMedia(src, "photo", sizes) : {};
 
   return (
     <div
@@ -84,6 +107,8 @@ export function MediaImage({
       {showPlaceholder ? placeholder : null}
       <FailureAwareImage
         src={src}
+        srcSet={photo.srcSet}
+        sizes={photo.sizes}
         alt={alt}
         loading={loading}
         fetchPriority={fetchPriority}

@@ -1,17 +1,25 @@
 import type { Club } from "@/types/domain";
+import { responsiveMedia } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import { FailureAwareImage } from "./FailureAwareImage";
 import { ui } from "@/components/ui-kit";
+
+/** The drawn width of each size below (h-7, h-9, h-12), for picking a copy. */
+const CREST_SIZES = { sm: "28px", md: "36px", lg: "48px" } as const;
 
 export function ClubCrest({
   club,
   size = "md",
   className,
+  loading,
 }: {
   club: Club;
   size?: "sm" | "md" | "lg";
   className?: string;
+  /** `"eager"` for a crest in the first screen, which should not wait. */
+  loading?: "eager" | "lazy";
 }) {
+  const crest = responsiveMedia(club.crestUrl, "crest", CREST_SIZES[size]);
   const dims =
     size === "sm"
       ? `h-7 w-7 ${ui.text.micro}`
@@ -60,7 +68,10 @@ export function ClubCrest({
     >
       <span>{club.crestPlaceholder}</span>
       <FailureAwareImage
-        src={club.crestUrl}
+        src={crest.src}
+        srcSet={crest.srcSet}
+        sizes={crest.sizes}
+        loading={loading}
         alt=""
         aria-hidden
         className="absolute inset-0 h-full w-full bg-[color:var(--ui-surface)] object-contain p-0.5"

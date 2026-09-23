@@ -225,7 +225,7 @@ function TeamColumn({ club }: { club: Club }) {
   const { tr } = useI18n();
   return (
     <div className="flex min-w-0 flex-col items-center gap-2">
-      <ClubCrest club={club} size="lg" />
+      <ClubCrest club={club} size="lg" loading="eager" />
       <div className={cn("min-w-0 text-center", ui.text.bodyStrong, ui.tone.default)}>
         <div className="truncate">{tr(club.shortName)}</div>
         <div className="mt-0.5 truncate text-[10px] font-semibold uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">

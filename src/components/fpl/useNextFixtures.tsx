@@ -4,6 +4,7 @@ import { useMemo, type ReactNode } from "react";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
 import { useI18n } from "@/i18n/provider";
 import { clubInitials } from "@/lib/club-identity";
+import { responsiveMedia } from "@/lib/media";
 import { fantasyService } from "@/services/fantasy-runtime";
 import type { Club } from "@/types/domain";
 import type { FixtureDifficulty } from "@/types/fantasy";
@@ -70,7 +71,7 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
         >
           {opponent.crestUrl ? (
             <FailureAwareImage
-              src={opponent.crestUrl}
+              {...responsiveMedia(opponent.crestUrl, "crest", "14px")}
               alt=""
               aria-hidden
               draggable={false}
