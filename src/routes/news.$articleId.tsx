@@ -16,7 +16,7 @@ import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
-import { resolveMediaUrl } from "@/lib/media";
+import { READING_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import { gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -236,6 +236,7 @@ function ArticlePage() {
             placeholder={<ArticleHeroFallback category={article.primaryCategory?.slug} />}
             loading="eager"
             fetchPriority="high"
+            frame={{ sizes: READING_COLUMN_SIZES, ratio: 16 / 10 }}
             className="aspect-[16/10] w-full animate-in fade-in duration-500"
           />
         </div>

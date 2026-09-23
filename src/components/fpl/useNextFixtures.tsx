@@ -71,7 +71,7 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
         >
           {opponent.crestUrl ? (
             <FailureAwareImage
-              {...responsiveMedia(opponent.crestUrl, "crest", "14px")}
+              {...responsiveMedia(opponent.crestUrl, { kind: "crest", sizes: "14px" })}
               alt=""
               aria-hidden
               draggable={false}

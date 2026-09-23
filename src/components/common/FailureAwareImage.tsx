@@ -66,17 +66,18 @@ export function MediaImage({
   style,
   loading,
   fetchPriority,
-  sizes,
+  frame,
 }: {
   src?: string;
   alt: string;
   fallback: string;
   /**
-   * How wide the box is drawn, as a `sizes` value (`"56px"`,
-   * `READING_COLUMN_SIZES`). With it the photo is fetched as the resized WebP
-   * copy that fits; without it, as the original file.
+   * How the box is drawn: its width as a `sizes` value (`"56px"`,
+   * `READING_COLUMN_SIZES`) and its shape, width / height, which must match
+   * the aspect class in `className`. With it the photo is fetched as the
+   * resized WebP copy that fits; without it, as the original file.
    */
-  sizes?: string;
+  frame?: { readonly sizes: string; readonly ratio: number };
   /**
    * Rendered inside this box, behind the photo, whenever there is no `src` or
    * the `src` that was given failed to load. It must position itself
@@ -96,7 +97,7 @@ export function MediaImage({
   // would hide a hero that is in fact loading.
   const [failedSrc, setFailedSrc] = useState<string>();
   const showPlaceholder = !src || failedSrc === src;
-  const photo = sizes ? responsiveMedia(src, "photo", sizes) : {};
+  const photo = frame ? responsiveMedia(src, { kind: "photo", ...frame }) : {};
 
   return (
     <div

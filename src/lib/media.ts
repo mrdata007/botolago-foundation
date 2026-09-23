@@ -92,10 +92,21 @@ export const MEDIA_WIDTHS = {
   crest: [64, 96, 128],
   // Editorial photos, from the 56px compact thumbnail to the 640px reading
   // column on a 2x screen.
-  photo: [160, 320, 640, 960, 1280],
+  photo: [160, 320, 480, 640, 960, 1280],
 } as const;
 
-export type MediaKind = keyof typeof MEDIA_WIDTHS;
+/**
+ * What a picture is and how it is drawn.
+ *
+ * A crest keeps its whole shape inside a square. A photo is cut to the shape
+ * of the box it fills (`ratio`, width / height), the same centred crop
+ * `object-cover` makes, so no pixels are sent that the box then hides. The
+ * image service needs both sides for that: asked for a width alone it keeps
+ * the original height and returns a narrow slice of the photo.
+ */
+export type MediaFrame =
+  | { readonly kind: "crest"; readonly sizes: string }
+  | { readonly kind: "photo"; readonly sizes: string; readonly ratio: number };
 
 /**
  * `sizes` for a picture as wide as the reading column. `UiScreen` caps the
@@ -104,10 +115,9 @@ export type MediaKind = keyof typeof MEDIA_WIDTHS;
  */
 export const READING_COLUMN_SIZES = "(min-width: 672px) 640px, calc(100vw - 32px)";
 
-// Crests keep their whole shape inside a square; photos keep their own shape
-// and the box they are drawn in crops them (`object-cover`).
-function resizeQuery(kind: MediaKind, width: number): string {
-  return kind === "crest" ? `width=${width}&height=${width}&resize=contain` : `width=${width}`;
+function resizeQuery(frame: MediaFrame, width: number): string {
+  if (frame.kind === "crest") return `width=${width}&height=${width}&resize=contain`;
+  return `width=${width}&height=${Math.round(width / frame.ratio)}&resize=cover`;
 }
 
 /**
@@ -136,7 +146,7 @@ export interface ResponsiveMedia {
 }
 
 /**
- * `src`, `srcSet` and `sizes` for a picture drawn `sizes` wide.
+ * `src`, `srcSet` and `sizes` for a picture drawn as `frame` describes.
  *
  * `srcSet` lists resized copies from Supabase's image service, which also
  * sends WebP to browsers that accept it. `src` stays the original file: a
@@ -149,8 +159,7 @@ export interface ResponsiveMedia {
  */
 export function responsiveMedia(
   url: string | null | undefined,
-  kind: MediaKind,
-  sizes: string,
+  frame: MediaFrame,
   supabaseUrl: string | null | undefined = configuredSupabaseUrl(),
 ): ResponsiveMedia {
   if (!url) return {};
@@ -158,8 +167,8 @@ export function responsiveMedia(
   const objectPath = origin ? ownObjectPath(url, origin) : undefined;
   if (!origin || !objectPath) return { src: url };
 
-  const srcSet = MEDIA_WIDTHS[kind]
-    .map((width) => `${origin}${RENDER_ROUTE}${objectPath}?${resizeQuery(kind, width)} ${width}w`)
+  const srcSet = MEDIA_WIDTHS[frame.kind]
+    .map((width) => `${origin}${RENDER_ROUTE}${objectPath}?${resizeQuery(frame, width)} ${width}w`)
     .join(", ");
-  return { src: url, srcSet, sizes };
+  return { src: url, srcSet, sizes: frame.sizes };
 }

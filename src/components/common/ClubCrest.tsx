@@ -19,7 +19,7 @@ export function ClubCrest({
   /** `"eager"` for a crest in the first screen, which should not wait. */
   loading?: "eager" | "lazy";
 }) {
-  const crest = responsiveMedia(club.crestUrl, "crest", CREST_SIZES[size]);
+  const crest = responsiveMedia(club.crestUrl, { kind: "crest", sizes: CREST_SIZES[size] });
   const dims =
     size === "sm"
       ? `h-7 w-7 ${ui.text.micro}`

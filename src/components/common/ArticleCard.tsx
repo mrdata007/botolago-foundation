@@ -4,6 +4,7 @@ import type { Article, Club } from "@/types/domain";
 import { ClubCrest } from "./ClubCrest";
 import { useI18n } from "@/i18n/provider";
 import { formatRelativeTime } from "@/lib/format-time";
+import { READING_COLUMN_SIZES } from "@/lib/media";
 import { SavedButton } from "@/components/news/SavedButton";
 import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
@@ -159,6 +160,7 @@ export function ArticleCard({
             placeholder={heroPlaceholder("md")}
             loading="eager"
             fetchPriority="high"
+            frame={{ sizes: READING_COLUMN_SIZES, ratio: 16 / 10 }}
             className="aspect-[16/10] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02]"
           />
           <div className="absolute inset-0" style={scrim(88, 35)} aria-hidden />
@@ -219,6 +221,7 @@ export function ArticleCard({
           alt=""
           fallback={article.heroGradient}
           placeholder={heroPlaceholder("sm")}
+          frame={{ sizes: "56px", ratio: 1 }}
           className={cn("h-14 w-14 shrink-0", ui.radius.control)}
         />
         <div className="min-w-0 flex-1">
@@ -260,6 +263,8 @@ export function ArticleCard({
               alt=""
               fallback={article.heroGradient}
               placeholder={heroPlaceholder("sm")}
+              // The 7.5rem first column of the card's grid.
+              frame={{ sizes: "120px", ratio: 1 }}
               className="aspect-square w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
             />
           </div>
@@ -319,6 +324,7 @@ export function ArticleCard({
             alt=""
             fallback={article.heroGradient}
             placeholder={heroPlaceholder("md")}
+            frame={{ sizes: READING_COLUMN_SIZES, ratio: 4 / 5 }}
             className="aspect-[4/5] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
           <div className="absolute inset-0" style={scrim(85, 25)} aria-hidden />
@@ -353,6 +359,7 @@ export function ArticleCard({
             alt=""
             fallback={article.heroGradient}
             placeholder={heroPlaceholder("md")}
+            frame={{ sizes: READING_COLUMN_SIZES, ratio: 16 / 8 }}
             className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
         </div>
