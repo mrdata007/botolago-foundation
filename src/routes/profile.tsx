@@ -44,12 +44,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profil — BotolaGO" },
+      { title: "Profile — BotolaGO" },
       {
         name: "description",
         content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
       },
-      { property: "og:title", content: "Profil — BotolaGO" },
+      { property: "og:title", content: "Profile — BotolaGO" },
       {
         property: "og:description",
         content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",

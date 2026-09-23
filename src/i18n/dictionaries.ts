@@ -25,7 +25,7 @@ export const dictionaries = {
     "nav.news": "Actualités",
     "nav.fantasy": "Fantasy",
     "nav.matches": "Matches",
-    "nav.profile": "Profil",
+    "nav.profile": "Profile",
 
     "home.greeting_morning": "Bonjour",
     "home.greeting_afternoon": "Bon après-midi",
@@ -513,7 +513,7 @@ export const dictionaries = {
     "common.away": "Extérieur",
     "common.vs": "vs",
 
-    "profile.title": "Profil",
+    "profile.title": "Profile",
     "profile.coming_soon": "Votre profil personnalisé arrive bientôt.",
     "profile.language": "Langue de l'application",
     "profile.followed_clubs": "Clubs suivis",
