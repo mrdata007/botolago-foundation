@@ -107,7 +107,16 @@ export function PageBackground({ variant, photo }: Props) {
             alt=""
             decoding="async"
             fetchPriority="high"
-            className="absolute inset-0 h-full w-full object-cover md:rtl:-scale-x-100"
+            className={cn(
+              "absolute w-full object-cover md:inset-0 md:h-full md:rtl:-scale-x-100",
+              // The tunnel's only lit part, its mouth onto the pitch, sits low
+              // in the portrait cut, exactly where the phone form card covers
+              // the screen. On a phone the photo is therefore a band behind
+              // the heading, cropped to the mouth and faded into the navy.
+              photo === "auth"
+                ? "inset-x-0 top-0 h-[46svh] object-[50%_92%] [mask-image:linear-gradient(to_bottom,black_60%,transparent)] md:object-center md:[mask-image:none]"
+                : "inset-0 h-full",
+            )}
           />
         </picture>
         {/* The mesh's own navy, laid back over the photograph so the white
@@ -117,7 +126,11 @@ export function PageBackground({ variant, photo }: Props) {
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 45%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)",
+              photo === "welcome"
+                ? // A deeper stop at 38% mutes the far stand's roof edge,
+                  // which otherwise ran like a rule through the subtitle.
+                  "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 70%, transparent) 38%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 52%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)"
+                : "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 45%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)",
           }}
         />
       </div>

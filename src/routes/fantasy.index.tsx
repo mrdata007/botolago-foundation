@@ -165,7 +165,7 @@ function FantasyHub() {
           alt=""
           aria-hidden
           decoding="async"
-          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_45%] rtl:-scale-x-100 sm:h-full sm:w-1/2"
+          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_45%] rtl:-scale-x-100 sm:h-64 sm:w-1/2 sm:object-[50%_75%]"
           style={{
             // Faded towards the title and at its lower edge, so it has no
             // hard border inside the gradient.
@@ -230,35 +230,35 @@ function FantasyHub() {
         <Link
           to="/fantasy/rankings"
           className={cn(
-            "relative block overflow-hidden px-4 py-4 text-center",
+            "relative block overflow-hidden px-4 py-4 text-start",
             ui.radius.control,
             ui.surface.ink,
             ui.focus,
           )}
         >
-          {/* A trophy under stadium lights, the trophy on the far side of
-              the centred title, mirrored in Arabic; the ink scrim over it
-              keeps the white title and link on their contrast. */}
+          {/* The trophy photo fills the end side of the card and fades out
+              towards the title, which sits on the plain ink at the start.
+              The mask flips with the image in Arabic, so the fade always
+              faces the text. */}
           <img
             src={rankingCardPhoto}
             alt=""
             aria-hidden
             loading="lazy"
             decoding="async"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[80%_50%] rtl:-scale-x-100"
+            className="pointer-events-none absolute inset-y-0 end-0 h-full w-3/5 object-cover object-[100%_50%] rtl:-scale-x-100 sm:w-2/5"
+            style={{
+              maskImage: "linear-gradient(to left, black 55%, transparent)",
+              WebkitMaskImage: "linear-gradient(to left, black 55%, transparent)",
+            }}
           />
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0"
-            style={{
-              // A centred pool of ink behind the title (a centred origin reads
-              // the same in both directions) over a lighter scrim everywhere.
-              background:
-                "radial-gradient(55% 75% at 50% 50%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 0%, transparent 100%), color-mix(in oklab, var(--ui-ink-deep) 40%, transparent)",
-            }}
+            style={{ background: "color-mix(in oklab, var(--ui-ink-deep) 30%, transparent)" }}
           />
           {/* Prose, not a figure — the stat ramp is numerals only. */}
-          <span className={cn("relative block", ui.text.hero, ui.tone.onInkPlain)}>
+          <span className={cn("relative block max-w-[60%]", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}
           </span>
           <span
