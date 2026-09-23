@@ -32,11 +32,14 @@ export function EmptyState({
   children,
   className,
   compact,
+  illustration,
 }: {
   children?: ReactNode;
   className?: string;
   /** Reduces vertical padding for use inside compact rails. */
   compact?: boolean;
+  /** An optional spot illustration (image URL) in place of the inbox glyph. */
+  illustration?: string;
 }) {
   const { t } = useI18n();
   return (
@@ -52,13 +55,24 @@ export function EmptyState({
         className,
       )}
     >
-      <div
-        className={cn("grid h-9 w-9 place-items-center rounded-full", ui.tone.ink)}
-        style={{ background: "color-mix(in oklab, var(--ui-ink) 12%, transparent)" }}
-        aria-hidden
-      >
-        <Inbox className="h-4 w-4" aria-hidden />
-      </div>
+      {illustration ? (
+        <img
+          src={illustration}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          className={cn("w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
+        />
+      ) : (
+        <div
+          className={cn("grid h-9 w-9 place-items-center rounded-full", ui.tone.ink)}
+          style={{ background: "color-mix(in oklab, var(--ui-ink) 12%, transparent)" }}
+          aria-hidden
+        >
+          <Inbox className="h-4 w-4" aria-hidden />
+        </div>
+      )}
       <span className="max-w-[28ch]">{children ?? t("state.empty")}</span>
     </div>
   );

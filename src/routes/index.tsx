@@ -42,6 +42,8 @@ import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
+import liveBand from "@/assets/photos/home-band-live.webp";
+import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -229,7 +231,12 @@ function HomeContent() {
           gameweek, which is what a reader needs, but the document still owes
           crawlers and screen-reader users a descriptive title. */}
       <h1 className="sr-only">{HOME_TITLE}</h1>
-      <GameweekBand greeting={greeting} dateLine={dateLine} gameweek={gwQ.data} />
+      <GameweekBand
+        greeting={greeting}
+        dateLine={dateLine}
+        gameweek={gwQ.data}
+        live={matchesQ.data?.matches.some((m) => m.status === "live") ?? false}
+      />
 
       {/* -------------------------------------------------------- */}
       {/* 2. Matches                                                */}
@@ -594,10 +601,13 @@ function GameweekBand({
   greeting,
   dateLine,
   gameweek,
+  live,
 }: {
   greeting: string;
   dateLine: string;
   gameweek?: { number: number; deadline: string };
+  /** A match is being played: the band shows the crowd celebrating. */
+  live: boolean;
 }) {
   const { t } = useI18n();
   // The band's own clock, so the deadline row leaves when the deadline passes
@@ -628,8 +638,12 @@ function GameweekBand({
           starts on the calm side. Decorative, so hidden from assistive tech;
           above the fold, so it is fetched eagerly. */}
       <img
-        src={stadiumBand}
-        srcSet={`${stadiumBandSmall} 800w, ${stadiumBand} 1600w`}
+        src={live ? liveBand : stadiumBand}
+        srcSet={
+          live
+            ? `${liveBandSmall} 800w, ${liveBand} 1600w`
+            : `${stadiumBandSmall} 800w, ${stadiumBand} 1600w`
+        }
         sizes="(min-width: 640px) 672px, 100vw"
         alt=""
         aria-hidden

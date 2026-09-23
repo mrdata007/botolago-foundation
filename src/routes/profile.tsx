@@ -1,3 +1,4 @@
+import profileCover from "@/assets/photos/profile-cover.webp";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -213,7 +214,21 @@ function AuthenticatedProfile({
   return (
     <>
       {/* Hero card */}
-      <section className={cn("mt-4 p-5", ui.surface.card)} aria-labelledby="profile-hero-name">
+      <section
+        className={cn("mt-4 overflow-hidden p-5", ui.surface.card)}
+        aria-labelledby="profile-hero-name"
+      >
+        {/* A pitch seen from above, as a cover strip across the top of the
+            card. Decorative; mirrored in Arabic so its calm side stays under
+            the start of the card. */}
+        <img
+          src={profileCover}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          className="-mx-5 -mt-5 mb-4 block h-24 w-[calc(100%+2.5rem)] max-w-none object-cover rtl:-scale-x-100"
+        />
         <div className="flex items-center gap-4">
           <div
             className={cn(

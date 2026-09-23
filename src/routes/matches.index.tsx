@@ -1,3 +1,4 @@
+import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -429,7 +430,9 @@ function MatchesPage() {
       )}
       {!loading && !seasonsQ.isError && !matchesQ.isError && totalDay === 0 && (
         <div className="mt-3">
-          <EmptyState>{t("matches.section.no_matches_today")}</EmptyState>
+          <EmptyState illustration={noMatchesArt}>
+            {t("matches.section.no_matches_today")}
+          </EmptyState>
         </div>
       )}
 

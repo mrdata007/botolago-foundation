@@ -51,7 +51,7 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
       {/* `variant="auth"` is explicit because this renders at `/`, where the
           resolver would otherwise paint the light page and every foreground
           on this screen would vanish. */}
-      <PageBackground variant="auth" />
+      <PageBackground variant="auth" photo="welcome" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
