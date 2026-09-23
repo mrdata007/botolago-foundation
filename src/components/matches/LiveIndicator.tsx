@@ -4,8 +4,9 @@ import { useI18n } from "@/i18n/provider";
 /**
  * Design System V2 — Live indicator.
  *
- * Restrained, premium urgency: a soft pulsing dot next to the LIVE label.
- * The pulse is CSS-only and disabled under prefers-reduced-motion.
+ * Restrained, premium urgency: a dot next to the LIVE label that slowly
+ * fades in and out (`live-breathe`, 1.5s a cycle, in styles.css). It is
+ * CSS-only and holds still under prefers-reduced-motion.
  * Never used with aggressive red flashing — the token `--color-live` is
  * a calm brand-red tuned for legibility on light and glass surfaces.
  */
@@ -30,10 +31,10 @@ export function LiveIndicator({
         className,
       )}
     >
-      <span className="relative inline-flex h-1.5 w-1.5 items-center justify-center" aria-hidden>
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--color-live)] opacity-60 motion-reduce:hidden" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--color-live)]" />
-      </span>
+      <span
+        className="live-breathe inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-live)]"
+        aria-hidden
+      />
       <span>{label}</span>
       {typeof minute === "number" && <span className="tabular-nums">{minute}′</span>}
     </span>

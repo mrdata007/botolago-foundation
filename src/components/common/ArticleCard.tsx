@@ -113,6 +113,13 @@ export function ArticleCard({
     "hover:shadow-[var(--ui-shadow-raised)] active:translate-y-px",
   );
 
+  /** Hover, after premierleague.com: the photo zooms in a touch and the
+   *  title dims slightly, both at the same quick pace. */
+  const imageZoom =
+    "transition-transform duration-[var(--duration-sheet)] ease-[var(--ease-standard)]";
+  const titleHover =
+    "transition-opacity duration-[var(--duration-sheet)] ease-[var(--ease-standard)] group-hover:opacity-85";
+
   /** A dot separator, tinted from the surrounding text. */
   const dot = (tone: "light" | "dark" = "light") => (
     <span
@@ -153,12 +160,15 @@ export function ArticleCard({
             placeholder={heroPlaceholder()}
             loading="eager"
             fetchPriority="high"
-            className="aspect-[4/3] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02] sm:aspect-[16/10]"
+            className={cn(
+              "aspect-[4/3] w-full group-hover:scale-[1.02] sm:aspect-[16/10]",
+              imageZoom,
+            )}
           />
           <div className="absolute inset-0" style={scrim(88, 35)} aria-hidden />
           <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
             {photoTag()}
-            <h3 {...contentAttributes} className={cn("mt-2.5", ui.text.title, onPhoto)}>
+            <h3 {...contentAttributes} className={cn("mt-2.5", ui.text.title, onPhoto, titleHover)}>
               {tr(article.title)}
             </h3>
             <p
@@ -211,7 +221,7 @@ export function ArticleCard({
         to={to}
         params={params}
         aria-label={ariaLabel}
-        className={cn(cardShell, "flex items-center gap-3 p-3", ui.space.row)}
+        className={cn(cardShell, "group flex items-center gap-3 p-3", ui.space.row)}
       >
         <MediaImage
           src={article.heroUrl}
@@ -223,7 +233,7 @@ export function ArticleCard({
         <div className="min-w-0 flex-1">
           <h4
             {...contentAttributes}
-            className={cn("line-clamp-2", ui.text.bodyStrong, ui.tone.default)}
+            className={cn("line-clamp-2", ui.text.bodyStrong, ui.tone.default, titleHover)}
           >
             {tr(article.title)}
           </h4>
@@ -259,7 +269,7 @@ export function ArticleCard({
               alt=""
               fallback={article.heroGradient}
               placeholder={heroPlaceholder()}
-              className="h-full min-h-[7.5rem] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
+              className={cn("h-full min-h-[7.5rem] w-full group-hover:scale-[1.05]", imageZoom)}
             />
           </div>
           <div className="flex min-w-0 flex-col justify-between py-1 pe-1">
@@ -271,7 +281,12 @@ export function ArticleCard({
               )}
               <h3
                 {...contentAttributes}
-                className={cn("mt-0.5 line-clamp-3", ui.text.bodyStrong, ui.tone.default)}
+                className={cn(
+                  "mt-0.5 line-clamp-3",
+                  ui.text.bodyStrong,
+                  ui.tone.default,
+                  titleHover,
+                )}
               >
                 {tr(article.title)}
               </h3>
@@ -316,12 +331,18 @@ export function ArticleCard({
             alt=""
             fallback={article.heroGradient}
             placeholder={heroPlaceholder()}
-            className="aspect-[4/5] w-full transition-transform sm:aspect-[16/9] duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
+            className={cn(
+              "aspect-[4/5] w-full group-hover:scale-[1.03] sm:aspect-[16/9]",
+              imageZoom,
+            )}
           />
           <div className="absolute inset-0" style={scrim(85, 25)} aria-hidden />
           {photoTag("absolute start-3 top-3")}
           <div className="absolute inset-x-0 bottom-0 p-3">
-            <h3 {...contentAttributes} className={cn("line-clamp-3", ui.text.subtitle, onPhoto)}>
+            <h3
+              {...contentAttributes}
+              className={cn("line-clamp-3", ui.text.subtitle, onPhoto, titleHover)}
+            >
               {tr(article.title)}
             </h3>
             {articleClubs.length > 0 && <div className="mt-1.5">{crestRow("dark")}</div>}
@@ -350,7 +371,7 @@ export function ArticleCard({
             alt=""
             fallback={article.heroGradient}
             placeholder={heroPlaceholder()}
-            className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
+            className={cn("aspect-[16/8] w-full group-hover:scale-[1.03]", imageZoom)}
           />
         </div>
         <div className="p-4">
@@ -359,7 +380,7 @@ export function ArticleCard({
           )}
           <h3
             {...contentAttributes}
-            className={cn("mt-1 line-clamp-2", ui.text.subtitle, ui.tone.default)}
+            className={cn("mt-1 line-clamp-2", ui.text.subtitle, ui.tone.default, titleHover)}
           >
             {tr(article.title)}
           </h3>

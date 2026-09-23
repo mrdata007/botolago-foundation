@@ -125,12 +125,12 @@ function NewsPage() {
       <PhotoPageHeader photo={newsHeaderPhoto} title={t("news.title")} />
 
       {/* Content discovery — real taxonomy-driven category chips */}
-      <Section index={0} className="mt-4">
+      <Section className="mt-4">
         <CategoryChips categories={categories} selected={categorySlug} onSelect={setCategorySlug} />
       </Section>
 
       {/* Club discovery */}
-      <Section index={0} className="mt-3">
+      <Section className="mt-3">
         {/* `ui.text.label` carries the `ltr:`-prefixed tracking: Arabic
             letterforms join and must never be letter-spaced (BG-0069). */}
         <h2 className={cn("mb-2", ui.text.label, ui.tone.muted)}>{t("news.filter_clubs")}</h2>
@@ -155,7 +155,7 @@ function NewsPage() {
       ) : (
         <>
           {lead && (
-            <Section index={1}>
+            <Section>
               <SectionHeader
                 eyebrow={t("news.section.lead")}
                 icon={Sparkles}
@@ -166,7 +166,7 @@ function NewsPage() {
           )}
 
           {featured.length > 0 && (
-            <Section index={2}>
+            <Section>
               <SectionHeader
                 title={t("news.section.top_stories")}
                 icon={Flame}
@@ -185,7 +185,7 @@ function NewsPage() {
       )}
 
       {/* Latest — chronological feed with real keyset pagination */}
-      <Section index={3}>
+      <Section>
         <SectionHeader
           title={t("news.section.latest")}
           icon={Clock}

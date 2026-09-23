@@ -1,8 +1,11 @@
-import { CalendarClock, MapPin, Trophy } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { CalendarClock, Goal, MapPin, Plus, Trophy } from "lucide-react";
+import type { MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
 import {
   isKickoffDateUnconfirmed,
@@ -23,11 +26,17 @@ export function MatchScoreHeader({
   home,
   away,
   elapsed,
+  events = [],
+  lineups = [],
 }: {
   match: Match;
   home: Club;
   away: Club;
   elapsed: number;
+  /** Key events, for the scorers under the score. */
+  events?: readonly MatchEvent[];
+  /** Published lineups, used only to put names on those events. */
+  lineups?: readonly MatchLineupDto[];
 }) {
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
@@ -172,6 +181,8 @@ export function MatchScoreHeader({
         <TeamColumn club={away} />
       </div>
 
+      {(isLive || isFinished) && <ScoreEvents events={events} lineups={lineups} />}
+
       {isLive && (
         <div className="relative mt-5">
           <div className="flex items-center justify-between text-[10px] font-black uppercase ltr:tracking-[0.14em] text-[color:var(--text-muted)]">
@@ -227,6 +238,193 @@ export function MatchScoreHeader({
         ) : null}
       </div>
     </header>
+  );
+}
+
+const GOAL_TYPES: ReadonlySet<MatchEvent["type"]> = new Set(["goal", "penalty_goal", "own_goal"]);
+const CARD_TYPES: ReadonlySet<MatchEvent["type"]> = new Set([
+  "yellow_card",
+  "second_yellow",
+  "red_card",
+]);
+
+function eventMinute(event: MatchEvent) {
+  return `${event.minute}${event.addedTime > 0 ? `+${event.addedTime}` : ""}′`;
+}
+
+/**
+ * Scorers under the score (after premierleague.com). Goals always show; the
+ * round + opens the assists and the cards, which grow into place while the +
+ * turns into ×. Names come from the published lineups, then from the event's
+ * own detail text; an event with neither shows its minute alone. Renders
+ * nothing for a match with no goals and no cards.
+ */
+function ScoreEvents({
+  events,
+  lineups,
+}: {
+  events: readonly MatchEvent[];
+  lineups: readonly MatchLineupDto[];
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  const names = new Map(
+    lineups.flatMap((lineup) =>
+      lineup.players.map((player) => [player.id, player.displayName] as const),
+    ),
+  );
+  const nameOf = (id: string | null) => (id ? names.get(id) : undefined);
+  const goals = events.filter((event) => GOAL_TYPES.has(event.type) && event.side !== null);
+  const cards = events.filter((event) => CARD_TYPES.has(event.type) && event.side !== null);
+  const hasAssists = goals.some((goal) => nameOf(goal.relatedPlayerId));
+  if (goals.length === 0 && cards.length === 0) return null;
+
+  const showLabel = t("matches.detail.events_show");
+  const hideLabel = t("matches.detail.events_hide");
+  const penaltyLabel = t("matches.detail.penalty_short");
+  const ownGoalLabel = t("matches.detail.own_goal_short");
+  const assistLabel = t("matches.event.assist");
+  const yellowLabel = t("matches.event.yellow");
+  const secondYellowLabel = t("matches.event.second_yellow");
+  const redLabel = t("matches.event.red");
+
+  // Opens and closes with the + ; hidden from assistive tech while closed.
+  const reveal = (children: ReactNode) => (
+    <div
+      aria-hidden={!open}
+      className={cn(
+        "grid transition-[grid-template-rows,opacity] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
+        open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+      )}
+    >
+      <div className="min-h-0 overflow-hidden">{children}</div>
+    </div>
+  );
+
+  const goalItem = (goal: MatchEvent) => {
+    const scorer = nameOf(goal.playerId) ?? goal.detail ?? undefined;
+    const assist = nameOf(goal.relatedPlayerId);
+    const note =
+      goal.type === "penalty_goal" ? penaltyLabel : goal.type === "own_goal" ? ownGoalLabel : null;
+    return (
+      <li key={goal.id} className="min-w-0">
+        <div className="line-clamp-2 break-words">
+          {scorer && <span className={ui.tone.default}>{scorer} </span>}
+          <span className={cn(ui.text.tabular, ui.tone.muted)}>{eventMinute(goal)}</span>
+          {note && <span className={ui.tone.muted}> ({note})</span>}
+        </div>
+        {assist &&
+          reveal(
+            <div className={cn("line-clamp-2 break-words", ui.text.micro, ui.tone.muted)}>
+              {assistLabel} {assist}
+            </div>,
+          )}
+      </li>
+    );
+  };
+
+  const cardItem = (card: MatchEvent) => {
+    const who = nameOf(card.playerId) ?? card.detail ?? undefined;
+    return (
+      <li
+        key={card.id}
+        className={cn(
+          "flex min-w-0 items-center gap-1.5",
+          card.side === "home" ? "justify-end" : "flex-row-reverse justify-end",
+        )}
+      >
+        <span className="line-clamp-2 min-w-0 break-words">
+          {who && <span className={ui.tone.default}>{who} </span>}
+          <span className={cn(ui.text.tabular, ui.tone.muted)}>{eventMinute(card)}</span>
+        </span>
+        <span
+          aria-label={
+            card.type === "red_card"
+              ? redLabel
+              : card.type === "second_yellow"
+                ? secondYellowLabel
+                : yellowLabel
+          }
+          role="img"
+          className={cn(
+            "h-3 w-2.5 shrink-0",
+            ui.radius.tight,
+            card.type === "yellow_card"
+              ? "bg-[color:var(--ui-caution)]"
+              : "bg-[color:var(--ui-live)]",
+          )}
+        />
+      </li>
+    );
+  };
+
+  const homeGoals = goals.filter((goal) => goal.side === "home");
+  const awayGoals = goals.filter((goal) => goal.side === "away");
+  const homeCards = cards.filter((card) => card.side === "home");
+  const awayCards = cards.filter((card) => card.side === "away");
+
+  return (
+    <div className={cn("relative mt-4 grid gap-2", ui.text.meta)}>
+      {goals.length > 0 && (
+        <div
+          role="group"
+          aria-label={t("matches.detail.scorers")}
+          className="grid grid-cols-[1fr_auto_1fr] items-start gap-x-3"
+        >
+          <ul className="grid min-w-0 gap-1 text-end">{homeGoals.map(goalItem)}</ul>
+          <Goal className={cn("mt-0.5 h-3.5 w-3.5", ui.tone.muted)} aria-hidden />
+          <ul className="grid min-w-0 gap-1 text-start">{awayGoals.map(goalItem)}</ul>
+        </div>
+      )}
+
+      {cards.length > 0 &&
+        reveal(
+          <div
+            role="group"
+            aria-label={t("matches.detail.cards")}
+            className={cn(
+              "grid grid-cols-[1fr_auto_1fr] items-start gap-x-3",
+              goals.length > 0 && "border-t border-dashed border-[color:var(--ui-rule)] pt-2",
+            )}
+          >
+            <ul className="grid min-w-0 gap-1">{homeCards.map(cardItem)}</ul>
+            <span className="w-3.5" aria-hidden />
+            <ul className="grid min-w-0 gap-1">{awayCards.map(cardItem)}</ul>
+          </div>,
+        )}
+
+      {(hasAssists || cards.length > 0) && (
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={open}
+          aria-label={open ? hideLabel : showLabel}
+          className={cn(
+            "group mx-auto grid place-items-center rounded-full",
+            ui.space.tap,
+            ui.focus,
+          )}
+        >
+          <span
+            className={cn(
+              "grid h-8 w-8 place-items-center rounded-full transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+              ui.surface.sunken,
+              ui.tone.ink,
+              "group-hover:bg-[color:color-mix(in_oklab,var(--ui-ink-fg)_12%,var(--ui-surface-sunken))]",
+            )}
+          >
+            <Plus
+              aria-hidden
+              className={cn(
+                "h-4 w-4 transition-transform duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
+                open && "rotate-45",
+              )}
+            />
+          </span>
+        </button>
+      )}
+    </div>
   );
 }
 

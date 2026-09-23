@@ -219,7 +219,7 @@ function MatchesPage() {
   const loading = seasonsQ.isLoading || !canLoadMatches || matchesQ.isLoading;
 
   return (
-    <AppShell backgroundVariant="matches">
+    <AppShell backgroundVariant="matches" liveStrip>
       <PhotoPageHeader
         photo={matchesHeaderPhoto}
         title={t("matches.title")}
@@ -315,10 +315,13 @@ function MatchesPage() {
       </div>
 
       {/* Sticky status filters — the Fantasy segmented track: an opaque sunken
-          strip, 10px track / 8px segment, no glass and no blur. */}
+          strip, 10px track / 8px segment, no glass and no blur. They sit
+          under the live strip while it is showing (`--livestrip-h`) and move
+          up with it when it slides away. */}
       <div
         className={cn(
-          "sticky top-[var(--topbar-h)] z-20 -mx-3 mt-3 px-3 pb-2 pt-1",
+          "sticky top-[calc(var(--topbar-h)+var(--livestrip-h))] z-20 -mx-3 mt-3 px-3 pb-2 pt-1",
+          "transition-[top] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
           "bg-[color:var(--ui-page)]",
         )}
       >
@@ -442,7 +445,7 @@ function MatchesPage() {
 
       {/* Live section */}
       {(filter === "all" || filter === "live") && visibleByBucket.live.length > 0 && (
-        <Section index={0}>
+        <Section>
           <SectionHeader
             title={t("matches.section.live")}
             eyebrow={t("matches.tab.live")}
@@ -462,7 +465,7 @@ function MatchesPage() {
 
       {/* Upcoming section */}
       {(filter === "all" || filter === "upcoming") && visibleByBucket.upcoming.length > 0 && (
-        <Section index={1}>
+        <Section>
           <SectionHeader
             title={t("matches.section.upcoming")}
             eyebrow={t("matches.tab.upcoming")}
@@ -482,7 +485,7 @@ function MatchesPage() {
 
       {/* Finished section */}
       {(filter === "all" || filter === "finished") && visibleByBucket.finished.length > 0 && (
-        <Section index={2}>
+        <Section>
           <SectionHeader
             title={t("matches.section.finished")}
             eyebrow={t("matches.tab.results")}
@@ -525,7 +528,7 @@ function MatchesPage() {
         )}
 
       {/* Standings — persistent context regardless of the selected date */}
-      <Section index={3}>
+      <Section>
         <SectionHeader
           title={t("matches.table_preview")}
           eyebrow={t("matches.competition.botola")}

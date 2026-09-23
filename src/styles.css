@@ -28,8 +28,16 @@
   --radius-dialog: 1.25rem; /* dialogs */
 
   /* ---- Sticky offsets ------------------------------------------ */
-  --topbar-h: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  /* The TopBar's own height, term for term: its top padding
+     (`ui.safe.top`), the 44px row, `pb-2` and the 1px rule. It was a flat
+     4.25rem, 3px taller than the bar, so page content showed through a
+     sliver between the bar and anything stuck under it. */
+  --topbar-h: calc(max(env(safe-area-inset-top, 0px), 0.75rem) + var(--ui-tap-min) + 0.5rem + 1px);
   --bottomnav-h: calc(env(safe-area-inset-bottom, 0px) + 4.75rem);
+  /* The live strip under the top bar (LiveStrip): its height, and how much
+     of it is showing — 0 unless `data-live-strip="shown"` is on the root. */
+  --livestrip-h-open: calc(var(--ui-tap-min) + 0.5rem);
+  --livestrip-h: 0px;
 
   /* ---- Brand core ---------------------------------------------- */
   --brand-primary: oklch(0.32 0.1 258); /* deep BotolaGO blue */
@@ -822,12 +830,57 @@ html[dir="rtl"] .lucide-arrow-left {
   box-shadow: var(--shadow-subtle);
 }
 
+/* Live dot — a slow fade in and out, 1.5s a cycle (after premierleague.com).
+   It replaced an expanding "ping" ring, which read as an alarm rather than
+   the restrained urgency the live indicator is meant to carry. */
+@keyframes live-breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility live-breathe {
+  animation: live-breathe 1.5s ease-in-out infinite;
+}
+
+/* A match event that arrives while the page is open (a live refresh) fades
+   in and opens to its own height, so it is noticed without a jump. The grid
+   track goes from 0fr to 1fr; the element's one child must be
+   `min-h-0 overflow-hidden` for the track to collapse. */
+@keyframes event-enter {
+  from {
+    opacity: 0;
+    grid-template-rows: 0fr;
+  }
+  to {
+    opacity: 1;
+    grid-template-rows: 1fr;
+  }
+}
+
+@utility event-enter {
+  display: grid;
+  animation: event-enter var(--duration-hero) var(--ease-standard) both;
+}
+
+/* The live strip is showing, so sticky bars below the top bar make room. */
+:root[data-live-strip="shown"] {
+  --livestrip-h: var(--livestrip-h-open);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+    /* A delay would still hold content back (hidden, with fill-mode
+       `both`) before it appeared all at once. */
+    animation-delay: 0s !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
@@ -837,6 +890,9 @@ html[dir="rtl"] .lucide-arrow-left {
   .shimmer {
     animation: none !important;
     background-image: none !important;
+  }
+  .live-breathe {
+    animation: none !important;
   }
 }
 

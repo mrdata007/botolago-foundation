@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ArrowLeftRight,
   CircleAlert,
@@ -28,6 +29,28 @@ export function EventTimeline({
 }) {
   const { t } = useI18n();
 
+  // Events already on screen at first render appear as they are; one that
+  // arrives later, on a live refresh, fades in and opens (`event-enter`) so
+  // it is noticed. Tracked by id, so a refetch or a language change that
+  // returns the same events animates nothing.
+  const [seen, setSeen] = useState<ReadonlySet<string>>(
+    () => new Set(events.map((event) => event.id)),
+  );
+  const [entering, setEntering] = useState<ReadonlySet<string>>(() => new Set());
+  const arrived = events.filter((event) => !seen.has(event.id)).map((event) => event.id);
+  if (arrived.length > 0) {
+    // Adjusting state while rendering, so the new row's first paint already
+    // carries the animation instead of flashing in before it starts.
+    setSeen(new Set([...seen, ...arrived]));
+    if (isLive) setEntering(new Set([...entering, ...arrived]));
+  }
+  const settle = (id: string) =>
+    setEntering((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+
   if (events.length === 0) {
     return (
       <div
@@ -53,16 +76,28 @@ export function EventTimeline({
         aria-hidden
         className="pointer-events-none absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-[var(--border-subtle)] rtl:translate-x-1/2"
       />
-      {events.map((event) => (
-        <li key={event.id} className="contents">
-          {event.id === firstSecondHalf && <HalfTimeDivider />}
-          <EventRow
-            event={event}
-            club={event.side === "home" ? home : event.side === "away" ? away : undefined}
-            isLatest={event.id === latestId}
-          />
-        </li>
-      ))}
+      {events.map((event) => {
+        const isEntering = entering.has(event.id);
+        return (
+          <li key={event.id} className="contents">
+            {event.id === firstSecondHalf && <HalfTimeDivider />}
+            <div
+              className={cn(isEntering && "event-enter")}
+              onAnimationEnd={(animation) => {
+                if (isEntering && animation.target === animation.currentTarget) settle(event.id);
+              }}
+            >
+              <div className={cn(isEntering && "min-h-0 overflow-hidden")}>
+                <EventRow
+                  event={event}
+                  club={event.side === "home" ? home : event.side === "away" ? away : undefined}
+                  isLatest={event.id === latestId}
+                />
+              </div>
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 }

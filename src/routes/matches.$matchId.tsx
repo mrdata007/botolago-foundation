@@ -250,7 +250,14 @@ function MatchDetailPage() {
         </div>
       )}
 
-      <MatchScoreHeader match={match} home={home} away={away} elapsed={live.elapsed} />
+      <MatchScoreHeader
+        match={match}
+        home={home}
+        away={away}
+        elapsed={live.elapsed}
+        events={live.events}
+        lineups={detailQ.data?.lineups ?? []}
+      />
 
       {isLive && (
         /* `ui.text.label` letter-spaces Latin only (BG-0069). */
@@ -264,7 +271,13 @@ function MatchDetailPage() {
         onChange={(key) => navigate({ search: { tab: key }, replace: true })}
       />
 
-      <div role="tabpanel" className="mt-5">
+      {/* Keyed on the tab so every switch remounts the panel and replays a
+          quick fade — the swap is still instant, just no longer invisible. */}
+      <div
+        key={tab}
+        role="tabpanel"
+        className="mt-5 animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-quick)] ease-[var(--ease-standard)]"
+      >
         {tab === "summary" && (
           <EventTimeline events={live.events} home={home} away={away} isLive={isLive} />
         )}
@@ -302,7 +315,7 @@ function MatchDetailPage() {
               </>
             )}
 
-            <Section index={0}>
+            <Section>
               <SectionHeader title={t("matches.detail.head_to_head")} eyebrow="H2H" />
               {h2h.length === 0 ? (
                 // Was a hand-rolled copy of `EmptyState compact` — the same
@@ -328,7 +341,7 @@ function MatchDetailPage() {
           false, so without this gate an approved article puts a dead card on
           the match page of every fixture involving either club. */}
       {NEWS_ENABLED && related.length > 0 && (
-        <Section index={1}>
+        <Section>
           <SectionHeader title={t("matches.detail.related_news")} eyebrow={t("news.title")} />
           <div className="grid gap-2.5">
             {related.map((a) => (

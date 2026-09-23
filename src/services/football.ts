@@ -204,6 +204,13 @@ export const footballService = {
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 
+  /** Matches in play right now, for the live strip. */
+  async getLiveMatches(language: FootballLanguage): Promise<FootballMatchCollection> {
+    const repository = getFootballRepository();
+    const matches = await repository.getLiveMatches(language, 10, requestContext());
+    return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
+  },
+
   async getMatchDay(
     date: Date,
     language: FootballLanguage,

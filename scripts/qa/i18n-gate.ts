@@ -331,7 +331,13 @@ export const BASELINES: Baselines = {
   // for exactly this and referenced nowhere until now. W3 257 -> 252; nothing
   // orphaned in exchange. W4 unchanged: each key is its own literal
   // `t("news.tab.…")` call in a switch, not built from the slug.
-  W3: 252,
+  //
+  // Motion pass (scorers under the score): the match header's "+" opens each
+  // goal's assist, labelled with `matches.event.assist` — already translated
+  // in both languages and referenced by nothing until now. W3 252 -> 251.
+  // Every key the pass added is referenced by the component that added it,
+  // and each is its own literal call, so W1, W2 and W4 do not move.
+  W3: 251,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

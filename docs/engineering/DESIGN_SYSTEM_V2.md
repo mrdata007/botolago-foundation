@@ -240,6 +240,41 @@ Plus `ui.radius.full` for a circle/pill.
 - `ui.rule.block` / `.blockStart` / `.inline` / `.all` — hairline dividers on
   logical edges.
 
+### 2.6 Motion
+
+Motion is calm and quick, and it explains a change rather than decorating the
+page — the approach taken from a study of premierleague.com. Content never
+waits on an animation to appear.
+
+Every duration and easing comes from the tokens in `src/styles.css`:
+
+| Token              | Value | Use                                                 |
+| ------------------ | ----- | --------------------------------------------------- |
+| `--duration-tap`   | 120ms | press feedback                                      |
+| `--duration-quick` | 180ms | colour changes, tab-panel fade                      |
+| `--duration-route` | 260ms | route changes (no animated route change today)      |
+| `--duration-sheet` | 320ms | sheets, expand/collapse, the live strip, card hover |
+| `--duration-hero`  | 420ms | a live match event arriving                         |
+
+Easing: `--ease-standard` unless there is a reason not to.
+
+Named pieces, in `styles.css`:
+
+- `live-breathe` — the live dot fades in and out, 1.5s a cycle. It replaced an
+  expanding "ping" ring, which read as an alarm.
+- `event-enter` — a match event that arrives while the page is open fades in
+  and opens to its own height. Its one child must be `min-h-0 overflow-hidden`.
+- `--livestrip-h` — how much of the live strip (`LiveStrip`) is showing: 0
+  unless the strip sets `data-live-strip="shown"` on the root. A sticky bar
+  under the top bar uses `top-[calc(var(--topbar-h)+var(--livestrip-h))]` so
+  it sits beneath the strip and moves up with it.
+
+Reduced motion is handled once, globally: the `prefers-reduced-motion` block
+cuts every animation and transition to nothing and resets animation delays,
+so nothing is ever held back. Loops (`.shimmer`, `.mesh-drift`,
+`.live-breathe`) are switched off by name. Do not stagger content with
+per-item delays.
+
 ---
 
 ## 3. The `--fpl-*` → kit mapping

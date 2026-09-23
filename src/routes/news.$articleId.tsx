@@ -417,7 +417,7 @@ function ArticlePage() {
 
       {/* Related */}
       {related.length > 0 && (
-        <Section index={1}>
+        <Section>
           <SectionHeader title={t("article.related")} eyebrow={t("article.related")} />
           <div className="grid gap-2.5">
             {related.map((a) => (

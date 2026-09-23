@@ -225,7 +225,7 @@ function HomeContent() {
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
-    <AppShell>
+    <AppShell liveStrip>
       {/* -------------------------------------------------------- */}
       {/* 1. Gameweek band — the page's anchor                     */}
       {/* -------------------------------------------------------- */}
@@ -246,7 +246,7 @@ function HomeContent() {
       {/* The fixture list rises out of the band: pulled up over its lower
           edge so the gameweek and its matches read as one moment rather than
           a banner followed by a separate section. */}
-      <Section index={1} className="relative -mt-10 sm:-mt-10">
+      <Section className="relative -mt-10 sm:-mt-10">
         <UiCard padding="none" className="min-w-0 overflow-hidden">
           <div className="flex items-center justify-between gap-3 ps-4 pe-2 pt-2">
             <h2 className={cn("truncate", ui.text.subtitle, ui.tone.default)}>
@@ -306,7 +306,7 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       {/* 3. Fantasy — gameweek deadline / team entry                */}
       {/* -------------------------------------------------------- */}
-      <Section index={2}>
+      <Section>
         <SectionHeader
           title={plain(t("home.fantasy_hub"))}
           action={<ViewAllLink to="/fantasy" className={ALIGN_WITH_TITLE} />}
@@ -369,7 +369,7 @@ function HomeContent() {
       {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
       {/* -------------------------------------------------------- */}
       {NEWS_ENABLED && (
-        <Section index={3}>
+        <Section>
           <SectionHeader
             title={plain(t("home.news_preview"))}
             action={<ViewAllLink to="/news" className={ALIGN_WITH_TITLE} />}
@@ -394,7 +394,7 @@ function HomeContent() {
       {/* 5. Standings snapshot — only when the backend has one     */}
       {/* -------------------------------------------------------- */}
       {showStandings && (
-        <Section index={4}>
+        <Section>
           <SectionHeader
             title={plain(t("matches.table_preview"))}
             action={<ViewAllLink to="/matches" className={ALIGN_WITH_TITLE} />}
@@ -483,7 +483,7 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       {/* 6. Discovery links                                        */}
       {/* -------------------------------------------------------- */}
-      <Section index={5} className="pb-2">
+      <Section className="pb-2">
         <SectionHeader title={<BrandedText text={t("home.explore")} />} />
         <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-4" : "grid-cols-3")}>
           <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />

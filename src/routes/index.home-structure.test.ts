@@ -70,7 +70,11 @@ describe("Accueil (Home) structural contract", () => {
     });
 
     test("the news preview section is behind the flag", () => {
-      expect(source).toContain("{NEWS_ENABLED && (\n        <Section index={3}>");
+      const gate = "{NEWS_ENABLED && (\n        <Section>";
+      expect(source).toContain(gate);
+      // …and the section behind it is the News preview, not another one.
+      const gated = source.slice(source.indexOf(gate), source.indexOf(gate) + 160);
+      expect(gated).toContain('t("home.news_preview")');
     });
 
     test("the news discovery tile is behind the flag", () => {

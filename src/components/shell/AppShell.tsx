@@ -8,6 +8,7 @@
 import type { ReactNode } from "react";
 
 import { UiScreen } from "@/components/ui-kit";
+import { LiveStrip } from "@/components/matches/LiveStrip";
 import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
@@ -18,18 +19,22 @@ export function AppShell({
   backgroundVariant,
   contentWidth = "compact",
   bottomNav,
+  liveStrip = false,
   className,
 }: {
   children: ReactNode;
   backgroundVariant?: BackgroundVariant;
   contentWidth?: "compact" | "wide";
   bottomNav?: ReactNode;
+  /** Live scores under the top bar while any match is live (Home, Matches). */
+  liveStrip?: boolean;
   className?: string;
 }) {
   return (
     <div className={cn("relative min-h-dvh text-[color:var(--ui-on-surface)]", className)}>
       <PageBackground variant={backgroundVariant} />
       <TopBar />
+      {liveStrip && <LiveStrip />}
       <UiScreen width={contentWidth === "wide" ? "wide" : "content"} bottomNav>
         {children}
       </UiScreen>
