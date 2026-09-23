@@ -16,6 +16,7 @@ import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
+import { readTimeLabel } from "@/lib/read-time";
 import { resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import { categoryLabel, gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
@@ -331,7 +332,7 @@ function ArticlePage() {
           <Dot />
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            {article.readingTimeMinutes} {t("news.read_min")}
+            {readTimeLabel(article.readingTimeMinutes, lang, t)}
           </span>
           {teamNames.length > 0 && (
             <>

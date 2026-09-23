@@ -180,8 +180,12 @@ function PlayerDetailPage() {
         <div className="flex items-center gap-3 p-4">
           <JerseyVisual kit={kit} size={48} imageUrl={p.jerseyImageUrl} ariaLabel={tr(p.name)} />
           <div className="min-w-0 flex-1">
-            <h2 dir="auto" className={cn("truncate", ui.text.section, ui.tone.default)}>
-              {tr(p.name)}
+            {/* The heading follows the page direction, so in Arabic the name
+                sits against the jersey like its subtitle does; <bdi> keeps a
+                Latin name's own reading order. (`dir="auto"` on the heading
+                aligned a Latin name to the far side in Arabic.) */}
+            <h2 className={cn("truncate", ui.text.section, ui.tone.default)}>
+              <bdi>{tr(p.name)}</bdi>
             </h2>
             <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5", ui.text.meta)}>
               <span className={ui.tone.muted}>

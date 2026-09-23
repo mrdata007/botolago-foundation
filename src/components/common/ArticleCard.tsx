@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
 import { MediaImage } from "./FailureAwareImage";
 import { ArticleHeroFallback } from "./ArticleHeroFallback";
+import { readTimeLabel } from "@/lib/read-time";
 
 /**
  * Article card, five variants:
@@ -186,7 +187,7 @@ export function ArticleCard({
               {dot("dark")}
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3 w-3" aria-hidden />
-                {article.readMinutes} {t("news.read_min")}
+                {readTimeLabel(article.readMinutes, lang, t)}
               </span>
               {time && (
                 <>
@@ -287,9 +288,7 @@ export function ArticleCard({
                 {time && <span className="min-w-0 truncate">{time}</span>}
                 {time && dot()}
                 <Clock className="h-3 w-3 shrink-0" aria-hidden />
-                <span className="shrink-0">
-                  {article.readMinutes} {t("news.read_min")}
-                </span>
+                <span className="shrink-0">{readTimeLabel(article.readMinutes, lang, t)}</span>
               </span>
             </div>
           </div>
@@ -332,7 +331,7 @@ export function ArticleCard({
               {time && <span>{time}</span>}
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3 w-3" aria-hidden />
-                {article.readMinutes} {t("news.read_min")}
+                {readTimeLabel(article.readMinutes, lang, t)}
               </span>
             </div>
           </div>
@@ -389,7 +388,7 @@ export function ArticleCard({
               {dot()}
               <span className="inline-flex shrink-0 items-center gap-1">
                 <Clock className="h-3 w-3" aria-hidden />
-                {article.readMinutes} {t("news.read_min")}
+                {readTimeLabel(article.readMinutes, lang, t)}
               </span>
             </span>
           </div>
