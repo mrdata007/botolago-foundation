@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { readTimeLabel } from "@/lib/read-time";
+import { dictionaries } from "@/i18n/dictionaries";
 import { resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import { categoryLabel, gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
@@ -272,7 +273,14 @@ function ArticlePage() {
             />
             {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
             <span className={cn(ui.text.label, ui.tone.default)}>
-              {categoryLabel(article.primaryCategory, t)}
+              {/* In the article's own language, like the headline around it:
+                  the eyebrow inherits the article's lang/dir, and an edition
+                  served in the other language must not carry a UI-language
+                  label under the wrong lang tag. */}
+              {categoryLabel(
+                article.primaryCategory,
+                (key) => (dictionaries[contentLanguage] as Record<string, string>)[key] ?? key,
+              )}
             </span>
           </div>
         )}

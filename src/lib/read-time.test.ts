@@ -9,8 +9,8 @@ const tFor = (lang: "fr" | "ar") => (key: TranslationKey) =>
 describe("readTimeLabel", () => {
   test("Arabic: the noun agrees with the number", () => {
     const t = tFor("ar");
-    expect(readTimeLabel(1, "ar", t)).toBe("1 دقيقة للقراءة");
-    expect(readTimeLabel(2, "ar", t)).toBe("2 دقيقتان للقراءة");
+    expect(readTimeLabel(1, "ar", t)).toBe("دقيقة للقراءة");
+    expect(readTimeLabel(2, "ar", t)).toBe("دقيقتان للقراءة");
     expect(readTimeLabel(3, "ar", t)).toBe("3 دقائق للقراءة");
     expect(readTimeLabel(10, "ar", t)).toBe("10 دقائق للقراءة");
     expect(readTimeLabel(11, "ar", t)).toBe("11 دقيقة للقراءة");

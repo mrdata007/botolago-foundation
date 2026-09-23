@@ -2,8 +2,10 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 
 /**
  * "5 min de lecture" / "5 دقائق قراءة", with the noun agreeing with the
- * number. Arabic counts differently from French: one minute, two minutes
- * (dual), 3–10 minutes (plural "دقائق") and 11+ minutes (singular again).
+ * number. Arabic counts differently from French: one minute and two
+ * minutes are words of their own ("دقيقة", the dual "دقيقتان", with no
+ * numeral, which would repeat the count), 3–10 take the plural "دقائق" and
+ * 11+ the singular again.
  * A fixed "{n} دقيقة" read "3 دقيقة", which is wrong. `Intl.PluralRules`
  * gives the category; each form is a literal key so the i18n gate sees it.
  */
