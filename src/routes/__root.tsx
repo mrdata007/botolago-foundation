@@ -1,3 +1,6 @@
+import notFoundArt from "@/assets/illustrations/not-found.webp";
+import errorArt from "@/assets/illustrations/no-connection.webp";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -74,6 +77,13 @@ function NotFoundBody() {
       className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
     >
       <div className="max-w-md text-center">
+        <img
+          src={notFoundArt}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="mx-auto mb-2 h-40 w-auto max-w-full object-contain"
+        />
         {/* The one oversized figure on the screen, so it comes off the STAT
             ramp (rule 4) rather than the prose ramp with `fpl-tabular` bolted
             on: `ui.stat.hero` already carries tabular figures, the hero
@@ -137,6 +147,13 @@ function ErrorBody({ reset }: { reset: () => void }) {
       className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
     >
       <div className="max-w-md text-center" role="alert">
+        <img
+          src={errorArt}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="mx-auto mb-4 h-40 w-auto max-w-full object-contain"
+        />
         <h1 className={cn(ui.text.title, ui.tone.default)}>{t("error.title")}</h1>
         <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("error.description")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -192,7 +209,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Actualités, informations de match et Fantasy pour la Botola Pro.",
       },
       { property: "og:type", content: "website" },
+      // The default share picture (stadium + wordmark, 1200×630). Article
+      // pages set their own og:image, which takes precedence.
+      { property: "og:image", content: `${PUBLIC_SITE_ORIGIN}/og-image.jpg` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "BotolaGO" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: `${PUBLIC_SITE_ORIGIN}/og-image.jpg` },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

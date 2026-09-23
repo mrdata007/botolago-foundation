@@ -27,7 +27,8 @@ export function SectionHeader({
   eyebrow,
   icon: Icon,
 }: {
-  title: string;
+  /** A string (with optional accent markers) or ready-made heading content. */
+  title: string | ReactNode;
   subtitle?: string;
   action?: ReactNode;
   /** Short brand-blue label rendered above the title. */
@@ -59,7 +60,7 @@ export function SectionHeader({
           </div>
         )}
         <h2 className={cn("truncate", ui.text.section, ui.tone.default)}>
-          <Trans text={title} />
+          {typeof title === "string" ? <Trans text={title} /> : title}
         </h2>
         {subtitle && (
           <p className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.muted)}>{subtitle}</p>

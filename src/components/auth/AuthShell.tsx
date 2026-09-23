@@ -101,7 +101,7 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
 
   return (
     <div className={cn("relative min-h-[100dvh] w-full overflow-x-hidden", ui.tone.onMesh)}>
-      <PageBackground variant="auth" />
+      <PageBackground variant="auth" photo="auth" />
       <div
         className={cn(
           "relative z-10 flex min-h-[100dvh] flex-col",

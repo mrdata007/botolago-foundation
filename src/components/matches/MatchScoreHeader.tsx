@@ -4,8 +4,25 @@ import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
-import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import {
+  isKickoffDateUnconfirmed,
+  isKickoffTimeUnconfirmed,
+  MATCH_TIME_ZONE,
+} from "@/lib/match-kickoff";
 import { ui } from "@/components/ui-kit";
+import stadiumNight from "@/assets/photos/stadium-night-800.webp";
+import stadiumGolden from "@/assets/photos/stadium-golden-800.webp";
+import stadiumDay from "@/assets/photos/stadium-day-800.webp";
+import stadiumRain from "@/assets/photos/stadium-rain-800.webp";
+
+/** Generic stadium photographs (no venue has its own yet). A match always
+ *  gets the same one: picked from its id, so it never changes on reload. */
+const STADIUM_PHOTOS = [stadiumNight, stadiumGolden, stadiumDay, stadiumRain] as const;
+function stadiumPhotoFor(matchId: string): string {
+  let hash = 0;
+  for (let i = 0; i < matchId.length; i += 1) hash = (hash * 31 + matchId.charCodeAt(i)) | 0;
+  return STADIUM_PHOTOS[Math.abs(hash) % STADIUM_PHOTOS.length];
+}
 
 /**
  * Live-first scoreboard header.
@@ -43,8 +60,16 @@ export function MatchScoreHeader({
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
+  const unconfirmedDate = isKickoffDateUnconfirmed(match);
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
-  const displayedTime = unconfirmedTime ? t("matches.kickoff_unconfirmed") : timeFmt;
+  const displayedTime = unconfirmedDate
+    ? t("matches.kickoff_date_unconfirmed")
+    : unconfirmedTime
+      ? t("matches.kickoff_unconfirmed")
+      : timeFmt;
+  // A postponed match has no day either, so the meta cell drops the date
+  // rather than pairing a real weekday with "Date à confirmer".
+  const displayedKickoff = unconfirmedDate ? displayedTime : `${dateFmt} · ${displayedTime}`;
 
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
@@ -62,14 +87,26 @@ export function MatchScoreHeader({
         "animate-in fade-in-0 slide-in-from-bottom-1 duration-500 ease-out",
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-24 h-44 opacity-45"
-        style={{
-          background:
-            "radial-gradient(620px 260px at 50% 100%, color-mix(in oklab, var(--brand-primary) 24%, transparent) 0%, transparent 70%)",
-        }}
-      />
+      {/* A stadium photograph behind the crests and kick-off, starting below
+          the competition line and fading into the card surface at both ends,
+          so every line of text keeps the card's own foreground and contrast.
+          Decorative. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-12 h-32">
+        <img
+          src={stadiumPhotoFor(match.id)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover object-[50%_60%]"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, var(--background-elevated) 0%, color-mix(in oklab, var(--background-elevated) 50%, transparent) 25%, color-mix(in oklab, var(--background-elevated) 85%, transparent) 55%, var(--background-elevated) 72%)",
+          }}
+        />
+      </div>
 
       <div className="relative flex items-center justify-between gap-2">
         <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase ltr:tracking-[0.16em] text-[color:var(--brand-accent)]">
@@ -105,7 +142,7 @@ export function MatchScoreHeader({
         aria-label={
           isLive || isFinished
             ? scoreA11y
-            : `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)} — ${dateFmt} · ${displayedTime}`
+            : `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)} — ${displayedKickoff}`
         }
       >
         <TeamColumn club={home} />
@@ -125,7 +162,12 @@ export function MatchScoreHeader({
                 className={cn(
                   ui.tone.default,
                   "[font-weight:var(--ui-weight-hero)]",
-                  unconfirmedTime
+                  // Both labels take the compact branch. The hero monospace
+                  // size is for a four-character clock; "Date à confirmer" in
+                  // that slot swells the centre track of a three-column grid
+                  // and pushes the team columns under the header's
+                  // overflow-hidden on a phone.
+                  unconfirmedDate || unconfirmedTime
                     ? cn("max-w-28 text-center", ui.text.secondary)
                     : cn("font-mono", ui.text.tabular, "text-[calc(var(--ui-text-hero)*1.2)]"),
                 )}
@@ -174,7 +216,7 @@ export function MatchScoreHeader({
         <MetaCell
           icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
           label={t("matches.detail.kickoff")}
-          value={`${dateFmt} · ${displayedTime}`}
+          value={displayedKickoff}
         />
         <MetaCell
           icon={<Trophy className="h-3.5 w-3.5" aria-hidden />}

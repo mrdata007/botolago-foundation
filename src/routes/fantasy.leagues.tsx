@@ -1,3 +1,4 @@
+import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, Settings } from "lucide-react";
@@ -267,6 +268,7 @@ function LeaguesBody() {
                   ) : (privateQ.data ?? []).length === 0 ? (
                     <UiEmptyState
                       className="mt-2 shadow-none"
+                      illustration={emptyLeaguesArt}
                       title={t("fantasy.leagues.empty_title")}
                       body={t("fpl.no_leagues")}
                     />

@@ -700,6 +700,7 @@ export function UiStatePanel({
   body,
   action,
   onRetry,
+  illustration,
   className,
   testId,
 }: {
@@ -708,6 +709,9 @@ export function UiStatePanel({
   body?: ReactNode;
   action?: ReactNode;
   onRetry?: () => void;
+  /** An optional spot illustration (image URL) above the heading.
+   *  Decorative: the heading carries the meaning. */
+  illustration?: string;
   className?: string;
 } & UiTestable) {
   const { t } = useI18n();
@@ -743,10 +747,19 @@ export function UiStatePanel({
   return (
     <UiCard padding="lg" testId={testId} className={cn("text-center", className)}>
       <div role={isError ? "alert" : "status"}>
-        {isError ? (
+        {illustration ? (
+          <img
+            src={illustration}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            className="mx-auto mb-3 h-28 w-auto max-w-full object-contain"
+          />
+        ) : isError ? (
           <AlertTriangle className="mx-auto h-7 w-7 text-[color:var(--ui-negative)]" aria-hidden />
         ) : null}
-        <h2 className={cn(isError && "mt-3", ui.text.section, ui.tone.default)}>
+        <h2 className={cn(isError && !illustration && "mt-3", ui.text.section, ui.tone.default)}>
           {title ?? (isError ? t("fpl.error.title") : t("state.empty"))}
         </h2>
         {body ? <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{body}</p> : null}

@@ -61,6 +61,15 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
   return "scheduled";
 }
 
+/**
+ * The provider statuses in which the fixture no longer has a date.
+ *
+ * Narrower than the four that collapse into the domain `postponed` above: a
+ * suspended or abandoned match kicked off at the stored instant and keeps
+ * that date -- it is history, not a plan -- so only these two lose it.
+ */
+const DATE_UNCONFIRMED_STATUSES: readonly MatchCardDto["status"][] = ["postponed", "cancelled"];
+
 export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
   // BG-0111 — `team.code` is blank (not null) for 13 of the 21 active clubs on
   // production, and `??` does not fall back on `""`. That shipped an empty
@@ -104,6 +113,7 @@ function toMatch(match: MatchCardDto): Match {
     homeScore: match.homeScore ?? undefined,
     awayScore: match.awayScore ?? undefined,
     venue: { fr: venueName, ar: venueName },
+    dateUnconfirmed: DATE_UNCONFIRMED_STATUSES.includes(match.status),
   };
 }
 
