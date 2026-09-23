@@ -33,7 +33,7 @@ import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
 
-const MATCHES_TITLE = "Matchs Botola Pro — scores en direct | BotolaGO";
+const MATCHES_TITLE = "Matches Botola Pro — scores en direct | BotolaGO";
 const MATCHES_DESCRIPTION =
   "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
