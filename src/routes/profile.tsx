@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Profil — BotolaGO" },
       {
         name: "description",

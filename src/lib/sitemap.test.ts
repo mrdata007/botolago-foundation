@@ -69,20 +69,48 @@ describe("sitemap.xml", () => {
   });
 });
 
-describe("robots.txt and admin noindex", () => {
+describe("robots.txt and crawlable noindex pages", () => {
   const robots = readFileSync(join(import.meta.dir, "../../public/robots.txt"), "utf8");
 
-  test("disallows the CMS, sign-in and personal pages, and points at the sitemap", () => {
-    for (const rule of ["Disallow: /admin", "Disallow: /auth", "Disallow: /profile"]) {
-      expect(robots).toContain(rule);
+  test("allows crawlers to read noindex directives and points at the sitemap", () => {
+    for (const path of ["/admin", "/auth", "/profile"]) {
+      expect(robots).not.toContain(`Disallow: ${path}`);
     }
     expect(robots).toContain("Sitemap: https://botolago.com/sitemap.xml");
     // The public site stays crawlable: no blanket disallow.
     expect(robots).not.toMatch(/^Disallow: \/\s*$/m);
   });
 
-  test("every Admin route (the CMS included) sends noindex, nofollow", () => {
+  test("private application areas send noindex directives", () => {
     const admin = readFileSync(join(import.meta.dir, "../routes/admin.tsx"), "utf8");
     expect(admin).toContain('meta: [{ name: "robots", content: "noindex, nofollow" }]');
+    const auth = readFileSync(join(import.meta.dir, "../routes/auth.tsx"), "utf8");
+    expect(auth).toContain('meta: [{ name: "robots", content: "noindex, follow" }]');
+    const profile = readFileSync(join(import.meta.dir, "../routes/profile.tsx"), "utf8");
+    expect(profile).toContain('{ name: "robots", content: "noindex, follow" }');
+  });
+
+  test("public sitemap pages declare matching canonical URLs", () => {
+    const canonicalByPath: Record<string, string> = {
+      "/": "${PUBLIC_SITE_ORIGIN}/",
+      "/matches": "${PUBLIC_SITE_ORIGIN}/matches",
+      "/fantasy": "FANTASY_URL",
+      "/fantasy/rules": "RULES_URL",
+      "/privacy": "PRIVACY_URL",
+      "/terms": "TERMS_URL",
+    };
+    const routeByPath: Record<string, string> = {
+      "/": "index.tsx",
+      "/matches": "matches.index.tsx",
+      "/fantasy": "fantasy.tsx",
+      "/fantasy/rules": "fantasy.rules.tsx",
+      "/privacy": "privacy.tsx",
+      "/terms": "terms.tsx",
+    };
+
+    for (const [path, canonical] of Object.entries(canonicalByPath)) {
+      const source = readFileSync(join(import.meta.dir, "../routes", routeByPath[path]), "utf8");
+      expect(source, `${path} should declare its sitemap canonical`).toContain(canonical);
+    }
   });
 });

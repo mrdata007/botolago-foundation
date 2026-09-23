@@ -1,4 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+
+const FANTASY_URL = `${PUBLIC_SITE_ORIGIN}/fantasy`;
 
 export const Route = createFileRoute("/fantasy")({
   head: () => ({
@@ -9,6 +12,8 @@ export const Route = createFileRoute("/fantasy")({
         content:
           "BotolaGO Fantasy : composez votre équipe Botola Pro, faites vos transferts et suivez vos points chaque journée.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: FANTASY_URL },
       { property: "og:title", content: "Fantasy — BotolaGO" },
       {
         property: "og:description",
@@ -16,6 +21,7 @@ export const Route = createFileRoute("/fantasy")({
           "BotolaGO Fantasy : composez votre équipe Botola Pro, faites vos transferts et suivez vos points chaque journée.",
       },
     ],
+    links: [{ rel: "canonical", href: FANTASY_URL }],
   }),
   component: FantasyLayout,
 });

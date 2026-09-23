@@ -1,11 +1,9 @@
 # BotolaGO — https://botolago.com
-# The CMS, sign-in and personal pages are not for search engines. Admin pages
-# also send <meta name="robots" content="noindex, nofollow">.
+# Sign-in, personal, and admin pages declare `noindex` in their HTML. They
+# stay crawlable so search engines can read that directive. Protocol and
+# integration endpoints below are not search pages.
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /auth
-Disallow: /profile
 Disallow: /mcp
 Disallow: /.mcp/
 Disallow: /.lovable/

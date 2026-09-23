@@ -24,6 +24,7 @@ import {
   publicNewsContext,
 } from "@/components/news/news-data";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 
 /**
  * While News is hidden (owner decision — see `@/lib/feature-flags`), `/news`
@@ -59,12 +60,14 @@ export const Route = createFileRoute("/news")({
           "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
       },
       { property: "og:title", content: "Actualités — BotolaGO" },
+      { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/news` },
       {
         property: "og:description",
         content:
           "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
       },
     ],
+    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/news` }],
   }),
   component: NewsRoute,
 });
