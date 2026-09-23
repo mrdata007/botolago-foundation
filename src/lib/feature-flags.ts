@@ -120,4 +120,4 @@ export const DARK_MODE_ENABLED = false;
  *   - `src/routes/auth.login.tsx` — divider + provider buttons
  *   - `src/routes/auth.register.tsx` — divider + provider buttons
  */
-export const OAUTH_PROVIDERS_ENABLED = false;
+export const OAUTH_PROVIDERS_ENABLED = true;
