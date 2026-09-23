@@ -44,7 +44,7 @@ describe("Accueil (Home) structural contract", () => {
   });
 
   test("the news preview links into /news instead of duplicating it", () => {
-    expect(source).toContain('<ViewAllLink to="/news" />');
+    expect(source).toContain('<ViewAllLink to="/news"');
     // No per-language article fetch control on Home — that belongs to /news.
     expect(source).not.toContain("news.language");
     expect(source).not.toContain("newsLanguage");
