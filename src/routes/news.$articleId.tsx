@@ -18,7 +18,7 @@ import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
-import { gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
+import { categoryLabel, gradientTokenForId, publicNewsContext } from "@/components/news/news-data";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/news/$articleId")({
@@ -270,7 +270,7 @@ function ArticlePage() {
             />
             {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
             <span className={cn(ui.text.label, ui.tone.default)}>
-              {article.primaryCategory.name}
+              {categoryLabel(article.primaryCategory, t)}
             </span>
           </div>
         )}

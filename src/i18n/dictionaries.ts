@@ -58,7 +58,7 @@ export const dictionaries = {
     "news.following": "Suivi",
     "news.read_min": "min de lecture",
     "news.section.lead": "À la une",
-    "news.section.top_stories": "Top stories",
+    "news.section.top_stories": "À ne pas manquer",
     "news.section.latest": "Les dernières",
     "news.section.transfers": "Mercato",
     "news.section.analysis": "Analyses & tactiques",

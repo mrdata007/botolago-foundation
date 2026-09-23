@@ -323,7 +323,15 @@ export const BASELINES: Baselines = {
   // three live call sites.) The key is left in the dictionary for the same
   // reason as the `fpl.rank.*` set below — a design migration does not edit
   // i18n — and comes off the list in the follow-up that removes both.
-  W3: 257,
+  //
+  // News design pass: the category chips and the article eyebrow printed the
+  // taxonomy's raw slug ("for_you", "latest") in English in both languages.
+  // They now go through `categoryLabel`, which maps the five shipped slugs to
+  // `news.tab.for_you/.latest/.transfers/.analysis/.interviews` — copy written
+  // for exactly this and referenced nowhere until now. W3 257 -> 252; nothing
+  // orphaned in exchange. W4 unchanged: each key is its own literal
+  // `t("news.tab.…")` call in a switch, not built from the slug.
+  W3: 252,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

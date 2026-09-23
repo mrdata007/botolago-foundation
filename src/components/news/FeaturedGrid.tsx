@@ -39,7 +39,9 @@ export function FeaturedGrid({
         </div>
       )}
       {restItems.length > 0 && (
-        <div className="grid gap-2.5 sm:grid-cols-2">
+        // Two-up only when there are two: a lone card in a two-column grid
+        // left half the row empty on desktop.
+        <div className={restItems.length > 1 ? "grid gap-2.5 sm:grid-cols-2" : "grid gap-2.5"}>
           {restItems.map((dto) => (
             <FeaturedCard
               key={dto.id}

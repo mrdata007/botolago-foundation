@@ -319,7 +319,7 @@ export function ArticleCard({
             alt=""
             fallback={article.heroGradient}
             placeholder={heroPlaceholder("md")}
-            className="aspect-[4/5] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
+            className="aspect-[4/5] w-full transition-transform sm:aspect-[16/9] duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
           <div className="absolute inset-0" style={scrim(85, 25)} aria-hidden />
           {photoTag("absolute start-3 top-3")}
